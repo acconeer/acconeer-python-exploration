@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# setup.py
+dist/
+build/
+*.egg-info/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
