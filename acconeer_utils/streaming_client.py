@@ -82,7 +82,8 @@ class StreamingClient:
             num_sens = metadata["data_sensors"]
 
             if data_type == self.IQ_DATA_TYPE:
-                payload = payload.reshape((2, num_vals*num_sens), order="F").view(dtype="complex")[0, ...]
+                n = num_vals*num_sens
+                payload = payload.reshape((2, n), order="F").view(dtype="complex")[0, ...]
 
             payload = np.reshape(payload, (num_sens, num_vals))
         else:

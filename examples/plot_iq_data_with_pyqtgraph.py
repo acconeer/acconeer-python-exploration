@@ -7,14 +7,13 @@ from acconeer_utils.config_builder import ConfigBuilder
 from acconeer_utils.example_argparse import ExampleArgumentParser
 
 
-class Main:
+class IQPyQtGraphExample:
     def run(self):
         parser = ExampleArgumentParser()
         args = parser.parse_args()
 
-        range_start = 0.20
-        range_end = 0.50
-        self.alpha = 0.9
+        range_start = 0.2
+        range_end = 0.8
         self.plot_x_min = int(100 * range_start + 0.5)
         self.plot_x_max = int(100 * range_end + 0.5)
         self.sweep_index = 0
@@ -46,7 +45,7 @@ class Main:
         self.config_builder.range_start = 0.20
         self.config_builder.range_length = 0.30
         self.config_builder.sweep_count = 2**16
-        self.config_builder.sweep_frequency = 100
+        self.config_builder.sweep_frequency = 80
 
         streaming_client = StreamingClient(args.host)
         streaming_client.run_session(self.config_builder.config, self.on_data)
@@ -57,7 +56,8 @@ class Main:
         if self.sweep_index == 0:
             self.smooth_data = data
         else:
-            self.smooth_data = self.alpha*self.smooth_data + (1-self.alpha)*data
+            alpha = 0.8
+            self.smooth_data = alpha*self.smooth_data + (1-alpha)*data
 
         xs = np.linspace(self.plot_x_min, self.plot_x_max, len(data))
         ampl = np.abs(self.smooth_data)
@@ -76,4 +76,4 @@ class Main:
 
 
 if __name__ == "__main__":
-    Main().run()
+    IQPyQtGraphExample().run()

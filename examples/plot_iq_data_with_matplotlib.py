@@ -6,7 +6,7 @@ from acconeer_utils.config_builder import ConfigBuilder
 from acconeer_utils.example_argparse import ExampleArgumentParser
 
 
-class Main:
+class IQMPLExample:
     def run(self):
         parser = ExampleArgumentParser()
         args = parser.parse_args()
@@ -45,7 +45,7 @@ class Main:
         config_builder.range_start = range_start
         config_builder.range_length = range_end - range_start
         config_builder.sweep_frequency = 10
-        config_builder.sweep_count = 10000
+        config_builder.sweep_count = 2**16
 
         streaming_client = StreamingClient(args.host)
         streaming_client.run_session(config_builder.config, self.on_data)
@@ -75,4 +75,4 @@ class Main:
 
 
 if __name__ == "__main__":
-    Main().run()
+    IQMPLExample().run()

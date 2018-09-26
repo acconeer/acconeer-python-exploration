@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="acconeer-utils",
-    version="1.0",
+    version="1.1",
     description="Acconeer utilities",
     url="https://github.com/acconeer/acconeer-python-exploration",
     author="Acconeer AB",

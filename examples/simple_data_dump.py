@@ -3,7 +3,7 @@ from acconeer_utils.config_builder import ConfigBuilder
 from acconeer_utils.example_argparse import ExampleArgumentParser
 
 
-class Main:
+class SimpleDataDumpExample:
     def run(self):
         parser = ExampleArgumentParser()
         args = parser.parse_args()
@@ -25,4 +25,4 @@ class Main:
 
 
 if __name__ == "__main__":
-    Main().run()
+    SimpleDataDumpExample().run()
