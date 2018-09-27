@@ -7,6 +7,10 @@ import numpy as np
 
 
 class StreamingClient:
+    ENVELOPE_DATA_TYPE = "envelope_data"
+    IQ_DATA_TYPE = "iq_data"
+    KNOWN_DATA_TYPES = [ENVELOPE_DATA_TYPE, IQ_DATA_TYPE]
+
     def __init__(self, host, port=6110):
         self.host = host
         self.port = port
@@ -63,20 +67,24 @@ class StreamingClient:
             packed = self.recv_buf[:payload_size]
             self.recv_buf = self.recv_buf[len(packed):]
 
-            payload_array = array("h")  # signed short
+            data_type = metadata["type"]
+            if data_type in self.KNOWN_DATA_TYPES:
+                payload_array = array("h")  # signed short
+            else:  # fallback
+                payload_array = array("H")  # unsigned short
+
             payload_array.fromstring(packed)
             if sys.byteorder == "little":
                 payload_array.byteswap()
+            payload = np.array(payload_array, dtype="float")
 
-            is_complex = metadata["type"] == "iq_data"
             num_vals = metadata["data_size"]
             num_sens = metadata["data_sensors"]
 
-            payload = np.array(payload_array, dtype="float")
-            if is_complex:
+            if data_type == self.IQ_DATA_TYPE:
                 payload = payload.reshape((2, num_vals*num_sens), order="F").view(dtype="complex")[0, ...]
 
-            payload = [payload[i*num_vals:(i+1)*num_vals] for i in range(num_sens)]
+            payload = np.reshape(payload, (num_sens, num_vals))
         else:
             payload = None
 
