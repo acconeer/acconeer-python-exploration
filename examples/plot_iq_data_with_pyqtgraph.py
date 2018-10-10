@@ -21,6 +21,7 @@ class IQPyQtGraphExample:
 
         self.app = QtGui.QApplication([])
         self.win = pg.GraphicsLayoutWidget()
+        self.win.closeEvent = lambda _: exit()
         self.win.setWindowTitle("Acconeer IQ data example")
         self.ampl_plot = self.win.addPlot()
         self.win.nextRow()
