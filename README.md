@@ -155,3 +155,12 @@ The basic scripts contains a lot of comments guiding you through the steps taken
   Example of how to use matplotlib for plotting IQ data.
 - `plot_with_pyqtgraph.py` \
   Example of how to use PyQtGraph for plotting IQ data.
+
+## GUI (beta)
+
+Run the GUI using:
+```
+python gui/main.py
+```
+
+Running examples in the GUI under Windows can be very slow. If you encounter lag in the GUI try reducing the sweep buffer in the GUI or running the examples directly as described above.
