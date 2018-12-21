@@ -2,11 +2,15 @@
 __pycache__/
 *.pyc
 venv/
+*.npy
 
 # setup.py
 dist/
 build/
 *.egg-info/
+
+# pytest
+.pytest_cache/
 
 # VS Code
 .vscode/

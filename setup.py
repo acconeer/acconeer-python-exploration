@@ -1,16 +1,17 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+
+
+PACKAGE_ROOT_DIR = "lib"
 
 setup(
     name="acconeer-utils",
-    version="1.1",
+    version="2.0.0",
     description="Acconeer utilities",
     url="https://github.com/acconeer/acconeer-python-exploration",
     author="Acconeer AB",
     author_email="github@acconeer.com",
     license="BSD 3-clause",
-    packages=["acconeer_utils"],
-    install_requires=[
-        "numpy",
-    ],
-    zip_safe=False,
+    package_dir={"": PACKAGE_ROOT_DIR},
+    packages=find_packages(PACKAGE_ROOT_DIR),
+    zip_safe=True,
 )
