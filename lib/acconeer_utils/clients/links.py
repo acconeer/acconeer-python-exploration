@@ -166,14 +166,16 @@ class SerialProcessLink(BaseSerialLink):
     def connect(self):
         self._recv_queue = mp.Queue()
         self._send_queue = mp.Queue()
-        self._connect_event = mp.Event()
+        self._flow_event = mp.Event()
+        self._error_event = mp.Event()
 
         args = (
             self._port,
             self.baudrate,
             self._recv_queue,
             self._send_queue,
-            self._connect_event,
+            self._flow_event,
+            self._error_event,
         )
 
         self._process = mp.Process(
@@ -183,11 +185,22 @@ class SerialProcessLink(BaseSerialLink):
                 )
 
         self._process.start()
-        connected = self._connect_event.wait(1)
 
-        if not connected:
+        flow_event_was_set = self._flow_event.wait(3)
+
+        if flow_event_was_set:
+            log.debug("connect - flow event was set")
+        else:
+            log.debug("connect - flow event was not set (timeout)")
             self.disconnect()
-            raise LinkError("failed to connect")
+            raise LinkError("failed to connect, timeout")
+
+        if self._error_event.is_set():
+            log.debug("connect - error event was set")
+            self.disconnect()
+            raise LinkError("failed to connect, see traceback from serial process")
+
+        log.debug("connect - successful")
 
         self._buf = bytearray()
 
@@ -237,7 +250,7 @@ class SerialProcessLink(BaseSerialLink):
 
     def disconnect(self):
         if self._process.exitcode is None:
-            self._connect_event.clear()
+            self._flow_event.clear()
             self._process.join(1)
 
         if self._process.exitcode is None:
@@ -269,25 +282,27 @@ class SerialProcessLink(BaseSerialLink):
         self._buf.extend(data)
 
 
-def serial_process_program(port, baud, recv_q, send_q, connect_event):
+def serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     try:
-        _serial_process_program(port, baud, recv_q, send_q, connect_event)
+        _serial_process_program(port, baud, recv_q, send_q, flow_event, error_event)
     except Exception:
+        error_event.set()
+        flow_event.set()
+        sleep(0.1)  # give the main process some time to print log messages
         print("Exception raised in serial process:\n")
         traceback.print_exc()
         print("\n\n")
 
     recv_q.close()
     send_q.close()
-    connect_event.clear()
 
 
-def _serial_process_program(port, baud, recv_q, send_q, connect_event):
+def _serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
     ser = serial.Serial(port=port, baudrate=baud, timeout=0, exclusive=True)
-    connect_event.set()
-    while connect_event.is_set():
+    flow_event.set()
+    while flow_event.is_set():
         received = bytearray()
         while True:
             data = bytearray(ser.read(4096))
@@ -307,6 +322,6 @@ def _serial_process_program(port, baud, recv_q, send_q, connect_event):
             sent = True
 
         if not sent:
-            sleep(0.0025)  # sleep for roughly 2-3 ms depending on OS
+            sleep(0.0025)
 
     ser.close()
