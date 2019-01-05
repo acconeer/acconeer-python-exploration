@@ -82,10 +82,10 @@ _Depending on your environment, you might have to replace `python` with `python3
 ### Setup
 
 Install the supplied Acconeer utilities module:
-
 ```
 python setup.py install --user
 ```
+Please note that the module has to be reinstalled after any change in `acconeer_utils`.
 
 If you're running Linux together with the XM112, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
 ```
