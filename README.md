@@ -143,11 +143,13 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 ### Processing
 
 - `breathing.py` \
-  An example breathing detection algoritm.
+  An example breathing detection algorithm.
+- `sleep_breathing.py` \
+  An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
 - `phase_tracking.py` \
-  Example of tracking relative movements using phase information.
+  An example of a relative movements tracking algorithm using phase information.
 - `presence_detection.py` \
-  Shows one way to perform presence detection while ignoring static objects.
+  An example of a presence/motion detection algorithm ignoring static objects.
 
 ### Plotting
 
