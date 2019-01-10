@@ -27,6 +27,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "../examples/processing"
 import presence_detection as prd
 import phase_tracking as pht
 import breathing as br
+import sleep_breathing as sb
 
 
 class GUI(QMainWindow):
@@ -115,6 +116,7 @@ class GUI(QMainWindow):
             "Presence detection": [prd, prd.PresenceDetectionProcessor],
             "Breathing": [br, br.BreathingProcessor],
             "Phase tracking": [pht, pht.PhaseTrackingProcessor],
+            "Sleep breathing": [sb, sb.PresenceDetectionProcessor],
         }
 
         self.external = axes[mode][1]
@@ -203,6 +205,7 @@ class GUI(QMainWindow):
         self.mode.addItem("Phase tracking")
         self.mode.addItem("Presence detection")
         self.mode.addItem("Breathing")
+        self.mode.addItem("Sleep breathing")
         self.mode.move(50, 250)
 
         self.mode_to_param = {
@@ -212,6 +215,7 @@ class GUI(QMainWindow):
             "Breathing": "iq_data",
             "Phase tracking": "iq_data",
             "Presence detection": "iq_data",
+            "Sleep breathing": "iq_data",
         }
 
         self.mode_to_config = {
@@ -221,6 +225,7 @@ class GUI(QMainWindow):
             "Breathing": [br.get_base_config(), "external"],
             "Phase tracking": [pht.get_base_config(), "external"],
             "Presence detection": [prd.get_base_config(), "external"],
+            "Sleep breathing": [sb.get_base_config(), "external"],
         }
 
         self.mode.currentIndexChanged.connect(self.update_canvas)
@@ -415,6 +420,7 @@ class GUI(QMainWindow):
 
     def connect_to_server(self):
         if self.buttons["connect"].text() == "Connect":
+            max_num = 4
             if "Select service" in self.current_canvas:
                 self.mode.setCurrentIndex(2)
 
@@ -426,16 +432,31 @@ class GUI(QMainWindow):
                     self.error_message("Please select port first!")
                     return
                 self.client = RegClient(port)
+                max_num = 1
 
-            try:
-                self.client.setup_session(self.update_sensor_config())
-                self.client.start_streaming()
-                self.client.stop_streaming()
+            conf = self.update_sensor_config()
+            sensor = 1
+            connection_success = False
+            error = None
+            while sensor <= max_num:
+                conf.sensor = sensor
+                try:
+                    self.client.setup_session(conf)
+                    self.client.start_streaming()
+                    self.client.stop_streaming()
+                    connection_success = True
+                    self.textboxes["sensor"].setText("{:d}".format(sensor))
+                    print(sensor)
+                    break
+                except Exception as e:
+                    sensor += 1
+                    error = e
+            if connection_success:
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(True)
                 self.buttons["stop"].setEnabled(True)
-            except Exception as e:
-                self.error_message("Could not connect to sever!\n{}".format(e))
+            else:
+                self.error_message("Could not connect to sever!\n{}".format(error))
                 return
 
             self.buttons["connect"].setText("Disconnect")
@@ -465,6 +486,7 @@ class GUI(QMainWindow):
 
         external = service != "internal"
 
+        conf.sensor = int(self.textboxes["sensor"].text())
         if external:
             color = "grey"
             self.textboxes["start_range"].setText(str(conf.range_interval[0]))
@@ -478,7 +500,6 @@ class GUI(QMainWindow):
                     float(self.textboxes["start_range"].text()),
                     float(self.textboxes["end_range"].text()),
             ]
-            conf.sensor = int(self.textboxes["sensor"].text())
             conf.sweep_rate = int(self.textboxes["frequency"].text())
             conf.gain = float(self.textboxes["gain"].text())
             self.sweep_count = int(self.textboxes["sweeps"].text())
@@ -545,6 +566,10 @@ class GUI(QMainWindow):
                 self.error_message("{}".format(e))
 
     def save_scan(self, data):
+        if "sleep" in self.mode.currentText().lower():
+            if int(self.textboxes["sweep_buffer"].text()) < 1000:
+                self.error_message("Please set sweep buffer to >= 1000")
+                return
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
@@ -655,6 +680,7 @@ class GUI(QMainWindow):
             self.textboxes["start_range"].setText("{:.2f}".format(sensor_config.range_interval[0]))
             self.textboxes["end_range"].setText("{:.2f}".format(sensor_config.range_interval[1]))
             self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
+            self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
             self.interface.setCurrentIndex(last_config["interface"])
             self.ports.setCurrentIndex(last_config["port"])
         except Exception as e:

@@ -1,5 +1,5 @@
 import numpy as np
-from time import time
+import time
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -251,7 +251,8 @@ class DataProcessing:
             plot_data = self.external.process(sweep_data)
             if self.sweep == 1:
                 self.service_fig.first(plot_data)
-            self.service_fig.update(plot_data)
+            if plot_data:
+                self.service_fig.update(plot_data)
 
         self.draw_canvas(self.sweep)
 
@@ -306,15 +307,18 @@ class DataProcessing:
                     return
 
             if not self.abort:
-                self.skip = 0
+                if "sleep" in self.service_type.lower():
+                    time.sleep(0.001)
+                else:
+                    self.skip = 0
                 plot_data, _ = self.process(data_step["sweep_data"])
 
     def draw_canvas(self, sweep_index):
         if self.skip <= 1:
             if sweep_index == 0:
-                self.time = time()
-            rate = time() - self.time
-            self.time = time()
+                self.time = time.time()
+            rate = time.time() - self.time
+            self.time = time.time()
             self.skip = rate / self.rate
             self.parent.parent.canvas.draw()
         else:
