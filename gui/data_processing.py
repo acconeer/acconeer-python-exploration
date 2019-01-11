@@ -35,6 +35,8 @@ class DataProcessing:
         process = self.external_processing
         if "iq" in service.lower() or "envelope" in service.lower():
             process = self.internal_processing
+        if "power" in service.lower():
+            process = self.power_bin_processing
         return process
 
     def abort_processing(self):
@@ -103,6 +105,23 @@ class DataProcessing:
                 self.parent.emit("error", error)
 
         return (cl, cl_iq, thrshld)
+
+    def power_bin_processing(self, iq_data):
+        if not self.sweep:
+            self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
+
+        plot_data = {
+            "iq_data": iq_data,
+            "sensor_config": self.sensor_config,
+            "sweep": self.sweep,
+            "x_mm": self.env_x_mm,
+        }
+
+        self.record_data(iq_data)
+        self.internal_plotting(plot_data)
+        self.sweep += 1
+
+        return (plot_data, self.record)
 
     def internal_processing(self, iq_data):
         complex_env = None
@@ -309,6 +328,8 @@ class DataProcessing:
             if not self.abort:
                 if "sleep" in self.service_type.lower():
                     time.sleep(0.001)
+                elif "power" in self.service_type.lower():
+                    time.sleep(self.rate)
                 else:
                     self.skip = 0
                 plot_data, _ = self.process(data_step["sweep_data"])
@@ -325,7 +346,10 @@ class DataProcessing:
             self.skip -= 1
 
     def internal_plotting(self, plot_data):
-        self.parent.emit("update_plots", "", plot_data)
+        cmd = "update_plots"
+        if "power" in self.mode.lower():
+            cmd = "update_power_plots"
+        self.parent.emit(cmd, "", plot_data)
 
 
 def push(val, arr, axis=0):

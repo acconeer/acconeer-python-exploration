@@ -113,6 +113,7 @@ class GUI(QMainWindow):
             "Select service": [None, None],
             "IQ": [None, None],
             "Envelope": [None, None],
+            "Power bin": [None, None],
             "Presence detection": [prd, prd.PresenceDetectionProcessor],
             "Breathing": [br, br.BreathingProcessor],
             "Phase tracking": [pht, pht.PhaseTrackingProcessor],
@@ -137,6 +138,27 @@ class GUI(QMainWindow):
             canvas = FigureCanvas(self.fig)
             canvas.figure.set_facecolor("#f0f0f0")
             canvas.draw()
+        elif "power" in mode.lower():
+            pg.setConfigOption("background", "#f0f0f0")
+            pg.setConfigOption("leftButtonPan", False)
+            pg.setConfigOptions(antialias=True)
+            canvas = pg.GraphicsLayoutWidget()
+            self.power_plot_window = canvas.addPlot(title="Power bin")
+            self.power_plot_window.showGrid(x=True, y=True)
+            self.power_plot_window.addLegend()
+            font = QFont()
+            font.setPixelSize(18)
+            self.power_plot_window.getAxis("bottom").tickFont = font
+            font.setPixelSize(12)
+            self.power_plot_window.getAxis("left").tickFont = font
+            pen = pg.mkPen("r", width=5)
+            self.power_plot = self.power_plot_window.plot(range(10),
+                                                          np.zeros(10),
+                                                          pen=pen,
+                                                          symbol='o',
+                                                          symbolPen='r',
+                                                          name="Power bins")
+            self.power_plot_window.setYRange(0, 1)
         else:
             pg.setConfigOption("background", "#f0f0f0")
             pg.setConfigOption("leftButtonPan", False)
@@ -166,6 +188,7 @@ class GUI(QMainWindow):
             self.snr_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1))
             self.snr_text.setZValue(3)
             self.envelope_plot_window.addItem(self.snr_text)
+
             canvas.nextRow()
             if mode.lower() == "iq":
                 self.iq_plot_window = canvas.addPlot(title="Phase")
@@ -202,6 +225,7 @@ class GUI(QMainWindow):
         self.mode.addItem("Select service")
         self.mode.addItem("IQ")
         self.mode.addItem("Envelope")
+        self.mode.addItem("Power bin")
         self.mode.addItem("Phase tracking")
         self.mode.addItem("Presence detection")
         self.mode.addItem("Breathing")
@@ -212,6 +236,7 @@ class GUI(QMainWindow):
             "Select service": "",
             "IQ": "iq_data",
             "Envelope": "envelope_data",
+            "Power bin": "power_bin",
             "Breathing": "iq_data",
             "Phase tracking": "iq_data",
             "Presence detection": "iq_data",
@@ -222,6 +247,7 @@ class GUI(QMainWindow):
             "Select service": ["", ""],
             "IQ": [configs.IQServiceConfig(), "internal"],
             "Envelope": [configs.EnvelopeServiceConfig(), "internal"],
+            "Power bin": [configs.PowerBinServiceConfig(), "internal_power"],
             "Breathing": [br.get_base_config(), "external"],
             "Phase tracking": [pht.get_base_config(), "external"],
             "Presence detection": [prd.get_base_config(), "external"],
@@ -484,7 +510,7 @@ class GUI(QMainWindow):
         if not conf:
             return None
 
-        external = service != "internal"
+        external = ("internal" not in service.lower())
 
         conf.sensor = int(self.textboxes["sensor"].text())
         if external:
@@ -608,6 +634,9 @@ class GUI(QMainWindow):
         elif "update_plots" in message_type:
             if data:
                 self.update_plots(data)
+        elif "update_power_plots" in message_type:
+            if data:
+                self.update_power_plots(data)
         else:
             print(message_type, message, data)
 
@@ -664,6 +693,24 @@ class GUI(QMainWindow):
 
         if self.sweep_buffer > data["sweep"]:
             self.hist_plot_image.setYRange(0, xdim)
+
+    def update_power_plots(self, data):
+        update_ylims = False
+        xstart = data["x_mm"][0]
+        xend = data["x_mm"][-1]
+        update_ylims = False
+        if not data["sweep"]:
+            self.env_plot_max_y = 0
+            update_ylims = True
+            self.power_plot_window.setXRange(xstart, xend)
+        self.power_plot.setData(data["x_mm"], data["iq_data"])
+
+        if max(data["iq_data"]) > self.env_plot_max_y:
+            self.env_plot_max_y = 1.2 * max(data["iq_data"])
+            update_ylims = True
+
+        if update_ylims:
+            self.power_plot_window.setYRange(0, self.env_plot_max_y)
 
     def start_up(self):
         if os.path.isfile(self.last_file):
