@@ -11,7 +11,7 @@ def main():
     example_utils.config_logging(args)
 
     if args.socket_addr:
-        print("Using detectors is not supported over socket")
+        print("Using detectors are only supported with the XM112 module")
         sys.exit()
     else:
         port = args.serial_port or example_utils.autodetect_serial_port()

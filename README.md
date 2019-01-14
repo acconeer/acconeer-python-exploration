@@ -137,6 +137,8 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ### Detectors
 
+Using detectors are only supported with the XM112 module.
+
 - `distance_peak_fix_threshold.py` \
   Demonstrates the *distance peak* detector.
 
