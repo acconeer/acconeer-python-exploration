@@ -1,36 +1,36 @@
-# Acconeer Python Exploration Kit
+# Acconeer Exploration Tool
 
-Acconeer Python Exploration Kit is a set of tools and examples for getting started with the Acconeer development kits. By seamlessly feeding radar data to your local machine, it allows you to quickly start exploring the world of Acconeer radar sensor technology. This repository serves as a good starting point both for evaluation purposes and algorithm development in Python.
+Acconeer Python Exploration Kit is a set of tools and examples for getting started with the Acconeer Evaluation kits. By seamlessly feeding radar data to your local machine, it allows you to quickly start exploring the world of Acconeer radar sensor technology. This repository serves as a good starting point both for evaluation purposes and algorithm development in Python.
 
-To run the exploration scripts, you'll need an Acconeer development kit running the streaming or module server supplied with the Acconeer A1 SDK.
+To run the exploration scripts, you'll need an Acconeer Evaluation kit running the streaming or Module server supplied with the Acconeer SDK or Module software image.
 
-This release supports SDK version 1.5.2 or newer.
+This release supports Acconeer SDK and Module SW version 1.5.2 or newer.
 
-## Setting up your development kit
+## Setting up your evaluation kit
 
-For general help on getting started, head over to the [Acconeer website](https://www.acconeer.com/products). There you'll find both a getting started guide and a video showing you how to set up your development kit. There you'll also find the SDK download.
+For general help on getting started, head over to the [Acconeer website](https://www.acconeer.com/products). There you'll find both a getting started guide and a video showing you how to set up your evaluation kit. There you'll also find the SDK download.
 
-### X111 or X112 (mounted on a Raspberry Pi)
+### XC111+XR111 or XC112+XR112 (mounted on a Raspberry Pi)
 
 #### Overview
 
 At large, these are the steps you'll need to take:
 
-* Assemble your development kit
+* Assemble your evaluation kit
 * Set up your Raspberry Pi
-* Load the Acconeer A1 SDK onto your Raspberry Pi
-* Run the streaming server
+* Load the Acconeer Raspberry Pi SDK onto your Raspberry Pi
+* Run the streaming server application on your Raspberry Pi
 
 For a single sensor setup, we recommend plugging the sensor into port 1 for simplicity's sake.
 
-#### Running the streaming server
+#### Running the streaming server application
 
-On your Raspberry Pi, start the streaming server located under `utils` in `AcconeerEvk`:
+For the XC112+XR112 kit, start the streaming server application on your Raspberry Pi located under `utils` in `AcconeerEvk`:
 ```
 $ cd AcconeerEvk
 $ ./utils/acc_streaming_server_rpi_xc112_r2b_xr112_r2b_a111_r2c
 ```
-If you have an X111 kit, the streaming server will instead be named `acc_streaming_server_rpi_xc111_r4a_xr111-3_r1c_a111_r2c`.
+If you have an XC111+XR111 kit, the streaming server will instead be named `acc_streaming_server_rpi_xc111_r4a_xr111-3_r1c_a111_r2c`.
 
 Find the IP address of your Raspberry Pi by running `ifconfig` in its terminal.
 
@@ -57,7 +57,7 @@ To get into the bootloader:
 - Release the NRST button
 - Let go of the ERASE button
 
-Now you should be able to flash the module server (`acc_module_server_xm112.bin`). After flashing, press the NRST button to reboot into the flashed software.
+Now you should be able to flash the Module software (`acc_module_server_xm112.bin`). After flashing, press the NRST button to reboot into the flashed software.
 
 If you're on Linux you likely will need to compile BOSSA on your own. In our experience, running Ubuntu 18.04, you will need to install `libreadline-dev` and `libwxgtk3.0-dev` before compiling with `make`. To get everything you need:
 ```
@@ -85,7 +85,7 @@ Install the supplied Acconeer utilities module:
 ```
 python setup.py install --user
 ```
-Please note that the module has to be reinstalled after any change in `acconeer_utils`.
+Please note that the utilities module has to be reinstalled after any change in `acconeer_utils`.
 
 If you're running Linux together with the XM112, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
 ```
@@ -97,9 +97,9 @@ Note: If you have ModemManager installed and running it might try to connect to 
 
 ## Running an example on your local machine
 
-Against X111 or X112 (mounted on a Raspberry Pi):
+Against XC111+XR111 or XC112+XR112 (mounted on a Raspberry Pi):
 ```
-python examples/basic.py -s 192.168.1.234
+python examples/basic.py -s <your Raspberry Pi IP address>
 ```
 Against XM112, autodetecting the serial port:
 ```
@@ -107,7 +107,7 @@ python examples/basic.py -u
 ```
 Against XM112, given a serial port (on Windows):
 ```
-python examples/basic.py -u COM3
+python examples/basic.py -u <your XM112 COM port e.g. COM3>
 ```
 _Again, depending on your environment, you might have to replace `python` with `python3` or `py`._
 
@@ -137,7 +137,7 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ### Detectors
 
-Using detectors is only supported with the XM112 module.
+Acconeer's detectors are **only** supported with the XM112 Module.
 
 - `distance_peak_fix_threshold.py` \
   Demonstrates the *distance peak* detector.
