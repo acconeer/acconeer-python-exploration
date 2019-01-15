@@ -40,6 +40,7 @@ class GUI(QMainWindow):
     last_file = os.path.join(os.path.dirname(__file__), "last_config.npy")
     sweep_buffer = 500
     env_plot_max_y = 0
+    cl_supported = False
 
     def __init__(self):
         super().__init__()
@@ -81,9 +82,10 @@ class GUI(QMainWindow):
             "sweep_buffer": "Sweep buffer",
             "start_range":  "Start (m)",
             "end_range":    "Stop (m)",
-            "clutter":      "Clutter settings",
+            "clutter":      "Background settings",
             "clutter_file": "",
-            "interface":    "Interface"
+            "interface":    "Interface",
+            "power_bins":   "Power bins",
         }
 
         self.labels = {}
@@ -91,6 +93,8 @@ class GUI(QMainWindow):
             self.labels[key] = QLabel(self)
         for key, val in self.labels.items():
             val.setText(text[key])
+
+        self.labels["power_bins"].setVisible(False)
 
     def init_textboxes(self):
         text = {
@@ -102,11 +106,14 @@ class GUI(QMainWindow):
             "start_range":  "0.18",
             "end_range":    "0.72",
             "sweep_buffer": "100",
+            "power_bins":   "6",
         }
         self.textboxes = {}
         for key in text:
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text[key])
+
+        self.textboxes["power_bins"].setVisible(False)
 
     def init_graphs(self, mode="Select service"):
         axes = {
@@ -122,6 +129,16 @@ class GUI(QMainWindow):
 
         self.external = axes[mode][1]
         canvas = None
+
+        self.textboxes["power_bins"].setVisible(False)
+        self.labels["power_bins"].setVisible(False)
+        self.cl_supported = False
+        if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
+            self.cl_supported = True
+        else:
+            self.load_clutter_file(force_unload=True)
+        self.buttons["create_cl"].setEnabled(self.cl_supported)
+        self.buttons["load_cl"].setEnabled(self.cl_supported)
 
         if mode == "Select service":
             canvas = QLabel()
@@ -145,20 +162,24 @@ class GUI(QMainWindow):
             canvas = pg.GraphicsLayoutWidget()
             self.power_plot_window = canvas.addPlot(title="Power bin")
             self.power_plot_window.showGrid(x=True, y=True)
-            self.power_plot_window.addLegend()
             font = QFont()
             font.setPixelSize(18)
             self.power_plot_window.getAxis("bottom").tickFont = font
             font.setPixelSize(12)
             self.power_plot_window.getAxis("left").tickFont = font
-            pen = pg.mkPen("r", width=5)
-            self.power_plot = self.power_plot_window.plot(range(10),
-                                                          np.zeros(10),
-                                                          pen=pen,
-                                                          symbol='o',
-                                                          symbolPen='r',
-                                                          name="Power bins")
-            self.power_plot_window.setYRange(0, 1)
+            pen = pg.mkPen("b", width=5)
+            self.power_plot = pg.BarGraphItem(x=np.arange(1, 7),
+                                              height=np.linspace(0, 6, num=6),
+                                              width=.5,
+                                              pen=pen,
+                                              name="Power bins")
+            self.power_plot_window.setLabel("left", "Amplitude")
+            self.power_plot_window.setLabel("bottom", "Power bin range (mm)")
+            self.power_plot_window.setYRange(0, 10)
+            self.power_plot_window.setXRange(0.5, 6.5)
+            self.power_plot_window.addItem(self.power_plot)
+            self.textboxes["power_bins"].setVisible(True)
+            self.labels["power_bins"].setVisible(True)
         else:
             pg.setConfigOption("background", "#f0f0f0")
             pg.setConfigOption("leftButtonPan", False)
@@ -182,14 +203,17 @@ class GUI(QMainWindow):
             self.clutter_plot = self.envelope_plot_window.plot(range(10),
                                                                np.zeros(10),
                                                                pen=pen,
-                                                               name="Clutter")
+                                                               name="Background")
             self.clutter_plot.setZValue(2)
 
             self.snr_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1))
             self.snr_text.setZValue(3)
             self.envelope_plot_window.addItem(self.snr_text)
+            self.envelope_plot_window.setLabel("left", "Amplitude")
+            self.envelope_plot_window.setLabel("bottom", "Distance (mm)")
 
             canvas.nextRow()
+
             if mode.lower() == "iq":
                 self.iq_plot_window = canvas.addPlot(title="Phase")
                 self.iq_plot_window.showGrid(x=True, y=True)
@@ -204,6 +228,8 @@ class GUI(QMainWindow):
                                                         np.arange(10)*0,
                                                         pen=pen,
                                                         name="IQ Phase")
+                self.iq_plot_window.setLabel("left", "Normalized phase")
+                self.iq_plot_window.setLabel("bottom", "Distance (mm)")
                 canvas.nextRow()
             self.hist_plot_image = canvas.addPlot()
             self.hist_plot = pg.ImageItem(titel="History")
@@ -216,6 +242,8 @@ class GUI(QMainWindow):
                                                             np.zeros(10),
                                                             pen=pen)
             self.hist_plot_image.addItem(self.hist_plot)
+            self.hist_plot_image.setLabel("left", "Distance (mm)")
+            self.hist_plot_image.setLabel("bottom", "Time (Sweep number)")
 
         self.current_canvas = mode
         return canvas
@@ -282,8 +310,8 @@ class GUI(QMainWindow):
             "start":        QtWidgets.QPushButton("Start", self),
             "connect":      QtWidgets.QPushButton("Connect", self),
             "stop":         QtWidgets.QPushButton("Stop", self),
-            "create_cl":    QtWidgets.QPushButton("Scan Clutter", self),
-            "load_cl":      QtWidgets.QPushButton("Load Clutter", self),
+            "create_cl":    QtWidgets.QPushButton("Scan Background", self),
+            "load_cl":      QtWidgets.QPushButton("Load Background", self),
             "load_scan":    QtWidgets.QPushButton("Load Scan", self),
             "save_scan":    QtWidgets.QPushButton("Save Scan", self),
         }
@@ -355,6 +383,8 @@ class GUI(QMainWindow):
         settings_sublayout_grid.addWidget(self.textboxes["sweeps"], 5, 1)
         settings_sublayout_grid.addWidget(self.labels["sweep_buffer"], 6, 0)
         settings_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], 6, 1)
+        settings_sublayout_grid.addWidget(self.labels["power_bins"], 7, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 7, 1)
 
         panel_sublayout_inner.addStretch(10)
         panel_sublayout_inner.addLayout(server_sublayout_grid)
@@ -433,6 +463,7 @@ class GUI(QMainWindow):
         self.buttons["load_scan"].setEnabled(False)
         self.buttons["save_scan"].setEnabled(False)
         self.buttons["create_cl"].setEnabled(False)
+        self.buttons["load_cl"].setEnabled(False)
         self.mode.setEnabled(False)
         self.interface.setEnabled(False)
 
@@ -441,6 +472,8 @@ class GUI(QMainWindow):
     def stop_scan(self):
         self.sig_scan.emit("stop")
         self.buttons["load_scan"].setEnabled(True)
+        if self.cl_supported:
+            self.buttons["load_cl"].setEnabled(True)
         self.mode.setEnabled(True)
         self.interface.setEnabled(True)
 
@@ -472,7 +505,6 @@ class GUI(QMainWindow):
                     self.client.stop_streaming()
                     connection_success = True
                     self.textboxes["sensor"].setText("{:d}".format(sensor))
-                    print(sensor)
                     break
                 except Exception as e:
                     sensor += 1
@@ -493,6 +525,8 @@ class GUI(QMainWindow):
             self.sig_scan.emit("stop")
             self.buttons["start"].setEnabled(False)
             self.buttons["create_cl"].setEnabled(False)
+            if self.cl_supported:
+                self.buttons["load_cl"].setEnabled(True)
 
             try:
                 self.client.stop_streaming()
@@ -529,6 +563,7 @@ class GUI(QMainWindow):
             conf.sweep_rate = int(self.textboxes["frequency"].text())
             conf.gain = float(self.textboxes["gain"].text())
             self.sweep_count = int(self.textboxes["sweeps"].text())
+            conf.bin_count = int(self.textboxes["power_bins"].text())
 
         lock = {
             "start_range": True,
@@ -546,18 +581,18 @@ class GUI(QMainWindow):
 
         return conf
 
-    def load_clutter_file(self):
-        if "un" in self.buttons["load_cl"].text().lower():
+    def load_clutter_file(self, force_unload=False):
+        if "unload" in self.buttons["load_cl"].text().lower() or force_unload:
             self.use_cl = None
             self.labels["clutter_file"].setText("")
-            self.buttons["load_cl"].setText("Clutter")
+            self.buttons["load_cl"].setText("Load Background")
             self.buttons["load_cl"].setStyleSheet("QPushButton {color: black}")
         else:
             options = QtWidgets.QFileDialog.Options()
             options |= QtWidgets.QFileDialog.DontUseNativeDialog
             fn, _ = QtWidgets.QFileDialog.getOpenFileName(
                     self,
-                    "QFileDialog.getOpenFileName()",
+                    "Load background file",
                     "",
                     "All Files (*);;NumPy data Files (*.npy)",
                     options=options
@@ -565,8 +600,8 @@ class GUI(QMainWindow):
 
             if fn:
                 self.use_cl = fn
-                self.labels["clutter_file"].setText("Clutter: {}".format(ntpath.basename(fn)))
-                self.buttons["load_cl"].setText("Unload clutter")
+                self.labels["clutter_file"].setText("Background: {}".format(ntpath.basename(fn)))
+                self.buttons["load_cl"].setText("Unload background")
                 self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
 
     def load_scan(self):
@@ -574,7 +609,7 @@ class GUI(QMainWindow):
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
-                "QFileDialog.getOpenFileName()",
+                "Load scan",
                 "",
                 "NumPy data files (*.npy)",
                 options=options
@@ -591,7 +626,7 @@ class GUI(QMainWindow):
             except Exception as e:
                 self.error_message("{}".format(e))
 
-    def save_scan(self, data):
+    def save_scan(self, data, clutter=False):
         if "sleep" in self.mode.currentText().lower():
             if int(self.textboxes["sweep_buffer"].text()) < 1000:
                 self.error_message("Please set sweep buffer to >= 1000")
@@ -599,16 +634,20 @@ class GUI(QMainWindow):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
+        title = "Save scan"
+        if clutter:
+            title = "Save background"
         filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-                self,
-                "QFileDialog.getOpenFileName()",
-                "",
-                "NumPy data files (*.npy)",
-                options=options
-                )
+                self, title, "", "NumPy data files (*.npy)", options=options)
 
         if filename:
             np.save(filename, data)
+            if clutter:
+                self.use_cl = filename
+                label_text = "Background: {}".format(ntpath.basename(filename))
+                self.labels["clutter_file"].setText(label_text)
+                self.buttons["load_cl"].setText("Unload background")
+                self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
@@ -621,7 +660,7 @@ class GUI(QMainWindow):
                 self.mode.setEnabled(True)
                 self.interface.setEnabled(True)
         elif message_type == "clutter_data":
-            self.save_scan(data)
+            self.save_scan(data, clutter=True)
         elif message_type == "scan_data":
             self.data = data
             self.buttons["save_scan"].setEnabled(True)
@@ -629,7 +668,9 @@ class GUI(QMainWindow):
             if "Disconnect" in self.buttons["connect"].text():
                 self.buttons["start"].setEnabled(True)
                 self.buttons["load_scan"].setEnabled(True)
-                self.buttons["create_cl"].setEnabled(True)
+                if self.cl_supported:
+                    self.buttons["create_cl"].setEnabled(True)
+                    self.buttons["load_cl"].setEnabled(True)
                 self.mode.setEnabled(True)
         elif "update_plots" in message_type:
             if data:
@@ -700,10 +741,15 @@ class GUI(QMainWindow):
         xend = data["x_mm"][-1]
         update_ylims = False
         if not data["sweep"]:
+            bin_num = int(self.textboxes["power_bins"].text())
+            bin_width = (xend - xstart)/(bin_num + 1)
             self.env_plot_max_y = 0
             update_ylims = True
             self.power_plot_window.setXRange(xstart, xend)
-        self.power_plot.setData(data["x_mm"], data["iq_data"])
+            self.power_plot.setOpts(x=data["x_mm"], width=bin_width)
+            self.power_plot_window.setXRange(xstart - bin_width / 2,
+                                             xend + bin_width / 2)
+        self.power_plot.setOpts(height=data["iq_data"])
 
         if max(data["iq_data"]) > self.env_plot_max_y:
             self.env_plot_max_y = 1.2 * max(data["iq_data"])
