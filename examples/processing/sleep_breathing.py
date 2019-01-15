@@ -272,12 +272,14 @@ class ExampleFigureUpdater(FigureUpdater):
     def setup(self, fig):
         self.phi_ax = fig.add_subplot(3, 1, 1)
         self.phi_ax.set_title("Breathing motion")
+        self.phi_ax.set_ylabel("Amplitude")
         self.phi_ax.set_xlabel("Samples used for processing")
         self.phi_ax.set_yticks([])
         self.phi_ax.set_ylim(-1.1, 1.1)
 
         self.power_spectrum_ax = fig.add_subplot(3, 1, 2)
         self.power_spectrum_ax.set_title("Power spectrum")
+        self.power_spectrum_ax.set_ylabel("Amplitude")
         self.power_spectrum_ax.set_xlabel("Frequency (Hz)")
         self.power_spectrum_ax.set_yticks([])
         self.power_spectrum_ax.set_xlim(-0.01, 1.1)
@@ -285,7 +287,9 @@ class ExampleFigureUpdater(FigureUpdater):
 
         self.f_est_hist = fig.add_subplot(3, 1, 3)
         self.f_est_hist.set_title("Breathing estimation history")
-        self.f_est_hist.set_yticks([])
+        self.f_est_hist.set_ylabel("Frequency (Hz)")
+        self.f_est_hist.set_xlabel("Breathing estimation samples")
+        self.f_est_hist.set_xticks([])
         self.f_est_hist.set_xlim(0, 1.1)
         self.f_est_hist.set_ylim(0, 1.2)
 
