@@ -344,6 +344,8 @@ class DataProcessing:
             self.parent.parent.canvas.draw()
         else:
             self.skip -= 1
+            if self.skip <= 1:
+                self.time = time.time()
 
     def internal_plotting(self, plot_data):
         cmd = "update_plots"
