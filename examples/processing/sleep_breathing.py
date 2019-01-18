@@ -122,9 +122,12 @@ class PresenceDetectionProcessor:
                     self.data_s_d_mat[self.sweep_index - 1, :]
                     )
 
+            phi_filt = signal.lfilter(self.b, self.a, self.phi_vec, axis=0)
+            phi_filt /= np.max(np.abs(self.phi_vec))
+
             out_data = {
-                "phi_raw": -np.ones(np.size(self.phi_vec)),
-                "phi_filt": -np.ones(np.size(self.phi_vec)),
+                "phi_raw": self.phi_vec / np.max(np.absolute(self.phi_vec)),
+                "phi_filt": phi_filt,
                 "power_spectrum": np.zeros(self.dft_points),
                 "x_dft": np.linspace(self.f_low, self.f_high, self.dft_points),
                 "f_dft_est_hist": self.f_dft_est_vec,
@@ -305,11 +308,12 @@ class ExampleFigureUpdater(FigureUpdater):
 
         self.artists["phi_raw"] = self.phi_ax.plot(data["phi_raw"], color="grey")[0]
         self.artists["phi_filt"] = self.phi_ax.plot(data["phi_filt"], color="k")[0]
-        self.artists["init_progress"] = self.phi_ax.text(
+
+        self.artists["init_progress"] = self.power_spectrum_ax.text(
                 0.5,
                 0.5,
                 "Initiating... ",
-                transform=self.phi_ax.transAxes,
+                transform=self.power_spectrum_ax.transAxes,
                 size="large",
                 ha="center",
                 va="center"
@@ -369,6 +373,9 @@ class ExampleFigureUpdater(FigureUpdater):
             self.artists["init_progress"].set_text(
                     "Initiating: {} %".format(data["init_progress"])
                     )
+
+            self.artists["phi_raw"].set_ydata(data["phi_raw"])
+            self.artists["phi_filt"].set_ydata(data["phi_filt"])
         else:
             self.artists["init_progress"].set_text("")
             self.artists["phi_raw"].set_ydata(data["phi_raw"])
