@@ -168,3 +168,20 @@ python gui/main.py
 ```
 
 Running examples in the GUI under Windows can be very slow. If you encounter lag in the GUI try reducing the sweep buffer in the GUI or running the examples directly as described above.
+
+## FAQ and common issues
+
+### Python-related
+
+1) Import errors with NumPy on Linux
+
+    The solution is to remove all duplicates of NumPy:
+    ```
+    sudo apt-get remove python3-numpy
+    python3 -m pip list | grep numpy
+    # Look for duplicate versions of numpy x.xx.x
+    # If numpy is installed several times, remove older versions
+    python3 -m pip uninstall numpy=x.xx.x
+    # If no numpy is installed, install latest
+    python3 -m pip install numpy
+    ```
