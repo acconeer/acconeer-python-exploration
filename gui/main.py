@@ -555,6 +555,7 @@ class GUI(QMainWindow):
             self.textboxes["frequency"].setText(str(conf.sweep_rate))
             self.sweep_count = -1
         else:
+            self.check_values(conf.mode)
             color = "white"
             conf.range_interval = [
                     float(self.textboxes["start_range"].text()),
@@ -580,6 +581,92 @@ class GUI(QMainWindow):
                 self.textboxes[key].setStyleSheet(style_sheet)
 
         return conf
+
+    def check_values(self, mode):
+        errors = []
+        if not self.textboxes["frequency"].text().isdigit():
+                errors.append("Frequency must be an integer and not less than 0!\n")
+                self.textboxes["frequency"].setText("10")
+
+        if not self.textboxes["sensor"].text().isdigit():
+                errors.append("Sensor must be an integer between 1 and 4!\n")
+                self.textboxes["sensor"].setText("0")
+        else:
+            sensor = int(self.textboxes["sensor"].text())
+            sensor, e = self.check_limit(sensor, self.textboxes["sensor"], 1, 4)
+            if e:
+                errors.append("Sensor must be an integer between 1 and 4!\n")
+
+        sweeps = self.is_float(self.textboxes["sweeps"].text(), is_positive=False)
+        if sweeps == -1:
+            pass
+        elif sweeps >= 1:
+            if not self.textboxes["sweeps"].text().isdigit():
+                errors.append("Sweeps must be a -1 or an int larger than 0!\n")
+                self.textboxes["sensor"].setText("-1")
+        else:
+            errors.append("Sweeps must be -1 or an int larger than 0!\n")
+            self.textboxes["sweeps"].setText("-1")
+
+        gain = self.is_float(self.textboxes["gain"].text())
+        gain, e = self.check_limit(gain, self.textboxes["gain"], 0, 1, set_to=0.7)
+        if e:
+            errors.append("Gain must be between 0 and 1!\n")
+
+        start = self.is_float(self.textboxes["start_range"].text())
+        start, e = self.check_limit(start, self.textboxes["start_range"], 0.06, 6.94)
+        if e:
+            errors.append("Start range must be between 0.06m and 6.94m!\n")
+
+        end = self.is_float(self.textboxes["end_range"].text())
+        end, e = self.check_limit(end, self.textboxes["end_range"], 0.12, 7)
+        if e:
+            errors.append("End range must be between 0.12m and 7.0m!\n")
+
+        r = end - start
+        if r < 0:
+            errors.append("Range must not be less than 0!\n")
+            self.textboxes["end_range"].setText(str(start + 0.06))
+            end = start + 0.06
+            r = end - start
+        if "envelope" in mode.lower() and r > 0.96:
+            errors.append("Envelope range must be less than 0.96m!\n")
+            self.textboxes["end_range"].setText(str(start + 0.96))
+            end = start + 0.96
+            r = end - start
+        if "iq" in mode.lower() and r > 0.72:
+            errors.append("IQ range must be less than 0.72m!\n")
+            end = start + 0.72
+            r = end - start
+
+        if len(errors):
+            self.error_message("".join(errors))
+
+    def is_float(self, val, is_positive=True):
+        try:
+            f = float(val)
+            if is_positive and f <= 0:
+                raise ValueError("Not positive")
+            return f
+        except Exception:
+            return False
+
+    def check_limit(self, val, field, start, end, set_to=None):
+        out_of_range = False
+        if isinstance(val, bool):
+            val = start
+            out_of_range = True
+        if val < start:
+            val = start
+            out_of_range = True
+        if val > end:
+            val = end
+            out_of_range = True
+        if out_of_range:
+            if set_to:
+                val = set_to
+            field.setText(str(val))
+        return val, out_of_range
 
     def load_clutter_file(self, force_unload=False):
         if "unload" in self.buttons["load_cl"].text().lower() or force_unload:
