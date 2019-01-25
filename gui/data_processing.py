@@ -335,16 +335,18 @@ class DataProcessing:
                 plot_data, _ = self.process(data_step["sweep_data"])
 
     def draw_canvas(self, sweep_index):
-        if self.skip <= 1:
+        if self.skip < 1:
             if sweep_index == 0:
                 self.time = time.time()
+            self.parent.parent.canvas.draw()
             rate = time.time() - self.time
             self.time = time.time()
             self.skip = rate / self.rate
-            self.parent.parent.canvas.draw()
+            if self.skip > 1:
+                self.skip = np.ceil(self.skip)
         else:
             self.skip -= 1
-            if self.skip <= 1:
+            if self.skip < 1:
                 self.time = time.time()
 
     def internal_plotting(self, plot_data):
