@@ -111,6 +111,22 @@ class BaseServiceConfig(BaseSessionConfig):
         self.range_length = range_end - self.range_start
 
 
+class BaseDenseServiceConfig(BaseServiceConfig):
+    def __init__(self, **kwargs):
+        self._running_average_factor = None
+        super().__init__(**kwargs)
+
+    @property
+    def running_average_factor(self):
+        return self._running_average_factor
+
+    @running_average_factor.setter
+    def running_average_factor(self, factor):
+        if not (0 < factor < 1):
+            raise ValueError("running average factor must be between 0 and 1")
+        self._running_average_factor = factor
+
+
 class PowerBinServiceConfig(BaseServiceConfig):
     def __init__(self, **kwargs):
         self._bin_count = None
@@ -131,29 +147,18 @@ class PowerBinServiceConfig(BaseServiceConfig):
         self._bin_count = count
 
 
-class EnvelopeServiceConfig(BaseServiceConfig):
+class EnvelopeServiceConfig(BaseDenseServiceConfig):
     MAX_DEPTH_RESOLUTION = 0
     MAX_SNR = 1
 
     def __init__(self, **kwargs):
         self._session_profile = None
-        self._running_average_factor = None
         self._compensate_phase = None
         super().__init__(**kwargs)
 
     @property
     def mode(self):
         return "envelope"
-
-    @property
-    def running_average_factor(self):
-        return self._running_average_factor
-
-    @running_average_factor.setter
-    def running_average_factor(self, factor):
-        if not (0 < factor < 1):
-            raise ValueError("running average factor must be between 0 and 1")
-        self._running_average_factor = factor
 
     @property
     def compensate_phase(self):
@@ -174,7 +179,7 @@ class EnvelopeServiceConfig(BaseServiceConfig):
         self._session_profile = profile
 
 
-class IQServiceConfig(BaseServiceConfig):
+class IQServiceConfig(BaseDenseServiceConfig):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

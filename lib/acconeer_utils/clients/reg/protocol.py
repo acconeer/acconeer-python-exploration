@@ -294,6 +294,16 @@ REGS = [
     ),
 
     Reg(
+        "running_average_factor",
+        "iq",
+        64,
+        "rw",
+        "u",
+        float_to_milli_enc_funs,
+        False,
+        "running_average_factor",
+    ),
+    Reg(
         "output_data_compression",
         "iq",
         65,

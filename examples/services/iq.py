@@ -24,6 +24,7 @@ def main():
     config.range_interval = [0.2, 0.6]
     config.sweep_rate = 30
     config.gain = 0.6
+    # config.running_average_factor = 0.5
 
     info = client.setup_session(config)
     num_points = info["data_length"]
