@@ -849,9 +849,9 @@ class GUI(QMainWindow):
         if os.path.isfile(self.last_file):
             try:
                 last = np.load(self.last_file)
+                self.update_settings(last.item()["sensor_config"], last.item())
             except Exception as e:
                 print("Could not load settings from last session\n{}".format(e))
-            self.update_settings(last.item()["sensor_config"], last.item())
 
     def update_settings(self, sensor_config, last_config=None):
         try:
