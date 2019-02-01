@@ -1,11 +1,11 @@
 import numpy as np
-from matplotlib.gridspec import GridSpec
+import pyqtgraph as pg
+from PyQt5 import QtGui, QtCore
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
-from acconeer_utils.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 def main():
@@ -23,9 +23,17 @@ def main():
 
     client.setup_session(config)
 
-    fig_updater = ExampleFigureUpdater(config)
-    plot_process = PlotProcess(fig_updater)
-    plot_process.start()
+    # Setup PyQtGraph
+    app = QtGui.QApplication([])
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOptions(antialias=True)
+    win = pg.GraphicsLayoutWidget()
+    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
+    win.setWindowTitle("Acconeer presence detection example")
+    plot_updater = PGUpdater(win, config)
+    win.show()
+    app.processEvents()
 
     client.start_streaming()
 
@@ -38,13 +46,12 @@ def main():
         info, sweep = client.get_next()
         plot_data = processor.process(sweep)
 
-        try:
-            plot_process.put_data(plot_data)  # Will ignore the first None from processor
-        except PlotProccessDiedException:
-            break
+        if plot_data is not None:
+            plot_updater.update(plot_data)
+            app.processEvents()
 
     print("Disconnecting...")
-    plot_process.close()
+    app.closeAllWindows()
     client.disconnect()
 
 
@@ -104,58 +111,45 @@ class PresenceDetectionProcessor:
         return np.exp(-dt/tau)
 
 
-class ExampleFigureUpdater(FigureUpdater):
-    def __init__(self, config):
+class PGUpdater:
+    def __init__(self, win, config):
         self.config = config
-
         self.movement_limit = 0.3
 
-    def setup(self, fig):
-        gs = GridSpec(1, 2)
+        self.env_plot = win.addPlot(title="IQ amplitude")
+        self.env_plot.showGrid(x=True, y=True)
+        self.env_plot.setLabel("bottom", "Depth (m)")
+        self.env_curve = self.env_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        self.env_smooth_max = example_utils.SmoothMax(config.sweep_rate)
 
-        self.axs = {
-            "envelope": fig.add_subplot(gs[0, 0]),
-            "movement_history": fig.add_subplot(gs[0, 1]),
-        }
-
-        self.axs["envelope"].set_title("Envelope")
-        self.axs["envelope"].set_xlabel("Depth (m)")
-        self.axs["envelope"].set_xlim(self.config.range_interval)
-        self.axs["envelope"].set_ylim(0, 0.5)
-
-        self.axs["movement_history"].set_title("Movement history")
-        self.axs["movement_history"].set_xlabel("Time (s)")
-        self.axs["movement_history"].set_xlim(-5, 0)
-        self.axs["movement_history"].set_ylim(0, 1)
-
-        for ax in self.axs.values():
-            ax.grid(True)
-
-        fig.canvas.set_window_title("Acconeer presence detection example")
-        fig.set_size_inches(10, 5)
-        fig.tight_layout()
-
-    def first(self, data):
-        xs = {
-            "envelope": np.linspace(*self.config.range_interval, data["envelope"].size),
-            "movement_history": np.linspace(-5, 0, data["movement_history"].size),
-        }
-        self.arts = {k: self.axs[k].plot(xs[k], data[k])[0] for k in xs.keys()}
-
-        mh_ax = self.axs["movement_history"]
-        self.arts["movement_limit"] = mh_ax.axhline(self.movement_limit, color="k", ls="--")
-        self.arts["movement_text"] = mh_ax.text(-2.5, 0.95, "", size=30, ha="center", va="top")
-
-        return self.arts.values()
+        win.nextRow()
+        move_hist_plot = win.addPlot(title="Movement history")
+        move_hist_plot.showGrid(x=True, y=True)
+        move_hist_plot.setLabel("bottom", "Time(s)")
+        move_hist_plot.setXRange(-5, 0)
+        move_hist_plot.setYRange(0, 1)
+        self.move_hist_curve = move_hist_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        limit_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
+        limit_line = pg.InfiniteLine(self.movement_limit, angle=0, pen=limit_pen)
+        move_hist_plot.addItem(limit_line)
+        self.move_hist_text = pg.TextItem(color=pg.mkColor("k"), anchor=(0.5, 0))
+        self.move_hist_text.setPos(-2.5, 0.95)
+        move_hist_plot.addItem(self.move_hist_text)
 
     def update(self, data):
-        for k, v in data.items():
-            self.arts[k].set_ydata(v)
+        env_ys = data["envelope"]
+        env_xs = np.linspace(*self.config.range_interval, len(env_ys))
+        self.env_curve.setData(env_xs, env_ys)
+        self.env_plot.setYRange(0, self.env_smooth_max.update(np.amax(env_ys)))
 
-        if data["movement_history"][-1] > self.movement_limit:
-            self.arts["movement_text"].set_text("Present!")
+        move_hist_ys = data["movement_history"]
+        move_hist_xs = np.linspace(-5, 0, len(move_hist_ys))
+        self.move_hist_curve.setData(move_hist_xs, move_hist_ys)
+
+        if move_hist_ys[-1] > self.movement_limit:
+            self.move_hist_text.setText("Present!")
         else:
-            self.arts["movement_text"].set_text("Not present")
+            self.move_hist_text.setText("Not present")
 
 
 if __name__ == "__main__":

@@ -1,11 +1,12 @@
 import numpy as np
+import pyqtgraph as pg
+from PyQt5 import QtGui
 from scipy import signal
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
-from acconeer_utils.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 def main():
@@ -23,9 +24,18 @@ def main():
 
     client.setup_session(config)
 
-    fig_updater = ExampleFigureUpdater(config)
-    plot_process = PlotProcess(fig_updater)
-    plot_process.start()
+    # Setup PyQtGraph
+    app = QtGui.QApplication([])
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOptions(antialias=True)
+    win = pg.GraphicsLayoutWidget()
+    win.resize(800, 600)
+    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
+    win.setWindowTitle("Acconeer sleep breathing estimation example")
+    plot_updater = PGUpdater(win, config)
+    win.show()
+    app.processEvents()
 
     client.start_streaming()
 
@@ -38,13 +48,12 @@ def main():
         info, sweep = client.get_next()
         plot_data = processor.process(sweep)
 
-        try:
-            plot_process.put_data(plot_data)  # Will ignore the first None from processor
-        except PlotProccessDiedException:
-            break
+        if plot_data is not None:
+            plot_updater.update(plot_data)
+            app.processEvents()
 
     print("Disconnecting...")
-    plot_process.close()
+    app.closeAllWindows()
     client.disconnect()
 
 
@@ -123,10 +132,9 @@ class PresenceDetectionProcessor:
                     )
 
             phi_filt = signal.lfilter(self.b, self.a, self.phi_vec, axis=0)
-            phi_filt /= np.max(np.abs(self.phi_vec))
 
             out_data = {
-                "phi_raw": self.phi_vec / np.max(np.absolute(self.phi_vec)),
+                "phi_raw": self.phi_vec,
                 "phi_filt": phi_filt,
                 "power_spectrum": np.zeros(self.dft_points),
                 "x_dft": np.linspace(self.f_low, self.f_high, self.dft_points),
@@ -169,9 +177,9 @@ class PresenceDetectionProcessor:
                 self.snr_vec = np.append(self.snr_vec, snr)
 
                 out_data = {
-                    "phi_raw": self.phi_vec / np.max(np.absolute(self.phi_vec)),
-                    "phi_filt": phi_filt_vec / np.max(np.absolute(self.phi_vec)),
-                    "power_spectrum": P / np.max(P),
+                    "phi_raw": self.phi_vec,
+                    "phi_filt": phi_filt_vec,
+                    "power_spectrum": P,
                     "x_dft": np.linspace(self.f_low, self.f_high, self.dft_points),
                     "f_dft_est_hist": self.f_dft_est_vec,
                     "f_est_hist": self.f_est_vec,
@@ -268,142 +276,92 @@ class PresenceDetectionProcessor:
         return f_est, P_peak
 
 
-class ExampleFigureUpdater(FigureUpdater):
-    def __init__(self, config):
+class PGUpdater:
+    def __init__(self, win, config):
         self.config = config
 
-    def setup(self, fig):
-        self.phi_ax = fig.add_subplot(3, 1, 1)
-        self.phi_ax.set_title("Breathing motion")
-        self.phi_ax.set_ylabel("Amplitude")
-        self.phi_ax.set_xlabel("Samples used for processing")
-        self.phi_ax.set_yticks([])
-        self.phi_ax.set_ylim(-1.1, 1.1)
-
-        self.power_spectrum_ax = fig.add_subplot(3, 1, 2)
-        self.power_spectrum_ax.set_title("Power spectrum")
-        self.power_spectrum_ax.set_ylabel("Amplitude")
-        self.power_spectrum_ax.set_xlabel("Frequency (Hz)")
-        self.power_spectrum_ax.set_yticks([])
-        self.power_spectrum_ax.set_xlim(-0.01, 1.1)
-        self.power_spectrum_ax.set_ylim(0, 1.1)
-
-        self.f_est_hist = fig.add_subplot(3, 1, 3)
-        self.f_est_hist.set_title("Breathing estimation history")
-        self.f_est_hist.set_ylabel("Frequency (Hz)")
-        self.f_est_hist.set_xlabel("Breathing estimation samples")
-        self.f_est_hist.set_xticks([])
-        self.f_est_hist.set_xlim(0, 1.1)
-        self.f_est_hist.set_ylim(0, 1.2)
-
-        fig.canvas.set_window_title("Acconeer sleep breathing estimation example")
-        fig.set_size_inches(10, 8)
-        fig.tight_layout()
-
-    def first(self, data):
-        self.artists = {}
-
-        self.phi_ax.set_title(
-            "Breathing motion (detection range: {} m to {} m)".format(*self.config.range_interval))
-
-        self.artists["phi_raw"] = self.phi_ax.plot(data["phi_raw"], color="grey")[0]
-        self.artists["phi_filt"] = self.phi_ax.plot(data["phi_filt"], color="k")[0]
-
-        self.artists["init_progress"] = self.power_spectrum_ax.text(
-                0.5,
-                0.5,
-                "Initiating... ",
-                transform=self.power_spectrum_ax.transAxes,
-                size="large",
-                ha="center",
-                va="center"
+        phi_title = "Breathing motion (detection range: {} m to {} m)" \
+                    .format(*self.config.range_interval)
+        self.phi_plot = win.addPlot(title=phi_title)
+        self.phi_plot.showGrid(x=True, y=True)
+        self.phi_plot.setLabel("left", "Amplitude")
+        self.phi_plot.setLabel("bottom", "Samples")
+        self.phi_plot.addLegend()
+        self.filt_phi_curve = self.phi_plot.plot(
+                pen=example_utils.pg_pen_cycler(0),
+                name="Filtered",
+                )
+        self.raw_phi_curve = self.phi_plot.plot(
+                pen=example_utils.pg_pen_cycler(1),
+                name="Raw",
                 )
 
-        self.artists["power_spectrum"] = self.power_spectrum_ax.plot(
-                data["x_dft"],
-                data["power_spectrum"],
-                color="grey"
-                )[0]
+        win.nextRow()
+        self.spect_plot = win.addPlot(title="Power spectrum")
+        self.spect_plot.showGrid(x=True, y=True)
+        self.spect_plot.setLabel("left", "Power")
+        self.spect_plot.setLabel("bottom", "Frequency (Hz)")
+        self.spect_curve = self.spect_plot.plot(pen=example_utils.pg_pen_cycler(1))
+        self.spect_smax = example_utils.SmoothMax(config.sweep_rate / 15)
+        self.spect_dft_inf_line = pg.InfiniteLine(pen=example_utils.pg_pen_cycler(1, "--"))
+        self.spect_plot.addItem(self.spect_dft_inf_line)
+        self.spect_est_inf_line = pg.InfiniteLine(pen=example_utils.pg_pen_cycler(0, "--"))
+        self.spect_plot.addItem(self.spect_est_inf_line)
+        self.spect_plot.setXRange(0, 1)
+        self.spect_plot.setYRange(0, 1)
+        self.spect_text_item = pg.TextItem("Initiating...", anchor=(0.5, 0.5), color="k")
+        self.spect_text_item.setPos(0.5, 0.5)
+        self.spect_plot.addItem(self.spect_text_item)
 
-        self.artists["f_dft_est"] = self.power_spectrum_ax.axvline(
-                data["f_dft_est"],
-                color="grey",
-                ls="--"
+        win.nextRow()
+        self.fest_plot = win.addPlot(title="Breathing estimation history")
+        self.fest_plot.showGrid(x=True, y=True)
+        self.fest_plot.setLabel("left", "Frequency (Hz)")
+        self.fest_plot.setLabel("bottom", "Samples")
+        self.fest_plot.addLegend()
+        self.fest_curve = self.fest_plot.plot(
+                pen=example_utils.pg_pen_cycler(0),
+                name="Breathing est.",
                 )
-
-        self.artists["f_est"] = self.power_spectrum_ax.axvline(data["f_est"], color="k", ls="--")
-
-        self.artists["snr"] = self.power_spectrum_ax.text(
-                0.90,
-                0.92,
-                "",
-                transform=self.power_spectrum_ax.transAxes,
-                size="large",
-                ha="center",
-                va="center"
+        self.fest_dft_curve = self.fest_plot.plot(
+                pen=example_utils.pg_pen_cycler(1),
+                name="DFT est.",
                 )
-
-        self.artists["f_dft_est_hist"] = self.f_est_hist.plot(
-                np.linspace(0, 1, data["f_dft_est_hist"].size),
-                data["f_dft_est_hist"], color="grey"
-                )[0]
-
-        self.artists["f_est_hist"] = self.f_est_hist.plot(
-                np.linspace(0, 1, data["f_est_hist"].size),
-                data["f_est_hist"],
-                color="k"
-                )[0]
-
-        self.artists["f_high"] = self.f_est_hist.axhline(data["f_high"], color="grey", ls=":")
-        self.artists["f_low"] = self.f_est_hist.axhline(data["f_low"], color="grey", ls=":")
-        self.artists["f_inst"] = self.f_est_hist.text(
-                0.5,
-                0.92,
-                "Frequency: {:.0f} Hz | {:.0f} BPM".format(data["f_est"], data["f_est"]*60),
-                transform=self.f_est_hist.transAxes,
-                size="large",
-                ha="center",
-                va="center"
-                )
-
-        return self.artists.values()
+        self.fest_plot.setXRange(0, 1)
+        self.fest_plot.setYRange(0, 1.2)
+        self.fest_text_item = pg.TextItem(anchor=(0, 0), color="k")
+        self.fest_text_item.setPos(0, 1.2)
+        self.fest_plot.addItem(self.fest_text_item)
 
     def update(self, data):
+        self.filt_phi_curve.setData(np.squeeze(data["phi_filt"]))
+        self.raw_phi_curve.setData(np.squeeze(data["phi_raw"]))
+
         if data["init_progress"] is not None:
-            self.artists["init_progress"].set_text(
-                    "Initiating: {} %".format(data["init_progress"])
-                    )
-
-            self.artists["phi_raw"].set_ydata(data["phi_raw"])
-            self.artists["phi_filt"].set_ydata(data["phi_filt"])
+            self.spect_text_item.setText("Initiating: {} %".format(data["init_progress"]))
         else:
-            self.artists["init_progress"].set_text("")
-            self.artists["phi_raw"].set_ydata(data["phi_raw"])
-            self.artists["phi_filt"].set_ydata(data["phi_filt"])
-
-            self.artists["power_spectrum"].set_data(data["x_dft"], data["power_spectrum"])
-            self.artists["f_dft_est"].set_xdata(data["f_dft_est"])
-            self.artists["f_est"].set_xdata(data["f_est"])
-
-            self.artists["f_dft_est_hist"].set_data(
-                    np.linspace(0, 1, data["f_dft_est_hist"].size), data["f_dft_est_hist"])
-
-            self.artists["f_est_hist"].set_data(
-                    np.linspace(0, 1, data["f_est_hist"].size), data["f_est_hist"])
+            snr = data["snr"]
+            if snr == 0:
+                s = "SNR: N/A | {:.0f} dB".format(10*np.log10(data["lambda_p"]))
+            else:
+                fmt = "SNR: {:.0f} | {:.0f} dB"
+                s = fmt.format(10*np.log10(snr), 10*np.log10(data["lambda_p"]))
+            self.spect_text_item.setText(s)
+            self.spect_text_item.setAnchor((0, 1))
+            self.spect_text_item.setPos(0, 0)
 
             f_est = data["f_est"]
             if f_est > 0:
                 s = "Latest frequency estimate: {:.2f} Hz | {:.0f} BPM".format(f_est, f_est*60)
-                self.artists["f_inst"].set_text(s)
+                self.fest_text_item.setText(s)
 
-            snr = data["snr"]
-            if snr == 0:
-                s = "SNR: N/A | {:.0f} dB".format(10*np.log10(data["lambda_p"]))
-                self.artists["snr"].set_text(s)
-            else:
-                fmt = "SNR: {:.0f} | {:.0f} dB"
-                s = fmt.format(10*np.log10(snr), 10*np.log10(data["lambda_p"]))
-                self.artists["snr"].set_text(s)
+            self.fest_plot.enableAutoRange(x=True)
+            self.spect_curve.setData(data["x_dft"], data["power_spectrum"])
+            self.spect_dft_inf_line.setValue(data["f_dft_est"])
+            self.spect_est_inf_line.setValue(data["f_est"])
+            self.spect_plot.setYRange(0, self.spect_smax.update(np.amax(data["power_spectrum"])))
+            self.fest_curve.setData(np.squeeze(data["f_est_hist"]))
+            self.fest_dft_curve.setData(np.squeeze(data["f_dft_est_hist"]))
 
 
 if __name__ == "__main__":

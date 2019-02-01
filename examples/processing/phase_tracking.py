@@ -1,11 +1,11 @@
 import numpy as np
-from matplotlib.gridspec import GridSpec
+import pyqtgraph as pg
+from PyQt5 import QtGui, QtCore
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
-from acconeer_utils.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 def main():
@@ -23,9 +23,18 @@ def main():
 
     client.setup_session(config)
 
-    fig_updater = ExampleFigureUpdater(config)
-    plot_process = PlotProcess(fig_updater)
-    plot_process.start()
+    # Setup PyQtGraph
+    app = QtGui.QApplication([])
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOptions(antialias=True)
+    win = pg.GraphicsLayoutWidget()
+    win.resize(800, 600)
+    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
+    win.setWindowTitle("Acconeer phase tracking example")
+    plot_updater = PGUpdater(win, config)
+    win.show()
+    app.processEvents()
 
     client.start_streaming()
 
@@ -39,13 +48,11 @@ def main():
         plot_data = processor.process(sweep)
 
         if plot_data is not None:
-            try:
-                plot_process.put_data(plot_data)
-            except PlotProccessDiedException:
-                break
+            plot_updater.update(plot_data)
+            app.processEvents()
 
     print("Disconnecting...")
-    plot_process.close()
+    app.closeAllWindows()
     client.disconnect()
 
 
@@ -127,79 +134,74 @@ class PhaseTrackingProcessor:
         return 1 - np.exp(-dt/tau)
 
 
-class ExampleFigureUpdater(FigureUpdater):
-    def __init__(self, config):
+class PGUpdater:
+    def __init__(self, win, config):
         self.interval = config.range_interval
 
-    def setup(self, fig):
-        gs = GridSpec(2, 3)
-        self.axs = {
-            "abs": fig.add_subplot(gs[0, 0]),
-            "arg": fig.add_subplot(gs[1, 0]),
-            "iq": fig.add_subplot(gs[1, 1]),
-            "hist_pos": fig.add_subplot(gs[0, 1:]),
-            "hist_pos_zoom": fig.add_subplot(gs[1, 2]),
-        }
+        self.abs_plot = win.addPlot(row=0, col=0)
+        self.abs_plot.showGrid(x=True, y=True)
+        self.abs_plot.setLabel("left", "Amplitude")
+        self.abs_plot.setLabel("bottom", "Depth (m)")
+        self.abs_curve = self.abs_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        pen = example_utils.pg_pen_cycler(1)
+        pen.setStyle(QtCore.Qt.DashLine)
+        self.abs_inf_line = pg.InfiniteLine(pen=pen)
+        self.abs_plot.addItem(self.abs_inf_line)
 
-        max_ampl = 0.5
-        self.axs["abs"].set_ylim(0, max_ampl)
-        self.axs["hist_pos"].set_ylim(-5, 5)
-        self.axs["hist_pos_zoom"].set_ylim(-0.5, 0.5)
-        self.axs["iq"].set_xlim(-max_ampl, max_ampl)
-        self.axs["iq"].set_ylim(-max_ampl, max_ampl)
-        example_utils.mpl_setup_yaxis_for_phase(self.axs["arg"])
-        self.axs["abs"].set_ylabel("Amplitude")
-        self.axs["arg"].set_ylabel("Phase")
-        self.axs["iq"].set_xlabel("Real part at line")
-        self.axs["iq"].set_ylabel("Imaginary part at line")
+        self.arg_plot = win.addPlot(row=1, col=0)
+        self.arg_plot.showGrid(x=True, y=True)
+        self.arg_plot.setLabel("bottom", "Depth (m)")
+        self.arg_plot.setLabel("left", "Phase")
+        self.arg_plot.setYRange(-np.pi, np.pi)
+        self.arg_plot.getAxis("left").setTicks(example_utils.pg_phase_ticks)
+        self.arg_curve = self.arg_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        self.arg_inf_line = pg.InfiniteLine(pen=pen)
+        self.arg_plot.addItem(self.arg_inf_line)
 
-        for k in ["hist_pos", "hist_pos_zoom"]:
-            ax = self.axs[k]
-            ax.set_xlabel("Time (s)")
-            ax.set_ylabel("Tracking (mm)")
+        self.iq_plot = win.addPlot(row=1, col=1, title="IQ at line")
+        example_utils.pg_setup_polar_plot(self.iq_plot, 0.5)
+        self.iq_curve = self.iq_plot.plot(pen=example_utils.pg_pen_cycler())
+        self.iq_scatter = pg.ScatterPlotItem(
+                brush=pg.mkBrush(example_utils.color_cycler()),
+                size=15,
+                )
+        self.iq_plot.addItem(self.iq_scatter)
 
-        for k in ["abs", "arg"]:
-            ax = self.axs[k]
-            ax.set_xlim(*self.interval)
-            ax.set_xlabel("Depth (m)")
+        self.hist_plot = win.addPlot(row=0, col=1, colspan=2)
+        self.hist_plot.showGrid(x=True, y=True)
+        self.hist_plot.setLabel("bottom", "Time (s)")
+        self.hist_plot.setLabel("left", "Tracking (mm)")
+        self.hist_curve = self.hist_plot.plot(pen=example_utils.pg_pen_cycler())
+        self.hist_plot.setYRange(-5, 5)
 
-        for ax in self.axs.values():
-            ax.grid(True)
+        self.hist_zoom_plot = win.addPlot(row=1, col=2)
+        self.hist_zoom_plot.showGrid(x=True, y=True)
+        self.hist_zoom_plot.setLabel("bottom", "Time (s)")
+        self.hist_zoom_plot.setLabel("left", "Tracking (mm)")
+        self.hist_zoom_curve = self.hist_zoom_plot.plot(pen=example_utils.pg_pen_cycler())
+        self.hist_zoom_plot.setYRange(-0.5, 0.5)
 
-        fig.canvas.set_window_title("Acconeer phase tracking example")
-        fig.set_size_inches(10, 7)
-        fig.tight_layout()
-
-    def first(self, data):
-        n = len(data["abs"])
-        xs = np.linspace(*self.interval, n)
-        ts = np.linspace(-3, 0, len(data["hist_pos"]))
-        ts_zoom = np.linspace(-1.5, 0, len(data["hist_pos_zoom"]))
-
-        self.arts = {
-            "abs": self.axs["abs"].plot(xs, data["abs"])[0],
-            "arg": self.axs["arg"].plot(xs, data["arg"])[0],
-            "abs_vline": self.axs["abs"].axvline(-1, color="C1", ls="--"),
-            "arg_vline": self.axs["arg"].axvline(-1, color="C1", ls="--"),
-            "hist_pos": self.axs["hist_pos"].plot(ts, data["hist_pos"])[0],
-            "hist_pos_zoom": self.axs["hist_pos_zoom"].plot(ts_zoom, data["hist_pos_zoom"])[0],
-            "iq": self.axs["iq"].plot(0, "-o", markevery=2)[0],
-        }
-
-        return self.arts.values()
+        self.smooth_max = example_utils.SmoothMax(config.sweep_rate)
+        self.first = True
 
     def update(self, data):
+        if self.first:
+            self.xs = np.linspace(*self.interval, len(data["abs"]))
+            self.ts = np.linspace(-3, 0, len(data["hist_pos"]))
+            self.ts_zoom = np.linspace(-1.5, 0, len(data["hist_pos_zoom"]))
+            self.first = False
+
         com_x = (1-data["com"])*self.interval[0] + data["com"]*self.interval[1]
 
-        iq_vals = [[np.real(data["iq_val"]), 0], [np.imag(data["iq_val"]), 0]]
-
-        self.arts["abs"].set_ydata(data["abs"])
-        self.arts["arg"].set_ydata(data["arg"])
-        self.arts["abs_vline"].set_xdata(com_x)
-        self.arts["arg_vline"].set_xdata(com_x)
-        self.arts["hist_pos"].set_ydata(data["hist_pos"])
-        self.arts["hist_pos_zoom"].set_ydata(data["hist_pos_zoom"])
-        self.arts["iq"].set_data(iq_vals)
+        self.abs_curve.setData(self.xs, data["abs"])
+        self.abs_plot.setYRange(0, self.smooth_max.update(np.amax(data["abs"])))
+        self.abs_inf_line.setValue(com_x)
+        self.arg_curve.setData(self.xs, data["arg"])
+        self.arg_inf_line.setValue(com_x)
+        self.hist_curve.setData(self.ts, data["hist_pos"])
+        self.hist_zoom_curve.setData(self.ts_zoom, data["hist_pos_zoom"])
+        self.iq_curve.setData([0, np.real(data["iq_val"])], [0, np.imag(data["iq_val"])])
+        self.iq_scatter.setData([np.real(data["iq_val"])], [np.imag(data["iq_val"])])
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 import numpy as np
+import pyqtgraph as pg
+from PyQt5 import QtGui
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
-from acconeer_utils.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 def main():
@@ -29,9 +30,17 @@ def main():
     info = client.setup_session(config)
     num_points = info["data_length"]
 
-    fig_updater = ExampleFigureUpdater(config, num_points)
-    plot_process = PlotProcess(fig_updater)
-    plot_process.start()
+    # Setup PyQtGraph
+    app = QtGui.QApplication([])
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOptions(antialias=True)
+    win = pg.GraphicsLayoutWidget()
+    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
+    win.setWindowTitle("Acconeer IQ example")
+    plot_updater = PGUpdater(win, config, num_points)
+    win.show()
+    app.processEvents()
 
     client.start_streaming()
 
@@ -46,53 +55,44 @@ def main():
             "phase": np.angle(data),
         }
 
-        try:
-            plot_process.put_data(plot_data)
-        except PlotProccessDiedException:
-            break
+        plot_updater.update(plot_data)
+        app.processEvents()
 
     print("Disconnecting...")
-    plot_process.close()
+    app.closeAllWindows()
     client.disconnect()
 
 
-class ExampleFigureUpdater(FigureUpdater):
-    def __init__(self, config, num_points):
-        self.interval = config.range_interval
-        self.num_points = num_points
+class PGUpdater:
+    def __init__(self, win, config, num_points):
+        self.ampl_plot = win.addPlot(title="IQ")
+        self.ampl_plot.showGrid(x=True, y=True)
+        self.ampl_plot.setLabel("bottom", "Depth (m)")
+        self.ampl_plot.setLabel("left", "Amplitude")
+        win.nextRow()
+        self.phase_plot = win.addPlot()
+        self.phase_plot.showGrid(x=True, y=True)
+        self.phase_plot.setLabel("bottom", "Depth (m)")
+        self.phase_plot.setLabel("left", "Phase")
+        self.phase_plot.setYRange(-np.pi, np.pi)
+        self.phase_plot.getAxis("left").setTicks(example_utils.pg_phase_ticks)
 
-    def setup(self, fig):
-        self.axs = {
-            "amplitude": fig.add_subplot(2, 1, 1),
-            "phase": fig.add_subplot(2, 1, 2),
-        }
+        self.ampl_curves = []
+        self.phase_curves = []
+        for i in range(len(config.sensor)):
+            pen = example_utils.pg_pen_cycler(i)
+            self.ampl_curves.append(self.ampl_plot.plot(pen=pen))
+            self.phase_curves.append(self.phase_plot.plot(pen=pen))
 
-        for ax in self.axs.values():
-            ax.grid(True)
-            ax.set_xlabel("Depth (m)")
-            ax.set_xlim(self.interval)
+        self.xs = np.linspace(*config.range_interval, num_points)
+        self.smooth_max = example_utils.SmoothMax(config.sweep_rate)
 
-        self.axs["amplitude"].set_title("Amplitude")
-        self.axs["amplitude"].set_ylim(0, 0.5)
-        self.axs["phase"].set_title("Phase")
-        example_utils.mpl_setup_yaxis_for_phase(self.axs["phase"])
+    def update(self, data):
+        for i in range(len(data["amplitude"])):
+            self.ampl_curves[i].setData(self.xs, data["amplitude"][i])
+            self.phase_curves[i].setData(self.xs, data["phase"][i])
 
-        fig.canvas.set_window_title("Acconeer IQ data example")
-        fig.set_size_inches(10, 7)
-        fig.tight_layout()
-
-    def first(self, d):
-        xs = np.linspace(*self.interval, self.num_points)
-
-        self.all_arts = {}
-        for key, ax in self.axs.items():
-            self.all_arts[key] = [ax.plot(xs, ys)[0] for ys in d[key]]
-        return [art for arts in self.all_arts.values() for art in arts]
-
-    def update(self, d):
-        for key, arts in self.all_arts.items():
-            for art, ys in zip(arts, d[key]):
-                art.set_ydata(ys)
+        self.ampl_plot.setYRange(0, self.smooth_max.update(np.amax(data["amplitude"])))
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 import numpy as np
+import pyqtgraph as pg
+from PyQt5 import QtGui
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
-from acconeer_utils.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 def main():
@@ -29,9 +30,17 @@ def main():
     info = client.setup_session(config)
     num_points = info["actual_bin_count"]
 
-    fig_updater = ExampleFigureUpdater(config, num_points)
-    plot_process = PlotProcess(fig_updater)
-    plot_process.start()
+    # Setup PyQtGraph
+    app = QtGui.QApplication([])
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOptions(antialias=True)
+    win = pg.GraphicsLayoutWidget()
+    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
+    win.setWindowTitle("Acconeer power bin example")
+    plot_updater = PGUpdater(win, config, num_points)
+    win.show()
+    app.processEvents()
 
     client.start_streaming()
 
@@ -41,40 +50,40 @@ def main():
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
 
-        try:
-            plot_process.put_data(data)
-        except PlotProccessDiedException:
-            break
+        plot_updater.update(data)
+        app.processEvents()
 
     print("Disconnecting...")
-    plot_process.close()
+    app.closeAllWindows()
     client.disconnect()
 
 
-class ExampleFigureUpdater(FigureUpdater):
-    def __init__(self, config, num_points):
-        self.interval = config.range_interval
-        self.num_points = num_points
+class PGUpdater:
+    def __init__(self, win, config, num_points):
+        self.plot = win.addPlot(title="Power bin")
+        self.plot.showGrid(x=True, y=True)
+        self.plot.setLabel("bottom", "Depth (m)")
+        self.plot.setLabel("left", "Amplitude")
 
-    def setup(self, fig):
-        self.ax = fig.add_subplot(1, 1, 1)
-        self.ax.set_title("Amplitude")
-        self.ax.set_xlabel("Depth (m)")
-        self.ax.set_ylim(0, 500)
-        self.ax.grid(True)
+        self.curves = []
+        for i in range(len(config.sensor)):
+            pen = example_utils.pg_pen_cycler(i)
+            curve = self.plot.plot(
+                    pen=pen,
+                    symbol="o",
+                    symbolPen="k",
+                    symbolBrush=pg.mkBrush(example_utils.color_cycler(i))
+                    )
+            self.curves.append(curve)
 
-        fig.canvas.set_window_title("Acconeer power bin data example")
-        fig.set_size_inches(10, 7)
-        fig.tight_layout()
-
-    def first(self, data):
-        xs = np.linspace(*self.interval, self.num_points)
-        self.arts = [self.ax.plot(xs, ys, '-o')[0] for ys in data]
-        return self.arts
+        self.xs = np.linspace(*config.range_interval, num_points)
+        self.smooth_max = example_utils.SmoothMax(config.sweep_rate)
 
     def update(self, data):
-        for art, ys in zip(self.arts, data):
-            art.set_ydata(ys)
+        for i in range(data.shape[0]):
+            self.curves[i].setData(self.xs, data[i])
+
+        self.plot.setYRange(0, self.smooth_max.update(np.amax(data)))
 
 
 if __name__ == "__main__":

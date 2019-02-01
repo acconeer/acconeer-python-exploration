@@ -1,13 +1,13 @@
 import numpy as np
 from numpy import pi
-from matplotlib.gridspec import GridSpec
 from scipy.signal import butter, sosfilt
+import pyqtgraph as pg
+from PyQt5 import QtGui, QtCore
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
-from acconeer_utils.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 env_max = 0.3
@@ -29,9 +29,18 @@ def main():
 
     client.setup_session(config)
 
-    fig_updater = ExampleFigureUpdater(config)
-    plot_process = PlotProcess(fig_updater)
-    plot_process.start()
+    # Setup PyQtGraph
+    app = QtGui.QApplication([])
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOptions(antialias=True)
+    win = pg.GraphicsLayoutWidget()
+    win.resize(800, 600)
+    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
+    win.setWindowTitle("Acconeer breathing example")
+    plot_updater = PGUpdater(win, config)
+    win.show()
+    app.processEvents()
 
     client.start_streaming()
 
@@ -44,13 +53,12 @@ def main():
         info, sweep = client.get_next()
         plot_data = processor.process(sweep)
 
-        try:
-            plot_process.put_data(plot_data)  # Will ignore the first None from processor
-        except PlotProccessDiedException:
-            break
+        if plot_data is not None:
+            plot_updater.update(plot_data)
+            app.processEvents()
 
     print("Disconnecting...")
-    plot_process.close()
+    app.closeAllWindows()
     client.disconnect()
 
 
@@ -229,112 +237,59 @@ class BreathingProcessor:
         return peaks
 
 
-class ExampleFigureUpdater(FigureUpdater):
-    def __init__(self, config):
+class PGUpdater:
+    def __init__(self, win, config):
         self.config = config
-        self.hist_plot_len = hist_plot_len
-
         self.plot_index = 0
 
-    def setup(self, fig):
-        fig.set_size_inches(8, 8)
+        self.move_xs = (np.arange(-hist_plot_len, 0) + 1) / self.config.sweep_rate
 
-        gs = GridSpec(2, 2)
+        self.peak_plot = win.addPlot(title="IQ at peak")
+        example_utils.pg_setup_polar_plot(self.peak_plot, 0.3)
+        self.peak_curve = self.peak_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        self.peak_scatter = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=15)
+        self.peak_plot.addItem(self.peak_scatter)
+        self.peak_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
+        self.peak_plot.addItem(self.peak_text_item)
+        self.peak_text_item.setPos(-0.3*1.15, -0.3*1.15)
 
-        self.peak_ax = fig.add_subplot(gs[0, 0])
-        self.peak_ax.grid(True)
-        self.peak_ax.set_xlim(-env_max, env_max)
-        self.peak_ax.set_ylim(-env_max, env_max)
-        self.peak_ax.set_title("IQ at peak")
+        self.env_plot = win.addPlot(title="Envelope and delta")
+        self.env_plot.showGrid(x=True, y=True)
+        self.env_plot.setYRange(0, 0.3)
+        self.env_curve = self.env_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        self.delta_curve = self.env_plot.plot(pen=example_utils.pg_pen_cycler(1))
+        self.peak_vline = pg.InfiniteLine(pen=pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine))
+        self.env_plot.addItem(self.peak_vline)
 
-        self.env_ax = fig.add_subplot(gs[0, 1])
-        self.env_ax.grid(True)
-        self.env_ax.set_xlim(*self.config.range_interval)
-        self.env_ax.set_ylim(0, env_max)
-        self.env_ax.set_xlabel("Distance (m)")
-        self.env_ax.set_title("Envelope and delta")
+        win.nextRow()
+        self.move_plot = win.addPlot(title="Breathing movement")
+        self.move_plot.showGrid(x=True, y=True)
+        self.move_plot.setLabel("bottom", "Time (s)")
+        self.move_plot.setLabel("left", "Movement (mm)")
+        self.move_plot.setYRange(-10, 10)
+        self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        self.move_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
+        self.move_text_item.setPos(self.move_xs[0], -10)
+        self.move_plot.addItem(self.move_text_item)
 
-        self.movement_ax = fig.add_subplot(gs[1, 0])
-        self.movement_ax.set_xlim(0, self.hist_plot_len)
-        self.movement_ax.set_ylim(-10, 10)
-        self.movement_ax.set_xticks([])
-        self.movement_ax.set_title("Breathing movement")
-        self.movement_ax.set_ylabel("Movement (mm)")
-
-        self.zoom_ax = fig.add_subplot(gs[1, 1])
-        self.zoom_ax.set_xlim(0, self.hist_plot_len)
-        self.zoom_ax.set_ylim(-1, 1)
-        self.zoom_ax.set_xticks([])
-        self.zoom_ax.set_yticks([])
-        self.zoom_ax.set_title("Relative movement (auto zoom)")
-
-        fig.canvas.set_window_title("Acconeer breathing example")
-        fig.tight_layout()
-
-    def first(self, data):
-        self.process_data(data)
-
-        self.artists = {}
-
-        self.artists["peak_hist"] = self.peak_ax.plot(self.peak_hist_re, self.peak_hist_im)[0]
-        self.artists["peak"] = self.peak_ax.plot(self.peak_re, self.peak_im, "ko", ms=10)[0]
-        self.artists["peak_std_text"] = self.peak_ax.text(
-                -0.95*env_max,
-                -0.95*env_max,
-                self.peak_std_text
-                )
-
-        self.artists["env_ampl"] = self.env_ax.plot(self.env_xs, data["env_ampl"])[0]
-        self.artists["env_delta"] = self.env_ax.plot(self.env_xs, data["env_delta"])[0]
-        self.artists["env_peak_vline"] = self.env_ax.axvline(self.peak_x, color="k", ls=":")
-
-        hist_text_plot_x = self.hist_plot_len // 20
-
-        self.artists["rel_dist_hist"] = self.movement_ax.plot(data["breathing_history"])[0]
-        self.artists["rel_dist_text"] = self.movement_ax.text(
-                hist_text_plot_x,
-                -9,
-                data["breathing_text"],
-                va="center",
-                ha="left",
-                )
-
-        self.artists["zoom"] = self.zoom_ax.plot(self.zoom_ys)[0]
-        zoom_text_y = 0.92
-        self.artists["zoom_max_text"] = self.zoom_ax.text(
-                hist_text_plot_x,
-                zoom_text_y,
-                self.zoom_max_text,
-                va="center",
-                ha="left",
-                )
-        self.artists["zoom_min_text"] = self.zoom_ax.text(
-                hist_text_plot_x,
-                -zoom_text_y,
-                self.zoom_min_text,
-                va="center",
-                ha="left",
-                )
-
-        return self.artists.values()
+        self.zoom_plot = win.addPlot(title="Relative movement")
+        self.zoom_plot.showGrid(x=True, y=True)
+        self.zoom_plot.setLabel("bottom", "Time (s)")
+        self.zoom_plot.setLabel("left", "Movement (mm)")
+        self.zoom_curve = self.zoom_plot.plot(pen=example_utils.pg_pen_cycler(0))
 
     def update(self, data):
         self.process_data(data)
 
-        self.artists["peak_hist"].set_data(self.peak_hist_re, self.peak_hist_im)
-        self.artists["peak"].set_data(self.peak_re, self.peak_im)
-        self.artists["peak_std_text"].set_text(self.peak_std_text)
-
-        self.artists["env_ampl"].set_ydata(data["env_ampl"])
-        self.artists["env_delta"].set_ydata(data["env_delta"])
-        self.artists["env_peak_vline"].set_xdata(self.peak_x)
-
-        self.artists["rel_dist_hist"].set_ydata(data["breathing_history"])
-        self.artists["rel_dist_text"].set_text(data["breathing_text"])
-
-        self.artists["zoom"].set_ydata(self.zoom_ys)
-        self.artists["zoom_max_text"].set_text(self.zoom_max_text)
-        self.artists["zoom_min_text"].set_text(self.zoom_min_text)
+        self.peak_scatter.setData([self.peak_re], [self.peak_im])
+        self.peak_curve.setData(self.peak_hist_re, self.peak_hist_im)
+        self.peak_text_item.setText(self.peak_std_text)
+        self.env_curve.setData(self.env_xs, data["env_ampl"])
+        self.delta_curve.setData(self.env_xs, data["env_delta"])
+        self.peak_vline.setValue(self.peak_x)
+        self.move_curve.setData(self.move_xs, data["breathing_history"])
+        self.zoom_curve.setData(self.move_xs, data["zoom_hist"])
+        self.move_text_item.setText(data["breathing_text"])
 
     def process_data(self, data):
         if self.plot_index == 0:
@@ -345,15 +300,7 @@ class ExampleFigureUpdater(FigureUpdater):
         self.peak_re = self.peak_hist_re[0]
         self.peak_im = self.peak_hist_im[0]
         self.peak_std_text = "Std: {:.3f}mm".format(data["peak_std_mm"])
-
         self.peak_x = self.env_xs[data["peak_idx"]]
-
-        zoom_lim = max(0.1, max(data["zoom_hist"]) * 1.2)
-        self.zoom_ys = data["zoom_hist"] / zoom_lim
-        zoom_lim_text = "{:.2f}mm".format(zoom_lim)
-        self.zoom_max_text = zoom_lim_text
-        self.zoom_min_text = "-" + zoom_lim_text
-
         self.plot_index += 1
 
 
