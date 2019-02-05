@@ -118,7 +118,7 @@ class DataProcessing:
         }
 
         self.record_data(iq_data)
-        self.internal_plotting(plot_data)
+        self.draw_canvas(self.sweep, plot_data, "update_power_plots")
         self.sweep += 1
 
         return (plot_data, self.record)
@@ -238,7 +238,7 @@ class DataProcessing:
         }
 
         self.record_data(iq_data)
-        self.internal_plotting(plot_data)
+        self.draw_canvas(self.sweep, plot_data)
         self.sweep += 1
 
         if self.create_cl and self.sweep == self.sweeps:
@@ -264,18 +264,14 @@ class DataProcessing:
         if self.first_run:
             self.external = self.parent.parent.external(self.sensor_config)
             self.first_run = False
-            self.service_fig = self.parent.parent.service_fig
+            self.service_widget = self.parent.parent.service_widget
             plot_data = self.external.process(sweep_data)
         else:
             plot_data = self.external.process(sweep_data)
-            if self.sweep == 1:
-                self.service_fig.first(plot_data)
             if plot_data:
-                self.service_fig.update(plot_data)
+                self.draw_canvas(self.sweep, plot_data, "update_external_plots")
+                self.sweep += 1
 
-        self.draw_canvas(self.sweep)
-
-        self.sweep += 1
         self.record_data(sweep_data)
         return None, self.record
 
@@ -334,11 +330,16 @@ class DataProcessing:
                     self.skip = 0
                 plot_data, _ = self.process(data_step["sweep_data"])
 
-    def draw_canvas(self, sweep_index):
-        if self.skip < 1:
+    def draw_canvas(self, sweep_index, plot_data, cmd="update_plots",
+                    skip_frames=False):
+        if not skip_frames:
+            self.update_plots(plot_data, cmd=cmd)
+            return
+
+        if self.skip <= 1:
             if sweep_index == 0:
                 self.time = time.time()
-            self.parent.parent.canvas.draw()
+            self.update_plots(plot_data, cmd=cmd)
             rate = time.time() - self.time
             self.time = time.time()
             self.skip = rate / self.rate
@@ -346,13 +347,10 @@ class DataProcessing:
                 self.skip = np.ceil(self.skip)
         else:
             self.skip -= 1
-            if self.skip < 1:
+            if self.skip <= 1:
                 self.time = time.time()
 
-    def internal_plotting(self, plot_data):
-        cmd = "update_plots"
-        if "power" in self.mode.lower():
-            cmd = "update_power_plots"
+    def update_plots(self, plot_data, cmd="update_plots"):
         self.parent.emit(cmd, "", plot_data)
 
 

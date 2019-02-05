@@ -12,7 +12,6 @@ from PyQt5 import QtCore
 import matplotlib as mpl
 mpl.use("QT5Agg")  # noqa: E402
 from matplotlib.backends.qt_compat import QtWidgets
-from matplotlib.backends.backend_qt5agg import FigureCanvas
 import matplotlib.pyplot as plt
 
 import pyqtgraph as pg
@@ -20,6 +19,7 @@ import pyqtgraph as pg
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
+from acconeer_utils import example_utils
 
 import data_processing
 
@@ -140,34 +140,36 @@ class GUI(QMainWindow):
         self.buttons["create_cl"].setEnabled(self.cl_supported)
         self.buttons["load_cl"].setEnabled(self.cl_supported)
 
+        self.current_canvas = mode
+
+        font = QFont()
+        font.setPixelSize(12)
+        ax_color = (0, 0, 0)
+        ax = ("bottom", "left")
+
         if mode == "Select service":
             canvas = QLabel()
             pixmap = QPixmap(self.acc_file)
             canvas.setPixmap(pixmap)
-            self.current_canvas = mode
             return canvas
 
+        pg.setConfigOption("background", "#f0f0f0")
+        pg.setConfigOption("foreground", "k")
+        pg.setConfigOption("leftButtonPan", False)
+        pg.setConfigOptions(antialias=True)
+        canvas = pg.GraphicsLayoutWidget()
+
         if self.external:
-            self.fig = plt.figure(tight_layout=True)
-            self.service_fig = axes[mode][0].ExampleFigureUpdater(self.update_sensor_config())
+            self.service_widget = axes[mode][0].PGUpdater(canvas, self.update_sensor_config())
             self.external = axes[mode][1]
-            self.service_fig.setup(self.fig)
-            canvas = FigureCanvas(self.fig)
-            canvas.figure.set_facecolor("#f0f0f0")
-            canvas.draw()
+            return canvas
         elif "power" in mode.lower():
-            pg.setConfigOption("background", "#f0f0f0")
-            pg.setConfigOption("leftButtonPan", False)
-            pg.setConfigOptions(antialias=True)
-            canvas = pg.GraphicsLayoutWidget()
             self.power_plot_window = canvas.addPlot(title="Power bin")
             self.power_plot_window.showGrid(x=True, y=True)
-            font = QFont()
-            font.setPixelSize(18)
-            self.power_plot_window.getAxis("bottom").tickFont = font
-            font.setPixelSize(12)
-            self.power_plot_window.getAxis("left").tickFont = font
-            pen = pg.mkPen("b", width=5)
+            for i in ax:
+                self.power_plot_window.getAxis(i).tickFont = font
+                self.power_plot_window.getAxis(i).setPen(ax_color)
+            pen = pg.mkPen(example_utils.color_cycler(0), width=2)
             self.power_plot = pg.BarGraphItem(x=np.arange(1, 7),
                                               height=np.linspace(0, 6, num=6),
                                               width=.5,
@@ -181,25 +183,20 @@ class GUI(QMainWindow):
             self.textboxes["power_bins"].setVisible(True)
             self.labels["power_bins"].setVisible(True)
         else:
-            pg.setConfigOption("background", "#f0f0f0")
-            pg.setConfigOption("leftButtonPan", False)
-            pg.setConfigOptions(antialias=True)
-            canvas = pg.GraphicsLayoutWidget()
             self.envelope_plot_window = canvas.addPlot(title="Envelope")
             self.envelope_plot_window.showGrid(x=True, y=True)
             self.envelope_plot_window.addLegend()
-            font = QFont()
-            font.setPixelSize(18)
-            self.envelope_plot_window.getAxis("bottom").tickFont = font
-            font.setPixelSize(12)
-            self.envelope_plot_window.getAxis("left").tickFont = font
-            pen = pg.mkPen("r", width=5)
+            for i in ax:
+                self.envelope_plot_window.getAxis(i).tickFont = font
+                self.envelope_plot_window.getAxis(i).setPen(ax_color)
+
+            pen = example_utils.pg_pen_cycler()
             self.envelope_plot = self.envelope_plot_window.plot(range(10),
                                                                 np.zeros(10),
                                                                 pen=pen,
                                                                 name="Envelope")
             self.envelope_plot_window.setYRange(0, 1)
-            pen = pg.mkPen(width=5, style=QtCore.Qt.DotLine)
+            pen = pg.mkPen(0.2, width=2, style=QtCore.Qt.DotLine)
             self.clutter_plot = self.envelope_plot_window.plot(range(10),
                                                                np.zeros(10),
                                                                pen=pen,
@@ -218,12 +215,10 @@ class GUI(QMainWindow):
                 self.iq_plot_window = canvas.addPlot(title="Phase")
                 self.iq_plot_window.showGrid(x=True, y=True)
                 self.iq_plot_window.addLegend()
-                font = QFont()
-                font.setPixelSize(18)
-                self.iq_plot_window.getAxis("bottom").tickFont = font
-                font.setPixelSize(12)
-                self.iq_plot_window.getAxis("left").tickFont = font
-                pen = pg.mkPen("g", width=5)
+                for i in ax:
+                    self.iq_plot_window.getAxis(i).tickFont = font
+                    self.iq_plot_window.getAxis(i).setPen(ax_color)
+                pen = example_utils.pg_pen_cycler()
                 self.iq_plot = self.iq_plot_window.plot(range(10),
                                                         np.arange(10)*0,
                                                         pen=pen,
@@ -237,15 +232,17 @@ class GUI(QMainWindow):
             colormap._init()
             lut = (colormap._lut * 255).view(np.ndarray)
             self.hist_plot.setLookupTable(lut)
-            pen = pg.mkPen("r", width=5)
+            pen = example_utils.pg_pen_cycler(1)
             self.hist_plot_peak = self.hist_plot_image.plot(range(10),
                                                             np.zeros(10),
                                                             pen=pen)
             self.hist_plot_image.addItem(self.hist_plot)
             self.hist_plot_image.setLabel("left", "Distance (mm)")
             self.hist_plot_image.setLabel("bottom", "Time (Sweep number)")
+            for i in ax:
+                    self.hist_plot_image.getAxis(i).tickFont = font
+                    self.hist_plot_image.getAxis(i).setPen(ax_color)
 
-        self.current_canvas = mode
         return canvas
 
     def init_dropdowns(self):
@@ -402,6 +399,7 @@ class GUI(QMainWindow):
 
         if force_update or self.current_canvas not in mode:
             self.main_layout.removeWidget(self.canvas)
+            self.canvas.setParent(None)
             self.canvas.deleteLater()
             self.canvas = None
             self.canvas = self.init_graphs(mode)
@@ -765,6 +763,9 @@ class GUI(QMainWindow):
         elif "update_power_plots" in message_type:
             if data:
                 self.update_power_plots(data)
+        elif "update_external_plots" in message_type:
+            if data:
+                self.update_external_plots(data)
         else:
             print(message_type, message, data)
 
@@ -844,6 +845,9 @@ class GUI(QMainWindow):
 
         if update_ylims:
             self.power_plot_window.setYRange(0, self.env_plot_max_y)
+
+    def update_external_plots(self, data):
+        self.service_widget.update(data)
 
     def start_up(self):
         if os.path.isfile(self.last_file):
