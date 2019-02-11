@@ -28,6 +28,7 @@ import presence_detection as prd
 import phase_tracking as pht
 import breathing as br
 import sleep_breathing as sb
+import obstacle_detection as od
 
 
 class GUI(QMainWindow):
@@ -125,6 +126,7 @@ class GUI(QMainWindow):
             "Breathing": [br, br.BreathingProcessor],
             "Phase tracking": [pht, pht.PhaseTrackingProcessor],
             "Sleep breathing": [sb, sb.PresenceDetectionProcessor],
+            "Obstacle detection": [od, od.ObstacleDetectionProcessor],
         }
 
         self.external = axes[mode][1]
@@ -255,6 +257,7 @@ class GUI(QMainWindow):
         self.mode.addItem("Presence detection")
         self.mode.addItem("Breathing")
         self.mode.addItem("Sleep breathing")
+        self.mode.addItem("Obstacle detection")
         self.mode.move(50, 250)
 
         self.mode_to_param = {
@@ -266,6 +269,7 @@ class GUI(QMainWindow):
             "Phase tracking": "iq_data",
             "Presence detection": "iq_data",
             "Sleep breathing": "iq_data",
+            "Obstacle detection": "iq_data",
         }
 
         self.mode_to_config = {
@@ -277,6 +281,7 @@ class GUI(QMainWindow):
             "Phase tracking": [pht.get_base_config(), "external"],
             "Presence detection": [prd.get_base_config(), "external"],
             "Sleep breathing": [sb.get_base_config(), "external"],
+            "Obstacle detection": [od.get_base_config(), "external"]
         }
 
         self.mode.currentIndexChanged.connect(self.update_canvas)
