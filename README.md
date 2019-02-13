@@ -156,9 +156,11 @@ Acconeer's detectors are **only** supported with the XM112 Module.
 ### Plotting
 
 - `plot_with_matplotlib.py` \
-  Example of how to use matplotlib for plotting IQ data.
+  Example of how to use matplotlib for plotting.
+- `plot_with_mpl_process.py` \
+  Example of how to use the mpl_process (matplotlib process) module for plotting.
 - `plot_with_pyqtgraph.py` \
-  Example of how to use PyQtGraph for plotting IQ data.
+  Example of how to use PyQtGraph for plotting.
 
 ## GUI (beta)
 

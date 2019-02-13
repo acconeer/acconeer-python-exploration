@@ -32,8 +32,7 @@ def main():
 
     hist_data = np.zeros([num_hist, num_points])
     hist_max = np.zeros(num_hist)
-    y_max = 0
-    alpha = np.exp(-1/(config.sweep_rate))
+    smooth_max = example_utils.SmoothMax(config.sweep_rate)
 
     app = QtGui.QApplication([])
     pg.setConfigOption("background", "w")
@@ -78,8 +77,7 @@ def main():
         hist_data[-1] = sweep
         hist_max = np.roll(hist_max, -1)
         hist_max[-1] = np.max(sweep)
-        y_max = max(max(hist_max), y_max * alpha)
-
+        y_max = smooth_max.update(np.amax(hist_max))
         env_curve.setData(xs, sweep)
         env_plot.setYRange(0, y_max)
         hist_image_item.updateImage(hist_data, levels=(0, y_max))
