@@ -3,6 +3,7 @@ import sys
 import ntpath
 import numpy as np
 import serial.tools.list_ports
+import h5py
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit)
 from PyQt5.QtGui import QPixmap, QFont
@@ -685,7 +686,7 @@ class GUI(QMainWindow):
                     self,
                     "Load background file",
                     "",
-                    "All Files (*);;NumPy data Files (*.npy)",
+                    "NumPy data Files (*.npy)",
                     options=options
                     )
 
@@ -702,20 +703,51 @@ class GUI(QMainWindow):
                 self,
                 "Load scan",
                 "",
-                "NumPy data files (*.npy)",
+                "HDF5 data files (*.h5);; NumPy data files (*.npy)",
                 options=options
                 )
 
         if filename:
-            try:
-                self.data = np.load(filename)
-                mode = self.data[0]["service_type"]
-                index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
-                if index >= 0:
-                    self.mode.setCurrentIndex(index)
-                    self.start_scan(from_file=True)
-            except Exception as e:
-                self.error_message("{}".format(e))
+            if "h5" in filename:
+                conf = configs.IQServiceConfig()
+                self.data = dict()
+                try:
+                    f = h5py.File(filename, "r")
+                    real = np.asarray(list(f["real"]))
+                    im = np.asarray(list(f["imag"]))
+                    self.data["sweeps"] = real[...] + 1j * im[...]
+                except Exception as e:
+                    self.error_message("{}".format(e))
+                    return
+
+                try:
+                    mode = f["service_type"][()]
+                    conf.sweep_rate = f["sweep_rate"][()]
+                    conf.range_interval = [f["start"][()], f["end"][()]]
+                    conf.bin_count = f["power_bins"][()]
+                except Exception:
+                    print("Config not stored in file...")
+                    conf.range_interval = [
+                            float(self.textboxes["start_range"].text()),
+                            float(self.textboxes["end_range"].text()),
+                    ]
+                    conf.sweep_rate = int(self.textboxes["frequency"].text())
+                    conf.bin_count = int(self.textboxes["power_bins"].text())
+                    mode = self.mode.currentText().lower()
+                self.data["service_type"] = mode
+                self.data["sensor_config"] = conf
+            else:
+                try:
+                    self.data = np.load(filename)
+                    mode = self.data[0]["service_type"]
+                except Exception as e:
+                    self.error_message("{}".format(e))
+                    return
+
+            index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
+            if index >= 0:
+                self.mode.setCurrentIndex(index)
+            self.start_scan(from_file=True)
 
     def save_scan(self, data, clutter=False):
         if "sleep" in self.mode.currentText().lower():
@@ -728,17 +760,44 @@ class GUI(QMainWindow):
         title = "Save scan"
         if clutter:
             title = "Save background"
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-                self, title, "", "NumPy data files (*.npy)", options=options)
+        filename, info = QtWidgets.QFileDialog.getSaveFileName(
+                self, title, "",
+                "HDF5 data files (*.h5);; NumPy data files (*.npy)",
+                options=options)
 
         if filename:
-            np.save(filename, data)
             if clutter:
+                np.save(filename, data)
                 self.use_cl = filename
                 label_text = "Background: {}".format(ntpath.basename(filename))
                 self.labels["clutter_file"].setText(label_text)
                 self.buttons["load_cl"].setText("Unload background")
                 self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
+            else:
+                if "h5" in info:
+                    sweep_data = []
+                    for sweep in data:
+                        sweep_data.append(sweep["sweep_data"])
+                    sweep_data = np.asarray(sweep_data)
+                    if ".h5" not in filename:
+                        filename = filename + ".h5"
+                    f = h5py.File(filename, "w")
+                    f.create_dataset("imag", data=np.imag(sweep_data), dtype=np.float32)
+                    f.create_dataset("real", data=np.real(sweep_data), dtype=np.float32)
+                    f.create_dataset("sweep_rate", data=int(self.textboxes["frequency"].text()),
+                                     dtype=np.float32)
+                    f.create_dataset("start", data=float(self.textboxes["start_range"].text()),
+                                     dtype=np.float32)
+                    f.create_dataset("end", data=float(self.textboxes["end_range"].text()),
+                                     dtype=np.float32)
+                    f.create_dataset("gain", data=float(self.textboxes["gain"].text()),
+                                     dtype=np.float32)
+                    f.create_dataset("service_type", data=self.mode.currentText().lower(),
+                                     dtype=h5py.special_dtype(vlen=str))
+                    f.create_dataset("power_bins", data=int(self.textboxes["power_bins"].text()),
+                                     dtype=np.int)
+                else:
+                    np.save(filename, data)
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:

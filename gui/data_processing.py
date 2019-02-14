@@ -295,32 +295,33 @@ class DataProcessing:
         self.init_vars()
         self.sweep = 0
         self.create_cl = False
-
-        if "sweep_data" not in data[0]:
-            self.parent.emit("error", "Wrong file format")
-            return
+        h5_data = True
 
         try:
             data_len = len(data)
+
+            if "sweeps" in data:
+                data_len = data["sweeps"].shape[0]
+                self.sensor_config = data["sensor_config"]
+                self.use_cl = None
+                service = data["service_type"]
+                data = data["sweeps"]
+            else:
+                self.sensor_config = data[0]["sensor_config"]
+                self.use_cl = data[0]["cl_file"]
+                service = data[0]["service_type"]
+                h5_data = False
+
+            self.mode = self.sensor_config.mode
+            self.sweeps = data_len
+            self.start_x = self.sensor_config.range_interval[0]
+            self.stop_x = self.sensor_config.range_interval[1]
+            self.process = self.get_processing_type(service)
+
         except Exception as e:
             self.parent.emit("error", "Wrong file format\n {}".format(e))
-            return
 
         for i, data_step in enumerate(data):
-            if i == 0:
-                try:
-                    self.sensor_config = data_step["sensor_config"]
-                    self.mode = self.sensor_config.mode
-                    self.sweeps = data_len
-                    self.start_x = self.sensor_config.range_interval[0]
-                    self.stop_x = self.sensor_config.range_interval[1]
-                    self.use_cl = data_step["cl_file"]
-                    service = data_step["service_type"]
-                    self.process = self.get_processing_type(service)
-                except Exception as e:
-                    self.parent.emit("error", "Could not load data\n {}".format(e))
-                    return
-
             if not self.abort:
                 if "sleep" in self.service_type.lower():
                     time.sleep(0.001)
@@ -328,7 +329,11 @@ class DataProcessing:
                     time.sleep(self.rate)
                 else:
                     self.skip = 0
-                plot_data, _ = self.process(data_step["sweep_data"])
+                    time.sleep(self.rate * 0.3)
+                if h5_data:
+                    plot_data, _ = self.process(data_step)
+                else:
+                    plot_data, _ = self.process(data_step["sweep_data"])
 
     def draw_canvas(self, sweep_index, plot_data, cmd="update_plots",
                     skip_frames=False):
