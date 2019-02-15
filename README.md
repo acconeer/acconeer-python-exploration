@@ -1,8 +1,8 @@
 # Acconeer Exploration Tool
 
-Acconeer Python Exploration Kit is a set of tools and examples for getting started with the Acconeer Evaluation kits. By seamlessly feeding radar data to your local machine, it allows you to quickly start exploring the world of Acconeer radar sensor technology. This repository serves as a good starting point both for evaluation purposes and algorithm development in Python.
+Acconeer Python Exploration Kit is a set of tools and examples for getting started with the Acconeer Evaluation kits. By seamlessly feeding radar data to your local machine, it allows you to quickly start exploring the world of Acconeer's radar sensor technology. This repository serves as a good starting point both for evaluation purposes and algorithm development in Python.
 
-To run the exploration scripts, you'll need an Acconeer Evaluation kit running the streaming or Module server supplied with the Acconeer SDK or Module software image.
+To run the exploration scripts, you will need an Acconeer Evaluation kit running the Streaming or Module server supplied with the Acconeer SDK or Module software image.
 
 This release supports Acconeer SDK and Module SW version 1.5.2 or newer.
 
@@ -155,7 +155,10 @@ Acconeer's detectors are **only** supported with the XM112 Module.
 - `phase_tracking.py` \
   An example of a relative movements tracking algorithm using phase information.
 - `presence_detection.py` \
-  An example of a presence/motion detection algorithm ignoring static objects.
+An example of a presence/motion detection algorithm based on **phase** changes in the received signal over time. Small changes/motions in front of the sensor are enough to trigger the detector. Further, static objects are ignored. A typical use case is to detect a person based on the small motions origin from the breathing and pulse. 
+- `motion_large.py` \
+An example of a presence/motion detection algorithm based on **power** changes in the received signal over time. Large changes/motions in front of the sensor are required to trigger the detector. Further, static objects are ignored but could reduce the sensitivity due to increased received average power. A typical use case is to detect a person walking up to or away from the sensor's coverage region. It will not detect small motions as breathing or pulse from a person standing in front of the sensor, which is the case for the _presence_detection.py_. 
+
 
 ### Plotting
 
