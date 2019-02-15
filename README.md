@@ -159,7 +159,7 @@ Acconeer's detectors are **only** supported with the XM112 Module.
 - `motion_large.py` \
   An example of a presence/motion detection algorithm based on **power** changes in the received signal over time. Large changes/motions in front of the sensor are required to trigger the detector. Further, static objects are ignored but could reduce the sensitivity due to increased received average power. A typical use case is to detect a person walking up to or away from the sensor's coverage region. It will not detect small motions as breathing or pulse from a person standing in front of the sensor, which is the case for the _presence_detection.py_.
 - `obstacle_detection.py` \
-  An example of a obstacle detection algorithm estimating the distance and angle to an apporaching obstacle. It is based the synthetic array radar (SAR) principle.
+  An example of a obstacle detection algorithm estimating the distance and angle to an apporaching obstacle. It is based the synthetic aperture radar (SAR) principle.
 
 ### Plotting
 
