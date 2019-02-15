@@ -63,6 +63,10 @@ If you're on Linux you likely will need to compile BOSSA on your own. In our exp
 ```
 sudo apt-get install libreadline-dev libwxgtk3.0-dev make build-essential
 ```
+To flash:
+```
+sudo ./bin/bossac -e -w -v -p /dev/ttyUSB0 -b /path/to/acc_module_server_xm112.bin
+```
 
 ## Setting up your local machine
 
