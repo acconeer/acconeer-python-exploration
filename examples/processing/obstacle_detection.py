@@ -97,19 +97,21 @@ class ObstacleDetectionProcessor:
         fft_max_env = env
         angle = None
         velocity = None
+        peak_idx = np.argmax(env)
 
-        if peak_avg:
+        if peak_avg is not None:
             fft_max_env = signalPSD[:, fft_peak[1]]
             zero = np.floor(fft_sweep_len / 2)
             angle_index = np.abs(peak_avg - zero)
             angle = np.arccos(angle_index / zero) / pi * 180
             velocity = (angle_index / zero) * wavelength * self.config.sweep_rate / 4
+            peak_idx = fft_peak[0]
 
         out_data = {
             "env_ampl": env,
             "fft_max_env": fft_max_env,
             "fft_map": signalPSD,
-            "peak_idx": np.argmax(env),
+            "peak_idx": peak_idx,
             "angle": angle,
             "velocity": velocity,
             "fft_peak": fft_peak,
@@ -136,6 +138,9 @@ class ObstacleDetectionProcessor:
                 s += arr[peak[0], (peak[1] - 1 + i)] * (peak[1] - 1 + i)
                 amp_sum += arr[peak[0], (peak[1] - 1 + i)]
                 peak_avg = s / amp_sum
+
+        peak_avg = max(0, peak_avg)
+        peak_avg = min(peak_avg, fft_sweep_len)
 
         if arr[peak[0], peak[1]] < threshold:
             peak = None
@@ -222,7 +227,8 @@ class PGUpdater:
             peak_fft_text = "Dist: {:.1f}cm, Speed/Angle: {:.1f}cm/s / {:.0f}".format(
                                 dist, data["velocity"], data["angle"])
 
-            self.obstacle_peak.setData([vel + 0.5], [dist])
+            half_pixel = self.max_velocity / np.floor(fft_sweep_len / 2) / 2
+            self.obstacle_peak.setData([vel + half_pixel], [dist])
         else:
             self.obstacle_peak.setData([], [])
 
