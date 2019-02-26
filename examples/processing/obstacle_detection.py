@@ -1,15 +1,14 @@
 import numpy as np
-from numpy import pi
-from numpy import unravel_index
-from PyQt5 import QtGui, QtCore
+from numpy import pi, unravel_index
+from PyQt5 import QtCore
 import pyqtgraph as pg
-import matplotlib.pyplot as plt
 from scipy.fftpack import fft, fftshift
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
+from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
 
 fft_sweep_len = 17
@@ -34,17 +33,9 @@ def main():
 
     client.setup_session(config)
 
-    # Setup PyQtGraph
-    app = QtGui.QApplication([])
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOptions(antialias=True)
-    win = pg.GraphicsLayoutWidget()
-    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
-    win.setWindowTitle("Acconeer obstacle detection example")
-    plot_updater = PGUpdater(win, config)
-    win.show()
-    app.processEvents()
+    pg_updater = PGUpdater(config)
+    pg_process = PGProcess(pg_updater)
+    pg_process.start()
 
     client.start_streaming()
 
@@ -58,11 +49,13 @@ def main():
         plot_data = processor.process(sweep)
 
         if plot_data is not None:
-            plot_updater.update(plot_data)
-            app.processEvents()
+            try:
+                pg_process.put_data(plot_data)
+            except PGProccessDiedException:
+                break
 
     print("Disconnecting...")
-    app.closeAllWindows()
+    pg_process.close()
     client.disconnect()
 
 
@@ -150,15 +143,15 @@ class ObstacleDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, win, config):
+    def __init__(self, config):
         self.config = config
-
         self.plot_index = 0
         self.map_max = 0
-
         self.width = 3
-
         self.max_velocity = wavelength/4*config.sweep_rate  # cm/s
+
+    def setup(self, win):
+        win.setWindowTitle("Acconeer obstacle detection example")
 
         self.env_ax = win.addPlot(row=0, col=0, title="Envelope and max FFT")
         self.env_ax.setLabel("bottom", "Depth (cm)")
@@ -172,7 +165,7 @@ class PGUpdater:
 
         self.peak_dist_text = pg.TextItem(color="k", anchor=(0, 1))
         self.env_ax.addItem(self.peak_dist_text)
-        self.peak_dist_text.setPos(config.range_start*100, 0)
+        self.peak_dist_text.setPos(self.config.range_start*100, 0)
         self.peak_dist_text.setZValue(3)
 
         self.env_peak_vline = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(width=2,
@@ -183,23 +176,24 @@ class PGUpdater:
         self.obstacle_im = pg.ImageItem()
         self.obstacle_ax.setLabel("bottom", "Velocity (cm/s)")
         self.obstacle_ax.setLabel("left", "Distance (cm)")
-        colormap = plt.get_cmap("viridis")
-        colormap._init()
-        lut = (colormap._lut * 255).view(np.ndarray)
-        self.obstacle_im.setLookupTable(lut)
+        self.obstacle_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
         self.obstacle_ax.addItem(self.obstacle_im)
 
         self.obstacle_ax.setXRange(-self.max_velocity, self.max_velocity)
-        self.obstacle_ax.setYRange(*config.range_interval * 100)
+        self.obstacle_ax.setYRange(*self.config.range_interval * 100)
 
         self.obstacle_peak = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=15)
         self.obstacle_ax.addItem(self.obstacle_peak)
 
         self.peak_fft_text = pg.TextItem(color="w", anchor=(0, 1))
         self.obstacle_ax.addItem(self.peak_fft_text)
-        self.peak_fft_text.setPos(-self.max_velocity, config.range_start*100)
+        self.peak_fft_text.setPos(-self.max_velocity, self.config.range_start*100)
 
-        self.smooth_max = example_utils.SmoothMax(config.sweep_rate, tau_decay=1, tau_grow=0.2)
+        self.smooth_max = example_utils.SmoothMax(
+                self.config.sweep_rate,
+                tau_decay=1,
+                tau_grow=0.2
+                )
 
     def update(self, data):
         ds = 32  # downsampling

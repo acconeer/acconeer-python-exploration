@@ -1,11 +1,12 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtCore
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
+from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
@@ -23,17 +24,9 @@ def main():
 
     client.setup_session(config)
 
-    # Setup PyQtGraph
-    app = QtGui.QApplication([])
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOptions(antialias=True)
-    win = pg.GraphicsLayoutWidget()
-    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
-    win.setWindowTitle("Acconeer presence detection example")
-    plot_updater = PGUpdater(win, config)
-    win.show()
-    app.processEvents()
+    pg_updater = PGUpdater(config)
+    pg_process = PGProcess(pg_updater)
+    pg_process.start()
 
     client.start_streaming()
 
@@ -47,11 +40,13 @@ def main():
         plot_data = processor.process(sweep)
 
         if plot_data is not None:
-            plot_updater.update(plot_data)
-            app.processEvents()
+            try:
+                pg_process.put_data(plot_data)
+            except PGProccessDiedException:
+                break
 
     print("Disconnecting...")
-    app.closeAllWindows()
+    pg_process.close()
     client.disconnect()
 
 
@@ -112,15 +107,18 @@ class PresenceDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, win, config):
+    def __init__(self, config):
         self.config = config
         self.movement_limit = 0.3
+
+    def setup(self, win):
+        win.setWindowTitle("Acconeer presence detection example")
 
         self.env_plot = win.addPlot(title="IQ amplitude")
         self.env_plot.showGrid(x=True, y=True)
         self.env_plot.setLabel("bottom", "Depth (m)")
         self.env_curve = self.env_plot.plot(pen=example_utils.pg_pen_cycler(0))
-        self.env_smooth_max = example_utils.SmoothMax(config.sweep_rate)
+        self.env_smooth_max = example_utils.SmoothMax(self.config.sweep_rate)
 
         win.nextRow()
         move_hist_plot = win.addPlot(title="Movement history")

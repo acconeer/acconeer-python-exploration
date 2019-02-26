@@ -1,12 +1,12 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtGui
 from scipy import signal
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
+from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
@@ -24,18 +24,9 @@ def main():
 
     client.setup_session(config)
 
-    # Setup PyQtGraph
-    app = QtGui.QApplication([])
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOptions(antialias=True)
-    win = pg.GraphicsLayoutWidget()
-    win.resize(800, 600)
-    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
-    win.setWindowTitle("Acconeer sleep breathing estimation example")
-    plot_updater = PGUpdater(win, config)
-    win.show()
-    app.processEvents()
+    pg_updater = PGUpdater(config)
+    pg_process = PGProcess(pg_updater)
+    pg_process.start()
 
     client.start_streaming()
 
@@ -49,11 +40,13 @@ def main():
         plot_data = processor.process(sweep)
 
         if plot_data is not None:
-            plot_updater.update(plot_data)
-            app.processEvents()
+            try:
+                pg_process.put_data(plot_data)
+            except PGProccessDiedException:
+                break
 
     print("Disconnecting...")
-    app.closeAllWindows()
+    pg_process.close()
     client.disconnect()
 
 
@@ -277,8 +270,12 @@ class PresenceDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, win, config):
+    def __init__(self, config):
         self.config = config
+
+    def setup(self, win):
+        win.resize(800, 600)
+        win.setWindowTitle("Acconeer sleep breathing estimation example")
 
         phi_title = "Breathing motion (detection range: {} m to {} m)" \
                     .format(*self.config.range_interval)
@@ -302,7 +299,7 @@ class PGUpdater:
         self.spect_plot.setLabel("left", "Power")
         self.spect_plot.setLabel("bottom", "Frequency (Hz)")
         self.spect_curve = self.spect_plot.plot(pen=example_utils.pg_pen_cycler(1))
-        self.spect_smax = example_utils.SmoothMax(config.sweep_rate / 15)
+        self.spect_smax = example_utils.SmoothMax(self.config.sweep_rate / 15)
         self.spect_dft_inf_line = pg.InfiniteLine(pen=example_utils.pg_pen_cycler(1, "--"))
         self.spect_plot.addItem(self.spect_dft_inf_line)
         self.spect_est_inf_line = pg.InfiniteLine(pen=example_utils.pg_pen_cycler(0, "--"))

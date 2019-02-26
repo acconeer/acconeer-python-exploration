@@ -1,11 +1,12 @@
 import numpy as np
 import pyqtgraph as pg
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtCore
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
+from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
@@ -23,18 +24,9 @@ def main():
 
     client.setup_session(config)
 
-    # Setup PyQtGraph
-    app = QtGui.QApplication([])
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOptions(antialias=True)
-    win = pg.GraphicsLayoutWidget()
-    win.resize(800, 600)
-    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
-    win.setWindowTitle("Acconeer phase tracking example")
-    plot_updater = PGUpdater(win, config)
-    win.show()
-    app.processEvents()
+    pg_updater = PGUpdater(config)
+    pg_process = PGProcess(pg_updater)
+    pg_process.start()
 
     client.start_streaming()
 
@@ -48,11 +40,13 @@ def main():
         plot_data = processor.process(sweep)
 
         if plot_data is not None:
-            plot_updater.update(plot_data)
-            app.processEvents()
+            try:
+                pg_process.put_data(plot_data)
+            except PGProccessDiedException:
+                break
 
     print("Disconnecting...")
-    app.closeAllWindows()
+    pg_process.close()
     client.disconnect()
 
 
@@ -135,8 +129,13 @@ class PhaseTrackingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, win, config):
+    def __init__(self, config):
+        self.config = config
         self.interval = config.range_interval
+
+    def setup(self, win):
+        win.resize(800, 600)
+        win.setWindowTitle("Acconeer phase tracking example")
 
         self.abs_plot = win.addPlot(row=0, col=0)
         self.abs_plot.showGrid(x=True, y=True)
@@ -181,7 +180,7 @@ class PGUpdater:
         self.hist_zoom_curve = self.hist_zoom_plot.plot(pen=example_utils.pg_pen_cycler())
         self.hist_zoom_plot.setYRange(-0.5, 0.5)
 
-        self.smooth_max = example_utils.SmoothMax(config.sweep_rate)
+        self.smooth_max = example_utils.SmoothMax(self.config.sweep_rate)
         self.first = True
 
     def update(self, data):

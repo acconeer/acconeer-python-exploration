@@ -2,12 +2,13 @@ import numpy as np
 from numpy import pi
 from scipy.signal import butter, sosfilt
 import pyqtgraph as pg
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtCore
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
+from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
 
 env_max = 0.3
@@ -29,18 +30,9 @@ def main():
 
     client.setup_session(config)
 
-    # Setup PyQtGraph
-    app = QtGui.QApplication([])
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOptions(antialias=True)
-    win = pg.GraphicsLayoutWidget()
-    win.resize(800, 600)
-    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
-    win.setWindowTitle("Acconeer breathing example")
-    plot_updater = PGUpdater(win, config)
-    win.show()
-    app.processEvents()
+    pg_updater = PGUpdater(config)
+    pg_process = PGProcess(pg_updater)
+    pg_process.start()
 
     client.start_streaming()
 
@@ -54,11 +46,13 @@ def main():
         plot_data = processor.process(sweep)
 
         if plot_data is not None:
-            plot_updater.update(plot_data)
-            app.processEvents()
+            try:
+                pg_process.put_data(plot_data)
+            except PGProccessDiedException:
+                break
 
     print("Disconnecting...")
-    app.closeAllWindows()
+    pg_process.close()
     client.disconnect()
 
 
@@ -238,11 +232,14 @@ class BreathingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, win, config):
+    def __init__(self, config):
         self.config = config
+        self.move_xs = (np.arange(-hist_plot_len, 0) + 1) / self.config.sweep_rate
         self.plot_index = 0
 
-        self.move_xs = (np.arange(-hist_plot_len, 0) + 1) / self.config.sweep_rate
+    def setup(self, win):
+        win.setWindowTitle("Acconeer breathing example")
+        win.resize(800, 600)
 
         self.peak_plot = win.addPlot(title="IQ at peak")
         example_utils.pg_setup_polar_plot(self.peak_plot, 0.3)

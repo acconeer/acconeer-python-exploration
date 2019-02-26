@@ -1,12 +1,13 @@
 import numpy as np
 from numpy import square, exp
 import pyqtgraph as pg
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtCore
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
+from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
@@ -24,17 +25,9 @@ def main():
 
     client.setup_session(config)
 
-    # Setup PyQtGraph
-    app = QtGui.QApplication([])
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOptions(antialias=True)
-    win = pg.GraphicsLayoutWidget()
-    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
-    win.setWindowTitle("Acconeer presence detection example")
-    plot_updater = PGUpdater(win, config)
-    win.show()
-    app.processEvents()
+    pg_updater = PGUpdater(config)
+    pg_process = PGProcess(pg_updater)
+    pg_process.start()
 
     client.start_streaming()
 
@@ -48,11 +41,13 @@ def main():
         plot_data = processor.process(sweep)
 
         if plot_data is not None:
-            plot_updater.update(plot_data)
-            app.processEvents()
+            try:
+                pg_process.put_data(plot_data)
+            except PGProccessDiedException:
+                break
 
     print("Disconnecting...")
-    app.closeAllWindows()
+    pg_process.close()
     client.disconnect()
 
 
@@ -124,15 +119,18 @@ class PresenceDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, win, config):
+    def __init__(self, config):
         self.config = config
         self.threshold = 0.4
+
+    def setup(self, win):
+        win.setWindowTitle("Acconeer presence detection example")
 
         self.env_plot = win.addPlot(title="Burst mean of Envelope²")
         self.env_plot.showGrid(x=True, y=True)
         self.env_plot.setLabel("bottom", "Depth (m)")
         self.env_curve = self.env_plot.plot(pen=example_utils.pg_pen_cycler(0))
-        self.env_smooth_max = example_utils.SmoothMax(config.sweep_rate / 10)
+        self.env_smooth_max = example_utils.SmoothMax(self.config.sweep_rate / 10)
 
         win.nextRow()
         move_hist_plot = win.addPlot(title="Changes in received power")
@@ -141,7 +139,7 @@ class PGUpdater:
         move_hist_plot.setXRange(-5, 0)
         move_hist_plot.setYRange(0, 1)
         self.move_hist_curve = move_hist_plot.plot(pen=example_utils.pg_pen_cycler(0))
-        self.move_hist_smooth_max = example_utils.SmoothMax(config.sweep_rate / 10)
+        self.move_hist_smooth_max = example_utils.SmoothMax(self.config.sweep_rate / 10)
         limit_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
         limit_line = pg.InfiniteLine(self.threshold, angle=0, pen=limit_pen)
         move_hist_plot.addItem(limit_line)

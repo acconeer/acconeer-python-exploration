@@ -162,7 +162,8 @@ class GUI(QMainWindow):
         canvas = pg.GraphicsLayoutWidget()
 
         if self.external:
-            self.service_widget = axes[mode][0].PGUpdater(canvas, self.update_sensor_config())
+            self.service_widget = axes[mode][0].PGUpdater(self.update_sensor_config())
+            self.service_widget.setup(canvas)
             self.external = axes[mode][1]
             return canvas
         elif "power" in mode.lower():

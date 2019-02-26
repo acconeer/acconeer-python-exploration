@@ -227,3 +227,10 @@ def pg_setup_polar_plot(plot, max_r=1):
         text_item.setPos(max_r*x*1.02, max_r*y*1.02)
         plot.addItem(text_item)
         plot.plot([0, max_r*x], [0, max_r*y], pen=pg.mkPen(0.5))
+
+
+def pg_mpl_cmap(name):
+    import matplotlib.pyplot as plt
+    cmap = plt.get_cmap(name)
+    cmap._init()
+    return np.array(cmap._lut) * 255

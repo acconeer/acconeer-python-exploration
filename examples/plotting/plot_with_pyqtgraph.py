@@ -1,6 +1,5 @@
 import numpy as np
 from pyqtgraph.Qt import QtGui
-import matplotlib.pyplot as plt
 import pyqtgraph as pg
 
 from acconeer_utils.clients.reg.client import RegClient
@@ -57,11 +56,11 @@ def main():
     hist_image_item.scale(2/num_hist, config.range_length/num_points)
     hist_plot.addItem(hist_image_item)
 
-    # get a colormap from matplotlib
-    cmap = plt.get_cmap("viridis")
-    cmap._init()
-    lut = np.array(cmap._lut) * 255
-    hist_image_item.setLookupTable(lut)
+    # try to get a colormap from matplotlib
+    try:
+        hist_image_item.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+    except ImportError:
+        pass
 
     win.show()
 
