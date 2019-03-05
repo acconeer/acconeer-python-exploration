@@ -1,0 +1,77 @@
+/*
+* Copyright (c) Acconeer AB, 2018
+* All rights reserved
+*/
+
+@font-face {
+  font-family: Spinnaker;
+  src: url(../font/Spinnaker-Regular.ttf);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: Spinnaker;
+  color: #2888A9;
+}
+
+label {
+  font-weight: bold;
+}
+
+.custom-control-label {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-right: 4px;
+  margin-top: 1px;
+}
+
+.logo {
+  font-size: 2rem;
+  font-weight: 300;
+}
+
+.backarrow, .infoicon, .settingsicon, .powericon {
+  height: 38px;
+  width: 38px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  transition: transform .2s;
+  outline: none !important;
+}
+
+.backarrow { background-image: url(../img/back.svg); }
+.infoicon { background-image: url(../img/info.svg); }
+.settingsicon { background-image: url(../img/cog.svg); }
+.powericon { background-image: url(../img/power.svg); }
+
+.backarrow:hover { transform: translateX(-3px); }
+.infoicon:hover { transform: translateY(-3px); }
+.settingsicon:hover { transform: rotate(15deg); }
+.powericon:hover { transform: translateY(-3px); }
+
+.card {
+  transition: transform .2s;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+}
+
+.card-link:hover {
+  text-decoration: underline;
+}
+
+.navbar-data {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.range-label {
+  font-size: 25px;
+}
+
+.badge {
+  min-width: 80px;
+}
+
+#motion-alert {
+  transition: background-color 200ms;
+}

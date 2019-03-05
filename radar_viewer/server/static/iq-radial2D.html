@@ -1,0 +1,147 @@
+<!doctype html>
+<!--
+Copyright (c) Acconeer AB, 2018
+All rights reserved
+-->
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>IQ data radial</title>
+
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32">
+  <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="lib/aos/css/aos.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <section id="logo">
+    <div class="container">
+      <div class="row justify-content-between my-4">
+        <div class="col-auto d-flex my-2" data-aos="fade-down">
+          <a href="index.html" title="Go back" class="backarrow"></a>
+          <h1 class="logo my-auto ml-3 ml-md-5">IQ data radial</h1>
+        </div>
+        <div class="col-auto d-flex my-2" data-aos="fade-down" data-aos-delay="100">
+          <a href="#" title="Show settings" class="settingsicon" data-toggle="modal" data-target="#settings"></a>
+          <a href="#" title="Show info" class="infoicon ml-3 ml-md-5" data-toggle="modal" data-target="#info"></a>
+        </div>
+      </div>
+      <div class="row py-5">
+        <div class="col-md-4" data-aos="fade-up">
+          <h3 class="logo my-auto">Phase</h3>
+          <canvas id="iq-phase"></canvas>
+        </div>
+        <div class="col-md-8" data-aos="fade-up">
+          <h3 class="logo my-auto">Amplitude</h3>
+          <canvas id="iq-amplitude"></canvas>
+          <input type="range" name="dist" min="0" max="0" step="1" value="0" class="custom-range" id="dist">
+          <div class="range-label text-center">
+            <span class="badge badge-secondary" ><span id="dist-label-custom">0</span> m</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="modal fade" id="settings">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Settings</h3>
+          <button type="button" class="close" title="Cancel" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="settings-form">
+            <div class="form-row">
+              <div class="form-group col-sm-6">
+                <label>Sweep start</label>
+                <div class="input-group mb-3">
+                  <input required type="number" name="range_start" step="0.01" min="0.06" max="1.5" class="form-control" value="0.06">
+                  <div class="input-group-append">
+                    <span class="input-group-text">0.06 - 1.5m</span>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group col-sm-6">
+                <label>Sweep length</label>
+                <div class="input-group mb-3">
+                  <input required type="number" name="range_end" step="0.01" min="0.06" max="0.5" class="form-control" value="0.5">
+                  <div class="input-group-append">
+                    <span class="input-group-text">0.06 - 0.5m</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-12">
+                <label>Frequency</label>
+                <div class="range-label text-center">
+                  <span class="badge badge-secondary" ><span id="frequency-label">30</span> Hz</span>
+                </div>
+                <input type="range" name="frequency" min="1" max="100" value="30" class="custom-range" id="frequency">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-12">
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="gain-check" data-toggle="collapse" data-target="#gain-slider">
+                  <label class="custom-control-label" for="gain-check">Enable gain</label>
+                </div>
+                <div class="collapse" id="gain-slider">
+                  <div class="range-label text-center">
+                    <span class="badge badge-secondary" id="gain-label">0.50</span>
+                  </div>
+                  <input type="range" name="gain" min="0" max="1" step="0.01" value="0.50" class="custom-range" id="gain">
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-12">
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="average-check" data-toggle="collapse" data-target="#average-slider">
+                  <label class="custom-control-label" for="average-check">Enable running average</label>
+                </div>
+                <div class="collapse" id="average-slider">
+                  <div class="range-label text-center">
+                    <span class="badge badge-secondary" id="average-label">0.50</span>
+                  </div>
+                  <input type="range" name="average" min="0" max="1" step="0.01" value="0.50" class="custom-range" id="average">
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary font-weight-bold">Apply</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="info">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Info</h3>
+          <button type="button" class="close" title="Close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Complex valued measurements with both amplitude and phase information. Perfect for applications that needs to track small relative moments with high accuracy.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib/jquery/jquery-3.3.1.min.js"></script>
+  <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="lib/chartjs/Chart.bundle.min.js"></script>
+  <script src="lib/aos/js/aos.js"></script>
+  <script src="lib/eventsrc/EventSource.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/iq-radial2D.js"></script>
+</body>
+</html>

@@ -179,6 +179,17 @@ python gui/main.py
 
 Running examples in the GUI under Windows can be very slow. If you encounter lag in the GUI try reducing the sweep buffer in the GUI or running the examples directly as described above.
 
+## Radar viewer
+
+The radar viewer visualizes the output from Acconeer's service API:s in your default browser.
+
+Currently **only the XM112 module is supported**.
+
+Run the radar viewer using:
+```
+python radar_viewer/radar_viewer.py -u
+```
+
 ## FAQ and common issues
 
 ### Python-related

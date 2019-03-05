@@ -1,0 +1,223 @@
+<!doctype html>
+<!--
+Copyright (c) Acconeer AB, 2018
+All rights reserved
+-->
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Acconeer A111 Radar sensor</title>
+
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32">
+  <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="lib/aos/css/aos.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <section id="logo">
+    <div class="container">
+      <div class="row my-5">
+        <div class="col-auto" data-aos="fade-down" data-aos-delay="0">
+          <a href="https://www.acconeer.com/" title="Go to acconeer.com"><img class="img-fluid" src="img/logo.png"/></a>
+        </div>
+        <div class="col-auto mr-auto d-flex my-2" data-aos="fade-down" data-aos-delay="0">
+          <h1 class="logo my-auto pl-md-3">A111 Radar Viewer</h1>
+        </div>
+        <div class="col-auto d-flex align-items-center my-2" data-aos="fade-down" data-aos-delay="100">
+          <div class="input-group mr-3">
+            <!--
+            <div class="input-group-prepend">
+              <label class="input-group-text">Connection</label>
+            </div>
+            <select class="custom-select font-weight-bold" id="board">
+              <option value="uart">XM112 uart</option>
+              <option value="streaming">XC111/XC112</option>
+            </select>
+            -->
+          </div>
+        </div>
+        <div class="col-auto d-flex align-items-center my-2" data-aos="fade-down" data-aos-delay="100">
+          <a href="#" title="Close demo" class="powericon" data-toggle="modal" data-target="#exit"></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="demos">
+    <div class="container">
+      <div class="row my-5">
+        <div class="col-12">
+          <h2 data-aos="fade-zoom-in">Sensor Services</h2>
+        </div>
+      </div>
+      <div class="row my-5">
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="0">
+          <div class="card flex-fill">
+            <div class="card-body">
+              <h5 class="card-title">Power Bins</h5>
+              <p class="card-text">Interface optimized for low computational complexity for applications that doesn't require high accuracy on distance but instead focus more on presence.</p>
+            </div>
+            <div class="card-footer">
+              <a href="powerbin.html" class="card-link font-weight-bold demo-link">Demo</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="50">
+          <div class="card flex-fill">
+            <div class="card-body">
+              <h5 class="card-title">Envelope</h5>
+              <p class="card-text">Processed radar data. Returns a vector with the amplitudes of the reflected radar signal within a predefined distance range.</p>
+            </div>
+            <div class="card-footer">
+              <a href="envelopes2D.html" class="card-link font-weight-bold demo-link">2D demo</a>
+              <a href="envelopes3D.html" class="card-link font-weight-bold demo-link">3D demo</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="100">
+          <div class="card flex-fill">
+            <div class="card-body">
+              <h5 class="card-title">IQ data</h5>
+              <p class="card-text">Complex valued measurements with both amplitude and phase information. Perfect for applications that needs to track small relative moments with high accuracy.</p>
+            </div>
+            <div class="card-footer">
+            <!--  <a href="iq-linear2D.html" class="card-link font-weight-bold demo-link">Linear</a> -->
+              <a href="iq-radial2D.html" class="card-link font-weight-bold demo-link">Radial</a>
+              <a href="iq3D.html" class="card-link font-weight-bold demo-link">3D demo</a>
+            </div>
+          </div>
+        </div>
+
+        <!--
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="150">
+          <div class="card flex-fill">
+            <div class="card-body">
+              <h5 class="card-title">Motion sensor</h5>
+              <p class="card-text">Simple motion detector. Shows if the sensor detects any motion.</p>
+            </div>
+            <div class="card-footer">
+              <a href="motion.html" class="card-link font-weight-bold demo-link">Demo</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="card flex-fill">
+            <div class="card-body">
+              <h5 class="card-title">Distance Peak Detector</h5>
+              <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
+            <div class="card-footer">
+              <a href="distance-peak.html" class="card-link font-weight-bold demo-link">Demo</a>
+            </div>
+          </div>
+        </div> -->
+      </div>
+    </div>
+  </section>
+<!--
+  <section id="documentation">
+    <div class="container">
+      <div class="row my-5">
+        <div class="col-12">
+          <h2 data-aos="fade-zoom-in">Documentation</h2>
+        </div>
+      </div>
+      <div class="row my-5">
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="0">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Datasheet</h5>
+              <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean tristique porta malesuada. Suspendisse ut sodales sapien. Morbi vel ullamcorper ipsum.</p>
+              <div class="dropdown dropup">
+                <button class="btn btn-light dropdown-toggle" type="button" data-toggle="dropdown">OPEN</button>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="#">Datasheet 1</a>
+                  <a class="dropdown-item" href="#">Datasheet 2</a>
+                  <a class="dropdown-item" href="#">Datasheet 3</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="100">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">User Guide</h5>
+              <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean tristique porta malesuada. Suspendisse ut sodales sapien. Morbi vel ullamcorper ipsum.</p>
+              <div class="dropdown dropup">
+                <button class="btn btn-light dropdown-toggle" type="button" data-toggle="dropdown">OPEN</button>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="#">Guide 1</a>
+                  <a class="dropdown-item" href="#">Guide 2</a>
+                  <a class="dropdown-item" href="#">Guide 3</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4 d-md-flex mb-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">SDK documentation</h5>
+              <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean tristique porta malesuada. Suspendisse ut sodales sapien. Morbi vel ullamcorper ipsum.</p>
+              <div class="dropdown dropup">
+                <button class="btn btn-light dropdown-toggle" type="button" data-toggle="dropdown">OPEN</button>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="#">SDK docs 1</a>
+                  <a class="dropdown-item" href="#">SDK docs 2</a>
+                  <a class="dropdown-item" href="#">SDK docs 3</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+-->
+
+  <div class="modal fade" id="exit">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Close demo?</h3>
+          <button type="button" class="close" title="Cancel" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>This will close this demo and stop any running radar software on the server.</p>
+          <button class="btn btn-danger btn-block font-weight-bold" id="exit-button">CLOSE DEMO</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="welcome" data-backdrop="static">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Welcome to Acconeer A111 Radar Visualization Tool!</h3>
+        </div>
+        <div class="modal-body">
+          <p>Please select your connector board.</p>
+          <div class="input-group">
+            <select class="custom-select font-weight-bold" id="board-welcome">
+              <option selected disabled>Select one...</option>
+              <option value="uart">XM112 module</option>
+              <option value="streming">XC111/XC112 streaming server</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib/jquery/jquery-3.3.1.min.js"></script>
+  <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="lib/aos/js/aos.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

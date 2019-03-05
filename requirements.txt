@@ -5,3 +5,4 @@ pyserial
 matplotlib
 pyqtgraph
 PyQt5
+Flask
