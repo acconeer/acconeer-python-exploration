@@ -119,6 +119,12 @@ def autodetect_serial_port():
             print("Autodetected XB112 on {}\n".format(port))
             return port
 
+    for port_info in port_infos:
+        port, desc, _ = port_info
+        if desc == "FT230X Basic UART":
+            print("Autodetected FT230X Basic UART on {}\n".format(port))
+            return port
+
     if len(port_infos) == 0:
         print("Could not autodetect serial port, no ports available")
         sys.exit()
