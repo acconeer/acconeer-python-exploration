@@ -243,8 +243,8 @@ class GUI(QMainWindow):
             self.hist_plot_image.setLabel("left", "Distance (mm)")
             self.hist_plot_image.setLabel("bottom", "Time (Sweep number)")
             for i in ax:
-                    self.hist_plot_image.getAxis(i).tickFont = font
-                    self.hist_plot_image.getAxis(i).setPen(ax_color)
+                self.hist_plot_image.getAxis(i).tickFont = font
+                self.hist_plot_image.getAxis(i).setPen(ax_color)
 
         return canvas
 
@@ -589,12 +589,12 @@ class GUI(QMainWindow):
     def check_values(self, mode):
         errors = []
         if not self.textboxes["frequency"].text().isdigit():
-                errors.append("Frequency must be an integer and not less than 0!\n")
-                self.textboxes["frequency"].setText("10")
+            errors.append("Frequency must be an integer and not less than 0!\n")
+            self.textboxes["frequency"].setText("10")
 
         if not self.textboxes["sensor"].text().isdigit():
-                errors.append("Sensor must be an integer between 1 and 4!\n")
-                self.textboxes["sensor"].setText("0")
+            errors.append("Sensor must be an integer between 1 and 4!\n")
+            self.textboxes["sensor"].setText("0")
         else:
             sensor = int(self.textboxes["sensor"].text())
             sensor, e = self.check_limit(sensor, self.textboxes["sensor"], 1, 4)
