@@ -538,7 +538,7 @@ class GUI(QMainWindow):
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(True)
             else:
-                self.error_message("Could not connect to sever!\n{}".format(error))
+                self.error_message("Could not connect to server!\n{}".format(error))
                 return
 
             self.buttons["connect"].setText("Disconnect")
