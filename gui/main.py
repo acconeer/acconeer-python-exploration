@@ -95,6 +95,7 @@ class GUI(QMainWindow):
             "power_bins":   "Power bins",
             "sweep_info":   "Sweeps: 0 (skipped 0)",
             "saturated":    "Warning: Data saturated, reduce gain!",
+            "stitching":    "Experimental stitching enabled!"
         }
 
         self.labels = {}
@@ -105,6 +106,8 @@ class GUI(QMainWindow):
 
         self.labels["power_bins"].setVisible(False)
         self.labels["saturated"].setStyleSheet('color: #f0f0f0')
+        self.labels["stitching"].setVisible(False)
+        self.labels["stitching"].setStyleSheet("color: red")
 
     def init_textboxes(self):
         text = {
@@ -435,6 +438,7 @@ class GUI(QMainWindow):
         settings_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], 7, 1)
         settings_sublayout_grid.addWidget(self.labels["power_bins"], 8, 0)
         settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 8, 1)
+        settings_sublayout_grid.addWidget(self.labels["stitching"], 9, 0, 1, 2)
 
         # Service params sublayout
         self.serviceparams_sublayout_grid = QtWidgets.QGridLayout()
@@ -668,7 +672,7 @@ class GUI(QMainWindow):
             self.textboxes["frequency"].setText("{:d}".format(conf.sweep_rate))
             self.sweep_count = -1
         else:
-            self.check_values(conf.mode)
+            stitching = self.check_values(conf.mode)
             color = "white"
             conf.range_interval = [
                     float(self.textboxes["start_range"].text()),
@@ -679,6 +683,8 @@ class GUI(QMainWindow):
             self.sweep_count = int(self.textboxes["sweeps"].text())
             if "power" in self.mode.currentText().lower():
                 conf.bin_count = int(self.textboxes["power_bins"].text())
+            conf.experimental_stitching = stitching
+
             if "envelope" in self.mode.currentText().lower():
                 if "snr" in self.profiles.currentText().lower():
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
@@ -776,24 +782,45 @@ class GUI(QMainWindow):
             errors.append("End range must be between 0.12m and 7.0m!\n")
 
         r = end - start
+
+        env_max_range = 0.96
+        iq_max_range = 0.72
+        if self.interface.currentText().lower() == "socket":
+            if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
+                env_max_range = 6.88
+                iq_max_range = 6.88
+
+        stitching = False
         if r <= 0:
             errors.append("Range must not be less than 0!\n")
             self.textboxes["end_range"].setText(str(start + 0.06))
             end = start + 0.06
             r = end - start
-        if "envelope" in mode.lower() and r > 0.96:
-            errors.append("Envelope range must be less than 0.96m!\n")
-            self.textboxes["end_range"].setText(str(start + 0.96))
-            end = start + 0.96
-            r = end - start
-        if "iq" in mode.lower() and r > 0.72:
-            self.textboxes["end_range"].setText(str(start + 0.72))
-            errors.append("IQ range must be less than 0.72m!\n")
-            end = start + 0.72
-            r = end - start
+
+        if "envelope" in mode.lower():
+            if r > env_max_range:
+                errors.append("Envelope range must be less than %.2fm!\n" % env_max_range)
+                self.textboxes["end_range"].setText(str(start + env_max_range))
+                end = start + env_max_range
+                r = end - start
+            elif r > 0.96:
+                stitching = True
+
+        if "iq" in mode.lower():
+            if r > iq_max_range:
+                errors.append("IQ range must be less than %.2fm!\n" % iq_max_range)
+                self.textboxes["end_range"].setText(str(start + iq_max_range))
+                end = start + iq_max_range
+                r = end - start
+            elif r > 0.72:
+                stitching = True
+
+        self.labels["stitching"].setVisible(stitching)
 
         if len(errors):
             self.error_message("".join(errors))
+
+        return stitching
 
     def is_float(self, val, is_positive=True):
         try:

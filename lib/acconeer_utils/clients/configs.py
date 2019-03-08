@@ -61,6 +61,7 @@ class BaseServiceConfig(BaseSessionConfig):
     _gain = None
     _range_start = None
     _range_length = None
+    _experimental_stitching = None
 
     @property
     def gain(self):
@@ -113,6 +114,14 @@ class BaseServiceConfig(BaseSessionConfig):
     @range_end.setter
     def range_end(self, range_end):
         self.range_length = range_end - self.range_start
+
+    @property
+    def experimental_stitching(self):
+        return self._experimental_stitching
+
+    @experimental_stitching.setter
+    def experimental_stitching(self, experimental_stitching):
+        self._experimental_stitching = experimental_stitching
 
 
 class BaseDenseServiceConfig(BaseServiceConfig):

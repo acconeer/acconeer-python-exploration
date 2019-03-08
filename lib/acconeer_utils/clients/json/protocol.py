@@ -19,6 +19,7 @@ KEY_AND_CONFIG_ATTR_PAIRS = [
     KeyConfigAttrPair("running_average_factor", "running_average_factor", False),
     KeyConfigAttrPair("compensate_phase", "compensate_phase", False),
     KeyConfigAttrPair("profile", "session_profile", False),
+    KeyConfigAttrPair("enable_stitching", "experimental_stitching", False),
 ]
 
 MODE_TO_CMD_MAP = {
