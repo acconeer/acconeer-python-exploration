@@ -11,7 +11,7 @@ Reg = namedtuple(
             "rw",
             "type",
             "val_map",
-            "is_session_info",
+            "info_type",
             "config_attr",
         ],
         )
@@ -85,7 +85,7 @@ REGS = [
         "rw",
         "u",
         MODES,
-        False,
+        None,
         None,
     ),
     Reg(
@@ -101,7 +101,7 @@ REGS = [
             "create_and_activate": 3,
             "clear_status": 4,
         },
-        False,
+        None,
         None,
     ),
     Reg(
@@ -114,7 +114,7 @@ REGS = [
             "disable": 0,
             "uart": 1,
         },
-        False,
+        None,
         None,
     ),
     Reg(
@@ -124,7 +124,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        None,
         None,
     ),
     Reg(
@@ -134,7 +134,7 @@ REGS = [
         "rw",
         "u",
         None,
-        False,
+        None,
         None,
     ),
     Reg(
@@ -144,7 +144,7 @@ REGS = [
         "w",
         "u",
         None,
-        False,
+        None,
         "session_profile",
     ),
     Reg(
@@ -154,7 +154,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        None,
         None,
     ),
     Reg(
@@ -164,7 +164,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        None,
         None,
     ),
     Reg(
@@ -174,7 +174,7 @@ REGS = [
         "rw",
         "i",
         float_to_milli_enc_funs,
-        False,
+        None,
         "range_start",
     ),
     Reg(
@@ -184,7 +184,7 @@ REGS = [
         "rw",
         "i",
         float_to_milli_enc_funs,
-        False,
+        None,
         "range_length",
     ),
     Reg(
@@ -197,7 +197,7 @@ REGS = [
             "fixed": 1,
             "max": 2,
         },
-        False,
+        None,
         None,
     ),
     Reg(
@@ -207,7 +207,7 @@ REGS = [
         "rw",
         "u",
         float_to_milli_enc_funs,
-        True,
+        "session",
         "sweep_rate",
     ),
     Reg(
@@ -217,8 +217,38 @@ REGS = [
         "rw",
         "u",
         float_to_milli_enc_funs,
-        False,
+        None,
         "gain",
+    ),
+    Reg(
+        "actual_range_start",
+        NO_MODE,
+        129,
+        "r",
+        "u",
+        float_to_milli_enc_funs,
+        "session",
+        None,
+    ),
+    Reg(
+        "actual_range_length",
+        NO_MODE,
+        130,
+        "r",
+        "u",
+        float_to_milli_enc_funs,
+        "session",
+        None,
+    ),
+    Reg(
+        "output_data_buffer_length",
+        NO_MODE,
+        233,
+        "r",
+        "u",
+        None,
+        None,
+        None,
     ),
 
     Reg(
@@ -228,7 +258,7 @@ REGS = [
         "rw",
         "u",
         None,
-        False,
+        None,
         "bin_count",
     ),
     Reg(
@@ -238,7 +268,7 @@ REGS = [
         "r",
         "u",
         None,
-        True,
+        "session",
         None,
     ),
     Reg(
@@ -248,7 +278,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        "sweep",
         None,
     ),
 
@@ -259,7 +289,7 @@ REGS = [
         "rw",
         "u",
         float_to_milli_enc_funs,
-        False,
+        None,
         "running_average_factor",
     ),
     Reg(
@@ -269,7 +299,7 @@ REGS = [
         "rw",
         "b",
         None,
-        False,
+        None,
         "compensate_phase",
     ),
     Reg(
@@ -279,7 +309,7 @@ REGS = [
         "r",
         "u",
         None,
-        True,
+        "session",
         None,
     ),
     Reg(
@@ -289,7 +319,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        "sweep",
         None,
     ),
 
@@ -300,7 +330,7 @@ REGS = [
         "rw",
         "u",
         float_to_milli_enc_funs,
-        False,
+        None,
         "running_average_factor",
     ),
     Reg(
@@ -310,7 +340,7 @@ REGS = [
         "rw",
         "u",
         None,
-        False,
+        None,
         None,
     ),
     Reg(
@@ -320,7 +350,7 @@ REGS = [
         "r",
         "u",
         None,
-        True,
+        "session",
         None,
     ),
     Reg(
@@ -330,7 +360,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        "sweep",
         None,
     ),
 
@@ -341,7 +371,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        "sweep",
         None,
     ),
     Reg(
@@ -351,7 +381,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        None,
         None,
     )
 ]

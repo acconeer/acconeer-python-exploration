@@ -9,7 +9,11 @@ def get_regs_for_mode(mode):
 
 
 def get_session_info_regs(mode):
-    return [reg for reg in get_regs_for_mode(mode) if reg.is_session_info]
+    return [reg for reg in get_regs_for_mode(mode) if reg.info_type == "session"]
+
+
+def get_sweep_info_regs(mode):
+    return [reg for reg in get_regs_for_mode(mode) if reg.info_type == "sweep"]
 
 
 def get_reg_vals_for_config(config):

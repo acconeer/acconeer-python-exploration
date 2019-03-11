@@ -1,4 +1,8 @@
 from abc import ABCMeta, abstractmethod
+import logging
+
+
+log = logging.getLogger(__name__)
 
 
 class BaseClient(metaclass=ABCMeta):
@@ -26,6 +30,16 @@ class BaseClient(metaclass=ABCMeta):
 
         session_info = self._setup_session(config)
         self._session_setup_done = True
+
+        try:
+            start_ok = abs(config.range_start - session_info["actual_range_start"]) < 0.01
+            len_ok = abs(config.range_length - session_info["actual_range_length"]) < 0.01
+        except (AttributeError, KeyError):
+            pass
+        else:
+            if not start_ok or not len_ok:
+                log.warn("actual measured range differs from the requested")
+
         return session_info
 
     def start_streaming(self, config=None):

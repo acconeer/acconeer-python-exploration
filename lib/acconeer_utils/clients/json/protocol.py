@@ -30,8 +30,8 @@ MODE_TO_CMD_MAP = {
 # None = ignore value
 SESSION_HEADER_TO_INFO_KEY_MAP = {
     "data_length": "data_length",
-    "actual_start_m": "range_start",
-    "actual_length_m": "range_length",
+    "actual_start_m": "actual_range_start",
+    "actual_length_m": "actual_range_length",
     "status": None,
     "payload_size": None,
     "free_space_absolute_offset": None,
