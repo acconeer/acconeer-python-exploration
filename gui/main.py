@@ -135,6 +135,8 @@ class GUI(QMainWindow):
 
         self.textboxes["power_bins"].setVisible(False)
         self.labels["power_bins"].setVisible(False)
+        self.profiles.setVisible(False)
+
         self.cl_supported = False
         if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
             self.cl_supported = True
@@ -230,6 +232,8 @@ class GUI(QMainWindow):
                 self.iq_plot_window.setLabel("left", "Normalized phase")
                 self.iq_plot_window.setLabel("bottom", "Distance (mm)")
                 canvas.nextRow()
+            else:
+                self.profiles.setVisible(True)
             self.hist_plot_image = canvas.addPlot()
             self.hist_plot = pg.ImageItem(titel="History")
             colormap = plt.get_cmap("viridis")
@@ -297,6 +301,19 @@ class GUI(QMainWindow):
         self.ports.addItem("Scan ports")
         self.ports.activated.connect(self.update_ports)
         self.update_ports()
+
+        self.profiles = QComboBox(self)
+        self.profiles.addItem("Max SNR")
+        self.profiles.addItem("Max depth resolution")
+        self.profiles.currentIndexChanged.connect(self.set_profile)
+
+    def set_profile(self):
+        profile = self.profiles.currentText().lower()
+
+        if "snr" in profile:
+            self.textboxes["gain"].setText(str(0.45))
+        elif "resolution" in profile:
+            self.textboxes["gain"].setText(str(0.8))
 
     def update_ports(self):
         if "scan" not in self.ports.currentText().lower():
@@ -373,22 +390,23 @@ class GUI(QMainWindow):
 
         # Settings sublayout
         settings_sublayout_grid = QtWidgets.QGridLayout()
-        settings_sublayout_grid.addWidget(self.labels["sensor"], 0, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sensor"], 0, 1)
-        settings_sublayout_grid.addWidget(self.labels["start_range"], 1, 0)
-        settings_sublayout_grid.addWidget(self.labels["end_range"], 1, 1)
-        settings_sublayout_grid.addWidget(self.textboxes["start_range"], 2, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["end_range"], 2, 1)
-        settings_sublayout_grid.addWidget(self.labels["frequency"], 3, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["frequency"], 3, 1)
-        settings_sublayout_grid.addWidget(self.labels["gain"], 4, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["gain"], 4, 1)
-        settings_sublayout_grid.addWidget(self.labels["sweeps"], 5, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sweeps"], 5, 1)
-        settings_sublayout_grid.addWidget(self.labels["sweep_buffer"], 6, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], 6, 1)
-        settings_sublayout_grid.addWidget(self.labels["power_bins"], 7, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 7, 1)
+        settings_sublayout_grid.addWidget(self.profiles, 0, 0, 1, 2)
+        settings_sublayout_grid.addWidget(self.labels["sensor"], 1, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["sensor"], 1, 1)
+        settings_sublayout_grid.addWidget(self.labels["start_range"], 2, 0)
+        settings_sublayout_grid.addWidget(self.labels["end_range"], 2, 1)
+        settings_sublayout_grid.addWidget(self.textboxes["start_range"], 3, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["end_range"], 3, 1)
+        settings_sublayout_grid.addWidget(self.labels["frequency"], 4, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["frequency"], 4, 1)
+        settings_sublayout_grid.addWidget(self.labels["gain"], 5, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["gain"], 5, 1)
+        settings_sublayout_grid.addWidget(self.labels["sweeps"], 6, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["sweeps"], 6, 1)
+        settings_sublayout_grid.addWidget(self.labels["sweep_buffer"], 7, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], 7, 1)
+        settings_sublayout_grid.addWidget(self.labels["power_bins"], 8, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 8, 1)
 
         panel_sublayout_inner.addStretch(10)
         panel_sublayout_inner.addLayout(server_sublayout_grid)
@@ -571,7 +589,11 @@ class GUI(QMainWindow):
             conf.gain = float(self.textboxes["gain"].text())
             self.sweep_count = int(self.textboxes["sweeps"].text())
             conf.bin_count = int(self.textboxes["power_bins"].text())
-
+            if "envelope" in self.mode.currentText().lower():
+                if "snr" in self.profiles.currentText().lower():
+                    conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
+                elif "depth" in self.profiles.currentText().lower():
+                    conf.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
         lock = {
             "start_range": True,
             "end_range": True,
@@ -722,10 +744,15 @@ class GUI(QMainWindow):
                     return
 
                 try:
+                    self.profiles.setCurrentIndex(f["profile"][()])
+                except Exception:
+                    pass
+                try:
                     mode = f["service_type"][()]
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
                     conf.bin_count = f["power_bins"][()]
+                    conf.gain = f["gain"][()]
                 except Exception:
                     print("Config not stored in file...")
                     conf.range_interval = [
@@ -795,6 +822,8 @@ class GUI(QMainWindow):
                                      dtype=np.float32)
                     f.create_dataset("service_type", data=self.mode.currentText().lower(),
                                      dtype=h5py.special_dtype(vlen=str))
+                    f.create_dataset("profile", data=self.profiles.currentIndex(),
+                                     dtype=np.int)
                     f.create_dataset("power_bins", data=int(self.textboxes["power_bins"].text()),
                                      dtype=np.int)
                 else:
@@ -817,9 +846,9 @@ class GUI(QMainWindow):
             self.data = data
             self.buttons["save_scan"].setEnabled(True)
         elif message_type == "scan_done":
+            self.buttons["load_scan"].setEnabled(True)
             if "Disconnect" in self.buttons["connect"].text():
                 self.buttons["start"].setEnabled(True)
-                self.buttons["load_scan"].setEnabled(True)
                 if self.cl_supported:
                     self.buttons["create_cl"].setEnabled(True)
                     self.buttons["load_cl"].setEnabled(True)
@@ -926,14 +955,19 @@ class GUI(QMainWindow):
 
     def update_settings(self, sensor_config, last_config=None):
         try:
-            self.textboxes["gain"].setText("{:.1f}".format(sensor_config.gain))
-            self.textboxes["frequency"].setText(str(sensor_config.sweep_rate))
-            self.textboxes["start_range"].setText("{:.2f}".format(sensor_config.range_interval[0]))
-            self.textboxes["end_range"].setText("{:.2f}".format(sensor_config.range_interval[1]))
+            self.profiles.setCurrentIndex(last_config["profile"])
             self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
             self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
             self.interface.setCurrentIndex(last_config["interface"])
             self.ports.setCurrentIndex(last_config["port"])
+        except Exception as e:
+            print("Warning, could not restore last session\n{}".format(e))
+
+        try:
+            self.textboxes["gain"].setText("{:.1f}".format(sensor_config.gain))
+            self.textboxes["frequency"].setText(str(sensor_config.sweep_rate))
+            self.textboxes["start_range"].setText("{:.2f}".format(sensor_config.range_interval[0]))
+            self.textboxes["end_range"].setText("{:.2f}".format(sensor_config.range_interval[1]))
         except Exception as e:
             print("Warning, could not restore last session\n{}".format(e))
 
@@ -950,6 +984,7 @@ class GUI(QMainWindow):
                 "sweep_buffer": self.textboxes["sweep_buffer"].text(),
                 "interface": self.interface.currentIndex(),
                 "port": self.ports.currentIndex(),
+                "profile": self.profiles.currentIndex(),
                 }
 
             np.save(self.last_file, last_config)
