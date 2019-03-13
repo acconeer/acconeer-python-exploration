@@ -4,7 +4,8 @@ Acconeer Python Exploration Kit is a set of tools and examples for getting start
 
 To run the exploration scripts, you will need an Acconeer Evaluation kit running the Streaming or Module server supplied with the Acconeer SDK or Module software image.
 
-This release supports Acconeer SDK and Module SW version 1.5.2 or newer.
+This release is developed for Acconeer SDK and Module SW **version 1.7.0**.
+Running this version is strongly recommended, as we constantly fix bugs and add features. The minimum supported version is 1.5.2.
 
 ## Setting up your evaluation kit
 
