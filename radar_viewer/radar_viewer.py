@@ -5,6 +5,7 @@ import time
 import webbrowser
 import threading
 from server import http_server
+import traceback
 
 from acconeer_utils.clients.reg.client import RegClient
 from acconeer_utils.clients.json.client import JSONClient
@@ -26,8 +27,10 @@ def check_connection(args):
         client.setup_session(config)
         client.disconnect()
         return True
-    except Exception as e:
-        print(e)
+    except Exception:
+        print()
+        traceback.print_exc()
+        print()
         return False
 
 

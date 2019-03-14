@@ -34,7 +34,7 @@ class BaseClient(metaclass=ABCMeta):
         try:
             start_ok = abs(config.range_start - session_info["actual_range_start"]) < 0.01
             len_ok = abs(config.range_length - session_info["actual_range_length"]) < 0.01
-        except (AttributeError, KeyError):
+        except (AttributeError, KeyError, TypeError):
             pass
         else:
             if not start_ok or not len_ok:
