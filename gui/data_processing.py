@@ -205,15 +205,19 @@ class DataProcessing:
         }
 
         snr = None
+        signal = np.abs(complex_env)[env_peak_idx]-cl[env_peak_idx]
         if self.use_cl and self.n_std_avg[env_peak_idx] > 0:
-            signal = np.abs(complex_env)[env_peak_idx]-cl[env_peak_idx]
             noise = self.n_std_avg[env_peak_idx]
+            snr = 20*np.log10(signal / noise)
+        else:
+            # Simple noise estimate: noise ~ mean(envelope)
+            noise = np.mean(env)
             snr = 20*np.log10(signal / noise)
 
         phase = np.angle(complex_env)
         phase /= np.max(np.abs(phase))
 
-        self.env_max = max(max(env), self.env_max)
+        self.env_max = np.max(env)
 
         plot_data = {
             "iq_data": iq_data,

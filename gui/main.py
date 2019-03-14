@@ -207,9 +207,9 @@ class GUI(QMainWindow):
                                                                name="Background")
             self.clutter_plot.setZValue(2)
 
-            self.snr_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1))
-            self.snr_text.setZValue(3)
-            self.envelope_plot_window.addItem(self.snr_text)
+            self.peak_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1))
+            self.peak_text.setZValue(3)
+            self.envelope_plot_window.addItem(self.peak_text)
             self.envelope_plot_window.setLabel("left", "Amplitude")
             self.envelope_plot_window.setLabel("bottom", "Distance (mm)")
 
@@ -333,7 +333,7 @@ class GUI(QMainWindow):
         button_enabled = {
             "start": False,
             "connect": True,
-            "stop": True,
+            "stop": False,
             "create_cl": False,
             "load_cl": True,
             "load_scan": True,
@@ -471,6 +471,7 @@ class GUI(QMainWindow):
         self.buttons["load_cl"].setEnabled(False)
         self.mode.setEnabled(False)
         self.interface.setEnabled(False)
+        self.buttons["stop"].setEnabled(True)
 
         self.threaded_scan.start()
 
@@ -481,6 +482,7 @@ class GUI(QMainWindow):
             self.buttons["load_cl"].setEnabled(True)
         self.mode.setEnabled(True)
         self.interface.setEnabled(True)
+        self.buttons["stop"].setEnabled(False)
 
     def connect_to_server(self):
         if self.buttons["connect"].text() == "Connect":
@@ -517,7 +519,6 @@ class GUI(QMainWindow):
             if connection_success:
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(True)
-                self.buttons["stop"].setEnabled(True)
             else:
                 self.error_message("Could not connect to sever!\n{}".format(error))
                 return
@@ -758,12 +759,12 @@ class GUI(QMainWindow):
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
         title = "Save scan"
+        file_types = "HDF5 data files (*.h5);; NumPy data files (*.npy)"
         if clutter:
             title = "Save background"
+            file_types = "NumPy data files (*.npy)"
         filename, info = QtWidgets.QFileDialog.getSaveFileName(
-                self, title, "",
-                "HDF5 data files (*.h5);; NumPy data files (*.npy)",
-                options=options)
+                self, title, "", file_types, options=options)
 
         if filename:
             if clutter:
@@ -809,6 +810,7 @@ class GUI(QMainWindow):
                 self.buttons["create_cl"].setEnabled(False)
                 self.mode.setEnabled(True)
                 self.interface.setEnabled(True)
+                self.buttons["stop"].setEnabled(False)
         elif message_type == "clutter_data":
             self.save_scan(data, clutter=True)
         elif message_type == "scan_data":
@@ -822,6 +824,7 @@ class GUI(QMainWindow):
                     self.buttons["create_cl"].setEnabled(True)
                     self.buttons["load_cl"].setEnabled(True)
                 self.mode.setEnabled(True)
+                self.buttons["stop"].setEnabled(False)
         elif "update_plots" in message_type:
             if data:
                 self.update_plots(data)
@@ -836,15 +839,19 @@ class GUI(QMainWindow):
 
     def update_plots(self, data):
         mode = self.mode.currentText()
-        update_ylims = False
         xstart = data["x_mm"][0]
         xend = data["x_mm"][-1]
         xdim = data["hist_env"].shape[0]
         if not data["sweep"]:
             self.env_plot_max_y = 0
-            update_ylims = True
             self.envelope_plot_window.setXRange(xstart, xend)
-            self.snr_text.setPos(xstart, 0)
+            self.peak_text.setPos(xstart, 0)
+
+            self.smooth_envelope = example_utils.SmoothMax(
+                int(self.textboxes["frequency"].text()),
+                tau_decay=1,
+                tau_grow=0.2
+                )
 
             if mode == "IQ":
                 self.iq_plot_window.setXRange(xstart, xend)
@@ -857,11 +864,13 @@ class GUI(QMainWindow):
             ticks = [list(zip(x, labels))]
             xax.setTicks(ticks)
 
-        snr = "SNR@peak: N/A"
-        if data["snr"] and np.isfinite(data["snr"]):
-            snr = "SNR@peak: %.1fdB" % data["snr"]
+        peak = "Peak: N/A"
+        if data["peaks"]["peak_mm"]:
+            peak = "Peak: %.1fmm" % data["peaks"]["peak_mm"]
+            if data["snr"] and np.isfinite(data["snr"]):
+                peak = "Peak: %.1fmm, SNR: %.1fdB" % (data["peaks"]["peak_mm"], data["snr"])
 
-        self.snr_text.setText(snr, color=(1, 1, 1))
+        self.peak_text.setText(peak, color=(1, 1, 1))
 
         max_val = max(np.max(data["env_clutter"]+data["env_ampl"]), np.max(data["env_clutter"]))
         peak_line = np.flip((data["hist_plot"]-xstart)/(xend - xstart)*xdim, axis=0)
@@ -875,41 +884,34 @@ class GUI(QMainWindow):
         self.hist_plot_peak.setData(peak_line)
         self.hist_plot_peak.setZValue(2)
 
+        self.envelope_plot_window.setYRange(0, self.smooth_envelope.update(data["env_max"]))
         if mode == "IQ":
             self.iq_plot.setData(data["x_mm"], data["phase"])
 
         if max_val > self.env_plot_max_y:
             self.env_plot_max_y = 1.2 * max_val
-            update_ylims = True
-
-        if update_ylims:
-            self.envelope_plot_window.setYRange(0, self.env_plot_max_y)
 
         if self.sweep_buffer > data["sweep"]:
             self.hist_plot_image.setYRange(0, xdim)
 
     def update_power_plots(self, data):
-        update_ylims = False
         xstart = data["x_mm"][0]
         xend = data["x_mm"][-1]
-        update_ylims = False
         if not data["sweep"]:
             bin_num = int(self.textboxes["power_bins"].text())
             bin_width = (xend - xstart)/(bin_num + 1)
             self.env_plot_max_y = 0
-            update_ylims = True
             self.power_plot_window.setXRange(xstart, xend)
             self.power_plot.setOpts(x=data["x_mm"], width=bin_width)
             self.power_plot_window.setXRange(xstart - bin_width / 2,
                                              xend + bin_width / 2)
+            self.smooth_power = example_utils.SmoothMax(
+                int(self.textboxes["frequency"].text()),
+                tau_decay=1,
+                tau_grow=0.2
+                )
         self.power_plot.setOpts(height=data["iq_data"])
-
-        if max(data["iq_data"]) > self.env_plot_max_y:
-            self.env_plot_max_y = 1.2 * max(data["iq_data"])
-            update_ylims = True
-
-        if update_ylims:
-            self.power_plot_window.setYRange(0, self.env_plot_max_y)
+        self.power_plot_window.setYRange(0, self.smooth_power.update(np.max(data["iq_data"])))
 
     def update_external_plots(self, data):
         self.service_widget.update(data)
