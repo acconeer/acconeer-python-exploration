@@ -40,6 +40,7 @@ SESSION_HEADER_TO_INFO_KEY_MAP = {
 # None = ignore value
 STREAM_HEADER_TO_INFO_KEY_MAP = {
     "sequence_number": "sequence_number",
+    "data_saturated": "data_saturated",
     "data_size": None,
     "data_sensors": None,
     "type": None,

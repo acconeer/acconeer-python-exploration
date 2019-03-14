@@ -43,6 +43,8 @@ class GUI(QMainWindow):
     sweep_buffer = 500
     env_plot_max_y = 0
     cl_supported = False
+    sweep_number = 0
+    sweeps_skipped = 0
 
     def __init__(self):
         super().__init__()
@@ -79,7 +81,7 @@ class GUI(QMainWindow):
             "server":       "Host address",
             "scan":         "Scan",
             "gain":         "Gain",
-            "frequency":    "Sample frequency",
+            "frequency":    "Sweep frequency",
             "sweeps":       "Number of sweeps",
             "sweep_buffer": "Sweep buffer",
             "start_range":  "Start (m)",
@@ -88,6 +90,8 @@ class GUI(QMainWindow):
             "clutter_file": "",
             "interface":    "Interface",
             "power_bins":   "Power bins",
+            "sweep_info":   "Sweeps: 0 (skipped 0)",
+            "saturated":    "Warning: Data saturated, reduce gain!",
         }
 
         self.labels = {}
@@ -97,6 +101,7 @@ class GUI(QMainWindow):
             val.setText(text[key])
 
         self.labels["power_bins"].setVisible(False)
+        self.labels["saturated"].setStyleSheet('color: #f0f0f0')
 
     def init_textboxes(self):
         text = {
@@ -408,6 +413,11 @@ class GUI(QMainWindow):
         settings_sublayout_grid.addWidget(self.labels["power_bins"], 8, 0)
         settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 8, 1)
 
+        # Info sublayout
+        info_sublayout_grid = QtWidgets.QGridLayout()
+        info_sublayout_grid.addWidget(self.labels["sweep_info"], 0, 0, 1, 2)
+        info_sublayout_grid.addWidget(self.labels["saturated"], 1, 0, 1, 2)
+
         panel_sublayout_inner.addStretch(10)
         panel_sublayout_inner.addLayout(server_sublayout_grid)
         panel_sublayout_inner.addStretch(2)
@@ -415,6 +425,8 @@ class GUI(QMainWindow):
         panel_sublayout_inner.addStretch(4)
         panel_sublayout_inner.addLayout(settings_sublayout_grid)
         panel_sublayout_inner.addStretch(20)
+        panel_sublayout_inner.addLayout(info_sublayout_grid)
+        panel_sublayout_inner.addStretch(1)
         self.panel_sublayout.addStretch(5)
         self.panel_sublayout.addLayout(panel_sublayout_inner)
         self.panel_sublayout.addStretch(10)
@@ -491,6 +503,8 @@ class GUI(QMainWindow):
         self.interface.setEnabled(False)
         self.buttons["stop"].setEnabled(True)
 
+        self.sweep_number = 0
+        self.sweeps_skipped = 0
         self.threaded_scan.start()
 
     def stop_scan(self):
@@ -863,6 +877,8 @@ class GUI(QMainWindow):
         elif "update_external_plots" in message_type:
             if data:
                 self.update_external_plots(data)
+        elif "sweep_info" in message_type:
+            self.update_sweep_info(data)
         else:
             print(message_type, message, data)
 
@@ -944,6 +960,28 @@ class GUI(QMainWindow):
 
     def update_external_plots(self, data):
         self.service_widget.update(data)
+
+    def update_sweep_info(self, data):
+        self.sweeps_skipped += data["sequence_number"] - (self.sweep_number + 1)
+        self.sweep_number = data["sequence_number"]
+
+        nr = ""
+        if self.sweep_number > 1e6:
+            self.sweep_number = 1e6
+            nr = ">"
+
+        skip = ""
+        if self.sweeps_skipped > 1e6:
+            self.sweeps_skipped = 1e6
+            skip = ">"
+
+        self.labels["sweep_info"].setText("Sweeps: {:s}{:d} (skipped {:s}{:d})".format(
+            nr, self.sweep_number, skip, self.sweeps_skipped))
+
+        if data.get("data_saturated"):
+            self.labels["saturated"].setStyleSheet("color: red")
+        else:
+            self.labels["saturated"].setStyleSheet("color: #f0f0f0")
 
     def start_up(self):
         if os.path.isfile(self.last_file):
@@ -1030,6 +1068,7 @@ class Threaded_Scan(QtCore.QThread):
             try:
                 while self.running:
                     info, sweep = self.client.get_next()
+                    self.emit("sweep_info", "", info)
                     plot_data, data = self.radar.process(sweep)
                     if plot_data and plot_data["sweep"] + 1 >= self.sweep_count:
                         self.running = False
