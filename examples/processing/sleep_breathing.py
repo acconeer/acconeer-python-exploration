@@ -19,7 +19,7 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    config = get_base_config()
+    config = get_sensor_config()
     config.sensor = args.sensors
 
     client.setup_session(config)
@@ -50,7 +50,7 @@ def main():
     client.disconnect()
 
 
-def get_base_config():
+def get_sensor_config():
     config = configs.IQServiceConfig()
     config.range_interval = [0.4, 0.8]
     config.sweep_rate = 60
@@ -59,8 +59,8 @@ def get_base_config():
 
 
 class PresenceDetectionProcessor:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, sensor_config, processing_config=None):
+        self.config = sensor_config
 
         # Settings
         n_dft = 15                         # Data length for frequency estimation [s] | 20
@@ -270,8 +270,8 @@ class PresenceDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, sensor_config, processing_config=None):
+        self.config = sensor_config
 
     def setup(self, win):
         win.resize(800, 600)

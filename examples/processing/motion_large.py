@@ -20,7 +20,7 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    config = get_base_config()
+    config = get_sensor_config()
     config.sensor = args.sensors
 
     client.setup_session(config)
@@ -51,7 +51,7 @@ def main():
     client.disconnect()
 
 
-def get_base_config():
+def get_sensor_config():
     config = configs.EnvelopeServiceConfig()
     config.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
     config.range_interval = [0.3, 0.8]
@@ -61,9 +61,9 @@ def get_base_config():
 
 
 class PresenceDetectionProcessor:
-    def __init__(self, config):
+    def __init__(self, sensor_config, processing_config=None):
         self.Ns = 10  # Number of sweeps per burst
-        self.fb = config.sweep_rate//self.Ns
+        self.fb = sensor_config.sweep_rate//self.Ns
         self.t_fast = 0.2  # seconds
         self.t_slow = 2  # seconds
         self.t_move = 1  # seconds
@@ -72,8 +72,8 @@ class PresenceDetectionProcessor:
         self.a_move = exp(-2 / (self.fb*self.t_move))
         self.p_fast = 0  # Power filtered with the fast filter parameter
         self.p_slow = 0  # Power filtered with the slow filter parameter
-        self.p_slow_vec = np.ones((self.t_slow * config.sweep_rate)//(self.Ns))
-        self.movement_history = np.zeros(5 * config.sweep_rate//self.Ns)  # 5 seconds
+        self.p_slow_vec = np.ones((self.t_slow * sensor_config.sweep_rate)//(self.Ns))
+        self.movement_history = np.zeros(5 * sensor_config.sweep_rate//self.Ns)  # 5 seconds
         self.movement_lp = 0
 
         self.sweep_index = 0
@@ -119,8 +119,8 @@ class PresenceDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, sensor_config, processing_config=None):
+        self.config = sensor_config
         self.threshold = 0.4
 
     def setup(self, win):

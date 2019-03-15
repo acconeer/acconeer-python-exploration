@@ -19,6 +19,7 @@ class DataProcessing:
         self.sweeps = parent.parent.sweep_count
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
+        self.service_params = params["service_params"]
 
         if self.sweeps < 0:
             self.sweeps = self.hist_len
@@ -266,7 +267,7 @@ class DataProcessing:
 
     def external_processing(self, sweep_data):
         if self.first_run:
-            self.external = self.parent.parent.external(self.sensor_config)
+            self.external = self.parent.parent.external(self.sensor_config, self.service_params)
             self.first_run = False
             self.service_widget = self.parent.parent.service_widget
             plot_data = self.external.process(sweep_data)

@@ -19,7 +19,7 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    config = get_base_config()
+    config = get_sensor_config()
     config.sensor = args.sensors
 
     client.setup_session(config)
@@ -50,7 +50,7 @@ def main():
     client.disconnect()
 
 
-def get_base_config():
+def get_sensor_config():
     config = configs.IQServiceConfig()
     config.range_interval = [0.3, 0.6]
     config.sweep_rate = 80
@@ -59,8 +59,8 @@ def get_base_config():
 
 
 class PhaseTrackingProcessor:
-    def __init__(self, config):
-        self.f = config.sweep_rate
+    def __init__(self, sensor_config, processing_config=None):
+        self.f = sensor_config.sweep_rate
         self.dt = 1 / self.f
 
         num_hist_points = self.f * 3
@@ -129,9 +129,9 @@ class PhaseTrackingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, config):
-        self.config = config
-        self.interval = config.range_interval
+    def __init__(self, sensor_config, processing_config=None):
+        self.config = sensor_config
+        self.interval = sensor_config.range_interval
 
     def setup(self, win):
         win.resize(800, 600)

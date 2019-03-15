@@ -25,7 +25,7 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    config = get_base_config()
+    config = get_sensor_config()
     config.sensor = args.sensors
 
     client.setup_session(config)
@@ -56,7 +56,7 @@ def main():
     client.disconnect()
 
 
-def get_base_config():
+def get_sensor_config():
     config = configs.IQServiceConfig()
     config.range_interval = [0.18, 0.60]
     config.sweep_rate = 50
@@ -74,11 +74,11 @@ class BreathingProcessor:
     sweep_alpha = 0.7
     env_alpha = 0.95
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, sensor_config, processing_config=None):
+        self.config = sensor_config
         self.hist_plot_len = hist_plot_len
 
-        self.f = config.sweep_rate
+        self.f = sensor_config.sweep_rate
 
         self.peak_history = np.zeros(self.peak_hist_len, dtype="complex")
         self.movement_history = np.zeros(self.peak_hist_len, dtype="float")
@@ -232,8 +232,8 @@ class BreathingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, sensor_config, processing_config=None):
+        self.config = sensor_config
         self.move_xs = (np.arange(-hist_plot_len, 0) + 1) / self.config.sweep_rate
         self.plot_index = 0
 

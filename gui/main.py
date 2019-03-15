@@ -45,6 +45,8 @@ class GUI(QMainWindow):
     cl_supported = False
     sweep_number = 0
     sweeps_skipped = 0
+    service_labels = {}
+    service_params = None
 
     def __init__(self):
         super().__init__()
@@ -122,7 +124,7 @@ class GUI(QMainWindow):
 
         self.textboxes["power_bins"].setVisible(False)
 
-    def init_graphs(self, mode="Select service"):
+    def init_graphs(self, mode="Select service", refresh=False):
         axes = {
             "Select service": [None, None],
             "IQ": [None, None],
@@ -169,10 +171,27 @@ class GUI(QMainWindow):
         pg.setConfigOptions(antialias=True)
         canvas = pg.GraphicsLayoutWidget()
 
+        if not refresh:
+            for m in self.service_labels:
+                for key in self.service_labels[m]:
+                    for element in self.service_labels[m][key]:
+                        if "label" in element or "box" in element:
+                            self.service_labels[m][key][element].setVisible(False)
+        if not self.external:
+            self.service_params = None
+
         if self.external:
-            self.service_widget = axes[mode][0].PGUpdater(self.update_sensor_config())
+            if not refresh:
+                self.service_params = None
+                try:
+                    self.service_params = axes[mode][0].get_processing_config()
+                    self.add_params(self.service_params)
+                except Exception:
+                    pass
+            self.service_widget = axes[mode][0].PGUpdater(
+                self.update_sensor_config(refresh=refresh), self.service_params)
             self.service_widget.setup(canvas)
-            self.external = axes[mode][1]
+
             return canvas
         elif "power" in mode.lower():
             self.power_plot_window = canvas.addPlot(title="Power bin")
@@ -291,11 +310,11 @@ class GUI(QMainWindow):
             "IQ": [configs.IQServiceConfig(), "internal"],
             "Envelope": [configs.EnvelopeServiceConfig(), "internal"],
             "Power bin": [configs.PowerBinServiceConfig(), "internal_power"],
-            "Breathing": [br.get_base_config(), "external"],
-            "Phase tracking": [pht.get_base_config(), "external"],
-            "Presence detection": [prd.get_base_config(), "external"],
-            "Sleep breathing": [sb.get_base_config(), "external"],
-            "Obstacle detection": [od.get_base_config(), "external"]
+            "Breathing": [br.get_sensor_config(), "external"],
+            "Phase tracking": [pht.get_sensor_config(), "external"],
+            "Presence detection": [prd.get_sensor_config(), "external"],
+            "Sleep breathing": [sb.get_sensor_config(), "external"],
+            "Obstacle detection": [od.get_sensor_config(), "external"]
         }
 
         self.mode.currentIndexChanged.connect(self.update_canvas)
@@ -416,6 +435,9 @@ class GUI(QMainWindow):
         settings_sublayout_grid.addWidget(self.labels["power_bins"], 8, 0)
         settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 8, 1)
 
+        # Service params sublayout
+        self.serviceparams_sublayout_grid = QtWidgets.QGridLayout()
+
         # Info sublayout
         info_sublayout_grid = QtWidgets.QGridLayout()
         info_sublayout_grid.addWidget(self.labels["sweep_info"], 0, 0, 1, 2)
@@ -427,12 +449,53 @@ class GUI(QMainWindow):
         panel_sublayout_inner.addLayout(control_sublayout_grid)
         panel_sublayout_inner.addStretch(4)
         panel_sublayout_inner.addLayout(settings_sublayout_grid)
+        panel_sublayout_inner.addStretch(4)
+        panel_sublayout_inner.addLayout(self.serviceparams_sublayout_grid)
         panel_sublayout_inner.addStretch(20)
         panel_sublayout_inner.addLayout(info_sublayout_grid)
         panel_sublayout_inner.addStretch(1)
         self.panel_sublayout.addStretch(5)
         self.panel_sublayout.addLayout(panel_sublayout_inner)
         self.panel_sublayout.addStretch(10)
+
+    def add_params(self, params):
+        for mode in self.service_labels:
+            for key in self.service_labels[mode]:
+                for element in self.service_labels[mode][key]:
+                    if "label" in element or "box" in element:
+                        self.service_labels[mode][key][element].setVisible(False)
+        mode = self.mode.currentText()
+
+        index = 0
+        if mode not in self.service_labels:
+            self.service_labels[mode] = {}
+
+        for key in params:
+            if key not in self.service_labels[mode]:
+                self.service_labels[mode][key] = {}
+                if params[key]["value"]:
+                    self.service_labels[mode][key]["label"] = QLabel(self)
+                    self.service_labels[mode][key]["label"].setMinimumWidth(125)
+                    self.service_labels[mode][key]["label"].setText(params[key]["name"])
+                    self.service_labels[mode][key]["box"] = QLineEdit(self)
+                    self.service_labels[mode][key]["box"].setText(str(params[key]["value"]))
+                    self.service_labels[mode][key]["limits"] = params[key]["limits"]
+                    self.service_labels[mode][key]["default"] = params[key]["value"]
+                    self.serviceparams_sublayout_grid.addWidget(
+                        self.service_labels[mode][key]["label"], index, 0)
+                    self.serviceparams_sublayout_grid.addWidget(
+                        self.service_labels[mode][key]["box"], index, 1)
+
+                else:
+                    self.service_labels[mode][key]["label"] = QLabel(self)
+                    self.service_labels[mode][key]["label"].setText(str(params[key]["text"]))
+                    self.serviceparams_sublayout_grid.addWidget(
+                        self.service_labels[mode][key]["label"], index, 0, 1, 2)
+                index += 1
+            else:
+                for element in self.service_labels[mode][key]:
+                    if "label" in element or "box" in element:
+                        self.service_labels[mode][key][element].setVisible(True)
 
     def update_canvas(self, force_update=False):
         mode = self.mode.currentText()
@@ -442,7 +505,11 @@ class GUI(QMainWindow):
             self.canvas.setParent(None)
             self.canvas.deleteLater()
             self.canvas = None
-            self.canvas = self.init_graphs(mode)
+            refresh = False
+            if self.current_canvas == mode:
+                refresh = True
+                self.service_params = self.update_service_params()
+            self.canvas = self.init_graphs(mode, refresh=refresh)
             self.main_layout.addWidget(self.canvas, 0, 0)
 
         self.update_sensor_config()
@@ -494,6 +561,7 @@ class GUI(QMainWindow):
             "data_type": self.mode_to_param[self.mode.currentText()],
             "service_type": self.mode.currentText(),
             "sweep_buffer": sweep_buffer,
+            "service_params": self.update_service_params(),
         }
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
@@ -582,7 +650,7 @@ class GUI(QMainWindow):
             except Exception:
                 pass
 
-    def update_sensor_config(self):
+    def update_sensor_config(self, refresh=False):
         conf, service = self.mode_to_config[self.mode.currentText()]
 
         if not conf:
@@ -591,12 +659,12 @@ class GUI(QMainWindow):
         external = ("internal" not in service.lower())
 
         conf.sensor = int(self.textboxes["sensor"].text())
-        if external:
+        if not refresh and external:
             color = "grey"
-            self.textboxes["start_range"].setText(str(conf.range_interval[0]))
-            self.textboxes["end_range"].setText(str(conf.range_interval[1]))
-            self.textboxes["gain"].setText(str(conf.gain))
-            self.textboxes["frequency"].setText(str(conf.sweep_rate))
+            self.textboxes["start_range"].setText("{:.2f}".format(conf.range_interval[0]))
+            self.textboxes["end_range"].setText("{:.2f}".format(conf.range_interval[1]))
+            self.textboxes["gain"].setText("{:.2f}".format(conf.gain))
+            self.textboxes["frequency"].setText("{:d}".format(conf.sweep_rate))
             self.sweep_count = -1
         else:
             self.check_values(conf.mode)
@@ -614,6 +682,11 @@ class GUI(QMainWindow):
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
                 elif "depth" in self.profiles.currentText().lower():
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
+
+        if self.service_params:  # Only lock boxes for services not yet supporting changing params
+            external = False
+            color = "white"
+
         lock = {
             "start_range": True,
             "end_range": True,
@@ -629,6 +702,35 @@ class GUI(QMainWindow):
                 self.textboxes[key].setStyleSheet(style_sheet)
 
         return conf
+
+    def update_service_params(self):
+        errors = []
+        mode = self.mode.currentText()
+
+        if mode not in self.service_labels:
+            return None
+
+        for key in self.service_labels[mode]:
+            if "box" in self.service_labels[mode][key]:
+                if self.service_labels[mode][key]["box"].isVisible():
+                    er = False
+                    val = self.is_float(self.service_labels[mode][key]["box"].text())
+                    limits = self.service_labels[mode][key]["limits"]
+                    default = self.service_labels[mode][key]["default"]
+                    if val:
+                        val, er = self.check_limit(val, self.service_labels[mode][key]["box"],
+                                                   limits[0], limits[1], set_to=default)
+                    else:
+                        er = True
+                        val = default
+                        self.service_labels[mode][key]["box"].setText(str(default))
+                    if er:
+                        errors.append("{:s} must be between {:s} and {:s}!\n".format(
+                            key, str(limits[0]), str(limits[1])))
+                self.service_params[key]["value"] = self.service_params[key]["type"](val)
+        if len(errors):
+            self.error_message("".join(errors))
+        return self.service_params
 
     def check_values(self, mode):
         errors = []
