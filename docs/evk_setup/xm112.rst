@@ -1,0 +1,36 @@
+Setting up your XM112
+=====================
+
+Finding the serial port
+-----------------------
+
+On Windows, use device manager to find the port which will be listed as ``USB Serial Port``. It's most likely ``COMx`` where ``x`` is 3 or higher. On Linux, it's likely ``/dev/ttyUSBx`` where ``x`` is 0 or some other integer.
+
+PySerial has a simple tool for listing all ports available::
+
+   python -m serial.tools.list_ports
+
+Flashing
+--------
+
+For detailed flashing instructions, head over to the `Acconeer website <https://www.acconeer.com/products>`_.
+
+We recommend flashing using BOSSA (`website <http://www.shumatech.com/web/products/bossa>`_, `GitHub <https://github.com/shumatech/BOSSA>`_). BOSSA 1.9 or newer is supported.
+
+To get into the bootloader:
+
+- Hold down the ERASE button
+- Push the NRST button
+- Release the NRST button
+- Let go of the ERASE button
+
+Now you should be able to flash the Module software (``acc_module_server_xm112.bin``). After flashing, press the NRST button to reboot into the flashed software.
+
+If you're on Linux you likely will need to compile BOSSA on your own. In our experience, running Ubuntu 18.04, you will need to install ``libreadline-dev`` and ``libwxgtk3.0-dev`` before compiling with ``make``.
+To get everything you need::
+
+   sudo apt-get install libreadline-dev libwxgtk3.0-dev make build-essential
+
+To flash::
+
+   sudo ./bin/bossac -e -w -v -p /dev/ttyUSB0 -b /path/to/acc_module_server_xm112.bin

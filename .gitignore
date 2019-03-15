@@ -17,3 +17,6 @@ build/
 
 # PyCharm
 .idea/
+
+# Docs
+docs/_build
