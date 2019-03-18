@@ -196,7 +196,7 @@ class GUI(QMainWindow):
         else:
             self.envelope_plot_window = canvas.addPlot(title="Envelope")
             self.envelope_plot_window.showGrid(x=True, y=True)
-            self.envelope_plot_window.addLegend()
+            self.envelope_plot_window.addLegend(offset=(-10, 10))
             for i in ax:
                 self.envelope_plot_window.getAxis(i).tickFont = font
                 self.envelope_plot_window.getAxis(i).setPen(ax_color)
@@ -212,6 +212,9 @@ class GUI(QMainWindow):
                                                                np.zeros(10),
                                                                pen=pen,
                                                                name="Background")
+            self.env_peak_vline = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(width=2,
+                                                  style=QtCore.Qt.DotLine))
+            self.envelope_plot_window.addItem(self.env_peak_vline)
             self.clutter_plot.setZValue(2)
 
             self.peak_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1))
@@ -225,7 +228,7 @@ class GUI(QMainWindow):
             if mode.lower() == "iq":
                 self.iq_plot_window = canvas.addPlot(title="Phase")
                 self.iq_plot_window.showGrid(x=True, y=True)
-                self.iq_plot_window.addLegend()
+                self.iq_plot_window.addLegend(offset=(-10, 10))
                 for i in ax:
                     self.iq_plot_window.getAxis(i).tickFont = font
                     self.iq_plot_window.getAxis(i).setPen(ax_color)
@@ -666,7 +669,7 @@ class GUI(QMainWindow):
             errors.append("End range must be between 0.12m and 7.0m!\n")
 
         r = end - start
-        if r < 0:
+        if r <= 0:
             errors.append("Range must not be less than 0!\n")
             self.textboxes["end_range"].setText(str(start + 0.06))
             end = start + 0.06
@@ -677,6 +680,7 @@ class GUI(QMainWindow):
             end = start + 0.96
             r = end - start
         if "iq" in mode.lower() and r > 0.72:
+            self.textboxes["end_range"].setText(str(start + 0.72))
             errors.append("IQ range must be less than 0.72m!\n")
             end = start + 0.72
             r = end - start
@@ -811,6 +815,8 @@ class GUI(QMainWindow):
             if clutter:
                 np.save(filename, data)
                 self.use_cl = filename
+                if "npy" not in filename.lower():
+                    self.use_cl += ".npy"
                 label_text = "Background: {}".format(ntpath.basename(filename))
                 self.labels["clutter_file"].setText(label_text)
                 self.buttons["load_cl"].setText("Unload background")
@@ -911,6 +917,7 @@ class GUI(QMainWindow):
 
         peak = "Peak: N/A"
         if data["peaks"]["peak_mm"]:
+            self.env_peak_vline.setValue(data["peaks"]["peak_mm"])
             peak = "Peak: %.1fmm" % data["peaks"]["peak_mm"]
             if data["snr"] and np.isfinite(data["snr"]):
                 peak = "Peak: %.1fmm, SNR: %.1fdB" % (data["peaks"]["peak_mm"], data["snr"])
@@ -929,7 +936,7 @@ class GUI(QMainWindow):
         self.hist_plot_peak.setData(peak_line)
         self.hist_plot_peak.setZValue(2)
 
-        self.envelope_plot_window.setYRange(0, self.smooth_envelope.update(data["env_max"]))
+        self.envelope_plot_window.setYRange(0, self.smooth_envelope.update(max_val))
         if mode == "IQ":
             self.iq_plot.setData(data["x_mm"], data["phase"])
 
