@@ -146,17 +146,4 @@ python radar_viewer/radar_viewer.py -u
 
 ## FAQ and common issues
 
-### Python-related
-
-1) Import errors with NumPy on Linux
-
-    The solution is to remove all duplicates of NumPy:
-    ```
-    sudo apt-get remove python3-numpy
-    python3 -m pip list | grep numpy
-    # Look for duplicate versions of numpy x.xx.x
-    # If numpy is installed several times, remove older versions
-    python3 -m pip uninstall numpy=x.xx.x
-    # If no numpy is installed, install latest
-    python3 -m pip install numpy
-    ```
+We've moved the FAQ to [Read the Docs](https://acconeer-python-exploration.readthedocs.io/en/latest/faq.html).
