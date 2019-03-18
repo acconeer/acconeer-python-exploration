@@ -7,67 +7,20 @@ To run the exploration scripts, you will need an Acconeer Evaluation kit running
 This release is developed for Acconeer SDK and Module SW **version 1.7.0**.
 Running this version is strongly recommended, as we constantly fix bugs and add features. The minimum supported version is 1.5.2.
 
+## Documentation
+
+Additional documentation related to this tool is available on Read the Docs: [acconeer-python-exploration.readthedocs.io](https://acconeer-python-exploration.readthedocs.io).
+
 ## Setting up your evaluation kit
 
-For general help on getting started, head over to the [Acconeer website](https://www.acconeer.com/products). There you'll find both a getting started guide and a video showing you how to set up your evaluation kit. There you'll also find the SDK download.
+We've moved the documentation for setting up your evaluation kit to [Read the Docs](https://acconeer-python-exploration.readthedocs.io).
 
-### XC111+XR111 or XC112+XR112 (mounted on a Raspberry Pi)
+Direct links:
 
-#### Overview
+* [Raspberry Pi (XC111+XR111 or XC112+XR112)](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/raspberry.html)
+* [XM112](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/xm112.html)
 
-At large, these are the steps you'll need to take:
-
-* Assemble your evaluation kit
-* Set up your Raspberry Pi
-* Load the Acconeer Raspberry Pi SDK onto your Raspberry Pi
-* Run the streaming server application on your Raspberry Pi
-
-For a single sensor setup, we recommend plugging the sensor into port 1 for simplicity's sake.
-
-#### Running the streaming server application
-
-For the XC112+XR112 kit, start the streaming server application on your Raspberry Pi located under `utils` in `AcconeerEvk`:
-```
-$ cd AcconeerEvk
-$ ./utils/acc_streaming_server_rpi_xc112_r2b_xr112_r2b_a111_r2c
-```
-If you have an XC111+XR111 kit, the streaming server will instead be named `acc_streaming_server_rpi_xc111_r4a_xr111-3_r1c_a111_r2c`.
-
-Find the IP address of your Raspberry Pi by running `ifconfig` in its terminal.
-
-### XM112
-
-#### Finding the serial port
-
-On Windows, use device manager to find the port which will be listed as `USB Serial Port`. It's most likely `COMx` where `x` is 3 or higher. On Linux, it's likely `/dev/ttyUSBx` where `x` is 0 or higher.
-
-PySerial has a simple tool for listing all ports available:
-```
-python -m serial.tools.list_ports
-```
-
-#### Flashing
-
-For detailed flashing instructions, head over to the [Acconeer website](https://www.acconeer.com/products).
-
-We recommend flashing using BOSSA ([website](http://www.shumatech.com/web/products/bossa), [GitHub](https://github.com/shumatech/BOSSA)). BOSSA 1.9 or newer is supported.
-
-To get into the bootloader:
-- Hold down the ERASE button
-- Push the NRST button
-- Release the NRST button
-- Let go of the ERASE button
-
-Now you should be able to flash the Module software (`acc_module_server_xm112.bin`). After flashing, press the NRST button to reboot into the flashed software.
-
-If you're on Linux you likely will need to compile BOSSA on your own. In our experience, running Ubuntu 18.04, you will need to install `libreadline-dev` and `libwxgtk3.0-dev` before compiling with `make`. To get everything you need:
-```
-sudo apt-get install libreadline-dev libwxgtk3.0-dev make build-essential
-```
-To flash:
-```
-sudo ./bin/bossac -e -w -v -p /dev/ttyUSB0 -b /path/to/acc_module_server_xm112.bin
-```
+For general help on getting started, head over to the [Acconeer developer page](https://developer.acconeer.com/). There you'll find both a getting started guide and a video showing you how to set up your evaluation kit. There you'll also find the SDK download.
 
 ## Setting up your local machine
 
@@ -153,14 +106,14 @@ Acconeer's detectors are **only** supported with the XM112 Module.
   An example breathing detection algorithm.
 - `sleep_breathing.py` \
   An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
-- `phase_tracking.py` \
+- `phase_tracking.py` ([documentation](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/phase_tracking.html)) \
   An example of a relative movements tracking algorithm using phase information.
-- `presence_detection.py` \
-  An example of a presence/motion detection algorithm based on **phase** changes in the received signal over time. Small changes/motions in front of the sensor are enough to trigger the detector. Further, static objects are ignored. A typical use case is to detect a person based on the small motions origin from the breathing and pulse.
-- `motion_large.py` \
-  An example of a presence/motion detection algorithm based on **power** changes in the received signal over time. Large changes/motions in front of the sensor are required to trigger the detector. Further, static objects are ignored but could reduce the sensitivity due to increased received average power. A typical use case is to detect a person walking up to or away from the sensor's coverage region. It will not detect small motions as breathing or pulse from a person standing in front of the sensor, which is the case for the _presence_detection.py_.
-- `obstacle_detection.py` \
-  An example of a obstacle detection algorithm estimating the distance and angle to an apporaching obstacle. It is based the synthetic aperture radar (SAR) principle.
+- `presence_detection.py` ([documentation](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection.html)) \
+  An example of a presence/motion detection algorithm based on **phase** changes in the received signal over time.
+- `motion_large.py` ([documentation](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/motion_large.html)) \
+  An example of a presence/motion detection algorithm based on **power** changes in the received signal over time.
+- `obstacle_detection.py` ([documentation](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html)) \
+  An example of a obstacle detection algorithm estimating the distance and angle to an approaching obstacle.
 
 ### Plotting
 
@@ -171,7 +124,7 @@ Acconeer's detectors are **only** supported with the XM112 Module.
 - `plot_with_pyqtgraph.py` \
   Example of how to use PyQtGraph for plotting.
 
-## GUI (beta)
+## GUI
 
 Run the GUI using:
 ```
