@@ -483,6 +483,9 @@ class GUI(QMainWindow):
             self.error_message("Sweep buffer needs to be a positive integer\n")
             self.textboxes["sweep_buffer"].setText("500")
 
+        if create_cl and self.use_cl:
+            self.load_clutter_file(force_unload=True)
+
         params = {
             "sensor_config": self.update_sensor_config(),
             "use_clutter": self.use_cl,
