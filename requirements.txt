@@ -1,4 +1,5 @@
 setuptools
+wheel
 numpy
 scipy
 pyserial

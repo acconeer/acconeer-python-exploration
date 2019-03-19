@@ -28,11 +28,12 @@ For general help on getting started, head over to the [Acconeer developer page](
 
 Python 3 (developed and tested on 3.6).
 
-Setuptools, NumPy, SciPy, PySerial, matplotlib, PyQtGraph (and PyQt5).
+Setuptools, wheel, NumPy, SciPy, PySerial, matplotlib, PyQtGraph, PyQt5, h5py, Flask.
 
 Install all Python dependencies using pip:
 
 ```
+python -m pip install --user setuptools wheel
 python -m pip install --user -r requirements.txt
 ```
 _Depending on your environment, you might have to replace `python` with `python3` or `py`._
