@@ -51,6 +51,7 @@ STREAM_HEADER_TO_INFO_KEY_MAP = {
 
 def get_dict_for_config(config):
     d = {}
+    d["cmd"] = MODE_TO_CMD_MAP[config.mode]
     for pair in KEY_AND_CONFIG_ATTR_PAIRS:
         config_val = getattr(config, pair.config_attr, None)
         if config_val is None:

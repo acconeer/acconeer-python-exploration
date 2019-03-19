@@ -66,7 +66,6 @@ class JSONClient(BaseClient):
             log.warn("setup with raw dict config - you're on your own")
         else:
             cmd = protocol.get_dict_for_config(config)
-            cmd["cmd"] = protocol.MODE_TO_CMD_MAP[config.mode]
 
         cmd["output_format"] = "json+binary"
 
