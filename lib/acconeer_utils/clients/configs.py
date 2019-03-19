@@ -4,14 +4,28 @@ import numpy as np
 
 
 class BaseSessionConfig(metaclass=ABCMeta):
-    def __init__(self, **kwargs):
-        self._sweep_rate = None
-        self._sensors = [1]
+    _sweep_rate = None
+    _sensors = [1]
 
+    def __init__(self, **kwargs):
         for k, v in kwargs.items():
             if not hasattr(self.__class__, k):
                 raise KeyError("unknown setting: {}".format(k))
             setattr(self, k, v)
+
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
+            object.__setattr__(self, name, value)
+        else:
+            raise AttributeError("{} has no setting {}".format(self.__class__.__name__, name))
+
+    def __str__(self):
+        attrs = [a for a in dir(self) if not a.startswith("_") and a.islower()]
+        vals = [getattr(self, a) for a in attrs]
+        d = {a: ("-" if v is None else v) for a, v in zip(attrs, vals)}
+        s = self.__class__.__name__
+        s += "".join(["\n  {:.<25} {}".format(a+" ", v) for (a, v) in d.items()])
+        return s
 
     @property
     def sweep_rate(self):
@@ -42,21 +56,11 @@ class BaseSessionConfig(metaclass=ABCMeta):
     def mode(self):
         pass
 
-    def __str__(self):
-        attrs = [a for a in dir(self) if not a.startswith("_")]
-        vals = [getattr(self, a) or "-" for a in attrs]
-        d = {a: ("-" if v is None else v) for a, v in zip(attrs, vals)}
-        s = self.__class__.__name__
-        s += "".join(["\n  {:.<25} {}".format(a+" ", v) for (a, v) in d.items()])
-        return s
-
 
 class BaseServiceConfig(BaseSessionConfig):
-    def __init__(self, **kwargs):
-        self._gain = None
-        self._range_start = None
-        self._range_length = None
-        super().__init__(**kwargs)
+    _gain = None
+    _range_start = None
+    _range_length = None
 
     @property
     def gain(self):
@@ -112,9 +116,7 @@ class BaseServiceConfig(BaseSessionConfig):
 
 
 class BaseDenseServiceConfig(BaseServiceConfig):
-    def __init__(self, **kwargs):
-        self._running_average_factor = None
-        super().__init__(**kwargs)
+    _running_average_factor = None
 
     @property
     def running_average_factor(self):
@@ -128,9 +130,7 @@ class BaseDenseServiceConfig(BaseServiceConfig):
 
 
 class PowerBinServiceConfig(BaseServiceConfig):
-    def __init__(self, **kwargs):
-        self._bin_count = None
-        super().__init__(**kwargs)
+    _bin_count = None
 
     @property
     def mode(self):
@@ -151,10 +151,8 @@ class EnvelopeServiceConfig(BaseDenseServiceConfig):
     MAX_DEPTH_RESOLUTION = 0
     MAX_SNR = 1
 
-    def __init__(self, **kwargs):
-        self._session_profile = None
-        self._compensate_phase = None
-        super().__init__(**kwargs)
+    _session_profile = None
+    _compensate_phase = None
 
     @property
     def mode(self):
@@ -180,18 +178,12 @@ class EnvelopeServiceConfig(BaseDenseServiceConfig):
 
 
 class IQServiceConfig(BaseDenseServiceConfig):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @property
     def mode(self):
         return "iq"
 
 
 class DistancePeakDetectorConfig(BaseServiceConfig):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     @property
     def mode(self):
         return "distance_peak_fix_threshold"

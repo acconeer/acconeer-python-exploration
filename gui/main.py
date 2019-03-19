@@ -676,7 +676,8 @@ class GUI(QMainWindow):
             conf.sweep_rate = int(self.textboxes["frequency"].text())
             conf.gain = float(self.textboxes["gain"].text())
             self.sweep_count = int(self.textboxes["sweeps"].text())
-            conf.bin_count = int(self.textboxes["power_bins"].text())
+            if "power" in self.mode.currentText().lower():
+                conf.bin_count = int(self.textboxes["power_bins"].text())
             if "envelope" in self.mode.currentText().lower():
                 if "snr" in self.profiles.currentText().lower():
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
