@@ -6,7 +6,8 @@ import serial.tools.list_ports
 import h5py
 import logging
 
-from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit)
+from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
+                             QCheckBox)
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore
@@ -34,8 +35,8 @@ import obstacle_detection as od
 
 
 class GUI(QMainWindow):
-    sig_scan = pyqtSignal(object)
-    use_cl = False
+    sig_scan = pyqtSignal(str, str, object)
+    cl_file = False
     data = None
     client = None
     sweep_count = -1
@@ -56,6 +57,7 @@ class GUI(QMainWindow):
         self.init_textboxes()
         self.init_buttons()
         self.init_dropdowns()
+        self.init_checkboxes()
         self.init_sublayouts()
         self.start_up()
 
@@ -90,7 +92,6 @@ class GUI(QMainWindow):
             "start_range":  "Start (m)",
             "end_range":    "Stop (m)",
             "clutter":      "Background settings",
-            "clutter_file": "",
             "interface":    "Interface",
             "power_bins":   "Power bins",
             "sweep_info":   "Sweeps: 0 (skipped 0)",
@@ -105,7 +106,7 @@ class GUI(QMainWindow):
             val.setText(text[key])
 
         self.labels["power_bins"].setVisible(False)
-        self.labels["saturated"].setStyleSheet('color: #f0f0f0')
+        self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
 
@@ -127,6 +128,35 @@ class GUI(QMainWindow):
             self.textboxes[key].setText(text[key])
 
         self.textboxes["power_bins"].setVisible(False)
+
+    def init_checkboxes(self):
+        check = {
+            "clutter_file": "",
+            "verbose":      "Enable verbose",
+        }
+
+        check_status = {
+            "clutter_file": False,
+            "verbose": False,
+        }
+
+        check_visible = {
+            "clutter_file": False,
+            "verbose": True,
+        }
+
+        check_funcs = {
+            "clutter_file": self.update_scan,
+            "verbose": self.set_log_level,
+        }
+
+        self.checkboxes = {}
+        for key in check:
+            self.checkboxes[key] = QCheckBox(check[key], self)
+            self.checkboxes[key].setChecked(check_status[key])
+            self.checkboxes[key].setVisible(check_visible[key])
+            if check_funcs[key]:
+                self.checkboxes[key].stateChanged.connect(check_funcs[key])
 
     def init_graphs(self, mode="Select service", refresh=False):
         axes = {
@@ -330,8 +360,6 @@ class GUI(QMainWindow):
         self.interface.currentIndexChanged.connect(self.update_interface)
 
         self.ports = QComboBox(self)
-        self.ports.addItem("Scan ports")
-        self.ports.activated.connect(self.update_ports)
         self.update_ports()
 
         self.profiles = QComboBox(self)
@@ -348,14 +376,10 @@ class GUI(QMainWindow):
             self.textboxes["gain"].setText(str(0.8))
 
     def update_ports(self):
-        if "scan" not in self.ports.currentText().lower():
-            return
-
         port_infos = serial.tools.list_ports.comports()
         ports = [port_info[0] for port_info in port_infos]
 
         self.ports.clear()
-        self.ports.addItem("Scan ports")
         self.ports.addItems(ports)
 
     def init_buttons(self):
@@ -367,6 +391,7 @@ class GUI(QMainWindow):
             "load_cl":      QtWidgets.QPushButton("Load Background", self),
             "load_scan":    QtWidgets.QPushButton("Load Scan", self),
             "save_scan":    QtWidgets.QPushButton("Save Scan", self),
+            "scan_ports":   QtWidgets.QPushButton("Scan ports", self),
         }
 
         button_funcs = {
@@ -377,6 +402,7 @@ class GUI(QMainWindow):
             "load_cl": self.load_clutter_file,
             "load_scan": self.load_scan,
             "save_scan": lambda: self.save_scan(self.data),
+            "scan_ports": self.update_ports,
         }
 
         button_enabled = {
@@ -387,11 +413,14 @@ class GUI(QMainWindow):
             "load_cl": True,
             "load_scan": True,
             "save_scan": False,
+            "scan_ports": True,
         }
 
         for key in button_funcs:
             self.buttons[key].clicked.connect(button_funcs[key])
             self.buttons[key].setEnabled(button_enabled[key])
+
+        self.buttons["scan_ports"].hide()
 
     def init_sublayouts(self):
         # Panel sublayout
@@ -401,6 +430,7 @@ class GUI(QMainWindow):
         # Server sublayout
         server_sublayout_grid = QtWidgets.QGridLayout()
         server_sublayout_grid.addWidget(self.labels["server"], 0, 0)
+        server_sublayout_grid.addWidget(self.buttons["scan_ports"], 0, 0)
         server_sublayout_grid.addWidget(self.labels["interface"], 0, 1)
         server_sublayout_grid.addWidget(self.ports, 1, 0)
         server_sublayout_grid.addWidget(self.textboxes["host"], 1, 0)
@@ -415,10 +445,10 @@ class GUI(QMainWindow):
         control_sublayout_grid.addWidget(self.buttons["stop"], 1, 1)
         control_sublayout_grid.addWidget(self.buttons["save_scan"], 2, 0)
         control_sublayout_grid.addWidget(self.buttons["load_scan"], 2, 1)
-        control_sublayout_grid.addWidget(self.labels["clutter"], 3, 0)
-        control_sublayout_grid.addWidget(self.buttons["create_cl"], 4, 0)
-        control_sublayout_grid.addWidget(self.buttons["load_cl"], 4, 1)
-        control_sublayout_grid.addWidget(self.labels["clutter_file"], 5, 0, 1, 2)
+        control_sublayout_grid.addWidget(self.labels["clutter"], 4, 0)
+        control_sublayout_grid.addWidget(self.buttons["create_cl"], 5, 0)
+        control_sublayout_grid.addWidget(self.buttons["load_cl"], 5, 1)
+        control_sublayout_grid.addWidget(self.checkboxes["clutter_file"], 6, 0, 1, 2)
 
         # Settings sublayout
         settings_sublayout_grid = QtWidgets.QGridLayout()
@@ -446,8 +476,9 @@ class GUI(QMainWindow):
 
         # Info sublayout
         info_sublayout_grid = QtWidgets.QGridLayout()
-        info_sublayout_grid.addWidget(self.labels["sweep_info"], 0, 0, 1, 2)
-        info_sublayout_grid.addWidget(self.labels["saturated"], 1, 0, 1, 2)
+        info_sublayout_grid.addWidget(self.checkboxes["verbose"], 0, 0, 1, 2)
+        info_sublayout_grid.addWidget(self.labels["sweep_info"], 1, 0, 1, 2)
+        info_sublayout_grid.addWidget(self.labels["saturated"], 2, 0, 1, 2)
 
         panel_sublayout_inner.addStretch(10)
         panel_sublayout_inner.addLayout(server_sublayout_grid)
@@ -527,15 +558,18 @@ class GUI(QMainWindow):
         if "serial" in self.interface.currentText().lower():
             self.ports.show()
             self.textboxes["host"].hide()
-            self.labels["server"].setText("Serial port")
+            self.labels["server"].hide()
+            self.buttons["scan_ports"].show()
         elif "spi" in self.interface.currentText().lower():
             self.ports.hide()
             self.textboxes["host"].hide()
-            self.labels["server"].setText("")
+            self.labels["server"].hide()
+            self.buttons["scan_ports"].hide()
         else:
             self.ports.hide()
             self.textboxes["host"].show()
-            self.labels["server"].setText("Host address")
+            self.labels["server"].show()
+            self.buttons["scan_ports"].hide()
 
     def error_message(self, error):
         em = QtWidgets.QErrorMessage(self.main_widget)
@@ -560,12 +594,17 @@ class GUI(QMainWindow):
             self.error_message("Sweep buffer needs to be a positive integer\n")
             self.textboxes["sweep_buffer"].setText("500")
 
-        if create_cl and self.use_cl:
+        if create_cl and self.cl_file:
             self.load_clutter_file(force_unload=True)
+
+        use_cl = False
+        if self.checkboxes["clutter_file"].isChecked():
+            use_cl = True
 
         params = {
             "sensor_config": self.update_sensor_config(),
-            "use_clutter": self.use_cl,
+            "clutter_file": self.cl_file,
+            "use_clutter": use_cl,
             "create_clutter": create_cl,
             "data_source": data_source,
             "data_type": self.mode_to_param[self.mode.currentText()],
@@ -584,21 +623,35 @@ class GUI(QMainWindow):
         self.buttons["create_cl"].setEnabled(False)
         self.buttons["load_cl"].setEnabled(False)
         self.mode.setEnabled(False)
-        self.interface.setEnabled(False)
         self.buttons["stop"].setEnabled(True)
 
         self.sweep_number = 0
         self.sweeps_skipped = 0
         self.threaded_scan.start()
 
+        self.buttons["connect"].setEnabled(False)
+
+    def update_scan(self):
+        if self.cl_file:
+            clutter_file = self.cl_file
+            if not self.checkboxes["clutter_file"].isChecked():
+                clutter_file = None
+            self.sig_scan.emit("set_clutter_flag", "", clutter_file)
+
     def stop_scan(self):
-        self.sig_scan.emit("stop")
+        self.sig_scan.emit("stop", "", None)
         self.buttons["load_scan"].setEnabled(True)
         if self.cl_supported:
             self.buttons["load_cl"].setEnabled(True)
         self.mode.setEnabled(True)
-        self.interface.setEnabled(True)
         self.buttons["stop"].setEnabled(False)
+        self.buttons["connect"].setEnabled(True)
+
+    def set_log_level(self):
+        log_level = logging.INFO
+        if self.checkboxes["verbose"].isChecked():
+            log_level = logging.DEBUG
+        example_utils.set_loglevel(log_level)
 
     def connect_to_server(self):
         if self.buttons["connect"].text() == "Connect":
@@ -646,7 +699,7 @@ class GUI(QMainWindow):
         else:
             self.buttons["connect"].setText("Connect")
             self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
-            self.sig_scan.emit("stop")
+            self.sig_scan.emit("stop", "", None)
             self.buttons["start"].setEnabled(False)
             self.buttons["create_cl"].setEnabled(False)
             if self.cl_supported:
@@ -855,16 +908,17 @@ class GUI(QMainWindow):
             field.setText(str(val))
         return val, out_of_range
 
-    def load_clutter_file(self, force_unload=False):
-        if "unload" in self.buttons["load_cl"].text().lower() or force_unload:
-            self.use_cl = None
-            self.labels["clutter_file"].setText("")
-            self.buttons["load_cl"].setText("Load Background")
-            self.buttons["load_cl"].setStyleSheet("QPushButton {color: black}")
-        else:
-            options = QtWidgets.QFileDialog.Options()
-            options |= QtWidgets.QFileDialog.DontUseNativeDialog
-            fn, _ = QtWidgets.QFileDialog.getOpenFileName(
+    def load_clutter_file(self, force_unload=False, fname=None):
+        if not fname:
+            if "unload" in self.buttons["load_cl"].text().lower() or force_unload:
+                self.cl_file = None
+                self.checkboxes["clutter_file"].setVisible(False)
+                self.buttons["load_cl"].setText("Load Background")
+                self.buttons["load_cl"].setStyleSheet("QPushButton {color: black}")
+            else:
+                options = QtWidgets.QFileDialog.Options()
+                options |= QtWidgets.QFileDialog.DontUseNativeDialog
+                fname, _ = QtWidgets.QFileDialog.getOpenFileName(
                     self,
                     "Load background file",
                     "",
@@ -872,11 +926,14 @@ class GUI(QMainWindow):
                     options=options
                     )
 
-            if fn:
-                self.use_cl = fn
-                self.labels["clutter_file"].setText("Background: {}".format(ntpath.basename(fn)))
-                self.buttons["load_cl"].setText("Unload background")
-                self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
+        if fname:
+            self.cl_file = fname
+            self.checkboxes["clutter_file"].setVisible(True)
+            s = "Background: {}".format(ntpath.basename(fname))
+            self.checkboxes["clutter_file"].setText(s)
+            self.checkboxes["clutter_file"].setChecked(True)
+            self.buttons["load_cl"].setText("Unload background")
+            self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
 
     def load_scan(self):
         options = QtWidgets.QFileDialog.Options()
@@ -890,16 +947,22 @@ class GUI(QMainWindow):
                 )
 
         if filename:
+            cl_file = None
             if "h5" in filename:
-                conf = configs.IQServiceConfig()
-                self.data = dict()
+                self.data = {}
                 try:
                     f = h5py.File(filename, "r")
+                    mode = f["service_type"][()]
+                    if "iq" in mode.lower():
+                        conf = configs.IQServiceConfig()
+                    else:
+                        conf = configs.EnvelopeServiceConfig()
                     real = np.asarray(list(f["real"]))
                     im = np.asarray(list(f["imag"]))
                     self.data["sweeps"] = real[...] + 1j * im[...]
                 except Exception as e:
                     self.error_message("{}".format(e))
+                    print(e)
                     return
 
                 try:
@@ -907,29 +970,42 @@ class GUI(QMainWindow):
                 except Exception:
                     pass
                 try:
-                    mode = f["service_type"][()]
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
-                    conf.bin_count = f["power_bins"][()]
+                    if "power" in mode:
+                        conf.bin_count = int(self.textboxes["power_bins"].text())
                     conf.gain = f["gain"][()]
-                except Exception:
+                except Exception as e:
                     print("Config not stored in file...")
+                    print(e)
                     conf.range_interval = [
                             float(self.textboxes["start_range"].text()),
                             float(self.textboxes["end_range"].text()),
                     ]
                     conf.sweep_rate = int(self.textboxes["frequency"].text())
-                    conf.bin_count = int(self.textboxes["power_bins"].text())
                     mode = self.mode.currentText().lower()
                 self.data["service_type"] = mode
                 self.data["sensor_config"] = conf
+                self.data["cl_file"] = None
+                try:
+                    self.data["cl_file"] = f["clutter_file"][()]
+                    cl_file = self.data["cl_file"]
+                except Exception:
+                    pass
             else:
                 try:
                     self.data = np.load(filename)
                     mode = self.data[0]["service_type"]
+                    cl_file = self.data[0]["cl_file"]
                 except Exception as e:
                     self.error_message("{}".format(e))
                     return
+
+            if cl_file:
+                try:
+                    self.load_clutter_file(fname=cl_file)
+                except Exception as e:
+                    print(e)
 
             index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
             if index >= 0:
@@ -954,12 +1030,18 @@ class GUI(QMainWindow):
 
         if filename:
             if clutter:
-                np.save(filename, data)
-                self.use_cl = filename
+                try:
+                    np.save(filename, data)
+                except Exception as e:
+                    self.error_message("Failed to save file:\n {:s}".format(e))
+                    return
+                self.cl_file = filename
                 if "npy" not in filename.lower():
-                    self.use_cl += ".npy"
+                    self.cl_file += ".npy"
                 label_text = "Background: {}".format(ntpath.basename(filename))
-                self.labels["clutter_file"].setText(label_text)
+                self.checkboxes["clutter_file"].setText(label_text)
+                self.checkboxes["clutter_file"].setChecked(True)
+                self.checkboxes["clutter_file"].setVisible(True)
                 self.buttons["load_cl"].setText("Unload background")
                 self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
             else:
@@ -970,7 +1052,11 @@ class GUI(QMainWindow):
                     sweep_data = np.asarray(sweep_data)
                     if ".h5" not in filename:
                         filename = filename + ".h5"
-                    f = h5py.File(filename, "w")
+                    try:
+                        f = h5py.File(filename, "w")
+                    except Exception as e:
+                        self.error_message("Failed to save file:\n {:s}".format(e))
+                        return
                     f.create_dataset("imag", data=np.imag(sweep_data), dtype=np.float32)
                     f.create_dataset("real", data=np.real(sweep_data), dtype=np.float32)
                     f.create_dataset("sweep_rate", data=int(self.textboxes["frequency"].text()),
@@ -983,12 +1069,18 @@ class GUI(QMainWindow):
                                      dtype=np.float32)
                     f.create_dataset("service_type", data=self.mode.currentText().lower(),
                                      dtype=h5py.special_dtype(vlen=str))
+                    f.create_dataset("clutter_file", data=self.cl_file,
+                                     dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("profile", data=self.profiles.currentIndex(),
                                      dtype=np.int)
                     f.create_dataset("power_bins", data=int(self.textboxes["power_bins"].text()),
                                      dtype=np.int)
                 else:
-                    np.save(filename, data)
+                    try:
+                        np.save(filename, data)
+                    except Exception as e:
+                        self.error_message("Failed to save file:\n {:s}".format(e))
+                        return
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
@@ -1008,12 +1100,14 @@ class GUI(QMainWindow):
             self.buttons["save_scan"].setEnabled(True)
         elif message_type == "scan_done":
             self.buttons["load_scan"].setEnabled(True)
+            self.buttons["connect"].setEnabled(True)
+            self.buttons["stop"].setEnabled(False)
+            self.mode.setEnabled(True)
             if "Disconnect" in self.buttons["connect"].text():
                 self.buttons["start"].setEnabled(True)
                 if self.cl_supported:
                     self.buttons["create_cl"].setEnabled(True)
                     self.buttons["load_cl"].setEnabled(True)
-                self.mode.setEnabled(True)
                 self.buttons["stop"].setEnabled(False)
         elif "update_plots" in message_type:
             if data:
@@ -1238,10 +1332,12 @@ class Threaded_Scan(QtCore.QThread):
             self.emit("error", "Unknown mode %s!" % self.mode)
         self.emit("scan_done", "", "")
 
-    def receive(self, message):
-        if message == "stop":
+    def receive(self, message_type, message, data=None):
+        if message_type == "stop":
             self.running = False
             self.radar.abort_processing()
+        elif message_type == "set_clutter_flag":
+            self.radar.set_clutter_flag(data)
 
     def emit(self, message_type, message, data=None):
         self.sig_scan.emit(message_type, message, data)
@@ -1255,7 +1351,6 @@ class Threaded_Scan(QtCore.QThread):
 
 if __name__ == "__main__":
     example_utils.config_logging(level=logging.INFO)
-    # example_utils.set_loglevel(logging.DEBUG)
 
     app = QApplication(sys.argv)
     ex = GUI()

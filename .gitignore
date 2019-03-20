@@ -20,3 +20,6 @@ build/
 
 # Docs
 docs/_build
+
+# Data
+*.h5

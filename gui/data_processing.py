@@ -16,6 +16,7 @@ class DataProcessing:
         self.stop_x = self.sensor_config.range_interval[1]
         self.create_cl = params["create_clutter"]
         self.use_cl = params["use_clutter"]
+        self.cl_file = params["clutter_file"]
         self.sweeps = parent.parent.sweep_count
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
@@ -63,6 +64,9 @@ class DataProcessing:
         self.threshold = np.zeros((0, 1))
         self.process = self.get_processing_type(self.service_type)
 
+    def set_clutter_flag(self, enable):
+        self.use_cl = enable
+
     def load_clutter_data(self, cl_length, cl_file=None):
         load_success = True
         error = None
@@ -82,11 +86,12 @@ class DataProcessing:
                 cl_iq = cl_data.item()["cl_iq"]
                 thrshld = cl_data.item()["cl_env_std"]
                 cl_config = cl_data.item()["config"]
-                if cl_config.gain != self.sensor_config.gain:
+                if not np.isclose(cl_config.gain, self.sensor_config.gain):
                     load_success = False
                     error = "Wrong gain:\n Clutter is {} and scan is {}".format(
                         cl_config.gain, self.sensor_config.gain)
-                if (cl_config.range_interval != self.sensor_config.range_interval).any():
+                if not np.isclose(cl_config.range_interval,
+                                  self.sensor_config.range_interval).any():
                     error = "Wrong range:\n Clutter is {} and scan is {}".format(
                         cl_config.range_interval, self.sensor_config.range_interval)
                 if cl_config.mode != self.sensor_config.mode:
@@ -102,6 +107,7 @@ class DataProcessing:
             cl = np.zeros(cl_length)
             thrshld = cl
             cl_iq = cl
+            self.use_cl = False
             if error:
                 self.parent.emit("error", error)
 
@@ -131,8 +137,9 @@ class DataProcessing:
         peak_data = {}
 
         if self.sweep == 0:
+            self.cl_empty = np.zeros(len(iq_data))
             self.cl, self.cl_iq, self.threshold = \
-                self.load_clutter_data(len(iq_data), self.use_cl)
+                self.load_clutter_data(len(iq_data), self.cl_file)
             self.cl = np.abs(self.cl_iq)
             self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
 
@@ -193,6 +200,9 @@ class DataProcessing:
         if self.create_cl:
             cl = self.cl[self.sweep, :]
             cl_iq = self.cl_iq[self.sweep, :]
+        elif not self.use_cl:
+            cl = self.cl_empty
+            cl_iq = self.cl_empty
 
         self.hist_env = push(env, self.hist_env, axis=1)
 
@@ -236,7 +246,7 @@ class DataProcessing:
             "SNR": snr,
             "peaks": peak_data,
             "x_mm": self.env_x_mm,
-            "cl_file": self.use_cl,
+            "cl_file": self.cl_file,
             "sweep": self.sweep,
             "snr": snr,
             "phase": phase,
@@ -285,7 +295,7 @@ class DataProcessing:
             "service_type": self.service_type,
             "sweep_data": sweep_data,
             "sensor_config": self.sensor_config,
-            "cl_file": self.use_cl,
+            "cl_file": self.cl_file,
         }
 
         if self.hist_len_index >= self.hist_len:
@@ -300,6 +310,7 @@ class DataProcessing:
         self.init_vars()
         self.sweep = 0
         self.create_cl = False
+        self.use_cl = False
         h5_data = True
 
         try:
@@ -308,14 +319,17 @@ class DataProcessing:
             if "sweeps" in data:
                 data_len = data["sweeps"].shape[0]
                 self.sensor_config = data["sensor_config"]
-                self.use_cl = None
+                self.cl_file = data["cl_file"]
                 service = data["service_type"]
                 data = data["sweeps"]
             else:
                 self.sensor_config = data[0]["sensor_config"]
-                self.use_cl = data[0]["cl_file"]
+                self.cl_file = data[0]["cl_file"]
                 service = data[0]["service_type"]
                 h5_data = False
+
+            if self.cl_file:
+                self.use_cl = True
 
             self.mode = self.sensor_config.mode
             self.sweeps = data_len
@@ -334,7 +348,7 @@ class DataProcessing:
                     time.sleep(self.rate)
                 else:
                     self.skip = 0
-                    time.sleep(self.rate * 0.3)
+                    time.sleep(self.rate)
                 if h5_data:
                     plot_data, _ = self.process(data_step)
                 else:
