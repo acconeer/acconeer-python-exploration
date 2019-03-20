@@ -87,27 +87,31 @@ def timestamp():
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def config_logging(args):
-    fmt = "[%(asctime)s] %(levelname)s - %(name)s - %(message)s"
+def config_logging(args=None, level=logging.WARN):
+    fmt = "{asctime}.{msecs:03.0f} | {levelname:<7} | {processName:<16} | {name:<36} | {message}"
     datefmt = "%H:%M:%S"
 
-    if args.debug:
-        level = logging.DEBUG
-    elif args.verbose:
-        level = logging.INFO
-    elif args.quiet:
-        level = logging.ERROR
-    else:
-        level = logging.WARN
+    if args is not None:
+        if args.debug:
+            level = logging.DEBUG
+        elif args.verbose:
+            level = logging.INFO
+        elif args.quiet:
+            level = logging.ERROR
 
     stream_handler = logging.StreamHandler()
-    formatter = logging.Formatter(fmt, datefmt=datefmt)
+    formatter = logging.Formatter(fmt, datefmt=datefmt, style="{")
     stream_handler.setFormatter(formatter)
     log = logging.getLogger(__name__.split(".")[0])
     log.setLevel(level)
     log.addHandler(stream_handler)
 
     logging.getLogger(__name__).debug("logging configured")
+
+
+def set_loglevel(level):
+    log = logging.getLogger(__name__.split(".")[0])
+    log.setLevel(level)
 
 
 def autodetect_serial_port():

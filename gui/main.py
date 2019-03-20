@@ -4,6 +4,7 @@ import ntpath
 import numpy as np
 import serial.tools.list_ports
 import h5py
+import logging
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit)
 from PyQt5.QtGui import QPixmap, QFont
@@ -1219,6 +1220,9 @@ class Threaded_Scan(QtCore.QThread):
 
 
 if __name__ == "__main__":
+    example_utils.config_logging(level=logging.INFO)
+    # example_utils.set_loglevel(logging.DEBUG)
+
     app = QApplication(sys.argv)
     ex = GUI()
     sys.exit(app.exec_())
