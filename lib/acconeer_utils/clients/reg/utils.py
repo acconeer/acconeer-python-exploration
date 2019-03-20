@@ -30,3 +30,7 @@ def get_reg_vals_for_config(config):
             rv = protocol.UnpackedRegVal(reg.addr, enc_val)
             reg_vals.append(rv)
     return reg_vals
+
+
+def fmt_enc_val(enc_val):
+    return " ".join(["{:02x}".format(x) for x in enc_val])

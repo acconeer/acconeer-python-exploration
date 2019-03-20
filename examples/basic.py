@@ -1,4 +1,4 @@
-from acconeer_utils.clients.reg.client import RegClient
+from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
@@ -19,10 +19,11 @@ def main():
     # -vv or --debug:   DEBUG
     example_utils.config_logging(args)
 
-    # Pick client depending on whether socket or UART is used. This
-    # might change in the future.
+    # Pick client depending on whether socket, SPI, or UART is used
     if args.socket_addr:
         client = JSONClient(args.socket_addr)
+    elif args.spi:
+        client = RegSPIClient()
     else:
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)

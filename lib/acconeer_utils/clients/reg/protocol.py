@@ -59,12 +59,26 @@ STREAM_PACKET = 0xFE
 STREAM_RESULT_INFO = 0xFD
 STREAM_BUFFER = 0xFE
 
+BUF_READ_REQUEST = 0xFA
+
+MAIN_BUFFER_ADDR = 232
+
+STATUS_DATA_READY_MASK = 1 << 0
+STATUS_ERROR_MASK = 1 << 2
+
 NO_MODE = "none"
 MODES = {
     "power_bin": 1,
     "envelope": 2,
     "iq": 3,
     "distance_peak_fix_threshold": 0x100,
+}
+
+FIXED_BUF_SIZE = {
+    "power_bin": True,
+    "envelope": True,
+    "iq": True,
+    "distance_peak_fix_threshold": False,
 }
 
 BYTE_PER_POINT = {

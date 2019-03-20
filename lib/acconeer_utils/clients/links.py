@@ -113,54 +113,13 @@ class SocketLink(BaseLink):
         self._buf = None
 
 
-class BaseSerialLink(BaseLink):
+class SerialProcessLink(BaseLink):
     DEFAULT_BAUDRATE = 115200
     MAX_BAUDRATE = 3000000
 
-    def __init__(self):
+    def __init__(self, port=None):
         super().__init__()
         self.baudrate = self.DEFAULT_BAUDRATE
-
-
-class SerialLink(BaseSerialLink):
-    def __init__(self, port=None):
-        super().__init__()
-        self._port = port
-        self._ser = None
-
-    def connect(self):
-        self._ser = serial.Serial()
-        self._ser.port = self._port
-        self._ser.baudrate = self.baudrate
-        self._ser.timeout = self._timeout
-        self._ser.open()
-
-    def recv(self, num_bytes):
-        data = bytearray(self._ser.read(num_bytes))
-
-        if not len(data) == num_bytes:
-            raise LinkError("recv timeout")
-
-        return data
-
-    def recv_until(self, bs):
-        data = bytearray(self._ser.read_until(bs))
-
-        if bs not in data:
-            raise LinkError("recv timeout")
-
-        return data
-
-    def send(self, data):
-        self._ser.write(data)
-
-    def disconnect(self):
-        self._ser.close()
-
-
-class SerialProcessLink(BaseSerialLink):
-    def __init__(self, port=None):
-        super().__init__()
         self._port = port
 
     def connect(self):
@@ -283,6 +242,7 @@ class SerialProcessLink(BaseSerialLink):
 
 
 def serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
+    log.debug("serial communication process started")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     try:

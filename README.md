@@ -40,11 +40,15 @@ _Depending on your environment, you might have to replace `python` with `python3
 
 ### Setup
 
+#### Installing acconeer_utils
+
 Install the supplied Acconeer utilities module:
 ```
 python setup.py install --user
 ```
 Please note that the utilities module has to be reinstalled after any change in `acconeer_utils`.
+
+#### Serial on Linux
 
 If you're running Linux together with the XM112, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
 ```
@@ -54,11 +58,27 @@ For the changes to take effect, you will need to log out and in again.
 
 Note: If you have ModemManager installed and running it might try to connect to the XM112, which has proven to cause problems. If you're having issues, try disabling the ModemManager service.
 
+#### SPI
+
+If you're using Linux, you probably need permission to access the SPI bridge USB device. Either run the scripts with `sudo`, or create an udev rule as follows. Create and edit:
+```
+sudo nano /etc/udev/rules.d/50-ft4222.rules
+```
+with the following content:
+```
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="601c", MODE:="0666"
+```
+This method is confirmed to work for Ubuntu 18.04.
+
 ## Running an example on your local machine
 
 Against XC111+XR111 or XC112+XR112 (mounted on a Raspberry Pi):
 ```
 python examples/basic.py -s <your Raspberry Pi IP address>
+```
+Against XM112, SPI:
+```
+python examples/basic.py -spi
 ```
 Against XM112, autodetecting the serial port:
 ```

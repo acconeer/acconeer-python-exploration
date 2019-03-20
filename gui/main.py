@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 import pyqtgraph as pg
 
-from acconeer_utils.clients.reg.client import RegClient
+from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
@@ -326,6 +326,7 @@ class GUI(QMainWindow):
         self.interface = QComboBox(self)
         self.interface.addItem("Socket")
         self.interface.addItem("Serial")
+        self.interface.addItem("SPI")
         self.interface.currentIndexChanged.connect(self.update_interface)
 
         self.ports = QComboBox(self)
@@ -527,6 +528,10 @@ class GUI(QMainWindow):
             self.ports.show()
             self.textboxes["host"].hide()
             self.labels["server"].setText("Serial port")
+        elif "spi" in self.interface.currentText().lower():
+            self.ports.hide()
+            self.textboxes["host"].hide()
+            self.labels["server"].setText("")
         else:
             self.ports.hide()
             self.textboxes["host"].show()
@@ -603,6 +608,8 @@ class GUI(QMainWindow):
 
             if self.interface.currentText().lower() == "socket":
                 self.client = JSONClient(self.textboxes["host"].text())
+            elif self.interface.currentText().lower() == "spi":
+                self.client = RegSPIClient()
             else:
                 port = self.ports.currentText()
                 if "scan" in port.lower():

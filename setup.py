@@ -5,7 +5,7 @@ PACKAGE_ROOT_DIR = "lib"
 
 setup(
     name="acconeer-utils",
-    version="2.1.9",
+    version="2.2.0",
     description="Acconeer utilities",
     url="https://github.com/acconeer/acconeer-python-exploration",
     author="Acconeer AB",
@@ -13,5 +13,7 @@ setup(
     license="BSD 3-clause",
     package_dir={"": PACKAGE_ROOT_DIR},
     packages=find_packages(PACKAGE_ROOT_DIR),
-    zip_safe=True,
+    zip_safe=False,
+    package_data={"": ["bin/*"]},
+    include_package_data=True,
 )

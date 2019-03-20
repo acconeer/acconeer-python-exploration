@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime
 import logging
 import sys
+import time
 import serial.tools.list_ports
 import pyqtgraph as pg
 from PyQt5 import QtCore
@@ -29,6 +30,13 @@ class ExampleArgumentParser(ArgumentParser):
             metavar="address",
             dest="socket_addr",
             help="connect via socket on given address (using json-based protocol)",
+            )
+        server_group.add_argument(
+            "-spi",
+            "--spi",
+            dest="spi",
+            help="connect via spi (using register-based protocol)",
+            action="store_true",
             )
 
         self.add_argument(
@@ -244,3 +252,31 @@ def pg_mpl_cmap(name):
     cmap = plt.get_cmap(name)
     cmap._init()
     return np.array(cmap._lut) * 255
+
+
+class FreqCounter:
+    def __init__(self, a=0.95, num_bits=None):
+        self.a = a
+        self.num_bits = num_bits
+        self.last_t = None
+        self.lp_dt = None
+
+    def tick(self):
+        now = time.time()
+
+        if self.last_t:
+            dt = now - self.last_t
+            if self.lp_dt:
+                self.lp_dt = self.a * self.lp_dt + (1-self.a) * dt
+                f = 1/self.lp_dt
+                dt_ms = self.lp_dt * 1e3
+                if self.num_bits:
+                    data_rate = self.num_bits * f * 1e-6
+                    s = " {:5.1f} ms, {:5.1f} Hz, {:5.2f} Mbit/s".format(dt_ms, f, data_rate)
+                    print(s, end="\r")
+                else:
+                    print(" {:5.1f} ms, {:5.1f} Hz".format(dt_ms, f), end="\r")
+            else:
+                self.lp_dt = dt
+
+        self.last_t = now
