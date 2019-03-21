@@ -310,7 +310,6 @@ class DataProcessing:
         self.init_vars()
         self.sweep = 0
         self.create_cl = False
-        self.use_cl = False
         h5_data = True
 
         try:
@@ -318,24 +317,12 @@ class DataProcessing:
 
             if "sweeps" in data:
                 data_len = data["sweeps"].shape[0]
-                self.sensor_config = data["sensor_config"]
-                self.cl_file = data["cl_file"]
-                service = data["service_type"]
                 data = data["sweeps"]
             else:
                 self.sensor_config = data[0]["sensor_config"]
-                self.cl_file = data[0]["cl_file"]
-                service = data[0]["service_type"]
                 h5_data = False
 
-            if self.cl_file:
-                self.use_cl = True
-
-            self.mode = self.sensor_config.mode
             self.sweeps = data_len
-            self.start_x = self.sensor_config.range_interval[0]
-            self.stop_x = self.sensor_config.range_interval[1]
-            self.process = self.get_processing_type(service)
 
         except Exception as e:
             self.parent.emit("error", "Wrong file format\n {}".format(e))

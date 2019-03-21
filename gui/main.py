@@ -183,6 +183,7 @@ class GUI(QMainWindow):
             self.cl_supported = True
         else:
             self.load_clutter_file(force_unload=True)
+
         self.buttons["create_cl"].setEnabled(self.cl_supported)
         self.buttons["load_cl"].setEnabled(self.cl_supported)
 
@@ -522,6 +523,7 @@ class GUI(QMainWindow):
                         self.service_labels[mode][key]["label"], index, 0)
                     self.serviceparams_sublayout_grid.addWidget(
                         self.service_labels[mode][key]["box"], index, 1)
+                    self.service_labels[mode][key]["box"].setVisible(True)
 
                 else:
                     self.service_labels[mode][key]["label"] = QLabel(self)
@@ -1001,10 +1003,12 @@ class GUI(QMainWindow):
                     self.error_message("{}".format(e))
                     return
 
-            if cl_file:
+            if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
                 try:
+                    os.path.isfile(cl_file)
                     self.load_clutter_file(fname=cl_file)
                 except Exception as e:
+                    print("Background file not found")
                     print(e)
 
             index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
@@ -1107,8 +1111,9 @@ class GUI(QMainWindow):
                 self.buttons["start"].setEnabled(True)
                 if self.cl_supported:
                     self.buttons["create_cl"].setEnabled(True)
-                    self.buttons["load_cl"].setEnabled(True)
                 self.buttons["stop"].setEnabled(False)
+            if self.cl_supported:
+                self.buttons["load_cl"].setEnabled(True)
         elif "update_plots" in message_type:
             if data:
                 self.update_plots(data)
