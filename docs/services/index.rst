@@ -1,14 +1,23 @@
 Services
 ========
 
-For documentation on services, head over to the `Acconeer developer page`_.
-Direct links to the different services:
+The Acconeer A1 sensor can be used in different modes depending on use case. There are currently three such services optimized for different purposes.
 
-- `Envelope`_
-- `IQ`_
-- `Power bin`_
++----------+----------------------------------------+
+| Service  | Typical use cases                      |
++==========+========================================+
+| Envelope | Distance measurements, static target   |
+|          | scenes                                 |
++----------+----------------------------------------+
+| IQ       | Presence detection, obstacle detection,|
+|          | vital sign monitoring                  |
++----------+----------------------------------------+
+| Power Bin| Low complexity implementations         |
++----------+----------------------------------------+
 
-.. _`Acconeer developer page`: https://developer.acconeer.com/
-.. _`Envelope`: https://developer.acconeer.com/download/envelope-service-user-guide-v1-3-pdf/
-.. _`IQ`: https://developer.acconeer.com/download/iq-data-service-user-guide-v1-0-pdf/
-.. _`Power bin`: https://developer.acconeer.com/download/power-bins-service-user-guide-v1-1-pdf/
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   *
