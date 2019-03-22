@@ -24,7 +24,7 @@ setup(
     url="https://github.com/acconeer/acconeer-python-exploration",
     author="Acconeer AB",
     author_email="github@acconeer.com",
-    license="BSD 3-clause",
+    license="BSD",
     package_dir={"": PACKAGE_ROOT_DIR},
     packages=find_packages(PACKAGE_ROOT_DIR),
     zip_safe=False,
