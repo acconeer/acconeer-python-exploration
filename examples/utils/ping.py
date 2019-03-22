@@ -1,5 +1,6 @@
 from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
 from acconeer_utils.clients.json.client import JSONClient
+from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 
 
@@ -15,7 +16,13 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    client.connect()
+    config = configs.EnvelopeServiceConfig()
+    config.sensor = args.sensors
+    config.range_interval = [0.2, 0.6]
+    config.sweep_rate = 10
+
+    client.start_streaming(config)
+    client.get_next()
     client.disconnect()
 
 

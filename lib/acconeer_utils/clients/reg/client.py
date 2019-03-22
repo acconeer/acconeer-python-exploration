@@ -14,7 +14,7 @@ from acconeer_utils import libft4222
 
 log = logging.getLogger(__name__)
 
-SPI_MAIN_CTRL_SLEEP = 0.5
+SPI_MAIN_CTRL_SLEEP = 0.3
 
 
 class RegClient(BaseClient):
@@ -326,7 +326,6 @@ class RegSPIClient(BaseClient):
             self._write_reg_raw(rv.addr, rv.val)
 
         self._write_reg("main_control", "create")
-        sleep(SPI_MAIN_CTRL_SLEEP)
 
         info = {}
         info_regs = utils.get_session_info_regs(mode)
