@@ -327,6 +327,8 @@ class DataProcessing:
         except Exception as e:
             self.parent.emit("error", "Wrong file format\n {}".format(e))
 
+        self.info = {"sequence_number": 0}
+
         for i, data_step in enumerate(data):
             if not self.abort:
                 if "sleep" in self.service_type.lower():
@@ -340,6 +342,8 @@ class DataProcessing:
                     plot_data, _ = self.process(data_step)
                 else:
                     plot_data, _ = self.process(data_step["sweep_data"])
+                self.info["sequence_number"] += 1
+                self.parent.emit("sweep_info", "", self.info)
 
     def draw_canvas(self, sweep_index, plot_data, cmd="update_plots",
                     skip_frames=False):
