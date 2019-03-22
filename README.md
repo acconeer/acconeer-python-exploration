@@ -30,8 +30,9 @@ Python 3 (developed and tested on 3.6).
 
 Setuptools, wheel, NumPy, SciPy, PySerial, matplotlib, PyQtGraph, PyQt5, h5py, Flask.
 
-Install all Python dependencies using pip:
+If you have PyQt4 installed, it might conflict with PyQt5. If this is the case for you, we recommend using `virtualenv` to separate the two installations.
 
+Install all Python dependencies using pip:
 ```
 python -m pip install --user setuptools wheel
 python -m pip install --user -r requirements.txt
