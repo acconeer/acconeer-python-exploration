@@ -1,6 +1,5 @@
 import platform
 from glob import glob
-import sys
 import os
 import enum
 import ctypes
@@ -188,41 +187,23 @@ def _load_dll():
         return
 
     system = platform.system().lower()
-    path_dirs = sys.path.copy()
-    path_dirs.extend([os.path.join(p, "acconeer_utils/bin") for p in path_dirs])
+    bin_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bin")
     if system == "linux":
-        path_dirs.insert(0, "/usr/local/lib")
-
-        for path_dir in path_dirs:
-            g = glob(os.path.join(path_dir, "libft4222.so*"))
-            if g:
-                lib_path = g[0]
-                break
-        else:
-            raise Exception("could not find libft4222.so")
-
+        lib_path = glob(os.path.join(bin_dir, "libft4222.so*"))[0]
         dll = ctypes.CDLL(lib_path)
         funs = {name: getattr(dll, name) for name in FUN_ARGTYPES.keys()}
     elif system == "windows":
-        ft4222_lib_path = None
-        for path_dir in path_dirs:
-            path = os.path.join(path_dir, "LibFT4222.dll")
-            if os.path.isfile(path):
-                ft4222_lib_path = path
-                break
-        else:
-            raise Exception("could not find LibFT4222.dll")
-
-        ft_dll = ctypes.WinDLL("ftd2xx")
-        ft4222_dll = ctypes.CDLL(ft4222_lib_path)
-
+        try:
+            ft_dll = ctypes.WinDLL(os.path.join(bin_dir, "amd64", "ftd2xx.dll"))
+            ft4222_dll = ctypes.CDLL(os.path.join(bin_dir, "amd64", "LibFT4222.dll"))
+        except OSError:
+            ft_dll = ctypes.WinDLL(os.path.join(bin_dir, "i386", "ftd2xx.dll"))
+            ft4222_dll = ctypes.CDLL(os.path.join(bin_dir, "i386", "LibFT4222.dll"))
         funs = {}
         for name in FUN_ARGTYPES.keys():
             prefix = name.split("_")[0].lower()
-            if prefix == "ft4222":
-                funs[name] = getattr(ft4222_dll, name)
-            else:
-                funs[name] = getattr(ft_dll, name)
+            dll = ft4222_dll if prefix == "ft4222" else ft_dll
+            funs[name] = getattr(dll, name)
     else:
         raise RuntimeError("OS not supported")
 

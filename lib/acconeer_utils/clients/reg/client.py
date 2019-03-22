@@ -424,9 +424,8 @@ class SPICommProcess(mp.Process):
         self.data_q = data_q
         self.mode = None
 
-        self.log = logging.getLogger(__name__)
-
     def run(self):
+        self.log = logging.getLogger(__name__)
         self.log.debug("SPI communication process started")
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
