@@ -392,6 +392,7 @@ class GUI(QMainWindow):
             "load_cl":      QtWidgets.QPushButton("Load Background", self),
             "load_scan":    QtWidgets.QPushButton("Load Scan", self),
             "save_scan":    QtWidgets.QPushButton("Save Scan", self),
+            "restart_buffered": QtWidgets.QPushButton("Restart buffered", self),
             "scan_ports":   QtWidgets.QPushButton("Scan ports", self),
         }
 
@@ -401,7 +402,8 @@ class GUI(QMainWindow):
             "stop": self.stop_scan,
             "create_cl": lambda: self.start_scan(create_cl=True),
             "load_cl": self.load_clutter_file,
-            "load_scan": self.load_scan,
+            "load_scan": lambda: self.load_scan(),
+            "restart_buffered": lambda: self.load_scan(restart=True),
             "save_scan": lambda: self.save_scan(self.data),
             "scan_ports": self.update_ports,
         }
@@ -414,6 +416,7 @@ class GUI(QMainWindow):
             "load_cl": True,
             "load_scan": True,
             "save_scan": False,
+            "restart_buffered": False,
             "scan_ports": True,
         }
 
@@ -446,10 +449,12 @@ class GUI(QMainWindow):
         control_sublayout_grid.addWidget(self.buttons["stop"], 1, 1)
         control_sublayout_grid.addWidget(self.buttons["save_scan"], 2, 0)
         control_sublayout_grid.addWidget(self.buttons["load_scan"], 2, 1)
-        control_sublayout_grid.addWidget(self.labels["clutter"], 4, 0)
-        control_sublayout_grid.addWidget(self.buttons["create_cl"], 5, 0)
-        control_sublayout_grid.addWidget(self.buttons["load_cl"], 5, 1)
-        control_sublayout_grid.addWidget(self.checkboxes["clutter_file"], 6, 0, 1, 2)
+        control_sublayout_grid.addWidget(self.buttons["restart_buffered"], 3, 0, 1, 2)
+        control_sublayout_grid.addWidget(QLabel(self), 4, 0)
+        control_sublayout_grid.addWidget(self.labels["clutter"], 5, 0)
+        control_sublayout_grid.addWidget(self.buttons["create_cl"], 6, 0)
+        control_sublayout_grid.addWidget(self.buttons["load_cl"], 6, 1)
+        control_sublayout_grid.addWidget(self.checkboxes["clutter_file"], 7, 0, 1, 2)
 
         # Settings sublayout
         settings_sublayout_grid = QtWidgets.QGridLayout()
@@ -483,11 +488,11 @@ class GUI(QMainWindow):
 
         panel_sublayout_inner.addStretch(10)
         panel_sublayout_inner.addLayout(server_sublayout_grid)
-        panel_sublayout_inner.addStretch(2)
+        panel_sublayout_inner.addStretch(5)
         panel_sublayout_inner.addLayout(control_sublayout_grid)
-        panel_sublayout_inner.addStretch(4)
+        panel_sublayout_inner.addStretch(5)
         panel_sublayout_inner.addLayout(settings_sublayout_grid)
-        panel_sublayout_inner.addStretch(4)
+        panel_sublayout_inner.addStretch(5)
         panel_sublayout_inner.addLayout(self.serviceparams_sublayout_grid)
         panel_sublayout_inner.addStretch(20)
         panel_sublayout_inner.addLayout(info_sublayout_grid)
@@ -511,7 +516,7 @@ class GUI(QMainWindow):
         for key in params:
             if key not in self.service_labels[mode]:
                 self.service_labels[mode][key] = {}
-                if params[key]["value"]:
+                if params[key]["value"] is not None:
                     self.service_labels[mode][key]["label"] = QLabel(self)
                     self.service_labels[mode][key]["label"].setMinimumWidth(125)
                     self.service_labels[mode][key]["label"].setText(params[key]["name"])
@@ -632,6 +637,7 @@ class GUI(QMainWindow):
         self.threaded_scan.start()
 
         self.buttons["connect"].setEnabled(False)
+        self.buttons["restart_buffered"].setEnabled(False)
 
     def update_scan(self):
         if self.cl_file:
@@ -643,11 +649,14 @@ class GUI(QMainWindow):
     def stop_scan(self):
         self.sig_scan.emit("stop", "", None)
         self.buttons["load_scan"].setEnabled(True)
-        if self.cl_supported:
-            self.buttons["load_cl"].setEnabled(True)
+        self.buttons["load_cl"].setEnabled(self.cl_supported)
+        self.buttons["create_cl"].setEnabled(self.cl_supported)
         self.mode.setEnabled(True)
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
+        self.buttons["start"].setEnabled(True)
+        if self.data:
+            self.buttons["restart_buffered"].setEnabled(True)
 
     def set_log_level(self):
         log_level = logging.INFO
@@ -691,7 +700,7 @@ class GUI(QMainWindow):
                     error = e
             if connection_success:
                 self.buttons["start"].setEnabled(True)
-                self.buttons["create_cl"].setEnabled(True)
+                self.buttons["create_cl"].setEnabled(self.cl_supported)
             else:
                 self.error_message("Could not connect to server!\n{}".format(error))
                 return
@@ -784,10 +793,11 @@ class GUI(QMainWindow):
             if "box" in self.service_labels[mode][key]:
                 if self.service_labels[mode][key]["box"].isVisible():
                     er = False
-                    val = self.is_float(self.service_labels[mode][key]["box"].text())
+                    val = self.is_float(self.service_labels[mode][key]["box"].text(),
+                                        is_positive=False)
                     limits = self.service_labels[mode][key]["limits"]
                     default = self.service_labels[mode][key]["default"]
-                    if val:
+                    if val is not False:
                         val, er = self.check_limit(val, self.service_labels[mode][key]["box"],
                                                    limits[0], limits[1], set_to=default)
                     else:
@@ -937,7 +947,11 @@ class GUI(QMainWindow):
             self.buttons["load_cl"].setText("Unload background")
             self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
 
-    def load_scan(self):
+    def load_scan(self, restart=False):
+        if restart:
+            self.start_scan(from_file=True)
+            return
+
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -1002,6 +1016,13 @@ class GUI(QMainWindow):
                 except Exception as e:
                     self.error_message("{}".format(e))
                     return
+
+            self.textboxes["start_range"].setText(str(conf.range_interval[0]))
+            self.textboxes["end_range"].setText(str(conf.range_interval[1]))
+            self.textboxes["gain"].setText(str(conf.gain))
+            self.textboxes["frequency"].setText(str(int(conf.sweep_rate)))
+            if "power" in mode.lower():
+                self.textboxes["power_bins"].setText(str(conf.bin_count))
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
                 try:
@@ -1090,30 +1111,20 @@ class GUI(QMainWindow):
         if "error" in message_type:
             self.error_message("{}".format(message))
             if "client" in message_type:
+                self.stop_scan()
                 if self.buttons["connect"].text() == "Disconnect":
                     self.connect_to_server()
-                self.buttons["start"].setEnabled(False)
                 self.buttons["create_cl"].setEnabled(False)
-                self.mode.setEnabled(True)
-                self.interface.setEnabled(True)
-                self.buttons["stop"].setEnabled(False)
+                self.buttons["start"].setEnabled(False)
         elif message_type == "clutter_data":
             self.save_scan(data, clutter=True)
         elif message_type == "scan_data":
             self.data = data
             self.buttons["save_scan"].setEnabled(True)
         elif message_type == "scan_done":
-            self.buttons["load_scan"].setEnabled(True)
-            self.buttons["connect"].setEnabled(True)
-            self.buttons["stop"].setEnabled(False)
-            self.mode.setEnabled(True)
-            if "Disconnect" in self.buttons["connect"].text():
-                self.buttons["start"].setEnabled(True)
-                if self.cl_supported:
-                    self.buttons["create_cl"].setEnabled(True)
-                self.buttons["stop"].setEnabled(False)
-            if self.cl_supported:
-                self.buttons["load_cl"].setEnabled(True)
+            self.stop_scan()
+            if "Connect" == self.buttons["connect"].text():
+                self.buttons["start"].setEnabled(False)
         elif "update_plots" in message_type:
             if data:
                 self.update_plots(data)
