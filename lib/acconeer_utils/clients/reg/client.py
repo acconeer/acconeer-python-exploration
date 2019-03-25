@@ -352,7 +352,9 @@ class RegSPIClient(BaseClient):
 
     def _get_next(self):
         ret_cmd, ret_args = self._data_queue.get()
-        if ret_cmd != "get_next":
+        if ret_cmd == "error":
+            raise ClientError("exception raised in SPI communcation process")
+        elif ret_cmd != "get_next":
             raise ClientError
         info, buffer = ret_args
 
@@ -406,12 +408,16 @@ class RegSPIClient(BaseClient):
                 ret_cmd, _ = self._data_queue.get()
                 if ret_cmd == cmd:
                     break
+                elif ret_cmd == "error":
+                    raise ClientError("exception raised in SPI communcation process")
                 elif ret_cmd != "get_next":
                     raise ClientError
             ret_args = None
         else:
             ret_cmd, ret_args = self._data_queue.get()
-            if ret_cmd != cmd:
+            if ret_cmd == "error":
+                raise ClientError("exception raised in SPI communcation process")
+            elif ret_cmd != cmd:
                 raise ClientError
         return ret_args
 
