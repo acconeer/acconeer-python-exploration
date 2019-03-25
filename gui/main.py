@@ -6,6 +6,8 @@ import numpy as np
 import serial.tools.list_ports
 import h5py
 import logging
+import signal
+import threading
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
                              QCheckBox)
@@ -1398,9 +1400,33 @@ class Threaded_Scan(QtCore.QThread):
         return err
 
 
+def sigint_handler(gui):
+    event = threading.Event()
+    thread = threading.Thread(target=watchdog, args=(event,))
+    thread.start()
+    gui.closeEvent()
+    event.set()
+    thread.join()
+
+
+def watchdog(event):
+    flag = event.wait(1)
+    if not flag:
+        print("\nforcing exit...")
+        os._exit(1)
+
+
 if __name__ == "__main__":
     example_utils.config_logging(level=logging.INFO)
 
     app = QApplication(sys.argv)
     ex = GUI()
+
+    signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
+
+    # Makes sure the signal is caught
+    timer = QtCore.QTimer()
+    timer.timeout.connect(lambda: None)
+    timer.start(200)
+
     sys.exit(app.exec_())
