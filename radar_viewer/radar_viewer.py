@@ -7,7 +7,7 @@ import threading
 from server import http_server
 import traceback
 
-from acconeer_utils.clients.reg.client import RegClient
+from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
 from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
@@ -18,6 +18,8 @@ def check_connection(args):
     try:
         if args.socket_addr:
             client = JSONClient(args.socket_addr)
+        elif args.spi:
+            client = RegSPIClient()
         else:
             port = args.serial_port or example_utils.autodetect_serial_port()
             client = RegClient(port)
