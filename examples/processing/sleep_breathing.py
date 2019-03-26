@@ -21,12 +21,13 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    config = get_sensor_config()
-    config.sensor = args.sensors
+    sensor_config = get_sensor_config()
+    sensor_config.sensor = args.sensors
+    processing_config = get_processing_config()
 
-    client.setup_session(config)
+    client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(config)
+    pg_updater = PGUpdater(sensor_config, processing_config)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -35,7 +36,7 @@ def main():
     interrupt_handler = example_utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
-    processor = PresenceDetectionProcessor(config)
+    processor = PresenceDetectionProcessor(sensor_config, processing_config)
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
@@ -60,22 +61,80 @@ def get_sensor_config():
     return config
 
 
+def get_processing_config():
+    return {
+        "n_dft": {
+            "name": "Estimation window [s]",
+            "value": 15,
+            "limits": [2, 20],
+            "type": float,
+            "text": "s",
+        },
+        "t_freq_est": {
+            "name": "Time between estimation [s]",
+            "value": 0.2,
+            "limits": [0.1, 10],
+            "type": float,
+            "text": "s",
+        },
+        "D": {
+            "name": "Distance down sampling",
+            "value": 124,
+            "limits": [0, 248],
+            "type": int,
+            "text": None,
+        },
+        "f_high": {
+            "name": "Bandpass high freq [Hz]",
+            "value": 0.8,
+            "limits": [0, 10],
+            "type": float,
+            "text": None,
+        },
+        "f_low": {
+            "name": "Bandpass low freq [Hz]",
+            "value": 0.2,
+            "limits": [0, 10],
+            "type": float,
+            "text": None,
+        },
+        "lambda_p": {
+            "name": "Peak to noise ratio",
+            "value": 40,
+            "limits": [1, 1000],
+            "type": float,
+            "text": None,
+        },
+    }
+
+
 class PresenceDetectionProcessor:
-    def __init__(self, sensor_config, processing_config=None):
+    def __init__(self, sensor_config, processing_config):
         self.config = sensor_config
 
         # Settings
-        n_dft = 15                         # Data length for frequency estimation [s] | 20
-        t_freq_est = 0.5                   # Time between frequency estimations [s] | 2
-        tau_iq = 0.04                      # Time constant low-pass filter on IQ-data [s] | 0.04
-        self.f_s = self.config.sweep_rate  # Time constant low-pass filter on IQ-data [s] | 150
-        self.D = 124                       # Spatial or Range down sampling factor | 124
-        self.f_low = 0.1                   # Lowest frequency of interest [Hz] | 0.1
-        self.f_high = 1.0                  # Highest frequency of interest [Hz] | 1
-        self.M = int(self.f_s / 10)        # Time down sampling for DFT | 40 f_s/M ~ 10 Hz
-        self.lambda_p = 40                 # Threshold: spectral peak to noise ratio [1] | 50
-        self.lamda_05 = 6                  # Threshold: ratio fundamental and half harmonic
-        self.interpolate = True            # Interpolation between DFT points
+        # Data length for frequency estimation [s] | 20
+        n_dft = processing_config["n_dft"]["value"]
+        # Time between frequency estimations [s] | 2
+        t_freq_est = processing_config["t_freq_est"]["value"]
+        # Time constant low-pass filter on IQ-data [s] | 0.04
+        tau_iq = 0.04
+        # Time constant low-pass filter on IQ-data [s] | 150
+        self.f_s = self.config.sweep_rate
+        # Spatial or Range down sampling factor | 124
+        self.D = int(processing_config["D"]["value"])
+        # Lowest frequency of interest [Hz] | 0.1
+        self.f_low = processing_config["f_low"]["value"]
+        # Highest frequency of interest [Hz] | 1
+        self.f_high = processing_config["f_high"]["value"]
+        # Time down sampling for DFT | 40 f_s/M ~ 10 Hz
+        self.M = int(self.f_s / 10)
+        # Threshold: spectral peak to noise ratio [1] | 50
+        self.lambda_p = processing_config["lambda_p"]["value"]
+        # Threshold: ratio fundamental and half harmonic
+        self.lamda_05 = 0
+        # Interpolation between DFT points
+        self.interpolate = True
 
         self.delta_f = 1 / n_dft
         self.dft_f_vec = np.arange(self.f_low, self.f_high, self.delta_f)
@@ -327,9 +386,9 @@ class PGUpdater:
                 name="DFT est.",
                 )
         self.fest_plot.setXRange(0, 1)
-        self.fest_plot.setYRange(0, 1.2)
+        self.fest_plot.setYRange(0, 0.5)
         self.fest_text_item = pg.TextItem(anchor=(0, 0), color="k")
-        self.fest_text_item.setPos(0, 1.2)
+        self.fest_text_item.setPos(0, 0.5)
         self.fest_plot.addItem(self.fest_text_item)
 
     def update(self, data):

@@ -108,11 +108,11 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ### Services
 
-- `power_bin.py` \
+- `power_bin.py` ([documentation](https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html)) \
   Demonstrates the power bin service.
-- `envelope.py` \
+- `envelope.py` ([documentation](https://acconeer-python-exploration.readthedocs.io/en/latest/services/envelope.html)) \
   Demonstrates the envelope service.
-- `iq.py` \
+- `iq.py` ([documentation](https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html)) \
   Demonstrates the IQ service.
 
 ### Detectors
