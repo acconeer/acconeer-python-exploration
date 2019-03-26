@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import ntpath
 import numpy as np
@@ -380,6 +381,18 @@ class GUI(QMainWindow):
         port_infos = serial.tools.list_ports.comports()
         ports = [port_info[0] for port_info in port_infos]
 
+        try:
+            opsys = os.uname()
+            if "microsoft" in opsys.release.lower() and "linux" in opsys.sysname.lower():
+                print("WSL detected. Limiting serial ports")
+                ports_reduced = []
+                for p in ports:
+                    if int(re.findall(r"\d+", p)[0]) < 20:
+                        ports_reduced.append(p)
+                ports = ports_reduced
+        except Exception:
+            pass
+
         self.ports.clear()
         self.ports.addItems(ports)
 
@@ -392,7 +405,7 @@ class GUI(QMainWindow):
             "load_cl":      QtWidgets.QPushButton("Load Background", self),
             "load_scan":    QtWidgets.QPushButton("Load Scan", self),
             "save_scan":    QtWidgets.QPushButton("Save Scan", self),
-            "restart_buffered": QtWidgets.QPushButton("Restart buffered", self),
+            "replay_buffered": QtWidgets.QPushButton("Replay buffered/loaded", self),
             "scan_ports":   QtWidgets.QPushButton("Scan ports", self),
         }
 
@@ -403,7 +416,7 @@ class GUI(QMainWindow):
             "create_cl": lambda: self.start_scan(create_cl=True),
             "load_cl": self.load_clutter_file,
             "load_scan": lambda: self.load_scan(),
-            "restart_buffered": lambda: self.load_scan(restart=True),
+            "replay_buffered": lambda: self.load_scan(restart=True),
             "save_scan": lambda: self.save_scan(self.data),
             "scan_ports": self.update_ports,
         }
@@ -416,7 +429,7 @@ class GUI(QMainWindow):
             "load_cl": True,
             "load_scan": True,
             "save_scan": False,
-            "restart_buffered": False,
+            "replay_buffered": False,
             "scan_ports": True,
         }
 
@@ -449,12 +462,14 @@ class GUI(QMainWindow):
         control_sublayout_grid.addWidget(self.buttons["stop"], 1, 1)
         control_sublayout_grid.addWidget(self.buttons["save_scan"], 2, 0)
         control_sublayout_grid.addWidget(self.buttons["load_scan"], 2, 1)
-        control_sublayout_grid.addWidget(self.buttons["restart_buffered"], 3, 0, 1, 2)
-        control_sublayout_grid.addWidget(QLabel(self), 4, 0)
-        control_sublayout_grid.addWidget(self.labels["clutter"], 5, 0)
-        control_sublayout_grid.addWidget(self.buttons["create_cl"], 6, 0)
-        control_sublayout_grid.addWidget(self.buttons["load_cl"], 6, 1)
-        control_sublayout_grid.addWidget(self.checkboxes["clutter_file"], 7, 0, 1, 2)
+        control_sublayout_grid.addWidget(self.buttons["replay_buffered"], 3, 0, 1, 2)
+        control_sublayout_grid.addWidget(self.labels["sweep_buffer"], 4, 0)
+        control_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], 4, 1)
+        control_sublayout_grid.addWidget(QLabel(self), 5, 0)
+        control_sublayout_grid.addWidget(self.labels["clutter"], 6, 0)
+        control_sublayout_grid.addWidget(self.buttons["create_cl"], 7, 0)
+        control_sublayout_grid.addWidget(self.buttons["load_cl"], 7, 1)
+        control_sublayout_grid.addWidget(self.checkboxes["clutter_file"], 8, 0, 1, 2)
 
         # Settings sublayout
         settings_sublayout_grid = QtWidgets.QGridLayout()
@@ -471,11 +486,9 @@ class GUI(QMainWindow):
         settings_sublayout_grid.addWidget(self.textboxes["gain"], 5, 1)
         settings_sublayout_grid.addWidget(self.labels["sweeps"], 6, 0)
         settings_sublayout_grid.addWidget(self.textboxes["sweeps"], 6, 1)
-        settings_sublayout_grid.addWidget(self.labels["sweep_buffer"], 7, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], 7, 1)
-        settings_sublayout_grid.addWidget(self.labels["power_bins"], 8, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 8, 1)
-        settings_sublayout_grid.addWidget(self.labels["stitching"], 9, 0, 1, 2)
+        settings_sublayout_grid.addWidget(self.labels["power_bins"], 7, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 7, 1)
+        settings_sublayout_grid.addWidget(self.labels["stitching"], 8, 0, 1, 2)
 
         # Service params sublayout
         self.serviceparams_sublayout_grid = QtWidgets.QGridLayout()
@@ -637,7 +650,7 @@ class GUI(QMainWindow):
         self.threaded_scan.start()
 
         self.buttons["connect"].setEnabled(False)
-        self.buttons["restart_buffered"].setEnabled(False)
+        self.buttons["replay_buffered"].setEnabled(False)
 
     def update_scan(self):
         if self.cl_file:
@@ -655,8 +668,8 @@ class GUI(QMainWindow):
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
         self.buttons["start"].setEnabled(True)
-        if self.data:
-            self.buttons["restart_buffered"].setEnabled(True)
+        if self.data is not None:
+            self.buttons["replay_buffered"].setEnabled(True)
 
     def set_log_level(self):
         log_level = logging.INFO
@@ -968,7 +981,22 @@ class GUI(QMainWindow):
                 self.data = {}
                 try:
                     f = h5py.File(filename, "r")
+                except Exception as e:
+                    self.error_message("{}".format(e))
+                    print(e)
+                    return
+
+                try:
                     mode = f["service_type"][()]
+                except Exception:
+                    print("Service type not stored, setting to Envelope!")
+                    mode = "Envelope"
+
+                index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
+                if index >= 0:
+                    self.mode.setCurrentIndex(index)
+
+                try:
                     if "iq" in mode.lower():
                         conf = configs.IQServiceConfig()
                     else:
@@ -976,6 +1004,7 @@ class GUI(QMainWindow):
                     real = np.asarray(list(f["real"]))
                     im = np.asarray(list(f["imag"]))
                     self.data["sweeps"] = real[...] + 1j * im[...]
+                    data_len = len(self.data["sweeps"][:, 0])
                 except Exception as e:
                     self.error_message("{}".format(e))
                     print(e)
@@ -999,7 +1028,6 @@ class GUI(QMainWindow):
                             float(self.textboxes["end_range"].text()),
                     ]
                     conf.sweep_rate = int(self.textboxes["frequency"].text())
-                    mode = self.mode.currentText().lower()
                 self.data["service_type"] = mode
                 self.data["sensor_config"] = conf
                 self.data["cl_file"] = None
@@ -1013,9 +1041,14 @@ class GUI(QMainWindow):
                     self.data = np.load(filename)
                     mode = self.data[0]["service_type"]
                     cl_file = self.data[0]["cl_file"]
+                    data_len = len(self.data)
+                    conf = self.data[0]["sensor_config"]
                 except Exception as e:
                     self.error_message("{}".format(e))
                     return
+                index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
+                if index >= 0:
+                    self.mode.setCurrentIndex(index)
 
             self.textboxes["start_range"].setText(str(conf.range_interval[0]))
             self.textboxes["end_range"].setText(str(conf.range_interval[1]))
@@ -1032,9 +1065,7 @@ class GUI(QMainWindow):
                     print("Background file not found")
                     print(e)
 
-            index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
-            if index >= 0:
-                self.mode.setCurrentIndex(index)
+            self.textboxes["sweep_buffer"].setText(str(data_len))
             self.start_scan(from_file=True)
 
     def save_scan(self, data, clutter=False):
@@ -1116,6 +1147,8 @@ class GUI(QMainWindow):
                     self.connect_to_server()
                 self.buttons["create_cl"].setEnabled(False)
                 self.buttons["start"].setEnabled(False)
+            if "clutter" in message_type:
+                self.load_clutter_file(force_unload=True)
         elif message_type == "clutter_data":
             self.save_scan(data, clutter=True)
         elif message_type == "scan_data":

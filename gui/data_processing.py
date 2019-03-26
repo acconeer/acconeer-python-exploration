@@ -109,7 +109,11 @@ class DataProcessing:
             cl_iq = cl
             self.use_cl = False
             if error:
-                self.parent.emit("error", error)
+                try:
+                    error += "\nFile: {:s}\n".format(cl_file)
+                except Exception:
+                    pass
+                self.parent.emit("clutter_error", error)
 
         return (cl, cl_iq, thrshld)
 
