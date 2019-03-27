@@ -12,7 +12,6 @@ from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
 
 env_max = 0.3
-hist_plot_len = 800
 
 
 def main():
@@ -27,12 +26,13 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    config = get_sensor_config()
-    config.sensor = args.sensors
+    sensor_config = get_sensor_config()
+    processing_config = get_processing_config()
+    sensor_config.sensor = args.sensors
 
-    client.setup_session(config)
+    client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(config)
+    pg_updater = PGUpdater(sensor_config, processing_config)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -41,7 +41,7 @@ def main():
     interrupt_handler = example_utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
-    processor = BreathingProcessor(config)
+    processor = BreathingProcessor(sensor_config, processing_config)
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
@@ -60,10 +60,22 @@ def main():
 
 def get_sensor_config():
     config = configs.IQServiceConfig()
-    config.range_interval = [0.18, 0.60]
-    config.sweep_rate = 50
+    config.range_interval = [0.3, 0.80]
+    config.sweep_rate = 80
     config.gain = 0.7
     return config
+
+
+def get_processing_config():
+    return {
+        "hist_plot_len": {
+            "name": "Plot length [s]",
+            "value": 10,
+            "limits": [1, 20000],
+            "type": int,
+            "text": None,
+        },
+    }
 
 
 class BreathingProcessor:
@@ -76,10 +88,11 @@ class BreathingProcessor:
     sweep_alpha = 0.7
     env_alpha = 0.95
 
-    def __init__(self, sensor_config, processing_config=None):
+    def __init__(self, sensor_config, processing_config):
         self.config = sensor_config
-        self.hist_plot_len = hist_plot_len
 
+        self.hist_plot_len = int(
+            processing_config["hist_plot_len"]["value"]*self.config.sweep_rate)
         self.f = sensor_config.sweep_rate
 
         self.peak_history = np.zeros(self.peak_hist_len, dtype="complex")
@@ -234,9 +247,13 @@ class BreathingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config=None):
+    def __init__(self, sensor_config, processing_config):
         self.config = sensor_config
-        self.move_xs = (np.arange(-hist_plot_len, 0) + 1) / self.config.sweep_rate
+
+        self.hist_plot_len = int(
+            processing_config["hist_plot_len"]["value"]*self.config.sweep_rate)
+
+        self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / self.config.sweep_rate
         self.plot_index = 0
 
     def setup(self, win):
