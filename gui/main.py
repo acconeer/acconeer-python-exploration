@@ -10,8 +10,8 @@ import signal
 import threading
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
-                             QCheckBox)
-from PyQt5.QtGui import QPixmap, QFont
+                             QCheckBox, QFrame)
+from PyQt5.QtGui import QPixmap, QFont, QIcon
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore
 
@@ -37,7 +37,14 @@ import sleep_breathing as sb
 import obstacle_detection as od
 
 
+if "win32" in sys.platform.lower():
+    import ctypes
+    myappid = "acconeer.exploration.tool"
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
+
 class GUI(QMainWindow):
+    num = 0
     sig_scan = pyqtSignal(str, str, object)
     cl_file = False
     data = None
@@ -52,9 +59,11 @@ class GUI(QMainWindow):
     sweeps_skipped = 0
     service_labels = {}
     service_params = None
+    service_defaults = None
 
     def __init__(self):
         super().__init__()
+        self.setWindowIcon(QIcon(self.acc_file))
 
         self.init_labels()
         self.init_textboxes()
@@ -85,21 +94,24 @@ class GUI(QMainWindow):
 
     def init_labels(self):
         text = {
-            "sensor":       "Sensor",
-            "server":       "Host address",
-            "scan":         "Scan",
-            "gain":         "Gain",
-            "frequency":    "Sweep frequency",
-            "sweeps":       "Number of sweeps",
-            "sweep_buffer": "Sweep buffer",
-            "start_range":  "Start (m)",
-            "end_range":    "Stop (m)",
-            "clutter":      "Background settings",
-            "interface":    "Interface",
-            "power_bins":   "Power bins",
-            "sweep_info":   "Sweeps: 0 (skipped 0)",
-            "saturated":    "Warning: Data saturated, reduce gain!",
-            "stitching":    "Experimental stitching enabled!"
+            "con_settings":     "Connection settings:",
+            "sensor_settings":  "Sensor settings:",
+            "service_settings": "Processing settings:",
+            "sensor":           "Sensor",
+            "scan":             "Scan controls:",
+            "gain":             "Gain",
+            "frequency":        "Sweep frequency",
+            "sweeps":           "Number of sweeps",
+            "sweep_buffer":     "Sweep buffer",
+            "start_range":      "Start (m)",
+            "end_range":        "Stop (m)",
+            "clutter":          "Background settings",
+            "interface":        "Interface",
+            "power_bins":       "Power bins",
+            "sweep_info":       "Sweeps: 0 (skipped 0)",
+            "saturated":        "Warning: Data saturated, reduce gain!",
+            "stitching":        "Experimental stitching enabled!",
+            "empty_01":         "",
         }
 
         self.labels = {}
@@ -112,6 +124,11 @@ class GUI(QMainWindow):
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
+
+        self.labels["con_settings"].setStyleSheet("text-decoration: underline")
+        self.labels["sensor_settings"].setStyleSheet("text-decoration: underline")
+        self.labels["service_settings"].setStyleSheet("text-decoration: underline")
+        self.labels["scan"].setStyleSheet("text-decoration: underline")
 
     def init_textboxes(self):
         text = {
@@ -201,7 +218,10 @@ class GUI(QMainWindow):
             canvas = QLabel()
             pixmap = QPixmap(self.acc_file)
             canvas.setPixmap(pixmap)
+            self.buttons["sensor_defaults"].setEnabled(False)
             return canvas
+        else:
+            self.buttons["sensor_defaults"].setEnabled(True)
 
         pg.setConfigOption("background", "#f0f0f0")
         pg.setConfigOption("foreground", "k")
@@ -217,15 +237,23 @@ class GUI(QMainWindow):
                             self.service_labels[m][key][element].setVisible(False)
         if not self.external:
             self.service_params = None
+            self.service_defaults = None
+            self.serviceFrame.hide()
 
         if self.external:
             if not refresh:
                 self.service_params = None
+                self.service_defaults = None
                 try:
                     self.service_params = axes[mode][0].get_processing_config()
+                    self.service_defaults = axes[mode][0].get_processing_config()
                     self.add_params(self.service_params)
                 except Exception:
                     pass
+            if self.service_params is not None:
+                self.serviceFrame.show()
+            else:
+                self.serviceFrame.hide()
             self.service_widget = axes[mode][0].PGUpdater(
                 self.update_sensor_config(refresh=refresh), self.service_params)
             self.service_widget.setup(canvas)
@@ -354,6 +382,21 @@ class GUI(QMainWindow):
             "Sleep breathing": [sb.get_sensor_config(), "external"],
             "Obstacle detection": [od.get_sensor_config(), "external"]
         }
+        self.conf_defaults = {}
+        for service in self.mode_to_config:
+            if "Select" not in service:
+                self.conf_defaults[service] = {}
+                conf = self.mode_to_config[service][0]
+                if "external" in self.mode_to_config[service][1]:
+                    self.conf_defaults[service]["gain"] = conf.gain
+                    self.conf_defaults[service]["start_range"] = conf.range_interval[0]
+                    self.conf_defaults[service]["end_range"] = conf.range_interval[1]
+                    self.conf_defaults[service]["frequency"] = conf.sweep_rate
+                else:
+                    self.conf_defaults[service]["start_range"] = 0.18
+                    self.conf_defaults[service]["end_range"] = 0.60
+                    self.conf_defaults[service]["gain"] = 0.7
+                    self.conf_defaults[service]["frequency"] = 60
 
         self.mode.currentIndexChanged.connect(self.update_canvas)
 
@@ -400,15 +443,17 @@ class GUI(QMainWindow):
 
     def init_buttons(self):
         self.buttons = {
-            "start":        QtWidgets.QPushButton("Start", self),
-            "connect":      QtWidgets.QPushButton("Connect", self),
-            "stop":         QtWidgets.QPushButton("Stop", self),
-            "create_cl":    QtWidgets.QPushButton("Scan Background", self),
-            "load_cl":      QtWidgets.QPushButton("Load Background", self),
-            "load_scan":    QtWidgets.QPushButton("Load Scan", self),
-            "save_scan":    QtWidgets.QPushButton("Save Scan", self),
-            "replay_buffered": QtWidgets.QPushButton("Replay buffered/loaded", self),
-            "scan_ports":   QtWidgets.QPushButton("Scan ports", self),
+            "start":            QtWidgets.QPushButton("Start", self),
+            "connect":          QtWidgets.QPushButton("Connect", self),
+            "stop":             QtWidgets.QPushButton("Stop", self),
+            "create_cl":        QtWidgets.QPushButton("Scan Background", self),
+            "load_cl":          QtWidgets.QPushButton("Load Background", self),
+            "load_scan":        QtWidgets.QPushButton("Load Scan", self),
+            "save_scan":        QtWidgets.QPushButton("Save Scan", self),
+            "replay_buffered":  QtWidgets.QPushButton("Replay buffered/loaded", self),
+            "scan_ports":       QtWidgets.QPushButton("Scan ports", self),
+            "sensor_defaults":  QtWidgets.QPushButton("Defaults", self),
+            "service_defaults": QtWidgets.QPushButton("Defaults", self),
         }
 
         button_funcs = {
@@ -421,6 +466,8 @@ class GUI(QMainWindow):
             "replay_buffered": lambda: self.load_scan(restart=True),
             "save_scan": lambda: self.save_scan(self.data),
             "scan_ports": self.update_ports,
+            "sensor_defaults": self.sensor_defaults,
+            "service_defaults": self.service_defaults,
         }
 
         button_enabled = {
@@ -433,6 +480,8 @@ class GUI(QMainWindow):
             "save_scan": False,
             "replay_buffered": False,
             "scan_ports": True,
+            "sensor_defaults": False,
+            "service_defaults": True,
         }
 
         for key in button_funcs:
@@ -447,53 +496,71 @@ class GUI(QMainWindow):
         panel_sublayout_inner = QtWidgets.QVBoxLayout()
 
         # Server sublayout
-        server_sublayout_grid = QtWidgets.QGridLayout()
-        server_sublayout_grid.addWidget(self.labels["server"], 0, 0)
-        server_sublayout_grid.addWidget(self.buttons["scan_ports"], 0, 0)
-        server_sublayout_grid.addWidget(self.labels["interface"], 0, 1)
-        server_sublayout_grid.addWidget(self.ports, 1, 0)
-        server_sublayout_grid.addWidget(self.textboxes["host"], 1, 0)
-        server_sublayout_grid.addWidget(self.interface, 1, 1)
-        server_sublayout_grid.addWidget(self.mode, 2, 0)
-        server_sublayout_grid.addWidget(self.buttons["connect"], 2, 1)
+        serverFrame = QFrame(self)
+        serverFrame.setFrameShape(QFrame.StyledPanel)
+        self.num = 0
+        server_sublayout_grid = QtWidgets.QGridLayout(serverFrame)
+        server_sublayout_grid.addWidget(self.labels["con_settings"], self.num, 0, 1, 2)
+        server_sublayout_grid.addWidget(self.labels["interface"], self.increment(), 0)
+        server_sublayout_grid.addWidget(self.interface, self.num, 1)
+        server_sublayout_grid.addWidget(self.ports, self.increment(), 0)
+        server_sublayout_grid.addWidget(self.textboxes["host"], self.num, 0, 1, 2)
+        server_sublayout_grid.addWidget(self.buttons["scan_ports"], self.num, 1)
+        server_sublayout_grid.addWidget(self.labels["empty_01"], self.num, 1)
+        server_sublayout_grid.addWidget(self.buttons["connect"], self.increment(), 0, 1, 2)
 
         # Controls sublayout
-        control_sublayout_grid = QtWidgets.QGridLayout()
-        control_sublayout_grid.addWidget(self.labels["scan"], 0, 0)
-        control_sublayout_grid.addWidget(self.buttons["start"], 1, 0)
-        control_sublayout_grid.addWidget(self.buttons["stop"], 1, 1)
-        control_sublayout_grid.addWidget(self.buttons["save_scan"], 2, 0)
-        control_sublayout_grid.addWidget(self.buttons["load_scan"], 2, 1)
-        control_sublayout_grid.addWidget(self.buttons["replay_buffered"], 3, 0, 1, 2)
-        control_sublayout_grid.addWidget(self.labels["sweep_buffer"], 4, 0)
-        control_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], 4, 1)
-        control_sublayout_grid.addWidget(QLabel(self), 5, 0)
-        control_sublayout_grid.addWidget(self.labels["clutter"], 6, 0)
-        control_sublayout_grid.addWidget(self.buttons["create_cl"], 7, 0)
-        control_sublayout_grid.addWidget(self.buttons["load_cl"], 7, 1)
-        control_sublayout_grid.addWidget(self.checkboxes["clutter_file"], 8, 0, 1, 2)
+        controlFrame = QFrame(self)
+        controlFrame.setFrameShape(QFrame.StyledPanel)
+        self.num = 0
+        control_sublayout_grid = QtWidgets.QGridLayout(controlFrame)
+        control_sublayout_grid.addWidget(self.labels["scan"], self.num, 0)
+        control_sublayout_grid.addWidget(self.mode, self.increment(), 0, 1, 2)
+        control_sublayout_grid.addWidget(self.buttons["start"], self.increment(), 0)
+        control_sublayout_grid.addWidget(self.buttons["stop"], self.num, 1)
+        control_sublayout_grid.addWidget(self.buttons["save_scan"], self.increment(), 0)
+        control_sublayout_grid.addWidget(self.buttons["load_scan"], self.num, 1)
+        control_sublayout_grid.addWidget(
+            self.buttons["replay_buffered"], self.increment(), 0, 1, 2)
+        control_sublayout_grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
+        control_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
+        control_sublayout_grid.addWidget(QLabel(self), self.increment(), 0)
+        control_sublayout_grid.addWidget(self.labels["clutter"], self.increment(), 0)
+        control_sublayout_grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
+        control_sublayout_grid.addWidget(self.buttons["load_cl"], self.num, 1)
+        control_sublayout_grid.addWidget(
+            self.checkboxes["clutter_file"], self.increment(), 0, 1, 2)
 
         # Settings sublayout
-        settings_sublayout_grid = QtWidgets.QGridLayout()
-        settings_sublayout_grid.addWidget(self.profiles, 0, 0, 1, 2)
-        settings_sublayout_grid.addWidget(self.labels["sensor"], 1, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sensor"], 1, 1)
-        settings_sublayout_grid.addWidget(self.labels["start_range"], 2, 0)
-        settings_sublayout_grid.addWidget(self.labels["end_range"], 2, 1)
-        settings_sublayout_grid.addWidget(self.textboxes["start_range"], 3, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["end_range"], 3, 1)
-        settings_sublayout_grid.addWidget(self.labels["frequency"], 4, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["frequency"], 4, 1)
-        settings_sublayout_grid.addWidget(self.labels["gain"], 5, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["gain"], 5, 1)
-        settings_sublayout_grid.addWidget(self.labels["sweeps"], 6, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sweeps"], 6, 1)
-        settings_sublayout_grid.addWidget(self.labels["power_bins"], 7, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], 7, 1)
-        settings_sublayout_grid.addWidget(self.labels["stitching"], 8, 0, 1, 2)
+        settingsFrame = QFrame(self)
+        settingsFrame.setFrameShape(QFrame.StyledPanel)
+        self.num = 0
+        settings_sublayout_grid = QtWidgets.QGridLayout(settingsFrame)
+        settings_sublayout_grid.addWidget(self.labels["sensor_settings"], self.num, 0)
+        settings_sublayout_grid.addWidget(self.buttons["sensor_defaults"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.labels["sensor"], self.increment(), 0)
+        settings_sublayout_grid.addWidget(self.textboxes["sensor"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.labels["start_range"], self.increment(), 0)
+        settings_sublayout_grid.addWidget(self.labels["end_range"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.textboxes["start_range"], self.increment(), 0)
+        settings_sublayout_grid.addWidget(self.textboxes["end_range"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.labels["frequency"], self.increment(), 0)
+        settings_sublayout_grid.addWidget(self.textboxes["frequency"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.labels["gain"], self.increment(), 0)
+        settings_sublayout_grid.addWidget(self.textboxes["gain"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.labels["sweeps"], self.increment(), 0)
+        settings_sublayout_grid.addWidget(self.textboxes["sweeps"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.labels["power_bins"], self.increment(), 0)
+        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.profiles, self.increment(), 0, 1, 2)
+        settings_sublayout_grid.addWidget(self.labels["stitching"], self.increment(), 0, 1, 2)
 
         # Service params sublayout
-        self.serviceparams_sublayout_grid = QtWidgets.QGridLayout()
+        self.serviceFrame = QFrame(self)
+        self.serviceFrame.setFrameShape(QFrame.StyledPanel)
+        self.serviceparams_sublayout_grid = QtWidgets.QGridLayout(self.serviceFrame)
+        self.serviceparams_sublayout_grid.addWidget(self.labels["service_settings"], 0, 0)
+        self.serviceparams_sublayout_grid.addWidget(self.buttons["service_defaults"], 0, 1)
 
         # Info sublayout
         info_sublayout_grid = QtWidgets.QGridLayout()
@@ -501,20 +568,19 @@ class GUI(QMainWindow):
         info_sublayout_grid.addWidget(self.labels["sweep_info"], 1, 0, 1, 2)
         info_sublayout_grid.addWidget(self.labels["saturated"], 2, 0, 1, 2)
 
-        panel_sublayout_inner.addStretch(10)
-        panel_sublayout_inner.addLayout(server_sublayout_grid)
-        panel_sublayout_inner.addStretch(5)
-        panel_sublayout_inner.addLayout(control_sublayout_grid)
-        panel_sublayout_inner.addStretch(5)
-        panel_sublayout_inner.addLayout(settings_sublayout_grid)
-        panel_sublayout_inner.addStretch(5)
-        panel_sublayout_inner.addLayout(self.serviceparams_sublayout_grid)
-        panel_sublayout_inner.addStretch(20)
-        panel_sublayout_inner.addLayout(info_sublayout_grid)
         panel_sublayout_inner.addStretch(1)
+        panel_sublayout_inner.addWidget(serverFrame)
+        panel_sublayout_inner.addStretch(1)
+        panel_sublayout_inner.addWidget(controlFrame)
+        panel_sublayout_inner.addStretch(1)
+        panel_sublayout_inner.addWidget(settingsFrame)
+        panel_sublayout_inner.addStretch(1)
+        panel_sublayout_inner.addWidget(self.serviceFrame)
+        panel_sublayout_inner.addStretch(5)
+        panel_sublayout_inner.addLayout(info_sublayout_grid)
         self.panel_sublayout.addStretch(5)
         self.panel_sublayout.addLayout(panel_sublayout_inner)
-        self.panel_sublayout.addStretch(10)
+        self.serviceFrame.hide()
 
     def add_params(self, params):
         for mode in self.service_labels:
@@ -524,7 +590,7 @@ class GUI(QMainWindow):
                         self.service_labels[mode][key][element].setVisible(False)
         mode = self.mode.currentText()
 
-        index = 0
+        index = 1
         if mode not in self.service_labels:
             self.service_labels[mode] = {}
 
@@ -556,6 +622,25 @@ class GUI(QMainWindow):
                     if "label" in element or "box" in element:
                         self.service_labels[mode][key][element].setVisible(True)
 
+    def sensor_defaults(self):
+        conf = self.conf_defaults[self.mode.currentText()]
+        self.textboxes["start_range"].setText("{:.2f}".format(conf["start_range"]))
+        self.textboxes["end_range"].setText("{:.2f}".format(conf["end_range"]))
+        self.textboxes["gain"].setText("{:.2f}".format(conf["gain"]))
+        self.textboxes["frequency"].setText("{:d}".format(conf["frequency"]))
+        self.sweep_count = -1
+        self.textboxes["sweeps"].setText("-1")
+
+    def service_defaults(self):
+        mode = self.mode.currentText()
+        if self.service_defaults is None:
+            return
+        for key in self.service_defaults:
+            if key in self.service_labels[mode]:
+                if "box" in self.service_labels[mode][key]:
+                    self.service_labels[mode][key]["box"].setText(
+                        str(self.service_defaults[key]["value"]))
+
     def update_canvas(self, force_update=False):
         mode = self.mode.currentText()
 
@@ -580,18 +665,18 @@ class GUI(QMainWindow):
         if "serial" in self.interface.currentText().lower():
             self.ports.show()
             self.textboxes["host"].hide()
-            self.labels["server"].hide()
             self.buttons["scan_ports"].show()
+            self.labels["empty_01"].hide()
         elif "spi" in self.interface.currentText().lower():
             self.ports.hide()
             self.textboxes["host"].hide()
-            self.labels["server"].hide()
             self.buttons["scan_ports"].hide()
+            self.labels["empty_01"].show()
         else:
             self.ports.hide()
             self.textboxes["host"].show()
-            self.labels["server"].show()
             self.buttons["scan_ports"].hide()
+            self.labels["empty_01"].hide()
 
     def error_message(self, error):
         em = QtWidgets.QErrorMessage(self.main_widget)
@@ -1305,6 +1390,10 @@ class GUI(QMainWindow):
         if last_config:
             self.textboxes["host"].setText(last_config["host"])
             self.sweep_count = last_config["sweep_count"]
+
+    def increment(self):
+        self.num += 1
+        return self.num
 
     def closeEvent(self, event=None):
         if "select" not in str(self.mode.currentText()).lower():
