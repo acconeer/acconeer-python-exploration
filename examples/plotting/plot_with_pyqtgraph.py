@@ -1,5 +1,5 @@
 import numpy as np
-from pyqtgraph.Qt import QtGui
+from pyqtgraph.Qt import QtWidgets
 import pyqtgraph as pg
 
 from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
@@ -35,7 +35,7 @@ def main():
     hist_max = np.zeros(num_hist)
     smooth_max = example_utils.SmoothMax(config.sweep_rate)
 
-    app = QtGui.QApplication([])
+    app = QtWidgets.QApplication([])
     pg.setConfigOption("background", "w")
     pg.setConfigOption("foreground", "k")
     pg.setConfigOptions(antialias=True)

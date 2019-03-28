@@ -5,7 +5,7 @@ import queue
 from time import sleep, time
 
 import pyqtgraph as pg
-from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 
 
 class PGProcess:
@@ -52,7 +52,7 @@ class PGProcess:
 def pg_process_program(q, exit_event, updater, max_freq):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    app = QtGui.QApplication([])
+    app = QtWidgets.QApplication([])
     pg.setConfigOption("background", "w")
     pg.setConfigOption("foreground", "k")
     pg.setConfigOptions(antialias=True)
