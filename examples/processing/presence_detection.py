@@ -76,6 +76,7 @@ def get_processing_config():
 class PresenceDetectionProcessor:
     def __init__(self, sensor_config, processing_config):
         self.movement_history = np.zeros(5 * sensor_config.sweep_rate)  # 5 seconds
+        self.threshold = processing_config["threshold"]["value"]
 
         self.a_fast_tau = 0.1
         self.a_slow_tau = 1
@@ -94,8 +95,6 @@ class PresenceDetectionProcessor:
         if self.sweep_index == 0:
             self.sweep_lp_fast = np.array(sweep)
             self.sweep_lp_slow = np.array(sweep)
-
-            out_data = None
         else:
             self.sweep_lp_fast = self.sweep_lp_fast*self.a_fast + sweep*(1-self.a_fast)
             self.sweep_lp_slow = self.sweep_lp_slow*self.a_slow + sweep*(1-self.a_slow)
@@ -107,10 +106,14 @@ class PresenceDetectionProcessor:
             self.movement_history = np.roll(self.movement_history, -1)
             self.movement_history[-1] = self.movement_lp
 
-            out_data = {
-                "envelope": np.abs(self.sweep_lp_fast),
-                "movement_history": np.tanh(self.movement_history),
-            }
+        move_hist = np.tanh(self.movement_history)
+        presence = move_hist[-1] > self.threshold
+
+        out_data = {
+            "envelope": np.abs(self.sweep_lp_fast),
+            "movement_history": move_hist,
+            "presence": presence,
+        }
 
         self.sweep_index += 1
         return out_data
@@ -122,7 +125,6 @@ class PresenceDetectionProcessor:
 class PGUpdater:
     def __init__(self, sensor_config, processing_config):
         self.sensor_config = sensor_config
-        self.plot_index = 0
         self.threshold = processing_config["threshold"]["value"]
 
     def setup(self, win):
@@ -144,9 +146,29 @@ class PGUpdater:
         limit_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
         self.limit_line = pg.InfiniteLine(self.threshold, angle=0, pen=limit_pen)
         move_hist_plot.addItem(self.limit_line)
-        self.move_hist_text = pg.TextItem(color=pg.mkColor("k"), anchor=(0.5, 0))
-        self.move_hist_text.setPos(-2.5, 0.95)
-        move_hist_plot.addItem(self.move_hist_text)
+
+        present_text = '<div style="text-align: center">' \
+                       '<span style="color: #FFFFFF;font-size:16pt;">' \
+                       '{}</span></div>'.format("Presence detected!")
+        not_present_text = '<div style="text-align: center">' \
+                           '<span style="color: #FFFFFF;font-size:16pt;">' \
+                           '{}</span></div>'.format("No presence detected")
+
+        self.present_text_item = pg.TextItem(
+            html=present_text,
+            fill=pg.mkColor(255, 140, 0),
+            anchor=(0.5, 0),
+            )
+        self.not_present_text_item = pg.TextItem(
+            html=not_present_text,
+            fill=pg.mkColor("b"),
+            anchor=(0.5, 0),
+            )
+        self.present_text_item.setPos(-2.5, 0.95)
+        self.not_present_text_item.setPos(-2.5, 0.95)
+        move_hist_plot.addItem(self.present_text_item)
+        move_hist_plot.addItem(self.not_present_text_item)
+        self.present_text_item.hide()
 
     def update(self, data):
         env_ys = data["envelope"]
@@ -158,10 +180,12 @@ class PGUpdater:
         move_hist_xs = np.linspace(-5, 0, len(move_hist_ys))
         self.move_hist_curve.setData(move_hist_xs, move_hist_ys)
 
-        if move_hist_ys[-1] > self.threshold:
-            self.move_hist_text.setText("Present!")
+        if data["presence"]:
+            self.present_text_item.show()
+            self.not_present_text_item.hide()
         else:
-            self.move_hist_text.setText("Not present")
+            self.present_text_item.hide()
+            self.not_present_text_item.show()
 
 
 if __name__ == "__main__":
