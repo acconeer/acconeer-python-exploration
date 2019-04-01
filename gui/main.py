@@ -532,10 +532,10 @@ class GUI(QMainWindow):
             self.checkboxes["clutter_file"], self.increment(), 0, 1, 2)
 
         # Settings sublayout
-        settingsFrame = QFrame(self)
-        settingsFrame.setFrameShape(QFrame.StyledPanel)
+        self.settingsFrame = QFrame(self)
+        self.settingsFrame.setFrameShape(QFrame.StyledPanel)
         self.num = 0
-        settings_sublayout_grid = QtWidgets.QGridLayout(settingsFrame)
+        settings_sublayout_grid = QtWidgets.QGridLayout(self.settingsFrame)
         settings_sublayout_grid.addWidget(self.labels["sensor_settings"], self.num, 0)
         settings_sublayout_grid.addWidget(self.buttons["sensor_defaults"], self.num, 1)
         settings_sublayout_grid.addWidget(self.labels["sensor"], self.increment(), 0)
@@ -573,7 +573,7 @@ class GUI(QMainWindow):
         panel_sublayout_inner.addStretch(1)
         panel_sublayout_inner.addWidget(controlFrame)
         panel_sublayout_inner.addStretch(1)
-        panel_sublayout_inner.addWidget(settingsFrame)
+        panel_sublayout_inner.addWidget(self.settingsFrame)
         panel_sublayout_inner.addStretch(1)
         panel_sublayout_inner.addWidget(self.serviceFrame)
         panel_sublayout_inner.addStretch(5)
@@ -736,6 +736,8 @@ class GUI(QMainWindow):
         self.sweeps_skipped = 0
         self.threaded_scan.start()
 
+        self.serviceFrame.setEnabled(False)
+        self.settingsFrame.setEnabled(False)
         self.buttons["connect"].setEnabled(False)
         self.buttons["replay_buffered"].setEnabled(False)
 
@@ -755,6 +757,8 @@ class GUI(QMainWindow):
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
         self.buttons["start"].setEnabled(True)
+        self.serviceFrame.setEnabled(True)
+        self.settingsFrame.setEnabled(True)
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
 
