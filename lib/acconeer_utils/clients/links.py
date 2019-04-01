@@ -7,6 +7,7 @@ import queue
 import signal
 import logging
 import traceback
+import platform
 
 from acconeer_utils.clients.base import ClientError
 
@@ -113,13 +114,57 @@ class SocketLink(BaseLink):
         self._buf = None
 
 
-class SerialProcessLink(BaseLink):
+class BaseSerialLink(BaseLink):
     DEFAULT_BAUDRATE = 115200
     MAX_BAUDRATE = 3000000
 
-    def __init__(self, port=None):
+    def __init__(self):
         super().__init__()
         self.baudrate = self.DEFAULT_BAUDRATE
+
+
+class SerialLink(BaseSerialLink):
+    def __init__(self, port=None):
+        super().__init__()
+        self._port = port
+        self._ser = None
+
+    def connect(self):
+        self._ser = serial.Serial()
+        self._ser.port = self._port
+        self._ser.baudrate = self.baudrate
+        self._ser.timeout = self._timeout
+        self._ser.open()
+
+        if platform.system().lower() == "windows":
+            self._ser.set_buffer_size(rx_size=10**6, tx_size=10**6)
+
+    def recv(self, num_bytes):
+        data = bytearray(self._ser.read(num_bytes))
+
+        if not len(data) == num_bytes:
+            raise LinkError("recv timeout")
+
+        return data
+
+    def recv_until(self, bs):
+        data = bytearray(self._ser.read_until(bs))
+
+        if bs not in data:
+            raise LinkError("recv timeout")
+
+        return data
+
+    def send(self, data):
+        self._ser.write(data)
+
+    def disconnect(self):
+        self._ser.close()
+
+
+class SerialProcessLink(BaseSerialLink):
+    def __init__(self, port=None):
+        super().__init__()
         self._port = port
 
     def connect(self):

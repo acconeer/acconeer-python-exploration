@@ -5,6 +5,7 @@ import multiprocessing as mp
 import queue
 import signal
 import traceback
+import platform
 
 from acconeer_utils.clients.base import BaseClient, ClientError
 from acconeer_utils.clients.reg import protocol, utils
@@ -21,13 +22,16 @@ class RegClient(BaseClient):
     def __init__(self, port, **kwargs):
         super().__init__(**kwargs)
 
-        self._link = links.SerialProcessLink(port)
+        if platform.system().lower() == "windows":
+            self._link = links.SerialLink(port)
+        else:
+            self._link = links.SerialProcessLink(port)
 
         self._mode = protocol.NO_MODE
 
     def _connect(self):
-        max_baud = links.SerialProcessLink.MAX_BAUDRATE
-        default_baud = links.SerialProcessLink.DEFAULT_BAUDRATE
+        max_baud = links.BaseSerialLink.MAX_BAUDRATE
+        default_baud = links.BaseSerialLink.DEFAULT_BAUDRATE
 
         self._link.baudrate = max_baud
         self._link.connect()
