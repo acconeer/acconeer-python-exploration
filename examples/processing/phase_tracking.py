@@ -21,12 +21,14 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
-    config = get_sensor_config()
-    config.sensor = args.sensors
+    sensor_config = get_sensor_config()
+    sensor_config.sensor = args.sensors
 
-    client.setup_session(config)
+    processing_config = get_processing_config()
 
-    pg_updater = PGUpdater(config)
+    client.setup_session(sensor_config)
+
+    pg_updater = PGUpdater(sensor_config, processing_config)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -35,7 +37,7 @@ def main():
     interrupt_handler = example_utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
-    processor = PhaseTrackingProcessor(config)
+    processor = PhaseTrackingProcessor(sensor_config, processing_config)
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
@@ -60,8 +62,12 @@ def get_sensor_config():
     return config
 
 
+def get_processing_config():
+    return {}
+
+
 class PhaseTrackingProcessor:
-    def __init__(self, sensor_config, processing_config=None):
+    def __init__(self, sensor_config, processing_config):
         self.f = sensor_config.sweep_rate
         self.dt = 1 / self.f
 
@@ -131,7 +137,7 @@ class PhaseTrackingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config=None):
+    def __init__(self, sensor_config, processing_config):
         self.config = sensor_config
         self.interval = sensor_config.range_interval
 

@@ -250,7 +250,7 @@ class GUI(QMainWindow):
                     self.add_params(self.service_params)
                 except Exception:
                     pass
-            if self.service_params is not None:
+            if self.service_params:
                 self.serviceFrame.show()
             else:
                 self.serviceFrame.hide()
@@ -836,7 +836,6 @@ class GUI(QMainWindow):
 
         conf.sensor = int(self.textboxes["sensor"].text())
         if not refresh and external:
-            color = "grey"
             self.textboxes["start_range"].setText("{:.2f}".format(conf.range_interval[0]))
             self.textboxes["end_range"].setText("{:.2f}".format(conf.range_interval[1]))
             self.textboxes["gain"].setText("{:.2f}".format(conf.gain))
@@ -844,7 +843,6 @@ class GUI(QMainWindow):
             self.sweep_count = -1
         else:
             stitching = self.check_values(conf.mode)
-            color = "white"
             conf.range_interval = [
                     float(self.textboxes["start_range"].text()),
                     float(self.textboxes["end_range"].text()),
@@ -861,24 +859,6 @@ class GUI(QMainWindow):
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
                 elif "depth" in self.profiles.currentText().lower():
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
-
-        if self.service_params:  # Only lock boxes for services not yet supporting changing params
-            external = False
-            color = "white"
-
-        lock = {
-            "start_range": True,
-            "end_range": True,
-            "frequency": True,
-            "gain": True,
-            "sweeps": True,
-        }
-
-        for key in lock:
-            if "sensor" not in key and "host" not in key:
-                self.textboxes[key].setReadOnly(external)
-                style_sheet = "QLineEdit {{background-color: {}}}".format(color)
-                self.textboxes[key].setStyleSheet(style_sheet)
 
         return conf
 
