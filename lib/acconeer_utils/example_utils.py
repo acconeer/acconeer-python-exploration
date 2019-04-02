@@ -236,8 +236,8 @@ def pg_setup_polar_plot(plot, max_r=1):
     for i in range(8):
         deg = (360 / 8) * i
         rad = np.radians(deg)
-        x = np.sin(rad)
-        y = np.cos(rad)
+        x = np.cos(rad)
+        y = np.sin(rad)
         text = str(int(deg)) + '\u00b0'
         ax = (-x + 1) / 2
         ay = (y + 1) / 2
