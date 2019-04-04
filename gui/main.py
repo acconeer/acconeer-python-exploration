@@ -1081,8 +1081,21 @@ class GUI(QMainWindow):
 
                 try:
                     self.profiles.setCurrentIndex(f["profile"][()])
+                    mode = self.mode.currentText()
+                    if self.service_params is not None:
+                        if mode in self.service_labels:
+                            for key in self.service_labels[mode]:
+                                if "box" in self.service_labels[mode][key]:
+                                    val = self.service_params[key]["type"](f[key][()])
+                                    if self.service_params[key]["type"] == np.float:
+                                        val = str("{:.4f}".format(val))
+                                    else:
+                                        val = str(val)
+                                    self.service_labels[mode][key]["box"].setText(val)
                 except Exception:
+                    print("Could not restore processing parameters")
                     pass
+
                 try:
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
@@ -1138,7 +1151,8 @@ class GUI(QMainWindow):
             self.start_scan(from_file=True)
 
     def save_scan(self, data, clutter=False):
-        if "sleep" in self.mode.currentText().lower():
+        mode = self.mode.currentText()
+        if "sleep" in mode.lower():
             if int(self.textboxes["sweep_buffer"].text()) < 1000:
                 self.error_message("Please set sweep buffer to >= 1000")
                 return
@@ -1192,7 +1206,7 @@ class GUI(QMainWindow):
                                      dtype=np.float32)
                     f.create_dataset("gain", data=float(self.textboxes["gain"].text()),
                                      dtype=np.float32)
-                    f.create_dataset("service_type", data=self.mode.currentText().lower(),
+                    f.create_dataset("service_type", data=mode.lower(),
                                      dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("clutter_file", data=self.cl_file,
                                      dtype=h5py.special_dtype(vlen=str))
@@ -1200,7 +1214,15 @@ class GUI(QMainWindow):
                                      dtype=np.int)
                     f.create_dataset("power_bins", data=int(self.textboxes["power_bins"].text()),
                                      dtype=np.int)
+                    if mode in self.service_labels:
+                        for key in self.service_params:
+                            f.create_dataset(key, data=self.service_params[key]["value"],
+                                             dtype=np.float32)
                 else:
+                    try:
+                        data[0]["service_params"] = self.service_params
+                    except Exception:
+                        pass
                     try:
                         np.save(filename, data)
                     except Exception as e:
