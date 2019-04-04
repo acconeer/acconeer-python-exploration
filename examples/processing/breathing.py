@@ -79,8 +79,6 @@ def get_processing_config():
 
 
 class BreathingProcessor:
-    breath_hist_len = 2000
-    pulse_hist_len = 800
     peak_hist_len = 600
 
     phase_weights_alpha = 0.9
@@ -91,14 +89,14 @@ class BreathingProcessor:
     def __init__(self, sensor_config, processing_config):
         self.config = sensor_config
 
-        self.hist_plot_len = int(
-            processing_config["hist_plot_len"]["value"]*self.config.sweep_rate)
         self.f = sensor_config.sweep_rate
+        self.hist_plot_len = int(round(processing_config["hist_plot_len"]["value"] * self.f))
+        self.breath_hist_len = max(2000, self.hist_plot_len)
 
         self.peak_history = np.zeros(self.peak_hist_len, dtype="complex")
         self.movement_history = np.zeros(self.peak_hist_len, dtype="float")
         self.breath_history = np.zeros(self.breath_hist_len, dtype="float")
-        self.pulse_history = np.zeros(self.pulse_hist_len, dtype="float")
+        self.pulse_history = np.zeros(self.hist_plot_len, dtype="float")
 
         self.breath_sos = np.concatenate(butter(2, 2 * 0.3/self.f))
         self.breath_zi = np.zeros((1, 2))
@@ -250,8 +248,8 @@ class PGUpdater:
     def __init__(self, sensor_config, processing_config):
         self.config = sensor_config
 
-        self.hist_plot_len = int(
-            processing_config["hist_plot_len"]["value"]*self.config.sweep_rate)
+        f = sensor_config.sweep_rate
+        self.hist_plot_len = int(round(processing_config["hist_plot_len"]["value"] * f))
 
         self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / self.config.sweep_rate
         self.plot_index = 0
