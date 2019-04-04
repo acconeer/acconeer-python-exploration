@@ -11,8 +11,8 @@ import threading
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
                              QCheckBox, QFrame)
-from PyQt5.QtGui import QPixmap, QFont, QIcon
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QPixmap, QFont, QIcon, QPainter
+from PyQt5.QtCore import pyqtSignal, QPoint
 from PyQt5 import QtCore
 
 import matplotlib as mpl
@@ -215,9 +215,7 @@ class GUI(QMainWindow):
         ax = ("bottom", "left")
 
         if mode == "Select service":
-            canvas = QLabel()
-            pixmap = QPixmap(self.acc_file)
-            canvas.setPixmap(pixmap)
+            canvas = Label(self.acc_file)
             self.buttons["sensor_defaults"].setEnabled(False)
             return canvas
         else:
@@ -1487,6 +1485,23 @@ def watchdog(event):
     if not flag:
         print("\nforcing exit...")
         os._exit(1)
+
+
+class Label(QLabel):
+    def __init__(self, img):
+        super(Label, self).__init__()
+        self.setFrameStyle(QFrame.StyledPanel)
+        self.pixmap = QPixmap(img)
+
+    def paintEvent(self, event):
+        size = self.size()
+        painter = QPainter(self)
+        point = QPoint(0, 0)
+        scaledPix = self.pixmap.scaled(size, QtCore.Qt.KeepAspectRatio,
+                                       QtCore.Qt.SmoothTransformation)
+        point.setX((size.width() - scaledPix.width())/2)
+        point.setY((size.height() - scaledPix.height())/2)
+        painter.drawPixmap(point, scaledPix)
 
 
 if __name__ == "__main__":
