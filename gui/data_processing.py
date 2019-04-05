@@ -5,6 +5,25 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+def get_internal_processing_config():
+    return {
+        "image_buffer": {
+            "name": "Image history",
+            "value": 100,
+            "limits": [10, 16384],
+            "type": int,
+            "text": None,
+        },
+        "averging": {
+            "name": "Averaging",
+            "value": 0,
+            "limits": [0, 0.9999],
+            "type": float,
+            "text": None,
+        },
+    }
+
+
 class DataProcessing:
     hist_len = 500
 
@@ -21,6 +40,10 @@ class DataProcessing:
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
         self.service_params = params["service_params"]
+
+        self.image_buffer = 0
+        if "iq" in self.service_type.lower() or "envelope" in self.service_type.lower():
+            self.image_buffer = params["service_params"]["image_buffer"]["value"]
 
         if self.sweeps < 0:
             self.sweeps = self.hist_len
@@ -45,10 +68,8 @@ class DataProcessing:
         self.abort = True
 
     def init_vars(self):
-        hist_len = min(self.sweeps, self.hist_len)
-        self.peak_history = np.zeros(hist_len, dtype="float")
-        self.peak_thrshld_history = np.zeros(hist_len, dtype="float")
-        self.hist_plot_len = hist_len
+        self.peak_history = np.zeros(self.image_buffer, dtype="float")
+        self.peak_thrshld_history = np.zeros(self.image_buffer, dtype="float")
         self.sweep = 0
         self.record = []
         self.env_ampl_avg = 0
@@ -147,9 +168,26 @@ class DataProcessing:
             self.cl = np.abs(self.cl_iq)
             self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
 
-        complex_env = iq_data
+        complex_env = iq_data.copy()
         if self.use_cl and self.sweep:
-            complex_env = iq_data - self.cl_iq
+            # For envelope mode cl_iq is amplitude only
+            try:
+                complex_env = iq_data - self.cl_iq
+                if "iq" not in self.mode:
+                    complex_env[complex_env < 0] = 0
+            except Exception as e:
+                self.parent.emit("error", "Background has wrong format!\n{}".format(e))
+                self.cl_iq = self.cl = np.zeros((len(complex_env)))
+
+        time_filter = self.service_params["averging"]["value"]
+        if time_filter >= 0:
+            if self.sweep < np.ceil(1.0 / (1.0 - self.service_params["averging"]["value"]) - 1):
+                time_filter = min(1.0 - 1.0 / (self.sweep + 1), time_filter)
+            if self.sweep:
+                complex_env = (1 - time_filter) * complex_env + time_filter * self.last_complex_env
+            else:
+                self.last_complex_env = complex_env.copy()
+            self.last_complex_env = complex_env.copy()
 
         env = np.abs(complex_env)
 
@@ -159,16 +197,6 @@ class DataProcessing:
                 self.cl_iq = np.zeros((self.sweeps, len(env)), dtype="complex")
             self.cl[self.sweep, :] = env
             self.cl_iq[self.sweep, :] = iq_data
-
-        if self.use_cl:
-            if "iq" not in self.mode:
-                try:
-                    env -= 1*self.cl
-                except Exception as e:
-                    self.parent.emit("error", "Background has wrong format!\n{}".format(e))
-                    self.cl = np.zeros((len(env)))
-
-                env[env < 0] = 0
 
         env_peak_idx = np.argmax(env)
 
@@ -197,7 +225,7 @@ class DataProcessing:
             self.complex_avg = complex_env/self.sweeps
             self.n_std_avg = self.threshold/self.sweeps
 
-            self.hist_env = np.zeros((len(self.env_x_mm), self.hist_plot_len))
+            self.hist_env = np.zeros((len(self.env_x_mm), self.image_buffer))
 
         cl = self.cl
         cl_iq = self.cl_iq

@@ -8,6 +8,7 @@ import h5py
 import logging
 import signal
 import threading
+import copy
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
                              QCheckBox, QFrame)
@@ -181,8 +182,8 @@ class GUI(QMainWindow):
     def init_graphs(self, mode="Select service", refresh=False):
         axes = {
             "Select service": [None, None],
-            "IQ": [None, None],
-            "Envelope": [None, None],
+            "IQ": [data_processing.get_internal_processing_config(), None],
+            "Envelope": [data_processing.get_internal_processing_config(), None],
             "Power bin": [None, None],
             "Presence detection": [prd, prd.PresenceDetectionProcessor],
             "Breathing": [br, br.BreathingProcessor],
@@ -192,6 +193,11 @@ class GUI(QMainWindow):
         }
 
         self.external = axes[mode][1]
+        if self.external:
+            processing_config = axes[mode][0].get_processing_config()
+        else:
+            processing_config = axes[mode][0]
+
         canvas = None
 
         self.textboxes["power_bins"].setVisible(False)
@@ -233,18 +239,17 @@ class GUI(QMainWindow):
                     for element in self.service_labels[m][key]:
                         if "label" in element or "box" in element:
                             self.service_labels[m][key][element].setVisible(False)
-        if not self.external:
+        if not processing_config:
             self.service_params = None
             self.service_defaults = None
             self.serviceFrame.hide()
-
-        if self.external:
+        else:
             if not refresh:
                 self.service_params = None
                 self.service_defaults = None
                 try:
-                    self.service_params = axes[mode][0].get_processing_config()
-                    self.service_defaults = axes[mode][0].get_processing_config()
+                    self.service_params = processing_config
+                    self.service_defaults = copy.deepcopy(self.service_params)
                     self.add_params(self.service_params)
                 except Exception:
                     pass
@@ -252,10 +257,11 @@ class GUI(QMainWindow):
                 self.serviceFrame.show()
             else:
                 self.serviceFrame.hide()
+
+        if self.external:
             self.service_widget = axes[mode][0].PGUpdater(
                 self.update_sensor_config(refresh=refresh), self.service_params)
             self.service_widget.setup(canvas)
-
             return canvas
         elif "power" in mode.lower():
             self.power_plot_window = canvas.addPlot(title="Power bin")
@@ -997,7 +1003,7 @@ class GUI(QMainWindow):
             val = end
             out_of_range = True
         if out_of_range:
-            if set_to:
+            if set_to is not None:
                 val = set_to
             field.setText(str(val))
         return val, out_of_range
