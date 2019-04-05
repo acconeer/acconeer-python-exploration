@@ -26,7 +26,6 @@ def check_connection(args):
 
         config = configs.EnvelopeServiceConfig()
         client.connect()
-        client.setup_session(config)
         client.disconnect()
         return True
     except Exception:
