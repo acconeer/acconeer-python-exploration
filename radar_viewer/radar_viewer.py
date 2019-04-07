@@ -9,7 +9,6 @@ import traceback
 
 from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
 from acconeer_utils.clients.json.client import JSONClient
-from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 
 
@@ -24,7 +23,6 @@ def check_connection(args):
             port = args.serial_port or example_utils.autodetect_serial_port()
             client = RegClient(port)
 
-        config = configs.EnvelopeServiceConfig()
         client.connect()
         client.disconnect()
         return True
