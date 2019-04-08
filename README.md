@@ -76,6 +76,32 @@ This method is confirmed to work for **Ubuntu 18.04**.
 
 Note: SPI is not supported under WSL.
 
+## GUI
+
+Using the GUI is the easiest way to start exploring Acconeer's radar sensor and our application examples:
+```
+python gui/main.py
+```
+
+In the top right box of the GUI, named "Connection Settings", select the interface you wish to use
+- SPI: the GUI will try to autodetect a sensor connected via USB
+- Socket: specify the IP address of your RaspberryPi, running the streaming server
+- Serial: specify the COM port that is assigned to the sensor (press "scan ports" to detect available ports)
+
+After pressing "Connect", a connection should be established.
+In the box below, labeled "Scan Controls", select the service you want to test and configure the sensor and service settings to your specific setup.
+Once you press "Start", the GUI will start fetching data from the sensor and plotting the results.
+You cannot change "Sensor" or "Processing" settings while scanning.
+After pressing "Stop", you can save (and later load data) or just replay the data stored in the sweep buffer.
+For basic examples you can also test background cancelation methods using the "Scan Background" or "Load Background" buttons.
+
+Note that except for Power bins, Envelope and IQ, the GUI is loading examples from the examples/processing folder.
+If you modify code in those files, the changes will trickle down to the GUI once you reload it.
+
+Large values for "Image history" (IQ and Envelope service) may slow down plotting severely.
+
+If you prefer using the command line for testing and evaluation of our examples you can use the following instructions.
+
 ## Running an example on your local machine
 
 XC111+XR111 or XC112+XR112 (mounted on a Raspberry Pi):
@@ -143,15 +169,6 @@ The basic scripts contains a lot of comments guiding you through the steps taken
   Example of how to use the mpl_process (matplotlib process) module for plotting.
 - `plot_with_pyqtgraph.py` \
   Example of how to use PyQtGraph for plotting.
-
-## GUI
-
-Run the GUI using:
-```
-python gui/main.py
-```
-
-Running examples in the GUI under Windows can be very slow. If you encounter lag in the GUI try reducing the sweep buffer in the GUI or running the examples directly as described above.
 
 ## Radar viewer
 
