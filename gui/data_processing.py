@@ -163,7 +163,7 @@ class DataProcessing:
 
         if self.sweep == 0:
             self.cl_empty = np.zeros(len(iq_data))
-            self.cl, self.cl_iq, self.threshold = \
+            self.cl, self.cl_iq, self.n_std_avg = \
                 self.load_clutter_data(len(iq_data), self.cl_file)
             self.cl = np.abs(self.cl_iq)
             self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
@@ -207,7 +207,7 @@ class DataProcessing:
             peak_mm = self.stop_x * 1000
 
         try:
-            peak_mm_thrshld = self.env_x_mm[np.where((env - self.threshold) >= 0)[0][0]]
+            peak_mm_thrshld = self.env_x_mm[np.where((env - self.n_std_avg) >= 0)[0][0]]
         except Exception:
             peak_mm_thrshld = self.env_x_mm[-1]
 
@@ -219,11 +219,9 @@ class DataProcessing:
         if self.sweep:
             self.env_ampl_avg += env/self.sweeps
             self.complex_avg += complex_env/self.sweeps
-            self.n_std_avg += self.threshold/self.sweeps
         else:
             self.env_ampl_avg = env/self.sweeps
             self.complex_avg = complex_env/self.sweeps
-            self.n_std_avg = self.threshold/self.sweeps
 
             self.hist_env = np.zeros((len(self.env_x_mm), self.image_buffer))
 
@@ -248,7 +246,7 @@ class DataProcessing:
         }
 
         snr = None
-        signal = np.abs(complex_env)[env_peak_idx]-cl[env_peak_idx]
+        signal = np.abs(env)[env_peak_idx]
         if self.use_cl and self.n_std_avg[env_peak_idx] > 0:
             noise = self.n_std_avg[env_peak_idx]
             snr = 20*np.log10(signal / noise)

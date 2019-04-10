@@ -306,7 +306,7 @@ class GUI(QMainWindow):
             self.envelope_plot_window.addItem(self.env_peak_vline)
             self.clutter_plot.setZValue(2)
 
-            self.peak_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1))
+            self.peak_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1), fill="#f0f0f0")
             self.peak_text.setZValue(3)
             self.envelope_plot_window.addItem(self.peak_text)
             self.envelope_plot_window.setLabel("left", "Amplitude")
