@@ -1444,6 +1444,11 @@ class Threaded_Scan(QtCore.QThread):
         if self.sweep_count == -1:
             self.sweep_count = np.inf
 
+        self.finished.connect(self.stop_thread)
+
+    def stop_thread(self):
+        self.quit()
+
     def run(self):
         if self.params["data_source"] == "stream":
             data = None
@@ -1483,9 +1488,12 @@ class Threaded_Scan(QtCore.QThread):
         self.emit("scan_done", "", "")
 
     def receive(self, message_type, message, data=None):
-        if message_type == "stop":
+        if message_type == "stop" and self.running:
             self.running = False
             self.radar.abort_processing()
+            if self.params["create_clutter"]:
+                self.emit("error", "Background scan not finished. "
+                          "Wait for sweep buffer to fill to finish background scan")
         elif message_type == "set_clutter_flag":
             self.radar.set_clutter_flag(data)
 

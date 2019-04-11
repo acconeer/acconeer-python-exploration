@@ -69,7 +69,6 @@ class DataProcessing:
 
     def init_vars(self):
         self.peak_history = np.zeros(self.image_buffer, dtype="float")
-        self.peak_thrshld_history = np.zeros(self.image_buffer, dtype="float")
         self.sweep = 0
         self.record = []
         self.env_ampl_avg = 0
@@ -165,11 +164,11 @@ class DataProcessing:
             self.cl_empty = np.zeros(len(iq_data))
             self.cl, self.cl_iq, self.n_std_avg = \
                 self.load_clutter_data(len(iq_data), self.cl_file)
-            self.cl = np.abs(self.cl_iq)
             self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
+            self.hist_env = np.zeros((len(self.env_x_mm), self.image_buffer))
 
         complex_env = iq_data.copy()
-        if self.use_cl and self.sweep:
+        if self.use_cl:
             # For envelope mode cl_iq is amplitude only
             try:
                 complex_env = iq_data - self.cl_iq
@@ -185,8 +184,6 @@ class DataProcessing:
                 time_filter = min(1.0 - 1.0 / (self.sweep + 1), time_filter)
             if self.sweep:
                 complex_env = (1 - time_filter) * complex_env + time_filter * self.last_complex_env
-            else:
-                self.last_complex_env = complex_env.copy()
             self.last_complex_env = complex_env.copy()
 
         env = np.abs(complex_env)
@@ -206,33 +203,8 @@ class DataProcessing:
         if peak_mm <= self.start_x * 1000:
             peak_mm = self.stop_x * 1000
 
-        try:
-            peak_mm_thrshld = self.env_x_mm[np.where((env - self.n_std_avg) >= 0)[0][0]]
-        except Exception:
-            peak_mm_thrshld = self.env_x_mm[-1]
-
         hist_plot = np.flip(self.peak_history, axis=0)
-
         self.peak_history = push(peak_mm, self.peak_history)
-        self.peak_thrshld_history = push(peak_mm_thrshld, self.peak_thrshld_history)
-
-        if self.sweep:
-            self.env_ampl_avg += env/self.sweeps
-            self.complex_avg += complex_env/self.sweeps
-        else:
-            self.env_ampl_avg = env/self.sweeps
-            self.complex_avg = complex_env/self.sweeps
-
-            self.hist_env = np.zeros((len(self.env_x_mm), self.image_buffer))
-
-        cl = self.cl
-        cl_iq = self.cl_iq
-        if self.create_cl:
-            cl = self.cl[self.sweep, :]
-            cl_iq = self.cl_iq[self.sweep, :]
-        elif not self.use_cl:
-            cl = self.cl_empty
-            cl_iq = self.cl_empty
 
         self.hist_env = push(env, self.hist_env, axis=1)
 
@@ -240,9 +212,7 @@ class DataProcessing:
 
         peak_data = {
             "peak_mm": peak_mm,
-            "peak_mm_thrshld": peak_mm_thrshld,
             "std_peak_mm": np.std(self.peak_history[0:min(self.sweep, std_len)]),
-            "std_peak_mm_thrshld": np.std(self.peak_thrshld_history[0:min(self.sweep, std_len)]),
         }
 
         snr = None
@@ -259,6 +229,15 @@ class DataProcessing:
         phase /= np.max(np.abs(phase))
 
         self.env_max = np.max(env)
+
+        cl = self.cl
+        cl_iq = self.cl_iq
+        if self.create_cl:
+            cl = self.cl[self.sweep, :]
+            cl_iq = self.cl_iq[self.sweep, :]
+        elif not self.use_cl:
+            cl = self.cl_empty
+            cl_iq = self.cl_empty
 
         plot_data = {
             "iq_data": iq_data,
