@@ -146,7 +146,7 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 - `iq.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html)) \
   Demonstrates the IQ service.
 - `sparse.py` \
-  Demonstrates the Sparse service.
+  Demonstrates the Sparse service. Currently this is an experimental service, see more in the [disclaimer](https://acconeer-python-exploration.readthedocs.io/en/latest/disclaimer.html)
 
 ### Processing
 
@@ -184,6 +184,10 @@ Run the radar viewer using:
 ```
 python radar_viewer/radar_viewer.py -u
 ```
+
+## Disclaimer
+
+Here you find the [disclaimer](https://acconeer-python-exploration.readthedocs.io/en/latest/disclaimer.html).
 
 ## FAQ and common issues
 

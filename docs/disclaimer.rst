@@ -9,3 +9,7 @@ Nothing contained herein is to be considered as permission or a recommendation t
 
 Acconeer reserves the right to at any time correct, change, amend, enhance, modify, and improve this document and/or Acconeer products without notice.
 This document supersedes and replaces all information supplied prior to the publication hereof.
+
+In our code you might encounter features tagged “experimental”. This means that the feature in question is an early version that has a limited test scope, and the API and/or functionality might change in upcoming releases. The intention is to let users try these features out and we appreciate feedback.
+
+For best performance A111 (expect for batch numbers: 10467, 10457, 10178) or XM112 should be used.
