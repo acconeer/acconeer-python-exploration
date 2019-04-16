@@ -28,6 +28,7 @@ class RegClient(BaseClient):
             self._link = links.SerialProcessLink(port)
 
         self._mode = protocol.NO_MODE
+        self._num_subsweeps = None
 
     def _connect(self):
         max_baud = links.BaseSerialLink.MAX_BAUDRATE
@@ -102,6 +103,8 @@ class RegClient(BaseClient):
         for reg in info_regs:
             info[reg.name] = self._read_reg(reg, mode)
 
+        self._num_subsweeps = info.get("number_of_subsweeps")
+
         # data rate check
         data_length = info.get("data_length")
         freq = info.get("frequency")
@@ -140,7 +143,7 @@ class RegClient(BaseClient):
             else:
                 info[reg.name] = val
 
-        data = protocol.decode_output_buffer(packet.buffer, self._mode)
+        data = protocol.decode_output_buffer(packet.buffer, self._mode, self._num_subsweeps)
 
         if self.squeeze:
             return info, data
@@ -278,6 +281,7 @@ class RegSPIClient(BaseClient):
         super().__init__(**kwargs)
         self._mode = protocol.NO_MODE
         self._proc = None
+        self._num_subsweeps = None
 
     def _connect(self):
         self._cmd_queue = mp.Queue()
@@ -337,6 +341,8 @@ class RegSPIClient(BaseClient):
         for reg in info_regs:
             info[reg.name] = self._read_reg(reg)
 
+        self._num_subsweeps = info.get("number_of_subsweeps")
+
         # data rate check
         data_length = info.get("data_length")
         freq = info.get("frequency")
@@ -363,7 +369,7 @@ class RegSPIClient(BaseClient):
             raise ClientError
         info, buffer = ret_args
 
-        data = protocol.decode_output_buffer(buffer, self._mode)
+        data = protocol.decode_output_buffer(buffer, self._mode, self._num_subsweeps)
 
         cur_seq_num = info.get("sequence_number")
         if cur_seq_num:

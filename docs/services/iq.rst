@@ -7,7 +7,7 @@ The In-phase and Quadrature components are represented as complex values, genera
 
 Similarly to the :ref:`envelope-service` service the amplitudes obtained through the IQ service provide a method for examining the reflectivity at different distances from the radar sensor. These two services are however differently optimized. The :ref:`envelope-service` service is optimized for providing an accurate envelope estimate, while the IQ service is optimized for producing a phase-stable estimate. Thus, one should only use the IQ service if phase information is of importance.
 
-``iq.py`` contains example code on how the IQ service can be used. Detection of micro-motions using the IQ service in a target scene has many use cases, some of which are presented in ``breathing.py``, ``sleep_breathing.py``, ``motion_large.py``, ``obstacle_detection.py``, ``phase_tracking.py`` and ``presence_detection.py``.
+``iq.py`` contains example code on how the IQ service can be used. Detection of micro-motions using the IQ service in a target scene has many use cases, some of which are presented in ``breathing.py``, ``sleep_breathing.py``, ``motion_large.py``, ``obstacle_detection.py``, ``phase_tracking.py`` and ``presence_detection_iq.py``.
 
 .. image:: /_static/services/iq.png
 

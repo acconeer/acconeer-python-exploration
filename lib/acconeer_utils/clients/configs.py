@@ -192,6 +192,26 @@ class IQServiceConfig(BaseDenseServiceConfig):
         return "iq"
 
 
+class SparseServiceConfig(BaseServiceConfig):
+    _number_of_subsweeps = 16
+
+    @property
+    def mode(self):
+        return "sparse"
+
+    @property
+    def number_of_subsweeps(self):
+        return self._number_of_subsweeps
+
+    @number_of_subsweeps.setter
+    def number_of_subsweeps(self, number_of_subsweeps):
+        if number_of_subsweeps < 1:
+            raise ValueError("number of subsweeps must be > 0")
+        if number_of_subsweeps > 16:
+            raise ValueError("number of subsweeps must be <= 16")
+        self._number_of_subsweeps = number_of_subsweeps
+
+
 class DistancePeakDetectorConfig(BaseServiceConfig):
     @property
     def mode(self):

@@ -4,7 +4,7 @@ _**Explore the Next Sense**_ with Acconeer's Python Exploration Kit! Use one of 
 
 To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Streaming or Module server, which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
-This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 1.7.1**.
+This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 1.8.1**.
 Running this version is strongly recommended, as we continuously fix bugs and add features. The minimum version supported is 1.5.2.
 
 ## Documentation
@@ -145,6 +145,8 @@ The basic scripts contains a lot of comments guiding you through the steps taken
   Demonstrates the envelope service.
 - `iq.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html)) \
   Demonstrates the IQ service.
+- `sparse.py` \
+  Demonstrates the Sparse service.
 
 ### Processing
 
@@ -152,7 +154,9 @@ The basic scripts contains a lot of comments guiding you through the steps taken
   An example breathing detection algorithm.
 - `sleep_breathing.py` \
   An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
-- `presence_detection.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection.html)) \
+- `presence_detection_sparse.py` \
+  An example of a presence/motion detection algorithm based on the sparse service.
+- `presence_detection_iq.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_iq.html)) \
   An example of a presence/motion detection algorithm based on **phase** changes in the received signal over time.
 - `motion_large.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/motion_large.html)) \
   An example of a presence/motion detection algorithm based on **power** changes in the received signal over time.

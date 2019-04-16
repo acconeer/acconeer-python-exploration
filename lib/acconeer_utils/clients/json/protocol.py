@@ -20,12 +20,14 @@ KEY_AND_CONFIG_ATTR_PAIRS = [
     KeyConfigAttrPair("compensate_phase", "compensate_phase", False),
     KeyConfigAttrPair("profile", "session_profile", False),
     KeyConfigAttrPair("enable_stitching", "experimental_stitching", False),
+    KeyConfigAttrPair("sweeps_per_result", "number_of_subsweeps", False),
 ]
 
 MODE_TO_CMD_MAP = {
     "power_bin": "power_bins_data",
     "envelope": "envelope_data",
     "iq": "iq_data",
+    "sparse": "sparse_data",
 }
 
 # None = ignore value
@@ -36,6 +38,7 @@ SESSION_HEADER_TO_INFO_KEY_MAP = {
     "status": None,
     "payload_size": None,
     "free_space_absolute_offset": None,
+    "sweeps_per_result": "number_of_subsweeps",
 }
 
 # None = ignore value
@@ -79,9 +82,9 @@ def get_session_info_for_header(header):
     return info
 
 
-def decode_stream_frame(header, payload, squeeze):
+def decode_stream_frame(header, payload, squeeze, number_of_subsweeps=None):
     info = decode_stream_header(header, squeeze)
-    data = decode_stream_payload(header, payload, squeeze)
+    data = decode_stream_payload(header, payload, squeeze, number_of_subsweeps)
     return info, data
 
 
@@ -106,7 +109,7 @@ def decode_stream_header(header, squeeze):
     return infos[0] if (squeeze and num_sensors == 1) else infos
 
 
-def decode_stream_payload(header, payload, squeeze):
+def decode_stream_payload(header, payload, squeeze, num_subsweeps=None):
     if not payload:
         return None
 
@@ -114,19 +117,29 @@ def decode_stream_payload(header, payload, squeeze):
     num_sensors = header["data_sensors"]
     sweep_type = header["type"]
 
+    squeeze = squeeze and num_sensors == 1
+
     if sweep_type == "iq_data":
         sweep = np.frombuffer(payload, dtype=">i2").astype("float")
         sweep *= 2**(-12)
         n = num_points * num_sensors
-        sweep = sweep.reshape((2, n), order="F").view(dtype="complex")
+        sweep = sweep.reshape((2, n), order="F").view(dtype="complex").flatten()
     elif sweep_type == "envelope_data":
         sweep = np.frombuffer(payload, dtype=">u2").astype("float")
+    elif sweep_type == "sparse_data":
+        sweep = np.frombuffer(payload, dtype=">u2").astype("float")
+        sweep -= 2**15
+
+        if squeeze:
+            sweep = sweep.reshape((num_subsweeps, -1))
+        else:
+            sweep = sweep.reshape((num_sensors, num_subsweeps, -1))
+
+        return sweep
     else:  # Fallback
         sweep = np.frombuffer(payload, dtype=">u2")
 
-    if squeeze and num_sensors == 1:
-        sweep = sweep.reshape(num_points)
-    else:
+    if not squeeze:
         sweep = sweep.reshape((num_sensors, num_points))
 
     return sweep

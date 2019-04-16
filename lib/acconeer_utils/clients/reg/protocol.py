@@ -71,6 +71,7 @@ MODES = {
     "power_bin": 1,
     "envelope": 2,
     "iq": 3,
+    "sparse": 4,
     "distance_peak_fix_threshold": 0x100,
 }
 
@@ -84,6 +85,7 @@ FIXED_BUF_SIZE = {
 BYTE_PER_POINT = {
     "envelope": 2,
     "iq": 4,
+    "sparse": 2,
 }
 
 float_to_milli_enc_funs = EncFuns(
@@ -377,7 +379,36 @@ REGS = [
         "sweep",
         None,
     ),
-
+    Reg(
+        "number_of_subsweeps",
+        "sparse",
+        64,
+        "rw",
+        "u",
+        None,
+        "session",
+        "number_of_subsweeps",
+    ),
+    Reg(
+        "data_length",
+        "sparse",
+        131,
+        "r",
+        "u",
+        None,
+        "session",
+        None,
+    ),
+    Reg(
+        "sequence_number",
+        "sparse",
+        160,
+        "r",
+        "u",
+        None,
+        False,
+        None,
+    ),
     Reg(
         "sequence_number",
         "distance_peak_fix_threshold",
@@ -627,7 +658,7 @@ def insert_packet_into_frame(packet):
     return frame
 
 
-def decode_output_buffer(buffer, mode):
+def decode_output_buffer(buffer, mode, number_of_subsweeps=None):
     mode = get_mode(mode)
     if mode == "power_bin":
         return np.frombuffer(buffer, dtype="<f4").astype("float")
@@ -636,6 +667,11 @@ def decode_output_buffer(buffer, mode):
     elif mode == "iq":
         sweep = np.frombuffer(buffer, dtype="<i2").astype("float") * 2**(-12)
         return sweep.reshape((2, -1), order="F").view(dtype="complex").reshape(-1)
+    elif mode == "sparse":
+        sweep = np.frombuffer(buffer, dtype="<u2").astype("float")
+        sweep -= 2**15
+        sweep = sweep.reshape((number_of_subsweeps, -1))
+        return sweep
     elif mode == "distance_peak_fix_threshold":
         sweep = np.frombuffer(buffer, dtype="<f4, <u2")
         return sweep.astype("float, float").view("float").reshape((-1, 2))

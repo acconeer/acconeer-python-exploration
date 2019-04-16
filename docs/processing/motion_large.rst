@@ -1,7 +1,7 @@
 Motion large
 ============
 
-``motion_large.py`` is an example of a simple motion detection algorithm based on changes in **power** in the received signal over time. Large motions or changes in front of the sensor are required to trigger the detector. Further, static objects are ignored but could reduce the sensitivity due to increased received average power. A typical use case is to detect a person walking up to or away from the sensor's coverage region. It will not detect small motions as breathing or pulse from a person standing in front of the sensor, which is the case for the ``presence_detection.py`` utilizing the phase coherency of the sensor.
+``motion_large.py`` is an example of a simple motion detection algorithm based on changes in **power** in the received signal over time. Large motions or changes in front of the sensor are required to trigger the detector. Further, static objects are ignored but could reduce the sensitivity due to increased received average power. A typical use case is to detect a person walking up to or away from the sensor's coverage region. It will not detect small motions as breathing or pulse from a person standing in front of the sensor, which is the case for the ``presence_detection_iq.py`` utilizing the phase coherency of the sensor.
 
 =============== ===================================
 Abbreviations   Description

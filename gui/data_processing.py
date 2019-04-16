@@ -42,7 +42,7 @@ class DataProcessing:
         self.service_params = params["service_params"]
 
         self.image_buffer = 0
-        if "iq" in self.service_type.lower() or "envelope" in self.service_type.lower():
+        if self.service_type.lower() in ["iq", "envelope"]:
             self.image_buffer = params["service_params"]["image_buffer"]["value"]
 
         if self.sweeps < 0:
@@ -58,9 +58,9 @@ class DataProcessing:
 
     def get_processing_type(self, service):
         process = self.external_processing
-        if "iq" in service.lower() or "envelope" in service.lower():
+        if self.service_type.lower() in ["iq", "envelope"]:
             process = self.internal_processing
-        if "power" in service.lower():
+        elif service.lower() == "power bin":
             process = self.power_bin_processing
         return process
 

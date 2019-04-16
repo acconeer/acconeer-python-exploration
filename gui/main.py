@@ -31,7 +31,8 @@ from acconeer_utils import example_utils
 import data_processing
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../examples/processing"))  # noqa: E402
-import presence_detection as prd
+import presence_detection_iq as prd
+import presence_detection_sparse as psd
 import phase_tracking as pht
 import breathing as br
 import sleep_breathing as sb
@@ -185,7 +186,8 @@ class GUI(QMainWindow):
             "IQ": [data_processing.get_internal_processing_config(), None],
             "Envelope": [data_processing.get_internal_processing_config(), None],
             "Power bin": [None, None],
-            "Presence detection": [prd, prd.PresenceDetectionProcessor],
+            "Presence detection (IQ)": [prd, prd.PresenceDetectionProcessor],
+            "Presence detection (sparse)": [psd, psd.PresenceDetectionSparseProcessor],
             "Breathing": [br, br.BreathingProcessor],
             "Phase tracking": [pht, pht.PhaseTrackingProcessor],
             "Sleep breathing": [sb, sb.PresenceDetectionProcessor],
@@ -357,7 +359,8 @@ class GUI(QMainWindow):
         self.mode.addItem("Envelope")
         self.mode.addItem("Power bin")
         self.mode.addItem("Phase tracking")
-        self.mode.addItem("Presence detection")
+        self.mode.addItem("Presence detection (IQ)")
+        self.mode.addItem("Presence detection (sparse)")
         self.mode.addItem("Breathing")
         self.mode.addItem("Sleep breathing")
         self.mode.addItem("Obstacle detection")
@@ -370,7 +373,8 @@ class GUI(QMainWindow):
             "Power bin": "power_bin",
             "Breathing": "iq_data",
             "Phase tracking": "iq_data",
-            "Presence detection": "iq_data",
+            "Presence detection (IQ)": "iq_data",
+            "Presence detection (sparse)": "sparse_data",
             "Sleep breathing": "iq_data",
             "Obstacle detection": "iq_data",
         }
@@ -382,7 +386,8 @@ class GUI(QMainWindow):
             "Power bin": [configs.PowerBinServiceConfig(), "internal_power"],
             "Breathing": [br.get_sensor_config(), "external"],
             "Phase tracking": [pht.get_sensor_config(), "external"],
-            "Presence detection": [prd.get_sensor_config(), "external"],
+            "Presence detection (IQ)": [prd.get_sensor_config(), "external"],
+            "Presence detection (sparse)": [psd.get_sensor_config(), "external"],
             "Sleep breathing": [sb.get_sensor_config(), "external"],
             "Obstacle detection": [od.get_sensor_config(), "external"]
         }

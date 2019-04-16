@@ -11,7 +11,7 @@ from acconeer_utils.clients.json import protocol
 log = logging.getLogger(__name__)
 
 MIN_VERSION = StrictVersion("1.5.2")
-DEV_VERSION = StrictVersion("1.7.1")
+DEV_VERSION = StrictVersion("1.8.1")
 
 
 class JSONClient(BaseClient):
@@ -22,6 +22,7 @@ class JSONClient(BaseClient):
 
         self._session_cmd = None
         self._session_ready = False
+        self._num_subsweeps = None
 
     def _connect(self):
         self._link.connect()
@@ -97,8 +98,7 @@ class JSONClient(BaseClient):
         elif status != "ok":
             raise ClientError("server error")
 
-        info, data = protocol.decode_stream_frame(header, payload, self.squeeze)
-        return info, data
+        return protocol.decode_stream_frame(header, payload, self.squeeze, self._num_subsweeps)
 
     def _stop_streaming(self):
         cmd = {"cmd": "stop_streaming"}
@@ -143,7 +143,9 @@ class JSONClient(BaseClient):
         log.debug("session initialized")
 
         self._session_ready = True
-        return protocol.get_session_info_for_header(header)
+        info = protocol.get_session_info_for_header(header)
+        self._num_subsweeps = info.get("number_of_subsweeps")
+        return info
 
     def _send_cmd(self, cmd_dict):
         cmd_dict["api_version"] = 2
