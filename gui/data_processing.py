@@ -93,7 +93,7 @@ class DataProcessing:
 
         if cl_file:
             try:
-                cl_data = np.load(cl_file)
+                cl_data = np.load(cl_file, allow_pickle=True)
             except Exception as e:
                 error = "Cannot load clutter ({})\n\n{}".format(cl_file, e)
                 load_success = False

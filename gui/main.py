@@ -1131,7 +1131,7 @@ class GUI(QMainWindow):
                     pass
             else:
                 try:
-                    self.data = np.load(filename)
+                    self.data = np.load(filename, allow_pickle=True)
                     mode = self.data[0]["service_type"]
                     cl_file = self.data[0]["cl_file"]
                     data_len = len(self.data)
@@ -1379,7 +1379,7 @@ class GUI(QMainWindow):
     def start_up(self):
         if os.path.isfile(self.last_file):
             try:
-                last = np.load(self.last_file)
+                last = np.load(self.last_file, allow_pickle=True)
                 self.update_settings(last.item()["sensor_config"], last.item())
             except Exception as e:
                 print("Could not load settings from last session\n{}".format(e))
