@@ -19,7 +19,7 @@ from PyQt5 import QtCore
 import matplotlib as mpl
 mpl.use("QT5Agg")  # noqa: E402
 from matplotlib.backends.qt_compat import QtWidgets
-import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 import pyqtgraph as pg
 
@@ -56,6 +56,7 @@ class GUI(QMainWindow):
     last_file = os.path.join(os.path.dirname(__file__), "last_config.npy")
     sweep_buffer = 500
     env_plot_max_y = 0
+    env_plot_min_y = 0
     cl_supported = False
     sweep_number = 0
     sweeps_skipped = 0
@@ -110,6 +111,7 @@ class GUI(QMainWindow):
             "clutter":          "Background settings",
             "interface":        "Interface",
             "power_bins":       "Power bins",
+            "subsweeps":        "Subsweeps",
             "sweep_info":       "Sweeps: 0 (skipped 0)",
             "saturated":        "Warning: Data saturated, reduce gain!",
             "stitching":        "Experimental stitching enabled!",
@@ -123,6 +125,7 @@ class GUI(QMainWindow):
             val.setText(text[key])
 
         self.labels["power_bins"].setVisible(False)
+        self.labels["subsweeps"].setVisible(False)
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
@@ -143,6 +146,7 @@ class GUI(QMainWindow):
             "end_range":    "0.72",
             "sweep_buffer": "100",
             "power_bins":   "6",
+            "subsweeps":    "16",
         }
         self.textboxes = {}
         for key in text:
@@ -150,6 +154,7 @@ class GUI(QMainWindow):
             self.textboxes[key].setText(text[key])
 
         self.textboxes["power_bins"].setVisible(False)
+        self.textboxes["subsweeps"].setVisible(False)
 
     def init_checkboxes(self):
         check = {
@@ -189,6 +194,7 @@ class GUI(QMainWindow):
             "Select service": [None, None],
             "IQ": [data_processing.get_internal_processing_config(), None],
             "Envelope": [data_processing.get_internal_processing_config(), None],
+            "Sparse": [data_processing.get_sparse_processing_config(), None],
             "Power bin": [None, None],
             "Presence detection (IQ)": [prd, prd.PresenceDetectionProcessor],
             "Presence detection (sparse)": [psd, psd.PresenceDetectionSparseProcessor],
@@ -206,6 +212,12 @@ class GUI(QMainWindow):
 
         canvas = None
 
+        if "sparse" in mode.lower():
+            self.textboxes["subsweeps"].setVisible(True)
+            self.labels["subsweeps"].setVisible(True)
+        else:
+            self.textboxes["subsweeps"].setVisible(False)
+            self.labels["subsweeps"].setVisible(False)
         self.textboxes["power_bins"].setVisible(False)
         self.labels["power_bins"].setVisible(False)
         self.profiles.setVisible(False)
@@ -270,7 +282,7 @@ class GUI(QMainWindow):
             self.service_widget.setup(canvas)
             return canvas
         elif "power" in mode.lower():
-            self.power_plot_window = canvas.addPlot(title="Power bin")
+            self.power_plot_window = canvas.addPlot(row=0, col=0, title="Power bin")
             self.power_plot_window.showGrid(x=True, y=True)
             for i in ax:
                 self.power_plot_window.getAxis(i).tickFont = font
@@ -288,8 +300,29 @@ class GUI(QMainWindow):
             self.power_plot_window.addItem(self.power_plot)
             self.textboxes["power_bins"].setVisible(True)
             self.labels["power_bins"].setVisible(True)
+        elif "sparse" in mode.lower():
+            self.sparse_plot_window = canvas.addPlot(row=0, col=0, title="Sparse mode")
+            self.sparse_plot_window.showGrid(x=True, y=True)
+            self.sparse_plot_window.setLabel("bottom", "Depth (mm)")
+            self.sparse_plot_window.setLabel("left", "Amplitude")
+            self.sparse_plot_window.setYRange(-2**15, 2**15)
+            self.sparse_plot = pg.ScatterPlotItem(size=10)
+            self.sparse_plot_window.addItem(self.sparse_plot)
+            for i in ax:
+                self.sparse_plot_window.getAxis(i).tickFont = font
+                self.sparse_plot_window.getAxis(i).setPen(ax_color)
+
+            self.hist_move_image = canvas.addPlot(row=2, col=0, title="Movement history")
+            self.hist_move = pg.ImageItem(autoDownsample=True)
+            self.hist_move.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+            pen = example_utils.pg_pen_cycler(1)
+            self.hist_move_image.addItem(self.hist_move)
+            self.hist_move_image.setLabel("left", "Distance (mm)")
+            self.hist_move_image.setLabel("bottom", "Time (s)")
+
+            canvas.nextRow()
         else:
-            self.envelope_plot_window = canvas.addPlot(title="Envelope")
+            self.envelope_plot_window = canvas.addPlot(row=0, col=0, title="Envelope")
             self.envelope_plot_window.showGrid(x=True, y=True)
             self.envelope_plot_window.addLegend(offset=(-10, 10))
             for i in ax:
@@ -318,10 +351,8 @@ class GUI(QMainWindow):
             self.envelope_plot_window.setLabel("left", "Amplitude")
             self.envelope_plot_window.setLabel("bottom", "Distance (mm)")
 
-            canvas.nextRow()
-
             if mode.lower() == "iq":
-                self.iq_plot_window = canvas.addPlot(title="Phase")
+                self.iq_plot_window = canvas.addPlot(row=1, col=0, title="Phase")
                 self.iq_plot_window.showGrid(x=True, y=True)
                 self.iq_plot_window.addLegend(offset=(-10, 10))
                 for i in ax:
@@ -337,22 +368,37 @@ class GUI(QMainWindow):
                 canvas.nextRow()
             else:
                 self.profiles.setVisible(True)
-            self.hist_plot_image = canvas.addPlot()
-            self.hist_plot = pg.ImageItem(titel="History")
-            colormap = plt.get_cmap("viridis")
-            colormap._init()
-            lut = (colormap._lut * 255).view(np.ndarray)
+
+        if mode.lower() in ["iq", "envelope", "sparse"]:
+            row = 1
+            title = "Envelope History"
+            if "iq" in mode.lower():
+                row = 2
+            if "sparse" in mode.lower():
+                title = "Sparse avg amplitude history"
+                basic_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
+                colormap = LinearSegmentedColormap.from_list("mycmap", basic_cols)
+                colormap._init()
+                lut = (colormap._lut * 255).view(np.ndarray)
+            else:
+                lut = example_utils.pg_mpl_cmap("viridis")
+
+            self.hist_plot_image = canvas.addPlot(row=row, col=0, title=title)
+            self.hist_plot = pg.ImageItem()
+            self.hist_plot.setAutoDownsample(True)
+
             self.hist_plot.setLookupTable(lut)
             pen = example_utils.pg_pen_cycler(1)
-            self.hist_plot_peak = self.hist_plot_image.plot(range(10),
-                                                            np.zeros(10),
-                                                            pen=pen)
             self.hist_plot_image.addItem(self.hist_plot)
             self.hist_plot_image.setLabel("left", "Distance (mm)")
-            self.hist_plot_image.setLabel("bottom", "Time (Sweep number)")
+            self.hist_plot_image.setLabel("bottom", "Time (s)")
             for i in ax:
                 self.hist_plot_image.getAxis(i).tickFont = font
                 self.hist_plot_image.getAxis(i).setPen(ax_color)
+        if mode.lower() in ["iq", "envelope"]:
+            self.hist_plot_peak = self.hist_plot_image.plot(range(10),
+                                                            np.zeros(10),
+                                                            pen=pen)
 
         return canvas
 
@@ -362,6 +408,7 @@ class GUI(QMainWindow):
         self.mode.addItem("IQ")
         self.mode.addItem("Envelope")
         self.mode.addItem("Power bin")
+        self.mode.addItem("Sparse")
         self.mode.addItem("Phase tracking")
         self.mode.addItem("Presence detection (IQ)")
         self.mode.addItem("Presence detection (sparse)")
@@ -375,6 +422,7 @@ class GUI(QMainWindow):
             "IQ": "iq_data",
             "Envelope": "envelope_data",
             "Power bin": "power_bin",
+            "Sparse": "sparse_data",
             "Breathing": "iq_data",
             "Phase tracking": "iq_data",
             "Presence detection (IQ)": "iq_data",
@@ -387,6 +435,7 @@ class GUI(QMainWindow):
             "Select service": ["", ""],
             "IQ": [configs.IQServiceConfig(), "internal"],
             "Envelope": [configs.EnvelopeServiceConfig(), "internal"],
+            "Sparse": [configs.SparseServiceConfig(), "internal_sparse"],
             "Power bin": [configs.PowerBinServiceConfig(), "internal_power"],
             "Breathing": [br.get_sensor_config(), "external"],
             "Phase tracking": [pht.get_sensor_config(), "external"],
@@ -578,6 +627,8 @@ class GUI(QMainWindow):
         settings_sublayout_grid.addWidget(self.textboxes["sweeps"], self.num, 1)
         settings_sublayout_grid.addWidget(self.labels["power_bins"], self.increment(), 0)
         settings_sublayout_grid.addWidget(self.textboxes["power_bins"], self.num, 1)
+        settings_sublayout_grid.addWidget(self.labels["subsweeps"], self.num, 0)
+        settings_sublayout_grid.addWidget(self.textboxes["subsweeps"], self.num, 1)
         settings_sublayout_grid.addWidget(self.profiles, self.increment(), 0, 1, 2)
         settings_sublayout_grid.addWidget(self.labels["stitching"], self.increment(), 0, 1, 2)
 
@@ -873,6 +924,7 @@ class GUI(QMainWindow):
 
     def update_sensor_config(self, refresh=False):
         conf, service = self.mode_to_config[self.mode.currentText()]
+        mode = self.mode.currentText()
 
         if not conf:
             return None
@@ -888,6 +940,7 @@ class GUI(QMainWindow):
             self.sweep_count = -1
         else:
             stitching = self.check_values(conf.mode)
+            conf.experimental_stitching = stitching
             conf.range_interval = [
                     float(self.textboxes["start_range"].text()),
                     float(self.textboxes["end_range"].text()),
@@ -895,11 +948,11 @@ class GUI(QMainWindow):
             conf.sweep_rate = int(self.textboxes["frequency"].text())
             conf.gain = float(self.textboxes["gain"].text())
             self.sweep_count = int(self.textboxes["sweeps"].text())
-            if "power" in self.mode.currentText().lower():
+            if "power" in mode.lower():
                 conf.bin_count = int(self.textboxes["power_bins"].text())
-            conf.experimental_stitching = stitching
-
-            if "envelope" in self.mode.currentText().lower():
+            if "sparse" in mode.lower():
+                conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
+            if "envelope" in mode.lower():
                 if "snr" in self.profiles.currentText().lower():
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
                 elif "depth" in self.profiles.currentText().lower():
@@ -962,6 +1015,17 @@ class GUI(QMainWindow):
         else:
             errors.append("Sweeps must be -1 or an int larger than 0!\n")
             self.textboxes["sweeps"].setText("-1")
+
+        if "sparse" in mode.lower():
+            e = False
+            if not self.textboxes["subsweeps"].text().isdigit():
+                self.textboxes["subsweeps"].setText("16")
+                e = True
+            else:
+                subs = int(self.textboxes["subsweeps"].text())
+                subs, e = self.check_limit(subs, self.textboxes["subsweeps"], 1, 16, set_to=16)
+            if e:
+                errors.append("Number of Subsweeps must be an int and between 1 and 16 !\n")
 
         gain = self.is_float(self.textboxes["gain"].text())
         gain, e = self.check_limit(gain, self.textboxes["gain"], 0, 1, set_to=0.7)
@@ -1111,6 +1175,8 @@ class GUI(QMainWindow):
                 try:
                     if "iq" in mode.lower():
                         conf = configs.IQServiceConfig()
+                    elif "sparse" in mode.lower():
+                        conf = configs.SparseServiceConfig()
                     else:
                         conf = configs.EnvelopeServiceConfig()
                     real = np.asarray(list(f["real"]))
@@ -1144,6 +1210,8 @@ class GUI(QMainWindow):
                     conf.range_interval = [f["start"][()], f["end"][()]]
                     if "power" in mode:
                         conf.bin_count = int(self.textboxes["power_bins"].text())
+                    if "sparse" in mode:
+                        conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
                     conf.gain = f["gain"][()]
                 except Exception as e:
                     print("Config not stored in file...")
@@ -1181,6 +1249,8 @@ class GUI(QMainWindow):
             self.textboxes["frequency"].setText(str(int(conf.sweep_rate)))
             if "power" in mode.lower():
                 self.textboxes["power_bins"].setText(str(conf.bin_count))
+            if "sparse" in mode.lower():
+                self.textboxes["subsweeps"].setText(str(conf.number_of_subsweeps))
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
                 try:
@@ -1255,8 +1325,13 @@ class GUI(QMainWindow):
                                      dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("profile", data=self.profiles.currentIndex(),
                                      dtype=np.int)
-                    f.create_dataset("power_bins", data=int(self.textboxes["power_bins"].text()),
-                                     dtype=np.int)
+                    if "power_bins" in mode.lower():
+                        f.create_dataset("power_bins",
+                                         data=int(self.textboxes["power_bins"].text()),
+                                         dtype=np.int)
+                    if "sparse" in mode.lower():
+                        f.create_dataset("subsweeps", data=int(self.textboxes["subsweeps"].text()),
+                                         dtype=np.int)
                     if mode in self.service_labels:
                         for key in self.service_params:
                             f.create_dataset(key, data=self.service_params[key]["value"],
@@ -1301,6 +1376,9 @@ class GUI(QMainWindow):
         elif "update_external_plots" in message_type:
             if data:
                 self.update_external_plots(data)
+        elif "update_sparse_plots" in message_type:
+            if data:
+                self.update_sparse_plots(data)
         elif "sweep_info" in message_type:
             self.update_sweep_info(data)
         else:
@@ -1326,12 +1404,21 @@ class GUI(QMainWindow):
                 self.iq_plot_window.setXRange(xstart, xend)
                 self.iq_plot_window.setYRange(-1.1, 1.1)
 
-            xax = self.hist_plot_image.getAxis("left")
-            x = np.round(np.arange(0, xdim+xdim/9, xdim/9))
+            yax = self.hist_plot_image.getAxis("left")
+            y = np.round(np.arange(0, xdim+xdim/9, xdim/9))
             labels = np.round(np.arange(xstart, xend+(xend-xstart)/9,
                               (xend-xstart)/9))
-            ticks = [list(zip(x, labels))]
-            xax.setTicks(ticks)
+            ticks = [list(zip(y, labels))]
+            yax.setTicks(ticks)
+            self.hist_plot_image.setYRange(0, xdim)
+
+            s_buff = data["hist_env"].shape[1]
+            t_buff = s_buff / data["sensor_config"].sweep_rate
+            tax = self.hist_plot_image.getAxis("bottom")
+            t = np.round(np.arange(0, s_buff + 1, s_buff/min(10, s_buff)))
+            labels = np.round(t / s_buff * t_buff, decimals=3)
+            ticks = [list(zip(t, labels))]
+            tax.setTicks(ticks)
 
         peak = "Peak: N/A"
         if data["peaks"]["peak_mm"]:
@@ -1361,9 +1448,6 @@ class GUI(QMainWindow):
         if max_val > self.env_plot_max_y:
             self.env_plot_max_y = 1.2 * max_val
 
-        if self.sweep_buffer > data["sweep"]:
-            self.hist_plot_image.setYRange(0, xdim)
-
     def update_power_plots(self, data):
         xstart = data["x_mm"][0]
         xend = data["x_mm"][-1]
@@ -1382,6 +1466,48 @@ class GUI(QMainWindow):
                 )
         self.power_plot.setOpts(height=data["iq_data"])
         self.power_plot_window.setYRange(0, self.smooth_power.update(np.max(data["iq_data"])))
+
+    def update_sparse_plots(self, data):
+        if not data["sweep"]:
+            self.smooth_sparse = example_utils.SmoothMax(
+                int(self.textboxes["frequency"].text()),
+                tau_decay=1,
+                tau_grow=0.2
+                )
+
+            axs = {}
+
+            xstart = data["x_mm"][0]
+            xend = data["x_mm"][-1]
+            xdim = data["hist_env"].shape[1]
+            data_points = xdim
+            if data_points > 10:
+                data_points /= 2
+            x = np.round(np.arange(0, xdim+xdim/data_points, xdim/data_points))
+            labels = np.round(np.arange(xstart, xend+(xend-xstart)/data_points,
+                              (xend-xstart)/data_points))
+            axs["left"] = [list(zip(x, labels))]
+
+            s_buff = data["hist_env"].shape[0]
+            t_buff = s_buff / data["sensor_config"].sweep_rate
+
+            t = np.round(np.arange(0, s_buff + 1, s_buff/min(10, s_buff)))
+            labels = np.round(t / s_buff * t_buff, decimals=3)
+            axs["bottom"] = [list(zip(t, labels))]
+
+            for ax in axs:
+                xax = self.hist_plot_image.getAxis(ax)
+                xax.setTicks(axs[ax])
+                xax = self.hist_move_image.getAxis(ax)
+                xax.setTicks(axs[ax])
+
+        self.sparse_plot.setData(data["x_mm"], data["iq_data"])
+        m = self.smooth_sparse.update(max(2500, np.amax(np.abs(data["iq_data"]))))
+        self.sparse_plot_window.setYRange(-m, m)
+
+        self.hist_plot.updateImage(data["hist_env"], levels=(0, 256))
+        move_max = max(np.max(data["hist_move"]) + 100, 1000)
+        self.hist_move.updateImage(data["hist_move"], levels=(0, move_max))
 
     def update_external_plots(self, data):
         self.service_widget.update(data)
