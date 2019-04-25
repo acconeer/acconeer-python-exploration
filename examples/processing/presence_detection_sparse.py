@@ -117,7 +117,7 @@ class PresenceDetectionSparseProcessor:
         self.movement_history = np.roll(self.movement_history, -1)
         self.movement_history[-1] = self.movement_lp
 
-        present = self.movement_history[-1] > self.threshold
+        present = np.tanh(self.movement_history[-1]) > self.threshold
 
         out_data = {
             "movement": np.abs(self.sweep_lp_fast - self.sweep_lp_slow),
