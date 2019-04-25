@@ -406,7 +406,7 @@ REGS = [
         "r",
         "u",
         None,
-        False,
+        "sweep",
         None,
     ),
     Reg(
