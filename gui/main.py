@@ -154,22 +154,26 @@ class GUI(QMainWindow):
     def init_checkboxes(self):
         check = {
             "clutter_file": "",
-            "verbose":      "Enable verbose",
+            "verbose": "Enable verbose",
+            "opengl": "Use OpenGL",
         }
 
         check_status = {
             "clutter_file": False,
             "verbose": False,
+            "opengl": False,
         }
 
         check_visible = {
             "clutter_file": False,
             "verbose": True,
+            "opengl": True,
         }
 
         check_funcs = {
             "clutter_file": self.update_scan,
             "verbose": self.set_log_level,
+            "opengl": self.enable_opengl,
         }
 
         self.checkboxes = {}
@@ -423,6 +427,19 @@ class GUI(QMainWindow):
         self.profiles.addItem("Max depth resolution")
         self.profiles.currentIndexChanged.connect(self.set_profile)
 
+    def enable_opengl(self):
+        if self.checkboxes["opengl"].isChecked():
+            warning = "Do you really want to enable OpenGL?"
+            detailed = "Enabling OpenGL might crash the GUI or introduce graphic glitches!"
+            if self.warning_message(warning, detailed_warning=detailed):
+                pg.setConfigOptions(useOpenGL=True)
+                self.update_canvas(force_update=True)
+            else:
+                self.checkboxes["opengl"].setChecked(False)
+        else:
+            pg.setConfigOptions(useOpenGL=False)
+            self.update_canvas(force_update=True)
+
     def set_profile(self):
         profile = self.profiles.currentText().lower()
 
@@ -573,9 +590,11 @@ class GUI(QMainWindow):
 
         # Info sublayout
         info_sublayout_grid = QtWidgets.QGridLayout()
-        info_sublayout_grid.addWidget(self.checkboxes["verbose"], 0, 0, 1, 2)
-        info_sublayout_grid.addWidget(self.labels["sweep_info"], 1, 0, 1, 2)
-        info_sublayout_grid.addWidget(self.labels["saturated"], 2, 0, 1, 2)
+        self.num = 0
+        info_sublayout_grid.addWidget(self.checkboxes["verbose"], self.num, 0, 1, 2)
+        info_sublayout_grid.addWidget(self.checkboxes["opengl"], self.num, 1, 1, 2)
+        info_sublayout_grid.addWidget(self.labels["sweep_info"], self.increment(), 0, 1, 2)
+        info_sublayout_grid.addWidget(self.labels["saturated"], self.increment(), 0, 1, 2)
 
         panel_sublayout_inner.addStretch(1)
         panel_sublayout_inner.addWidget(serverFrame)
@@ -692,6 +711,17 @@ class GUI(QMainWindow):
         em.setWindowTitle("Error")
         em.showMessage(error)
 
+    def warning_message(self, warning, detailed_warning=None):
+        msg = QtWidgets.QMessageBox(self.main_widget)
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setText(warning)
+        if detailed_warning:
+            msg.setDetailedText(detailed_warning)
+        msg.setWindowTitle("Warning")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        retval = msg.exec_()
+        return retval == 1024
+
     def start_scan(self, create_cl=False, from_file=False):
         if "Select" in self.mode.currentText():
             self.error_message("Please select a service")
@@ -740,6 +770,7 @@ class GUI(QMainWindow):
         self.buttons["load_cl"].setEnabled(False)
         self.mode.setEnabled(False)
         self.buttons["stop"].setEnabled(True)
+        self.checkboxes["opengl"].setEnabled(False)
 
         self.sweep_number = 0
         self.sweeps_skipped = 0
@@ -768,6 +799,7 @@ class GUI(QMainWindow):
         self.buttons["start"].setEnabled(True)
         self.serviceFrame.setEnabled(True)
         self.settingsFrame.setEnabled(True)
+        self.checkboxes["opengl"].setEnabled(True)
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
 
