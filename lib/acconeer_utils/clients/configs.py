@@ -79,8 +79,9 @@ class BaseServiceConfig(BaseSessionConfig):
 
     @range_start.setter
     def range_start(self, start):
-        if start < 0:
-            raise ValueError("range start must be positive")
+        if getattr(self, "session_profile", None) != EnvelopeServiceConfig.DIRECT_LEAKAGE:
+            if start < 0:
+                raise ValueError("range start must be positive")
         self._range_start = start
 
     @property
@@ -159,8 +160,10 @@ class PowerBinServiceConfig(BaseServiceConfig):
 class EnvelopeServiceConfig(BaseDenseServiceConfig):
     MAX_DEPTH_RESOLUTION = 0
     MAX_SNR = 1
+    DIRECT_LEAKAGE = 2
+    PROFILES = [MAX_DEPTH_RESOLUTION, MAX_SNR, DIRECT_LEAKAGE]
 
-    _session_profile = None
+    _session_profile = MAX_SNR
     _compensate_phase = None
 
     @property
@@ -181,7 +184,7 @@ class EnvelopeServiceConfig(BaseDenseServiceConfig):
 
     @session_profile.setter
     def session_profile(self, profile):
-        if profile not in [self.MAX_DEPTH_RESOLUTION, self.MAX_SNR]:
+        if profile not in self.PROFILES:
             raise ValueError("invalid profile")
         self._session_profile = profile
 
