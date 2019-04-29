@@ -14,6 +14,8 @@ The Acconeer A1 sensor can be used in different modes depending on use case. The
 | IQ       | Presence detection, obstacle detection,|
 |          | vital sign monitoring                  |
 +----------+----------------------------------------+
+| Sparse   | Presence detection                     |
++----------+----------------------------------------+
 
 
 .. toctree::
@@ -23,3 +25,4 @@ The Acconeer A1 sensor can be used in different modes depending on use case. The
    pb
    envelope
    iq
+   sparse
