@@ -100,6 +100,7 @@ class GUI(QMainWindow):
             "con_settings":     "Connection settings:",
             "sensor_settings":  "Sensor settings:",
             "service_settings": "Processing settings:",
+            "advanced_params":  "Advanced processing settings:",
             "sensor":           "Sensor",
             "scan":             "Scan controls:",
             "gain":             "Gain",
@@ -134,6 +135,7 @@ class GUI(QMainWindow):
         self.labels["sensor_settings"].setStyleSheet("text-decoration: underline")
         self.labels["service_settings"].setStyleSheet("text-decoration: underline")
         self.labels["scan"].setStyleSheet("text-decoration: underline")
+        self.labels["advanced_params"].setStyleSheet("text-decoration: underline")
 
     def init_textboxes(self):
         text = {
@@ -161,33 +163,25 @@ class GUI(QMainWindow):
             "clutter_file": "",
             "verbose": "Enable verbose",
             "opengl": "Use OpenGL",
+            "show_advanced": "Show advanced settings",
         }
 
-        check_status = {
-            "clutter_file": False,
-            "verbose": False,
-            "opengl": False,
-        }
-
-        check_visible = {
-            "clutter_file": False,
-            "verbose": True,
-            "opengl": True,
-        }
-
-        check_funcs = {
-            "clutter_file": self.update_scan,
-            "verbose": self.set_log_level,
-            "opengl": self.enable_opengl,
+        #  Status, Visible, Enabled, Function
+        check_init = {
+            "clutter_file": [False, False, True, self.update_scan],
+            "verbose": [False, True, True, self.set_log_level],
+            "opengl": [False, True, True, self.enable_opengl],
+            "show_advanced": [False, False, True, self.show_advanced],
         }
 
         self.checkboxes = {}
         for key in check:
             self.checkboxes[key] = QCheckBox(check[key], self)
-            self.checkboxes[key].setChecked(check_status[key])
-            self.checkboxes[key].setVisible(check_visible[key])
-            if check_funcs[key]:
-                self.checkboxes[key].stateChanged.connect(check_funcs[key])
+            self.checkboxes[key].setChecked(check_init[key][0])
+            self.checkboxes[key].setVisible(check_init[key][1])
+            self.checkboxes[key].setEnabled(check_init[key][2])
+            if check_init[key][3]:
+                self.checkboxes[key].stateChanged.connect(check_init[key][3])
 
     def init_graphs(self, mode="Select service", refresh=False):
         axes = {
@@ -268,9 +262,9 @@ class GUI(QMainWindow):
                 try:
                     self.service_params = processing_config
                     self.service_defaults = copy.deepcopy(self.service_params)
-                    self.add_params(self.service_params)
                 except Exception:
                     pass
+                self.add_params(self.service_params)
             if self.service_params:
                 self.serviceFrame.show()
             else:
@@ -529,6 +523,7 @@ class GUI(QMainWindow):
             "scan_ports":       QtWidgets.QPushButton("Scan ports", self),
             "sensor_defaults":  QtWidgets.QPushButton("Defaults", self),
             "service_defaults": QtWidgets.QPushButton("Defaults", self),
+            "advanced_defaults": QtWidgets.QPushButton("Defaults", self),
         }
 
         button_funcs = {
@@ -543,6 +538,7 @@ class GUI(QMainWindow):
             "scan_ports": self.update_ports,
             "sensor_defaults": self.sensor_defaults,
             "service_defaults": self.service_defaults,
+            "advanced_defaults": self.service_defaults,
         }
 
         button_enabled = {
@@ -557,6 +553,7 @@ class GUI(QMainWindow):
             "scan_ports": True,
             "sensor_defaults": False,
             "service_defaults": True,
+            "advanced_defaults": True,
         }
 
         for key in button_funcs:
@@ -569,6 +566,7 @@ class GUI(QMainWindow):
         # Panel sublayout
         self.panel_sublayout = QtWidgets.QHBoxLayout()
         panel_sublayout_inner = QtWidgets.QVBoxLayout()
+        advanced_sublayout_inner = QtWidgets.QVBoxLayout()
 
         # Server sublayout
         serverFrame = QFrame(self)
@@ -638,6 +636,7 @@ class GUI(QMainWindow):
         self.serviceparams_sublayout_grid = QtWidgets.QGridLayout(self.serviceFrame)
         self.serviceparams_sublayout_grid.addWidget(self.labels["service_settings"], 0, 0)
         self.serviceparams_sublayout_grid.addWidget(self.buttons["service_defaults"], 0, 1)
+        self.serviceparams_sublayout_grid.addWidget(self.checkboxes["show_advanced"], 10, 0, 1, 2)
 
         # Info sublayout
         info_sublayout_grid = QtWidgets.QGridLayout()
@@ -647,19 +646,26 @@ class GUI(QMainWindow):
         info_sublayout_grid.addWidget(self.labels["sweep_info"], self.increment(), 0, 1, 2)
         info_sublayout_grid.addWidget(self.labels["saturated"], self.increment(), 0, 1, 2)
 
-        panel_sublayout_inner.addStretch(1)
+        # Advanced params layout
+        self.advancedFrame = QFrame(self)
+        self.advancedFrame.setFrameShape(QFrame.StyledPanel)
+        self.advanced_params_layout_grid = QtWidgets.QGridLayout(self.advancedFrame)
+        self.advanced_params_layout_grid.addWidget(self.labels["advanced_params"], 0, 0)
+        self.advanced_params_layout_grid.addWidget(self.buttons["advanced_defaults"], 0, 1)
+
         panel_sublayout_inner.addWidget(serverFrame)
-        panel_sublayout_inner.addStretch(1)
         panel_sublayout_inner.addWidget(controlFrame)
-        panel_sublayout_inner.addStretch(1)
         panel_sublayout_inner.addWidget(self.settingsFrame)
-        panel_sublayout_inner.addStretch(1)
         panel_sublayout_inner.addWidget(self.serviceFrame)
-        panel_sublayout_inner.addStretch(5)
+        panel_sublayout_inner.addStretch(500)
         panel_sublayout_inner.addLayout(info_sublayout_grid)
-        self.panel_sublayout.addStretch(5)
+        advanced_sublayout_inner.addWidget(self.advancedFrame)
+        advanced_sublayout_inner.addStretch(500)
         self.panel_sublayout.addLayout(panel_sublayout_inner)
+        self.panel_sublayout.addLayout(advanced_sublayout_inner)
+
         self.serviceFrame.hide()
+        self.advancedFrame.hide()
 
     def add_params(self, params):
         for mode in self.service_labels:
@@ -673,10 +679,23 @@ class GUI(QMainWindow):
         if mode not in self.service_labels:
             self.service_labels[mode] = {}
 
+        advanced_available = False
         for key in params:
             if key not in self.service_labels[mode]:
                 self.service_labels[mode][key] = {}
-                if params[key]["value"] is not None:
+
+                grid = self.serviceparams_sublayout_grid
+                if "advanced" in params[key] and params[key]["advanced"]:
+                    grid = self.advanced_params_layout_grid
+                    advanced_available = True
+                self.service_labels[mode][key]["advanced"] = advanced_available
+
+                if isinstance(params[key]["value"], bool):
+                    self.service_labels[mode][key]["checkbox"] = QCheckBox(
+                        params[key]["name"], self)
+                    self.service_labels[mode][key]["checkbox"].setChecked(params[key]["value"])
+                    grid.addWidget(self.service_labels[mode][key]["checkbox"], index, 0, 1, 2)
+                elif params[key]["value"] is not None:
                     self.service_labels[mode][key]["label"] = QLabel(self)
                     self.service_labels[mode][key]["label"].setMinimumWidth(125)
                     self.service_labels[mode][key]["label"].setText(params[key]["name"])
@@ -684,22 +703,32 @@ class GUI(QMainWindow):
                     self.service_labels[mode][key]["box"].setText(str(params[key]["value"]))
                     self.service_labels[mode][key]["limits"] = params[key]["limits"]
                     self.service_labels[mode][key]["default"] = params[key]["value"]
-                    self.serviceparams_sublayout_grid.addWidget(
-                        self.service_labels[mode][key]["label"], index, 0)
-                    self.serviceparams_sublayout_grid.addWidget(
-                        self.service_labels[mode][key]["box"], index, 1)
+                    grid.addWidget(self.service_labels[mode][key]["label"], index, 0)
+                    grid.addWidget(self.service_labels[mode][key]["box"], index, 1)
                     self.service_labels[mode][key]["box"].setVisible(True)
-
                 else:
                     self.service_labels[mode][key]["label"] = QLabel(self)
                     self.service_labels[mode][key]["label"].setText(str(params[key]["text"]))
-                    self.serviceparams_sublayout_grid.addWidget(
-                        self.service_labels[mode][key]["label"], index, 0, 1, 2)
+                    grid.addWidget(self.service_labels[mode][key]["label"], index, 0, 1, 2)
                 index += 1
             else:
                 for element in self.service_labels[mode][key]:
-                    if "label" in element or "box" in element:
+                    if element in ["label", "box", "checkbox"]:
                         self.service_labels[mode][key][element].setVisible(True)
+                    if self.service_labels[mode][key]["advanced"]:
+                        advanced_available = True
+
+        self.checkboxes["show_advanced"].setVisible(advanced_available)
+        if self.checkboxes["show_advanced"].isChecked() and advanced_available:
+            self.advancedFrame.show()
+        else:
+            self.advancedFrame.hide()
+
+    def show_advanced(self):
+        if self.checkboxes["show_advanced"].isChecked():
+            self.advancedFrame.show()
+        else:
+            self.advancedFrame.hide()
 
     def sensor_defaults(self):
         conf = self.conf_defaults[self.mode.currentText()]
@@ -719,6 +748,9 @@ class GUI(QMainWindow):
                 if "box" in self.service_labels[mode][key]:
                     self.service_labels[mode][key]["box"].setText(
                         str(self.service_defaults[key]["value"]))
+                if "checkbox" in self.service_labels[mode][key]:
+                    self.service_labels[mode][key]["checkbox"].setChecked(
+                        bool(self.service_defaults[key]["value"]))
 
     def update_canvas(self, force_update=False):
         mode = self.mode.currentText()
@@ -734,7 +766,7 @@ class GUI(QMainWindow):
             refresh = False
             if self.current_canvas == mode:
                 refresh = True
-                self.service_params = self.update_service_params()
+                self.update_service_params()
             self.canvas = self.init_graphs(mode, refresh=refresh)
             self.main_layout.addWidget(self.canvas, 0, 0)
 
@@ -979,26 +1011,30 @@ class GUI(QMainWindow):
             return None
 
         for key in self.service_labels[mode]:
-            if "box" in self.service_labels[mode][key]:
-                if self.service_labels[mode][key]["box"].isVisible():
-                    er = False
-                    val = self.is_float(self.service_labels[mode][key]["box"].text(),
-                                        is_positive=False)
-                    limits = self.service_labels[mode][key]["limits"]
-                    default = self.service_labels[mode][key]["default"]
-                    if val is not False:
-                        val, er = self.check_limit(val, self.service_labels[mode][key]["box"],
-                                                   limits[0], limits[1], set_to=default)
-                    else:
-                        er = True
-                        val = default
-                        self.service_labels[mode][key]["box"].setText(str(default))
-                    if er:
-                        errors.append("{:s} must be between {:s} and {:s}!\n".format(
-                            key, str(limits[0]), str(limits[1])))
+            entry = self.service_labels[mode][key]
+            if "box" in entry:
+                er = False
+                val = self.is_float(entry["box"].text(),
+                                    is_positive=False)
+                limits = entry["limits"]
+                default = entry["default"]
+                if val is not False:
+                    val, er = self.check_limit(val, entry["box"],
+                                               limits[0], limits[1], set_to=default)
+                else:
+                    er = True
+                    val = default
+                    entry["box"].setText(str(default))
+                if er:
+                    errors.append("{:s} must be between {:s} and {:s}!\n".format(
+                        key, str(limits[0]), str(limits[1])))
                 self.service_params[key]["value"] = self.service_params[key]["type"](val)
+            elif "checkbox" in entry:
+                self.service_params[key]["value"] = entry["checkbox"].isChecked()
+
         if len(errors):
             self.error_message("".join(errors))
+
         return self.service_params
 
     def check_values(self, mode):
@@ -1661,7 +1697,6 @@ class GUI(QMainWindow):
             self.client.disconnect()
         except Exception:
             pass
-
         self.close()
 
 
