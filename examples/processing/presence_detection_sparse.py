@@ -86,7 +86,7 @@ class PresenceDetectionSparseProcessor:
         self.threshold = processing_config["threshold"]["value"]
         num_subsweeps = sensor_config.number_of_subsweeps
         upper_speed_limit = processing_config["upper_speed_limit"]["value"]
-        f = sensor_config.sweep_rate
+        f = int(round(sensor_config.sweep_rate))
 
         self.movement_history = np.zeros(f * 5)  # 5 seconds
 

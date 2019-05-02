@@ -71,7 +71,7 @@ class PhaseTrackingProcessor:
         self.f = sensor_config.sweep_rate
         self.dt = 1 / self.f
 
-        num_hist_points = self.f * 3
+        num_hist_points = int(round(self.f * 3))
 
         self.lp_vel = 0
         self.last_sweep = None

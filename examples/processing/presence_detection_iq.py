@@ -75,7 +75,7 @@ def get_processing_config():
 
 class PresenceDetectionProcessor:
     def __init__(self, sensor_config, processing_config):
-        self.movement_history = np.zeros(5 * sensor_config.sweep_rate)  # 5 seconds
+        self.movement_history = np.zeros(int(round(5 * sensor_config.sweep_rate)))  # 5 seconds
         self.threshold = processing_config["threshold"]["value"]
 
         self.a_fast_tau = 0.1
