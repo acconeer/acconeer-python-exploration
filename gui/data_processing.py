@@ -151,7 +151,7 @@ class DataProcessing:
 
         return (cl, cl_iq, thrshld)
 
-    def power_bin_processing(self, iq_data):
+    def power_bin_processing(self, iq_data, info):
         if not self.sweep:
             self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
 
@@ -162,13 +162,13 @@ class DataProcessing:
             "x_mm": self.env_x_mm,
         }
 
-        self.record_data(iq_data)
+        self.record_data(iq_data, info)
         self.draw_canvas(self.sweep, plot_data, "update_power_plots")
         self.sweep += 1
 
         return (plot_data, self.record)
 
-    def sparse_processing(self, iq_data):
+    def sparse_processing(self, iq_data, info):
         num_subsweeps = iq_data.shape[0]
         if not self.sweep:
             self.env_x_mm = np.tile(np.linspace(self.start_x, self.stop_x, iq_data.shape[1]),
@@ -234,7 +234,7 @@ class DataProcessing:
             "x_mm": self.env_x_mm,
         }
 
-        self.record_data(iq_data)
+        self.record_data(iq_data, info)
         self.draw_canvas(self.sweep, plot_data, "update_sparse_plots")
         self.sweep += 1
 
@@ -243,7 +243,7 @@ class DataProcessing:
     def alpha(self, tau, dt):
         return np.exp(-dt/tau)
 
-    def internal_processing(self, iq_data):
+    def internal_processing(self, iq_data, info):
         complex_env = None
 
         snr = {}
@@ -352,7 +352,7 @@ class DataProcessing:
             "phase": phase,
         }
 
-        self.record_data(iq_data)
+        self.record_data(iq_data, info)
         self.draw_canvas(self.sweep, plot_data)
         self.sweep += 1
 
@@ -375,7 +375,7 @@ class DataProcessing:
 
         return (plot_data, self.record)
 
-    def external_processing(self, sweep_data):
+    def external_processing(self, sweep_data, info):
         if self.first_run:
             self.external = self.parent.parent.external(self.sensor_config, self.service_params)
             self.first_run = False
@@ -387,15 +387,16 @@ class DataProcessing:
                 self.draw_canvas(self.sweep, plot_data, "update_external_plots")
                 self.sweep += 1
 
-        self.record_data(sweep_data)
+        self.record_data(sweep_data, info)
         return None, self.record
 
-    def record_data(self, sweep_data):
+    def record_data(self, sweep_data, info):
         plot_data = {
             "service_type": self.service_type,
             "sweep_data": sweep_data,
             "sensor_config": self.sensor_config,
             "cl_file": self.cl_file,
+            "info": info,
         }
 
         if self.hist_len_index >= self.hist_len:
@@ -410,40 +411,38 @@ class DataProcessing:
         self.init_vars()
         self.sweep = 0
         self.create_cl = False
-        h5_data = True
 
+        info_available = True
         try:
-            data_len = len(data)
-
-            if "sweeps" in data:
-                data_len = data["sweeps"].shape[0]
-                data = data["sweeps"]
-            else:
-                self.sensor_config = data[0]["sensor_config"]
-                h5_data = False
-
-            self.sweeps = data_len
-
+            self.sweeps = len(data)
         except Exception as e:
             self.parent.emit("error", "Wrong file format\n {}".format(e))
+            return
 
-        self.info = {"sequence_number": 0}
+        try:
+            sequence_offset = max(data[0]["info"]["sequence_number"] - 1, 0)
+        except Exception:
+            info_available = False
+
+        if not info_available:
+            self.info = {"sequence_number": 1}
+            print("Session info not available")
 
         for i, data_step in enumerate(data):
+            if info_available:
+                info = data[i]["info"]
+                info["sequence_number"] -= sequence_offset
+            else:
+                info = self.info.copy()
             if not self.abort:
-                if "sleep" in self.service_type.lower():
-                    time.sleep(0.001)
-                elif "power" in self.service_type.lower():
-                    time.sleep(self.rate)
-                else:
-                    self.skip = 0
-                    time.sleep(self.rate)
-                if h5_data:
-                    plot_data, _ = self.process(data_step)
-                else:
-                    plot_data, _ = self.process(data_step["sweep_data"])
+                self.skip = 0
+                time.sleep(self.rate)
+                plot_data, _ = self.process(data_step["sweep_data"], info)
+
+                self.parent.emit("sweep_info", "", info)
+
+            if not info_available:
                 self.info["sequence_number"] += 1
-                self.parent.emit("sweep_info", "", self.info)
 
     def draw_canvas(self, sweep_index, plot_data, cmd="update_plots",
                     skip_frames=False):

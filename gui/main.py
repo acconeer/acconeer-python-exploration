@@ -722,6 +722,9 @@ class GUI(QMainWindow):
 
     def update_canvas(self, force_update=False):
         mode = self.mode.currentText()
+        if self.mode_to_param[mode] != self.mode_to_param[self.current_canvas]:
+            self.data = None
+            self.buttons["replay_buffered"].setEnabled(False)
 
         if force_update or self.current_canvas not in mode:
             self.main_layout.removeWidget(self.canvas)
@@ -778,13 +781,20 @@ class GUI(QMainWindow):
             self.error_message("Please select a service")
             return
 
+        data_source = "stream"
+        if from_file:
+            try:
+                sensor_config = self.data[0]["sensor_config"]
+                self.update_settings(sensor_config)
+            except Exception:
+                print("Warning, could not restore config from cached data!")
+                pass
+            data_source = "file"
+        sweep_buffer = 500
+
         if self.external:
             self.update_canvas(force_update=True)
 
-        data_source = "stream"
-        if from_file:
-            data_source = "file"
-        sweep_buffer = 500
         try:
             sweep_buffer = int(self.textboxes["sweep_buffer"].text())
         except Exception:
@@ -853,6 +863,7 @@ class GUI(QMainWindow):
         self.checkboxes["opengl"].setEnabled(True)
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
+            self.buttons["save_scan"].setEnabled(True)
 
     def set_log_level(self):
         log_level = logging.INFO
@@ -1154,7 +1165,6 @@ class GUI(QMainWindow):
         if filename:
             cl_file = None
             if "h5" in filename:
-                self.data = {}
                 try:
                     f = h5py.File(filename, "r")
                 except Exception as e:
@@ -1181,11 +1191,11 @@ class GUI(QMainWindow):
                         conf = configs.EnvelopeServiceConfig()
                     real = np.asarray(list(f["real"]))
                     im = np.asarray(list(f["imag"]))
-                    self.data["sweeps"] = real[...] + 1j * im[...]
-                    data_len = len(self.data["sweeps"][:, 0])
+                    sweeps = real[...] + 1j * im[...]
+                    data_len = len(sweeps[:, 0])
+                    length = range(len(sweeps))
                 except Exception as e:
                     self.error_message("{}".format(e))
-                    print(e)
                     return
 
                 try:
@@ -1205,6 +1215,14 @@ class GUI(QMainWindow):
                     print("Could not restore processing parameters")
                     pass
 
+                session_info = True
+                try:
+                    nr = np.asarray(list(f["sequence_number"]))
+                    sat = np.asarray(list(f["data_saturated"]))
+                except Exception:
+                    session_info = False
+                    print("Session info not stored!")
+
                 try:
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
@@ -1221,27 +1239,47 @@ class GUI(QMainWindow):
                             float(self.textboxes["end_range"].text()),
                     ]
                     conf.sweep_rate = int(self.textboxes["frequency"].text())
-                self.data["service_type"] = mode
-                self.data["sensor_config"] = conf
-                self.data["cl_file"] = None
+
+                cl_file = None
                 try:
-                    self.data["cl_file"] = f["clutter_file"][()]
-                    cl_file = self.data["cl_file"]
+                    cl_file = f["clutter_file"][()]
                 except Exception:
                     pass
+
+                if session_info:
+                    self.data = [
+                        {
+                            "sweep_data": sweeps[i],
+                            "service_type": mode,
+                            "sensor_config": conf,
+                            "cl_file": cl_file,
+                            "info": {
+                                "sequence_number": nr[i],
+                                "data_saturated": sat[i],
+                            },
+                        } for i in length]
+                else:
+                    self.data = [
+                        {
+                            "sweep_data": sweeps[i],
+                            "service_type": mode,
+                            "sensor_config": conf,
+                            "cl_file": cl_file,
+                        } for i in length]
             else:
                 try:
-                    self.data = np.load(filename, allow_pickle=True)
-                    mode = self.data[0]["service_type"]
-                    cl_file = self.data[0]["cl_file"]
-                    data_len = len(self.data)
-                    conf = self.data[0]["sensor_config"]
+                    data = np.load(filename, allow_pickle=True)
+                    mode = data[0]["service_type"]
+                    cl_file = data[0]["cl_file"]
+                    data_len = len(data)
+                    conf = data[0]["sensor_config"]
                 except Exception as e:
                     self.error_message("{}".format(e))
                     return
                 index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.mode.setCurrentIndex(index)
+                self.data = data
 
             self.textboxes["start_range"].setText(str(conf.range_interval[0]))
             self.textboxes["end_range"].setText(str(conf.range_interval[1]))
@@ -1299,9 +1337,31 @@ class GUI(QMainWindow):
             else:
                 if "h5" in info:
                     sweep_data = []
+                    info_available = True
+                    try:
+                        data[0]["info"]["sequence_number"]
+                        sequence_number = []
+                        data_saturated = []
+                    except Exception as e:
+                        print(e)
+                        print("Cannot save session info!")
+                        info_available = False
+
                     for sweep in data:
                         sweep_data.append(sweep["sweep_data"])
+                        if info_available:
+                            sequence_number.append(sweep["info"]["sequence_number"])
+                            data_saturated.append(sweep["info"]["data_saturated"])
                     sweep_data = np.asarray(sweep_data)
+                    if info_available:
+                        sequence_number = np.asarray(sequence_number)
+                        data_saturated = np.asarray(data_saturated)
+                    try:
+                        sensor_config = data[0]["sensor_config"]
+                    except Exception as e:
+                        self.error_message("Cannot fetch sensor_config!\n {:s}".format(e))
+                        return
+
                     if ".h5" not in filename:
                         filename = filename + ".h5"
                     try:
@@ -1313,24 +1373,25 @@ class GUI(QMainWindow):
                     f.create_dataset("real", data=np.real(sweep_data), dtype=np.float32)
                     f.create_dataset("sweep_rate", data=int(self.textboxes["frequency"].text()),
                                      dtype=np.float32)
-                    f.create_dataset("start", data=float(self.textboxes["start_range"].text()),
+                    f.create_dataset("start", data=float(sensor_config.range_start),
                                      dtype=np.float32)
-                    f.create_dataset("end", data=float(self.textboxes["end_range"].text()),
+                    f.create_dataset("end", data=float(sensor_config.range_end),
                                      dtype=np.float32)
-                    f.create_dataset("gain", data=float(self.textboxes["gain"].text()),
-                                     dtype=np.float32)
+                    f.create_dataset("gain", data=float(sensor_config.gain), dtype=np.float32)
                     f.create_dataset("service_type", data=mode.lower(),
                                      dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("clutter_file", data=self.cl_file,
                                      dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("profile", data=self.profiles.currentIndex(),
                                      dtype=np.int)
+                    if info_available:
+                        f.create_dataset("sequence_number", data=sequence_number, dtype=np.int)
+                        f.create_dataset("data_saturated", data=data_saturated, dtype='u1')
                     if "power_bins" in mode.lower():
-                        f.create_dataset("power_bins",
-                                         data=int(self.textboxes["power_bins"].text()),
+                        f.create_dataset("power_bins", data=int(sensor_config.power_bins),
                                          dtype=np.int)
                     if "sparse" in mode.lower():
-                        f.create_dataset("subsweeps", data=int(self.textboxes["subsweeps"].text()),
+                        f.create_dataset("subsweeps", data=int(sensor_config.number_of_subsweeps),
                                          dtype=np.int)
                     if mode in self.service_labels:
                         for key in self.service_params:
@@ -1362,7 +1423,6 @@ class GUI(QMainWindow):
             self.save_scan(data, clutter=True)
         elif message_type == "scan_data":
             self.data = data
-            self.buttons["save_scan"].setEnabled(True)
         elif message_type == "scan_done":
             self.stop_scan()
             if "Connect" == self.buttons["connect"].text():
@@ -1381,6 +1441,8 @@ class GUI(QMainWindow):
                 self.update_sparse_plots(data)
         elif "sweep_info" in message_type:
             self.update_sweep_info(data)
+        elif "session_info" in message_type:
+            self.update_ranges(data)
         else:
             print(message_type, message, data)
 
@@ -1480,9 +1542,7 @@ class GUI(QMainWindow):
             xstart = data["x_mm"][0]
             xend = data["x_mm"][-1]
             xdim = data["hist_env"].shape[1]
-            data_points = xdim
-            if data_points > 10:
-                data_points /= 2
+            data_points = min(xdim, 10)
             x = np.round(np.arange(0, xdim+xdim/data_points, xdim/data_points))
             labels = np.round(np.arange(xstart, xend+(xend-xstart)/data_points,
                               (xend-xstart)/data_points))
@@ -1534,6 +1594,17 @@ class GUI(QMainWindow):
         else:
             self.labels["saturated"].setStyleSheet("color: #f0f0f0")
 
+    def update_ranges(self, data):
+        old_start = float(self.textboxes["start_range"].text())
+        old_end = float(self.textboxes["end_range"].text())
+        start = data["actual_range_start"]
+        self.textboxes["start_range"].setText("{:.2f}".format(start))
+        end = start + data["actual_range_length"]
+        self.textboxes["end_range"].setText("{:.2f}".format(end))
+        print("Updated range settings to match session info!")
+        print("Start {:.3f} -> {:.3f}".format(old_start, start))
+        print("End   {:.3f} -> {:.3f}".format(old_end, end))
+
     def start_up(self):
         if os.path.isfile(self.last_file):
             try:
@@ -1543,26 +1614,30 @@ class GUI(QMainWindow):
                 print("Could not load settings from last session\n{}".format(e))
 
     def update_settings(self, sensor_config, last_config=None):
-        try:
-            self.profiles.setCurrentIndex(last_config["profile"])
-            self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
-            self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
-            self.interface.setCurrentIndex(last_config["interface"])
-            self.ports.setCurrentIndex(last_config["port"])
-        except Exception as e:
-            print("Warning, could not restore last session\n{}".format(e))
+        if last_config:
+            try:
+                self.profiles.setCurrentIndex(last_config["profile"])
+                self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
+                self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
+                self.interface.setCurrentIndex(last_config["interface"])
+                self.ports.setCurrentIndex(last_config["port"])
+                self.textboxes["host"].setText(last_config["host"])
+                self.sweep_count = last_config["sweep_count"]
+            except Exception as e:
+                print("Warning, could not restore last session\n{}".format(e))
 
         try:
             self.textboxes["gain"].setText("{:.1f}".format(sensor_config.gain))
-            self.textboxes["frequency"].setText(str(sensor_config.sweep_rate))
+            self.textboxes["frequency"].setText(str(int(sensor_config.sweep_rate)))
             self.textboxes["start_range"].setText("{:.2f}".format(sensor_config.range_interval[0]))
             self.textboxes["end_range"].setText("{:.2f}".format(sensor_config.range_interval[1]))
+            if hasattr(sensor_config, "bin_count"):
+                self.textboxes["power_bins"].setText("{:d}".format(sensor_config.bin_count))
+            if hasattr(sensor_config, "number_of_subsweeps"):
+                subs = sensor_config.number_of_subsweeps
+                self.textboxes["subsweeps"].setText("{:d}".format(subs))
         except Exception as e:
-            print("Warning, could not restore last session\n{}".format(e))
-
-        if last_config:
-            self.textboxes["host"].setText(last_config["host"])
-            self.sweep_count = last_config["sweep_count"]
+            print("Warning, could not update config settings\n{}".format(e))
 
     def increment(self):
         self.num += 1
@@ -1598,7 +1673,7 @@ class Threaded_Scan(QtCore.QThread):
 
         self.client = parent.client
         self.radar = parent.radar
-        self.sensor_config = parent.update_sensor_config()
+        self.sensor_config = params["sensor_config"]
         self.params = params
         self.data = parent.data
         self.parent = parent
@@ -1617,7 +1692,9 @@ class Threaded_Scan(QtCore.QThread):
             data = None
 
             try:
-                self.client.setup_session(self.sensor_config)
+                session_info = self.client.setup_session(self.sensor_config)
+                if not self.check_session_info(session_info):
+                    self.emit("session_info", "", session_info)
                 self.radar.prepare_processing(self, self.params)
                 self.client.start_streaming()
             except Exception as e:
@@ -1629,7 +1706,7 @@ class Threaded_Scan(QtCore.QThread):
                 while self.running:
                     info, sweep = self.client.get_next()
                     self.emit("sweep_info", "", info)
-                    plot_data, data = self.radar.process(sweep)
+                    plot_data, data = self.radar.process(sweep, info)
                     if plot_data and plot_data["sweep"] + 1 >= self.sweep_count:
                         self.running = False
             except Exception as e:
@@ -1668,6 +1745,21 @@ class Threaded_Scan(QtCore.QThread):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
         return err
+
+    def check_session_info(self, data):
+        try:
+            start = self.sensor_config.range_start
+            length = self.sensor_config.range_length
+            start_ok = abs(start - data["actual_range_start"]) < 0.01
+            len_ok = abs(length - data["actual_range_length"]) < 0.01
+        except (AttributeError, KeyError, TypeError):
+            pass
+        else:
+            if not start_ok or not len_ok:
+                self.sensor_config.range_start = data["actual_range_start"]
+                self.sensor_config.range_length = data["actual_range_length"]
+                return False
+        return True
 
 
 def sigint_handler(gui):
