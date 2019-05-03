@@ -266,6 +266,26 @@ REGS = [
         None,
         None,
     ),
+    Reg(
+        "data_saturated",
+        NO_MODE,
+        0x9F,
+        "r",
+        "b",
+        None,
+        "sweep",
+        None,
+    ),
+    Reg(
+        "sequence_number",
+        NO_MODE,
+        0xA0,
+        "r",
+        "u",
+        None,
+        "sweep",
+        None,
+    ),
 
     Reg(
         "requested_bin_count",
@@ -285,16 +305,6 @@ REGS = [
         "u",
         None,
         "session",
-        None,
-    ),
-    Reg(
-        "sequence_number",
-        "power_bin",
-        160,
-        "r",
-        "u",
-        None,
-        "sweep",
         None,
     ),
 
@@ -326,16 +336,6 @@ REGS = [
         "u",
         None,
         "session",
-        None,
-    ),
-    Reg(
-        "sequence_number",
-        "envelope",
-        160,
-        "r",
-        "u",
-        None,
-        "sweep",
         None,
     ),
 
@@ -370,16 +370,6 @@ REGS = [
         None,
     ),
     Reg(
-        "sequence_number",
-        "iq",
-        160,
-        "r",
-        "u",
-        None,
-        "sweep",
-        None,
-    ),
-    Reg(
         "number_of_subsweeps",
         "sparse",
         64,
@@ -399,26 +389,7 @@ REGS = [
         "session",
         None,
     ),
-    Reg(
-        "sequence_number",
-        "sparse",
-        160,
-        "r",
-        "u",
-        None,
-        "sweep",
-        None,
-    ),
-    Reg(
-        "sequence_number",
-        "distance_peak_fix_threshold",
-        160,
-        "r",
-        "u",
-        None,
-        "sweep",
-        None,
-    ),
+
     Reg(
         "peak_count",
         "distance_peak_fix_threshold",
@@ -428,7 +399,7 @@ REGS = [
         None,
         None,
         None,
-    )
+    ),
 ]
 
 MODE_LOOKUP = {v: k for k, v in MODES.items()}
@@ -508,7 +479,7 @@ def decode_reg_val(reg, enc_val, mode=None):
     elif reg.type == "i":
         x = int.from_bytes(enc_val, BO, signed=True)
     elif reg.type == "b":
-        x = any(x)
+        x = any(enc_val)
     else:
         x = enc_val
 
