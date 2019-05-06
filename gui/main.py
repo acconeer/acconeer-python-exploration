@@ -96,34 +96,33 @@ class GUI(QMainWindow):
         self.radar = data_processing.DataProcessing()
 
     def init_labels(self):
+        # Text, group, collapsible
         text = {
-            "con_settings":     "Connection settings:",
-            "sensor_settings":  "Sensor settings:",
-            "service_settings": "Processing settings:",
-            "advanced_params":  "Advanced processing settings:",
-            "sensor":           "Sensor",
-            "scan":             "Scan controls:",
-            "gain":             "Gain",
-            "frequency":        "Sweep frequency",
-            "sweeps":           "Number of sweeps",
-            "sweep_buffer":     "Sweep buffer",
-            "start_range":      "Start (m)",
-            "end_range":        "Stop (m)",
-            "clutter":          "Background settings",
-            "interface":        "Interface",
-            "power_bins":       "Power bins",
-            "subsweeps":        "Subsweeps",
-            "sweep_info":       "Sweeps: 0 (skipped 0)",
-            "saturated":        "Warning: Data saturated, reduce gain!",
-            "stitching":        "Experimental stitching enabled!",
-            "empty_01":         "",
+            "advanced_params":  ["Advanced processing settings:", "advanced", False],
+            "sensor":           ["Sensor", "sensor", True],
+            "gain":             ["Gain", "sensor", True],
+            "frequency":        ["Sweep frequency", "sensor", True],
+            "sweeps":           ["Number of sweeps", "sensor", True],
+            "sweep_buffer":     ["Sweep buffer", "scan", True],
+            "start_range":      ["Start (m)", "sensor", True],
+            "end_range":        ["Stop (m)", "sensor", True],
+            "clutter":          ["Background settings", "scan", True],
+            "interface":        ["Interface", "connection", True],
+            "power_bins":       ["Power bins", "sensor", False],
+            "subsweeps":        ["Subsweeps", "sensor", False],
+            "sweep_info":       ["Sweeps: 0 (skipped 0)", "debug", False],
+            "saturated":        ["Warning: Data saturated, reduce gain!", "debug", False],
+            "stitching":        ["Experimental stitching enabled!", "sensor", False],
+            "empty_01":         ["", "connection", True],
+            "empty_02":         ["", "scan", True],
         }
 
         self.labels = {}
         for key in text:
             self.labels[key] = QLabel(self)
         for key, val in self.labels.items():
-            val.setText(text[key])
+            val.setText(text[key][0])
+        self.labels["collapsible"] = text
 
         self.labels["power_bins"].setVisible(False)
         self.labels["subsweeps"].setVisible(False)
@@ -131,29 +130,27 @@ class GUI(QMainWindow):
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
 
-        self.labels["con_settings"].setStyleSheet("text-decoration: underline")
-        self.labels["sensor_settings"].setStyleSheet("text-decoration: underline")
-        self.labels["service_settings"].setStyleSheet("text-decoration: underline")
-        self.labels["scan"].setStyleSheet("text-decoration: underline")
         self.labels["advanced_params"].setStyleSheet("text-decoration: underline")
 
     def init_textboxes(self):
+        # Text, group, collapsible
         text = {
-            "sensor":       "1",
-            "host":         "192.168.1.100",
-            "frequency":    "10",
-            "sweeps":       "-1",
-            "gain":         "0.4",
-            "start_range":  "0.18",
-            "end_range":    "0.72",
-            "sweep_buffer": "100",
-            "power_bins":   "6",
-            "subsweeps":    "16",
+            "sensor":       ["1", "sensor", True],
+            "host":         ["192.168.1.100", "connection", True],
+            "frequency":    ["10", "sensor", True],
+            "sweeps":       ["-1", "sensor", True],
+            "gain":         ["0.4", "sensor", True],
+            "start_range":  ["0.18", "sensor", True],
+            "end_range":    ["0.72", "sensor", True],
+            "sweep_buffer": ["100", "scan", True],
+            "power_bins":   ["6", "sensor", False],
+            "subsweeps":    ["16", "sensor", False],
         }
         self.textboxes = {}
         for key in text:
             self.textboxes[key] = QLineEdit(self)
-            self.textboxes[key].setText(text[key])
+            self.textboxes[key].setText(text[key][0])
+        self.textboxes["collapsible"] = text
 
         self.textboxes["power_bins"].setVisible(False)
         self.textboxes["subsweeps"].setVisible(False)
@@ -166,7 +163,7 @@ class GUI(QMainWindow):
             "show_advanced": "Show advanced settings",
         }
 
-        #  Status, Visible, Enabled, Function
+        # Status, Visible, Enabled, Function
         check_init = {
             "clutter_file": [False, False, True, self.update_scan],
             "verbose": [False, True, True, self.set_log_level],
@@ -215,6 +212,7 @@ class GUI(QMainWindow):
         self.textboxes["power_bins"].setVisible(False)
         self.labels["power_bins"].setVisible(False)
         self.profiles.setVisible(False)
+        self.dropdowns["collapsible"]["profiles"][2] = False
 
         self.cl_supported = False
         if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
@@ -362,6 +360,7 @@ class GUI(QMainWindow):
                 canvas.nextRow()
             else:
                 self.profiles.setVisible(True)
+                self.dropdowns["collapsible"]["profiles"][2] = True
 
         if mode.lower() in ["iq", "envelope", "sparse"]:
             row = 1
@@ -470,6 +469,14 @@ class GUI(QMainWindow):
         self.profiles.addItem("Max depth resolution")
         self.profiles.currentIndexChanged.connect(self.set_profile)
 
+        self.dropdowns = {}
+        self.dropdowns["collapsible"] = {
+            "profiles": [self.profiles, "sensor", True],
+            "interface": [self.interface, "connection", True],
+            "mode": [self.mode, "scan", True],
+            "ports": [self.ports, "connection", False],
+        }
+
     def enable_opengl(self):
         if self.checkboxes["opengl"].isChecked():
             warning = "Do you really want to enable OpenGL?"
@@ -526,43 +533,85 @@ class GUI(QMainWindow):
             "advanced_defaults": QtWidgets.QPushButton("Defaults", self),
         }
 
-        button_funcs = {
-            "start": self.start_scan,
-            "connect": self.connect_to_server,
-            "stop": self.stop_scan,
-            "create_cl": lambda: self.start_scan(create_cl=True),
-            "load_cl": self.load_clutter_file,
-            "load_scan": lambda: self.load_scan(),
-            "replay_buffered": lambda: self.load_scan(restart=True),
-            "save_scan": lambda: self.save_scan(self.data),
-            "scan_ports": self.update_ports,
-            "sensor_defaults": self.sensor_defaults,
-            "service_defaults": self.service_defaults,
-            "advanced_defaults": self.service_defaults,
+        self.tbuttons = {
+            "connection": QtWidgets.QToolButton(text="Connection settings", checkable=True,
+                                                checked=False),
+            "scan": QtWidgets.QToolButton(text="Scan controls", checkable=True, checked=False),
+            "sensor": QtWidgets.QToolButton(text="Sensor settings", checkable=True, checked=False),
+            "service": QtWidgets.QToolButton(text="Processing Settings", checkable=True,
+                                             checked=False),
         }
 
-        button_enabled = {
-            "start": False,
-            "connect": True,
-            "stop": False,
-            "create_cl": False,
-            "load_cl": True,
-            "load_scan": True,
-            "save_scan": False,
-            "replay_buffered": False,
-            "scan_ports": True,
-            "sensor_defaults": False,
-            "service_defaults": True,
-            "advanced_defaults": True,
+        for button in self.tbuttons:
+            self.tbuttons[button].setStyleSheet("QToolButton { border: none; }")
+            self.tbuttons[button].setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+            self.tbuttons[button].setArrowType(QtCore.Qt.ArrowType.DownArrow)
+
+        self.tbuttons["connection"].pressed.connect(lambda: self.toggle_frames("connection"))
+        self.tbuttons["scan"].pressed.connect(lambda: self.toggle_frames("scan"))
+        self.tbuttons["sensor"].pressed.connect(lambda: self.toggle_frames("sensor"))
+        self.tbuttons["service"].pressed.connect(lambda: self.toggle_frames("service"))
+
+        # Function, enabled, group, collapsible
+        button_properties = {
+            "start": [self.start_scan, False, "scan", True],
+            "connect": [self.connect_to_server, True, "connection", True],
+            "stop": [self.stop_scan, False, "scan", True],
+            "create_cl": [lambda: self.start_scan(create_cl=True), False, "scan", True],
+            "load_cl": [self.load_clutter_file, False, "scan", True],
+            "load_scan": [lambda: self.load_scan(), True, "scan", True],
+            "replay_buffered": [lambda: self.load_scan(restart=True), False, "scan", True],
+            "save_scan": [lambda: self.save_scan(self.data), False, "scan", True],
+            "scan_ports": [self.update_ports, True, "connection", False],
+            "sensor_defaults": [self.sensor_defaults, False, "sensor", False],
+            "service_defaults": [self.service_defaults, True, "service", False],
+            "advanced_defaults": [self.service_defaults, True, "advanced", False],
         }
 
-        for key in button_funcs:
-            self.buttons[key].clicked.connect(button_funcs[key])
-            self.buttons[key].setEnabled(button_enabled[key])
+        self.buttons["collapsible"] = {}
+        for key in button_properties:
+            self.buttons[key].clicked.connect(button_properties[key][0])
+            self.buttons[key].setEnabled(button_properties[key][1])
+            self.buttons["collapsible"][key] = button_properties[key][1:]
 
         self.buttons["scan_ports"].hide()
 
+    def toggle_frames(self, button):
+        checked = self.tbuttons[button].isChecked()
+        arrow = QtCore.Qt.ArrowType.RightArrow
+        if checked:
+            arrow = QtCore.Qt.ArrowType.DownArrow
+
+        self.toggle_animation = QtCore.QParallelAnimationGroup(self)
+        self.tbuttons[button].setArrowType(arrow)
+
+        collapsibles = {
+            "labels": self.labels,
+            "buttons": self.buttons,
+            "textboxes": self.textboxes,
+            "dropdowns": self.dropdowns,
+        }
+
+        mode = self.mode.currentText()
+        if mode in self.service_labels:
+            collapsibles["service_params"] = self.service_labels[mode]
+
+        for item in collapsibles:
+            for i in collapsibles[item]["collapsible"]:
+                group = collapsibles[item]["collapsible"][i][1]
+                collapsible = collapsibles[item]["collapsible"][i][2]
+                if collapsible and (group == button):
+                    if item in ["dropdowns", "service_params"]:
+                        collapse = collapsibles[item]["collapsible"][i][0]
+                    else:
+                        collapse = collapsibles[item][i]
+                    if not checked:
+                        collapse.hide()
+                    else:
+                        collapse.show()
+
     def init_sublayouts(self):
+        minimum_width = 300
         # Panel sublayout
         self.panel_sublayout = QtWidgets.QHBoxLayout()
         panel_sublayout_inner = QtWidgets.QVBoxLayout()
@@ -571,9 +620,10 @@ class GUI(QMainWindow):
         # Server sublayout
         serverFrame = QFrame(self)
         serverFrame.setFrameShape(QFrame.StyledPanel)
+        serverFrame.setMinimumWidth(minimum_width)
         self.num = 0
         server_sublayout_grid = QtWidgets.QGridLayout(serverFrame)
-        server_sublayout_grid.addWidget(self.labels["con_settings"], self.num, 0, 1, 2)
+        server_sublayout_grid.addWidget(self.tbuttons["connection"], self.num, 0)
         server_sublayout_grid.addWidget(self.labels["interface"], self.increment(), 0)
         server_sublayout_grid.addWidget(self.interface, self.num, 1)
         server_sublayout_grid.addWidget(self.ports, self.increment(), 0)
@@ -582,12 +632,13 @@ class GUI(QMainWindow):
         server_sublayout_grid.addWidget(self.labels["empty_01"], self.num, 1)
         server_sublayout_grid.addWidget(self.buttons["connect"], self.increment(), 0, 1, 2)
 
-        # Controls sublayout
+        # Scan controls sublayout
         controlFrame = QFrame(self)
         controlFrame.setFrameShape(QFrame.StyledPanel)
+        controlFrame.setMinimumWidth(minimum_width)
         self.num = 0
         control_sublayout_grid = QtWidgets.QGridLayout(controlFrame)
-        control_sublayout_grid.addWidget(self.labels["scan"], self.num, 0)
+        control_sublayout_grid.addWidget(self.tbuttons["scan"], self.num, 0)
         control_sublayout_grid.addWidget(self.mode, self.increment(), 0, 1, 2)
         control_sublayout_grid.addWidget(self.buttons["start"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.buttons["stop"], self.num, 1)
@@ -597,7 +648,7 @@ class GUI(QMainWindow):
             self.buttons["replay_buffered"], self.increment(), 0, 1, 2)
         control_sublayout_grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
-        control_sublayout_grid.addWidget(QLabel(self), self.increment(), 0)
+        control_sublayout_grid.addWidget(self.labels["empty_02"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.labels["clutter"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.buttons["load_cl"], self.num, 1)
@@ -607,9 +658,10 @@ class GUI(QMainWindow):
         # Settings sublayout
         self.settingsFrame = QFrame(self)
         self.settingsFrame.setFrameShape(QFrame.StyledPanel)
+        self.settingsFrame.setMinimumWidth(minimum_width)
         self.num = 0
         settings_sublayout_grid = QtWidgets.QGridLayout(self.settingsFrame)
-        settings_sublayout_grid.addWidget(self.labels["sensor_settings"], self.num, 0)
+        settings_sublayout_grid.addWidget(self.tbuttons["sensor"], self.num, 0)
         settings_sublayout_grid.addWidget(self.buttons["sensor_defaults"], self.num, 1)
         settings_sublayout_grid.addWidget(self.labels["sensor"], self.increment(), 0)
         settings_sublayout_grid.addWidget(self.textboxes["sensor"], self.num, 1)
@@ -633,8 +685,9 @@ class GUI(QMainWindow):
         # Service params sublayout
         self.serviceFrame = QFrame(self)
         self.serviceFrame.setFrameShape(QFrame.StyledPanel)
+        self.serviceFrame.setMinimumWidth(minimum_width)
         self.serviceparams_sublayout_grid = QtWidgets.QGridLayout(self.serviceFrame)
-        self.serviceparams_sublayout_grid.addWidget(self.labels["service_settings"], 0, 0)
+        self.serviceparams_sublayout_grid.addWidget(self.tbuttons["service"], 0, 0)
         self.serviceparams_sublayout_grid.addWidget(self.buttons["service_defaults"], 0, 1)
         self.serviceparams_sublayout_grid.addWidget(self.checkboxes["show_advanced"], 10, 0, 1, 2)
 
@@ -678,6 +731,7 @@ class GUI(QMainWindow):
         index = 1
         if mode not in self.service_labels:
             self.service_labels[mode] = {}
+            self.service_labels[mode]["collapsible"] = {}
 
         advanced_available = False
         for key in params:
@@ -718,11 +772,27 @@ class GUI(QMainWindow):
                     if self.service_labels[mode][key]["advanced"]:
                         advanced_available = True
 
+            # Set collapsible flags
+            idx = 0
+            for element in self.service_labels[mode][key]:
+                if element in ["label", "box", "checkbox"]:
+                    widget = self.service_labels[mode][key][element]
+                    d = self.service_labels[mode]["collapsible"]
+                    if advanced_available:
+                        d[key+str(idx)] = [widget, "service", False]
+                    else:
+                        d[key+str(idx)] = [widget, "service", True]
+                    idx += 1
+
         self.checkboxes["show_advanced"].setVisible(advanced_available)
         if self.checkboxes["show_advanced"].isChecked() and advanced_available:
             self.advancedFrame.show()
         else:
             self.advancedFrame.hide()
+
+        if self.tbuttons["service"].isChecked():
+            self.tbuttons["service"].toggle()
+            self.tbuttons["service"].setArrowType(QtCore.Qt.ArrowType.DownArrow)
 
     def show_advanced(self):
         if self.checkboxes["show_advanced"].isChecked():
@@ -791,6 +861,11 @@ class GUI(QMainWindow):
             self.textboxes["host"].show()
             self.buttons["scan_ports"].hide()
             self.labels["empty_01"].hide()
+
+        self.textboxes["collapsible"]["host"][2] = self.textboxes["host"].isVisible()
+        self.buttons["collapsible"]["scan_ports"][2] = self.buttons["scan_ports"].isVisible()
+        self.labels["collapsible"]["empty_01"][2] = self.labels["empty_01"].isVisible()
+        self.dropdowns["collapsible"]["ports"][2] = self.ports.isVisible()
 
     def error_message(self, error):
         em = QtWidgets.QErrorMessage(self.main_widget)
@@ -1665,6 +1740,9 @@ class GUI(QMainWindow):
                 self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
                 self.interface.setCurrentIndex(last_config["interface"])
                 self.ports.setCurrentIndex(last_config["port"])
+                if last_config["interface"] == 1:
+                    self.dropdowns["collapsible"]["ports"][2] = True
+                    self.buttons["collapsible"]["scan_ports"][2] = True
                 self.textboxes["host"].setText(last_config["host"])
                 self.sweep_count = last_config["sweep_count"]
             except Exception as e:
