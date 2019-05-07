@@ -1374,6 +1374,7 @@ class GUI(QMainWindow):
                 if "h5" in info:
                     sweep_data = []
                     info_available = True
+                    saturated_available = True
                     try:
                         data[0]["info"]["sequence_number"]
                         sequence_number = []
@@ -1387,7 +1388,14 @@ class GUI(QMainWindow):
                         sweep_data.append(sweep["sweep_data"])
                         if info_available:
                             sequence_number.append(sweep["info"]["sequence_number"])
-                            data_saturated.append(sweep["info"]["data_saturated"])
+                            try:
+                                data_saturated.append(sweep["info"]["data_saturated"])
+                            except Exception:
+                                data_saturated.append(False)
+                                saturated_available = False
+                    if not saturated_available:
+                        print("Session info does not contain saturation data!")
+
                     sweep_data = np.asarray(sweep_data)
                     if info_available:
                         sequence_number = np.asarray(sequence_number)
