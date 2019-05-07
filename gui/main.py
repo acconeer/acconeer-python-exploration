@@ -14,11 +14,8 @@ from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLab
                              QCheckBox, QFrame)
 from PyQt5.QtGui import QPixmap, QFont, QIcon, QPainter
 from PyQt5.QtCore import pyqtSignal, QPoint
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 
-import matplotlib as mpl
-mpl.use("QT5Agg")  # noqa: E402
-from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.colors import LinearSegmentedColormap
 
 import pyqtgraph as pg
@@ -64,6 +61,7 @@ class GUI(QMainWindow):
     service_labels = {}
     service_params = None
     service_defaults = None
+    advanced_process_data = {"use_data": False, "process_data": None}
 
     def __init__(self):
         super().__init__()
@@ -75,7 +73,6 @@ class GUI(QMainWindow):
         self.init_dropdowns()
         self.init_checkboxes()
         self.init_sublayouts()
-        self.start_up()
 
         self.main_widget = QWidget()
         self.main_layout = QtWidgets.QGridLayout(self.main_widget)
@@ -93,6 +90,7 @@ class GUI(QMainWindow):
         self.setGeometry(50, 50, 1200, 700)
         self.setWindowTitle("Acconeer Exploration GUI")
         self.show()
+        self.start_up()
 
         self.radar = data_processing.DataProcessing()
 
@@ -221,8 +219,9 @@ class GUI(QMainWindow):
         else:
             self.load_clutter_file(force_unload=True)
 
-        self.buttons["create_cl"].setEnabled(self.cl_supported)
-        self.buttons["load_cl"].setEnabled(self.cl_supported)
+        self.buttons["create_cl"].setVisible(self.cl_supported)
+        self.buttons["load_cl"].setVisible(self.cl_supported)
+        self.labels["clutter"].setVisible(self.cl_supported)
 
         self.current_canvas = mode
 
@@ -463,6 +462,7 @@ class GUI(QMainWindow):
         self.interface.currentIndexChanged.connect(self.update_interface)
 
         self.ports = QComboBox(self)
+        self.ports.hide()
         self.update_ports()
 
         self.profiles = QComboBox(self)
@@ -532,6 +532,8 @@ class GUI(QMainWindow):
             "sensor_defaults":  QtWidgets.QPushButton("Defaults", self),
             "service_defaults": QtWidgets.QPushButton("Defaults", self),
             "advanced_defaults": QtWidgets.QPushButton("Defaults", self),
+            "save_process_data": QtWidgets.QPushButton("Save process data", self),
+            "load_process_data": QtWidgets.QPushButton("Load process data", self),
         }
 
         self.tbuttons = {
@@ -567,6 +569,10 @@ class GUI(QMainWindow):
             "sensor_defaults": [self.sensor_defaults, False, "sensor", False],
             "service_defaults": [self.service_defaults, True, "service", False],
             "advanced_defaults": [self.service_defaults, True, "advanced", False],
+            "save_process_data": [lambda: self.handle_advanced_process_data("save"),
+                                  True, "advanced", False],
+            "load_process_data": [lambda: self.handle_advanced_process_data("load"),
+                                  True, "advanced", False],
         }
 
         self.buttons["collapsible"] = {}
@@ -576,6 +582,8 @@ class GUI(QMainWindow):
             self.buttons["collapsible"][key] = button_properties[key][1:]
 
         self.buttons["scan_ports"].hide()
+        self.buttons["save_process_data"].hide()
+        self.buttons["load_process_data"].hide()
 
     def toggle_frames(self, button):
         checked = self.tbuttons[button].isChecked()
@@ -706,6 +714,8 @@ class GUI(QMainWindow):
         self.advanced_params_layout_grid = QtWidgets.QGridLayout(self.advancedFrame)
         self.advanced_params_layout_grid.addWidget(self.labels["advanced_params"], 0, 0)
         self.advanced_params_layout_grid.addWidget(self.buttons["advanced_defaults"], 0, 1)
+        self.advanced_params_layout_grid.addWidget(self.buttons["load_process_data"], 50, 0)
+        self.advanced_params_layout_grid.addWidget(self.buttons["save_process_data"], 50, 1)
 
         panel_sublayout_inner.addWidget(serverFrame)
         panel_sublayout_inner.addWidget(controlFrame)
@@ -722,6 +732,8 @@ class GUI(QMainWindow):
         self.advancedFrame.hide()
 
     def add_params(self, params):
+        self.buttons["load_process_data"].hide()
+        self.buttons["save_process_data"].hide()
         for mode in self.service_labels:
             for key in self.service_labels[mode]:
                 for element in self.service_labels[mode][key]:
@@ -745,7 +757,12 @@ class GUI(QMainWindow):
                     advanced_available = True
                 self.service_labels[mode][key]["advanced"] = advanced_available
 
-                if isinstance(params[key]["value"], bool):
+                if "send_process_data" == key:
+                    self.buttons["load_process_data"].setText("Load " + params[key]["text"])
+                    self.buttons["save_process_data"].setText("Save " + params[key]["text"])
+                    self.buttons["load_process_data"].show()
+                    self.buttons["save_process_data"].show()
+                elif isinstance(params[key]["value"], bool):
                     self.service_labels[mode][key]["checkbox"] = QCheckBox(
                         params[key]["name"], self)
                     self.service_labels[mode][key]["checkbox"].setChecked(params[key]["value"])
@@ -1107,6 +1124,15 @@ class GUI(QMainWindow):
                 self.service_params[key]["value"] = self.service_params[key]["type"](val)
             elif "checkbox" in entry:
                 self.service_params[key]["value"] = entry["checkbox"].isChecked()
+
+            if "send_process_data" in key:
+                if self.advanced_process_data["use_data"]:
+                    if self.advanced_process_data["process_data"] is not None:
+                        data = self.advanced_process_data["process_data"]
+                        self.service_params["send_process_data"]["value"] = data
+                    else:
+                        data = self.service_params["send_process_data"]["text"]
+                        print(data + " data not available")
 
         if len(errors):
             self.error_message("".join(errors))
@@ -1528,6 +1554,57 @@ class GUI(QMainWindow):
                         self.error_message("Failed to save file:\n {:s}".format(e))
                         return
 
+    def handle_advanced_process_data(self, action=None):
+        load_text = self.buttons["load_process_data"].text()
+        try:
+            data_text = self.service_params["send_process_data"]["text"]
+        except Exception as e:
+            print("Function not available! \n{}".format(e))
+            return
+
+        if action == "save":
+            if self.advanced_process_data["process_data"] is not None:
+                options = QtWidgets.QFileDialog.Options()
+                options |= QtWidgets.QFileDialog.DontUseNativeDialog
+
+                title = "Save " + load_text
+                file_types = "NumPy data files (*.npy)"
+                fname, info = QtWidgets.QFileDialog.getSaveFileName(
+                    self, title, "", file_types, options=options)
+                if fname:
+                    try:
+                        np.save(fname, self.advanced_process_data["process_data"])
+                    except Exception as e:
+                        self.error_message("Failed to save " + load_text + "{}".format(e))
+                        return
+                    self.advanced_process_data["use_data"] = True
+                    self.buttons["load_process_data"].setText(load_text.replace("Load", "Unload"))
+                    self.buttons["load_process_data"].setStyleSheet("QPushButton {color: red}")
+            else:
+                self.error_message(data_text + " data not availble!".format())
+        elif action == "load":
+            if "Unload" in load_text:
+                self.buttons["load_process_data"].setText(load_text.replace("Unload", "Load"))
+                self.buttons["load_process_data"].setStyleSheet("QPushButton {color: black}")
+                self.advanced_process_data["use_data"] = False
+            else:
+                options = QtWidgets.QFileDialog.Options()
+                options |= QtWidgets.QFileDialog.DontUseNativeDialog
+                fname, _ = QtWidgets.QFileDialog.getOpenFileName(
+                    self, "Load " + data_text, "", "NumPy data Files (*.npy)", options=options)
+                if fname:
+                    try:
+                        content = np.load(fname, allow_pickle=True)
+                        self.advanced_process_data["process_data"] = content
+                    except Exception as e:
+                        self.error_message("Failed to load " + data_text + "\n{}".format(e))
+                        return
+                    self.advanced_process_data["use_data"] = True
+                    self.buttons["load_process_data"].setText(load_text.replace("Load", "Unload"))
+                    self.buttons["load_process_data"].setStyleSheet("QPushButton {color: red}")
+        else:
+            print("Process data action not implemented")
+
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
             self.error_message("{}".format(message))
@@ -1563,7 +1640,10 @@ class GUI(QMainWindow):
             self.update_sweep_info(data)
         elif "session_info" in message_type:
             self.update_ranges(data)
+        elif "process_data":
+            self.advanced_process_data["process_data"] = data
         else:
+            print("Thread data not implemented!")
             print(message_type, message, data)
 
     def update_plots(self, data):

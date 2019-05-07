@@ -386,6 +386,8 @@ class DataProcessing:
             if plot_data:
                 self.draw_canvas(self.sweep, plot_data, "update_external_plots")
                 self.sweep += 1
+            if plot_data.get("send_process_data") is not None:
+                self.parent.emit("process_data", "", plot_data["send_process_data"])
 
         self.record_data(sweep_data, info)
         return None, self.record

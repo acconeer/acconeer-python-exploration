@@ -10,6 +10,8 @@ from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 
+import logging
+log = logging.getLogger("acconeer_utils.examples.obstacle_detection")
 
 MAX_SPEED = 8.00   # Max speed to be resolved with FFT in cm/s
 WAVELENGTH = 0.49  # Wavelength of radar in cm
@@ -71,7 +73,7 @@ def get_processing_config():
     return {
         "fft_length": {
             "name": "FFT length",
-            "value": 17,
+            "value": 16,
             "limits": [2, 512],
             "type": int,
         },
@@ -180,39 +182,34 @@ def get_processing_config():
             "advanced": True,
         },
         "background_map": {
-            "name": "Show background map",
+            "name": "Show background (from background iterations)",
             "value": False,
-            "limits": None,
-            "type": float,
             "advanced": True,
         },
         "threshold_map": {
             "name": "Show threshold map",
             "value": False,
-            "limits": None,
-            "type": float,
             "advanced": True,
         },
         "distance_history": {
             "name": "Show distance history",
             "value": False,
-            "limits": None,
-            "type": float,
             "advanced": True,
         },
         "velocity_history": {
             "name": "Show velocity history",
             "value": False,
-            "limits": None,
-            "type": float,
             "advanced": True,
         },
         "angle_history": {
             "name": "Show angle history",
             "value": True,
-            "limits": None,
-            "type": float,
             "advanced": True,
+        },
+        # Allows saving and loading from GUI
+        "send_process_data": {
+            "value": None,
+            "text": "FFT background",
         },
     }
 
@@ -228,6 +225,7 @@ class ObstacleDetectionProcessor:
         self.sweep_index = 0
         self.use_bg = max(processing_config["calib"]["value"], 0)
         self.bg_off = processing_config["bg_offset"]["value"]
+        self.saved_bg = processing_config["send_process_data"]["value"]
         self.bg_avg = 0
         self.peak_hist_len = processing_config["peak_hist"]["value"]
         self.nr_locals = processing_config["nr_peaks"]["value"]
@@ -253,6 +251,17 @@ class ObstacleDetectionProcessor:
             self.peak_hist = np.zeros((self.nr_locals, 3, self.peak_hist_len)) * float('nan')
             self.mask = np.zeros((len_range, self.fft_len))
             self.threshold_map = np.zeros((len_range, self.fft_len))
+
+            if self.saved_bg is not None:
+                if hasattr(self.saved_bg, "shape") and self.saved_bg.shape == self.fft_bg.shape:
+                    self.fft_bg = self.saved_bg
+                    self.use_bg = False
+                    log.info("Using saved FFT background data!")
+                else:
+                    log.warn("Saved background has wrong shape/type!")
+                    log.warn("Required shape {}".format(self.fft_bg.shape))
+                    if hasattr(self.saved_bg, "shape"):
+                        log.warn("Supplied shape {}".format(self.saved_bg.shape))
 
             for dist in range(len_range):
                 for freq in range(self.fft_len):
@@ -331,6 +340,7 @@ class ObstacleDetectionProcessor:
             "peak_hist": self.peak_hist,
             "fft_bg": fft_bg,
             "threshold_map": threshold_map,
+            "send_process_data": fft_bg,
         }
 
         self.sweep_index += 1
@@ -521,9 +531,6 @@ class PGUpdater:
             "threshold_map":  processing_config["threshold_map"]["value"],
         }
 
-        if not processing_config["calib"]["value"]:
-            self.advanced_plots["background_map"] = False
-
     def setup(self, win):
         win.setWindowTitle("Acconeer obstacle detection example")
 
@@ -665,11 +672,10 @@ class PGUpdater:
                         )
             if self.advanced_plots["threshold_map"]:
                 self.obstacle_thresh_im.translate(-self.max_velocity,
-                                              self.sensor_config.range_start*100)
+                                                  self.sensor_config.range_start*100)
                 self.obstacle_thresh_im.scale(
                         2*self.max_velocity/nfft,
-                        self.sensor_config.range_length*100/num_points*ds
-                        )
+                        self.sensor_config.range_length*100/num_points*ds)
         else:
             self.peak_x = self.peak_x * 0.7 + 0.3 * self.env_xs[data["peak_idx"]]
 
