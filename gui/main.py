@@ -28,6 +28,7 @@ from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 
+sys.path.append("")  # noqa: E402
 import data_processing
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../examples/processing"))  # noqa: E402
