@@ -198,12 +198,17 @@ def get_processing_config():
         },
         "velocity_history": {
             "name": "Show velocity history",
-            "value": False,
+            "value": True,
             "advanced": True,
         },
         "angle_history": {
             "name": "Show angle history",
-            "value": True,
+            "value": False,
+            "advanced": True,
+        },
+        "amplitude_history": {
+            "name": "Show amplitude history",
+            "value": False,
             "advanced": True,
         },
         # Allows saving and loading from GUI
@@ -248,7 +253,9 @@ class ObstacleDetectionProcessor:
             for i in range(len_range):
                 self.hamming_map[i, :] = np.hamming(self.fft_len)
             self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, len(sweep))
-            self.peak_hist = np.zeros((self.nr_locals, 3, self.peak_hist_len)) * float('nan')
+            self.peak_prop_num = 4
+            self.peak_hist = np.zeros((self.nr_locals, self.peak_prop_num, self.peak_hist_len))
+            self.peak_hist *= float(np.nan)
             self.mask = np.zeros((len_range, self.fft_len))
             self.threshold_map = np.zeros((len_range, self.fft_len))
 
@@ -288,7 +295,6 @@ class ObstacleDetectionProcessor:
         angle = None
         velocity = None
         peak_idx = np.argmax(env)
-        dist_normal = None
 
         if self.sweep_index < self.fft_len:
             fft_peaks = None
@@ -300,25 +306,27 @@ class ObstacleDetectionProcessor:
             for i in range(self.nr_locals):
                 bin_index = (fft_peaks[i, 2] - zero)
                 velocity = (bin_index / zero) * WAVELENGTH * self.sensor_config.sweep_rate / 4
-                angle = np.arccos(self.clamp(velocity / self.robot_velocity, -1.0, 1.0)) / pi * 180
+                angle = np.arccos(self.clamp(abs(velocity) / self.robot_velocity, -1.0, 1.0))
+                angle = np.sign(velocity) * angle / pi * 180
                 peak_idx = int(fft_peaks[i, 0])
                 distance = self.env_xs[int(fft_peaks[i, 0])]
-                dist_normal = np.cos(angle / 180 * np.pi) * distance
+                amp = fft_peaks[i, 3]
 
-                peak_val = fft_peaks[i, 4]
-                if not peak_val:
+                if not amp:
                     distance = float(np.nan)
                     velocity = float(np.nan)
                     angle = float(np.nan)
+                    amp = float(np.nan)
+
                 self.push_vec(distance, self.peak_hist[i, 0, :])
                 self.push_vec(velocity, self.peak_hist[i, 1, :])
                 self.push_vec(angle, self.peak_hist[i, 2, :])
+                self.push_vec(amp, self.peak_hist[i, 3, :])
             fft_peaks = fft_peaks[:peaks_found, :]
         else:
             for i in range(self.nr_locals):
-                self.push_vec(float(np.nan), self.peak_hist[i, 0, :])
-                self.push_vec(float(np.nan), self.peak_hist[i, 1, :])
-                self.push_vec(float(np.nan), self.peak_hist[i, 2, :])
+                for j in range(self.peak_prop_num):
+                    self.push_vec(float(np.nan), self.peak_hist[i, j, :])
 
         fft_bg = None
         if self.sweep_index in range(self.fft_len + 1, self.fft_len + 5):
@@ -336,7 +344,6 @@ class ObstacleDetectionProcessor:
             "angle": angle,
             "velocity": velocity,
             "fft_peaks": fft_peaks,
-            "dist_normal": dist_normal,
             "peak_hist": self.peak_hist,
             "fft_bg": fft_bg,
             "threshold_map": threshold_map,
@@ -386,11 +393,10 @@ class ObstacleDetectionProcessor:
 
         if peak is not None:
             peak_avg = self.calc_peak_avg(peak, arr)
-            local_peaks = np.zeros((self.nr_locals, 5), dtype=float)
+            local_peaks = np.zeros((self.nr_locals, self.peak_prop_num), dtype=float)
             local_peaks[0, 0:2] = peak
             local_peaks[0, 2] = peak_avg
             local_peaks[0, 3] = np.round(peak_val, decimals=4)
-            local_peaks[0, 4] = thresh
             peaks_found += 1
             self.mask = arr.copy()
 
@@ -406,7 +412,6 @@ class ObstacleDetectionProcessor:
                     local_peaks[i + 1, 1] = p[1]
                     local_peaks[i + 1, 2] = self.calc_peak_avg(p, arr)
                     local_peaks[i + 1, 3] = np.round(peak_val, decimals=4)
-                    local_peaks[i + 1, 4] = thresh
                     peaks_found += 1
                 else:
                     break
@@ -516,11 +521,13 @@ class PGUpdater:
         self.dist_index = processing_config["downsampling"]["value"]
         self.nr_locals = processing_config["nr_peaks"]["value"]
         self.downsampling = processing_config["downsampling"]["value"]
+        self.threshold = processing_config["static_threshold"]["value"]
 
         self.hist_plots = {
             "velocity": [[], processing_config["velocity_history"]["value"]],
             "angle":    [[], processing_config["angle_history"]["value"]],
             "distance": [[], processing_config["distance_history"]["value"]],
+            "amplitude": [[], processing_config["amplitude_history"]["value"]],
         }
         self.num_hist_plots = 0
         for hist in self.hist_plots:
@@ -535,7 +542,7 @@ class PGUpdater:
         win.setWindowTitle("Acconeer obstacle detection example")
 
         row_idx = 0
-        self.env_ax = win.addPlot(row=row_idx, col=0, colspan=3, title="Envelope and max FFT")
+        self.env_ax = win.addPlot(row=row_idx, col=0, colspan=4, title="Envelope and max FFT")
         self.env_ax.setLabel("bottom", "Depth (cm)")
         self.env_ax.setXRange(*(self.sensor_config.range_interval * 100))
         self.env_ax.showGrid(True, True)
@@ -617,6 +624,10 @@ class PGUpdater:
             self.peak_hist_ax_c = win.addPlot(row=row_idx, col=hist_col, title="Velocity history")
             self.peak_hist_ax_c.setLabel("bottom", "Sweep")
             self.peak_hist_ax_c.setXRange(0, self.peak_hist_len)
+            limit = np.round(self.max_velocity / 10) * 10
+            if limit < 1.0:
+                limit = self.max_velocity
+            self.peak_hist_ax_c.setYRange(-limit, limit)
             self.peak_hist_ax_c.showGrid(True, True)
             self.peak_hist_ax_c.addLegend(offset=(-10, 10))
             hist_col += 1
@@ -627,7 +638,16 @@ class PGUpdater:
             self.peak_hist_ax_r.setXRange(0, self.peak_hist_len)
             self.peak_hist_ax_r.showGrid(True, True)
             self.peak_hist_ax_r.addLegend(offset=(-10, 10))
-            self.peak_hist_ax_r.setYRange(0, 180)
+            self.peak_hist_ax_r.setYRange(-100, 100)
+            hist_col += 1
+
+        if self.hist_plots["amplitude"][1]:
+            self.peak_hist_ax_r1 = win.addPlot(row=row_idx, col=hist_col,
+                                               title="Amplitude history")
+            self.peak_hist_ax_r1.setLabel("bottom", "Sweep")
+            self.peak_hist_ax_r1.setXRange(0, self.peak_hist_len)
+            self.peak_hist_ax_r1.showGrid(True, True)
+            self.peak_hist_ax_r1.addLegend(offset=(-10, 10))
             hist_col += 1
 
         for i in range(self.nr_locals):
@@ -643,6 +663,10 @@ class PGUpdater:
                 self.hist_plots["distance"][0].append(
                     self.peak_hist_ax_l.plot(pen=example_utils.pg_pen_cycler(i),
                                              name="Distance {:d}".format(i)))
+            if self.hist_plots["amplitude"][1]:
+                self.hist_plots["amplitude"][0].append(
+                    self.peak_hist_ax_r1.plot(pen=example_utils.pg_pen_cycler(i),
+                                              name="Amplitude {:d}".format(i)))
 
         self.smooth_max = example_utils.SmoothMax(
                 self.sensor_config.sweep_rate,
@@ -703,6 +727,9 @@ class PGUpdater:
             if self.hist_plots["angle"][1]:
                 self.hist_plots["angle"][0][i].setData(data["peak_hist"][i, 2, :],
                                                        connect="finite")
+            if self.hist_plots["amplitude"][1]:
+                self.hist_plots["amplitude"][0][i].setData(data["peak_hist"][i, 3, :],
+                                                           connect="finite")
 
         map_max = np.max(np.max(data["fft_map"]))
 

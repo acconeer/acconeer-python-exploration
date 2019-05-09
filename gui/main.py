@@ -1313,8 +1313,8 @@ class GUI(QMainWindow):
                 try:
                     mode = f["service_type"][()]
                 except Exception:
-                    print("Service type not stored, setting to Envelope!")
-                    mode = "Envelope"
+                    print("Service type not stored, setting to IQ!")
+                    mode = "IQ"
 
                 index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
                 if index >= 0:
