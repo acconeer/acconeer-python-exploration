@@ -99,9 +99,16 @@ def get_processing_config():
             "text": None,
         },
         "lambda_p": {
-            "name": "Peak to noise ratio",
+            "name": "Threshold: Peak to noise ratio",
             "value": 40,
             "limits": [1, 1000],
+            "type": float,
+            "text": None,
+        },
+        "lambda_05": {
+            "name": "Threshold: Peak to half harmonic ratio",
+            "value": 1.0,
+            "limits": [0, 10],
             "type": float,
             "text": None,
         },
@@ -132,7 +139,7 @@ class PresenceDetectionProcessor:
         # Threshold: spectral peak to noise ratio [1] | 50
         self.lambda_p = processing_config["lambda_p"]["value"]
         # Threshold: ratio fundamental and half harmonic
-        self.lamda_05 = 0
+        self.lambda_05 = processing_config["lambda_05"]["value"]
         # Interpolation between DFT points
         self.interpolate = True
 
@@ -200,6 +207,7 @@ class PresenceDetectionProcessor:
                 "f_high": self.f_high,
                 "snr": 0,
                 "lambda_p": self.lambda_p,
+                "lambda_05": self.lambda_05,
                 "dist_range": self.config.range_interval,
                 "init_progress": round(100 * self.sweep_index / self.sweeps_in_block),
             }
@@ -243,6 +251,7 @@ class PresenceDetectionProcessor:
                     "f_high": self.f_high,
                     "snr": snr,
                     "lambda_p": self.lambda_p,
+                    "lambda_05": self.lambda_05,
                     "dist_range": self.config.range_interval,
                     "init_progress": None,
                 }
@@ -294,7 +303,7 @@ class PresenceDetectionProcessor:
 
         P_half = self.half_peak_frequency(P, f_est)
 
-        if (P_peak < self.lamda_05 * P_half):
+        if (P_peak < self.lambda_05 * P_half):
             f_est = f_est / 2
             P_peak = P_half
 
