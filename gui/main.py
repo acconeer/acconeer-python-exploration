@@ -26,10 +26,14 @@ from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 
 sys.path.append("")  # noqa: E402
+sys.path.append(os.path.join(os.path.dirname(__file__), "../examples/processing"))  # noqa: E402
+sys.path.append(os.path.join(os.path.dirname(__file__), "processing/"))   # noqa: E402
+
 import data_processing
 from helper import Label, CollapsibleSection
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../examples/processing"))  # noqa: E402
+import envelope as env
+import iq
 import presence_detection_iq as prd
 import presence_detection_sparse as psd
 import phase_tracking as pht
@@ -192,8 +196,8 @@ class GUI(QMainWindow):
     def init_graphs(self, mode="Select service", refresh=False):
         self.service_props = {
             "Select service": [None, None],
-            "IQ": [data_processing.get_internal_processing_config(), None],
-            "Envelope": [data_processing.get_internal_processing_config(), None],
+            "IQ": [iq, iq.IQProcessor],
+            "Envelope": [env, env.EnvelopeProcessor],
             "Sparse": [data_processing.get_sparse_processing_config(), None],
             "Power bin": [None, None],
             "Presence detection (IQ)": [prd, prd.PresenceDetectionProcessor],
@@ -230,6 +234,7 @@ class GUI(QMainWindow):
 
         self.buttons["create_cl"].setVisible(self.cl_supported)
         self.buttons["load_cl"].setVisible(self.cl_supported)
+        self.buttons["load_cl"].setEnabled(self.cl_supported)
         self.labels["clutter"].setVisible(self.cl_supported)
 
         self.current_canvas = mode
@@ -298,55 +303,13 @@ class GUI(QMainWindow):
             self.hist_move_image = canvas.addPlot(row=2, col=0, title="Movement history")
             self.hist_move = pg.ImageItem(autoDownsample=True)
             self.hist_move.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
-            pen = example_utils.pg_pen_cycler(1)
             self.hist_move_image.addItem(self.hist_move)
             self.hist_move_image.setLabel("left", "Distance (mm)")
             self.hist_move_image.setLabel("bottom", "Time (s)")
 
             canvas.nextRow()
-        else:
-            self.envelope_plot_window = canvas.addPlot(row=0, col=0, title="Envelope")
-            self.envelope_plot_window.showGrid(x=True, y=True)
-            self.envelope_plot_window.addLegend(offset=(-10, 10))
 
-            pen = example_utils.pg_pen_cycler()
-            self.envelope_plot = self.envelope_plot_window.plot(range(10),
-                                                                np.zeros(10),
-                                                                pen=pen,
-                                                                name="Envelope")
-            self.envelope_plot_window.setYRange(0, 1)
-            pen = pg.mkPen(0.2, width=2, style=QtCore.Qt.DotLine)
-            self.clutter_plot = self.envelope_plot_window.plot(range(10),
-                                                               np.zeros(10),
-                                                               pen=pen,
-                                                               name="Background")
-            self.env_peak_vline = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(width=2,
-                                                  style=QtCore.Qt.DotLine))
-            self.envelope_plot_window.addItem(self.env_peak_vline)
-            self.clutter_plot.setZValue(2)
-
-            self.peak_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1), fill="#f0f0f0")
-            self.peak_text.setZValue(3)
-            self.envelope_plot_window.addItem(self.peak_text)
-            self.envelope_plot_window.setLabel("left", "Amplitude")
-            self.envelope_plot_window.setLabel("bottom", "Distance (mm)")
-
-            if mode.lower() == "iq":
-                self.iq_plot_window = canvas.addPlot(row=1, col=0, title="Phase")
-                self.iq_plot_window.showGrid(x=True, y=True)
-                self.iq_plot_window.addLegend(offset=(-10, 10))
-                pen = example_utils.pg_pen_cycler()
-                self.iq_plot = self.iq_plot_window.plot(range(10),
-                                                        np.arange(10)*0,
-                                                        pen=pen,
-                                                        name="IQ Phase")
-                self.iq_plot_window.setLabel("left", "Normalized phase")
-                self.iq_plot_window.setLabel("bottom", "Distance (mm)")
-                canvas.nextRow()
-            else:
-                self.profiles.setVisible(True)
-
-        if mode.lower() in ["iq", "envelope", "sparse"]:
+        if mode.lower() in ["sparse"]:
             row = 1
             title = "Envelope History"
             if "iq" in mode.lower():
@@ -365,12 +328,9 @@ class GUI(QMainWindow):
             self.hist_plot.setAutoDownsample(True)
 
             self.hist_plot.setLookupTable(lut)
-            pen = example_utils.pg_pen_cycler(1)
             self.hist_plot_image.addItem(self.hist_plot)
             self.hist_plot_image.setLabel("left", "Distance (mm)")
             self.hist_plot_image.setLabel("bottom", "Time (s)")
-        if mode.lower() in ["iq", "envelope"]:
-            self.hist_plot_peak = self.hist_plot_image.plot(pen=pen)
 
         return canvas
 
@@ -879,6 +839,15 @@ class GUI(QMainWindow):
         if self.checkboxes["clutter_file"].isChecked():
             use_cl = True
 
+        processing_config = self.update_service_params()
+        mode = self.mode.currentText()
+        if mode == "Envelope" or mode == "IQ":
+            processing_config = copy.deepcopy(self.update_service_params())
+            processing_config["clutter_file"] = self.cl_file
+            processing_config["use_clutter"] = use_cl
+            processing_config["create_clutter"] = create_cl
+            processing_config["sweeps_requested"] = self.sweep_count
+
         params = {
             "sensor_config": self.update_sensor_config(),
             "clutter_file": self.cl_file,
@@ -888,7 +857,7 @@ class GUI(QMainWindow):
             "data_type": self.mode_to_param[self.mode.currentText()],
             "service_type": self.mode.currentText(),
             "sweep_buffer": self.sweep_buffer,
-            "service_params": self.update_service_params(),
+            "service_params": processing_config,
         }
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
@@ -987,6 +956,7 @@ class GUI(QMainWindow):
             if connection_success:
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(self.cl_supported)
+                self.buttons["load_cl"].setEnabled(self.cl_supported)
             else:
                 self.error_message("Could not connect to server!\n{}".format(error))
                 return
@@ -1593,9 +1563,6 @@ class GUI(QMainWindow):
             self.stop_scan()
             if "Connect" == self.buttons["connect"].text():
                 self.buttons["start"].setEnabled(False)
-        elif "update_plots" in message_type:
-            if data:
-                self.update_plots(data)
         elif "update_power_plots" in message_type:
             if data:
                 self.update_power_plots(data)
@@ -1614,70 +1581,6 @@ class GUI(QMainWindow):
         else:
             print("Thread data not implemented!")
             print(message_type, message, data)
-
-    def update_plots(self, data):
-        mode = self.mode.currentText()
-        xstart = data["x_mm"][0]
-        xend = data["x_mm"][-1]
-        xdim = data["hist_env"].shape[0]
-        if not data["sweep"]:
-            self.env_plot_max_y = 0
-            self.envelope_plot_window.setXRange(xstart, xend)
-            self.peak_text.setPos(xstart, 0)
-
-            self.smooth_envelope = example_utils.SmoothMax(
-                int(self.textboxes["frequency"].text()),
-                tau_decay=1,
-                tau_grow=0.2
-                )
-
-            if mode == "IQ":
-                self.iq_plot_window.setXRange(xstart, xend)
-                self.iq_plot_window.setYRange(-1.1, 1.1)
-
-            yax = self.hist_plot_image.getAxis("left")
-            y = np.round(np.arange(0, xdim+xdim/9, xdim/9))
-            labels = np.round(np.arange(xstart, xend+(xend-xstart)/9,
-                              (xend-xstart)/9))
-            ticks = [list(zip(y, labels))]
-            yax.setTicks(ticks)
-            self.hist_plot_image.setYRange(0, xdim)
-
-            s_buff = data["hist_env"].shape[1]
-            t_buff = s_buff / data["sensor_config"].sweep_rate
-            tax = self.hist_plot_image.getAxis("bottom")
-            t = np.round(np.arange(0, s_buff + 1, s_buff/min(10, s_buff)))
-            labels = np.round(t / s_buff * t_buff, decimals=3)
-            ticks = [list(zip(t, labels))]
-            tax.setTicks(ticks)
-
-        peak = "Peak: N/A"
-        if data["peaks"]["peak_mm"]:
-            self.env_peak_vline.setValue(data["peaks"]["peak_mm"])
-            peak = "Peak: %.1fmm" % data["peaks"]["peak_mm"]
-            if data["snr"] and np.isfinite(data["snr"]):
-                peak = "Peak: %.1fmm, SNR: %.1fdB" % (data["peaks"]["peak_mm"], data["snr"])
-
-        self.peak_text.setText(peak, color=(1, 1, 1))
-
-        max_val = max(np.max(data["env_clutter"]+data["env_ampl"]), np.max(data["env_clutter"]))
-        peak_line = np.flip((data["hist_plot"]-xstart)/(xend - xstart)*xdim, axis=0)
-
-        self.envelope_plot.setData(data["x_mm"], data["env_ampl"] + data["env_clutter"])
-        self.clutter_plot.setData(data["x_mm"], data["env_clutter"])
-
-        ymax_level = min(1.5*np.max(np.max(data["hist_env"])), self.env_plot_max_y)
-
-        self.hist_plot.updateImage(data["hist_env"].T, levels=(0, ymax_level))
-        self.hist_plot_peak.setData(peak_line)
-        self.hist_plot_peak.setZValue(2)
-
-        self.envelope_plot_window.setYRange(0, self.smooth_envelope.update(max_val))
-        if mode == "IQ":
-            self.iq_plot.setData(data["x_mm"], data["phase"])
-
-        if max_val > self.env_plot_max_y:
-            self.env_plot_max_y = 1.2 * max_val
 
     def update_power_plots(self, data):
         xstart = data["x_mm"][0]
@@ -1905,7 +1808,7 @@ class Threaded_Scan(QtCore.QThread):
                 self.radar.prepare_processing(self, self.params)
                 self.client.start_streaming()
             except Exception as e:
-                self.emit("client_error", "Failed to communicate with server!\n"
+                self.emit("client_error", "Failed to setup streaming!\n"
                           "{}".format(self.format_error(e)))
                 self.running = False
 

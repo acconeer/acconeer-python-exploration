@@ -5,25 +5,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def get_internal_processing_config():
-    return {
-        "image_buffer": {
-            "name": "Image history",
-            "value": 100,
-            "limits": [10, 10000],
-            "type": int,
-            "text": None,
-        },
-        "averging": {
-            "name": "Averaging",
-            "value": 0,
-            "limits": [0, 0.9999],
-            "type": float,
-            "text": None,
-        },
-    }
-
-
 def get_sparse_processing_config():
     return {
         "image_buffer": {
@@ -38,6 +19,10 @@ def get_sparse_processing_config():
 
 class DataProcessing:
     hist_len = 500
+    processing_handle = None
+
+    def send_sensor_config(self, sensor_config):
+        self.sensor_config = sensor_config
 
     def prepare_processing(self, parent, params):
         self.sensor_config = params["sensor_config"]
@@ -52,6 +37,9 @@ class DataProcessing:
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
         self.service_params = params["service_params"]
+
+        if self.service_params is not None:
+            self.service_params["processing_handle"] = self
 
         self.image_buffer = 0
         if self.service_type.lower() in ["iq", "envelope", "sparse"]:
@@ -70,9 +58,7 @@ class DataProcessing:
 
     def get_processing_type(self, service):
         process = self.external_processing
-        if self.service_type.lower() in ["iq", "envelope"]:
-            process = self.internal_processing
-        elif service.lower() == "power bin":
+        if service.lower() == "power bin":
             process = self.power_bin_processing
         elif service.lower() == "sparse":
             process = self.sparse_processing
@@ -85,7 +71,6 @@ class DataProcessing:
         self.peak_history = np.zeros(self.image_buffer, dtype="float")
         self.sweep = 0
         self.record = []
-        self.env_ampl_avg = 0
         self.complex_avg = 0
         self.n_std_avg = 0
         self.abort = False
@@ -100,6 +85,12 @@ class DataProcessing:
 
     def set_clutter_flag(self, enable):
         self.use_cl = enable
+
+        try:
+            self.service_params["use_clutter"] = enable
+            self.external.update_processing_config(self.service_params)
+        except Exception:
+            pass
 
     def load_clutter_data(self, cl_length, cl_file=None):
         load_success = True
@@ -243,138 +234,6 @@ class DataProcessing:
     def alpha(self, tau, dt):
         return np.exp(-dt/tau)
 
-    def internal_processing(self, iq_data, info):
-        complex_env = None
-
-        snr = {}
-        peak_data = {}
-
-        if self.sweep == 0:
-            self.cl_empty = np.zeros(len(iq_data))
-            self.cl, self.cl_iq, self.n_std_avg = \
-                self.load_clutter_data(len(iq_data), self.cl_file)
-            self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
-            self.hist_env = np.zeros((len(self.env_x_mm), self.image_buffer))
-
-        complex_env = iq_data.copy()
-        if self.use_cl:
-            # For envelope mode cl_iq is amplitude only
-            try:
-                complex_env = iq_data - self.cl_iq
-                if "iq" not in self.mode:
-                    complex_env[complex_env < 0] = 0
-            except Exception as e:
-                self.parent.emit("error", "Background has wrong format!\n{}".format(e))
-                self.cl_iq = self.cl = np.zeros((len(complex_env)))
-
-        time_filter = self.service_params["averging"]["value"]
-        if time_filter >= 0:
-            if self.sweep < np.ceil(1.0 / (1.0 - self.service_params["averging"]["value"]) - 1):
-                time_filter = min(1.0 - 1.0 / (self.sweep + 1), time_filter)
-            if self.sweep:
-                complex_env = (1 - time_filter) * complex_env + time_filter * self.last_complex_env
-            self.last_complex_env = complex_env.copy()
-
-        env = np.abs(complex_env)
-
-        if self.create_cl:
-            if self.sweep == 0:
-                self.cl = np.zeros((self.sweeps, len(env)))
-                self.cl_iq = np.zeros((self.sweeps, len(env)), dtype="complex")
-            self.cl[self.sweep, :] = env
-            self.cl_iq[self.sweep, :] = iq_data
-
-        env_peak_idx = np.argmax(env)
-
-        phase = np.angle(np.mean(complex_env[(env_peak_idx-50):(env_peak_idx+50)]))
-
-        peak_mm = self.env_x_mm[env_peak_idx]
-        if peak_mm <= self.start_x * 1000:
-            peak_mm = self.stop_x * 1000
-
-        hist_plot = np.flip(self.peak_history, axis=0)
-        self.peak_history = np.roll(self.peak_history, 1)
-        self.peak_history[0] = peak_mm
-
-        self.hist_env = np.roll(self.hist_env, 1, axis=1)
-        self.hist_env[:, 0] = env
-
-        std_len = min(self.sweep, len(self.peak_history) - 1)
-
-        peak_data = {
-            "peak_mm": peak_mm,
-            "std_peak_mm": np.std(self.peak_history[0:min(self.sweep, std_len)]),
-        }
-
-        snr = None
-        signal = np.abs(env)[env_peak_idx]
-        if self.use_cl and self.n_std_avg[env_peak_idx] > 0:
-            noise = self.n_std_avg[env_peak_idx]
-            snr = 20*np.log10(signal / noise)
-        else:
-            # Simple noise estimate: noise ~ mean(envelope)
-            noise = np.mean(env)
-            snr = 20*np.log10(signal / noise)
-
-        phase = np.angle(complex_env)
-        phase /= np.max(np.abs(phase))
-
-        self.env_max = np.max(env)
-
-        cl = self.cl
-        cl_iq = self.cl_iq
-        if self.create_cl:
-            cl = self.cl[self.sweep, :]
-            cl_iq = self.cl_iq[self.sweep, :]
-        elif not self.use_cl:
-            cl = self.cl_empty
-            cl_iq = self.cl_empty
-
-        plot_data = {
-            "iq_data": iq_data,
-            "complex_data": complex_env,
-            "complex_avg": self.complex_avg,
-            "env_ampl": env,
-            "env_ampl_avg": self.env_ampl_avg,
-            "env_clutter": cl,
-            "env_max": self.env_max,
-            "iq_clutter": cl_iq,
-            "n_std_avg": self.n_std_avg,
-            "hist_plot": hist_plot,
-            "hist_env": self.hist_env,
-            "sensor_config": self.sensor_config,
-            "SNR": snr,
-            "peaks": peak_data,
-            "x_mm": self.env_x_mm,
-            "cl_file": self.cl_file,
-            "sweep": self.sweep,
-            "snr": snr,
-            "phase": phase,
-        }
-
-        self.record_data(iq_data, info)
-        self.draw_canvas(self.sweep, plot_data)
-        self.sweep += 1
-
-        if self.create_cl and self.sweep == self.sweeps:
-            cl = np.zeros((3, len(self.cl[0])))
-            cl[0] = np.mean(self.cl, axis=0)
-            cl[2] = np.mean(self.cl_iq, axis=0)
-
-            for i in range(len(self.cl[0])):
-                cl[1, i] = np.std(self.cl[:, i])
-
-            cl_data = {
-                "cl_env": cl[0],
-                "cl_env_std": cl[1],
-                "cl_iq": cl[2],
-                "config": self.sensor_config,
-            }
-
-            self.parent.emit("clutter_data", "", cl_data)
-
-        return (plot_data, self.record)
-
     def external_processing(self, sweep_data, info):
         if self.first_run:
             self.external = self.parent.parent.external(self.sensor_config, self.service_params)
@@ -389,8 +248,32 @@ class DataProcessing:
                 if plot_data.get("send_process_data") is not None:
                     self.parent.emit("process_data", "", plot_data["send_process_data"])
 
+                if self.create_cl and self.sweep == self.sweeps - 1:
+                    self.process_clutter_data(plot_data["clutter_raw"])
+
+        if plot_data:
+            plot_data["sweep"] = self.sweep
+
         self.record_data(sweep_data, info)
-        return None, self.record
+
+        return (plot_data, self.record)
+
+    def process_clutter_data(self, cl_data):
+        cl = np.zeros((3, len(cl_data[0])))
+        cl[0] = np.mean(np.abs(cl_data), axis=0)
+        cl[2] = np.mean(cl_data, axis=0)
+
+        for i in range(len(cl_data[0])):
+            cl[1, i] = np.std(cl_data[:, i])
+
+        cl_data = {
+            "cl_env": cl[0],
+            "cl_env_std": cl[1],
+            "cl_iq": cl[2],
+            "config": self.sensor_config,
+        }
+
+        self.parent.emit("clutter_data", "", cl_data)
 
     def record_data(self, sweep_data, info):
         plot_data = {
