@@ -1,3 +1,5 @@
+.. _iq-service:
+
 IQ
 ==
 

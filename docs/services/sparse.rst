@@ -1,3 +1,5 @@
+.. _sparse-service:
+
 Sparse
 ======
 
