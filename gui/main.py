@@ -468,6 +468,7 @@ class GUI(QMainWindow):
         self.profiles = QComboBox(self)
         self.profiles.addItem("Max SNR")
         self.profiles.addItem("Max depth resolution")
+        self.profiles.addItem("Direct leakage")
         self.profiles.currentIndexChanged.connect(self.set_profile)
 
         self.dropdowns = {}
@@ -496,8 +497,12 @@ class GUI(QMainWindow):
 
         if "snr" in profile:
             self.textboxes["gain"].setText(str(0.45))
-        elif "resolution" in profile:
+        elif "depth" in profile:
             self.textboxes["gain"].setText(str(0.8))
+        elif "leakage" in profile:
+            self.textboxes["gain"].setText(str(0.2))
+            self.textboxes["start_range"].setText(str(0))
+            self.textboxes["end_range"].setText(str(0.3))
 
     def update_ports(self):
         port_infos = serial.tools.list_ports.comports()
@@ -1089,10 +1094,13 @@ class GUI(QMainWindow):
             if "sparse" in mode.lower():
                 conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
             if "envelope" in mode.lower():
-                if "snr" in self.profiles.currentText().lower():
+                profile_text = self.profiles.currentText().lower()
+                if "snr" in profile_text:
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
-                elif "depth" in self.profiles.currentText().lower():
+                elif "depth" in profile_text:
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
+                elif "leakage" in profile_text:
+                    conf.session_profile = configs.EnvelopeServiceConfig.DIRECT_LEAKAGE
 
         return conf
 
@@ -1181,10 +1189,11 @@ class GUI(QMainWindow):
         if e:
             errors.append("Gain must be between 0 and 1!\n")
 
-        start = self.is_float(self.textboxes["start_range"].text())
-        start, e = self.check_limit(start, self.textboxes["start_range"], 0.06, 6.94)
+        min_start_range = 0 if "leakage" in self.profiles.currentText().lower() else 0.06
+        start = self.is_float(self.textboxes["start_range"].text(), is_positive=False)
+        start, e = self.check_limit(start, self.textboxes["start_range"], min_start_range, 6.94)
         if e:
-            errors.append("Start range must be between 0.06m and 6.94m!\n")
+            errors.append("Start range must be between {}m and 6.94m!\n".format(min_start_range))
 
         end = self.is_float(self.textboxes["end_range"].text())
         end, e = self.check_limit(end, self.textboxes["end_range"], 0.12, 7)
@@ -1243,7 +1252,9 @@ class GUI(QMainWindow):
 
     def check_limit(self, val, field, start, end, set_to=None):
         out_of_range = False
-        if isinstance(val, bool):
+        try:
+            float(val)
+        except (ValueError, TypeError):
             val = start
             out_of_range = True
         if val < start:
