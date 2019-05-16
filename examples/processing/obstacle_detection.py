@@ -703,7 +703,7 @@ class PGUpdater:
         else:
             self.peak_x = self.peak_x * 0.7 + 0.3 * self.env_xs[data["peak_idx"]]
 
-        peak_dist_text = "Peak: {:.1f}mm".format(self.peak_x)
+        peak_dist_text = "Peak: {:.1f} cm".format(self.peak_x)
         peak_fft_text = "No peaks found"
 
         if data["fft_peaks"] is not None:
