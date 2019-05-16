@@ -19,7 +19,7 @@ Four basic steps are repeated in this algorithm:
 Sweep collection
 -----------------
 Each radar sweep :math:`s_n` consists of :math:`N_D` complex delay points, where each delay point represents a specific distance.
-For moving obstacles, the phase :math:`\phi` of its corresponding complex delay point will change based on the sensor-to-obeject distance change between consecutive sweeps, while the amplitude :math:`A` will be unchanged
+For moving obstacles, the phase :math:`\phi` of its corresponding complex delay point will change based on the sensor-to-object distance change between consecutive sweeps, while the amplitude :math:`A` will be unchanged
 
 .. math:: s_n\left[d_{object}\right] = A e^{i\phi} \tag{1}
 .. math:: s_{n+1}\left[d_{object}\right] = A e^{i(\phi+\Delta\phi)} \tag{2}
