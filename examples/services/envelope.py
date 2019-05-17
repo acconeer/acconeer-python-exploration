@@ -26,6 +26,7 @@ def main():
     config.range_interval = [0.2, 0.6]
     config.sweep_rate = 60
     config.gain = 0.6
+    # config.experimental_stitching = True
     # config.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
     # config.running_average_factor = 0.5
     # config.compensate_phase = False  # not recommended

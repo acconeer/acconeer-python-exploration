@@ -86,7 +86,13 @@ class RegClient(BaseClient):
         self._write_reg("main_control", "stop")
 
         self._write_reg("mode_selection", mode)
-        self._write_reg("repetition_mode", "fixed")
+
+        if config.experimental_stitching:
+            self._write_reg("repetition_mode", "max")
+            log.warn("experimental stitching on - switching to max freq. mode")
+        else:
+            self._write_reg("repetition_mode", "fixed")
+
         self._write_reg("streaming_control", "uart")
 
         if mode == "iq":
@@ -112,7 +118,7 @@ class RegClient(BaseClient):
         if data_length:
             log.debug("data length: {}".format(data_length))
 
-            if bpp and freq:
+            if bpp and freq and not config.experimental_stitching:
                 data_rate = 8 * bpp * data_length * freq
                 log_text = "data rate: {:.2f} Mbit/s".format(data_rate*1e-6)
                 if data_rate > 2/3 * self._link.baudrate:
@@ -316,14 +322,19 @@ class RegSPIClient(BaseClient):
         mode = protocol.get_mode(config.mode)
         self._mode = mode
 
-        self.__cmd_proc("set_mode_and_rate", mode, config.sweep_rate)
-
-        self._sweep_rate = config.sweep_rate
+        sweep_rate = None if config.experimental_stitching else config.sweep_rate
+        self.__cmd_proc("set_mode_and_rate", mode, sweep_rate)
 
         self._write_reg("main_control", "stop")
 
         self._write_reg("mode_selection", mode)
-        self._write_reg("repetition_mode", "fixed")
+
+        if config.experimental_stitching:
+            self._write_reg("repetition_mode", "max")
+            log.warn("experimental stitching on - switching to max freq. mode")
+        else:
+            self._write_reg("repetition_mode", "fixed")
+
         self._write_reg("streaming_control", "disable")
 
         if mode == "iq":
@@ -350,7 +361,7 @@ class RegSPIClient(BaseClient):
         if data_length:
             log.debug("assumed data length: {}".format(data_length))
 
-            if bpp and freq:
+            if bpp and freq and not config.experimental_stitching:
                 data_rate = 8 * bpp * data_length * freq
                 log_text = "data rate: {:.2f} Mbit/s".format(data_rate*1e-6)
                 log.info(log_text)
@@ -484,7 +495,7 @@ class SPICommProcess(mp.Process):
         while True:
             status = self.read_reg("status")
             if not status:
-                if (time() - poll_t) > (2/self.sweep_rate + 0.5):
+                if (time() - poll_t) > self.poll_timeout:
                     raise ClientError("gave up polling")
                 continue
             elif status & protocol.STATUS_DATA_READY_MASK:
@@ -521,8 +532,11 @@ class SPICommProcess(mp.Process):
         self.dev.set_wake_up_interrupt(False)
 
     def set_mode_and_rate(self, mode, sweep_rate):
-        self.sweep_rate = sweep_rate
         self.mode = mode
+        if sweep_rate:
+            self.poll_timeout = (2/sweep_rate + 0.5)
+        else:
+            self.poll_timeout = 1.0
 
     def start_streaming(self):
         self.write_reg("main_control", "activate")
