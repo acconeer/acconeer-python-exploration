@@ -62,6 +62,8 @@ class GUI(QMainWindow):
     service_params = None
     service_defaults = None
     advanced_process_data = {"use_data": False, "process_data": None}
+    max_cl_sweeps = 10000
+    creating_cl = False
 
     def __init__(self):
         super().__init__()
@@ -106,6 +108,7 @@ class GUI(QMainWindow):
             "start_range":      ["Start (m)", "sensor", True],
             "end_range":        ["Stop (m)", "sensor", True],
             "clutter":          ["Background settings", "scan", True],
+            "clutter_status":   ["", "scan", True],
             "interface":        ["Interface", "connection", True],
             "power_bins":       ["Power bins", "sensor", False],
             "subsweeps":        ["Subsweeps", "sensor", False],
@@ -128,6 +131,8 @@ class GUI(QMainWindow):
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
+        self.labels["clutter_status"].setStyleSheet("color: red")
+        self.labels["clutter_status"].setVisible(False)
 
         self.labels["advanced_params"].setStyleSheet("text-decoration: underline")
 
@@ -182,7 +187,7 @@ class GUI(QMainWindow):
                 self.checkboxes[key].stateChanged.connect(check_init[key][3])
 
     def init_graphs(self, mode="Select service", refresh=False):
-        axes = {
+        self.service_props = {
             "Select service": [None, None],
             "IQ": [data_processing.get_internal_processing_config(), None],
             "Envelope": [data_processing.get_internal_processing_config(), None],
@@ -196,11 +201,11 @@ class GUI(QMainWindow):
             "Obstacle detection": [od, od.ObstacleDetectionProcessor],
         }
 
-        self.external = axes[mode][1]
+        self.external = self.service_props[mode][1]
         if self.external:
-            processing_config = axes[mode][0].get_processing_config()
+            processing_config = self.service_props[mode][0].get_processing_config()
         else:
-            processing_config = axes[mode][0]
+            processing_config = self.service_props[mode][0]
 
         canvas = None
 
@@ -271,8 +276,8 @@ class GUI(QMainWindow):
                 self.serviceFrame.hide()
 
         if self.external:
-            self.service_widget = axes[mode][0].PGUpdater(
-                self.update_sensor_config(refresh=refresh), self.service_params)
+            self.service_widget = self.service_props[mode][0].PGUpdater(
+                self.update_sensor_config(refresh=refresh), self.update_service_params())
             self.service_widget.setup(canvas)
             return canvas
         elif "power" in mode.lower():
@@ -665,6 +670,7 @@ class GUI(QMainWindow):
         control_sublayout_grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
         control_sublayout_grid.addWidget(self.labels["empty_02"], self.increment(), 0)
+        control_sublayout_grid.addWidget(self.labels["clutter_status"], self.increment(), 0, 1, 2)
         control_sublayout_grid.addWidget(self.labels["clutter"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
         control_sublayout_grid.addWidget(self.buttons["load_cl"], self.num, 1)
@@ -738,7 +744,7 @@ class GUI(QMainWindow):
         self.serviceFrame.hide()
         self.advancedFrame.hide()
 
-    def add_params(self, params):
+    def add_params(self, params, start_up_mode=None):
         self.buttons["load_process_data"].hide()
         self.buttons["save_process_data"].hide()
         for mode in self.service_labels:
@@ -746,7 +752,13 @@ class GUI(QMainWindow):
                 for element in self.service_labels[mode][key]:
                     if "label" in element or "box" in element:
                         self.service_labels[mode][key][element].setVisible(False)
-        mode = self.mode.currentText()
+
+        if start_up_mode is None:
+            mode = self.mode.currentText()
+            set_visible = True
+        else:
+            mode = start_up_mode
+            set_visible = False
 
         index = 1
         if mode not in self.service_labels:
@@ -784,7 +796,7 @@ class GUI(QMainWindow):
                     self.service_labels[mode][key]["default"] = params[key]["value"]
                     grid.addWidget(self.service_labels[mode][key]["label"], index, 0)
                     grid.addWidget(self.service_labels[mode][key]["box"], index, 1)
-                    self.service_labels[mode][key]["box"].setVisible(True)
+                    self.service_labels[mode][key]["box"].setVisible(set_visible)
                 else:
                     self.service_labels[mode][key]["label"] = QLabel(self)
                     self.service_labels[mode][key]["label"].setText(str(params[key]["text"]))
@@ -793,7 +805,7 @@ class GUI(QMainWindow):
             else:
                 for element in self.service_labels[mode][key]:
                     if element in ["label", "box", "checkbox"]:
-                        self.service_labels[mode][key][element].setVisible(True)
+                        self.service_labels[mode][key][element].setVisible(set_visible)
                     if self.service_labels[mode][key]["advanced"]:
                         advanced_available = True
 
@@ -809,15 +821,16 @@ class GUI(QMainWindow):
                         d[key+str(idx)] = [widget, "service", True]
                     idx += 1
 
-        self.checkboxes["show_advanced"].setVisible(advanced_available)
-        if self.checkboxes["show_advanced"].isChecked() and advanced_available:
-            self.advancedFrame.show()
-        else:
-            self.advancedFrame.hide()
+        if start_up_mode is None:
+            self.checkboxes["show_advanced"].setVisible(advanced_available)
+            if self.checkboxes["show_advanced"].isChecked() and advanced_available:
+                self.advancedFrame.show()
+            else:
+                self.advancedFrame.hide()
 
-        if self.tbuttons["service"].isChecked():
-            self.tbuttons["service"].toggle()
-            self.tbuttons["service"].setArrowType(QtCore.Qt.ArrowType.DownArrow)
+            if self.tbuttons["service"].isChecked():
+                self.tbuttons["service"].toggle()
+                self.tbuttons["service"].setArrowType(QtCore.Qt.ArrowType.DownArrow)
 
     def show_advanced(self):
         if self.checkboxes["show_advanced"].isChecked():
@@ -833,6 +846,8 @@ class GUI(QMainWindow):
         self.textboxes["frequency"].setText("{:d}".format(conf["frequency"]))
         self.sweep_count = -1
         self.textboxes["sweeps"].setText("-1")
+        if self.profiles.isVisible():
+            self.profiles.setCurrentIndex(0)
 
     def service_defaults(self):
         mode = self.mode.currentText()
@@ -865,7 +880,8 @@ class GUI(QMainWindow):
             self.canvas = self.init_graphs(mode, refresh=refresh)
             self.main_layout.addWidget(self.canvas, 0, 0)
 
-        self.update_sensor_config()
+        if "select service" not in mode.lower():
+            self.update_sensor_config()
 
     def update_interface(self):
         if self.buttons["connect"].text() == "Disconnect":
@@ -922,19 +938,26 @@ class GUI(QMainWindow):
                 print("Warning, could not restore config from cached data!")
                 pass
             data_source = "file"
-        sweep_buffer = 500
+        self.sweep_buffer = 500
 
         if self.external:
             self.update_canvas(force_update=True)
 
         try:
-            sweep_buffer = int(self.textboxes["sweep_buffer"].text())
+            self.sweep_buffer = int(self.textboxes["sweep_buffer"].text())
         except Exception:
             self.error_message("Sweep buffer needs to be a positive integer\n")
             self.textboxes["sweep_buffer"].setText("500")
 
-        if create_cl and self.cl_file:
-            self.load_clutter_file(force_unload=True)
+        if create_cl:
+            self.sweep_buffer = min(self.sweep_buffer, self.max_cl_sweeps)
+            self.creating_cl = True
+            self.labels["empty_02"].hide()
+            self.labels["clutter_status"].show()
+            if self.cl_file:
+                self.load_clutter_file(force_unload=True)
+        else:
+            self.creating_cl = False
 
         use_cl = False
         if self.checkboxes["clutter_file"].isChecked():
@@ -948,7 +971,7 @@ class GUI(QMainWindow):
             "data_source": data_source,
             "data_type": self.mode_to_param[self.mode.currentText()],
             "service_type": self.mode.currentText(),
-            "sweep_buffer": sweep_buffer,
+            "sweep_buffer": self.sweep_buffer,
             "service_params": self.update_service_params(),
         }
 
@@ -986,6 +1009,8 @@ class GUI(QMainWindow):
         self.buttons["load_scan"].setEnabled(True)
         self.buttons["load_cl"].setEnabled(self.cl_supported)
         self.buttons["create_cl"].setEnabled(self.cl_supported)
+        self.labels["empty_02"].show()
+        self.labels["clutter_status"].hide()
         self.mode.setEnabled(True)
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
@@ -1206,7 +1231,8 @@ class GUI(QMainWindow):
 
         env_max_range = 0.96
         iq_max_range = 0.72
-        if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
+        data_type = self.mode_to_param[self.mode.currentText()]
+        if "iq" in data_type or "envelope" in data_type:
             if self.interface.currentText().lower() == "socket":
                 env_max_range = 6.88
                 iq_max_range = 6.88
@@ -1221,7 +1247,7 @@ class GUI(QMainWindow):
             end = start + 0.06
             r = end - start
 
-        if "envelope" in mode.lower():
+        if "envelope" in data_type:
             if r > env_max_range:
                 errors.append("Envelope range must be less than %.2fm!\n" % env_max_range)
                 self.textboxes["end_range"].setText(str(start + env_max_range))
@@ -1230,7 +1256,7 @@ class GUI(QMainWindow):
             elif r > 0.96:
                 stitching = True
 
-        if "iq" in mode.lower():
+        if "iq" in data_type:
             if r > iq_max_range:
                 errors.append("IQ range must be less than %.2fm!\n" % iq_max_range)
                 self.textboxes["end_range"].setText(str(start + iq_max_range))
@@ -1811,6 +1837,12 @@ class GUI(QMainWindow):
         else:
             self.labels["saturated"].setStyleSheet("color: #f0f0f0")
 
+        if self.creating_cl:
+            clutter_sweeps = min(self.max_cl_sweeps, self.sweep_buffer)
+            clutter_status = "Scanning background sweep {:d} of {:d}".format(self.sweep_number,
+                                                                             clutter_sweeps)
+            self.labels["clutter_status"].setText(clutter_status)
+
     def update_ranges(self, data):
         old_start = float(self.textboxes["start_range"].text())
         old_end = float(self.textboxes["end_range"].text())
@@ -1832,6 +1864,7 @@ class GUI(QMainWindow):
 
     def update_settings(self, sensor_config, last_config=None):
         if last_config:
+            # restore last sensor settings
             try:
                 self.profiles.setCurrentIndex(last_config["profile"])
                 self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
@@ -1845,6 +1878,27 @@ class GUI(QMainWindow):
                 self.sweep_count = last_config["sweep_count"]
             except Exception as e:
                 print("Warning, could not restore last session\n{}".format(e))
+            # restore all service settings
+            try:
+                if last_config["service_settings"]:
+                    for mode in last_config["service_settings"]:
+                        external = self.service_props[mode][1]
+                        if external:
+                            processing_config = self.service_props[mode][0].get_processing_config()
+                        else:
+                            processing_config = self.service_props[mode][0]
+                        self.add_params(processing_config, start_up_mode=mode)
+
+                        labels = last_config["service_settings"][mode]
+                        for key in labels:
+                            if "checkbox" in labels[key]:
+                                self.service_labels[mode][key]["checkbox"].setChecked(
+                                    labels[key]["checkbox"])
+                            elif "box" in labels[key]:
+                                self.service_labels[mode][key]["box"].setText(
+                                    str(labels[key]["box"]))
+            except Exception as e:
+                print("Warning, could not restore service settings\n{}".format(e))
 
         try:
             self.textboxes["gain"].setText("{:.1f}".format(sensor_config.gain))
@@ -1865,6 +1919,19 @@ class GUI(QMainWindow):
 
     def closeEvent(self, event=None):
         if "select" not in str(self.mode.currentText()).lower():
+            service_params = {}
+            for mode in self.service_labels:
+                if service_params.get(mode) is None:
+                    service_params[mode] = {}
+                for key in self.service_labels[mode]:
+                    if service_params[mode].get(key) is None:
+                        service_params[mode][key] = {}
+                        if "checkbox" in self.service_labels[mode][key]:
+                            checked = self.service_labels[mode][key]["checkbox"].isChecked()
+                            service_params[mode][key]["checkbox"] = checked
+                        elif "box" in self.service_labels[mode][key]:
+                            val = self.service_labels[mode][key]["box"].text()
+                            service_params[mode][key]["box"] = val
             last_config = {
                 "sensor_config": self.update_sensor_config(),
                 "sweep_count": self.sweep_count,
@@ -1873,9 +1940,10 @@ class GUI(QMainWindow):
                 "interface": self.interface.currentIndex(),
                 "port": self.ports.currentIndex(),
                 "profile": self.profiles.currentIndex(),
+                "service_settings": service_params,
                 }
 
-            np.save(self.last_file, last_config)
+            np.save(self.last_file, last_config, allow_pickle=True)
 
         try:
             self.client.disconnect()

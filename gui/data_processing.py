@@ -10,7 +10,7 @@ def get_internal_processing_config():
         "image_buffer": {
             "name": "Image history",
             "value": 100,
-            "limits": [10, 16384],
+            "limits": [10, 10000],
             "type": int,
             "text": None,
         },
@@ -29,7 +29,7 @@ def get_sparse_processing_config():
         "image_buffer": {
             "name": "Image history",
             "value": 100,
-            "limits": [10, 16384],
+            "limits": [10, 10000],
             "type": int,
             "text": None,
         },
@@ -386,8 +386,8 @@ class DataProcessing:
             if plot_data:
                 self.draw_canvas(self.sweep, plot_data, "update_external_plots")
                 self.sweep += 1
-            if plot_data.get("send_process_data") is not None:
-                self.parent.emit("process_data", "", plot_data["send_process_data"])
+                if plot_data.get("send_process_data") is not None:
+                    self.parent.emit("process_data", "", plot_data["send_process_data"])
 
         self.record_data(sweep_data, info)
         return None, self.record
