@@ -149,6 +149,8 @@ class GUI(QMainWindow):
         for key in text:
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text[key][0])
+            self.textboxes[key].editingFinished.connect(
+                lambda: self.check_values(self.mode_to_config[self.mode.currentText()][0].mode))
         self.textboxes["collapsible"] = text
 
         self.textboxes["power_bins"].setVisible(False)
@@ -425,7 +427,7 @@ class GUI(QMainWindow):
         }
 
         self.mode_to_config = {
-            "Select service": ["", ""],
+            "Select service": [configs.EnvelopeServiceConfig(), ""],
             "IQ": [configs.IQServiceConfig(), "internal"],
             "Envelope": [configs.EnvelopeServiceConfig(), "internal"],
             "Sparse": [configs.SparseServiceConfig(), "internal_sparse"],
@@ -1204,10 +1206,13 @@ class GUI(QMainWindow):
 
         env_max_range = 0.96
         iq_max_range = 0.72
-        if self.interface.currentText().lower() == "socket":
-            if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
+        if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
+            if self.interface.currentText().lower() == "socket":
                 env_max_range = 6.88
                 iq_max_range = 6.88
+            else:
+                env_max_range = 5.0
+                iq_max_range = 3.0
 
         stitching = False
         if r <= 0:
@@ -1235,6 +1240,7 @@ class GUI(QMainWindow):
                 stitching = True
 
         self.labels["stitching"].setVisible(stitching)
+        self.textboxes["frequency"].setEnabled(not stitching)
 
         if len(errors):
             self.error_message("".join(errors))
