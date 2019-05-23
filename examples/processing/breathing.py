@@ -192,14 +192,14 @@ class BreathingProcessor:
                 bpm = 60.0 / ((inhale_time + exhale_time) / self.f)
                 symmetry = (inhale_dist - exhale_dist) / (inhale_dist + exhale_dist)
                 first_peak_rel = first_peak / (inhale_time + exhale_time)
-                if 3 < bpm < 30 and abs(symmetry) < 0.5 and first_peak_rel < 0.7:
+                if 3 < bpm < 30 and abs(symmetry) < 0.6 and first_peak_rel < 0.7:
                     breathing = True
 
             if breathing:
                 bstr = "Exhaling" if exhale else "Inhaling"
                 bpm_text = "{}, BPM {:0.1f}, depth {:0.1f} mm".format(bstr, bpm, inhale_dist)
             else:
-                bpm_text = "No breathing detected"
+                bpm_text = None
 
             # Make an explicit copy, otherwise flip will not return a new object
             breath_hist_plot = np.array(np.flip(self.breath_history[:self.hist_plot_len], axis=0))
@@ -249,8 +249,8 @@ class PGUpdater:
         self.config = sensor_config
 
         f = sensor_config.sweep_rate
-        self.hist_plot_len = int(round(processing_config["hist_plot_len"]["value"] * f))
-
+        self.hist_plot_len_s = processing_config["hist_plot_len"]["value"]
+        self.hist_plot_len = int(round(self.hist_plot_len_s * f))
         self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / self.config.sweep_rate
         self.plot_index = 0
 
@@ -280,10 +280,11 @@ class PGUpdater:
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Time (s)")
         self.move_plot.setLabel("left", "Movement (mm)")
-        self.move_plot.setYRange(-10, 10)
+        self.move_plot.setYRange(-2, 2)
+        self.move_plot.setXRange(-self.hist_plot_len_s, 0)
         self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler(0))
         self.move_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
-        self.move_text_item.setPos(self.move_xs[0], -10)
+        self.move_text_item.setPos(self.move_xs[0], -2)
         self.move_plot.addItem(self.move_text_item)
 
         self.zoom_plot = win.addPlot(title="Relative movement")
@@ -302,6 +303,9 @@ class PGUpdater:
         self.delta_curve.setData(self.env_xs, data["env_delta"])
         self.peak_vline.setValue(self.peak_x)
         self.move_curve.setData(self.move_xs, data["breathing_history"])
+        m = max(2, max(np.abs(data['breathing_history'])))
+        self.move_plot.setYRange(-m, m)
+        self.move_text_item.setPos(self.move_xs[0], -m)
         self.zoom_curve.setData(self.move_xs, data["zoom_hist"])
         self.move_text_item.setText(data["breathing_text"])
 
