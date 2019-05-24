@@ -237,6 +237,21 @@ REGS = [
         "gain",
     ),
     Reg(
+        "sensor_power_mode",
+        NO_MODE,
+        37,
+        "rw",
+        "u",
+        {
+            "a": 0,
+            "b": 1,
+            "c": 2,
+            "d": 3,
+        },
+        None,
+        None,
+    ),
+    Reg(
         "actual_range_start",
         NO_MODE,
         129,

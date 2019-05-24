@@ -106,6 +106,7 @@ class RegClient(BaseClient):
             self._write_reg("repetition_mode", "fixed")
 
         self._write_reg("streaming_control", "uart")
+        self._write_reg("sensor_power_mode", "d")
 
         if mode == "iq":
             self._write_reg("output_data_compression", 1)
@@ -348,6 +349,7 @@ class RegSPIClient(BaseClient):
             self._write_reg("repetition_mode", "fixed")
 
         self._write_reg("streaming_control", "disable")
+        self._write_reg("sensor_power_mode", "d")
 
         if mode == "iq":
             self._write_reg("output_data_compression", 1)
