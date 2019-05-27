@@ -118,6 +118,7 @@ class BaseSerialLink(BaseLink):
     def __init__(self, baudrate=115200):
         super().__init__()
         self.baudrate = baudrate
+        self._timeout = 2
 
 
 class SerialLink(BaseSerialLink):
@@ -187,7 +188,7 @@ class SerialProcessLink(BaseSerialLink):
 
         self._process.start()
 
-        flow_event_was_set = self._flow_event.wait(3)
+        flow_event_was_set = self._flow_event.wait(self._timeout)
 
         if flow_event_was_set:
             log.debug("connect - flow event was set")
