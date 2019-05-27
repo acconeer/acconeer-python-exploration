@@ -115,12 +115,9 @@ class SocketLink(BaseLink):
 
 
 class BaseSerialLink(BaseLink):
-    DEFAULT_BAUDRATE = 115200
-    MAX_BAUDRATE = 3000000
-
-    def __init__(self):
+    def __init__(self, baudrate=115200):
         super().__init__()
-        self.baudrate = self.DEFAULT_BAUDRATE
+        self.baudrate = baudrate
 
 
 class SerialLink(BaseSerialLink):

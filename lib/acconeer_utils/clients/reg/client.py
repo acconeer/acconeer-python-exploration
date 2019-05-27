@@ -19,6 +19,9 @@ SPI_MAIN_CTRL_SLEEP = 0.3
 
 
 class RegClient(BaseClient):
+    DEFAULT_BASE_BAUDRATE = 115200
+    DEFAULT_CONF_BAUDRATE = 3000000
+
     def __init__(self, port, **kwargs):
         super().__init__(**kwargs)
 
@@ -27,46 +30,55 @@ class RegClient(BaseClient):
         else:
             self._link = links.SerialProcessLink(port)
 
+        self.base_baudrate = kwargs.get("base_baudrate", self.DEFAULT_BASE_BAUDRATE)
+        self.conf_baudrate = kwargs.get("conf_baudrate", self.DEFAULT_CONF_BAUDRATE)
+
         self._mode = protocol.NO_MODE
         self._num_subsweeps = None
 
     def _connect(self):
-        max_baud = links.BaseSerialLink.MAX_BAUDRATE
-        default_baud = links.BaseSerialLink.DEFAULT_BAUDRATE
+        use_dual_baudrate = bool(self.conf_baudrate)
+        init_baudrate = self.conf_baudrate if use_dual_baudrate else self.base_baudrate
 
-        self._link.baudrate = max_baud
+        self._link.baudrate = init_baudrate
         self._link.connect()
+        log.debug("port opened at {} baud".format(init_baudrate))
 
-        log.debug("connected at {} baud".format(max_baud))
+        if use_dual_baudrate:
+            success = False
+            try:
+                self._handshake()
+            except ClientError:
+                log.info("handshake failed at {} baud, trying {} baud..."
+                         .format(self.conf_baudrate, self.base_baudrate))
+            else:
+                success = True
 
-        success = False
-        try:
-            self._handshake()
-        except ClientError:
-            log.info("handshake failed at {} baud, trying {} baud..."
-                     .format(max_baud, default_baud))
+            if not success:
+                self._link.disconnect()
+                self._link.baudrate = self.base_baudrate
+                self._link.connect()
+
+                try:
+                    self._handshake()
+                except links.LinkError as e:
+                    raise ClientError("could not connect, no response") from e
+
+                log.info("handshake successful, switching to {} baud..."
+                         .format(self.conf_baudrate))
+
+                self._write_reg("uart_baudrate", self.conf_baudrate)
+                self._link.disconnect()
+                self._link.baudrate = self.conf_baudrate
+                self._link.connect()
+                self._handshake()
+
+                log.info("successfully connected at {} baud!".format(self.conf_baudrate))
         else:
-            success = True
-
-        if not success:
-            self._link.disconnect()
-            self._link.baudrate = default_baud
-            self._link.connect()
-
             try:
                 self._handshake()
             except links.LinkError as e:
                 raise ClientError("could not connect, no response") from e
-
-            log.info("handshake successful, switching to {} baud...".format(max_baud))
-
-            self._write_reg("uart_baudrate", max_baud)
-            self._link.disconnect()
-            self._link.baudrate = max_baud
-            self._link.connect()
-            self._handshake()
-
-            log.info("successfully connected at {} baud!".format(max_baud))
 
         ver = self._read_reg("product_version")
         if ver < protocol.MIN_VERSION:
