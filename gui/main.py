@@ -44,6 +44,8 @@ if "win32" in sys.platform.lower():
 
 
 class GUI(QMainWindow):
+    DEFAULT_BAUDRATE = 3000000
+
     num = 0
     sig_scan = pyqtSignal(str, str, object)
     cl_file = False
@@ -64,6 +66,7 @@ class GUI(QMainWindow):
     advanced_process_data = {"use_data": False, "process_data": None}
     max_cl_sweeps = 10000
     creating_cl = False
+    baudrate = DEFAULT_BAUDRATE
 
     def __init__(self):
         super().__init__()
@@ -530,6 +533,26 @@ class GUI(QMainWindow):
         self.ports.clear()
         self.ports.addItems(ports)
 
+    def advanced_port(self):
+        input_dialog = QtWidgets.QInputDialog(self)
+        input_dialog.setInputMode(QtWidgets.QInputDialog.IntInput)
+        input_dialog.setFixedSize(400, 200)
+        input_dialog.setCancelButtonText("Default")
+        input_dialog.setIntRange(0, 3e6)
+        input_dialog.setIntValue(self.baudrate)
+        input_dialog.setOption(QtWidgets.QInputDialog.UsePlainTextEditForTextInput)
+        input_dialog.setWindowTitle("Set baudrate")
+        input_dialog.setLabelText(
+                "Default is {}, only change if using special hardware"
+                .format(self.DEFAULT_BAUDRATE)
+                )
+
+        if input_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            self.baudrate = int(input_dialog.intValue())
+        else:
+            self.baudrate = self.DEFAULT_BAUDRATE
+        input_dialog.deleteLater()
+
     def init_buttons(self):
         self.buttons = {
             "start":            QtWidgets.QPushButton("Start", self),
@@ -546,6 +569,7 @@ class GUI(QMainWindow):
             "advanced_defaults": QtWidgets.QPushButton("Defaults", self),
             "save_process_data": QtWidgets.QPushButton("Save process data", self),
             "load_process_data": QtWidgets.QPushButton("Load process data", self),
+            "advanced_port":    QtWidgets.QPushButton("Advanced port settings", self),
         }
 
         self.tbuttons = {
@@ -585,6 +609,7 @@ class GUI(QMainWindow):
                                   True, "advanced", False],
             "load_process_data": [lambda: self.handle_advanced_process_data("load"),
                                   True, "advanced", False],
+            "advanced_port": [self.advanced_port, True, "connection", False],
         }
 
         self.buttons["collapsible"] = {}
@@ -596,6 +621,7 @@ class GUI(QMainWindow):
         self.buttons["scan_ports"].hide()
         self.buttons["save_process_data"].hide()
         self.buttons["load_process_data"].hide()
+        self.buttons["advanced_port"].hide()
 
     def toggle_frames(self, button):
         checked = self.tbuttons[button].isChecked()
@@ -651,6 +677,7 @@ class GUI(QMainWindow):
         server_sublayout_grid.addWidget(self.textboxes["host"], self.num, 0, 1, 2)
         server_sublayout_grid.addWidget(self.buttons["scan_ports"], self.num, 1)
         server_sublayout_grid.addWidget(self.labels["empty_01"], self.num, 1)
+        server_sublayout_grid.addWidget(self.buttons["advanced_port"], self.increment(), 0, 1, 2)
         server_sublayout_grid.addWidget(self.buttons["connect"], self.increment(), 0, 1, 2)
 
         # Scan controls sublayout
@@ -890,20 +917,23 @@ class GUI(QMainWindow):
         if "serial" in self.interface.currentText().lower():
             self.ports.show()
             self.textboxes["host"].hide()
+            self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
             self.labels["empty_01"].hide()
         elif "spi" in self.interface.currentText().lower():
             self.ports.hide()
             self.textboxes["host"].hide()
+            self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
             self.labels["empty_01"].show()
         else:
             self.ports.hide()
             self.textboxes["host"].show()
-            self.buttons["scan_ports"].hide()
+            self.buttons["advanced_port"].hide()
             self.labels["empty_01"].hide()
 
         self.textboxes["collapsible"]["host"][2] = self.textboxes["host"].isVisible()
+        self.buttons["collapsible"]["advanced_port"][2] = self.buttons["advanced_port"].isVisible()
         self.buttons["collapsible"]["scan_ports"][2] = self.buttons["scan_ports"].isVisible()
         self.labels["collapsible"]["empty_01"][2] = self.labels["empty_01"].isVisible()
         self.dropdowns["collapsible"]["ports"][2] = self.ports.isVisible()
@@ -1043,7 +1073,9 @@ class GUI(QMainWindow):
                 if "scan" in port.lower():
                     self.error_message("Please select port first!")
                     return
-                self.client = RegClient(port)
+                if self.baudrate != self.DEFAULT_BAUDRATE:
+                    print("Warning: Using non-standard baudrate of {}!".format(self.baudrate))
+                self.client = RegClient(port, conf_baudrate=self.baudrate)
                 max_num = 1
 
             conf = self.update_sensor_config()
@@ -1071,12 +1103,14 @@ class GUI(QMainWindow):
 
             self.buttons["connect"].setText("Disconnect")
             self.buttons["connect"].setStyleSheet("QPushButton {color: red}")
+            self.buttons["advanced_port"].setEnabled(False)
         else:
             self.buttons["connect"].setText("Connect")
             self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
             self.sig_scan.emit("stop", "", None)
             self.buttons["start"].setEnabled(False)
             self.buttons["create_cl"].setEnabled(False)
+            self.buttons["advanced_port"].setEnabled(True)
             if self.cl_supported:
                 self.buttons["load_cl"].setEnabled(True)
 
@@ -1899,6 +1933,12 @@ class GUI(QMainWindow):
                                     str(labels[key]["box"]))
             except Exception as e:
                 print("Warning, could not restore service settings\n{}".format(e))
+            try:
+                if last_config.get("baudrate") is not None:
+                    self.baudrate = last_config["baudrate"]
+            except Exception:
+                print("Warning, could not restore baudrate for UART!")
+                raise
 
         try:
             self.textboxes["gain"].setText("{:.1f}".format(sensor_config.gain))
@@ -1941,6 +1981,7 @@ class GUI(QMainWindow):
                 "port": self.ports.currentIndex(),
                 "profile": self.profiles.currentIndex(),
                 "service_settings": service_params,
+                "baudrate": self.baudrate,
                 }
 
             np.save(self.last_file, last_config, allow_pickle=True)
