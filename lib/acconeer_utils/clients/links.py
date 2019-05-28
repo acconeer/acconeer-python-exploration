@@ -20,9 +20,11 @@ class LinkError(ClientError):
 
 
 class BaseLink(metaclass=ABCMeta):
+    DEFAULT_TIMEOUT = 3
+
     @abstractmethod
     def __init__(self):
-        self._timeout = 3
+        self._timeout = self.DEFAULT_TIMEOUT
 
     @abstractmethod
     def connect(self):
@@ -115,10 +117,12 @@ class SocketLink(BaseLink):
 
 
 class BaseSerialLink(BaseLink):
+    DEFAULT_TIMEOUT = 2
+
     def __init__(self, baudrate=115200):
         super().__init__()
-        self.baudrate = baudrate
-        self._timeout = 2
+        self._timeout = self.DEFAULT_TIMEOUT
+        self._baudrate = baudrate
 
 
 class SerialLink(BaseSerialLink):
@@ -130,7 +134,7 @@ class SerialLink(BaseSerialLink):
     def connect(self):
         self._ser = serial.Serial()
         self._ser.port = self._port
-        self._ser.baudrate = self.baudrate
+        self._ser.baudrate = self._baudrate
         self._ser.timeout = self._timeout
         self._ser.open()
 
@@ -159,11 +163,34 @@ class SerialLink(BaseSerialLink):
     def disconnect(self):
         self._ser.close()
 
+    @property
+    def baudrate(self):
+        return self._baudrate
+
+    @baudrate.setter
+    def baudrate(self, new_baudrate):
+        self._baudrate = new_baudrate
+
+        if self._ser is not None and self._ser.is_open:
+            self._ser.baudrate = new_baudrate
+
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, new_timeout):
+        self._timeout = new_timeout
+
+        if self._ser is not None and self._ser.is_open:
+            self._ser.timeout = new_timeout
+
 
 class SerialProcessLink(BaseSerialLink):
     def __init__(self, port=None):
         super().__init__()
         self._port = port
+        self._process = None
 
     def connect(self):
         self._recv_queue = mp.Queue()
@@ -173,7 +200,7 @@ class SerialProcessLink(BaseSerialLink):
 
         args = (
             self._port,
-            self.baudrate,
+            self._baudrate,
             self._recv_queue,
             self._send_queue,
             self._flow_event,
@@ -283,6 +310,26 @@ class SerialProcessLink(BaseSerialLink):
 
         self._buf.extend(data)
 
+    @property
+    def baudrate(self):
+        return self._baudrate
+
+    @baudrate.setter
+    def baudrate(self, new_baudrate):
+        self._baudrate = new_baudrate
+
+        if self._process is not None and self._process.exitcode is None:
+            log.debug("Changing baudrate to {}".format(new_baudrate))
+            self._send_queue.put(("baudrate", new_baudrate))
+
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, new_timeout):
+        self._timeout = new_timeout
+
 
 def serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
     log.debug("serial communication process started")
@@ -318,11 +365,16 @@ def _serial_process_program(port, baud, recv_q, send_q, flow_event, error_event)
         sent = False
         while True:
             try:
-                frame = send_q.get_nowait()
+                x = send_q.get_nowait()
             except queue.Empty:
                 break
-            ser.write(frame)
-            sent = True
+
+            if isinstance(x, tuple):
+                _, val = x  # assume its a baudrate change
+                ser.baudrate = val
+            else:
+                ser.write(x)
+                sent = True
 
         if not sent:
             sleep(0.0025)

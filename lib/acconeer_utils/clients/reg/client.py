@@ -21,6 +21,7 @@ SPI_MAIN_CTRL_SLEEP = 0.3
 class RegClient(BaseClient):
     DEFAULT_BASE_BAUDRATE = 115200
     DEFAULT_CONF_BAUDRATE = 3000000
+    CONNECT_ROUTINE_TIMEOUT = 0.6
 
     def __init__(self, port, **kwargs):
         super().__init__(**kwargs)
@@ -43,6 +44,8 @@ class RegClient(BaseClient):
         self._link.baudrate = init_baudrate
         self._link.connect()
         log.debug("port opened at {} baud".format(init_baudrate))
+        old_timeout = self._link.timeout
+        self._link.timeout = self.CONNECT_ROUTINE_TIMEOUT
 
         if use_dual_baudrate:
             success = False
@@ -55,9 +58,7 @@ class RegClient(BaseClient):
                 success = True
 
             if not success:
-                self._link.disconnect()
                 self._link.baudrate = self.base_baudrate
-                self._link.connect()
 
                 try:
                     self._handshake()
@@ -68,9 +69,7 @@ class RegClient(BaseClient):
                          .format(self.conf_baudrate))
 
                 self._write_reg("uart_baudrate", self.conf_baudrate)
-                self._link.disconnect()
                 self._link.baudrate = self.conf_baudrate
-                self._link.connect()
                 self._handshake()
 
                 log.info("successfully connected at {} baud!".format(self.conf_baudrate))
@@ -85,6 +84,8 @@ class RegClient(BaseClient):
             log.warn("server version is not supported (too old)")
         elif ver != protocol.DEV_VERSION:
             log.warn("server version might not be fully supported")
+
+        self._link.timeout = old_timeout
 
     def _setup_session(self, config):
         if len(config.sensor) > 1:
