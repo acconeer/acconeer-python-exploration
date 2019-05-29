@@ -302,6 +302,7 @@ class RegSPIClient(BaseClient):
         self._mode = protocol.NO_MODE
         self._proc = None
         self._num_subsweeps = None
+        self._experimental_stitching = None
 
     def _connect(self):
         self._cmd_queue = mp.Queue()
@@ -336,6 +337,7 @@ class RegSPIClient(BaseClient):
         mode = protocol.get_mode(config.mode)
         self._mode = mode
 
+        self._experimental_stitching = bool(config.experimental_stitching)
         sweep_rate = None if config.experimental_stitching else config.sweep_rate
         self.__cmd_proc("set_mode_and_rate", mode, sweep_rate)
 
@@ -397,14 +399,15 @@ class RegSPIClient(BaseClient):
 
         data = protocol.decode_output_buffer(buffer, self._mode, self._num_subsweeps)
 
-        cur_seq_num = info.get("sequence_number")
-        if cur_seq_num:
-            if self._seq_num:
-                if cur_seq_num > self._seq_num + 1:
-                    log.info("missed sweep")
-                if cur_seq_num <= self._seq_num:
-                    log.info("got same sweep twice")
-            self._seq_num = cur_seq_num
+        if not self._experimental_stitching:
+            cur_seq_num = info.get("sequence_number")
+            if cur_seq_num:
+                if self._seq_num:
+                    if cur_seq_num > self._seq_num + 1:
+                        log.info("missed sweep")
+                    if cur_seq_num <= self._seq_num:
+                        log.info("got same sweep twice")
+                self._seq_num = cur_seq_num
 
         if self.squeeze:
             return info, data
