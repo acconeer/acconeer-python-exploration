@@ -13,9 +13,9 @@ PySerial has a simple tool for listing all ports available::
 Flashing
 --------
 
-For detailed flashing instructions, head over to the `Acconeer website <https://www.acconeer.com/products>`_.
+For detailed flashing instructions, see section 2 in the `module software user guide <https://developer.acconeer.com/download/xm112-module-software-user-guide-pdf/>`_.
 
-We recommend flashing using BOSSA (`website <http://www.shumatech.com/web/products/bossa>`_, `GitHub <https://github.com/shumatech/BOSSA>`_). BOSSA 1.9 or newer is supported.
+We recommend flashing using BOSSA (`website <http://www.shumatech.com/web/products/bossa>`_, `GitHub <https://github.com/shumatech/BOSSA>`_). **BOSSA 1.9 or newer is supported**.
 
 To get into the bootloader:
 
