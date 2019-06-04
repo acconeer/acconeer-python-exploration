@@ -93,13 +93,18 @@ class PresenceDetectionSparseProcessor:
         self.a_fast_tau = 1.0 / (upper_speed_limit / 2.5)
         self.a_slow_tau = 1.0
         self.a_move_tau = 1.0
-        self.a_fast = self.alpha(self.a_fast_tau, 1.0 / (f * num_subsweeps))
-        self.a_slow = self.alpha(self.a_slow_tau, 1.0 / (f * num_subsweeps))
+        self.static_a_fast = self.alpha(self.a_fast_tau, 1.0 / (f * num_subsweeps))
+        self.static_a_slow = self.alpha(self.a_slow_tau, 1.0 / (f * num_subsweeps))
         self.a_move = self.alpha(self.a_move_tau, 1.0 / (f * num_subsweeps))
 
         self.sweep_lp_fast = None
         self.sweep_lp_slow = None
+        self.subsweep_index = 0
         self.movement_lp = 0
+
+    def dynamic_filter_coefficient(self, static_alpha):
+        dynamic_alpha = 1.0 - 1.0 / (1 + self.subsweep_index)
+        return min(static_alpha, dynamic_alpha)
 
     def process(self, sweep):
         for subsweep in sweep:
@@ -107,12 +112,17 @@ class PresenceDetectionSparseProcessor:
                 self.sweep_lp_fast = subsweep.copy()
                 self.sweep_lp_slow = subsweep.copy()
             else:
-                self.sweep_lp_fast = self.sweep_lp_fast * self.a_fast + subsweep * (1-self.a_fast)
-                self.sweep_lp_slow = self.sweep_lp_slow * self.a_slow + subsweep * (1-self.a_slow)
+                a_fast = self.dynamic_filter_coefficient(self.static_a_fast)
+                self.sweep_lp_fast = self.sweep_lp_fast * a_fast + subsweep * (1-a_fast)
+
+                a_slow = self.dynamic_filter_coefficient(self.static_a_slow)
+                self.sweep_lp_slow = self.sweep_lp_slow * a_slow + subsweep * (1-a_slow)
 
                 movement = np.mean(np.abs(self.sweep_lp_fast - self.sweep_lp_slow))
                 movement *= 0.01
                 self.movement_lp = self.movement_lp*self.a_move + movement*(1-self.a_move)
+
+            self.subsweep_index += 1
 
         self.movement_history = np.roll(self.movement_history, -1)
         self.movement_history[-1] = self.movement_lp
