@@ -1873,7 +1873,8 @@ class GUI(QMainWindow):
 
         if self.creating_cl:
             clutter_sweeps = min(self.max_cl_sweeps, self.sweep_buffer)
-            clutter_status = "Scanning background sweep {:d} of {:d}".format(self.sweep_number,
+            sweeps = self.sweep_number - self.sweeps_skipped
+            clutter_status = "Scanning background sweep {:d} of {:d}".format(sweeps,
                                                                              clutter_sweeps)
             self.labels["clutter_status"].setText(clutter_status)
 
