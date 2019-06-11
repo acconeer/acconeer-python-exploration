@@ -26,6 +26,7 @@ def main():
     config.range_interval = [0.2, 0.6]
     config.sweep_rate = 30
     config.gain = 0.6
+    config.sampling_mode = config.SAMPLING_MODE_A
     # config.running_average_factor = 0.5
 
     info = client.setup_session(config)

@@ -375,6 +375,16 @@ REGS = [
         None,
     ),
     Reg(
+        "sampling_mode",
+        "iq",
+        66,
+        "rw",
+        "u",
+        None,
+        None,
+        "sampling_mode",
+    ),
+    Reg(
         "data_length",
         "iq",
         131,

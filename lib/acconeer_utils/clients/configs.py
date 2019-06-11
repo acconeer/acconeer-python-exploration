@@ -190,9 +190,25 @@ class EnvelopeServiceConfig(BaseDenseServiceConfig):
 
 
 class IQServiceConfig(BaseDenseServiceConfig):
+    SAMPLING_MODE_A = 0
+    SAMPLING_MODE_B = 1
+    SAMPLING_MODES = [SAMPLING_MODE_A, SAMPLING_MODE_B]
+
+    _sampling_mode = SAMPLING_MODE_A
+
     @property
     def mode(self):
         return "iq"
+
+    @property
+    def sampling_mode(self):
+        return self._sampling_mode
+
+    @sampling_mode.setter
+    def sampling_mode(self, sampling_mode):
+        if sampling_mode not in self.SAMPLING_MODES:
+            raise ValueError("invalid sampling mode")
+        self._sampling_mode = sampling_mode
 
 
 class SparseServiceConfig(BaseServiceConfig):

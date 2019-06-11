@@ -21,6 +21,7 @@ KEY_AND_CONFIG_ATTR_PAIRS = [
     KeyConfigAttrPair("profile", "session_profile", False),
     KeyConfigAttrPair("enable_stitching", "experimental_stitching", False),
     KeyConfigAttrPair("sweeps_per_result", "number_of_subsweeps", False),
+    KeyConfigAttrPair("sampling_mode", "sampling_mode", False),
 ]
 
 MODE_TO_CMD_MAP = {
