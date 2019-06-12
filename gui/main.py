@@ -11,9 +11,9 @@ import threading
 import copy
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
-                             QCheckBox, QFrame)
-from PyQt5.QtGui import QPixmap, QFont, QIcon, QPainter
-from PyQt5.QtCore import pyqtSignal, QPoint
+                             QCheckBox, QFrame, QPushButton)
+from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore, QtWidgets
 
 from matplotlib.colors import LinearSegmentedColormap
@@ -27,6 +27,7 @@ from acconeer_utils import example_utils
 
 sys.path.append("")  # noqa: E402
 import data_processing
+from helper import Label, CollapsibleSection
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../examples/processing"))  # noqa: E402
 import presence_detection_iq as prd
@@ -78,21 +79,21 @@ class GUI(QMainWindow):
         self.init_dropdowns()
         self.init_checkboxes()
         self.init_sublayouts()
+        self.init_panel_scroll_area()
+        self.init_statusbar()
 
         self.main_widget = QWidget()
         self.main_layout = QtWidgets.QGridLayout(self.main_widget)
-        self.main_layout.sizeConstraint = QtWidgets.QLayout.SetDefaultConstraint
-
-        self.main_layout.addLayout(self.panel_sublayout, 0, 1)
-        self.main_layout.setColumnStretch(0, 1)
 
         self.canvas = self.init_graphs()
+        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.main_layout.addWidget(self.canvas, 0, 0)
+        self.main_layout.addWidget(self.panel_scroll_area, 0, 1)
 
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
 
-        self.setGeometry(50, 50, 1200, 700)
+        self.setGeometry(50, 50, 1200, 800)
         self.setWindowTitle("Acconeer Exploration GUI")
         self.show()
         self.start_up()
@@ -100,34 +101,31 @@ class GUI(QMainWindow):
         self.radar = data_processing.DataProcessing()
 
     def init_labels(self):
-        # Text, group, collapsible
-        text = {
-            "advanced_params":  ["Advanced processing settings:", "advanced", False],
-            "sensor":           ["Sensor", "sensor", True],
-            "gain":             ["Gain", "sensor", True],
-            "frequency":        ["Sweep frequency", "sensor", True],
-            "sweeps":           ["Number of sweeps", "sensor", True],
-            "sweep_buffer":     ["Sweep buffer", "scan", True],
-            "start_range":      ["Start (m)", "sensor", True],
-            "end_range":        ["Stop (m)", "sensor", True],
-            "clutter":          ["Background settings", "scan", True],
-            "clutter_status":   ["", "scan", True],
-            "interface":        ["Interface", "connection", True],
-            "power_bins":       ["Power bins", "sensor", False],
-            "subsweeps":        ["Subsweeps", "sensor", False],
-            "sweep_info":       ["Sweeps: 0 (skipped 0)", "debug", False],
-            "saturated":        ["Warning: Data saturated, reduce gain!", "debug", False],
-            "stitching":        ["Experimental stitching enabled!", "sensor", False],
-            "empty_01":         ["", "connection", True],
-            "empty_02":         ["", "scan", True],
+        # key: text, group
+        label_info = {
+            "sensor": ("Sensor", "sensor"),
+            "gain": ("Gain", "sensor"),
+            "frequency": ("Sweep frequency", "sensor"),
+            "sweeps": ("Number of sweeps", "sensor"),
+            "sweep_buffer": ("Sweep buffer", "scan"),
+            "start_range": ("Start (m)", "sensor"),
+            "end_range": ("Stop (m)", "sensor"),
+            "clutter": ("Background settings", "scan"),
+            "clutter_status": ("", "scan"),
+            "interface": ("Interface", "connection"),
+            "power_bins": ("Power bins", "sensor"),
+            "subsweeps": ("Subsweeps", "sensor"),
+            "sweep_info": ("", "statusbar"),
+            "saturated": ("Warning: Data saturated, reduce gain!", "statusbar"),
+            "stitching": ("Experimental stitching enabled!", "sensor"),
+            "empty_02": ("", "scan"),
         }
 
         self.labels = {}
-        for key in text:
-            self.labels[key] = QLabel(self)
-        for key, val in self.labels.items():
-            val.setText(text[key][0])
-        self.labels["collapsible"] = text
+        for key, (text, _) in label_info.items():
+            lbl = QLabel(self)
+            lbl.setText(text)
+            self.labels[key] = lbl
 
         self.labels["power_bins"].setVisible(False)
         self.labels["subsweeps"].setVisible(False)
@@ -136,58 +134,51 @@ class GUI(QMainWindow):
         self.labels["stitching"].setStyleSheet("color: red")
         self.labels["clutter_status"].setStyleSheet("color: red")
         self.labels["clutter_status"].setVisible(False)
-
-        self.labels["advanced_params"].setStyleSheet("text-decoration: underline")
+        self.labels["empty_02"].hide()
 
     def init_textboxes(self):
-        # Text, group, collapsible
-        text = {
-            "sensor":       ["1", "sensor", True],
-            "host":         ["192.168.1.100", "connection", True],
-            "frequency":    ["10", "sensor", True],
-            "sweeps":       ["-1", "sensor", True],
-            "gain":         ["0.4", "sensor", True],
-            "start_range":  ["0.18", "sensor", True],
-            "end_range":    ["0.72", "sensor", True],
-            "sweep_buffer": ["100", "scan", True],
-            "power_bins":   ["6", "sensor", False],
-            "subsweeps":    ["16", "sensor", False],
+        # key: text, group
+        textbox_info = {
+            "sensor": ("1", "sensor"),
+            "host": ("192.168.1.100", "connection"),
+            "frequency": ("10", "sensor"),
+            "sweeps": ("-1", "sensor"),
+            "gain": ("0.4", "sensor"),
+            "start_range": ("0.18", "sensor"),
+            "end_range": ("0.72", "sensor"),
+            "sweep_buffer": ("100", "scan"),
+            "power_bins": ("6", "sensor"),
+            "subsweeps": ("16", "sensor"),
         }
+
         self.textboxes = {}
-        for key in text:
+        for key, (text, _) in textbox_info.items():
             self.textboxes[key] = QLineEdit(self)
-            self.textboxes[key].setText(text[key][0])
+            self.textboxes[key].setText(text)
             self.textboxes[key].editingFinished.connect(
-                lambda: self.check_values(self.mode_to_config[self.mode.currentText()][0].mode))
-        self.textboxes["collapsible"] = text
+                lambda: self.check_values(self.mode_to_config[self.mode.currentText()][0].mode)
+            )
 
         self.textboxes["power_bins"].setVisible(False)
         self.textboxes["subsweeps"].setVisible(False)
 
     def init_checkboxes(self):
-        check = {
-            "clutter_file": "",
-            "verbose": "Enable verbose",
-            "opengl": "Use OpenGL",
-            "show_advanced": "Show advanced settings",
-        }
-
-        # Status, Visible, Enabled, Function
-        check_init = {
-            "clutter_file": [False, False, True, self.update_scan],
-            "verbose": [False, True, True, self.set_log_level],
-            "opengl": [False, True, True, self.enable_opengl],
-            "show_advanced": [False, False, True, self.show_advanced],
+        # text, status, visible, enabled, function
+        checkbox_info = {
+            "clutter_file": ("", False, False, True, self.update_scan),
+            "verbose": ("Verbose logging", False, True, True, self.set_log_level),
+            "opengl": ("OpenGL", False, True, True, self.enable_opengl),
         }
 
         self.checkboxes = {}
-        for key in check:
-            self.checkboxes[key] = QCheckBox(check[key], self)
-            self.checkboxes[key].setChecked(check_init[key][0])
-            self.checkboxes[key].setVisible(check_init[key][1])
-            self.checkboxes[key].setEnabled(check_init[key][2])
-            if check_init[key][3]:
-                self.checkboxes[key].stateChanged.connect(check_init[key][3])
+        for key, (text, status, visible, enabled, fun) in checkbox_info.items():
+            cb = QCheckBox(text, self)
+            cb.setChecked(status)
+            cb.setVisible(visible)
+            cb.setEnabled(enabled)
+            if fun:
+                cb.stateChanged.connect(fun)
+            self.checkboxes[key] = cb
 
     def init_graphs(self, mode="Select service", refresh=False):
         self.service_props = {
@@ -221,7 +212,6 @@ class GUI(QMainWindow):
         self.textboxes["power_bins"].setVisible(False)
         self.labels["power_bins"].setVisible(False)
         self.profiles.setVisible(False)
-        self.dropdowns["collapsible"]["profiles"][2] = False
 
         self.cl_supported = False
         if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
@@ -262,7 +252,7 @@ class GUI(QMainWindow):
         if not processing_config:
             self.service_params = None
             self.service_defaults = None
-            self.serviceFrame.hide()
+            self.service_section.hide()
         else:
             if not refresh:
                 self.service_params = None
@@ -274,9 +264,9 @@ class GUI(QMainWindow):
                     pass
                 self.add_params(self.service_params)
             if self.service_params:
-                self.serviceFrame.show()
+                self.service_section.show()
             else:
-                self.serviceFrame.hide()
+                self.service_section.hide()
 
         if self.external:
             self.service_widget = self.service_props[mode][0].PGUpdater(
@@ -370,7 +360,6 @@ class GUI(QMainWindow):
                 canvas.nextRow()
             else:
                 self.profiles.setVisible(True)
-                self.dropdowns["collapsible"]["profiles"][2] = True
 
         if mode.lower() in ["iq", "envelope", "sparse"]:
             row = 1
@@ -406,62 +395,43 @@ class GUI(QMainWindow):
         return canvas
 
     def init_dropdowns(self):
+        # text, mode, config, external
+        mode_info = [
+            ("Select service", "", configs.EnvelopeServiceConfig(), ""),
+            ("IQ", "iq_data", configs.IQServiceConfig(), "internal"),
+            ("Envelope", "envelope_data", configs.EnvelopeServiceConfig(), "internal"),
+            ("Power bin", "power_bin", configs.PowerBinServiceConfig(), "internal_power"),
+            ("Sparse", "sparse_data", configs.SparseServiceConfig(), "internal_sparse"),
+            ("Breathing", "iq_data", br.get_sensor_config(), "external"),
+            ("Phase tracking", "iq_data", pht.get_sensor_config(), "external"),
+            ("Presence detection (IQ)", "iq_data", prd.get_sensor_config(), "external"),
+            ("Presence detection (sparse)", "sparse_data", psd.get_sensor_config(), "external"),
+            ("Sleep breathing", "iq_data", sb.get_sensor_config(), "external"),
+            ("Obstacle detection", "iq_data", od.get_sensor_config(), "external"),
+        ]
+
+        self.mode_to_param = {text: mode for text, mode, *_ in mode_info}
+        self.mode_to_config = {text: [config, ext] for text, _, config, ext in mode_info}
+
         self.mode = QComboBox(self)
-        self.mode.addItem("Select service")
-        self.mode.addItem("IQ")
-        self.mode.addItem("Envelope")
-        self.mode.addItem("Power bin")
-        self.mode.addItem("Sparse")
-        self.mode.addItem("Phase tracking")
-        self.mode.addItem("Presence detection (IQ)")
-        self.mode.addItem("Presence detection (sparse)")
-        self.mode.addItem("Breathing")
-        self.mode.addItem("Sleep breathing")
-        self.mode.addItem("Obstacle detection")
         self.mode.move(50, 250)
 
-        self.mode_to_param = {
-            "Select service": "",
-            "IQ": "iq_data",
-            "Envelope": "envelope_data",
-            "Power bin": "power_bin",
-            "Sparse": "sparse_data",
-            "Breathing": "iq_data",
-            "Phase tracking": "iq_data",
-            "Presence detection (IQ)": "iq_data",
-            "Presence detection (sparse)": "sparse_data",
-            "Sleep breathing": "iq_data",
-            "Obstacle detection": "iq_data",
-        }
-
-        self.mode_to_config = {
-            "Select service": [configs.EnvelopeServiceConfig(), ""],
-            "IQ": [configs.IQServiceConfig(), "internal"],
-            "Envelope": [configs.EnvelopeServiceConfig(), "internal"],
-            "Sparse": [configs.SparseServiceConfig(), "internal_sparse"],
-            "Power bin": [configs.PowerBinServiceConfig(), "internal_power"],
-            "Breathing": [br.get_sensor_config(), "external"],
-            "Phase tracking": [pht.get_sensor_config(), "external"],
-            "Presence detection (IQ)": [prd.get_sensor_config(), "external"],
-            "Presence detection (sparse)": [psd.get_sensor_config(), "external"],
-            "Sleep breathing": [sb.get_sensor_config(), "external"],
-            "Obstacle detection": [od.get_sensor_config(), "external"]
-        }
         self.conf_defaults = {}
-        for service in self.mode_to_config:
-            if "Select" not in service:
-                self.conf_defaults[service] = {}
-                conf = self.mode_to_config[service][0]
-                if "external" in self.mode_to_config[service][1]:
-                    self.conf_defaults[service]["gain"] = conf.gain
-                    self.conf_defaults[service]["start_range"] = conf.range_interval[0]
-                    self.conf_defaults[service]["end_range"] = conf.range_interval[1]
-                    self.conf_defaults[service]["frequency"] = conf.sweep_rate
+        for text, mode, config, ext in mode_info:
+            self.mode.addItem(text)
+
+            if mode:
+                self.conf_defaults[text] = {}
+                if "external" in ext:
+                    self.conf_defaults[text]["gain"] = config.gain
+                    self.conf_defaults[text]["start_range"] = config.range_interval[0]
+                    self.conf_defaults[text]["end_range"] = config.range_interval[1]
+                    self.conf_defaults[text]["frequency"] = config.sweep_rate
                 else:
-                    self.conf_defaults[service]["start_range"] = 0.18
-                    self.conf_defaults[service]["end_range"] = 0.60
-                    self.conf_defaults[service]["gain"] = 0.7
-                    self.conf_defaults[service]["frequency"] = 60
+                    self.conf_defaults[text]["start_range"] = 0.18
+                    self.conf_defaults[text]["end_range"] = 0.60
+                    self.conf_defaults[text]["gain"] = 0.7
+                    self.conf_defaults[text]["frequency"] = 60
 
         self.mode.currentIndexChanged.connect(self.update_canvas)
 
@@ -480,14 +450,6 @@ class GUI(QMainWindow):
         self.profiles.addItem("Max depth resolution")
         self.profiles.addItem("Direct leakage")
         self.profiles.currentIndexChanged.connect(self.set_profile)
-
-        self.dropdowns = {}
-        self.dropdowns["collapsible"] = {
-            "profiles": [self.profiles, "sensor", True],
-            "interface": [self.interface, "connection", True],
-            "mode": [self.mode, "scan", True],
-            "ports": [self.ports, "connection", False],
-        }
 
     def enable_opengl(self):
         if self.checkboxes["opengl"].isChecked():
@@ -554,231 +516,166 @@ class GUI(QMainWindow):
         input_dialog.deleteLater()
 
     def init_buttons(self):
-        self.buttons = {
-            "start":            QtWidgets.QPushButton("Start", self),
-            "connect":          QtWidgets.QPushButton("Connect", self),
-            "stop":             QtWidgets.QPushButton("Stop", self),
-            "create_cl":        QtWidgets.QPushButton("Scan Background", self),
-            "load_cl":          QtWidgets.QPushButton("Load Background", self),
-            "load_scan":        QtWidgets.QPushButton("Load Scan", self),
-            "save_scan":        QtWidgets.QPushButton("Save Scan", self),
-            "replay_buffered":  QtWidgets.QPushButton("Replay buffered/loaded", self),
-            "scan_ports":       QtWidgets.QPushButton("Scan ports", self),
-            "sensor_defaults":  QtWidgets.QPushButton("Defaults", self),
-            "service_defaults": QtWidgets.QPushButton("Defaults", self),
-            "advanced_defaults": QtWidgets.QPushButton("Defaults", self),
-            "save_process_data": QtWidgets.QPushButton("Save process data", self),
-            "load_process_data": QtWidgets.QPushButton("Load process data", self),
-            "advanced_port":    QtWidgets.QPushButton("Advanced port settings", self),
+        # key: text, function, enabled, hidden, group
+        button_info = {
+            "start": ("Start", self.start_scan, False, False, "scan"),
+            "connect": ("Connect", self.connect_to_server, True, False, "connection"),
+            "stop": ("Stop", self.stop_scan, False, False, "scan"),
+            "create_cl": (
+                "Scan Background",
+                lambda: self.start_scan(create_cl=True),
+                False,
+                False,
+                "scan",
+            ),
+            "load_cl": ("Load Background", self.load_clutter_file, False, False, "scan"),
+            "load_scan": ("Load Scan", lambda: self.load_scan(), True, False, "scan"),
+            "save_scan": ("Save Scan", lambda: self.save_scan(self.data), False, False, "scan"),
+            "replay_buffered": (
+                "Replay buffered/loaded",
+                lambda: self.load_scan(restart=True),
+                False,
+                False,
+                "scan",
+            ),
+            "scan_ports": ("Scan ports", self.update_ports, True, True, "connection"),
+            "sensor_defaults": ("Defaults", self.sensor_defaults, False, False, "sensor"),
+            "service_defaults": ("Defaults", self.service_defaults, True, False, "service"),
+            "advanced_defaults": ("Defaults", self.service_defaults, True, False, "advanced"),
+            "save_process_data": (
+                "Save process data",
+                lambda: self.handle_advanced_process_data("save"),
+                True,
+                True,
+                "advanced",
+            ),
+            "load_process_data": (
+                "Load process data",
+                lambda: self.handle_advanced_process_data("load"),
+                True,
+                True,
+                "advanced",
+            ),
+            "advanced_port": (
+                "Advanced port settings",
+                self.advanced_port,
+                True,
+                True,
+                "connection",
+            ),
         }
 
-        self.tbuttons = {
-            "connection": QtWidgets.QToolButton(text="Connection settings", checkable=True,
-                                                checked=False),
-            "scan": QtWidgets.QToolButton(text="Scan controls", checkable=True, checked=False),
-            "sensor": QtWidgets.QToolButton(text="Sensor settings", checkable=True, checked=False),
-            "service": QtWidgets.QToolButton(text="Processing Settings", checkable=True,
-                                             checked=False),
-        }
-
-        for button in self.tbuttons:
-            self.tbuttons[button].setStyleSheet("QToolButton { border: none; }")
-            self.tbuttons[button].setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
-            self.tbuttons[button].setArrowType(QtCore.Qt.ArrowType.DownArrow)
-
-        self.tbuttons["connection"].pressed.connect(lambda: self.toggle_frames("connection"))
-        self.tbuttons["scan"].pressed.connect(lambda: self.toggle_frames("scan"))
-        self.tbuttons["sensor"].pressed.connect(lambda: self.toggle_frames("sensor"))
-        self.tbuttons["service"].pressed.connect(lambda: self.toggle_frames("service"))
-
-        # Function, enabled, group, collapsible
-        button_properties = {
-            "start": [self.start_scan, False, "scan", True],
-            "connect": [self.connect_to_server, True, "connection", True],
-            "stop": [self.stop_scan, False, "scan", True],
-            "create_cl": [lambda: self.start_scan(create_cl=True), False, "scan", True],
-            "load_cl": [self.load_clutter_file, False, "scan", True],
-            "load_scan": [lambda: self.load_scan(), True, "scan", True],
-            "replay_buffered": [lambda: self.load_scan(restart=True), False, "scan", True],
-            "save_scan": [lambda: self.save_scan(self.data), False, "scan", True],
-            "scan_ports": [self.update_ports, True, "connection", False],
-            "sensor_defaults": [self.sensor_defaults, False, "sensor", False],
-            "service_defaults": [self.service_defaults, True, "service", False],
-            "advanced_defaults": [self.service_defaults, True, "advanced", False],
-            "save_process_data": [lambda: self.handle_advanced_process_data("save"),
-                                  True, "advanced", False],
-            "load_process_data": [lambda: self.handle_advanced_process_data("load"),
-                                  True, "advanced", False],
-            "advanced_port": [self.advanced_port, True, "connection", False],
-        }
-
-        self.buttons["collapsible"] = {}
-        for key in button_properties:
-            self.buttons[key].clicked.connect(button_properties[key][0])
-            self.buttons[key].setEnabled(button_properties[key][1])
-            self.buttons["collapsible"][key] = button_properties[key][1:]
-
-        self.buttons["scan_ports"].hide()
-        self.buttons["save_process_data"].hide()
-        self.buttons["load_process_data"].hide()
-        self.buttons["advanced_port"].hide()
-
-    def toggle_frames(self, button):
-        checked = self.tbuttons[button].isChecked()
-        arrow = QtCore.Qt.ArrowType.RightArrow
-        if checked:
-            arrow = QtCore.Qt.ArrowType.DownArrow
-
-        self.toggle_animation = QtCore.QParallelAnimationGroup(self)
-        self.tbuttons[button].setArrowType(arrow)
-
-        collapsibles = {
-            "labels": self.labels,
-            "buttons": self.buttons,
-            "textboxes": self.textboxes,
-            "dropdowns": self.dropdowns,
-        }
-
-        mode = self.mode.currentText()
-        if mode in self.service_labels:
-            collapsibles["service_params"] = self.service_labels[mode]
-
-        for item in collapsibles:
-            for i in collapsibles[item]["collapsible"]:
-                group = collapsibles[item]["collapsible"][i][1]
-                collapsible = collapsibles[item]["collapsible"][i][2]
-                if collapsible and (group == button):
-                    if item in ["dropdowns", "service_params"]:
-                        collapse = collapsibles[item]["collapsible"][i][0]
-                    else:
-                        collapse = collapsibles[item][i]
-                    if not checked:
-                        collapse.hide()
-                    else:
-                        collapse.show()
+        self.buttons = {}
+        for key, (text, fun, enabled, hidden, _) in button_info.items():
+            btn = QPushButton(text, self)
+            btn.clicked.connect(fun)
+            btn.setEnabled(enabled)
+            btn.setHidden(hidden)
+            btn.setMinimumWidth(150)
+            self.buttons[key] = btn
 
     def init_sublayouts(self):
-        minimum_width = 300
-        # Panel sublayout
-        self.panel_sublayout = QtWidgets.QHBoxLayout()
-        panel_sublayout_inner = QtWidgets.QVBoxLayout()
-        advanced_sublayout_inner = QtWidgets.QVBoxLayout()
+        self.panel_sublayout = QtWidgets.QVBoxLayout()
 
-        # Server sublayout
-        serverFrame = QFrame(self)
-        serverFrame.setFrameShape(QFrame.StyledPanel)
-        serverFrame.setMinimumWidth(minimum_width)
-        self.num = 0
-        server_sublayout_grid = QtWidgets.QGridLayout(serverFrame)
-        server_sublayout_grid.addWidget(self.tbuttons["connection"], self.num, 0)
-        server_sublayout_grid.addWidget(self.labels["interface"], self.increment(), 0)
-        server_sublayout_grid.addWidget(self.interface, self.num, 1)
-        server_sublayout_grid.addWidget(self.ports, self.increment(), 0)
-        server_sublayout_grid.addWidget(self.textboxes["host"], self.num, 0, 1, 2)
-        server_sublayout_grid.addWidget(self.buttons["scan_ports"], self.num, 1)
-        server_sublayout_grid.addWidget(self.labels["empty_01"], self.num, 1)
-        server_sublayout_grid.addWidget(self.buttons["advanced_port"], self.increment(), 0, 1, 2)
-        server_sublayout_grid.addWidget(self.buttons["connect"], self.increment(), 0, 1, 2)
+        server_section = CollapsibleSection("Connection")
+        self.panel_sublayout.addWidget(server_section)
+        server_section.grid.addWidget(self.labels["interface"], 0, 0)
+        server_section.grid.addWidget(self.interface, 0, 1)
+        server_section.grid.addWidget(self.ports, 1, 0)
+        server_section.grid.addWidget(self.textboxes["host"], 1, 0, 1, 2)
+        server_section.grid.addWidget(self.buttons["scan_ports"], 1, 1)
+        server_section.grid.addWidget(self.buttons["advanced_port"], 2, 0, 1, 2)
+        server_section.grid.addWidget(self.buttons["connect"], 3, 0, 1, 2)
 
-        # Scan controls sublayout
-        controlFrame = QFrame(self)
-        controlFrame.setFrameShape(QFrame.StyledPanel)
-        controlFrame.setMinimumWidth(minimum_width)
+        control_section = CollapsibleSection("Scan controls")
+        self.panel_sublayout.addWidget(control_section)
         self.num = 0
-        control_sublayout_grid = QtWidgets.QGridLayout(controlFrame)
-        control_sublayout_grid.addWidget(self.tbuttons["scan"], self.num, 0)
-        control_sublayout_grid.addWidget(self.mode, self.increment(), 0, 1, 2)
-        control_sublayout_grid.addWidget(self.buttons["start"], self.increment(), 0)
-        control_sublayout_grid.addWidget(self.buttons["stop"], self.num, 1)
-        control_sublayout_grid.addWidget(self.buttons["save_scan"], self.increment(), 0)
-        control_sublayout_grid.addWidget(self.buttons["load_scan"], self.num, 1)
-        control_sublayout_grid.addWidget(
+        control_section.grid.addWidget(self.mode, self.increment(), 0, 1, 2)
+        control_section.grid.addWidget(self.buttons["start"], self.increment(), 0)
+        control_section.grid.addWidget(self.buttons["stop"], self.num, 1)
+        control_section.grid.addWidget(self.buttons["save_scan"], self.increment(), 0)
+        control_section.grid.addWidget(self.buttons["load_scan"], self.num, 1)
+        control_section.grid.addWidget(
             self.buttons["replay_buffered"], self.increment(), 0, 1, 2)
-        control_sublayout_grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
-        control_sublayout_grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
-        control_sublayout_grid.addWidget(self.labels["empty_02"], self.increment(), 0)
-        control_sublayout_grid.addWidget(self.labels["clutter_status"], self.increment(), 0, 1, 2)
-        control_sublayout_grid.addWidget(self.labels["clutter"], self.increment(), 0)
-        control_sublayout_grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
-        control_sublayout_grid.addWidget(self.buttons["load_cl"], self.num, 1)
-        control_sublayout_grid.addWidget(
+        control_section.grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
+        control_section.grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
+        control_section.grid.addWidget(self.labels["empty_02"], self.increment(), 0)
+        control_section.grid.addWidget(self.labels["clutter_status"], self.increment(), 0, 1, 2)
+        control_section.grid.addWidget(self.labels["clutter"], self.increment(), 0)
+        control_section.grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
+        control_section.grid.addWidget(self.buttons["load_cl"], self.num, 1)
+        control_section.grid.addWidget(
             self.checkboxes["clutter_file"], self.increment(), 0, 1, 2)
 
-        # Settings sublayout
-        self.settingsFrame = QFrame(self)
-        self.settingsFrame.setFrameShape(QFrame.StyledPanel)
-        self.settingsFrame.setMinimumWidth(minimum_width)
+        self.settings_section = CollapsibleSection("Sensor settings")
+        self.panel_sublayout.addWidget(self.settings_section)
         self.num = 0
-        settings_sublayout_grid = QtWidgets.QGridLayout(self.settingsFrame)
-        settings_sublayout_grid.addWidget(self.tbuttons["sensor"], self.num, 0)
-        settings_sublayout_grid.addWidget(self.buttons["sensor_defaults"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.labels["sensor"], self.increment(), 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sensor"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.labels["start_range"], self.increment(), 0)
-        settings_sublayout_grid.addWidget(self.labels["end_range"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.textboxes["start_range"], self.increment(), 0)
-        settings_sublayout_grid.addWidget(self.textboxes["end_range"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.labels["frequency"], self.increment(), 0)
-        settings_sublayout_grid.addWidget(self.textboxes["frequency"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.labels["gain"], self.increment(), 0)
-        settings_sublayout_grid.addWidget(self.textboxes["gain"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.labels["sweeps"], self.increment(), 0)
-        settings_sublayout_grid.addWidget(self.textboxes["sweeps"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.labels["power_bins"], self.increment(), 0)
-        settings_sublayout_grid.addWidget(self.textboxes["power_bins"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.labels["subsweeps"], self.num, 0)
-        settings_sublayout_grid.addWidget(self.textboxes["subsweeps"], self.num, 1)
-        settings_sublayout_grid.addWidget(self.profiles, self.increment(), 0, 1, 2)
-        settings_sublayout_grid.addWidget(self.labels["stitching"], self.increment(), 0, 1, 2)
+        self.settings_section.grid.addWidget(self.buttons["sensor_defaults"], self.num, 0, 1, 2)
+        self.settings_section.grid.addWidget(self.labels["sensor"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["sensor"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["start_range"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.labels["end_range"], self.num, 1)
+        self.settings_section.grid.addWidget(self.textboxes["start_range"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["end_range"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["frequency"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["frequency"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["gain"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["gain"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["sweeps"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["sweeps"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["power_bins"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["power_bins"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["subsweeps"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["subsweeps"], self.num, 1)
+        self.settings_section.grid.addWidget(self.profiles, self.increment(), 0, 1, 2)
+        self.settings_section.grid.addWidget(self.labels["stitching"], self.increment(), 0, 1, 2)
 
-        # Service params sublayout
-        self.serviceFrame = QFrame(self)
-        self.serviceFrame.setFrameShape(QFrame.StyledPanel)
-        self.serviceFrame.setMinimumWidth(minimum_width)
-        self.serviceparams_sublayout_grid = QtWidgets.QGridLayout(self.serviceFrame)
-        self.serviceparams_sublayout_grid.addWidget(self.tbuttons["service"], 0, 0)
-        self.serviceparams_sublayout_grid.addWidget(self.buttons["service_defaults"], 0, 1)
-        self.serviceparams_sublayout_grid.addWidget(self.checkboxes["show_advanced"], 10, 0, 1, 2)
+        self.service_section = CollapsibleSection("Processing settings")
+        self.panel_sublayout.addWidget(self.service_section)
+        self.service_section.grid.addWidget(self.buttons["service_defaults"], 0, 0, 1, 2)
+        self.serviceparams_sublayout_grid = self.service_section.grid
 
-        # Info sublayout
-        info_sublayout_grid = QtWidgets.QGridLayout()
-        self.num = 0
-        info_sublayout_grid.addWidget(self.checkboxes["verbose"], self.num, 0, 1, 2)
-        info_sublayout_grid.addWidget(self.checkboxes["opengl"], self.num, 1, 1, 2)
-        info_sublayout_grid.addWidget(self.labels["sweep_info"], self.increment(), 0, 1, 2)
-        info_sublayout_grid.addWidget(self.labels["saturated"], self.increment(), 0, 1, 2)
+        self.advanced_section = CollapsibleSection("Advanced settings", init_collapsed=True)
+        self.panel_sublayout.addWidget(self.advanced_section)
+        self.advanced_section.grid.addWidget(self.buttons["advanced_defaults"], 0, 0, 1, 2)
+        self.advanced_section.grid.addWidget(self.buttons["load_process_data"], 1, 0)
+        self.advanced_section.grid.addWidget(self.buttons["save_process_data"], 1, 1)
+        self.advanced_params_layout_grid = self.advanced_section.grid
 
-        # Advanced params layout
-        self.advancedFrame = QFrame(self)
-        self.advancedFrame.setFrameShape(QFrame.StyledPanel)
-        self.advanced_params_layout_grid = QtWidgets.QGridLayout(self.advancedFrame)
-        self.advanced_params_layout_grid.addWidget(self.labels["advanced_params"], 0, 0)
-        self.advanced_params_layout_grid.addWidget(self.buttons["advanced_defaults"], 0, 1)
-        self.advanced_params_layout_grid.addWidget(self.buttons["load_process_data"], 50, 0)
-        self.advanced_params_layout_grid.addWidget(self.buttons["save_process_data"], 50, 1)
+        self.panel_sublayout.addStretch()
 
-        panel_sublayout_inner.addWidget(serverFrame)
-        panel_sublayout_inner.addWidget(controlFrame)
-        panel_sublayout_inner.addWidget(self.settingsFrame)
-        panel_sublayout_inner.addWidget(self.serviceFrame)
-        panel_sublayout_inner.addStretch(500)
-        panel_sublayout_inner.addLayout(info_sublayout_grid)
-        advanced_sublayout_inner.addWidget(self.advancedFrame)
-        advanced_sublayout_inner.addStretch(500)
-        self.panel_sublayout.addLayout(panel_sublayout_inner)
-        self.panel_sublayout.addLayout(advanced_sublayout_inner)
+        self.service_section.hide()
+        self.advanced_section.hide()
 
-        self.serviceFrame.hide()
-        self.advancedFrame.hide()
+    def init_panel_scroll_area(self):
+        self.panel_scroll_area = QtWidgets.QScrollArea()
+        self.panel_scroll_area.setFrameShape(QFrame.StyledPanel)
+        self.panel_scroll_area.setFixedWidth(375)
+        self.panel_scroll_area.setWidgetResizable(True)
+        self.panel_scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.panel_scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.panel_scroll_area.horizontalScrollBar().setEnabled(False)
+        panel_scroll_area_widget = QWidget(self.panel_scroll_area)
+        self.panel_scroll_area.setWidget(panel_scroll_area_widget)
+        panel_scroll_area_widget.setLayout(self.panel_sublayout)
+
+    def init_statusbar(self):
+        self.statusBar().showMessage("Not connected")
+        self.labels["sweep_info"].setFixedWidth(200)
+        self.statusBar().addPermanentWidget(self.labels["saturated"])
+        self.statusBar().addPermanentWidget(self.labels["sweep_info"])
+        self.statusBar().addPermanentWidget(self.checkboxes["verbose"])
+        self.statusBar().addPermanentWidget(self.checkboxes["opengl"])
+        self.statusBar().show()
 
     def add_params(self, params, start_up_mode=None):
         self.buttons["load_process_data"].hide()
         self.buttons["save_process_data"].hide()
         for mode in self.service_labels:
-            for key in self.service_labels[mode]:
-                for element in self.service_labels[mode][key]:
+            for param_key in self.service_labels[mode]:
+                for element in self.service_labels[mode][param_key]:
                     if element in ["label", "box", "button"]:
-                        self.service_labels[mode][key][element].setVisible(False)
+                        self.service_labels[mode][param_key][element].setVisible(False)
 
         if start_up_mode is None:
             mode = self.mode.currentText()
@@ -787,94 +684,78 @@ class GUI(QMainWindow):
             mode = start_up_mode
             set_visible = False
 
-        index = 1
+        if not hasattr(self, "param_index"):
+            self.param_index = 2
+
         if mode not in self.service_labels:
             self.service_labels[mode] = {}
-            self.service_labels[mode]["collapsible"] = {}
 
         advanced_available = False
-        for key in params:
-            if key not in self.service_labels[mode]:
-                self.service_labels[mode][key] = {}
+        for param_key, param_dict in params.items():
+            if param_key not in self.service_labels[mode]:
+                param_gui_dict = {}
+                self.service_labels[mode][param_key] = param_gui_dict
 
-                grid = self.serviceparams_sublayout_grid
-                if "advanced" in params[key] and params[key]["advanced"]:
+                advanced_available = bool(param_dict.get("advanced"))
+                if advanced_available:
                     grid = self.advanced_params_layout_grid
-                    advanced_available = True
-                self.service_labels[mode][key]["advanced"] = advanced_available
+                else:
+                    grid = self.serviceparams_sublayout_grid
 
-                if "send_process_data" == key:
-                    data_buttons = self.service_labels[mode][key]
+                param_gui_dict["advanced"] = advanced_available
+
+                if "send_process_data" == param_key:
+                    data_buttons = param_gui_dict
                     data_buttons["load_button"] = self.buttons["load_process_data"]
                     data_buttons["save_button"] = self.buttons["save_process_data"]
-                    data_buttons["load_text"] = "Load " + params[key]["text"]
-                    data_buttons["save_text"] = "Save " + params[key]["text"]
+                    data_buttons["load_text"] = "Load " + param_dict["text"]
+                    data_buttons["save_text"] = "Save " + param_dict["text"]
                     data_buttons["load_button"].setText(data_buttons["load_text"])
                     data_buttons["save_button"].setText(data_buttons["save_text"])
                     data_buttons["load_button"].setVisible(set_visible)
                     data_buttons["save_button"].setVisible(set_visible)
-                elif isinstance(params[key]["value"], bool):
-                    self.service_labels[mode][key]["checkbox"] = QCheckBox(
-                        params[key]["name"], self)
-                    self.service_labels[mode][key]["checkbox"].setChecked(params[key]["value"])
-                    grid.addWidget(self.service_labels[mode][key]["checkbox"], index, 0, 1, 2)
-                elif params[key]["value"] is not None:
-                    self.service_labels[mode][key]["label"] = QLabel(self)
-                    self.service_labels[mode][key]["label"].setMinimumWidth(125)
-                    self.service_labels[mode][key]["label"].setText(params[key]["name"])
-                    self.service_labels[mode][key]["box"] = QLineEdit(self)
-                    self.service_labels[mode][key]["box"].setText(str(params[key]["value"]))
-                    self.service_labels[mode][key]["limits"] = params[key]["limits"]
-                    self.service_labels[mode][key]["default"] = params[key]["value"]
-                    grid.addWidget(self.service_labels[mode][key]["label"], index, 0)
-                    grid.addWidget(self.service_labels[mode][key]["box"], index, 1)
-                    self.service_labels[mode][key]["box"].setVisible(set_visible)
-                else:
-                    self.service_labels[mode][key]["label"] = QLabel(self)
-                    self.service_labels[mode][key]["label"].setText(str(params[key]["text"]))
-                    grid.addWidget(self.service_labels[mode][key]["label"], index, 0, 1, 2)
-                index += 1
+                elif isinstance(param_dict["value"], bool):
+                    param_gui_dict["checkbox"] = QCheckBox(param_dict["name"], self)
+                    param_gui_dict["checkbox"].setChecked(param_dict["value"])
+                    grid.addWidget(param_gui_dict["checkbox"], self.param_index, 0, 1, 2)
+                elif param_dict["value"] is not None:
+                    param_gui_dict["label"] = QLabel(self)
+                    param_gui_dict["label"].setMinimumWidth(125)
+                    param_gui_dict["label"].setText(param_dict["name"])
+                    param_gui_dict["box"] = QLineEdit(self)
+                    param_gui_dict["box"].setText(str(param_dict["value"]))
+                    param_gui_dict["limits"] = param_dict["limits"]
+                    param_gui_dict["default"] = param_dict["value"]
+                    grid.addWidget(param_gui_dict["label"], self.param_index, 0)
+                    grid.addWidget(param_gui_dict["box"], self.param_index, 1)
+                    param_gui_dict["box"].setVisible(set_visible)
+                else:  # param is only a label
+                    param_gui_dict["label"] = QLabel(self)
+                    param_gui_dict["label"].setText(str(param_dict["text"]))
+                    grid.addWidget(param_gui_dict["label"], self.param_index, 0, 1, 2)
+
+                self.param_index += 1
             else:
-                for element in self.service_labels[mode][key]:
+                param_gui_dict = self.service_labels[mode][param_key]
+
+                for element in param_gui_dict:
                     if element in ["label", "box", "checkbox"]:
-                        self.service_labels[mode][key][element].setVisible(set_visible)
+                        param_gui_dict[element].setVisible(set_visible)
                     if "button" in element:
-                        data_buttons = self.service_labels[mode][key]
+                        data_buttons = param_gui_dict
                         data_buttons["load_button"].setText(data_buttons["load_text"])
                         data_buttons["save_button"].setText(data_buttons["save_text"])
                         data_buttons["load_button"].setVisible(set_visible)
                         data_buttons["save_button"].setVisible(set_visible)
-                    if self.service_labels[mode][key]["advanced"]:
+                    if param_gui_dict["advanced"]:
                         advanced_available = True
 
-            # Set collapsible flags
-            idx = 0
-            for element in self.service_labels[mode][key]:
-                if element in ["label", "box", "checkbox"]:
-                    widget = self.service_labels[mode][key][element]
-                    d = self.service_labels[mode]["collapsible"]
-                    if advanced_available:
-                        d[key+str(idx)] = [widget, "service", False]
-                    else:
-                        d[key+str(idx)] = [widget, "service", True]
-                    idx += 1
-
         if start_up_mode is None:
-            self.checkboxes["show_advanced"].setVisible(advanced_available)
-            if self.checkboxes["show_advanced"].isChecked() and advanced_available:
-                self.advancedFrame.show()
+            if advanced_available:
+                self.advanced_section.show()
+                self.advanced_section.button_event(override=True)
             else:
-                self.advancedFrame.hide()
-
-            if self.tbuttons["service"].isChecked():
-                self.tbuttons["service"].toggle()
-                self.tbuttons["service"].setArrowType(QtCore.Qt.ArrowType.DownArrow)
-
-    def show_advanced(self):
-        if self.checkboxes["show_advanced"].isChecked():
-            self.advancedFrame.show()
-        else:
-            self.advancedFrame.hide()
+                self.advanced_section.hide()
 
     def sensor_defaults(self):
         conf = self.conf_defaults[self.mode.currentText()]
@@ -930,24 +811,16 @@ class GUI(QMainWindow):
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
-            self.labels["empty_01"].hide()
         elif "spi" in self.interface.currentText().lower():
             self.ports.hide()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
-            self.labels["empty_01"].show()
-        else:
+        else:  # socket
             self.ports.hide()
             self.textboxes["host"].show()
             self.buttons["advanced_port"].hide()
-            self.labels["empty_01"].hide()
-
-        self.textboxes["collapsible"]["host"][2] = self.textboxes["host"].isVisible()
-        self.buttons["collapsible"]["advanced_port"][2] = self.buttons["advanced_port"].isVisible()
-        self.buttons["collapsible"]["scan_ports"][2] = self.buttons["scan_ports"].isVisible()
-        self.labels["collapsible"]["empty_01"][2] = self.labels["empty_01"].isVisible()
-        self.dropdowns["collapsible"]["ports"][2] = self.ports.isVisible()
+            self.buttons["scan_ports"].hide()
 
     def error_message(self, error):
         em = QtWidgets.QErrorMessage(self.main_widget)
@@ -1033,8 +906,8 @@ class GUI(QMainWindow):
         self.sweeps_skipped = 0
         self.threaded_scan.start()
 
-        self.serviceFrame.setEnabled(False)
-        self.settingsFrame.setEnabled(False)
+        self.service_section.body_widget.setEnabled(False)
+        self.settings_section.body_widget.setEnabled(False)
         self.buttons["connect"].setEnabled(False)
         self.buttons["replay_buffered"].setEnabled(False)
 
@@ -1056,8 +929,8 @@ class GUI(QMainWindow):
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
         self.buttons["start"].setEnabled(True)
-        self.serviceFrame.setEnabled(True)
-        self.settingsFrame.setEnabled(True)
+        self.service_section.body_widget.setEnabled(True)
+        self.settings_section.body_widget.setEnabled(True)
         self.checkboxes["opengl"].setEnabled(True)
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
@@ -1076,9 +949,12 @@ class GUI(QMainWindow):
                 self.mode.setCurrentIndex(2)
 
             if self.interface.currentText().lower() == "socket":
-                self.client = JSONClient(self.textboxes["host"].text())
+                host = self.textboxes["host"].text()
+                self.client = JSONClient(host)
+                statusbar_connection_info = "socket ({})".format(host)
             elif self.interface.currentText().lower() == "spi":
                 self.client = RegSPIClient()
+                statusbar_connection_info = "SPI"
             else:
                 port = self.ports.currentText()
                 if "scan" in port.lower():
@@ -1088,6 +964,7 @@ class GUI(QMainWindow):
                     print("Warning: Using non-standard baudrate of {}!".format(self.baudrate))
                 self.client = RegClient(port, conf_baudrate=self.baudrate)
                 max_num = 1
+                statusbar_connection_info = "UART ({})".format(port)
 
             conf = self.update_sensor_config()
             sensor = 1
@@ -1115,6 +992,7 @@ class GUI(QMainWindow):
             self.buttons["connect"].setText("Disconnect")
             self.buttons["connect"].setStyleSheet("QPushButton {color: red}")
             self.buttons["advanced_port"].setEnabled(False)
+            self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
         else:
             self.buttons["connect"].setText("Connect")
             self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
@@ -1122,6 +1000,7 @@ class GUI(QMainWindow):
             self.buttons["start"].setEnabled(False)
             self.buttons["create_cl"].setEnabled(False)
             self.buttons["advanced_port"].setEnabled(True)
+            self.statusBar().showMessage("Not connected")
             if self.cl_supported:
                 self.buttons["load_cl"].setEnabled(True)
 
@@ -1917,9 +1796,6 @@ class GUI(QMainWindow):
                 self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
                 self.interface.setCurrentIndex(last_config["interface"])
                 self.ports.setCurrentIndex(last_config["port"])
-                if last_config["interface"] == 1:
-                    self.dropdowns["collapsible"]["ports"][2] = True
-                    self.buttons["collapsible"]["scan_ports"][2] = True
                 self.textboxes["host"].setText(last_config["host"])
                 self.sweep_count = last_config["sweep_count"]
             except Exception as e:
@@ -2116,23 +1992,6 @@ def watchdog(event):
     if not flag:
         print("\nforcing exit...")
         os._exit(1)
-
-
-class Label(QLabel):
-    def __init__(self, img):
-        super(Label, self).__init__()
-        self.setFrameStyle(QFrame.StyledPanel)
-        self.pixmap = QPixmap(img)
-
-    def paintEvent(self, event):
-        size = self.size()
-        painter = QPainter(self)
-        point = QPoint(0, 0)
-        scaledPix = self.pixmap.scaled(size, QtCore.Qt.KeepAspectRatio,
-                                       QtCore.Qt.SmoothTransformation)
-        point.setX((size.width() - scaledPix.width())/2)
-        point.setY((size.height() - scaledPix.height())/2)
-        painter.drawPixmap(point, scaledPix)
 
 
 if __name__ == "__main__":
