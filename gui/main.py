@@ -777,7 +777,7 @@ class GUI(QMainWindow):
         for mode in self.service_labels:
             for key in self.service_labels[mode]:
                 for element in self.service_labels[mode][key]:
-                    if "label" in element or "box" in element:
+                    if element in ["label", "box", "button"]:
                         self.service_labels[mode][key][element].setVisible(False)
 
         if start_up_mode is None:
@@ -804,10 +804,15 @@ class GUI(QMainWindow):
                 self.service_labels[mode][key]["advanced"] = advanced_available
 
                 if "send_process_data" == key:
-                    self.buttons["load_process_data"].setText("Load " + params[key]["text"])
-                    self.buttons["save_process_data"].setText("Save " + params[key]["text"])
-                    self.buttons["load_process_data"].show()
-                    self.buttons["save_process_data"].show()
+                    data_buttons = self.service_labels[mode][key]
+                    data_buttons["load_button"] = self.buttons["load_process_data"]
+                    data_buttons["save_button"] = self.buttons["save_process_data"]
+                    data_buttons["load_text"] = "Load " + params[key]["text"]
+                    data_buttons["save_text"] = "Save " + params[key]["text"]
+                    data_buttons["load_button"].setText(data_buttons["load_text"])
+                    data_buttons["save_button"].setText(data_buttons["save_text"])
+                    data_buttons["load_button"].setVisible(set_visible)
+                    data_buttons["save_button"].setVisible(set_visible)
                 elif isinstance(params[key]["value"], bool):
                     self.service_labels[mode][key]["checkbox"] = QCheckBox(
                         params[key]["name"], self)
@@ -833,6 +838,12 @@ class GUI(QMainWindow):
                 for element in self.service_labels[mode][key]:
                     if element in ["label", "box", "checkbox"]:
                         self.service_labels[mode][key][element].setVisible(set_visible)
+                    if "button" in element:
+                        data_buttons = self.service_labels[mode][key]
+                        data_buttons["load_button"].setText(data_buttons["load_text"])
+                        data_buttons["save_button"].setText(data_buttons["save_text"])
+                        data_buttons["load_button"].setVisible(set_visible)
+                        data_buttons["save_button"].setVisible(set_visible)
                     if self.service_labels[mode][key]["advanced"]:
                         advanced_available = True
 
