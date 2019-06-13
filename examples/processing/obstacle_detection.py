@@ -182,7 +182,7 @@ def get_processing_config():
             "advanced": True,
         },
         "background_map": {
-            "name": "Show background (from background iterations)",
+            "name": "Show background",
             "value": False,
             "advanced": True,
         },
