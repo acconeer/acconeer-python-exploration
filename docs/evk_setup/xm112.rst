@@ -29,7 +29,7 @@ Now you should be able to flash the Module software (``acc_module_server_xm112.b
 If you're on Linux you likely will need to compile BOSSA on your own. In our experience, running Ubuntu 18.04, you will need to install ``libreadline-dev`` and ``libwxgtk3.0-dev`` before compiling with ``make``.
 To get everything you need::
 
-   sudo apt-get install libreadline-dev libwxgtk3.0-dev make build-essential
+   sudo apt install libreadline-dev libwxgtk3.0-dev make build-essential
 
 To flash::
 

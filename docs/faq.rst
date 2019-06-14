@@ -8,7 +8,7 @@ Python related
 
    The solution is to remove all duplicates of NumPy and reinstall using pip::
 
-      sudo apt-get remove python3-numpy
+      sudo apt remove python3-numpy
       python -m pip uninstall numpy       # Repeat until no NumPy version is installed
       python -m pip install --user numpy
 
