@@ -69,22 +69,33 @@ All rights reserved
             </div>
             <div class="form-row">
               <div class="form-group col-12">
+                <label>Amplitude max plot range</label>
+                <div class="input-group mb-3">
+                  <input required type="number" name="plot_range" step="1" min="100" max="2000" class="form-control" value="500">
+                  <div class="input-group-append">
+                    <span class="input-group-text">100 - 2000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-12">
                 <label>Frequency</label>
                 <div class="range-label text-center">
-                  <span class="badge badge-secondary" ><span id="frequency-label">30</span> Hz</span>
+                  <span class="badge badge-light border"><span id="frequency-label">30</span> Hz</span>
                 </div>
                 <input type="range" name="frequency" min="1" max="100" value="30" class="custom-range" id="frequency">
               </div>
             </div>
             <div class="form-row">
               <div class="form-group col-12">
-                <div class="custom-control custom-checkbox">
+                <div class="custom-control custom-switch">
                   <input type="checkbox" class="custom-control-input" id="gain-check" data-toggle="collapse" data-target="#gain-slider">
                   <label class="custom-control-label" for="gain-check">Enable gain</label>
                 </div>
                 <div class="collapse" id="gain-slider">
                   <div class="range-label text-center">
-                    <span class="badge badge-secondary" id="gain-label">0.50</span>
+                    <span class="badge badge-light border" id="gain-label">0.50</span>
                   </div>
                   <input type="range" name="gain" min="0" max="1" step="0.01" value="0.50" class="custom-range" id="gain">
                 </div>
@@ -94,12 +105,13 @@ All rights reserved
               <div class="form-group col-12">
                 <label>Number of bins</label>
                 <div class="range-label text-center">
-                  <span class="badge badge-secondary" id="bins-label">10</span>
+                  <span class="badge badge-light border" id="bins-label">10</span>
                 </div>
                 <input type="range" name="bins" min="1" max="32" value="10" class="custom-range" id="bins">
               </div>
             </div>
             <button type="submit" class="btn btn-primary font-weight-bold">Apply</button>
+            <button onclick="window.location.reload()" class="btn btn-outline-secondary font-weight-bold">Reset to defaults</button>
           </form>
         </div>
       </div>
@@ -117,12 +129,13 @@ All rights reserved
         </div>
         <div class="modal-body">
           <p>Interface optimized for low computational complexity for applications that doesn't require high accuracy on distance but instead focus more on presence.</p>
+          <p>Additional documentation is available on <a href="https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html" target="_blank">Read the Docs</a>.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="lib/jquery/jquery-3.3.1.min.js"></script>
+  <script src="lib/jquery/jquery-3.4.0.min.js"></script>
   <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="lib/chartjs/Chart.bundle.min.js"></script>
   <script src="lib/aos/js/aos.js"></script>

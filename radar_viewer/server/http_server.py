@@ -1,7 +1,7 @@
 from functools import wraps, update_wrapper
 from datetime import datetime
 from server.demo_control import DemoControl
-from server.detector_wrappers import EnvelopeHandler, IQHandler, PowerBinHandler
+from server.detector_wrappers import EnvelopeHandler, IQHandler, PowerBinHandler, SparseHandler
 
 from threading import Thread
 from threading import Timer
@@ -123,6 +123,7 @@ def start_server(args):
     demo_ctrl.add_detector(PowerBinHandler)
     demo_ctrl.add_detector(EnvelopeHandler)
     demo_ctrl.add_detector(IQHandler)
+    demo_ctrl.add_detector(SparseHandler)
 
     main_loop_worker = Thread(target=worker_thread_main_loop)
     main_loop_worker.start()

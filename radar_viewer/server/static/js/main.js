@@ -112,7 +112,7 @@ function startDetector(name) {
     }
     data.push({name: 'board', value: boardId});
     // TEMPORARY solution to range length
-    if (name == 'powerbins' || name == 'envelope' || name == 'iq' || name == 'distancepeak') {
+    if (name == 'powerbins' || name == 'envelope' || name == 'iq' || name == 'distancepeak' || name == 'sparse') {
         data[1].value = (parseFloat(data[0].value) + parseFloat(data[1].value)).toString();
     }
     $.ajax({
@@ -133,8 +133,9 @@ function startDetector(name) {
 function initChartjsConfig() {
   Chart.defaults.global.animation.duration = 100;
 
-  var textColor = 'rgb(33, 37, 41)';
+  var textColor = 'rgb(53, 74, 83)';
   var lineColor = 'rgb(40, 136, 169)';
+  var axisColor = 'rgb(53, 74, 83)';
   var fillColor = 'rgb(147, 195, 212)';
 
   var config = {
@@ -144,7 +145,6 @@ function initChartjsConfig() {
         borderColor: lineColor,
         borderWidth: 2,
         pointRadius: 0, // Only for line charts
-        lineTension: 0, // Only for line charts
         showLine: true,
         fill: false,
         data: []
@@ -156,6 +156,9 @@ function initChartjsConfig() {
       },
       legend: {
         display: false
+      },
+      hover: {
+        mode: null
       },
       scales: {
         yAxes: [{
@@ -170,7 +173,7 @@ function initChartjsConfig() {
           gridLines: {
             display: false,
             lineWidth: 2,
-            color: lineColor
+            color: axisColor
           }
         }],
         xAxes: [{
@@ -186,7 +189,7 @@ function initChartjsConfig() {
           gridLines: {
             display: false,
             lineWidth: 2,
-            color: lineColor
+            color: axisColor
           }
         }]
       },
@@ -235,7 +238,7 @@ function initChartDrawLinePlugin() {
       context.stroke();
       context.setLineDash([]);
     },
-    afterDatasetsDraw: function(chart, easing) {
+    beforeDraw: function(chart, easing) {
       if(chart.config.verticallLine) {
         this.renderVerticalLine(chart, chart.config.verticallLine);
       }
@@ -288,7 +291,7 @@ function initThreejsEnv() {
   controls.rotateSpeed = 0.1;
   controls.maxPolarAngle = (Math.PI / 2);
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.15;
+  controls.autoRotateSpeed = 0.1;
 
   controls.addEventListener('start', function() {
     controls.autoRotate = false;

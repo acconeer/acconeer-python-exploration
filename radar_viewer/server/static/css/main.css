@@ -13,15 +13,39 @@ h1, h2, h3, h4, h5, h6 {
   color: #2888A9;
 }
 
-label {
-  font-weight: bold;
+input[type=range] {
+  -webkit-appearance: none;
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  height: 17px;
+  width: 17px;
+  border-radius: 17px;
+  background: #2888a9;
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -4.5px;
+}
+input[type=range]::-moz-range-thumb {
+  height: 17px;
+  width: 17px;
+  border-radius: 17px;
+  background: #2888a9;
+  cursor: pointer;
+}
+input[type=range]::-ms-thumb {
+  height: 17px;
+  width: 17px;
+  border-radius: 17px;
+  background: #2888a9;
+  cursor: pointer;
+  height: 11.4px;
 }
 
-.custom-control-label {
-  padding-top: 2px;
-  padding-bottom: 2px;
-  padding-right: 4px;
-  margin-top: 1px;
+label {
+  font-weight: bold;
 }
 
 .logo {
@@ -56,16 +80,12 @@ label {
   transform: translateY(-6px);
 }
 
-.card-link:hover {
-  text-decoration: underline;
-}
-
 .navbar-data {
   background: rgba(255, 255, 255, 0.8);
 }
 
 .range-label {
-  font-size: 25px;
+  font-size: 23px;
 }
 
 .badge {

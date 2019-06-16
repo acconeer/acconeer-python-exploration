@@ -11,6 +11,8 @@ var iqGeo = [];
 var iqDot = [];
 var length = 25;
 var axisLength = 100;
+var dataValueLength = 100;
+var pointSize = 0.4;
 
 lineMaterial = new THREE.LineBasicMaterial({
   color: 0x2888A9, linewidth: 1
@@ -18,20 +20,20 @@ lineMaterial = new THREE.LineBasicMaterial({
 axisLineMaterial = new THREE.LineBasicMaterial({
   color: 0x2888A9, linewidth: 2
 });
-dotMaterial = new THREE.PointsMaterial({
-  color: 0x2888A9, size: 1
+dotMaterial = new THREE.MeshBasicMaterial({
+  color: 0x2888A9
 });
 
-var textMesh = loadThreejsText(['Distance [cm]', 'Re unit [I]', 'Im unit [Q]'], function(textMesh) {
+var textMesh = loadThreejsText(['Distance [m]', 'Re unit [I]', 'Im unit [Q]'], function(textMesh) {
   textMesh[0].rotation.x = -Math.PI / 2;
-  textMesh[0].position.z = length + 5;
+  textMesh[0].position.z = -(length + 5);
   textMesh[0].position.x = -11;
   scene.add(textMesh[0]);
-  textMesh[1].rotation.y = Math.PI / 2;
-  textMesh[1].position.z = -(length + 6);
+  textMesh[1].rotation.y = -Math.PI / 2;
+  textMesh[1].position.z = length + 6;
   scene.add(textMesh[1]);
   textMesh[2].rotation.z = Math.PI / 2;
-  textMesh[2].rotation.y = Math.PI / 2;
+  textMesh[2].rotation.y = -Math.PI / 2;
   textMesh[2].position.y = length + 6;
   scene.add(textMesh[2]);
 });
@@ -50,7 +52,7 @@ scene.add(realAxisLine);
 
 var imAxisGeo = new THREE.Geometry();
 imAxisGeo.vertices.push(new THREE.Vector3(0, 0, 0));
-imAxisGeo.vertices.push(new THREE.Vector3(0, 0, -(length + 5)));
+imAxisGeo.vertices.push(new THREE.Vector3(0, 0, length + 5));
 var imAxisLine = new THREE.Line(imAxisGeo, axisLineMaterial);
 scene.add(imAxisLine);
 
@@ -59,7 +61,8 @@ grid.position.y = -(length + 5);
 scene.add(grid);
 
 camera.position.y = 70;
-camera.position.x = 90;
+camera.position.x = -90;
+camera.position.z = 90;
 
 function makeDatapoints(nbrOfPoints) {
   var group = new THREE.Group();
@@ -75,10 +78,10 @@ function makeDatapoints(nbrOfPoints) {
     var line = new THREE.Line(iqGeo[i], lineMaterial);
     group.add(line);
 
-    iqDot[i] = new THREE.Geometry();
-    iqDot[i].vertices.push(iqData[i]);
-    var dot = new THREE.Points(iqDot[i], dotMaterial);
-    group.add(dot);
+    var point = new THREE.SphereGeometry(pointSize);
+    iqDot[i] = new THREE.Mesh(point, dotMaterial);
+    iqDot[i].position.copy(iqData[i]);
+    group.add(iqDot[i]);
   }
   return group;
 }
@@ -87,15 +90,16 @@ var datapoints;
 var prevNbrOfPoints = 0;
 getData(function(data) {
   if(data.length != prevNbrOfPoints) {
+    prevNbrOfPoints = data.length;
     scene.remove(datapoints);
     datapoints = makeDatapoints(data.length)
     scene.add(datapoints);
   }
   for(var i = 0; i < data.length; i++) {
     var point = data[i];
-    iqData[i].setY(point['im'] * length);
-    iqData[i].setZ(point['re'] * length);
+    iqData[i].setY(point['im'] * dataValueLength);
+    iqData[i].setZ(point['re'] * dataValueLength);
+    iqDot[i].position.copy(iqData[i]);
     iqGeo[i].verticesNeedUpdate = true;
-    iqDot[i].verticesNeedUpdate = true;
   }
 }, 'iq');

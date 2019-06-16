@@ -30,15 +30,15 @@ All rights reserved
       </div>
       <div class="row py-5">
         <div class="col-md-4" data-aos="fade-up">
-          <h3 class="logo my-auto">Phase</h3>
+          <h3 class="my-auto pb-3">Phase at <span id="dist-at-label">0</span> m</h3>
           <canvas id="iq-phase"></canvas>
         </div>
         <div class="col-md-8" data-aos="fade-up">
-          <h3 class="logo my-auto">Amplitude</h3>
+          <h3 class="my-auto pb-3">Amplitude</h3>
           <canvas id="iq-amplitude"></canvas>
           <input type="range" name="dist" min="0" max="0" step="1" value="0" class="custom-range" id="dist">
           <div class="range-label text-center">
-            <span class="badge badge-secondary" ><span id="dist-label-custom">0</span> m</span>
+            <span class="badge badge-light border" ><span id="dist-label-custom">0</span> m</span>
           </div>
         </div>
       </div>
@@ -69,9 +69,9 @@ All rights reserved
               <div class="form-group col-sm-6">
                 <label>Sweep length</label>
                 <div class="input-group mb-3">
-                  <input required type="number" name="range_end" step="0.01" min="0.06" max="0.5" class="form-control" value="0.5">
+                  <input required type="number" name="range_end" step="0.01" min="0.06" max="0.7" class="form-control" value="0.7">
                   <div class="input-group-append">
-                    <span class="input-group-text">0.06 - 0.5m</span>
+                    <span class="input-group-text">0.06 - 0.7m</span>
                   </div>
                 </div>
               </div>
@@ -80,20 +80,20 @@ All rights reserved
               <div class="form-group col-12">
                 <label>Frequency</label>
                 <div class="range-label text-center">
-                  <span class="badge badge-secondary" ><span id="frequency-label">30</span> Hz</span>
+                  <span class="badge badge-light border"><span id="frequency-label">30</span> Hz</span>
                 </div>
                 <input type="range" name="frequency" min="1" max="100" value="30" class="custom-range" id="frequency">
               </div>
             </div>
             <div class="form-row">
               <div class="form-group col-12">
-                <div class="custom-control custom-checkbox">
+                <div class="custom-control custom-switch">
                   <input type="checkbox" class="custom-control-input" id="gain-check" data-toggle="collapse" data-target="#gain-slider">
                   <label class="custom-control-label" for="gain-check">Enable gain</label>
                 </div>
                 <div class="collapse" id="gain-slider">
                   <div class="range-label text-center">
-                    <span class="badge badge-secondary" id="gain-label">0.50</span>
+                    <span class="badge badge-light border" id="gain-label">0.50</span>
                   </div>
                   <input type="range" name="gain" min="0" max="1" step="0.01" value="0.50" class="custom-range" id="gain">
                 </div>
@@ -101,19 +101,20 @@ All rights reserved
             </div>
             <div class="form-row">
               <div class="form-group col-12">
-                <div class="custom-control custom-checkbox">
-                  <input type="checkbox" class="custom-control-input" id="average-check" data-toggle="collapse" data-target="#average-slider">
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" checked id="average-check" data-toggle="collapse" data-target="#average-slider">
                   <label class="custom-control-label" for="average-check">Enable running average</label>
                 </div>
-                <div class="collapse" id="average-slider">
+                <div class="collapse show" id="average-slider">
                   <div class="range-label text-center">
-                    <span class="badge badge-secondary" id="average-label">0.50</span>
+                    <span class="badge badge-light border" id="average-label">0.70</span>
                   </div>
-                  <input type="range" name="average" min="0" max="1" step="0.01" value="0.50" class="custom-range" id="average">
+                  <input type="range" name="average" min="0.01" max="0.99" step="0.01" value="0.7" class="custom-range" id="average">
                 </div>
               </div>
             </div>
             <button type="submit" class="btn btn-primary font-weight-bold">Apply</button>
+            <button onclick="window.location.reload()" class="btn btn-outline-secondary font-weight-bold">Reset to defaults</button>
           </form>
         </div>
       </div>
@@ -131,12 +132,13 @@ All rights reserved
         </div>
         <div class="modal-body">
           <p>Complex valued measurements with both amplitude and phase information. Perfect for applications that needs to track small relative moments with high accuracy.</p>
+          <p>Additional documentation is available on <a href="https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html" target="_blank">Read the Docs</a>.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="lib/jquery/jquery-3.3.1.min.js"></script>
+  <script src="lib/jquery/jquery-3.4.0.min.js"></script>
   <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="lib/chartjs/Chart.bundle.min.js"></script>
   <script src="lib/aos/js/aos.js"></script>
