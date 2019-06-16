@@ -13,6 +13,12 @@ config.options.scales.xAxes[0].scaleLabel.labelString = 'Distance'
 var powerbin = document.getElementById('powerbin').getContext('2d');
 var powerbinChart = new Chart(powerbin, config);
 
+$('#settings-form').on('settingsChanged', function(event, data) {
+  config.options.scales.yAxes[0].ticks.max = +(data.filter(function(item) {
+    return item.name == 'plot_range';
+  })[0]['value']);
+});
+
 getData(function(data) {
   powerbinChart.data.labels = getLabels(data.length, 'Bin ', true);
   powerbinChart.data.datasets[0].data = data;

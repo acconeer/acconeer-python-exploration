@@ -88,7 +88,7 @@ class PowerBinHandler(Detector):
             self.config.bin_count = int(params["bins"])
 
     def process_data(self, a):
-        data = [round(float(x)) for x in a[1:]]
+        data = [round(float(x)) for x in a[0:]]
         return json.dumps({"powerbins": data})
 
 
@@ -111,7 +111,7 @@ class EnvelopeHandler(Detector):
                 print("Unknown profile")
 
     def process_data(self, a):
-        data = [round(int(x)) for x in a[1:]]
+        data = [round(int(x)) for x in a[0:]]
         return json.dumps({"envelope": data})
 
 
@@ -128,3 +128,16 @@ class IQHandler(Detector):
         for z in a.tolist()[0::18]:
             response.append({"re": np.real(z), "im": np.imag(z)})
         return json.dumps({"iq": response})
+
+
+class SparseHandler(Detector):
+    detector_name = "sparse"
+
+    def __init__(self, demo_ctrl, params):
+        super().__init__(demo_ctrl, self.detector_name)
+        self.config = configs.SparseServiceConfig()
+        self.update_config(params)
+
+    def process_data(self, a):
+        data = [[int(j) for j in i] for i in a]
+        return json.dumps({"sparse": data})

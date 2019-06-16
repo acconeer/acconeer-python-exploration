@@ -19,10 +19,10 @@ shapeMaterial = new THREE.MeshBasicMaterial({
   color: 0xF9F9F9, side: THREE.DoubleSide
 });
 
-var textMesh = loadThreejsText(['Distance', 'Time', 'Amplitude'], function(textMesh) {
+var textMesh = loadThreejsText(['Distance [m]', 'Time', 'Amplitude'], function(textMesh) {
   textMesh[0].rotation.x = -Math.PI / 2;
   textMesh[0].position.z = 5;
-  textMesh[0].position.x = -7;
+  textMesh[0].position.x = -10;
   scene.add(textMesh[0]);
   textMesh[1].rotation.x = -Math.PI / 2;
   textMesh[1].rotation.z = Math.PI / 2;
@@ -44,39 +44,60 @@ controls.target.set(0, 0, -length / 2);
 camera.position.y = 80;
 camera.position.x = 140;
 
+var prevNbrOfPoints = 0;
 getData(function(data) {
-  var shape = makeShape(data);
-  var curve = makeObjects(shape);
-  curves.unshift(curve);
-  scene.add(curve);
+  if(data.length != prevNbrOfPoints) {
+    prevNbrOfPoints = data.length;
+    for(var i = 0; i < curves.length; i++){
+      scene.remove(curves[i]);
+    }
+    curves = [];
+  }
 
   if(curves.length > maxCurves) {
-    scene.remove(curves.pop());
+    var last = curves.pop();
+    updateObject(data, last);
+    last.position.z = 0;
+    curves.unshift(last);
+  } else {
+    var curve = makeObjects(data.length);
+    updateObject(data, curve);
+    curves.unshift(curve);
+    scene.add(curve);
   }
+
   curves.forEach(function(curve) {
     curve.position.z -= length / maxCurves;
   });
 }, 'envelope');
 
-function makeShape(data) {
+function updateObject(data, shape) {
+  for(var i = 0; i < data.length; i++) {
+    shape.children[0].geometry.vertices[i + 1].y = data[i] * height;
+    shape.children[1].geometry.vertices[i + 1].y = data[i] * height - 0.5;
+  }
+  shape.children[0].geometry.verticesNeedUpdate = true;
+  shape.children[1].geometry.verticesNeedUpdate = true;
+}
+
+function makeObjects(datapoints) {
+  var group = new THREE.Group();
+
+  var plane = new THREE.PlaneGeometry(width, 0, datapoints, 0);
+
   var shape = new THREE.Shape();
-  var step = width / (data.length - 1);
+  var step = width / (datapoints - 1);
   var offset = width / 2;
 
   shape.moveTo(-offset, 0);
-  for(var i = 0; i < data.length; i++) {
-    shape.lineTo((step * i) - offset, data[i] * height);
+  for(var i = 0; i < datapoints; i++) {
+    shape.lineTo((step * i) - offset, 1);
+    plane.vertices[i + 1].x = (step * i) - offset;
   }
-  shape.lineTo(offset, 0);
   shape.lineTo(-offset, 0);
-  return shape;
-}
 
-function makeObjects(shape) {
-  var group = new THREE.Group();
-
-  var geometry = new THREE.ShapeGeometry(shape);
-  var mesh = new THREE.Mesh(geometry, shapeMaterial);
+  var mesh = new THREE.Mesh(plane, shapeMaterial);
+  mesh.position.y += 0.5;
 
   var points = new THREE.Geometry().setFromPoints(shape.getPoints());
   var line = new THREE.Line(points, lineMaterial);
