@@ -539,9 +539,27 @@ class GUI(QMainWindow):
                 "scan",
             ),
             "scan_ports": ("Scan ports", self.update_ports, True, True, "connection"),
-            "sensor_defaults": ("Defaults", self.sensor_defaults, False, False, "sensor"),
-            "service_defaults": ("Defaults", self.service_defaults, True, False, "service"),
-            "advanced_defaults": ("Defaults", self.service_defaults, True, False, "advanced"),
+            "sensor_defaults": (
+                "Defaults",
+                self.sensor_defaults_handler,
+                False,
+                False,
+                "sensor",
+            ),
+            "service_defaults": (
+                "Defaults",
+                self.service_defaults_handler,
+                True,
+                False,
+                "service",
+            ),
+            "advanced_defaults": (
+                "Defaults",
+                self.service_defaults_handler,
+                True,
+                False,
+                "advanced",
+            ),
             "save_process_data": (
                 "Save process data",
                 lambda: self.handle_advanced_process_data("save"),
@@ -757,7 +775,7 @@ class GUI(QMainWindow):
             else:
                 self.advanced_section.hide()
 
-    def sensor_defaults(self):
+    def sensor_defaults_handler(self):
         conf = self.conf_defaults[self.mode.currentText()]
         self.textboxes["start_range"].setText("{:.2f}".format(conf["start_range"]))
         self.textboxes["end_range"].setText("{:.2f}".format(conf["end_range"]))
@@ -768,7 +786,7 @@ class GUI(QMainWindow):
         if self.profiles.isVisible():
             self.profiles.setCurrentIndex(0)
 
-    def service_defaults(self):
+    def service_defaults_handler(self):
         mode = self.mode.currentText()
         if self.service_defaults is None:
             return
