@@ -90,6 +90,8 @@ class GUI(QMainWindow):
         self.main_layout.addWidget(self.canvas, 0, 0)
         self.main_layout.addWidget(self.panel_scroll_area, 0, 1)
 
+        self.main_layout.setColumnStretch(0, 1)
+
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
 
