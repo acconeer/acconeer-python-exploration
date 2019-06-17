@@ -3,9 +3,9 @@ Presence detection (sparse)
 
 An example of a presence/motion detection algorithm based on the :ref:`sparse-service` service. Similarly to its :ref:`iq-service` service counterpart, :ref:`iq-presence-detection`, this example of presence detection measures small changes in radar response over time through the difference between a fast and a slow IIR filter.
 
-The :ref:`sparse-service` service returns data in *frames*. We denote sweeps captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the frame index, :math:`s` the sweep index and :math:`d` the range index. Each frame constitutes of :math:`N_d` range points sampled :math:`N_s` number of times. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as large sinusoidal movements of the spatial sampling points over time. For each range point, we thus wish to detect any changes between individual point samples occurring in the :math:`s` dimension.
+The :ref:`sparse-service` service returns sweeps in the form of multiple subsweeps. Each subsweep constitutes of :math:`N_d` range points spaced roughly 6 cm apart. We denote sweeps captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the sweep index, :math:`s` the subsweep index and :math:`d` the range index. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as large sinusoidal movements of the spatial sampling points over time. For each range point, we thus wish to detect any changes between individual point samples occurring in the :math:`s` dimension.
 
-In this example, this is accomplished using exponential smoothing. Two exponential filters are used, one with a larger smoothing factor, :math:`\alpha_{fa}`, and one with a smaller, :math:`\alpha_{sl}`. Each sweep of a frame is thus filtered through
+In this example, this is accomplished using exponential smoothing. Two exponential filters are used, one with a larger smoothing factor, :math:`\alpha_{fa}`, and one with a smaller, :math:`\alpha_{sl}`. Each subsweep of a sweep is thus filtered through
 
 .. math::
     x_{sl}(d) \leftarrow \alpha_{sl}x_{sl}(d) + (1 - \alpha_{sl})x(f, s, d),
