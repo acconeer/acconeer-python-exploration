@@ -12,7 +12,7 @@ import copy
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
                              QCheckBox, QFrame, QPushButton)
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore, QtWidgets
 
@@ -234,11 +234,6 @@ class GUI(QMainWindow):
 
         self.current_canvas = mode
 
-        font = QFont()
-        font.setPixelSize(12)
-        ax_color = (0, 0, 0)
-        ax = ("bottom", "left")
-
         if mode == "Select service":
             canvas = Label(self.acc_file)
             self.buttons["sensor_defaults"].setEnabled(False)
@@ -281,19 +276,13 @@ class GUI(QMainWindow):
         elif "power" in mode.lower():
             self.power_plot_window = canvas.addPlot(row=0, col=0, title="Power bin")
             self.power_plot_window.showGrid(x=True, y=True)
-            for i in ax:
-                self.power_plot_window.getAxis(i).tickFont = font
-                self.power_plot_window.getAxis(i).setPen(ax_color)
-            pen = pg.mkPen(example_utils.color_cycler(0), width=2)
-            self.power_plot = pg.BarGraphItem(x=np.arange(1, 7),
-                                              height=np.linspace(0, 6, num=6),
-                                              width=.5,
-                                              pen=pen,
+            self.power_plot = pg.BarGraphItem(x=[],
+                                              height=[],
+                                              width=0.5,
+                                              brush=pg.mkBrush(example_utils.color_cycler()),
                                               name="Power bins")
             self.power_plot_window.setLabel("left", "Amplitude")
-            self.power_plot_window.setLabel("bottom", "Power bin range (mm)")
-            self.power_plot_window.setYRange(0, 10)
-            self.power_plot_window.setXRange(0.5, 6.5)
+            self.power_plot_window.setLabel("bottom", "Distance (mm)")
             self.power_plot_window.addItem(self.power_plot)
             self.textboxes["power_bins"].setVisible(True)
             self.labels["power_bins"].setVisible(True)
@@ -305,9 +294,6 @@ class GUI(QMainWindow):
             self.sparse_plot_window.setYRange(-2**15, 2**15)
             self.sparse_plot = pg.ScatterPlotItem(size=10)
             self.sparse_plot_window.addItem(self.sparse_plot)
-            for i in ax:
-                self.sparse_plot_window.getAxis(i).tickFont = font
-                self.sparse_plot_window.getAxis(i).setPen(ax_color)
 
             self.hist_move_image = canvas.addPlot(row=2, col=0, title="Movement history")
             self.hist_move = pg.ImageItem(autoDownsample=True)
@@ -322,9 +308,6 @@ class GUI(QMainWindow):
             self.envelope_plot_window = canvas.addPlot(row=0, col=0, title="Envelope")
             self.envelope_plot_window.showGrid(x=True, y=True)
             self.envelope_plot_window.addLegend(offset=(-10, 10))
-            for i in ax:
-                self.envelope_plot_window.getAxis(i).tickFont = font
-                self.envelope_plot_window.getAxis(i).setPen(ax_color)
 
             pen = example_utils.pg_pen_cycler()
             self.envelope_plot = self.envelope_plot_window.plot(range(10),
@@ -352,9 +335,6 @@ class GUI(QMainWindow):
                 self.iq_plot_window = canvas.addPlot(row=1, col=0, title="Phase")
                 self.iq_plot_window.showGrid(x=True, y=True)
                 self.iq_plot_window.addLegend(offset=(-10, 10))
-                for i in ax:
-                    self.iq_plot_window.getAxis(i).tickFont = font
-                    self.iq_plot_window.getAxis(i).setPen(ax_color)
                 pen = example_utils.pg_pen_cycler()
                 self.iq_plot = self.iq_plot_window.plot(range(10),
                                                         np.arange(10)*0,
@@ -389,13 +369,8 @@ class GUI(QMainWindow):
             self.hist_plot_image.addItem(self.hist_plot)
             self.hist_plot_image.setLabel("left", "Distance (mm)")
             self.hist_plot_image.setLabel("bottom", "Time (s)")
-            for i in ax:
-                self.hist_plot_image.getAxis(i).tickFont = font
-                self.hist_plot_image.getAxis(i).setPen(ax_color)
         if mode.lower() in ["iq", "envelope"]:
-            self.hist_plot_peak = self.hist_plot_image.plot(range(10),
-                                                            np.zeros(10),
-                                                            pen=pen)
+            self.hist_plot_peak = self.hist_plot_image.plot(pen=pen)
 
         return canvas
 
