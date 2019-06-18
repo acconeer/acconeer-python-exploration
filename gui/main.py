@@ -681,7 +681,7 @@ class GUI(QMainWindow):
 
     def init_statusbar(self):
         self.statusBar().showMessage("Not connected")
-        self.labels["sweep_info"].setFixedWidth(200)
+        self.labels["sweep_info"].setFixedWidth(220)
         self.statusBar().addPermanentWidget(self.labels["saturated"])
         self.statusBar().addPermanentWidget(self.labels["sweep_info"])
         self.statusBar().addPermanentWidget(self.checkboxes["verbose"])
