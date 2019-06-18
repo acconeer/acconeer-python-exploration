@@ -1,26 +1,34 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QPixmap, QPainter
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout
 )
 
 
 class Label(QLabel):
-    def __init__(self, img):
+    def __init__(self, img, img_scale=0.8):
         super(Label, self).__init__()
-        self.setFrameStyle(QFrame.StyledPanel)
+
+        self.img_scale = img_scale
         self.pixmap = QPixmap(img)
 
-    def paintEvent(self, event):
-        size = self.size()
-        painter = QPainter(self)
-        point = QPoint(0, 0)
-        scaledPix = self.pixmap.scaled(size, QtCore.Qt.KeepAspectRatio,
-                                       QtCore.Qt.SmoothTransformation)
-        point.setX((size.width() - scaledPix.width())/2)
-        point.setY((size.height() - scaledPix.height())/2)
-        painter.drawPixmap(point, scaledPix)
+        self.setFrameStyle(QFrame.StyledPanel)
+        self.setMinimumSize(1, 1)
+        self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
+        self.setPixmap(self.pixmap)
+
+    def resizeEvent(self, event):
+        w = self.size().width() * self.img_scale
+        h = self.size().height() * self.img_scale
+        scaled_size = QtCore.QSize(w, h)
+
+        scaled_pixmap = self.pixmap.scaled(
+            scaled_size,
+            QtCore.Qt.KeepAspectRatio,
+            QtCore.Qt.SmoothTransformation,
+        )
+
+        self.setPixmap(scaled_pixmap)
 
 
 class CollapsibleSection(QFrame):
