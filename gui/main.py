@@ -73,6 +73,7 @@ class GUI(QMainWindow):
         super().__init__()
         self.setWindowIcon(QIcon(self.acc_file))
 
+        self.init_pyqtgraph()
         self.init_labels()
         self.init_textboxes()
         self.init_buttons()
@@ -101,6 +102,12 @@ class GUI(QMainWindow):
         self.start_up()
 
         self.radar = data_processing.DataProcessing()
+
+    def init_pyqtgraph(self):
+        pg.setConfigOption("background", "#f0f0f0")
+        pg.setConfigOption("foreground", "k")
+        pg.setConfigOption("leftButtonPan", False)
+        pg.setConfigOptions(antialias=True)
 
     def init_labels(self):
         # key: text, group
@@ -239,10 +246,6 @@ class GUI(QMainWindow):
         else:
             self.buttons["sensor_defaults"].setEnabled(True)
 
-        pg.setConfigOption("background", "#f0f0f0")
-        pg.setConfigOption("foreground", "k")
-        pg.setConfigOption("leftButtonPan", False)
-        pg.setConfigOptions(antialias=True)
         canvas = pg.GraphicsLayoutWidget()
 
         if not refresh:
