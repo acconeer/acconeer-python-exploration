@@ -298,9 +298,9 @@ class GUI(QMainWindow):
             self.textboxes["power_bins"].setVisible(True)
             self.labels["power_bins"].setVisible(True)
         elif "sparse" in mode.lower():
-            self.sparse_plot_window = canvas.addPlot(row=0, col=0, title="Sparse mode")
+            self.sparse_plot_window = canvas.addPlot(row=0, col=0, title="Sparse data")
             self.sparse_plot_window.showGrid(x=True, y=True)
-            self.sparse_plot_window.setLabel("bottom", "Depth (mm)")
+            self.sparse_plot_window.setLabel("bottom", "Distance (mm)")
             self.sparse_plot_window.setLabel("left", "Amplitude")
             self.sparse_plot_window.setYRange(-2**15, 2**15)
             self.sparse_plot = pg.ScatterPlotItem(size=10)
@@ -372,7 +372,7 @@ class GUI(QMainWindow):
             if "iq" in mode.lower():
                 row = 2
             if "sparse" in mode.lower():
-                title = "Sparse avg amplitude history"
+                title = "Amplitude history"
                 basic_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
                 colormap = LinearSegmentedColormap.from_list("mycmap", basic_cols)
                 colormap._init()
@@ -1727,32 +1727,21 @@ class GUI(QMainWindow):
                 tau_grow=0.2
                 )
 
-            axs = {}
+            time_res = 1.0 / data["sensor_config"].sweep_rate
 
-            xstart = data["x_mm"][0]
-            xend = data["x_mm"][-1]
-            xdim = data["hist_env"].shape[1]
-            data_points = min(xdim, 10)
-            x = np.round(np.arange(0, xdim+xdim/data_points, xdim/data_points))
-            labels = np.round(np.arange(xstart, xend+(xend-xstart)/data_points,
-                              (xend-xstart)/data_points))
-            axs["left"] = [list(zip(x, labels))]
+            depth_start = data["x_mm"][0]
+            depth_end = data["x_mm"][-1]
+            depth_length = depth_end - depth_start
+            depth_size = data["hist_env"].shape[1]
+            depth_res = depth_length / (depth_size - 1)
 
-            s_buff = data["hist_env"].shape[0]
-            t_buff = s_buff / data["sensor_config"].sweep_rate
-
-            t = np.round(np.arange(0, s_buff + 1, s_buff/min(10, s_buff)))
-            labels = np.round(t / s_buff * t_buff, decimals=3)
-            axs["bottom"] = [list(zip(t, labels))]
-
-            for ax in axs:
-                xax = self.hist_plot_image.getAxis(ax)
-                xax.setTicks(axs[ax])
-                xax = self.hist_move_image.getAxis(ax)
-                xax.setTicks(axs[ax])
+            for im in [self.hist_plot, self.hist_move]:
+                im.resetTransform()
+                im.translate(0, data["x_mm"][0] - depth_res / 2)
+                im.scale(time_res, depth_res)
 
         self.sparse_plot.setData(data["x_mm"], data["iq_data"])
-        m = self.smooth_sparse.update(max(2500, np.amax(np.abs(data["iq_data"]))))
+        m = self.smooth_sparse.update(max(500, np.max(np.abs(data["iq_data"]))))
         self.sparse_plot_window.setYRange(-m, m)
 
         self.hist_plot.updateImage(data["hist_env"], levels=(0, 256))
