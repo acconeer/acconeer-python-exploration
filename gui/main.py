@@ -96,7 +96,7 @@ class GUI(QMainWindow):
         self.main_widget.setLayout(self.main_layout)
         self.setCentralWidget(self.main_widget)
 
-        self.setGeometry(50, 50, 1200, 800)
+        self.resize(1200, 800)
         self.setWindowTitle("Acconeer Exploration GUI")
         self.show()
         self.start_up()
