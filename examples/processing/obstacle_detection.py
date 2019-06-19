@@ -375,7 +375,7 @@ class ObstacleDetectionProcessor:
         res[1:] = vec[:-1]
         vec[...] = res
 
-    def find_peaks(self, arr, dead_zone=2):
+    def find_peaks(self, arr):
         if not self.nr_locals:
             return None, 0
 
