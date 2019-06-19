@@ -1,0 +1,137 @@
+<!doctype html>
+<!--
+Copyright (c) Acconeer AB, 2018
+All rights reserved
+-->
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>Sparse 2D</title>
+
+  <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32">
+  <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="lib/aos/css/aos.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <section id="logo">
+    <div class="container">
+      <div class="row justify-content-between my-4">
+        <div class="col-auto d-flex my-2" data-aos="fade-down">
+          <a href="index.html" title="Go back" class="backarrow"></a>
+          <h1 class="logo my-auto ml-3 ml-md-5">Sparse 2D Demo</h1>
+        </div>
+        <div class="col-auto d-flex my-2" data-aos="fade-down" data-aos-delay="100">
+          <a href="#" title="Show settings" class="settingsicon" data-toggle="modal" data-target="#settings"></a>
+          <a href="#" title="Show info" class="infoicon ml-3 ml-md-5" data-toggle="modal" data-target="#info"></a>
+        </div>
+      </div>
+      <div class="row py-5">
+        <div class="col-12" data-aos="fade-up">
+          <canvas id="sparse"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="modal fade" id="settings">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Settings</h3>
+          <button type="button" class="close" title="Cancel" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="settings-form">
+            <div class="form-row">
+              <div class="form-group col-sm-6">
+                <label>Sweep start</label>
+                <div class="input-group mb-3">
+                  <input required type="number" name="range_start" step="0.01" min="0.06" max="1.5" class="form-control" value="0.2">
+                  <div class="input-group-append">
+                    <span class="input-group-text">0.06 - 1.5m</span>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group col-sm-6">
+                <label>Sweep length</label>
+                <div class="input-group mb-3">
+                  <input required type="number" name="range_end" step="0.01" min="0.06" max="0.7" class="form-control" value="0.7">
+                  <div class="input-group-append">
+                    <span class="input-group-text">0.06 - 0.7m</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-12">
+                <label>Amplitude plot range</label>
+                <div class="input-group mb-3">
+                  <input required type="number" name="plot_range" step="1" min="5000" max="33000" class="form-control" value="30000">
+                  <div class="input-group-append">
+                    <span class="input-group-text">5k - 33k</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-12">
+                <label>Frequency</label>
+                <div class="range-label text-center">
+                  <span class="badge badge-light border"><span id="frequency-label">30</span> Hz</span>
+                </div>
+                <input type="range" name="frequency" min="1" max="100" value="30" class="custom-range" id="frequency">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-12">
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="gain-check" data-toggle="collapse" data-target="#gain-slider">
+                  <label class="custom-control-label" for="gain-check">Enable gain</label>
+                </div>
+                <div class="collapse" id="gain-slider">
+                  <div class="range-label text-center">
+                    <span class="badge badge-light border" id="gain-label">0.50</span>
+                  </div>
+                  <input type="range" name="gain" min="0" max="1" step="0.01" value="0.50" class="custom-range" id="gain">
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary font-weight-bold">Apply</button>
+            <button onclick="window.location.reload()" class="btn btn-outline-secondary font-weight-bold">Reset to defaults</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="info">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Info</h3>
+          <button type="button" class="close" title="Close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>The sparse service allows for detection of any movement, small or large, occurring in front of the sensor at the configured sampling points. Sparse is fundamentally different from the other services as it can not be regarded as a downsampled Envelope or IQ service. Instead of sampling the reflected wavelet several times per wavelength (which is ~5 mm), the wavelet is sampled roughly every 6 cm. As such, the sparse service should not be used to measure the reflections of static objects. Instead, the sparse service produces a sequence of robust measurements of the sparsely located sampling points.</p>
+          <p>Additional documentation is available on <a href="https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html" target="_blank">Read the Docs</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib/jquery/jquery-3.4.0.min.js"></script>
+  <script src="lib/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="lib/chartjs/Chart.bundle.min.js"></script>
+  <script src="lib/aos/js/aos.js"></script>
+  <script src="lib/eventsrc/EventSource.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/sparse2D.js"></script>
+</body>
+</html>
