@@ -1605,7 +1605,7 @@ class GUI(QMainWindow):
             self.update_sweep_info(data)
         elif "session_info" in message_type:
             self.update_ranges(data)
-        elif "process_data":
+        elif "process_data" in message_type:
             self.advanced_process_data["process_data"] = data
         else:
             print("Thread data not implemented!")
