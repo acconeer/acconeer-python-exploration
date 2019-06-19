@@ -6,13 +6,12 @@ from PyQt5.QtWidgets import (
 
 
 class Label(QLabel):
-    def __init__(self, img, img_scale=0.8):
+    def __init__(self, img, img_scale=0.7):
         super(Label, self).__init__()
 
         self.img_scale = img_scale
         self.pixmap = QPixmap(img)
 
-        self.setFrameStyle(QFrame.StyledPanel)
         self.setMinimumSize(1, 1)
         self.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
         self.setPixmap(self.pixmap)
@@ -32,10 +31,12 @@ class Label(QLabel):
 
 
 class CollapsibleSection(QFrame):
-    def __init__(self, header_text, init_collapsed=False):
+    def __init__(self, header_text, init_collapsed=False, is_top=False):
         super().__init__()
 
-        self.setFrameShape(QFrame.StyledPanel)
+        if not is_top:
+            self.setObjectName("CollapsibleSection")
+            self.setStyleSheet("#CollapsibleSection{border-top: 1px solid lightgrey;}")
 
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
@@ -48,6 +49,8 @@ class CollapsibleSection(QFrame):
 
         self.grid = QGridLayout(self.body_widget)
         self.grid.setContentsMargins(9, 0, 9, 9)
+        self.grid.setColumnStretch(0, 1)
+        self.grid.setColumnStretch(1, 1)
 
         self._header_widget_layout = QHBoxLayout(self._header_widget)
         self._header_widget_layout.setContentsMargins(7, 7, 7, 7)

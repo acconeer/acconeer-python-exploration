@@ -83,18 +83,18 @@ class GUI(QMainWindow):
         self.init_panel_scroll_area()
         self.init_statusbar()
 
-        self.main_widget = QWidget()
-        self.main_layout = QtWidgets.QGridLayout(self.main_widget)
-
-        self.canvas = self.init_graphs()
-        self.canvas.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.main_layout.addWidget(self.canvas, 0, 0)
-        self.main_layout.addWidget(self.panel_scroll_area, 0, 1)
-
-        self.main_layout.setColumnStretch(0, 1)
-
-        self.main_widget.setLayout(self.main_layout)
+        self.main_widget = QtWidgets.QSplitter(self.centralWidget())
+        self.main_widget.setStyleSheet("QSplitter::handle{background: lightgrey}")
         self.setCentralWidget(self.main_widget)
+
+        self.canvas_widget = QFrame(self.main_widget)
+        self.canvas_widget.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        self.panel_scroll_area.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        self.main_widget.addWidget(self.panel_scroll_area)
+
+        self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
+        self.canvas = self.init_graphs()
+        self.canvas_layout.addWidget(self.canvas)
 
         self.resize(1200, 800)
         self.setWindowTitle("Acconeer Exploration GUI")
@@ -574,8 +574,10 @@ class GUI(QMainWindow):
 
     def init_sublayouts(self):
         self.panel_sublayout = QtWidgets.QVBoxLayout()
+        self.panel_sublayout.setContentsMargins(0, 3, 0, 3)
+        self.panel_sublayout.setSpacing(0)
 
-        server_section = CollapsibleSection("Connection")
+        server_section = CollapsibleSection("Connection", is_top=True)
         self.panel_sublayout.addWidget(server_section)
         server_section.grid.addWidget(self.labels["interface"], 0, 0)
         server_section.grid.addWidget(self.interface, 0, 1)
@@ -647,8 +649,9 @@ class GUI(QMainWindow):
 
     def init_panel_scroll_area(self):
         self.panel_scroll_area = QtWidgets.QScrollArea()
-        self.panel_scroll_area.setFrameShape(QFrame.StyledPanel)
-        self.panel_scroll_area.setFixedWidth(375)
+        self.panel_scroll_area.setFrameShape(QFrame.NoFrame)
+        self.panel_scroll_area.setMinimumWidth(350)
+        self.panel_scroll_area.setMaximumWidth(600)
         self.panel_scroll_area.setWidgetResizable(True)
         self.panel_scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.panel_scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
@@ -664,6 +667,7 @@ class GUI(QMainWindow):
         self.statusBar().addPermanentWidget(self.labels["sweep_info"])
         self.statusBar().addPermanentWidget(self.checkboxes["verbose"])
         self.statusBar().addPermanentWidget(self.checkboxes["opengl"])
+        self.statusBar().setStyleSheet("QStatusBar{border-top: 1px solid lightgrey;}")
         self.statusBar().show()
 
     def add_params(self, params, start_up_mode=None):
@@ -786,7 +790,7 @@ class GUI(QMainWindow):
             self.buttons["replay_buffered"].setEnabled(False)
 
         if force_update or self.current_canvas not in mode:
-            self.main_layout.removeWidget(self.canvas)
+            self.canvas_layout.removeWidget(self.canvas)
             self.canvas.setParent(None)
             self.canvas.deleteLater()
             self.canvas = None
@@ -795,7 +799,7 @@ class GUI(QMainWindow):
                 refresh = True
                 self.update_service_params()
             self.canvas = self.init_graphs(mode, refresh=refresh)
-            self.main_layout.addWidget(self.canvas, 0, 0)
+            self.canvas_layout.addWidget(self.canvas)
 
         if "select service" not in mode.lower():
             self.update_sensor_config()
