@@ -167,7 +167,7 @@ class GUI(QMainWindow):
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
             self.textboxes[key].editingFinished.connect(
-                lambda: self.check_values(self.mode_to_config[self.mode.currentText()][0].mode)
+                lambda: self.check_values(self.mode_to_config[self.module_dd.currentText()][0].mode)  # noqa: E501
             )
 
         self.textboxes["power_bins"].setVisible(False)
@@ -222,10 +222,10 @@ class GUI(QMainWindow):
             self.labels["subsweeps"].setVisible(False)
         self.textboxes["power_bins"].setVisible(False)
         self.labels["power_bins"].setVisible(False)
-        self.profiles.setVisible(False)
+        self.env_profiles_dd.setVisible(False)
 
         self.cl_supported = False
-        if "IQ" in self.mode.currentText() or "Envelope" in self.mode.currentText():
+        if "IQ" in self.module_dd.currentText() or "Envelope" in self.module_dd.currentText():
             self.cl_supported = True
         else:
             self.load_clutter_file(force_unload=True)
@@ -351,11 +351,11 @@ class GUI(QMainWindow):
         self.mode_to_param = {text: mode for text, mode, *_ in mode_info}
         self.mode_to_config = {text: [config, ext] for text, _, config, ext in mode_info}
 
-        self.mode = QComboBox(self)
+        self.module_dd = QComboBox(self)
 
         self.conf_defaults = {}
         for text, mode, config, ext in mode_info:
-            self.mode.addItem(text)
+            self.module_dd.addItem(text)
 
             if mode:
                 self.conf_defaults[text] = {}
@@ -370,23 +370,23 @@ class GUI(QMainWindow):
                     self.conf_defaults[text]["gain"] = 0.7
                     self.conf_defaults[text]["frequency"] = 60
 
-        self.mode.currentIndexChanged.connect(self.update_canvas)
+        self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
-        self.interface = QComboBox(self)
-        self.interface.addItem("Socket")
-        self.interface.addItem("Serial")
-        self.interface.addItem("SPI")
-        self.interface.currentIndexChanged.connect(self.update_interface)
+        self.interface_dd = QComboBox(self)
+        self.interface_dd.addItem("Socket")
+        self.interface_dd.addItem("Serial")
+        self.interface_dd.addItem("SPI")
+        self.interface_dd.currentIndexChanged.connect(self.update_interface)
 
-        self.ports = QComboBox(self)
-        self.ports.hide()
+        self.ports_dd = QComboBox(self)
+        self.ports_dd.hide()
         self.update_ports()
 
-        self.profiles = QComboBox(self)
-        self.profiles.addItem("Max SNR")
-        self.profiles.addItem("Max depth resolution")
-        self.profiles.addItem("Direct leakage")
-        self.profiles.currentIndexChanged.connect(self.set_profile)
+        self.env_profiles_dd = QComboBox(self)
+        self.env_profiles_dd.addItem("Max SNR")
+        self.env_profiles_dd.addItem("Max depth resolution")
+        self.env_profiles_dd.addItem("Direct leakage")
+        self.env_profiles_dd.currentIndexChanged.connect(self.set_profile)
 
     def enable_opengl(self):
         if self.checkboxes["opengl"].isChecked():
@@ -402,7 +402,7 @@ class GUI(QMainWindow):
             self.update_canvas(force_update=True)
 
     def set_profile(self):
-        profile = self.profiles.currentText().lower()
+        profile = self.env_profiles_dd.currentText().lower()
 
         if "snr" in profile:
             self.textboxes["gain"].setText(str(0.45))
@@ -429,8 +429,8 @@ class GUI(QMainWindow):
         except Exception:
             pass
 
-        self.ports.clear()
-        self.ports.addItems(ports)
+        self.ports_dd.clear()
+        self.ports_dd.addItems(ports)
 
     def advanced_port(self):
         input_dialog = QtWidgets.QInputDialog(self)
@@ -537,8 +537,8 @@ class GUI(QMainWindow):
         server_section = CollapsibleSection("Connection", is_top=True)
         self.panel_sublayout.addWidget(server_section)
         server_section.grid.addWidget(self.labels["interface"], 0, 0)
-        server_section.grid.addWidget(self.interface, 0, 1)
-        server_section.grid.addWidget(self.ports, 1, 0)
+        server_section.grid.addWidget(self.interface_dd, 0, 1)
+        server_section.grid.addWidget(self.ports_dd, 1, 0)
         server_section.grid.addWidget(self.textboxes["host"], 1, 0, 1, 2)
         server_section.grid.addWidget(self.buttons["scan_ports"], 1, 1)
         server_section.grid.addWidget(self.buttons["advanced_port"], 2, 0, 1, 2)
@@ -547,7 +547,7 @@ class GUI(QMainWindow):
         control_section = CollapsibleSection("Scan controls")
         self.panel_sublayout.addWidget(control_section)
         self.num = 0
-        control_section.grid.addWidget(self.mode, self.increment(), 0, 1, 2)
+        control_section.grid.addWidget(self.module_dd, self.increment(), 0, 1, 2)
         control_section.grid.addWidget(self.buttons["start"], self.increment(), 0)
         control_section.grid.addWidget(self.buttons["stop"], self.num, 1)
         control_section.grid.addWidget(self.buttons["save_scan"], self.increment(), 0)
@@ -584,7 +584,7 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.textboxes["power_bins"], self.num, 1)
         self.settings_section.grid.addWidget(self.labels["subsweeps"], self.increment(), 0)
         self.settings_section.grid.addWidget(self.textboxes["subsweeps"], self.num, 1)
-        self.settings_section.grid.addWidget(self.profiles, self.increment(), 0, 1, 2)
+        self.settings_section.grid.addWidget(self.env_profiles_dd, self.increment(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["stitching"], self.increment(), 0, 1, 2)
 
         self.service_section = CollapsibleSection("Processing settings")
@@ -637,7 +637,7 @@ class GUI(QMainWindow):
                         self.service_labels[mode][param_key][element].setVisible(False)
 
         if start_up_mode is None:
-            mode = self.mode.currentText()
+            mode = self.module_dd.currentText()
             set_visible = True
         else:
             mode = start_up_mode
@@ -717,18 +717,18 @@ class GUI(QMainWindow):
                 self.advanced_section.hide()
 
     def sensor_defaults_handler(self):
-        conf = self.conf_defaults[self.mode.currentText()]
+        conf = self.conf_defaults[self.module_dd.currentText()]
         self.textboxes["start_range"].setText("{:.2f}".format(conf["start_range"]))
         self.textboxes["end_range"].setText("{:.2f}".format(conf["end_range"]))
         self.textboxes["gain"].setText("{:.2f}".format(conf["gain"]))
         self.textboxes["frequency"].setText("{:d}".format(conf["frequency"]))
         self.sweep_count = -1
         self.textboxes["sweeps"].setText("-1")
-        if self.profiles.isVisible():
-            self.profiles.setCurrentIndex(0)
+        if self.env_profiles_dd.isVisible():
+            self.env_profiles_dd.setCurrentIndex(0)
 
     def service_defaults_handler(self):
-        mode = self.mode.currentText()
+        mode = self.module_dd.currentText()
         if self.service_defaults is None:
             return
         for key in self.service_defaults:
@@ -741,7 +741,7 @@ class GUI(QMainWindow):
                         bool(self.service_defaults[key]["value"]))
 
     def update_canvas(self, force_update=False):
-        mode = self.mode.currentText()
+        mode = self.module_dd.currentText()
         if self.mode_to_param[mode] != self.mode_to_param[self.current_canvas]:
             self.data = None
             self.buttons["replay_buffered"].setEnabled(False)
@@ -765,18 +765,18 @@ class GUI(QMainWindow):
         if self.buttons["connect"].text() == "Disconnect":
             self.connect_to_server()
 
-        if "serial" in self.interface.currentText().lower():
-            self.ports.show()
+        if "serial" in self.interface_dd.currentText().lower():
+            self.ports_dd.show()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
-        elif "spi" in self.interface.currentText().lower():
-            self.ports.hide()
+        elif "spi" in self.interface_dd.currentText().lower():
+            self.ports_dd.hide()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
         else:  # socket
-            self.ports.hide()
+            self.ports_dd.hide()
             self.textboxes["host"].show()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
@@ -798,7 +798,7 @@ class GUI(QMainWindow):
         return retval == 1024
 
     def start_scan(self, create_cl=False, from_file=False):
-        if "Select" in self.mode.currentText():
+        if "Select" in self.module_dd.currentText():
             self.error_message("Please select a service")
             return
 
@@ -837,7 +837,7 @@ class GUI(QMainWindow):
             use_cl = True
 
         processing_config = self.update_service_params()
-        mode = self.mode.currentText()
+        mode = self.module_dd.currentText()
         if mode == "Envelope" or mode == "IQ":
             processing_config = copy.deepcopy(self.update_service_params())
             processing_config["clutter_file"] = self.cl_file
@@ -851,7 +851,7 @@ class GUI(QMainWindow):
             "use_clutter": use_cl,
             "create_clutter": create_cl,
             "data_source": data_source,
-            "service_type": self.mode.currentText(),
+            "service_type": self.module_dd.currentText(),
             "sweep_buffer": self.sweep_buffer,
             "service_params": processing_config,
         }
@@ -865,7 +865,7 @@ class GUI(QMainWindow):
         self.buttons["save_scan"].setEnabled(False)
         self.buttons["create_cl"].setEnabled(False)
         self.buttons["load_cl"].setEnabled(False)
-        self.mode.setEnabled(False)
+        self.module_dd.setEnabled(False)
         self.buttons["stop"].setEnabled(True)
         self.checkboxes["opengl"].setEnabled(False)
 
@@ -892,7 +892,7 @@ class GUI(QMainWindow):
         self.buttons["create_cl"].setEnabled(self.cl_supported)
         self.labels["empty_02"].show()
         self.labels["clutter_status"].hide()
-        self.mode.setEnabled(True)
+        self.module_dd.setEnabled(True)
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
         self.buttons["start"].setEnabled(True)
@@ -913,17 +913,17 @@ class GUI(QMainWindow):
         if self.buttons["connect"].text() == "Connect":
             max_num = 4
             if "Select service" in self.current_canvas:
-                self.mode.setCurrentIndex(2)
+                self.module_dd.setCurrentIndex(2)
 
-            if self.interface.currentText().lower() == "socket":
+            if self.interface_dd.currentText().lower() == "socket":
                 host = self.textboxes["host"].text()
                 self.client = JSONClient(host)
                 statusbar_connection_info = "socket ({})".format(host)
-            elif self.interface.currentText().lower() == "spi":
+            elif self.interface_dd.currentText().lower() == "spi":
                 self.client = RegSPIClient()
                 statusbar_connection_info = "SPI"
             else:
-                port = self.ports.currentText()
+                port = self.ports_dd.currentText()
                 if "scan" in port.lower():
                     self.error_message("Please select port first!")
                     return
@@ -983,8 +983,8 @@ class GUI(QMainWindow):
                 pass
 
     def update_sensor_config(self, refresh=False):
-        conf, service = self.mode_to_config[self.mode.currentText()]
-        mode = self.mode.currentText()
+        conf, service = self.mode_to_config[self.module_dd.currentText()]
+        mode = self.module_dd.currentText()
 
         if not conf:
             return None
@@ -1013,7 +1013,7 @@ class GUI(QMainWindow):
             if "sparse" in mode.lower():
                 conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
             if "envelope" in mode.lower():
-                profile_text = self.profiles.currentText().lower()
+                profile_text = self.env_profiles_dd.currentText().lower()
                 if "snr" in profile_text:
                     conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
                 elif "depth" in profile_text:
@@ -1025,7 +1025,7 @@ class GUI(QMainWindow):
 
     def update_service_params(self):
         errors = []
-        mode = self.mode.currentText()
+        mode = self.module_dd.currentText()
 
         if mode not in self.service_labels:
             return None
@@ -1108,7 +1108,7 @@ class GUI(QMainWindow):
         if e:
             errors.append("Gain must be between 0 and 1!\n")
 
-        min_start_range = 0 if "leakage" in self.profiles.currentText().lower() else 0.06
+        min_start_range = 0 if "leakage" in self.env_profiles_dd.currentText().lower() else 0.06
         start = self.is_float(self.textboxes["start_range"].text(), is_positive=False)
         start, e = self.check_limit(start, self.textboxes["start_range"], min_start_range, 6.94)
         if e:
@@ -1123,9 +1123,9 @@ class GUI(QMainWindow):
 
         env_max_range = 0.96
         iq_max_range = 0.72
-        data_type = self.mode_to_param[self.mode.currentText()]
+        data_type = self.mode_to_param[self.module_dd.currentText()]
         if "iq" in data_type or "envelope" in data_type:
-            if self.interface.currentText().lower() == "socket":
+            if self.interface_dd.currentText().lower() == "socket":
                 env_max_range = 6.88
                 iq_max_range = 6.88
             else:
@@ -1251,9 +1251,9 @@ class GUI(QMainWindow):
                     print("Service type not stored, setting to IQ!")
                     mode = "IQ"
 
-                index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
+                index = self.module_dd.findText(mode, QtCore.Qt.MatchFixedString)
                 if index >= 0:
-                    self.mode.setCurrentIndex(index)
+                    self.module_dd.setCurrentIndex(index)
 
                 try:
                     if "iq" in mode.lower():
@@ -1272,8 +1272,8 @@ class GUI(QMainWindow):
                     return
 
                 try:
-                    self.profiles.setCurrentIndex(f["profile"][()])
-                    mode = self.mode.currentText()
+                    self.env_profiles_dd.setCurrentIndex(f["profile"][()])
+                    mode = self.module_dd.currentText()
                     if self.service_params is not None:
                         if mode in self.service_labels:
                             for key in self.service_labels[mode]:
@@ -1349,9 +1349,9 @@ class GUI(QMainWindow):
                 except Exception as e:
                     self.error_message("{}".format(e))
                     return
-                index = self.mode.findText(mode, QtCore.Qt.MatchFixedString)
+                index = self.module_dd.findText(mode, QtCore.Qt.MatchFixedString)
                 if index >= 0:
-                    self.mode.setCurrentIndex(index)
+                    self.module_dd.setCurrentIndex(index)
                 self.data = data
 
             self.textboxes["start_range"].setText(str(conf.range_interval[0]))
@@ -1375,7 +1375,7 @@ class GUI(QMainWindow):
             self.start_scan(from_file=True)
 
     def save_scan(self, data, clutter=False):
-        mode = self.mode.currentText()
+        mode = self.module_dd.currentText()
         if "sleep" in mode.lower():
             if int(self.textboxes["sweep_buffer"].text()) < 1000:
                 self.error_message("Please set sweep buffer to >= 1000")
@@ -1463,7 +1463,7 @@ class GUI(QMainWindow):
                                      dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("clutter_file", data=self.cl_file,
                                      dtype=h5py.special_dtype(vlen=str))
-                    f.create_dataset("profile", data=self.profiles.currentIndex(),
+                    f.create_dataset("profile", data=self.env_profiles_dd.currentIndex(),
                                      dtype=np.int)
                     if info_available:
                         f.create_dataset("sequence_number", data=sequence_number, dtype=np.int)
@@ -1680,11 +1680,11 @@ class GUI(QMainWindow):
         if last_config:
             # restore last sensor settings
             try:
-                self.profiles.setCurrentIndex(last_config["profile"])
+                self.env_profiles_dd.setCurrentIndex(last_config["profile"])
                 self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
                 self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
-                self.interface.setCurrentIndex(last_config["interface"])
-                self.ports.setCurrentIndex(last_config["port"])
+                self.interface_dd.setCurrentIndex(last_config["interface"])
+                self.ports_dd.setCurrentIndex(last_config["port"])
                 self.textboxes["host"].setText(last_config["host"])
                 self.sweep_count = last_config["sweep_count"]
             except Exception as e:
@@ -1735,7 +1735,7 @@ class GUI(QMainWindow):
         return self.num
 
     def closeEvent(self, event=None):
-        if "select" not in str(self.mode.currentText()).lower():
+        if "select" not in str(self.module_dd.currentText()).lower():
             service_params = {}
             for mode in self.service_labels:
                 if service_params.get(mode) is None:
@@ -1754,9 +1754,9 @@ class GUI(QMainWindow):
                 "sweep_count": self.sweep_count,
                 "host": self.textboxes["host"].text(),
                 "sweep_buffer": self.textboxes["sweep_buffer"].text(),
-                "interface": self.interface.currentIndex(),
-                "port": self.ports.currentIndex(),
-                "profile": self.profiles.currentIndex(),
+                "interface": self.interface_dd.currentIndex(),
+                "port": self.ports_dd.currentIndex(),
+                "profile": self.env_profiles_dd.currentIndex(),
                 "service_settings": service_params,
                 "baudrate": self.baudrate,
                 }
