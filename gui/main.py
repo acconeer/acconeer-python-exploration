@@ -73,6 +73,9 @@ class GUI(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        self.current_mode = None
+
         self.setWindowIcon(QIcon(self.acc_file))
 
         self.init_pyqtgraph()
@@ -166,9 +169,7 @@ class GUI(QMainWindow):
         for key, (text, _) in textbox_info.items():
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
-            self.textboxes[key].editingFinished.connect(
-                lambda: self.check_values(self.mode_to_config[self.module_dd.currentText()][0].mode)  # noqa: E501
-            )
+            self.textboxes[key].editingFinished.connect(self.check_values)
 
         self.textboxes["power_bins"].setVisible(False)
         self.textboxes["subsweeps"].setVisible(False)
@@ -214,15 +215,13 @@ class GUI(QMainWindow):
 
         canvas = None
 
-        if "sparse" in mode.lower():
-            self.textboxes["subsweeps"].setVisible(True)
-            self.labels["subsweeps"].setVisible(True)
-        else:
-            self.textboxes["subsweeps"].setVisible(False)
-            self.labels["subsweeps"].setVisible(False)
-        self.textboxes["power_bins"].setVisible(False)
-        self.labels["power_bins"].setVisible(False)
-        self.env_profiles_dd.setVisible(False)
+        mode_is_sparse = (self.current_mode == "sparse")
+        self.textboxes["subsweeps"].setVisible(mode_is_sparse)
+        self.labels["subsweeps"].setVisible(mode_is_sparse)
+        mode_is_power_bin = (self.current_mode == "power_bin")
+        self.textboxes["power_bins"].setVisible(mode_is_power_bin)
+        self.labels["power_bins"].setVisible(mode_is_power_bin)
+        self.env_profiles_dd.setVisible(self.current_mode == "envelope")
 
         self.cl_supported = False
         if "IQ" in self.module_dd.currentText() or "Envelope" in self.module_dd.currentText():
@@ -741,6 +740,8 @@ class GUI(QMainWindow):
                         bool(self.service_defaults[key]["value"]))
 
     def update_canvas(self, force_update=False):
+        self.current_mode = self.mode_to_config[self.module_dd.currentText()][0].mode
+
         mode = self.module_dd.currentText()
         if self.mode_to_param[mode] != self.mode_to_param[self.current_canvas]:
             self.data = None
@@ -999,7 +1000,7 @@ class GUI(QMainWindow):
             self.textboxes["frequency"].setText("{:d}".format(conf.sweep_rate))
             self.sweep_count = -1
         else:
-            stitching = self.check_values(conf.mode)
+            stitching = self.check_values()
             conf.experimental_stitching = stitching
             conf.range_interval = [
                     float(self.textboxes["start_range"].text()),
@@ -1066,7 +1067,9 @@ class GUI(QMainWindow):
 
         return self.service_params
 
-    def check_values(self, mode):
+    def check_values(self):
+        mode = self.current_mode
+
         errors = []
         if not self.textboxes["frequency"].text().isdigit():
             errors.append("Frequency must be an integer and not less than 0!\n")
@@ -1123,8 +1126,7 @@ class GUI(QMainWindow):
 
         env_max_range = 0.96
         iq_max_range = 0.72
-        data_type = self.mode_to_param[self.module_dd.currentText()]
-        if "iq" in data_type or "envelope" in data_type:
+        if self.current_mode in ["iq", "envelope"]:
             if self.interface_dd.currentText().lower() == "socket":
                 env_max_range = 6.88
                 iq_max_range = 6.88
@@ -1139,7 +1141,7 @@ class GUI(QMainWindow):
             end = start + 0.06
             r = end - start
 
-        if "envelope" in data_type:
+        if self.current_mode == "envelope":
             if r > env_max_range:
                 errors.append("Envelope range must be less than %.2fm!\n" % env_max_range)
                 self.textboxes["end_range"].setText(str(start + env_max_range))
@@ -1148,7 +1150,7 @@ class GUI(QMainWindow):
             elif r > 0.96:
                 stitching = True
 
-        if "iq" in data_type:
+        if self.current_mode == "iq":
             if r > iq_max_range:
                 errors.append("IQ range must be less than %.2fm!\n" % iq_max_range)
                 self.textboxes["end_range"].setText(str(start + iq_max_range))
