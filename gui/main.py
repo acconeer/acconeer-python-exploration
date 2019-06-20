@@ -60,8 +60,6 @@ class GUI(QMainWindow):
     acc_file = os.path.join(os.path.dirname(__file__), "acc.png")
     last_file = os.path.join(os.path.dirname(__file__), "last_config.npy")
     sweep_buffer = 500
-    env_plot_max_y = 0
-    env_plot_min_y = 0
     cl_supported = False
     sweep_number = 0
     sweeps_skipped = 0
@@ -1588,7 +1586,6 @@ class GUI(QMainWindow):
         if not data["sweep"]:
             bin_num = int(self.textboxes["power_bins"].text())
             bin_width = (xend - xstart)/(bin_num + 1)
-            self.env_plot_max_y = 0
             self.power_plot_window.setXRange(xstart, xend)
             self.power_plot.setOpts(x=data["x_mm"], width=bin_width)
             self.power_plot_window.setXRange(xstart - bin_width / 2,
