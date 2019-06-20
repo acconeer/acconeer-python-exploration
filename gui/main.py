@@ -334,40 +334,27 @@ class GUI(QMainWindow):
     def init_dropdowns(self):
         # text, mode, config, external
         mode_info = [
-            ("Select service", "", configs.EnvelopeServiceConfig(), ""),
-            ("IQ", "iq_data", configs.IQServiceConfig(), "internal"),
-            ("Envelope", "envelope_data", configs.EnvelopeServiceConfig(), "internal"),
-            ("Power bin", "power_bin", configs.PowerBinServiceConfig(), "internal_power"),
-            ("Sparse", "sparse_data", configs.SparseServiceConfig(), "internal_sparse"),
-            ("Breathing", "iq_data", br.get_sensor_config(), "external"),
-            ("Phase tracking", "iq_data", pht.get_sensor_config(), "external"),
-            ("Presence detection (IQ)", "iq_data", prd.get_sensor_config(), "external"),
-            ("Presence detection (sparse)", "sparse_data", psd.get_sensor_config(), "external"),
-            ("Sleep breathing", "iq_data", sb.get_sensor_config(), "external"),
-            ("Obstacle detection", "iq_data", od.get_sensor_config(), "external"),
+            ("Select service", "", configs.EnvelopeServiceConfig, ""),
+            ("IQ", "iq_data", configs.IQServiceConfig, "internal"),
+            ("Envelope", "envelope_data", configs.EnvelopeServiceConfig, "internal"),
+            ("Power bin", "power_bin", configs.PowerBinServiceConfig, "internal_power"),
+            ("Sparse", "sparse_data", configs.SparseServiceConfig, "internal_sparse"),
+            ("Breathing", "iq_data", br.get_sensor_config, "external"),
+            ("Phase tracking", "iq_data", pht.get_sensor_config, "external"),
+            ("Presence detection (IQ)", "iq_data", prd.get_sensor_config, "external"),
+            ("Presence detection (sparse)", "sparse_data", psd.get_sensor_config, "external"),
+            ("Sleep breathing", "iq_data", sb.get_sensor_config, "external"),
+            ("Obstacle detection", "iq_data", od.get_sensor_config, "external"),
         ]
 
         self.mode_to_param = {text: mode for text, mode, *_ in mode_info}
-        self.mode_to_config = {text: [config, ext] for text, _, config, ext in mode_info}
+        self.mode_to_config = {text: [config(), ext] for text, _, config, ext in mode_info}
+        self.mode_to_config_class = {text: config for text, _, config, _ in mode_info}
 
         self.module_dd = QComboBox(self)
 
-        self.conf_defaults = {}
-        for text, mode, config, ext in mode_info:
+        for text, *_ in mode_info:
             self.module_dd.addItem(text)
-
-            if mode:
-                self.conf_defaults[text] = {}
-                if "external" in ext:
-                    self.conf_defaults[text]["gain"] = config.gain
-                    self.conf_defaults[text]["range_start"] = config.range_interval[0]
-                    self.conf_defaults[text]["range_end"] = config.range_interval[1]
-                    self.conf_defaults[text]["sweep_rate"] = config.sweep_rate
-                else:
-                    self.conf_defaults[text]["range_start"] = 0.18
-                    self.conf_defaults[text]["range_end"] = 0.60
-                    self.conf_defaults[text]["gain"] = 0.7
-                    self.conf_defaults[text]["sweep_rate"] = 60
 
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
@@ -716,15 +703,29 @@ class GUI(QMainWindow):
                 self.advanced_section.hide()
 
     def sensor_defaults_handler(self):
-        conf = self.conf_defaults[self.module_dd.currentText()]
-        self.textboxes["range_start"].setText("{:.2f}".format(conf["range_start"]))
-        self.textboxes["range_end"].setText("{:.2f}".format(conf["range_end"]))
-        self.textboxes["gain"].setText("{:.2f}".format(conf["gain"]))
-        self.textboxes["sweep_rate"].setText("{:d}".format(conf["sweep_rate"]))
         self.sweep_count = -1
         self.textboxes["sweeps"].setText("-1")
-        if self.env_profiles_dd.isVisible():
-            self.env_profiles_dd.setCurrentIndex(0)
+
+        self.env_profiles_dd.setCurrentIndex(0)
+
+        config_class = self.mode_to_config_class[self.module_dd.currentText()]
+        default_config = None if config_class is None else config_class()
+
+        if default_config is None:
+            return
+
+        d = {
+            "range_start": (0.18, ".2f"),
+            "range_end": (0.60, ".2f"),
+            "gain": (0.6, ".2f"),
+            "sweep_rate": (40, "d"),
+        }
+
+        for key, (alt, fmt) in d.items():
+            config_val = getattr(default_config, key)
+            val = alt if config_val is None else config_val
+            text = "{{:{}}}".format(fmt).format(val)
+            self.textboxes[key].setText(text)
 
     def service_defaults_handler(self):
         mode = self.module_dd.currentText()
