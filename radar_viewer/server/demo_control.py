@@ -52,7 +52,7 @@ class DemoControl:
                     print("demo_control: got rvc_command but rvc control not initiated")
             elif cmd[0] == "exit":
                 if self.detector_thread:
-                    self.stop_detector(self.detector_thread.name)
+                    self.stop_detector()
                 return False
         elif cmd is not None:
             self._update_gui_state(cmd)
