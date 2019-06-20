@@ -352,7 +352,6 @@ class GUI(QMainWindow):
         self.mode_to_config = {text: [config, ext] for text, _, config, ext in mode_info}
 
         self.mode = QComboBox(self)
-        self.mode.move(50, 250)
 
         self.conf_defaults = {}
         for text, mode, config, ext in mode_info:
@@ -852,7 +851,6 @@ class GUI(QMainWindow):
             "use_clutter": use_cl,
             "create_clutter": create_cl,
             "data_source": data_source,
-            "data_type": self.mode_to_param[self.mode.currentText()],
             "service_type": self.mode.currentText(),
             "sweep_buffer": self.sweep_buffer,
             "service_params": processing_config,

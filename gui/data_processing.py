@@ -19,10 +19,6 @@ def get_sparse_processing_config():
 
 class DataProcessing:
     hist_len = 500
-    processing_handle = None
-
-    def send_sensor_config(self, sensor_config):
-        self.sensor_config = sensor_config
 
     def prepare_processing(self, parent, params):
         self.sensor_config = params["sensor_config"]
@@ -71,16 +67,13 @@ class DataProcessing:
         self.peak_history = np.zeros(self.image_buffer, dtype="float")
         self.sweep = 0
         self.record = []
-        self.complex_avg = 0
         self.n_std_avg = 0
         self.abort = False
-        self.env_max = 0
         self.first_run = True
         self.skip = 0
 
         self.cl = np.zeros((0, 1))
         self.cl_iq = np.zeros((0, 1), dtype="complex")
-        self.threshold = np.zeros((0, 1))
         self.process = self.get_processing_type(self.service_type)
 
     def set_clutter_flag(self, enable):
