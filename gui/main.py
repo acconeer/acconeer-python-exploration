@@ -119,11 +119,11 @@ class GUI(QMainWindow):
         label_info = {
             "sensor": ("Sensor", "sensor"),
             "gain": ("Gain", "sensor"),
-            "frequency": ("Sweep frequency", "sensor"),
+            "sweep_rate": ("Sweep frequency", "sensor"),
             "sweeps": ("Number of sweeps", "sensor"),
             "sweep_buffer": ("Sweep buffer", "scan"),
-            "start_range": ("Start (m)", "sensor"),
-            "end_range": ("Stop (m)", "sensor"),
+            "range_start": ("Start (m)", "sensor"),
+            "range_end": ("Stop (m)", "sensor"),
             "clutter": ("Background settings", "scan"),
             "clutter_status": ("", "scan"),
             "interface": ("Interface", "connection"),
@@ -155,11 +155,11 @@ class GUI(QMainWindow):
         textbox_info = {
             "sensor": ("1", "sensor"),
             "host": ("192.168.1.100", "connection"),
-            "frequency": ("10", "sensor"),
+            "sweep_rate": ("10", "sensor"),
             "sweeps": ("-1", "sensor"),
             "gain": ("0.4", "sensor"),
-            "start_range": ("0.18", "sensor"),
-            "end_range": ("0.72", "sensor"),
+            "range_start": ("0.18", "sensor"),
+            "range_end": ("0.72", "sensor"),
             "sweep_buffer": ("100", "scan"),
             "power_bins": ("6", "sensor"),
             "subsweeps": ("16", "sensor"),
@@ -360,14 +360,14 @@ class GUI(QMainWindow):
                 self.conf_defaults[text] = {}
                 if "external" in ext:
                     self.conf_defaults[text]["gain"] = config.gain
-                    self.conf_defaults[text]["start_range"] = config.range_interval[0]
-                    self.conf_defaults[text]["end_range"] = config.range_interval[1]
-                    self.conf_defaults[text]["frequency"] = config.sweep_rate
+                    self.conf_defaults[text]["range_start"] = config.range_interval[0]
+                    self.conf_defaults[text]["range_end"] = config.range_interval[1]
+                    self.conf_defaults[text]["sweep_rate"] = config.sweep_rate
                 else:
-                    self.conf_defaults[text]["start_range"] = 0.18
-                    self.conf_defaults[text]["end_range"] = 0.60
+                    self.conf_defaults[text]["range_start"] = 0.18
+                    self.conf_defaults[text]["range_end"] = 0.60
                     self.conf_defaults[text]["gain"] = 0.7
-                    self.conf_defaults[text]["frequency"] = 60
+                    self.conf_defaults[text]["sweep_rate"] = 60
 
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
@@ -409,8 +409,8 @@ class GUI(QMainWindow):
             self.textboxes["gain"].setText(str(0.8))
         elif "leakage" in profile:
             self.textboxes["gain"].setText(str(0.2))
-            self.textboxes["start_range"].setText(str(0))
-            self.textboxes["end_range"].setText(str(0.3))
+            self.textboxes["range_start"].setText(str(0))
+            self.textboxes["range_end"].setText(str(0.3))
 
     def update_ports(self):
         port_infos = serial.tools.list_ports.comports()
@@ -569,12 +569,12 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.buttons["sensor_defaults"], self.num, 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["sensor"], self.increment(), 0)
         self.settings_section.grid.addWidget(self.textboxes["sensor"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["start_range"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.labels["end_range"], self.num, 1)
-        self.settings_section.grid.addWidget(self.textboxes["start_range"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["end_range"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["frequency"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["frequency"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["range_start"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.labels["range_end"], self.num, 1)
+        self.settings_section.grid.addWidget(self.textboxes["range_start"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["range_end"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["sweep_rate"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["sweep_rate"], self.num, 1)
         self.settings_section.grid.addWidget(self.labels["gain"], self.increment(), 0)
         self.settings_section.grid.addWidget(self.textboxes["gain"], self.num, 1)
         self.settings_section.grid.addWidget(self.labels["sweeps"], self.increment(), 0)
@@ -717,10 +717,10 @@ class GUI(QMainWindow):
 
     def sensor_defaults_handler(self):
         conf = self.conf_defaults[self.module_dd.currentText()]
-        self.textboxes["start_range"].setText("{:.2f}".format(conf["start_range"]))
-        self.textboxes["end_range"].setText("{:.2f}".format(conf["end_range"]))
+        self.textboxes["range_start"].setText("{:.2f}".format(conf["range_start"]))
+        self.textboxes["range_end"].setText("{:.2f}".format(conf["range_end"]))
         self.textboxes["gain"].setText("{:.2f}".format(conf["gain"]))
-        self.textboxes["frequency"].setText("{:d}".format(conf["frequency"]))
+        self.textboxes["sweep_rate"].setText("{:d}".format(conf["sweep_rate"]))
         self.sweep_count = -1
         self.textboxes["sweeps"].setText("-1")
         if self.env_profiles_dd.isVisible():
@@ -994,19 +994,19 @@ class GUI(QMainWindow):
 
         conf.sensor = int(self.textboxes["sensor"].text())
         if not refresh and external:
-            self.textboxes["start_range"].setText("{:.2f}".format(conf.range_interval[0]))
-            self.textboxes["end_range"].setText("{:.2f}".format(conf.range_interval[1]))
+            self.textboxes["range_start"].setText("{:.2f}".format(conf.range_interval[0]))
+            self.textboxes["range_end"].setText("{:.2f}".format(conf.range_interval[1]))
             self.textboxes["gain"].setText("{:.2f}".format(conf.gain))
-            self.textboxes["frequency"].setText("{:d}".format(conf.sweep_rate))
+            self.textboxes["sweep_rate"].setText("{:d}".format(conf.sweep_rate))
             self.sweep_count = -1
         else:
             stitching = self.check_values()
             conf.experimental_stitching = stitching
             conf.range_interval = [
-                    float(self.textboxes["start_range"].text()),
-                    float(self.textboxes["end_range"].text()),
+                    float(self.textboxes["range_start"].text()),
+                    float(self.textboxes["range_end"].text()),
             ]
-            conf.sweep_rate = int(self.textboxes["frequency"].text())
+            conf.sweep_rate = int(self.textboxes["sweep_rate"].text())
             conf.gain = float(self.textboxes["gain"].text())
             self.sweep_count = int(self.textboxes["sweeps"].text())
             if "power" in mode.lower():
@@ -1071,9 +1071,9 @@ class GUI(QMainWindow):
         mode = self.current_mode
 
         errors = []
-        if not self.textboxes["frequency"].text().isdigit():
+        if not self.textboxes["sweep_rate"].text().isdigit():
             errors.append("Frequency must be an integer and not less than 0!\n")
-            self.textboxes["frequency"].setText("10")
+            self.textboxes["sweep_rate"].setText("10")
 
         if not self.textboxes["sensor"].text().isdigit():
             errors.append("Sensor must be an integer between 1 and 4!\n")
@@ -1112,13 +1112,13 @@ class GUI(QMainWindow):
             errors.append("Gain must be between 0 and 1!\n")
 
         min_start_range = 0 if "leakage" in self.env_profiles_dd.currentText().lower() else 0.06
-        start = self.is_float(self.textboxes["start_range"].text(), is_positive=False)
-        start, e = self.check_limit(start, self.textboxes["start_range"], min_start_range, 6.94)
+        start = self.is_float(self.textboxes["range_start"].text(), is_positive=False)
+        start, e = self.check_limit(start, self.textboxes["range_start"], min_start_range, 6.94)
         if e:
             errors.append("Start range must be between {}m and 6.94m!\n".format(min_start_range))
 
-        end = self.is_float(self.textboxes["end_range"].text())
-        end, e = self.check_limit(end, self.textboxes["end_range"], 0.12, 7)
+        end = self.is_float(self.textboxes["range_end"].text())
+        end, e = self.check_limit(end, self.textboxes["range_end"], 0.12, 7)
         if e:
             errors.append("End range must be between 0.12m and 7.0m!\n")
 
@@ -1137,14 +1137,14 @@ class GUI(QMainWindow):
         stitching = False
         if r <= 0:
             errors.append("Range must not be less than 0!\n")
-            self.textboxes["end_range"].setText(str(start + 0.06))
+            self.textboxes["range_end"].setText(str(start + 0.06))
             end = start + 0.06
             r = end - start
 
         if self.current_mode == "envelope":
             if r > env_max_range:
                 errors.append("Envelope range must be less than %.2fm!\n" % env_max_range)
-                self.textboxes["end_range"].setText(str(start + env_max_range))
+                self.textboxes["range_end"].setText(str(start + env_max_range))
                 end = start + env_max_range
                 r = end - start
             elif r > 0.96:
@@ -1153,14 +1153,14 @@ class GUI(QMainWindow):
         if self.current_mode == "iq":
             if r > iq_max_range:
                 errors.append("IQ range must be less than %.2fm!\n" % iq_max_range)
-                self.textboxes["end_range"].setText(str(start + iq_max_range))
+                self.textboxes["range_end"].setText(str(start + iq_max_range))
                 end = start + iq_max_range
                 r = end - start
             elif r > 0.72:
                 stitching = True
 
         self.labels["stitching"].setVisible(stitching)
-        self.textboxes["frequency"].setEnabled(not stitching)
+        self.textboxes["sweep_rate"].setEnabled(not stitching)
 
         if len(errors):
             self.error_message("".join(errors))
@@ -1310,10 +1310,10 @@ class GUI(QMainWindow):
                     print("Config not stored in file...")
                     print(e)
                     conf.range_interval = [
-                            float(self.textboxes["start_range"].text()),
-                            float(self.textboxes["end_range"].text()),
+                            float(self.textboxes["range_start"].text()),
+                            float(self.textboxes["range_end"].text()),
                     ]
-                    conf.sweep_rate = int(self.textboxes["frequency"].text())
+                    conf.sweep_rate = int(self.textboxes["sweep_rate"].text())
 
                 cl_file = None
                 try:
@@ -1356,10 +1356,10 @@ class GUI(QMainWindow):
                     self.module_dd.setCurrentIndex(index)
                 self.data = data
 
-            self.textboxes["start_range"].setText(str(conf.range_interval[0]))
-            self.textboxes["end_range"].setText(str(conf.range_interval[1]))
+            self.textboxes["range_start"].setText(str(conf.range_interval[0]))
+            self.textboxes["range_end"].setText(str(conf.range_interval[1]))
             self.textboxes["gain"].setText(str(conf.gain))
-            self.textboxes["frequency"].setText(str(int(conf.sweep_rate)))
+            self.textboxes["sweep_rate"].setText(str(int(conf.sweep_rate)))
             if "power" in mode.lower():
                 self.textboxes["power_bins"].setText(str(conf.bin_count))
             if "sparse" in mode.lower():
@@ -1454,7 +1454,7 @@ class GUI(QMainWindow):
                         return
                     f.create_dataset("imag", data=np.imag(sweep_data), dtype=np.float32)
                     f.create_dataset("real", data=np.real(sweep_data), dtype=np.float32)
-                    f.create_dataset("sweep_rate", data=int(self.textboxes["frequency"].text()),
+                    f.create_dataset("sweep_rate", data=int(self.textboxes["sweep_rate"].text()),
                                      dtype=np.float32)
                     f.create_dataset("start", data=float(sensor_config.range_start),
                                      dtype=np.float32)
@@ -1591,7 +1591,7 @@ class GUI(QMainWindow):
             self.power_plot_window.setXRange(xstart - bin_width / 2,
                                              xend + bin_width / 2)
             self.smooth_power = example_utils.SmoothMax(
-                int(self.textboxes["frequency"].text()),
+                int(self.textboxes["sweep_rate"].text()),
                 tau_decay=1,
                 tau_grow=0.2
                 )
@@ -1601,7 +1601,7 @@ class GUI(QMainWindow):
     def update_sparse_plots(self, data):
         if not data["sweep"]:
             self.smooth_sparse = example_utils.SmoothMax(
-                int(self.textboxes["frequency"].text()),
+                int(self.textboxes["sweep_rate"].text()),
                 tau_decay=1,
                 tau_grow=0.2
                 )
@@ -1660,12 +1660,12 @@ class GUI(QMainWindow):
             self.labels["clutter_status"].setText(clutter_status)
 
     def update_ranges(self, data):
-        old_start = float(self.textboxes["start_range"].text())
-        old_end = float(self.textboxes["end_range"].text())
+        old_start = float(self.textboxes["range_start"].text())
+        old_end = float(self.textboxes["range_end"].text())
         start = data["actual_range_start"]
-        self.textboxes["start_range"].setText("{:.2f}".format(start))
+        self.textboxes["range_start"].setText("{:.2f}".format(start))
         end = start + data["actual_range_length"]
-        self.textboxes["end_range"].setText("{:.2f}".format(end))
+        self.textboxes["range_end"].setText("{:.2f}".format(end))
         print("Updated range settings to match session info!")
         print("Start {:.3f} -> {:.3f}".format(old_start, start))
         print("End   {:.3f} -> {:.3f}".format(old_end, end))
@@ -1721,9 +1721,9 @@ class GUI(QMainWindow):
 
         try:
             self.textboxes["gain"].setText("{:.1f}".format(sensor_config.gain))
-            self.textboxes["frequency"].setText(str(int(sensor_config.sweep_rate)))
-            self.textboxes["start_range"].setText("{:.2f}".format(sensor_config.range_interval[0]))
-            self.textboxes["end_range"].setText("{:.2f}".format(sensor_config.range_interval[1]))
+            self.textboxes["sweep_rate"].setText(str(int(sensor_config.sweep_rate)))
+            self.textboxes["range_start"].setText("{:.2f}".format(sensor_config.range_interval[0]))
+            self.textboxes["range_end"].setText("{:.2f}".format(sensor_config.range_interval[1]))
             if hasattr(sensor_config, "bin_count"):
                 self.textboxes["power_bins"].setText("{:d}".format(sensor_config.bin_count))
             if hasattr(sensor_config, "number_of_subsweeps"):
