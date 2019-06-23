@@ -216,8 +216,6 @@ class GUI(QMainWindow):
         else:
             processing_config = module_processing_prop
 
-        canvas = None
-
         mode_is_sparse = (self.current_mode == "sparse")
         self.textboxes["subsweeps"].setVisible(mode_is_sparse)
         self.labels["subsweeps"].setVisible(mode_is_sparse)
