@@ -28,7 +28,7 @@ MODULE_INFOS = [
     ModuleInfo(
         "Select service",
         None,
-        configs.EnvelopeServiceConfig,
+        None,
         None,
         None,
     ),

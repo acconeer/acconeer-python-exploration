@@ -69,7 +69,8 @@ class GUI(QMainWindow):
 
         self.module_label_to_sensor_config_map = {}
         for mi in MODULE_INFOS:
-            self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
+            if mi.sensor_config_class is not None:
+                self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
 
         self.setWindowIcon(QIcon(self.acc_file))
 
@@ -648,8 +649,13 @@ class GUI(QMainWindow):
         self.current_module_label = module_label
 
         self.current_module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
-        self.current_mode = self.current_module_info.sensor_config_class().mode
-        self.external = self.current_module_info.processor
+
+        if self.current_module_info.module is None:
+            self.current_mode = None
+            self.external = None
+        else:
+            self.current_mode = self.current_module_info.sensor_config_class().mode
+            self.external = self.current_module_info.processor
 
         if switching_module:
             self.data = None
@@ -894,7 +900,7 @@ class GUI(QMainWindow):
         mode = self.current_module_label
         conf = self.module_label_to_sensor_config_map[mode]
 
-        if not conf:
+        if conf is None:
             return None
 
         conf.sensor = int(self.textboxes["sensor"].text())
