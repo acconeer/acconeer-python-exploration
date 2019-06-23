@@ -327,23 +327,23 @@ class GUI(QMainWindow):
         return canvas
 
     def init_dropdowns(self):
-        # text, mode, config, external
+        # text, config, external
         mode_info = [
-            ("Select service", "", configs.EnvelopeServiceConfig, ""),
-            ("IQ", "iq_data", configs.IQServiceConfig, "internal"),
-            ("Envelope", "envelope_data", configs.EnvelopeServiceConfig, "internal"),
-            ("Power bin", "power_bin", configs.PowerBinServiceConfig, "internal_power"),
-            ("Sparse", "sparse_data", configs.SparseServiceConfig, "internal_sparse"),
-            ("Breathing", "iq_data", br.get_sensor_config, "external"),
-            ("Phase tracking", "iq_data", pht.get_sensor_config, "external"),
-            ("Presence detection (IQ)", "iq_data", prd.get_sensor_config, "external"),
-            ("Presence detection (sparse)", "sparse_data", psd.get_sensor_config, "external"),
-            ("Sleep breathing", "iq_data", sb.get_sensor_config, "external"),
-            ("Obstacle detection", "iq_data", od.get_sensor_config, "external"),
+            ("Select service", configs.EnvelopeServiceConfig, ""),
+            ("IQ", configs.IQServiceConfig, "internal"),
+            ("Envelope", configs.EnvelopeServiceConfig, "internal"),
+            ("Power bin", configs.PowerBinServiceConfig, "internal_power"),
+            ("Sparse", configs.SparseServiceConfig, "internal_sparse"),
+            ("Breathing", br.get_sensor_config, "external"),
+            ("Phase tracking", pht.get_sensor_config, "external"),
+            ("Presence detection (IQ)", prd.get_sensor_config, "external"),
+            ("Presence detection (sparse)", psd.get_sensor_config, "external"),
+            ("Sleep breathing", sb.get_sensor_config, "external"),
+            ("Obstacle detection", od.get_sensor_config, "external"),
         ]
 
-        self.mode_to_config = {text: [config(), ext] for text, _, config, ext in mode_info}
-        self.mode_to_config_class = {text: config for text, _, config, _ in mode_info}
+        self.mode_to_config = {text: [config(), ext] for text, config, ext in mode_info}
+        self.mode_to_config_class = {text: config for text, config, _ in mode_info}
 
         self.module_dd = QComboBox(self)
 
