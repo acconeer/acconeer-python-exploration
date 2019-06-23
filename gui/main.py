@@ -75,6 +75,8 @@ class GUI(QMainWindow):
         super().__init__()
 
         self.current_mode = None
+        self.current_module_label = None
+        self.canvas = None
 
         self.setWindowIcon(QIcon(self.acc_file))
 
@@ -98,8 +100,8 @@ class GUI(QMainWindow):
         self.main_widget.addWidget(self.panel_scroll_area)
 
         self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
-        self.canvas = self.init_graphs()
-        self.canvas_layout.addWidget(self.canvas)
+
+        self.update_canvas(force_update=True)
 
         self.resize(1200, 800)
         self.setWindowTitle("Acconeer Exploration GUI")
@@ -192,7 +194,7 @@ class GUI(QMainWindow):
                 cb.stateChanged.connect(fun)
             self.checkboxes[key] = cb
 
-    def init_graphs(self, mode="Select service", refresh=False):
+    def init_graphs(self, refresh=False):
         self.service_props = {
             "Select service": [None, None],
             "IQ": [iq, iq.IQProcessor],
@@ -207,11 +209,13 @@ class GUI(QMainWindow):
             "Obstacle detection": [od, od.ObstacleDetectionProcessor],
         }
 
-        self.external = self.service_props[mode][1]
+        self.external = self.service_props[self.current_module_label][1]
+
+        module_processing_prop = self.service_props[self.current_module_label][0]
         if self.external:
-            processing_config = self.service_props[mode][0].get_processing_config()
+            processing_config = module_processing_prop.get_processing_config()
         else:
-            processing_config = self.service_props[mode][0]
+            processing_config = module_processing_prop
 
         canvas = None
 
@@ -224,7 +228,7 @@ class GUI(QMainWindow):
         self.env_profiles_dd.setVisible(self.current_mode == "envelope")
 
         self.cl_supported = False
-        if "IQ" in self.module_dd.currentText() or "Envelope" in self.module_dd.currentText():
+        if self.current_module_label in ["IQ", "Envelope"]:
             self.cl_supported = True
         else:
             self.load_clutter_file(force_unload=True)
@@ -234,9 +238,7 @@ class GUI(QMainWindow):
         self.buttons["load_cl"].setEnabled(self.cl_supported)
         self.labels["clutter"].setVisible(self.cl_supported)
 
-        self.current_canvas = mode
-
-        if mode == "Select service":
+        if self.current_module_label == "Select service":
             canvas = Label(self.acc_file)
             self.buttons["sensor_defaults"].setEnabled(False)
             return canvas
@@ -271,11 +273,11 @@ class GUI(QMainWindow):
                 self.service_section.hide()
 
         if self.external:
-            self.service_widget = self.service_props[mode][0].PGUpdater(
+            self.service_widget = self.service_props[self.current_module_label][0].PGUpdater(
                 self.update_sensor_config(refresh=refresh), self.update_service_params())
             self.service_widget.setup(canvas)
             return canvas
-        elif "power" in mode.lower():
+        elif "power" in self.current_module_label.lower():
             self.power_plot_window = canvas.addPlot(row=0, col=0, title="Power bin")
             self.power_plot_window.showGrid(x=True, y=True)
             self.power_plot = pg.BarGraphItem(x=[],
@@ -288,7 +290,7 @@ class GUI(QMainWindow):
             self.power_plot_window.addItem(self.power_plot)
             self.textboxes["power_bins"].setVisible(True)
             self.labels["power_bins"].setVisible(True)
-        elif "sparse" in mode.lower():
+        elif "sparse" in self.current_module_label.lower():
             self.sparse_plot_window = canvas.addPlot(row=0, col=0, title="Sparse data")
             self.sparse_plot_window.showGrid(x=True, y=True)
             self.sparse_plot_window.setLabel("bottom", "Distance (mm)")
@@ -306,7 +308,7 @@ class GUI(QMainWindow):
 
             canvas.nextRow()
 
-        if mode.lower() == "sparse":
+        if self.current_module_label.lower() == "sparse":
             row = 1
             title = "Amplitude history"
             basic_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
@@ -341,7 +343,6 @@ class GUI(QMainWindow):
             ("Obstacle detection", "iq_data", od.get_sensor_config, "external"),
         ]
 
-        self.mode_to_param = {text: mode for text, mode, *_ in mode_info}
         self.mode_to_config = {text: [config(), ext] for text, _, config, ext in mode_info}
         self.mode_to_config_class = {text: config for text, _, config, _ in mode_info}
 
@@ -617,7 +618,7 @@ class GUI(QMainWindow):
                         self.service_labels[mode][param_key][element].setVisible(False)
 
         if start_up_mode is None:
-            mode = self.module_dd.currentText()
+            mode = self.current_module_label
             set_visible = True
         else:
             mode = start_up_mode
@@ -702,7 +703,7 @@ class GUI(QMainWindow):
 
         self.env_profiles_dd.setCurrentIndex(0)
 
-        config_class = self.mode_to_config_class[self.module_dd.currentText()]
+        config_class = self.mode_to_config_class[self.current_module_label]
         default_config = None if config_class is None else config_class()
 
         if default_config is None:
@@ -722,7 +723,7 @@ class GUI(QMainWindow):
             self.textboxes[key].setText(text)
 
     def service_defaults_handler(self):
-        mode = self.module_dd.currentText()
+        mode = self.current_module_label
         if self.service_defaults is None:
             return
         for key in self.service_defaults:
@@ -735,26 +736,29 @@ class GUI(QMainWindow):
                         bool(self.service_defaults[key]["value"]))
 
     def update_canvas(self, force_update=False):
-        self.current_mode = self.mode_to_config[self.module_dd.currentText()][0].mode
+        module_label = self.module_dd.currentText()
+        switching_module = self.current_module_label != module_label
+        self.current_module_label = module_label
 
-        mode = self.module_dd.currentText()
-        if self.mode_to_param[mode] != self.mode_to_param[self.current_canvas]:
+        self.current_mode = self.mode_to_config[self.current_module_label][0].mode
+
+        if switching_module:
             self.data = None
             self.buttons["replay_buffered"].setEnabled(False)
 
-        if force_update or self.current_canvas not in mode:
-            self.canvas_layout.removeWidget(self.canvas)
-            self.canvas.setParent(None)
-            self.canvas.deleteLater()
-            self.canvas = None
-            refresh = False
-            if self.current_canvas == mode:
-                refresh = True
+        if force_update or switching_module:
+            if self.canvas is not None:
+                self.canvas_layout.removeWidget(self.canvas)
+                self.canvas.setParent(None)
+                self.canvas.deleteLater()
+
+            if not switching_module:
                 self.update_service_params()
-            self.canvas = self.init_graphs(mode, refresh=refresh)
+
+            self.canvas = self.init_graphs(refresh=(not switching_module))
             self.canvas_layout.addWidget(self.canvas)
 
-        if "select service" not in mode.lower():
+        if "select service" not in self.current_module_label.lower():
             self.update_sensor_config()
 
     def update_interface(self):
@@ -794,7 +798,7 @@ class GUI(QMainWindow):
         return retval == 1024
 
     def start_scan(self, create_cl=False, from_file=False):
-        if "Select" in self.module_dd.currentText():
+        if "Select" in self.current_module_label:
             self.error_message("Please select a service")
             return
 
@@ -833,7 +837,7 @@ class GUI(QMainWindow):
             use_cl = True
 
         processing_config = self.update_service_params()
-        mode = self.module_dd.currentText()
+        mode = self.current_module_label
         if mode == "Envelope" or mode == "IQ":
             processing_config = copy.deepcopy(self.update_service_params())
             processing_config["clutter_file"] = self.cl_file
@@ -847,7 +851,7 @@ class GUI(QMainWindow):
             "use_clutter": use_cl,
             "create_clutter": create_cl,
             "data_source": data_source,
-            "service_type": self.module_dd.currentText(),
+            "service_type": self.current_module_label,
             "sweep_buffer": self.sweep_buffer,
             "service_params": processing_config,
         }
@@ -908,7 +912,7 @@ class GUI(QMainWindow):
     def connect_to_server(self):
         if self.buttons["connect"].text() == "Connect":
             max_num = 4
-            if "Select service" in self.current_canvas:
+            if "Select service" in self.current_module_label:
                 self.module_dd.setCurrentIndex(2)
 
             if self.interface_dd.currentText().lower() == "socket":
@@ -979,8 +983,8 @@ class GUI(QMainWindow):
                 pass
 
     def update_sensor_config(self, refresh=False):
-        conf, service = self.mode_to_config[self.module_dd.currentText()]
-        mode = self.module_dd.currentText()
+        mode = self.current_module_label
+        conf, service = self.mode_to_config[mode]
 
         if not conf:
             return None
@@ -1021,7 +1025,7 @@ class GUI(QMainWindow):
 
     def update_service_params(self):
         errors = []
-        mode = self.module_dd.currentText()
+        mode = self.current_module_label
 
         if mode not in self.service_labels:
             return None
@@ -1270,7 +1274,7 @@ class GUI(QMainWindow):
 
                 try:
                     self.env_profiles_dd.setCurrentIndex(f["profile"][()])
-                    mode = self.module_dd.currentText()
+                    mode = self.current_module_label
                     if self.service_params is not None:
                         if mode in self.service_labels:
                             for key in self.service_labels[mode]:
@@ -1372,7 +1376,7 @@ class GUI(QMainWindow):
             self.start_scan(from_file=True)
 
     def save_scan(self, data, clutter=False):
-        mode = self.module_dd.currentText()
+        mode = self.current_module_label
         if "sleep" in mode.lower():
             if int(self.textboxes["sweep_buffer"].text()) < 1000:
                 self.error_message("Please set sweep buffer to >= 1000")
@@ -1732,7 +1736,7 @@ class GUI(QMainWindow):
         return self.num
 
     def closeEvent(self, event=None):
-        if "select" not in str(self.module_dd.currentText()).lower():
+        if "select" not in str(self.current_module_label).lower():
             service_params = {}
             for mode in self.service_labels:
                 if service_params.get(mode) is None:
