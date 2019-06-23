@@ -330,8 +330,8 @@ class GUI(QMainWindow):
         # text, config, external
         mode_info = [
             ("Select service", configs.EnvelopeServiceConfig, ""),
-            ("IQ", configs.IQServiceConfig, "internal"),
-            ("Envelope", configs.EnvelopeServiceConfig, "internal"),
+            ("IQ", configs.IQServiceConfig, "external"),
+            ("Envelope", configs.EnvelopeServiceConfig, "external"),
             ("Power bin", configs.PowerBinServiceConfig, "internal_power"),
             ("Sparse", configs.SparseServiceConfig, "internal_sparse"),
             ("Breathing", br.get_sensor_config, "external"),
