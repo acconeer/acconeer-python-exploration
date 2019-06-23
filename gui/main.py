@@ -254,19 +254,6 @@ class GUI(QMainWindow):
                 self.update_sensor_config(refresh=refresh), self.update_service_params())
             self.service_widget.setup(canvas)
             return canvas
-        elif "power" in self.current_module_label.lower():
-            self.power_plot_window = canvas.addPlot(row=0, col=0, title="Power bin")
-            self.power_plot_window.showGrid(x=True, y=True)
-            self.power_plot = pg.BarGraphItem(x=[],
-                                              height=[],
-                                              width=0.5,
-                                              brush=pg.mkBrush(example_utils.color_cycler()),
-                                              name="Power bins")
-            self.power_plot_window.setLabel("left", "Amplitude")
-            self.power_plot_window.setLabel("bottom", "Distance (mm)")
-            self.power_plot_window.addItem(self.power_plot)
-            self.textboxes["power_bins"].setVisible(True)
-            self.labels["power_bins"].setVisible(True)
         elif "sparse" in self.current_module_label.lower():
             self.sparse_plot_window = canvas.addPlot(row=0, col=0, title="Sparse data")
             self.sparse_plot_window.showGrid(x=True, y=True)
@@ -1520,11 +1507,8 @@ class GUI(QMainWindow):
             self.stop_scan()
             if "Connect" == self.buttons["connect"].text():
                 self.buttons["start"].setEnabled(False)
-        elif "update_power_plots" in message_type:
-            if data:
-                self.update_power_plots(data)
         elif "update_external_plots" in message_type:
-            if data:
+            if data is not None:
                 self.update_external_plots(data)
         elif "update_sparse_plots" in message_type:
             if data:
@@ -1538,24 +1522,6 @@ class GUI(QMainWindow):
         else:
             print("Thread data not implemented!")
             print(message_type, message, data)
-
-    def update_power_plots(self, data):
-        xstart = data["x_mm"][0]
-        xend = data["x_mm"][-1]
-        if not data["sweep"]:
-            bin_num = int(self.textboxes["power_bins"].text())
-            bin_width = (xend - xstart)/(bin_num + 1)
-            self.power_plot_window.setXRange(xstart, xend)
-            self.power_plot.setOpts(x=data["x_mm"], width=bin_width)
-            self.power_plot_window.setXRange(xstart - bin_width / 2,
-                                             xend + bin_width / 2)
-            self.smooth_power = example_utils.SmoothMax(
-                int(self.textboxes["sweep_rate"].text()),
-                tau_decay=1,
-                tau_grow=0.2
-                )
-        self.power_plot.setOpts(height=data["iq_data"])
-        self.power_plot_window.setYRange(0, self.smooth_power.update(np.max(data["iq_data"])))
 
     def update_sparse_plots(self, data):
         if not data["sweep"]:
@@ -1774,8 +1740,8 @@ class Threaded_Scan(QtCore.QThread):
                 while self.running:
                     info, sweep = self.client.get_next()
                     self.emit("sweep_info", "", info)
-                    plot_data, data = self.radar.process(sweep, info)
-                    if plot_data and plot_data["sweep"] + 1 >= self.sweep_count:
+                    plot_data, data, sweep_number = self.radar.process(sweep, info)
+                    if sweep_number + 1 >= self.sweep_count:
                         self.running = False
             except Exception as e:
                 msg = "Failed to communicate with server!\n{}".format(self.format_error(e))
@@ -1786,7 +1752,7 @@ class Threaded_Scan(QtCore.QThread):
             except Exception:
                 pass
 
-            if data:
+            if data is not None:
                 self.emit("scan_data", "", data)
         elif self.params["data_source"] == "file":
             self.radar.prepare_processing(self, self.params)

@@ -29,10 +29,9 @@ def main():
     config.gain = 0.6
     # config.bin_count = 8
 
-    info = client.setup_session(config)
-    num_points = info["actual_bin_count"]
+    client.setup_session(config)
 
-    pg_updater = PGUpdater(config, num_points)
+    pg_updater = PGUpdater(config)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -55,9 +54,10 @@ def main():
 
 
 class PGUpdater:
-    def __init__(self, config, num_points):
-        self.config = config
-        self.num_points = num_points
+    def __init__(self, sensor_config, processing_config=None):
+        self.config = sensor_config
+
+        self.sweep_index = 0
 
     def setup(self, win):
         win.setWindowTitle("Acconeer power bin example")
@@ -78,14 +78,19 @@ class PGUpdater:
                     )
             self.curves.append(curve)
 
-        self.xs = np.linspace(*self.config.range_interval, self.num_points)
         self.smooth_max = example_utils.SmoothMax(self.config.sweep_rate)
 
     def update(self, data):
+        if self.sweep_index == 0:
+            num_points = data.shape[1]
+            self.xs = np.linspace(*self.config.range_interval, num_points)
+
         for i in range(data.shape[0]):
             self.curves[i].setData(self.xs, data[i])
 
         self.plot.setYRange(0, self.smooth_max.update(np.amax(data)))
+
+        self.sweep_index += 1
 
 
 if __name__ == "__main__":

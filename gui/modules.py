@@ -3,9 +3,11 @@ from collections import namedtuple
 from acconeer_utils.clients import configs
 
 import data_processing
+from helper import UnsqueezingDummyProcessor
 
 import service_modules.envelope as envelope_module
 import service_modules.iq as iq_module
+import examples.services.power_bin as power_bin_module
 import examples.processing.breathing as breathing_module
 import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_iq as presence_detection_iq_module
@@ -50,11 +52,11 @@ MODULE_INFOS = [
     ),
     ModuleInfo(
         "Power bin",
-        None,
+        power_bin_module,
         configs.PowerBinServiceConfig,
+        UnsqueezingDummyProcessor,
         None,
-        None,
-        "internal_power",
+        "external",
     ),
     ModuleInfo(
         "Sparse",

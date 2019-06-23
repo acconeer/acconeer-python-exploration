@@ -79,3 +79,11 @@ class CollapsibleSection(QFrame):
         else:
             self._button.setArrowType(QtCore.Qt.ArrowType.DownArrow)
             self.body_widget.show()
+
+
+class UnsqueezingDummyProcessor:
+    def __init__(self, sensor_config, processing_config):
+        pass
+
+    def process(self, data):
+        return data[None, ...]

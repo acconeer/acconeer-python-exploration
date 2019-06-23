@@ -54,9 +54,7 @@ class DataProcessing:
 
     def get_processing_type(self, service):
         process = self.external_processing
-        if service.lower() == "power bin":
-            process = self.power_bin_processing
-        elif service.lower() == "sparse":
+        if service.lower() == "sparse":
             process = self.sparse_processing
         return process
 
@@ -135,23 +133,6 @@ class DataProcessing:
 
         return (cl, cl_iq, thrshld)
 
-    def power_bin_processing(self, iq_data, info):
-        if not self.sweep:
-            self.env_x_mm = np.linspace(self.start_x, self.stop_x, iq_data.size)*1000
-
-        plot_data = {
-            "iq_data": iq_data,
-            "sensor_config": self.sensor_config,
-            "sweep": self.sweep,
-            "x_mm": self.env_x_mm,
-        }
-
-        self.record_data(iq_data, info)
-        self.draw_canvas(self.sweep, plot_data, "update_power_plots")
-        self.sweep += 1
-
-        return (plot_data, self.record)
-
     def sparse_processing(self, iq_data, info):
         num_subsweeps = iq_data.shape[0]
         if not self.sweep:
@@ -222,7 +203,7 @@ class DataProcessing:
         self.draw_canvas(self.sweep, plot_data, "update_sparse_plots")
         self.sweep += 1
 
-        return (plot_data, self.record)
+        return plot_data, self.record, self.sweep
 
     def alpha(self, tau, dt):
         return np.exp(-dt/tau)
@@ -235,21 +216,18 @@ class DataProcessing:
             plot_data = self.external.process(sweep_data)
         else:
             plot_data = self.external.process(sweep_data)
-            if plot_data:
+            if plot_data is not None:
                 self.draw_canvas(self.sweep, plot_data, "update_external_plots")
                 self.sweep += 1
-                if plot_data.get("send_process_data") is not None:
+                if isinstance(plot_data, dict) and plot_data.get("send_process_data") is not None:
                     self.parent.emit("process_data", "", plot_data["send_process_data"])
 
                 if self.create_cl and self.sweep == self.sweeps - 1:
                     self.process_clutter_data(plot_data["clutter_raw"])
 
-        if plot_data:
-            plot_data["sweep"] = self.sweep
-
         self.record_data(sweep_data, info)
 
-        return (plot_data, self.record)
+        return plot_data, self.record, self.sweep
 
     def process_clutter_data(self, cl_data):
         cl = np.zeros((3, len(cl_data[0])))
@@ -315,7 +293,7 @@ class DataProcessing:
             if not self.abort:
                 self.skip = 0
                 time.sleep(self.rate)
-                plot_data, _ = self.process(data_step["sweep_data"], info)
+                plot_data, *_ = self.process(data_step["sweep_data"], info)
 
                 self.parent.emit("sweep_info", "", info)
 
