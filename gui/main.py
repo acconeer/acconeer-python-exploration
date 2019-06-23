@@ -306,19 +306,13 @@ class GUI(QMainWindow):
 
             canvas.nextRow()
 
-        if mode.lower() in ["sparse"]:
+        if mode.lower() == "sparse":
             row = 1
-            title = "Envelope History"
-            if "iq" in mode.lower():
-                row = 2
-            if "sparse" in mode.lower():
-                title = "Amplitude history"
-                basic_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
-                colormap = LinearSegmentedColormap.from_list("mycmap", basic_cols)
-                colormap._init()
-                lut = (colormap._lut * 255).view(np.ndarray)
-            else:
-                lut = example_utils.pg_mpl_cmap("viridis")
+            title = "Amplitude history"
+            basic_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
+            colormap = LinearSegmentedColormap.from_list("mycmap", basic_cols)
+            colormap._init()
+            lut = (colormap._lut * 255).view(np.ndarray)
 
             self.hist_plot_image = canvas.addPlot(row=row, col=0, title=title)
             self.hist_plot = pg.ImageItem()
