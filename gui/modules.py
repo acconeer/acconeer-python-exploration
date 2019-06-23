@@ -22,7 +22,6 @@ ModuleInfo = namedtuple("ModuleInfo", [
     "sensor_config_class",
     "processor",
     "processing_config_class",
-    "ext",
 ])
 
 MODULE_INFOS = [
@@ -32,7 +31,6 @@ MODULE_INFOS = [
         configs.EnvelopeServiceConfig,
         None,
         None,
-        "",
     ),
     ModuleInfo(
         "IQ",
@@ -40,7 +38,6 @@ MODULE_INFOS = [
         configs.IQServiceConfig,
         iq_module.IQProcessor,
         iq_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Envelope",
@@ -48,7 +45,6 @@ MODULE_INFOS = [
         configs.EnvelopeServiceConfig,
         envelope_module.EnvelopeProcessor,
         envelope_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Power bin",
@@ -56,7 +52,6 @@ MODULE_INFOS = [
         configs.PowerBinServiceConfig,
         UnsqueezingDummyProcessor,
         None,
-        "external",
     ),
     ModuleInfo(
         "Sparse",
@@ -64,7 +59,6 @@ MODULE_INFOS = [
         sparse_module.get_sensor_config,
         sparse_module.Processor,
         sparse_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Breathing",
@@ -72,7 +66,6 @@ MODULE_INFOS = [
         breathing_module.get_sensor_config,
         breathing_module.BreathingProcessor,
         breathing_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Phase tracking",
@@ -80,7 +73,6 @@ MODULE_INFOS = [
         phase_tracking_module.get_sensor_config,
         phase_tracking_module.PhaseTrackingProcessor,
         phase_tracking_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Presence detection (IQ)",
@@ -88,7 +80,6 @@ MODULE_INFOS = [
         presence_detection_iq_module.get_sensor_config,
         presence_detection_iq_module.PresenceDetectionProcessor,
         presence_detection_iq_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Presence detection (sparse)",
@@ -96,7 +87,6 @@ MODULE_INFOS = [
         presence_detection_sparse_module.get_sensor_config,
         presence_detection_sparse_module.PresenceDetectionSparseProcessor,
         presence_detection_sparse_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Sleep breathing",
@@ -104,7 +94,6 @@ MODULE_INFOS = [
         sleep_breathing_module.get_sensor_config,
         sleep_breathing_module.PresenceDetectionProcessor,
         sleep_breathing_module.get_processing_config,
-        "external",
     ),
     ModuleInfo(
         "Obstacle detection",
@@ -112,7 +101,6 @@ MODULE_INFOS = [
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
         obstacle_detection_module.get_processing_config,
-        "external",
     ),
 ]
 

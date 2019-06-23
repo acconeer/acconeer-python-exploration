@@ -649,7 +649,6 @@ class GUI(QMainWindow):
 
         self.current_module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
         self.current_mode = self.current_module_info.sensor_config_class().mode
-        self.external_plotting = "internal" not in self.current_module_info.ext
         self.external = self.current_module_info.processor
 
         if switching_module:
@@ -723,8 +722,7 @@ class GUI(QMainWindow):
             data_source = "file"
         self.sweep_buffer = 500
 
-        if self.external_plotting:
-            self.update_canvas(force_update=True)
+        self.update_canvas(force_update=True)
 
         try:
             self.sweep_buffer = int(self.textboxes["sweep_buffer"].text())
@@ -900,7 +898,7 @@ class GUI(QMainWindow):
             return None
 
         conf.sensor = int(self.textboxes["sensor"].text())
-        if not refresh and self.external_plotting:
+        if not refresh:
             self.textboxes["range_start"].setText("{:.2f}".format(conf.range_interval[0]))
             self.textboxes["range_end"].setText("{:.2f}".format(conf.range_interval[1]))
             self.textboxes["gain"].setText("{:.2f}".format(conf.gain))
