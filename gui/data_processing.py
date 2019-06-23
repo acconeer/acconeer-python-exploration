@@ -5,18 +5,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def get_sparse_processing_config():
-    return {
-        "image_buffer": {
-            "name": "Image history",
-            "value": 100,
-            "limits": [10, 10000],
-            "type": int,
-            "text": None,
-        },
-    }
-
-
 class DataProcessing:
     hist_len = 500
 
@@ -53,10 +41,7 @@ class DataProcessing:
         self.init_vars()
 
     def get_processing_type(self, service):
-        process = self.external_processing
-        if service.lower() == "sparse":
-            process = self.sparse_processing
-        return process
+        return self.external_processing
 
     def abort_processing(self):
         self.abort = True
@@ -132,81 +117,6 @@ class DataProcessing:
                 self.parent.emit("clutter_error", error)
 
         return (cl, cl_iq, thrshld)
-
-    def sparse_processing(self, iq_data, info):
-        num_subsweeps = iq_data.shape[0]
-        if not self.sweep:
-            self.env_x_mm = np.tile(np.linspace(self.start_x, self.stop_x, iq_data.shape[1]),
-                                    num_subsweeps) * 1000
-            self.hist_env = np.zeros((self.image_buffer, iq_data.shape[1]))
-            self.gamma_map = np.zeros((self.image_buffer, iq_data.shape[1]))
-            self.plus = np.zeros((self.image_buffer, iq_data.shape[1]))
-            self.minus = np.zeros((self.image_buffer, iq_data.shape[1]))
-
-            f = self.sensor_config.sweep_rate
-
-            self.move_hist = np.zeros((self.image_buffer, iq_data.shape[1]))
-
-            upper_speed_limit = 25
-            self.a_fast_tau = 1.0 / (upper_speed_limit / 2.5)
-            self.a_slow_tau = 1.0
-            self.a_move_tau = 0.2
-            self.a_fast = self.alpha(self.a_fast_tau, 1.0 / (f * num_subsweeps))
-            self.a_slow = self.alpha(self.a_slow_tau, 1.0 / (f * num_subsweeps))
-            self.a_move = self.alpha(self.a_move_tau, 1.0 / (f * num_subsweeps))
-            self.movement_lp = 0
-            self.lp_fast = None
-
-        #  Create average envelope history
-        self.plus.fill(0)
-        self.minus.fill(0)
-        avg_env = np.mean(iq_data, axis=0)
-        self.hist_env = np.roll(self.hist_env, 1, axis=0)
-        self.hist_env[0, :] = avg_env
-
-        self.plus[self.hist_env >= 0] = self.hist_env[self.hist_env >= 0] / 2**15 * 254
-        self.minus[self.hist_env <= 0] = -self.hist_env[self.hist_env <= 0] / 2**15 * 254
-
-        self.gamma(self.plus)
-        self.gamma(self.minus)
-
-        self.gamma_map[self.hist_env >= 0] = 254 + self.plus[self.hist_env >= 0]
-        self.gamma_map[self.hist_env < 0] = 254 - self.minus[self.hist_env < 0]
-
-        self.gamma_map /= 2
-
-        #  Create movement history
-        for subsweep in iq_data:
-            if self.lp_fast is None:
-                self.lp_fast = subsweep.copy()
-                self.lp_slow = subsweep.copy()
-            else:
-                self.lp_fast = self.lp_fast * self.a_fast + subsweep * (1 - self.a_fast)
-                self.lp_slow = self.lp_slow * self.a_slow + subsweep * (1 - self.a_slow)
-
-                move = np.abs(self.lp_fast - self.lp_slow)
-                self.movement_lp = self.movement_lp * self.a_move + move * (1 - self.a_move)
-
-        self.move_hist = np.roll(self.move_hist, 1, axis=0)
-        self.move_hist[0, :] = self.movement_lp
-
-        plot_data = {
-            "iq_data": iq_data.flatten(),
-            "hist_env": self.gamma_map.copy(),
-            "hist_move": self.move_hist,
-            "sensor_config": self.sensor_config,
-            "sweep": self.sweep,
-            "x_mm": self.env_x_mm,
-        }
-
-        self.record_data(iq_data, info)
-        self.draw_canvas(self.sweep, plot_data, "update_sparse_plots")
-        self.sweep += 1
-
-        return plot_data, self.record, self.sweep
-
-    def alpha(self, tau, dt):
-        return np.exp(-dt/tau)
 
     def external_processing(self, sweep_data, info):
         if self.first_run:
@@ -322,12 +232,3 @@ class DataProcessing:
 
     def update_plots(self, plot_data, cmd="update_plots"):
         self.parent.emit(cmd, "", plot_data)
-
-    def gamma(self, arr, alpha=2.2, max_brightness=254, min_brightness=50):
-        g = 1/alpha
-        map_max = max(np.max(np.max(arr)), min_brightness)
-        gamma_map = max_brightness/map_max**g * arr**g
-
-        gamma_map[gamma_map > max_brightness] = max_brightness
-
-        arr[...] = gamma_map

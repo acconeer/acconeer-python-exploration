@@ -16,8 +16,6 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore, QtWidgets
 
-from matplotlib.colors import LinearSegmentedColormap
-
 import pyqtgraph as pg
 
 from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
@@ -249,46 +247,9 @@ class GUI(QMainWindow):
             else:
                 self.service_section.hide()
 
-        if self.external_plotting:
-            self.service_widget = self.current_module_info.module.PGUpdater(
-                self.update_sensor_config(refresh=refresh), self.update_service_params())
-            self.service_widget.setup(canvas)
-            return canvas
-        elif "sparse" in self.current_module_label.lower():
-            self.sparse_plot_window = canvas.addPlot(row=0, col=0, title="Sparse data")
-            self.sparse_plot_window.showGrid(x=True, y=True)
-            self.sparse_plot_window.setLabel("bottom", "Distance (mm)")
-            self.sparse_plot_window.setLabel("left", "Amplitude")
-            self.sparse_plot_window.setYRange(-2**15, 2**15)
-            self.sparse_plot = pg.ScatterPlotItem(size=10)
-            self.sparse_plot_window.addItem(self.sparse_plot)
-
-            self.hist_move_image = canvas.addPlot(row=2, col=0, title="Movement history")
-            self.hist_move = pg.ImageItem(autoDownsample=True)
-            self.hist_move.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
-            self.hist_move_image.addItem(self.hist_move)
-            self.hist_move_image.setLabel("left", "Distance (mm)")
-            self.hist_move_image.setLabel("bottom", "Time (s)")
-
-            canvas.nextRow()
-
-        if self.current_module_label.lower() == "sparse":
-            row = 1
-            title = "Amplitude history"
-            basic_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
-            colormap = LinearSegmentedColormap.from_list("mycmap", basic_cols)
-            colormap._init()
-            lut = (colormap._lut * 255).view(np.ndarray)
-
-            self.hist_plot_image = canvas.addPlot(row=row, col=0, title=title)
-            self.hist_plot = pg.ImageItem()
-            self.hist_plot.setAutoDownsample(True)
-
-            self.hist_plot.setLookupTable(lut)
-            self.hist_plot_image.addItem(self.hist_plot)
-            self.hist_plot_image.setLabel("left", "Distance (mm)")
-            self.hist_plot_image.setLabel("bottom", "Time (s)")
-
+        self.service_widget = self.current_module_info.module.PGUpdater(
+            self.update_sensor_config(refresh=refresh), self.update_service_params())
+        self.service_widget.setup(canvas)
         return canvas
 
     def init_dropdowns(self):
@@ -1510,9 +1471,6 @@ class GUI(QMainWindow):
         elif "update_external_plots" in message_type:
             if data is not None:
                 self.update_external_plots(data)
-        elif "update_sparse_plots" in message_type:
-            if data:
-                self.update_sparse_plots(data)
         elif "sweep_info" in message_type:
             self.update_sweep_info(data)
         elif "session_info" in message_type:
@@ -1522,35 +1480,6 @@ class GUI(QMainWindow):
         else:
             print("Thread data not implemented!")
             print(message_type, message, data)
-
-    def update_sparse_plots(self, data):
-        if not data["sweep"]:
-            self.smooth_sparse = example_utils.SmoothMax(
-                int(self.textboxes["sweep_rate"].text()),
-                tau_decay=1,
-                tau_grow=0.2
-                )
-
-            time_res = 1.0 / data["sensor_config"].sweep_rate
-
-            depth_start = data["x_mm"][0]
-            depth_end = data["x_mm"][-1]
-            depth_length = depth_end - depth_start
-            depth_size = data["hist_env"].shape[1]
-            depth_res = depth_length / (depth_size - 1)
-
-            for im in [self.hist_plot, self.hist_move]:
-                im.resetTransform()
-                im.translate(0, data["x_mm"][0] - depth_res / 2)
-                im.scale(time_res, depth_res)
-
-        self.sparse_plot.setData(data["x_mm"], data["iq_data"])
-        m = self.smooth_sparse.update(max(500, np.max(np.abs(data["iq_data"]))))
-        self.sparse_plot_window.setYRange(-m, m)
-
-        self.hist_plot.updateImage(data["hist_env"], levels=(0, 256))
-        move_max = max(np.max(data["hist_move"]) + 100, 1000)
-        self.hist_move.updateImage(data["hist_move"], levels=(0, move_max))
 
     def update_external_plots(self, data):
         self.service_widget.update(data)
