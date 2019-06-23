@@ -12,8 +12,6 @@ class DataProcessing:
         self.sensor_config = params["sensor_config"]
         self.mode = self.sensor_config.mode
         self.service_type = params["service_type"]
-        self.start_x = self.sensor_config.range_interval[0]
-        self.stop_x = self.sensor_config.range_interval[1]
         self.create_cl = params["create_clutter"]
         self.use_cl = params["use_clutter"]
         self.cl_file = params["clutter_file"]
@@ -24,10 +22,6 @@ class DataProcessing:
 
         if self.service_params is not None:
             self.service_params["processing_handle"] = self
-
-        self.image_buffer = 0
-        if self.service_type.lower() in ["iq", "envelope", "sparse"]:
-            self.image_buffer = params["service_params"]["image_buffer"]["value"]
 
         if self.sweeps < 0:
             self.sweeps = self.hist_len
@@ -40,14 +34,10 @@ class DataProcessing:
 
         self.init_vars()
 
-    def get_processing_type(self, service):
-        return self.external_processing
-
     def abort_processing(self):
         self.abort = True
 
     def init_vars(self):
-        self.peak_history = np.zeros(self.image_buffer, dtype="float")
         self.sweep = 0
         self.record = []
         self.n_std_avg = 0
@@ -57,7 +47,6 @@ class DataProcessing:
 
         self.cl = np.zeros((0, 1))
         self.cl_iq = np.zeros((0, 1), dtype="complex")
-        self.process = self.get_processing_type(self.service_type)
 
     def set_clutter_flag(self, enable):
         self.use_cl = enable
@@ -118,7 +107,7 @@ class DataProcessing:
 
         return (cl, cl_iq, thrshld)
 
-    def external_processing(self, sweep_data, info):
+    def process(self, sweep_data, info):
         if self.first_run:
             self.external = self.parent.parent.external(self.sensor_config, self.service_params)
             self.first_run = False
@@ -203,7 +192,7 @@ class DataProcessing:
             if not self.abort:
                 self.skip = 0
                 time.sleep(self.rate)
-                plot_data, *_ = self.process(data_step["sweep_data"], info)
+                self.process(data_step["sweep_data"], info)
 
                 self.parent.emit("sweep_info", "", info)
 
