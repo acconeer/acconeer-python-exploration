@@ -189,11 +189,7 @@ class GUI(QMainWindow):
             self.checkboxes[key] = cb
 
     def init_graphs(self, refresh=False):
-        processing_config_class = self.current_module_info.processing_config_class
-        if processing_config_class is None:
-            processing_config = {}
-        else:
-            processing_config = processing_config_class()
+        processing_config = self.get_processing_config()
 
         mode_is_sparse = (self.current_mode == "sparse")
         self.textboxes["subsweeps"].setVisible(mode_is_sparse)
@@ -1553,13 +1549,7 @@ class GUI(QMainWindow):
             try:
                 if last_config["service_settings"]:
                     for mode in last_config["service_settings"]:
-                        module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[mode]
-                        processing_config_class = module_info.processing_config_class
-                        if processing_config_class is None:
-                            processing_config = {}
-                        else:
-                            processing_config = processing_config_class()
-
+                        processing_config = self.get_processing_config(mode)
                         self.add_params(processing_config, start_up_mode=mode)
 
                         labels = last_config["service_settings"][mode]
@@ -1630,6 +1620,19 @@ class GUI(QMainWindow):
         except Exception:
             pass
         self.close()
+
+    def get_processing_config(self, module_label=None):
+        if module_label is not None:
+            module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
+        else:
+            module_info = self.current_module_info
+
+        module = module_info.module
+
+        if module is None or not hasattr(module, "get_processing_config"):
+            return {}
+
+        return module.get_processing_config()
 
 
 class Threaded_Scan(QtCore.QThread):
