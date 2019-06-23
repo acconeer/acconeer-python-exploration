@@ -4,7 +4,7 @@ import numpy as np
 
 
 class BaseSessionConfig(metaclass=ABCMeta):
-    _sweep_rate = None
+    _sweep_rate = 30
     _sensors = [1]
 
     def __init__(self, **kwargs):
@@ -58,9 +58,9 @@ class BaseSessionConfig(metaclass=ABCMeta):
 
 
 class BaseServiceConfig(BaseSessionConfig):
-    _gain = None
-    _range_start = None
-    _range_length = None
+    _gain = 0.5
+    _range_start = 0.2
+    _range_length = 0.6
     _experimental_stitching = None
 
     @property
