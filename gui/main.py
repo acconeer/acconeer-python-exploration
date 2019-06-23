@@ -29,16 +29,8 @@ sys.path.append(os.path.dirname(__file__))  # noqa: E402
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
 
 import data_processing
+from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
 from helper import Label, CollapsibleSection
-
-import service_modules.envelope as env
-import service_modules.iq as iq
-import examples.processing.presence_detection_iq as prd
-import examples.processing.presence_detection_sparse as psd
-import examples.processing.phase_tracking as pht
-import examples.processing.breathing as br
-import examples.processing.sleep_breathing as sb
-import examples.processing.obstacle_detection as od
 
 
 if "win32" in sys.platform.lower():
@@ -76,6 +68,10 @@ class GUI(QMainWindow):
         self.current_mode = None
         self.current_module_label = None
         self.canvas = None
+
+        self.module_label_to_sensor_config_map = {}
+        for mi in MODULE_INFOS:
+            self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
 
         self.setWindowIcon(QIcon(self.acc_file))
 
@@ -194,27 +190,11 @@ class GUI(QMainWindow):
             self.checkboxes[key] = cb
 
     def init_graphs(self, refresh=False):
-        self.service_props = {
-            "Select service": [None, None],
-            "IQ": [iq, iq.IQProcessor],
-            "Envelope": [env, env.EnvelopeProcessor],
-            "Sparse": [data_processing.get_sparse_processing_config(), None],
-            "Power bin": [None, None],
-            "Presence detection (IQ)": [prd, prd.PresenceDetectionProcessor],
-            "Presence detection (sparse)": [psd, psd.PresenceDetectionSparseProcessor],
-            "Breathing": [br, br.BreathingProcessor],
-            "Phase tracking": [pht, pht.PhaseTrackingProcessor],
-            "Sleep breathing": [sb, sb.PresenceDetectionProcessor],
-            "Obstacle detection": [od, od.ObstacleDetectionProcessor],
-        }
-
-        self.external = self.service_props[self.current_module_label][1]
-
-        module_processing_prop = self.service_props[self.current_module_label][0]
-        if self.external:
-            processing_config = module_processing_prop.get_processing_config()
+        processing_config_class = self.current_module_info.processing_config_class
+        if processing_config_class is None:
+            processing_config = {}
         else:
-            processing_config = module_processing_prop
+            processing_config = processing_config_class()
 
         mode_is_sparse = (self.current_mode == "sparse")
         self.textboxes["subsweeps"].setVisible(mode_is_sparse)
@@ -269,8 +249,8 @@ class GUI(QMainWindow):
             else:
                 self.service_section.hide()
 
-        if self.external:
-            self.service_widget = self.service_props[self.current_module_label][0].PGUpdater(
+        if self.external_plotting:
+            self.service_widget = self.current_module_info.module.PGUpdater(
                 self.update_sensor_config(refresh=refresh), self.update_service_params())
             self.service_widget.setup(canvas)
             return canvas
@@ -325,28 +305,10 @@ class GUI(QMainWindow):
         return canvas
 
     def init_dropdowns(self):
-        # text, config, external
-        mode_info = [
-            ("Select service", configs.EnvelopeServiceConfig, ""),
-            ("IQ", configs.IQServiceConfig, "external"),
-            ("Envelope", configs.EnvelopeServiceConfig, "external"),
-            ("Power bin", configs.PowerBinServiceConfig, "internal_power"),
-            ("Sparse", configs.SparseServiceConfig, "internal_sparse"),
-            ("Breathing", br.get_sensor_config, "external"),
-            ("Phase tracking", pht.get_sensor_config, "external"),
-            ("Presence detection (IQ)", prd.get_sensor_config, "external"),
-            ("Presence detection (sparse)", psd.get_sensor_config, "external"),
-            ("Sleep breathing", sb.get_sensor_config, "external"),
-            ("Obstacle detection", od.get_sensor_config, "external"),
-        ]
-
-        self.mode_to_config = {text: [config(), ext] for text, config, ext in mode_info}
-        self.mode_to_config_class = {text: config for text, config, _ in mode_info}
-
         self.module_dd = QComboBox(self)
 
-        for text, *_ in mode_info:
-            self.module_dd.addItem(text)
+        for module_info in MODULE_INFOS:
+            self.module_dd.addItem(module_info.label)
 
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
@@ -700,8 +662,8 @@ class GUI(QMainWindow):
 
         self.env_profiles_dd.setCurrentIndex(0)
 
-        config_class = self.mode_to_config_class[self.current_module_label]
-        default_config = None if config_class is None else config_class()
+        sensor_config_class = self.current_module_info.sensor_config_class
+        default_config = None if sensor_config_class is None else sensor_config_class()
 
         if default_config is None:
             return
@@ -737,7 +699,10 @@ class GUI(QMainWindow):
         switching_module = self.current_module_label != module_label
         self.current_module_label = module_label
 
-        self.current_mode = self.mode_to_config[self.current_module_label][0].mode
+        self.current_module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
+        self.current_mode = self.current_module_info.sensor_config_class().mode
+        self.external_plotting = "internal" not in self.current_module_info.ext
+        self.external = self.current_module_info.processor
 
         if switching_module:
             self.data = None
@@ -810,7 +775,7 @@ class GUI(QMainWindow):
             data_source = "file"
         self.sweep_buffer = 500
 
-        if self.external:
+        if self.external_plotting:
             self.update_canvas(force_update=True)
 
         try:
@@ -981,15 +946,13 @@ class GUI(QMainWindow):
 
     def update_sensor_config(self, refresh=False):
         mode = self.current_module_label
-        conf, service = self.mode_to_config[mode]
+        conf = self.module_label_to_sensor_config_map[mode]
 
         if not conf:
             return None
 
-        external = ("internal" not in service.lower())
-
         conf.sensor = int(self.textboxes["sensor"].text())
-        if not refresh and external:
+        if not refresh and self.external_plotting:
             self.textboxes["range_start"].setText("{:.2f}".format(conf.range_interval[0]))
             self.textboxes["range_end"].setText("{:.2f}".format(conf.range_interval[1]))
             self.textboxes["gain"].setText("{:.2f}".format(conf.gain))
@@ -1691,11 +1654,13 @@ class GUI(QMainWindow):
             try:
                 if last_config["service_settings"]:
                     for mode in last_config["service_settings"]:
-                        external = self.service_props[mode][1]
-                        if external:
-                            processing_config = self.service_props[mode][0].get_processing_config()
+                        module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[mode]
+                        processing_config_class = module_info.processing_config_class
+                        if processing_config_class is None:
+                            processing_config = {}
                         else:
-                            processing_config = self.service_props[mode][0]
+                            processing_config = processing_config_class()
+
                         self.add_params(processing_config, start_up_mode=mode)
 
                         labels = last_config["service_settings"][mode]
