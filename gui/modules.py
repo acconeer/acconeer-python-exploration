@@ -33,13 +33,13 @@ MODULE_INFOS = [
     ModuleInfo(
         "IQ",
         iq_module,
-        configs.IQServiceConfig,
+        iq_module.get_sensor_config,
         iq_module.IQProcessor,
     ),
     ModuleInfo(
         "Envelope",
         envelope_module,
-        configs.EnvelopeServiceConfig,
+        envelope_module.get_sensor_config,
         envelope_module.EnvelopeProcessor,
     ),
     ModuleInfo(

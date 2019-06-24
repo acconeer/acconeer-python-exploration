@@ -30,11 +30,7 @@ def get_processing_config():
 
 
 def get_sensor_config():
-    config = configs.EnvelopeServiceConfig()
-    config.range_interval = [0.1, 0.5]
-    config.sweep_rate = 60
-    config.gain = 0.7
-    return config
+    return configs.EnvelopeServiceConfig()
 
 
 class EnvelopeProcessor:
