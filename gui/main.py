@@ -898,7 +898,7 @@ class GUI(QMainWindow):
 
     def update_sensor_config(self, refresh=False):
         mode = self.current_module_label
-        conf = self.module_label_to_sensor_config_map[mode]
+        conf = self.get_sensor_config()
 
         if conf is None:
             return None
@@ -1152,7 +1152,7 @@ class GUI(QMainWindow):
 
         if filename:
             cl_file = None
-            if "h5" in filename:
+            if filename.endswith(".h5"):
                 try:
                     f = h5py.File(filename, "r")
                 except Exception as e:
@@ -1161,25 +1161,38 @@ class GUI(QMainWindow):
                     return
 
                 try:
-                    mode = f["service_type"][()]
-                except Exception:
-                    print("Service type not stored, setting to IQ!")
-                    mode = "IQ"
-
-                index = self.module_dd.findText(mode, QtCore.Qt.MatchFixedString)
-                if index >= 0:
-                    self.module_dd.setCurrentIndex(index)
-
-                try:
-                    if "iq" in mode.lower():
-                        conf = configs.IQServiceConfig()
-                    elif "sparse" in mode.lower():
-                        conf = configs.SparseServiceConfig()
-                    else:
-                        conf = configs.EnvelopeServiceConfig()
                     real = np.asarray(list(f["real"]))
                     im = np.asarray(list(f["imag"]))
-                    sweeps = real[...] + 1j * im[...]
+                except Exception as e:
+                    self.error_message("{}".format(e))
+                    return
+
+                try:
+                    module_label = f["service_type"][()]
+                except Exception:
+                    if np.any(np.nonzero(im.flatten())):
+                        module_label = "IQ"
+                    else:
+                        module_label = "Envelope"
+
+                    print("Service type not stored, autodetected {}".format(module_label))
+
+                index = self.module_dd.findText(module_label, QtCore.Qt.MatchFixedString)
+                if index >= 0:
+                    self.module_dd.setCurrentIndex(index)
+                    self.update_canvas()
+                else:
+                    self.error_message("Unknown module in loaded data")
+                    return
+
+                conf = self.get_sensor_config()
+
+                try:
+                    if self.current_data_type == "iq":
+                        sweeps = real + 1j * im
+                    else:
+                        sweeps = real
+
                     data_len = len(sweeps[:, 0])
                     length = range(len(sweeps))
                 except Exception as e:
@@ -1188,17 +1201,17 @@ class GUI(QMainWindow):
 
                 try:
                     self.env_profiles_dd.setCurrentIndex(f["profile"][()])
-                    mode = self.current_module_label
+                    module_label = self.current_module_label
                     if self.service_params is not None:
-                        if mode in self.service_labels:
-                            for key in self.service_labels[mode]:
-                                if "box" in self.service_labels[mode][key]:
+                        if module_label in self.service_labels:
+                            for key in self.service_labels[module_label]:
+                                if "box" in self.service_labels[module_label][key]:
                                     val = self.service_params[key]["type"](f[key][()])
                                     if self.service_params[key]["type"] == np.float:
                                         val = str("{:.4f}".format(val))
                                     else:
                                         val = str(val)
-                                    self.service_labels[mode][key]["box"].setText(val)
+                                    self.service_labels[module_label][key]["box"].setText(val)
                 except Exception:
                     print("Could not restore processing parameters")
                     pass
@@ -1214,9 +1227,9 @@ class GUI(QMainWindow):
                 try:
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
-                    if "power" in mode:
+                    if self.current_data_type == "power_bin":
                         conf.bin_count = int(self.textboxes["power_bins"].text())
-                    if "sparse" in mode:
+                    if self.current_data_type == "sparse":
                         conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
                     conf.gain = f["gain"][()]
                 except Exception as e:
@@ -1238,7 +1251,7 @@ class GUI(QMainWindow):
                     self.data = [
                         {
                             "sweep_data": sweeps[i],
-                            "service_type": mode,
+                            "service_type": module_label,
                             "sensor_config": conf,
                             "cl_file": cl_file,
                             "info": {
@@ -1250,21 +1263,21 @@ class GUI(QMainWindow):
                     self.data = [
                         {
                             "sweep_data": sweeps[i],
-                            "service_type": mode,
+                            "service_type": module_label,
                             "sensor_config": conf,
                             "cl_file": cl_file,
                         } for i in length]
             else:
                 try:
                     data = np.load(filename, allow_pickle=True)
-                    mode = data[0]["service_type"]
+                    module_label = data[0]["service_type"]
                     cl_file = data[0]["cl_file"]
                     data_len = len(data)
                     conf = data[0]["sensor_config"]
                 except Exception as e:
                     self.error_message("{}".format(e))
                     return
-                index = self.module_dd.findText(mode, QtCore.Qt.MatchFixedString)
+                index = self.module_dd.findText(module_label, QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.module_dd.setCurrentIndex(index)
                 self.data = data
@@ -1273,9 +1286,9 @@ class GUI(QMainWindow):
             self.textboxes["range_end"].setText(str(conf.range_interval[1]))
             self.textboxes["gain"].setText(str(conf.gain))
             self.textboxes["sweep_rate"].setText(str(int(conf.sweep_rate)))
-            if "power" in mode.lower():
+            if self.current_data_type == "power_bin":
                 self.textboxes["power_bins"].setText(str(conf.bin_count))
-            if "sparse" in mode.lower():
+            if self.current_data_type == "sparse":
                 self.textboxes["subsweeps"].setText(str(conf.number_of_subsweeps))
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
@@ -1626,6 +1639,15 @@ class GUI(QMainWindow):
         except Exception:
             pass
         self.close()
+
+    def get_sensor_config(self):
+        module_info = self.current_module_info
+
+        if module_info.module is None:
+            return None
+
+        module_label = module_info.label
+        return self.module_label_to_sensor_config_map[module_label]
 
     def get_processing_config(self, module_label=None):
         if module_label is not None:
