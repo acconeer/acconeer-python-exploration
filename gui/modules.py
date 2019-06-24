@@ -1,13 +1,11 @@
 from collections import namedtuple
 
-from acconeer_utils.clients import configs
-
-from helper import UnsqueezingDummyProcessor
+from helper import PassthroughProcessor
 
 import service_modules.envelope as envelope_module
 import service_modules.iq as iq_module
 import service_modules.sparse as sparse_module
-import examples.services.power_bin as power_bin_module
+import service_modules.power_bin as power_bin_module
 import examples.processing.breathing as breathing_module
 import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_iq as presence_detection_iq_module
@@ -45,8 +43,8 @@ MODULE_INFOS = [
     ModuleInfo(
         "Power bin",
         power_bin_module,
-        configs.PowerBinServiceConfig,
-        UnsqueezingDummyProcessor,
+        power_bin_module.get_sensor_config,
+        PassthroughProcessor,
     ),
     ModuleInfo(
         "Sparse",
