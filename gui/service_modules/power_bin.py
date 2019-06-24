@@ -64,6 +64,7 @@ class PGUpdater:
         self.plot.showGrid(x=True, y=True)
         self.plot.setLabel("bottom", "Depth (m)")
         self.plot.setLabel("left", "Amplitude")
+        self.plot.setYRange(0, 1)
 
         self.bar_graph = pg.BarGraphItem(
             x=[],
