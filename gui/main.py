@@ -165,7 +165,8 @@ class GUI(QMainWindow):
         for key, (text, _) in textbox_info.items():
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
-            self.textboxes[key].editingFinished.connect(self.check_values)
+            if key != "host":
+                self.textboxes[key].editingFinished.connect(self.check_values)
 
         self.textboxes["power_bins"].setVisible(False)
         self.textboxes["subsweeps"].setVisible(False)
