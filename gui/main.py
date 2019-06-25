@@ -648,13 +648,16 @@ class GUI(QMainWindow):
         self.current_module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
 
         if self.current_module_info.module is None:
-            self.current_data_type = None
+            data_type = None
             self.external = None
         else:
-            self.current_data_type = self.current_module_info.sensor_config_class().mode
+            data_type = self.current_module_info.sensor_config_class().mode
             self.external = self.current_module_info.processor
 
-        if switching_module:
+        switching_data_type = self.current_data_type != data_type
+        self.current_data_type = data_type
+
+        if switching_data_type:
             self.data = None
             self.buttons["replay_buffered"].setEnabled(False)
 
