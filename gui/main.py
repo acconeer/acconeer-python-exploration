@@ -977,6 +977,8 @@ class GUI(QMainWindow):
 
     def check_values(self):
         mode = self.current_mode
+        if mode is None:
+            return
 
         errors = []
         if not self.textboxes["sweep_rate"].text().isdigit():
