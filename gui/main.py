@@ -63,7 +63,7 @@ class GUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.current_mode = None
+        self.current_data_type = None
         self.current_module_label = None
         self.canvas = None
 
@@ -192,13 +192,13 @@ class GUI(QMainWindow):
     def init_graphs(self, refresh=False):
         processing_config = self.get_processing_config()
 
-        mode_is_sparse = (self.current_mode == "sparse")
+        mode_is_sparse = (self.current_data_type == "sparse")
         self.textboxes["subsweeps"].setVisible(mode_is_sparse)
         self.labels["subsweeps"].setVisible(mode_is_sparse)
-        mode_is_power_bin = (self.current_mode == "power_bin")
+        mode_is_power_bin = (self.current_data_type == "power_bin")
         self.textboxes["power_bins"].setVisible(mode_is_power_bin)
         self.labels["power_bins"].setVisible(mode_is_power_bin)
-        self.env_profiles_dd.setVisible(self.current_mode == "envelope")
+        self.env_profiles_dd.setVisible(self.current_data_type == "envelope")
 
         self.cl_supported = False
         if self.current_module_label in ["IQ", "Envelope"]:
@@ -648,10 +648,10 @@ class GUI(QMainWindow):
         self.current_module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
 
         if self.current_module_info.module is None:
-            self.current_mode = None
+            self.current_data_type = None
             self.external = None
         else:
-            self.current_mode = self.current_module_info.sensor_config_class().mode
+            self.current_data_type = self.current_module_info.sensor_config_class().mode
             self.external = self.current_module_info.processor
 
         if switching_module:
@@ -976,7 +976,7 @@ class GUI(QMainWindow):
         return self.service_params
 
     def check_values(self):
-        mode = self.current_mode
+        mode = self.current_data_type
         if mode is None:
             return
 
@@ -1036,7 +1036,7 @@ class GUI(QMainWindow):
 
         env_max_range = 0.96
         iq_max_range = 0.72
-        if self.current_mode in ["iq", "envelope"]:
+        if self.current_data_type in ["iq", "envelope"]:
             if self.interface_dd.currentText().lower() == "socket":
                 env_max_range = 6.88
                 iq_max_range = 6.88
@@ -1051,7 +1051,7 @@ class GUI(QMainWindow):
             end = start + 0.06
             r = end - start
 
-        if self.current_mode == "envelope":
+        if self.current_data_type == "envelope":
             if r > env_max_range:
                 errors.append("Envelope range must be less than %.2fm!\n" % env_max_range)
                 self.textboxes["range_end"].setText(str(start + env_max_range))
@@ -1060,7 +1060,7 @@ class GUI(QMainWindow):
             elif r > 0.96:
                 stitching = True
 
-        if self.current_mode == "iq":
+        if self.current_data_type == "iq":
             if r > iq_max_range:
                 errors.append("IQ range must be less than %.2fm!\n" % iq_max_range)
                 self.textboxes["range_end"].setText(str(start + iq_max_range))
