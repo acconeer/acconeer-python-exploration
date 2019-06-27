@@ -129,7 +129,7 @@ class GUI(QMainWindow):
             "clutter": ("Background settings", "scan"),
             "clutter_status": ("", "scan"),
             "interface": ("Interface", "connection"),
-            "power_bins": ("Power bins", "sensor"),
+            "bin_count": ("Power bins", "sensor"),
             "subsweeps": ("Subsweeps", "sensor"),
             "sweep_info": ("", "statusbar"),
             "saturated": ("Warning: Data saturated, reduce gain!", "statusbar"),
@@ -143,7 +143,7 @@ class GUI(QMainWindow):
             lbl.setText(text)
             self.labels[key] = lbl
 
-        self.labels["power_bins"].setVisible(False)
+        self.labels["bin_count"].setVisible(False)
         self.labels["subsweeps"].setVisible(False)
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
@@ -163,7 +163,7 @@ class GUI(QMainWindow):
             "range_start": ("0.18", "sensor"),
             "range_end": ("0.72", "sensor"),
             "sweep_buffer": ("100", "scan"),
-            "power_bins": ("6", "sensor"),
+            "bin_count": ("6", "sensor"),
             "subsweeps": ("16", "sensor"),
         }
 
@@ -174,7 +174,7 @@ class GUI(QMainWindow):
             if key != "host":
                 self.textboxes[key].editingFinished.connect(self.check_values)
 
-        self.textboxes["power_bins"].setVisible(False)
+        self.textboxes["bin_count"].setVisible(False)
         self.textboxes["subsweeps"].setVisible(False)
 
     def init_checkboxes(self):
@@ -202,8 +202,8 @@ class GUI(QMainWindow):
         self.textboxes["subsweeps"].setVisible(mode_is_sparse)
         self.labels["subsweeps"].setVisible(mode_is_sparse)
         mode_is_power_bin = (self.current_data_type == "power_bin")
-        self.textboxes["power_bins"].setVisible(mode_is_power_bin)
-        self.labels["power_bins"].setVisible(mode_is_power_bin)
+        self.textboxes["bin_count"].setVisible(mode_is_power_bin)
+        self.labels["bin_count"].setVisible(mode_is_power_bin)
         self.env_profiles_dd.setVisible(self.current_data_type == "envelope")
 
         self.cl_supported = False
@@ -478,8 +478,8 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.textboxes["gain"], self.num, 1)
         self.settings_section.grid.addWidget(self.labels["sweeps"], self.increment(), 0)
         self.settings_section.grid.addWidget(self.textboxes["sweeps"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["power_bins"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["power_bins"], self.num, 1)
+        self.settings_section.grid.addWidget(self.labels["bin_count"], self.increment(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["bin_count"], self.num, 1)
         self.settings_section.grid.addWidget(self.labels["subsweeps"], self.increment(), 0)
         self.settings_section.grid.addWidget(self.textboxes["subsweeps"], self.num, 1)
         self.settings_section.grid.addWidget(self.env_profiles_dd, self.increment(), 0, 1, 2)
@@ -943,7 +943,7 @@ class GUI(QMainWindow):
         config.gain = float(self.textboxes["gain"].text())
         self.sweep_count = int(self.textboxes["sweeps"].text())
         if self.current_data_type == "power_bin":
-            config.bin_count = int(self.textboxes["power_bins"].text())
+            config.bin_count = int(self.textboxes["bin_count"].text())
         if self.current_data_type == "sparse":
             config.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
         if self.current_data_type == "envelope":
@@ -1246,7 +1246,7 @@ class GUI(QMainWindow):
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
                     if self.current_data_type == "power_bin":
-                        conf.bin_count = int(self.textboxes["power_bins"].text())
+                        conf.bin_count = int(self.textboxes["bin_count"].text())
                     if self.current_data_type == "sparse":
                         conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
                     conf.gain = f["gain"][()]
@@ -1305,7 +1305,7 @@ class GUI(QMainWindow):
             self.textboxes["gain"].setText(str(conf.gain))
             self.textboxes["sweep_rate"].setText(str(int(conf.sweep_rate)))
             if self.current_data_type == "power_bin":
-                self.textboxes["power_bins"].setText(str(conf.bin_count))
+                self.textboxes["bin_count"].setText(str(conf.bin_count))
             if self.current_data_type == "sparse":
                 self.textboxes["subsweeps"].setText(str(conf.number_of_subsweeps))
 
@@ -1415,7 +1415,7 @@ class GUI(QMainWindow):
                         f.create_dataset("sequence_number", data=sequence_number, dtype=np.int)
                         f.create_dataset("data_saturated", data=data_saturated, dtype='u1')
                     if "power_bins" in mode.lower():
-                        f.create_dataset("power_bins", data=int(sensor_config.power_bins),
+                        f.create_dataset("bin_count", data=int(sensor_config.power_bins),
                                          dtype=np.int)
                     if "sparse" in mode.lower():
                         f.create_dataset("subsweeps", data=int(sensor_config.number_of_subsweeps),
@@ -1612,7 +1612,7 @@ class GUI(QMainWindow):
             self.textboxes["range_start"].setText("{:.2f}".format(sensor_config.range_interval[0]))
             self.textboxes["range_end"].setText("{:.2f}".format(sensor_config.range_interval[1]))
             if hasattr(sensor_config, "bin_count"):
-                self.textboxes["power_bins"].setText("{:d}".format(sensor_config.bin_count))
+                self.textboxes["bin_count"].setText("{:d}".format(sensor_config.bin_count))
             if hasattr(sensor_config, "number_of_subsweeps"):
                 subs = sensor_config.number_of_subsweeps
                 self.textboxes["subsweeps"].setText("{:d}".format(subs))
