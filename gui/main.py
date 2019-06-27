@@ -1419,13 +1419,12 @@ class GUI(QMainWindow):
                     if info_available:
                         f.create_dataset("sequence_number", data=sequence_number, dtype=np.int)
                         f.create_dataset("data_saturated", data=data_saturated, dtype='u1')
-                    if "power_bins" in mode.lower():
-                        f.create_dataset("bin_count", data=int(sensor_config.power_bins),
-                                         dtype=np.int)
-                    if "sparse" in mode.lower():
-                        f.create_dataset("number_of_subsweeps",
-                                         data=int(sensor_config.number_of_subsweeps),
-                                         dtype=np.int)
+
+                    for key in ["bin_count", "number_of_subsweeps"]:
+                        val = getattr(sensor_config, key, None)
+                        if val is not None:
+                            f.create_dataset(key, data=int(val), dtype=np.int)
+
                     if mode in self.service_labels:
                         for key in self.service_params:
                             f.create_dataset(key, data=self.service_params[key]["value"],
