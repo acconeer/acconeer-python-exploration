@@ -1427,6 +1427,9 @@ class GUI(QMainWindow):
 
                     if mode in self.service_labels:
                         for key in self.service_params:
+                            if key == "processing_handle":
+                                continue
+
                             f.create_dataset(key, data=self.service_params[key]["value"],
                                              dtype=np.float32)
                 else:
