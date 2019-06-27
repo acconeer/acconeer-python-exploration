@@ -163,7 +163,7 @@ class GUI(QMainWindow):
             "range_start": ("0.18", "sensor"),
             "range_end": ("0.72", "sensor"),
             "sweep_buffer": ("100", "scan"),
-            "bin_count": ("6", "sensor"),
+            "bin_count": ("-1", "sensor"),
             "number_of_subsweeps": ("16", "sensor"),
         }
 
@@ -946,7 +946,9 @@ class GUI(QMainWindow):
         config.gain = float(self.textboxes["gain"].text())
         self.sweep_count = int(self.textboxes["sweeps"].text())
         if self.current_data_type == "power_bin":
-            config.bin_count = int(self.textboxes["bin_count"].text())
+            bin_count = int(self.textboxes["bin_count"].text())
+            if bin_count > 0:
+                config.bin_count = bin_count
         if self.current_data_type == "sparse":
             config.number_of_subsweeps = int(self.textboxes["number_of_subsweeps"].text())
         if self.current_data_type == "envelope":
