@@ -621,26 +621,14 @@ class GUI(QMainWindow):
         self.sweep_count = -1
         self.textboxes["sweeps"].setText("-1")
 
-        self.env_profiles_dd.setCurrentIndex(0)
-
         sensor_config_class = self.current_module_info.sensor_config_class
         default_config = None if sensor_config_class is None else sensor_config_class()
 
         if default_config is None:
             return
 
-        d = {
-            "range_start": (0.18, ".2f"),
-            "range_end": (0.60, ".2f"),
-            "gain": (0.6, ".2f"),
-            "sweep_rate": (40, "d"),
-        }
-
-        for key, (alt, fmt) in d.items():
-            config_val = getattr(default_config, key)
-            val = alt if config_val is None else config_val
-            text = "{{:{}}}".format(fmt).format(val)
-            self.textboxes[key].setText(text)
+        self.module_label_to_sensor_config_map[self.current_module_label] = default_config
+        self.load_gui_settings_from_sensor_config()
 
     def service_defaults_handler(self):
         mode = self.current_module_label
@@ -910,16 +898,32 @@ class GUI(QMainWindow):
             except Exception:
                 pass
 
-    def load_gui_settings_from_sensor_config(self):
-        config = self.get_sensor_config()
+    def load_gui_settings_from_sensor_config(self, config=None):
+        if config is None:
+            config = self.get_sensor_config()
 
         if config is None:
             return
 
-        self.textboxes["range_start"].setText("{:.2f}".format(config.range_interval[0]))
-        self.textboxes["range_end"].setText("{:.2f}".format(config.range_interval[1]))
-        self.textboxes["gain"].setText("{:.2f}".format(config.gain))
-        self.textboxes["sweep_rate"].setText("{:d}".format(config.sweep_rate))
+        # key: (default, format)
+        d = {
+            "range_start": (0.2, ".2f"),
+            "range_end": (0.8, ".2f"),
+            "gain": (0.5, ".2f"),
+            "sweep_rate": (30, ".0f"),
+            "number_of_subsweeps": (16, "d"),
+            "bin_count": (-1, "d"),
+        }
+
+        for key, (default, fmt) in d.items():
+            if not hasattr(config, key):
+                continue
+
+            val = getattr(config, key)
+            val = default if val is None else val
+            text = "{{:{}}}".format(fmt).format(val)
+            self.textboxes[key].setText(text)
+
         self.sweep_count = -1
 
         session_profile = getattr(config, "session_profile", None)
@@ -1307,14 +1311,7 @@ class GUI(QMainWindow):
                     self.module_dd.setCurrentIndex(index)
                 self.data = data
 
-            self.textboxes["range_start"].setText(str(conf.range_interval[0]))
-            self.textboxes["range_end"].setText(str(conf.range_interval[1]))
-            self.textboxes["gain"].setText(str(conf.gain))
-            self.textboxes["sweep_rate"].setText(str(int(conf.sweep_rate)))
-            if self.current_data_type == "power_bin":
-                self.textboxes["bin_count"].setText(str(conf.bin_count))
-            if self.current_data_type == "sparse":
-                self.textboxes["number_of_subsweeps"].setText(str(conf.number_of_subsweeps))
+            self.load_gui_settings_from_sensor_config(conf)
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
                 try:
@@ -1617,15 +1614,7 @@ class GUI(QMainWindow):
                 raise
 
         try:
-            self.textboxes["gain"].setText("{:.1f}".format(sensor_config.gain))
-            self.textboxes["sweep_rate"].setText(str(int(sensor_config.sweep_rate)))
-            self.textboxes["range_start"].setText("{:.2f}".format(sensor_config.range_interval[0]))
-            self.textboxes["range_end"].setText("{:.2f}".format(sensor_config.range_interval[1]))
-            if hasattr(sensor_config, "bin_count"):
-                self.textboxes["bin_count"].setText("{:d}".format(sensor_config.bin_count))
-            if hasattr(sensor_config, "number_of_subsweeps"):
-                subs = sensor_config.number_of_subsweeps
-                self.textboxes["number_of_subsweeps"].setText("{:d}".format(subs))
+            self.load_gui_settings_from_sensor_config(sensor_config)
         except Exception as e:
             print("Warning, could not update config settings\n{}".format(e))
 
