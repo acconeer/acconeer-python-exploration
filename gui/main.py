@@ -726,7 +726,6 @@ class GUI(QMainWindow):
                 self.update_settings(sensor_config)
             except Exception:
                 print("Warning, could not restore config from cached data!")
-                pass
             data_source = "file"
         self.sweep_buffer = 500
 
@@ -1242,7 +1241,6 @@ class GUI(QMainWindow):
                                     self.service_labels[module_label][key]["box"].setText(val)
                 except Exception:
                     print("Could not restore processing parameters")
-                    pass
 
                 session_info = True
                 try:
