@@ -40,6 +40,12 @@ if "win32" in sys.platform.lower():
 class GUI(QMainWindow):
     DEFAULT_BAUDRATE = 3000000
 
+    ENVELOPE_PROFILES = [
+        (configs.EnvelopeServiceConfig.MAX_SNR, "Max SNR"),
+        (configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION, "Max depth resolution"),
+        (configs.EnvelopeServiceConfig.DIRECT_LEAKAGE, "Direct leakage"),
+    ]
+
     num = 0
     sig_scan = pyqtSignal(str, str, object)
     cl_file = False
@@ -276,9 +282,8 @@ class GUI(QMainWindow):
         self.update_ports()
 
         self.env_profiles_dd = QComboBox(self)
-        self.env_profiles_dd.addItem("Max SNR")
-        self.env_profiles_dd.addItem("Max depth resolution")
-        self.env_profiles_dd.addItem("Direct leakage")
+        for _, text in self.ENVELOPE_PROFILES:
+            self.env_profiles_dd.addItem(text)
         self.env_profiles_dd.currentIndexChanged.connect(self.set_profile)
 
     def enable_opengl(self):
@@ -914,6 +919,12 @@ class GUI(QMainWindow):
         self.textboxes["sweep_rate"].setText("{:d}".format(config.sweep_rate))
         self.sweep_count = -1
 
+        session_profile = getattr(config, "session_profile", None)
+        if session_profile is not None:
+            text = [text for v, text in self.ENVELOPE_PROFILES if v == session_profile][0]
+            index = self.env_profiles_dd.findText(text, QtCore.Qt.MatchFixedString)
+            self.env_profiles_dd.setCurrentIndex(index)
+
     def save_gui_settings_to_sensor_config(self):
         config = self.get_sensor_config()
 
@@ -936,13 +947,9 @@ class GUI(QMainWindow):
         if self.current_data_type == "sparse":
             config.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
         if self.current_data_type == "envelope":
-            profile_text = self.env_profiles_dd.currentText().lower()
-            if "snr" in profile_text:
-                config.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
-            elif "depth" in profile_text:
-                config.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
-            elif "leakage" in profile_text:
-                config.session_profile = configs.EnvelopeServiceConfig.DIRECT_LEAKAGE
+            profile_text = self.env_profiles_dd.currentText()
+            profile_val = [v for v, text in self.ENVELOPE_PROFILES if text == profile_text][0]
+            config.session_profile = profile_val
 
         return config
 
