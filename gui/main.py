@@ -723,7 +723,7 @@ class GUI(QMainWindow):
         if from_file:
             try:
                 sensor_config = self.data[0]["sensor_config"]
-                self.update_settings(sensor_config)
+                self.load_gui_settings_from_sensor_config(sensor_config)
             except Exception:
                 print("Warning, could not restore config from cached data!")
             data_source = "file"
@@ -1570,51 +1570,40 @@ class GUI(QMainWindow):
         if os.path.isfile(self.last_file):
             try:
                 last = np.load(self.last_file, allow_pickle=True)
-                self.update_settings(last.item()["sensor_config"], last.item())
+                self.load_last_config(last.item())
             except Exception as e:
                 print("Could not load settings from last session\n{}".format(e))
 
-    def update_settings(self, sensor_config, last_config=None):
-        if last_config:
-            # restore last sensor settings
-            try:
-                self.env_profiles_dd.setCurrentIndex(last_config["profile"])
-                self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
-                self.textboxes["sensor"].setText("{:d}".format(sensor_config.sensor[0]))
-                self.interface_dd.setCurrentIndex(last_config["interface"])
-                self.ports_dd.setCurrentIndex(last_config["port"])
-                self.textboxes["host"].setText(last_config["host"])
-                self.sweep_count = last_config["sweep_count"]
-            except Exception as e:
-                print("Warning, could not restore last session\n{}".format(e))
-            # restore all service settings
-            try:
-                if last_config["service_settings"]:
-                    for mode in last_config["service_settings"]:
-                        processing_config = self.get_processing_config(mode)
-                        self.add_params(processing_config, start_up_mode=mode)
+    def load_last_config(self, last_config):
+        # Restore sensor configs
+        for key in self.module_label_to_sensor_config_map.keys():
+            if key in last_config["sensor_config_map"]:
+                self.module_label_to_sensor_config_map[key] = last_config["sensor_config_map"][key]
 
-                        labels = last_config["service_settings"][mode]
-                        for key in labels:
-                            if "checkbox" in labels[key]:
-                                self.service_labels[mode][key]["checkbox"].setChecked(
-                                    labels[key]["checkbox"])
-                            elif "box" in labels[key]:
-                                self.service_labels[mode][key]["box"].setText(
-                                    str(labels[key]["box"]))
-            except Exception as e:
-                print("Warning, could not restore service settings\n{}".format(e))
-            try:
-                if last_config.get("baudrate") is not None:
-                    self.baudrate = last_config["baudrate"]
-            except Exception:
-                print("Warning, could not restore baudrate for UART!")
-                raise
+        # Restore misc. settings
+        self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
+        self.interface_dd.setCurrentIndex(last_config["interface"])
+        self.ports_dd.setCurrentIndex(last_config["port"])
+        self.textboxes["host"].setText(last_config["host"])
+        self.sweep_count = last_config["sweep_count"]
 
-        try:
-            self.load_gui_settings_from_sensor_config(sensor_config)
-        except Exception as e:
-            print("Warning, could not update config settings\n{}".format(e))
+        if last_config.get("baudrate") is not None:
+            self.baudrate = last_config["baudrate"]
+
+        # Restore processing configs
+        if last_config["service_settings"]:
+            for module_label in last_config["service_settings"]:
+                processing_config = self.get_processing_config(module_label)
+                self.add_params(processing_config, start_up_mode=module_label)
+
+                labels = last_config["service_settings"][module_label]
+                for key in labels:
+                    if "checkbox" in labels[key]:
+                        checked = labels[key]["checkbox"]
+                        self.service_labels[module_label][key]["checkbox"].setChecked(checked)
+                    elif "box" in labels[key]:
+                        text = str(labels[key]["box"])
+                        self.service_labels[module_label][key]["box"].setText(text)
 
     def increment(self):
         self.num += 1
@@ -1636,7 +1625,7 @@ class GUI(QMainWindow):
                             val = self.service_labels[mode][key]["box"].text()
                             service_params[mode][key]["box"] = val
             last_config = {
-                "sensor_config": self.save_gui_settings_to_sensor_config(),
+                "sensor_config_map": self.module_label_to_sensor_config_map,
                 "sweep_count": self.sweep_count,
                 "host": self.textboxes["host"].text(),
                 "sweep_buffer": self.textboxes["sweep_buffer"].text(),
