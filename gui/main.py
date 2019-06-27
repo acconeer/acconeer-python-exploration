@@ -130,7 +130,7 @@ class GUI(QMainWindow):
             "clutter_status": ("", "scan"),
             "interface": ("Interface", "connection"),
             "bin_count": ("Power bins", "sensor"),
-            "subsweeps": ("Subsweeps", "sensor"),
+            "number_of_subsweeps": ("Subsweeps", "sensor"),
             "sweep_info": ("", "statusbar"),
             "saturated": ("Warning: Data saturated, reduce gain!", "statusbar"),
             "stitching": ("Experimental stitching enabled!", "sensor"),
@@ -144,7 +144,7 @@ class GUI(QMainWindow):
             self.labels[key] = lbl
 
         self.labels["bin_count"].setVisible(False)
-        self.labels["subsweeps"].setVisible(False)
+        self.labels["number_of_subsweeps"].setVisible(False)
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
@@ -164,7 +164,7 @@ class GUI(QMainWindow):
             "range_end": ("0.72", "sensor"),
             "sweep_buffer": ("100", "scan"),
             "bin_count": ("6", "sensor"),
-            "subsweeps": ("16", "sensor"),
+            "number_of_subsweeps": ("16", "sensor"),
         }
 
         self.textboxes = {}
@@ -175,7 +175,7 @@ class GUI(QMainWindow):
                 self.textboxes[key].editingFinished.connect(self.check_values)
 
         self.textboxes["bin_count"].setVisible(False)
-        self.textboxes["subsweeps"].setVisible(False)
+        self.textboxes["number_of_subsweeps"].setVisible(False)
 
     def init_checkboxes(self):
         # text, status, visible, enabled, function
@@ -199,8 +199,8 @@ class GUI(QMainWindow):
         processing_config = self.get_processing_config()
 
         mode_is_sparse = (self.current_data_type == "sparse")
-        self.textboxes["subsweeps"].setVisible(mode_is_sparse)
-        self.labels["subsweeps"].setVisible(mode_is_sparse)
+        self.textboxes["number_of_subsweeps"].setVisible(mode_is_sparse)
+        self.labels["number_of_subsweeps"].setVisible(mode_is_sparse)
         mode_is_power_bin = (self.current_data_type == "power_bin")
         self.textboxes["bin_count"].setVisible(mode_is_power_bin)
         self.labels["bin_count"].setVisible(mode_is_power_bin)
@@ -480,8 +480,11 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.textboxes["sweeps"], self.num, 1)
         self.settings_section.grid.addWidget(self.labels["bin_count"], self.increment(), 0)
         self.settings_section.grid.addWidget(self.textboxes["bin_count"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["subsweeps"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["subsweeps"], self.num, 1)
+        self.settings_section.grid.addWidget(
+                self.labels["number_of_subsweeps"],
+                self.increment(),
+                0)
+        self.settings_section.grid.addWidget(self.textboxes["number_of_subsweeps"], self.num, 1)
         self.settings_section.grid.addWidget(self.env_profiles_dd, self.increment(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["stitching"], self.increment(), 0, 1, 2)
 
@@ -945,7 +948,7 @@ class GUI(QMainWindow):
         if self.current_data_type == "power_bin":
             config.bin_count = int(self.textboxes["bin_count"].text())
         if self.current_data_type == "sparse":
-            config.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
+            config.number_of_subsweeps = int(self.textboxes["number_of_subsweeps"].text())
         if self.current_data_type == "envelope":
             profile_text = self.env_profiles_dd.currentText()
             profile_val = [v for v, text in self.ENVELOPE_PROFILES if text == profile_text][0]
@@ -1028,12 +1031,13 @@ class GUI(QMainWindow):
 
         if "sparse" in mode.lower():
             e = False
-            if not self.textboxes["subsweeps"].text().isdigit():
-                self.textboxes["subsweeps"].setText("16")
+            if not self.textboxes["number_of_subsweeps"].text().isdigit():
+                self.textboxes["number_of_subsweeps"].setText("16")
                 e = True
             else:
-                subs = int(self.textboxes["subsweeps"].text())
-                subs, e = self.check_limit(subs, self.textboxes["subsweeps"], 1, 16, set_to=16)
+                textbox = self.textboxes["number_of_subsweeps"]
+                subs = int(textbox.text())
+                subs, e = self.check_limit(subs, textbox, 1, 16, set_to=16)
             if e:
                 errors.append("Number of Subsweeps must be an int and between 1 and 16 !\n")
 
@@ -1248,7 +1252,8 @@ class GUI(QMainWindow):
                     if self.current_data_type == "power_bin":
                         conf.bin_count = int(self.textboxes["bin_count"].text())
                     if self.current_data_type == "sparse":
-                        conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
+                        textbox = self.textboxes["number_of_subsweeps"]
+                        conf.number_of_subsweeps = int(textbox.text())
                     conf.gain = f["gain"][()]
                 except Exception as e:
                     print("Config not stored in file...")
@@ -1307,7 +1312,7 @@ class GUI(QMainWindow):
             if self.current_data_type == "power_bin":
                 self.textboxes["bin_count"].setText(str(conf.bin_count))
             if self.current_data_type == "sparse":
-                self.textboxes["subsweeps"].setText(str(conf.number_of_subsweeps))
+                self.textboxes["number_of_subsweeps"].setText(str(conf.number_of_subsweeps))
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
                 try:
@@ -1418,7 +1423,8 @@ class GUI(QMainWindow):
                         f.create_dataset("bin_count", data=int(sensor_config.power_bins),
                                          dtype=np.int)
                     if "sparse" in mode.lower():
-                        f.create_dataset("subsweeps", data=int(sensor_config.number_of_subsweeps),
+                        f.create_dataset("number_of_subsweeps",
+                                         data=int(sensor_config.number_of_subsweeps),
                                          dtype=np.int)
                     if mode in self.service_labels:
                         for key in self.service_params:
@@ -1615,7 +1621,7 @@ class GUI(QMainWindow):
                 self.textboxes["bin_count"].setText("{:d}".format(sensor_config.bin_count))
             if hasattr(sensor_config, "number_of_subsweeps"):
                 subs = sensor_config.number_of_subsweeps
-                self.textboxes["subsweeps"].setText("{:d}".format(subs))
+                self.textboxes["number_of_subsweeps"].setText("{:d}".format(subs))
         except Exception as e:
             print("Warning, could not update config settings\n{}".format(e))
 
