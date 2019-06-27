@@ -245,8 +245,15 @@ class GUI(QMainWindow):
             else:
                 self.service_section.hide()
 
+        if refresh:
+            self.save_gui_settings_to_sensor_config()
+        else:
+            self.load_gui_settings_from_sensor_config()
+
         self.service_widget = self.current_module_info.module.PGUpdater(
-            self.update_sensor_config(refresh=refresh), self.update_service_params())
+                self.get_sensor_config(),
+                self.update_service_params(),
+                )
         self.service_widget.setup(canvas)
         return canvas
 
@@ -673,8 +680,7 @@ class GUI(QMainWindow):
             self.canvas = self.init_graphs(refresh=(not switching_module))
             self.canvas_layout.addWidget(self.canvas)
 
-        if "select service" not in self.current_module_label.lower():
-            self.update_sensor_config()
+        self.load_gui_settings_from_sensor_config()
 
     def update_interface(self):
         if self.buttons["connect"].text() == "Disconnect":
@@ -760,7 +766,7 @@ class GUI(QMainWindow):
             processing_config["sweeps_requested"] = self.sweep_count
 
         params = {
-            "sensor_config": self.update_sensor_config(),
+            "sensor_config": self.save_gui_settings_to_sensor_config(),
             "clutter_file": self.cl_file,
             "use_clutter": use_cl,
             "create_clutter": create_cl,
@@ -847,7 +853,7 @@ class GUI(QMainWindow):
                 max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
 
-            conf = self.update_sensor_config()
+            conf = self.get_sensor_config()
             sensor = 1
             connection_success = False
             error = None
@@ -896,44 +902,49 @@ class GUI(QMainWindow):
             except Exception:
                 pass
 
-    def update_sensor_config(self, refresh=False):
-        mode = self.current_module_label
-        conf = self.get_sensor_config()
+    def load_gui_settings_from_sensor_config(self):
+        config = self.get_sensor_config()
 
-        if conf is None:
+        if config is None:
+            return
+
+        self.textboxes["range_start"].setText("{:.2f}".format(config.range_interval[0]))
+        self.textboxes["range_end"].setText("{:.2f}".format(config.range_interval[1]))
+        self.textboxes["gain"].setText("{:.2f}".format(config.gain))
+        self.textboxes["sweep_rate"].setText("{:d}".format(config.sweep_rate))
+        self.sweep_count = -1
+
+    def save_gui_settings_to_sensor_config(self):
+        config = self.get_sensor_config()
+
+        if config is None:
             return None
 
-        conf.sensor = int(self.textboxes["sensor"].text())
-        if not refresh:
-            self.textboxes["range_start"].setText("{:.2f}".format(conf.range_interval[0]))
-            self.textboxes["range_end"].setText("{:.2f}".format(conf.range_interval[1]))
-            self.textboxes["gain"].setText("{:.2f}".format(conf.gain))
-            self.textboxes["sweep_rate"].setText("{:d}".format(conf.sweep_rate))
-            self.sweep_count = -1
-        else:
-            stitching = self.check_values()
-            conf.experimental_stitching = stitching
-            conf.range_interval = [
-                    float(self.textboxes["range_start"].text()),
-                    float(self.textboxes["range_end"].text()),
-            ]
-            conf.sweep_rate = int(self.textboxes["sweep_rate"].text())
-            conf.gain = float(self.textboxes["gain"].text())
-            self.sweep_count = int(self.textboxes["sweeps"].text())
-            if "power" in mode.lower():
-                conf.bin_count = int(self.textboxes["power_bins"].text())
-            if "sparse" in mode.lower():
-                conf.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
-            if "envelope" in mode.lower():
-                profile_text = self.env_profiles_dd.currentText().lower()
-                if "snr" in profile_text:
-                    conf.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
-                elif "depth" in profile_text:
-                    conf.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
-                elif "leakage" in profile_text:
-                    conf.session_profile = configs.EnvelopeServiceConfig.DIRECT_LEAKAGE
+        config.sensor = int(self.textboxes["sensor"].text())
 
-        return conf
+        stitching = self.check_values()
+        config.experimental_stitching = stitching
+        config.range_interval = [
+                float(self.textboxes["range_start"].text()),
+                float(self.textboxes["range_end"].text()),
+        ]
+        config.sweep_rate = int(self.textboxes["sweep_rate"].text())
+        config.gain = float(self.textboxes["gain"].text())
+        self.sweep_count = int(self.textboxes["sweeps"].text())
+        if self.current_data_type == "power_bin":
+            config.bin_count = int(self.textboxes["power_bins"].text())
+        if self.current_data_type == "sparse":
+            config.number_of_subsweeps = int(self.textboxes["subsweeps"].text())
+        if self.current_data_type == "envelope":
+            profile_text = self.env_profiles_dd.currentText().lower()
+            if "snr" in profile_text:
+                config.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
+            elif "depth" in profile_text:
+                config.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
+            elif "leakage" in profile_text:
+                config.session_profile = configs.EnvelopeServiceConfig.DIRECT_LEAKAGE
+
+        return config
 
     def update_service_params(self):
         errors = []
@@ -1621,7 +1632,7 @@ class GUI(QMainWindow):
                             val = self.service_labels[mode][key]["box"].text()
                             service_params[mode][key]["box"] = val
             last_config = {
-                "sensor_config": self.update_sensor_config(),
+                "sensor_config": self.save_gui_settings_to_sensor_config(),
                 "sweep_count": self.sweep_count,
                 "host": self.textboxes["host"].text(),
                 "sweep_buffer": self.textboxes["sweep_buffer"].text(),
