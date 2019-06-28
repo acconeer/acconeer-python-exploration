@@ -1254,10 +1254,9 @@ class GUI(QMainWindow):
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
                     if self.current_data_type == "power_bin":
-                        conf.bin_count = int(self.textboxes["bin_count"].text())
+                        conf.bin_count = int(f["bin_count"][()])
                     if self.current_data_type == "sparse":
-                        textbox = self.textboxes["number_of_subsweeps"]
-                        conf.number_of_subsweeps = int(textbox.text())
+                        conf.number_of_subsweeps = int(f["number_of_subsweeps"][()])
                     conf.gain = f["gain"][()]
                 except Exception as e:
                     print("Config not stored in file...")
