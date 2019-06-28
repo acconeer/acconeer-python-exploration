@@ -1,11 +1,14 @@
 import multiprocessing
 import sys
 import time
+import os
 
 import webbrowser
 import threading
-from server import http_server
 import traceback
+
+sys.path.append(os.path.dirname(__file__))  # noqa: E402
+from server import http_server
 
 from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
 from acconeer_utils.clients.json.client import JSONClient
