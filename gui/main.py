@@ -1630,7 +1630,6 @@ class GUI(QMainWindow):
                 "sweep_buffer": self.textboxes["sweep_buffer"].text(),
                 "interface": self.interface_dd.currentIndex(),
                 "port": self.ports_dd.currentIndex(),
-                "profile": self.env_profiles_dd.currentIndex(),
                 "service_settings": service_params,
                 "baudrate": self.baudrate,
                 }
