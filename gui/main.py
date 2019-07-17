@@ -1062,7 +1062,7 @@ class GUI(QMainWindow):
             errors.append("Start range must be between {}m and 6.94m!\n".format(min_start_range))
 
         end = self.is_float(self.textboxes["range_end"].text())
-        end, e = self.check_limit(end, self.textboxes["range_end"], 0.12, 7)
+        end, e = self.check_limit(end, self.textboxes["range_end"], 0.12, 7.03)
         if e:
             errors.append("End range must be between 0.12m and 7.0m!\n")
 
