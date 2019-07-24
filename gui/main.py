@@ -844,11 +844,9 @@ class GUI(QMainWindow):
                     self.error_message("Please select port first!")
                     return
 
-                base = self.BASE_BAUDRATE
                 if self.baudrate != self.DEFAULT_BAUDRATE:
-                    base = self.baudrate
                     print("Warning: Using non-standard baudrate of {}!".format(self.baudrate))
-                self.client = RegClient(port, base_baudrate=base, conf_baudrate=self.baudrate)
+                self.client = RegClient(port, conf_baudrate=self.baudrate)
                 max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
 
