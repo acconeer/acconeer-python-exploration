@@ -134,7 +134,7 @@ class BaseDenseServiceConfig(BaseServiceConfig):
 
     @running_average_factor.setter
     def running_average_factor(self, factor):
-        if not (0 < factor < 1):
+        if not (0 <= factor < 1):
             raise ValueError("running average factor must be between 0 and 1")
         self._running_average_factor = factor
 
