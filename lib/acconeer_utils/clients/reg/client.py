@@ -70,6 +70,7 @@ class RegClient(BaseClient):
 
                 self._write_reg("uart_baudrate", self.conf_baudrate)
                 self._link.baudrate = self.conf_baudrate
+                sleep(0.2)
                 self._handshake()
 
                 log.info("successfully connected at {} baud!".format(self.conf_baudrate))
