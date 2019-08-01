@@ -933,6 +933,8 @@ class GUI(QMainWindow):
             index = self.env_profiles_dd.findText(text, QtCore.Qt.MatchFixedString)
             self.env_profiles_dd.setCurrentIndex(index)
 
+        self.check_values()
+
     def save_gui_settings_to_sensor_config(self):
         config = self.get_sensor_config()
 
