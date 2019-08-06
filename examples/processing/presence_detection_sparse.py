@@ -73,7 +73,7 @@ def get_processing_config():
         },
         "upper_speed_limit": {
             "name": "Max movement [mm/s]",
-            "value": 25,
+            "value": 30,
             "limits": [1, 500],
             "type": float,
             "text": None,
@@ -91,14 +91,17 @@ class PresenceDetectionSparseProcessor:
         self.movement_history = np.zeros(f * 5)  # 5 seconds
 
         self.a_fast_tau = 1.0 / (upper_speed_limit / 2.5)
-        self.a_slow_tau = 1.0
-        self.a_move_tau = 1.0
+        self.a_slow_tau = 0.8
+        self.a_diff_tau = 0.4
+        self.a_move_tau = 0.8
         self.static_a_fast = self.alpha(self.a_fast_tau, 1.0 / (f * num_subsweeps))
         self.static_a_slow = self.alpha(self.a_slow_tau, 1.0 / (f * num_subsweeps))
+        self.a_diff = self.alpha(self.a_diff_tau, 1.0 / (f * num_subsweeps))
         self.a_move = self.alpha(self.a_move_tau, 1.0 / (f * num_subsweeps))
 
         self.sweep_lp_fast = None
         self.sweep_lp_slow = None
+        self.lp_diff = None
         self.subsweep_index = 0
         self.movement_lp = 0
 
@@ -108,9 +111,10 @@ class PresenceDetectionSparseProcessor:
 
     def process(self, sweep):
         for subsweep in sweep:
-            if self.sweep_lp_fast is None:
+            if self.subsweep_index == 0:
                 self.sweep_lp_fast = subsweep.copy()
                 self.sweep_lp_slow = subsweep.copy()
+                self.lp_diff = np.zeros_like(subsweep)
             else:
                 a_fast = self.dynamic_filter_coefficient(self.static_a_fast)
                 self.sweep_lp_fast = self.sweep_lp_fast * a_fast + subsweep * (1-a_fast)
@@ -118,8 +122,13 @@ class PresenceDetectionSparseProcessor:
                 a_slow = self.dynamic_filter_coefficient(self.static_a_slow)
                 self.sweep_lp_slow = self.sweep_lp_slow * a_slow + subsweep * (1-a_slow)
 
-                movement = np.mean(np.abs(self.sweep_lp_fast - self.sweep_lp_slow))
-                movement *= 0.01
+                diff = np.abs(self.sweep_lp_fast - self.sweep_lp_slow)
+                self.lp_diff = self.lp_diff * self.a_diff + diff * (1-self.a_diff)
+
+                depth_filtered_lp_diff = np.correlate(self.lp_diff, np.ones(3) / 3)
+
+                movement = np.max(depth_filtered_lp_diff)
+                movement *= 0.0025
                 self.movement_lp = self.movement_lp*self.a_move + movement*(1-self.a_move)
 
             self.subsweep_index += 1
@@ -130,7 +139,8 @@ class PresenceDetectionSparseProcessor:
         present = np.tanh(self.movement_history[-1]) > self.threshold
 
         out_data = {
-            "movement": np.abs(self.sweep_lp_fast - self.sweep_lp_slow),
+            "movement": depth_filtered_lp_diff,
+            "movement_index": np.argmax(depth_filtered_lp_diff),
             "movement_history": np.tanh(self.movement_history),
             "present": present,
         }
@@ -149,11 +159,17 @@ class PGUpdater:
     def setup(self, win):
         win.setWindowTitle("Acconeer presence detection example")
 
+        dashed_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
+
         self.move_plot = win.addPlot(title="Movement")
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Depth (m)")
         self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler())
         self.move_smooth_max = example_utils.SmoothMax(self.config.sweep_rate)
+
+        self.move_depth_line = pg.InfiniteLine(pen=dashed_pen)
+        self.move_depth_line.hide()
+        self.move_plot.addItem(self.move_depth_line)
 
         win.nextRow()
 
@@ -163,23 +179,23 @@ class PGUpdater:
         move_hist_plot.setXRange(-5, 0)
         move_hist_plot.setYRange(0, 1)
         self.move_hist_curve = move_hist_plot.plot(pen=example_utils.pg_pen_cycler())
-        limit_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
-        limit_line = pg.InfiniteLine(self.movement_limit, angle=0, pen=limit_pen)
+        limit_line = pg.InfiniteLine(self.movement_limit, angle=0, pen=dashed_pen)
         move_hist_plot.addItem(limit_line)
 
-        present_text = '<div style="text-align: center">' \
-                       '<span style="color: #FFFFFF;font-size:16pt;">' \
-                       '{}</span></div>'.format("Presence detected!")
-        not_present_text = '<div style="text-align: center">' \
+        self.present_html_format = '<div style="text-align: center">' \
+                                   '<span style="color: #FFFFFF;font-size:16pt;">' \
+                                   '{}</span></div>'
+        present_html = self.present_html_format.format("Presence detected!")
+        not_present_html = '<div style="text-align: center">' \
                            '<span style="color: #FFFFFF;font-size:16pt;">' \
                            '{}</span></div>'.format("No presence detected")
         self.present_text_item = pg.TextItem(
-            html=present_text,
+            html=present_html,
             fill=pg.mkColor(255, 140, 0),
             anchor=(0.5, 0),
             )
         self.not_present_text_item = pg.TextItem(
-            html=not_present_text,
+            html=not_present_html,
             fill=pg.mkColor("b"),
             anchor=(0.5, 0),
             )
@@ -195,16 +211,25 @@ class PGUpdater:
         self.move_curve.setData(move_xs, move_ys)
         self.move_plot.setYRange(0, self.move_smooth_max.update(np.max(move_ys)))
 
+        movement_x = move_xs[data["movement_index"]]
+        self.move_depth_line.setPos(movement_x)
+
         move_hist_ys = data["movement_history"]
         move_hist_xs = np.linspace(-5, 0, len(move_hist_ys))
         self.move_hist_curve.setData(move_hist_xs, move_hist_ys)
 
         if data["present"]:
+            present_text = "Presence detected at {:.1f}m!".format(movement_x)
+            present_html = self.present_html_format.format(present_text)
+            self.present_text_item.setHtml(present_html)
+
             self.present_text_item.show()
             self.not_present_text_item.hide()
+            self.move_depth_line.show()
         else:
             self.present_text_item.hide()
             self.not_present_text_item.show()
+            self.move_depth_line.hide()
 
 
 if __name__ == "__main__":
