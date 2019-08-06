@@ -1002,6 +1002,8 @@ class GUI(QMainWindow):
                     else:
                         data = self.service_params["send_process_data"]["text"]
                         print(data + " data not available")
+                else:
+                    self.service_params["send_process_data"]["value"] = None
 
         if len(errors):
             self.error_message("".join(errors))
