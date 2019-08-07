@@ -1049,9 +1049,9 @@ class GUI(QMainWindow):
             else:
                 textbox = self.textboxes["number_of_subsweeps"]
                 subs = int(textbox.text())
-                subs, e = self.check_limit(subs, textbox, 1, 16, set_to=16)
+                subs, e = self.check_limit(subs, textbox, 1, 64, set_to=16)
             if e:
-                errors.append("Number of Subsweeps must be an int and between 1 and 16 !\n")
+                errors.append("Number of Subsweeps must be an int and between 1 and 64 !\n")
 
         gain = self.is_float(self.textboxes["gain"].text())
         gain, e = self.check_limit(gain, self.textboxes["gain"], 0, 1, set_to=0.7)

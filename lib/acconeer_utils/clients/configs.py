@@ -226,8 +226,8 @@ class SparseServiceConfig(BaseServiceConfig):
     def number_of_subsweeps(self, number_of_subsweeps):
         if number_of_subsweeps < 1:
             raise ValueError("number of subsweeps must be > 0")
-        if number_of_subsweeps > 16:
-            raise ValueError("number of subsweeps must be <= 16")
+        if number_of_subsweeps > 64:
+            raise ValueError("number of subsweeps must be <= 64")
         self._number_of_subsweeps = number_of_subsweeps
 
 
