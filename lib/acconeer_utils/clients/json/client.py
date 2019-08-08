@@ -45,7 +45,7 @@ class JSONClient(BaseClient):
 
         startstr = "server version v"
         if not msg.startswith(startstr):
-            log.warn("server version unknown")
+            log.warning("server version unknown")
             return
 
         server_version_str = msg[len(startstr):].strip()
@@ -53,18 +53,18 @@ class JSONClient(BaseClient):
         try:
             server_version = StrictVersion(server_version_str)
         except ValueError:
-            log.warn("server version unknown")
+            log.warning("server version unknown")
             return
 
         if server_version < MIN_VERSION:
-            log.warn("server version is not supported (too old)")
+            log.warning("server version is not supported (too old)")
         elif server_version != DEV_VERSION:
-            log.warn("server version might not be fully supported")
+            log.warning("server version might not be fully supported")
 
     def _setup_session(self, config):
         if isinstance(config, dict):
             cmd = deepcopy(config)
-            log.warn("setup with raw dict config - you're on your own")
+            log.warning("setup with raw dict config - you're on your own")
         else:
             cmd = protocol.get_dict_for_config(config)
 

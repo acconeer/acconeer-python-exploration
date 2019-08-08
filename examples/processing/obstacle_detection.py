@@ -265,10 +265,10 @@ class ObstacleDetectionProcessor:
                     self.use_bg = False
                     log.info("Using saved FFT background data!")
                 else:
-                    log.warn("Saved background has wrong shape/type!")
-                    log.warn("Required shape {}".format(self.fft_bg.shape))
+                    log.warning("Saved background has wrong shape/type!")
+                    log.warning("Required shape {}".format(self.fft_bg.shape))
                     if hasattr(self.saved_bg, "shape"):
-                        log.warn("Supplied shape {}".format(self.saved_bg.shape))
+                        log.warning("Supplied shape {}".format(self.saved_bg.shape))
 
             for dist in range(len_range):
                 for freq in range(self.fft_len):

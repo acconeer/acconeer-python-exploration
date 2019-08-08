@@ -38,7 +38,7 @@ class BaseClient(metaclass=ABCMeta):
             pass
         else:
             if not start_ok or not len_ok:
-                log.warn("actual measured range differs from the requested")
+                log.warning("actual measured range differs from the requested")
 
         return session_info
 

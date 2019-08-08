@@ -82,9 +82,9 @@ class RegClient(BaseClient):
 
         ver = self._read_reg("product_version")
         if ver < protocol.MIN_VERSION:
-            log.warn("server version is not supported (too old)")
+            log.warning("server version is not supported (too old)")
         elif ver != protocol.DEV_VERSION:
-            log.warn("server version might not be fully supported")
+            log.warning("server version might not be fully supported")
 
         self._link.timeout = old_timeout
 
@@ -103,7 +103,7 @@ class RegClient(BaseClient):
 
         if config.experimental_stitching:
             self._write_reg("repetition_mode", "max")
-            log.warn("experimental stitching on - switching to max freq. mode")
+            log.warning("experimental stitching on - switching to max freq. mode")
         else:
             self._write_reg("repetition_mode", "fixed")
 
@@ -137,8 +137,8 @@ class RegClient(BaseClient):
                 data_rate = 8 * bpp * data_length * freq
                 log_text = "data rate: {:.2f} Mbit/s".format(data_rate*1e-6)
                 if data_rate > 2/3 * self._link.baudrate:
-                    log.warn(log_text)
-                    log.warn("data rate might be too high")
+                    log.warning(log_text)
+                    log.warning("data rate might be too high")
                 else:
                     log.info(log_text)
 
@@ -278,7 +278,7 @@ class RegClient(BaseClient):
                 packet = buf_2[si+1+protocol.LEN_FIELD_SIZE:-1]
                 break
 
-            log.warn("successfully recovered from corrupt frame")
+            log.warning("successfully recovered from corrupt frame")
 
         return protocol.unpack_packet(packet)
 
@@ -325,9 +325,9 @@ class RegSPIClient(BaseClient):
 
         ver = self._read_reg("product_version")
         if ver < protocol.MIN_VERSION:
-            log.warn("server version is not supported (too old)")
+            log.warning("server version is not supported (too old)")
         elif ver != protocol.DEV_VERSION:
-            log.warn("server version might not be fully supported")
+            log.warning("server version might not be fully supported")
 
     def _setup_session(self, config):
         if len(config.sensor) > 1:
@@ -348,7 +348,7 @@ class RegSPIClient(BaseClient):
 
         if config.experimental_stitching:
             self._write_reg("repetition_mode", "max")
-            log.warn("experimental stitching on - switching to max freq. mode")
+            log.warning("experimental stitching on - switching to max freq. mode")
         else:
             self._write_reg("repetition_mode", "fixed")
 
