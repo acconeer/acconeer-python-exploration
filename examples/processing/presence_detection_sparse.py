@@ -125,7 +125,7 @@ class PresenceDetectionSparseProcessor:
                 diff = np.abs(self.sweep_lp_fast - self.sweep_lp_slow)
                 self.lp_diff = self.lp_diff * self.a_diff + diff * (1-self.a_diff)
 
-                depth_filtered_lp_diff = np.correlate(self.lp_diff, np.ones(3) / 3)
+                depth_filtered_lp_diff = np.correlate(self.lp_diff, np.ones(3) / 3, mode="same")
 
                 movement = np.max(depth_filtered_lp_diff)
                 movement *= 0.0025
