@@ -84,20 +84,20 @@ def get_processing_config():
 class PresenceDetectionSparseProcessor:
     def __init__(self, sensor_config, processing_config):
         self.threshold = processing_config["threshold"]["value"]
-        num_subsweeps = sensor_config.number_of_subsweeps
         upper_speed_limit = processing_config["upper_speed_limit"]["value"]
-        f = int(round(sensor_config.sweep_rate))
+        subsweep_rate = sensor_config.sweep_rate * sensor_config.number_of_subsweeps
+        subsweep_dt = 1.0 / subsweep_rate
 
-        self.movement_history = np.zeros(f * 5)  # 5 seconds
+        self.movement_history = np.zeros(int(round(sensor_config.sweep_rate * 5)))  # 5 seconds
 
         self.a_fast_tau = 1.0 / (upper_speed_limit / 2.5)
         self.a_slow_tau = 0.8
         self.a_diff_tau = 0.4
         self.a_move_tau = 0.8
-        self.static_a_fast = self.alpha(self.a_fast_tau, 1.0 / (f * num_subsweeps))
-        self.static_a_slow = self.alpha(self.a_slow_tau, 1.0 / (f * num_subsweeps))
-        self.a_diff = self.alpha(self.a_diff_tau, 1.0 / (f * num_subsweeps))
-        self.a_move = self.alpha(self.a_move_tau, 1.0 / (f * num_subsweeps))
+        self.static_a_fast = self.alpha(self.a_fast_tau, subsweep_dt)
+        self.static_a_slow = self.alpha(self.a_slow_tau, subsweep_dt)
+        self.a_diff = self.alpha(self.a_diff_tau, subsweep_dt)
+        self.a_move = self.alpha(self.a_move_tau, subsweep_dt)
 
         self.sweep_lp_fast = None
         self.sweep_lp_slow = None
