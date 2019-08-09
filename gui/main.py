@@ -688,6 +688,7 @@ class GUI(QMainWindow):
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
+            self.update_ports()
         elif "spi" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].hide()
