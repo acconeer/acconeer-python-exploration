@@ -128,7 +128,7 @@ class JSONClient(BaseClient):
 
         log.debug("disconnected")
 
-    def _init_session(self):
+    def _init_session(self, retry=True):
         if self._session_cmd is None:
             raise ClientError
 
@@ -136,7 +136,10 @@ class JSONClient(BaseClient):
         header, _ = self._recv_frame()
 
         if header["status"] == "error":
-            raise ClientError("server error while initializing session")
+            if retry:
+                return self._init_session(retry=False)
+            else:
+                raise ClientError("server error while initializing session")
         elif header["status"] != "ok":
             raise ClientError("got unexpected header")
 
