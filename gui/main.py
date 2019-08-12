@@ -760,7 +760,10 @@ class GUI(QMainWindow):
             processing_config["clutter_file"] = self.cl_file
             processing_config["use_clutter"] = use_cl
             processing_config["create_clutter"] = create_cl
-            processing_config["sweeps_requested"] = self.sweep_count
+            if not create_cl:
+                processing_config["sweeps_requested"] = self.sweep_count
+            else:
+                processing_config["sweeps_requested"] = self.sweep_buffer
 
         params = {
             "sensor_config": self.save_gui_settings_to_sensor_config(),
