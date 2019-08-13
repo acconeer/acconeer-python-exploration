@@ -118,6 +118,10 @@ class RegClient(BaseClient):
             self._write_reg_raw(rv.addr, rv.val)
 
         self._write_reg("main_control", "create")
+        status = self._read_reg("status")
+
+        if status & protocol.STATUS_ERROR_ON_SERVICE_CREATION_MASK:
+            raise ClientError("session setup failed")
 
         info = {}
         info_regs = utils.get_session_info_regs(mode)
@@ -364,6 +368,10 @@ class RegSPIClient(BaseClient):
 
         self._write_reg("main_control", "create")
         sleep(SPI_MAIN_CTRL_SLEEP)
+        status = self._read_reg("status")
+
+        if status & protocol.STATUS_ERROR_ON_SERVICE_CREATION_MASK:
+            raise ClientError("session setup failed")
 
         info = {}
         info_regs = utils.get_session_info_regs(mode)
