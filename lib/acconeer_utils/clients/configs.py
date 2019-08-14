@@ -61,6 +61,7 @@ class BaseServiceConfig(BaseSessionConfig):
     _gain = 0.5
     _range_start = 0.2
     _range_length = 0.6
+    _hw_accelerated_average_samples = 7
     _experimental_stitching = None
 
     @property
@@ -117,6 +118,18 @@ class BaseServiceConfig(BaseSessionConfig):
         self.range_length = range_end - self.range_start
 
     @property
+    def hw_accelerated_average_samples(self):
+        return self._hw_accelerated_average_samples
+
+    @hw_accelerated_average_samples.setter
+    def hw_accelerated_average_samples(self, hw_accelerated_average_samples):
+        if hw_accelerated_average_samples < 1:
+            raise ValueError("number of hardware accelerated average samples be >= 1")
+        if hw_accelerated_average_samples > 64:
+            raise ValueError("number of hardware accelerated average samples be <= 64")
+        self._hw_accelerated_average_samples = hw_accelerated_average_samples
+
+    @property
     def experimental_stitching(self):
         return self._experimental_stitching
 
@@ -140,6 +153,7 @@ class BaseDenseServiceConfig(BaseServiceConfig):
 
 
 class PowerBinServiceConfig(BaseServiceConfig):
+    _hw_accelerated_average_samples = 8
     _bin_count = None
 
     @property
@@ -212,6 +226,7 @@ class IQServiceConfig(BaseDenseServiceConfig):
 
 
 class SparseServiceConfig(BaseServiceConfig):
+    _hw_accelerated_average_samples = 60
     _number_of_subsweeps = 16
 
     @property

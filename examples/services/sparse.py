@@ -27,6 +27,7 @@ def main():
     config.range_interval = [0.24, 1.20]
     config.sweep_rate = 60
     config.number_of_subsweeps = 16
+    # config.hw_accelerated_average_samples = 60
 
     client.setup_session(config)
 

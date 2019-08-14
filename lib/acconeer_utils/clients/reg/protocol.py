@@ -253,6 +253,16 @@ REGS = [
         None,
     ),
     Reg(
+        "hw_accelerated_average_samples",
+        NO_MODE,
+        48,
+        "rw",
+        "u",
+        None,
+        None,
+        "hw_accelerated_average_samples",
+    ),
+    Reg(
         "actual_range_start",
         NO_MODE,
         129,

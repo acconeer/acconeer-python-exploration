@@ -22,6 +22,7 @@ KEY_AND_CONFIG_ATTR_PAIRS = [
     KeyConfigAttrPair("enable_stitching", "experimental_stitching", False),
     KeyConfigAttrPair("sweeps_per_result", "number_of_subsweeps", False),
     KeyConfigAttrPair("sampling_mode", "sampling_mode", False),
+    KeyConfigAttrPair("point_average", "hw_accelerated_average_samples", False),
 ]
 
 MODE_TO_CMD_MAP = {
