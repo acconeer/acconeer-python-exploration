@@ -344,16 +344,6 @@ REGS = [
         None,
         "compensate_phase",
     ),
-    Reg(
-        "data_length",
-        "envelope",
-        131,
-        "r",
-        "u",
-        None,
-        "session",
-        None,
-    ),
 
     Reg(
         "running_average_factor",
@@ -386,16 +376,6 @@ REGS = [
         "sampling_mode",
     ),
     Reg(
-        "data_length",
-        "iq",
-        131,
-        "r",
-        "u",
-        None,
-        "session",
-        None,
-    ),
-    Reg(
         "number_of_subsweeps",
         "sparse",
         64,
@@ -426,14 +406,31 @@ REGS = [
         None,
         None,
     ),
+
+    Reg(
+        "data_length",
+        ["envelope", "iq"],
+        131,
+        "r",
+        "u",
+        None,
+        "session",
+        None,
+    ),
 ]
 
 MODE_LOOKUP = {v: k for k, v in MODES.items()}
 REG_LOOKUP = {k: {} for k in MODES.keys()}
 REG_LOOKUP[NO_MODE] = {}
 for reg in REGS:
-    REG_LOOKUP[reg.mode][reg.name] = reg
-    REG_LOOKUP[reg.mode][reg.addr] = reg
+    if isinstance(reg.mode, (list, tuple)):
+        modes = reg.mode
+    else:
+        modes = [reg.mode]
+
+    for mode in modes:
+        REG_LOOKUP[mode][reg.name] = reg
+        REG_LOOKUP[mode][reg.addr] = reg
 
 
 def get_mode(mode):

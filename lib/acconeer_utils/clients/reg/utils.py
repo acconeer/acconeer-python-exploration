@@ -6,6 +6,8 @@ def get_regs_for_mode(mode):
     for reg in protocol.REGS:
         if reg.mode in [protocol.NO_MODE, mode]:
             yield reg
+        elif isinstance(reg.mode, (list, tuple)) and mode in reg.mode:
+            yield reg
 
 
 def get_session_info_regs(mode):
