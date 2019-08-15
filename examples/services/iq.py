@@ -27,6 +27,8 @@ def main():
     config.gain = 0.6
     config.sampling_mode = config.SAMPLING_MODE_A
     # config.running_average_factor = 0.5
+    # config.hw_accelerated_average_samples = 7
+    # config.stepsize = 1
 
     info = client.setup_session(config)
     num_points = info["data_length"]

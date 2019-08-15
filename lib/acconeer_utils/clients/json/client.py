@@ -11,7 +11,7 @@ from acconeer_utils.clients.json import protocol
 log = logging.getLogger(__name__)
 
 MIN_VERSION = StrictVersion("1.5.2")
-DEV_VERSION = StrictVersion("1.8.6")
+DEV_VERSION = StrictVersion("1.9.1")
 
 
 class JSONClient(BaseClient):

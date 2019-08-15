@@ -23,6 +23,8 @@ KEY_AND_CONFIG_ATTR_PAIRS = [
     KeyConfigAttrPair("sweeps_per_result", "number_of_subsweeps", False),
     KeyConfigAttrPair("sampling_mode", "sampling_mode", False),
     KeyConfigAttrPair("point_average", "hw_accelerated_average_samples", False),
+    KeyConfigAttrPair("sweep_rate", "subsweep_rate", False),
+    KeyConfigAttrPair("stepsize", "stepsize", False),
 ]
 
 MODE_TO_CMD_MAP = {
@@ -41,6 +43,8 @@ SESSION_HEADER_TO_INFO_KEY_MAP = {
     "payload_size": None,
     "free_space_absolute_offset": None,
     "sweeps_per_result": "number_of_subsweeps",
+    "actual_sweep_rate": "actual_subsweep_rate",
+    "actual_stepsize_m": "actual_stepsize",
 }
 
 # None = ignore value

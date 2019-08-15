@@ -99,8 +99,13 @@ PRODUCTS = [
 ]
 
 float_to_milli_enc_funs = EncFuns(
-    lambda v: int(round(v * 1000)),
-    lambda v: v / 1000.0
+    lambda v: int(round(v * 1e3)),
+    lambda v: v * 1e-3
+)
+
+float_to_micro_enc_funs = EncFuns(
+    lambda v: int(round(v * 1e6)),
+    lambda v: v * 1e-6
 )
 
 REGS = [
@@ -262,6 +267,16 @@ REGS = [
         None,
     ),
     Reg(
+        "stepsize",
+        ["iq", "sparse"],
+        41,
+        "rw",
+        "u",
+        None,
+        None,
+        "stepsize",
+    ),
+    Reg(
         "hw_accelerated_average_samples",
         NO_MODE,
         48,
@@ -288,6 +303,16 @@ REGS = [
         "r",
         "i",
         float_to_milli_enc_funs,
+        "session",
+        None,
+    ),
+    Reg(
+        "actual_stepsize",
+        ["iq", "sparse"],
+        133,
+        "r",
+        "i",
+        float_to_micro_enc_funs,
         "session",
         None,
     ),
@@ -405,12 +430,42 @@ REGS = [
         "number_of_subsweeps",
     ),
     Reg(
+        "subsweep_rate",
+        "sparse",
+        65,
+        "rw",
+        "u",
+        float_to_milli_enc_funs,
+        None,
+        "subsweep_rate",
+    ),
+    Reg(
+        "sparse_sampling_mode",
+        "sparse",
+        66,
+        "rw",
+        "u",
+        None,
+        None,
+        "sampling_mode",
+    ),
+    Reg(
         "data_length",
         "sparse",
         131,
         "r",
         "u",
         None,
+        "session",
+        None,
+    ),
+    Reg(
+        "actual_subsweep_rate",
+        "sparse",
+        132,
+        "r",
+        "u",
+        float_to_milli_enc_funs,
         "session",
         None,
     ),

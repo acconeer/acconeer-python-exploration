@@ -27,6 +27,7 @@ def main():
     config.sweep_rate = 60
     config.number_of_subsweeps = 16
     # config.hw_accelerated_average_samples = 60
+    # config.stepsize = 1
 
     client.setup_session(config)
 

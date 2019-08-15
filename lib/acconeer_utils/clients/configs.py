@@ -209,6 +209,7 @@ class IQServiceConfig(BaseDenseServiceConfig):
     SAMPLING_MODES = [SAMPLING_MODE_A, SAMPLING_MODE_B]
 
     _sampling_mode = SAMPLING_MODE_A
+    _stepsize = 1
 
     @property
     def mode(self):
@@ -224,10 +225,27 @@ class IQServiceConfig(BaseDenseServiceConfig):
             raise ValueError("invalid sampling mode")
         self._sampling_mode = sampling_mode
 
+    @property
+    def stepsize(self):
+        return self._stepsize
+
+    @stepsize.setter
+    def stepsize(self, stepsize):
+        if stepsize not in [1, 2, 4]:
+            raise ValueError("stepsize must be 1, 2, or 4")
+        self._stepsize = stepsize
+
 
 class SparseServiceConfig(BaseServiceConfig):
+    SAMPLING_MODE_A = 0
+    SAMPLING_MODE_B = 1
+    SAMPLING_MODES = [SAMPLING_MODE_A, SAMPLING_MODE_B]
+
     _hw_accelerated_average_samples = 60
     _number_of_subsweeps = 16
+    _subsweep_rate = None
+    _stepsize = 1
+    _sampling_mode = SAMPLING_MODE_B
 
     @property
     def mode(self):
@@ -241,9 +259,37 @@ class SparseServiceConfig(BaseServiceConfig):
     def number_of_subsweeps(self, number_of_subsweeps):
         if number_of_subsweeps < 1:
             raise ValueError("number of subsweeps must be > 0")
-        if number_of_subsweeps > 64:
-            raise ValueError("number of subsweeps must be <= 64")
         self._number_of_subsweeps = number_of_subsweeps
+
+    @property
+    def sampling_mode(self):
+        return self._sampling_mode
+
+    @sampling_mode.setter
+    def sampling_mode(self, sampling_mode):
+        if sampling_mode not in self.SAMPLING_MODES:
+            raise ValueError("invalid sampling mode")
+        self._sampling_mode = sampling_mode
+
+    @property
+    def subsweep_rate(self):
+        return self._subsweep_rate
+
+    @subsweep_rate.setter
+    def subsweep_rate(self, subsweep_rate):
+        if subsweep_rate is not None and subsweep_rate <= 0.0:
+            raise ValueError("subsweep rate must be > 0 or None")
+        self._subsweep_rate = subsweep_rate
+
+    @property
+    def stepsize(self):
+        return self._stepsize
+
+    @stepsize.setter
+    def stepsize(self, stepsize):
+        if stepsize < 1:
+            raise ValueError("stepsize must be at least 1")
+        self._stepsize = stepsize
 
 
 class DistancePeakDetectorConfig(BaseServiceConfig):
