@@ -731,8 +731,6 @@ class GUI(QMainWindow):
             data_source = "file"
         self.sweep_buffer = 500
 
-        self.update_canvas(force_update=True)
-
         try:
             self.sweep_buffer = int(self.textboxes["sweep_buffer"].text())
         except Exception:
@@ -746,12 +744,18 @@ class GUI(QMainWindow):
             self.labels["clutter_status"].show()
             if self.cl_file:
                 self.load_clutter_file(force_unload=True)
+            self.input_clutter_sweeps()
+            if self.clutter_sweeps is None:
+                return
         else:
             self.creating_cl = False
+            self.clutter_sweeps = None
 
         use_cl = False
         if self.checkboxes["clutter_file"].isChecked():
             use_cl = True
+
+        self.update_canvas(force_update=True)
 
         processing_config = self.update_service_params()
         mode = self.current_module_label
@@ -763,7 +767,7 @@ class GUI(QMainWindow):
             if not create_cl:
                 processing_config["sweeps_requested"] = self.sweep_count
             else:
-                processing_config["sweeps_requested"] = self.sweep_buffer
+                processing_config["sweeps_requested"] = self.clutter_sweeps
 
         params = {
             "sensor_config": self.save_gui_settings_to_sensor_config(),
@@ -822,6 +826,24 @@ class GUI(QMainWindow):
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
             self.buttons["save_scan"].setEnabled(True)
+
+    def input_clutter_sweeps(self):
+        input_dialog = QtWidgets.QInputDialog(self)
+        input_dialog.setInputMode(QtWidgets.QInputDialog.IntInput)
+        input_dialog.setFixedSize(400, 200)
+        input_dialog.setIntRange(0, 3e6)
+        input_dialog.setIntValue(100)
+        input_dialog.setOption(QtWidgets.QInputDialog.UsePlainTextEditForTextInput)
+        input_dialog.setWindowTitle("Sweep count")
+        input_dialog.setLabelText(
+                "Over how many sweeps do you want to estimate the background?"
+                )
+
+        if input_dialog.exec_() == QtWidgets.QDialog.Accepted:
+            self.clutter_sweeps = int(input_dialog.intValue())
+        else:
+            self.clutter_sweeps = None
+        input_dialog.deleteLater()
 
     def set_log_level(self):
         log_level = logging.INFO
@@ -1150,6 +1172,7 @@ class GUI(QMainWindow):
             if "unload" in self.buttons["load_cl"].text().lower() or force_unload:
                 self.cl_file = None
                 self.checkboxes["clutter_file"].setVisible(False)
+                self.checkboxes["clutter_file"].setChecked(False)
                 self.buttons["load_cl"].setText("Load Background")
                 self.buttons["load_cl"].setStyleSheet("QPushButton {color: black}")
             else:
@@ -1558,10 +1581,9 @@ class GUI(QMainWindow):
             self.labels["saturated"].setStyleSheet("color: #f0f0f0")
 
         if self.creating_cl:
-            clutter_sweeps = min(self.max_cl_sweeps, self.sweep_buffer)
             sweeps = self.sweep_number - self.sweeps_skipped
             clutter_status = "Scanning background sweep {:d} of {:d}".format(sweeps,
-                                                                             clutter_sweeps)
+                                                                             self.clutter_sweeps)
             self.labels["clutter_status"].setText(clutter_status)
 
     def update_ranges(self, data):
@@ -1691,6 +1713,8 @@ class Threaded_Scan(QtCore.QThread):
         self.sweep_count = parent.sweep_count
         if self.sweep_count == -1:
             self.sweep_count = np.inf
+        if params["service_params"]["create_clutter"]:
+            self.sweep_count = params["service_params"]["sweeps_requested"]
 
         self.finished.connect(self.stop_thread)
 

@@ -27,7 +27,7 @@ class DataProcessing:
             self.sweeps = self.hist_len
 
         if self.create_cl:
-            parent.sweep_count = min(self.sweeps, parent.sweep_count)
+            self.sweeps = params["service_params"]["sweeps_requested"]
 
         self.parent = parent
         self.hist_len_index = 0
