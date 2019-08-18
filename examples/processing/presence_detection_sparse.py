@@ -7,6 +7,7 @@ from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
+from acconeer_utils.structs import configbase
 
 
 OUTPUT_MAX = 10
@@ -66,50 +67,64 @@ def get_sensor_config():
     return config
 
 
-def get_processing_config():
-    return {
-        "threshold": {
-            "name": "Threshold",
-            "value": 2,
-            "limits": [0, OUTPUT_MAX],
-            "type": float,
-            "text": None,
-        },
-        "fast_cut": {
-            "name": "Fast cutoff freq. [Hz]",
-            "value": 50.0,
-            "limits": [1, 500],
-            "type": float,
-            "text": None,
-        },
-        "slow_cut": {
-            "name": "Slow cutoff freq. [Hz]",
-            "value": 1.0,
-            "limits": [0.1, 5.0],
-            "type": float,
-            "text": None,
-        },
-        "show_sweep": {
-            "name": "Show sweep",
-            "value": True,
-        },
-        "show_noise": {
-            "name": "Show noise",
-            "value": False,
-        },
-        "show_depthwise_output": {
-            "name": "Show depthwise presence",
-            "value": True,
-        },
-    }
+class ProcessingConfiguration(configbase.ProcessingConfig):
+    threshold = configbase.FloatParameter(
+            label="Threshold",
+            default_value=2,
+            limits=(0, OUTPUT_MAX),
+            updateable=True,
+            order=0,
+            )
+
+    fast_cut = configbase.FloatParameter(
+            label="Fast cutoff freq.",
+            unit="Hz",
+            default_value=50.0,
+            limits=(5, 200),
+            updateable=True,
+            order=10,
+            )
+
+    slow_cut = configbase.FloatParameter(
+            label="Slow cutoff freq.",
+            unit="Hz",
+            default_value=1.0,
+            limits=(0.1, 5.0),
+            updateable=True,
+            order=20,
+            )
+
+    show_sweep = configbase.BoolParameter(
+            label="Show sweep",
+            default_value=True,
+            updateable=True,
+            order=30,
+            )
+
+    show_noise = configbase.BoolParameter(
+            label="Show noise",
+            default_value=False,
+            updateable=True,
+            order=40,
+            )
+
+    show_depthwise_output = configbase.BoolParameter(
+            label="Show depthwise presence",
+            default_value=True,
+            updateable=True,
+            order=50,
+            )
+
+
+get_processing_config = ProcessingConfiguration
 
 
 class PresenceDetectionSparseProcessor:
     def __init__(self, sensor_config, processing_config):
+        self.processing_config = processing_config
         self.num_subsweeps = sensor_config.number_of_subsweeps
-        self.threshold = processing_config["threshold"]["value"]
         f = sensor_config.sweep_rate
-        dt = 1.0 / f
+        self.dt = 1.0 / f
 
         self.noise_est_diff_order = 3
         self.depth_filter_length = 3
@@ -122,17 +137,13 @@ class PresenceDetectionSparseProcessor:
         # tc: time constant [s]
         # sf: smoothing factor [dimensionless]
 
-        fast_cut = processing_config["fast_cut"]["value"]
-        slow_cut = processing_config["slow_cut"]["value"]
         bandpass_tc = 0.5
         output_tc = 1.0
         noise_tc = 1.0
 
-        self.fast_sf = self.static_sf(1.0 / fast_cut, dt)
-        self.slow_sf = self.static_sf(1.0 / slow_cut, dt)
-        self.bandpass_sf = self.static_sf(bandpass_tc, dt)
-        self.output_sf = self.static_sf(output_tc, dt)
-        self.noise_sf = self.static_sf(noise_tc, dt)
+        self.bandpass_sf = self.static_sf(bandpass_tc, self.dt)
+        self.output_sf = self.static_sf(output_tc, self.dt)
+        self.noise_sf = self.static_sf(noise_tc, self.dt)
 
         self.fast_lp_mean_subsweep = None
         self.slow_lp_mean_subsweep = None
@@ -142,6 +153,22 @@ class PresenceDetectionSparseProcessor:
 
         self.output_history = np.zeros(int(round(f * HISTORY_LENGTH_S)))
         self.sweep_index = 0
+
+        self.update_processing_config()
+
+    def update_processing_config(self, processing_config=None):
+        if processing_config is None:
+            processing_config = self.processing_config
+        else:
+            self.processing_config = processing_config
+
+        self.threshold = processing_config.threshold
+
+        fast_cut = processing_config.fast_cut
+        slow_cut = processing_config.slow_cut
+
+        self.fast_sf = self.static_sf(1.0 / fast_cut, self.dt)
+        self.slow_sf = self.static_sf(1.0 / slow_cut, self.dt)
 
     def static_sf(self, tc, dt):
         return np.exp(-dt / tc)
@@ -208,71 +235,72 @@ class PGUpdater:
     def __init__(self, sensor_config, processing_config):
         self.sensor_config = sensor_config
         self.processing_config = processing_config
-        self.movement_limit = processing_config["threshold"]["value"]
+
+        self.setup_is_done = False
 
     def setup(self, win):
         win.setWindowTitle("Acconeer presence detection example")
 
+        self.limit_lines = []
         dashed_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
 
-        if self.processing_config["show_sweep"]["value"]:
-            data_plot = win.addPlot(title="Sweep (blue), fast (orange), and slow (green)")
-            data_plot.showGrid(x=True, y=True)
-            data_plot.setLabel("bottom", "Depth (m)")
-            data_plot.setYRange(-2**15, 2**15)
-            self.sweep_scatter = pg.ScatterPlotItem(
-                    size=10,
-                    brush=example_utils.pg_brush_cycler(0),
-                    )
-            self.fast_scatter = pg.ScatterPlotItem(
-                    size=10,
-                    brush=example_utils.pg_brush_cycler(1),
-                    )
-            self.slow_scatter = pg.ScatterPlotItem(
-                    size=10,
-                    brush=example_utils.pg_brush_cycler(2),
-                    )
-            data_plot.addItem(self.sweep_scatter)
-            data_plot.addItem(self.fast_scatter)
-            data_plot.addItem(self.slow_scatter)
+        self.data_plot = win.addPlot(title="Sweep (blue), fast (orange), and slow (green)")
+        self.data_plot.showGrid(x=True, y=True)
+        self.data_plot.setLabel("bottom", "Depth (m)")
+        self.data_plot.setYRange(-2**15, 2**15)
+        self.sweep_scatter = pg.ScatterPlotItem(
+                size=10,
+                brush=example_utils.pg_brush_cycler(0),
+                )
+        self.fast_scatter = pg.ScatterPlotItem(
+                size=10,
+                brush=example_utils.pg_brush_cycler(1),
+                )
+        self.slow_scatter = pg.ScatterPlotItem(
+                size=10,
+                brush=example_utils.pg_brush_cycler(2),
+                )
+        self.data_plot.addItem(self.sweep_scatter)
+        self.data_plot.addItem(self.fast_scatter)
+        self.data_plot.addItem(self.slow_scatter)
 
-            win.nextRow()
+        win.nextRow()
 
-        if self.processing_config["show_noise"]["value"]:
-            self.noise_plot = win.addPlot(title="Noise")
-            self.noise_plot.showGrid(x=True, y=True)
-            self.noise_plot.setLabel("bottom", "Depth (m)")
-            self.noise_curve = self.noise_plot.plot(pen=example_utils.pg_pen_cycler())
-            self.noise_smooth_max = example_utils.SmoothMax(self.sensor_config.sweep_rate)
+        self.noise_plot = win.addPlot(title="Noise")
+        self.noise_plot.showGrid(x=True, y=True)
+        self.noise_plot.setLabel("bottom", "Depth (m)")
+        self.noise_curve = self.noise_plot.plot(pen=example_utils.pg_pen_cycler())
+        self.noise_smooth_max = example_utils.SmoothMax(self.sensor_config.sweep_rate)
 
-            win.nextRow()
+        win.nextRow()
 
-        if self.processing_config["show_depthwise_output"]["value"]:
-            self.move_plot = win.addPlot(title="Depthwise presence")
-            self.move_plot.showGrid(x=True, y=True)
-            self.move_plot.setLabel("bottom", "Depth (m)")
-            self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler())
-            self.move_smooth_max = example_utils.SmoothMax(
-                    self.sensor_config.sweep_rate,
-                    tau_decay=1.0,
-                    )
+        self.move_plot = win.addPlot(title="Depthwise presence")
+        self.move_plot.showGrid(x=True, y=True)
+        self.move_plot.setLabel("bottom", "Depth (m)")
+        self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler())
+        self.move_smooth_max = example_utils.SmoothMax(
+                self.sensor_config.sweep_rate,
+                tau_decay=1.0,
+                )
 
-            self.move_depth_line = pg.InfiniteLine(pen=dashed_pen)
-            self.move_depth_line.hide()
-            self.move_plot.addItem(self.move_depth_line)
-            limit_line = pg.InfiniteLine(self.movement_limit, angle=0, pen=dashed_pen)
-            self.move_plot.addItem(limit_line)
+        self.move_depth_line = pg.InfiniteLine(pen=dashed_pen)
+        self.move_depth_line.hide()
+        self.move_plot.addItem(self.move_depth_line)
+        limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
+        self.move_plot.addItem(limit_line)
+        self.limit_lines.append(limit_line)
 
-            win.nextRow()
+        win.nextRow()
 
-        move_hist_plot = win.addPlot(title="Presence history")
-        move_hist_plot.showGrid(x=True, y=True)
-        move_hist_plot.setLabel("bottom", "Time (s)")
-        move_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
-        move_hist_plot.setYRange(0, OUTPUT_MAX)
-        self.move_hist_curve = move_hist_plot.plot(pen=example_utils.pg_pen_cycler())
-        limit_line = pg.InfiniteLine(self.movement_limit, angle=0, pen=dashed_pen)
-        move_hist_plot.addItem(limit_line)
+        self.move_hist_plot = win.addPlot(title="Presence history")
+        self.move_hist_plot.showGrid(x=True, y=True)
+        self.move_hist_plot.setLabel("bottom", "Time (s)")
+        self.move_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
+        self.move_hist_plot.setYRange(0, OUTPUT_MAX)
+        self.move_hist_curve = self.move_hist_plot.plot(pen=example_utils.pg_pen_cycler())
+        limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
+        self.move_hist_plot.addItem(limit_line)
+        self.limit_lines.append(limit_line)
 
         self.present_html_format = '<div style="text-align: center">' \
                                    '<span style="color: #FFFFFF;font-size:16pt;">' \
@@ -293,36 +321,52 @@ class PGUpdater:
             )
         self.present_text_item.setPos(-2.5, 0.95 * OUTPUT_MAX)
         self.not_present_text_item.setPos(-2.5, 0.95 * OUTPUT_MAX)
-        move_hist_plot.addItem(self.present_text_item)
-        move_hist_plot.addItem(self.not_present_text_item)
+        self.move_hist_plot.addItem(self.present_text_item)
+        self.move_hist_plot.addItem(self.not_present_text_item)
         self.present_text_item.hide()
+
+        self.setup_is_done = True
+        self.update_processing_config()
+
+    def update_processing_config(self, processing_config=None):
+        if processing_config is None:
+            processing_config = self.processing_config
+        else:
+            self.processing_config = processing_config
+
+        if not self.setup_is_done:
+            return
+
+        self.data_plot.setVisible(self.processing_config.show_sweep)
+        self.noise_plot.setVisible(self.processing_config.show_noise)
+        self.move_plot.setVisible(self.processing_config.show_depthwise_output)
+
+        for line in self.limit_lines:
+            line.setPos(processing_config.threshold)
 
     def update(self, data):
         sweep = data["sweep"]
         _, num_depths = sweep.shape
         depths = np.linspace(*self.sensor_config.range_interval, num_depths)
 
-        if self.processing_config["show_sweep"]["value"]:
-            self.sweep_scatter.setData(
-                    np.tile(depths, self.sensor_config.number_of_subsweeps),
-                    sweep.flatten(),
-                    )
-            self.fast_scatter.setData(depths, data["fast"])
-            self.slow_scatter.setData(depths, data["slow"])
+        self.sweep_scatter.setData(
+                np.tile(depths, self.sensor_config.number_of_subsweeps),
+                sweep.flatten(),
+                )
+        self.fast_scatter.setData(depths, data["fast"])
+        self.slow_scatter.setData(depths, data["slow"])
 
-        if self.processing_config["show_noise"]["value"]:
-            noise = data["noise"]
-            self.noise_curve.setData(depths, noise)
-            self.noise_plot.setYRange(0, self.noise_smooth_max.update(np.max(noise)))
+        noise = data["noise"]
+        self.noise_curve.setData(depths, noise)
+        self.noise_plot.setYRange(0, self.noise_smooth_max.update(np.max(noise)))
 
         movement_x = depths[data["movement_index"]]
 
-        if self.processing_config["show_depthwise_output"]["value"]:
-            move_ys = data["movement"]
-            self.move_curve.setData(depths, move_ys)
-            self.move_plot.setYRange(0, self.move_smooth_max.update(np.max(move_ys)))
-            self.move_depth_line.setPos(movement_x)
-            self.move_depth_line.setVisible(data["present"])
+        move_ys = data["movement"]
+        self.move_curve.setData(depths, move_ys)
+        self.move_plot.setYRange(0, self.move_smooth_max.update(np.max(move_ys)))
+        self.move_depth_line.setPos(movement_x)
+        self.move_depth_line.setVisible(data["present"])
 
         move_hist_ys = data["movement_history"]
         move_hist_xs = np.linspace(-HISTORY_LENGTH_S, 0, len(move_hist_ys))

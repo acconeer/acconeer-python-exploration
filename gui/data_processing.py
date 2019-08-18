@@ -20,14 +20,14 @@ class DataProcessing:
         self.hist_len = params["sweep_buffer"]
         self.service_params = params["service_params"]
 
-        if self.service_params is not None:
+        if isinstance(self.service_params, dict):
             self.service_params["processing_handle"] = self
+
+            if self.create_cl:
+                self.sweeps = self.service_params["sweeps_requested"]
 
         if self.sweeps < 0:
             self.sweeps = self.hist_len
-
-        if self.create_cl:
-            self.sweeps = params["service_params"]["sweeps_requested"]
 
         self.parent = parent
         self.hist_len_index = 0

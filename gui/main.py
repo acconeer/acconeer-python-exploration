@@ -23,6 +23,7 @@ from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.clients.mock.client import MockClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
+from acconeer_utils.structs import configbase
 
 sys.path.append(os.path.dirname(__file__))  # noqa: E402
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
@@ -51,6 +52,7 @@ class GUI(QMainWindow):
     ]
 
     sig_scan = pyqtSignal(str, str, object)
+    sig_pidget_event = pyqtSignal(object)
 
     def __init__(self, under_test=False):
         super().__init__()
@@ -85,11 +87,17 @@ class GUI(QMainWindow):
         self.control_grid_count = Count()
         self.param_grid_count = Count(2)
 
+        self.sig_pidget_event.connect(self.pidget_processing_config_event_handler)
+
         self.module_label_to_sensor_config_map = {}
+        self.module_label_to_processing_config_map = {}
         self.current_module_info = MODULE_INFOS[0]
         for idx, mi in enumerate(MODULE_INFOS):
             if mi.sensor_config_class is not None:
                 self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
+
+                processing_config = self.get_default_processing_config(mi.label)
+                self.module_label_to_processing_config_map[mi.label] = processing_config
 
         self.setWindowIcon(QIcon(self.ACC_IMG_FILENAME))
 
@@ -102,6 +110,7 @@ class GUI(QMainWindow):
         self.init_sublayouts()
         self.init_panel_scroll_area()
         self.init_statusbar()
+        self.init_pidgets()
 
         self.main_widget = QtWidgets.QSplitter(self.centralWidget())
         self.main_widget.setStyleSheet("QSplitter::handle{background: lightgrey}")
@@ -233,6 +242,7 @@ class GUI(QMainWindow):
         if self.current_module_info.module is None:
             canvas = Label(self.ACC_IMG_FILENAME)
             self.buttons["sensor_defaults"].setEnabled(False)
+            self.refresh_pidgets()
             return canvas
         else:
             self.buttons["sensor_defaults"].setEnabled(True)
@@ -264,7 +274,94 @@ class GUI(QMainWindow):
                 self.update_service_params(),
                 )
         self.service_widget.setup(canvas)
+
+        self.refresh_pidgets()
+
         return canvas
+
+    def init_pidgets(self):
+        self.last_processing_config = None
+
+        for module_label, processing_config in self.module_label_to_processing_config_map.items():
+            if not isinstance(processing_config, configbase.Config):
+                continue
+
+            processing_config._event_handlers.add(self.pidget_processing_config_event_handler)
+            pidgets = processing_config._create_pidgets()
+
+            for pidget in pidgets:
+                if pidget is None:
+                    continue
+
+                loc = pidget.param.pidget_location
+                if loc == "advanced":
+                    grid = self.advanced_params_layout_grid
+                    count = self.param_grid_count
+                elif loc == "control":
+                    grid = self.control_section.grid
+                    count = self.control_grid_count
+                else:
+                    grid = self.serviceparams_sublayout_grid
+                    count = self.param_grid_count
+
+                grid.addWidget(pidget, count.val, 0, 1, 2)
+                count.post_incr()
+
+    def refresh_pidgets(self):
+        processing_config = self.get_processing_config()
+
+        if self.last_processing_config != processing_config:
+            if isinstance(self.last_processing_config, configbase.Config):
+                self.last_processing_config._state = configbase.Config.State.UNLOADED
+
+            self.last_processing_config = processing_config
+
+            # TODO: else return here when migration to configbase is done
+
+        if processing_config is None:
+            self.service_section.hide()
+            self.advanced_section.hide()
+            return
+
+        # TODO: remove the follow check when migration to configbase is done
+        if not isinstance(processing_config, configbase.Config):
+            return
+
+        processing_config._state = configbase.Config.State.LOADED
+
+        has_standard_params = has_advanced_params = False
+        for param in processing_config._get_params():
+            if param.pidget_class is not None:
+                loc = param.pidget_location
+                if loc == "advanced":
+                    has_advanced_params = True
+                elif loc == "control":
+                    pass
+                else:
+                    has_standard_params = True
+
+        self.service_section.setVisible(has_standard_params)
+        self.advanced_section.setVisible(has_advanced_params)
+
+    def pidget_processing_config_event_handler(self, processing_config):
+        if threading.current_thread().name != "MainThread":
+            self.sig_pidget_event.emit(processing_config)
+            return
+
+        # Processor
+        try:
+            if isinstance(self.radar.external, self.current_module_info.processor):
+                self.radar.external.update_processing_config(processing_config)
+        except AttributeError:
+            pass
+
+        # Plot updater
+        try:
+            self.service_widget.update_processing_config(processing_config)
+        except AttributeError:
+            pass
+
+        processing_config._update_pidgets()
 
     def init_dropdowns(self):
         self.module_dd = QComboBox(self)
@@ -645,6 +742,12 @@ class GUI(QMainWindow):
         self.load_gui_settings_from_sensor_config()
 
     def service_defaults_handler(self):
+        processing_config = self.get_processing_config()
+
+        if isinstance(processing_config, configbase.Config):
+            processing_config._reset()
+            return
+
         mode = self.current_module_label
         if self.service_defaults is None:
             return
@@ -835,8 +938,16 @@ class GUI(QMainWindow):
         self.sweeps_skipped = 0
         self.threaded_scan.start()
 
-        self.service_section.body_widget.setEnabled(False)
         self.settings_section.body_widget.setEnabled(False)
+
+        if isinstance(processing_config, configbase.Config):
+            self.service_section.body_widget.setEnabled(True)
+            self.buttons["service_defaults"].setEnabled(False)
+            self.buttons["advanced_defaults"].setEnabled(False)
+            processing_config._state = configbase.Config.State.LIVE
+        else:
+            self.service_section.body_widget.setEnabled(False)
+
         self.buttons["connect"].setEnabled(False)
         self.buttons["replay_buffered"].setEnabled(False)
 
@@ -904,6 +1015,13 @@ class GUI(QMainWindow):
         self.buttons["start"].setEnabled(True)
         self.service_section.body_widget.setEnabled(True)
         self.settings_section.body_widget.setEnabled(True)
+
+        processing_config = self.get_processing_config()
+        if isinstance(processing_config, configbase.Config):
+            self.buttons["service_defaults"].setEnabled(True)
+            self.buttons["advanced_defaults"].setEnabled(True)
+            processing_config._state = configbase.Config.State.LOADED
+
         self.checkboxes["opengl"].setEnabled(True)
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
@@ -1065,6 +1183,9 @@ class GUI(QMainWindow):
         return config
 
     def update_service_params(self):
+        if isinstance(self.get_processing_config(), configbase.Config):
+            return self.get_processing_config()
+
         errors = []
         mode = self.current_module_label
 
@@ -1329,20 +1450,28 @@ class GUI(QMainWindow):
                 except Exception:
                     print("Could not restore envelope profile")
 
-                try:
-                    module_label = self.current_module_label
-                    if self.service_params is not None:
-                        if module_label in self.service_labels:
-                            for key in self.service_labels[module_label]:
-                                if "box" in self.service_labels[module_label][key]:
-                                    val = self.service_params[key]["type"](f[key][()])
-                                    if self.service_params[key]["type"] == np.float:
-                                        val = str("{:.4f}".format(val))
-                                    else:
-                                        val = str(val)
-                                    self.service_labels[module_label][key]["box"].setText(val)
-                except Exception:
-                    print("Could not restore processing parameters")
+                processing_config = self.get_processing_config()
+                if isinstance(processing_config, configbase.Config):
+                    try:
+                        s = f["processing_config_dump"][()]
+                        processing_config._loads(s)
+                    except Exception:
+                        print("Could not restore processing config")
+                else:
+                    try:
+                        module_label = self.current_module_label
+                        if self.service_params is not None:
+                            if module_label in self.service_labels:
+                                for key in self.service_labels[module_label]:
+                                    if "box" in self.service_labels[module_label][key]:
+                                        val = self.service_params[key]["type"](f[key][()])
+                                        if self.service_params[key]["type"] == np.float:
+                                            val = str("{:.4f}".format(val))
+                                        else:
+                                            val = str(val)
+                                        self.service_labels[module_label][key]["box"].setText(val)
+                    except Exception:
+                        print("Could not restore processing parameters")
 
                 try:
                     conf.sweep_rate = f["sweep_rate"][()]
@@ -1565,16 +1694,29 @@ class GUI(QMainWindow):
                         if val is not None:
                             f.create_dataset(key, data=int(val), dtype=np.int)
 
-                    if mode in self.service_labels:
-                        for key in self.service_params:
-                            if key == "processing_handle":
-                                continue
+                    processing_config = self.get_processing_config()
+                    if isinstance(processing_config, configbase.Config):
+                        s = processing_config._dumps()
+                        f.create_dataset(
+                                "processing_config_dump",
+                                data=s,
+                                dtype=h5py.special_dtype(vlen=str),
+                                )
+                    else:
+                        if mode in self.service_labels:
+                            for key in self.service_params:
+                                if key == "processing_handle":
+                                    continue
 
-                            f.create_dataset(key, data=self.service_params[key]["value"],
-                                             dtype=np.float32)
+                                f.create_dataset(key, data=self.service_params[key]["value"],
+                                                 dtype=np.float32)
                 else:
                     try:
-                        data[0]["service_params"] = self.service_params
+                        if isinstance(processing_config, configbase.Config):
+                            s = processing_config._dumps()
+                            data[0]["processing_config_dump"] = s
+                        else:
+                            data[0]["service_params"] = self.service_params
                     except Exception:
                         pass
                     try:
@@ -1738,6 +1880,17 @@ class GUI(QMainWindow):
             if key in last_config["sensor_config_map"]:
                 self.module_label_to_sensor_config_map[key] = last_config["sensor_config_map"][key]
 
+        # Restore processing configs (configbase)
+        dumps = last_config.get("processing_config_dumps", {})
+        for key, conf in self.module_label_to_processing_config_map.items():
+            if key in dumps:
+                dump = last_config["processing_config_dumps"][key]
+                try:
+                    conf._loads(dump)
+                except Exception:
+                    print("Could not load processing config for \'{}\'".format(key))
+                    conf._reset()
+
         # Restore misc. settings
         self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
         self.interface_dd.setCurrentIndex(last_config["interface"])
@@ -1752,6 +1905,10 @@ class GUI(QMainWindow):
         if last_config["service_settings"]:
             for module_label in last_config["service_settings"]:
                 processing_config = self.get_default_processing_config(module_label)
+
+                if isinstance(processing_config, configbase.Config):
+                    continue
+
                 self.add_params(processing_config, start_up_mode=module_label)
 
                 labels = last_config["service_settings"][module_label]
@@ -1808,8 +1965,17 @@ class GUI(QMainWindow):
                     elif "box" in self.service_labels[mode][key]:
                         val = self.service_labels[mode][key]["box"].text()
                         service_params[mode][key]["box"] = val
+
+        processing_config_dumps = {}
+        for module_label, config in self.module_label_to_processing_config_map.items():
+            try:
+                processing_config_dumps[module_label] = config._dumps()
+            except AttributeError:
+                pass
+
         last_config = {
             "sensor_config_map": self.module_label_to_sensor_config_map,
+            "processing_config_dumps": processing_config_dumps,
             "sweep_count": self.sweep_count,
             "host": self.textboxes["host"].text(),
             "sweep_buffer": self.textboxes["sweep_buffer"].text(),
@@ -1845,6 +2011,18 @@ class GUI(QMainWindow):
 
         return config
 
+    def get_processing_config(self, module_label=None):
+        if module_label is None:
+            module_info = self.current_module_info
+        else:
+            module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
+
+        if module_info.module is None:
+            return None
+
+        module_label = module_info.label
+        return self.module_label_to_processing_config_map[module_label]
+
     def get_default_processing_config(self, module_label=None):
         if module_label is not None:
             module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
@@ -1875,8 +2053,10 @@ class Threaded_Scan(QtCore.QThread):
         self.sweep_count = parent.sweep_count
         if self.sweep_count == -1:
             self.sweep_count = np.inf
-        if params["service_params"] and params["service_params"].get("create_clutter"):
-            self.sweep_count = params["service_params"]["sweeps_requested"]
+
+        if isinstance(params["service_params"], dict):
+            if params["service_params"].get("create_clutter"):
+                self.sweep_count = params["service_params"]["sweeps_requested"]
 
         self.finished.connect(self.stop_thread)
 
