@@ -1710,7 +1710,7 @@ class Threaded_Scan(QtCore.QThread):
         self.sweep_count = parent.sweep_count
         if self.sweep_count == -1:
             self.sweep_count = np.inf
-        if "create_clutter" in params["service_params"]:
+        if params["service_params"].get("create_clutter") is True:
             self.sweep_count = params["service_params"]["sweeps_requested"]
 
         self.finished.connect(self.stop_thread)
