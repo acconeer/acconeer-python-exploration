@@ -211,10 +211,9 @@ class GUI(QMainWindow):
         self.cl_supported = False
         if self.current_module_label in ["IQ", "Envelope"]:
             self.cl_supported = True
-        else:
-            self.load_clutter_file(force_unload=True)
 
         self.buttons["create_cl"].setVisible(self.cl_supported)
+        self.buttons["create_cl"].setEnabled(self.cl_supported)
         self.buttons["load_cl"].setVisible(self.cl_supported)
         self.buttons["load_cl"].setEnabled(self.cl_supported)
         self.labels["clutter"].setVisible(self.cl_supported)
