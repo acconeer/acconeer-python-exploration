@@ -1639,32 +1639,31 @@ class GUI(QMainWindow):
         return self.num
 
     def closeEvent(self, event=None):
-        if "select" not in str(self.current_module_label).lower():
-            service_params = {}
-            for mode in self.service_labels:
-                if service_params.get(mode) is None:
-                    service_params[mode] = {}
-                for key in self.service_labels[mode]:
-                    if service_params[mode].get(key) is None:
-                        service_params[mode][key] = {}
-                        if "checkbox" in self.service_labels[mode][key]:
-                            checked = self.service_labels[mode][key]["checkbox"].isChecked()
-                            service_params[mode][key]["checkbox"] = checked
-                        elif "box" in self.service_labels[mode][key]:
-                            val = self.service_labels[mode][key]["box"].text()
-                            service_params[mode][key]["box"] = val
-            last_config = {
-                "sensor_config_map": self.module_label_to_sensor_config_map,
-                "sweep_count": self.sweep_count,
-                "host": self.textboxes["host"].text(),
-                "sweep_buffer": self.textboxes["sweep_buffer"].text(),
-                "interface": self.interface_dd.currentIndex(),
-                "port": self.ports_dd.currentIndex(),
-                "service_settings": service_params,
-                "baudrate": self.baudrate,
-                }
+        service_params = {}
+        for mode in self.service_labels:
+            if service_params.get(mode) is None:
+                service_params[mode] = {}
+            for key in self.service_labels[mode]:
+                if service_params[mode].get(key) is None:
+                    service_params[mode][key] = {}
+                    if "checkbox" in self.service_labels[mode][key]:
+                        checked = self.service_labels[mode][key]["checkbox"].isChecked()
+                        service_params[mode][key]["checkbox"] = checked
+                    elif "box" in self.service_labels[mode][key]:
+                        val = self.service_labels[mode][key]["box"].text()
+                        service_params[mode][key]["box"] = val
+        last_config = {
+            "sensor_config_map": self.module_label_to_sensor_config_map,
+            "sweep_count": self.sweep_count,
+            "host": self.textboxes["host"].text(),
+            "sweep_buffer": self.textboxes["sweep_buffer"].text(),
+            "interface": self.interface_dd.currentIndex(),
+            "port": self.ports_dd.currentIndex(),
+            "service_settings": service_params,
+            "baudrate": self.baudrate,
+            }
 
-            np.save(self.last_file, last_config, allow_pickle=True)
+        np.save(self.last_file, last_config, allow_pickle=True)
 
         try:
             self.client.disconnect()
