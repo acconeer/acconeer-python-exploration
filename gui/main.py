@@ -73,6 +73,7 @@ class GUI(QMainWindow):
         self.current_data_type = None
         self.current_module_label = None
         self.canvas = None
+        self.param_index = 2
 
         self.module_label_to_sensor_config_map = {}
         for mi in MODULE_INFOS:
@@ -544,9 +545,6 @@ class GUI(QMainWindow):
         else:
             mode = start_up_mode
             set_visible = False
-
-        if not hasattr(self, "param_index"):
-            self.param_index = 2
 
         if mode not in self.service_labels:
             self.service_labels[mode] = {}
