@@ -125,8 +125,8 @@ class BaseServiceConfig(BaseSessionConfig):
     def hw_accelerated_average_samples(self, hw_accelerated_average_samples):
         if hw_accelerated_average_samples < 1:
             raise ValueError("number of hardware accelerated average samples be >= 1")
-        if hw_accelerated_average_samples > 64:
-            raise ValueError("number of hardware accelerated average samples be <= 64")
+        if hw_accelerated_average_samples > 63:
+            raise ValueError("number of hardware accelerated average samples be <= 63")
         self._hw_accelerated_average_samples = hw_accelerated_average_samples
 
     @property
