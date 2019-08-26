@@ -218,7 +218,7 @@ class GUI(QMainWindow):
         self.buttons["load_cl"].setEnabled(self.cl_supported)
         self.labels["clutter"].setVisible(self.cl_supported)
 
-        if self.current_module_label == "Select service":
+        if self.current_module_info.module is None:
             canvas = Label(self.acc_file)
             self.buttons["sensor_defaults"].setEnabled(False)
             return canvas
@@ -714,8 +714,8 @@ class GUI(QMainWindow):
         return retval == 1024
 
     def start_scan(self, create_cl=False, from_file=False):
-        if "Select" in self.current_module_label:
-            self.error_message("Please select a service")
+        if self.current_module_info.module is None:
+            self.error_message("Please select a service or detector")
             return
 
         data_source = "stream"
@@ -851,7 +851,7 @@ class GUI(QMainWindow):
     def connect_to_server(self):
         if self.buttons["connect"].text() == "Connect":
             max_num = 4
-            if "Select service" in self.current_module_label:
+            if self.current_module_info.module is None:
                 self.module_dd.setCurrentIndex(2)
 
             if self.interface_dd.currentText().lower() == "socket":

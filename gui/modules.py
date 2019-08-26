@@ -23,7 +23,7 @@ ModuleInfo = namedtuple("ModuleInfo", [
 
 MODULE_INFOS = [
     ModuleInfo(
-        "Select service",
+        "Select service or detector",
         None,
         None,
         None,
@@ -53,13 +53,13 @@ MODULE_INFOS = [
         sparse_module.Processor,
     ),
     ModuleInfo(
-        "Breathing",
+        "Breathing (IQ)",
         breathing_module,
         breathing_module.get_sensor_config,
         breathing_module.BreathingProcessor,
     ),
     ModuleInfo(
-        "Phase tracking",
+        "Phase tracking (IQ)",
         phase_tracking_module,
         phase_tracking_module.get_sensor_config,
         phase_tracking_module.PhaseTrackingProcessor,
@@ -71,22 +71,22 @@ MODULE_INFOS = [
         presence_detection_iq_module.PresenceDetectionProcessor,
     ),
     ModuleInfo(
-        "Presence detection (sparse)",
-        presence_detection_sparse_module,
-        presence_detection_sparse_module.get_sensor_config,
-        presence_detection_sparse_module.PresenceDetectionSparseProcessor,
-    ),
-    ModuleInfo(
-        "Sleep breathing",
+        "Sleep breathing (IQ)",
         sleep_breathing_module,
         sleep_breathing_module.get_sensor_config,
         sleep_breathing_module.PresenceDetectionProcessor,
     ),
     ModuleInfo(
-        "Obstacle detection",
+        "Obstacle detection (IQ)",
         obstacle_detection_module,
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
+    ),
+    ModuleInfo(
+        "Presence detection (sparse)",
+        presence_detection_sparse_module,
+        presence_detection_sparse_module.get_sensor_config,
+        presence_detection_sparse_module.PresenceDetectionSparseProcessor,
     ),
 ]
 
