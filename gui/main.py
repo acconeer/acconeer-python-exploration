@@ -20,6 +20,7 @@ import pyqtgraph as pg
 
 from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
 from acconeer_utils.clients.json.client import JSONClient
+from acconeer_utils.clients.mock.client import MockClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 
@@ -276,6 +277,7 @@ class GUI(QMainWindow):
         self.interface_dd.addItem("Socket")
         self.interface_dd.addItem("Serial")
         self.interface_dd.addItem("SPI")
+        self.interface_dd.addItem("Simulated")
         self.interface_dd.currentIndexChanged.connect(self.update_interface)
 
         self.ports_dd = QComboBox(self)
@@ -691,9 +693,14 @@ class GUI(QMainWindow):
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
-        else:  # socket
+        elif "socket" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].show()
+            self.buttons["advanced_port"].hide()
+            self.buttons["scan_ports"].hide()
+        else:
+            self.ports_dd.hide()
+            self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
 
@@ -861,6 +868,9 @@ class GUI(QMainWindow):
             elif self.interface_dd.currentText().lower() == "spi":
                 self.client = RegSPIClient()
                 statusbar_connection_info = "SPI"
+            elif self.interface_dd.currentText().lower() == "simulated":
+                self.client = MockClient()
+                statusbar_connection_info = "simulated interface"
             else:
                 port = self.ports_dd.currentText()
                 if "scan" in port.lower():
