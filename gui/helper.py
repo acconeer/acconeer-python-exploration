@@ -1,7 +1,8 @@
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout
+    QWidget, QLabel, QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout, QCheckBox,
+    QLineEdit
 )
 
 
@@ -79,6 +80,101 @@ class CollapsibleSection(QFrame):
         else:
             self._button.setArrowType(QtCore.Qt.ArrowType.DownArrow)
             self.body_widget.show()
+
+
+class SensorSelection(QFrame):
+    def __init__(self, multi_sensors=False, error_handler=None):
+        super().__init__()
+
+        self.error_handler = error_handler
+        self.multi_sensors = multi_sensors
+
+        # text, checked, visible, enabled, function
+        checkbox_info = {
+            "sensor_1": ("1", False, True, True, None),
+            "sensor_2": ("2", False, True, True, None),
+            "sensor_3": ("3", False, True, True, None),
+            "sensor_4": ("4", False, True, True, None),
+        }
+
+        self.checkboxes = {}
+        for key, (text, checked, visible, enabled, fun) in checkbox_info.items():
+            cb = QCheckBox(text, self)
+            cb.setChecked(checked)
+            cb.setVisible(visible)
+            cb.setEnabled(enabled)
+            if fun:
+                cb.stateChanged.connect(fun)
+            self.checkboxes[key] = cb
+
+        self.textbox = QLineEdit()
+        self.textbox.setText("1")
+        self.textbox.editingFinished.connect(lambda: self.check_value())
+
+        self.grid = QtWidgets.QGridLayout(self)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.addWidget(self.checkboxes["sensor_1"], 0, 0)
+        self.grid.addWidget(self.checkboxes["sensor_2"], 0, 1)
+        self.grid.addWidget(self.checkboxes["sensor_3"], 0, 2)
+        self.grid.addWidget(self.checkboxes["sensor_4"], 0, 3)
+        self.grid.addWidget(self.textbox, 0, 4)
+
+        self.set_multi_sensor_support(multi_sensors)
+
+    def get_sensors(self):
+        sensors = []
+        if self.multi_sensors:
+            for s in range(1, 5):
+                sensor_id = "sensor_{:d}".format(s)
+                if self.checkboxes[sensor_id].isChecked():
+                    sensors.append(s)
+        else:
+            sensors.append(int(self.textbox.text()))
+
+        return sensors
+
+    def set_sensors(self, sensors):
+        if not sensors:
+            sensors = []
+
+        if self.multi_sensors:
+            for s in range(1, 5):
+                enabled = s in sensors
+                sensor_id = "sensor_{:d}".format(s)
+                self.checkboxes[sensor_id].setChecked(enabled)
+        else:
+            if isinstance(sensors, list):
+                sensors = sensors[0]
+            try:
+                self.textbox.setText(str(sensors))
+            except Exception as e:
+                self.error_handler("Could not set sensor {}".format(e))
+
+    def set_multi_sensor_support(self, multi_sensors):
+        if multi_sensors is None:
+            multi_sensors = False
+        self.textbox.setVisible(not multi_sensors)
+
+        for s in range(1, 5):
+            sensor_id = "sensor_{:d}".format(s)
+            self.checkboxes[sensor_id].setVisible(multi_sensors)
+
+        self.multi_sensors = multi_sensors
+
+    def check_value(self):
+        error = None
+        if not self.textbox.text().isdigit():
+            error = "Sensor must be an integer between 1 and 4!\n"
+            self.textbox["sensor"].setText("1")
+        else:
+            sensor = int(self.textbox.text())
+            e = sensor < 1 or sensor > 4
+            if e:
+                error = "Sensor must be an integer between 1 and 4!\n"
+                self.textbox.setText("1")
+
+        if error is not None and self.error_message is not None:
+            self.error_handler(error)
 
 
 class PassthroughProcessor:

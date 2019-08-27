@@ -29,7 +29,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
 
 import data_processing
 from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
-from helper import Label, CollapsibleSection
+from helper import Label, CollapsibleSection, SensorSelection
 
 
 if "win32" in sys.platform.lower():
@@ -75,9 +75,11 @@ class GUI(QMainWindow):
         self.current_module_label = None
         self.canvas = None
         self.param_index = 2
+        self.multi_sensor_interface = True
 
         self.module_label_to_sensor_config_map = {}
-        for mi in MODULE_INFOS:
+        self.current_module_info = MODULE_INFOS[0]
+        for idx, mi in enumerate(MODULE_INFOS):
             if mi.sensor_config_class is not None:
                 self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
 
@@ -158,7 +160,6 @@ class GUI(QMainWindow):
     def init_textboxes(self):
         # key: text, group
         textbox_info = {
-            "sensor": ("1", "sensor"),
             "host": ("192.168.1.100", "connection"),
             "sweep_rate": ("10", "sensor"),
             "sweeps": ("-1", "sensor"),
@@ -228,7 +229,11 @@ class GUI(QMainWindow):
 
         canvas = pg.GraphicsLayoutWidget()
 
+        if self.client:
+            self.client.squeeze = not self.current_module_info.multi_sensor
+
         if not refresh:
+            self.set_multi_sensors()
             for m in self.service_labels:
                 for key in self.service_labels[m]:
                     for element in self.service_labels[m][key]:
@@ -301,6 +306,12 @@ class GUI(QMainWindow):
         else:
             pg.setConfigOptions(useOpenGL=False)
             self.update_canvas(force_update=True)
+
+    def set_multi_sensors(self):
+        multi_sensor = False
+        if self.multi_sensor_interface:
+            multi_sensor = self.current_module_info.multi_sensor
+        self.sensor_selection.set_multi_sensor_support(multi_sensor)
 
     def set_profile(self):
         profile = self.env_profiles_dd.currentText().lower()
@@ -470,7 +481,11 @@ class GUI(QMainWindow):
         self.num = 0
         self.settings_section.grid.addWidget(self.buttons["sensor_defaults"], self.num, 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["sensor"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["sensor"], self.num, 1)
+
+        self.sensor_selection = SensorSelection(error_handler=self.error_message)
+        self.settings_section.grid.addWidget(self.sensor_selection, self.num, 1)
+        self.set_multi_sensors()
+
         self.settings_section.grid.addWidget(self.labels["range_start"], self.increment(), 0)
         self.settings_section.grid.addWidget(self.labels["range_end"], self.num, 1)
         self.settings_section.grid.addWidget(self.textboxes["range_start"], self.increment(), 0)
@@ -682,27 +697,32 @@ class GUI(QMainWindow):
         if self.buttons["connect"].text() == "Disconnect":
             self.connect_to_server()
 
+        self.multi_sensor_interface = True
         if "serial" in self.interface_dd.currentText().lower():
             self.ports_dd.show()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
             self.update_ports()
+            self.multi_sensor_interface = False
         elif "spi" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
+            self.multi_sensor_interface = False
         elif "socket" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].show()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
-        else:
+        elif "simulated" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
+
+        self.set_multi_sensors()
 
     def error_message(self, error):
         em = QtWidgets.QErrorMessage(self.main_widget)
@@ -741,6 +761,11 @@ class GUI(QMainWindow):
             self.error_message("Sweep buffer needs to be a positive integer\n")
             self.textboxes["sweep_buffer"].setText("500")
 
+        sensor_config = self.save_gui_settings_to_sensor_config()
+        if create_cl and len(sensor_config.sensor) > 1:
+            self.error_message("Background is only supported for single sensor operation!\n")
+            return
+
         if create_cl:
             self.sweep_buffer = min(self.sweep_buffer, self.max_cl_sweeps)
             self.creating_cl = True
@@ -774,7 +799,7 @@ class GUI(QMainWindow):
                 processing_config["sweeps_requested"] = self.clutter_sweeps
 
         params = {
-            "sensor_config": self.save_gui_settings_to_sensor_config(),
+            "sensor_config": sensor_config,
             "clutter_file": self.cl_file,
             "use_clutter": use_cl,
             "create_clutter": create_cl,
@@ -868,6 +893,7 @@ class GUI(QMainWindow):
             elif self.interface_dd.currentText().lower() == "spi":
                 self.client = RegSPIClient()
                 statusbar_connection_info = "SPI"
+                max_num = 1
             elif self.interface_dd.currentText().lower() == "simulated":
                 self.client = MockClient()
                 statusbar_connection_info = "simulated interface"
@@ -885,6 +911,7 @@ class GUI(QMainWindow):
 
             conf = self.get_sensor_config()
             sensor = 1
+            sensors_available = []
             connection_success = False
             error = None
             while sensor <= max_num:
@@ -894,11 +921,12 @@ class GUI(QMainWindow):
                     self.client.start_streaming()
                     self.client.stop_streaming()
                     connection_success = True
-                    self.textboxes["sensor"].setText("{:d}".format(sensor))
-                    break
+                    sensors_available.append(sensor)
                 except Exception as e:
-                    sensor += 1
+                    print("Sensor {:d} not available".format(sensor))
                     error = e
+                sensor += 1
+            self.sensor_selection.set_sensors(sensors_available)
             if connection_success:
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(self.cl_supported)
@@ -974,8 +1002,6 @@ class GUI(QMainWindow):
         if config is None:
             return None
 
-        config.sensor = int(self.textboxes["sensor"].text())
-
         stitching = self.check_values()
         config.experimental_stitching = stitching
         config.range_interval = [
@@ -1049,18 +1075,11 @@ class GUI(QMainWindow):
             return
 
         errors = []
-        if not self.textboxes["sweep_rate"].text().isdigit():
+        sweep_rate = self.textboxes["sweep_rate"].text()
+        if not sweep_rate.isdigit():
             errors.append("Frequency must be an integer and not less than 0!\n")
-            self.textboxes["sweep_rate"].setText("10")
-
-        if not self.textboxes["sensor"].text().isdigit():
-            errors.append("Sensor must be an integer between 1 and 4!\n")
-            self.textboxes["sensor"].setText("0")
-        else:
-            sensor = int(self.textboxes["sensor"].text())
-            sensor, e = self.check_limit(sensor, self.textboxes["sensor"], 1, 4)
-            if e:
-                errors.append("Sensor must be an integer between 1 and 4!\n")
+            sweep_rate = 10
+            self.textboxes["sweep_rate"].setText(str(sweep_rate))
 
         sweeps = self.is_float(self.textboxes["sweeps"].text(), is_positive=False)
         if sweeps == -1:
@@ -1068,7 +1087,7 @@ class GUI(QMainWindow):
         elif sweeps >= 1:
             if not self.textboxes["sweeps"].text().isdigit():
                 errors.append("Sweeps must be a -1 or an int larger than 0!\n")
-                self.textboxes["sensor"].setText("-1")
+                self.textboxes["sweeps"].setText("-1")
         else:
             errors.append("Sweeps must be -1 or an int larger than 0!\n")
             self.textboxes["sweeps"].setText("-1")
@@ -1346,8 +1365,10 @@ class GUI(QMainWindow):
                 index = self.module_dd.findText(module_label, QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.module_dd.setCurrentIndex(index)
+                    self.update_canvas()
                 self.data = data
 
+            self.sensor_selection.set_sensors(conf.sensor)
             self.load_gui_settings_from_sensor_config(conf)
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
@@ -1566,8 +1587,12 @@ class GUI(QMainWindow):
         self.service_widget.update(data)
 
     def update_sweep_info(self, data):
-        self.sweeps_skipped += data["sequence_number"] - (self.sweep_number + 1)
-        self.sweep_number = data["sequence_number"]
+        if isinstance(data, list):
+            self.sweeps_skipped += data[0]["sequence_number"] - (self.sweep_number + 1)
+            self.sweep_number = data[0]["sequence_number"]
+        else:
+            self.sweeps_skipped += data["sequence_number"] - (self.sweep_number + 1)
+            self.sweep_number = data["sequence_number"]
 
         nr = ""
         if self.sweep_number > 1e6:
@@ -1582,7 +1607,16 @@ class GUI(QMainWindow):
         self.labels["sweep_info"].setText("Sweeps: {:s}{:d} (skipped {:s}{:d})".format(
             nr, self.sweep_number, skip, self.sweeps_skipped))
 
-        if data.get("data_saturated"):
+        saturated = False
+        if isinstance(data, list):
+            for i in range(len(data)):
+                if data[i].get("data_saturated"):
+                    saturated = True
+                    break
+        elif data.get("data_saturated"):
+            saturated = True
+
+        if saturated:
             self.labels["saturated"].setStyleSheet("color: red")
         else:
             self.labels["saturated"].setStyleSheet("color: #f0f0f0")
@@ -1687,7 +1721,12 @@ class GUI(QMainWindow):
             return None
 
         module_label = module_info.label
-        return self.module_label_to_sensor_config_map[module_label]
+        config = self.module_label_to_sensor_config_map[module_label]
+
+        if len(self.sensor_selection.get_sensors()):
+            config.sensor = self.sensor_selection.get_sensors()
+
+        return config
 
     def get_processing_config(self, module_label=None):
         if module_label is not None:

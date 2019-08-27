@@ -18,6 +18,7 @@ ModuleInfo = namedtuple("ModuleInfo", [
     "module",
     "sensor_config_class",
     "processor",
+    "multi_sensor",
 ])
 
 MODULE_INFOS = [
@@ -26,60 +27,70 @@ MODULE_INFOS = [
         None,
         None,
         None,
+        True,
     ),
     ModuleInfo(
         "IQ",
         iq_module,
         iq_module.get_sensor_config,
         iq_module.IQProcessor,
+        True,
     ),
     ModuleInfo(
         "Envelope",
         envelope_module,
         envelope_module.get_sensor_config,
         envelope_module.EnvelopeProcessor,
+        True,
     ),
     ModuleInfo(
         "Power bin",
         power_bin_module,
         power_bin_module.get_sensor_config,
         PassthroughProcessor,
+        False,
     ),
     ModuleInfo(
         "Sparse",
         sparse_module,
         sparse_module.get_sensor_config,
         sparse_module.Processor,
+        False,
     ),
     ModuleInfo(
         "Presence detection (sparse)",
         presence_detection_sparse_module,
         presence_detection_sparse_module.get_sensor_config,
         presence_detection_sparse_module.PresenceDetectionSparseProcessor,
+        False,
     ),
     ModuleInfo(
         "Breathing (IQ)",
         breathing_module,
         breathing_module.get_sensor_config,
         breathing_module.BreathingProcessor,
+        False,
     ),
     ModuleInfo(
         "Phase tracking (IQ)",
         phase_tracking_module,
         phase_tracking_module.get_sensor_config,
         phase_tracking_module.PhaseTrackingProcessor,
+        False,
     ),
     ModuleInfo(
         "Sleep breathing (IQ)",
         sleep_breathing_module,
         sleep_breathing_module.get_sensor_config,
         sleep_breathing_module.PresenceDetectionProcessor,
+        False,
     ),
     ModuleInfo(
         "Obstacle detection (IQ)",
         obstacle_detection_module,
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
+        False,
     ),
 ]
 
