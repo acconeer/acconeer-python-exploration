@@ -50,6 +50,7 @@ class MockClient(BaseClient):
             out = [self._mocker.get_next(*mocker_args) for _ in config.sensor]
             info, data = zip(*out)
             data = np.array(data)
+            info = list(info)
 
         return info, data
 
