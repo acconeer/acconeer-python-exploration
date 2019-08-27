@@ -42,12 +42,14 @@ class MockClient(BaseClient):
         if data_capture_time > now:
             sleep(data_capture_time - now)
 
-        mocker_args = (data_capture_time, self._data_count)
+        args = (data_capture_time, self._data_count)
+        num_sensors = len(config.sensor)
 
-        if self.squeeze and len(config.sensor) == 1:
-            return self._mocker.get_next(*mocker_args)
+        if self.squeeze and num_sensors == 1:
+            return self._mocker.get_next(*args, 0)
         else:
-            out = [self._mocker.get_next(*mocker_args) for _ in config.sensor]
+            idx_offset = max(0, (num_sensors - 1) / 2)
+            out = [self._mocker.get_next(*args, i - idx_offset) for i in range(num_sensors)]
             info, data = zip(*out)
             data = np.array(data)
             info = list(info)
@@ -80,7 +82,7 @@ class DenseMocker:
 
 
 class EnvelopeMocker(DenseMocker):
-    def get_next(self, t, i):
+    def get_next(self, t, i, offset):
         info = {
             "data_saturated": False,
             "sequence_number": i,
@@ -90,7 +92,9 @@ class EnvelopeMocker(DenseMocker):
         noise = filtfilt(*butter(2, 0.03), noise, method="gust")
 
         ampl = 2000 + np.random.randn() * 20
-        center = self.range_center + np.random.randn() * 0.2e-3
+        center = self.range_center
+        center += np.random.randn() * 0.2e-3
+        center += offset * 0.1
         signal = ampl * np.exp(-np.square((self.depths - center) / 0.03))
 
         data = signal + noise
@@ -99,7 +103,7 @@ class EnvelopeMocker(DenseMocker):
 
 
 class IQMocker(DenseMocker):
-    def get_next(self, t, i):
+    def get_next(self, t, i, offset):
         info = {
             "data_saturated": False,
             "sequence_number": i,
@@ -110,7 +114,9 @@ class IQMocker(DenseMocker):
         noise = filtfilt(*butter(2, 0.03), noise, method="gust")
 
         ampl = 0.1 * (1 + 0.01 * np.random.randn())
-        center = self.range_center + np.random.randn() * 0.2e-3
+        center = self.range_center
+        center += np.random.randn() * 0.2e-3
+        center += offset * 0.1
         phase = np.deg2rad(45 + np.random.randn() * 3)
         signal = np.exp(1j * phase) * ampl * np.exp(-np.square((self.depths - center) / 0.05))
 
@@ -159,7 +165,7 @@ class SparseMocker:
         self.range_center = (start + end) / 2
         self.depths = np.linspace(start, end, self.num_depths)
 
-    def get_next(self, t, i):
+    def get_next(self, t, i, offset):
         info = {
             "data_saturated": False,
             "sequence_number": i,
