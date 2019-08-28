@@ -268,10 +268,17 @@ class PGUpdater:
         self.peak_text_item.setPos(-0.3*1.15, -0.3*1.15)
 
         self.env_plot = win.addPlot(title="Envelope and delta")
+        self.env_plot.addLegend()
         self.env_plot.showGrid(x=True, y=True)
         self.env_plot.setYRange(0, 0.3)
-        self.env_curve = self.env_plot.plot(pen=example_utils.pg_pen_cycler(0))
-        self.delta_curve = self.env_plot.plot(pen=example_utils.pg_pen_cycler(1))
+        self.env_curve = self.env_plot.plot(
+                pen=example_utils.pg_pen_cycler(0),
+                name="Envelope",
+                )
+        self.delta_curve = self.env_plot.plot(
+                pen=example_utils.pg_pen_cycler(1),
+                name="Phase delta",
+                )
         self.peak_vline = pg.InfiniteLine(pen=pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine))
         self.env_plot.addItem(self.peak_vline)
 
