@@ -356,6 +356,14 @@ class RegSPIClient(BaseClient):
         elif ver != protocol.DEV_VERSION:
             log.warning("server version might not be fully supported")
 
+        try:
+            version_str = self._read_main_buffer().decode("ascii").strip()
+            assert len(version_str) > 0
+        except (UnicodeDecodeError, AssertionError):
+            log.warning("could not read software version (maybe too old)")
+        else:
+            log.info("reported version: {}".format(version_str))
+
     def _setup_session(self, config):
         if len(config.sensor) > 1:
             raise ValueError("the register protocol does not support multiple sensors")
@@ -471,6 +479,19 @@ class RegSPIClient(BaseClient):
     def _write_reg_raw(self, addr, enc_val):
         addr = protocol.get_addr_for_reg(addr)
         self.__cmd_proc("write_reg_raw", addr, enc_val)
+
+    def read_buf_raw(self, addr, size):
+        addr = protocol.get_addr_for_reg(addr)
+        buffer = self.__cmd_proc("read_buf_raw", addr, size)
+        return buffer
+
+    def _read_main_buffer(self):
+        buffer_size = self._read_reg("output_data_buffer_length")
+        if buffer_size > 0:
+            buffer = self.read_buf_raw(protocol.MAIN_BUFFER_ADDR, buffer_size)
+        else:
+            buffer = bytearray()
+        return buffer
 
     def __cmd_proc(self, cmd, *args):
         log.debug("sending cmd to proc: {}".format(cmd))
