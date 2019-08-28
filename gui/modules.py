@@ -53,6 +53,12 @@ MODULE_INFOS = [
         sparse_module.Processor,
     ),
     ModuleInfo(
+        "Presence detection (sparse)",
+        presence_detection_sparse_module,
+        presence_detection_sparse_module.get_sensor_config,
+        presence_detection_sparse_module.PresenceDetectionSparseProcessor,
+    ),
+    ModuleInfo(
         "Breathing (IQ)",
         breathing_module,
         breathing_module.get_sensor_config,
@@ -81,12 +87,6 @@ MODULE_INFOS = [
         obstacle_detection_module,
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
-    ),
-    ModuleInfo(
-        "Presence detection (sparse)",
-        presence_detection_sparse_module,
-        presence_detection_sparse_module.get_sensor_config,
-        presence_detection_sparse_module.PresenceDetectionSparseProcessor,
     ),
 ]
 
