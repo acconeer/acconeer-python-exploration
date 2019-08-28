@@ -11,7 +11,7 @@ from acconeer_utils.clients.json import protocol
 log = logging.getLogger(__name__)
 
 MIN_VERSION = StrictVersion("1.5.2")
-DEV_VERSION = StrictVersion("1.8.1")
+DEV_VERSION = StrictVersion("1.8.6")
 
 
 class JSONClient(BaseClient):
@@ -41,7 +41,7 @@ class JSONClient(BaseClient):
             raise ClientError("server error while connecting")
 
         msg = header["message"].lower()
-        log.debug("version msg: {}".format(msg))
+        log.info("version msg: {}".format(msg))
 
         startstr = "server version v"
         if not msg.startswith(startstr):
