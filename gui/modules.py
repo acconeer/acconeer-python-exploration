@@ -8,7 +8,6 @@ import service_modules.sparse as sparse_module
 import service_modules.power_bin as power_bin_module
 import examples.processing.breathing as breathing_module
 import examples.processing.phase_tracking as phase_tracking_module
-import examples.processing.presence_detection_iq as presence_detection_iq_module
 import examples.processing.presence_detection_sparse as presence_detection_sparse_module
 import examples.processing.sleep_breathing as sleep_breathing_module
 import examples.processing.obstacle_detection as obstacle_detection_module
@@ -69,12 +68,6 @@ MODULE_INFOS = [
         phase_tracking_module,
         phase_tracking_module.get_sensor_config,
         phase_tracking_module.PhaseTrackingProcessor,
-    ),
-    ModuleInfo(
-        "Presence detection (IQ)",
-        presence_detection_iq_module,
-        presence_detection_iq_module.get_sensor_config,
-        presence_detection_iq_module.PresenceDetectionProcessor,
     ),
     ModuleInfo(
         "Sleep breathing (IQ)",
