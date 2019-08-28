@@ -110,17 +110,19 @@ class IQMocker(DenseMocker):
         }
 
         noise = np.random.randn(self.num_depths) + 1j * np.random.randn(self.num_depths)
-        noise *= 0.01
-        noise = filtfilt(*butter(2, 0.03), noise, method="gust")
+        noise *= 0.015
 
-        ampl = 0.1 * (1 + 0.01 * np.random.randn())
+        ampl = 0.2 * (1 + 0.03 * np.random.randn())
         center = self.range_center
-        center += np.random.randn() * 0.2e-3
+        center += np.random.randn() * (3 / 360) * 2.5e-3
         center += offset * 0.1
-        phase = np.deg2rad(45 + np.random.randn() * 3)
-        signal = np.exp(1j * phase) * ampl * np.exp(-np.square((self.depths - center) / 0.05))
+        center += 4e-3 * np.sin(t)
+        xs = self.depths - center
+        signal = ampl * np.exp(2j * np.pi * xs / 2.5e-3) * np.exp(-np.square(xs / 0.05))
 
         data = signal + noise
+        data *= np.exp(-2j * np.pi * self.depths / 2.5e-3)
+        data = filtfilt(*butter(2, 0.03), data, method="gust")
 
         return info, data
 
