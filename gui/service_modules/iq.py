@@ -71,6 +71,9 @@ class IQProcessor:
         snr = {}
         peak_data = {}
 
+        if len(sweep.shape) == 1:
+            sweep = np.expand_dims(sweep, 0)
+
         if self.sweep == 0:
             self.num_sensors, self.data_len = sweep.shape
             self.env_x_mm = np.linspace(self.start_x, self.stop_x, self.data_len) * 1000
@@ -261,7 +264,7 @@ class PGUpdater:
                         pen=pen,
                         name="Background")
                     )
-                self.clutter_plots[s].setZValue(2)
+                self.clutter_plots[0].setZValue(2)
             else:
                 hist_title = "History {}".format(legend_text)
 
@@ -281,7 +284,10 @@ class PGUpdater:
         xstart = data["x_mm"][0]
         xend = data["x_mm"][-1]
         xdim = data["hist_env"].shape[1]
-        num_sensors = data["num_sensors"]
+
+        num_sensors = len(data["env_ampl"])
+        if self.num_sensors < num_sensors:
+            num_sensors = self.num_sensors
 
         if data["sweep"] <= 1:
             self.env_plot_max_y = np.zeros(self.num_sensors)
@@ -339,8 +345,8 @@ class PGUpdater:
 
             self.envelope_plot_window.setYRange(0, self.smooth_envelope.update(max_val))
 
-            if num_sensors == 1:
-                self.clutter_plots[s].setData(data["x_mm"], data["env_clutter"])
+            if num_sensors == 1 and len(self.clutter_plots):
+                self.clutter_plots[0].setData(data["x_mm"], data["env_clutter"])
 
             ymax_level = min(1.5 * np.max(np.max(data["hist_env"][s, :, :])),
                              self.env_plot_max_y[s])

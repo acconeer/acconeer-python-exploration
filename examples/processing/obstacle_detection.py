@@ -242,7 +242,9 @@ class ObstacleDetectionProcessor:
         self.downsampling = processing_config["downsampling"]["value"]
 
     def process(self, sweep):
-        sweep = np.expand_dims(sweep, axis=0)
+        if len(sweep.shape) == 1:
+            sweep = np.expand_dims(sweep, 0)
+
         if self.downsampling:
             sweep = sweep[:, ::self.downsampling]
 

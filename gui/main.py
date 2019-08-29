@@ -1316,7 +1316,6 @@ class GUI(QMainWindow):
                         conf.bin_count = int(f["bin_count"][()])
                     if self.current_data_type == "sparse":
                         conf.number_of_subsweeps = int(f["number_of_subsweeps"][()])
-                    conf.gain = f["gain"][()]
                 except Exception as e:
                     print("Config not stored in file...")
                     print(e)
@@ -1325,6 +1324,10 @@ class GUI(QMainWindow):
                             float(self.textboxes["range_end"].text()),
                     ]
                     conf.sweep_rate = int(self.textboxes["sweep_rate"].text())
+                try:
+                    conf.sensor = list(map(int, f["sensor"][()]))
+                except Exception:
+                    conf.sensor = 1
 
                 cl_file = None
                 try:
@@ -1372,12 +1375,13 @@ class GUI(QMainWindow):
             self.load_gui_settings_from_sensor_config(conf)
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
-                try:
-                    os.path.isfile(cl_file)
-                    self.load_clutter_file(fname=cl_file)
-                except Exception as e:
-                    print("Background file not found")
-                    print(e)
+                if len(cl_file):
+                    try:
+                        os.path.isfile(cl_file)
+                        self.load_clutter_file(fname=cl_file)
+                    except Exception as e:
+                        print("Background file not found")
+                        print(e)
 
             self.textboxes["sweep_buffer"].setText(str(data_len))
             self.start_scan(from_file=True)
@@ -1425,8 +1429,7 @@ class GUI(QMainWindow):
                         sequence_number = []
                         data_saturated = []
                     except Exception as e:
-                        print(e)
-                        print("Cannot save session info!")
+                        print("Error saving session info: ", e)
                         info_available = False
 
                     for sweep in data:
@@ -1458,6 +1461,11 @@ class GUI(QMainWindow):
                     except Exception as e:
                         self.error_message("Failed to save file:\n {:s}".format(e))
                         return
+
+                    cl_file = None
+                    if self.cl_file:
+                        cl_file = self.cl_file
+
                     f.create_dataset("imag", data=np.imag(sweep_data), dtype=np.float32)
                     f.create_dataset("real", data=np.real(sweep_data), dtype=np.float32)
                     f.create_dataset("sweep_rate", data=int(self.textboxes["sweep_rate"].text()),
@@ -1467,9 +1475,10 @@ class GUI(QMainWindow):
                     f.create_dataset("end", data=float(sensor_config.range_end),
                                      dtype=np.float32)
                     f.create_dataset("gain", data=float(sensor_config.gain), dtype=np.float32)
+                    f.create_dataset("sensor", data=sensor_config.sensor, dtype=np.int)
                     f.create_dataset("service_type", data=mode.lower(),
                                      dtype=h5py.special_dtype(vlen=str))
-                    f.create_dataset("clutter_file", data=self.cl_file,
+                    f.create_dataset("clutter_file", data=cl_file,
                                      dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("profile", data=self.env_profiles_dd.currentIndex(),
                                      dtype=np.int)
