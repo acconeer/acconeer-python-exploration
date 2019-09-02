@@ -23,6 +23,8 @@ UnpackedRegWriteRequest = namedtuple("UnpackedRegWriteRequest", ["reg_val"])
 UnpackedRegReadResponse = namedtuple("UnpackedRegReadResponse", ["reg_val"])
 UnpackedRegWriteResponse = namedtuple("UnpackedRegWriteResponse", ["reg_val"])
 UnpackedStreamData = namedtuple("UnpackedStreamData", ["result_info", "buffer"])
+UnpackedGPIOPin = namedtuple("UnpackedGPIOPin", ["pin"])
+UnpackedGPIOPinAndVal = namedtuple("UnpackedGPIOPinAndVal", ["pin", "val"])
 
 
 class ProtocolError(Exception):
@@ -55,6 +57,8 @@ REG_READ_RESPONSE = 0xF6
 REG_WRITE_REQUEST = 0xF9
 REG_WRITE_RESPONSE = 0xF5
 STREAM_PACKET = 0xFE
+GPIO_READ = 0xA0
+GPIO_WRITE = 0xA1
 
 STREAM_RESULT_INFO = 0xFD
 STREAM_BUFFER = 0xFE
@@ -541,6 +545,8 @@ def unpack_packet(packet):
         return unpack_reg_write_res_segment(segment)
     elif packet_type == STREAM_PACKET:
         return unpack_stream_data_segment(segment)
+    elif packet_type in [GPIO_READ, GPIO_WRITE]:
+        return unpack_gpio_pin_and_val(segment)
     else:
         raise UnpackError("unknown packet type")
 
@@ -600,6 +606,14 @@ def unpack_stream_data_segment(segment):
     return UnpackedStreamData(result_info, buffer)
 
 
+def unpack_gpio_pin_and_val(segment):
+    if len(segment) != 3:
+        raise UnpackError("unexpected package length")
+
+    pin, _, val = segment
+    return UnpackedGPIOPinAndVal(pin, val)
+
+
 def pack_reg_val(reg_val):
     if len(reg_val.val) != REG_SIZE:
         raise PackError("register value must be {} bytes".format(REG_SIZE))
@@ -623,6 +637,12 @@ def pack_packet(packet):
     elif isinstance(packet, UnpackedRegWriteResponse):
         packet_type = REG_WRITE_RESPONSE
         packet_data = pack_reg_val(packet.reg_val)
+    elif isinstance(packet, UnpackedGPIOPin):
+        packet_type = GPIO_READ
+        packet_data = bytearray([packet.pin])
+    elif isinstance(packet, UnpackedGPIOPinAndVal):
+        packet_type = GPIO_WRITE
+        packet_data = bytearray([packet.pin, packet.val])
     else:
         raise TypeError("unknown type of packet")
 
