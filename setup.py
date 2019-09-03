@@ -19,7 +19,7 @@ PACKAGE_ROOT_DIR = "lib"
 
 setup(
     name="acconeer-utils",
-    version="2.4.4",
+    version="2.4.5",
     description="Acconeer utilities",
     url="https://github.com/acconeer/acconeer-python-exploration",
     author="Acconeer AB",
