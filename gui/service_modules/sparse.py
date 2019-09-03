@@ -26,6 +26,8 @@ def main():
         port = args.serial_port or example_utils.autodetect_serial_port()
         client = RegClient(port)
 
+    client.squeeze = False
+
     sensor_config = get_sensor_config()
     sensor_config.sensor = args.sensors
 
@@ -84,38 +86,35 @@ class Processor:
         self.history_len = processing_config["image_buffer"]["value"]
 
         pd_config = presence_detection_sparse.get_processing_config()
-        self.pd_processor = presence_detection_sparse.PresenceDetectionSparseProcessor(
-            sensor_config,
-            pd_config
-        )
+        processor_class = presence_detection_sparse.PresenceDetectionSparseProcessor
+        self.pd_processors = [processor_class(sensor_config, pd_config)]
 
         self.smooth_max = example_utils.SmoothMax(sensor_config.sweep_rate)
 
         self.sweep_index = 0
 
-    def process(self, sweep):
-        pd_data = self.pd_processor.process(sweep)
-        movement = pd_data["movement"]
+    def process(self, data):
+        presences = [p.process(s)["movement"] for s, p in zip(data, self.pd_processors)]
 
         if self.sweep_index == 0:
-            num_subsweeps, num_depths = sweep.shape
+            num_sensors, num_subsweeps, num_depths = data.shape
 
-            self.data_history = np.zeros([self.history_len, num_depths])
-            self.movement_history = np.zeros([self.history_len, num_depths])
+            self.data_history = np.zeros([self.history_len, num_sensors, num_depths])
+            self.presence_history = np.zeros([self.history_len, num_sensors, num_depths])
 
         self.data_history = np.roll(self.data_history, 1, axis=0)
-        self.data_history[0] = sweep.mean(axis=0)
+        self.data_history[0] = data.mean(axis=1)
 
-        self.movement_history = np.roll(self.movement_history, 1, axis=0)
-        self.movement_history[0] = movement
+        self.presence_history = np.roll(self.presence_history, 1, axis=0)
+        self.presence_history[0] = presences
 
-        smooth_max = self.smooth_max.update(np.max(np.abs(sweep)))
+        smooth_max = self.smooth_max.update(np.max(np.abs(data)))
 
         out_data = {
-            "data": sweep,
+            "data": data,
             "data_smooth_max": smooth_max,
             "data_history": self.data_history,
-            "movement_history": self.movement_history,
+            "presence_history": self.presence_history,
         }
 
         self.sweep_index += 1
@@ -132,66 +131,75 @@ class PGUpdater:
     def setup(self, win):
         win.setWindowTitle("Acconeer sparse example")
 
-        self.data_plot = win.addPlot(title="Sparse data")
-        self.data_plot.showGrid(x=True, y=True)
-        self.data_plot.setLabel("bottom", "Depth (m)")
-        self.data_plot.setLabel("left", "Amplitude")
-        self.data_plot.setYRange(-2**15, 2**15)
-        self.scatter = pg.ScatterPlotItem(size=10)
-        self.data_plot.addItem(self.scatter)
+        self.data_plots = []
+        self.scatters = []
+        self.data_history_ims = []
+        self.presence_history_ims = []
 
-        win.nextRow()
+        for i in range(len(self.sensor_config.sensor)):
+            data_plot = win.addPlot(title="Sparse data", row=0, col=i)
+            data_plot.showGrid(x=True, y=True)
+            data_plot.setLabel("bottom", "Depth (m)")
+            data_plot.setLabel("left", "Amplitude")
+            data_plot.setYRange(-2**15, 2**15)
+            scatter = pg.ScatterPlotItem(size=10)
+            data_plot.addItem(scatter)
 
-        cmap_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
-        cmap = LinearSegmentedColormap.from_list("mycmap", cmap_cols)
-        cmap._init()
-        lut = (cmap._lut * 255).view(np.ndarray)
+            cmap_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
+            cmap = LinearSegmentedColormap.from_list("mycmap", cmap_cols)
+            cmap._init()
+            lut = (cmap._lut * 255).view(np.ndarray)
 
-        self.data_history_plot = win.addPlot(title="Data history")
-        self.data_history_im = pg.ImageItem(autoDownsample=True)
-        self.data_history_im.setLookupTable(lut)
-        self.data_history_plot.addItem(self.data_history_im)
-        self.data_history_plot.setLabel("bottom", "Time (s)")
-        self.data_history_plot.setLabel("left", "Depth (m)")
+            data_history_plot = win.addPlot(title="Data history", row=1, col=i)
+            data_history_im = pg.ImageItem(autoDownsample=True)
+            data_history_im.setLookupTable(lut)
+            data_history_plot.addItem(data_history_im)
+            data_history_plot.setLabel("bottom", "Time (s)")
+            data_history_plot.setLabel("left", "Depth (m)")
 
-        win.nextRow()
+            presence_history_plot = win.addPlot(title="Movement history", row=2, col=i)
+            presence_history_im = pg.ImageItem(autoDownsample=True)
+            presence_history_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+            presence_history_plot.addItem(presence_history_im)
+            presence_history_plot.setLabel("bottom", "Time (s)")
+            presence_history_plot.setLabel("left", "Depth (m)")
 
-        self.movement_history_plot = win.addPlot(title="Movement history")
-        self.movement_history_im = pg.ImageItem(autoDownsample=True)
-        self.movement_history_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
-        self.movement_history_plot.addItem(self.movement_history_im)
-        self.movement_history_plot.setLabel("bottom", "Time (s)")
-        self.movement_history_plot.setLabel("left", "Depth (m)")
+            self.data_plots.append(data_plot)
+            self.scatters.append(scatter)
+            self.data_history_ims.append(data_history_im)
+            self.presence_history_ims.append(presence_history_im)
 
     def update(self, d):
         if self.sweep_index == 0:
-            num_subsweeps, num_depths = d["data"].shape
+            num_sensors, num_subsweeps, num_depths = d["data"].shape
             depths = np.linspace(*self.sensor_config.range_interval, num_depths)
             self.xs = np.tile(depths, num_subsweeps)
 
             time_res = 1.0 / self.sensor_config.sweep_rate
             depth_res = self.sensor_config.range_length / (num_depths - 1)
 
-            for im in [self.data_history_im, self.movement_history_im]:
-                im.resetTransform()
-                im.translate(0, self.sensor_config.range_start - depth_res / 2)
-                im.scale(time_res, depth_res)
+            for ims in zip(self.data_history_ims, self.presence_history_ims):
+                for im in ims:
+                    im.resetTransform()
+                    im.translate(0, self.sensor_config.range_start - depth_res / 2)
+                    im.scale(time_res, depth_res)
 
-        ys = d["data"].flatten()
-        self.scatter.setData(self.xs, ys)
-        m = max(500, d["data_smooth_max"])
-        self.data_plot.setYRange(-m, m)
+        for i in range(len(self.sensor_config.sensor)):
+            ys = d["data"][i].flatten()
+            self.scatters[i].setData(self.xs, ys)
+            m = max(500, d["data_smooth_max"])
+            self.data_plots[i].setYRange(-m, m)
 
-        data_history_adj = d["data_history"]
-        sign = np.sign(data_history_adj)
-        data_history_adj = np.abs(data_history_adj)
-        data_history_adj /= data_history_adj.max()
-        data_history_adj = np.power(data_history_adj, 1/2.2)  # gamma correction
-        data_history_adj *= sign
-        self.data_history_im.updateImage(data_history_adj, levels=(-1.05, 1.05))
+            data_history_adj = d["data_history"][:, i]
+            sign = np.sign(data_history_adj)
+            data_history_adj = np.abs(data_history_adj)
+            data_history_adj /= data_history_adj.max()
+            data_history_adj = np.power(data_history_adj, 1/2.2)  # gamma correction
+            data_history_adj *= sign
+            self.data_history_ims[i].updateImage(data_history_adj, levels=(-1.05, 1.05))
 
-        m = np.max(d["movement_history"]) * 1.1
-        self.movement_history_im.updateImage(d["movement_history"], levels=(0, m))
+            m = np.max(d["presence_history"][:, i]) * 1.1
+            self.presence_history_ims[i].updateImage(d["presence_history"][:, i], levels=(0, m))
 
         self.sweep_index += 1
 

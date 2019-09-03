@@ -55,7 +55,7 @@ MODULE_INFOS = [
         sparse_module,
         sparse_module.get_sensor_config,
         sparse_module.Processor,
-        False,
+        True,
     ),
     ModuleInfo(
         "Presence detection (sparse)",
