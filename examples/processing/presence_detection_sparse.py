@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import binom
 import pyqtgraph as pg
 from PyQt5 import QtCore
 
@@ -7,6 +8,10 @@ from acconeer_utils.clients.json.client import JSONClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
+
+
+OUTPUT_MAX = 10
+HISTORY_LENGTH_S = 5
 
 
 def main():
@@ -55,10 +60,10 @@ def main():
 
 def get_sensor_config():
     config = configs.SparseServiceConfig()
-    config.range_interval = [0.5, 1.5]
-    config.sweep_rate = 60
-    config.gain = 0.65
-    config.number_of_subsweeps = 16
+    config.range_interval = [0.3, 1.3]
+    config.sweep_rate = 80
+    config.gain = 0.6
+    config.number_of_subsweeps = 32
     return config
 
 
@@ -66,94 +71,144 @@ def get_processing_config():
     return {
         "threshold": {
             "name": "Threshold",
-            "value": 0.3,
-            "limits": [0, 1],
+            "value": 2,
+            "limits": [0, OUTPUT_MAX],
             "type": float,
             "text": None,
         },
-        "upper_speed_limit": {
-            "name": "Max movement [mm/s]",
-            "value": 30,
+        "fast_cut": {
+            "name": "Fast cutoff freq. [Hz]",
+            "value": 50.0,
             "limits": [1, 500],
             "type": float,
             "text": None,
+        },
+        "slow_cut": {
+            "name": "Slow cutoff freq. [Hz]",
+            "value": 1.0,
+            "limits": [0.1, 5.0],
+            "type": float,
+            "text": None,
+        },
+        "show_sweep": {
+            "name": "Show sweep",
+            "value": True,
+        },
+        "show_noise": {
+            "name": "Show noise",
+            "value": False,
+        },
+        "show_depthwise_output": {
+            "name": "Show depthwise presence",
+            "value": True,
         },
     }
 
 
 class PresenceDetectionSparseProcessor:
     def __init__(self, sensor_config, processing_config):
+        self.num_subsweeps = sensor_config.number_of_subsweeps
         self.threshold = processing_config["threshold"]["value"]
-        upper_speed_limit = processing_config["upper_speed_limit"]["value"]
-        subsweep_rate = sensor_config.sweep_rate * sensor_config.number_of_subsweeps
-        subsweep_dt = 1.0 / subsweep_rate
+        f = sensor_config.sweep_rate
+        dt = 1.0 / f
 
-        self.movement_history = np.zeros(int(round(sensor_config.sweep_rate * 5)))  # 5 seconds
+        self.noise_est_diff_order = 3
+        self.depth_filter_length = 3
 
-        self.a_fast_tau = 1.0 / (upper_speed_limit / 2.5)
-        self.a_slow_tau = 0.8
-        self.a_diff_tau = 0.4
-        self.a_move_tau = 0.8
-        self.static_a_fast = self.alpha(self.a_fast_tau, subsweep_dt)
-        self.static_a_slow = self.alpha(self.a_slow_tau, subsweep_dt)
-        self.a_diff = self.alpha(self.a_diff_tau, subsweep_dt)
-        self.a_move = self.alpha(self.a_move_tau, subsweep_dt)
+        nd = self.noise_est_diff_order
+        self.noise_norm_factor = np.sqrt(np.sum(np.square(binom(nd, np.arange(nd + 1)))))
 
-        self.sweep_lp_fast = None
-        self.sweep_lp_slow = None
-        self.lp_diff = None
-        self.subsweep_index = 0
-        self.movement_lp = 0
+        # lp(f): low pass (filtered)
+        # cut: cutoff frequency [Hz]
+        # tc: time constant [s]
+        # sf: smoothing factor [dimensionless]
 
-    def dynamic_filter_coefficient(self, static_alpha):
-        dynamic_alpha = 1.0 - 1.0 / (1 + self.subsweep_index)
-        return min(static_alpha, dynamic_alpha)
+        fast_cut = processing_config["fast_cut"]["value"]
+        slow_cut = processing_config["slow_cut"]["value"]
+        bandpass_tc = 0.5
+        output_tc = 1.0
+        noise_tc = 1.0
+
+        self.fast_sf = self.static_sf(1.0 / fast_cut, dt)
+        self.slow_sf = self.static_sf(1.0 / slow_cut, dt)
+        self.bandpass_sf = self.static_sf(bandpass_tc, dt)
+        self.output_sf = self.static_sf(output_tc, dt)
+        self.noise_sf = self.static_sf(noise_tc, dt)
+
+        self.fast_lp_mean_subsweep = None
+        self.slow_lp_mean_subsweep = None
+        self.lp_bandpass = None
+        self.lp_output = 0
+        self.lp_noise = None
+
+        self.output_history = np.zeros(int(round(f * HISTORY_LENGTH_S)))
+        self.sweep_index = 0
+
+    def static_sf(self, tc, dt):
+        return np.exp(-dt / tc)
+
+    def dynamic_sf(self, static_sf):
+        return min(static_sf, 1.0 - 1.0 / (1.0 + self.sweep_index))
 
     def process(self, sweep):
-        for subsweep in sweep:
-            if self.subsweep_index == 0:
-                self.sweep_lp_fast = subsweep.copy()
-                self.sweep_lp_slow = subsweep.copy()
-                self.lp_diff = np.zeros_like(subsweep)
-            else:
-                a_fast = self.dynamic_filter_coefficient(self.static_a_fast)
-                self.sweep_lp_fast = self.sweep_lp_fast * a_fast + subsweep * (1-a_fast)
+        mean_subsweep = sweep.mean(axis=0)
 
-                a_slow = self.dynamic_filter_coefficient(self.static_a_slow)
-                self.sweep_lp_slow = self.sweep_lp_slow * a_slow + subsweep * (1-a_slow)
+        if self.sweep_index == 0:
+            self.fast_lp_mean_subsweep = np.zeros_like(mean_subsweep)
+            self.slow_lp_mean_subsweep = np.zeros_like(mean_subsweep)
+            self.lp_bandpass = np.zeros_like(mean_subsweep)
+            self.lp_noise = np.zeros_like(mean_subsweep)
 
-                diff = np.abs(self.sweep_lp_fast - self.sweep_lp_slow)
-                self.lp_diff = self.lp_diff * self.a_diff + diff * (1-self.a_diff)
+        sf = self.dynamic_sf(self.fast_sf)
+        self.fast_lp_mean_subsweep = sf * self.fast_lp_mean_subsweep + (1.0 - sf) * mean_subsweep
 
-                depth_filtered_lp_diff = np.correlate(self.lp_diff, np.ones(3) / 3, mode="same")
+        sf = self.dynamic_sf(self.slow_sf)
+        self.slow_lp_mean_subsweep = sf * self.slow_lp_mean_subsweep + (1.0 - sf) * mean_subsweep
 
-                movement = np.max(depth_filtered_lp_diff)
-                movement *= 0.0025
-                self.movement_lp = self.movement_lp*self.a_move + movement*(1-self.a_move)
+        bandpass = np.abs(self.fast_lp_mean_subsweep - self.slow_lp_mean_subsweep)
+        sf = self.dynamic_sf(self.bandpass_sf)
+        self.lp_bandpass = sf * self.lp_bandpass + (1.0 - sf) * bandpass
 
-            self.subsweep_index += 1
+        nd = self.noise_est_diff_order
+        noise = np.diff(sweep, n=nd, axis=0).std(axis=0) / self.noise_norm_factor
+        sf = self.dynamic_sf(self.noise_sf)
+        self.lp_noise = sf * self.lp_noise + (1.0 - sf) * noise
 
-        self.movement_history = np.roll(self.movement_history, -1)
-        self.movement_history[-1] = self.movement_lp
+        norm_lp_bandpass = self.lp_bandpass / self.lp_noise
+        norm_lp_bandpass *= np.sqrt(self.num_subsweeps)
 
-        present = np.tanh(self.movement_history[-1]) > self.threshold
+        depth_filter = np.ones(self.depth_filter_length) / self.depth_filter_length
+        depth_filt_norm_lp_bandpass = np.correlate(norm_lp_bandpass, depth_filter, mode="same")
+
+        output = np.max(depth_filt_norm_lp_bandpass)
+        sf = self.output_sf  # no dynamic filter for the output
+        self.lp_output = sf * self.lp_output + (1.0 - sf) * output
+
+        present = self.lp_output > self.threshold
+
+        self.output_history = np.roll(self.output_history, -1)
+        self.output_history[-1] = self.lp_output
 
         out_data = {
-            "movement": depth_filtered_lp_diff,
-            "movement_index": np.argmax(depth_filtered_lp_diff),
-            "movement_history": np.tanh(self.movement_history),
+            "sweep": sweep,
+            "fast": self.fast_lp_mean_subsweep,
+            "slow": self.slow_lp_mean_subsweep,
+            "noise": self.lp_noise,
+            "movement": depth_filt_norm_lp_bandpass,
+            "movement_index": np.argmax(depth_filt_norm_lp_bandpass),
+            "movement_history": self.output_history,
             "present": present,
         }
 
-        return out_data
+        self.sweep_index += 1
 
-    def alpha(self, tau, dt):
-        return np.exp(-dt/tau)
+        return out_data
 
 
 class PGUpdater:
     def __init__(self, sensor_config, processing_config):
-        self.config = sensor_config
+        self.sensor_config = sensor_config
+        self.processing_config = processing_config
         self.movement_limit = processing_config["threshold"]["value"]
 
     def setup(self, win):
@@ -161,23 +216,61 @@ class PGUpdater:
 
         dashed_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
 
-        self.move_plot = win.addPlot(title="Movement")
-        self.move_plot.showGrid(x=True, y=True)
-        self.move_plot.setLabel("bottom", "Depth (m)")
-        self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler())
-        self.move_smooth_max = example_utils.SmoothMax(self.config.sweep_rate)
+        if self.processing_config["show_sweep"]["value"]:
+            data_plot = win.addPlot(title="Sweep (blue), fast (orange), and slow (green)")
+            data_plot.showGrid(x=True, y=True)
+            data_plot.setLabel("bottom", "Depth (m)")
+            data_plot.setYRange(-2**15, 2**15)
+            self.sweep_scatter = pg.ScatterPlotItem(
+                    size=10,
+                    brush=pg.mkBrush(example_utils.color_cycler(0)),
+                    )
+            self.fast_scatter = pg.ScatterPlotItem(
+                    size=10,
+                    brush=pg.mkBrush(example_utils.color_cycler(1)),
+                    )
+            self.slow_scatter = pg.ScatterPlotItem(
+                    size=10,
+                    brush=pg.mkBrush(example_utils.color_cycler(2)),
+                    )
+            data_plot.addItem(self.sweep_scatter)
+            data_plot.addItem(self.fast_scatter)
+            data_plot.addItem(self.slow_scatter)
 
-        self.move_depth_line = pg.InfiniteLine(pen=dashed_pen)
-        self.move_depth_line.hide()
-        self.move_plot.addItem(self.move_depth_line)
+            win.nextRow()
 
-        win.nextRow()
+        if self.processing_config["show_noise"]["value"]:
+            self.noise_plot = win.addPlot(title="Noise")
+            self.noise_plot.showGrid(x=True, y=True)
+            self.noise_plot.setLabel("bottom", "Depth (m)")
+            self.noise_curve = self.noise_plot.plot(pen=example_utils.pg_pen_cycler())
+            self.noise_smooth_max = example_utils.SmoothMax(self.sensor_config.sweep_rate)
 
-        move_hist_plot = win.addPlot(title="Movement history")
+            win.nextRow()
+
+        if self.processing_config["show_depthwise_output"]["value"]:
+            self.move_plot = win.addPlot(title="Depthwise presence")
+            self.move_plot.showGrid(x=True, y=True)
+            self.move_plot.setLabel("bottom", "Depth (m)")
+            self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler())
+            self.move_smooth_max = example_utils.SmoothMax(
+                    self.sensor_config.sweep_rate,
+                    tau_decay=1.0,
+                    )
+
+            self.move_depth_line = pg.InfiniteLine(pen=dashed_pen)
+            self.move_depth_line.hide()
+            self.move_plot.addItem(self.move_depth_line)
+            limit_line = pg.InfiniteLine(self.movement_limit, angle=0, pen=dashed_pen)
+            self.move_plot.addItem(limit_line)
+
+            win.nextRow()
+
+        move_hist_plot = win.addPlot(title="Presence history")
         move_hist_plot.showGrid(x=True, y=True)
         move_hist_plot.setLabel("bottom", "Time (s)")
-        move_hist_plot.setXRange(-5, 0)
-        move_hist_plot.setYRange(0, 1)
+        move_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
+        move_hist_plot.setYRange(0, OUTPUT_MAX)
         self.move_hist_curve = move_hist_plot.plot(pen=example_utils.pg_pen_cycler())
         limit_line = pg.InfiniteLine(self.movement_limit, angle=0, pen=dashed_pen)
         move_hist_plot.addItem(limit_line)
@@ -199,24 +292,42 @@ class PGUpdater:
             fill=pg.mkColor("b"),
             anchor=(0.5, 0),
             )
-        self.present_text_item.setPos(-2.5, 0.95)
-        self.not_present_text_item.setPos(-2.5, 0.95)
+        self.present_text_item.setPos(-2.5, 0.95 * OUTPUT_MAX)
+        self.not_present_text_item.setPos(-2.5, 0.95 * OUTPUT_MAX)
         move_hist_plot.addItem(self.present_text_item)
         move_hist_plot.addItem(self.not_present_text_item)
         self.present_text_item.hide()
 
     def update(self, data):
-        move_ys = data["movement"]
-        move_xs = np.linspace(*self.config.range_interval, len(move_ys))
-        self.move_curve.setData(move_xs, move_ys)
-        self.move_plot.setYRange(0, self.move_smooth_max.update(np.max(move_ys)))
+        sweep = data["sweep"]
+        _, num_depths = sweep.shape
+        depths = np.linspace(*self.sensor_config.range_interval, num_depths)
 
-        movement_x = move_xs[data["movement_index"]]
-        self.move_depth_line.setPos(movement_x)
+        if self.processing_config["show_sweep"]["value"]:
+            self.sweep_scatter.setData(
+                    np.tile(depths, self.sensor_config.number_of_subsweeps),
+                    sweep.flatten(),
+                    )
+            self.fast_scatter.setData(depths, data["fast"])
+            self.slow_scatter.setData(depths, data["slow"])
+
+        if self.processing_config["show_noise"]["value"]:
+            noise = data["noise"]
+            self.noise_curve.setData(depths, noise)
+            self.noise_plot.setYRange(0, self.noise_smooth_max.update(np.max(noise)))
+
+        movement_x = depths[data["movement_index"]]
+
+        if self.processing_config["show_depthwise_output"]["value"]:
+            move_ys = data["movement"]
+            self.move_curve.setData(depths, move_ys)
+            self.move_plot.setYRange(0, self.move_smooth_max.update(np.max(move_ys)))
+            self.move_depth_line.setPos(movement_x)
+            self.move_depth_line.setVisible(data["present"])
 
         move_hist_ys = data["movement_history"]
-        move_hist_xs = np.linspace(-5, 0, len(move_hist_ys))
-        self.move_hist_curve.setData(move_hist_xs, move_hist_ys)
+        move_hist_xs = np.linspace(-HISTORY_LENGTH_S, 0, len(move_hist_ys))
+        self.move_hist_curve.setData(move_hist_xs, np.minimum(move_hist_ys, OUTPUT_MAX))
 
         if data["present"]:
             present_text = "Presence detected at {:.1f}m!".format(movement_x)
@@ -225,11 +336,9 @@ class PGUpdater:
 
             self.present_text_item.show()
             self.not_present_text_item.hide()
-            self.move_depth_line.show()
         else:
             self.present_text_item.hide()
             self.not_present_text_item.show()
-            self.move_depth_line.hide()
 
 
 if __name__ == "__main__":
