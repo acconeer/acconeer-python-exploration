@@ -137,6 +137,9 @@ class SensorSelection(QFrame):
         if not sensors:
             sensors = []
 
+        if len(sensors) > 1:
+            self.set_multi_sensor_support(True)
+
         if self.multi_sensors:
             for s in range(1, 5):
                 enabled = s in sensors

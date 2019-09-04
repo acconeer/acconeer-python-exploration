@@ -71,6 +71,11 @@ class GUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.gui_states = {
+            "has_loaded_data": False,
+            "server_connected": False,
+        }
+
         self.current_data_type = None
         self.current_module_label = None
         self.canvas = None
@@ -309,7 +314,9 @@ class GUI(QMainWindow):
 
     def set_multi_sensors(self):
         multi_sensor = False
-        if self.multi_sensor_interface:
+        if self.get_gui_state("has_loaded_data"):
+            multi_sensor = len(self.data[0]["sensor_config"].sensor) > 1
+        elif self.multi_sensor_interface:
             multi_sensor = self.current_module_info.multi_sensor
         self.sensor_selection.set_multi_sensor_support(multi_sensor)
 
@@ -694,7 +701,7 @@ class GUI(QMainWindow):
         self.load_gui_settings_from_sensor_config()
 
     def update_interface(self):
-        if self.buttons["connect"].text() == "Disconnect":
+        if self.gui_states["server_connected"]:
             self.connect_to_server()
 
         self.multi_sensor_interface = True
@@ -741,6 +748,8 @@ class GUI(QMainWindow):
         return retval == 1024
 
     def start_scan(self, create_cl=False, from_file=False):
+        if self.get_gui_state("has_loaded_data") and not from_file:
+            self.set_gui_state("has_loaded_data", False)
         if self.current_module_info.module is None:
             self.error_message("Please select a service or detector")
             return
@@ -831,6 +840,50 @@ class GUI(QMainWindow):
         self.buttons["connect"].setEnabled(False)
         self.buttons["replay_buffered"].setEnabled(False)
 
+    def set_gui_state(self, state, enabled):
+        if state in self.gui_states:
+            self.gui_states[state] = enabled
+        else:
+            print("{} is an unknown state!".format(state))
+            return
+
+        if state == "server_connected":
+            if enabled:
+                self.buttons["start"].setEnabled(True)
+                self.buttons["create_cl"].setEnabled(self.cl_supported)
+                self.buttons["load_cl"].setEnabled(self.cl_supported)
+                self.buttons["connect"].setText("Disconnect")
+                self.buttons["connect"].setStyleSheet("QPushButton {color: red}")
+                self.buttons["advanced_port"].setEnabled(False)
+                self.buttons["replay_buffered"].setEnabled(False)
+                self.gui_states["has_loaded_data"] = False
+                self.data = None
+                self.set_multi_sensors()
+            else:
+                self.buttons["connect"].setText("Connect")
+                self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
+                self.buttons["start"].setEnabled(False)
+                self.buttons["create_cl"].setEnabled(False)
+                self.buttons["advanced_port"].setEnabled(True)
+                self.statusBar().showMessage("Not connected")
+                if self.cl_supported:
+                    self.buttons["load_cl"].setEnabled(True)
+
+        if state == "has_loaded_data":
+            if enabled:
+                if isinstance(self.data, list) and self.data[0].get("sensor_config"):
+                    self.set_multi_sensors()
+            else:
+                self.buttons["replay_buffered"].setEnabled(False)
+            self.init_graphs()
+
+    def get_gui_state(self, state):
+        if state in self.gui_states:
+            return self.gui_states[state]
+        else:
+            print("{} is an unknown state!".format(state))
+            return
+
     def update_scan(self):
         if self.cl_file:
             clutter_file = self.cl_file
@@ -881,7 +934,7 @@ class GUI(QMainWindow):
         example_utils.set_loglevel(log_level)
 
     def connect_to_server(self):
-        if self.buttons["connect"].text() == "Connect":
+        if not self.get_gui_state("server_connected"):
             max_num = 4
             if self.current_module_info.module is None:
                 self.module_dd.setCurrentIndex(2)
@@ -927,29 +980,15 @@ class GUI(QMainWindow):
                     error = e
                 sensor += 1
             if connection_success:
-                self.buttons["start"].setEnabled(True)
-                self.buttons["create_cl"].setEnabled(self.cl_supported)
-                self.buttons["load_cl"].setEnabled(self.cl_supported)
+                self.set_gui_state("server_connected", True)
                 self.sensor_selection.set_sensors(sensors_available)
+                self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
             else:
                 self.error_message("Could not connect to server!\n{}".format(error))
                 return
-
-            self.buttons["connect"].setText("Disconnect")
-            self.buttons["connect"].setStyleSheet("QPushButton {color: red}")
-            self.buttons["advanced_port"].setEnabled(False)
-            self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
         else:
-            self.buttons["connect"].setText("Connect")
-            self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
+            self.set_gui_state("server_connected", False)
             self.sig_scan.emit("stop", "", None)
-            self.buttons["start"].setEnabled(False)
-            self.buttons["create_cl"].setEnabled(False)
-            self.buttons["advanced_port"].setEnabled(True)
-            self.statusBar().showMessage("Not connected")
-            if self.cl_supported:
-                self.buttons["load_cl"].setEnabled(True)
-
             try:
                 self.client.stop_streaming()
             except Exception:
@@ -1371,6 +1410,8 @@ class GUI(QMainWindow):
                     self.update_canvas()
                 self.data = data
 
+            self.set_gui_state("has_loaded_data", True)
+
             self.sensor_selection.set_sensors(conf.sensor)
             self.load_gui_settings_from_sensor_config(conf)
 
@@ -1565,7 +1606,7 @@ class GUI(QMainWindow):
             self.error_message("{}".format(message))
             if "client" in message_type:
                 self.stop_scan()
-                if self.buttons["connect"].text() == "Disconnect":
+                if self.get_gui_state("server_connected"):
                     self.connect_to_server()
                 self.buttons["create_cl"].setEnabled(False)
                 self.buttons["start"].setEnabled(False)
@@ -1577,7 +1618,7 @@ class GUI(QMainWindow):
             self.data = data
         elif message_type == "scan_done":
             self.stop_scan()
-            if "Connect" == self.buttons["connect"].text():
+            if not self.get_gui_state("server_connected"):
                 self.buttons["start"].setEnabled(False)
         elif "update_external_plots" in message_type:
             if data is not None:
