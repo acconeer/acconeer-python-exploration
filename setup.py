@@ -1,6 +1,8 @@
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 from shutil import rmtree
+import os
+import sys
 
 
 def clean():
@@ -17,9 +19,23 @@ class InstallCommand(install):
 
 PACKAGE_ROOT_DIR = "lib"
 
+project_root_dir = os.path.dirname(os.path.realpath(__file__))
+root_init_file = os.path.join(project_root_dir, "lib/acconeer_utils/__init__.py")
+
+with open(root_init_file, "r") as f:
+    lines = f.readlines()
+
+for line in lines:
+    if line.startswith("__version__"):
+        version = line.split("=")[1].strip()[1:-1]
+        break
+else:
+    sys.stderr.write("Could not find the version number\n")
+    sys.exit(1)
+
 setup(
     name="acconeer-utils",
-    version="2.4.6",
+    version=version,
     description="Acconeer utilities",
     url="https://github.com/acconeer/acconeer-python-exploration",
     author="Acconeer AB",
