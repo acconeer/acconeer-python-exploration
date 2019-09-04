@@ -926,11 +926,11 @@ class GUI(QMainWindow):
                     print("Sensor {:d} not available".format(sensor))
                     error = e
                 sensor += 1
-            self.sensor_selection.set_sensors(sensors_available)
             if connection_success:
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(self.cl_supported)
                 self.buttons["load_cl"].setEnabled(self.cl_supported)
+                self.sensor_selection.set_sensors(sensors_available)
             else:
                 self.error_message("Could not connect to server!\n{}".format(error))
                 return
