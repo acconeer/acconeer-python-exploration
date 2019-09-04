@@ -35,7 +35,7 @@ Tested on:
 
 Setuptools, wheel, NumPy, SciPy, PySerial, matplotlib, PyQtGraph, PyQt5, h5py, Flask.
 
-If you have PyQt4 installed, it might conflict with PyQt5. If this is the case for you, we recommend using `virtualenv` to separate the two installations.
+If you have PyQt4 installed, it might conflict with PyQt5. If this is the case for you, we recommend using virtual environments to separate the two installations.
 
 Install all Python dependencies using pip:
 ```
@@ -174,12 +174,11 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 The radar viewer visualizes the output from Acconeer's service API:s in your default browser.
 
-Currently **only the XM112+XB112 module is supported**.
-
 Run the radar viewer using:
 ```
 python radar_viewer/radar_viewer.py -u
 ```
+The usage of arguments is the same as for the examples.
 
 ## Disclaimer
 

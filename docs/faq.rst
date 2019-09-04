@@ -14,6 +14,12 @@ Python related
 
    Depending on your environment, you might have to replace ``python`` with ``python3`` or ``py``.
 
+#) The GUI does not load properly after updating
+
+   Try removing the ``last_config.npy`` file in the ``gui`` directory.
+
+   If the above does not work, please open an issue on GitHub.
+
 
 Sensor related
 --------------
