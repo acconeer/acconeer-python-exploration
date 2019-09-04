@@ -13,8 +13,11 @@ from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 import logging
 log = logging.getLogger("acconeer_utils.examples.obstacle_detection")
 
-MAX_SPEED = 8.00   # Max speed to be resolved with FFT in cm/s
-WAVELENGTH = 0.49  # Wavelength of radar in cm
+MAX_SPEED = 8.00          # Max speed to be resolved with FFT in cm/s
+WAVELENGTH = 0.49         # Wavelength of radar in cm
+FUSION_MAX_OBSTACLES = 5  # Max obstacles for sensor fusion
+FUSION_MAX_SHADOWS = 10   # Max obstacles for sensor fusion shadows
+FUSION_HISTORY = 30       # Max history for sensor fusion
 
 
 def main():
@@ -211,6 +214,30 @@ def get_processing_config():
             "value": False,
             "advanced": True,
         },
+        "fusion_map": {
+            "name": "Show fusion (2 sensors)",
+            "value": False,
+            "advanced": True,
+        },
+        "show_shadows": {
+            "name": "Show shadows",
+            "value": False,
+            "advanced": True,
+        },
+        "sensor_separation": {
+            "name": "Sensor separation [cm]",
+            "value": 15,
+            "limits": [1, 100],
+            "type": float,
+            "advanced": True,
+        },
+        "fusion_spread": {
+            "name": "Fusion spread [degrees]",
+            "value": 15,
+            "limits": [1, 45],
+            "type": float,
+            "advanced": True,
+        },
         # Allows saving and loading from GUI
         "send_process_data": {
             "value": None,
@@ -222,6 +249,8 @@ def get_processing_config():
 class ObstacleDetectionProcessor:
     def __init__(self, sensor_config, processing_config):
         self.sensor_config = sensor_config
+        self.sensor_separation = processing_config["sensor_separation"]["value"]
+        self.fusion_spread = processing_config["fusion_spread"]["value"]
         self.fft_len = processing_config["fft_length"]["value"]
         self.threshold = processing_config["threshold"]["value"]
         self.static_threshold = processing_config["static_threshold"]["value"]
@@ -240,6 +269,11 @@ class ObstacleDetectionProcessor:
         self.robot_velocity = processing_config["robot_velocity"]["value"]
         self.edge_ratio = processing_config["edge_to_peak"]["value"]
         self.downsampling = processing_config["downsampling"]["value"]
+        self.fusion_enabled = processing_config["fusion_map"]["value"]
+        self.fusion_handle = None
+        self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
+        self.fusion_history = FUSION_HISTORY
+        self.fusion_max_shadows = FUSION_MAX_SHADOWS
 
     def process(self, sweep):
         if len(sweep.shape) == 1:
@@ -248,15 +282,41 @@ class ObstacleDetectionProcessor:
         if self.downsampling:
             sweep = sweep[:, ::self.downsampling]
 
-        len_range = sweep.shape[1]
-        nr_sensors = sweep.shape[0]
+        nr_sensors, len_range = sweep.shape
+
+        nr_sensors = min(len(self.sensor_config.sensor), nr_sensors)
 
         if self.sweep_index == 0 and self.bg_avg == 0:
+            if self.fusion_enabled and nr_sensors <= 2:
+                self.fusion_handle = SensorFusion()
+                fusion_params = {
+                    "separation": self.sensor_separation,
+                    "obstacle_spread": self.fusion_spread,
+                    "min_y_spread": 4,                                      # cm
+                    "min_x_spread": 4,                                      # cm
+                    "decay_time": 5,                                        # cycles
+                    "step_time": 1 / self.sensor_config.sweep_rate,         # s
+                    "min_distance": self.sensor_config.range_start * 100,   # cm
+                }
+                self.fusion_handle.setup(fusion_params)
+
             self.sweep_map = np.zeros((nr_sensors, len_range, self.fft_len), dtype="complex")
             self.fft_bg = np.zeros((nr_sensors, len_range, self.fft_len))
+            self.fft_psd = np.zeros((nr_sensors, len_range, self.fft_len))
             self.hamming_map = np.zeros((len_range, self.fft_len))
+
+            self.fusion_data = {
+                "fused_y": np.full((self.fusion_history, self.fusion_max_obstacles), np.nan),
+                "fused_x": np.full((self.fusion_history, self.fusion_max_obstacles), np.nan),
+                "left_shadow_y": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+                "left_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+                "right_shadow_y": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+                "right_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+                }
+
             for i in range(len_range):
                 self.hamming_map[i, :] = np.hamming(self.fft_len)
+
             self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, len_range)
             self.peak_prop_num = 4
             self.peak_hist = np.zeros((nr_sensors, self.nr_locals,
@@ -281,11 +341,13 @@ class ObstacleDetectionProcessor:
                     self.threshold_map[dist, freq] = self.variable_thresholding(
                         freq, dist, self.threshold, self.static_threshold)
 
+        fused_obstacles = {}
         for s in range(nr_sensors):
             self.push(sweep[s, :], self.sweep_map[s, :, :])
 
             signalFFT = fftshift(fft(self.sweep_map[s, :, :]*self.hamming_map, axis=1), axes=1)
-            signalPSD = np.square(np.abs(signalFFT))
+            self.fft_psd[s, :, :] = np.square(np.abs(signalFFT))
+            signalPSD = self.fft_psd[s, :, :]
             if self.use_bg and self.sweep_index == self.fft_len - 1:
                 self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
                 if s == nr_sensors - 1:
@@ -300,6 +362,7 @@ class ObstacleDetectionProcessor:
             angle = None
             velocity = None
             peak_idx = np.argmax(env)
+            obstacles = []
 
             if self.sweep_index < self.fft_len:
                 fft_peaks = None
@@ -322,16 +385,48 @@ class ObstacleDetectionProcessor:
                         velocity = float(np.nan)
                         angle = float(np.nan)
                         amp = float(np.nan)
-
+                    elif self.fusion_handle:
+                        obstacles.append(
+                            {"angle": abs(angle),
+                             "velocity": velocity,
+                             "distance": distance,
+                             "amplitude": amp,
+                             "sensor": s}
+                        )
                     self.push_vec(distance, self.peak_hist[s, i, 0, :])
                     self.push_vec(velocity, self.peak_hist[s, i, 1, :])
                     self.push_vec(angle, self.peak_hist[s, i, 2, :])
                     self.push_vec(amp, self.peak_hist[s, i, 3, :])
+
                 fft_peaks = fft_peaks[:peaks_found, :]
             else:
                 for i in range(self.nr_locals):
                     for j in range(self.peak_prop_num):
                         self.push_vec(float(np.nan), self.peak_hist[s, i, j, :])
+            fused_obstacles["{}".format(s)] = obstacles
+
+        if self.fusion_handle:
+            fused_obstacles, shadow_obstacles = self.fusion_handle.update(fused_obstacles)
+
+            for position in self.fusion_data:
+                self.fusion_data[position] = np.roll(self.fusion_data[position], 1, axis=0)
+                self.fusion_data[position][0, :] = np.nan
+
+            if fused_obstacles is not None and nr_sensors == 2:
+                for i, o in enumerate(fused_obstacles):
+                    if i < self.fusion_max_obstacles:
+                        self.fusion_data["fused_x"][0, i] = o["pos"][0]
+                        self.fusion_data["fused_y"][0, i] = o["pos"][1]
+                    else:
+                        print("Too many fused obstacles ({})".format(len(fused_obstacles)))
+            if shadow_obstacles is not None:
+                for i, o in enumerate(shadow_obstacles):
+                    if i < self.fusion_max_shadows:
+                        tag = o["sensor"]
+                        self.fusion_data["{}_shadow_x".format(tag)][0, i] = o["pos"][0]
+                        self.fusion_data["{}_shadow_y".format(tag)][0, i] = o["pos"][1]
+                    else:
+                        print("Too many shadow obstacles ({})".format(len(shadow_obstacles)))
 
         fft_bg = None
         if self.sweep_index in range(self.fft_len + 1, self.fft_len + 15):
@@ -341,10 +436,11 @@ class ObstacleDetectionProcessor:
         if self.sweep_index == 1:
             threshold_map = self.threshold_map
 
+        f_data = self.fusion_data
         out_data = {
             "env_ampl": env,
             "fft_max_env": fft_max_env,
-            "fft_map": signalPSD,
+            "fft_map": self.fft_psd,
             "peak_idx": peak_idx,
             "angle": angle,
             "velocity": velocity,
@@ -353,6 +449,10 @@ class ObstacleDetectionProcessor:
             "fft_bg": fft_bg,
             "threshold_map": threshold_map,
             "send_process_data": fft_bg,
+            "fused_obstacles": [f_data["fused_x"], f_data["fused_y"]],
+            "left_shadows": [f_data["left_shadow_x"], f_data["left_shadow_y"]],
+            "right_shadows": [f_data["right_shadow_x"], f_data["right_shadow_y"]],
+            "sweep_index": self.sweep_index,
         }
 
         if (self.bg_avg < self.use_bg) and (self.sweep_index == self.fft_len - 1):
@@ -522,7 +622,6 @@ class ObstacleDetectionProcessor:
 class PGUpdater:
     def __init__(self, sensor_config, processing_config):
         self.sensor_config = sensor_config
-        self.plot_index = 0
         self.map_max = 0
         self.width = 3
         self.max_velocity = WAVELENGTH / 4 * self.sensor_config.sweep_rate  # cm/s
@@ -531,6 +630,10 @@ class PGUpdater:
         self.nr_locals = processing_config["nr_peaks"]["value"]
         self.downsampling = processing_config["downsampling"]["value"]
         self.threshold = processing_config["static_threshold"]["value"]
+        self.sensor_separation = processing_config["sensor_separation"]["value"]
+        self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
+        self.fusion_max_shadows = FUSION_MAX_SHADOWS
+        self.fusion_history = FUSION_HISTORY
 
         self.hist_plots = {
             "velocity": [[], processing_config["velocity_history"]["value"]],
@@ -545,7 +648,18 @@ class PGUpdater:
         self.advanced_plots = {
             "background_map": processing_config["background_map"]["value"],
             "threshold_map":  processing_config["threshold_map"]["value"],
+            "fusion_map":  processing_config["fusion_map"]["value"],
+            "show_shadows": False,
         }
+
+        if len(sensor_config.sensor) > 2:
+            self.advanced_plots["fusion_map"] = False
+            log.warning("Sensor fusion needs 2 sensors!")
+        if len(sensor_config.sensor) == 1:
+            log.warning("Sensor fusion needs 2 sensors! Plotting single sensor data.")
+
+        if self.advanced_plots["fusion_map"]:
+            self.advanced_plots["show_shadows"] = processing_config["show_shadows"]["value"]
 
     def setup(self, win):
         win.setWindowTitle("Acconeer obstacle detection example")
@@ -598,8 +712,9 @@ class PGUpdater:
 
         row_idx += 1
         if self.advanced_plots["background_map"]:
-            self.obstacle_bg_ax = win.addPlot(row=row_idx, col=0, colspan=self.num_hist_plots,
-                                              title="Obstacle background")
+            self.obstacle_bg_ax = win.addPlot(
+                row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle background"
+                )
             self.obstacle_bg_im = pg.ImageItem()
             self.obstacle_bg_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_bg_ax.setLabel("left", "Distance (cm)")
@@ -608,13 +723,111 @@ class PGUpdater:
             row_idx += 1
 
         if self.advanced_plots["threshold_map"]:
-            self.obstacle_thresh_ax = win.addPlot(row=row_idx, col=0, colspan=self.num_hist_plots,
-                                                  title="Obstacle threshold")
+            self.obstacle_thresh_ax = win.addPlot(
+                row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle threshold"
+                )
             self.obstacle_thresh_im = pg.ImageItem()
             self.obstacle_thresh_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_thresh_ax.setLabel("left", "Distance (cm)")
             self.obstacle_thresh_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
             self.obstacle_thresh_ax.addItem(self.obstacle_thresh_im)
+            row_idx += 1
+
+        if self.advanced_plots["fusion_map"]:
+            b = example_utils.color_cycler(0)
+            r = example_utils.color_cycler(1)
+            p = example_utils.color_cycler(4)
+            spos = self.sensor_separation / 2
+            pos0 = self.sensor_config.range_start * 100
+            pos1 = self.sensor_config.range_end * 100
+            self.fusion_ax = win.addPlot(
+                    row=row_idx,
+                    col=0,
+                    colspan=self.num_hist_plots,
+                    title="Fused obstacle map"
+                )
+            self.fusion_legend = self.fusion_ax.addLegend()
+            self.fusion_ax.showGrid(True, True)
+            self.fusion_ax.setLabel("bottom", "X (cm)")
+            self.fusion_ax.setLabel("left", "Y (cm)")
+            self.fusion_ax.setXRange(-pos0, pos0)
+            self.fusion_ax.setYRange(pos0 - 10, pos1)
+
+            # Add plots for fused obstacles
+            self.fusion_scatter = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=10)
+            self.fusion_legend.addItem(self.fusion_scatter, "Fused")
+            self.fusion_ax.addItem(self.fusion_scatter)
+            self.fusion_scatter.setZValue(10)
+            self.fusion_hist = []
+            for i in range(self.fusion_max_obstacles):
+                self.fusion_hist.append(
+                    self.fusion_ax.plot(pen=example_utils.pg_pen_cycler(2, "--"))
+                    )
+                self.fusion_ax.addItem(self.fusion_hist[i])
+                self.fusion_hist[i].setZValue(10)
+
+            # Add plots for shadow obstacles
+            if self.advanced_plots["show_shadows"]:
+                self.left_sensor_shadows = pg.ScatterPlotItem(brush=pg.mkBrush(r), size=10)
+                self.right_sensor_shadows = pg.ScatterPlotItem(brush=pg.mkBrush(b), size=10)
+                self.fusion_ax.addItem(self.left_sensor_shadows)
+                self.fusion_ax.addItem(self.right_sensor_shadows)
+                self.fusion_left_shadow_hist = []
+                self.fusion_right_shadow_hist = []
+                for i in range(self.fusion_max_shadows):
+                    self.fusion_left_shadow_hist.append(
+                        self.fusion_ax.plot(pen=example_utils.pg_pen_cycler(0, "--"))
+                        )
+                    self.fusion_right_shadow_hist.append(
+                        self.fusion_ax.plot(pen=example_utils.pg_pen_cycler(1, "--"))
+                        )
+                    self.fusion_ax.addItem(self.fusion_left_shadow_hist[i])
+                    self.fusion_ax.addItem(self.fusion_right_shadow_hist[i])
+
+            self.left_sensor = pg.InfiniteLine(
+                pos=-spos,
+                angle=90,
+                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
+                )
+            self.right_sensor = pg.InfiniteLine(
+                pos=spos,
+                angle=90,
+                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
+                )
+            self.detection_limit = pg.InfiniteLine(
+                pos=self.sensor_config.range_start * 100,
+                angle=0,
+                pen=pg.mkPen(color=p, width=2, style=QtCore.Qt.DotLine)
+                )
+            self.fusion_ax.addItem(self.left_sensor)
+            self.fusion_ax.addItem(self.right_sensor)
+            self.fusion_ax.addItem(self.detection_limit)
+            self.right_sensor_rect = pg.QtGui.QGraphicsRectItem(spos - 1, pos0 - 1, 2, 2)
+            self.right_sensor_rect.setPen(pg.mkPen(None))
+            self.right_sensor_rect.setBrush(pg.mkBrush(b))
+            self.fusion_ax.addItem(self.right_sensor_rect)
+
+            self.left_sensor_rect = pg.QtGui.QGraphicsRectItem(-spos - 1, pos0 - 1, 2, 2)
+            self.left_sensor_rect.setPen(pg.mkPen(None))
+            self.left_sensor_rect.setBrush(pg.mkBrush(r))
+            self.fusion_ax.addItem(self.left_sensor_rect)
+
+            id1 = self.sensor_config.sensor[0]
+            if len(self.sensor_config.sensor) == 2:
+                id2 = self.sensor_config.sensor[1]
+            else:
+                id2 = -1
+            self.right_sensor_text = pg.TextItem("Sensor {}".format(id1), color=b, anchor=(0, 1))
+            self.left_sensor_text = pg.TextItem("Sensor {}".format(id2), color=r, anchor=(1, 1))
+            self.fusion_ax.addItem(self.left_sensor_text)
+            self.fusion_ax.addItem(self.right_sensor_text)
+            self.left_sensor_text.setPos(-spos, spos)
+            self.right_sensor_text.setPos(spos, spos)
+
+            if id2 == -1:
+                self.left_sensor_text.hide()
+                self.left_sensor_rect.hide()
+
             row_idx += 1
 
         hist_col = 0
@@ -683,32 +896,68 @@ class PGUpdater:
                 tau_grow=0.2
                 )
 
+        self.plot_index = 0
+
     def update(self, data):
         ds = max(self.downsampling, 8)  # downsampling
-        nfft = data["fft_map"].shape[1]
+        nfft = data["fft_map"].shape[2]
         if self.plot_index == 0:
+            nr_sensors = data["fft_map"].shape[0]
+            spos = self.sensor_separation / 2
+            pos0 = self.sensor_config.range_start * 100
+            pos1 = self.sensor_config.range_end * 100
             num_points = data["env_ampl"].size
-            self.env_xs = np.linspace(*self.sensor_config.range_interval*100, num_points)
+            self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, num_points)
             self.peak_x = self.env_xs[data["peak_idx"]]
 
-            self.obstacle_im.translate(-self.max_velocity, self.sensor_config.range_start*100)
+            self.obstacle_im.translate(-self.max_velocity, pos0)
             self.obstacle_im.scale(
-                    2*self.max_velocity/nfft,
-                    self.sensor_config.range_length*100/num_points*ds
+                    2 * self.max_velocity/nfft,
+                    self.sensor_config.range_length * 100/num_points*ds
                     )
             if self.advanced_plots["background_map"]:
-                self.obstacle_bg_im.translate(-self.max_velocity,
-                                              self.sensor_config.range_start*100)
+                self.obstacle_bg_im.translate(-self.max_velocity, pos0)
                 self.obstacle_bg_im.scale(
-                        2*self.max_velocity/nfft,
-                        self.sensor_config.range_length*100/num_points*ds
+                        2 * self.max_velocity / nfft,
+                        self.sensor_config.range_length * 100 / num_points * ds
                         )
             if self.advanced_plots["threshold_map"]:
-                self.obstacle_thresh_im.translate(-self.max_velocity,
-                                                  self.sensor_config.range_start*100)
+                self.obstacle_thresh_im.translate(-self.max_velocity, pos0)
                 self.obstacle_thresh_im.scale(
-                        2*self.max_velocity/nfft,
-                        self.sensor_config.range_length*100/num_points*ds)
+                        2 * self.max_velocity / nfft,
+                        self.sensor_config.range_length * 100 / num_points * ds
+                        )
+            show_fusion = self.advanced_plots["fusion_map"]
+            show_shadows = self.advanced_plots["show_shadows"]
+            if show_fusion:
+                self.fusion_ax.setXRange(-pos1, pos1)
+                self.fusion_ax.setYRange(pos0 - 10, pos1)
+                self.left_sensor_text.setPos(-spos, pos0 - 10)
+                self.right_sensor_text.setPos(spos, pos0 - 10)
+                self.left_sensor.setValue(spos)
+                self.right_sensor.setValue(-spos)
+                self.left_sensor_rect.setRect(-spos - 1, pos0 - 1, 2, 2)
+                self.right_sensor_rect.setRect(spos - 1, pos0 - 1, 2, 2)
+
+                id1 = self.sensor_config.sensor[0]
+                self.right_sensor_text.setText("Sensor {}".format(id1))
+                if show_shadows:
+                    self.fusion_legend.addItem(self.right_sensor_shadows, "Sensor {}".format(id1))
+                if len(self.sensor_config.sensor) == 2:
+                    id2 = self.sensor_config.sensor[1]
+                    self.left_sensor_text.setText("Sensor {}".format(id2))
+                    if show_shadows:
+                        self.fusion_legend.addItem(
+                            self.left_sensor_shadows,
+                            "Sensor {}".format(id2)
+                            )
+
+                if nr_sensors == 1:
+                    self.left_sensor_text.hide()
+                    self.left_sensor_rect.hide()
+                else:
+                    self.left_sensor_text.show()
+                    self.left_sensor_rect.show()
         else:
             self.peak_x = self.peak_x * 0.7 + 0.3 * self.env_xs[data["peak_idx"]]
 
@@ -717,11 +966,11 @@ class PGUpdater:
 
         if data["fft_peaks"] is not None:
             dist = self.env_xs[data["fft_peaks"][:, 0].astype(int)]
-            vel = (data["fft_peaks"][:, 1] / data["fft_map"].shape[1] * 2 - 1) * self.max_velocity
+            vel = (data["fft_peaks"][:, 1] / data["fft_map"].shape[2] * 2 - 1) * self.max_velocity
             peak_fft_text = "Dist: {:.1f}cm, Speed/Angle: {:.1f}cm/s / {:.0f}".format(
                                 dist[0], data["velocity"], data["angle"])
 
-            half_pixel = self.max_velocity / np.floor(data["fft_map"].shape[1] / 2) / 2
+            half_pixel = self.max_velocity / np.floor(data["fft_map"].shape[2] / 2) / 2
             self.obstacle_peak.setData(vel + half_pixel, dist)
         else:
             self.obstacle_peak.setData([], [])
@@ -740,7 +989,7 @@ class PGUpdater:
                 self.hist_plots["amplitude"][0][i].setData(data["peak_hist"][i, 3, :],
                                                            connect="finite")
 
-        map_max = np.max(np.max(data["fft_map"]))
+        map_max = np.max(np.max(data["fft_map"][0]))
 
         self.peak_dist_text.setText(peak_dist_text)
         self.peak_fft_text.setText(peak_fft_text)
@@ -758,7 +1007,7 @@ class PGUpdater:
 
         self.fft_max.setData(self.env_xs, data["fft_max_env"])
 
-        fft_data = data["fft_map"].T
+        fft_data = data["fft_map"][0].T
 
         g = 1/2.2
         fft_data = 254/(map_max + 1.0e-9)**g * fft_data**g
@@ -786,7 +1035,528 @@ class PGUpdater:
 
             self.obstacle_bg_im.updateImage(fft_data[:, ::ds], levels=(map_min, map_max))
 
+        if self.advanced_plots["fusion_map"]:
+            self.fusion_scatter.setData(
+                data["fused_obstacles"][0][0, :],
+                data["fused_obstacles"][1][0, :]
+                )
+            for i in range(self.fusion_max_obstacles):
+                self.fusion_hist[i].setData(
+                    data["fused_obstacles"][0][:, i],
+                    data["fused_obstacles"][1][:, i]
+                    )
+            if self.advanced_plots["show_shadows"]:
+                self.left_sensor_shadows.setData(
+                    data["left_shadows"][0][0, :],
+                    data["left_shadows"][1][0, :]
+                    )
+                self.right_sensor_shadows.setData(
+                    data["right_shadows"][0][0, :],
+                    data["right_shadows"][1][0, :]
+                    )
         self.plot_index += 1
+
+
+class SensorFusion():
+    def __init__(self):
+        self.debug = False
+
+        self.iteration = 0
+
+        self.fusion_params = {
+            "separation": 15,       # cm
+            "obstacle_spread": 10,  # degrees
+            "min_y_spread": 2,      # cm
+            "min_x_spread": 4,      # cm
+            "max_x_spread": 15,     # cm
+            "decay_time": 5,        # cycles
+            "step_time": 0,         # s
+            "min_distance": 6,      # cm
+        }
+        self.fused_obstacles = []
+
+    def setup(self, params):
+        for key in params:
+            self.fusion_params[key] = params[key]
+
+    def update(self, obstacles):
+
+        right = []
+        left = []
+        if "0" in obstacles:
+            right = obstacles["0"]
+        if "1" in obstacles:
+            left = obstacles["1"]
+
+        obstacle_list = []
+
+        # Split obstacles into left and right sensor and convert to xy coordinates
+        # Each obstavcle has two x and one y coordinate, where x1 is the outer
+        # position and x2 is the inner position between both sensors
+        for l in left:
+            obstacle_list.append(
+                self.convert_to_xy(l, "left"))
+
+        for r in right:
+            obstacle_list.append(
+                self.convert_to_xy(r, "right"))
+
+        # create all possible obstacle locations
+        shadow_obstacles = self.create_shadow_obstacles(obstacle_list)
+
+        # get updated obstacle data
+        new_fused_obstacle_data = self.extract(obstacle_list)
+
+        # combine new obstacles with old obstacles
+        self.update_fused_obstacle_data(new_fused_obstacle_data)
+
+        if self.debug:
+            self.print_obstacles(obstacle_list, left, right)
+
+        return self.fused_obstacles, shadow_obstacles
+
+    def extract(self, obstacles):
+        fused_obstacles = []
+
+        if self.debug:
+            self.debug_updates = []
+
+        if len(obstacles) == 0:
+            return []
+
+        ref_obst = obstacles[0]
+        add_ref = True
+
+        for num, obst in enumerate(obstacles):
+            if num == 0:
+                continue
+
+            # Check overlap with current obstacle
+            overlap_idx, _ = self.check_overlap(ref_obst, obst)
+            hist_idx = None
+            if overlap_idx:
+                self.add_obstacle(
+                    fused_obstacles,
+                    obst,
+                    obst2=ref_obst,
+                    idx=overlap_idx,
+                    matched=True,
+                    position="inner")
+                add_ref = False
+            else:
+                # Check overlap with obstacle history
+                overlap_idx, matched, hist_idx = self.check_overlap_with_history(obst)
+                if overlap_idx:
+                    self.add_obstacle(
+                        fused_obstacles,
+                        obst,
+                        obst2=self.fused_obstacles[hist_idx],
+                        idx=overlap_idx,
+                        matched=matched,
+                        position=self.fused_obstacles[hist_idx]["match_position"],
+                        hist_idx=hist_idx)
+
+            if self.debug:
+                if overlap_idx:
+                    if hist_idx is None:
+                        self.debug_updates.append(
+                            "obstacle 0 matched with {} at x{:d}".format(num, overlap_idx))
+                    else:
+                        self.debug_updates.append(
+                            "obstacle {} matched with fused {} at x{:d}".format(
+                                num, hist_idx, overlap_idx))
+                else:
+                    self.debug_updates.append("obstacle {} not matched".format(num))
+
+            # If no overlap with old/new obstacle, assume outer position x1
+            if overlap_idx is None:
+                self.add_obstacle(fused_obstacles, obst, idx=1, position=obst["side"])
+
+        if add_ref:
+            # Check ref overlap with obstacle history
+            overlap_idx, matched, hist_idx = self.check_overlap_with_history(ref_obst)
+            if overlap_idx:
+                self.add_obstacle(
+                    fused_obstacles,
+                    ref_obst,
+                    obst2=self.fused_obstacles[hist_idx],
+                    idx=overlap_idx,
+                    matched=matched,
+                    position=self.fused_obstacles[hist_idx]["match_position"],
+                    hist_idx=hist_idx)
+
+            else:
+                self.add_obstacle(fused_obstacles, ref_obst, idx=1, position=ref_obst["side"])
+
+            if self.debug:
+                if overlap_idx:
+                    self.debug_updates.append(
+                        "obstacle 0 matched with fused {} at x{:d}".format(hist_idx, overlap_idx))
+                else:
+                    self.debug_updates.append("obstacle 0 not matched")
+
+        return fused_obstacles
+
+    def check_overlap_with_history(self, obstacle, hist_idx=None):
+        overlap_idx = None
+        idx = None
+        matched = False
+        overlaps_matched = []
+        overlaps_unmatched = []
+        hist = self.fused_obstacles
+
+        if hist_idx:
+            hist = [self.fused_obstacles[hist_idx]]
+
+        for idx, o in enumerate(hist):
+            # update y spread with prediction
+            dy = o["y"][0] - o["predicted"][2]
+            y = o["y"] - dy
+            y[0] = o["predicted"][2]
+
+            obst_hist = {
+                "vec": o["predicted"],
+                "x1": o["x1"],
+                "x2": o["x1"],
+                "y":  y,
+                "match_position": o["match_position"]
+                }
+
+            overlap_idx, d = self.check_overlap(obstacle, obst_hist, mode="history")
+            if overlap_idx:
+                if o["matched"]:
+                    overlaps_matched.append((d[0], overlap_idx, idx))
+                else:
+                    overlaps_unmatched.append((d[0], overlap_idx, idx))
+
+        over = None
+        if len(overlaps_matched):
+            over = np.asarray(overlaps_matched)
+            matched = True
+        elif len(overlaps_unmatched):
+            over = np.asarray(overlaps_unmatched)
+
+        if over is not None:
+            overlap_idx = int(over[np.argmin(over[:, 0]), 1])
+            idx = int(over[np.argmin(over[:, 0]), 2])
+
+        if hist_idx is None:
+            hist_idx = idx
+
+        return overlap_idx, matched, hist_idx
+
+    def check_overlap(self, obst1, obst2, mode="current"):
+        overlap_idx = None
+        delta = None
+        o1_x_spread = np.asarray(((obst1["x1"][1:]), (obst1["x2"][1:])))
+        o1_y_spread = np.asarray((obst1["y"][1:]))
+
+        o2_y_spread = np.asarray(np.flip(obst2["y"][1:]))
+        o2_x_spread = np.asarray((np.flip(obst2["x1"][1:]),
+                                  np.flip(obst2["x2"][1:])))
+
+        # if there is a sign flip between the outer cooridnate margins, obstacles overlap
+        diff_y = o1_y_spread - o2_y_spread
+
+        if np.sign(diff_y[0]) == np.sign(diff_y[1]):
+            # No overlap in y
+            if not (obst1["y"] == obst2["y"]).any():
+                return overlap_idx, delta
+
+        diff_x1 = o1_x_spread[0] - o2_x_spread[0]
+        diff_x2 = o1_x_spread[1] - o2_x_spread[1]
+
+        # Overlap in x 1 (outer position)
+        if np.sign(diff_x1[0]) != np.sign(diff_x1[1]):
+            overlap_idx = 1
+        if (obst1["x1"] == obst2["x1"]).any():
+            overlap_idx = 1
+
+        # Overlap in x2 (inner position)
+        if np.sign(diff_x2[0]) != np.sign(diff_x2[1]):
+            overlap_idx = 2
+        if (obst1["x2"] == obst2["x2"]).any():
+            overlap_idx = 1
+
+        if obst1.get("side") and mode == "history":
+            if obst2["match_position"] == "inner" and overlap_idx == 1:
+                overlap_idx = None
+            if obst2["match_position"] == "left" and obst1["side"] == "right":
+                overlap_idx = None
+            if obst2["match_position"] == "right" and obst1["side"] == "left":
+                overlap_idx = None
+
+        delta = [min(min(abs(diff_x1)), min(abs(diff_x2))), min(abs(diff_y))]
+
+        return overlap_idx, delta
+
+    def update_fused_obstacle_data(self, new_obstacles):
+        # compare new obstacles against old obstacles
+        no_match_found = np.full(len(self.fused_obstacles), True)
+        add_as_new = np.full(len(new_obstacles), False)
+
+        overlaps = []
+        for idx_new, new in enumerate(new_obstacles):
+            if new["matched_hist_idx"]:
+                overlap, matched, idx_old = self.check_overlap_with_history(
+                    new, new["matched_hist_idx"])
+            else:
+                overlap, matched, idx_old = self.check_overlap_with_history(new)
+            if overlap:
+                overlaps.append((idx_new, idx_old, overlap, matched))
+            else:
+                add_as_new[idx_new] = True
+
+        for o in overlaps:
+            # update old obstacles with new obstacle coordinates
+            idx_new = o[0]
+            idx_fused = o[1]
+            self.update_fused_obstacle(idx_fused, new_obstacles[idx_new], idx_new)
+            no_match_found[idx_fused] = False
+
+        # add new obstacles not matching any old obstacles
+        for idx, add in enumerate(add_as_new):
+            if add:
+                self.create_fused_obstacle(new_obstacles[idx])
+
+        # update prediction for unmatched old obstacles and destroy if decayed
+        self.decay_fused_obstacles()
+
+        # TODO: remove obstacles we know are not correct
+        self.destroy_shadows()
+
+        return
+
+    def decay_fused_obstacles(self):
+        for fused_obst in self.fused_obstacles:
+            if not fused_obst["updated"]:
+                fused_obst["decay_time"] -= 1
+                fused_obst["predicted"] = self.predict(fused_obst["vec"])
+
+        for idx, fused_obst in enumerate(self.fused_obstacles):
+            if fused_obst["decay_time"] < 1:
+                self.fused_obstacles.pop(idx)
+
+        for fused_obst in self.fused_obstacles:
+            fused_obst["updated"] = False
+
+    def update_fused_obstacle(self, fused_idx, new_obst_data, idx_new):
+        decay_time = self.fusion_params["decay_time"]
+        fused_obst = self.fused_obstacles[fused_idx]
+        for key in new_obst_data:
+            fused_obst[key] = new_obst_data[key]
+        fused_obst["decay_time"] = min(fused_obst["decay_time"] + 1, decay_time)
+        fused_obst["predicted"] = self.predict(new_obst_data["vec"])
+        fused_obst["updated"] = True
+
+        if self.debug:
+            self.debug_updates.append(
+                "updating fused obstacle {} with new obstacle {}".format(fused_idx, idx_new))
+
+    def create_fused_obstacle(self, obst_data):
+        if obst_data:
+            new_fused = {
+               "predicted": self.predict(obst_data["vec"]),
+               "decay_time": self.fusion_params["decay_time"],
+               "updated": True,
+                }
+            for key in obst_data:
+                new_fused[key] = obst_data[key]
+            self.fused_obstacles.append(new_fused)
+
+            if self.debug:
+                self.debug_updates.append("creating new obstacle X/Y {:.1f} / {:.1f}".format(
+                    obst_data["pos"][0], obst_data["pos"][1]))
+
+    def destroy_shadows(self):
+        pass
+
+    def create_shadow_obstacles(self, obstacle_data):
+        shadow_obstacles = []
+        for obst in obstacle_data:
+            self.add_obstacle(shadow_obstacles, obst, idx=1, matched=False)
+            self.add_obstacle(shadow_obstacles, obst, idx=2, matched=False)
+
+        return shadow_obstacles
+
+    def predict(self, vec):
+        step_time = self.fusion_params["step_time"]
+
+        predicted = vec.copy()
+
+        vy = vec[4]
+        y = vec[2]
+
+        predicted[2] = y + vy * step_time
+
+        return predicted
+
+    def add_obstacle(self, o_list, obst1, obst2=None, idx=None, matched=False, position=None,
+                     hist_idx=None):
+        if idx is None:
+            print("Warning: no index for obstacle")
+            return
+        idx -= 1
+
+        idx_excluded = 0
+        if idx == 0:
+            idx_excluded = 1
+
+        vec1 = obst1["vec"]
+        vec2 = vec1
+        if obst2 is not None:
+            vec2 = obst2["vec"]
+
+        vec = np.empty_like(vec1)
+
+        amp1 = 1
+        amp2 = 1
+
+        # write x coordinate as average of both inputs
+        vec[0] = (vec1[idx] * amp1 + vec2[idx] * amp2) / (amp1 + amp2)
+        vec[1] = vec[0]
+
+        # write remaining params as average of both inputs
+        for i in range(2, len(vec1)):
+            vec[i] = (vec1[i] * amp1 + vec2[i] * amp2) / (amp1 + amp2)
+
+        # use angle of obstacle 1
+        vec[5] = vec1[5]
+
+        # use closest y distance
+        vec[2] = min(vec1[2], vec2[2])
+
+        spread = self.fusion_params["obstacle_spread"]
+        fused_angle = np.arctan(vec[0] / vec[2]) / np.pi * 180
+
+        dx1 = np.tan((fused_angle - spread) / 180 * np.pi) * vec[2]
+        dx2 = np.tan((fused_angle + spread) / 180 * np.pi) * vec[2]
+
+        fused_x = np.asarray((vec[0], min(dx1, dx2), max(dx1, dx2)))
+
+        max_x_spread = self.fusion_params["max_x_spread"]
+        if abs(fused_x[0] - fused_x[1]) > max_x_spread:
+            fused_x[1] = fused_x[0] - max_x_spread
+        if abs(fused_x[0] - fused_x[2]) > max_x_spread:
+            fused_x[2] = fused_x[0] + max_x_spread
+
+        vec[0:6] = np.round(vec[0:6], 1)
+        obstacle = {
+            "pos": np.round((vec[0], vec[2]), 1),
+            "fused_angle": np.round(fused_angle, 1),
+            "amplitude": max(vec1[6], vec2[6]),
+            "x1": np.round(fused_x, 1),
+            "x2": np.round(fused_x, 1),
+            "y": np.round(obst1["y"], 1),
+            "excluded": np.round((vec1[idx_excluded], vec2[idx_excluded]), 1),
+            "vec": vec,
+            "matched": matched,
+            "match_position": position,
+            "matched_hist_idx": hist_idx,
+            "sensor": obst1["side"],
+        }
+
+        o_list.append(obstacle)
+
+    def convert_to_xy(self, data, side):
+        spread = self.fusion_params["obstacle_spread"]
+        min_x_spread = self.fusion_params["min_x_spread"]
+        min_y_spread = self.fusion_params["min_y_spread"]
+        angle = data["angle"]
+        distance = data["distance"]
+        v = data["velocity"]
+
+        # each coordinate has a margin given by the obstacle spread
+        a = np.asarray(
+            (angle / 180 * np.pi,
+             max(angle - spread, 0) / 180 * np.pi,
+             max(angle + spread, 0) / 180 * np.pi
+             )
+        )
+
+        x = np.sin(a) * distance
+        y = np.cos(a) * distance
+
+        y[0] = max(y[0], self.fusion_params["min_distance"])
+
+        vt = np.sin(angle / 180 * np.pi) * v
+        vy = -np.cos(angle / 180 * np.pi) * v
+
+        # x1 is outer position for each sensor side
+        # x2 is inner postion between both sensors
+        x1 = self.fusion_params["separation"] / 2 + x
+        x2 = self.fusion_params["separation"] / 2 - x
+
+        if side == "left":
+            x1 *= -1
+            x2 *= -1
+
+        # make sure coordinates are ordered from left to right
+        if x1[1] > x1[2]:
+            x1[1:] = np.flip(x1[1:])
+        if x2[1] > x2[2]:
+            x2[1:] = np.flip(x2[1:])
+        if y[1] > y[2]:
+            y[1:] = np.flip(y[1:])
+
+        if abs(x1[0] - x1[1]) < min_x_spread:
+            x1[1] = x1[0] - min_x_spread
+        if abs(x1[0] - x1[2]) < min_x_spread:
+            x1[2] = x1[0] + min_x_spread
+        if abs(x2[0] - x2[1]) < min_x_spread:
+            x2[1] = x2[0] - min_x_spread
+        if abs(x2[0] - x2[2]) < min_x_spread:
+            x2[2] = x2[0] + min_x_spread
+
+        if abs(y[0] - y[1]) < min_y_spread:
+            y[1] = y[0] - min_y_spread
+        if abs(y[0] - y[2]) < min_y_spread:
+            y[2] = y[0] + min_y_spread
+
+        data["x1"] = np.round(x1, 1)
+        data["x2"] = np.round(x2, 1)
+        data["vx"] = np.round(vt, 1)
+        data["vy"] = np.round(vy, 1)
+        data["y"] = np.round(y, 1)
+        data["side"] = side
+        data["vec"] = np.asarray(
+            (x1[0], x2[0], y[0], vt, vy, data["angle"], data["amplitude"])
+            )
+        data["vec"][0:6] = np.round(data["vec"][0:6], 1)
+
+        return data
+
+    def print_obstacles(self, obstacle_list, left, right):
+        self.iteration += 1
+
+        print(self.iteration)
+        if len(self.fused_obstacles) == 0:
+            print("No obstacles!")
+        else:
+            print("New obstacles:")
+        for i, o in enumerate(obstacle_list):
+            fmt = (
+                "{}: X {:.1f}({:.1f}>{:.1f})/{:.2f}({:.2}>{:.1f})"
+                "Y {:.1f}/({:.1f}>{:.1f}) true {:.1f} a {:.1f}"
+                )
+            print(fmt.format(i, o["vec"][0], o["x1"][1], o["x1"][2],
+                             o["vec"][1], o["x2"][1], o["x2"][2],
+                             o["vec"][2], o["y"][1], o["y"][2],
+                             o["distance"], o["vec"][5]))
+
+        for update in self.debug_updates:
+            print(update)
+
+        if len(self.fused_obstacles):
+            print("Fused obstalces (L:{}/R:{} ):".format(len(left), len(right)))
+        else:
+            print("No fused obstalces!".format(len(left), len(right)))
+        for i, o in enumerate(self.fused_obstacles):
+            print("{}: X {:.1f}({:.1f}/{:.2}) Y {:.1f}({:.1f}/{:.1f}) t {} matched {} {}".format(
+                  i, o["vec"][0], o["x1"][1], o["x1"][2],
+                  o["vec"][2], o["y"][1], o["y"][2],
+                  o["decay_time"], o["matched"], o["match_position"]))
+        print("")
 
 
 if __name__ == "__main__":

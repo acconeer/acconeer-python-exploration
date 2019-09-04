@@ -90,7 +90,7 @@ MODULE_INFOS = [
         obstacle_detection_module,
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
-        False,
+        [1, 2],
     ),
 ]
 

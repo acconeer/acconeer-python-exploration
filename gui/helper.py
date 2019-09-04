@@ -89,22 +89,24 @@ class SensorSelection(QFrame):
         self.error_handler = error_handler
         self.multi_sensors = multi_sensors
 
+        self.select_hist = [1, 0, 0, 0]
+
         # text, checked, visible, enabled, function
         checkbox_info = {
-            "sensor_1": ("1", False, True, True, None),
-            "sensor_2": ("2", False, True, True, None),
-            "sensor_3": ("3", False, True, True, None),
-            "sensor_4": ("4", False, True, True, None),
+            "sensor_1": ("1", True, True, True, lambda: self.sensor_limits(1)),
+            "sensor_2": ("2", False, True, True, lambda: self.sensor_limits(2)),
+            "sensor_3": ("3", False, True, True, lambda: self.sensor_limits(3)),
+            "sensor_4": ("4", False, True, True, lambda: self.sensor_limits(4)),
         }
 
         self.checkboxes = {}
-        for key, (text, checked, visible, enabled, fun) in checkbox_info.items():
+        for key, (text, checked, visible, enabled, func) in checkbox_info.items():
             cb = QCheckBox(text, self)
             cb.setChecked(checked)
             cb.setVisible(visible)
             cb.setEnabled(enabled)
-            if fun:
-                cb.stateChanged.connect(fun)
+            if func:
+                cb.stateChanged.connect(func)
             self.checkboxes[key] = cb
 
         self.textbox = QLineEdit()
@@ -156,13 +158,19 @@ class SensorSelection(QFrame):
     def set_multi_sensor_support(self, multi_sensors):
         if multi_sensors is None:
             multi_sensors = False
+        self.multi_sensors = multi_sensors
+
+        if isinstance(multi_sensors, list):
+            multi_sensors = True
+
         self.textbox.setVisible(not multi_sensors)
 
         for s in range(1, 5):
             sensor_id = "sensor_{:d}".format(s)
             self.checkboxes[sensor_id].setVisible(multi_sensors)
 
-        self.multi_sensors = multi_sensors
+        if multi_sensors:
+            self.sensor_limits()
 
     def check_value(self):
         error = None
@@ -178,6 +186,36 @@ class SensorSelection(QFrame):
 
         if error is not None and self.error_message is not None:
             self.error_handler(error)
+
+    def sensor_limits(self, sensor=None):
+        if not self.multi_sensors:
+            return
+
+        if sensor:
+            if self.checkboxes["sensor_%d" % sensor].isChecked():
+                if sensor not in self.select_hist:
+                    self.select_hist.insert(0, sensor)
+                    self.select_hist.pop(4)
+            if not self.checkboxes["sensor_%d" % sensor].isChecked():
+                if sensor in self.select_hist:
+                    self.select_hist.pop(self.select_hist.index(sensor))
+                    self.select_hist.insert(3, 0)
+
+        # if self.multi_sensors is a list, we limit the max nr of sensor to its length
+        if isinstance(self.multi_sensors, list):
+            allowed_nr = len(self.multi_sensors)
+            current_nr = len(self.get_sensors())
+            diff = current_nr - allowed_nr
+            s = 3
+            while diff > 0 and s >= 0:
+                if self.select_hist[s]:
+                    sensor_id = "sensor_{:d}".format(self.select_hist[s])
+                    self.checkboxes[sensor_id].setChecked(False)
+                    self.select_hist[s] = 0
+                    self.select_hist.pop(s)
+                    self.select_hist.insert(3, 0)
+                    diff = len(self.get_sensors()) - len(self.multi_sensors)
+                s -= 1
 
 
 class PassthroughProcessor:
