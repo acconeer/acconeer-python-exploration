@@ -181,6 +181,10 @@ def pg_pen_cycler(i=0, style=None):
     return pen
 
 
+def pg_brush_cycler(i=0):
+    return pg.mkBrush(color_cycler(i))
+
+
 class SmoothMax:
     def __init__(self, f, hysteresis=0.5, tau_decay=2.0, tau_grow=0.5):
         self.h = hysteresis

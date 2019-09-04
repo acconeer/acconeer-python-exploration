@@ -223,15 +223,15 @@ class PGUpdater:
             data_plot.setYRange(-2**15, 2**15)
             self.sweep_scatter = pg.ScatterPlotItem(
                     size=10,
-                    brush=pg.mkBrush(example_utils.color_cycler(0)),
+                    brush=example_utils.pg_brush_cycler(0),
                     )
             self.fast_scatter = pg.ScatterPlotItem(
                     size=10,
-                    brush=pg.mkBrush(example_utils.color_cycler(1)),
+                    brush=example_utils.pg_brush_cycler(1),
                     )
             self.slow_scatter = pg.ScatterPlotItem(
                     size=10,
-                    brush=pg.mkBrush(example_utils.color_cycler(2)),
+                    brush=example_utils.pg_brush_cycler(2),
                     )
             data_plot.addItem(self.sweep_scatter)
             data_plot.addItem(self.fast_scatter)
