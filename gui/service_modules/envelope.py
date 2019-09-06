@@ -138,7 +138,7 @@ class EnvelopeProcessor:
         for s in range(self.num_sensors):
             peak_idx = np.argmax(env[s, :])
             peak_mm = self.env_x_mm[peak_idx]
-            if peak_mm <= self.start_x * 1000:
+            if peak_mm < self.start_x * 1000:
                 peak_mm = self.stop_x * 1000
             peak_data['peak_mm'][s] = peak_mm
             peak_data['peak_idx'][s] = peak_idx

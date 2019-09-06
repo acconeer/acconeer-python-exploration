@@ -139,8 +139,11 @@ class SensorSelection(QFrame):
         if not sensors:
             sensors = []
 
-        if len(sensors) > 1:
-            self.set_multi_sensor_support(True)
+        try:
+            if len(sensors) > 1:
+                self.set_multi_sensor_support(True)
+        except Exception as e:
+            self.error_handler("Could not set sensor {}".format(e))
 
         if self.multi_sensors:
             for s in range(1, 5):

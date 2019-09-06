@@ -74,6 +74,7 @@ class GUI(QMainWindow):
         self.gui_states = {
             "has_loaded_data": False,
             "server_connected": False,
+            "replaying_data": False,
         }
 
         self.current_data_type = None
@@ -684,6 +685,7 @@ class GUI(QMainWindow):
 
         if switching_data_type:
             self.data = None
+            self.set_gui_state("has_loaded_data", False)
             self.buttons["replay_buffered"].setEnabled(False)
 
         if force_update or switching_module:
@@ -757,8 +759,8 @@ class GUI(QMainWindow):
         data_source = "stream"
         if from_file:
             try:
-                sensor_config = self.data[0]["sensor_config"]
-                self.load_gui_settings_from_sensor_config(sensor_config)
+                saved_sensor_config = copy.deepcopy(self.data[0]["sensor_config"])
+                self.load_gui_settings_from_sensor_config(saved_sensor_config)
             except Exception:
                 print("Warning, could not restore config from cached data!")
             data_source = "file"
@@ -771,9 +773,16 @@ class GUI(QMainWindow):
             self.textboxes["sweep_buffer"].setText("500")
 
         sensor_config = self.save_gui_settings_to_sensor_config()
+        if from_file:
+            # We need to fix sensors here, which are overwritten in above call
+            self.data[0]["sensor_config"] = saved_sensor_config
+
         if create_cl and len(sensor_config.sensor) > 1:
             self.error_message("Background is only supported for single sensor operation!\n")
             return
+
+        if data_source == "file":
+            self.set_gui_state("replaying_data", True)
 
         if create_cl:
             self.sweep_buffer = min(self.sweep_buffer, self.max_cl_sweeps)
@@ -908,6 +917,7 @@ class GUI(QMainWindow):
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
             self.buttons["save_scan"].setEnabled(True)
+        self.set_gui_state("replaying_data", False)
 
     def input_clutter_sweeps(self):
         input_dialog = QtWidgets.QInputDialog(self)
@@ -1310,7 +1320,7 @@ class GUI(QMainWindow):
                     self.error_message("Unknown module in loaded data")
                     return
 
-                conf = self.get_sensor_config()
+                conf = copy.deepcopy(self.get_sensor_config())
 
                 try:
                     if self.current_data_type == "iq":
@@ -1318,7 +1328,6 @@ class GUI(QMainWindow):
                     else:
                         sweeps = real
 
-                    data_len = len(sweeps[:, 0])
                     length = range(len(sweeps))
                 except Exception as e:
                     self.error_message("{}".format(e))
@@ -1340,14 +1349,6 @@ class GUI(QMainWindow):
                 except Exception:
                     print("Could not restore processing parameters")
 
-                session_info = True
-                try:
-                    nr = np.asarray(list(f["sequence_number"]))
-                    sat = np.asarray(list(f["data_saturated"]))
-                except Exception:
-                    session_info = False
-                    print("Session info not stored!")
-
                 try:
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
@@ -1356,8 +1357,7 @@ class GUI(QMainWindow):
                     if self.current_data_type == "sparse":
                         conf.number_of_subsweeps = int(f["number_of_subsweeps"][()])
                 except Exception as e:
-                    print("Config not stored in file...")
-                    print(e)
+                    print("Config not stored in file: ", e)
                     conf.range_interval = [
                             float(self.textboxes["range_start"].text()),
                             float(self.textboxes["range_end"].text()),
@@ -1365,14 +1365,35 @@ class GUI(QMainWindow):
                     conf.sweep_rate = int(self.textboxes["sweep_rate"].text())
                 try:
                     conf.sensor = list(map(int, f["sensor"][()]))
-                except Exception:
+                except Exception as e:
+                    print("Sensor selection not stored: ", e)
                     conf.sensor = 1
+                nr_sensors = len(conf.sensor)
 
                 cl_file = None
                 try:
                     cl_file = f["clutter_file"][()]
                 except Exception:
                     pass
+
+                session_info = True
+                nr = None
+                try:
+                    nr = np.asarray(list(f["sequence_number"]))
+                except Exception:
+                    session_info = False
+                    print("Session info not stored!")
+
+                try:
+                    sat = np.asarray(list(f["data_saturated"]))
+                except Exception:
+                    if nr is not None:
+                        sat = np.full(nr.shape, False)
+                    print("Saturaded info not stored!")
+
+                if nr is not None and nr_sensors == 1:
+                    sat = np.expand_dims(sat, axis=1)
+                    nr = np.expand_dims(nr, axis=1)
 
                 if session_info:
                     self.data = [
@@ -1381,10 +1402,11 @@ class GUI(QMainWindow):
                             "service_type": module_label,
                             "sensor_config": conf,
                             "cl_file": cl_file,
-                            "info": {
-                                "sequence_number": nr[i],
-                                "data_saturated": sat[i],
-                            },
+                            "info": [
+                                {
+                                    "sequence_number": int(nr[i, s]),
+                                    "data_saturated": bool(sat[i, s]),
+                                } for s in range(nr_sensors)],
                         } for i in length]
                 else:
                     self.data = [
@@ -1399,7 +1421,6 @@ class GUI(QMainWindow):
                     data = np.load(filename, allow_pickle=True)
                     module_label = data[0]["service_type"]
                     cl_file = data[0]["cl_file"]
-                    data_len = len(data)
                     conf = data[0]["sensor_config"]
                 except Exception as e:
                     self.error_message("{}".format(e))
@@ -1424,7 +1445,7 @@ class GUI(QMainWindow):
                         print("Background file not found")
                         print(e)
 
-            self.textboxes["sweep_buffer"].setText(str(data_len))
+            print("Loaded file with {} sweeps.".format(len(self.data)))
             self.start_scan(from_file=True)
 
     def save_scan(self, data, clutter=False):
@@ -1465,30 +1486,47 @@ class GUI(QMainWindow):
                     sweep_data = []
                     info_available = True
                     saturated_available = True
+
+                    # check for session info data
                     try:
-                        data[0]["info"]["sequence_number"]
-                        sequence_number = []
-                        data_saturated = []
+                        nr_sensor = len(data[0]["sensor_config"].sensor)
+                        data[0]["info"][0]["sequence_number"]
                     except Exception as e:
                         print("Error saving session info: ", e)
                         info_available = False
 
+                    # check for data saturated info
+                    try:
+                        data[0]["info"][0]["data_saturated"]
+                    except Exception as e:
+                        print("Error saving saturation data: ", e)
+                        saturated_available = False
+
+                    sequence_number = []
+                    data_saturated = []
+                    for i in range(nr_sensor):
+                        sequence_number.append([])
+                        data_saturated.append([])
+
                     for sweep in data:
                         sweep_data.append(sweep["sweep_data"])
                         if info_available:
-                            sequence_number.append(sweep["info"]["sequence_number"])
-                            try:
-                                data_saturated.append(sweep["info"]["data_saturated"])
-                            except Exception:
-                                data_saturated.append(False)
-                                saturated_available = False
-                    if not saturated_available:
-                        print("Session info does not contain saturation data!")
+                            for s in range(nr_sensor):
+                                if info_available:
+                                    session = sweep["info"][s]["sequence_number"]
+                                    sequence_number[s].append(session)
+                                if saturated_available:
+                                    saturated = sweep["info"][s]["data_saturated"]
+                                    data_saturated[s].append(saturated)
 
                     sweep_data = np.asarray(sweep_data)
                     if info_available:
-                        sequence_number = np.asarray(sequence_number)
-                        data_saturated = np.asarray(data_saturated)
+                        sequence_number = np.asarray(sequence_number).T
+                        if saturated_available:
+                            data_saturated = np.asarray(data_saturated).T
+                        else:
+                            data_saturated = np.full(sequence_number, False)
+
                     try:
                         sensor_config = data[0]["sensor_config"]
                     except Exception as e:
@@ -1615,7 +1653,8 @@ class GUI(QMainWindow):
         elif message_type == "clutter_data":
             self.save_scan(data, clutter=True)
         elif message_type == "scan_data":
-            self.data = data
+            if not self.get_gui_state("replaying_data"):
+                self.data = data
         elif message_type == "scan_done":
             self.stop_scan()
             if not self.get_gui_state("server_connected"):
@@ -1629,6 +1668,8 @@ class GUI(QMainWindow):
             self.update_ranges(data)
         elif "process_data" in message_type:
             self.advanced_process_data["process_data"] = data
+        elif "set_sensors" in message_type:
+            self.sensor_selection.set_sensors(data)
         else:
             print("Thread data not implemented!")
             print(message_type, message, data)
@@ -1775,6 +1816,9 @@ class GUI(QMainWindow):
 
         if len(self.sensor_selection.get_sensors()):
             config.sensor = self.sensor_selection.get_sensors()
+        else:
+            config.sensor = [1]
+            self.sensor_selection.set_sensors([1])
 
         return config
 

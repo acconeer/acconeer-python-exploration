@@ -167,37 +167,68 @@ class DataProcessing:
         self.sweep = 0
         self.create_cl = False
 
-        info_available = True
         try:
             self.sweeps = len(data)
         except Exception as e:
             self.parent.emit("error", "Wrong file format\n {}".format(e))
             return
 
-        try:
-            sequence_offset = max(data[0]["info"]["sequence_number"] - 1, 0)
-        except Exception:
-            info_available = False
+        info_available = True
+        is_session_format_new = True
 
-        if not info_available:
-            self.info = {"sequence_number": 1}
-            print("Session info not available")
+        try:
+            sequence_offset = max(data[0]["info"][0]["sequence_number"] - 1, 0)
+        except Exception:
+            try:
+                sequence_offset = max(data[0]["info"]["sequence_number"] - 1, 0)
+                is_session_format_new = False
+            except Exception:
+                info_available = False
+                self.info = [{"sequence_number": 1}]
+                print("Session info not available")
+
+        selected_sensors = self.sensor_config.sensor
+        stored_sensors = data[0]["sensor_config"].sensor
+        nr_sensors = len(stored_sensors)
+
+        sensor_list = []
+        matching_sensors = []
+        for sensor_idx in stored_sensors:
+            if sensor_idx in selected_sensors:
+                sensor_list.append(stored_sensors.index(sensor_idx))
+                matching_sensors.append(sensor_idx)
+
+        if not len(sensor_list) or len(matching_sensors) != len(selected_sensors):
+            error = "Data is not available for all selected sensors {}.\n".format(selected_sensors)
+            error += "I have data for sensors {} ".format(stored_sensors)
+            self.parent.emit("set_sensors", "", stored_sensors)
+            self.parent.emit("sensor_selection_error", error)
+            return
+
+        self.sensor_config.sensor = matching_sensors
 
         for i, data_step in enumerate(data):
             if info_available:
-                info = data[i]["info"]
+                if not is_session_format_new:
+                    info = data[i]["info"]
+                else:
+                    info = data[i]["info"][0]
                 info["sequence_number"] -= sequence_offset
             else:
                 info = self.info.copy()
             if not self.abort:
                 self.skip = 0
                 time.sleep(self.rate)
-                self.process(data_step["sweep_data"], info)
+
+                if nr_sensors == 1:
+                    self.process(data_step["sweep_data"], info)
+                else:
+                    self.process(data_step["sweep_data"][sensor_list, :], info)
 
                 self.parent.emit("sweep_info", "", info)
 
             if not info_available:
-                self.info["sequence_number"] += 1
+                self.info[0]["sequence_number"] += 1
 
     def draw_canvas(self, sweep_index, plot_data, cmd="update_plots",
                     skip_frames=False):
