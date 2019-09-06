@@ -267,7 +267,7 @@ class PGUpdater:
         if self.num_sensors < num_sensors:
             num_sensors = self.num_sensors
 
-        if data["sweep"] <= 1:
+        if data["sweep"] <= 2:
             self.env_plot_max_y = np.zeros(self.num_sensors)
             self.envelope_plot_window.setXRange(xstart, xend)
 
