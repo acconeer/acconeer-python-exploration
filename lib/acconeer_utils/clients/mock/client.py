@@ -4,6 +4,7 @@ from time import time, sleep
 import logging
 
 from acconeer_utils.clients.base import BaseClient, ClientError
+from acconeer_utils.clients.configs import EnvelopeServiceConfig
 
 
 log = logging.getLogger(__name__)
@@ -95,7 +96,8 @@ class EnvelopeMocker(DenseMocker):
         center = self.range_center
         center += np.random.randn() * 0.2e-3
         center += offset * 0.1
-        s = 0.01 if self.config.session_profile == self.config.MAX_DEPTH_RESOLUTION else 0.04
+        profile = getattr(self.config, "session_profile", None)
+        s = 0.01 if profile == EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION else 0.04
         signal = ampl * np.exp(-np.square((self.depths - center) / s))
 
         data = signal + noise
