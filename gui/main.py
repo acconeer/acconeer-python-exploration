@@ -450,24 +450,25 @@ class GUI(QMainWindow):
         server_section.grid.addWidget(self.buttons["advanced_port"], 2, 0, 1, 2)
         server_section.grid.addWidget(self.buttons["connect"], 3, 0, 1, 2)
 
-        control_section = CollapsibleSection("Scan controls")
-        self.panel_sublayout.addWidget(control_section)
+        self.control_section = CollapsibleSection("Scan controls")
+        self.panel_sublayout.addWidget(self.control_section)
         self.num = 0
-        control_section.grid.addWidget(self.module_dd, self.increment(), 0, 1, 2)
-        control_section.grid.addWidget(self.buttons["start"], self.increment(), 0)
-        control_section.grid.addWidget(self.buttons["stop"], self.num, 1)
-        control_section.grid.addWidget(self.buttons["save_scan"], self.increment(), 0)
-        control_section.grid.addWidget(self.buttons["load_scan"], self.num, 1)
-        control_section.grid.addWidget(
+        self.control_section.grid.addWidget(self.module_dd, self.increment(), 0, 1, 2)
+        self.control_section.grid.addWidget(self.buttons["start"], self.increment(), 0)
+        self.control_section.grid.addWidget(self.buttons["stop"], self.num, 1)
+        self.control_section.grid.addWidget(self.buttons["save_scan"], self.increment(), 0)
+        self.control_section.grid.addWidget(self.buttons["load_scan"], self.num, 1)
+        self.control_section.grid.addWidget(
             self.buttons["replay_buffered"], self.increment(), 0, 1, 2)
-        control_section.grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
-        control_section.grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
-        control_section.grid.addWidget(self.labels["empty_02"], self.increment(), 0)
-        control_section.grid.addWidget(self.labels["clutter_status"], self.increment(), 0, 1, 2)
-        control_section.grid.addWidget(self.labels["clutter"], self.increment(), 0)
-        control_section.grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
-        control_section.grid.addWidget(self.buttons["load_cl"], self.num, 1)
-        control_section.grid.addWidget(
+        self.control_section.grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
+        self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
+        self.control_section.grid.addWidget(self.labels["empty_02"], self.increment(), 0)
+        self.control_section.grid.addWidget(
+            self.labels["clutter_status"], self.increment(), 0, 1, 2)
+        self.control_section.grid.addWidget(self.labels["clutter"], self.increment(), 0)
+        self.control_section.grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
+        self.control_section.grid.addWidget(self.buttons["load_cl"], self.num, 1)
+        self.control_section.grid.addWidget(
             self.checkboxes["clutter_file"], self.increment(), 0, 1, 2)
 
         self.settings_section = CollapsibleSection("Sensor settings")
