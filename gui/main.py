@@ -244,11 +244,9 @@ class GUI(QMainWindow):
             if not (processing_config and isinstance(processing_config, dict)):
                 self.service_params = None
                 self.service_defaults = None
-                self.service_section.hide()
             else:
                 self.service_params = processing_config
                 self.service_defaults = copy.deepcopy(self.service_params)
-                self.service_section.show()
 
             self.add_params(self.service_params)
 
@@ -625,6 +623,8 @@ class GUI(QMainWindow):
                         advanced_available = True
 
         if start_up_mode is None:
+            self.service_section.setVisible(bool(params))
+
             if advanced_available:
                 self.advanced_section.show()
                 self.advanced_section.button_event(override=True)
