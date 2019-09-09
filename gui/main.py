@@ -256,10 +256,7 @@ class GUI(QMainWindow):
                 self.service_defaults = copy.deepcopy(self.service_params)
                 self.add_params(self.service_params)
 
-            if self.service_params:
-                self.service_section.show()
-            else:
-                self.service_section.hide()
+            self.service_section.show()
 
         if refresh:
             self.save_gui_settings_to_sensor_config()
