@@ -240,11 +240,6 @@ class GUI(QMainWindow):
 
         if not refresh:
             self.set_multi_sensors()
-            for m in self.service_labels:
-                for key in self.service_labels[m]:
-                    for element in self.service_labels[m][key]:
-                        if "label" in element or "box" in element:
-                            self.service_labels[m][key][element].setVisible(False)
 
         if not processing_config:
             self.service_params = None
@@ -254,9 +249,11 @@ class GUI(QMainWindow):
             if not refresh:
                 self.service_params = processing_config
                 self.service_defaults = copy.deepcopy(self.service_params)
-                self.add_params(self.service_params)
 
             self.service_section.show()
+
+        if not refresh:
+            self.add_params(self.service_params)
 
         if refresh:
             self.save_gui_settings_to_sensor_config()
@@ -549,12 +546,15 @@ class GUI(QMainWindow):
         self.statusBar().show()
 
     def add_params(self, params, start_up_mode=None):
+        if params is None:
+            params = {}
+
         self.buttons["load_process_data"].hide()
         self.buttons["save_process_data"].hide()
         for mode in self.service_labels:
             for param_key in self.service_labels[mode]:
                 for element in self.service_labels[mode][param_key]:
-                    if element in ["label", "box", "button"]:
+                    if element in ["label", "box", "checkbox", "button"]:
                         self.service_labels[mode][param_key][element].setVisible(False)
 
         if start_up_mode is None:
