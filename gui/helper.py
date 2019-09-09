@@ -4,6 +4,24 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout, QCheckBox,
     QLineEdit
 )
+from argparse import ArgumentParser
+
+
+class Arguments(ArgumentParser):
+    def __init__(self):
+        super().__init__()
+
+        self.add_argument("-ml",
+                          "--machine-learning",
+                          dest="machine_learning",
+                          help="Enable machine learning",
+                          action="store_true")
+
+        self.add_argument("-b",
+                          "--beta-features",
+                          dest="beta_features",
+                          help="Enable beta features",
+                          action="store_true")
 
 
 class Label(QLabel):
@@ -219,6 +237,20 @@ class SensorSelection(QFrame):
                     self.select_hist.insert(3, 0)
                     diff = len(self.get_sensors()) - len(self.multi_sensors)
                 s -= 1
+
+
+class QHLine(QFrame):
+    def __init__(self):
+        super(QHLine, self).__init__()
+        self.setFrameShape(QFrame.HLine)
+        self.setFrameShadow(QFrame.Sunken)
+
+
+class QVLine(QFrame):
+    def __init__(self):
+        super(QVLine, self).__init__()
+        self.setFrameShape(QFrame.VLine)
+        self.setFrameShadow(QFrame.Sunken)
 
 
 class PassthroughProcessor:
