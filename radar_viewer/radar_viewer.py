@@ -10,8 +10,7 @@ import traceback
 sys.path.append(os.path.dirname(__file__))  # noqa: E402
 from server import http_server
 
-from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
-from acconeer_utils.clients.json.client import JSONClient
+from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils import example_utils
 
 
@@ -19,12 +18,12 @@ def check_connection(args):
     print("Checking connection to radar")
     try:
         if args.socket_addr:
-            client = JSONClient(args.socket_addr)
+            client = SocketClient(args.socket_addr)
         elif args.spi:
-            client = RegSPIClient()
+            client = SPIClient()
         else:
             port = args.serial_port or example_utils.autodetect_serial_port()
-            client = RegClient(port)
+            client = UARTClient(port)
 
         client.connect()
         client.disconnect()

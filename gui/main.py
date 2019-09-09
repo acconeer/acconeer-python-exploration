@@ -18,8 +18,7 @@ from PyQt5 import QtCore, QtWidgets
 
 import pyqtgraph as pg
 
-from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
-from acconeer_utils.clients.json.client import JSONClient
+from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.clients.mock.client import MockClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
@@ -939,10 +938,10 @@ class GUI(QMainWindow):
 
             if self.interface_dd.currentText().lower() == "socket":
                 host = self.textboxes["host"].text()
-                self.client = JSONClient(host)
+                self.client = SocketClient(host)
                 statusbar_connection_info = "socket ({})".format(host)
             elif self.interface_dd.currentText().lower() == "spi":
-                self.client = RegSPIClient()
+                self.client = SPIClient()
                 statusbar_connection_info = "SPI"
                 max_num = 1
             elif self.interface_dd.currentText().lower() == "simulated":
@@ -956,7 +955,7 @@ class GUI(QMainWindow):
 
                 if self.baudrate != self.DEFAULT_BAUDRATE:
                     print("Warning: Using non-standard baudrate of {}!".format(self.baudrate))
-                self.client = RegClient(port, conf_baudrate=self.baudrate)
+                self.client = UARTClient(port, conf_baudrate=self.baudrate)
                 max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
 

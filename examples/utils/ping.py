@@ -1,5 +1,4 @@
-from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
-from acconeer_utils.clients.json.client import JSONClient
+from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 
@@ -9,12 +8,12 @@ def main():
     example_utils.config_logging(args)
 
     if args.socket_addr:
-        client = JSONClient(args.socket_addr)
+        client = SocketClient(args.socket_addr)
     elif args.spi:
-        client = RegSPIClient()
+        client = SPIClient()
     else:
         port = args.serial_port or example_utils.autodetect_serial_port()
-        client = RegClient(port)
+        client = UARTClient(port)
 
     config = configs.EnvelopeServiceConfig()
     config.sensor = args.sensors

@@ -1,5 +1,4 @@
-from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
-from acconeer_utils.clients.json.client import JSONClient
+from acconeer_utils.clients import UARTClient, SPIClient, SocketClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 
@@ -21,12 +20,12 @@ def main():
 
     # Pick client depending on whether socket, SPI, or UART is used
     if args.socket_addr:
-        client = JSONClient(args.socket_addr)
+        client = SocketClient(args.socket_addr)
     elif args.spi:
-        client = RegSPIClient()
+        client = SPIClient()
     else:
         port = args.serial_port or example_utils.autodetect_serial_port()
-        client = RegClient(port)
+        client = UARTClient(port)
 
     # Create a configuration to run on the sensor. A good first choice
     # is the envelope service, so let's pick that one.

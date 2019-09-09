@@ -1,7 +1,6 @@
 import pytest
 
-from acconeer_utils.clients.reg.client import RegClient, RegSPIClient
-from acconeer_utils.clients.json.client import JSONClient
+from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.example_utils import autodetect_serial_port
 from acconeer_utils.clients import configs
 
@@ -11,14 +10,14 @@ def setup(request):
     conn_type, *args = request.param
 
     if conn_type == "spi":
-        client = RegSPIClient()
+        client = SPIClient()
         sensor = 1
     elif conn_type == "uart":
         port = args[0] or autodetect_serial_port()
-        client = RegClient(port)
+        client = UARTClient(port)
         sensor = 1
     elif conn_type == "socket":
-        client = JSONClient(args[0])
+        client = SocketClient(args[0])
         sensor = int(args[1])
     else:
         pytest.fail()
