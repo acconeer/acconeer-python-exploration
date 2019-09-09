@@ -1327,6 +1327,10 @@ class GUI(QMainWindow):
 
                 try:
                     self.env_profiles_dd.setCurrentIndex(f["profile"][()])
+                except Exception:
+                    print("Could not restore envelope profile")
+
+                try:
                     module_label = self.current_module_label
                     if self.service_params is not None:
                         if module_label in self.service_labels:
