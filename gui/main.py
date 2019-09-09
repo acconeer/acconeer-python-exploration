@@ -245,20 +245,17 @@ class GUI(QMainWindow):
                     for element in self.service_labels[m][key]:
                         if "label" in element or "box" in element:
                             self.service_labels[m][key][element].setVisible(False)
+
         if not processing_config:
             self.service_params = None
             self.service_defaults = None
             self.service_section.hide()
         else:
             if not refresh:
-                self.service_params = None
-                self.service_defaults = None
-                try:
-                    self.service_params = processing_config
-                    self.service_defaults = copy.deepcopy(self.service_params)
-                except Exception:
-                    pass
+                self.service_params = processing_config
+                self.service_defaults = copy.deepcopy(self.service_params)
                 self.add_params(self.service_params)
+
             if self.service_params:
                 self.service_section.show()
             else:
