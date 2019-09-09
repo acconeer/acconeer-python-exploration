@@ -241,7 +241,7 @@ class GUI(QMainWindow):
         if not refresh:
             self.set_multi_sensors()
 
-            if not processing_config:
+            if not (processing_config and isinstance(processing_config, dict)):
                 self.service_params = None
                 self.service_defaults = None
                 self.service_section.hide()
