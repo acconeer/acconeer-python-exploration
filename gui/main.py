@@ -206,7 +206,7 @@ class GUI(QMainWindow):
             self.checkboxes[key] = cb
 
     def init_graphs(self, refresh=False):
-        processing_config = self.get_processing_config()
+        processing_config = self.get_default_processing_config()
 
         mode_is_sparse = (self.current_data_type == "sparse")
         self.textboxes["number_of_subsweeps"].setVisible(mode_is_sparse)
@@ -1747,7 +1747,7 @@ class GUI(QMainWindow):
         # Restore processing configs
         if last_config["service_settings"]:
             for module_label in last_config["service_settings"]:
-                processing_config = self.get_processing_config(module_label)
+                processing_config = self.get_default_processing_config(module_label)
                 self.add_params(processing_config, start_up_mode=module_label)
 
                 labels = last_config["service_settings"][module_label]
@@ -1813,7 +1813,7 @@ class GUI(QMainWindow):
 
         return config
 
-    def get_processing_config(self, module_label=None):
+    def get_default_processing_config(self, module_label=None):
         if module_label is not None:
             module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
         else:
