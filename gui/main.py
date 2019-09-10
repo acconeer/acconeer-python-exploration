@@ -52,8 +52,10 @@ class GUI(QMainWindow):
 
     sig_scan = pyqtSignal(str, str, object)
 
-    def __init__(self):
+    def __init__(self, under_test=False):
         super().__init__()
+
+        self.under_test = under_test
 
         self.cl_file = False
         self.data = None
@@ -1720,7 +1722,7 @@ class GUI(QMainWindow):
         print("End   {:.3f} -> {:.3f}".format(old_end, end))
 
     def start_up(self):
-        if os.path.isfile(self.LAST_CONF_FILENAME):
+        if os.path.isfile(self.LAST_CONF_FILENAME) and not self.under_test:
             try:
                 last = np.load(self.LAST_CONF_FILENAME, allow_pickle=True)
                 self.load_last_config(last.item())
@@ -1783,7 +1785,8 @@ class GUI(QMainWindow):
             "baudrate": self.baudrate,
             }
 
-        np.save(self.LAST_CONF_FILENAME, last_config, allow_pickle=True)
+        if not self.under_test:
+            np.save(self.LAST_CONF_FILENAME, last_config, allow_pickle=True)
 
         try:
             self.client.disconnect()
