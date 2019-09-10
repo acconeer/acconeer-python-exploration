@@ -40,7 +40,6 @@ if "win32" in sys.platform.lower():
 
 class GUI(QMainWindow):
     DEFAULT_BAUDRATE = 3000000
-    BASE_BAUDRATE = 115200
 
     ENVELOPE_PROFILES = [
         (configs.EnvelopeServiceConfig.MAX_SNR, "Max SNR"),
