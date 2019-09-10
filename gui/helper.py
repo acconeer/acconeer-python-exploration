@@ -259,3 +259,17 @@ class PassthroughProcessor:
 
     def process(self, data):
         return data
+
+
+class Count:
+    def __init__(self, val=0):
+        self.val = val
+
+    def pre_incr(self):
+        self.val += 1
+        return self.val
+
+    def post_incr(self):
+        ret = self.val
+        self.val += 1
+        return ret

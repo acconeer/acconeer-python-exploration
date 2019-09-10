@@ -29,7 +29,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
 
 import data_processing
 from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
-from helper import Label, CollapsibleSection, SensorSelection
+from helper import Label, CollapsibleSection, SensorSelection, Count
 
 
 if "win32" in sys.platform.lower():
@@ -48,7 +48,6 @@ class GUI(QMainWindow):
         (configs.EnvelopeServiceConfig.DIRECT_LEAKAGE, "Direct leakage"),
     ]
 
-    num = 0
     sig_scan = pyqtSignal(str, str, object)
     cl_file = False
     data = None
@@ -80,8 +79,9 @@ class GUI(QMainWindow):
         self.current_data_type = None
         self.current_module_label = None
         self.canvas = None
-        self.param_index = 2
         self.multi_sensor_interface = True
+        self.control_grid_count = Count()
+        self.param_grid_count = Count(2)
 
         self.module_label_to_sensor_config_map = {}
         self.current_module_info = MODULE_INFOS[0]
@@ -452,54 +452,48 @@ class GUI(QMainWindow):
 
         self.control_section = CollapsibleSection("Scan controls")
         self.panel_sublayout.addWidget(self.control_section)
-        self.num = 0
-        self.control_section.grid.addWidget(self.module_dd, self.increment(), 0, 1, 2)
-        self.control_section.grid.addWidget(self.buttons["start"], self.increment(), 0)
-        self.control_section.grid.addWidget(self.buttons["stop"], self.num, 1)
-        self.control_section.grid.addWidget(self.buttons["save_scan"], self.increment(), 0)
-        self.control_section.grid.addWidget(self.buttons["load_scan"], self.num, 1)
-        self.control_section.grid.addWidget(
-            self.buttons["replay_buffered"], self.increment(), 0, 1, 2)
-        self.control_section.grid.addWidget(self.labels["sweep_buffer"], self.increment(), 0)
-        self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], self.num, 1)
-        self.control_section.grid.addWidget(self.labels["empty_02"], self.increment(), 0)
-        self.control_section.grid.addWidget(
-            self.labels["clutter_status"], self.increment(), 0, 1, 2)
-        self.control_section.grid.addWidget(self.labels["clutter"], self.increment(), 0)
-        self.control_section.grid.addWidget(self.buttons["create_cl"], self.increment(), 0)
-        self.control_section.grid.addWidget(self.buttons["load_cl"], self.num, 1)
-        self.control_section.grid.addWidget(
-            self.checkboxes["clutter_file"], self.increment(), 0, 1, 2)
+        c = self.control_grid_count
+        self.control_section.grid.addWidget(self.module_dd, c.pre_incr(), 0, 1, 2)
+        self.control_section.grid.addWidget(self.buttons["start"], c.pre_incr(), 0)
+        self.control_section.grid.addWidget(self.buttons["stop"], c.val, 1)
+        self.control_section.grid.addWidget(self.buttons["save_scan"], c.pre_incr(), 0)
+        self.control_section.grid.addWidget(self.buttons["load_scan"], c.val, 1)
+        self.control_section.grid.addWidget(self.buttons["replay_buffered"], c.pre_incr(), 0, 1, 2)
+        self.control_section.grid.addWidget(self.labels["sweep_buffer"], c.pre_incr(), 0)
+        self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], c.val, 1)
+        self.control_section.grid.addWidget(self.labels["empty_02"], c.pre_incr(), 0)
+        self.control_section.grid.addWidget(self.labels["clutter_status"], c.pre_incr(), 0, 1, 2)
+        self.control_section.grid.addWidget(self.labels["clutter"], c.pre_incr(), 0)
+        self.control_section.grid.addWidget(self.buttons["create_cl"], c.pre_incr(), 0)
+        self.control_section.grid.addWidget(self.buttons["load_cl"], c.val, 1)
+        self.control_section.grid.addWidget(self.checkboxes["clutter_file"], c.pre_incr(), 0, 1, 2)
 
         self.settings_section = CollapsibleSection("Sensor settings")
         self.panel_sublayout.addWidget(self.settings_section)
-        self.num = 0
-        self.settings_section.grid.addWidget(self.buttons["sensor_defaults"], self.num, 0, 1, 2)
-        self.settings_section.grid.addWidget(self.labels["sensor"], self.increment(), 0)
+        c = Count()
+        self.settings_section.grid.addWidget(self.buttons["sensor_defaults"], c.val, 0, 1, 2)
+        self.settings_section.grid.addWidget(self.labels["sensor"], c.pre_incr(), 0)
 
         self.sensor_selection = SensorSelection(error_handler=self.error_message)
-        self.settings_section.grid.addWidget(self.sensor_selection, self.num, 1)
+        self.settings_section.grid.addWidget(self.sensor_selection, c.val, 1)
         self.set_multi_sensors()
 
-        self.settings_section.grid.addWidget(self.labels["range_start"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.labels["range_end"], self.num, 1)
-        self.settings_section.grid.addWidget(self.textboxes["range_start"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["range_end"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["sweep_rate"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["sweep_rate"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["gain"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["gain"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["sweeps"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["sweeps"], self.num, 1)
-        self.settings_section.grid.addWidget(self.labels["bin_count"], self.increment(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["bin_count"], self.num, 1)
-        self.settings_section.grid.addWidget(
-                self.labels["number_of_subsweeps"],
-                self.increment(),
-                0)
-        self.settings_section.grid.addWidget(self.textboxes["number_of_subsweeps"], self.num, 1)
-        self.settings_section.grid.addWidget(self.env_profiles_dd, self.increment(), 0, 1, 2)
-        self.settings_section.grid.addWidget(self.labels["stitching"], self.increment(), 0, 1, 2)
+        self.settings_section.grid.addWidget(self.labels["range_start"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.labels["range_end"], c.val, 1)
+        self.settings_section.grid.addWidget(self.textboxes["range_start"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["range_end"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["sweep_rate"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["sweep_rate"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["gain"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["gain"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["sweeps"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["sweeps"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["bin_count"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["bin_count"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["number_of_subsweeps"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["number_of_subsweeps"], c.val, 1)
+        self.settings_section.grid.addWidget(self.env_profiles_dd, c.pre_incr(), 0, 1, 2)
+        self.settings_section.grid.addWidget(self.labels["stitching"], c.pre_incr(), 0, 1, 2)
 
         self.service_section = CollapsibleSection("Processing settings")
         self.panel_sublayout.addWidget(self.service_section)
@@ -590,7 +584,7 @@ class GUI(QMainWindow):
                 elif isinstance(param_dict["value"], bool):
                     param_gui_dict["checkbox"] = QCheckBox(param_dict["name"], self)
                     param_gui_dict["checkbox"].setChecked(param_dict["value"])
-                    grid.addWidget(param_gui_dict["checkbox"], self.param_index, 0, 1, 2)
+                    grid.addWidget(param_gui_dict["checkbox"], self.param_grid_count.val, 0, 1, 2)
                 elif param_dict["value"] is not None:
                     param_gui_dict["label"] = QLabel(self)
                     param_gui_dict["label"].setMinimumWidth(125)
@@ -599,15 +593,15 @@ class GUI(QMainWindow):
                     param_gui_dict["box"].setText(str(param_dict["value"]))
                     param_gui_dict["limits"] = param_dict["limits"]
                     param_gui_dict["default"] = param_dict["value"]
-                    grid.addWidget(param_gui_dict["label"], self.param_index, 0)
-                    grid.addWidget(param_gui_dict["box"], self.param_index, 1)
+                    grid.addWidget(param_gui_dict["label"], self.param_grid_count.val, 0)
+                    grid.addWidget(param_gui_dict["box"], self.param_grid_count.val, 1)
                     param_gui_dict["box"].setVisible(set_visible)
                 else:  # param is only a label
                     param_gui_dict["label"] = QLabel(self)
                     param_gui_dict["label"].setText(str(param_dict["text"]))
-                    grid.addWidget(param_gui_dict["label"], self.param_index, 0, 1, 2)
+                    grid.addWidget(param_gui_dict["label"], self.param_grid_count.val, 0, 1, 2)
 
-                self.param_index += 1
+                self.param_grid_count.post_incr()
             else:
                 param_gui_dict = self.service_labels[mode][param_key]
 
@@ -1763,10 +1757,6 @@ class GUI(QMainWindow):
                     elif "box" in labels[key]:
                         text = str(labels[key]["box"])
                         self.service_labels[module_label][key]["box"].setText(text)
-
-    def increment(self):
-        self.num += 1
-        return self.num
 
     def closeEvent(self, event=None):
         service_params = {}
