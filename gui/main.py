@@ -976,8 +976,8 @@ class GUI(QMainWindow):
                     error = e
                 sensor += 1
             if connection_success:
-                self.set_gui_state("server_connected", True)
                 self.sensor_selection.set_sensors(sensors_available)
+                self.set_gui_state("server_connected", True)
                 self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
             else:
                 self.error_message("Could not connect to server!\n{}".format(error))
