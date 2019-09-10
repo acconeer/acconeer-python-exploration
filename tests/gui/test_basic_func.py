@@ -60,6 +60,38 @@ def test_run_a_session(qtbot, gui):
     qtbot.waitUntil(lambda: gui.buttons["connect"].text() == "Connect")
 
 
+def test_multi_sensor(qtbot, gui):
+    assert len(gui.sensor_selection.checkboxes) == 4
+    set_and_check_cb(qtbot, gui.interface_dd, MOCK_INTERFACE)  # allows multi
+
+    set_and_check_cb(qtbot, gui.module_dd, "Envelope")  # allows multi
+    qtbot.wait(200)
+
+    for _ in range(2):
+        qtbot.waitUntil(lambda: not gui.sensor_selection.textbox.isVisible())
+        for checkbox in gui.sensor_selection.checkboxes.values():
+            qtbot.waitUntil(lambda: checkbox.isVisible())
+
+        connect_and_disconnect(qtbot, gui)
+
+    set_and_check_cb(qtbot, gui.module_dd, "Presence detection (sparse)")  # doesn't allow multi
+    qtbot.wait(200)
+
+    for _ in range(2):
+        qtbot.waitUntil(lambda: gui.sensor_selection.textbox.isVisible())
+        for checkbox in gui.sensor_selection.checkboxes.values():
+            qtbot.waitUntil(lambda: not checkbox.isVisible())
+
+        connect_and_disconnect(qtbot, gui)
+
+
+def connect_and_disconnect(qtbot, gui):
+    qtbot.mouseClick(gui.buttons["connect"], LB)
+    qtbot.waitUntil(lambda: gui.buttons["connect"].text() == "Disconnect")
+    qtbot.mouseClick(gui.buttons["connect"], LB)
+    qtbot.waitUntil(lambda: gui.buttons["connect"].text() == "Connect")
+
+
 def set_cb(cb, text):
     index = cb.findText(text, QtCore.Qt.MatchFixedString)
     assert index >= 0
