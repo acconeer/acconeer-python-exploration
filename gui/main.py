@@ -52,23 +52,23 @@ class GUI(QMainWindow):
 
     sig_scan = pyqtSignal(str, str, object)
 
-    cl_file = False
-    data = None
-    client = None
-    sweep_count = -1
-    sweep_buffer = 500
-    cl_supported = False
-    sweep_number = 0
-    sweeps_skipped = 0
-    service_labels = {}
-    service_params = None
-    service_defaults = None
-    advanced_process_data = {"use_data": False, "process_data": None}
-    creating_cl = False
-    baudrate = DEFAULT_BAUDRATE
-
     def __init__(self):
         super().__init__()
+
+        self.cl_file = False
+        self.data = None
+        self.client = None
+        self.sweep_count = -1
+        self.sweep_buffer = 500
+        self.cl_supported = False
+        self.sweep_number = 0
+        self.sweeps_skipped = 0
+        self.service_labels = {}
+        self.service_params = None
+        self.service_defaults = None
+        self.advanced_process_data = {"use_data": False, "process_data": None}
+        self.creating_cl = False
+        self.baudrate = self.DEFAULT_BAUDRATE
 
         self.gui_states = {
             "has_loaded_data": False,
