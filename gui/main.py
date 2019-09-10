@@ -40,6 +40,9 @@ if "win32" in sys.platform.lower():
 
 class GUI(QMainWindow):
     DEFAULT_BAUDRATE = 3000000
+    ACC_IMG_FILENAME = os.path.join(os.path.dirname(__file__), "acc.png")
+    LAST_CONF_FILENAME = os.path.join(os.path.dirname(__file__), "last_config.npy")
+    MAX_CL_SWEEPS = 10000
 
     ENVELOPE_PROFILES = [
         (configs.EnvelopeServiceConfig.MAX_SNR, "Max SNR"),
@@ -48,12 +51,11 @@ class GUI(QMainWindow):
     ]
 
     sig_scan = pyqtSignal(str, str, object)
+
     cl_file = False
     data = None
     client = None
     sweep_count = -1
-    acc_file = os.path.join(os.path.dirname(__file__), "acc.png")
-    last_file = os.path.join(os.path.dirname(__file__), "last_config.npy")
     sweep_buffer = 500
     cl_supported = False
     sweep_number = 0
@@ -62,7 +64,6 @@ class GUI(QMainWindow):
     service_params = None
     service_defaults = None
     advanced_process_data = {"use_data": False, "process_data": None}
-    max_cl_sweeps = 10000
     creating_cl = False
     baudrate = DEFAULT_BAUDRATE
 
@@ -88,7 +89,7 @@ class GUI(QMainWindow):
             if mi.sensor_config_class is not None:
                 self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
 
-        self.setWindowIcon(QIcon(self.acc_file))
+        self.setWindowIcon(QIcon(self.ACC_IMG_FILENAME))
 
         self.init_pyqtgraph()
         self.init_labels()
@@ -226,7 +227,7 @@ class GUI(QMainWindow):
         self.labels["clutter"].setVisible(self.cl_supported)
 
         if self.current_module_info.module is None:
-            canvas = Label(self.acc_file)
+            canvas = Label(self.ACC_IMG_FILENAME)
             self.buttons["sensor_defaults"].setEnabled(False)
             return canvas
         else:
@@ -770,7 +771,7 @@ class GUI(QMainWindow):
             self.set_gui_state("replaying_data", True)
 
         if create_cl:
-            self.sweep_buffer = min(self.sweep_buffer, self.max_cl_sweeps)
+            self.sweep_buffer = min(self.sweep_buffer, self.MAX_CL_SWEEPS)
             self.creating_cl = True
             self.labels["empty_02"].hide()
             self.labels["clutter_status"].show()
@@ -1719,9 +1720,9 @@ class GUI(QMainWindow):
         print("End   {:.3f} -> {:.3f}".format(old_end, end))
 
     def start_up(self):
-        if os.path.isfile(self.last_file):
+        if os.path.isfile(self.LAST_CONF_FILENAME):
             try:
-                last = np.load(self.last_file, allow_pickle=True)
+                last = np.load(self.LAST_CONF_FILENAME, allow_pickle=True)
                 self.load_last_config(last.item())
             except Exception as e:
                 print("Could not load settings from last session\n{}".format(e))
@@ -1782,7 +1783,7 @@ class GUI(QMainWindow):
             "baudrate": self.baudrate,
             }
 
-        np.save(self.last_file, last_config, allow_pickle=True)
+        np.save(self.LAST_CONF_FILENAME, last_config, allow_pickle=True)
 
         try:
             self.client.disconnect()
