@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import cos, pi, sqrt, square
 from scipy.special import binom
 import pyqtgraph as pg
 from PyQt5 import QtCore
@@ -68,51 +69,86 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(configbase.ProcessingConfig):
+    VERSION = 1
+
     threshold = configbase.FloatParameter(
-            label="Threshold",
+            label="Detection threshold",
             default_value=2,
             limits=(0, OUTPUT_MAX),
             updateable=True,
             order=0,
+            help="Level at which the detector output is considered as \"present\"",
             )
 
-    fast_cut = configbase.FloatParameter(
+    fast_cutoff = configbase.FloatParameter(
             label="Fast cutoff freq.",
             unit="Hz",
-            default_value=50.0,
-            limits=(5, 200),
+            default_value=10.0,
+            limits=(1, 100),
             updateable=True,
             order=10,
+            help="Cutoff frequency of the low pass filter for the fast filtered subsweep mean",
             )
 
-    slow_cut = configbase.FloatParameter(
+    slow_cutoff = configbase.FloatParameter(
             label="Slow cutoff freq.",
             unit="Hz",
-            default_value=1.0,
-            limits=(0.1, 5.0),
+            default_value=0.2,
+            limits=(0.01, 1),
             updateable=True,
             order=20,
+            help="Cutoff frequency of the low pass filter for the slow filtered subsweep mean",
+            )
+
+    deviation_tc = configbase.FloatParameter(
+            label="Deviation time const.",
+            unit="s",
+            default_value=0.5,
+            limits=(0, 3),
+            updateable=True,
+            order=30,
+            help="Time constant of the low pass filter for the deviation between fast and slow"
+            )
+
+    output_tc = configbase.FloatParameter(
+            label="Output time const.",
+            unit="s",
+            default_value=1.0,
+            limits=(0, 3),
+            updateable=True,
+            order=40,
+            help="Time constant of the low pass filter for the detector output"
+            )
+
+    noise_tc = configbase.FloatParameter(
+            label="Noise est. time const.",
+            unit="s",
+            default_value=1.0,
+            limits=(0.5, 2.0),
+            updateable=True,
+            order=50,
+            help="Time constant of the low pass filter for noise estimation",
             )
 
     show_sweep = configbase.BoolParameter(
             label="Show sweep",
             default_value=True,
             updateable=True,
-            order=30,
+            order=100,
             )
 
     show_noise = configbase.BoolParameter(
             label="Show noise",
             default_value=False,
             updateable=True,
-            order=40,
+            order=110,
             )
 
     show_depthwise_output = configbase.BoolParameter(
             label="Show depthwise presence",
             default_value=True,
             updateable=True,
-            order=50,
+            order=120,
             )
 
 
@@ -120,11 +156,15 @@ get_processing_config = ProcessingConfiguration
 
 
 class PresenceDetectionSparseProcessor:
+    # lp(f): low pass (filtered)
+    # cut: cutoff frequency [Hz]
+    # tc: time constant [s]
+    # sf: smoothing factor [dimensionless]
+
     def __init__(self, sensor_config, processing_config):
         self.processing_config = processing_config
         self.num_subsweeps = sensor_config.number_of_subsweeps
-        f = sensor_config.sweep_rate
-        self.dt = 1.0 / f
+        self.f = sensor_config.sweep_rate
 
         self.noise_est_diff_order = 3
         self.depth_filter_length = 3
@@ -132,26 +172,13 @@ class PresenceDetectionSparseProcessor:
         nd = self.noise_est_diff_order
         self.noise_norm_factor = np.sqrt(np.sum(np.square(binom(nd, np.arange(nd + 1)))))
 
-        # lp(f): low pass (filtered)
-        # cut: cutoff frequency [Hz]
-        # tc: time constant [s]
-        # sf: smoothing factor [dimensionless]
-
-        bandpass_tc = 0.5
-        output_tc = 1.0
-        noise_tc = 1.0
-
-        self.bandpass_sf = self.static_sf(bandpass_tc, self.dt)
-        self.output_sf = self.static_sf(output_tc, self.dt)
-        self.noise_sf = self.static_sf(noise_tc, self.dt)
-
         self.fast_lp_mean_subsweep = None
         self.slow_lp_mean_subsweep = None
-        self.lp_bandpass = None
+        self.lp_dev = None
         self.lp_output = 0
         self.lp_noise = None
 
-        self.output_history = np.zeros(int(round(f * HISTORY_LENGTH_S)))
+        self.output_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
         self.sweep_index = 0
 
         self.update_processing_config()
@@ -164,17 +191,47 @@ class PresenceDetectionSparseProcessor:
 
         self.threshold = processing_config.threshold
 
-        fast_cut = processing_config.fast_cut
-        slow_cut = processing_config.slow_cut
+        fast_cutoff = processing_config.fast_cutoff
+        slow_cutoff = processing_config.slow_cutoff
+        dev_tc = processing_config.deviation_tc
+        output_tc = processing_config.output_tc
+        noise_tc = processing_config.noise_tc
 
-        self.fast_sf = self.static_sf(1.0 / fast_cut, self.dt)
-        self.slow_sf = self.static_sf(1.0 / slow_cut, self.dt)
+        self.fast_sf = self.cutoff_to_sf(fast_cutoff, self.f)
+        self.slow_sf = self.cutoff_to_sf(slow_cutoff, self.f)
+        self.dev_sf = self.tc_to_sf(dev_tc, self.f)
+        self.output_sf = self.tc_to_sf(output_tc, self.f)
+        self.noise_sf = self.tc_to_sf(noise_tc, self.f)
 
-    def static_sf(self, tc, dt):
-        return np.exp(-dt / tc)
+    def cutoff_to_sf(self, fc, fs):  # cutoff frequency to smoothing factor conversion
+        if fc > 0.5 * fs:
+            return 0.0
+
+        cos_w = cos(2.0 * pi * (fc / fs))
+        return 2.0 - cos_w - sqrt(square(cos_w) - 4.0 * cos_w + 3.0)
+
+    def tc_to_sf(self, tc, fs):  # time constant to smoothing factor conversion
+        if tc <= 0.0:
+            return 0.0
+
+        return np.exp(-1.0 / (tc * fs))
 
     def dynamic_sf(self, static_sf):
         return min(static_sf, 1.0 - 1.0 / (1.0 + self.sweep_index))
+
+    def abs_dev(self, a, axis=None, ddof=0, subtract_mean=True):
+        if subtract_mean:
+            a = a - a.mean(axis=axis, keepdims=True)
+
+        if axis is None:
+            n = a.size
+        else:
+            n = a.shape[axis]
+
+        assert ddof >= 0
+        assert n > ddof
+
+        return np.mean(np.abs(a), axis=axis) * sqrt(n / (n - ddof))
 
     def process(self, sweep):
         mean_subsweep = sweep.mean(axis=0)
@@ -182,7 +239,7 @@ class PresenceDetectionSparseProcessor:
         if self.sweep_index == 0:
             self.fast_lp_mean_subsweep = np.zeros_like(mean_subsweep)
             self.slow_lp_mean_subsweep = np.zeros_like(mean_subsweep)
-            self.lp_bandpass = np.zeros_like(mean_subsweep)
+            self.lp_dev = np.zeros_like(mean_subsweep)
             self.lp_noise = np.zeros_like(mean_subsweep)
 
         sf = self.dynamic_sf(self.fast_sf)
@@ -191,22 +248,23 @@ class PresenceDetectionSparseProcessor:
         sf = self.dynamic_sf(self.slow_sf)
         self.slow_lp_mean_subsweep = sf * self.slow_lp_mean_subsweep + (1.0 - sf) * mean_subsweep
 
-        bandpass = np.abs(self.fast_lp_mean_subsweep - self.slow_lp_mean_subsweep)
-        sf = self.dynamic_sf(self.bandpass_sf)
-        self.lp_bandpass = sf * self.lp_bandpass + (1.0 - sf) * bandpass
+        dev = np.abs(self.fast_lp_mean_subsweep - self.slow_lp_mean_subsweep)
+        sf = self.dynamic_sf(self.dev_sf)
+        self.lp_dev = sf * self.lp_dev + (1.0 - sf) * dev
 
         nd = self.noise_est_diff_order
-        noise = np.diff(sweep, n=nd, axis=0).std(axis=0) / self.noise_norm_factor
+        noise = self.abs_dev(np.diff(sweep, n=nd, axis=0), axis=0, subtract_mean=False)
+        noise /= self.noise_norm_factor
         sf = self.dynamic_sf(self.noise_sf)
         self.lp_noise = sf * self.lp_noise + (1.0 - sf) * noise
 
-        norm_lp_bandpass = self.lp_bandpass / self.lp_noise
-        norm_lp_bandpass *= np.sqrt(self.num_subsweeps)
+        norm_lp_dev = self.lp_dev / self.lp_noise
+        norm_lp_dev *= np.sqrt(self.num_subsweeps)
 
         depth_filter = np.ones(self.depth_filter_length) / self.depth_filter_length
-        depth_filt_norm_lp_bandpass = np.correlate(norm_lp_bandpass, depth_filter, mode="same")
+        depth_filt_norm_lp_dev = np.correlate(norm_lp_dev, depth_filter, mode="same")
 
-        output = np.max(depth_filt_norm_lp_bandpass)
+        output = np.max(depth_filt_norm_lp_dev)
         sf = self.output_sf  # no dynamic filter for the output
         self.lp_output = sf * self.lp_output + (1.0 - sf) * output
 
@@ -220,8 +278,8 @@ class PresenceDetectionSparseProcessor:
             "fast": self.fast_lp_mean_subsweep,
             "slow": self.slow_lp_mean_subsweep,
             "noise": self.lp_noise,
-            "movement": depth_filt_norm_lp_bandpass,
-            "movement_index": np.argmax(depth_filt_norm_lp_bandpass),
+            "movement": depth_filt_norm_lp_dev,
+            "movement_index": np.argmax(depth_filt_norm_lp_dev),
             "movement_history": self.output_history,
             "present": present,
         }
@@ -364,7 +422,9 @@ class PGUpdater:
 
         move_ys = data["movement"]
         self.move_curve.setData(depths, move_ys)
-        self.move_plot.setYRange(0, self.move_smooth_max.update(np.max(move_ys)))
+        m = self.move_smooth_max.update(np.max(move_ys))
+        m = max(m, 2 * self.processing_config.threshold)
+        self.move_plot.setYRange(0, m)
         self.move_depth_line.setPos(movement_x)
         self.move_depth_line.setVisible(data["present"])
 
