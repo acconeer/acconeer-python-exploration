@@ -322,11 +322,28 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
 
     def __to_slider_scale(self, x):
         lower, upper = self.param.limits
-        return int(round((x - lower) / (upper - lower) * self.NUM_SLIDER_STEPS))
 
-    def __from_slider_scale(self, x):
+        if self.param.logscale:
+            lower = np.log(lower)
+            upper = np.log(upper)
+            x = np.log(x)
+
+        y = (x - lower) / (upper - lower) * self.NUM_SLIDER_STEPS
+        return int(round(y))
+
+    def __from_slider_scale(self, y):
         lower, upper = self.param.limits
-        return x / self.NUM_SLIDER_STEPS * (upper - lower) + lower
+
+        if self.param.logscale:
+            lower = np.log(lower)
+            upper = np.log(upper)
+
+        x = y / self.NUM_SLIDER_STEPS * (upper - lower) + lower
+
+        if self.param.logscale:
+            x = np.exp(x)
+
+        return x
 
 
 class Parameter:
@@ -489,10 +506,15 @@ class IntParameter(NumberParameter):
 class FloatParameter(NumberParameter):
     def __init__(self, **kwargs):
         self.decimals = kwargs.pop("decimals", 2)
+        self.logscale = kwargs.pop("logscale", False)
 
         kwargs.setdefault("pidget_class", FloatSpinBoxAndSliderPidget)
 
         super().__init__(**kwargs)
+
+        if self.logscale:
+            assert self.limits is not None
+            assert self.limits[1] > self.limits[0] > 0
 
     def _check(self, obj, value):
         try:
