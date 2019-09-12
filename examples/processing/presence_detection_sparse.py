@@ -137,6 +137,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             default_value=True,
             updateable=True,
             order=100,
+            help="Show the sweep data and the fast and slow filtered version of the subsweep mean",
             )
 
     show_noise = configbase.BoolParameter(
@@ -144,6 +145,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             default_value=False,
             updateable=True,
             order=110,
+            help="Show the noise estimation",
             )
 
     show_depthwise_output = configbase.BoolParameter(
@@ -151,6 +153,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             default_value=True,
             updateable=True,
             order=120,
+            help="Show the depthwise presence output",
             )
 
 

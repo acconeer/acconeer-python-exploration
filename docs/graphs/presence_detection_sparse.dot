@@ -1,0 +1,63 @@
+digraph {
+  graph [pad=0.1, nodesep=0.3, ranksep=0.4]
+  bgcolor="#ffffff00"
+  fontname=sans
+  fontsize=12
+  node [fontname=sans, fontsize=12]
+
+  in -> ss_mean
+  subgraph cluster_inter {
+    label="Inter-frame base"
+
+    ss_mean -> {lp_fast, lp_slow}
+
+    subgraph cluster_inter_dw {
+      label="Depthwise"
+
+      {lp_fast, lp_slow} -> inter_absdev -> lp_dev
+    }
+  }
+
+  in -> noise_deriv
+  subgraph cluster_noise {
+    label="Noise estimation"
+
+    noise_deriv -> noise_absdev
+
+    subgraph cluster_inter_dw {
+      label="Depthwise"
+
+      noise_absdev -> noise_unbias
+    }
+
+  }
+
+  {lp_dev, noise_unbias} -> inter_norm
+
+  inter_norm -> depth_filter
+  depth_filter -> out_max -> lp_out -> threshold -> out
+  depth_filter -> out_argmax -> out
+
+  in [shape=Mdiamond, label="Input frame"]
+
+  ss_mean [shape=record, label="Mean over\nsubsweeps"]
+  lp_fast [shape=record, label="Fast LPF"]
+  lp_slow [shape=record, label="Slow LPF"]
+  lp_dev [shape=record, label="Deviation LPF"]
+  inter_absdev [shape=record, label="Absolute\ndifference"]
+
+  noise_deriv [shape=record, label="Differentiate\nover subsweeps\n3 times"]
+  noise_absdev [shape=record, label="Absolute deviation"]
+  noise_unbias [shape=record, label="Normalize"]
+
+  inter_norm [shape=record, label="Normalize"]
+
+  depth_filter [shape=record, label="Depth filter"]
+  out_max [shape=record, label="max\nover depths"]
+  lp_out [shape=record, label="Output LPF"]
+  threshold [shape=record, label="Compare against\nthreshold"]
+
+  out_argmax [shape=record, label="argmax\nover depths"]
+
+  out [shape=Msquare, label="Output"]
+}

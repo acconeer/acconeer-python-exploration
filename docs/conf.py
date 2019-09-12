@@ -18,7 +18,13 @@ author = 'Acconeer AB'
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.autodoc',
+    'sphinx.ext.graphviz',
 ]
+
+autodoc_member_order = 'bysource'
+
+graphviz_dot_args = []
+graphviz_output_format = "svg"
 
 source_suffix = '.rst'
 

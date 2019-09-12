@@ -1,30 +1,167 @@
 Presence detection (sparse)
 ===========================
 
-An example of a presence/motion detection algorithm based on the :ref:`sparse-service` service. Similarly to its :ref:`iq-service` service counterpart, :ref:`iq-presence-detection`, this example of presence detection measures small changes in radar response over time through the difference between a fast and a slow IIR filter.
+A presence detection algorithm built on top of the :ref:`sparse-service` service - based on measuring changes in the radar response over time.
 
-The :ref:`sparse-service` service returns sweeps in the form of multiple subsweeps. Each subsweep constitutes of :math:`N_d` range points spaced roughly 6 cm apart. We denote sweeps captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the sweep index, :math:`s` the subsweep index and :math:`d` the range index. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as large sinusoidal movements of the spatial sampling points over time. For each range point, we thus wish to detect any changes between individual point samples occurring in the :math:`s` dimension.
+The :ref:`sparse-service` service returns sweeps in the form of :math:`N_s` subsweeps, each consisting of :math:`N_d` range depth points, normally spaced roughly 6 cm apart. We denote sweeps captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the sweep index, :math:`s` the subsweep index and :math:`d` the range depth index. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as sinusoidal movements of the sampling points over time. Thus, for each range depth point, we wish to detect changes between individual point samples occurring in the :math:`f` (and :math:`s`) dimension.
 
-In this example, this is accomplished using exponential smoothing. Two exponential filters are used, one with a larger smoothing factor, :math:`\alpha_{fa}`, and one with a smaller, :math:`\alpha_{sl}`. Each subsweep of a sweep is thus filtered through
+This presence detection algorithm achieves this by depthwise looking at the deviation between a fast and a slow low pass filtered version of the signal. This deviation is then filtered again both in time and depth. To be more robust against changing environments and variations between sensors, a normalization is done against the noise floor.
 
-.. math::
-    x_{sl}(d) \leftarrow \alpha_{sl}x_{sl}(d) + (1 - \alpha_{sl})x(f, s, d),
-
-.. math::
-    x_{fa}(d) \leftarrow \alpha_{fa}x_{fa}(d) + (1 - \alpha_{fa})x(f, s, d).
-
-A detection metric, :math:`\delta`, is obtained by taking the average difference between the two smoothed outputs as in
-
-.. math::
-    \delta = \frac{1}{N_d}\sum_{i=0}^{N_d-1}|x_{fa}(i) - x_{sl}(i)|.
-
-:math:`\delta` thus corresponds to amount of movement occurring in the radars field of view. Finally, :math:`\delta` is thresholded to produce a prediction if movement was significant.
-
-The presence detector can be tuned by changing the :math:`\alpha_{fa}` parameter. This parameter can be related to a time constant :math:`\tau_{fa}`, which corresponds to what movement speeds will be detected. Increasing :math:`\tau_{fa}` will also increase the noise floor in :math:`\delta`, so a tuning of the threshold might be necessary when altering :math:`\tau_{fa}`.
+Plots
+-----
 
 .. image:: /_static/processing/sparse_presence.png
 
-In the above image output of the sparse presence detection algorithm is shown. The top plot shows the :math:`|x_{fa}(d) - x_{sl}(d)|` vector. Clear detection of a moving target is seen at a distance of roughly 1.3 m. In the bottom part the evolution of :math:`\delta` is plotted. Since :math:`\delta` is above the threshold of 0.3 presence is detected.
+The above image shows a screenshot of the detector plots. In it, we can a target detected at around 0.5 m.
+
+**Top plot:**
+The sweep :math:`x` (blue dots), along with the fast (orange) and slow (green) filtered subsweep mean
+:math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` respectively.
+The distance between the fast (orange) and slow (green) dots is the basis for this detector.
+
+**Middle plot:**
+The "depthwise presence" :math:`z`. This signal is the time and depth filtered (and noise normalized) version of the distance between the fast and slow filter.
+
+**Bottom plot:**
+The detector output :math:`\bar{v}`. Typically limited to give a clearer view. This is basically a time filtered maximum of the above plot.
+
+**Not shown:** The noise estimation :math:`\bar{n}`, used for normalization of the signal.
+
+Detailed description
+--------------------
+
+Inter-frame detection basis
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the typical case, the time between *sweeps* is far greater than the time between *subsweeps*. Typically, the sweep rate is 5 - 100 Hz while the subsweep rate is 3 - 30 kHz. Therefore, when looking for slow movements - presence - the subsweeps in a sweep can be regarded as being sampled at the same point in time. This allows us to take the mean over all subsweeps without loosing any information. Let the *mean subsweep* be denoted as
+
+.. math::
+   y(f, d) = \frac{1}{N_s} \sum_s x(f, s, d)
+
+We take this mean subsweep :math:`y` and depthwise run it though two `exponential smoothing`_ filters (first order IIR filters). One slower filter with a larger `smoothing factor`_, and one faster filter with a smaller smoothing factor. Let :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` be the smoothing factors and :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` be the filtered subsweep means.
+In the implementation, the smoothing factors :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` are set through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.fast_cutoff`
+and
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.slow_cutoff`
+parameters.
+For every depth :math:`d`, for every new frame :math:`f`:
+
+
+.. math::
+   \bar{y}_\text{slow}(f, d) = \alpha_\text{slow} \cdot \bar{y}_\text{slow}(f-1, d) + (1 - \alpha_\text{slow}) \cdot y(f, d)
+
+   \bar{y}_\text{fast}(f, d) = \alpha_\text{fast} \cdot \bar{y}_\text{fast}(f-1, d) + (1 - \alpha_\text{fast}) \cdot y(f, d)
+
+From the fast and slow filtered subsweep means, a deviation metric :math:`s` is obtained by taking the absolute deviation between the two:
+
+.. math::
+   s(f, d) = |\bar{y}_\text{fast}(f, d) - \bar{y}_\text{slow}(f, d)|
+
+Basically, :math:`s` relates to the instantaneous power of a bandpass filtered version of :math:`y`. This metric is then filtered again with a smoothing factor :math:`\alpha_\text{dev}`, set through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.deviation_tc`
+parameter,
+to get a more stable metric:
+
+.. math::
+   \bar{s}(f, d) = \alpha_\text{dev} \cdot \bar{s}(f-1, d) + (1 - \alpha_\text{dev}) \cdot s(f, d)
+
+This is the starting point of the inter-frame presence detection algorithm. In a few words - depthwise low pass filtered power of the bandpass filtered signal. But before it's used, it's favorable to normalize it with noise floor, discussed in the following section.
+
+Noise estimation
+^^^^^^^^^^^^^^^^
+
+To normalize detection levels, we need an estimate of the noise power generated by the sensor. We assume that from a static channel, i.e., a radar signal with no moving reflections, the noise is white and its power is its variance. However, we do not want to rely on having such a measurement to obtain this estimate.
+
+Since we're looking for motions generated by humans and other living things, we know that we typically won't see fast moving objects in the data. In other words, we may assume that *high frequency content in the data originates from sensor noise*.
+Since we have a relatively high subsweep rate, we may take advantage of this to measure high frequency content.
+
+Extracting the high frequency content from the data can be done in numerous ways. The simplest to implement is possibly a FFT, but it is computationally expensive. Instead, we use another technique which is both robust and cheap.
+
+First, to remove any trends in the subsweep from fast motion, we differentiate each sweep over all the subsweeps :math:`N_\text{diff}=3` times:
+
+.. math::
+   x'(f, s, d) = x^{(1)}(f, s, d) = x(f, s, d) - x(f, s - 1, d)
+
+.. math::
+   ...
+
+.. math::
+   x^{(N_\text{diff})}(f, s, d) = x^{(N_\text{diff} - 1)}(f, s, d) - x^{(N_\text{diff} - 1)}(f, s - 1, d)
+
+
+Then, take the mean absolute deviation:
+
+.. math::
+   \hat{n}(f, d) = \frac{1}{N_s - N_\text{diff}} \sum_{s=N_\text{diff}}^{N_s} | x^{(N_\text{diff})}(f, s, d) |
+
+And normalize such that the expectation value would be the same as if no differentiation was applied:
+
+.. math::
+   n(f, d) = \hat{n}(f, d)
+   \cdot
+   \left[
+       \sum_{k=0}^{N_\text{diff}} \binom{N_\text{diff}}{k}^2
+   \right]^{-1/2}
+
+Finally, apply an exponential smoothing filter with a smoothing factor :math:`\alpha_\text{noise}`, set through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.noise_tc`
+parameter,
+to get a more stable metric:
+
+.. math::
+   \bar{n}(f, d) = \alpha_\text{noise} \cdot \bar{n}(f-1, d) + (1 - \alpha_\text{noise}) \cdot n(f, d)
+
+Generating the detector output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With the noise estimate :math:`\bar{n}`, we form a depthwise normalized inter-frame detection:
+
+.. math::
+   \bar{s}_n(f, d) = \frac{\bar{s}(f, d) \cdot \sqrt{N_s}}{\bar{n}(f, d)}
+
+Finally, since the reflection typically span several depth points, we apply a small depth filter:
+
+.. math::
+   z(f, d) = \frac{1}{3} \sum_{i=-1}^{1} \bar{s}_n(f, d + i)
+
+where the signal :math:`\bar{s}_n` is zero-padded, i.e.:
+
+.. math::
+   \bar{s}_n(f, d) = 0 \text{ for } d \lt 1 \text{ and } d \gt N_d
+
+From :math:`z`, we can extract the information we are looking for. Is there someone present in front of the sensor, and if so, where? To answer this, we simply look for a peak in the data :math:`z`. To give the detection decision a bit of inertia, we also add a smoothing filter to the peak value.
+
+.. math::
+   v(f) = \max_d(z(f, d))
+
+.. math::
+   \bar{v}(f) = \alpha_\text{output} \cdot \bar{v}(f-1) + (1 - \alpha_\text{output}) \cdot v(f)
+
+.. math::
+   p = v > v_\text{threshold}
+
+.. math::
+   d_p = \arg\max_d(z(f, d))
+
+where :math:`p` is the "present"/"not present" output and :math:`d_p` is the presence depth index output.
+
+It is possible to tune :math:`\alpha_\text{output}` through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.output_tc`
+parameter. The threshold :math:`v_\text{threshold}` is settable through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.threshold`
+parameter.
+
+Overview
+^^^^^^^^
+
+.. graphviz:: /graphs/presence_detection_sparse.dot
+   :align: center
+
+Configuration
+-------------
 
 .. autoclass:: examples.processing.presence_detection_sparse.ProcessingConfiguration
    :members:
+
+.. _`exponential smoothing`: https://en.wikipedia.org/wiki/Exponential_smoothing
+.. _`smoothing factor`: https://en.wikipedia.org/wiki/Exponential_smoothing

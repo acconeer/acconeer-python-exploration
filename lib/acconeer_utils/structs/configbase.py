@@ -365,8 +365,9 @@ class Parameter:
 
         self.pidgets = WeakKeyDictionary()
 
-        if self.help:
-            self.__doc__ = self.help
+        doc = self.generate_doc().strip()
+        if doc:
+            self.__doc__ = doc
 
     def update_pidget(self, obj):
         pidget = self.get_pidget(obj)
@@ -393,6 +394,9 @@ class Parameter:
 
     def load(self):
         pass
+
+    def generate_doc(self):
+        return self.help
 
 
 class ValueParameter(Parameter):
@@ -440,8 +444,28 @@ class ValueParameter(Parameter):
     def load(self, obj, value):
         self.__set__(obj, value)
 
+    def generate_doc(self):
+        s = ""
+        if self.help:
+            s += self.help
+            s += "\n\n"
+
+        type_str = getattr(self, "type_str", None)
+        if type_str:
+            s += "| Type: {}\n".format(type_str)
+
+        unit = getattr(self, "unit", None)
+        if unit:
+            s += "| Unit: {}\n".format(unit)
+
+        s += "| Default value: {}\n".format(self.default_value)
+
+        return s
+
 
 class BoolParameter(ValueParameter):
+    type_str = "bool"
+
     def __init__(self, **kwargs):
         kwargs.setdefault("pidget_class", BoolCheckboxPidget)
 
@@ -476,6 +500,8 @@ class NumberParameter(ValueParameter):
 
 
 class IntParameter(NumberParameter):
+    type_str = "int"
+
     def __init__(self, **kwargs):
         self.step = kwargs.pop("step", 1)
 
@@ -504,6 +530,8 @@ class IntParameter(NumberParameter):
 
 
 class FloatParameter(NumberParameter):
+    type_str = "float"
+
     def __init__(self, **kwargs):
         self.decimals = kwargs.pop("decimals", 2)
         self.logscale = kwargs.pop("logscale", False)
