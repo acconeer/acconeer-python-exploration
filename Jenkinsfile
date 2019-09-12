@@ -1,12 +1,17 @@
 pipeline {
     agent {
-        dockerfile true
+        dockerfile {
+            label 'ai-31'
+            args '--net=host'
+        }
     }
 
     stages {
         stage('Test') {
             steps {
                 sh 'flake8'
+                sh 'python3 setup.py -q install --user'
+                sh 'pytest'
             }
         }
     }
