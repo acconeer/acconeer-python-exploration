@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import os
+import sys
+
+
+conf_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.join(conf_dir, "..")
+sys.path.append(root_dir)
+
 project = 'acconeer-python-exploration'
 copyright = '2019, Acconeer AB'
 author = 'Acconeer AB'
@@ -9,6 +17,7 @@ author = 'Acconeer AB'
 
 extensions = [
     'sphinx.ext.mathjax',
+    'sphinx.ext.autodoc',
 ]
 
 source_suffix = '.rst'

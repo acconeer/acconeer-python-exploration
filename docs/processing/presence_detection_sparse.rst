@@ -25,3 +25,6 @@ The presence detector can be tuned by changing the :math:`\alpha_{fa}` parameter
 .. image:: /_static/processing/sparse_presence.png
 
 In the above image output of the sparse presence detection algorithm is shown. The top plot shows the :math:`|x_{fa}(d) - x_{sl}(d)|` vector. Clear detection of a moving target is seen at a distance of roughly 1.3 m. In the bottom part the evolution of :math:`\delta` is plotted. Since :math:`\delta` is above the threshold of 0.3 presence is detected.
+
+.. autoclass:: examples.processing.presence_detection_sparse.ProcessingConfiguration
+   :members:
