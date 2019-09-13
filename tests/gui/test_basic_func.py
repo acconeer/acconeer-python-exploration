@@ -5,6 +5,7 @@ from PyQt5 import QtCore
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))  # noqa: E402
 from gui.main import GUI
+from gui.modules import MODULE_INFOS
 
 
 MOCK_INTERFACE = "Simulated"
@@ -83,6 +84,23 @@ def test_multi_sensor(qtbot, gui):
             qtbot.waitUntil(lambda: not checkbox.isVisible())
 
         connect_and_disconnect(qtbot, gui)
+
+
+def test_start_and_stop_all_modules(qtbot, gui):
+    set_and_check_cb(qtbot, gui.interface_dd, MOCK_INTERFACE)
+    qtbot.mouseClick(gui.buttons["connect"], LB)
+
+    for module_info in MODULE_INFOS:
+        if module_info.module is None:
+            continue
+
+        set_and_check_cb(qtbot, gui.module_dd, module_info.label)
+        qtbot.wait(100)
+
+        qtbot.mouseClick(gui.buttons["start"], LB)
+        qtbot.wait(400)
+        qtbot.mouseClick(gui.buttons["stop"], LB)
+        qtbot.wait(100)
 
 
 def connect_and_disconnect(qtbot, gui):
