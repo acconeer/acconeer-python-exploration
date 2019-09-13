@@ -111,7 +111,6 @@ class DataProcessing:
         if self.first_run:
             self.external = self.parent.parent.external(self.sensor_config, self.service_params)
             self.first_run = False
-            self.service_widget = self.parent.parent.service_widget
             plot_data = self.external.process(sweep_data)
         else:
             plot_data = self.external.process(sweep_data)
