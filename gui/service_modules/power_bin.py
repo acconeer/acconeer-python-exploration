@@ -24,7 +24,7 @@ def main():
 
     client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(sensor_config)
+    pg_updater = PGUpdater(sensor_config, None)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -51,7 +51,7 @@ def get_sensor_config():
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config=None):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
 
         self.sweep_index = 0

@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 class DataProcessing:
     hist_len = 500
 
-    def prepare_processing(self, parent, params):
+    def prepare_processing(self, parent, params, session_info):
         self.sensor_config = params["sensor_config"]
         self.mode = self.sensor_config.mode
         self.service_type = params["service_type"]
@@ -31,6 +31,8 @@ class DataProcessing:
 
         self.parent = parent
         self.hist_len_index = 0
+
+        self.session_info = session_info
 
         self.init_vars()
 
@@ -109,7 +111,8 @@ class DataProcessing:
 
     def process(self, sweep_data, info):
         if self.first_run:
-            self.external = self.parent.parent.external(self.sensor_config, self.service_params)
+            self.external = self.parent.parent.external(
+                self.sensor_config, self.service_params, self.session_info)
             self.first_run = False
             plot_data = self.external.process(sweep_data)
         else:

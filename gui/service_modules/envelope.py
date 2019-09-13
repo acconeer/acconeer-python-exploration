@@ -34,7 +34,7 @@ def get_sensor_config():
 
 
 class EnvelopeProcessor:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.data_processing = processing_config["processing_handle"]
         self.sensor_config = sensor_config
         self.mode = self.sensor_config.mode
@@ -192,7 +192,7 @@ class EnvelopeProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.env_plot_max_y = 1
         self.sensor_config = sensor_config
         self.num_sensors = len(sensor_config.sensor)

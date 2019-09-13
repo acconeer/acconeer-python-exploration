@@ -115,7 +115,7 @@ def get_processing_config():
 
 
 class PresenceDetectionProcessor:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.config = sensor_config
 
         # Settings
@@ -339,7 +339,7 @@ class PresenceDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config=None):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.config = sensor_config
 
     def setup(self, win):

@@ -246,7 +246,7 @@ def get_processing_config():
 
 
 class ObstacleDetectionProcessor:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
         self.sensor_separation = processing_config["sensor_separation"]["value"]
         self.fusion_spread = processing_config["fusion_spread"]["value"]
@@ -619,7 +619,7 @@ class ObstacleDetectionProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
         self.map_max = 0
         self.width = 3

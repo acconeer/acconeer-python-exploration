@@ -66,7 +66,7 @@ def get_processing_config():
 
 
 class PhaseTrackingProcessor:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.f = sensor_config.sweep_rate
         self.dt = 1 / self.f
 
@@ -136,7 +136,7 @@ class PhaseTrackingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.config = sensor_config
         self.interval = sensor_config.range_interval
 

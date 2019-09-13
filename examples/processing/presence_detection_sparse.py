@@ -163,7 +163,7 @@ class PresenceDetectionSparseProcessor:
     # tc: time constant [s]
     # sf: smoothing factor [dimensionless]
 
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.processing_config = processing_config
         self.num_subsweeps = sensor_config.number_of_subsweeps
         self.f = sensor_config.sweep_rate
@@ -292,7 +292,7 @@ class PresenceDetectionSparseProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 

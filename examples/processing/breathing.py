@@ -85,7 +85,7 @@ class BreathingProcessor:
     sweep_alpha = 0.7
     env_alpha = 0.95
 
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.config = sensor_config
 
         self.f = sensor_config.sweep_rate
@@ -244,7 +244,7 @@ class BreathingProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.config = sensor_config
 
         f = sensor_config.sweep_rate

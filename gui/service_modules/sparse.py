@@ -81,12 +81,12 @@ def get_processing_config():
 
 
 class Processor:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.history_len = processing_config["image_buffer"]["value"]
 
         pd_config = presence_detection_sparse.get_processing_config()
         processor_class = presence_detection_sparse.PresenceDetectionSparseProcessor
-        self.pd_processors = [processor_class(sensor_config, pd_config)]
+        self.pd_processors = [processor_class(sensor_config, pd_config, session_info)]
 
         self.smooth_max = example_utils.SmoothMax(sensor_config.sweep_rate)
 
@@ -122,7 +122,7 @@ class Processor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config):
+    def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
 
         self.sweep_index = 0

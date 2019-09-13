@@ -9,6 +9,7 @@ import logging
 import signal
 import threading
 import copy
+import json
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
                              QCheckBox, QFrame, QPushButton)
@@ -73,6 +74,7 @@ class GUI(QMainWindow):
         self.advanced_process_data = {"use_data": False, "process_data": None}
         self.creating_cl = False
         self.baudrate = self.DEFAULT_BAUDRATE
+        self.session_info = None
 
         self.gui_states = {
             "has_loaded_data": False,
@@ -269,15 +271,27 @@ class GUI(QMainWindow):
         else:
             self.load_gui_settings_from_sensor_config()
 
-        self.service_widget = self.current_module_info.module.PGUpdater(
-                self.get_sensor_config(),
-                self.update_service_params(),
-                )
-        self.service_widget.setup(canvas)
+        self.reload_pg_updater(canvas=canvas)
 
         self.refresh_pidgets()
 
         return canvas
+
+    def reload_pg_updater(self, canvas=None, session_info=None):
+        if canvas is None:
+            canvas = pg.GraphicsLayoutWidget()
+            self.swap_canvas(canvas)
+
+        sensor_config = self.get_sensor_config()
+        processing_config = self.update_service_params()
+
+        if session_info is None:
+            session_info = MockClient().setup_session(sensor_config)
+
+        self.service_widget = self.current_module_info.module.PGUpdater(
+            sensor_config, processing_config, session_info)
+
+        self.service_widget.setup(canvas)
 
     def init_pidgets(self):
         self.last_processing_config = None
@@ -783,18 +797,22 @@ class GUI(QMainWindow):
             self.buttons["replay_buffered"].setEnabled(False)
 
         if force_update or switching_module:
-            if self.canvas is not None:
-                self.canvas_layout.removeWidget(self.canvas)
-                self.canvas.setParent(None)
-                self.canvas.deleteLater()
-
             if not switching_module:
                 self.update_service_params()
 
-            self.canvas = self.init_graphs(refresh=(not switching_module))
-            self.canvas_layout.addWidget(self.canvas)
+            new_canvas = self.init_graphs(refresh=(not switching_module))
+            self.swap_canvas(new_canvas)
 
         self.load_gui_settings_from_sensor_config()
+
+    def swap_canvas(self, new_canvas):
+        if self.canvas is not None:
+            self.canvas_layout.removeWidget(self.canvas)
+            self.canvas.setParent(None)
+            self.canvas.deleteLater()
+
+        self.canvas_layout.addWidget(new_canvas)
+        self.canvas = new_canvas
 
     def update_interface(self):
         if self.gui_states["server_connected"]:
@@ -1450,6 +1468,12 @@ class GUI(QMainWindow):
                 except Exception:
                     print("Could not restore envelope profile")
 
+                try:
+                    session_info = json.loads(f["session_info"][()])
+                except Exception:
+                    print("Could not restore session info")
+                    session_info = None
+
                 processing_config = self.get_processing_config()
                 if isinstance(processing_config, configbase.Config):
                     try:
@@ -1500,12 +1524,12 @@ class GUI(QMainWindow):
                 except Exception:
                     pass
 
-                session_info = True
+                has_sweep_info = True
                 nr = None
                 try:
                     nr = np.asarray(list(f["sequence_number"]))
                 except Exception:
-                    session_info = False
+                    has_sweep_info = False
                     print("Session info not stored!")
 
                 try:
@@ -1519,7 +1543,7 @@ class GUI(QMainWindow):
                     sat = np.expand_dims(sat, axis=1)
                     nr = np.expand_dims(nr, axis=1)
 
-                if session_info:
+                if has_sweep_info:
                     self.data = [
                         {
                             "sweep_data": sweeps[i],
@@ -1540,6 +1564,8 @@ class GUI(QMainWindow):
                             "sensor_config": conf,
                             "cl_file": cl_file,
                         } for i in length]
+
+                self.data[0]["session_info"] = session_info
             else:
                 try:
                     data = np.load(filename, allow_pickle=True)
@@ -1694,6 +1720,12 @@ class GUI(QMainWindow):
                         if val is not None:
                             f.create_dataset(key, data=int(val), dtype=np.int)
 
+                    f.create_dataset(
+                            "session_info",
+                            data=json.dumps(self.session_info),
+                            dtype=h5py.special_dtype(vlen=str),
+                            )
+
                     processing_config = self.get_processing_config()
                     if isinstance(processing_config, configbase.Config):
                         s = processing_config._dumps()
@@ -1717,6 +1749,8 @@ class GUI(QMainWindow):
                             data[0]["processing_config_dump"] = s
                         else:
                             data[0]["service_params"] = self.service_params
+
+                        data[0]["session_info"] = self.session_info
                     except Exception:
                         pass
                     try:
@@ -1802,7 +1836,10 @@ class GUI(QMainWindow):
         elif "sweep_info" in message_type:
             self.update_sweep_info(data)
         elif "session_info" in message_type:
-            self.update_ranges(data)
+            if message == "mismatch":
+                self.update_ranges(data)
+            self.session_info = data
+            self.reload_pg_updater(session_info=data)
         elif "process_data" in message_type:
             self.advanced_process_data["process_data"] = data
         elif "set_sensors" in message_type:
@@ -2069,9 +2106,10 @@ class Threaded_Scan(QtCore.QThread):
 
             try:
                 session_info = self.client.setup_session(self.sensor_config)
-                if not self.check_session_info(session_info):
-                    self.emit("session_info", "", session_info)
-                self.radar.prepare_processing(self, self.params)
+                check = self.check_session_info(session_info)
+                check_msg = "ok" if check else "mismatch"
+                self.emit("session_info", check_msg, session_info)
+                self.radar.prepare_processing(self, self.params, session_info)
                 self.client.start_streaming()
             except Exception as e:
                 self.emit("client_error", "Failed to setup streaming!\n"
@@ -2094,10 +2132,19 @@ class Threaded_Scan(QtCore.QThread):
             except Exception:
                 pass
 
-            if data is not None:
+            if data is not None and len(data) > 0:
+                data[0]["session_info"] = session_info
                 self.emit("scan_data", "", data)
         elif self.params["data_source"] == "file":
-            self.radar.prepare_processing(self, self.params)
+            try:
+                session_info = self.data[0]["session_info"]
+                assert session_info is not None
+            except (IndexError, KeyError, AttributeError, AssertionError):
+                # TODO: infer session info
+                print("No session info")
+                session_info = None
+
+            self.radar.prepare_processing(self, self.params, session_info)
             self.radar.process_saved_data(self.data, self)
         else:
             self.emit("error", "Unknown mode %s!" % self.mode)

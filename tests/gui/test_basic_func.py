@@ -95,12 +95,12 @@ def test_start_and_stop_all_modules(qtbot, gui):
             continue
 
         set_and_check_cb(qtbot, gui.module_dd, module_info.label)
-        qtbot.wait(100)
+        qtbot.wait(200)
 
         qtbot.mouseClick(gui.buttons["start"], LB)
-        qtbot.wait(400)
+        qtbot.wait(600)
         qtbot.mouseClick(gui.buttons["stop"], LB)
-        qtbot.wait(100)
+        qtbot.wait(200)
 
 
 def connect_and_disconnect(qtbot, gui):
