@@ -543,7 +543,7 @@ class SPICommProcess(mp.Process):
     def get_next(self):
         poll_t = time()
         while True:
-            status = self.read_reg("status")
+            status = self.read_reg("status", do_log=False)
             if not status:
                 if (time() - poll_t) > self.poll_timeout:
                     raise ClientError("gave up polling")
@@ -565,9 +565,9 @@ class SPICommProcess(mp.Process):
         info = {}
         info_regs = utils.get_sweep_info_regs(self.mode)
         for reg in info_regs:
-            info[reg.name] = self.read_reg(reg)
+            info[reg.name] = self.read_reg(reg, do_log=False)
 
-        self.write_reg("main_control", "clear_status")
+        self.write_reg("main_control", "clear_status", do_log=False)
 
         return info, buffer
 
@@ -607,29 +607,31 @@ class SPICommProcess(mp.Process):
     def disconnect(self):
         self.dev.close()
 
-    def read_reg(self, reg):
+    def read_reg(self, reg, do_log=True):
         reg = protocol.get_reg(reg, self.mode)
-        enc_val = self.read_reg_raw(reg.addr)
+        enc_val = self.read_reg_raw(reg.addr, do_log=do_log)
         return protocol.decode_reg_val(reg, enc_val)
 
-    def read_reg_raw(self, addr):
+    def read_reg_raw(self, addr, do_log=True):
         addr = protocol.get_addr_for_reg(addr)
         b = bytearray([protocol.REG_READ_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
         enc_val = self.dev.spi_master_single_read(4)
-        log.debug("reg r res: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
+        if do_log:
+            log.debug("reg r res: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
         return enc_val
 
-    def write_reg(self, reg, val):
+    def write_reg(self, reg, val, do_log=True):
         reg = protocol.get_reg(reg, self.mode)
         enc_val = protocol.encode_reg_val(reg, val)
-        self.write_reg_raw(reg.addr, enc_val)
+        self.write_reg_raw(reg.addr, enc_val, do_log=do_log)
 
-    def write_reg_raw(self, addr, enc_val):
+    def write_reg_raw(self, addr, enc_val, do_log=True):
         addr = protocol.get_addr_for_reg(addr)
         b = bytearray([protocol.REG_WRITE_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
-        log.debug("reg w req: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
+        if do_log:
+            log.debug("reg w req: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
         self.dev.spi_master_single_write(enc_val)
 
     def read_buf_raw(self, addr, size):
