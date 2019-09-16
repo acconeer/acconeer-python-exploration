@@ -13,6 +13,7 @@ Table of contents
 
    faq
    disclaimer
+   sensor_introduction
 
 .. toctree::
    :maxdepth: 1

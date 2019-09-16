@@ -66,3 +66,5 @@ texinfo_documents = [
 epub_title = project
 
 epub_exclude_files = ['search.html']
+
+numfig = True
