@@ -12,6 +12,7 @@ pipeline {
                 sh 'flake8'
                 sh 'python3 setup.py -q install --user'
                 sh 'pytest'
+                sh 'sphinx-build -QW -b html docs docs/_build'
             }
         }
     }
