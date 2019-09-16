@@ -44,6 +44,7 @@ In the implementation, the smoothing factors :math:`\alpha_\text{fast}` and :mat
 and
 :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.slow_cutoff`
 parameters.
+The relationship between cutoff frequency and smoothing factor is described under :ref:`calculating-smoothing-factors`.
 For every depth :math:`d`, for every new frame :math:`f`:
 
 
@@ -156,6 +157,46 @@ Overview
 
 .. graphviz:: /graphs/presence_detection_sparse.dot
    :align: center
+
+.. _calculating-smoothing-factors:
+
+Calculating smoothing factors
+-----------------------------
+
+Instead of directly setting the smoothing factor of the smoothing filters in the detector, we use cutoff frequencies and time constants. This allows the configuration to be independent of the sweep rate.
+
+The symbols used are:
+
+============== ================ ========
+**Symbol**     **Description**  **Unit**
+-------------- ---------------- --------
+:math:`\alpha` Smoothing factor 1
+:math:`\tau`   Time constant    s
+:math:`f_c`    Cutoff frequency Hz
+:math:`f_f`    Sweep rate       Hz
+============== ================ ========
+
+Going from time constant :math:`\tau` to smoothing factor :math:`\alpha`:
+
+.. math::
+   \alpha = \exp\left(-\frac{1}{\tau \cdot f_f}\right)
+
+The bigger the time constant, the slower the filter.
+
+Going from cutoff frequency :math:`f_c` to smoothing factor :math:`\alpha`:
+
+.. math::
+   \alpha =
+   \begin{cases}
+   2 - \cos(2\pi f_c/f_f) - \sqrt{\cos^2(2\pi f_c/f_f) - 4 \cos(2\pi f_c/f_f) + 3} & \text{if } f_c < f_f / 2 \\
+   0 & \text{otherwise} \\
+   \end{cases}
+
+The lower the cutoff frequency, the slower the filter. The expression is obtained from setting the -3 dB frequency of the resulting exponential filter to be the cutoff frequency. For low cutoff frequencies, the more well known expression :math:`\alpha = \exp(-2\pi f_c/f_f)` is a good approximation.
+
+Read more:
+`time constants <https://en.wikipedia.org/wiki/Exponential_smoothing#Time_Constant>`_,
+`cutoff frequencies <https://www.dsprelated.com/showarticle/182.php>`_.
 
 Configuration
 -------------

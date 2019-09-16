@@ -154,7 +154,7 @@ The basic scripts contains a lot of comments guiding you through the steps taken
   An example breathing detection algorithm.
 - `sleep_breathing.py` \
   An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
-- `presence_detection_sparse.py` \
+- `presence_detection_sparse.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html)) \
   An example of a presence/motion detection algorithm based on the sparse service.
 - `phase_tracking.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/phase_tracking.html)) \
   An example of a relative movements tracking algorithm using phase information.

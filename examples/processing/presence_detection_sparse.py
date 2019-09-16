@@ -77,7 +77,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             limits=(0, OUTPUT_MAX),
             updateable=True,
             order=0,
-            help="Level at which the detector output is considered as \"present\"",
+            help="Level at which the detector output is considered as \"present\".",
             )
 
     fast_cutoff = configbase.FloatParameter(
@@ -88,7 +88,11 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             logscale=True,
             updateable=True,
             order=10,
-            help="Cutoff frequency of the low pass filter for the fast filtered subsweep mean",
+            help=(
+                "Cutoff frequency of the low pass filter for the fast filtered subsweep mean."
+                " No filtering is applied if the cutoff is set over half the sweep frequency"
+                " (Nyquist limit)."
+            ),
             )
 
     slow_cutoff = configbase.FloatParameter(
@@ -99,7 +103,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             logscale=True,
             updateable=True,
             order=20,
-            help="Cutoff frequency of the low pass filter for the slow filtered subsweep mean",
+            help="Cutoff frequency of the low pass filter for the slow filtered subsweep mean.",
             )
 
     deviation_tc = configbase.FloatParameter(
@@ -109,7 +113,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             limits=(0, 3),
             updateable=True,
             order=30,
-            help="Time constant of the low pass filter for the deviation between fast and slow"
+            help="Time constant of the low pass filter for the deviation between fast and slow."
             )
 
     output_tc = configbase.FloatParameter(
@@ -119,7 +123,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             limits=(0, 3),
             updateable=True,
             order=40,
-            help="Time constant of the low pass filter for the detector output"
+            help="Time constant of the low pass filter for the detector output."
             )
 
     noise_tc = configbase.FloatParameter(
@@ -129,7 +133,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             limits=(0.5, 2.0),
             updateable=True,
             order=50,
-            help="Time constant of the low pass filter for noise estimation",
+            help="Time constant of the low pass filter for noise estimation.",
             )
 
     show_sweep = configbase.BoolParameter(
@@ -137,7 +141,10 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             default_value=True,
             updateable=True,
             order=100,
-            help="Show the sweep data and the fast and slow filtered version of the subsweep mean",
+            help=(
+                "Show the plot of the sweep data and the fast and slow filtered version of the"
+                " subsweep mean."
+            ),
             )
 
     show_noise = configbase.BoolParameter(
@@ -145,7 +152,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             default_value=False,
             updateable=True,
             order=110,
-            help="Show the noise estimation",
+            help="Show the noise estimation plot.",
             )
 
     show_depthwise_output = configbase.BoolParameter(
@@ -153,7 +160,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             default_value=True,
             updateable=True,
             order=120,
-            help="Show the depthwise presence output",
+            help="Show the depthwise presence output plot.",
             )
 
 
