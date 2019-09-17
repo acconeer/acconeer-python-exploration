@@ -31,9 +31,9 @@ def main():
     processing_config = get_processing_config()
     sensor_config.sensor = args.sensors
 
-    client.setup_session(sensor_config)
+    session_info = client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(sensor_config, processing_config)
+    pg_updater = PGUpdater(sensor_config, processing_config, session_info)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -42,7 +42,7 @@ def main():
     interrupt_handler = example_utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
-    processor = PresenceDetectionSparseProcessor(sensor_config, processing_config)
+    processor = PresenceDetectionSparseProcessor(sensor_config, processing_config, session_info)
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
