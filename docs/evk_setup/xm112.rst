@@ -26,11 +26,32 @@ To get into the bootloader:
 
 Now you should be able to flash the Module software (``acc_module_server_xm112.bin``). After flashing, press the NRST button to reboot into the flashed software.
 
-If you're on Linux you likely will need to compile BOSSA on your own. In our experience, running Ubuntu 18.04, you will need to install ``libreadline-dev`` and ``libwxgtk3.0-dev`` before compiling with ``make``.
-To get everything you need::
+BOSSA on Linux
+^^^^^^^^^^^^^^
 
-   sudo apt install libreadline-dev libwxgtk3.0-dev make build-essential
+If you're on Linux you likely will need to compile BOSSA on your own. Here's how to do it on Ubuntu 18.04.
+
+Get everything you need to build::
+
+   sudo apt update
+   sudo apt install -y make build-essential
+
+Clone the BOSSA repository to a suitable location (below we use the home directory)::
+
+   cd ~
+   git clone https://github.com/shumatech/BOSSA.git
+
+Go into to the repository::
+
+   cd BOSSA
+
+Build ``bossac`` (the CLI tool)::
+
+   make -j8 bossac
 
 To flash::
 
    sudo ./bin/bossac -e -w -v -p /dev/ttyUSB0 -b /path/to/acc_module_server_xm112.bin
+
+Note:
+If you want the full BOSSA GUI, you will also need to install ``libreadline-dev`` and ``libwxgtk3.0-dev`` before compiling with ``make``.
