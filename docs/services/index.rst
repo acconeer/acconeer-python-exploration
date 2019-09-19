@@ -11,7 +11,7 @@ The Acconeer A1 sensor can be used in different modes depending on use case. The
 | Envelope | Distance measurements, static target   |
 |          | scenes                                 |
 +----------+----------------------------------------+
-| IQ       | Presence detection, obstacle detection,|
+| IQ       | Obstacle detection,                    |
 |          | vital sign monitoring                  |
 +----------+----------------------------------------+
 | Sparse   | Presence detection                     |
