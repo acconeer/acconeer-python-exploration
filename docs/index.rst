@@ -24,7 +24,7 @@ Table of contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Examples
+   :caption: Services and detectors
 
    services/index
    processing/index
