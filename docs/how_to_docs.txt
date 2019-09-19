@@ -12,8 +12,15 @@ For VS Code:
 
 Install the extensions Python and reStructuredText. Hit Ctrl-Shift-P, search for "Python: Select Interpreter", and select Python 3. When VS Code asks how to generate HTML, select Sphinx. If VS Code doesn't ask, hit the gear icon in the statusbar when you have an .rst document open.
 
-This is a subsection
---------------------
+Some good resources:
+http://docutils.sourceforge.net/docs/user/rst/quickref.html
+https://sphinx-rtd-theme.readthedocs.io/en/stable/index.html
+
+This is a section
+-----------------
+
+And a subsection
+^^^^^^^^^^^^^^^^
 
 **Bold**, *italic*, ``literal``
 
@@ -43,5 +50,32 @@ With syntax highlighting:
 
    def fac(n):
        return n * fac(n-1) if n > 1 else 1
+
+.. attention::
+   Attention
+
+.. caution::
+   Caution
+
+.. danger::
+   Danger
+
+.. error::
+   Error
+
+.. hint::
+   Hint
+
+.. important::
+   Important
+
+.. note::
+   Note
+
+.. tip::
+   Tip
+
+.. warning::
+   Warning
 
 .. [#] A very nice footnote!
