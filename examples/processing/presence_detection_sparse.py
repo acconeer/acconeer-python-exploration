@@ -193,15 +193,14 @@ class PresenceDetectionSparseProcessor:
     def update_processing_config(self, processing_config):
         self.threshold = processing_config.threshold
 
-        fast_cutoff = processing_config.fast_cutoff
-        slow_cutoff = processing_config.slow_cutoff
-        dev_tc = processing_config.deviation_tc
-        output_tc = processing_config.output_tc
-
-        self.fast_sf = self.cutoff_to_sf(fast_cutoff, self.f)
-        self.slow_sf = self.cutoff_to_sf(slow_cutoff, self.f)
-        self.dev_sf = self.tc_to_sf(dev_tc, self.f)
-        self.output_sf = self.tc_to_sf(output_tc, self.f)
+        self.fast_sf = self.cutoff_to_sf(
+            processing_config.fast_cutoff, self.f)
+        self.slow_sf = self.cutoff_to_sf(
+            processing_config.slow_cutoff, self.f)
+        self.dev_sf = self.tc_to_sf(
+            processing_config.deviation_tc, self.f)
+        self.output_sf = self.tc_to_sf(
+            processing_config.output_tc, self.f)
 
     def cutoff_to_sf(self, fc, fs):  # cutoff frequency to smoothing factor conversion
         if fc > 0.5 * fs:
