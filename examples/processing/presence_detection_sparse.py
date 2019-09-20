@@ -69,7 +69,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(configbase.ProcessingConfig):
-    VERSION = 1
+    VERSION = 2
 
     threshold = configbase.FloatParameter(
             label="Detection threshold",
@@ -126,17 +126,6 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             help="Time constant of the low pass filter for the detector output."
             )
 
-    noise_tc = configbase.FloatParameter(
-            label="Noise est. time const.",
-            unit="s",
-            default_value=1.0,
-            limits=(0.5, 2.0),
-            updateable=True,
-            order=50,
-            help="Time constant of the low pass filter for noise estimation.",
-            pidget_location="advanced",
-            )
-
     show_sweep = configbase.BoolParameter(
             label="Show sweep",
             default_value=True,
@@ -180,8 +169,12 @@ class PresenceDetectionSparseProcessor:
         self.num_subsweeps = sensor_config.number_of_subsweeps
         self.f = sensor_config.sweep_rate
 
+        # Fixed parameters
         self.noise_est_diff_order = 3
         self.depth_filter_length = 3
+        noise_tc = 1.0
+
+        self.noise_sf = self.tc_to_sf(noise_tc, self.f)
 
         nd = self.noise_est_diff_order
         self.noise_norm_factor = np.sqrt(np.sum(np.square(binom(nd, np.arange(nd + 1)))))
@@ -209,13 +202,11 @@ class PresenceDetectionSparseProcessor:
         slow_cutoff = processing_config.slow_cutoff
         dev_tc = processing_config.deviation_tc
         output_tc = processing_config.output_tc
-        noise_tc = processing_config.noise_tc
 
         self.fast_sf = self.cutoff_to_sf(fast_cutoff, self.f)
         self.slow_sf = self.cutoff_to_sf(slow_cutoff, self.f)
         self.dev_sf = self.tc_to_sf(dev_tc, self.f)
         self.output_sf = self.tc_to_sf(output_tc, self.f)
-        self.noise_sf = self.tc_to_sf(noise_tc, self.f)
 
     def cutoff_to_sf(self, fc, fs):  # cutoff frequency to smoothing factor conversion
         if fc > 0.5 * fs:
