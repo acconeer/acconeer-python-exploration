@@ -303,6 +303,12 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
+        range_start = session_info["actual_range_start"]
+        range_end = range_start + session_info["actual_range_length"]
+        self.range_interval = (range_start, range_end)
+        num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
+        self.depths = np.linspace(*self.range_interval, num_depths)
+
         self.setup_is_done = False
 
     def setup(self, win):
@@ -412,25 +418,21 @@ class PGUpdater:
             line.setPos(processing_config.threshold)
 
     def update(self, data):
-        sweep = data["sweep"]
-        _, num_depths = sweep.shape
-        depths = np.linspace(*self.sensor_config.range_interval, num_depths)
-
         self.sweep_scatter.setData(
-                np.tile(depths, self.sensor_config.number_of_subsweeps),
-                sweep.flatten(),
+                np.tile(self.depths, self.sensor_config.number_of_subsweeps),
+                data["sweep"].flatten(),
                 )
-        self.fast_scatter.setData(depths, data["fast"])
-        self.slow_scatter.setData(depths, data["slow"])
+        self.fast_scatter.setData(self.depths, data["fast"])
+        self.slow_scatter.setData(self.depths, data["slow"])
 
         noise = data["noise"]
-        self.noise_curve.setData(depths, noise)
+        self.noise_curve.setData(self.depths, noise)
         self.noise_plot.setYRange(0, self.noise_smooth_max.update(np.max(noise)))
 
-        movement_x = depths[data["movement_index"]]
+        movement_x = self.depths[data["movement_index"]]
 
         move_ys = data["movement"]
-        self.move_curve.setData(depths, move_ys)
+        self.move_curve.setData(self.depths, move_ys)
         m = self.move_smooth_max.update(np.max(move_ys))
         m = max(m, 2 * self.processing_config.threshold)
         self.move_plot.setYRange(0, m)
