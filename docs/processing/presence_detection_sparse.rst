@@ -3,9 +3,12 @@
 Presence detection (sparse)
 ===========================
 
+.. warning::
+   The nomenclature currently differs between the Acconeer SDK and Exploration tool due to backwards compatibility reasons. In the Exploration code base, **frames** are referred to as **sweeps** and **sweeps** are referred to as **subsweeps**. Using frames and sweep is preferred, and will switched to in Exploration v3. Throughout this guide, we use the preferred nomenclature.
+
 A presence detection algorithm built on top of the :ref:`sparse-service` service - based on measuring changes in the radar response over time.
 
-The :ref:`sparse-service` service returns sweeps in the form of :math:`N_s` subsweeps, each consisting of :math:`N_d` range depth points, normally spaced roughly 6 cm apart. We denote sweeps captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the sweep index, :math:`s` the subsweep index and :math:`d` the range depth index. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as sinusoidal movements of the sampling points over time. Thus, for each range depth point, we wish to detect changes between individual point samples occurring in the :math:`f` (and :math:`s`) dimension.
+The :ref:`sparse-service` service returns data frames in the form of :math:`N_s` sweeps, each consisting of :math:`N_d` range depth points, normally spaced roughly 6 cm apart. We denote frames captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the frame index, :math:`s` the sweep index and :math:`d` the range depth index. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as sinusoidal movements of the sampling points over time. Thus, for each range depth point, we wish to detect changes between individual point samples occurring in the :math:`f` and :math:`s` dimensions.
 
 This presence detection algorithm achieves this by depthwise looking at the deviation between a fast and a slow low pass filtered version of the signal. This deviation is then filtered again both in time and depth. To be more robust against changing environments and variations between sensors, a normalization is done against the noise floor.
 
@@ -17,7 +20,7 @@ Plots
 The above image shows a screenshot of the detector plots. In it, we can a target detected at around 0.5 m.
 
 **Top plot:**
-The sweep :math:`x` (blue dots), along with the fast (orange) and slow (green) filtered subsweep mean
+The frame :math:`x` (blue dots), along with the fast (orange) and slow (green) filtered sweep mean
 :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` respectively.
 The distance between the fast (orange) and slow (green) dots is the basis for this detector.
 
@@ -35,12 +38,12 @@ Detailed description
 Inter-frame detection basis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the typical case, the time between *sweeps* is far greater than the time between *subsweeps*. Typically, the sweep rate is 5 - 100 Hz while the subsweep rate is 3 - 30 kHz. Therefore, when looking for slow movements - presence - the subsweeps in a sweep can be regarded as being sampled at the same point in time. This allows us to take the mean over all subsweeps without loosing any information. Let the *mean subsweep* be denoted as
+In the typical case, the time between *frames* is far greater than the time between *sweeps*. Typically, the frame rate is 5 - 100 Hz while the sweep rate is 3 - 30 kHz. Therefore, when looking for slow movements - presence - the sweeps in a frame can be regarded as being sampled at the same point in time. This allows us to take the mean over all sweeps in a frame without loosing any information. Let the *mean sweep* be denoted as
 
 .. math::
    y(f, d) = \frac{1}{N_s} \sum_s x(f, s, d)
 
-We take this mean subsweep :math:`y` and depthwise run it though two `exponential smoothing`_ filters (first order IIR filters). One slower filter with a larger `smoothing factor`_, and one faster filter with a smaller smoothing factor. Let :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` be the smoothing factors and :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` be the filtered subsweep means.
+We take this mean sweep :math:`y` and depthwise run it though two `exponential smoothing`_ filters (first order IIR filters). One slower filter with a larger `smoothing factor`_, and one faster filter with a smaller smoothing factor. Let :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` be the smoothing factors and :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` be the filtered sweep means.
 In the implementation, the smoothing factors :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` are set through the
 :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.fast_cutoff`
 and
@@ -55,7 +58,7 @@ For every depth :math:`d`, for every new frame :math:`f`:
 
    \bar{y}_\text{fast}(f, d) = \alpha_\text{fast} \cdot \bar{y}_\text{fast}(f-1, d) + (1 - \alpha_\text{fast}) \cdot y(f, d)
 
-From the fast and slow filtered subsweep means, a deviation metric :math:`s` is obtained by taking the absolute deviation between the two:
+From the fast and slow filtered sweep means, a deviation metric :math:`s` is obtained by taking the absolute deviation between the two:
 
 .. math::
    s(f, d) = |\bar{y}_\text{fast}(f, d) - \bar{y}_\text{slow}(f, d)|
@@ -76,11 +79,11 @@ Noise estimation
 To normalize detection levels, we need an estimate of the noise power generated by the sensor. We assume that from a static channel, i.e., a radar signal with no moving reflections, the noise is white and its power is its variance. However, we do not want to rely on having such a measurement to obtain this estimate.
 
 Since we're looking for motions generated by humans and other living things, we know that we typically won't see fast moving objects in the data. In other words, we may assume that *high frequency content in the data originates from sensor noise*.
-Since we have a relatively high subsweep rate, we may take advantage of this to measure high frequency content.
+Since we have a relatively high sweep rate, we may take advantage of this to measure high frequency content.
 
 Extracting the high frequency content from the data can be done in numerous ways. The simplest to implement is possibly a FFT, but it is computationally expensive. Instead, we use another technique which is both robust and cheap.
 
-First, to remove any trends in the subsweep from fast motion, we differentiate each sweep over all the subsweeps :math:`N_\text{diff}=3` times:
+First, to remove any trends from fast motion in the frame, we differentiate over the sweeps :math:`N_\text{diff}=3` times:
 
 .. math::
    x'(f, s, d) = x^{(1)}(f, s, d) = x(f, s, d) - x(f, s - 1, d)
@@ -165,7 +168,7 @@ Overview
 Calculating smoothing factors
 -----------------------------
 
-Instead of directly setting the smoothing factor of the smoothing filters in the detector, we use cutoff frequencies and time constants. This allows the configuration to be independent of the sweep rate.
+Instead of directly setting the smoothing factor of the smoothing filters in the detector, we use cutoff frequencies and time constants. This allows the configuration to be independent of the frame rate.
 
 The symbols used are:
 
@@ -175,7 +178,7 @@ The symbols used are:
 :math:`\alpha` Smoothing factor 1
 :math:`\tau`   Time constant    s
 :math:`f_c`    Cutoff frequency Hz
-:math:`f_f`    Sweep rate       Hz
+:math:`f_f`    Frame rate       Hz
 ============== ================ ========
 
 Going from time constant :math:`\tau` to smoothing factor :math:`\alpha`:

@@ -40,13 +40,13 @@ digraph {
 
   in [shape=Mdiamond, label="Input frame"]
 
-  ss_mean [shape=record, label="Mean over\nsubsweeps"]
+  ss_mean [shape=record, label="Mean over\nsweeps"]
   lp_fast [shape=record, label="Fast LPF"]
   lp_slow [shape=record, label="Slow LPF"]
   lp_dev [shape=record, label="Deviation LPF"]
   inter_absdev [shape=record, label="Absolute\ndifference"]
 
-  noise_deriv [shape=record, label="Differentiate\nover subsweeps\n3 times"]
+  noise_deriv [shape=record, label="Differentiate\nover sweeps\n3 times"]
   noise_absdev [shape=record, label="Absolute deviation"]
   noise_unbias [shape=record, label="Normalize"]
 
