@@ -24,3 +24,11 @@ docs/_build
 
 # Data
 *.h5
+
+# LaTeX
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.gz
