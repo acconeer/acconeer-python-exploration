@@ -181,7 +181,7 @@ class PresenceDetectionSparseProcessor:
 
         self.fast_lp_mean_subsweep = np.zeros(self.num_depths)
         self.slow_lp_mean_subsweep = np.zeros(self.num_depths)
-        self.lp_dev = np.zeros(self.num_depths)
+        self.lp_inter_dev = np.zeros(self.num_depths)
         self.lp_noise = np.zeros(self.num_depths)
         self.lp_output = 0
 
@@ -197,7 +197,7 @@ class PresenceDetectionSparseProcessor:
             processing_config.fast_cutoff, self.f)
         self.slow_sf = self.cutoff_to_sf(
             processing_config.slow_cutoff, self.f)
-        self.dev_sf = self.tc_to_sf(
+        self.inter_dev_sf = self.tc_to_sf(
             processing_config.deviation_tc, self.f)
         self.output_sf = self.tc_to_sf(
             processing_config.output_tc, self.f)
@@ -261,14 +261,14 @@ class PresenceDetectionSparseProcessor:
         sf = self.dynamic_sf(self.slow_sf)
         self.slow_lp_mean_subsweep = sf * self.slow_lp_mean_subsweep + (1.0 - sf) * mean_subsweep
 
-        dev = np.abs(self.fast_lp_mean_subsweep - self.slow_lp_mean_subsweep)
-        sf = self.dynamic_sf(self.dev_sf)
-        self.lp_dev = sf * self.lp_dev + (1.0 - sf) * dev
+        inter_dev = np.abs(self.fast_lp_mean_subsweep - self.slow_lp_mean_subsweep)
+        sf = self.dynamic_sf(self.inter_dev_sf)
+        self.lp_inter_dev = sf * self.lp_inter_dev + (1.0 - sf) * inter_dev
 
         norm_lp_dev = np.divide(
-                self.lp_dev,
+                self.lp_inter_dev,
                 self.lp_noise,
-                out=np.zeros_like(self.lp_dev),
+                out=np.zeros_like(self.lp_inter_dev),
                 where=(self.lp_noise > 1.0),
                 )
 
