@@ -83,7 +83,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
     fast_cutoff = configbase.FloatParameter(
             label="Fast cutoff freq.",
             unit="Hz",
-            default_value=10.0,
+            default_value=20.0,
             limits=(1, 100),
             logscale=True,
             updateable=True,
@@ -119,7 +119,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
     output_tc = configbase.FloatParameter(
             label="Output time const.",
             unit="s",
-            default_value=1.0,
+            default_value=0.5,
             limits=(0, 3),
             updateable=True,
             order=40,
