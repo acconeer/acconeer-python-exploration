@@ -270,7 +270,13 @@ class PresenceDetectionSparseProcessor:
         sf = self.dynamic_sf(self.noise_sf)
         self.lp_noise = sf * self.lp_noise + (1.0 - sf) * noise
 
-        norm_lp_dev = self.lp_dev / self.lp_noise
+        norm_lp_dev = np.divide(
+                self.lp_dev,
+                self.lp_noise,
+                out=np.zeros_like(self.lp_dev),
+                where=(self.lp_noise > 1.0),
+                )
+
         norm_lp_dev *= np.sqrt(self.num_subsweeps)
 
         depth_filter = np.ones(self.depth_filter_length) / self.depth_filter_length
