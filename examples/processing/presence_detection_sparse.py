@@ -165,7 +165,6 @@ class PresenceDetectionSparseProcessor:
     # sf: smoothing factor [dimensionless]
 
     def __init__(self, sensor_config, processing_config, session_info):
-        self.processing_config = processing_config
         self.num_subsweeps = sensor_config.number_of_subsweeps
         self.f = sensor_config.sweep_rate
 
@@ -188,14 +187,9 @@ class PresenceDetectionSparseProcessor:
         self.output_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
         self.sweep_index = 0
 
-        self.update_processing_config()
+        self.update_processing_config(processing_config)
 
-    def update_processing_config(self, processing_config=None):
-        if processing_config is None:
-            processing_config = self.processing_config
-        else:
-            self.processing_config = processing_config
-
+    def update_processing_config(self, processing_config):
         self.threshold = processing_config.threshold
 
         fast_cutoff = processing_config.fast_cutoff
