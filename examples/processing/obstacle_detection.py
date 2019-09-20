@@ -352,7 +352,7 @@ class ObstacleDetectionProcessor:
                 if s == nr_sensors - 1:
                     self.bg_avg += 1
 
-            signalPSD -= self.fft_bg[s, :]
+            signalPSD -= self.fft_bg[s, :, :]
             signalPSD[signalPSD < 0] = 0
             env = np.abs(sweep[s, :])
 
@@ -428,8 +428,10 @@ class ObstacleDetectionProcessor:
                         print("Too many shadow obstacles ({})".format(len(shadow_obstacles)))
 
         fft_bg = None
+        fft_bg_send = None
         if self.sweep_index in range(self.fft_len + 1, self.fft_len + 15):
-            fft_bg = self.fft_bg[0, :]
+            fft_bg = self.fft_bg[0, :, :]
+            fft_bg_send = self.fft_bg
 
         threshold_map = None
         if self.sweep_index == 1:
@@ -447,7 +449,7 @@ class ObstacleDetectionProcessor:
             "peak_hist": self.peak_hist[0, :, :, :],
             "fft_bg": fft_bg,
             "threshold_map": threshold_map,
-            "send_process_data": fft_bg,
+            "send_process_data": fft_bg_send,
             "fused_obstacles": [f_data["fused_x"], f_data["fused_y"]],
             "left_shadows": [f_data["left_shadow_x"], f_data["left_shadow_y"]],
             "right_shadows": [f_data["right_shadow_x"], f_data["right_shadow_y"]],
@@ -651,10 +653,10 @@ class PGUpdater:
             "show_shadows": False,
         }
 
-        if len(sensor_config.sensor) > 2:
+        if self.advanced_plots["fusion_map"] and len(sensor_config.sensor) > 2:
             self.advanced_plots["fusion_map"] = False
             log.warning("Sensor fusion needs 2 sensors!")
-        if len(sensor_config.sensor) == 1:
+        if self.advanced_plots["fusion_map"] and len(sensor_config.sensor) == 1:
             log.warning("Sensor fusion needs 2 sensors! Plotting single sensor data.")
 
         if self.advanced_plots["fusion_map"]:
