@@ -245,6 +245,16 @@ class PresenceDetectionSparseProcessor:
 
         return np.mean(np.abs(a), axis=axis) * sqrt(n / (n - ddof))
 
+    def depth_filter(self, a):
+        b = np.ones(self.depth_filter_length) / self.depth_filter_length
+
+        if a.size >= b.size:
+            return np.correlate(a, b, mode="same")
+        else:
+            pad_width = int(np.ceil((b.size - a.size) / 2))
+            a = np.pad(a, pad_width)
+            return np.correlate(a, b, mode="same")[pad_width: -pad_width]
+
     def process(self, sweep):
         mean_subsweep = sweep.mean(axis=0)
 
@@ -279,8 +289,7 @@ class PresenceDetectionSparseProcessor:
 
         norm_lp_dev *= np.sqrt(self.num_subsweeps)
 
-        depth_filter = np.ones(self.depth_filter_length) / self.depth_filter_length
-        depth_filt_norm_lp_dev = np.correlate(norm_lp_dev, depth_filter, mode="same")
+        depth_filt_norm_lp_dev = self.depth_filter(norm_lp_dev)
 
         output = np.max(depth_filt_norm_lp_dev)
         sf = self.output_sf  # no dynamic filter for the output
