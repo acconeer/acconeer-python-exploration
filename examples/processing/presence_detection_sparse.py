@@ -134,6 +134,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             updateable=True,
             order=50,
             help="Time constant of the low pass filter for noise estimation.",
+            pidget_location="advanced",
             )
 
     show_sweep = configbase.BoolParameter(
@@ -153,6 +154,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             updateable=True,
             order=110,
             help="Show the noise estimation plot.",
+            pidget_location="advanced",
             )
 
     show_depthwise_output = configbase.BoolParameter(
