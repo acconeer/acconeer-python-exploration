@@ -1,3 +1,5 @@
+.. _pb-service:
+
 Power Bin
 =========
 

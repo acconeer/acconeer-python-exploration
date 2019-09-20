@@ -1,3 +1,5 @@
+.. _sparse-presence-detection:
+
 Presence detection (sparse)
 ===========================
 
