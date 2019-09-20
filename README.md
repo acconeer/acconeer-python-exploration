@@ -7,6 +7,10 @@ To run the Python exploration scripts, you will need an [evaluation kit](https:/
 This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 1.8.6**.
 Running this version is strongly recommended, as we continuously fix bugs and add features. The minimum version supported is 1.5.2.
 
+<p align="center">
+  <img alt="The GUI in action" src="docs/_static/gui.png">
+</p>
+
 ## Documentation
 
 Additional documentation is available on [Read the Docs](https://acconeer-python-exploration.readthedocs.io).
