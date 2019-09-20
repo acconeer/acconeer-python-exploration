@@ -244,6 +244,16 @@ class PresenceDetectionSparseProcessor:
             return np.correlate(a, b, mode="same")[pad_width: -pad_width]
 
     def process(self, sweep):
+        # Noise estimation
+
+        nd = self.noise_est_diff_order
+        noise = self.abs_dev(np.diff(sweep, n=nd, axis=0), axis=0, subtract_mean=False)
+        noise /= self.noise_norm_factor
+        sf = self.dynamic_sf(self.noise_sf)
+        self.lp_noise = sf * self.lp_noise + (1.0 - sf) * noise
+
+        # Inter-frame part
+
         mean_subsweep = sweep.mean(axis=0)
 
         sf = self.dynamic_sf(self.fast_sf)
@@ -256,12 +266,6 @@ class PresenceDetectionSparseProcessor:
         sf = self.dynamic_sf(self.dev_sf)
         self.lp_dev = sf * self.lp_dev + (1.0 - sf) * dev
 
-        nd = self.noise_est_diff_order
-        noise = self.abs_dev(np.diff(sweep, n=nd, axis=0), axis=0, subtract_mean=False)
-        noise /= self.noise_norm_factor
-        sf = self.dynamic_sf(self.noise_sf)
-        self.lp_noise = sf * self.lp_noise + (1.0 - sf) * noise
-
         norm_lp_dev = np.divide(
                 self.lp_dev,
                 self.lp_noise,
@@ -271,9 +275,13 @@ class PresenceDetectionSparseProcessor:
 
         norm_lp_dev *= np.sqrt(self.num_subsweeps)
 
-        depth_filt_norm_lp_dev = self.depth_filter(norm_lp_dev)
+        inter = self.depth_filter(norm_lp_dev)
 
-        output = np.max(depth_filt_norm_lp_dev)
+        # Detector output
+
+        output_vector = inter
+
+        output = np.max(output_vector)
         sf = self.output_sf  # no dynamic filter for the output
         self.lp_output = sf * self.lp_output + (1.0 - sf) * output
 
@@ -287,8 +295,8 @@ class PresenceDetectionSparseProcessor:
             "fast": self.fast_lp_mean_subsweep,
             "slow": self.slow_lp_mean_subsweep,
             "noise": self.lp_noise,
-            "movement": depth_filt_norm_lp_dev,
-            "movement_index": np.argmax(depth_filt_norm_lp_dev),
+            "movement": output_vector,
+            "movement_index": np.argmax(output_vector),
             "movement_history": self.output_history,
             "present": present,
         }
