@@ -166,6 +166,7 @@ class PresenceDetectionSparseProcessor:
 
     def __init__(self, sensor_config, processing_config, session_info):
         self.num_subsweeps = sensor_config.number_of_subsweeps
+        self.num_depths = session_info["data_length"] // self.num_subsweeps
         self.f = sensor_config.sweep_rate
 
         # Fixed parameters
@@ -178,11 +179,11 @@ class PresenceDetectionSparseProcessor:
         nd = self.noise_est_diff_order
         self.noise_norm_factor = np.sqrt(np.sum(np.square(binom(nd, np.arange(nd + 1)))))
 
-        self.fast_lp_mean_subsweep = None
-        self.slow_lp_mean_subsweep = None
-        self.lp_dev = None
+        self.fast_lp_mean_subsweep = np.zeros(self.num_depths)
+        self.slow_lp_mean_subsweep = np.zeros(self.num_depths)
+        self.lp_dev = np.zeros(self.num_depths)
+        self.lp_noise = np.zeros(self.num_depths)
         self.lp_output = 0
-        self.lp_noise = None
 
         self.output_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
         self.sweep_index = 0
@@ -244,12 +245,6 @@ class PresenceDetectionSparseProcessor:
 
     def process(self, sweep):
         mean_subsweep = sweep.mean(axis=0)
-
-        if self.sweep_index == 0:
-            self.fast_lp_mean_subsweep = np.zeros_like(mean_subsweep)
-            self.slow_lp_mean_subsweep = np.zeros_like(mean_subsweep)
-            self.lp_dev = np.zeros_like(mean_subsweep)
-            self.lp_noise = np.zeros_like(mean_subsweep)
 
         sf = self.dynamic_sf(self.fast_sf)
         self.fast_lp_mean_subsweep = sf * self.fast_lp_mean_subsweep + (1.0 - sf) * mean_subsweep
