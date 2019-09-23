@@ -31,7 +31,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
 
 import data_processing
 from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
-from helper import Label, CollapsibleSection, SensorSelection, Count
+from helper import Label, CollapsibleSection, SensorSelection, Count, AdvancedSerialDialog
 
 
 if "win32" in sys.platform.lower():
@@ -73,7 +73,7 @@ class GUI(QMainWindow):
         self.service_defaults = None
         self.advanced_process_data = {"use_data": False, "process_data": None}
         self.creating_cl = False
-        self.baudrate = self.DEFAULT_BAUDRATE
+        self.override_baudrate = None
         self.session_info = None
 
         self.gui_states = {
@@ -454,24 +454,13 @@ class GUI(QMainWindow):
         self.ports_dd.addItems(ports)
 
     def advanced_port(self):
-        input_dialog = QtWidgets.QInputDialog(self)
-        input_dialog.setInputMode(QtWidgets.QInputDialog.IntInput)
-        input_dialog.setFixedSize(400, 200)
-        input_dialog.setCancelButtonText("Default")
-        input_dialog.setIntRange(0, 3e6)
-        input_dialog.setIntValue(self.baudrate)
-        input_dialog.setOption(QtWidgets.QInputDialog.UsePlainTextEditForTextInput)
-        input_dialog.setWindowTitle("Set baudrate")
-        input_dialog.setLabelText(
-                "Default is {}, only change if using special hardware"
-                .format(self.DEFAULT_BAUDRATE)
-                )
+        dialog = AdvancedSerialDialog(self.override_baudrate, self)
+        ret = dialog.exec_()
 
-        if input_dialog.exec_() == QtWidgets.QDialog.Accepted:
-            self.baudrate = int(input_dialog.intValue())
-        else:
-            self.baudrate = self.DEFAULT_BAUDRATE
-        input_dialog.deleteLater()
+        if ret == QtWidgets.QDialog.Accepted:
+            self.override_baudrate = dialog.get_state()
+
+        dialog.deleteLater()
 
     def init_buttons(self):
         # key: text, function, enabled, hidden, group
@@ -1093,9 +1082,10 @@ class GUI(QMainWindow):
                     self.error_message("Please select port first!")
                     return
 
-                if self.baudrate != self.DEFAULT_BAUDRATE:
-                    print("Warning: Using non-standard baudrate of {}!".format(self.baudrate))
-                self.client = UARTClient(port, conf_baudrate=self.baudrate)
+                if self.override_baudrate:
+                    print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
+
+                self.client = UARTClient(port, override_baudrate=self.override_baudrate)
                 max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
 
@@ -1935,8 +1925,8 @@ class GUI(QMainWindow):
         self.textboxes["host"].setText(last_config["host"])
         self.sweep_count = last_config["sweep_count"]
 
-        if last_config.get("baudrate") is not None:
-            self.baudrate = last_config["baudrate"]
+        if last_config.get("override_baudrate"):
+            self.override_baudrate = last_config["override_baudrate"]
 
         # Restore processing configs
         if last_config["service_settings"]:
@@ -2019,8 +2009,8 @@ class GUI(QMainWindow):
             "interface": self.interface_dd.currentIndex(),
             "port": self.ports_dd.currentIndex(),
             "service_settings": service_params,
-            "baudrate": self.baudrate,
-            }
+            "override_baudrate": self.override_baudrate,
+        }
 
         if not self.under_test:
             np.save(self.LAST_CONF_FILENAME, last_config, allow_pickle=True)

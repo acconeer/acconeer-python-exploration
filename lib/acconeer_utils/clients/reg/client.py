@@ -22,7 +22,6 @@ class RegClient(BaseClient):
     _XM112_LED_PIN = 67
 
     DEFAULT_BASE_BAUDRATE = 115200
-    DEFAULT_CONF_BAUDRATE = 3000000
     CONNECT_ROUTINE_TIMEOUT = 0.6
 
     def __init__(self, port, **kwargs):
@@ -33,62 +32,63 @@ class RegClient(BaseClient):
         else:
             self._link = links.SerialProcessLink(port)
 
-        self.base_baudrate = kwargs.get("base_baudrate", self.DEFAULT_BASE_BAUDRATE)
-        self.conf_baudrate = kwargs.get("conf_baudrate", self.DEFAULT_CONF_BAUDRATE)
+        self.override_baudrate = kwargs.get("override_baudrate")
 
         self._mode = protocol.NO_MODE
         self._num_subsweeps = None
 
     def _connect(self):
-        use_dual_baudrate = bool(self.conf_baudrate)
-        init_baudrate = self.conf_baudrate if use_dual_baudrate else self.base_baudrate
-
-        self._link.baudrate = init_baudrate
-        self._link.connect()
-        log.debug("port opened at {} baud".format(init_baudrate))
-        old_timeout = self._link.timeout
         self._link.timeout = self.CONNECT_ROUTINE_TIMEOUT
 
-        if use_dual_baudrate:
-            success = False
-            try:
-                self._handshake()
-            except ClientError:
-                log.info("handshake failed at {} baud, trying {} baud..."
-                         .format(self.conf_baudrate, self.base_baudrate))
-            else:
-                success = True
+        if self.override_baudrate:
+            self._link.baudrate = self.override_baudrate
+            self._link.connect()
 
-            if not success:
-                self._link.baudrate = self.base_baudrate
-
-                try:
-                    self._handshake()
-                except links.LinkError as e:
-                    raise ClientError("could not connect, no response") from e
-
-                log.info("handshake successful, switching to {} baud..."
-                         .format(self.conf_baudrate))
-
-                self._write_reg("uart_baudrate", self.conf_baudrate)
-                self._link.baudrate = self.conf_baudrate
-                sleep(0.2)
-                self._handshake()
-
-                log.info("successfully connected at {} baud!".format(self.conf_baudrate))
-        else:
             try:
                 self._handshake()
             except links.LinkError as e:
                 raise ClientError("could not connect, no response") from e
+        else:
+            baudrates = [product.baudrate for product in protocol.PRODUCTS]
+            baudrates.append(self.DEFAULT_BASE_BAUDRATE)
+            baudrates = sorted(list(set(baudrates)))
+
+            self._link.baudrate = baudrates[0]
+            self._link.connect()
+
+            for i, baudrate in enumerate(baudrates):
+                if i != 0:
+                    self._link.baudrate = baudrate
+                    sleep(0.2)
+
+                try:
+                    self._handshake()
+                except links.LinkError:
+                    log.debug("handshake failed at {} baud".format(baudrate))
+                else:
+                    log.debug("handshake succeeded at {} baud".format(baudrate))
+                    break
+            else:
+                raise ClientError("could not connect, no response")
+
+            product_id = self._read_reg("product_id")
+            product = {product.id: product for product in protocol.PRODUCTS}[product_id]
+
+            if baudrate != product.baudrate:
+                log.debug("switching to {} baud...".format(product.baudrate))
+                self._write_reg("uart_baudrate", product.baudrate)
+                self._link.baudrate = product.baudrate
+                sleep(0.2)
+                self._handshake()
+                log.debug("handshake succeeded at {} baud".format(product.baudrate))
+
+        self._link.timeout = self._link.DEFAULT_TIMEOUT
 
         ver = self._read_reg("product_version")
         if ver < protocol.MIN_VERSION:
             log.warning("server version is not supported (too old)")
         elif ver != protocol.DEV_VERSION:
             log.warning("server version might not be fully supported")
-
-        self._link.timeout = old_timeout
 
     def _setup_session(self, config):
         if len(config.sensor) > 1:
@@ -320,7 +320,8 @@ class RegClient(BaseClient):
         self._link.recv_until(exp_frame)
 
         idn_reg = self._read_reg("product_id")
-        if idn_reg != protocol.EXPECTED_ID:
+        possible_ids = [product.id for product in protocol.PRODUCTS]
+        if idn_reg not in possible_ids:
             raise ClientError("unexpected product id")
 
 
@@ -347,7 +348,8 @@ class RegSPIClient(BaseClient):
         log.debug("connected")
 
         idn_reg = self._read_reg("product_id")
-        if idn_reg != protocol.EXPECTED_ID:
+        possible_ids = [product.id for product in protocol.PRODUCTS]
+        if idn_reg not in possible_ids:
             raise ClientError("unexpected product id")
 
         ver = self._read_reg("product_version")

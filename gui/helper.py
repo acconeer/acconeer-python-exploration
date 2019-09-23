@@ -2,9 +2,74 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout, QCheckBox,
-    QLineEdit
+    QLineEdit, QDialog, QPushButton, QSpinBox
 )
 from argparse import ArgumentParser
+
+
+class AdvancedSerialDialog(QDialog):
+    def __init__(self, state, parent):
+        super().__init__(parent)
+
+        self.setMinimumWidth(350)
+        self.setModal(True)
+        self.setWindowTitle("Advanced serial settings")
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        texts = [
+            "Please note:",
+            (
+                "Overriding the baudrate disables automatic"
+                " detection and negotiation of baudrate."
+            ),
+            "Only use on special hardware.",
+        ]
+
+        for text in texts:
+            lbl = QLabel(text, self)
+            lbl.setWordWrap(True)
+            layout.addWidget(lbl)
+
+        layout.addStretch(1)
+
+        self.cb = QCheckBox("Override baudrate", self)
+        self.cb.stateChanged.connect(self.cb_state_changed)
+        layout.addWidget(self.cb)
+
+        self.sb = QSpinBox(self)
+        self.sb.setRange(1, int(3e6))
+        layout.addWidget(self.sb)
+
+        layout.addStretch(1)
+
+        buttons_widget = QWidget(self)
+        layout.addWidget(buttons_widget)
+        hbox = QHBoxLayout()
+        buttons_widget.setLayout(hbox)
+        hbox.addStretch(1)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        hbox.addWidget(cancel_btn)
+        save_btn = QPushButton("Save")
+        save_btn.setDefault(True)
+        save_btn.clicked.connect(self.accept)
+        hbox.addWidget(save_btn)
+
+        self.set_state(state)
+
+    def cb_state_changed(self, state):
+        self.sb.setEnabled(bool(state))
+
+    def set_state(self, state):
+        checked = state is not None
+        self.cb.setChecked(checked)
+        self.cb_state_changed(checked)
+        self.sb.setValue(state if checked else 115200)
+
+    def get_state(self):
+        return self.sb.value() if self.cb.checkState() else None
 
 
 class Arguments(ArgumentParser):

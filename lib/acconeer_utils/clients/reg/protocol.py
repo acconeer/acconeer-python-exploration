@@ -16,6 +16,7 @@ Reg = namedtuple(
         ],
         )
 EncFuns = namedtuple("EncFuns", ["encode_fun", "decode_fun"])
+Product = namedtuple("Product", ["name", "id", "baudrate"])
 
 UnpackedRegVal = namedtuple("UnpackedRegVal", ["addr", "val"])
 UnpackedRegReadRequest = namedtuple("UnpackedRegReadRequest", ["addr"])
@@ -46,7 +47,6 @@ MIN_FRAME_SIZE = 1 + LEN_FIELD_SIZE + 1 + 1
 BYTEORDER = "little"
 BO = BYTEORDER
 
-EXPECTED_ID = 0xACC0
 MIN_VERSION = 1
 DEV_VERSION = 1
 
@@ -92,6 +92,11 @@ BYTE_PER_POINT = {
     "iq": 4,
     "sparse": 2,
 }
+
+PRODUCTS = [
+    Product("XM112",  0xACC0, 3000000),
+    Product("XM122",  0xACC1, 1000000),
+]
 
 float_to_milli_enc_funs = EncFuns(
     lambda v: int(round(v * 1000)),

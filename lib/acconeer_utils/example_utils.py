@@ -127,8 +127,8 @@ def autodetect_serial_port():
 
     for port_info in port_infos:
         port, desc, _ = port_info
-        if desc.startswith("XB112"):
-            print("Autodetected XB112 on {}\n".format(port))
+        if desc.strip().lower() in ["xb112", "xb122"]:
+            print("Autodetected {} on {}\n".format(desc.strip(), port))
             return port
 
     for port_info in port_infos:
