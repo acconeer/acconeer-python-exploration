@@ -11,6 +11,16 @@ Running this version is strongly recommended, as we continuously fix bugs and ad
   <img alt="The GUI in action" src="docs/_static/gui.png">
 </p>
 
+## Quickstart for Windows
+
+There is a portable version of Exploration Kit for Windows:
+
+* [Download](https://developer.acconeer.com/download/portable_exploration_tool-zip/) the zip file and extract
+* Double click the `update.bat` file and wait for the installation to finish, which takes a couple of minutes
+* Double click the `run_gui.bat`
+
+**For an in-depth evaluation we recommend a full installation of the Exploartion Kit as described below.**
+
 ## Documentation
 
 Additional documentation is available on [Read the Docs](https://acconeer-python-exploration.readthedocs.io).
