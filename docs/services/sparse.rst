@@ -58,6 +58,8 @@ If you're doing things like **gesture recognition** or any **velocity measuremen
 Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. _sparse-param-sampling-mode:
+
 Sampling mode
    | Python: ``sampling_mode``
    | C SDK: ``acc_service_sparse_sampling_mode_[get/set]``
@@ -74,6 +76,8 @@ Sampling mode
    Mode B typically gives roughly 3 dB better SNR per unit time than mode A. However, please note
    that very short ranges of only one or a few points are suboptimal with mode B. In those cases,
    always use mode A.
+
+.. _sparse-param-range:
 
 Range
    | Python: ``range_interval`` (or ``range_start``, ``range_length``, ``range_end``)
@@ -111,6 +115,8 @@ Gain
 
    Must be a value between 0 and 1 inclusive, where 1 is the highest possible gain.
 
+.. _sparse-param-frame-rate:
+
 Update rate (frame rate)
    | Python: ``sweep_rate`` (old nomenclature)
    | C SDK: ``acc_sweep_configuration_repetition_mode_streaming_[get/set]``
@@ -130,6 +136,8 @@ Update rate (frame rate)
          \frac{1}{f_f} > N_s \cdot \frac{1}{f_s} + \text{overhead*}
 
       \* *The overhead largely depends on data frame size and data transfer speeds.*
+
+.. _sparse-param-sweep-rate:
 
 Sweep rate
    | Python: ``subsweep_rate`` (old nomenclature)
@@ -151,6 +159,8 @@ Sweep rate
    .. tip::
       If you do not need a specific sweep rate, we recommend leaving it unset.
 
+.. _sparse-param-sweeps-per-frame:
+
 Sweeps per frame
    | Python: ``number_of_subsweeps`` (old nomenclature)
    | C SDK: ``acc_service_sparse_configuration_sweeps_per_frame_[get/set]``
@@ -160,6 +170,8 @@ Sweeps per frame
    The number of sweeps per frame :math:`N_s`.
 
    Must be at least 1, and not greater than 64 when using sampling mode B.
+
+.. _sparse-param-hwaas:
 
 HWAAS - Hardware Accelerated Average Samples
    | Python: ``hw_accelerated_average_samples``

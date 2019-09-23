@@ -6,72 +6,189 @@ Presence detection (sparse)
 .. warning::
    The nomenclature currently differs between the Acconeer SDK and Exploration tool due to backwards compatibility reasons. In the Exploration code base, **frames** are referred to as **sweeps** and **sweeps** are referred to as **subsweeps**. Using frames and sweep is preferred, and will switched to in Exploration v3. Throughout this guide, we use the preferred nomenclature.
 
-A presence detection algorithm built on top of the :ref:`sparse-service` service - based on measuring changes in the radar response over time.
+This is a presence detection algorithm built on top of the :ref:`sparse-service` service -- based on measuring changes in the radar response over time. The algorithm has two main parts which are weighed together:
 
-The :ref:`sparse-service` service returns data frames in the form of :math:`N_s` sweeps, each consisting of :math:`N_d` range depth points, normally spaced roughly 6 cm apart. We denote frames captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the frame index, :math:`s` the sweep index and :math:`d` the range depth index. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as sinusoidal movements of the sampling points over time. Thus, for each range depth point, we wish to detect changes between individual point samples occurring in the :math:`f` and :math:`s` dimensions.
+Inter-frame deviation -- detecting (slower) movements *between* frames
+   For every frame and depth, we take the *mean sweep* and feed it through a fast and a slow low pass filter.
+   The inter-frame deviation is based on the deviation between the two filters.
 
-This presence detection algorithm achieves this by depthwise looking at the deviation between a fast and a slow low pass filtered version of the signal. This deviation is then filtered again both in time and depth. To be more robust against changing environments and variations between sensors, a normalization is done against the noise floor.
+Intra-frame deviation -- detecting (faster) movements *inside* frames
+   For every frame and depth, the intra-frame devition is based on the deviation from the mean of the sweeps.
+
+Both the inter- and the intra-frame deviations are filtered both in time and depth. Also, to be more robust against changing environments and variations between sensors, a normalization is done against the noise floor. Finally, some simple processing is applied to generate the final output.
 
 Plots
 -----
 
-.. image:: /_static/processing/sparse_presence.png
+.. figure:: /_static/processing/sparse_presence.png
+    :align: center
 
-The above image shows a screenshot of the detector plots. In it, we can a target detected at around 0.5 m.
+    A screenshot of the plots. In it, we can see a target detected at around 0.5 m.
 
 **Top plot:**
-The frame :math:`x` (blue dots), along with the fast (orange) and slow (green) filtered sweep mean
+The frame :math:`x` (blue) along with the fast (orange) and slow (green) filtered mean sweep
 :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` respectively.
-The distance between the fast (orange) and slow (green) dots is the basis for this detector.
+The distance between the fast (orange) and slow (green) dots is the basis of the inter-frame part,
+and the spread of the sweeps (blue) is the basis of the intra-frame part.
 
 **Middle plot:**
-The "depthwise presence" :math:`z`. This signal is the time and depth filtered (and noise normalized) version of the distance between the fast and slow filter.
+The "depthwise presence" :math:`z`.
+This signal is the time filtered, depth filtered, and normalized version of the weighted sum of the inter- and intra-frame parts. The blue and orange parts show the inter- and intra-frame contributions respectively.
 
 **Bottom plot:**
-The detector output :math:`\bar{v}`. Typically limited to give a clearer view. This is basically a time filtered maximum of the above plot.
+The detector output :math:`\bar{v}`.
+This is obtained from taking the maximum in the above plot and low pass filtering it.
+The plot is limited to give a clearer view.
 
 **Not shown:** The noise estimation :math:`\bar{n}`, used for normalization of the signal.
+
+How to use
+----------
+
+Tuning the detector parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+As previously mentioned, the inter-frame part is good at detecting *slower* movements, and the intra-frame part is good at detecting *faster* movements. By slower movements we mean, for example, a person sitting in a chair or sofa. Faster movements could be a person walking or waving their hand.
+
+By default, the detector is configured such that both faster and slower movements are detected.
+This means that both the inter- and intra-frame parts are used. We recommend this as a starting point.
+
+.. tip::
+   The overall sensitivity can be adjusted with the
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.detection_threshold`
+   parameter.
+   If the detection toggles too often, try increasing the
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.output_time_const`
+   parameter. If it is too sluggish, try decreasing it instead.
+   The effects of these two parameters can be clearly seen in the bottom plot (detector output).
+
+The other parameters are best described by example:
+
+Fast motions - looking for a person walking towards or away from the sensor
+   Disable the inter-frame part by setting the
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
+   to 1.
+
+   The intra-frame part has one parameter - its filter time constant
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`.
+   Look at the depthwise presence (middle plot). If it can't keep up with the movements, try decreasing the time constant. Instead, if it's too flickery, try increasing the time constant.
+   This will also be seen in the presence distance.
+
+   Since the inter-frame part is disabled, inter-frame parameters have no effect.
+
+Slow motions - looking for a person resting in a sofa
+   Disable the intra-frame part by setting the
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
+   to 0.
+
+   The inter-frame part has a couple of parameters:
+
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_fast_cutoff`
+      If too low, some (too fast) motions might not be detected.
+      If too high, unnecessary noise might be entered into the detector.
+
+      Values larger than half the :ref:`frame rate <sparse-param-frame-rate>` disables this filter.
+      If that is not enough, you need a higher :ref:`frame rates <sparse-param-frame-rate>` or use intra-frame part.
+
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_slow_cutoff`
+      If too high, some (too slow) motions might not be detected.
+      If too low, unnecessary noise might be entered into the detector, and changes to the static environment takes a long time to adjust to.
+
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_deviation_time_const`
+      This behaves in the same way as the intra-frame time constant
+      :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`.
+
+      Look at the depthwise presence (middle plot). If it can't keep up with movements changing depth, try decreasing the time constant. Instead, if it's too flickery, try increasing the time constant.
+
+   Since the intra-frame part is disabled, the
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`
+   has no effect.
+
+Tuning the service parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Always start by setting the
+:ref:`range <sparse-param-range>`
+to the desired interval. This is important, since other parameters depend on this.
+
+The :ref:`frame rate <sparse-param-frame-rate>` should high enough to keep up with faster motions.
+However, doing so will increase the duty cycle and therefore the power consumption of the system.
+
+The :ref:`sweeps per frame <sparse-param-sweeps-per-frame>` should also in most cases be set as high as possible, but **after** the frame rate is set. This will also increase the duty cycle and power consumption of the system.
+
+If you want to distinguish depths with presence from those with no presence, set the
+:ref:`sampling mode <sparse-param-sampling-mode>`
+to A, otherwise keep it at B (the default) for maximum SNR.
+
+Limiting the :ref:`sweep rate <sparse-param-sweep-rate>`
+or decreasing :ref:`HWAAS <sparse-param-hwaas>`
+is not recommend.
 
 Detailed description
 --------------------
 
+The :ref:`sparse-service` service returns data frames in the form of :math:`N_s` sweeps, each consisting of :math:`N_d` range depth points, normally spaced roughly 6 cm apart. We denote frames captured using the sparse service as :math:`x(f,s,d)`, where :math:`f` denotes the frame index, :math:`s` the sweep index and :math:`d` the range depth index. As described in the documentation of the :ref:`sparse-service` service, small movements within the field of view of the radar appear as sinusoidal movements of the sampling points over time. Thus, for each range depth point, we wish to detect changes between individual point samples occurring in the :math:`f` and :math:`s` dimensions.
+
 Inter-frame detection basis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the typical case, the time between *frames* is far greater than the time between *sweeps*. Typically, the frame rate is 5 - 100 Hz while the sweep rate is 3 - 30 kHz. Therefore, when looking for slow movements - presence - the sweeps in a frame can be regarded as being sampled at the same point in time. This allows us to take the mean over all sweeps in a frame without loosing any information. Let the *mean sweep* be denoted as
+In the typical case, the time between *frames* is far greater than the time between *sweeps*. Typically, the frame rate is 2 - 100 Hz while the sweep rate is 3 - 30 kHz. Therefore, when looking for slow movements -- presence -- the sweeps in a frame can be regarded as being sampled at the same point in time. This allows us to take the mean over all sweeps in a frame without losing any information. Let the *mean sweep* be denoted as
 
 .. math::
    y(f, d) = \frac{1}{N_s} \sum_s x(f, s, d)
 
-We take this mean sweep :math:`y` and depthwise run it though two `exponential smoothing`_ filters (first order IIR filters). One slower filter with a larger `smoothing factor`_, and one faster filter with a smaller smoothing factor. Let :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` be the smoothing factors and :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` be the filtered sweep means.
-In the implementation, the smoothing factors :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` are set through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.fast_cutoff`
-and
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.slow_cutoff`
-parameters.
-The relationship between cutoff frequency and smoothing factor is described under :ref:`calculating-smoothing-factors`.
-For every depth :math:`d`, for every new frame :math:`f`:
-
+We take this mean sweep :math:`y` and depthwise run it though two `exponential smoothing`_ filters (first order IIR low pass filters). One slower filter with a larger smoothing factor, and one faster filter with a smaller smoothing factor. Let :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` be the smoothing factors and :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` be the filtered sweep means.
+For every depth :math:`d` in every new frame :math:`f`:
 
 .. math::
    \bar{y}_\text{slow}(f, d) = \alpha_\text{slow} \cdot \bar{y}_\text{slow}(f-1, d) + (1 - \alpha_\text{slow}) \cdot y(f, d)
 
    \bar{y}_\text{fast}(f, d) = \alpha_\text{fast} \cdot \bar{y}_\text{fast}(f-1, d) + (1 - \alpha_\text{fast}) \cdot y(f, d)
 
-From the fast and slow filtered sweep means, a deviation metric :math:`s` is obtained by taking the absolute deviation between the two:
+.. note::
+   The smoothing factors :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` are set through the
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_fast_cutoff`
+   and
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_slow_cutoff`
+   parameters.
+   The relationship between cutoff frequency and smoothing factor is described under :ref:`calculating-smoothing-factors`.
+
+From the fast and slow filtered sweep means, a deviation metric :math:`s_\text{inter}` is obtained by taking the absolute deviation between the two:
 
 .. math::
-   s(f, d) = |\bar{y}_\text{fast}(f, d) - \bar{y}_\text{slow}(f, d)|
+   s_\text{inter}(f, d) = \sqrt{N_s} \cdot |\bar{y}_\text{fast}(f, d) - \bar{y}_\text{slow}(f, d)|
 
-Basically, :math:`s` relates to the instantaneous power of a bandpass filtered version of :math:`y`. This metric is then filtered again with a smoothing factor :math:`\alpha_\text{dev}`, set through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.deviation_tc`
+Where :math:`\sqrt{N_s}` is a normalization constant.
+In other words, :math:`s_\text{inter}` relates to the instantaneous power of a bandpass filtered version of :math:`y`. This metric is then filtered again with a smoothing factor, :math:`\alpha_\text{dev}`, set through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_deviation_time_const`
 parameter,
 to get a more stable metric:
 
 .. math::
-   \bar{s}(f, d) = \alpha_\text{dev} \cdot \bar{s}(f-1, d) + (1 - \alpha_\text{dev}) \cdot s(f, d)
+   \bar{s}_\text{inter}(f, d) = \alpha_\text{dev} \cdot \bar{s}_\text{inter}(f-1, d) + (1 - \alpha_\text{dev}) \cdot s_\text{inter}(f, d)
 
-This is the starting point of the inter-frame presence detection algorithm. In a few words - depthwise low pass filtered power of the bandpass filtered signal. But before it's used, it's favorable to normalize it with noise floor, discussed in the following section.
+This is the basis of the inter-frame presence detection. In a few words - depthwise low pass filtered power of the bandpass filtered signal. But before it's used, it's favorable to normalize it with noise floor, discussed in later sections.
+
+Intra-frame detection basis
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are cases where the motion is too fast for the inter-frame to pick up. Often, we are interested in seeing such movements as well, and this is what the intra-frame part is for. The idea is simple -- for every frame we depthwise take the deviation from the sweep mean and low pass (smoothing) filter it.
+
+Let the deviation from the be mean be:
+
+.. math::
+   s_\text{intra}(f, d) = \sqrt{\frac{N_s}{N_s - 1}} \cdot \frac{1}{N_s} \sum_s |x(f, s, d) - y(f, d)|
+
+where the first factor is a correction for the limited number of samples (sweeps).
+
+Then, let the low pass filtered (smoothened) version be:
+
+.. math::
+   \bar{s}_\text{intra}(f, d) = \alpha_\text{intra} \cdot \bar{s}_\text{intra}(f-1, d) + (1 - \alpha_\text{intra}) \cdot s_\text{intra}(f, d)
+
+The smoothing factor :math:`\alpha_\text{intra}` is set through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`
+parameter.
 
 Noise estimation
 ^^^^^^^^^^^^^^^^
@@ -109,21 +226,35 @@ And normalize such that the expectation value would be the same as if no differe
        \sum_{k=0}^{N_\text{diff}} \binom{N_\text{diff}}{k}^2
    \right]^{-1/2}
 
-Finally, apply an exponential smoothing filter with a smoothing factor :math:`\alpha_\text{noise}`, set through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.noise_tc`
-parameter,
-to get a more stable metric:
+Finally, apply an exponential smoothing filter with a smoothing factor :math:`\alpha_\text{noise}` to get a more stable metric:
 
 .. math::
    \bar{n}(f, d) = \alpha_\text{noise} \cdot \bar{n}(f-1, d) + (1 - \alpha_\text{noise}) \cdot n(f, d)
 
+This smoothing factor is set from a fixed time constant of 1 s.
+
 Generating the detector output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-With the noise estimate :math:`\bar{n}`, we form a depthwise normalized inter-frame detection:
+We now have three signals --
+the inter-frame deviation :math:`\bar{s}_\text{inter}(f, d)`,
+the intra-frame deviation :math:`\bar{s}_\text{intra}(f, d)`,
+and the noise estimation :math:`\bar{n}(f, d)`.
+To form the depthwise output we weigh the inter and intra parts together and normalize with the noise estimation:
 
 .. math::
-   \bar{s}_n(f, d) = \frac{\bar{s}(f, d) \cdot \sqrt{N_s}}{\bar{n}(f, d)}
+   \bar{s}_n(f, d) = \frac{
+      w_\text{inter} \cdot \bar{s}_\text{inter}(f, d)
+      +
+      w_\text{intra} \cdot \bar{s}_\text{intra}(f, d)
+   }{
+      \bar{n}(f, d)
+   }
+
+The intra-frame weight :math:`w_\text{intra}` is settable through the
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
+parameter.
+The inter-frame weight :math:`w_\text{inter} = 1 - w_\text{intra}`.
 
 Finally, since the reflection typically span several depth points, we apply a small depth filter:
 
@@ -152,13 +283,13 @@ From :math:`z`, we can extract the information we are looking for. Is there some
 where :math:`p` is the "present"/"not present" output and :math:`d_p` is the presence depth index output.
 
 It is possible to tune :math:`\alpha_\text{output}` through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.output_tc`
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.output_time_const`
 parameter. The threshold :math:`v_\text{threshold}` is settable through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.threshold`
+:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.detection_threshold`
 parameter.
 
-Overview
-^^^^^^^^
+Graphical overview
+^^^^^^^^^^^^^^^^^^
 
 .. graphviz:: /graphs/presence_detection_sparse.dot
    :align: center
@@ -166,7 +297,7 @@ Overview
 .. _calculating-smoothing-factors:
 
 Calculating smoothing factors
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Instead of directly setting the smoothing factor of the smoothing filters in the detector, we use cutoff frequencies and time constants. This allows the configuration to be independent of the frame rate.
 
@@ -203,11 +334,10 @@ Read more:
 `time constants <https://en.wikipedia.org/wiki/Exponential_smoothing#Time_Constant>`_,
 `cutoff frequencies <https://www.dsprelated.com/showarticle/182.php>`_.
 
-Configuration
--------------
+Configuration parameters
+------------------------
 
 .. autoclass:: examples.processing.presence_detection_sparse.ProcessingConfiguration
    :members:
 
 .. _`exponential smoothing`: https://en.wikipedia.org/wiki/Exponential_smoothing
-.. _`smoothing factor`: https://en.wikipedia.org/wiki/Exponential_smoothing

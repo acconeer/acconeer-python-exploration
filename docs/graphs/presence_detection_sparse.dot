@@ -1,63 +1,70 @@
 digraph {
-  graph [pad=0.1, nodesep=0.3, ranksep=0.4]
+  pad=0.1
+  ranksep=0.3
+  nodesep=0.3
   bgcolor="#ffffff00"
   fontname=sans
   fontsize=12
-  node [fontname=sans, fontsize=12]
+  style=rounded
+  node [fontname=sans, fontsize=12, shape=record, style=rounded]
 
-  in -> ss_mean
-  subgraph cluster_inter {
-    label="Inter-frame base"
+  subgraph cluster {
+    style=invis
 
-    ss_mean -> {lp_fast, lp_slow}
+    subgraph cluster_inter {
+        label="Inter-frame base\nDepthwise"
+        style=rounded
 
-    subgraph cluster_inter_dw {
-      label="Depthwise"
+        sweep_mean -> {fast_lpf, slow_lpf} -> fast_slow_dev -> inter_lpf
+    }
 
-      {lp_fast, lp_slow} -> inter_absdev -> lp_dev
+    subgraph cluster_intra {
+        label="Intra-frame base\nDepthwise"
+        style=rounded
+
+        sweep_dev -> intra_lpf
+    }
+
+    subgraph cluster_noise {
+        label="Noise estimation\nDepthwise"
+        style=rounded
+
+        noise_diff -> noise_dev -> noise_comp -> noise_lpf
     }
   }
 
-  in -> noise_deriv
-  subgraph cluster_noise {
-    label="Noise estimation"
+  in -> {sweep_mean, sweep_dev, noise_diff}
 
-    noise_deriv -> noise_absdev
-
-    subgraph cluster_inter_dw {
-      label="Depthwise"
-
-      noise_absdev -> noise_unbias
-    }
-
-  }
-
-  {lp_dev, noise_unbias} -> inter_norm
-
-  inter_norm -> depth_filter
+  {intra_lpf, inter_lpf} -> weighted_sum
+  {weighted_sum, noise_lpf} -> norm -> depth_filter
   depth_filter -> out_max -> lp_out -> threshold -> out
   depth_filter -> out_argmax -> out
 
   in [shape=Mdiamond, label="Input frame"]
 
-  ss_mean [shape=record, label="Mean over\nsweeps"]
-  lp_fast [shape=record, label="Fast LPF"]
-  lp_slow [shape=record, label="Slow LPF"]
-  lp_dev [shape=record, label="Deviation LPF"]
-  inter_absdev [shape=record, label="Absolute\ndifference"]
+  sweep_mean [label="Mean over\nsweeps"]
+  fast_lpf [label="Fast LPF"]
+  slow_lpf [label="Slow LPF"]
+  fast_slow_dev [label="Absolute\ndifference"]
+  inter_lpf [label="LPF"]
 
-  noise_deriv [shape=record, label="Differentiate\nover sweeps\n3 times"]
-  noise_absdev [shape=record, label="Absolute deviation"]
-  noise_unbias [shape=record, label="Normalize"]
+  sweep_dev [label="Deviation\nover sweeps"]
+  intra_lpf [label="LPF"]
 
-  inter_norm [shape=record, label="Normalize"]
+  noise_diff [label="Differentiate\nover sweeps\n3 times"]
+  noise_dev [label="Absolute\ndeviation"]
+  noise_comp [label="Compensate for\ndifferentiation"]
+  noise_lpf [label="LPF"]
 
-  depth_filter [shape=record, label="Depth filter"]
-  out_max [shape=record, label="max\nover depths"]
-  lp_out [shape=record, label="Output LPF"]
-  threshold [shape=record, label="Compare against\nthreshold"]
+  weighted_sum [label="Weighted sum"]
+  norm [label="Normalize with noise"]
 
-  out_argmax [shape=record, label="argmax\nover depths"]
+  depth_filter [label="Depth filter"]
+  out_max [label="max\nover depths"]
+  lp_out [label="LPF"]
+  threshold [label="Compare against threshold"]
+
+  out_argmax [label="argmax\nover depths"]
 
   out [shape=Msquare, label="Output"]
 }
