@@ -12,6 +12,7 @@ import examples.processing.presence_detection_sparse as presence_detection_spars
 import examples.processing.sparse_fft as sparse_fft_module
 import examples.processing.sleep_breathing as sleep_breathing_module
 import examples.processing.obstacle_detection as obstacle_detection_module
+import examples.processing.button_press as button_press_module
 
 
 ModuleInfo = namedtuple("ModuleInfo", [
@@ -110,6 +111,14 @@ MODULE_INFOS = [
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
         [1, 2],
+        False,
+    ),
+    ModuleInfo(
+        "Button Press (envelope)",
+        button_press_module,
+        button_press_module.get_sensor_config,
+        button_press_module.ButtonPressProcessor,
+        False,
         False,
     ),
 ]
