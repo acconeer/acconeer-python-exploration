@@ -523,6 +523,7 @@ class SPICommProcess(mp.Process):
         self.cmd_q = cmd_q
         self.data_q = data_q
         self.mode = None
+        self.consecutive_error_count = 0
 
     def run(self):
         self.log = logging.getLogger(__name__)
@@ -559,6 +560,8 @@ class SPICommProcess(mp.Process):
                 raise ClientError("unknown cmd {}".format(cmd))
 
     def poll(self):
+        self.consecutive_error_count = 0
+
         while self.cmd_q.empty():
             ret = self.get_next()
             self.data_q.put(("get_next", ret))
@@ -572,10 +575,15 @@ class SPICommProcess(mp.Process):
                     raise ClientError("gave up polling")
                 continue
             elif status & protocol.STATUS_DATA_READY_MASK:
+                self.consecutive_error_count = 0
                 break
             elif status & protocol.STATUS_ERROR_MASK:
                 self.write_reg("main_control", "clear_status")
                 log.info("lost sweep due to server error")
+
+                self.consecutive_error_count += 1
+                if self.consecutive_error_count >= 3:
+                    raise ClientError("too many server errors")
             else:
                 raise ClientError("got unexpected status ({})".format(status))
 
