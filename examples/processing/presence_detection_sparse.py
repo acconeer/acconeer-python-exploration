@@ -277,6 +277,14 @@ class PresenceDetectionSparseProcessor:
             return np.correlate(a, b, mode="same")[pad_width: -pad_width]
 
     def process(self, sweep):
+        # Due to backwards compatibility reasons, here in the
+        # Exploration code base, frames are referred to as sweeps, and
+        # sweeps are referred to as subsweeps. Using frames and sweeps
+        # is preferred, and will switched to in Exploration v3.
+        #
+        # For example, the "sweep" input parameter will be renamed to
+        # "frame", and "mean_subsweep" will be renamed to "mean_sweep".
+
         # Noise estimation
 
         nd = self.noise_est_diff_order
