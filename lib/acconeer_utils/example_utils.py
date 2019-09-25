@@ -189,7 +189,11 @@ class SmoothMax:
     def __init__(self, f, hysteresis=0.5, tau_decay=2.0, tau_grow=0.5):
         self.h = hysteresis
         self.ax = np.exp(-1 / (tau_decay * f))
-        self.ay = np.exp(-1 / (tau_grow * f))
+
+        if tau_grow > 1e-3:
+            self.ay = np.exp(-1 / (tau_grow * f))
+        else:
+            self.ay = 0
 
         self.x = -1
         self.y = -1
