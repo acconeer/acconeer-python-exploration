@@ -165,6 +165,8 @@ class SparseMocker:
             "actual_range_start": start,
             "actual_range_length": end - start,
             "data_length": self.num_depths * config.number_of_subsweeps,
+            "actual_subsweep_rate": 1e3,
+            "actual_stepsize": 0.06 * getattr(config, "stepsize", 1),
         }
 
         self.range_center = (start + end) / 2
