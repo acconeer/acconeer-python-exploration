@@ -93,7 +93,7 @@ class Processor:
         self.sweep_index = 0
 
     def process(self, data):
-        presences = [p.process(s)["movement"] for s, p in zip(data, self.pd_processors)]
+        presences = [p.process(s)["depthwise_presence"] for s, p in zip(data, self.pd_processors)]
 
         if self.sweep_index == 0:
             num_sensors, num_subsweeps, num_depths = data.shape

@@ -210,9 +210,9 @@ class PresenceDetectionSparseProcessor:
         self.lp_inter_dev = np.zeros(self.num_depths)
         self.lp_intra_dev = np.zeros(self.num_depths)
         self.lp_noise = np.zeros(self.num_depths)
-        self.lp_output = 0
+        self.presence_score = 0
 
-        self.output_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
+        self.presence_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
         self.sweep_index = 0
 
         self.update_processing_config(processing_config)
@@ -324,16 +324,16 @@ class PresenceDetectionSparseProcessor:
         inter = self.depth_filter(norm_lp_dev)
 
         # Detector output
-        output_vector = self.inter_weight * inter + self.intra_weight * intra
+        depthwise_presence = self.inter_weight * inter + self.intra_weight * intra
 
-        output = np.max(output_vector)
+        max_depthwise_presence = np.max(depthwise_presence)
         sf = self.output_sf  # no dynamic filter for the output
-        self.lp_output = sf * self.lp_output + (1.0 - sf) * output
+        self.presence_score = sf * self.presence_score + (1.0 - sf) * max_depthwise_presence
 
-        present = self.lp_output > self.threshold
+        presence_detected = self.presence_score > self.threshold
 
-        self.output_history = np.roll(self.output_history, -1)
-        self.output_history[-1] = self.lp_output
+        self.presence_history = np.roll(self.presence_history, -1)
+        self.presence_history[-1] = self.presence_score
 
         out_data = {
             "sweep": sweep,
@@ -342,10 +342,10 @@ class PresenceDetectionSparseProcessor:
             "noise": self.lp_noise,
             "inter": inter * self.inter_weight,
             "intra": intra * self.intra_weight,
-            "movement": output_vector,
-            "movement_index": np.argmax(output_vector),
-            "movement_history": self.output_history,
-            "present": present,
+            "depthwise_presence": depthwise_presence,
+            "presence_index": np.argmax(depthwise_presence),
+            "presence_history": self.presence_history,
+            "presence_detected": presence_detected,
         }
 
         self.sweep_index += 1
@@ -504,22 +504,22 @@ class PGUpdater:
         self.noise_curve.setData(self.depths, noise)
         self.noise_plot.setYRange(0, self.noise_smooth_max.update(np.max(noise)))
 
-        movement_x = self.depths[data["movement_index"]]
+        movement_x = self.depths[data["presence_index"]]
 
-        move_ys = data["movement"]
+        move_ys = data["depthwise_presence"]
         self.inter_curve.setData(self.depths, data["inter"])
         self.total_curve.setData(self.depths, move_ys)
         m = self.move_smooth_max.update(np.max(move_ys))
         m = max(m, 2 * self.processing_config.detection_threshold)
         self.move_plot.setYRange(0, m)
         self.move_depth_line.setPos(movement_x)
-        self.move_depth_line.setVisible(data["present"])
+        self.move_depth_line.setVisible(data["presence_detected"])
 
-        move_hist_ys = data["movement_history"]
+        move_hist_ys = data["presence_history"]
         move_hist_xs = np.linspace(-HISTORY_LENGTH_S, 0, len(move_hist_ys))
         self.move_hist_curve.setData(move_hist_xs, np.minimum(move_hist_ys, OUTPUT_MAX))
 
-        if data["present"]:
+        if data["presence_detected"]:
             present_text = "Presence detected at {:.1f}m!".format(movement_x)
             present_html = self.present_html_format.format(present_text)
             self.present_text_item.setHtml(present_html)
