@@ -53,6 +53,11 @@ class GUI(QMainWindow):
         (configs.EnvelopeServiceConfig.DIRECT_LEAKAGE, "Direct leakage"),
     ]
 
+    SAMPLING_MODES = [
+        (0, "Sampling mode A"),
+        (1, "Sampling mode B"),
+    ]
+
     sig_scan = pyqtSignal(str, str, object)
     sig_pidget_event = pyqtSignal(object)
 
@@ -157,6 +162,9 @@ class GUI(QMainWindow):
             "interface": ("Interface", "connection"),
             "bin_count": ("Power bins", "sensor"),
             "number_of_subsweeps": ("Subsweeps", "sensor"),
+            "subsweep_rate": ("Subsweep rate", "sensor"),
+            "stepsize": ("Stepsize", "sensor"),
+            "hw_accelerated_average_samples": ("HWAAS", "sensor"),
             "sweep_info": ("", "statusbar"),
             "saturated": ("Warning: Data saturated, reduce gain!", "statusbar"),
             "stitching": ("Experimental stitching enabled!", "sensor"),
@@ -189,6 +197,9 @@ class GUI(QMainWindow):
             "sweep_buffer": ("100", "scan"),
             "bin_count": ("-1", "sensor"),
             "number_of_subsweeps": ("16", "sensor"),
+            "subsweep_rate": ("-1", "sensor"),
+            "stepsize": ("1", "sensor"),
+            "hw_accelerated_average_samples": ("10", "sensor"),
         }
 
         self.textboxes = {}
@@ -222,10 +233,17 @@ class GUI(QMainWindow):
         mode_is_sparse = (self.current_data_type == "sparse")
         self.textboxes["number_of_subsweeps"].setVisible(mode_is_sparse)
         self.labels["number_of_subsweeps"].setVisible(mode_is_sparse)
+        self.textboxes["subsweep_rate"].setVisible(mode_is_sparse)
+        self.labels["subsweep_rate"].setVisible(mode_is_sparse)
         mode_is_power_bin = (self.current_data_type == "power_bin")
         self.textboxes["bin_count"].setVisible(mode_is_power_bin)
         self.labels["bin_count"].setVisible(mode_is_power_bin)
         self.env_profiles_dd.setVisible(self.current_data_type == "envelope")
+        self.sampling_mode_dd.setVisible(self.current_data_type in ["iq", "sparse"])
+
+        enable_stepsize = self.current_data_type in ["sparse", "iq"]
+        self.textboxes["stepsize"].setVisible(enable_stepsize)
+        self.labels["stepsize"].setVisible(enable_stepsize)
 
         self.cl_supported = False
         if self.current_module_label in ["IQ", "Envelope"]:
@@ -396,6 +414,10 @@ class GUI(QMainWindow):
         for _, text in self.ENVELOPE_PROFILES:
             self.env_profiles_dd.addItem(text)
         self.env_profiles_dd.currentIndexChanged.connect(self.set_profile)
+
+        self.sampling_mode_dd = QComboBox(self)
+        for _, text in self.SAMPLING_MODES:
+            self.sampling_mode_dd.addItem(text)
 
     def enable_opengl(self):
         if self.checkboxes["opengl"].isChecked():
@@ -582,17 +604,26 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.labels["range_end"], c.val, 1)
         self.settings_section.grid.addWidget(self.textboxes["range_start"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["range_end"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["stepsize"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["stepsize"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["sweep_rate"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["sweep_rate"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["gain"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["gain"], c.val, 1)
+        self.settings_section.grid.addWidget(
+            self.labels["hw_accelerated_average_samples"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(
+            self.textboxes["hw_accelerated_average_samples"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["sweeps"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["sweeps"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["bin_count"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["bin_count"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["number_of_subsweeps"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["number_of_subsweeps"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["subsweep_rate"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["subsweep_rate"], c.val, 1)
         self.settings_section.grid.addWidget(self.env_profiles_dd, c.pre_incr(), 0, 1, 2)
+        self.settings_section.grid.addWidget(self.sampling_mode_dd, c.pre_incr(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["stitching"], c.pre_incr(), 0, 1, 2)
 
         self.service_section = CollapsibleSection("Processing settings")
@@ -1145,6 +1176,9 @@ class GUI(QMainWindow):
             "sweep_rate": (30, ".0f"),
             "number_of_subsweeps": (16, "d"),
             "bin_count": (-1, "d"),
+            "hw_accelerated_average_samples": (10, "d"),
+            "stepsize": (1, "d"),
+            "subsweep_rate": (-1, ".1f"),
         }
 
         for key, (default, fmt) in d.items():
@@ -1164,6 +1198,12 @@ class GUI(QMainWindow):
             index = self.env_profiles_dd.findText(text, QtCore.Qt.MatchFixedString)
             self.env_profiles_dd.setCurrentIndex(index)
 
+        sampling_mode = getattr(config, "sampling_mode", None)
+        if sampling_mode is not None:
+            text = [text for v, text in self.SAMPLING_MODES if v == sampling_mode][0]
+            index = self.sampling_mode_dd.findText(text, QtCore.Qt.MatchFixedString)
+            self.sampling_mode_dd.setCurrentIndex(index)
+
         self.check_values()
 
     def save_gui_settings_to_sensor_config(self):
@@ -1181,16 +1221,29 @@ class GUI(QMainWindow):
         config.sweep_rate = int(self.textboxes["sweep_rate"].text())
         config.gain = float(self.textboxes["gain"].text())
         self.sweep_count = int(self.textboxes["sweeps"].text())
+        hwaas = int(self.textboxes["hw_accelerated_average_samples"].text())
+        config.hw_accelerated_average_samples = hwaas
         if self.current_data_type == "power_bin":
             bin_count = int(self.textboxes["bin_count"].text())
             if bin_count > 0:
                 config.bin_count = bin_count
         if self.current_data_type == "sparse":
             config.number_of_subsweeps = int(self.textboxes["number_of_subsweeps"].text())
+
+            subsweep_rate = float(self.textboxes["subsweep_rate"].text())
+            if subsweep_rate <= 0:
+                subsweep_rate = None
+            config.subsweep_rate = subsweep_rate
         if self.current_data_type == "envelope":
             profile_text = self.env_profiles_dd.currentText()
             profile_val = [v for v, text in self.ENVELOPE_PROFILES if text == profile_text][0]
             config.session_profile = profile_val
+        if self.current_data_type in ["iq", "sparse"]:
+            config.stepsize = int(self.textboxes["stepsize"].text())
+
+            current_text = self.sampling_mode_dd.currentText()
+            sampling_mode_val = [v for v, text in self.SAMPLING_MODES if text == current_text][0]
+            config.sampling_mode = sampling_mode_val
 
         return config
 
@@ -1248,11 +1301,55 @@ class GUI(QMainWindow):
             return
 
         errors = []
-        sweep_rate = self.textboxes["sweep_rate"].text()
-        if not sweep_rate.isdigit():
-            errors.append("Frequency must be an integer and not less than 0!\n")
-            sweep_rate = 10
-            self.textboxes["sweep_rate"].setText(str(sweep_rate))
+
+        # key, type, optional (None if <= 0)
+        checked_params = [
+            ("hw_accelerated_average_samples", int, False),
+            ("stepsize", int, False),
+            ("number_of_subsweeps", int, False),
+            ("gain", float, False),
+            ("sweep_rate", float, False),
+            ("subsweep_rate", float, True),
+        ]
+
+        config_class = self.current_module_info.sensor_config_class
+
+        if hasattr(config_class(), "sampling_mode"):
+            current_text = self.sampling_mode_dd.currentText()
+            sampling_mode_val = [v for v, text in self.SAMPLING_MODES if text == current_text][0]
+        else:
+            sampling_mode_val = None
+
+        for key, objtype, optional in checked_params:
+            default_config = config_class()
+
+            if sampling_mode_val is not None:
+                default_config.sampling_mode = sampling_mode_val
+
+            if not hasattr(default_config, key):
+                continue
+
+            default_val = getattr(default_config, key)
+            default_text = str("-1" if default_val is None and optional else str(default_val))
+
+            text = self.textboxes[key].text()
+
+            try:
+                val = objtype(text)
+            except ValueError:
+                errors.append("Value must be of type " + objtype.__name__)
+                self.textboxes[key].setText(default_text)
+                continue
+
+            if optional:
+                if val <= 0:
+                    val = None
+
+            try:
+                setattr(default_config, key, val)
+            except ValueError as e:
+                errors.append(str(e))
+                self.textboxes[key].setText(default_text)
 
         sweeps = self.is_float(self.textboxes["sweeps"].text(), is_positive=False)
         if sweeps == -1:
@@ -1264,23 +1361,6 @@ class GUI(QMainWindow):
         else:
             errors.append("Sweeps must be -1 or an int larger than 0!\n")
             self.textboxes["sweeps"].setText("-1")
-
-        if "sparse" in mode.lower():
-            e = False
-            if not self.textboxes["number_of_subsweeps"].text().isdigit():
-                self.textboxes["number_of_subsweeps"].setText("16")
-                e = True
-            else:
-                textbox = self.textboxes["number_of_subsweeps"]
-                subs = int(textbox.text())
-                subs, e = self.check_limit(subs, textbox, 1, 64, set_to=16)
-            if e:
-                errors.append("Number of Subsweeps must be an int and between 1 and 64 !\n")
-
-        gain = self.is_float(self.textboxes["gain"].text())
-        gain, e = self.check_limit(gain, self.textboxes["gain"], 0, 1, set_to=0.7)
-        if e:
-            errors.append("Gain must be between 0 and 1!\n")
 
         min_start_range = 0 if "leakage" in self.env_profiles_dd.currentText().lower() else 0.06
         start = self.is_float(self.textboxes["range_start"].text(), is_positive=False)
@@ -1494,10 +1574,16 @@ class GUI(QMainWindow):
                 try:
                     conf.sweep_rate = f["sweep_rate"][()]
                     conf.range_interval = [f["start"][()], f["end"][()]]
+                    hwaas = f["hw_accelerated_average_samples"][()]
+                    conf.hw_accelerated_average_samples = int(hwaas)
                     if self.current_data_type == "power_bin":
                         conf.bin_count = int(f["bin_count"][()])
                     if self.current_data_type == "sparse":
                         conf.number_of_subsweeps = int(f["number_of_subsweeps"][()])
+                        subsweep_rate = f["subsweep_rate"][()]
+                        conf.subsweep_rate = subsweep_rate if subsweep_rate > 0 else None
+                    if self.current_data_type in ["sparse", "iq"]:
+                        conf.stepsize = int(f["stepsize"][()])
                 except Exception as e:
                     print("Config not stored in file: ", e)
                     conf.range_interval = [
@@ -1709,10 +1795,23 @@ class GUI(QMainWindow):
                         f.create_dataset("sequence_number", data=sequence_number, dtype=np.int)
                         f.create_dataset("data_saturated", data=data_saturated, dtype='u1')
 
-                    for key in ["bin_count", "number_of_subsweeps"]:
+                    keys = [
+                        "bin_count",
+                        "number_of_subsweeps",
+                        "hw_accelerated_average_samples",
+                        "stepsize",
+                    ]
+
+                    for key in keys:
                         val = getattr(sensor_config, key, None)
                         if val is not None:
                             f.create_dataset(key, data=int(val), dtype=np.int)
+
+                    if hasattr(sensor_config, "subsweep_rate"):
+                        val = sensor_config.subsweep_rate
+                        if val is None:
+                            val = -1
+                        f.create_dataset("subsweep_rate", data=val, dtype=np.float32)
 
                     f.create_dataset(
                             "session_info",
