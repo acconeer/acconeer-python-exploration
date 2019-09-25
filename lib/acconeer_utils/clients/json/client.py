@@ -10,7 +10,6 @@ from acconeer_utils.clients.json import protocol
 
 log = logging.getLogger(__name__)
 
-MIN_VERSION = StrictVersion("1.5.2")
 DEV_VERSION = StrictVersion("1.9.1")
 
 
@@ -25,6 +24,8 @@ class JSONClient(BaseClient):
         self._num_subsweeps = None
 
     def _connect(self):
+        info = {}
+
         self._link.connect()
 
         cmd = {"cmd": "get_version"}
@@ -46,20 +47,31 @@ class JSONClient(BaseClient):
         startstr = "server version v"
         if not msg.startswith(startstr):
             log.warning("server version unknown")
-            return
+            return info
 
         server_version_str = msg[len(startstr):].strip()
+        info["version_str"] = server_version_str
 
-        try:
-            server_version = StrictVersion(server_version_str)
-        except ValueError:
-            log.warning("server version unknown")
-            return
+        if "-" in server_version_str:
+            log.warning("development server")
+            strict_version = StrictVersion(server_version_str.split("-")[0])
+        else:
+            strict_version = StrictVersion(server_version_str)
 
-        if server_version < MIN_VERSION:
-            log.warning("server version is not supported (too old)")
-        elif server_version != DEV_VERSION:
+        info["strict_version"] = strict_version
+
+        if strict_version < DEV_VERSION:
             log.warning("server version might not be fully supported")
+
+        if strict_version >= StrictVersion("1.10.0"):
+            cmd = {"cmd": "get_board_sensor_count"}
+            self._send_cmd(cmd)
+            header, _ = self._recv_frame()
+            msg = header["message"]
+            board_sensor_count = int(msg)
+            info["board_sensor_count"] = board_sensor_count
+
+        return info
 
     def _setup_session(self, config):
         if isinstance(config, dict):

@@ -18,8 +18,13 @@ class BaseClient(metaclass=ABCMeta):
         if self._connected:
             raise ClientError("already connected")
 
-        self._connect()
+        info = self._connect()
         self._connected = True
+
+        if info is None:
+            info = {}
+
+        return info
 
     def setup_session(self, config):
         if self._streaming_started:
