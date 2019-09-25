@@ -127,7 +127,7 @@ Update rate (frame rate)
 
       .. math::
 
-         f_f > N_s \cdot f_s + \text{overhead*}
+         \frac{1}{f_f} > N_s \cdot \frac{1}{f_s} + \text{overhead*}
 
       \* *The overhead largely depends on data frame size and data transfer speeds.*
 
