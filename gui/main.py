@@ -170,8 +170,6 @@ class GUI(QMainWindow):
             lbl.setText(text)
             self.labels[key] = lbl
 
-        self.labels["bin_count"].setVisible(False)
-        self.labels["number_of_subsweeps"].setVisible(False)
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
@@ -199,9 +197,6 @@ class GUI(QMainWindow):
             self.textboxes[key].setText(text)
             if key != "host":
                 self.textboxes[key].editingFinished.connect(self.check_values)
-
-        self.textboxes["bin_count"].setVisible(False)
-        self.textboxes["number_of_subsweeps"].setVisible(False)
 
     def init_checkboxes(self):
         # text, status, visible, enabled, function
