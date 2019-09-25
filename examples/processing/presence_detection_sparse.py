@@ -192,7 +192,8 @@ class PresenceDetectionSparseProcessor:
 
     def __init__(self, sensor_config, processing_config, session_info):
         self.num_subsweeps = sensor_config.number_of_subsweeps
-        self.num_depths = session_info["data_length"] // self.num_subsweeps
+        self.depths = get_range_depths(sensor_config, session_info)
+        self.num_depths = self.depths.size
         self.f = sensor_config.sweep_rate
 
         # Fixed parameters
@@ -210,7 +211,9 @@ class PresenceDetectionSparseProcessor:
         self.lp_inter_dev = np.zeros(self.num_depths)
         self.lp_intra_dev = np.zeros(self.num_depths)
         self.lp_noise = np.zeros(self.num_depths)
+
         self.presence_score = 0
+        self.presence_distance = 0
 
         self.presence_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
         self.sweep_index = 0
@@ -324,9 +327,11 @@ class PresenceDetectionSparseProcessor:
         inter = self.depth_filter(norm_lp_dev)
 
         # Detector output
+
         depthwise_presence = self.inter_weight * inter + self.intra_weight * intra
 
         max_depthwise_presence = np.max(depthwise_presence)
+
         sf = self.output_sf  # no dynamic filter for the output
         self.presence_score = sf * self.presence_score + (1.0 - sf) * max_depthwise_presence
 
@@ -334,6 +339,9 @@ class PresenceDetectionSparseProcessor:
 
         self.presence_history = np.roll(self.presence_history, -1)
         self.presence_history[-1] = self.presence_score
+
+        if max_depthwise_presence > self.threshold:
+            self.presence_distance = self.depths[np.argmax(depthwise_presence)]
 
         out_data = {
             "sweep": sweep,
@@ -343,7 +351,7 @@ class PresenceDetectionSparseProcessor:
             "inter": inter * self.inter_weight,
             "intra": intra * self.intra_weight,
             "depthwise_presence": depthwise_presence,
-            "presence_index": np.argmax(depthwise_presence),
+            "presence_distance": self.presence_distance,
             "presence_history": self.presence_history,
             "presence_detected": presence_detected,
         }
@@ -504,7 +512,7 @@ class PGUpdater:
         self.noise_curve.setData(self.depths, noise)
         self.noise_plot.setYRange(0, self.noise_smooth_max.update(np.max(noise)))
 
-        movement_x = self.depths[data["presence_index"]]
+        movement_x = data["presence_distance"]
 
         move_ys = data["depthwise_presence"]
         self.inter_curve.setData(self.depths, data["inter"])
