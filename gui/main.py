@@ -22,6 +22,7 @@ import pyqtgraph as pg
 import acconeer_utils
 from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.clients.mock.client import MockClient
+from acconeer_utils.clients.base import ClientError
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 from acconeer_utils.structs import configbase
@@ -1088,6 +1089,14 @@ class GUI(QMainWindow):
                 self.client = UARTClient(port, override_baudrate=self.override_baudrate)
                 max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
+
+            try:
+                info = self.client.connect()
+            except ClientError:
+                self.error_message("Could not connect to server!")
+                return
+
+            max_num = info.get("board_sensor_count", max_num)
 
             conf = self.get_sensor_config()
             sensor = 1
