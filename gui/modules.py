@@ -9,6 +9,7 @@ import service_modules.power_bin as power_bin_module
 import examples.processing.breathing as breathing_module
 import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_sparse as presence_detection_sparse_module
+import examples.processing.sparse_fft as sparse_fft_module
 import examples.processing.sleep_breathing as sleep_breathing_module
 import examples.processing.obstacle_detection as obstacle_detection_module
 
@@ -62,6 +63,13 @@ MODULE_INFOS = [
         presence_detection_sparse_module,
         presence_detection_sparse_module.get_sensor_config,
         presence_detection_sparse_module.PresenceDetectionSparseProcessor,
+        False,
+    ),
+    ModuleInfo(
+        "Sparse FFT (sparse)",
+        sparse_fft_module,
+        sparse_fft_module.get_sensor_config,
+        sparse_fft_module.Processor,
         False,
     ),
     ModuleInfo(
