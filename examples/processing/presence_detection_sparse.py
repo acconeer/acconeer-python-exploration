@@ -152,14 +152,14 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             help="Time constant of the low pass filter for the detector output."
             )
 
-    show_sweep = configbase.BoolParameter(
-            label="Show sweep",
+    show_sweep = configbase.BoolParameter(  # TODO: rename param, don't use sweep
+            label="Show data scatter plot",
             default_value=True,
             updateable=True,
             order=100,
             help=(
-                "Show the plot of the sweep data and the fast and slow filtered version of the"
-                " subsweep mean."
+                "Show the plot of the current data frame along with the fast and slow filtered"
+                " mean sweep (used in the inter-frame part)."
             ),
             )
 
@@ -378,7 +378,7 @@ class PGUpdater:
 
         # Data plot
 
-        self.data_plot = win.addPlot(title="Sweep (blue), fast (orange), and slow (green)")
+        self.data_plot = win.addPlot(title="Frame (blue), fast (orange), and slow (green)")
         self.data_plot.showGrid(x=True, y=True)
         self.data_plot.setLabel("bottom", "Depth (m)")
         self.data_plot.setYRange(-2**15, 2**15)
