@@ -358,11 +358,7 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
-        range_start = session_info["actual_range_start"]
-        range_end = range_start + session_info["actual_range_length"]
-        self.range_interval = (range_start, range_end)
-        num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
-        self.depths = np.linspace(*self.range_interval, num_depths)
+        self.depths = get_range_depths(sensor_config, session_info)
 
         self.setup_is_done = False
 
@@ -533,6 +529,13 @@ class PGUpdater:
         else:
             self.present_text_item.hide()
             self.not_present_text_item.show()
+
+
+def get_range_depths(sensor_config, session_info):
+    range_start = session_info["actual_range_start"]
+    range_end = range_start + session_info["actual_range_length"]
+    num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
+    return np.linspace(range_start, range_end, num_depths)
 
 
 if __name__ == "__main__":
