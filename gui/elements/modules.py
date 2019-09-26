@@ -20,6 +20,7 @@ ModuleInfo = namedtuple("ModuleInfo", [
     "sensor_config_class",
     "processor",
     "multi_sensor",
+    "allow_ml"
 ])
 
 MODULE_INFOS = [
@@ -29,12 +30,14 @@ MODULE_INFOS = [
         None,
         None,
         True,
+        True,
     ),
     ModuleInfo(
         "IQ",
         iq_module,
         iq_module.get_sensor_config,
         iq_module.IQProcessor,
+        True,
         True,
     ),
     ModuleInfo(
@@ -43,12 +46,14 @@ MODULE_INFOS = [
         envelope_module.get_sensor_config,
         envelope_module.EnvelopeProcessor,
         True,
+        True,
     ),
     ModuleInfo(
         "Power bin",
         power_bin_module,
         power_bin_module.get_sensor_config,
         PassthroughProcessor,
+        False,
         False,
     ),
     ModuleInfo(
@@ -57,12 +62,14 @@ MODULE_INFOS = [
         sparse_module.get_sensor_config,
         sparse_module.Processor,
         True,
+        True,
     ),
     ModuleInfo(
         "Presence detection (sparse)",
         presence_detection_sparse_module,
         presence_detection_sparse_module.get_sensor_config,
         presence_detection_sparse_module.PresenceDetectionSparseProcessor,
+        False,
         False,
     ),
     ModuleInfo(
@@ -71,12 +78,14 @@ MODULE_INFOS = [
         sparse_fft_module.get_sensor_config,
         sparse_fft_module.Processor,
         False,
+        False,
     ),
     ModuleInfo(
         "Breathing (IQ)",
         breathing_module,
         breathing_module.get_sensor_config,
         breathing_module.BreathingProcessor,
+        False,
         False,
     ),
     ModuleInfo(
@@ -85,12 +94,14 @@ MODULE_INFOS = [
         phase_tracking_module.get_sensor_config,
         phase_tracking_module.PhaseTrackingProcessor,
         False,
+        False,
     ),
     ModuleInfo(
         "Sleep breathing (IQ)",
         sleep_breathing_module,
         sleep_breathing_module.get_sensor_config,
         sleep_breathing_module.PresenceDetectionProcessor,
+        False,
         False,
     ),
     ModuleInfo(
@@ -99,6 +110,7 @@ MODULE_INFOS = [
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
         [1, 2],
+        False,
     ),
 ]
 

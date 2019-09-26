@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import traceback
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -9,16 +10,20 @@ class DataProcessing:
     hist_len = 500
 
     def prepare_processing(self, parent, params, session_info):
+        self.parent = parent
+        self.gui_handle = self.parent.parent
         self.sensor_config = params["sensor_config"]
         self.mode = self.sensor_config.mode
         self.service_type = params["service_type"]
         self.create_cl = params["create_clutter"]
         self.use_cl = params["use_clutter"]
         self.cl_file = params["clutter_file"]
-        self.sweeps = parent.parent.sweep_count
+        self.sweeps = self.gui_handle.sweep_count
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
         self.service_params = params["service_params"]
+
+        self.ml_plotting = params["ml_plotting"]
 
         if isinstance(self.service_params, dict):
             self.service_params["processing_handle"] = self
@@ -29,7 +34,6 @@ class DataProcessing:
         if self.sweeps < 0:
             self.sweeps = self.hist_len
 
-        self.parent = parent
         self.hist_len_index = 0
 
         self.session_info = session_info
@@ -58,6 +62,20 @@ class DataProcessing:
             self.external.update_processing_config(self.service_params)
         except Exception:
             pass
+
+    def update_feature_extraction(self, param, value=None):
+        if not isinstance(param, dict):
+            param = {param: value}
+        try:
+            self.external.update_processing_config(frame_settings=param)
+        except Exception:
+            traceback.print_exc()
+
+    def send_feature_trigger(self):
+        try:
+            self.external.update_processing_config(trigger=True)
+        except Exception:
+            traceback.print_exc()
 
     def load_clutter_data(self, cl_length, cl_file=None):
         load_success = True
@@ -111,8 +129,10 @@ class DataProcessing:
 
     def process(self, sweep_data, info):
         if self.first_run:
-            self.external = self.parent.parent.external(
-                self.sensor_config, self.service_params, self.session_info)
+            ext = self.gui_handle.external
+            if self.ml_plotting:
+                ext = self.gui_handle.ml_external
+            self.external = ext(self.sensor_config, self.service_params, self.session_info)
             self.first_run = False
             plot_data = self.external.process(sweep_data)
         else:

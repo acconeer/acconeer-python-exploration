@@ -81,7 +81,7 @@ class EnvelopeProcessor:
             self.cl_empty = np.zeros(self.data_len)
             self.last_env = np.zeros((self.num_sensors, self.data_len))
 
-            if self.num_sensors == 1:
+            if self.data_processing is not None and self.num_sensors == 1:
                 self.cl, _, self.n_std_avg = \
                     self.data_processing.load_clutter_data(self.data_len, self.cl_file)
             else:

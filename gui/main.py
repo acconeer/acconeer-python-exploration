@@ -12,7 +12,7 @@ import copy
 import json
 
 from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
-                             QCheckBox, QFrame, QPushButton)
+                             QCheckBox, QFrame, QPushButton, QTabWidget, QStackedWidget)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtCore, QtWidgets
@@ -29,10 +29,13 @@ from acconeer_utils.structs import configbase
 
 sys.path.append(os.path.dirname(__file__))  # noqa: E402
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
+sys.path.append(os.path.join(os.path.dirname(__file__), "ml/"))   # noqa: E402
+sys.path.append(os.path.join(os.path.dirname(__file__), "elements/"))   # noqa: E402
 
 import data_processing
 from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
-from helper import Label, CollapsibleSection, SensorSelection, Count, AdvancedSerialDialog
+from helper import (Label, CollapsibleSection, Count, AdvancedSerialDialog, GUIArgumentParser,
+                    SensorSelection)
 
 
 if "win32" in sys.platform.lower():
@@ -43,8 +46,9 @@ if "win32" in sys.platform.lower():
 
 class GUI(QMainWindow):
     DEFAULT_BAUDRATE = 3000000
-    ACC_IMG_FILENAME = os.path.join(os.path.dirname(__file__), "acc.png")
+    ACC_IMG_FILENAME = os.path.join(os.path.dirname(__file__), "elements/acc.png")
     LAST_CONF_FILENAME = os.path.join(os.path.dirname(__file__), "last_config.npy")
+    LAST_ML_CONF_FILENAME = os.path.join(os.path.dirname(__file__), "last_ml_config.npy")
     MAX_CL_SWEEPS = 10000
 
     ENVELOPE_PROFILES = [
@@ -81,11 +85,16 @@ class GUI(QMainWindow):
         self.creating_cl = False
         self.override_baudrate = None
         self.session_info = None
+        self.threaded_scan = None
 
         self.gui_states = {
             "has_loaded_data": False,
             "server_connected": False,
             "replaying_data": False,
+            "ml_plotting_extraction": False,
+            "ml_plotting_evaluation": False,
+            "ml_mode": False,
+            "ml_tab": "main",
         }
 
         self.current_data_type = None
@@ -94,7 +103,17 @@ class GUI(QMainWindow):
         self.multi_sensor_interface = True
         self.control_grid_count = Count()
         self.param_grid_count = Count(2)
+        self.sensor_widgets = {}
 
+        self.ml_feature_plot_widget = None
+        self.ml_use_model_plot_widget = None
+        self.ml_plotting_extraction = False
+        self.ml_plotting_evaluation = False
+        self.ml_data = None
+
+        gui_inarg = GUIArgumentParser()
+        self.args = gui_inarg.parse_args()
+        self.set_gui_state("ml_mode", self.args.machine_learning)
         self.sig_pidget_event.connect(self.pidget_processing_config_event_handler)
 
         self.module_label_to_sensor_config_map = {}
@@ -109,6 +128,11 @@ class GUI(QMainWindow):
 
         self.setWindowIcon(QIcon(self.ACC_IMG_FILENAME))
 
+        self.main_widget = QtWidgets.QSplitter(self.centralWidget())
+        self.main_widget.setStyleSheet("QSplitter::handle{background: lightgrey}")
+        self.main_widget.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        self.setCentralWidget(self.main_widget)
+
         self.init_pyqtgraph()
         self.init_labels()
         self.init_textboxes()
@@ -120,16 +144,15 @@ class GUI(QMainWindow):
         self.init_statusbar()
         self.init_pidgets()
 
-        self.main_widget = QtWidgets.QSplitter(self.centralWidget())
-        self.main_widget.setStyleSheet("QSplitter::handle{background: lightgrey}")
-        self.setCentralWidget(self.main_widget)
+        if self.get_gui_state("ml_mode"):
+            self.init_machine_learning()
+            self.main_widget.addWidget(self.tab_parent)
+            self.canvas_layout = self.tabs["collect"].layout
+        else:
+            self.canvas_widget = QFrame(self.main_widget)
+            self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
 
-        self.canvas_widget = QFrame(self.main_widget)
-        self.canvas_widget.setFrameStyle(QFrame.Panel | QFrame.Sunken)
-        self.panel_scroll_area.setFrameStyle(QFrame.Panel | QFrame.Sunken)
         self.main_widget.addWidget(self.panel_scroll_area)
-
-        self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
 
         self.update_canvas(force_update=True)
 
@@ -195,6 +218,7 @@ class GUI(QMainWindow):
             "range_start": ("0.18", "sensor"),
             "range_end": ("0.72", "sensor"),
             "sweep_buffer": ("100", "scan"),
+            "sweep_buffer_ml": ("unlimited", "scan"),
             "bin_count": ("-1", "sensor"),
             "number_of_subsweeps": ("16", "sensor"),
             "subsweep_rate": ("-1", "sensor"),
@@ -206,8 +230,11 @@ class GUI(QMainWindow):
         for key, (text, _) in textbox_info.items():
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
-            if key != "host":
+            if key != "host" and key != "sweep_buffer_ml":
                 self.textboxes[key].editingFinished.connect(self.check_values)
+
+        self.textboxes["sweep_buffer_ml"].setVisible(False)
+        self.textboxes["sweep_buffer_ml"].setEnabled(False)
 
     def init_checkboxes(self):
         # text, status, visible, enabled, function
@@ -249,11 +276,12 @@ class GUI(QMainWindow):
         if self.current_module_label in ["IQ", "Envelope"]:
             self.cl_supported = True
 
-        self.buttons["create_cl"].setVisible(self.cl_supported)
+        if self.get_gui_state("ml_tab") == "main":
+            self.buttons["create_cl"].setVisible(self.cl_supported)
+            self.buttons["load_cl"].setVisible(self.cl_supported)
+            self.labels["clutter"].setVisible(self.cl_supported)
         self.buttons["create_cl"].setEnabled(self.cl_supported)
-        self.buttons["load_cl"].setVisible(self.cl_supported)
         self.buttons["load_cl"].setEnabled(self.cl_supported)
-        self.labels["clutter"].setVisible(self.cl_supported)
 
         if self.current_module_info.module is None:
             canvas = Label(self.ACC_IMG_FILENAME)
@@ -368,8 +396,9 @@ class GUI(QMainWindow):
                 else:
                     has_standard_params = True
 
-        self.service_section.setVisible(has_standard_params)
-        self.advanced_section.setVisible(has_advanced_params)
+        if self.get_gui_state("ml_tab") == "main":
+            self.service_section.setVisible(has_standard_params)
+            self.advanced_section.setVisible(has_advanced_params)
 
     def pidget_processing_config_event_handler(self, processing_config):
         if threading.current_thread().name != "MainThread":
@@ -395,7 +424,11 @@ class GUI(QMainWindow):
         self.module_dd = QComboBox(self)
 
         for module_info in MODULE_INFOS:
-            self.module_dd.addItem(module_info.label)
+            if self.get_gui_state("ml_mode"):
+                if module_info.allow_ml:
+                    self.module_dd.addItem(module_info.label)
+            else:
+                self.module_dd.addItem(module_info.label)
 
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
@@ -438,7 +471,20 @@ class GUI(QMainWindow):
             multi_sensor = len(self.data[0]["sensor_config"].sensor) > 1
         elif self.multi_sensor_interface:
             multi_sensor = self.current_module_info.multi_sensor
-        self.sensor_selection.set_multi_sensor_support(multi_sensor)
+        for name in self.sensor_widgets:
+            self.sensor_widgets[name].set_multi_sensor_support(multi_sensor)
+
+    def set_sensors(self, sensors):
+        for name in self.sensor_widgets:
+            self.sensor_widgets[name].set_sensors(sensors)
+
+    def get_sensors(self, widget_name=None):
+        if widget_name is None:
+            widget_name = "main"
+
+        sensors = self.sensor_widgets[widget_name].get_sensors()
+
+        return sensors
 
     def set_profile(self):
         profile = self.env_profiles_dd.currentText().lower()
@@ -558,22 +604,22 @@ class GUI(QMainWindow):
             self.buttons[key] = btn
 
     def init_sublayouts(self):
-        self.panel_sublayout = QtWidgets.QVBoxLayout()
-        self.panel_sublayout.setContentsMargins(0, 3, 0, 3)
-        self.panel_sublayout.setSpacing(0)
+        self.main_sublayout = QtWidgets.QGridLayout()
+        self.main_sublayout.setContentsMargins(0, 3, 0, 3)
+        self.main_sublayout.setSpacing(0)
 
-        server_section = CollapsibleSection("Connection", is_top=True)
-        self.panel_sublayout.addWidget(server_section)
-        server_section.grid.addWidget(self.labels["interface"], 0, 0)
-        server_section.grid.addWidget(self.interface_dd, 0, 1)
-        server_section.grid.addWidget(self.ports_dd, 1, 0)
-        server_section.grid.addWidget(self.textboxes["host"], 1, 0, 1, 2)
-        server_section.grid.addWidget(self.buttons["scan_ports"], 1, 1)
-        server_section.grid.addWidget(self.buttons["advanced_port"], 2, 0, 1, 2)
-        server_section.grid.addWidget(self.buttons["connect"], 3, 0, 1, 2)
+        self.server_section = CollapsibleSection("Connection", is_top=True)
+        self.main_sublayout.addWidget(self.server_section, 0, 0)
+        self.server_section.grid.addWidget(self.labels["interface"], 0, 0)
+        self.server_section.grid.addWidget(self.interface_dd, 0, 1)
+        self.server_section.grid.addWidget(self.ports_dd, 1, 0)
+        self.server_section.grid.addWidget(self.textboxes["host"], 1, 0, 1, 2)
+        self.server_section.grid.addWidget(self.buttons["scan_ports"], 1, 1)
+        self.server_section.grid.addWidget(self.buttons["advanced_port"], 2, 0, 1, 2)
+        self.server_section.grid.addWidget(self.buttons["connect"], 3, 0, 1, 2)
 
         self.control_section = CollapsibleSection("Scan controls")
-        self.panel_sublayout.addWidget(self.control_section)
+        self.main_sublayout.addWidget(self.control_section, 1, 0)
         c = self.control_grid_count
         self.control_section.grid.addWidget(self.module_dd, c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.buttons["start"], c.pre_incr(), 0)
@@ -583,6 +629,7 @@ class GUI(QMainWindow):
         self.control_section.grid.addWidget(self.buttons["replay_buffered"], c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.labels["sweep_buffer"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], c.val, 1)
+        self.control_section.grid.addWidget(self.textboxes["sweep_buffer_ml"], c.val, 1)
         self.control_section.grid.addWidget(self.labels["empty_02"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.labels["clutter_status"], c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.labels["clutter"], c.pre_incr(), 0)
@@ -591,13 +638,14 @@ class GUI(QMainWindow):
         self.control_section.grid.addWidget(self.checkboxes["clutter_file"], c.pre_incr(), 0, 1, 2)
 
         self.settings_section = CollapsibleSection("Sensor settings")
-        self.panel_sublayout.addWidget(self.settings_section)
+        self.main_sublayout.addWidget(self.settings_section, 4, 0)
         c = Count()
         self.settings_section.grid.addWidget(self.buttons["sensor_defaults"], c.val, 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["sensor"], c.pre_incr(), 0)
 
-        self.sensor_selection = SensorSelection(error_handler=self.error_message)
-        self.settings_section.grid.addWidget(self.sensor_selection, c.val, 1)
+        sensor_selection = SensorSelection(error_handler=self.error_message)
+        self.settings_section.grid.addWidget(sensor_selection, c.val, 1)
+        self.sensor_widgets["main"] = sensor_selection
         self.set_multi_sensors()
 
         self.settings_section.grid.addWidget(self.labels["range_start"], c.pre_incr(), 0)
@@ -627,18 +675,18 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.labels["stitching"], c.pre_incr(), 0, 1, 2)
 
         self.service_section = CollapsibleSection("Processing settings")
-        self.panel_sublayout.addWidget(self.service_section)
+        self.main_sublayout.addWidget(self.service_section, 5, 0)
         self.service_section.grid.addWidget(self.buttons["service_defaults"], 0, 0, 1, 2)
         self.serviceparams_sublayout_grid = self.service_section.grid
 
         self.advanced_section = CollapsibleSection("Advanced settings", init_collapsed=True)
-        self.panel_sublayout.addWidget(self.advanced_section)
+        self.main_sublayout.addWidget(self.advanced_section, 6, 0)
         self.advanced_section.grid.addWidget(self.buttons["advanced_defaults"], 0, 0, 1, 2)
         self.advanced_section.grid.addWidget(self.buttons["load_process_data"], 1, 0)
         self.advanced_section.grid.addWidget(self.buttons["save_process_data"], 1, 1)
         self.advanced_params_layout_grid = self.advanced_section.grid
 
-        self.panel_sublayout.addStretch()
+        self.main_sublayout.setRowStretch(6, 1)
 
         self.service_section.hide()
         self.advanced_section.hide()
@@ -652,9 +700,13 @@ class GUI(QMainWindow):
         self.panel_scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.panel_scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.panel_scroll_area.horizontalScrollBar().setEnabled(False)
-        panel_scroll_area_widget = QWidget(self.panel_scroll_area)
-        self.panel_scroll_area.setWidget(panel_scroll_area_widget)
-        panel_scroll_area_widget.setLayout(self.panel_sublayout)
+
+        self.panel_scroll_area_widget = QStackedWidget(self.panel_scroll_area)
+        self.panel_scroll_area.setWidget(self.panel_scroll_area_widget)
+        self.main_sublayout_widget = QWidget(self.panel_scroll_area_widget)
+        self.main_sublayout_widget.setLayout(self.main_sublayout)
+        self.panel_scroll_area_widget.addWidget(self.main_sublayout_widget)
+        self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
 
     def init_statusbar(self):
         self.statusBar().showMessage("Not connected")
@@ -666,6 +718,106 @@ class GUI(QMainWindow):
         self.statusBar().addPermanentWidget(self.checkboxes["opengl"])
         self.statusBar().setStyleSheet("QStatusBar{border-top: 1px solid lightgrey;}")
         self.statusBar().show()
+
+    def init_machine_learning(self):
+        if self.get_gui_state("ml_mode"):
+            import ml_gui_elements as ml_gui
+            import feature_processing
+            self.ml_elements = ml_gui
+            self.ml_external = feature_processing.DataProcessor
+            self.ml_module = feature_processing
+            self.init_tabs()
+            self.init_ml_panels()
+
+    def init_tabs(self):
+        self.tab_parent = QTabWidget(self.main_widget)
+        self.tab_parent.setStyleSheet("background: #f0f0f0")
+        self.tab_parent.resize(300, 200)
+
+        self.tabs = {
+            "collect": (QWidget(self.main_widget), "Configure service"),
+            "feature_select": (QWidget(self.main_widget), "Feature configuration"),
+            "feature_extract": (QWidget(self.main_widget), "Feature extraction"),
+            "feature_inspect": (QWidget(self.main_widget), "Feature inspection"),
+            "train": (QWidget(self.main_widget), "Train Network"),
+            "eval": (QWidget(self.main_widget), "Use Network"),
+            }
+
+        self.tabs_text_to_key = {
+            "Configure service": "main",
+            "Feature configuration": "feature_select",
+            "Feature extraction": "feature_extract",
+            "Feature inspection": "feature_inspect",
+            "Train Network": "train",
+            "Use Network": "eval",
+        }
+
+        for key, (tab, label) in self.tabs.items():
+            self.tab_parent.addTab(tab, label)
+            tab.layout = QtWidgets.QVBoxLayout()
+            tab.setLayout(tab.layout)
+            self.tabs[key] = tab
+
+        self.tab_parent.currentChanged.connect(self.tab_changed)
+
+        self.feature_select = self.ml_elements.FeatureSelectFrame(
+            self.main_widget,
+            gui_handle=self
+            )
+        self.tabs["feature_select"].layout.addWidget(self.feature_select)
+
+        self.feature_extract = self.ml_elements.FeatureExtractFrame(
+            self.main_widget,
+            gui_handle=self
+            )
+        self.tabs["feature_extract"].layout.addWidget(self.feature_extract)
+
+        self.feature_inspect = self.ml_elements.FeatureInspectFrame(
+            self.main_widget,
+            gui_handle=self
+            )
+        self.tabs["feature_inspect"].layout.addWidget(self.feature_inspect)
+
+        self.training = self.ml_elements.TrainingFrame(self.main_widget, gui_handle=self)
+        self.tabs["train"].layout.addWidget(self.training)
+
+        self.eval_model = self.ml_elements.EvalFrame(self.main_widget, gui_handle=self)
+        self.tabs["eval"].layout.addWidget(self.eval_model)
+
+    def init_ml_panels(self):
+        # feature select/extract/inspect frame
+        self.feature_section = CollapsibleSection("Feature settings", init_collapsed=False)
+        self.main_sublayout.addWidget(self.feature_section, 3, 0)
+        self.feature_sidepanel = self.ml_elements.FeatureSidePanel(self.main_widget, self)
+        self.feature_section.grid.addWidget(self.feature_sidepanel, 0, 0, 1, 2)
+        self.feature_section.hide()
+        self.feature_section.button_event(override=False)
+
+        # training frame
+        self.training_sidepanel = self.ml_elements.TrainingSidePanel(
+            self.panel_scroll_area_widget, self)
+        self.panel_scroll_area_widget.addWidget(self.training_sidepanel)
+
+        # eval frame
+        self.eval_section = CollapsibleSection("Run model", init_collapsed=False)
+        self.main_sublayout.addWidget(self.eval_section, 2, 0)
+        self.eval_sidepanel = self.ml_elements.EvalSidePanel(self.eval_section, self)
+        self.eval_section.grid.addWidget(self.eval_sidepanel, 0, 0, 1, 2)
+        self.eval_section.hide()
+        self.eval_section.button_event(override=False)
+
+    def tab_changed(self, index):
+        tab = self.tab_parent.tabText(index)
+        self.set_gui_state("ml_tab", self.tabs_text_to_key[tab])
+
+    def enable_tabs(self, enable):
+        if not self.get_gui_state("ml_mode"):
+            return
+
+        current_tab = self.tab_parent.currentIndex()
+        for i in range(len(self.tabs)):
+            if i != current_tab:
+                self.tab_parent.setTabEnabled(i, enable)
 
     def add_params(self, params, start_up_mode=None):
         if params is None:
@@ -750,7 +902,8 @@ class GUI(QMainWindow):
                         advanced_available = True
 
         if start_up_mode is None:
-            self.service_section.setVisible(bool(params))
+            if self.get_gui_state("ml_tab") == "main":
+                self.service_section.setVisible(bool(params))
 
             if advanced_available:
                 self.advanced_section.show()
@@ -866,6 +1019,16 @@ class GUI(QMainWindow):
         em.setWindowTitle("Error")
         em.showMessage(error)
 
+    def info_handle(self, info, detailed_info=None):
+        msg = QtWidgets.QMessageBox(self.main_widget)
+        msg.setIcon(QtWidgets.QMessageBox.Information)
+        msg.setText(info)
+        if detailed_info:
+            msg.setDetailedText(detailed_info)
+        msg.setWindowTitle("Info")
+        msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg.exec_()
+
     def warning_message(self, warning, detailed_warning=None):
         msg = QtWidgets.QMessageBox(self.main_widget)
         msg.setIcon(QtWidgets.QMessageBox.Warning)
@@ -944,6 +1107,44 @@ class GUI(QMainWindow):
             else:
                 processing_config["sweeps_requested"] = self.clutter_sweeps
 
+        sensor_config = self.save_gui_settings_to_sensor_config()
+        if create_cl and len(sensor_config.sensor) > 1:
+            self.error_message("Background can only be measured for one sensor at a time!\n")
+            return
+
+        sweep_buffer = self.sweep_buffer
+        feature_list = None
+        ml_plotting = False
+        if self.ml_plotting_extraction or self.ml_plotting_evaluation:
+            if self.ml_plotting_extraction:
+                sweep_buffer = np.inf
+                feature_list = self.feature_select
+            else:
+                if self.eval_sidepanel.model_loaded() is False:
+                    self.error_message("Please load a model first!\n")
+                    return
+                feature_list = self.eval_sidepanel
+                sensor = sensor_config.sensor.copy()
+                sensor_config = self.eval_sidepanel.get_sensor_config()
+                sensor_config.sensor = sensor
+                if not self.eval_sidepanel.config_is_valid():
+                    return
+
+            e_handle = self.error_message
+            if not self.feature_select.check_limits(sensor_config, error_handle=e_handle):
+                return
+
+            processing_config["ml_settings"] = {
+                "feature_list": feature_list,
+                "frame_settings": self.feature_sidepanel.get_frame_settings(),
+                "evaluate": self.ml_plotting_evaluation,
+            }
+            ml_plotting = True
+            if self.ml_plotting_evaluation:
+                self.ml_use_model_plot_widget.reset_data(sensor_config, processing_config)
+            elif self.ml_plotting_extraction:
+                self.ml_feature_plot_widget.reset_data(sensor_config, processing_config)
+
         params = {
             "sensor_config": sensor_config,
             "clutter_file": self.cl_file,
@@ -951,8 +1152,10 @@ class GUI(QMainWindow):
             "create_clutter": create_cl,
             "data_source": data_source,
             "service_type": self.current_module_label,
-            "sweep_buffer": self.sweep_buffer,
+            "sweep_buffer": sweep_buffer,
             "service_params": processing_config,
+            "ml_plotting": ml_plotting,
+            "service_handle": self.current_module_info.module,
         }
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
@@ -984,16 +1187,17 @@ class GUI(QMainWindow):
 
         self.buttons["connect"].setEnabled(False)
         self.buttons["replay_buffered"].setEnabled(False)
+        self.enable_tabs(False)
 
-    def set_gui_state(self, state, enabled):
+    def set_gui_state(self, state, val):
         if state in self.gui_states:
-            self.gui_states[state] = enabled
+            self.gui_states[state] = val
         else:
             print("{} is an unknown state!".format(state))
             return
 
         if state == "server_connected":
-            if enabled:
+            if val:
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(self.cl_supported)
                 self.buttons["load_cl"].setEnabled(self.cl_supported)
@@ -1004,6 +1208,8 @@ class GUI(QMainWindow):
                 self.gui_states["has_loaded_data"] = False
                 self.data = None
                 self.set_multi_sensors()
+                if self.get_gui_state("ml_mode"):
+                    self.feature_select.update_sensors(self.save_gui_settings_to_sensor_config())
             else:
                 self.buttons["connect"].setText("Connect")
                 self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
@@ -1015,12 +1221,94 @@ class GUI(QMainWindow):
                     self.buttons["load_cl"].setEnabled(True)
 
         if state == "has_loaded_data":
-            if enabled:
+            if val:
                 if isinstance(self.data, list) and self.data[0].get("sensor_config"):
                     self.set_multi_sensors()
             else:
                 self.buttons["replay_buffered"].setEnabled(False)
             self.init_graphs()
+
+        if state == "ml_tab":
+            self.feature_sidepanel.select_mode(val)
+            self.settings_section.body_widget.setEnabled(True)
+            self.server_section.hide()
+            self.service_section.hide()
+            self.settings_section.hide()
+            self.control_section.hide()
+            self.feature_section.hide()
+            self.eval_section.hide()
+            self.textboxes["sweep_buffer_ml"].hide()
+            self.textboxes["sweep_buffer"].hide()
+            self.ml_plotting_extraction = False
+            self.ml_plotting_evaluation = False
+            cl_supported = self.cl_supported
+
+            if val == "main":
+                if "Select service" not in self.current_module_label:
+                    self.service_section.show()
+                self.settings_section.show()
+                self.server_section.show()
+                self.control_section.show()
+                self.textboxes["sweep_buffer"].show()
+                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
+
+            elif val == "feature_select":
+                self.feature_section.button_event(override=False)
+                self.settings_section.show()
+                self.feature_section.show()
+                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
+                self.set_sensors(self.get_sensors(widget_name="main"))
+                self.feature_sidepanel.textboxes["sweep_rate"].setText(
+                    self.textboxes["sweep_rate"].text()
+                    )
+
+            elif val == "feature_extract":
+                self.ml_plotting_extraction = True
+                cl_supported = False
+                self.server_section.show()
+                self.control_section.show()
+                self.feature_section.button_event(override=False)
+                self.feature_section.show()
+                self.textboxes["sweep_buffer_ml"].show()
+                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
+                self.set_sensors(self.get_sensors(widget_name="main"))
+                self.feature_sidepanel.textboxes["sweep_rate"].setText(
+                    self.textboxes["sweep_rate"].text()
+                    )
+
+                if self.ml_feature_plot_widget is None:
+                    self.feature_extract.init_graph()
+                    self.ml_feature_plot_widget = self.feature_extract.plot_widget
+
+            elif val == "feature_inspect":
+                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
+                self.feature_section.show()
+                self.feature_inspect.update_frame("frames", 1, init=True)
+                self.feature_inspect.update_sliders()
+
+            elif val == "train":
+                self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
+
+            elif val == "eval":
+                self.settings_section.body_widget.setEnabled(False)
+                self.ml_plotting_evaluation = True
+                cl_supported = False
+                self.feature_section.show()
+                self.eval_section.show()
+                self.settings_section.show()
+                self.server_section.show()
+                self.control_section.show()
+                self.textboxes["sweep_buffer"].show()
+                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
+
+                if self.ml_use_model_plot_widget is None:
+                    self.eval_model.init_graph()
+                    self.ml_use_model_plot_widget = self.eval_model.plot_widget
+
+            self.buttons["create_cl"].setVisible(cl_supported)
+            self.buttons["load_cl"].setVisible(cl_supported)
+            self.buttons["load_cl"].setEnabled(cl_supported)
+            self.labels["clutter"].setVisible(cl_supported)
 
     def get_gui_state(self, state):
         if state in self.gui_states:
@@ -1048,7 +1336,9 @@ class GUI(QMainWindow):
         self.buttons["connect"].setEnabled(True)
         self.buttons["start"].setEnabled(True)
         self.service_section.body_widget.setEnabled(True)
-        self.settings_section.body_widget.setEnabled(True)
+
+        if self.get_gui_state("ml_tab") == "main":
+            self.settings_section.body_widget.setEnabled(True)
 
         processing_config = self.get_processing_config()
         if isinstance(processing_config, configbase.Config):
@@ -1061,6 +1351,7 @@ class GUI(QMainWindow):
             self.buttons["replay_buffered"].setEnabled(True)
             self.buttons["save_scan"].setEnabled(True)
         self.set_gui_state("replaying_data", False)
+        self.enable_tabs(True)
 
     def input_clutter_sweeps(self):
         input_dialog = QtWidgets.QInputDialog(self)
@@ -1142,7 +1433,7 @@ class GUI(QMainWindow):
                     error = e
                 sensor += 1
             if connection_success:
-                self.sensor_selection.set_sensors(sensors_available)
+                self.set_sensors(sensors_available)
                 self.set_gui_state("server_connected", True)
                 self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
             else:
@@ -1416,6 +1707,10 @@ class GUI(QMainWindow):
         if len(errors):
             self.error_message("".join(errors))
 
+        if self.get_gui_state("ml_mode"):
+            sweep_rate = self.textboxes["sweep_rate"].text()
+            self.feature_sidepanel.textboxes["sweep_rate"].setText(sweep_rate)
+
         return stitching
 
     def is_float(self, val, is_positive=True):
@@ -1663,7 +1958,7 @@ class GUI(QMainWindow):
 
             self.set_gui_state("has_loaded_data", True)
 
-            self.sensor_selection.set_sensors(conf.sensor)
+            self.set_sensors(conf.sensor)
             self.load_gui_settings_from_sensor_config(conf)
 
             if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
@@ -1832,9 +2127,11 @@ class GUI(QMainWindow):
                             for key in self.service_params:
                                 if key == "processing_handle":
                                     continue
-
-                                f.create_dataset(key, data=self.service_params[key]["value"],
-                                                 dtype=np.float32)
+                                try:
+                                    f.create_dataset(key, data=self.service_params[key]["value"],
+                                                     dtype=np.float32)
+                                except Exception:
+                                    pass
                 else:
                     try:
                         if isinstance(processing_config, configbase.Config):
@@ -1936,13 +2233,20 @@ class GUI(QMainWindow):
         elif "process_data" in message_type:
             self.advanced_process_data["process_data"] = data
         elif "set_sensors" in message_type:
-            self.sensor_selection.set_sensors(data)
+            self.set_sensors(data)
         else:
             print("Thread data not implemented!")
             print(message_type, message, data)
 
     def update_external_plots(self, data):
-        self.service_widget.update(data)
+        if isinstance(data, dict) and data.get("ml_plotting") is True:
+            if self.ml_plotting_extraction:
+                self.ml_feature_plot_widget.update(data)
+            else:
+                self.ml_use_model_plot_widget.update(data)
+            self.ml_data = data
+        else:
+            self.service_widget.update(data)
 
     def update_sweep_info(self, data):
         if isinstance(data, list):
@@ -1997,12 +2301,20 @@ class GUI(QMainWindow):
         print("End   {:.3f} -> {:.3f}".format(old_end, end))
 
     def start_up(self):
-        if os.path.isfile(self.LAST_CONF_FILENAME) and not self.under_test:
-            try:
-                last = np.load(self.LAST_CONF_FILENAME, allow_pickle=True)
-                self.load_last_config(last.item())
-            except Exception as e:
-                print("Could not load settings from last session\n{}".format(e))
+        if not self.under_test:
+            if os.path.isfile(self.LAST_CONF_FILENAME):
+                try:
+                    last = np.load(self.LAST_CONF_FILENAME, allow_pickle=True)
+                    self.load_last_config(last.item())
+                except Exception as e:
+                    print("Could not load settings from last session\n{}".format(e))
+            if os.path.isfile(self.LAST_ML_CONF_FILENAME) and self.get_gui_state("ml_mode"):
+                try:
+                    last = np.load(self.LAST_ML_CONF_FILENAME, allow_pickle=True)
+                    self.feature_select.update_feature_list(last.item()["feature_list"])
+                    self.feature_sidepanel.set_frame_settings(last.item()["frame_settings"])
+                except Exception as e:
+                    print("Could not load ml settings from last session\n{}".format(e))
 
     def load_last_config(self, last_config):
         # Restore sensor configs
@@ -2118,6 +2430,17 @@ class GUI(QMainWindow):
         if not self.under_test:
             np.save(self.LAST_CONF_FILENAME, last_config, allow_pickle=True)
 
+            if self.get_gui_state("ml_mode"):
+                try:
+                    last_ml_config = {
+                        "feature_list": self.feature_select.get_feature_list(),
+                        "frame_settings": self.feature_sidepanel.get_frame_settings(),
+                    }
+                except Exception:
+                    pass
+                else:
+                    np.save(self.LAST_ML_CONF_FILENAME, last_ml_config, allow_pickle=True)
+
         try:
             self.client.disconnect()
         except Exception:
@@ -2133,11 +2456,11 @@ class GUI(QMainWindow):
         module_label = module_info.label
         config = self.module_label_to_sensor_config_map[module_label]
 
-        if len(self.sensor_selection.get_sensors()):
-            config.sensor = self.sensor_selection.get_sensors()
+        if len(self.get_sensors()):
+            config.sensor = self.get_sensors()
         else:
             config.sensor = [1]
-            self.sensor_selection.set_sensors([1])
+            self.set_sensors([1])
 
         return config
 
@@ -2244,14 +2567,19 @@ class Threaded_Scan(QtCore.QThread):
         self.emit("scan_done", "", "")
 
     def receive(self, message_type, message, data=None):
-        if message_type == "stop" and self.running:
-            self.running = False
-            self.radar.abort_processing()
-            if self.params["create_clutter"]:
-                self.emit("error", "Background scan not finished. "
-                          "Wait for sweep buffer to fill to finish background scan")
+        if message_type == "stop":
+            if self.running:
+                self.running = False
+                self.radar.abort_processing()
+                if self.params["create_clutter"]:
+                    self.emit("error", "Background scan not finished. "
+                              "Wait for sweep buffer to fill to finish background scan")
         elif message_type == "set_clutter_flag":
             self.radar.set_clutter_flag(data)
+        elif message_type == "update_feature_extraction":
+            self.radar.update_feature_extraction(message, data)
+        else:
+            print("Scan thread received unknown signal: {}".format(message_type))
 
     def emit(self, message_type, message, data=None):
         self.sig_scan.emit(message_type, message, data)

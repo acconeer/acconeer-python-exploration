@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout, QCheckBox,
     QLineEdit, QDialog, QPushButton, QSpinBox
 )
+import sys
+import os
 from argparse import ArgumentParser
 
 
@@ -72,7 +74,7 @@ class AdvancedSerialDialog(QDialog):
         return self.sb.value() if self.cb.checkState() else None
 
 
-class Arguments(ArgumentParser):
+class GUIArgumentParser(ArgumentParser):
     def __init__(self):
         super().__init__()
 
@@ -166,12 +168,12 @@ class CollapsibleSection(QFrame):
 
 
 class SensorSelection(QFrame):
-    def __init__(self, multi_sensors=False, error_handler=None):
+    def __init__(self, multi_sensors=False, error_handler=None, callback=None):
         super().__init__()
 
         self.error_handler = error_handler
         self.multi_sensors = multi_sensors
-
+        self.cb = callback
         self.select_hist = [1, 0, 0, 0]
 
         # text, checked, visible, enabled, function
@@ -303,6 +305,21 @@ class SensorSelection(QFrame):
                     diff = len(self.get_sensors()) - len(self.multi_sensors)
                 s -= 1
 
+        if self.cb is not None:
+            self.cb()
+
+
+class ErrorFormater:
+    def __init__(self):
+        pass
+
+    def error_to_text(self, error):
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        err_text = "File: {}<br>Line: {}<br>Error: {}".format(fname, exc_tb.tb_lineno, error)
+
+        return err_text
+
 
 class QHLine(QFrame):
     def __init__(self):
@@ -338,3 +355,26 @@ class Count:
         ret = self.val
         self.val += 1
         return ret
+
+    def decr(self, val=1):
+        self.val -= val
+
+    def set_val(self, val):
+        self.val = val
+
+
+class GUI_Styles:
+    def get_button_style(self):
+        return (
+            "QPushButton {"
+            "background-color: #f0f0f0;"
+            "border-width: 1px;"
+            "border-color: #339;"
+            "}"
+            "QPushButton:pressed {"
+            "background-color: red;"
+            "}"
+            "QPushButton:hover:!pressed {"
+            "background-color: lightcoral;"
+            "}"
+        )

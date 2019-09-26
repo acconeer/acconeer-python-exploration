@@ -114,9 +114,22 @@ If you modify code in those files, the changes will trickle down to the GUI once
 
 Large values for "Image history" (IQ and Envelope service) may slow down plotting severely.
 
-If you prefer using the command line for testing and evaluation of our examples you can use the following instructions.
+EXPERIMENTAL deep learning:
+
+If you want to test our new deep learning interface please install additional requirements
+```
+python -m pip install --user -r requirements_ml.txt
+```
+This will install Keras, TensorFlow and Scikit-learn.
+You can then start the machine learning GUI with
+```
+python gui/main.py -ml
+```
+Please keep in mind that the deep learning interface is WIP and documentation is not available at this point.
 
 ## Running an example on your local machine
+
+If you prefer using the command line for testing and evaluation of our examples you can use the following instructions.
 
 XC111+XR111 or XC112+XR112 (mounted on a Raspberry Pi):
 ```

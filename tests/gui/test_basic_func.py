@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))  # noqa: E402
 from gui.main import GUI
-from gui.modules import MODULE_INFOS
+from gui.elements.modules import MODULE_INFOS
 
 
 MOCK_INTERFACE = "Simulated"
@@ -62,15 +62,15 @@ def test_run_a_session(qtbot, gui):
 
 
 def test_multi_sensor(qtbot, gui):
-    assert len(gui.sensor_selection.checkboxes) == 4
+    assert len(gui.sensor_widgets["main"].checkboxes) == 4
     set_and_check_cb(qtbot, gui.interface_dd, MOCK_INTERFACE)  # allows multi
 
     set_and_check_cb(qtbot, gui.module_dd, "Envelope")  # allows multi
     qtbot.wait(200)
 
     for _ in range(2):
-        qtbot.waitUntil(lambda: not gui.sensor_selection.textbox.isVisible())
-        for checkbox in gui.sensor_selection.checkboxes.values():
+        qtbot.waitUntil(lambda: not gui.sensor_widgets["main"].textbox.isVisible())
+        for checkbox in gui.sensor_widgets["main"].checkboxes.values():
             qtbot.waitUntil(lambda: checkbox.isVisible())
 
         connect_and_disconnect(qtbot, gui)
@@ -79,8 +79,8 @@ def test_multi_sensor(qtbot, gui):
     qtbot.wait(200)
 
     for _ in range(2):
-        qtbot.waitUntil(lambda: gui.sensor_selection.textbox.isVisible())
-        for checkbox in gui.sensor_selection.checkboxes.values():
+        qtbot.waitUntil(lambda: gui.sensor_widgets["main"].textbox.isVisible())
+        for checkbox in gui.sensor_widgets["main"].checkboxes.values():
             qtbot.waitUntil(lambda: not checkbox.isVisible())
 
         connect_and_disconnect(qtbot, gui)
