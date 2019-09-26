@@ -201,6 +201,8 @@ class PresenceDetectionSparseProcessor:
         self.depth_filter_length = 3
         noise_tc = 1.0
 
+        assert self.num_subsweeps > self.noise_est_diff_order
+
         self.noise_sf = self.tc_to_sf(noise_tc, self.f)
 
         nd = self.noise_est_diff_order
