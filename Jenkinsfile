@@ -1,3 +1,5 @@
+gerritReview labels: [Verified: 0], message: "Test started: ${env.BUILD_URL}"
+
 pipeline {
     agent {
         dockerfile {
