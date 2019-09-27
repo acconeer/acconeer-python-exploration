@@ -471,8 +471,15 @@ class GUI(QMainWindow):
             multi_sensor = len(self.data[0]["sensor_config"].sensor) > 1
         elif self.multi_sensor_interface:
             multi_sensor = self.current_module_info.multi_sensor
+
+        sensor = self.get_sensors()
+
         for name in self.sensor_widgets:
             self.sensor_widgets[name].set_multi_sensor_support(multi_sensor)
+
+        if not multi_sensor and self.multi_sensor_interface:
+            if isinstance(sensor, list) and len(sensor):
+                self.set_sensors(sensor[0])
 
     def set_sensors(self, sensors):
         for name in self.sensor_widgets:

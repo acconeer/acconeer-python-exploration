@@ -224,6 +224,9 @@ class SensorSelection(QFrame):
         if not sensors:
             sensors = []
 
+        if not isinstance(sensors, list):
+            sensors = [sensors]
+
         try:
             if len(sensors) > 1:
                 self.set_multi_sensor_support(True)
