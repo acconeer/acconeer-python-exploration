@@ -1017,7 +1017,7 @@ class GUI(QMainWindow):
     def error_message(self, error):
         em = QtWidgets.QErrorMessage(self.main_widget)
         em.setWindowTitle("Error")
-        em.showMessage(error)
+        em.showMessage(error.replace("\n", "<br>"))
 
     def info_handle(self, info, detailed_info=None):
         msg = QtWidgets.QMessageBox(self.main_widget)
