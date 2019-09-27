@@ -194,6 +194,20 @@ class RegClient(BaseClient):
     def _disconnect(self):
         self._link.disconnect()
 
+    def _read_buf_raw(self, addr=protocol.MAIN_BUFFER_ADDR):
+        req = protocol.UnpackedBufferReadRequest(addr)
+        self._send_packet(req)
+
+        log.debug("sent buf r req: addr: {:3}".format(addr))
+
+        res = self._recv_packet()
+        if not isinstance(res, protocol.UnpackedBufferReadResponse):
+            raise ClientError("got unexpected type of frame")
+
+        log.debug("recv buf r res: addr: {:3} len: {}".format(addr, len(res.buffer)))
+
+        return res.buffer
+
     def _read_reg(self, reg, mode=None):
         mode = mode or self._mode
         reg = protocol.get_reg(reg, mode)

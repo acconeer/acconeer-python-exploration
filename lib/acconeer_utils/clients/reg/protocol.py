@@ -23,6 +23,8 @@ UnpackedRegReadRequest = namedtuple("UnpackedRegReadRequest", ["addr"])
 UnpackedRegWriteRequest = namedtuple("UnpackedRegWriteRequest", ["reg_val"])
 UnpackedRegReadResponse = namedtuple("UnpackedRegReadResponse", ["reg_val"])
 UnpackedRegWriteResponse = namedtuple("UnpackedRegWriteResponse", ["reg_val"])
+UnpackedBufferReadRequest = namedtuple("UnpackedBufferReadRequest", ["addr"])
+UnpackedBufferReadResponse = namedtuple("UnpackedBufferReadResponse", ["addr", "buffer"])
 UnpackedStreamData = namedtuple("UnpackedStreamData", ["result_info", "buffer"])
 UnpackedGPIOPin = namedtuple("UnpackedGPIOPin", ["pin"])
 UnpackedGPIOPinAndVal = namedtuple("UnpackedGPIOPinAndVal", ["pin", "val"])
@@ -64,6 +66,7 @@ STREAM_RESULT_INFO = 0xFD
 STREAM_BUFFER = 0xFE
 
 BUF_READ_REQUEST = 0xFA
+BUF_READ_RESPONSE = 0xF7
 
 MAIN_BUFFER_ADDR = 232
 
@@ -603,6 +606,8 @@ def unpack_packet(packet):
         return unpack_reg_read_res_segment(segment)
     elif packet_type == REG_WRITE_RESPONSE:
         return unpack_reg_write_res_segment(segment)
+    elif packet_type == BUF_READ_RESPONSE:
+        return unpack_buf_read_res_segment(segment)
     elif packet_type == STREAM_PACKET:
         return unpack_stream_data_segment(segment)
     elif packet_type in [GPIO_READ, GPIO_WRITE]:
@@ -629,6 +634,12 @@ def unpack_reg_read_res_segment(segment):
 def unpack_reg_write_res_segment(segment):
     rv = unpack_reg_val(segment)
     return UnpackedRegWriteResponse(rv)
+
+
+def unpack_buf_read_res_segment(segment):
+    buf_addr = segment[0]
+    buffer = segment[1:]
+    return UnpackedBufferReadResponse(buf_addr, buffer)
 
 
 def unpack_stream_data_segment(segment):
@@ -703,6 +714,11 @@ def pack_packet(packet):
     elif isinstance(packet, UnpackedGPIOPinAndVal):
         packet_type = GPIO_WRITE
         packet_data = bytearray([packet.pin, packet.val])
+    elif isinstance(packet, UnpackedBufferReadRequest):
+        packet_type = BUF_READ_REQUEST
+        packet_data = bytearray()
+        packet_data.extend(packet.addr.to_bytes(ADDR_SIZE, BO))
+        packet_data.extend([0, 0])
     else:
         raise TypeError("unknown type of packet")
 
