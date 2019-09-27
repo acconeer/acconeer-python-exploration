@@ -6,11 +6,10 @@ from distutils.version import StrictVersion
 from acconeer_utils.clients.base import BaseClient, ClientError
 from acconeer_utils.clients import links
 from acconeer_utils.clients.json import protocol
+from acconeer_utils.clients.base import decode_version_str
 
 
 log = logging.getLogger(__name__)
-
-DEV_VERSION = StrictVersion("1.9.1")
 
 
 class JSONClient(BaseClient):
@@ -50,20 +49,9 @@ class JSONClient(BaseClient):
             return info
 
         server_version_str = msg[len(startstr):].strip()
-        info["version_str"] = server_version_str
+        info.update(decode_version_str(server_version_str))
 
-        if "-" in server_version_str:
-            log.warning("development server")
-            strict_version = StrictVersion(server_version_str.split("-")[0])
-        else:
-            strict_version = StrictVersion(server_version_str)
-
-        info["strict_version"] = strict_version
-
-        if strict_version < DEV_VERSION:
-            log.warning("server version might not be fully supported")
-
-        if strict_version >= StrictVersion("1.10.0"):
+        if info["strict_version"] >= StrictVersion("1.10"):
             cmd = {"cmd": "get_board_sensor_count"}
             self._send_cmd(cmd)
             header, _ = self._recv_frame()

@@ -1,4 +1,5 @@
 from acconeer_utils.clients.reg import protocol
+from acconeer_utils.clients.base import decode_version_str
 
 
 def get_regs_for_mode(mode):
@@ -36,3 +37,15 @@ def get_reg_vals_for_config(config):
 
 def fmt_enc_val(enc_val):
     return " ".join(["{:02x}".format(x) for x in enc_val])
+
+
+def decode_version_buffer(version: bytearray):
+    try:
+        version_str = version.decode("ascii").strip()
+        assert len(version_str) > 1
+        assert version_str.startswith("v")
+        version_str = version_str[1:]
+    except (UnicodeDecodeError, AssertionError):
+        return {}
+
+    return decode_version_str(version_str)

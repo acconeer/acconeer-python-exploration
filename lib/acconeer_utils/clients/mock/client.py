@@ -3,7 +3,8 @@ from scipy.signal import butter, filtfilt
 from time import time, sleep
 import logging
 
-from acconeer_utils.clients.base import BaseClient, ClientError
+from acconeer_utils import SDK_VERSION
+from acconeer_utils.clients.base import BaseClient, ClientError, decode_version_str
 from acconeer_utils.clients.configs import EnvelopeServiceConfig
 
 
@@ -15,7 +16,7 @@ class MockClient(BaseClient):
         super().__init__(**kwargs)
 
     def _connect(self):
-        pass
+        return decode_version_str(SDK_VERSION)
 
     def _setup_session(self, config):
         self._config = config

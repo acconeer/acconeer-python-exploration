@@ -20,6 +20,8 @@ def main():
     config.range_interval = [0.2, 0.6]
     config.sweep_rate = 10
 
+    info = client.connect()
+    print("connect info:", info)
     client.start_streaming(config)
     client.get_next()
     client.disconnect()

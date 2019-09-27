@@ -90,6 +90,14 @@ class RegClient(BaseClient):
         elif ver != protocol.DEV_VERSION:
             log.warning("server version might not be fully supported")
 
+        version_buffer = self._read_buf_raw()
+        version_info = utils.decode_version_buffer(version_buffer)
+
+        info = {}
+        info.update(version_info)
+
+        return info
+
     def _setup_session(self, config):
         if len(config.sensor) > 1:
             raise ValueError("the register protocol does not support multiple sensors")
@@ -372,13 +380,13 @@ class RegSPIClient(BaseClient):
         elif ver != protocol.DEV_VERSION:
             log.warning("server version might not be fully supported")
 
-        try:
-            version_str = self._read_main_buffer().decode("ascii").strip()
-            assert len(version_str) > 0
-        except (UnicodeDecodeError, AssertionError):
-            log.warning("could not read software version (maybe too old)")
-        else:
-            log.info("reported version: {}".format(version_str))
+        version_buffer = self._read_main_buffer()
+        version_info = utils.decode_version_buffer(version_buffer)
+
+        info = {}
+        info.update(version_info)
+
+        return info
 
     def _setup_session(self, config):
         if len(config.sensor) > 1:

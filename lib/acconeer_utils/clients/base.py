@@ -1,5 +1,8 @@
 from abc import ABCMeta, abstractmethod
 import logging
+from distutils.version import StrictVersion
+
+from acconeer_utils import SDK_VERSION
 
 
 log = logging.getLogger(__name__)
@@ -23,6 +26,16 @@ class BaseClient(metaclass=ABCMeta):
 
         if info is None:
             info = {}
+
+        try:
+            log.info("reported version: {}".format(info["version_str"]))
+
+            if info["strict_version"] < StrictVersion(SDK_VERSION):
+                log.warning("old server version - please upgrade server")
+            elif info["strict_version"] > StrictVersion(SDK_VERSION):
+                log.warning("new server version - please upgrade client")
+        except KeyError:
+            log.warning("could not read software version (might be too old)")
 
         return info
 
@@ -113,3 +126,15 @@ class BaseClient(metaclass=ABCMeta):
 
 class ClientError(Exception):
     pass
+
+
+def decode_version_str(version: str):
+    if "-" in version:
+        strict_version = StrictVersion(version.split("-")[0])
+    else:
+        strict_version = StrictVersion(version)
+
+    return {
+        "version_str": version,
+        "strict_version": strict_version,
+    }
