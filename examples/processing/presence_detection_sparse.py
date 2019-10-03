@@ -215,6 +215,7 @@ class PresenceDetectionSparseProcessor:
         self.lp_noise = np.zeros(self.num_depths)
 
         self.presence_score = 0
+        self.presence_distance_index = 0
         self.presence_distance = 0
 
         self.presence_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
@@ -351,7 +352,8 @@ class PresenceDetectionSparseProcessor:
         self.presence_history[-1] = self.presence_score
 
         if max_depthwise_presence > self.threshold:
-            self.presence_distance = self.depths[np.argmax(depthwise_presence)]
+            self.presence_distance_index = np.argmax(depthwise_presence)
+            self.presence_distance = self.depths[self.presence_distance_index]
 
         out_data = {
             "sweep": sweep,
@@ -361,6 +363,7 @@ class PresenceDetectionSparseProcessor:
             "inter": inter * self.inter_weight,
             "intra": intra * self.intra_weight,
             "depthwise_presence": depthwise_presence,
+            "presence_distance_index": self.presence_distance_index,
             "presence_distance": self.presence_distance,
             "presence_history": self.presence_history,
             "presence_detected": presence_detected,
