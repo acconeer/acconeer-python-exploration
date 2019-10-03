@@ -73,6 +73,14 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             label="Show data",
             default_value=True,
             updateable=True,
+            order=0,
+            )
+
+    show_speed_plot = configbase.BoolParameter(
+            label="Show speed on FFT y-axis",
+            default_value=False,
+            updateable=True,
+            order=10,
             )
 
 
@@ -104,6 +112,8 @@ class PGUpdater:
         self.depths = get_range_depths(sensor_config, session_info)
         self.actual_stepsize_m = session_info["actual_stepsize"]
         self.num_depths = self.depths.size
+        self.f_res = self.subsweep_rate / self.num_subsweeps
+        self.fft_x_scale = 100 * self.actual_stepsize_m
 
         self.smooth_max_f = self.subsweep_rate / self.num_subsweeps
 
@@ -124,19 +134,12 @@ class PGUpdater:
             self.plots.append(plot)
             self.curves.append(curve)
 
-        ft_plot = win.addPlot(row=1, col=0, colspan=self.num_depths)
+        self.ft_plot = win.addPlot(row=1, col=0, colspan=self.num_depths)
         self.ft_im = pg.ImageItem(autoDownsample=True)
         self.ft_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
-        ft_plot.addItem(self.ft_im)
-        ft_plot.setLabel("bottom", "Depth (cm)")
-        ft_plot.setLabel("left", "Frequency (kHz)")
-        ft_plot.getAxis("bottom").setTickSpacing(6 * self.stepsize, 6)
-
-        f_res = self.subsweep_rate / self.num_subsweeps
-        self.ft_im.translate(
-            100 * (self.depths[0] - self.actual_stepsize_m / 2), 0)
-        self.ft_im.scale(
-            100 * (self.depths[-1] - self.depths[0]) / (self.num_depths - 1), f_res * 1e-3)
+        self.ft_plot.addItem(self.ft_im)
+        self.ft_plot.setLabel("bottom", "Depth (cm)")
+        self.ft_plot.getAxis("bottom").setTickSpacing(6 * self.stepsize, 6)
 
         self.smooth_max = example_utils.SmoothMax(
                 self.smooth_max_f,
@@ -159,6 +162,16 @@ class PGUpdater:
 
         for plot in self.plots:
             plot.setVisible(self.processing_config.show_data_plot)
+
+        QUARTER_OF_WAVELENGTH_PER_M = 1.239e-3
+        self.ft_im.resetTransform()
+        self.ft_im.translate(100 * (self.depths[0] - self.actual_stepsize_m / 2), 0)
+        if self.processing_config.show_speed_plot:
+            self.ft_plot.setLabel("left", "Speed (m/s)")
+            self.ft_im.scale(self.fft_x_scale, self.f_res * QUARTER_OF_WAVELENGTH_PER_M)
+        else:
+            self.ft_plot.setLabel("left", "Frequency (kHz)")
+            self.ft_im.scale(self.fft_x_scale, self.f_res * 1e-3)
 
     def update(self, data):
         frame = data["sweep"]
