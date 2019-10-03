@@ -180,6 +180,13 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             help="Show the depthwise presence output plot.",
             )
 
+    show_sectors = configbase.BoolParameter(
+            label="Show distance sectors",
+            default_value=False,
+            updateable=True,
+            order=130,
+            )
+
 
 get_processing_config = ProcessingConfiguration
 
@@ -381,17 +388,27 @@ class PGUpdater:
 
         self.depths = get_range_depths(sensor_config, session_info)
 
+        max_num_of_sectors = max(6, self.depths.size // 3)
+        self.sector_size = max(1, int(np.ceil(self.depths.size / max_num_of_sectors)))
+        self.num_sectors = self.depths.size // self.sector_size
+        self.sector_offset = (self.depths.size - self.num_sectors * self.sector_size) // 2
+
         self.setup_is_done = False
 
     def setup(self, win):
         win.setWindowTitle("Acconeer presence detection example")
+        win.setAntialiasing(True)
 
         self.limit_lines = []
         dashed_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
 
         # Data plot
 
-        self.data_plot = win.addPlot(title="Frame (blue), fast (orange), and slow (green)")
+        self.data_plot = win.addPlot(
+                row=0,
+                col=0,
+                title="Frame (blue), fast (orange), and slow (green)",
+                )
         self.data_plot.showGrid(x=True, y=True)
         self.data_plot.setLabel("bottom", "Depth (m)")
         self.data_plot.setYRange(-2**15, 2**15)
@@ -411,21 +428,25 @@ class PGUpdater:
         self.data_plot.addItem(self.fast_scatter)
         self.data_plot.addItem(self.slow_scatter)
 
-        win.nextRow()
-
         # Noise estimation plot
 
-        self.noise_plot = win.addPlot(title="Noise")
+        self.noise_plot = win.addPlot(
+                row=1,
+                col=0,
+                title="Noise",
+                )
         self.noise_plot.showGrid(x=True, y=True)
         self.noise_plot.setLabel("bottom", "Depth (m)")
         self.noise_curve = self.noise_plot.plot(pen=example_utils.pg_pen_cycler())
         self.noise_smooth_max = example_utils.SmoothMax(self.sensor_config.sweep_rate)
 
-        win.nextRow()
-
         # Depthwise presence plot
 
-        self.move_plot = win.addPlot(title="Depthwise presence")
+        self.move_plot = win.addPlot(
+                row=2,
+                col=0,
+                title="Depthwise presence",
+                )
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Depth (m)")
         zero_curve = self.move_plot.plot(self.depths, np.zeros_like(self.depths))
@@ -457,11 +478,9 @@ class PGUpdater:
                 )
         self.move_plot.addItem(fbi)
 
-        win.nextRow()
-
         # Presence history plot
 
-        self.move_hist_plot = win.addPlot(title="Presence history")
+        self.move_hist_plot = pg.PlotItem(title="Presence history")
         self.move_hist_plot.showGrid(x=True, y=True)
         self.move_hist_plot.setLabel("bottom", "Time (s)")
         self.move_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
@@ -494,6 +513,31 @@ class PGUpdater:
         self.move_hist_plot.addItem(self.not_present_text_item)
         self.present_text_item.hide()
 
+        # Sector plot
+
+        self.sector_plot = pg.PlotItem()
+        self.sector_plot.setAspectLocked()
+        self.sector_plot.hideAxis("left")
+        self.sector_plot.hideAxis("bottom")
+        self.sectors = []
+
+        pen = pg.mkPen("k", width=1)
+        span_deg = 25
+        for r in np.flip(np.arange(self.num_sectors) + 1):
+            sector = pg.QtGui.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
+            sector.setStartAngle(-16 * span_deg)
+            sector.setSpanAngle(16 * span_deg * 2)
+            sector.setPen(pen)
+            self.sector_plot.addItem(sector)
+            self.sectors.append(sector)
+
+        self.sectors.reverse()
+
+        sublayout = win.addLayout(row=3, col=0)
+        sublayout.layout.setColumnStretchFactor(0, 2)
+        sublayout.addItem(self.move_hist_plot, col=0)
+        sublayout.addItem(self.sector_plot, col=1)
+
         self.setup_is_done = True
         self.update_processing_config()
 
@@ -509,6 +553,7 @@ class PGUpdater:
         self.data_plot.setVisible(self.processing_config.show_sweep)
         self.noise_plot.setVisible(self.processing_config.show_noise)
         self.move_plot.setVisible(self.processing_config.show_depthwise_output)
+        self.sector_plot.setVisible(self.processing_config.show_sectors)
 
         for line in self.limit_lines:
             line.setPos(processing_config.detection_threshold)
@@ -550,6 +595,14 @@ class PGUpdater:
         else:
             self.present_text_item.hide()
             self.not_present_text_item.show()
+
+        brush = example_utils.pg_brush_cycler(0)
+        for sector in self.sectors:
+            sector.setBrush(brush)
+
+        if data["presence_detected"]:
+            index = (data["presence_distance_index"] + self.sector_offset) // self.sector_size
+            self.sectors[index].setBrush(example_utils.pg_brush_cycler(1))
 
 
 def get_range_depths(sensor_config, session_info):
