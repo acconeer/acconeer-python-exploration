@@ -411,6 +411,7 @@ class PGUpdater:
                 )
         self.data_plot.showGrid(x=True, y=True)
         self.data_plot.setLabel("bottom", "Depth (m)")
+        self.data_plot.setLabel("left", "Amplitude")
         self.data_plot.setYRange(-2**15, 2**15)
         self.sweep_scatter = pg.ScatterPlotItem(
                 size=10,
@@ -437,6 +438,7 @@ class PGUpdater:
                 )
         self.noise_plot.showGrid(x=True, y=True)
         self.noise_plot.setLabel("bottom", "Depth (m)")
+        self.noise_plot.setLabel("left", "Amplitude")
         self.noise_curve = self.noise_plot.plot(pen=example_utils.pg_pen_cycler())
         self.noise_smooth_max = example_utils.SmoothMax(self.sensor_config.sweep_rate)
 
@@ -449,6 +451,7 @@ class PGUpdater:
                 )
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Depth (m)")
+        self.move_plot.setLabel("left", "Norm. ampl.")
         zero_curve = self.move_plot.plot(self.depths, np.zeros_like(self.depths))
         self.inter_curve = self.move_plot.plot()
         self.total_curve = self.move_plot.plot()
@@ -483,6 +486,7 @@ class PGUpdater:
         self.move_hist_plot = pg.PlotItem(title="Presence history")
         self.move_hist_plot.showGrid(x=True, y=True)
         self.move_hist_plot.setLabel("bottom", "Time (s)")
+        self.move_hist_plot.setLabel("left", "Score (limited to {})".format(OUTPUT_MAX))
         self.move_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
         self.move_hist_plot.setYRange(0, OUTPUT_MAX)
         self.move_hist_curve = self.move_hist_plot.plot(pen=example_utils.pg_pen_cycler())
