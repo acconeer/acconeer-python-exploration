@@ -95,6 +95,7 @@ class GUI(QMainWindow):
             "ml_plotting_evaluation": False,
             "ml_mode": False,
             "ml_tab": "main",
+            "scan_is_running": False,
         }
 
         self.current_data_type = None
@@ -1122,11 +1123,11 @@ class GUI(QMainWindow):
         sweep_buffer = self.sweep_buffer
         feature_list = None
         ml_plotting = False
-        if self.ml_plotting_extraction or self.ml_plotting_evaluation:
-            if self.ml_plotting_extraction:
-                sweep_buffer = np.inf
-                feature_list = self.feature_select
-            else:
+        ml_mode = self.get_gui_state("ml_tab")
+        if ml_mode != "main":
+            is_eval_mode = (ml_mode == "eval")
+            ml_plotting = True
+            if is_eval_mode:
                 if self.eval_sidepanel.model_loaded() is False:
                     self.error_message("Please load a model first!\n")
                     return
@@ -1136,20 +1137,29 @@ class GUI(QMainWindow):
                 sensor_config.sensor = sensor
                 if not self.eval_sidepanel.config_is_valid():
                     return
+            else:
+                sweep_buffer = np.inf
+                feature_list = self.feature_select
 
             e_handle = self.error_message
             if not self.feature_select.check_limits(sensor_config, error_handle=e_handle):
                 return
 
+            frame_settings = self.feature_sidepanel.get_frame_settings()
+            if ml_mode == "feature_select":
+                frame_settings["frame_pad"] = 0
+                frame_settings["collection_mode"] = "continuous"
+                frame_settings["rolling"] = True
+
             processing_config["ml_settings"] = {
                 "feature_list": feature_list,
-                "frame_settings": self.feature_sidepanel.get_frame_settings(),
-                "evaluate": self.ml_plotting_evaluation,
+                "frame_settings": frame_settings,
+                "evaluate": is_eval_mode,
             }
-            ml_plotting = True
-            if self.ml_plotting_evaluation:
+
+            if ml_mode == "eval":
                 self.ml_use_model_plot_widget.reset_data(sensor_config, processing_config)
-            elif self.ml_plotting_extraction:
+            elif ml_mode == "feature_extract":
                 self.ml_feature_plot_widget.reset_data(sensor_config, processing_config)
 
         params = {
@@ -1196,6 +1206,14 @@ class GUI(QMainWindow):
         self.buttons["replay_buffered"].setEnabled(False)
         self.enable_tabs(False)
 
+        self.set_gui_state("scan_is_running", True)
+
+        if self.get_gui_state("ml_mode"):
+            self.feature_select.buttons["stop"].setEnabled(True)
+            self.feature_select.buttons["start"].setEnabled(False)
+            self.feature_select.buttons["replay_buffered"].setEnabled(False)
+            self.feature_sidepanel.textboxes["sweep_rate"].setEnabled(False)
+
     def set_gui_state(self, state, val):
         if state in self.gui_states:
             self.gui_states[state] = val
@@ -1204,7 +1222,8 @@ class GUI(QMainWindow):
             return
 
         if state == "server_connected":
-            if val:
+            connected = val
+            if connected:
                 self.buttons["start"].setEnabled(True)
                 self.buttons["create_cl"].setEnabled(self.cl_supported)
                 self.buttons["load_cl"].setEnabled(self.cl_supported)
@@ -1217,6 +1236,8 @@ class GUI(QMainWindow):
                 self.set_multi_sensors()
                 if self.get_gui_state("ml_mode"):
                     self.feature_select.update_sensors(self.save_gui_settings_to_sensor_config())
+                    if self.feature_select.is_config_valid():
+                        self.feature_select.buttons["start"].setEnabled(True)
             else:
                 self.buttons["connect"].setText("Connect")
                 self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
@@ -1236,6 +1257,7 @@ class GUI(QMainWindow):
             self.init_graphs()
 
         if state == "ml_tab":
+            tab = val
             self.feature_sidepanel.select_mode(val)
             self.settings_section.body_widget.setEnabled(True)
             self.server_section.hide()
@@ -1246,11 +1268,10 @@ class GUI(QMainWindow):
             self.eval_section.hide()
             self.textboxes["sweep_buffer_ml"].hide()
             self.textboxes["sweep_buffer"].hide()
-            self.ml_plotting_extraction = False
-            self.ml_plotting_evaluation = False
+            self.module_dd.show()
             cl_supported = self.cl_supported
 
-            if val == "main":
+            if tab == "main":
                 if "Select service" not in self.current_module_label:
                     self.service_section.show()
                 self.settings_section.show()
@@ -1259,7 +1280,7 @@ class GUI(QMainWindow):
                 self.textboxes["sweep_buffer"].show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
 
-            elif val == "feature_select":
+            elif tab == "feature_select":
                 self.feature_section.button_event(override=False)
                 self.settings_section.show()
                 self.feature_section.show()
@@ -1268,14 +1289,15 @@ class GUI(QMainWindow):
                 self.feature_sidepanel.textboxes["sweep_rate"].setText(
                     self.textboxes["sweep_rate"].text()
                     )
+                self.feature_select.check_limits()
 
-            elif val == "feature_extract":
-                self.ml_plotting_extraction = True
+            elif tab == "feature_extract":
                 cl_supported = False
                 self.server_section.show()
                 self.control_section.show()
                 self.feature_section.button_event(override=False)
                 self.feature_section.show()
+                self.buttons["start"].setText("Start extraction")
                 self.textboxes["sweep_buffer_ml"].show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
@@ -1287,18 +1309,17 @@ class GUI(QMainWindow):
                     self.feature_extract.init_graph()
                     self.ml_feature_plot_widget = self.feature_extract.plot_widget
 
-            elif val == "feature_inspect":
+            elif tab == "feature_inspect":
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.feature_section.show()
                 self.feature_inspect.update_frame("frames", 1, init=True)
                 self.feature_inspect.update_sliders()
 
-            elif val == "train":
+            elif tab == "train":
                 self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
 
-            elif val == "eval":
+            elif tab == "eval":
                 self.settings_section.body_widget.setEnabled(False)
-                self.ml_plotting_evaluation = True
                 cl_supported = False
                 self.feature_section.show()
                 self.eval_section.show()
@@ -1347,6 +1368,13 @@ class GUI(QMainWindow):
         if self.get_gui_state("ml_tab") == "main":
             self.settings_section.body_widget.setEnabled(True)
 
+        if self.get_gui_state("ml_mode"):
+            self.feature_select.buttons["start"].setEnabled(True)
+            self.feature_select.buttons["stop"].setEnabled(False)
+            self.feature_sidepanel.textboxes["sweep_rate"].setEnabled(True)
+            if self.data is not None:
+                self.feature_select.buttons["replay_buffered"].setEnabled(True)
+
         processing_config = self.get_processing_config()
         if isinstance(processing_config, configbase.Config):
             self.buttons["service_defaults"].setEnabled(True)
@@ -1359,6 +1387,8 @@ class GUI(QMainWindow):
             self.buttons["save_scan"].setEnabled(True)
         self.set_gui_state("replaying_data", False)
         self.enable_tabs(True)
+
+        self.set_gui_state("scan_is_running", False)
 
     def input_clutter_sweeps(self):
         input_dialog = QtWidgets.QInputDialog(self)
@@ -2247,9 +2277,11 @@ class GUI(QMainWindow):
 
     def update_external_plots(self, data):
         if isinstance(data, dict) and data.get("ml_plotting") is True:
-            if self.ml_plotting_extraction:
+            if self.get_gui_state("ml_tab") == "feature_extract":
                 self.ml_feature_plot_widget.update(data)
-            else:
+            elif self.get_gui_state("ml_tab") == "feature_select":
+                self.feature_select.plot_feature(data)
+            elif self.get_gui_state("ml_tab") == "eval":
                 self.ml_use_model_plot_widget.update(data)
             self.ml_data = data
         else:
@@ -2585,6 +2617,8 @@ class Threaded_Scan(QtCore.QThread):
             self.radar.set_clutter_flag(data)
         elif message_type == "update_feature_extraction":
             self.radar.update_feature_extraction(message, data)
+        elif message_type == "update_feature_list":
+            self.radar.update_feature_list(data)
         else:
             print("Scan thread received unknown signal: {}".format(message_type))
 

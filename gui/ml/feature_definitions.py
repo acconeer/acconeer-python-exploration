@@ -305,7 +305,7 @@ class FeatureSweep:
             start = float(options["Start"])
             stop = float(options["Stop"])
             downsample = int(options["Down sample"])
-            size = (stop - start) * 100 * 124 / downsample / 6
+            size = (stop - start) * 100 * 124 / downsample / 6 + 1
         except Exception as e:
             print("Failed to calculate feature hight!\n ", e)
             return 1
@@ -373,7 +373,7 @@ class FeatureSparseFFT:
         try:
             start = float(options["Start"])
             stop = float(options["Stop"])
-            size = (stop - start) * 100 / 6
+            size = (stop - start) * 100 / 6 + 1
         except Exception as e:
             print("Failed to calculate feature hight!\n ", e)
             return 1

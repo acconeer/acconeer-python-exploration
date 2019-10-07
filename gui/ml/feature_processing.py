@@ -31,31 +31,33 @@ class FeatureProcessing:
         self.motion_processors = None
         self.setup(sensor_config, feature_list)
 
-    def setup(self, sensor_config, feature_list=None, flush_data=True):
+    def setup(self, sensor_config, feature_list=None):
         self.feature_list = feature_list
         self.sensor_map = self.get_sensor_map(sensor_config)
         self.init_feature_cb()
-        if flush_data:
-            self.frame_list = []
-            self.markers = []
-            self.sweep_counter = -1
-            self.motion_score = None
-            self.motion_detected = False
-            self.sweep_number = 0
-            self.label = ""
-            self.triggered = False
-            self.feature_error = []
-            self.motion_processors = None
-            self.motion_score = None
-            self.motion_score_normalized = None
+
+    def flush_data(self):
+        self.frame_list = []
+        self.markers = []
+        self.sweep_counter = -1
+        self.motion_score = None
+        self.motion_detected = False
+        self.sweep_number = 0
+        self.label = ""
+        self.triggered = False
+        self.feature_error = []
+        self.motion_processors = None
+        self.motion_score = None
+        self.motion_score_normalized = None
 
     def set_feature_list(self, feature_list):
         self.feature_list = feature_list
-
         try:
             self.init_feature_cb()
         except Exception:
             pass
+
+        self.flush_data()
 
     def set_frame_settings(self, params):
         if not isinstance(params, dict):
@@ -63,6 +65,10 @@ class FeatureProcessing:
             return
         if params.get("frame_size") is not None:
             self.frame_size = params["frame_size"]
+            self.sweep_counter = -1
+        if params.get("frame_pad") is not None:
+            self.frame_pad = params["frame_pad"]
+            self.sweep_counter = -1
         if params.get("rolling") is not None:
             self.rolling = params["rolling"]
             self.sweep_counter = -1
@@ -436,12 +442,19 @@ class DataProcessor:
         self.feature_process.set_feature_list(feature_list)
         self.feature_process.set_frame_settings(self.frame_settings)
 
-    def update_processing_config(self, processing_config=None, frame_settings=None, trigger=None):
+    def update_processing_config(self, processing_config=None, frame_settings=None, trigger=None,
+                                 feature_list=None):
         if frame_settings is not None:
             self.feature_process.set_frame_settings(frame_settings)
 
         if trigger is not None:
             self.feature_process.send_trigger()
+
+        if feature_list:
+            try:
+                self.feature_process.set_feature_list(feature_list)
+            except Exception as e:
+                print("Failed to update feature list ", e)
 
     def process(self, sweep):
         mode = self.sensor_config.mode

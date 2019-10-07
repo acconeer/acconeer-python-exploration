@@ -508,6 +508,8 @@ class KerasPlotting:
 
         if data is not None:
             for key in data:
+                if key not in self.history:
+                    self.history[key] = []
                 self.history[key].append(data[key])
 
         self.update(self.history, from_process=True)
@@ -520,13 +522,15 @@ class KerasPlotting:
         if not from_process:
             history = data.history
 
-        self.train_acc_plot.setData(history["acc"])
-        self.train_loss_plot.setData(history["loss"])
-        try:
-            self.test_acc_plot.setData(history["val_acc"])
-            self.test_loss_plot.setData(history["val_loss"])
-        except Exception:
-            pass
+        for key in history:
+            if "val_acc" in key:
+                self.train_acc_plot.setData(history[key])
+            elif "val_loss" in key:
+                self.train_loss_plot.setData(history[key])
+            elif "acc" in key:
+                self.test_acc_plot.setData(history[key])
+            elif "loss" in key:
+                self.test_loss_plot.setData(history[key])
 
 
 class Arguments():

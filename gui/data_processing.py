@@ -64,16 +64,24 @@ class DataProcessing:
             pass
 
     def update_feature_extraction(self, param, value=None):
-        if not isinstance(param, dict):
-            param = {param: value}
+        if isinstance(value, dict):
+            settings = value
+        else:
+            settings = {param: value}
         try:
-            self.external.update_processing_config(frame_settings=param)
+            self.external.update_processing_config(frame_settings=settings)
         except Exception:
             traceback.print_exc()
 
     def send_feature_trigger(self):
         try:
             self.external.update_processing_config(trigger=True)
+        except Exception:
+            traceback.print_exc()
+
+    def update_feature_list(self, feature_list):
+        try:
+            self.external.update_processing_config(feature_list=feature_list)
         except Exception:
             traceback.print_exc()
 

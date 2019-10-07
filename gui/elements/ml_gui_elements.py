@@ -28,6 +28,9 @@ class FeatureSelectFrame(QFrame):
         self.nr_col = 13
         self.row_idx = Count(2)
         self.gui_handle = gui_handle
+        self.has_valid_config = False
+        self.feature_testing = False
+
         self.limits = {
             "start": 0,
             "end": np.inf,
@@ -84,6 +87,17 @@ class FeatureSelectFrame(QFrame):
         self.error_text = QLabel("")
         self.error_text.setStyleSheet("QLabel {color: red}")
 
+        self.buttons = {
+            "start": QPushButton("Test extraction", self),
+            "stop": QPushButton("Stop", self),
+            "replay_buffered": QPushButton("Replay buffered", self),
+        }
+
+        for b in self.buttons:
+            button = self.buttons[b]
+            button.clicked.connect(partial(self.gui_handle.buttons[b].click))
+            button.setEnabled(False)
+
     def update_grid(self):
         try:
             self._layout.removeWidget(self.name_vline)
@@ -91,14 +105,20 @@ class FeatureSelectFrame(QFrame):
             self._layout.removeWidget(self.sensor_vline)
             self._layout.removeWidget(self.drop_down)
             self._layout.removeWidget(self.error_text)
+            for b in self.buttons:
+                self._layout.removeWidget(self.button[b])
         except Exception:
             pass
 
         self._layout.addWidget(self.name_vline, 0, 1, self.row_idx.val + 1, 1)
         self._layout.addWidget(self.params_vline, 0, 9, self.row_idx.val + 1, 1)
         self._layout.addWidget(self.sensor_vline, 0, 11, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.drop_down, self.row_idx.pre_incr(), 0, 1, 5)
-        self._layout.addWidget(self.error_text, self.row_idx.val, 5, 1, self.nr_col - 6)
+        self._layout.addWidget(self.drop_down, self.row_idx.pre_incr(), 0, 1, 4)
+        self._layout.addWidget(self.buttons["start"], self.row_idx.val, 4)
+        self._layout.addWidget(self.buttons["stop"], self.row_idx.val, 5)
+        self._layout.addWidget(self.buttons["replay_buffered"], self.row_idx.val, 6)
+        self._layout.addWidget(self.error_text, self.row_idx.val, 7, 1, self.nr_col - 7)
+
         self.drop_down.setCurrentIndex(0)
 
         self._layout.setRowStretch(self.row_idx.val + 2, 1)
@@ -525,14 +545,25 @@ class FeatureSelectFrame(QFrame):
             error_message += "<br>Sensor: {}<br>".format(config_data_type)
 
         if not is_valid:
+            self.buttons["start"].setEnabled(False)
+            self.buttons["replay_buffered"].setEnabled(False)
+            self.has_valid_config = False
             if error_handle is None:
                 self.error_text.setText(error_message)
             else:
                 error_handle(error_message)
             return False
         else:
+            self.has_valid_config = True
+            if self.gui_handle.get_gui_state("server_connected"):
+                self.buttons["start"].setEnabled(True)
+                if self.gui_handle.data is not None:
+                    self.buttons["replay_buffered"].setEnabled(True)
             self.error_text.setText("")
             return True
+
+    def is_config_valid(self):
+        return self.has_valid_config
 
     def clearLayout(self):
         while self._layout.count():
@@ -553,6 +584,13 @@ class FeatureSelectFrame(QFrame):
         self.feat_dim_text.setPos(0, 0)
         self.feat_dim_text.setZValue(3)
         self.feat_plot_image.addItem(self.feat_dim_text)
+
+        self.feat_plot = pg.ImageItem()
+        self.feat_plot.setAutoDownsample(True)
+        self.feat_plot_image.addItem(self.feat_plot)
+
+        lut = example_utils.pg_mpl_cmap("viridis")
+        self.feat_plot.setLookupTable(lut)
 
         self.feature_areas = []
         self.main.addWidget(win)
@@ -584,6 +622,10 @@ class FeatureSelectFrame(QFrame):
         self.check_limits()
         for area in self.feature_areas:
             self.feat_plot_image.removeItem(area)
+
+        scan_is_running = self.gui_handle.get_gui_state("scan_is_running")
+        if not scan_is_running:
+            self.feat_plot.setOpacity(0)
 
         self.feature_areas = []
 
@@ -617,18 +659,54 @@ class FeatureSelectFrame(QFrame):
                     rect.setPen(example_utils.pg_pen_cycler(feature["count"]))
                     rect.setBrush(example_utils.pg_brush_cycler(feature["count"]))
                     rect.setOpacity(0.5)
+                    rect.setZValue(2)
                     self.feat_plot_image.addItem(rect)
                     self.feature_areas.append(rect)
                     y_max_size += feature_size
+
+        self.feature_testing = False
 
         self.feat_plot_image.setYRange(0, max(y_max_size, 1))
 
         self.feat_dim_text.setText("Feature size: {} by {}".format(int(y_max_size), x_max_size))
 
+        if scan_is_running and self.has_valid_config:
+            self.gui_handle.sig_scan.emit("update_feature_list", None, self.get_feature_list())
+            self.feature_testing = False
+
+    def plot_feature(self,  data):
+        feat_map = None
+        if data["ml_frame_data"] is not None:
+            frame_data = data["ml_frame_data"]
+            feat_map = frame_data["current_frame"]["feature_map"]
+        else:
+            return
+
+        if feat_map is None:
+            return
+
+        if not self.feature_testing:
+            self.feature_testing = True
+            for area in self.feature_areas:
+                area.setBrush(QBrush(QtCore.Qt.NoBrush))
+                area.setOpacity(1)
+            self.feat_plot.setOpacity(1)
+
+        ymax_level = 1.2 * np.max(feat_map)
+
+        g = 1/2.2
+        feat_map = 254/(ymax_level + 1.0e-9)**g * feat_map**g
+
+        feat_map[feat_map > 254] = 254
+
+        self.feat_plot.updateImage(feat_map.T, levels=(0, 256))
+
+        return
+
     def get_frame_size(self):
-        try:
+        if hasattr(self.gui_handle, "feature_sidepanel"):
             frame_size = self.gui_handle.feature_sidepanel.get_frame_settings()["frame_size"]
-        except Exception:
+        else:
             frame_size = 30
 
         return frame_size
@@ -912,13 +990,18 @@ class FeatureSidePanel(QFrame):
                 self.frame_settings["collection_mode"] = self.radio_toggles()
 
         sig = None
-        if self.gui_handle.threaded_scan is not None:
-            if self.gui_handle.threaded_scan.isRunning():
-                sig = self.gui_handle.sig_scan
-                if len(senders) > 1:
-                    sig.emit("update_feature_extraction", self.frame_settings)
-                else:
-                    sig.emit("update_feature_extraction", sender, self.frame_settings[senders[0]])
+        if self.gui_handle.get_gui_state("scan_is_running"):
+            sig = self.gui_handle.sig_scan
+
+            # Only allow hot updating frame size when feature select preview
+            if self.gui_handle.get_gui_state("ml_tab") == "feature_select":
+                sender = "frame_size"
+                senders = [sender]
+
+            if len(senders) > 1:
+                sig.emit("update_feature_extraction", None, self.frame_settings)
+            else:
+                sig.emit("update_feature_extraction", sender, self.frame_settings[senders[0]])
 
     def get_frame_settings(self):
         self.frame_settings_storage()
