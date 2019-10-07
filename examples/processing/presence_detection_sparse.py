@@ -433,7 +433,7 @@ class PGUpdater:
                 tau_decay=1.0,
                 )
 
-        self.move_depth_line = pg.InfiniteLine(pen=dashed_pen)
+        self.move_depth_line = pg.InfiniteLine(pen=pg.mkPen("k", width=1.5))
         self.move_depth_line.hide()
         self.move_plot.addItem(self.move_depth_line)
         limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
