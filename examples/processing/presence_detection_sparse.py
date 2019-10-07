@@ -495,20 +495,18 @@ class PGUpdater:
         self.limit_lines.append(limit_line)
 
         self.present_html_format = '<div style="text-align: center">' \
-                                   '<span style="color: #FFFFFF;font-size:16pt;">' \
+                                   '<span style="color: #FFFFFF;font-size:15pt;">' \
                                    '{}</span></div>'
-        present_html = self.present_html_format.format("Presence detected!")
         not_present_html = '<div style="text-align: center">' \
-                           '<span style="color: #FFFFFF;font-size:16pt;">' \
+                           '<span style="color: #FFFFFF;font-size:15pt;">' \
                            '{}</span></div>'.format("No presence detected")
         self.present_text_item = pg.TextItem(
-            html=present_html,
-            fill=pg.mkColor(255, 140, 0),
+            fill=pg.mkColor(0xff, 0x7f, 0x0e, 200),
             anchor=(0.5, 0),
             )
         self.not_present_text_item = pg.TextItem(
             html=not_present_html,
-            fill=pg.mkColor("b"),
+            fill=pg.mkColor(0x1f, 0x77, 0xb4, 180),
             anchor=(0.5, 0),
             )
         self.present_text_item.setPos(-2.5, 0.95 * OUTPUT_MAX)
@@ -590,7 +588,7 @@ class PGUpdater:
         self.move_hist_curve.setData(move_hist_xs, np.minimum(move_hist_ys, OUTPUT_MAX))
 
         if data["presence_detected"]:
-            present_text = "Presence detected at {:.1f}m!".format(movement_x)
+            present_text = "Presence detected at {:.0f} cm".format(movement_x * 100)
             present_html = self.present_html_format.format(present_text)
             self.present_text_item.setHtml(present_html)
 
