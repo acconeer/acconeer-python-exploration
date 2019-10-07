@@ -458,6 +458,7 @@ class PGUpdater:
         self.move_smooth_max = example_utils.SmoothMax(
                 self.sensor_config.sweep_rate,
                 tau_decay=1.0,
+                tau_grow=0.25,
                 )
 
         self.move_depth_line = pg.InfiniteLine(pen=pg.mkPen("k", width=1.5))
