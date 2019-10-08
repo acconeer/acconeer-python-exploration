@@ -76,7 +76,10 @@ class MachineLearning():
                                          self.label_num))
         inputs = Input(shape=input_dimensions)
 
-        x = Conv2D(filters=32, kernel_size=(3, 3), activation="relu")(inputs)
+        max_kernel = min(self.y_dim, self.x_dim)
+        k = min(3, max_kernel)
+
+        x = Conv2D(filters=32, kernel_size=(k, k), padding="same", activation="relu")(inputs)
         x = self.maxpool(x)
         x = GaussianNoise(0.3)(x)
         x = Dropout(rate=0.1)(x)
@@ -92,6 +95,7 @@ class MachineLearning():
         predictions = Dense(self.label_num, activation="softmax")(x)
 
         self.model = Model(inputs=inputs, outputs=predictions)
+        self.model.summary()
 
         self.model.compile(
             loss="categorical_crossentropy",
@@ -101,9 +105,8 @@ class MachineLearning():
 
     def maxpool(self, x):
         x_pool = y_pool = 2
-        if self.y_dim <= 9:
+        if self.y_dim <= 9 or self.x_dim <= 9:
             y_pool = 1
-        if self.x_dim <= 9:
             x_pool = 1
 
         self.x_dim /= x_pool
@@ -524,13 +527,13 @@ class KerasPlotting:
 
         for key in history:
             if "val_acc" in key:
-                self.train_acc_plot.setData(history[key])
-            elif "val_loss" in key:
-                self.train_loss_plot.setData(history[key])
-            elif "acc" in key:
                 self.test_acc_plot.setData(history[key])
-            elif "loss" in key:
+            elif "val_loss" in key:
                 self.test_loss_plot.setData(history[key])
+            elif "acc" in key:
+                self.train_acc_plot.setData(history[key])
+            elif "loss" in key:
+                self.train_loss_plot.setData(history[key])
 
 
 class Arguments():

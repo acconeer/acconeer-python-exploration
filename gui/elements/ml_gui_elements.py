@@ -989,6 +989,9 @@ class FeatureSidePanel(QFrame):
             if sender == "collection_mode":
                 self.frame_settings["collection_mode"] = self.radio_toggles()
 
+        # ToDo: Complete frame padding functionality
+        self.frame_settings["frame_pad"] = 5
+
         sig = None
         if self.gui_handle.get_gui_state("scan_is_running"):
             sig = self.gui_handle.sig_scan
