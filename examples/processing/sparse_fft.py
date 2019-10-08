@@ -163,12 +163,12 @@ class PGUpdater:
         for plot in self.plots:
             plot.setVisible(self.processing_config.show_data_plot)
 
-        QUARTER_OF_WAVELENGTH_PER_M = 1.239e-3
+        half_wavelength = 2.445e-3
         self.ft_im.resetTransform()
         self.ft_im.translate(100 * (self.depths[0] - self.actual_stepsize_m / 2), 0)
         if self.processing_config.show_speed_plot:
             self.ft_plot.setLabel("left", "Speed (m/s)")
-            self.ft_im.scale(self.fft_x_scale, self.f_res * QUARTER_OF_WAVELENGTH_PER_M)
+            self.ft_im.scale(self.fft_x_scale, self.f_res * half_wavelength)
         else:
             self.ft_plot.setLabel("left", "Frequency (kHz)")
             self.ft_im.scale(self.fft_x_scale, self.f_res * 1e-3)
