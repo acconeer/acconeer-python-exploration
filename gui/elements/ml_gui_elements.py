@@ -990,7 +990,7 @@ class FeatureSidePanel(QFrame):
                 self.frame_settings["collection_mode"] = self.radio_toggles()
 
         # ToDo: Complete frame padding functionality
-        self.frame_settings["frame_pad"] = 5
+        self.frame_settings["frame_pad"] = 0
 
         sig = None
         if self.gui_handle.get_gui_state("scan_is_running"):
@@ -1578,12 +1578,8 @@ class TrainingFrame(QFrame):
         self.data_widget.setHorizontalHeaderLabels(["Number"])
         self.data_widget.setVerticalHeaderLabels(label_list)
 
-    def show_results(self, plot_data=None, end_result=False, flush_data=False):
-        if end_result:
-            self.graph.update(plot_data)
-        else:
-            self.graph.process(plot_data, flush_data)
-        return
+    def show_results(self, plot_data=None, flush_data=False):
+        self.graph.process(plot_data, flush_data)
 
     def set_feature_dimensions(self, dims):
         self.labels["data_length"].setText(str(dims[0]))
@@ -1671,7 +1667,7 @@ class TrainingSidePanel(QFrame):
         self.buttons["clear_training"].clicked.connect(partial(self.model_operation, "clear_data"))
         self.buttons["load_model"].clicked.connect(partial(self.model_operation, "load_model"))
 
-        self.buttons["stop"].setVisible(False)
+        self.buttons["stop"].setEnabled(False)
         self.buttons["train"].setEnabled(False)
 
         self.drop_down = QComboBox(self)
@@ -1863,38 +1859,31 @@ class TrainingSidePanel(QFrame):
         self.buttons["train"].setEnabled(False)
 
         # Todo: Finalize threaded training
-        thread_training = False
+        thread_training = True
+        model_params = {
+            "x": x,
+            "y": y,
+            "epochs": ep,
+            "batch_size": batch,
+            "eval_data": self.get_evaluation_mode(),
+            "save_best": save_best,
+            "dropout": self.get_dropout(),
+            "session": self.keras.get_current_session(),
+            "graph": self.keras.get_current_graph(),
+            "learning_rate": self.get_learning_rate(),
+            "plot_cb": func,
+        }
 
         if thread_training:
-            model_params = {
-                "model": self.keras,
-                "x": x,
-                "y": y,
-                "epochs": ep,
-                "batch_size": batch,
-                "eval_data": self.get_evaluation_mode(),
-                "save_best": save_best,
-                "dropout": self.get_dropout(),
-                "session": self.keras.get_current_session(),
-                "graph": self.keras.get_current_graph(),
-                "learning_rate": self.get_learning_rate(),
-            }
+            model_params["model"] = self.keras
             self.threaded_train = Threaded_Training(model_params, parent=self)
             self.threaded_train.sig_scan.connect(self.thread_receive)
             self.sig_scan.connect(self.threaded_train.receive)
             self.threaded_train.start()
         else:
-            self.train_history = self.keras.train(
-                x,
-                y,
-                epochs=ep,
-                batch_size=batch,
-                eval_data=self.get_evaluation_mode(),
-                save_best=save_best,
-                dropout=self.get_dropout(),
-                learning_rate=self.get_learning_rate(),
-                cb_func=func
-                )
+            self.is_training(True)
+            self.train_history = self.keras.train(model_params)
+            self.is_training(False)
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
             try:
@@ -2008,6 +1997,12 @@ class TrainingSidePanel(QFrame):
 
         if not success:
             self.sender().setText(val)
+
+    def is_training(self, val):
+        if val:
+            self.gui_handle.enable_tabs(False)
+        else:
+            self.gui_handle.enable_tabs(True)
 
 
 class TrainingGraph(QFrame):
@@ -2285,39 +2280,38 @@ class SpinBoxAndSliderWidget(QFrame):
 class Threaded_Training(QtCore.QThread):
     sig_scan = pyqtSignal(str, str, object)
 
-    def __init__(self, model_data, parent=None):
+    def __init__(self, training_params, parent=None):
         QtCore.QThread.__init__(self, parent)
 
-        self.model_data = model_data
-        self.model = self.model_data["model"]
-        self.epochs = self.model_data["epochs"]
+        self.parent = parent
+        self.training_params = training_params
+        self.model = training_params["model"]
+        self.epochs = training_params["epochs"]
 
         self.finished.connect(self.stop_thread)
 
-        self.running = True
+        self.stop = False
 
     def stop_thread(self):
         self.quit()
 
     def run(self):
-        if self.running:
-            self.model_data["cb"] = self.update_plots
+        self.training_params["plot_cb"] = self.update_plots
+        self.training_params["stop_cb"] = self.stop_training
+        self.training_params["threaded"] = True
+        self.parent.is_training(True)
 
-        epoch = 0
-        while self.running and epoch < self.epochs:
-            try:
-                training_model, session, graph = self.model.threaded_training(self.model_data)
-            except Exception as e:
-                msg = "Failed to train model!\n{}".format(self.format_error(e))
-                self.emit("training_error", msg)
-            epoch += 1
-
-        self.emit("training_done", "", [training_model, session, graph])
-        self.running = False
+        try:
+            training_model, session, graph = self.model.train(self.training_params)
+            self.emit("training_done", "", [training_model, session, graph])
+        except Exception as e:
+            msg = "Failed to train model!\n{}".format(self.format_error(e))
+            self.emit("training_error", msg)
+        self.parent.is_training(False)
 
     def receive(self, message_type, message, data=None):
         if message_type == "stop":
-            self.running = False
+            self.stop = True
         else:
             print("Scan thread received unknown signal: {}".format(message_type))
 
@@ -2332,3 +2326,6 @@ class Threaded_Training(QtCore.QThread):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
         return err
+
+    def stop_training(self):
+        return self.stop

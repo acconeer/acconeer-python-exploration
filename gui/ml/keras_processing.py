@@ -3,13 +3,14 @@ from keras import backend as K
 from keras.layers import (Dense, Dropout, Input, GaussianNoise, Activation, Conv1D, Conv2D,
                           MaxPool2D, Flatten, BatchNormalization)
 from keras.utils import to_categorical
-from keras.callbacks import EarlyStopping, LambdaCallback, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ModelCheckpoint, Callback
 from sklearn.model_selection import train_test_split
 
 import numpy as np
 import argparse
 
 from acconeer_utils import example_utils
+import pyqtgraph as pg
 from helper import ErrorFormater
 import tensorflow as tf
 
@@ -18,7 +19,6 @@ class MachineLearning():
     def __init__(self, model_dimension=2):
         self.labels_dict = None
         self.model = None
-        self.validation_hist = False
         self.model_dimensions = {
             "dimensionality": model_dimension,
             "input": None,
@@ -114,49 +114,89 @@ class MachineLearning():
 
         return MaxPool2D(pool_size=(y_pool, x_pool))(x)
 
-    def train(self, x, y, epochs=128, batch_size=128, eval_data=None, save_best=None,
-              dropout=False, learning_rate=None, cb_func=None):
-        if eval_data:
+    def train(self, train_params):
+        try:
+            x = train_params["x"]
+            y = train_params["y"]
+            epochs = train_params["epochs"]
+            batch_size = train_params["batch_size"]
+        except Exception as e:
+            print("Incorrect training parameters! ", e)
+
+        model = self.model
+        run_threaded = False
+        if train_params.get("threaded"):
+            model = train_params["model"].model
+            run_threaded = True
+
+        if "eval_data" in train_params:
+            eval_data = train_params["eval_data"]
             if isinstance(eval_data, float):
                 x, xTest, y, yTest = train_test_split(x, y, test_size=eval_data)
                 eval_data = (xTest, yTest)
-            self.validation_hist = True
+        else:
+            eval_data = None
 
         cb = []
-        if cb_func:
-            if isinstance(cb_func, list):
-                for f in cb_func:
-                    func = LambdaCallback(on_epoch_end=lambda epoch, logs: f(logs))
-                    cb.append(func)
-            else:
-                func = LambdaCallback(on_epoch_end=lambda epoch, logs: cb_func(logs))
-                cb.append(func)
-        if isinstance(dropout, dict):
-            if dropout["monitor"] in ["acc", "val_acc", "loss", "val_loss"]:
-                cb_early_stop = EarlyStopping(monitor=dropout["monitor"],
-                                              min_delta=dropout["min_delta"],
-                                              patience=dropout["patience"],
-                                              verbose=0,
-                                              mode="auto")
+        if "plot_cb" in train_params:
+            plot_cb = train_params["plot_cb"]
+            stop_cb = None
+            if "stop_cb" in train_params:
+                stop_cb = train_params["stop_cb"]
+            steps = int(np.ceil(x.shape[0] / batch_size))
+            func = TrainCallback(plot_cb=plot_cb, steps_per_epoch=steps, stop_cb=stop_cb)
+            cb.append(func)
+            verbose = 0
+        else:
+            verbose = 1
+
+        if "dropout" in train_params:
+            dropout = train_params["dropout"]
+            if isinstance(dropout, dict):
+                if dropout["monitor"] in ["acc", "val_acc", "loss", "val_loss"]:
+                    cb_early_stop = EarlyStopping(monitor=dropout["monitor"],
+                                                  min_delta=dropout["min_delta"],
+                                                  patience=dropout["patience"],
+                                                  verbose=0,
+                                                  mode="auto"
+                                                  )
                 cb.append(cb_early_stop)
-        if save_best:
-            cb_best = ModelCheckpoint(save_best, monitor="val_acc", verbose=0,
-                                      save_best_only=True, save_weights_only=False,
-                                      mode="auto", period=1)
+
+        if train_params.get("save_best"):
+            cb_best = ModelCheckpoint(train_params["save_best"],
+                                      monitor="val_acc",
+                                      verbose=0,
+                                      save_best_only=True,
+                                      save_weights_only=False,
+                                      mode="auto",
+                                      period=1
+                                      )
             cb.append(cb_best)
 
-        if learning_rate is not None:
-            K.set_value(self.model.optimizer.lr, learning_rate)
+        if run_threaded:
+            tf_session = train_params["session"].as_default()
+            tf_graph = train_params["graph"].as_default()
+        else:
+            tf_session = self.tf_session.as_default()
+            tf_graph = self.tf_graph.as_default()
 
-        with self.tf_session.as_default():
-            with self.tf_graph.as_default():
-                history = self.model.fit(x, y, epochs=epochs, batch_size=batch_size,
-                                         callbacks=cb, validation_data=eval_data)
+        with tf_session:
+            with tf_graph:
+                if "learning_rate" in train_params:
+                    K.set_value(model.optimizer.lr, train_params["learning_rate"])
+                history = model.fit(x,
+                                    y,
+                                    epochs=epochs,
+                                    batch_size=batch_size,
+                                    callbacks=cb,
+                                    validation_data=eval_data,
+                                    verbose=verbose
+                                    )
 
-        if save_best:
-            self.save_info(save_best)
-
-        return history
+        if run_threaded:
+            return model, self.get_current_graph(), self.get_current_session()
+        else:
+            return history
 
     def set_learning_rate(self, rate):
         K.set_value(self.model.optimizer.lr, rate)
@@ -414,23 +454,6 @@ class MachineLearning():
     def set_current_session(self, session):
         K.set_session(session)
 
-    def threaded_training(self, train_params, epochs=1):
-        tf_session = train_params["session"]
-        tf_graph = train_params["graph"]
-        with tf_session.as_default():
-            with tf_graph.as_default():
-                self.train(
-                    train_params["x"],
-                    train_params["y"],
-                    epochs=epochs,
-                    batch_size=train_params["batch_size"],
-                    eval_data=train_params["eval_data"],
-                    save_best=train_params["save_best"],
-                    dropout=train_params["dropout"],
-                    cb_func=train_params["cb"]
-                    )
-        return self.model, self.get_current_graph(), self.get_current_session()
-
     def clear_training_data(self):
         self.model_params = None
         self.clear_model()
@@ -470,6 +493,39 @@ class MachineLearning():
         return {"matrix": matrix, "labels": row_labels}
 
 
+class TrainCallback(Callback):
+    def __init__(self, plot_cb=None, steps_per_epoch=None, stop_cb=None):
+        self.plot = plot_cb
+        self.stop_cb = stop_cb
+        self.steps_per_epoch = steps_per_epoch
+        self.epoch = 0
+        self.batch = 0
+
+    def on_batch_end(self, batch, logs=None):
+        self.batch += 1
+        self.send_data(logs)
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.epoch += 1
+        self.send_data(logs)
+
+    def send_data(self, data):
+        if "steps_per_epoch" not in data:
+            data["steps_per_epoch"] = self.steps_per_epoch
+        if self.plot is not None:
+            self.plot(data)
+
+        if self.stop_cb is not None:
+            try:
+                stop_training = self.stop_cb()
+                if stop_training:
+                    self.stopped_epoch = self.epoch
+                    self.model.stop_training = True
+            except Exception as e:
+                print("Failed to call stop callback! ", e)
+                pass
+
+
 class KerasPlotting:
     def __init__(self):
         self.first = True
@@ -479,6 +535,8 @@ class KerasPlotting:
             "val_acc": [],
             "val_loss": [],
         }
+        self.train_max = 1
+        self.test_max = 1
 
     def setup(self, win):
         win.setWindowTitle("Keras training results")
@@ -487,15 +545,27 @@ class KerasPlotting:
         self.train_plot_window.showGrid(x=True, y=True)
         self.train_plot_window.addLegend(offset=(-10, 10))
         self.train_plot_window.setYRange(0, 1)
+        self.train_plot_window.setXRange(0, 1)
         self.train_plot_window.setLabel("left", "Accuracy/Loss")
         self.train_plot_window.setLabel("bottom", "Epoch")
+
+        self.progress_train = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
+        self.progress_train.setPos(0, 0)
+        self.progress_train.setZValue(2)
+        self.train_plot_window.addItem(self.progress_train, ignoreBounds=True)
 
         self.test_plot_window = win.addPlot(row=1, col=0, title="Test-set results")
         self.test_plot_window.showGrid(x=True, y=True)
         self.test_plot_window.addLegend(offset=(-10, 10))
         self.test_plot_window.setYRange(0, 1)
+        self.test_plot_window.setXRange(0, 1)
         self.test_plot_window.setLabel("left", "Accuracy/Loss")
         self.test_plot_window.setLabel("bottom", "Epoch")
+
+        self.progress_test = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
+        self.progress_test.setPos(0, 0)
+        self.progress_test.setZValue(2)
+        self.test_plot_window.addItem(self.progress_test, ignoreBounds=True)
 
         pen = example_utils.pg_pen_cycler(1)
         self.train_acc_plot = self.train_plot_window.plot(pen=pen, name="Accuracy")
@@ -508,6 +578,10 @@ class KerasPlotting:
         if flush_data:
             for hist in self.history:
                 self.history[hist] = []
+            self.progress_train.setText("")
+            self.progress_test.setText("")
+            self.train_max = 1
+            self.test_max = 1
 
         if data is not None:
             for key in data:
@@ -515,25 +589,94 @@ class KerasPlotting:
                     self.history[key] = []
                 self.history[key].append(data[key])
 
-        self.update(self.history, from_process=True)
+        self.update(self.history)
 
-    def update(self, data, from_process=False):
+    def update(self, data):
         if data is None:
             return
 
-        history = data
-        if not from_process:
-            history = data.history
+        if not isinstance(data, dict):
+            print("Train log data has wrong type: ", type(data))
+            return
 
-        for key in history:
+        train_x = None
+
+        try:
+            data_len = len(data["loss"])
+            epoch = data_len
+            spe = "N/A"
+        except Exception as e:
+            print("Cannot process training logs... ", e)
+            return
+
+        if not data_len:
+            return
+
+        batch = 0
+
+        try:
+            batch = data["batch"][-1] + 1
+        except Exception:
+            pass
+
+        if "steps_per_epoch" in data:
+            spe = data["steps_per_epoch"][0]
+            increment = 1 / (spe + 1)
+            epoch = np.ceil(data_len / spe)
+            train_x = np.arange(0, epoch + increment, increment)
+            train_x = train_x[0:data_len]
+            epoch = int(epoch)
+
+        acc = None
+        loss = None
+        val_acc = None
+        val_loss = None
+
+        for key in data:
             if "val_acc" in key:
-                self.test_acc_plot.setData(history[key])
+                if len(data[key]):
+                    val_acc = data[key][-1]
+                self.test_acc_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
             elif "val_loss" in key:
-                self.test_loss_plot.setData(history[key])
+                if len(data[key]):
+                    val_loss = data[key][-1]
+                self.test_loss_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
             elif "acc" in key:
-                self.train_acc_plot.setData(history[key])
+                if len(data[key]):
+                    acc = data[key][-1]
+                if train_x is not None:
+                    self.train_acc_plot.setData(train_x, data[key])
+                else:
+                    self.train_acc_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
             elif "loss" in key:
-                self.train_loss_plot.setData(history[key])
+                if len(data[key]):
+                    loss = data[key][-1]
+                if train_x is not None:
+                    self.train_loss_plot.setData(train_x, data[key])
+                else:
+                    self.train_loss_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
+
+        p_train = "Epoch: {} Batch {} of {}\n".format(epoch, batch, spe)
+        if acc is not None and loss is not None:
+            p_train += "Acc: {:1.2E} Loss: {:1.2E}\n".format(acc, loss)
+        self.progress_train.setText(p_train)
+
+        if val_acc is not None and val_loss is not None:
+            p_test = "Acc: {:1.2E} Loss: {:1.2E}\n".format(val_acc, val_loss)
+            self.progress_test.setText(p_test)
+
+        self.train_plot_window.setXRange(0, epoch)
+        if acc and loss:
+            train_max = max(acc, loss)
+            if train_max > self.train_max:
+                self.train_max = train_max
+                self.train_plot_window.setYRange(0, train_max)
+        self.test_plot_window.setXRange(0, epoch)
+        if val_acc and val_loss:
+            test_max = max(val_acc, val_loss)
+            if test_max > self.test_max:
+                self.test_max = test_max
+                self.test_plot_window.setYRange(0, test_max)
 
 
 class Arguments():

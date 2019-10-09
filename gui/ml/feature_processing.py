@@ -18,7 +18,7 @@ class FeatureProcessing:
         self.motion_detected = False
         self.frame_list = []
         self.sweep_number = 0
-        self.frame_pad = 5
+        self.frame_pad = 0
         self.auto_offset = 10
         self.auto_offset += self.frame_pad
         self.markers = []
