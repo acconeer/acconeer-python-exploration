@@ -172,8 +172,8 @@ def color_cycler(i=0):
     return category10[i % len(category10)]
 
 
-def pg_pen_cycler(i=0, style=None):
-    pen = pg.mkPen(color_cycler(i), width=2)
+def pg_pen_cycler(i=0, style=None, width=2):
+    pen = pg.mkPen(color_cycler(i), width=width)
     if style == "--":
         pen.setStyle(QtCore.Qt.DashLine)
     elif style is not None:

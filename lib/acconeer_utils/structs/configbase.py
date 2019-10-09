@@ -131,7 +131,9 @@ class ComboBoxPidget(PidgetStub):
         self.grid.addWidget(label, 0, 0, 1, 1)
 
         self.cb = QComboBox()
-        self.cb.addItems([e.value for e in param.enum.__members__.values()])
+        members = param.enum.__members__.values()
+        label_attrib_name = "label" if hasattr(param.enum, "label") else "value"
+        self.cb.addItems([getattr(e, label_attrib_name) for e in members])
         self.cb.currentIndexChanged.connect(self.__cb_event_handler)
         self.grid.addWidget(self.cb, 0, 1, 1, 1)
 
