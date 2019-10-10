@@ -19,24 +19,28 @@ from PyQt5 import QtCore, QtWidgets
 
 import pyqtgraph as pg
 
-import acconeer_utils
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients.mock.client import MockClient
-from acconeer_utils.clients.base import ClientError
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
-from acconeer_utils.structs import configbase
+try:
+    from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
+    from acconeer_utils.clients.mock.client import MockClient
+    from acconeer_utils.clients.base import ClientError
+    from acconeer_utils.clients import configs
+    from acconeer_utils import example_utils
+    from acconeer_utils.structs import configbase
 
-sys.path.append(os.path.dirname(__file__))  # noqa: E402
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
-sys.path.append(os.path.join(os.path.dirname(__file__), "ml/"))   # noqa: E402
-sys.path.append(os.path.join(os.path.dirname(__file__), "elements/"))   # noqa: E402
+    sys.path.append(os.path.dirname(__file__))  # noqa: E402
+    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
+    sys.path.append(os.path.join(os.path.dirname(__file__), "ml/"))   # noqa: E402
+    sys.path.append(os.path.join(os.path.dirname(__file__), "elements/"))   # noqa: E402
 
-import data_processing
-from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
-from helper import (Label, CollapsibleSection, Count, AdvancedSerialDialog, GUIArgumentParser,
-                    SensorSelection)
-
+    import data_processing
+    from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
+    from helper import (Label, CollapsibleSection, Count, AdvancedSerialDialog, GUIArgumentParser,
+                        SensorSelection, lib_version_up_to_date)
+except Exception:
+    import traceback
+    traceback.print_exc()
+    print("\nPlease update your libraries with 'python setup.py install --user'")
+    sys.exit(1)
 
 if "win32" in sys.platform.lower():
     import ctypes
@@ -161,7 +165,7 @@ class GUI(QMainWindow):
         self.setWindowTitle("Acconeer Exploration GUI")
         self.show()
         self.start_up()
-        self.version_check()
+        lib_version_up_to_date(gui_handle=self)
 
         self.radar = data_processing.DataProcessing()
 
@@ -2405,37 +2409,6 @@ class GUI(QMainWindow):
                         text = str(labels[key]["box"])
                         self.service_labels[module_label][key]["box"].setText(text)
 
-    def version_check(self):
-        fdir = os.path.dirname(os.path.realpath(__file__))
-        fn = os.path.join(fdir, "../lib/acconeer_utils/__init__.py")
-        if os.path.isfile(fn):
-            with open(fn, "r") as f:
-                lines = [line.strip() for line in f.readlines()]
-
-            for line in lines:
-                if line.startswith("__version__"):
-                    fs_lib_ver = line.split("=")[1].strip()[1:-1]
-                    break
-            else:
-                fs_lib_ver = None
-        else:
-            fs_lib_ver = None
-
-        used_lib_ver = getattr(acconeer_utils, "__version__", None)
-
-        rerun_text = " - you probably need to rerun setup.py (python setup.py install --user)"
-        if used_lib_ver:
-            sb_text = "Lib v{}".format(used_lib_ver)
-
-            if fs_lib_ver != used_lib_ver:
-                sb_text += " (mismatch)"
-                self.error_message("Lib version mismatch" + rerun_text)
-        else:
-            sb_text = "Lib version unknown"
-            self.error_message("Could not read installed lib version" + rerun_text)
-
-        self.labels["libver"].setText(sb_text)
-
     def closeEvent(self, event=None):
         service_params = {}
         for mode in self.service_labels:
@@ -2668,16 +2641,17 @@ def watchdog(event):
 
 
 if __name__ == "__main__":
-    example_utils.config_logging(level=logging.INFO)
+    if lib_version_up_to_date():
+        example_utils.config_logging(level=logging.INFO)
 
-    app = QApplication(sys.argv)
-    ex = GUI()
+        app = QApplication(sys.argv)
+        ex = GUI()
 
-    signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
+        signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
 
-    # Makes sure the signal is caught
-    timer = QtCore.QTimer()
-    timer.timeout.connect(lambda: None)
-    timer.start(200)
+        # Makes sure the signal is caught
+        timer = QtCore.QTimer()
+        timer.timeout.connect(lambda: None)
+        timer.start(200)
 
-    sys.exit(app.exec_())
+        sys.exit(app.exec_())

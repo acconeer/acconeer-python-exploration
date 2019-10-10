@@ -7,6 +7,59 @@ from PyQt5.QtWidgets import (
 import sys
 import os
 from argparse import ArgumentParser
+import acconeer_utils
+
+
+def lib_version_up_to_date(gui_handle=None):
+    fdir = os.path.dirname(os.path.realpath(__file__))
+    fn = os.path.join(fdir, "../../lib/acconeer_utils/__init__.py")
+    if os.path.isfile(fn):
+        with open(fn, "r") as f:
+            lines = [line.strip() for line in f.readlines()]
+
+        for line in lines:
+            if line.startswith("__version__"):
+                fs_lib_ver = line.split("=")[1].strip()[1:-1]
+                break
+        else:
+            fs_lib_ver = None
+    else:
+        fs_lib_ver = None
+
+    used_lib_ver = getattr(acconeer_utils, "__version__", None)
+
+    rerun_text = "You probably need to rerun setup.py (python setup.py install --user)"
+    error_text = None
+    if used_lib_ver:
+        sb_text = "Lib v{}".format(used_lib_ver)
+
+        if fs_lib_ver != used_lib_ver:
+            sb_text += " (mismatch)"
+            error_text = "Lib version mismatch."
+            error_text += " Installed: {} Latest: {}\n".format(used_lib_ver, fs_lib_ver)
+            error_text += rerun_text
+    else:
+        sb_text = "Lib version unknown"
+        error_text = "Could not read installed lib version" + rerun_text
+
+    if gui_handle is not None:
+        gui_handle.labels["libver"].setText(sb_text)
+        if error_text and sys.executable.endswith("pythonw.exe"):
+            gui_handle.error_message(error_text)
+    else:
+        if not sys.executable.endswith("pythonw.exe") and error_text:
+            prompt = "\nThe GUI might not work properly!\nContinue anyway? [y/N]"
+            while True:
+                print(error_text + prompt)
+                choice = input().lower()
+                if choice.lower() == "y":
+                    return True
+                elif choice == "" or choice.lower() == "n":
+                    return False
+                else:
+                    sys.stdout.write("Please respond with 'y' or 'n' "
+                                     "(or 'Y' or 'N').\n")
+        return True
 
 
 class AdvancedSerialDialog(QDialog):
