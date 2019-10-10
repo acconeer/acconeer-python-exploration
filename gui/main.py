@@ -1135,6 +1135,7 @@ class GUI(QMainWindow):
                 if self.eval_sidepanel.model_loaded() is False:
                     self.error_message("Please load a model first!\n")
                     return
+                frame_settings = self.eval_sidepanel.get_frame_settings()
                 feature_list = self.eval_sidepanel
                 sensor = sensor_config.sensor.copy()
                 sensor_config = self.eval_sidepanel.get_sensor_config()
@@ -1142,6 +1143,7 @@ class GUI(QMainWindow):
                 if not self.eval_sidepanel.config_is_valid():
                     return
             else:
+                frame_settings = self.feature_sidepanel.get_frame_settings()
                 sweep_buffer = np.inf
                 feature_list = self.feature_select
 
@@ -1149,7 +1151,6 @@ class GUI(QMainWindow):
             if not self.feature_select.check_limits(sensor_config, error_handle=e_handle):
                 return
 
-            frame_settings = self.feature_sidepanel.get_frame_settings()
             if ml_mode == "feature_select":
                 frame_settings["frame_pad"] = 0
                 frame_settings["collection_mode"] = "continuous"

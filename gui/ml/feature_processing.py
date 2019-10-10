@@ -509,6 +509,8 @@ class DataProcessor:
         complete = plot_data["ml_frame_data"]["current_frame"]["frame_complete"]
         if complete and self.evaluate and feature_map is not None:
             plot_data["prediction"] = self.evaluate(feature_map)
+            prediction_label = plot_data["prediction"]["prediction"]
+            plot_data["ml_frame_data"]["frame_list"][-1]["label"] = prediction_label
 
             if self.prediction_hist is None:
                 self.prediction_hist = np.zeros((plot_data["prediction"]["number_labels"],

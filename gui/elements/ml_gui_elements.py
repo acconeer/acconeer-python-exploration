@@ -1368,12 +1368,15 @@ class FeatureInspectFrame(QFrame):
 
         self.feature_process.set_feature_list(fdata["ml_frame_data"]["feature_list"])
 
-        fdata = self.feature_process.feature_extraction_window(
-            fdata,
-            sweep_data,
-            frame_start,
-            label
-            )
+        try:
+            fdata = self.feature_process.feature_extraction_window(
+                fdata,
+                sweep_data,
+                frame_start,
+                label
+                )
+        except Exception as e:
+            self.gui_handle.error_message("Failed to calculate new feature frame<br>{}", e)
 
         self.current_sweep = sweep
 
@@ -2201,6 +2204,12 @@ class EvalSidePanel(QFrame):
     def get_feature_list(self):
         if self.model_data["loaded"]:
             return self.model_data["feature_list"]
+        else:
+            return None
+
+    def get_frame_settings(self):
+        if self.model_data["loaded"]:
+            return self.model_data["frame_settings"]
         else:
             return None
 

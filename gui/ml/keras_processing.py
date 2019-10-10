@@ -512,6 +512,7 @@ class TrainCallback(Callback):
     def send_data(self, data):
         if "steps_per_epoch" not in data:
             data["steps_per_epoch"] = self.steps_per_epoch
+
         if self.plot is not None:
             self.plot(data)
 
@@ -527,69 +528,69 @@ class TrainCallback(Callback):
 
 
 class KerasPlotting:
-    def __init__(self):
+    def __init__(self, epoch_history=20):
+        self.epoch_history = epoch_history
         self.first = True
         self.history = {
             "acc": [],
             "loss": [],
             "val_acc": [],
             "val_loss": [],
+            "train_x": [],
+            "val_x": [],
+            "epoch_idx": [],
         }
-        self.train_max = 1
-        self.test_max = 1
+        self.current_epoch = 0
 
     def setup(self, win):
         win.setWindowTitle("Keras training results")
 
-        self.train_plot_window = win.addPlot(row=0, col=0, title="Training results")
-        self.train_plot_window.showGrid(x=True, y=True)
-        self.train_plot_window.addLegend(offset=(-10, 10))
-        self.train_plot_window.setYRange(0, 1)
-        self.train_plot_window.setXRange(0, 1)
-        self.train_plot_window.setLabel("left", "Accuracy/Loss")
-        self.train_plot_window.setLabel("bottom", "Epoch")
+        self.acc_plot_window = win.addPlot(row=0, col=0, title="Training results")
+        self.acc_plot_window.showGrid(x=True, y=True)
+        self.acc_plot_window.addLegend(offset=(-10, 10))
+        self.acc_plot_window.setYRange(0, 1)
+        self.acc_plot_window.setXRange(0, 1)
+        self.acc_plot_window.setLabel("left", "Accuracy/Loss")
+        self.acc_plot_window.setLabel("bottom", "Epoch")
 
-        self.progress_train = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
-        self.progress_train.setPos(0, 0)
-        self.progress_train.setZValue(2)
-        self.train_plot_window.addItem(self.progress_train, ignoreBounds=True)
+        self.progress_acc = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
+        self.progress_acc.setPos(0, 0)
+        self.progress_acc.setZValue(2)
+        self.acc_plot_window.addItem(self.progress_acc, ignoreBounds=True)
 
-        self.test_plot_window = win.addPlot(row=1, col=0, title="Test-set results")
-        self.test_plot_window.showGrid(x=True, y=True)
-        self.test_plot_window.addLegend(offset=(-10, 10))
-        self.test_plot_window.setYRange(0, 1)
-        self.test_plot_window.setXRange(0, 1)
-        self.test_plot_window.setLabel("left", "Accuracy/Loss")
-        self.test_plot_window.setLabel("bottom", "Epoch")
+        self.loss_plot_window = win.addPlot(row=1, col=0, title="Test-set results")
+        self.loss_plot_window.showGrid(x=True, y=True)
+        self.loss_plot_window.addLegend(offset=(-10, 10))
+        self.loss_plot_window.setYRange(0, 1)
+        self.loss_plot_window.setXRange(0, 1)
+        self.loss_plot_window.setLabel("left", "Accuracy/Loss")
+        self.loss_plot_window.setLabel("bottom", "Epoch")
 
-        self.progress_test = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
-        self.progress_test.setPos(0, 0)
-        self.progress_test.setZValue(2)
-        self.test_plot_window.addItem(self.progress_test, ignoreBounds=True)
+        self.progress_loss = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
+        self.progress_loss.setPos(.5, 0.5)
+        self.progress_loss.setZValue(2)
+        self.loss_plot_window.addItem(self.progress_loss, ignoreBounds=True)
 
+        hp = self.history_plots = {}
         pen = example_utils.pg_pen_cycler(1)
-        self.train_acc_plot = self.train_plot_window.plot(pen=pen, name="Accuracy")
-        self.test_acc_plot = self.test_plot_window.plot(pen=pen, name="Accuracy")
+        hp["acc"] = self.acc_plot_window.plot(pen=pen, name="Accuracy")
+        hp["loss"] = self.loss_plot_window.plot(pen=pen, name="Loss")
         pen = example_utils.pg_pen_cycler(2)
-        self.train_loss_plot = self.train_plot_window.plot(pen=pen, name="Loss")
-        self.test_loss_plot = self.test_plot_window.plot(pen=pen, name="Loss")
+        hp["val_acc"] = self.acc_plot_window.plot(pen=pen, name="Val. Accuracy")
+        hp["val_loss"] = self.loss_plot_window.plot(pen=pen, name="Val. Loss")
 
     def process(self, data=None, flush_data=False):
         if flush_data:
-            for hist in self.history:
-                self.history[hist] = []
-            self.progress_train.setText("")
-            self.progress_test.setText("")
-            self.train_max = 1
-            self.test_max = 1
+            for key in self.history:
+                self.history[key] = []
+            for key in self.history_plots:
+                self.history_plots[key].setData([], [])
+            self.history["epoch_idx"].append(0)
+            self.progress_acc.setText("")
+            self.progress_loss.setText("")
+            self.current_epoch = 0
 
-        if data is not None:
-            for key in data:
-                if key not in self.history:
-                    self.history[key] = []
-                self.history[key].append(data[key])
-
-        self.update(self.history)
+        self.update(data)
 
     def update(self, data):
         if data is None:
@@ -598,85 +599,71 @@ class KerasPlotting:
         if not isinstance(data, dict):
             print("Train log data has wrong type: ", type(data))
             return
-
-        train_x = None
-
-        try:
-            data_len = len(data["loss"])
-            epoch = data_len
-            spe = "N/A"
-        except Exception as e:
-            print("Cannot process training logs... ", e)
+        if "loss" not in data or "acc" not in data:
+            print("Cannot process training logs... ")
             return
 
-        if not data_len:
-            return
+        hp = self.history_plots
+        h = self.history
+
+        if "val_loss" in data:
+            self.current_epoch += 1
+            h["val_x"].append(self.current_epoch)
+            h["epoch_idx"].append(len(h["train_x"]) + 1)
+        epoch = self.current_epoch
 
         batch = 0
+        if "batch" in data:
+            batch = data["batch"] + 1
 
-        try:
-            batch = data["batch"][-1] + 1
-        except Exception:
-            pass
-
+        increment = 1
         if "steps_per_epoch" in data:
-            spe = data["steps_per_epoch"][0]
+            spe = data["steps_per_epoch"]
             increment = 1 / (spe + 1)
-            epoch = np.ceil(data_len / spe)
-            train_x = np.arange(0, epoch + increment, increment)
-            train_x = train_x[0:data_len]
-            epoch = int(epoch)
+            if len(h["train_x"]):
+                increment += h["train_x"][-1]
+        h["train_x"].append(increment)
 
-        acc = None
-        loss = None
-        val_acc = None
-        val_loss = None
+        hist_key_list = ["acc", "accuracy", "val_acc", "val_accuracy", "loss", "val_loss"]
 
-        for key in data:
-            if "val_acc" in key:
-                if len(data[key]):
-                    val_acc = data[key][-1]
-                self.test_acc_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
-            elif "val_loss" in key:
-                if len(data[key]):
-                    val_loss = data[key][-1]
-                self.test_loss_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
-            elif "acc" in key:
-                if len(data[key]):
-                    acc = data[key][-1]
-                if train_x is not None:
-                    self.train_acc_plot.setData(train_x, data[key])
-                else:
-                    self.train_acc_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
-            elif "loss" in key:
-                if len(data[key]):
-                    loss = data[key][-1]
-                if train_x is not None:
-                    self.train_loss_plot.setData(train_x, data[key])
-                else:
-                    self.train_loss_plot.setData(np.arange(1, len(data[key]) + 1), data[key])
+        for data_key in data:
+            for hist_key in hist_key_list:
+                if hist_key == data_key:
+                    h[hist_key].append(data[data_key])
+                    x = h["train_x"]
+                    if "val" in data_key:
+                        x = h["val_x"]
+                    hp[hist_key].setData(x, h[hist_key])
 
-        p_train = "Epoch: {} Batch {} of {}\n".format(epoch, batch, spe)
-        if acc is not None and loss is not None:
-            p_train += "Acc: {:1.2E} Loss: {:1.2E}\n".format(acc, loss)
-        self.progress_train.setText(p_train)
+        self.acc_plot_window.setXRange(max(0, epoch - self.epoch_history), epoch + 2)
+        self.loss_plot_window.setXRange(max(0, epoch - self.epoch_history), epoch + 2)
 
-        if val_acc is not None and val_loss is not None:
-            p_test = "Acc: {:1.2E} Loss: {:1.2E}\n".format(val_acc, val_loss)
-            self.progress_test.setText(p_test)
+        if len(h["val_acc"]):
+            train_idx = h["epoch_idx"][max(0, epoch - self.epoch_history)]
+            val_idx = max(0, epoch - self.epoch_history)
 
-        self.train_plot_window.setXRange(0, epoch)
-        if acc and loss:
-            train_max = max(acc, loss)
-            if train_max > self.train_max:
-                self.train_max = train_max
-                self.train_plot_window.setYRange(0, train_max)
-        self.test_plot_window.setXRange(0, epoch)
-        if val_acc and val_loss:
-            test_max = max(val_acc, val_loss)
-            if test_max > self.test_max:
-                self.test_max = test_max
-                self.test_plot_window.setYRange(0, test_max)
+            max_acc = max(max(h["val_acc"][val_idx:]), max(h["acc"][train_idx:]))
+            min_acc = min(min(h["val_acc"][val_idx:]), min(h["acc"][train_idx:]))
+
+            max_loss = max(max(h["val_loss"][val_idx:]), max(h["loss"][train_idx:]))
+            min_loss = min(min(h["val_loss"][val_idx:]), min(h["loss"][train_idx:]))
+
+            self.acc_plot_window.setYRange(max(0.9 * min_acc, 0), 1.1 * max_acc)
+            self.loss_plot_window.setYRange(max(0.9 * min_loss, 0), 1.1 * max_loss)
+            self.progress_acc.setPos(max(0, epoch - self.epoch_history), max(0.9 * min_acc, 0))
+            self.progress_loss.setPos(max(0, epoch - self.epoch_history), max(0.9 * min_loss, 0))
+
+        p_acc = "Epoch: {} -> Batch {} of {}\n".format(epoch, batch, spe)
+        p_acc += "Acc: {:1.2E} ".format(h["acc"][-1])
+        if len(h["val_acc"]):
+            p_acc += "Val-Acc: {:1.2E}".format(h["val_acc"][-1])
+
+        p_loss = "Loss: {:1.2E} ".format(h["loss"][-1])
+        if len(h["val_loss"]):
+            p_loss += "Val-Loss: {:1.2E}".format(h["val_loss"][-1])
+
+        self.progress_acc.setText(p_acc)
+        self.progress_loss.setText(p_loss)
 
 
 class Arguments():
