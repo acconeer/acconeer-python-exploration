@@ -1190,6 +1190,7 @@ class FeatureSidePanel(QFrame):
         if "session" in action:
             title = "Save session data"
             fname = 'ml_session_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+            fname += "_{}".format(self.gui_handle.feature_extract.get_label())
 
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -1317,8 +1318,6 @@ class FeatureInspectFrame(QFrame):
             return
 
         f_histdata = fdata["ml_frame_data"]["frame_list"]
-        f_current = fdata["ml_frame_data"]["current_frame"]
-        f_info = fdata["ml_frame_data"]["frame_info"]
 
         frame_nr = self.current_frame_nr
         if action == "frames":
@@ -1330,19 +1329,19 @@ class FeatureInspectFrame(QFrame):
             print("No feature data available!")
             return
 
-        for key in f_histdata[frame_nr]:
-            f_current[key] = f_histdata[frame_nr][key]
-
-        self.labels["current_frame"].setText("Frame: {}".format(frame_nr + 1))
-
-        label = f_current["label"]
         if action == "frames":
+            self.set_slider_value("frame_slider", frame_nr + 1)
+            f_current = f_histdata[frame_nr]
+            for key in f_histdata[frame_nr]:
+                f_current[key] = f_histdata[frame_nr][key]
+            label = f_current["label"]
             self.current_frame_data = f_current
             self.graph.update(fdata)
             self.current_sweep = f_current["frame_marker"]
             self.current_frame_nr = frame_nr
             self.textboxes["label"].setText(label)
             self.labels["current_sweep"].setText("Sweep: {}".format(self.current_sweep))
+            self.labels["current_frame"].setText("Frame: {}".format(frame_nr + 1))
             self.set_slider_value("sweep_slider", self.current_sweep)
             return
         else:
@@ -1350,6 +1349,9 @@ class FeatureInspectFrame(QFrame):
                 print("No sweep data available")
                 return
             label = self.textboxes["label"].text()
+
+        f_current = fdata["ml_frame_data"]["current_frame"]
+        f_info = fdata["ml_frame_data"]["frame_info"]
 
         sweep = number
         sweep_data = self.gui_handle.data
@@ -1415,24 +1417,25 @@ class FeatureInspectFrame(QFrame):
                 f_new[key] = f_modified[key]
             f_histdata.insert(frame_nr + 1, f_new)
             self.update_sliders()
-            self.update_frame("frames", frame_nr + 1)
+            self.update_frame("frames", frame_nr + 2)
         elif "current" in action:
             for key in f_histdata[frame_nr]:
                 f_histdata[frame_nr][key] = f_modified[key]
         elif "remove" in action:
             if len(f_histdata) > frame_nr:
                 f_histdata.pop(frame_nr)
+                self.update_frame("frames", frame_nr)
                 self.update_sliders()
-                self.update_frame("frames", -1)
 
     def update_sliders(self):
         if self.gui_handle.data is None or self.gui_handle.ml_data is None:
             return
 
         nr_sweeps = len(self.gui_handle.data)
+        frame_size = self.gui_handle.ml_data["ml_frame_data"]["frame_info"]["frame_size"]
         nr_frames = len(self.gui_handle.ml_data["ml_frame_data"]["frame_list"])
 
-        self.sliders["sweep_slider"].set_limits([1, max(nr_sweeps, 1)])
+        self.sliders["sweep_slider"].set_limits([1, max(nr_sweeps, 1) - (frame_size + 1)])
         self.sliders["frame_slider"].set_limits([1, max(nr_frames, 1)])
 
     def set_slider_value(self, tag, value):
@@ -1912,13 +1915,14 @@ class TrainingSidePanel(QFrame):
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
         elif message_type == "training_done":
-            self.keras.set_current_session(data[1])
+            self.keras.set_current_session(data[2])
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
-            self.keras.confusion_matrix(
+            confusion_matrix = self.keras.confusion_matrix(
                 self.train_data["y_labels"],
                 self.keras.predict(self.train_data["x_data"])
                 )
+            self.gui_handle.training.update_confusion_matrix(confusion_matrix)
         elif message_type == "update_plots":
             self.gui_handle.training.show_results(data)
         else:
