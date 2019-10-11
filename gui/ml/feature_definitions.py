@@ -347,19 +347,19 @@ class FeatureSparseFFT:
         start_idx = np.argmin((dist_vec - start)**2)
         stop_idx = np.argmin((dist_vec - stop)**2)
 
+        stop_idx = max(start_idx + 1, stop_idx)
+
+        arr = arr[:, start_idx:stop_idx, :]
+
         hanning = np.hanning(point_repeats)[:, np.newaxis, np.newaxis]
         doppler = abs(np.fft.rfft(hanning * (arr - np.mean(arr, axis=0, keepdims=True)), axis=0))
         fft_psd = np.sum(doppler, axis=1)
 
-        freq_bins = fft_psd.shape[1]
-        freq_cutoff = freq_bins - int(high_pass * freq_bins)
-        left_cut = int(freq_cutoff / 2)
-        right_cut = freq_bins - int(freq_cutoff / 2)
-        fft_psd[:, 0:left_cut] = 0
-        fft_psd[:, right_cut:] = 0
+        freq_bins = fft_psd.shape[0]
+        freq_cutoff = int(high_pass * freq_bins)
 
         data = {
-            "fft": fft_psd[start_idx:stop_idx, :],
+            "fft": fft_psd[0:freq_cutoff, :],
         }
 
         return data
@@ -368,12 +368,10 @@ class FeatureSparseFFT:
         return self.data, self.options
 
     def get_size(self, options=None):
-        if options is None:
+        if options is None or "subsweeps" not in options:
             return 1
         try:
-            start = float(options["Start"])
-            stop = float(options["Stop"])
-            size = (stop - start) * 100 / 6 + 1
+            size = int(np.ceil(options["subsweeps"] * options["High pass"] / 2))
         except Exception as e:
             print("Failed to calculate feature hight!\n ", e)
             return 1

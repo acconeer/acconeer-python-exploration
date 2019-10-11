@@ -30,6 +30,7 @@ class FeatureSelectFrame(QFrame):
         self.gui_handle = gui_handle
         self.has_valid_config = False
         self.feature_testing = False
+        self.sparse_subsweeps = False
 
         self.limits = {
             "start": 0,
@@ -479,6 +480,9 @@ class FeatureSelectFrame(QFrame):
             config_end = sensor_config.range_end
             config_sensors = sensor_config.sensor
             config_data_type = sensor_config.mode
+            self.sparse_subsweeps = False
+            if "sparse" in config_data_type:
+                self.sparse_subsweeps = sensor_config.number_of_subsweeps
         except Exception:
             if error_handle is None:
                 return self.error_text.setText("No service selected!")
@@ -640,6 +644,8 @@ class FeatureSelectFrame(QFrame):
             feature_opts = self.get_feature_list([feature])[0]["options"]
             feature_size = 1
             if feature["size_cb"] is not None:
+                if self.sparse_subsweeps:
+                    feature_opts["subsweeps"] = self.sparse_subsweeps
                 feature_size = feature["size_cb"](feature_opts)
             out_multiplier = 0
             for out in feature["output"]:

@@ -1370,7 +1370,7 @@ class GUI(QMainWindow):
         self.buttons["start"].setEnabled(True)
         self.service_section.body_widget.setEnabled(True)
 
-        if self.get_gui_state("ml_tab") == "main":
+        if self.get_gui_state("ml_tab") in ["main", "feature_select"]:
             self.settings_section.body_widget.setEnabled(True)
 
         if self.get_gui_state("ml_mode"):
