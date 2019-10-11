@@ -180,7 +180,7 @@ class GUI(QMainWindow):
         label_info = {
             "sensor": ("Sensor", "sensor"),
             "gain": ("Gain", "sensor"),
-            "sweep_rate": ("Sweep frequency", "sensor"),
+            "sweep_rate": ("Update rate", "sensor"),
             "sweeps": ("Number of sweeps", "sensor"),
             "sweep_buffer": ("Sweep buffer", "scan"),
             "range_start": ("Start (m)", "sensor"),
@@ -189,10 +189,10 @@ class GUI(QMainWindow):
             "clutter_status": ("", "scan"),
             "interface": ("Interface", "connection"),
             "bin_count": ("Power bins", "sensor"),
-            "number_of_subsweeps": ("Subsweeps", "sensor"),
-            "subsweep_rate": ("Subsweep rate", "sensor"),
+            "number_of_subsweeps": ("Sweeps per frame", "sensor"),
+            "subsweep_rate": ("Sweep rate", "sensor"),
             "stepsize": ("Stepsize", "sensor"),
-            "hw_accelerated_average_samples": ("HWAAS", "sensor"),
+            "hw_accelerated_average_samples": ("HW Acc. avg. samples", "sensor"),
             "sweep_info": ("", "statusbar"),
             "saturated": ("Warning: Data saturated, reduce gain!", "statusbar"),
             "stitching": ("Experimental stitching enabled!", "sensor"),
@@ -664,8 +664,6 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.labels["range_end"], c.val, 1)
         self.settings_section.grid.addWidget(self.textboxes["range_start"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["range_end"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["stepsize"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["stepsize"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["sweep_rate"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["sweep_rate"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["gain"], c.pre_incr(), 0)
@@ -674,14 +672,16 @@ class GUI(QMainWindow):
             self.labels["hw_accelerated_average_samples"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(
             self.textboxes["hw_accelerated_average_samples"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["sweeps"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["sweeps"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["stepsize"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["stepsize"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["bin_count"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["bin_count"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["number_of_subsweeps"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["number_of_subsweeps"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["subsweep_rate"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["subsweep_rate"], c.val, 1)
+        self.settings_section.grid.addWidget(self.labels["sweeps"], c.pre_incr(), 0)
+        self.settings_section.grid.addWidget(self.textboxes["sweeps"], c.val, 1)
         self.settings_section.grid.addWidget(self.env_profiles_dd, c.pre_incr(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.sampling_mode_dd, c.pre_incr(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["stitching"], c.pre_incr(), 0, 1, 2)
