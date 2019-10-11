@@ -413,7 +413,7 @@ class PGUpdater:
             self.vel_text_item.setHtml(html)
             self.vel_text_item.show()
 
-            self.vel_max_line.setPos(v)
+            self.vel_max_line.setPos(v * self.unit.scale)
             self.vel_max_line.show()
         else:
             self.vel_text_item.hide()
