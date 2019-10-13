@@ -39,7 +39,9 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        speed = processor.process(sweep)
+
+        print (speed)
 
         # if plot_data is not None:
         #     try:
@@ -89,17 +91,32 @@ get_processing_config = ProcessingConfiguration
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
-        pass
+        half_wavelength = 2.445e-3  # m
+    subsweep_rate = sensor_config.subsweep_rate
+    num_subsweeps = sensor_config.number_of_subsweeps
+    self.bin_index_to_speed = half_wavelength * subsweep_rate / num_subsweeps
 
     def process(self, sweep):
         zero_mean_sweep = sweep - sweep.mean(axis=0, keepdims=True)
         fft = np.fft.rfft(zero_mean_sweep.T * np.hanning(sweep.shape[0]), axis=1)
         abs_fft = np.abs(fft)
 
-        return {
-            "sweep": sweep,
-            "abs_fft": abs_fft,
-        }
+        # abs_fft is a matrix with dims abs_fft[depth, freq_bin]
+        # we don't care about the depth, so take max over all depths
+        asd = np.max(abs_fft, axis=0)
+
+        # asd becomes a vector (asd[freq_bin])
+        # now we take the argmax of that
+        max_bin = np.argmax(asd)
+
+        speed = max_bin * self.bin_index_to_speed
+
+        return speed
+
+        # return {
+        #     "sweep": sweep,
+        #     "abs_fft": abs_fft,
+        # }
 
 
 # class PGUpdater:
