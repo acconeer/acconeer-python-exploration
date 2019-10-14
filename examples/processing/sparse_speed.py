@@ -101,8 +101,9 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
     min_speed = configbase.FloatParameter(
             label="Minimum speed",
             unit="m/s",
-            default_value=0.1,
-            limits=(0, 10),
+            default_value=0.2,
+            limits=(0, 5),
+            decimals=1,
             updateable=True,
             order=0,
             )
