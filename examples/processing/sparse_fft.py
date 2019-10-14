@@ -1,12 +1,14 @@
 import numpy as np
-# import pyqtgraph as pg
 
 from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
-# from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
 from acconeer_utils.structs import configbase
 
+waitForCompletingSpeedLimitDetection = None
+
+# Speedlimit in km/h
+speedLimit = 15
 
 def main():
     args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
@@ -26,10 +28,6 @@ def main():
 
     session_info = client.setup_session(sensor_config)
 
-    # pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    # pg_process = PGProcess(pg_updater)
-    # pg_process.start()
-
     client.start_streaming()
 
     interrupt_handler = example_utils.ExampleInterruptHandler()
@@ -37,17 +35,24 @@ def main():
 
     processor = Processor(sensor_config, processing_config, session_info)
 
+    global speedLimit
+    global waitForCompletingSpeedLimitDetection
+    
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
         speed = processor.process(sweep)
+        speed = speed * 3.6
 
+        if speed > speedLimit:
+            speedLimit = speed
+            print ("Maximal current Speed: " + str(speedLimit))
+            if not waitForCompletingSpeedLimitDetection:
+                waitForCompletingSpeedLimitDetection = True
+                timer1 = threading.Timer(0.1, captureImageFromCamera) 
+                timer1.start()
+                timer2 = threading.Timer(2.0, sendSpeedCatImage)
+                timer2.start()
         print (speed)
-
-        # if plot_data is not None:
-        #     try:
-        #         pg_process.put_data(plot_data)
-        #     except PGProccessDiedException:
-        #         break
 
     print("Disconnecting...")
     # pg_process.close()
@@ -92,9 +97,9 @@ get_processing_config = ProcessingConfiguration
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
         half_wavelength = 2.445e-3  # m
-    subsweep_rate = sensor_config.subsweep_rate
-    num_subsweeps = sensor_config.number_of_subsweeps
-    self.bin_index_to_speed = half_wavelength * subsweep_rate / num_subsweeps
+        subsweep_rate = sensor_config.subsweep_rate
+        num_subsweeps = sensor_config.number_of_subsweeps
+        self.bin_index_to_speed = half_wavelength * subsweep_rate / num_subsweeps
 
     def process(self, sweep):
         zero_mean_sweep = sweep - sweep.mean(axis=0, keepdims=True)
@@ -113,101 +118,35 @@ class Processor:
 
         return speed
 
-        # return {
-        #     "sweep": sweep,
-        #     "abs_fft": abs_fft,
-        # }
+def captureImageFromCamera(): 
+    print("Trigger Canon EOS80D\n")
+    myCmd = '/home/stellarmate/Pictures/SpeedCam/captureImage.sh'
+    os.system(myCmd)
 
+def sendSpeedCatImage(): 
+    print ("Lock radar until image is sendet")
+    global waitForCompletingSpeedLimitDetection
+    global speedLimit
+    # from m/s to km/h
+    m = speedLimit * 3.6
 
-# class PGUpdater:
-#     def __init__(self, sensor_config, processing_config, session_info):
-#         self.processing_config = processing_config
-#
-#         self.stepsize = sensor_config.stepsize
-#         self.num_subsweeps = sensor_config.number_of_subsweeps
-#         self.subsweep_rate = session_info["actual_subsweep_rate"]
-#         self.depths = get_range_depths(sensor_config, session_info)
-#         self.actual_stepsize_m = session_info["actual_stepsize"]
-#         self.num_depths = self.depths.size
-#         self.f_res = self.subsweep_rate / self.num_subsweeps
-#         self.fft_x_scale = 100 * self.actual_stepsize_m
-#
-#         self.smooth_max_f = self.subsweep_rate / self.num_subsweeps
-#
-#         self.setup_is_done = False
-#
-#     def setup(self, win):
-#         self.plots = []
-#         self.curves = []
-#         for i in range(self.num_depths):
-#             title = "{:.0f} cm".format(100 * self.depths[i])
-#             plot = win.addPlot(row=0, col=i, title=title)
-#             plot.showGrid(x=True, y=True)
-#             plot.setYRange(-2**15, 2**15)
-#             plot.hideAxis("left")
-#             plot.hideAxis("bottom")
-#             plot.plot(np.arange(self.num_subsweeps), np.zeros(self.num_subsweeps))
-#             curve = plot.plot(pen=example_utils.pg_pen_cycler())
-#             self.plots.append(plot)
-#             self.curves.append(curve)
-#
-#         self.ft_plot = win.addPlot(row=1, col=0, colspan=self.num_depths)
-#         self.ft_im = pg.ImageItem(autoDownsample=True)
-#         self.ft_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
-#         self.ft_plot.addItem(self.ft_im)
-#         self.ft_plot.setLabel("bottom", "Depth (cm)")
-#         self.ft_plot.getAxis("bottom").setTickSpacing(6 * self.stepsize, 6)
-#
-#         self.smooth_max = example_utils.SmoothMax(
-#                 self.smooth_max_f,
-#                 tau_grow=0,
-#                 tau_decay=0.5,
-#                 hysteresis=0.1,
-#                 )
-#
-#         self.setup_is_done = True
-#         self.update_processing_config()
-#
-#     def update_processing_config(self, processing_config=None):
-#         if processing_config is None:
-#             processing_config = self.processing_config
-#         else:
-#             self.processing_config = processing_config
-#
-#         if not self.setup_is_done:
-#             return
-#
-#         for plot in self.plots:
-#             plot.setVisible(self.processing_config.show_data_plot)
-#
-#         half_wavelength = 2.445e-3
-#         self.ft_im.resetTransform()
-#         self.ft_im.translate(100 * (self.depths[0] - self.actual_stepsize_m / 2), 0)
-#         if self.processing_config.show_speed_plot:
-#             self.ft_plot.setLabel("left", "Speed (m/s)")
-#             self.ft_im.scale(self.fft_x_scale, self.f_res * half_wavelength)
-#         else:
-#             self.ft_plot.setLabel("left", "Frequency (kHz)")
-#             self.ft_im.scale(self.fft_x_scale, self.f_res * 1e-3)
-#
-#     def update(self, data):
-#         frame = data["sweep"]
-#
-#         for i, ys in enumerate(frame.T):
-#             self.curves[i].setData(ys)
-#
-#         m = np.max(data["abs_fft"])
-#         m = max(m, 1e4)
-#         m = self.smooth_max.update(m)
-#         self.ft_im.updateImage(data["abs_fft"], levels=(0, m * 1.05))
-#
-#
-# def get_range_depths(sensor_config, session_info):
-#     range_start = session_info["actual_range_start"]
-#     range_end = range_start + session_info["actual_range_length"]
-#     num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
-#     return np.linspace(range_start, range_end, num_depths)
+    print("Write max Speed to file: " + str(speedLimit))
+    f = open("speed.txt", "w")
+    f.write(str(speedLimit.round(1)) + " km/h")
+    f.close()
+    
+    print("Start Postprocessing")
+    myCmd = '/home/stellarmate/Pictures/SpeedCam/postProcessing.sh'
+    os.system(myCmd)
+    
+    print("Send Email with Attachment")
+    myCmd = '/home/stellarmate/Pictures/SpeedCam/sendmail.sh'
+    os.system(myCmd)
 
+    speedLimit = 11000
+    waitForCompletingSpeedLimitDetection = None
+
+    print ("Release radar lock")
 
 if __name__ == "__main__":
     main()
