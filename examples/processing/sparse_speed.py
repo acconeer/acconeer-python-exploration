@@ -298,7 +298,7 @@ class PGUpdater:
         # Spectral density plot
 
         self.sd_plot = win.addPlot(row=1, col=0, colspan=self.num_depths)
-        self.sd_plot.setLabel("left", "Normalized ASD")
+        self.sd_plot.setLabel("left", "Normalized PSD (dB)")
         self.sd_plot.showGrid(x=True, y=True)
         self.sd_curve = self.sd_plot.plot(pen=example_utils.pg_pen_cycler())
         dashed_pen = pg.mkPen("k", width=2, style=QtCore.Qt.DashLine)
@@ -390,12 +390,12 @@ class PGUpdater:
 
         # Spectral density plot
 
-        sd = data["sd"]
-        m = self.smooth_max.update(max(10, np.max(sd)))
+        psd_db = 20 * np.log10(data["sd"])
+        psd_threshold_db = 20 * np.log10(data["sd_threshold"])
+        m = self.smooth_max.update(max(2 * psd_threshold_db, np.max(psd_db)))
         self.sd_plot.setYRange(0, m)
-        self.sd_curve.setData(self.bin_vs * self.unit.scale, sd)
-
-        self.sd_threshold_line.setPos(data["sd_threshold"])
+        self.sd_curve.setData(self.bin_vs * self.unit.scale, psd_db)
+        self.sd_threshold_line.setPos(psd_threshold_db)
 
         # Rolling speed plot
 
