@@ -1723,7 +1723,7 @@ class GUI(QMainWindow):
                 iq_max_range = 3.0
 
         stitching = False
-        if r <= 0:
+        if r < 0:
             errors.append("Range must not be less than 0!\n")
             self.textboxes["range_end"].setText(str(start + 0.06))
             end = start + 0.06
