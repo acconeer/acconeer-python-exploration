@@ -1,11 +1,20 @@
 import numpy as np
-from PyQt5 import QtCore
-import pyqtgraph as pg
 import copy
 
-from acconeer_utils import example_utils
-from matplotlib.colors import LinearSegmentedColormap
-from examples.processing import presence_detection_sparse
+try:
+    from matplotlib.colors import LinearSegmentedColormap
+    from PyQt5 import QtCore
+    import pyqtgraph as pg
+    from acconeer_utils import example_utils
+    PYQT_PLOTTING_AVAILABLE = True
+except ImportError:
+    PYQT_PLOTTING_AVAILABLE = False
+
+try:
+    from examples.processing import presence_detection_sparse
+    SPARSE_AUTO_DETECTION = True
+except ImportError:
+    SPARSE_AUTO_DETECTION = False
 
 
 class FeatureProcessing:
@@ -361,7 +370,11 @@ class FeatureProcessing:
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
 
-        if mode == "sparse":
+        if mode == "sparse" and not SPARSE_AUTO_DETECTION:
+            if self.sweep_counter == 0:
+                print("Warning: Auto movement detection with spares not available.")
+
+        if mode == "sparse" and SPARSE_AUTO_DETECTION:
             if self.motion_processors is None:
                 self.motion_config = presence_detection_sparse.get_processing_config()
                 self.motion_config.inter_frame_fast_cutoff = 100
@@ -529,6 +542,10 @@ class DataProcessor:
 
 class PGUpdater:
     def __init__(self, sensor_config=None, processing_config=None, predictions=False):
+
+        if not PYQT_PLOTTING_AVAILABLE:
+            print("Warning: Plotting functionality not available.")
+
         self.env_plot_max_y = 0
         self.hist_plot_max_y = 0
         self.sensor_config = sensor_config
