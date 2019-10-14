@@ -196,7 +196,7 @@ class Processor:
         psd = np.max(psds, axis=1)
         asd = np.sqrt(psd)
 
-        inst_noise_est = np.mean(asd[-self.num_noise_est_bins:])
+        inst_noise_est = np.mean(asd[(-self.num_noise_est_bins - 1):-1])
         sf = self.dynamic_sf(self.noise_est_sf)
         self.noise_est = sf * self.noise_est + (1.0 - sf) * inst_noise_est
 
