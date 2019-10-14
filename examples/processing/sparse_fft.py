@@ -52,7 +52,7 @@ def main():
                 timer1.start()
                 timer2 = threading.Timer(2.0, sendSpeedCatImage)
                 timer2.start()
-        print (speed)
+        # print (speed)
 
     print("Disconnecting...")
     # pg_process.close()
