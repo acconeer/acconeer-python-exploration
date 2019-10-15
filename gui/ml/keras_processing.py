@@ -8,7 +8,6 @@ from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
 import numpy as np
-import argparse
 import sys
 import os
 
@@ -68,7 +67,7 @@ class MachineLearning():
         self.model.compile(
             loss="categorical_crossentropy",
             optimizer="adam",
-            metrics=["accuracy"]
+            metrics=["accuracy"],
         )
 
     def init_model_2D(self, input_dimensions):
@@ -103,7 +102,7 @@ class MachineLearning():
         self.model.compile(
             loss="categorical_crossentropy",
             optimizer="adam",
-            metrics=["accuracy"]
+            metrics=["accuracy"],
         )
 
     def maxpool(self, x):
@@ -678,38 +677,3 @@ class KerasPlotting:
 
         self.progress_acc.setText(p_acc)
         self.progress_loss.setText(p_loss)
-
-
-class Arguments():
-    def __init__(self):
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-l", "--load", dest="load",
-                            help="Load training data", default="")
-        parser.add_argument("-e", "--evaluate", dest="evaluate",
-                            help="Sensor", default="")
-        parser.add_argument("-sb", "--save-best", dest="save_best",
-                            help="Save model", default=None)
-        parser.add_argument("-s", "--save", dest="save",
-                            help="Save model", default=None)
-        parser.add_argument("-m", "--model", dest="model",
-                            help="Load model", default=None)
-        parser.add_argument("-t", "--train", dest="train",
-                            help="Sensor", action="store_true")
-
-        args = parser.parse_args()
-        self.load = args.load
-        self.save = args.save
-        self.save_best = args.save_best
-        self.train = args.train
-        self.evaluate = args.evaluate
-        self.model = args.model
-
-    def get_args(self):
-        return self
-
-
-if __name__ == "__main__":
-    arg = Arguments()
-    args = arg.get_args()
-
-    # TODO: add code for Deep learning without GUI

@@ -248,7 +248,9 @@ class DataProcessing:
                 info = self.info.copy()
             if not self.abort:
                 self.skip = 0
-                time.sleep(self.rate)
+
+                if parent.parent.get_gui_state("ml_tab") != "feature_extract":
+                    time.sleep(self.rate)
 
                 if nr_sensors == 1:
                     self.process(data_step["sweep_data"], info)
