@@ -1,6 +1,6 @@
 # Acconeer Exploration Kit
 
-_**Explore the Next Sense**_ with Acconeer's Python Exploration Kit! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and GUI in this repository will help you to easily stream the radar sensor's data to your local machine and begin evaluation and algorithm development for your application.
+_**Explore the Next Sense**_ with Acconeer's Python Exploration Kit! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and GUI in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
 
 To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Streaming or Module server, which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
@@ -13,13 +13,13 @@ Running this version is strongly recommended, as we continuously fix bugs and ad
 
 ## Quickstart for Windows
 
-There is a portable version of Exploration Kit for Windows:
+There is a portable version of the Exploration Kit for Windows:
 
 * [Download](https://developer.acconeer.com/download/portable_exploration_tool-zip/) the zip file and extract
 * Double click the `update.bat` file and wait for the installation to finish, which takes a couple of minutes
 * Double click the `run_gui.bat`
 
-**For an in-depth evaluation we recommend a full installation of the Exploartion Kit as described below.**
+For an in-depth evaluation we recommend a full installation of the Exploartion Kit as described below.
 
 ## Documentation
 
@@ -56,7 +56,7 @@ Install all Python dependencies using pip:
 python -m pip install --user setuptools wheel
 python -m pip install --user -r requirements.txt
 ```
-_Depending on your environment, you might have to replace `python` with `python3` or `py`._
+Depending on your environment, you might have to replace `python` with `python3` or `py`.
 
 #### Installing acconeer_utils
 
@@ -64,7 +64,7 @@ Install the supplied Acconeer utilities module `acconeer_utils`:
 ```
 python setup.py install --user
 ```
-Please note that the utilities module has to be reinstalled after any change in `acconeer_utils`.
+_** Note: The utilities module has to be reinstalled after any change in `acconeer_utils`, and therefore it is recommended to reinstall after each update of the Exploration Kit.**_
 
 #### XM112+XB112 serial on Linux
 
@@ -127,7 +127,7 @@ python gui/main.py -ml
 ```
 Please keep in mind that the deep learning interface is WIP and documentation is not available at this point.
 
-## Running an example on your local machine
+## Running an example script on your local machine
 
 If you prefer using the command line for testing and evaluation of our examples you can use the following instructions.
 
@@ -177,16 +177,22 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ### Processing
 
-- `breathing.py` \
-  An example breathing detection algorithm.
-- `sleep_breathing.py` \
-  An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
 - `presence_detection_sparse.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html)) \
   An example of a presence/motion detection algorithm based on the sparse service.
-- `phase_tracking.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/phase_tracking.html)) \
-  An example of a relative movements tracking algorithm using phase information.
+- `sparse_speed.py` \
+  An example of a speed detection algorithm estimating speeds of an approaching object based on the sparse service.
+- `sparse_fft.py` \
+  An example of a frequency analyzer to get an idea of the frequency content in the sparse service data.
+- `button_press.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/button_press.html)) \
+  An example of a "button press" detection algorithm detecting a motion at short distances (~3-5 cm) based on the envelope service, which could be used as "hidden" touch buttons.
 - `obstacle_detection.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html)) \
   An example of an obstacle detection algorithm estimating the distance and angle to an approaching obstacle.
+- `breathing.py` \
+  An example breathing detection algorithm.
+- `sleep_breathing.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/sleep_breathing.html)) \
+  An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
+- `phase_tracking.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/phase_tracking.html)) \
+  An example of a relative movements tracking algorithm using phase information.
 
 ### Plotting
 
