@@ -24,5 +24,6 @@ pipeline {
     post {
         success { gerritReview labels: [Verified: 1], message: "Success: ${env.BUILD_URL}" }
         failure { gerritReview labels: [Verified: -1], message: "Failed: ${env.BUILD_URL}" }
+        aborted { gerritReview labels: [Verified: -1], message: "Aborted: ${env.BUILD_URL}" }
     }
 }
