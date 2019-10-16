@@ -13,7 +13,9 @@ pipeline {
             steps {
                 sh 'flake8'
                 sh 'python3 setup.py -q install --user'
-                sh 'pytest'
+                timeout(time: 2, unit: 'MINUTES') {
+                    sh 'pytest'
+                }
                 sh 'sphinx-build -QW -b html docs docs/_build'
             }
         }
