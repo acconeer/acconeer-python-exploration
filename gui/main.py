@@ -117,7 +117,11 @@ class GUI(QMainWindow):
         self.ml_data = None
 
         gui_inarg = GUIArgumentParser()
-        self.args = gui_inarg.parse_args()
+        if under_test:
+            self.args = gui_inarg.parse_args([])
+        else:
+            self.args = gui_inarg.parse_args()
+
         self.set_gui_state("ml_mode", self.args.machine_learning)
         self.sig_pidget_event.connect(self.pidget_processing_config_event_handler)
 
