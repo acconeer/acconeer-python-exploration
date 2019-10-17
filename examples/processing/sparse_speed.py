@@ -16,7 +16,7 @@ HISTORY_LENGTH = 2.0  # s
 EST_VEL_HISTORY_LENGTH = HISTORY_LENGTH  # s
 SD_HISTORY_LENGTH = HISTORY_LENGTH  # s
 NUM_SAVED_SEQUENCES = 10
-SEQUENCE_TIMEOUT_COUNT = 10
+SEQUENCE_TIMEOUT_LENGTH = 0.5  # s
 FFT_OVERSAMPLING_FACTOR = 4
 
 
@@ -153,6 +153,7 @@ class Processor:
         self.min_threshold = 4.0
         self.dynamic_threshold = 0.1
 
+        self.sequence_timeout_count = int(round(SEQUENCE_TIMEOUT_LENGTH * est_update_rate))
         est_vel_history_size = int(round(est_update_rate * EST_VEL_HISTORY_LENGTH))
         sd_history_size = int(round(est_update_rate * SD_HISTORY_LENGTH))
         self.noise_est_sf = self.tc_to_sf(noise_est_tc, est_update_rate)
@@ -164,7 +165,7 @@ class Processor:
         self.est_vel_history = np.full(est_vel_history_size, np.nan)
         self.belongs_to_last_sequence = np.zeros(est_vel_history_size, dtype=bool)
         self.noise_est = 0
-        self.current_sequence_idle = SEQUENCE_TIMEOUT_COUNT + 1
+        self.current_sequence_idle = self.sequence_timeout_count + 1
         self.sequence_vels = np.zeros(NUM_SAVED_SEQUENCES)
         self.update_idx = 0
 
@@ -223,7 +224,7 @@ class Processor:
         if np.isnan(est_vel):
             self.current_sequence_idle += 1
         else:
-            if self.current_sequence_idle > SEQUENCE_TIMEOUT_COUNT:
+            if self.current_sequence_idle > self.sequence_timeout_count:
                 self.sequence_vels = np.roll(self.sequence_vels, -1)
                 self.sequence_vels[-1] = est_vel
                 self.belongs_to_last_sequence[:] = False
