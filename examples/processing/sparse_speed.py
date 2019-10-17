@@ -12,12 +12,12 @@ from acconeer_utils.structs import configbase
 
 
 HALF_WAVELENGTH = 2.445e-3  # m
-NUM_FFT_BINS = 512
 HISTORY_LENGTH = 2.0  # s
 EST_VEL_HISTORY_LENGTH = HISTORY_LENGTH  # s
 SD_HISTORY_LENGTH = HISTORY_LENGTH  # s
 NUM_SAVED_SEQUENCES = 10
 SEQUENCE_TIMEOUT_COUNT = 10
+FFT_OVERSAMPLING_FACTOR = 4
 
 
 def main():
@@ -70,7 +70,7 @@ def get_sensor_config():
     config.range_interval = [0.30, 0.48]
     config.stepsize = 3
     config.sampling_mode = configs.SparseServiceConfig.SAMPLING_MODE_A
-    config.number_of_subsweeps = NUM_FFT_BINS
+    config.number_of_subsweeps = 512
     config.gain = 0.5
     config.hw_accelerated_average_samples = 60
     # config.subsweep_rate = 6e3
@@ -143,10 +143,11 @@ get_processing_config = ProcessingConfiguration
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
+        self.num_subsweeps = sensor_config.number_of_subsweeps
         subsweep_rate = session_info["actual_subsweep_rate"]
-        est_update_rate = subsweep_rate / sensor_config.number_of_subsweeps
+        est_update_rate = subsweep_rate / self.num_subsweeps
 
-        self.nperseg = NUM_FFT_BINS // 2
+        self.fft_length = (self.num_subsweeps // 2) * FFT_OVERSAMPLING_FACTOR
         self.num_noise_est_bins = 3
         noise_est_tc = 1.0
         self.min_threshold = 4.0
@@ -154,11 +155,11 @@ class Processor:
 
         est_vel_history_size = int(round(est_update_rate * EST_VEL_HISTORY_LENGTH))
         sd_history_size = int(round(est_update_rate * SD_HISTORY_LENGTH))
-        num_bins = NUM_FFT_BINS // 2 + 1
         self.noise_est_sf = self.tc_to_sf(noise_est_tc, est_update_rate)
-        self.bin_fs = np.fft.rfftfreq(NUM_FFT_BINS) * subsweep_rate
+        self.bin_fs = np.fft.rfftfreq(self.fft_length) * subsweep_rate
         self.bin_vs = self.bin_fs * HALF_WAVELENGTH
 
+        num_bins = self.bin_fs.size
         self.nasd_history = np.zeros([sd_history_size, num_bins])
         self.est_vel_history = np.full(est_vel_history_size, np.nan)
         self.belongs_to_last_sequence = np.zeros(est_vel_history_size, dtype=bool)
@@ -188,10 +189,10 @@ class Processor:
 
         _, psds = welch(
                 zero_mean_sweep,
-                nperseg=self.nperseg,
+                nperseg=self.num_subsweeps // 2,
                 detrend=False,
                 axis=0,
-                nfft=NUM_FFT_BINS,
+                nfft=self.fft_length,
                 )
 
         psd = np.max(psds, axis=1)
@@ -274,7 +275,8 @@ class PGUpdater:
         self.num_depths = self.depths.size
         self.est_update_rate = self.subsweep_rate / self.num_subsweeps
 
-        self.bin_vs = np.fft.rfftfreq(NUM_FFT_BINS) * self.subsweep_rate * HALF_WAVELENGTH
+        fft_length = (self.num_subsweeps // 2) * FFT_OVERSAMPLING_FACTOR
+        self.bin_vs = np.fft.rfftfreq(fft_length) * self.subsweep_rate * HALF_WAVELENGTH
         self.dt = 1.0 / self.est_update_rate
 
         self.setup_is_done = False
