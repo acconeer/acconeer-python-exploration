@@ -16,7 +16,8 @@ LB = QtCore.Qt.LeftButton
 def gui(qtbot):
     w = GUI(under_test=True)
     qtbot.addWidget(w)
-    qtbot.waitForWindowShown(w)
+    with qtbot.waitExposed(w):
+        w.show()
     return w
 
 
