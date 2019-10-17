@@ -95,9 +95,6 @@ def test_start_and_stop_all_modules(qtbot, gui):
         if module_info.module is None:
             continue
 
-        if "speed" in module_info.label.lower():
-            continue
-
         set_and_check_cb(qtbot, gui.module_dd, module_info.label)
         qtbot.wait(200)
 

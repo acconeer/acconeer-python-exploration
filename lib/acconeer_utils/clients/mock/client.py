@@ -21,6 +21,12 @@ class MockClient(BaseClient):
     def _setup_session(self, config):
         self._config = config
 
+        update_rate_limit = 100
+        if config.experimental_stitching or config.sweep_rate > update_rate_limit:
+            self._update_rate = update_rate_limit
+        else:
+            self._update_rate = config.sweep_rate
+
         try:
             mock_class = mock_class_map[config.mode]
         except KeyError as e:
@@ -39,7 +45,7 @@ class MockClient(BaseClient):
 
         self._data_count += 1
 
-        data_capture_time = self._data_count / config.sweep_rate
+        data_capture_time = self._data_count / self._update_rate
         now = time() - self._start_time
         if data_capture_time > now:
             sleep(data_capture_time - now)
