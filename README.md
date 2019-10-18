@@ -36,6 +36,8 @@ For general help on getting started head over to the [Acconeer developer page](h
 
 ### Requirements
 
+Python 3.6 or newer. Older versions have limited or no support.
+
 Tested on:
 
 * Python 3 (developed and tested on 3.6 and 3.7)
