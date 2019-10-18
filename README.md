@@ -66,7 +66,7 @@ Install the supplied Acconeer utilities module `acconeer_utils`:
 ```
 python setup.py install --user
 ```
-_** Note: The utilities module has to be reinstalled after any change in `acconeer_utils`, and therefore it is recommended to reinstall after each update of the Exploration Kit.**_
+_**Note: The utilities module has to be reinstalled after any change in `acconeer_utils`, and therefore it is recommended to reinstall after each update of the Exploration Kit.**_
 
 #### XM112+XB112 serial on Linux
 
