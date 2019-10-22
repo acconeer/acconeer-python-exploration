@@ -54,7 +54,7 @@ class FeaturePeak:
     def __init__(self):
         # output data
         self.data = {
-            "peak": "Peak",
+            "peak": "Distance",
             "amplitude": "Amplitude",
         }
         # text, value, limits, type
@@ -136,14 +136,10 @@ class FeatureAverages1D():
             peak[i, 1] = arr[int(idx), i]
             peak[i, 2] = np.sum(arr[start:stop, i])
 
-        center = (options["Stop"] * 1000 + options["Start"] * 1000) / 2
-        if center <= 0:
-            center = 1
-
         data = {
-            "avg_dist": np.mean(peak[:, 0]) / center,
+            "avg_dist": np.mean(peak[:, 0]),
             "avg_std": np.std(peak[:, 0]),
-            "avg_ampl": np.mean(peak[:, 1]) / (2**16 / 2),
+            "avg_ampl": np.mean(peak[:, 1]),
             "avg_total": np.mean(peak[:, 2]),
         }
 

@@ -42,7 +42,7 @@ class FeatureProcessing:
 
     def setup(self, sensor_config, feature_list=None):
         self.feature_list = feature_list
-        self.sensor_map = self.get_sensor_map(sensor_config)
+        self.sensor_map, self.sensor_array = self.get_sensor_map(sensor_config)
         self.init_feature_cb()
 
     def flush_data(self):
@@ -58,6 +58,7 @@ class FeatureProcessing:
         self.motion_processors = None
         self.motion_score = None
         self.motion_score_normalized = None
+        self.calibration = None
 
     def set_feature_list(self, feature_list):
         self.feature_list = feature_list
@@ -95,6 +96,13 @@ class FeatureProcessing:
             self.dead_time = self.dead_time_reset
         if params.get("auto_offset") is not None:
             self.auto_offset = params["auto_offset"]
+        if params.get("calibration") is not None:
+            if 0.0 in params["calibration"]:
+                print(np.where(params["calibration"] == 0.0))
+                print("Discarding calibration data, detected 0 elements!")
+                self.calibration = None
+            else:
+                self.calibration = params["calibration"]
 
         if self.collection_mode == "auto" or self.collection_mode == "single":
             self.rolling = False
@@ -236,6 +244,15 @@ class FeatureProcessing:
             except Exception as e:
                 print("Unable to stack features to frame: {}".format(e))
 
+        if self.calibration is not None:
+            if self.calibration.shape != fmap.shape:
+                print("Calibration data not matching featuer shape!!!")
+                print("Calibration: {}".format(self.calibration.shape))
+                print("Feature map: {}".format(feature_map.shape))
+                self.calibration = None
+            else:
+                fmap /= self.calibration
+
         current_frame = {
            "label": self.label,
            "frame_nr": len(self.markers),
@@ -244,6 +261,7 @@ class FeatureProcessing:
            "frame_complete": False,
            "sweep_counter": self.sweep_counter,
            "sweep_number": self.sweep_number,
+           "calibration": self.calibration,
         }
 
         if self.sweep_counter >= n_sweeps:
@@ -294,6 +312,7 @@ class FeatureProcessing:
     def feature_extraction_window(self, data, sweep_data, start, label=""):
         self.frame_pad = data["ml_frame_data"]["frame_info"]["frame_pad"]
         self.frame_size = data["ml_frame_data"]["frame_info"]["frame_size"]
+        self.calibration = data["ml_frame_data"]["current_frame"].get("calibration")
         n_sweeps = self.frame_size + 2 * self.frame_pad
         feature_list = data["ml_frame_data"]["feature_list"]
         frame_start = start - self.frame_pad
@@ -313,6 +332,9 @@ class FeatureProcessing:
             else:
                 data_step["env_ampl"] = np.abs(sweep_data[marker]["sweep_data"])
             win_idx = n_sweeps - idx - 1
+            if data_step["iq_data"].shape != self.win_data["iq_data"].shape[0:2]:
+                data_step["iq_data"] = data_step["iq_data"][self.sensor_array]
+                data_step["env_ampl"] = data_step["env_ampl"][self.sensor_array]
             self.add_sweep(data_step, win_idx=win_idx)
 
         feature_map = []
@@ -346,6 +368,15 @@ class FeatureProcessing:
             except Exception as e:
                 print("Unable to stack features to frame: {}".format(e))
 
+        if self.calibration is not None:
+            if self.calibration.shape != fmap.shape:
+                print("Calibration data not matching featuer shape!!!")
+                print("Calibration: {}".format(self.calibration.shape))
+                print("Feature map: {}".format(feature_map.shape))
+                self.calibration = None
+            else:
+                fmap /= self.calibration
+
         current_frame = {
            "label": label,
            "frame_nr": data["ml_frame_data"]["current_frame"]["frame_nr"],
@@ -354,6 +385,7 @@ class FeatureProcessing:
            "frame_complete": True,
            "sweep_counter": n_sweeps,
            "sweep_number": frame_stop,
+           "calibration": self.calibration,
         }
 
         data["ml_frame_data"]["current_frame"] = current_frame
@@ -416,13 +448,17 @@ class FeatureProcessing:
         num_sensors = len(sensors)
 
         sensor_map = {"1": None, "2": None, "3": None, "4": None}
+        sensor_array = []
         for idx, s in enumerate(sensors):
             sensor_map[str(s)] = idx
+            sensor_array.append(s)
         if num_sensors == 1:
             for s in range(1, 5):
                 sensor_map[str(s)] = 0
 
-        return sensor_map
+        sensor_array = np.asarray(sensor_array)
+
+        return sensor_map, sensor_array
 
 
 class DataProcessor:

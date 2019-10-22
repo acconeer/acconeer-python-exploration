@@ -8,8 +8,9 @@ from functools import partial
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import (QComboBox, QApplication, QWidget, QLabel, QLineEdit,
-                             QCheckBox, QFrame, QPushButton, QRadioButton,
-                             QSpinBox, QSlider, QTableWidget, QTableWidgetItem
+                             QCheckBox, QFrame, QPushButton, QRadioButton, QVBoxLayout,
+                             QSpinBox, QSlider, QTableWidget, QTableWidgetItem, QDialog,
+                             QHBoxLayout,
                              )
 from PyQt5.QtGui import QColor, QBrush
 from PyQt5.QtCore import pyqtSignal
@@ -806,6 +807,7 @@ class FeatureSidePanel(QFrame):
             "empty_2": QLabel(""),
             "empty_3": QLabel(""),
         }
+
         self.textboxes = {
             "frame_time": QLineEdit(str(1)),
             "sweep_rate": QLineEdit(str(30)),
@@ -827,10 +829,14 @@ class FeatureSidePanel(QFrame):
             "load_session": QPushButton("Load session", self),
             "save_session": QPushButton("Save session", self),
             "trigger": QPushButton("&Trigger", self),
+            "create_calib": QPushButton("Create calibration", self),
+            "show_calib": QPushButton("Show calibration", self),
         }
 
         self.buttons["load_settings"].clicked.connect(self.load_data)
         self.buttons["load_session"].clicked.connect(self.load_data)
+        self.buttons["create_calib"].clicked.connect(self.calibration_handling)
+        self.buttons["show_calib"].clicked.connect(self.calibration_handling)
         self.buttons["save_settings"].clicked.connect(self.save_data)
         self.buttons["save_session"].clicked.connect(self.save_data)
         self.buttons["trigger"].clicked.connect(
@@ -840,6 +846,7 @@ class FeatureSidePanel(QFrame):
                 True
                 )
             )
+        self.buttons["show_calib"].setEnabled(False)
 
         self.checkboxes = {
             "rolling": QCheckBox("Rolling frame", self),
@@ -905,6 +912,8 @@ class FeatureSidePanel(QFrame):
         self.grid.addWidget(self.textboxes["sweep_rate"], self.num, 1)
         self.grid.addWidget(self.labels["frame_size"], self.increment(), 0)
         self.grid.addWidget(self.textboxes["frame_size"], self.num, 1)
+        self.grid.addWidget(self.buttons["create_calib"], self.increment(), 0)
+        self.grid.addWidget(self.buttons["show_calib"], self.num, 1)
         self.grid.addWidget(self.labels["empty_1"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.radio_frame, self.increment(), 0, 1, 2)
         self.grid.addWidget(self.labels["empty_2"], self.increment(), 0, 1, 2)
@@ -931,6 +940,8 @@ class FeatureSidePanel(QFrame):
                 self.labels["sweep_rate"],
                 self.textboxes["frame_time"],
                 self.textboxes["sweep_rate"],
+                self.buttons["create_calib"],
+                self.buttons["show_calib"],
                 ],
             "feature_inspect": [
                 self.labels["frame_time"],
@@ -959,6 +970,8 @@ class FeatureSidePanel(QFrame):
                 self.buttons["save_session"],
                 self.buttons["load_settings"],
                 self.buttons["save_settings"],
+                self.buttons["create_calib"],
+                self.buttons["show_calib"],
                 ],
             "train": [],
         }
@@ -975,6 +988,7 @@ class FeatureSidePanel(QFrame):
                 "dead_time",
                 "rolling",
                 "sweep_rate",
+                "calibration",
             ]
         elif not isinstance(senders, list):
             senders = [senders]
@@ -1018,16 +1032,30 @@ class FeatureSidePanel(QFrame):
 
     def set_frame_settings(self, frame_settings):
         try:
-            self.gui_handle.feature_extract.set_label(frame_settings["frame_label"])
-            self.textboxes["frame_time"].setText(str(frame_settings["frame_time"]))
-            self.textboxes["sweep_rate"].setText(str(frame_settings["sweep_rate"]))
-            self.textboxes["dead_time"].setText(str(frame_settings["dead_time"]))
-            self.textboxes["auto_threshold"].setText(str(frame_settings["auto_threshold"]))
-            self.textboxes["auto_offset"].setText(str(frame_settings["auto_offset"]))
-            self.radiobuttons[frame_settings["collection_mode"]].setChecked()
-            self.checkboxes["rolling"].setChecked(frame_settings["rolling"])
-        except Exception:
-            pass
+            if "frame_label" in frame_settings:
+                self.gui_handle.feature_extract.set_label(frame_settings["frame_label"])
+            if "frame_time" in frame_settings:
+                self.textboxes["frame_time"].setText(str(frame_settings["frame_time"]))
+            if "sweep_rate" in frame_settings:
+                self.textboxes["sweep_rate"].setText(str(frame_settings["sweep_rate"]))
+            if "dead_time" in frame_settings:
+                self.textboxes["dead_time"].setText(str(frame_settings["dead_time"]))
+            if "auto_threshold" in frame_settings:
+                self.textboxes["auto_threshold"].setText(str(frame_settings["auto_threshold"]))
+            if "auto_offset" in frame_settings:
+                self.textboxes["auto_offset"].setText(str(frame_settings["auto_offset"]))
+            if "collection_mode" in frame_settings:
+                self.radiobuttons[frame_settings["collection_mode"]].setChecked(True)
+            if "rolling" in frame_settings:
+                self.checkboxes["rolling"].setChecked(frame_settings["rolling"])
+            if frame_settings.get("calibration") is not None:
+                if self.frame_settings.get("frame_settings") is not None:
+                    print("Found calibration data in file. Overwriting existing calibration data")
+                self.buttons["show_calib"].setEnabled(True)
+                self.buttons["create_calib"].setText("Clear calibration")
+                self.frame_settings["calibration"] = frame_settings["calibration"]
+        except Exception as e:
+            print(e)
 
         self.frame_settings_storage()
 
@@ -1116,6 +1144,8 @@ class FeatureSidePanel(QFrame):
         title = "Load session data"
         if "settings" in action:
             title = "Load feature settings"
+        elif "calibration" in action:
+            title = "Load session file for frame calibration"
 
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -1139,6 +1169,18 @@ class FeatureSidePanel(QFrame):
                 error_text = self.format_error.error_to_text(e)
                 error_handle("Failed to load features from file:\n {}".format(error_text))
                 return
+        elif "calibration" in action:
+            try:
+                frame_list = data.item()["frame_data"]["ml_frame_data"]["frame_list"]
+                nr_frames = len(frame_list)
+                calibration = np.zeros_like(frame_list[0]["feature_map"])
+                for frame in frame_list:
+                    calibration += (frame["feature_map"] / nr_frames)
+            except Exception as e:
+                print("Failed to generate calibration array!<br>{}".format(e))
+                return None
+            else:
+                return calibration
         else:
             try:
                 sweep_data = data.item()["sweep_data"]
@@ -1226,6 +1268,49 @@ class FeatureSidePanel(QFrame):
             self.gui_handle.error_message("Failed to save settings:\n {}".format(e))
             return
 
+    def calibration_handling(self):
+        action = self.sender().text().lower()
+
+        show_data = None
+        clear_data = None
+        use_data = None
+
+        if "show" in action:
+            show_data = True
+            calibration = self.frame_settings.get("calibration")
+        elif "create" in action:
+            calibration = self.load_data()
+            if calibration is not None:
+                show_data = True
+            if len(np.where(calibration == 0.0)[0]):
+                print("Warning, replacing 0 elements with 1!")
+                print(np.where(calibration == 0.0)[0])
+                calibration[np.where(calibration == 0)[0]] = 1
+        elif "clear" in action:
+            clear_data = True
+            calibration = None
+
+        if show_data and calibration is not None:
+            dialog = CalibrationDialog(calibration.copy(), self)
+            ret = dialog.exec_()
+            if ret:
+                use_data = True
+            else:
+                clear_data = True
+
+        if calibration is None:
+            clear_data = True
+
+        if clear_data:
+            if "calibration" in self.frame_settings:
+                self.frame_settings.pop("calibration", None)
+            self.buttons["show_calib"].setEnabled(False)
+            self.buttons["create_calib"].setText("Create calibration")
+        elif use_data:
+            self.frame_settings["calibration"] = calibration
+            self.buttons["show_calib"].setEnabled(True)
+            self.buttons["create_calib"].setText("Clear calibration")
+
 
 class FeatureInspectFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
@@ -1273,18 +1358,22 @@ class FeatureInspectFrame(QFrame):
             "update_to_current": QPushButton("to current frame", self),
             "update_to_new": QPushButton("to new frame", self),
             "update_to_none": QPushButton("remove frame", self),
+            "write_to_all": QPushButton("Write label to all frames", self),
         }
 
         for i in self.buttons:
             if "update" in i:
                 self.buttons[i].clicked.connect(self.update_frame_data)
+            elif "write" in i:
+                self.buttons[i].clicked.connect(self.update_frame_labels)
 
         self.update_box = QFrame()
         self.update_box.grid = QtWidgets.QGridLayout(self.update_box)
         self.update_box.grid.addWidget(self.labels["label"], 0, 0, 1, 2)
         self.update_box.grid.addWidget(self.textboxes["label"], 1, 0, 1, 2)
-        self.update_box.grid.addWidget(self.labels["current_frame"], 2, 0)
-        self.update_box.grid.addWidget(self.labels["current_sweep"], 2, 1)
+        self.update_box.grid.addWidget(self.buttons["write_to_all"], 2, 0, 1, 2)
+        self.update_box.grid.addWidget(self.labels["current_frame"], 4, 0)
+        self.update_box.grid.addWidget(self.labels["current_sweep"], 4, 1)
         empty_1 = QLabel("")
         empty_1.setFixedWidth(10)
         empty_2 = QLabel("")
@@ -1331,6 +1420,10 @@ class FeatureInspectFrame(QFrame):
         total_frames = len(f_histdata) - 1
         frame_nr = int(min(total_frames, frame_nr))
 
+        sweep_data = self.gui_handle.data
+        f_info = fdata["ml_frame_data"]["frame_info"]
+        n_sweeps = len(sweep_data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
+
         if frame_nr < 0:
             print("No feature data available!")
             return
@@ -1343,11 +1436,15 @@ class FeatureInspectFrame(QFrame):
             label = f_current["label"]
             self.current_frame_data = f_current
             self.graph.update(fdata)
-            self.current_sweep = f_current["frame_marker"]
+            self.current_sweep = f_current["frame_marker"] + 1
             self.current_frame_nr = frame_nr
             self.textboxes["label"].setText(label)
-            self.labels["current_sweep"].setText("Sweep: {}".format(self.current_sweep))
-            self.labels["current_frame"].setText("Frame: {}".format(frame_nr + 1))
+            self.labels["current_sweep"].setText(
+                "Sweep: {} / {}".format(self.current_sweep + 1, n_sweeps + 1)
+                )
+            self.labels["current_frame"].setText(
+                "Frame: {} / {}".format(frame_nr + 1, total_frames + 1)
+                )
             self.set_slider_value("sweep_slider", self.current_sweep)
             return
         else:
@@ -1357,13 +1454,8 @@ class FeatureInspectFrame(QFrame):
             label = self.textboxes["label"].text()
 
         f_current = fdata["ml_frame_data"]["current_frame"]
-        f_info = fdata["ml_frame_data"]["frame_info"]
 
         sweep = number
-        sweep_data = self.gui_handle.data
-
-        n_sweeps = len(sweep_data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
-
         sweep = max(0, sweep)
         sweep = int(min(n_sweeps, sweep))
 
@@ -1382,7 +1474,7 @@ class FeatureInspectFrame(QFrame):
                 label
                 )
         except Exception as e:
-            self.gui_handle.error_message("Failed to calculate new feature frame<br>{}", e)
+            self.gui_handle.error_message("Failed to calculate new feature frame<br>{}".format(e))
 
         self.current_sweep = sweep
 
@@ -1435,6 +1527,28 @@ class FeatureInspectFrame(QFrame):
                 f_histdata.pop(frame_nr)
                 self.update_frame("frames", frame_nr)
                 self.update_sliders()
+
+    def update_frame_labels(self):
+        if self.gui_handle.ml_data is None:
+            print("No feature data available")
+            return
+        if self.current_frame_data is None:
+            print("Feature data not updated")
+            return
+
+        try:
+            fdata = self.gui_handle.ml_data
+            f_histdata = fdata["ml_frame_data"]["frame_list"]
+            f_modified = self.current_frame_data
+        except Exception as e:
+            print("Something went wrong with the feature data: {}".format(e))
+            return
+
+        label = self.textboxes["label"].text()
+
+        f_modified["label"] = label
+        for frame in f_histdata:
+            frame["label"] = label
 
     def update_sliders(self):
         if self.gui_handle.data is None or self.gui_handle.ml_data is None:
@@ -2230,6 +2344,60 @@ class EvalSidePanel(QFrame):
 
     def get_model_shape(self):
         return self.model_data["model_shape"]
+
+
+class CalibrationDialog(QDialog):
+    def __init__(self, calibration_data, parent):
+        super().__init__(parent)
+
+        self.setMinimumWidth(350)
+        self.setModal(True)
+        self.setWindowTitle("Calibration data")
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        win = pg.GraphicsLayoutWidget()
+        win.setWindowTitle("Calibration plot")
+        cal_plot_image = win.addPlot(row=0, col=0)
+
+        cal_plot = pg.ImageItem()
+        cal_plot.setAutoDownsample(True)
+        cal_plot_image.addItem(cal_plot)
+
+        calibration_data -= np.nanmin(calibration_data)
+
+        max_level = 1.2 * np.nanmax(calibration_data)
+
+        g = 1/2.2
+        calibration_data = 254/(max_level + 1.0e-9)**g * calibration_data**g
+
+        calibration_data[calibration_data > 254] = 254
+
+        cal_plot.updateImage(calibration_data.T, levels=(0, 256))
+
+        lut = example_utils.pg_mpl_cmap("viridis")
+        cal_plot.setLookupTable(lut)
+
+        layout.addWidget(win)
+
+        layout.addStretch(1)
+
+        buttons_widget = QWidget(self)
+        layout.addWidget(buttons_widget)
+        hbox = QHBoxLayout()
+        buttons_widget.setLayout(hbox)
+        hbox.addStretch(1)
+        cancel_btn = QPushButton("Discard")
+        cancel_btn.clicked.connect(self.reject)
+        hbox.addWidget(cancel_btn)
+        save_btn = QPushButton("Use calibration")
+        save_btn.setDefault(True)
+        save_btn.clicked.connect(self.accept)
+        hbox.addWidget(save_btn)
+
+    def get_state(self):
+        return
 
 
 class SpinBoxAndSliderWidget(QFrame):
