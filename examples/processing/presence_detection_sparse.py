@@ -12,7 +12,6 @@ from acconeer_utils.structs import configbase
 
 
 OUTPUT_MAX = 10
-HISTORY_LENGTH_S = 5
 
 
 def main():
@@ -187,6 +186,16 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             order=130,
             )
 
+    history_length_s = configbase.FloatParameter(
+            label="History length",
+            unit="s",
+            default_value=5,
+            limits=(1, 20),
+            decimals=0,
+            order=200,
+            pidget_location="advanced",
+            )
+
 
 get_processing_config = ProcessingConfiguration
 
@@ -225,7 +234,7 @@ class PresenceDetectionSparseProcessor:
         self.presence_distance_index = 0
         self.presence_distance = 0
 
-        self.presence_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
+        self.presence_history = np.zeros(int(round(self.f * processing_config.history_length_s)))
         self.sweep_index = 0
 
         self.update_processing_config(processing_config)
@@ -386,6 +395,7 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
+        self.history_length_s = processing_config.history_length_s
         self.depths = get_range_depths(sensor_config, session_info)
 
         max_num_of_sectors = max(6, self.depths.size // 3)
@@ -488,7 +498,7 @@ class PGUpdater:
         self.move_hist_plot.showGrid(x=True, y=True)
         self.move_hist_plot.setLabel("bottom", "Time (s)")
         self.move_hist_plot.setLabel("left", "Score (limited to {})".format(OUTPUT_MAX))
-        self.move_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
+        self.move_hist_plot.setXRange(-self.history_length_s, 0)
         self.move_hist_plot.setYRange(0, OUTPUT_MAX)
         self.move_hist_curve = self.move_hist_plot.plot(pen=example_utils.pg_pen_cycler())
         limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
@@ -510,8 +520,10 @@ class PGUpdater:
             fill=pg.mkColor(0x1f, 0x77, 0xb4, 180),
             anchor=(0.5, 0),
             )
-        self.present_text_item.setPos(-2.5, 0.95 * OUTPUT_MAX)
-        self.not_present_text_item.setPos(-2.5, 0.95 * OUTPUT_MAX)
+
+        pos = (-self.history_length_s / 2, 0.95 * OUTPUT_MAX)
+        self.present_text_item.setPos(*pos)
+        self.not_present_text_item.setPos(*pos)
         self.move_hist_plot.addItem(self.present_text_item)
         self.move_hist_plot.addItem(self.not_present_text_item)
         self.present_text_item.hide()
@@ -585,7 +597,7 @@ class PGUpdater:
         self.move_depth_line.setVisible(data["presence_detected"])
 
         move_hist_ys = data["presence_history"]
-        move_hist_xs = np.linspace(-HISTORY_LENGTH_S, 0, len(move_hist_ys))
+        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
         self.move_hist_curve.setData(move_hist_xs, np.minimum(move_hist_ys, OUTPUT_MAX))
 
         if data["presence_detected"]:
