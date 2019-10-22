@@ -85,7 +85,17 @@ class PidgetStub(Pidget):
 
     def _update(self):
         state = self._parent_instance._state
-        self.setVisible(state != Config.State.UNLOADED)
+
+        if state != Config.State.UNLOADED:
+            if callable(self.param.visible):
+                visible = self.param.visible(self._parent_instance)
+            else:
+                visible = self.param.visible
+        else:
+            visible = False
+
+        self.setVisible(bool(visible))
+
         self.setEnabled(state != Config.State.LIVE or self.param.is_live_updateable)
 
         try:
@@ -357,6 +367,7 @@ class Parameter:
         self.pidget_location = kwargs.pop("pidget_location", None)
         self.order = kwargs.pop("order", -1)
         self.help = kwargs.pop("help", None)
+        self.visible = kwargs.pop("visible", True)
 
         # don't care if unused
         kwargs.pop("default_value", None)
