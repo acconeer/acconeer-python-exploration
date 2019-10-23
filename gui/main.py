@@ -702,7 +702,7 @@ class GUI(QMainWindow):
         self.advanced_section.grid.addWidget(self.buttons["save_process_data"], 1, 1)
         self.advanced_params_layout_grid = self.advanced_section.grid
 
-        self.main_sublayout.setRowStretch(6, 1)
+        self.main_sublayout.setRowStretch(7, 1)
 
         self.service_section.hide()
         self.advanced_section.hide()
