@@ -2576,6 +2576,7 @@ class Threaded_Scan(QtCore.QThread):
             try:
                 session_info = self.data[0]["session_info"]
                 assert session_info is not None
+                self.emit("session_info", "ok", session_info)
             except (IndexError, KeyError, AttributeError, AssertionError):
                 # TODO: infer session info
                 print("No session info")
