@@ -1,4 +1,5 @@
 from collections import namedtuple
+from types import ModuleType
 
 from helper import PassthroughProcessor
 
@@ -15,6 +16,59 @@ import examples.processing.sleep_breathing as sleep_breathing_module
 import examples.processing.obstacle_detection as obstacle_detection_module
 import examples.processing.button_press as button_press_module
 
+
+def multi_sensor_wrap(module):
+    processor_cls = module.__dict__["Processor"]
+
+    class WrappedProcessor:
+        def __init__(self, sensor_config, processing_config, session_info):
+            self.processors = []
+            for _ in sensor_config.sensor:
+                p = processor_cls(sensor_config, processing_config, session_info)
+                self.processors.append(p)
+
+        def update_processing_config(self, processing_config):
+            if hasattr(processor_cls, "update_processing_config"):
+                for p in self.processors:
+                    p.update_processing_config(processing_config)
+
+        def process(self, data):
+            return [p.process(d) for p, d in zip(self.processors, data)]
+
+    updater_cls = module.__dict__["PGUpdater"]
+
+    class WrappedPGUpdater:
+        def __init__(self, sensor_config, processing_config, session_info):
+            self.updaters = []
+            for _ in sensor_config.sensor:
+                u = updater_cls(sensor_config, processing_config, session_info)
+                self.updaters.append(u)
+
+        def update_processing_config(self, processing_config):
+            if hasattr(updater_cls, "update_processing_config"):
+                for u in self.updaters:
+                    u.update_processing_config(processing_config)
+
+        def setup(self, win):
+            for i, u in enumerate(self.updaters):
+                sublayout = win.addLayout(row=0, col=i)
+                u.setup(sublayout)
+
+        def update(self, data):
+            for u, d in zip(self.updaters, data):
+                u.update(d)
+
+    obj = ModuleType("wrapped_" + module.__name__.split(".")[-1])
+    obj.__dict__["Processor"] = WrappedProcessor
+    obj.__dict__["PGUpdater"] = WrappedPGUpdater
+    for k, v in module.__dict__.items():
+        if k not in obj.__dict__:
+            obj.__dict__[k] = v
+
+    return obj
+
+
+multi_sensor_sparse_speed_module = multi_sensor_wrap(sparse_speed_module)
 
 ModuleInfo = namedtuple("ModuleInfo", [
     "label",
@@ -84,10 +138,10 @@ MODULE_INFOS = [
     ),
     ModuleInfo(
         "Speed (sparse)",
-        sparse_speed_module,
-        sparse_speed_module.get_sensor_config,
-        sparse_speed_module.Processor,
-        False,
+        multi_sensor_sparse_speed_module,
+        multi_sensor_sparse_speed_module.get_sensor_config,
+        multi_sensor_sparse_speed_module.Processor,
+        True,
         False,
     ),
     ModuleInfo(
