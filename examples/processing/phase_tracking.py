@@ -74,7 +74,6 @@ class PhaseTrackingProcessor:
 
         self.lp_vel = 0
         self.last_sweep = None
-        self.hist_vel = np.zeros(num_hist_points)
         self.hist_pos = np.zeros(num_hist_points)
         self.sweep_index = 0
 
@@ -104,9 +103,6 @@ class PhaseTrackingProcessor:
 
             a = self.alpha(0.1, self.dt)
             self.lp_vel = a*vel + (1 - a)*self.lp_vel
-
-            self.hist_vel = np.roll(self.hist_vel, -1)
-            self.hist_vel[-1] = self.lp_vel
 
             dp = self.lp_vel / self.f
             self.hist_pos = np.roll(self.hist_pos, -1)
