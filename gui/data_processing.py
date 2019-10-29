@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import traceback
+from PyQt5.QtCore import QThread
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -266,6 +267,7 @@ class DataProcessing:
                     skip_frames=False):
         if not skip_frames:
             self.update_plots(plot_data, cmd=cmd)
+            QThread.msleep(3)
             return
 
         if self.skip <= 1:
