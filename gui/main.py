@@ -1718,6 +1718,18 @@ class GUI(QMainWindow):
 
         env_max_range = 0.96
         iq_max_range = 0.72
+        sparse_max_range = None
+        if sampling_mode_val is not None:
+            number_of_subsweeps = float(self.textboxes["number_of_subsweeps"].text())
+            if sampling_mode_val == configs.SparseServiceConfig.SAMPLING_MODE_B:
+                if number_of_subsweeps > 64:
+                    number_of_subsweeps = 64
+                    self.textboxes["number_of_subsweeps"].setText(str(number_of_subsweeps))
+                    errors.append("Number of subsweeps must be less than 64 for mode B!<br>")
+            elif sampling_mode_val == configs.SparseServiceConfig.SAMPLING_MODE_A:
+                stepsize = float(self.textboxes["stepsize"].text())
+                sparse_max_range = 0.06 * stepsize * 2048 / number_of_subsweeps - 0.06
+
         if self.current_data_type in ["iq", "envelope"]:
             if self.interface_dd.currentText().lower() == "socket":
                 env_max_range = 6.88
@@ -1725,6 +1737,14 @@ class GUI(QMainWindow):
             else:
                 env_max_range = 5.0
                 iq_max_range = 3.0
+        elif sparse_max_range is not None:
+            if r > sparse_max_range:
+                end = start + sparse_max_range
+                self.textboxes["range_end"].setText(str(end))
+                errors.append(
+                    "Max range for {} sweeps per frame is {}m!<br>".format(number_of_subsweeps,
+                                                                           sparse_max_range)
+                    )
 
         stitching = False
         if r < 0:
@@ -1755,6 +1775,7 @@ class GUI(QMainWindow):
         self.textboxes["sweep_rate"].setEnabled(not stitching)
 
         if len(errors):
+            QtWidgets.qApp.processEvents()
             self.error_message("".join(errors))
 
         if self.get_gui_state("ml_mode"):
@@ -1927,6 +1948,14 @@ class GUI(QMainWindow):
                         conf.number_of_subsweeps = int(f["number_of_subsweeps"][()])
                         subsweep_rate = f["subsweep_rate"][()]
                         conf.subsweep_rate = subsweep_rate if subsweep_rate > 0 else None
+                        try:
+                            conf.sampling_mode = int(f["sampling_mode"][()])
+                        except Exception:
+                            print("Sampling mode not stored")
+                            if conf.number_of_subsweeps > 64:
+                                conf.sampling_mode = configs.SparseServiceConfig.SAMPLING_MODE_A
+                            else:
+                                conf.sampling_mode = configs.SparseServiceConfig.SAMPLING_MODE_B
                     if self.current_data_type in ["sparse", "iq"]:
                         conf.stepsize = int(f["stepsize"][()])
                 except Exception as e:
@@ -2145,6 +2174,7 @@ class GUI(QMainWindow):
                         "number_of_subsweeps",
                         "hw_accelerated_average_samples",
                         "stepsize",
+                        "sampling_mode"
                     ]
 
                     for key in keys:
