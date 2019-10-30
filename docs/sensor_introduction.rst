@@ -327,7 +327,7 @@ The radar cross section is the effective area of the object that the signal is r
 
     Radiation pattern and analytical expressions for simple geometrical shapes.
 
-For most objects it is not possible to analytically calculate σ, instead it needs to be measured or modelled or just tested if the received energy gives a high enough signal to noise ratio (SNR) to make a detection. The SNR is given by
+For most objects it is not possible to analytically calculate :math:`\sigma`, instead it needs to be measured or modelled or just tested if the received energy gives a high enough signal to noise ratio (SNR) to make a detection. The SNR is given by
 
 .. _Equation 4:
 
@@ -345,7 +345,7 @@ where :math:`C` is the radar loop gain and :math:`R` is the distance to the obje
 
     Received signal power versus distance. Note: signal, S, is plotted in dB.
 
-In `Table 2`_ and `Table 3`_ the visibility for a range of objects with common shapes (cylinder, plate, etc.) and of varying reflectivity, i.e. materials, is shown. Objects are at normal incidence and the governing system parameters are σ, γ, and C, as show in `Equation 4`_. The envelope service was used to collect the data with the maximize SNR configuration. The object counts as distinguishable from the noise with a SNR > 10 dB (Y), barely visible between 5dB and 10dB (-) and not visible with a SNR < 5 dB (N).
+In `Table 2`_ and `Table 3`_ the visibility for a range of objects with common shapes (cylinder, plate, etc.) and of varying reflectivity, i.e. materials, is shown. Objects are at normal incidence and the governing system parameters are :math:`\sigma`, :math:`\gamma`, and C, as show in `Equation 4`_. The envelope service was used to collect the data with the maximize SNR configuration. The object counts as distinguishable from the noise with a SNR > 10 dB (Y), barely visible between 5dB and 10dB (-) and not visible with a SNR < 5 dB (N).
 The range can be further increased based on the configuration of the sensor, as described in Section `Configuring the Acconeer sensor`_ and by optimizing the physical integration, as will be described in Section `Physical integration aspects`_. As an example for such an optimization `Table 3`_ shows results with an added radar Fresnel lens.
 
 .. _Table 2:
@@ -510,7 +510,7 @@ The A111 sensor contains the mmWave front-end, digital control logic, digitizati
 
     Illustration of integration into host platform, the A111 is marked with the Acconeer logo.
 
-In addition to the above it is also important for optimized integration to consider the electromagnetic (EM) environment, both in terms of what is placed on top of the sensor as well as to the side of the sensor. To evaluate the EM integration a Radar loop measurement can be conducted by placing an object in front of the sensor and rotating the sensor around its own axis, as illustrated in :numref:`fig_radar_loop_pattern`. The received energy from e.g. the Envelope Service can then be used to plot the amplitude versus rotation angle (θ).
+In addition to the above it is also important for optimized integration to consider the electromagnetic (EM) environment, both in terms of what is placed on top of the sensor as well as to the side of the sensor. To evaluate the EM integration a Radar loop measurement can be conducted by placing an object in front of the sensor and rotating the sensor around its own axis, as illustrated in :numref:`fig_radar_loop_pattern`. The received energy from e.g. the Envelope Service can then be used to plot the amplitude versus rotation angle (:math:`\theta`).
 
 
 .. _fig_radar_loop_pattern:
@@ -521,7 +521,7 @@ In addition to the above it is also important for optimized integration to consi
     Setup configuration for radar loop pattern measurements.
 
 
-The radiation pattern of the integrated antennas will be affected by anything that is put on top of the sensor as a cover. The transmission through a material is given by 1-γ, where γ is the reflectivity calculated in Equation 3. Hence, materials with low reflectivity are good materials to use as a cover on top of the sensor, plastic is a good choice and the sensor is not sensitive to the color of the material. Figure 21 shows the measured Radar loop pattern for 3 different scenarios, plastic (ABS), gorilla glass (GorillaGlass) and free space (FS). To further optimize the cover integration the thickness of the material should be considered. One can also use a layered cover which uses materials of different ε for optimum matching to the medium in which the signal is going to propagate or even to increase the directivity, as shown in Figure 21, where the beam width has been decreased by adding material on top of the sensor. More information on the EM integration aspects can be found in “Electromagnetic Integration - Basic Guidelines” document available at `developer.acconeer.com <https://developer.acconeer.com>`_.
+The radiation pattern of the integrated antennas will be affected by anything that is put on top of the sensor as a cover. The transmission through a material is given by 1-:math:`\gamma`, where :math:`\gamma` is the reflectivity calculated in Equation 3. Hence, materials with low reflectivity are good materials to use as a cover on top of the sensor, plastic is a good choice and the sensor is not sensitive to the color of the material. Figure 21 shows the measured Radar loop pattern for 3 different scenarios, plastic (ABS), gorilla glass (GorillaGlass) and free space (FS). To further optimize the cover integration the thickness of the material should be considered. One can also use a layered cover which uses materials of different :math:`\varepsilon` for optimum matching to the medium in which the signal is going to propagate or even to increase the directivity, as shown in Figure 21, where the beam width has been decreased by adding material on top of the sensor. More information on the EM integration aspects can be found in “Electromagnetic Integration - Basic Guidelines” document available at `developer.acconeer.com <https://developer.acconeer.com>`_.
 
 
 .. _fig_h_plan_pattern:
