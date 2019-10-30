@@ -22,7 +22,6 @@ import pyqtgraph as pg
 try:
     from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
     from acconeer_utils.clients.mock.client import MockClient
-    from acconeer_utils.clients.base import ClientError
     from acconeer_utils.clients import configs
     from acconeer_utils import example_utils
     from acconeer_utils.structs import configbase
@@ -1455,8 +1454,13 @@ class GUI(QMainWindow):
 
             try:
                 info = self.client.connect()
-            except ClientError:
-                self.error_message("Could not connect to server!")
+            except Exception as e:
+                err_message = "Could not connect to server!<br>{}".format(e)
+                if type(e).__name__ == "SerialException":
+                    err_message = "Did you select the right COM port?<br>"
+                    err_message += "Try unplugging and plugging back in the module!<br>"
+                    err_message += "{}".format(e)
+                self.error_message(err_message)
                 return
 
             max_num = info.get("board_sensor_count", max_num)
