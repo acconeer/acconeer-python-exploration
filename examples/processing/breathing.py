@@ -8,6 +8,7 @@ from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
 from acconeer_utils.clients import configs
 from acconeer_utils import example_utils
 from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
+from acconeer_utils.structs import configbase
 
 
 env_max = 0.3
@@ -65,16 +66,19 @@ def get_sensor_config():
     return config
 
 
-def get_processing_config():
-    return {
-        "hist_plot_len": {
-            "name": "Plot length [s]",
-            "value": 10,
-            "limits": [1, 20000],
-            "type": int,
-            "text": None,
-        },
-    }
+class ProcessingConfiguration(configbase.ProcessingConfig):
+    VERSION = 1
+
+    hist_plot_len = configbase.FloatParameter(
+            label="Plot length",
+            unit="s",
+            default_value=10,
+            limits=(1, 30),
+            decimals=0,
+            )
+
+
+get_processing_config = ProcessingConfiguration
 
 
 class BreathingProcessor:
@@ -89,7 +93,7 @@ class BreathingProcessor:
         self.config = sensor_config
 
         self.f = sensor_config.sweep_rate
-        self.hist_plot_len = int(round(processing_config["hist_plot_len"]["value"] * self.f))
+        self.hist_plot_len = int(round(processing_config.hist_plot_len * self.f))
         self.breath_hist_len = max(2000, self.hist_plot_len)
 
         self.peak_history = np.zeros(self.peak_hist_len, dtype="complex")
@@ -248,7 +252,7 @@ class PGUpdater:
         self.config = sensor_config
 
         f = sensor_config.sweep_rate
-        self.hist_plot_len_s = processing_config["hist_plot_len"]["value"]
+        self.hist_plot_len_s = processing_config.hist_plot_len
         self.hist_plot_len = int(round(self.hist_plot_len_s * f))
         self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / self.config.sweep_rate
         self.plot_index = 0
