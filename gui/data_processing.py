@@ -23,6 +23,7 @@ class DataProcessing:
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
         self.service_params = params["service_params"]
+        self.multi_sensor = params["multi_sensor"]
 
         self.ml_plotting = params["ml_plotting"]
 
@@ -238,6 +239,10 @@ class DataProcessing:
 
         self.sensor_config.sensor = matching_sensors
 
+        squeezed_dim = 1
+        if self.mode == "sparse":
+            squeezed_dim = 2
+
         for i, data_step in enumerate(data):
             if info_available:
                 if not is_session_format_new:
@@ -253,11 +258,17 @@ class DataProcessing:
                 if parent.parent.get_gui_state("ml_tab") != "feature_extract":
                     time.sleep(self.rate)
 
-                if nr_sensors == 1:
-                    self.process(data_step["sweep_data"], info)
-                else:
-                    self.process(data_step["sweep_data"][sensor_list, :], info)
+                sweep_data = data_step["sweep_data"]
 
+                # Only send data for selected sensors
+                if self.multi_sensor and nr_sensors > 1:
+                    sweep_data = data_step["sweep_data"][sensor_list, :]
+
+                # Make sure we send squeezed data to detectors not supporting multiple sensors
+                if not self.multi_sensor and len(sweep_data.shape) > squeezed_dim:
+                    sweep_data = data_step["sweep_data"][sensor_list[0], :]
+
+                self.process(sweep_data, info)
                 self.parent.emit("sweep_info", "", info)
 
             if not info_available:

@@ -1180,7 +1180,7 @@ class GUI(QMainWindow):
             "sweep_buffer": sweep_buffer,
             "service_params": processing_config,
             "ml_plotting": ml_plotting,
-            "service_handle": self.current_module_info.module,
+            "multi_sensor": self.current_module_info.multi_sensor,
         }
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
@@ -2286,15 +2286,17 @@ class GUI(QMainWindow):
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
-            self.error_message("{}".format(message))
             if "client" in message_type:
                 self.stop_scan()
                 if self.get_gui_state("server_connected"):
                     self.connect_to_server()
                 self.buttons["create_cl"].setEnabled(False)
                 self.buttons["start"].setEnabled(False)
-            if "clutter" in message_type:
+            elif "clutter" in message_type:
                 self.load_clutter_file(force_unload=True)
+            elif "proccessing" in message_type:
+                self.stop_scan()
+            self.error_message("{}".format(message))
         elif message_type == "clutter_data":
             self.save_scan(data, clutter=True)
         elif message_type == "scan_data":
@@ -2615,9 +2617,12 @@ class Threaded_Scan(QtCore.QThread):
                 # TODO: infer session info
                 print("No session info")
                 session_info = None
-
-            self.radar.prepare_processing(self, self.params, session_info)
-            self.radar.process_saved_data(self.data, self)
+            try:
+                self.radar.prepare_processing(self, self.params, session_info)
+                self.radar.process_saved_data(self.data, self)
+            except Exception as e:
+                error = self.format_error(e)
+                self.emit("processing_error", "Error while replaying data:<br>" + error)
         else:
             self.emit("error", "Unknown mode %s!" % self.mode)
         self.emit("scan_done", "", "")
