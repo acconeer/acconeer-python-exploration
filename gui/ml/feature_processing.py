@@ -435,10 +435,10 @@ class FeatureProcessing:
                 motion_score = np.max(np.abs(data["env_ampl"][i, :]))
                 if self.motion_score is None:
                     self.motion_score = motion_score
-                self.motion_score_normalized = motion_score / self.motion_score
                 if motion_score < self.motion_score:
                     self.motion_score = motion_score
-                if motion_score > self.auto_threshold * self.motion_score:
+                self.motion_score_normalized = motion_score / self.motion_score
+                if self.motion_score_normalized > self.auto_threshold:
                     detected = True
                     return detected
         return detected
