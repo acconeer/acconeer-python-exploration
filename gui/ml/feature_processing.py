@@ -332,7 +332,7 @@ class FeatureProcessing:
             else:
                 data_step["env_ampl"] = np.abs(sweep_data[marker]["sweep_data"])
             win_idx = n_sweeps - idx - 1
-            if data_step["iq_data"].shape != self.win_data["iq_data"].shape[0:2]:
+            if data_step["env_ampl"].shape != self.win_data["env_data"].shape[0:2]:
                 data_step["iq_data"] = data_step["iq_data"][self.sensor_array]
                 data_step["env_ampl"] = data_step["env_ampl"][self.sensor_array]
             self.add_sweep(data_step, win_idx=win_idx)
