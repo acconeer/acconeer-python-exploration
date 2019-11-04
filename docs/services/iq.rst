@@ -9,11 +9,17 @@ The In-phase and Quadrature components are represented as complex values, genera
 
 Similarly to the :ref:`envelope-service` service the amplitudes obtained through the IQ service provide a method for examining the reflectivity at different distances from the radar sensor. These two services are however differently optimized. The :ref:`envelope-service` service is optimized for providing an accurate envelope estimate, while the IQ service is optimized for producing a phase-stable estimate. Thus, one should only use the IQ service if phase information is of importance.
 
+For phase estimation in the vital sign use case and for object detection in the robot use case, Profile 2 and 3 are recommended. To get data good data from the IQ service with Profile 1, sampling mode B and a Hardware accelerated average samples (HWAAS) of at least 20.
+
+The filtering of data in the IQ Service applies a low-pass filter in the range dimension. This leads to some filter edge effects in the first few centimeters of the sweep. For very short sweeps, approx. 3 cm for Profile 1 and approx 6 cm for Profile 2-5, these edge effects affects the magnitude and phase of the whole sweep. It is therefore recommended to add at least 3 cm to the sweep at each end for Profile 1, and 6 cm for Profile 2-5, to the region where the amplitude and phase should be estimated.
+
+The IQ service can be configured with different pulse length profiles, `see <https://acconeer-python-exploration.readthedocs.io/en/latest/sensor_introduction.html>`_.
+
 ``iq.py`` contains example code on how the IQ service can be used. Detection of micro-motions using the IQ service in a target scene has many use cases, some of which are presented in ``breathing.py``, ``sleep_breathing.py``, ``obstacle_detection.py``, and ``phase_tracking.py``.
 
 .. image:: /_static/services/iq.png
 
 For further reading on the IQ service we refer to the `IQ documentation`_ on the `Acconeer developer page`_.
 
-.. _`IQ documentation`: https://developer.acconeer.com/download/iq-data-service-user-guide-v1-0-pdf/
+.. _`IQ documentation`: https://developer.acconeer.com/download/iq-data-service-user-guide-pdf/
 .. _`Acconeer developer page`: https://developer.acconeer.com/

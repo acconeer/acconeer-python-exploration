@@ -9,11 +9,11 @@ This document serves as an introduction to Acconeer’s sensor technology and pr
 
 When starting to use the Acconeer sensor there are different alternatives for both hardware and software setup and we are adding more as we get to know your needs. Check out our website to see our current offer of sensors, modules, and evaluation kits. A typical development flow to get started is to setup one of our evaluation kits and:
 
-* Use the Exploration tool to get data from sensor into Python to start application development for your use case
-
-* Use the Radar system software API or Module protocol to start software development
+* Use the `Exploration Tool <https://github.com/acconeer/acconeer-python-exploration>`_ to get data from sensor into Python to start application development for your use case
 
 * Use our Reference applications to get guidance on use case specific software solutions
+
+* Use Acconeer SDK or Acconeer Module Software to start software development
 
 To further support and guide you through the development process we also provide several user guides, data sheets, reference schematics, and reference layouts, which you can find at `acconeer.com <https://acconeer.com>`_. Also check out our Demo videos `Demo videos <https://www.youtube.com/channel/UC56HMJfKPSpamS-kMHXOcAw>`_ and `Application page <https://www.acconeer.com/applications>`_ to get inspiration on how you can solve different use cases and how the Acconeer sensor can be used in your application.
 
@@ -21,8 +21,10 @@ To further support and guide you through the development process we also provide
     :scale: 30
     :align: center
 
+
 Radar basics and the Acconeer pulsed coherent radar
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Radar is a well-established technology which has been used in many different applications where accurate and robust distance measurement is required. You can find radar in cars, in the process industry, in airplanes etc. However, most often these radar systems are big, power hungry and expensive, what Acconeer offer is a way to take radar into applications where size, cost and power consumption matter.
 Radar is an acronym for Radio Detection and Ranging and is a way of determining range to an object by transmitting and detecting radio waves. Acconeer’s radar system is a time-of-flight system, which means that a radio wave is transmitted by a first antenna, reflected by an object, and then received by a second antenna. The time of flight between transmission and reception of the signal is measured, as illustrated in :numref:`fig_sensor_wave_object`.
 
@@ -35,7 +37,7 @@ Radar is an acronym for Radio Detection and Ranging and is a way of determining 
 
 The distance to the object can then be calculated by multiplying the time-of-flight with the speed of the radio wave (same as speed of light) and then dividing by two as the distance the signal has traveled is equal to two times the distance to the object. More details about the radar and the Acconeer approach can be found in the chapter `System Overview`_.
 
-There are different approaches to building radar systems, each with its own pros and cons that typically results in a trade-off between accuracy and power consumption :numref:`fig_pulsed_coherent_radar`. At Acconeer we have solved this by combining two important features of a radar system, the first is that it is pulsed, which means that the radio part is shut down in between transmission of signals. In fact, the Acconeer radar is pulsed so fast that the radio is active less than 1 % of the time even when transmitting at maximum rate, this is how the power consumption can be kept low and optimized dependent on the update rate required by your application.
+There are different approaches to building radar systems, each with its own pros and cons that typically results in a trade-off between accuracy and power consumption, see :numref:`fig_pulsed_coherent_radar`. At Acconeer we have solved this by combining two important features of a radar system, the first is that it is pulsed, which means that the radio part is shut down in between transmission of signals. In fact, the Acconeer radar is pulsed so fast that, typically, the radio is active less than 1 % of the time even when transmitting at maximum rate. This is how the power consumption can be kept low and optimized dependent on the update rate required by your application.
 
 .. _fig_pulsed_coherent_radar:
 .. figure:: /_static/introduction/fig_pulsed_coherent_radar.png
@@ -56,6 +58,7 @@ The unique selling points of the PCR sensor are summarized in :numref:`fig_uniqu
 
 Another benefit of the pulse coherent radar is that amplitude, time and phase of the received signal can be handled separately and allow for classification of different materials that the signal has been reflected on. These are all benefits when compared to sensors such as infra-red and ultrasonic. Additional benefits are that the Acconeer radar can be hidden behind colored plastic or glass and hence do not need an open or visible aperture, we call this optimized integration. The sensor is also robust as it is not sensitive to ambient light or sound and not sensitive to dust or even color of the object.
 
+
 The Acconeer offer
 ^^^^^^^^^^^^^^^^^^
 
@@ -70,7 +73,7 @@ The Acconeer offer consists of two parts, hardware and software, as illustrated 
 
 The A111 sensor is the core of the hardware offer and is available in module and in evaluation kits. The purpose of the evaluation kit is to provide a platform to get acquainted with the pulsed coherent radar and to start use case evaluation. The sensor evaluation kits are based on Raspberry Pi, which is a well-known and available platform which also allows you to connected other types of sensors. The module is an integration of the A111 and a microcontroller unit (MCU) and has its own evaluation kit. Just as the sensor evaluation kit it can be used to get familiar with the pulsed coherent radar technology and get started with use case development. It can also be included as a single unit in your product to decrease your development cost and decrease time to market.
 
-:numref:`fig_acconeer_offer` outlines the software structure, platform for running it, and communication interfaces. The software for controlling the A111 sensor and retrieving data from it is called Radar System Software (RSS) and provides output at two levels:
+:numref:`fig_system_structure` outlines the software structure, platform for running it, and communication interfaces. The software for controlling the A111 sensor and retrieving data from it is called Radar System Software (RSS) and provides output at two levels:
 
 * Service, provides pre-processed sensor data
 
@@ -83,7 +86,7 @@ The A111 sensor is the core of the hardware offer and is available in module and
 
     System structure, the RSS software runs on a host that controls the sensor.
 
-RSS is provided as library files and is written in C and designed to be portable between different platforms, a list of currently supported processor architectures and toolchains are available at the Acconeer developer site acconeer.com. Apart from RSS Acconeer provides Example applications and stubbed software integration source code in the Software development kits (SDKs) as well as full reference integrations for selected platforms.
+RSS is provided as library files and is written in C and designed to be portable between different platforms, a list of currently supported processor architectures and toolchains are available at the `Acconeer developer site <https://developer.acconeer.com>`_. Apart from RSS, Acconeer provides Example applications and stubbed software integration source code in the Software development kits (SDKs) as well as full reference integrations for selected platforms.
 
 Acconeer provide four types of applications:
 
@@ -91,11 +94,25 @@ Acconeer provide four types of applications:
 
 * Reference applications: Use case specific reference application available at Acconeer GitHub
 
-* Streaming server: Application streaming data from sensor evaluation kit to PC, available in SDK at Acconeer developer site
+* Streaming server: Application streaming data from sensor evaluation kit to PC, available in SDK for Raspberry Pi at Acconeer developer site
 
 * Module server: Application providing a register write based interface to Acconeer modules, available in Module software image at Acconeer developer site.
 
-Both RSS and Applications run on a host platform and Acconeer provides a software integration reference with guidance on how to integrate to your host platform as well as specific integration for the modules and evaluation kits that Acconeer provides. The software integration includes hardware abstraction layer, device drivers, and build environment provided as source code and is available in the SDK. Based on these deliveries it is possible for the customer to create their own integration layer for any platform that uses a supported processor architecture. The currently available products and corresponding software deliveries are listed in :numref:`fig_product_sw_offer`, refer to documentation for each specific product for further details.
+Both RSS and Applications run on a host platform and Acconeer provides a software integration reference with guidance on how to integrate to your host platform as well as specific integration for the modules and evaluation kits that Acconeer provides.
+
+* For our EVK platforms we provide a software package that includes hardware abstraction layer, device drivers, and build environment provided as source code and is available in the SDK.
+
+* For our EVK platforms we provide a software package and for
+
+    * Raspberry Pi it includes hardware abstraction layer, device drivers, and build environment provided as source code and is available in the SDK
+
+    *-* Modules it includes hardware abstraction layer and build environment provided as source code and is available in the SDK
+
+* For STM32 platforms we provide example integration files and instructions for how to set up a project in STM32CubeIDE.
+
+* Other ARM Cortex M4 and M7 based platform can easily be used by writing a custom implantation of the HAL integration layer. A handful functions that use MCU specific driver functions for accessing timers, SPI and GPIO have to be implemented.
+
+Based on these deliveries it is possible for the customer to create their own integration layer for any platform that uses a supported processor architecture. The currently available products and corresponding software deliveries are listed in :numref:`fig_product_sw_offer`, refer to documentation for each specific product for further details.
 
 .. _fig_product_sw_offer:
 .. figure:: /_static/introduction/fig_product_sw_offer.png
@@ -120,15 +137,15 @@ The two setups listed above are also illustrated in :numref:`fig_setups`.
 
     Setup.
 
-For the Stand-alone module setup the customer should use the RSS library and Software integration source code provided in the corresponding SDK and build their own application on these deliveries. For the Controlled module regime, the complete software that runs on the module is delivered as an image. The customer can freely select between these two options, Acconeer supports both.
+For the Stand-alone module setup the customer should use the RSS library and Software integration source code provided in the corresponding SDK and build their own application on these deliveries. For the Controlled module regime, i.e. the modules designed by Acconeer, the complete software that runs on the module is delivered as an image. The customer can freely select between these two options, Acconeer supports both.
 
 
 .. _Acconeer tools:
 
-Acconeer tools
-^^^^^^^^^^^^^^
+The Acconeer Tools
+^^^^^^^^^^^^^^^^^^
 
-To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration tool requires that the Streaming server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The Streaming Server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`_. An overview of how Exploration tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
+To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration Tool requires that the Streaming server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The Streaming Server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration Tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`_. An overview of how Exploration Tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
 
 .. _fig_sw_hw_if:
 .. figure:: /_static/introduction/fig_sw_hw_if.png
@@ -141,7 +158,7 @@ To help you to get to know the Acconeer products and get started quickly with ap
 Services and Detectors
 ----------------------
 
-The RSS provides output at two different levels, Service and Detector. The Service output is pre-processed sensor data as a function of distance. Detectors are built with this Service data as the input and the output is a result, in the form of e.g. distance, motion, angle etc. Services and Detectors currently available are listed in :numref:`fig_detectors_services`.
+The RSS provides output at two different levels, Service and Detector. The Service output is pre-processed sensor data as a function of distance. Detectors are built with this Service data as the input and the output is a result, in the form of e.g. distance, presence, angle etc. Services and Detectors currently available are listed in :numref:`fig_detectors_services`.
 
 .. _fig_detectors_services:
 .. figure:: /_static/introduction/fig_detectors_services.png
@@ -152,20 +169,23 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 
 Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see Section `Acconeer tools`_) to observe the different outputs and understand what they represent, each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`_.
 
-At `acconeer.com <https://acconeer.com>`_ we have several movies showing demos where the Acconeer sensor is used in different use cases. These demo movies come with use case specific reference applications, which are available for download at our GitHub page. These reference applications are written in C code and use our Services and Detectors, check out these examples to get inspiration on how to build your product with the Acconeer sensor.
+At `developer.acconeer.com <https://developer.acconeer.com>`_, we have several movies showing demos where the Acconeer sensor is used in different use cases. These demo movies come with use case specific reference applications, which are available for download at our GitHub page. These reference applications are written in C code and use our Services and Detectors, check out these examples to get inspiration on how to build your product with the Acconeer sensor.
 
 
-Envelope and Power bins Services
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Services
+^^^^^^^^
 
-:numref:`fig_power_bins_demo` and :numref:`fig_env_demo` show outputs from the Power bins and Envelope Services obtained with one of the scripts in Exploration tool, the setup and environment are identical for the two data sets. Here it can be seen that Power bins and Envelope Services provides output of the same type, i.e. amplitude of received signal as a function of distance. The difference lies in the signal processing done and the Power bins output has lower SNR, lower resolution in range, but requires less processing and memory allocation than Envelope.
+Envelope and Power Bins services
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:numref:`fig_power_bins_demo` and :numref:`fig_env_demo` show outputs from the Power Bins and Envelope Services obtained with one of the scripts in Exploration Tool, the setup and environment are identical for the two data sets. Here it can be seen that Power Bins and Envelope Services provides output of the same type, i.e. amplitude of received signal as a function of distance. The difference lies in the signal processing done and the Power Bins output has lower SNR, lower resolution in range, but requires less processing and memory allocation than Envelope.
 
 .. _fig_power_bins_demo:
 .. figure:: /_static/introduction/fig_power_bins_demo.png
     :scale: 60
     :align: center
 
-    Output from the Power bins service in Exploration Tool.
+    Output from the Power Bins service in Exploration Tool. Each bin correspond to a region of the scanned range, where Bin 1 is closest to the sensor.
 
 
 .. _fig_env_demo:
@@ -176,19 +196,19 @@ Envelope and Power bins Services
     Output from the Envelope service in Exploration Tool.
 
 
-IQ Service
-^^^^^^^^^^
+IQ service
+~~~~~~~~~~
 
-The IQ Service provides data in cartesian form, which is shown in :numref:`fig_iq_demo` with distance on the third axis, data taken with the same setup as for Envelope and Power bins in :numref:`fig_power_bins_demo` and :numref:`fig_env_demo`.
+The IQ Service provides complex data in cartesian form, which is shown in :numref:`fig_iq_demo` with distance on the third axis and data taken with the same setup as for Envelope and Power bins in :numref:`fig_power_bins_demo` and :numref:`fig_env_demo`.
 
 .. _fig_iq_demo:
 .. figure:: /_static/introduction/fig_iq_demo.png
     :scale: 60
     :align: center
 
-    Output from the Envelope service in Exploration Tool.
+    Output from the IQ Service in Exploration Tool.
 
-The cartesian data can be transformed to polar data providing phase and amplitude of the signal. Having the phase of the signal available makes it possible to perform more accurate measurements as compared to the Power bins and Envelope Services where only the amplitude is available. This is illustrated in :numref:`fig_wavelet` where an object is moving towards the radar. The envelope of the signal only varies slightly when the object is moving, while the value of the coherent signal at a fixed time delay varies substantially. This change will be present in the phase of the data from the IQ Service API.
+The cartesian data can be transformed to polar data providing phase and amplitude of the signal. Having the phase of the signal available makes it possible to perform more accurate measurements as compared to the Power bins and Envelope Services where only the amplitude is available. This is illustrated in :numref:`fig_wavelet` where an object is moving towards the radar. The envelope of the signal only varies slightly when the object is moving, while the value of the coherent signal at a fixed time delay varies substantially. This change will be present in the phase of the data from the IQ Service.
 
 .. _fig_wavelet:
 .. figure:: /_static/introduction/fig_wavelet.png
@@ -200,10 +220,18 @@ The cartesian data can be transformed to polar data providing phase and amplitud
 The IQ Service is the choice when high accuracy is required, and higher processing power and memory allocation can be tolerated.
 
 
+Sparse service
+~~~~~~~~~~~~~~
+
+The other services, :ref:`envelope-service`, :ref:`iq-service`, and :ref:`pb-service`, are all based on sampling the incoming waves several times per wavelength (effectively ~2.5 mm). In the Sparse service, the incoming waves are instead sampled approximately every 6 cm and the amount of processing is minimal, which makes Sparse data fundamentally different from data generated by the other services.
+
+Due to the highly undersampled signal from the sparse service, it should not be used to measure the reflections of static objects. Instead, the sparse service should be used for situations, where detecting moving objects is desired. Sparse is optimal for this, as it produces sequences of very time accurate measurements at these sparsely located sampling points. More details `here <https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html>`_.
+
+
 Detectors
 ^^^^^^^^^
 
-Detectors take Service data as input and produce a result as the output that can be used by the application. Currently we have three Detectors available that produce different types of results and that are based on different Services. User guides for the different Detectors are available at acconeer.com and the Detectors are also available in the Exploration tool.
+Detectors take Service data as input and produce a result as the output that can be used by the application. Currently we have four Detectors available that produce different types of results and that are based on different Services. User guides for the different Detectors are available at `acconeer.com  <https://developer.acconeer.com/>`_ and the Detectors are also available in the Exploration Tool.
 
 In addition, we provide several Reference applications which uses Services or Detector to demonstrate how to develop applications based on our technology, you can find these at the Acconeer GitHub.
 
@@ -214,22 +242,22 @@ Distance peak detector
 Finds peaks in the data provided from the Envelope Service and provides the distance to these peaks. The peaks are identified if above a threshold, which can be set to be fixed, based on the response from the environment without the object to be identified, or based on receiver noise. This Detector is used for the characterization of the A111 in the data sheet.
 
 
-Motion detector
-~~~~~~~~~~~~~~~
+Presence detector
+~~~~~~~~~~~~~~~~~
 
-Records changes in the environment over time by using an adaptive threshold based on historic data. The Detector uses the amplitude information from the IQ service.
+Detects changes in the environment over time based on data from the Sparse service. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html>`_.
 
 
-Distance basic
-~~~~~~~~~~~~~~
+Distance basic detector
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Low complexity distance detection based on finding the maximum of the data provided from the Envelope Service.
 
 
-Obstacle localization detector
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Obstacle detector
+~~~~~~~~~~~~~~~~~
 
-Assumes that the Acconeer sensor is placed on a moving object with a known velocity, such as a robotic vacuum cleaner or lawn mower. The Detector creates a virtual antenna array and uses synthetic aperture radar (SAR) signal processing to localize objects. This Detector is used in the Obstacle localization demo movie.
+Assumes that the Acconeer sensor is placed on a moving object with a known velocity, such as a robotic vacuum cleaner or lawn mower. The Detector creates a virtual antenna array and uses synthetic aperture radar (SAR) signal processing to localize objects. This Detector is used in the Obstacle localization demo movie. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html>`_.
 
 
 .. _ System Overview:
@@ -237,14 +265,14 @@ Assumes that the Acconeer sensor is placed on a moving object with a known veloc
 System overview
 ---------------
 
-The Acconeer sensor is a pulsed coherent radar, which means that it transmits radio signals in short pulses where the starting phase is well known, as illustrated in :numref:`fig_transmit_signal_length`.
+The Acconeer sensor is a mm wavelength pulsed coherent radar, which means that it transmits radio signals in short pulses where the starting phase is well known, as illustrated in :numref:`fig_transmit_signal_length`.
 
 .. _fig_transmit_signal_length:
 .. figure:: /_static/introduction/fig_transmit_signal_length.png
     :scale: 60
     :align: center
 
-    Illustration of the time domain transmitted signal from the Acconeer A111 sensor, a radar sweep  typically consists of thousands of pulses.
+    Illustration of the time domain transmitted signal from the Acconeer A111 sensor, a radar sweep typically consists of thousands of pulses. The length of the pulses can be controlled by setting Profile.
 
 
 These transmitted signals are reflected by an object and the time elapsed between transmission and reception of the reflected signal (:math:`t_{delay}`) is used to calculate the distance to the object by using
@@ -261,9 +289,10 @@ These transmitted signals are reflected by an object and the time elapsed betwee
     .. math::
         :label: Equation 2
 
-        v=\frac{c_0v}{\sqrt{\varepsilon_r}}
+        v=\frac{c_0}{\sqrt{\varepsilon_r}}
 
 where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' in the denominator of is due to the fact that :math:`t_{delay}` is the time for the signal to travel to the object and back, hence to get the distance to the object a division by 2 is needed, as illustrated in :numref:`fig_sensor_wave_object`. As :math:`f_{RF}` is 60.5 GHz one wavelength (:math:`\lambda`) is roughly 5 mm, which then corresponds to a distance to the object of 2.5 mm.
+
 :numref:`fig_block_diagram` shows a block diagram of the A111 sensor. The signal is transmitted from the Tx antenna and received by the Rx antenna, both integrated in the top layer of the A111 package substrate. In addition to the mmWave radio the sensor consists of power management and digital control, signal quantization, memory and a timing circuit.
 
 .. _fig_block_diagram:
@@ -271,9 +300,9 @@ where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' 
     :scale: 100
     :align: center
 
-    Block diagram of the A111 sensor, further details about interfaces can be found in the A111 data sheet.
+    Block diagram of the A111 sensor package, further details about interfaces can be found in the A111 data sheet.
 
-:numref:`fig_envelope_2d` shows a typical radar sweep obtained with the Envelope Service, with one object present. The range resolution of the measurement is ~0.5 mm and each data point correspond to transmission of one pulse, hence, to sweep from 30 cm, from 20 cm to 50 cm as in :numref:`fig_envelope_2d`, requires that 600 pulses  are transmitted. The system relies on the fact that the pulses are transmitted phase coherent, which makes it possible to send multiple pulses and then combine the received signal from these pulses to improve signal-to-noise ratio (SNR) to enhance the object visibility.
+:numref:`fig_envelope_2d` shows a typical radar sweep obtained with the Envelope Service, with one object present. The range resolution of the measurement is ~0.5 mm and each data point correspond to transmission of at least one pulse (depending on averaging), hence, to sweep 30 cm, e.g. from 20 cm to 50 cm as in :numref:`fig_envelope_2d`, requires that 600 pulses  are transmitted. The system relies on the fact that the pulses are transmitted phase coherent, which makes it possible to send multiple pulses and then combine the received signal from these pulses to improve signal-to-noise ratio (SNR) to enhance the object visibility.
 
 .. _fig_envelope_2d:
 .. figure:: /_static/introduction/fig_envelope_2d.png
@@ -282,7 +311,11 @@ where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' 
 
     Output from Envelope service for a typical radar sweep with one object present.
 
-The amount of energy received back to the Rx antenna depends on the reflectivity of the object (:math:`\gamma`), the radar cross section (RCS) of the object (:math:`\sigma`), and the distance to the object (R). A reflection occurs when there is a difference in relative permittivity between two media that the signal is propagating through, :math:`\gamma` is then given as
+
+Reflectivity
+^^^^^^^^^^^^
+
+The amount of energy received back to the Rx antenna depends on the reflectivity of the object (:math:`\gamma`), the radar cross section (RCS) of the object (:math:`\sigma`), and the distance to the object (:math:`R`). A reflection occurs when there is a difference in relative permittivity between two media that the signal is propagating through. :math:`\gamma` is then given as
 
 
 .. _Equation 3:
@@ -292,7 +325,7 @@ The amount of energy received back to the Rx antenna depends on the reflectivity
 
         \gamma=\left(\frac{\sqrt{\varepsilon_1}-\sqrt{\varepsilon_2}}{\sqrt{\varepsilon_1}+\sqrt{\varepsilon_2}}\right)^2
 
-where :math:`\varepsilon_1` and :math:`\varepsilon_1` is the relative permittivity on either side of the boundary. The relative permittivity for common materials can be found in various data bases, but keep in mind that it is frequency dependent. As an example, `Table 1`_ lists approximate values for the real part of the relative permittivity for some common materials.
+where :math:`\varepsilon_1` and :math:`\varepsilon_2` is the relative permittivity, at 60 GHz, on either side of the boundary. The relative permittivity for common materials can be found in various data bases, but keep in mind that it is frequency dependent. As an example, `Table 1`_ lists approximate values for the real part of the relative permittivity for some common materials.
 
 .. _Table 1:
 
@@ -318,7 +351,11 @@ where :math:`\varepsilon_1` and :math:`\varepsilon_1` is the relative permittivi
 
 `Table 1`_ shows that some materials are semi-transparent to 60 GHz signals and it is hence possible to detect reflecting objects behind a surface of these materials, each boundary with a change in permittivity gives a reflection. This is a useful property in applications where the use case requires that the sensor measures through, e.g., a wall, clothing or plastic housing.
 
-The radar cross section is the effective area of the object that the signal is reflected against, for simple geometrical shapes, where the size is larger than the wavelength of the signal (~5 mm) and is in the far-field distance, it can be expressed analytically as in :numref:`fig_rcs`. The far-field distance depends on the object size and its distance to the radar source. Generally speaking, far-field applies when the waves reflected by the object can be considered plane-waves. Representative back scattering pattern of a sphere, flat plate and trihedral corner reflector are shown in the polar plots.  It is seen that the objects can have different maximum RCS, but also different radiation patterns, a flat plate for instance is very directive and if tilted away from the Rx antenna the received energy will be decreased, whereas the corner has less angular dependence and is a more robust reflector in terms of angle with respect to the Rx antenna.
+
+Radar cross section
+^^^^^^^^^^^^^^^^^^^
+
+The radar cross section is the effective area of the object that the signal is reflected against, for simple geometrical shapes, where the size is larger than the wavelength of the signal (~5 mm) and is in the far-field distance, it can be expressed analytically as in :numref:`fig_rcs`. The far-field distance depends on the object size and its distance to the radar source. Generally speaking, far-field applies when the waves reflected by the object can be considered plane-waves. Representative back scattering pattern of a sphere, flat plate and trihedral corner reflector are shown in the polar plots.  It is seen that the objects can have different maximum RCS, but also different radiation patterns, a flat plate for instance is very directive and if tilted away from the radar, the received energy will be decreased, whereas the corner has less angular dependence and is a more robust reflector in terms of angle with respect to the radar.
 
 .. _fig_rcs:
 .. figure:: /_static/introduction/fig_rcs.png
@@ -327,25 +364,13 @@ The radar cross section is the effective area of the object that the signal is r
 
     Radiation pattern and analytical expressions for simple geometrical shapes.
 
-For most objects it is not possible to analytically calculate :math:`\sigma`, instead it needs to be measured or modelled or just tested if the received energy gives a high enough signal to noise ratio (SNR) to make a detection. The SNR is given by
+For most objects it is not possible to analytically calculate :math:`\sigma`, instead it needs to be measured or modelled.
 
-.. _Equation 4:
 
-    .. math::
-        :label: Equation 4
+Typical ranges for different objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-        SNR_{dB}=10\log_{10}\frac{S}{N}=C_{dB}+\sigma_{dB}+\gamma_{dB}-k10\log_{10}(R)
-
-where :math:`C` is the radar loop gain and :math:`R` is the distance to the object. :numref:`fig_rx_power_vs_dist` shows how the received energy drops with increasing R for objects where the exponent k is equal to 4, which applies for objects which are smaller than the area which is illuminated coherently by the radar. For objects that are larger than this area the :math:`k` is smaller than 4, with a lower limit of :math:`k = 2`  when the object is a large flat surface.
-
-.. _fig_rx_power_vs_dist:
-.. figure:: /_static/introduction/fig_rx_power_vs_dist.png
-    :scale: 60
-    :align: center
-
-    Received signal power versus distance. Note: signal, S, is plotted in dB.
-
-In `Table 2`_ and `Table 3`_ the visibility for a range of objects with common shapes (cylinder, plate, etc.) and of varying reflectivity, i.e. materials, is shown. Objects are at normal incidence and the governing system parameters are :math:`\sigma`, :math:`\gamma`, and C, as show in `Equation 4`_. The envelope service was used to collect the data with the maximize SNR configuration. The object counts as distinguishable from the noise with a SNR > 10 dB (Y), barely visible between 5dB and 10dB (-) and not visible with a SNR < 5 dB (N).
+In `Table 2`_ and `Table 3`_ the visibility for a range of objects with common shapes (cylinder, plate, etc.) and of varying reflectivity, i.e. materials, is shown. Objects are at normal incidence and the governing system parameters are :math:`\sigma`, :math:`\gamma`, and C, as show in `Equation 4`_. The envelope service was used to collect the data with Profile 2. The object counts as distinguishable from the noise with a SNR > 10 dB (Y), barely visible between 5 dB and 10 dB (-) and not visible with a SNR < 5 dB (N).
 The range can be further increased based on the configuration of the sensor, as described in Section `Configuring the Acconeer sensor`_ and by optimizing the physical integration, as will be described in Section `Physical integration aspects`_. As an example for such an optimization `Table 3`_ shows results with an added radar Fresnel lens.
 
 .. _Table 2:
@@ -405,6 +430,79 @@ The range can be further increased based on the configuration of the sensor, as 
         Football                               Y     Y     Y     N     N
         ====================================== ===== ===== ===== ===== =====
 
+Radar sensor performance metrics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Radar sensor performance metrics (RSPMs) for the Acconeer radar system provides useful information on the performance of the system: sensor, RSS and reference integration. The list contains the RSPMs that are applicable to services that produce radar data. However, not all RSPMs are applicable to all radar services. The RSPMs is used in our `Radar Datasheet <https://developer.acconeer.com/download/a111-datasheet-pdf/>`_.
+
+
+Radar loop gain
+~~~~~~~~~~~~~~~
+
+The SNR can be modelled as a function of a limited number of parameters: the RCS of the object (:math:`\sigma`), the distance to the object (:math:`R`), the reflectivity of the object (:math:`\gamma`), and a radar sensor dependent constant referred to as radar loop gain (:math:`C`). The SNR (in dB) is then given by
+
+.. _Equation 4:
+
+    .. math::
+        :label: Equation 4
+
+        SNR_{dB}=10\log_{10}\frac{S}{N}=C_{dB}+\sigma_{dB}+\gamma_{dB}-k10\log_{10}(R)
+
+:numref:`fig_rx_power_vs_dist` shows how the received energy drops with increasing :math:`R` for objects where the exponent :math:`k` is equal to 4, which applies for objects which are smaller than the area which is illuminated coherently by the radar. For objects that are larger than this area the :math:`k` is smaller than 4, with a lower limit of :math:`k = 2`  when the object is a large flat surface.
+
+.. _fig_rx_power_vs_dist:
+.. figure:: /_static/introduction/fig_rx_power_vs_dist.png
+    :scale: 60
+    :align: center
+
+    Received signal power versus distance. Note: signal, S, is plotted in dB.
+
+
+Depth resolution
+~~~~~~~~~~~~~~~~
+
+The depth resolution determines the minimum distance of two different objects in order to be distinguished from each other.
+
+
+Distance resolution
+~~~~~~~~~~~~~~~~~~~
+
+The Acconeer radar systems are based on a time diluted measurement that splits up as a vector of energy in several time bins it is important to know the bin separation. This is the delay resolution of the system and in A111 radar sensor the target is ~3 ps on average, which corresponds to a distance resolution of ~0.5 mm between distance samples.
+
+
+Half-power beamwidth
+~~~~~~~~~~~~~~~~~~~~
+
+The radiation pattern determines the angle between the half-power (-3 dB) points of the main lobe of the radiation pattern. The radiation pattern of the sensor depends on both the antenna-in-package design and the hardware integration of the sensor, such as surrounding components, ground plane size, and added di-electric lenses for directivity optimizations, valid for both vertical and horizontal plane.
+
+
+Distance jitter
+~~~~~~~~~~~~~~~
+
+The distance jitter determines the timing accuracy and stability of the radar system between sweep updates. The jitter is estimated by calculating the standard deviation of the phase, for the same distance bin, over many IQ sweeps.
+
+
+Distance linearity
+~~~~~~~~~~~~~~~~~~
+
+The distance linearity deterministic the deterministic error from the ideal delay transfer function. Linearity of the service data is estimated by measuring the phase change of the IQ data vs distance.
+
+
+Update rate accuracy
+~~~~~~~~~~~~~~~~~~~~
+
+The update rate accuracy determines the accuracy of the time between sweep updates or similarly the accuracy of the update rate, typically important when the radar data is used for estimating velocity of an object.
+
+
+Close-in range
+~~~~~~~~~~~~~~
+
+The close-in range determines the radar system limits on how close to the radar sensor objects can be measured.
+
+
+Power consumption
+~~~~~~~~~~~~~~~~~
+
+The power consumption determines the radar sensor power usage for different configurations as service depends, the power mode, the update rate, downsampling, sweep length, etc.
 
 
 .. _Configuring the Acconeer sensor:
@@ -412,24 +510,36 @@ The range can be further increased based on the configuration of the sensor, as 
 Configuring the Acconeer sensor
 -------------------------------
 
-The Acconeer sensor is highly configurable and can operate in many different modes where parameters are tuned to optimize the sensor performance for specific use cases. The first step is to select between the two basic configuration profiles provided to optimize on either depth resolution or SNR, or in terms of use cases, optimized for multiple objects/close range or for weak reflections/long range, respectively. Depth resolution (:math:`d_{res}`) is the ability to resolve reflections which are closely spaced, and hence depends on tpulse according to
+The Acconeer sensor is highly configurable and can operate in many different modes where parameters are tuned to optimize the sensor performance for specific use cases.
+
+
+Profiles
+^^^^^^^^
+
+The first step is to select pulse length profile to optimize on either depth resolution or radar loop gain, or in terms of use cases, optimized for multiple objects/close range or for weak reflections/long range, respectively.
+
+Depth resolution, :math:`d_{res}`, is the ability to resolve reflections which are closely spaced, and hence depends on :math:`t_{pulse}` according to
 
 .. _Equation 5:
 
     .. math::
         :label: Equation 5
 
-        d_{res}=\frac{t_{pulse}v}{2}
+        d_{res} \approx \frac{t_{pulse}v}{2}
 
 
-:numref:`fig_distance_resolution` illustrates how the ability to resolve closely spaced reflections can be improved by decreasing tpulse. On the other hand, decreasing tpulse means that the total energy in the pulse is decreased and hence the SNR in the receiver, this is the trade-off that is made by selecting between the two profiles.
+:numref:`fig_distance_resolution` illustrates how the ability to resolve closely spaced reflections can be improved by decreasing :math:`t_{pulse}`. On the other hand, decreasing :math:`t_{pulse}` means that the total energy in the pulse is decreased and hence decrease the SNR in the receiver, this is the trade-off that is made by selecting between the five profiles. Each service can be configured with five different pulse length profiles (see `Table 6`_), where
+
+* shorter pulses provides higher distance resolution at the cost of a reduced SNR
+
+* longer pulses provides higher SNR at a cost of reduced depth resolution
 
 .. _fig_distance_resolution:
 .. figure:: /_static/introduction/fig_distance_resolution.png
     :scale: 60
     :align: center
 
-    Illustration of received signal containing 2 echoes. A longer pulsewavelet increases the transmitted energy, but also limits the depth resolution. The displayed data corresponds to the two setups in :numref:`fig_scenario`.
+    Illustration of received signal containing 2 echoes. A longer pulse increases the radar loop gain, but also limits the depth resolution. The displayed data corresponds to the two setups in :numref:`fig_scenario`.
 
 
 .. _fig_scenario:
@@ -437,13 +547,11 @@ The Acconeer sensor is highly configurable and can operate in many different mod
     :scale: 60
     :align: center
 
-    Illustration of scenarios that can produce the data in :numref:`fig_distance_resolution`. A strong reflector, such as a flat metallic surface, can give a moderate radar signal if the angle to the radar is high. R1 is identical in the two illustrations as well as R2.
+    Illustration of scenarios that can produce the data in :numref:`fig_distance_resolution`. A strong reflector, such as a flat metallic surface, can give a moderate radar signal if the angle to the radar is high. :math:`R_1` is identical in the two illustrations as well as :math:`R_2`.
 
+Optimizing on depth resolution also means that close-in range performance is improved. The A111 sensor has both the Tx and Rx antenna integrated and since they are so closely spaced, there will be leakage between the two antennas. This means that any object close to the sensor will have to be filtered from this static leakage. The ability to do this is improved if a short :math:`t_{pulse}` is used, as illustrated in :numref:`fig_close_in_distance`.
 
-If angular information is needed one possibility is to mechanically move the sensor to scan an area and produce a synthetic aperture radar (SAR). One such case is for autonomous robots using sensor input for navigation. Another option is to use multiple A111 sensors and merge data from them to calculate the position of the object by trilateration. This can be achieved by running the sensors sequentially and merge the data in the application. We also have the possibility to create a multi-static radar by synchronizing multiple sensors to allow for 1 sensor to transmit and multiple to receive at the same time, this mode is currently not available in our software.
-
-Optimizing on depth resolution also means that close in range performance is improved. The A111 sensor has both the Tx and Rx antenna integrated and as they are so closely spaced there will be leakage between the two antennas. This means that any objects close to the sensor will have to be filtered from this static leakage. The ability to do this is improved if a short tpulse is used, as illustrated in :numref:`fig_close_in_distance`.
-
+If angular information is needed one possibility is to mechanically move the sensor to scan an area and produce a synthetic aperture radar (SAR). One such case is for autonomous robots using sensor input for navigation. Another option is to use multiple A111 sensors and merge data from them to calculate the position of the object by trilateration. This can be achieved by running the sensors sequentially and merge the data in the application.
 
 .. _fig_close_in_distance:
 .. figure:: /_static/introduction/fig_close_in_distance.png
@@ -452,48 +560,114 @@ Optimizing on depth resolution also means that close in range performance is imp
 
     Illustration of how the leakage between the Tx and Rx antenna will appear in the Envelope Service data for a short and a long pulse.
 
-`Table 4`_  shows a list of important parameters that are available through our API and that can be used to optimize the performance for a specific use case, refer to product documentation and user guides for a complete list of all parameters and how to use them.
-
-
 .. _Table 4:
+
+    .. table:: Pulse profiles
+        :align: center
+        :widths: auto
+
+        ================ ======================== ====================== ========
+        Profile          Relative SNR improvement Depth resolution       Comments
+        ================ ======================== ====================== ========
+        Profile 1        TBD                      TBD                    TBD
+        Profile 2        TBD                      TBD                    TBD
+        Profile 3        TBD                      TBD                    TBD
+        Profile 4        TBD                      TBD                    TBD
+        Profile 5        TBD                      TBD                    TBD
+        ================ ======================== ====================== ========
+
+
+Signal Averaging and Gain
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In addition to the Profile configuration parameter, two main configuration parameters are available in all Services to optimize the signal quality:
+
+* Hardware Accelerated Average Samples (HWAAS) is related to the number of pulses averaged in the radar to produce one data point. A high number will increase the radar loop gain but each sweep will take longer to acquire and therefore limit the maximum update rate.
+
+* The gain of the amplifiers in the sensor. Adjusting this parameter so the ADC isn't saturated and at the same time the signal is above the quantization noise is necessary. A gain figure of 0.5 is often a good start.
+
+
+Sweep and update rate
+^^^^^^^^^^^^^^^^^^^^^
+
+A sweep is defined as a distance measurement range, starting at the distance *start range* and continues for *sweep length*. Hence, every sweep consists of one or several distance sampling points.
+
+A number of sweeps :math:`N_s` are sampled after each other and the time between each sweep is :math:`\Delta t_s`, which is configurable. We usually refer to this as the *update rate* :math:`f_s=1/\Delta t_s`.
+
+In addition, the sparse service introduces a concept of frames defined `here <https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html>`_.
+
+
+Repetition modes
+^^^^^^^^^^^^^^^^
+
+RSS supports two different *repetition modes*. They determine how and when data acquisition occurs. They are:
+
+* **On demand**: The sensor produces data when requested by the application. Hence, the application is responsible for timing the data acquisition. This is the default mode, and may be used with lower power modes.
+
+* **Streaming**: The sensor produces data at a fixed rate, given by a configurable accurate hardware timer. This mode is recommended if exact timing between updates is required.
+
+Note, Exploration Tool is capable of setting the update rate also in *on demand* mode. Thus, the difference between the modes becomes subtle. This is why *on demand* and *streaming* are called *host driven* and *sensor driven* respectively in Exploration Tool.
+
+
+Signal Averaging and Gain
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In addition to the Profile configuration parameter, two main configuration parameters are available in all Services to optimize the signal quality:
+
+* Hardware Accelerated Average Samples (HWAAS) is related to the number of pulses averaged in the radar to produce one data point. A high number will increase the radar loop gain but each sweep will take longer to acquire and therefore limit the maximum update rate.
+
+* The gain of the amplifiers in the sensor. Adjusting this parameter so the ADC isn't saturated and at the same time the signal is above the quantization noise is necessary. A gain figure of 0.5 is often a good start.
+
+
+Power modes
+^^^^^^^^^^^
+
+The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are four power modes see `Table 6`_.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
+
+Another important aspect of the power save mode is when using the service in repetition mode Streaming. In streaming mode the service is also configured with an update rate at which the sensor produce new data. The update rate is maintained by the sensor itself using either internally generated clock or using the externally applied clock on XIN/XOUT pins. Besides the fact that power save mode *Active* gives the highest possible update rate, it also gives the best update rate accuracy. Likewise, the power save mode *Sleep* gives a lower possible update rate than *Active* and also a lower update rate accuracy. Bare in mind that also in streaming mode the maximum update rate is not only determined by the power save mode but also profile, length, and hardware accelerated average samples. The power save mode *Off* is not supported in streaming mode since the sensor is turned off completely between its measurements and thus cannot keep an update rate.
+
+`Table 5`_ concludes the power save mode configurations,
+
+.. _Table 5:
+
+    .. table:: Power save modes
+        :align: center
+        :widths: auto
+
+        ================== ==================== ============== =========================
+        Power save mode    Current dissipation  Response time  Update rate accuracy
+        ================== ==================== ============== =========================
+        Off                Lowest               Longest        Not applicable
+        Sleep              ...                  ...            Worst
+        Ready              ...                  ...            ...
+        Active             Highest              Shortest       Best
+        ================== ==================== ============== =========================
+
+ As part of the deactivation process of the service the sensor is disabled, which is the same state as power save mode *Off*.
+
+Configuration summary
+^^^^^^^^^^^^^^^^^^^^^
+
+`Table 6`_ shows a list of important parameters that are available through our API and that can be used to optimize the performance for a specific use case, refer to product documentation and user guides for a complete list of all parameters and how to use them.
+
+
+.. _Table 6:
 
     .. table:: List of sensor parameters
         :align: center
         :widths: auto
 
-        ================== ===========================================================================
+        ================== ==============================================================================================
         Parameter          Comment
-        ================== ===========================================================================
-        Profile            Select between Maximize SNR or Maximize Depth Resolution
+        ================== ==============================================================================================
+        Profile            Selects between the pulse length profiles. Trade off between SNR and depth resolution.
+        Start              Start of sweep [m]
+        Length             Length of sweep, independently of Start range  [m]
+        HWAAS              Amount of radar pulse averaging in the sensor
         Receiver gain      Adjust to accommodate received signal level
-        Start range        Start of sweep
-        Sweep length       Length of sweep, set independently of Start range
-        Running average    Filtering to average over sweeps to stabilize the amplitude [#]_
-        Frequency          Desired rate at which sweeps are generated
-        Power save mode    Tradeoff between power consumption and rate at which sweeps are generated
-        ================== ===========================================================================
-
-
-.. [#] The filtered signal :math:`\hat{y}(r,s)` at distance :math:`r` and for sweep :math:`s` is :math:`\hat{y}(r,s)=(1-k)y(r,s)+k\hat{y}(r,s-1)`, where :math:`y(r,s)` is the unfiltered signal and :math:`k` is the running average factor.
-
-Different power modes will limit the maximum obtainable sweep frequency, as will start and end range and the speed of the SPI data transfer. `Table 5`_ shows a reference measurement indicating the point at which the sensor reaches the maximum limit on sweep frequency for the 4 different power modes for the specific integration of ‘XM112’ and for a sweep configuration identical to that used in the data sheet.
-
-
-.. _Table 5:
-
-    .. table:: Maximum sweep frequency @ SPI data transfer rate of 30 MHz
-        :align: center
-        :widths: auto
-
-        ================== ===========================================================================
-        Power mode         Maximum sweep frequency of sensor for SPI data transfer rate of 30 MHz
-        ================== ===========================================================================
-        A                  TBD
-        B                  TBD
-        C                  TBD
-        D                  TBD
-        ================== ===========================================================================
-
+        Update rate        Desired rate at which sweeps are generated [Hz] (in repetition mode streaming)
+        Power save mode    Tradeoff between power consumption and rate and accuracy at which sweeps are generated
+        ================== ==============================================================================================
 
 .. _Physical integration aspects:
 
