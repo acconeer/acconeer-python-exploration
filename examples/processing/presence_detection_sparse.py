@@ -399,9 +399,9 @@ class PGUpdater:
         self.depths = get_range_depths(sensor_config, session_info)
 
         max_num_of_sectors = max(6, self.depths.size // 3)
-        self.sector_size = max(1, int(np.ceil(self.depths.size / max_num_of_sectors)))
-        self.num_sectors = self.depths.size // self.sector_size
-        self.sector_offset = (self.depths.size - self.num_sectors * self.sector_size) // 2
+        self.sector_size = max(1, -(-self.depths.size // max_num_of_sectors))
+        self.num_sectors = -(-self.depths.size // self.sector_size)
+        self.sector_offset = (self.num_sectors * self.sector_size - self.depths.size) // 2
 
         self.setup_is_done = False
 
