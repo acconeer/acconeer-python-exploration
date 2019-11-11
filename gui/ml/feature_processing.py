@@ -438,8 +438,12 @@ class FeatureProcessing:
                 if motion_score < self.motion_score:
                     self.motion_score = motion_score
                 self.motion_score_normalized = motion_score / self.motion_score
+
                 if self.motion_score_normalized > self.auto_threshold:
                     detected = True
+                else:
+                    # Try to remove small scale variations
+                    self.motion_score = 0.9 * self.motion_score + 0.1 * motion_score
                     return detected
         return detected
 
