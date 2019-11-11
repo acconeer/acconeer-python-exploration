@@ -7,7 +7,7 @@ import signal
 import traceback
 import platform
 
-from acconeer_utils.clients.base import BaseClient, ClientError
+from acconeer_utils.clients.base import BaseClient, ClientError, decode_version_str
 from acconeer_utils.clients.reg import protocol, utils
 from acconeer_utils.clients import links
 from acconeer_utils import libft4222
@@ -91,7 +91,7 @@ class RegClient(BaseClient):
             log.warning("server version might not be fully supported")
 
         version_buffer = self._read_buf_raw()
-        version_info = utils.decode_version_buffer(version_buffer)
+        version_info = decode_version_buffer(version_buffer)
 
         info = {}
         info.update(version_info)
@@ -174,7 +174,7 @@ class RegClient(BaseClient):
                 val = protocol.decode_reg_val(reg, enc_val)
             except protocol.ProtocolError:
                 log.info("got unknown reg val in result info")
-                log.info("addr: {}, value: {}".format(addr, utils.fmt_enc_val(enc_val)))
+                log.info("addr: {}, value: {}".format(addr, fmt_enc_val(enc_val)))
             else:
                 info[reg.name] = val
 
@@ -235,7 +235,7 @@ class RegClient(BaseClient):
 
         enc_val = res.reg_val.val
 
-        log.debug("recv reg r res: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
+        log.debug("recv reg r res: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
 
         return enc_val
 
@@ -250,7 +250,7 @@ class RegClient(BaseClient):
         req = protocol.UnpackedRegWriteRequest(rrv)
         self._send_packet(req)
 
-        log.debug("sent reg w req: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
+        log.debug("sent reg w req: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
 
         if expect_response:
             res = self._recv_packet()
@@ -381,7 +381,7 @@ class RegSPIClient(BaseClient):
             log.warning("server version might not be fully supported")
 
         version_buffer = self._read_main_buffer()
-        version_info = utils.decode_version_buffer(version_buffer)
+        version_info = decode_version_buffer(version_buffer)
 
         info = {}
         info.update(version_info)
@@ -671,7 +671,7 @@ class SPICommProcess(mp.Process):
         self.dev.spi_master_single_write(b)
         enc_val = self.dev.spi_master_single_read(4)
         if do_log:
-            log.debug("reg r res: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
+            log.debug("reg r res: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
         return enc_val
 
     def write_reg(self, reg, val, do_log=True):
@@ -684,10 +684,26 @@ class SPICommProcess(mp.Process):
         b = bytearray([protocol.REG_WRITE_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
         if do_log:
-            log.debug("reg w req: addr: {:3} val: {}".format(addr, utils.fmt_enc_val(enc_val)))
+            log.debug("reg w req: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
         self.dev.spi_master_single_write(enc_val)
 
     def read_buf_raw(self, addr, size):
         b = bytearray([protocol.BUF_READ_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
         return self.dev.spi_master_single_read(size)
+
+
+def fmt_enc_val(enc_val):
+    return " ".join(["{:02x}".format(x) for x in enc_val])
+
+
+def decode_version_buffer(version: bytearray):
+    try:
+        version_str = version.decode("ascii").strip()
+        assert len(version_str) > 1
+        assert version_str.startswith("v")
+        version_str = version_str[1:]
+    except (UnicodeDecodeError, AssertionError):
+        return {}
+
+    return decode_version_str(version_str)
