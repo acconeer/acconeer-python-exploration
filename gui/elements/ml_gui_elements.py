@@ -1435,7 +1435,12 @@ class FeatureInspectFrame(QFrame):
                 f_current[key] = f_histdata[frame_nr][key]
             label = f_current["label"]
             self.current_frame_data = f_current
-            self.graph.update(fdata)
+
+            try:
+                self.graph.update(fdata)
+            except Exception as e:
+                print("Error processing frame:\n", e)
+
             self.current_sweep = f_current["frame_marker"] + 1
             self.current_frame_nr = frame_nr
             self.textboxes["label"].setText(label)
