@@ -1571,7 +1571,7 @@ class LabelingGraph(QFrame):
 
         featproc = feature_proc
         canvas = pg.GraphicsLayoutWidget()
-        self.label_graph_widget = featproc.PGUpdater()
+        self.label_graph_widget = featproc.PGUpdater(info_text=False)
         self.label_graph_widget.setup(canvas)
 
         self.gui_handle = gui_handle

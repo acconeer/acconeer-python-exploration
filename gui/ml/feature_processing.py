@@ -303,7 +303,7 @@ class FeatureProcessing:
                 },
             "feature_list": self.feature_list,
             "frame_list": self.frame_list,
-            "motion_score": self.motion_score_normalized,
+            "motion_score": np.max(self.motion_score_normalized),
             "model_dimension": model_dims
         }
 
@@ -431,20 +431,24 @@ class FeatureProcessing:
                         )
                     return detected
         else:
+            if self.motion_score is None:
+                self.motion_score_normalized = np.zeros(num_sensors)
+                self.motion_score = np.full(num_sensors, np.inf)
+
             for i in range(num_sensors):
                 motion_score = np.max(np.abs(data["env_ampl"][i, :]))
-                if self.motion_score is None:
-                    self.motion_score = motion_score
-                if motion_score < self.motion_score:
-                    self.motion_score = motion_score
-                self.motion_score_normalized = motion_score / self.motion_score
 
-                if self.motion_score_normalized > self.auto_threshold:
+                if motion_score < self.motion_score[i]:
+                    self.motion_score[i] = motion_score
+
+                self.motion_score_normalized[i] = motion_score / self.motion_score[i]
+
+                if self.motion_score_normalized[i] > self.auto_threshold:
                     detected = True
+                    return detected
                 else:
                     # Try to remove small scale variations
-                    self.motion_score = 0.9 * self.motion_score + 0.1 * motion_score
-                    return detected
+                    self.motion_score[i] = 0.9 * self.motion_score[i] + 0.1 * motion_score
         return detected
 
     def get_sensor_map(self, sensor_config):
@@ -581,7 +585,8 @@ class DataProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config=None, processing_config=None, predictions=False):
+    def __init__(self, sensor_config=None, processing_config=None, predictions=False,
+                 info_text=True):
 
         if not PYQT_PLOTTING_AVAILABLE:
             print("Warning: Plotting functionality not available.")
@@ -592,6 +597,7 @@ class PGUpdater:
         self.processing_config = processing_config
         self.first = True
         self.show_predictions = predictions
+        self.print_info_text = info_text
 
     def setup(self, win):
         win.setWindowTitle("Feature plotting")
@@ -777,15 +783,18 @@ class PGUpdater:
         if detected and not len(feat_map):
             detected = False
 
-        if not detected:
-            motion_score = frame_data.pop("motion_score", None)
-            text = "Waiting..."
-            if motion_score is not None:
-                text = "Waiting.. (Motion score: {:.1f})".format(motion_score)
-            self.detected_text.setText(text)
-            return
-        else:
-            self.detected_text.setText("Collecting..")
+        if self.print_info_text:
+            feature_nr = frame_data["current_frame"]["frame_nr"]
+            self.feature_nr_text.setText("Feature: {}".format(feature_nr))
+            if not detected:
+                motion_score = frame_data.pop("motion_score", None)
+                text = "Waiting..."
+                if motion_score is not None:
+                    text = "Waiting.. (Motion score: {:.1f})".format(motion_score)
+                self.detected_text.setText(text)
+                return
+            else:
+                self.detected_text.setText("Collecting..")
 
         if not frame_complete:
             self.border_rolling.show()
@@ -794,9 +803,6 @@ class PGUpdater:
                 )
         else:
             self.border_rolling.hide()
-
-        feauture_nr = frame_data["current_frame"]["frame_nr"]
-        self.feature_nr_text.setText("Feature: {}".format(feauture_nr))
 
         self.feat_plot_image.setYRange(0, feat_map.shape[0])
 
