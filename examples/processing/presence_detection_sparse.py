@@ -292,7 +292,7 @@ class PresenceDetectionSparseProcessor:
             return np.correlate(a, b, mode="same")
         else:
             pad_width = int(np.ceil((b.size - a.size) / 2))
-            a = np.pad(a, pad_width)
+            a = np.pad(a, pad_width, "constant")
             return np.correlate(a, b, mode="same")[pad_width: -pad_width]
 
     def process(self, sweep):
