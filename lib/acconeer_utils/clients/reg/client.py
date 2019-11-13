@@ -164,7 +164,7 @@ class RegClient(BaseClient):
     def _get_next(self):
         packet = self._recv_packet(allow_recovery_skip=True)
 
-        if not isinstance(packet, protocol.UnpackedStreamData):
+        if not isinstance(packet, protocol.StreamData):
             raise ClientError("got unexpected type of frame")
 
         info = {}
@@ -192,9 +192,9 @@ class RegClient(BaseClient):
         while time() - t0 < self._link._timeout:
             res = self._recv_packet()
 
-            if isinstance(res, protocol.UnpackedRegWriteResponse):
+            if isinstance(res, protocol.RegWriteResponse):
                 break
-            if not isinstance(res, protocol.UnpackedStreamData):
+            if not isinstance(res, protocol.StreamData):
                 raise ClientError("got unexpected packet while stopping session")
         else:
             raise ClientError("timeout while stopping session")
@@ -203,13 +203,13 @@ class RegClient(BaseClient):
         self._link.disconnect()
 
     def _read_buf_raw(self, addr=protocol.MAIN_BUFFER_ADDR):
-        req = protocol.UnpackedBufferReadRequest(addr)
+        req = protocol.BufferReadRequest(addr)
         self._send_packet(req)
 
         log.debug("sent buf r req: addr: {:3}".format(addr))
 
         res = self._recv_packet()
-        if not isinstance(res, protocol.UnpackedBufferReadResponse):
+        if not isinstance(res, protocol.BufferReadResponse):
             raise ClientError("got unexpected type of frame")
 
         log.debug("recv buf r res: addr: {:3} len: {}".format(addr, len(res.buffer)))
@@ -224,13 +224,13 @@ class RegClient(BaseClient):
 
     def _read_reg_raw(self, addr):
         addr = protocol.get_addr_for_reg(addr)
-        req = protocol.UnpackedRegReadRequest(addr)
+        req = protocol.RegReadRequest(addr)
         self._send_packet(req)
 
         log.debug("sent reg r req: addr: {:3}".format(addr))
 
         res = self._recv_packet()
-        if not isinstance(res, protocol.UnpackedRegReadResponse):
+        if not isinstance(res, protocol.RegReadResponse):
             raise ClientError("got unexpected type of frame")
 
         enc_val = res.reg_val.val
@@ -246,15 +246,15 @@ class RegClient(BaseClient):
 
     def _write_reg_raw(self, addr, enc_val, expect_response=True):
         addr = protocol.get_addr_for_reg(addr)
-        rrv = protocol.UnpackedRegVal(addr, enc_val)
-        req = protocol.UnpackedRegWriteRequest(rrv)
+        rrv = protocol.RegVal(addr, enc_val)
+        req = protocol.RegWriteRequest(rrv)
         self._send_packet(req)
 
         log.debug("sent reg w req: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
 
         if expect_response:
             res = self._recv_packet()
-            if not isinstance(res, protocol.UnpackedRegWriteResponse):
+            if not isinstance(res, protocol.RegWriteResponse):
                 raise ClientError("got unexpected packet (expected reg write response)")
             if res.reg_val != rrv:
                 raise ClientError("reg write failed")
@@ -262,22 +262,22 @@ class RegClient(BaseClient):
             log.debug("recv reg w res: ok")
 
     def _read_gpio(self, pin):
-        req = protocol.UnpackedGPIOPin(pin)
+        req = protocol.GPIOPin(pin)
         self._send_packet(req)
 
         res = self._recv_packet()
 
-        if not isinstance(res, protocol.UnpackedGPIOPinAndVal):
+        if not isinstance(res, protocol.GPIOPinAndVal):
             raise ClientError("got unexpected packet (expected gpio pin and value)")
 
         return res.val
 
     def _write_gpio(self, pin, val):
-        req = protocol.UnpackedGPIOPinAndVal(pin, val)
+        req = protocol.GPIOPinAndVal(pin, val)
         self._send_packet(req)
 
         res = self._recv_packet()
-        if not isinstance(res, protocol.UnpackedGPIOPinAndVal):
+        if not isinstance(res, protocol.GPIOPinAndVal):
             raise ClientError("got unexpected packet (expected gpio pin and value)")
         if res.val != val:
             raise ClientError("gpio write failed")
@@ -336,8 +336,8 @@ class RegClient(BaseClient):
 
         exp_addr = protocol.get_addr_for_reg("main_control")
         exp_enc_val = protocol.encode_reg_val("main_control", "stop")
-        exp_reg_val = protocol.UnpackedRegVal(exp_addr, exp_enc_val)
-        exp_packet = protocol.UnpackedRegWriteResponse(exp_reg_val)
+        exp_reg_val = protocol.RegVal(exp_addr, exp_enc_val)
+        exp_packet = protocol.RegWriteResponse(exp_reg_val)
         exp_frame = protocol.insert_packet_into_frame(exp_packet)
         self._link.recv_until(exp_frame)
 

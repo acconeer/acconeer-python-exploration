@@ -8,8 +8,8 @@ test_mode_val = 2
 test_reg = ptcl.REG_LOOKUP[ptcl.NO_MODE]["main_control"]
 test_mode_reg = ptcl.REG_LOOKUP["envelope"]["running_average_factor"]
 
-unp_reg_val = ptcl.UnpackedRegVal(2, b"\x03\x00\x00\x00")
-unp_reg_read_res = ptcl.UnpackedRegReadResponse(unp_reg_val)
+unp_reg_val = ptcl.RegVal(2, b"\x03\x00\x00\x00")
+unp_reg_read_res = ptcl.RegReadResponse(unp_reg_val)
 pkd_reg_read_res_segment = b"\x02\x03\x00\x00\x00"
 pkd_reg_read_res_packet = bytearray([ptcl.REG_READ_RESPONSE]) + pkd_reg_read_res_segment
 pkd_reg_read_res_frame = (bytearray([ptcl.START_MARKER])
@@ -17,7 +17,7 @@ pkd_reg_read_res_frame = (bytearray([ptcl.START_MARKER])
                           + pkd_reg_read_res_packet
                           + bytearray([ptcl.END_MARKER]))
 
-unp_reg_write_req = ptcl.UnpackedRegWriteRequest(unp_reg_val)
+unp_reg_write_req = ptcl.RegWriteRequest(unp_reg_val)
 pkd_reg_write_req_packet = bytearray()
 pkd_reg_write_req_packet.append(ptcl.REG_WRITE_REQUEST)
 pkd_reg_write_req_packet.append(unp_reg_write_req.reg_val.addr)
@@ -79,9 +79,9 @@ def test_unpack_reg_read_res_segment():
 def test_unpack_stream_data_segment():
     rv_addr = ptcl.get_addr_for_reg(test_mode_reg)
     rv_enc_val = ptcl.encode_reg_val(test_mode_reg, 123)
-    rvs = [ptcl.UnpackedRegVal(rv_addr, rv_enc_val)]
+    rvs = [ptcl.RegVal(rv_addr, rv_enc_val)]
     buffer = bytearray(b'\x12\x34\x56')
-    unp_stream_data = ptcl.UnpackedStreamData(rvs, buffer)
+    unp_stream_data = ptcl.StreamData(rvs, buffer)
 
     pkd_stream_data_segment = bytearray()
     pkd_stream_data_segment.append(ptcl.STREAM_BUFFER)

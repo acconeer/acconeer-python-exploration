@@ -29,6 +29,6 @@ def get_reg_vals_for_config(config):
 
         if config_val is not None:
             enc_val = protocol.encode_reg_val(reg, config_val)
-            rv = protocol.UnpackedRegVal(reg.addr, enc_val)
+            rv = protocol.RegVal(reg.addr, enc_val)
             reg_vals.append(rv)
     return reg_vals

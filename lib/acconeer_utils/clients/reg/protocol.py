@@ -18,16 +18,16 @@ Reg = namedtuple(
 EncFuns = namedtuple("EncFuns", ["encode_fun", "decode_fun"])
 Product = namedtuple("Product", ["name", "id", "baudrate"])
 
-UnpackedRegVal = namedtuple("UnpackedRegVal", ["addr", "val"])
-UnpackedRegReadRequest = namedtuple("UnpackedRegReadRequest", ["addr"])
-UnpackedRegWriteRequest = namedtuple("UnpackedRegWriteRequest", ["reg_val"])
-UnpackedRegReadResponse = namedtuple("UnpackedRegReadResponse", ["reg_val"])
-UnpackedRegWriteResponse = namedtuple("UnpackedRegWriteResponse", ["reg_val"])
-UnpackedBufferReadRequest = namedtuple("UnpackedBufferReadRequest", ["addr"])
-UnpackedBufferReadResponse = namedtuple("UnpackedBufferReadResponse", ["addr", "buffer"])
-UnpackedStreamData = namedtuple("UnpackedStreamData", ["result_info", "buffer"])
-UnpackedGPIOPin = namedtuple("UnpackedGPIOPin", ["pin"])
-UnpackedGPIOPinAndVal = namedtuple("UnpackedGPIOPinAndVal", ["pin", "val"])
+RegVal = namedtuple("RegVal", ["addr", "val"])
+RegReadRequest = namedtuple("RegReadRequest", ["addr"])
+RegWriteRequest = namedtuple("RegWriteRequest", ["reg_val"])
+RegReadResponse = namedtuple("RegReadResponse", ["reg_val"])
+RegWriteResponse = namedtuple("RegWriteResponse", ["reg_val"])
+BufferReadRequest = namedtuple("BufferReadRequest", ["addr"])
+BufferReadResponse = namedtuple("BufferReadResponse", ["addr", "buffer"])
+StreamData = namedtuple("StreamData", ["result_info", "buffer"])
+GPIOPin = namedtuple("GPIOPin", ["pin"])
+GPIOPinAndVal = namedtuple("GPIOPinAndVal", ["pin", "val"])
 
 
 class ProtocolError(Exception):
@@ -615,23 +615,23 @@ def unpack_reg_val(packed):
     reg_addr = packed[0]
     enc_val = packed[1:]
 
-    return UnpackedRegVal(reg_addr, enc_val)
+    return RegVal(reg_addr, enc_val)
 
 
 def unpack_reg_read_res_segment(segment):
     rv = unpack_reg_val(segment)
-    return UnpackedRegReadResponse(rv)
+    return RegReadResponse(rv)
 
 
 def unpack_reg_write_res_segment(segment):
     rv = unpack_reg_val(segment)
-    return UnpackedRegWriteResponse(rv)
+    return RegWriteResponse(rv)
 
 
 def unpack_buf_read_res_segment(segment):
     buf_addr = segment[0]
     buffer = segment[1:]
-    return UnpackedBufferReadResponse(buf_addr, buffer)
+    return BufferReadResponse(buf_addr, buffer)
 
 
 def unpack_stream_data_segment(segment):
@@ -659,14 +659,14 @@ def unpack_stream_data_segment(segment):
             for i in range(num_regs):
                 addr = part_data[s*i]
                 enc_val = part_data[s*i+1:s*(i+1)]
-                rrv = UnpackedRegVal(addr, enc_val)
+                rrv = RegVal(addr, enc_val)
                 result_info.append(rrv)
         elif part_type == STREAM_BUFFER:
             buffer = part_data
         else:
             raise ProtocolError("unknown stream part type")
 
-    return UnpackedStreamData(result_info, buffer)
+    return StreamData(result_info, buffer)
 
 
 def unpack_gpio_pin_and_val(segment):
@@ -674,7 +674,7 @@ def unpack_gpio_pin_and_val(segment):
         raise ProtocolError("unexpected package length")
 
     pin, _, val = segment
-    return UnpackedGPIOPinAndVal(pin, val)
+    return GPIOPinAndVal(pin, val)
 
 
 def pack_reg_val(reg_val):
@@ -687,26 +687,26 @@ def pack_reg_val(reg_val):
 
 
 def pack_packet(packet):
-    if isinstance(packet, UnpackedRegReadRequest):
+    if isinstance(packet, RegReadRequest):
         packet_type = REG_READ_REQUEST
         packet_data = bytearray()
         packet_data.extend(packet.addr.to_bytes(ADDR_SIZE, BO))
-    elif isinstance(packet, UnpackedRegWriteRequest):
+    elif isinstance(packet, RegWriteRequest):
         packet_type = REG_WRITE_REQUEST
         packet_data = pack_reg_val(packet.reg_val)
-    elif isinstance(packet, UnpackedRegReadResponse):
+    elif isinstance(packet, RegReadResponse):
         packet_type = REG_READ_RESPONSE
         packet_data = pack_reg_val(packet.reg_val)
-    elif isinstance(packet, UnpackedRegWriteResponse):
+    elif isinstance(packet, RegWriteResponse):
         packet_type = REG_WRITE_RESPONSE
         packet_data = pack_reg_val(packet.reg_val)
-    elif isinstance(packet, UnpackedGPIOPin):
+    elif isinstance(packet, GPIOPin):
         packet_type = GPIO_READ
         packet_data = bytearray([packet.pin])
-    elif isinstance(packet, UnpackedGPIOPinAndVal):
+    elif isinstance(packet, GPIOPinAndVal):
         packet_type = GPIO_WRITE
         packet_data = bytearray([packet.pin, packet.val])
-    elif isinstance(packet, UnpackedBufferReadRequest):
+    elif isinstance(packet, BufferReadRequest):
         packet_type = BUF_READ_REQUEST
         packet_data = bytearray()
         packet_data.extend(packet.addr.to_bytes(ADDR_SIZE, BO))
