@@ -34,14 +34,6 @@ class ProtocolError(Exception):
     pass
 
 
-class PackError(ProtocolError):
-    pass
-
-
-class UnpackError(ProtocolError):
-    pass
-
-
 ADDR_SIZE = 1
 REG_SIZE = 4
 LEN_FIELD_SIZE = 2
@@ -597,7 +589,7 @@ def decode_reg_val(reg, enc_val, mode=None):
 
 def unpack_packet(packet):
     if len(packet) < 1:
-        raise UnpackError("package is too short")
+        raise ProtocolError("package is too short")
 
     packet_type = packet[0]
     segment = packet[1:]
@@ -613,12 +605,12 @@ def unpack_packet(packet):
     elif packet_type in [GPIO_READ, GPIO_WRITE]:
         return unpack_gpio_pin_and_val(segment)
     else:
-        raise UnpackError("unknown packet type")
+        raise ProtocolError("unknown packet type")
 
 
 def unpack_reg_val(packed):
     if len(packed) != ADDR_SIZE + REG_SIZE:
-        raise UnpackError("unexpected package length")
+        raise ProtocolError("unexpected package length")
 
     reg_addr = packed[0]
     enc_val = packed[1:]
@@ -648,7 +640,7 @@ def unpack_stream_data_segment(segment):
     rest = segment
     while len(rest) > 0:
         if len(rest) < 1 + LEN_FIELD_SIZE:
-            raise UnpackError("invalid package length")
+            raise ProtocolError("invalid package length")
 
         part_type = rest[0]
         data_start_index = 1+LEN_FIELD_SIZE
@@ -660,7 +652,7 @@ def unpack_stream_data_segment(segment):
         if part_type == STREAM_RESULT_INFO:
             s = ADDR_SIZE + REG_SIZE
             if part_len % s != 0:
-                raise UnpackError("invalid package length")
+                raise ProtocolError("invalid package length")
 
             result_info = []
             num_regs = part_len // s
@@ -672,14 +664,14 @@ def unpack_stream_data_segment(segment):
         elif part_type == STREAM_BUFFER:
             buffer = part_data
         else:
-            raise UnpackError("unknown stream part type")
+            raise ProtocolError("unknown stream part type")
 
     return UnpackedStreamData(result_info, buffer)
 
 
 def unpack_gpio_pin_and_val(segment):
     if len(segment) != 3:
-        raise UnpackError("unexpected package length")
+        raise ProtocolError("unexpected package length")
 
     pin, _, val = segment
     return UnpackedGPIOPinAndVal(pin, val)
@@ -687,7 +679,7 @@ def unpack_gpio_pin_and_val(segment):
 
 def pack_reg_val(reg_val):
     if len(reg_val.val) != REG_SIZE:
-        raise PackError("register value must be {} bytes".format(REG_SIZE))
+        raise ProtocolError("register value must be {} bytes".format(REG_SIZE))
     packed = bytearray()
     packed.extend(reg_val.addr.to_bytes(ADDR_SIZE, BO))
     packed.extend(reg_val.val)
