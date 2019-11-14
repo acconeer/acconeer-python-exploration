@@ -13,6 +13,7 @@ import os
 
 try:
     import pyqtgraph as pg
+    from PyQt5 import QtCore
     PYQT_PLOTTING_AVAILABLE = True
 except ImportError:
     PYQT_PLOTTING_AVAILABLE = False
@@ -554,16 +555,17 @@ class KerasPlotting:
             "epoch_idx": [],
         }
         self.current_epoch = 0
+        self.tendency_plots = False
 
     def setup(self, win):
         win.setWindowTitle("Keras training results")
 
-        self.acc_plot_window = win.addPlot(row=0, col=0, title="Training results")
+        self.acc_plot_window = win.addPlot(row=0, col=0, title="Accuracy results")
         self.acc_plot_window.showGrid(x=True, y=True)
         self.acc_plot_window.addLegend(offset=(-10, 10))
         self.acc_plot_window.setYRange(0, 1)
         self.acc_plot_window.setXRange(0, 1)
-        self.acc_plot_window.setLabel("left", "Accuracy/Loss")
+        self.acc_plot_window.setLabel("left", "Accuracy")
         self.acc_plot_window.setLabel("bottom", "Epoch")
 
         self.progress_acc = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
@@ -571,12 +573,12 @@ class KerasPlotting:
         self.progress_acc.setZValue(2)
         self.acc_plot_window.addItem(self.progress_acc, ignoreBounds=True)
 
-        self.loss_plot_window = win.addPlot(row=1, col=0, title="Test-set results")
+        self.loss_plot_window = win.addPlot(row=1, col=0, title="Loss results")
         self.loss_plot_window.showGrid(x=True, y=True)
         self.loss_plot_window.addLegend(offset=(-10, 10))
         self.loss_plot_window.setYRange(0, 1)
         self.loss_plot_window.setXRange(0, 1)
-        self.loss_plot_window.setLabel("left", "Accuracy/Loss")
+        self.loss_plot_window.setLabel("left", "Loss")
         self.loss_plot_window.setLabel("bottom", "Epoch")
 
         self.progress_loss = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
@@ -591,6 +593,10 @@ class KerasPlotting:
         pen = pg.mkPen("#2ca02c", width=2)
         hp["val_acc"] = self.acc_plot_window.plot(pen=pen, name="Val. Accuracy")
         hp["val_loss"] = self.loss_plot_window.plot(pen=pen, name="Val. Loss")
+        if self.tendency_plots:
+            pen = pg.mkPen("#0000ff", width=2, style=QtCore.Qt.DotLine)
+            hp["acc_tendency"] = self.acc_plot_window.plot(pen=pen, name="Tendency")
+            hp["loss_tendency"] = self.loss_plot_window.plot(pen=pen, name="Tendency")
 
     def process(self, data=None, flush_data=False):
         if flush_data:
@@ -665,6 +671,14 @@ class KerasPlotting:
             self.loss_plot_window.setYRange(max(0.9 * min_loss, 0), 1.1 * max_loss)
             self.progress_acc.setPos(max(0, epoch - self.epoch_history), max(0.9 * min_acc, 0))
             self.progress_loss.setPos(max(0, epoch - self.epoch_history), max(0.9 * min_loss, 0))
+
+            if self.tendency_plots:
+                acc_z = np.polyfit(h["val_x"][val_idx:], h["val_acc"][val_idx:], 1)
+                acc_p = np.poly1d(acc_z)
+                hp["acc_tendency"].setData(h["val_x"][val_idx:], acc_p(h["val_x"][val_idx:]))
+                loss_z = np.polyfit(h["val_x"][val_idx:], h["val_loss"][val_idx:], 1)
+                loss_p = np.poly1d(loss_z)
+                hp["loss_tendency"].setData(h["val_x"][val_idx:], loss_p(h["val_x"][val_idx:]))
 
         p_acc = "Epoch: {} -> Batch {} of {}\n".format(epoch, batch, spe)
         p_acc += "Acc: {:1.2E} ".format(h["acc"][-1])

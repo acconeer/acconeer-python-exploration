@@ -1222,12 +1222,12 @@ class FeatureSidePanel(QFrame):
                 error_handle("Failed to load data:<br> {}".format(error_text))
                 return
 
-            try:
-                frame_settings = data.item()["frame_settings"]
-                self.gui_handle.feature_sidepanel.set_frame_settings(frame_settings)
-            except Exception as e:
-                error_text = self.format_error.error_to_text(e)
-                error_handle("Failed to load frame settings:<br> {}".format(error_text))
+        try:
+            frame_settings = data.item()["frame_settings"]
+            self.gui_handle.feature_sidepanel.set_frame_settings(frame_settings)
+        except Exception as e:
+            error_text = self.format_error.error_to_text(e)
+            error_handle("Failed to load frame settings:<br> {}".format(error_text))
 
     def save_data(self):
         feature_list = self.gui_handle.feature_select.get_feature_list()
@@ -1252,6 +1252,7 @@ class FeatureSidePanel(QFrame):
 
         data = {
                 "feature_list": feature_list,
+                "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
             }
         if "session" in action:
             title = "Save session data"

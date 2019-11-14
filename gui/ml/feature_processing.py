@@ -23,6 +23,8 @@ class FeatureProcessing:
         self.frame_size = 25
         self.sweep_counter = -1
         self.motion_score = None
+        self.motion_pass = 2
+        self.motion_pass_counter = 0
         self.auto_threshold = 1.5
         self.motion_detected = False
         self.frame_list = []
@@ -439,16 +441,21 @@ class FeatureProcessing:
                 motion_score = np.max(np.abs(data["env_ampl"][i, :]))
 
                 if motion_score < self.motion_score[i]:
-                    self.motion_score[i] = motion_score
+                    if self.motion_score[i] == np.inf:
+                        self.motion_score[i] = motion_score
 
                 self.motion_score_normalized[i] = motion_score / self.motion_score[i]
 
                 if self.motion_score_normalized[i] > self.auto_threshold:
-                    detected = True
-                    return detected
+                    self.motion_pass_counter += 1
+                    if self.motion_pass_counter >= self.motion_pass:
+                        self.motion_pass_counter = 0
+                        detected = True
+                        return detected
                 else:
                     # Try to remove small scale variations
                     self.motion_score[i] = 0.9 * self.motion_score[i] + 0.1 * motion_score
+
         return detected
 
     def get_sensor_map(self, sensor_config):
