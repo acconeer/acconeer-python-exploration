@@ -430,6 +430,8 @@ class FeatureSelectFrame(QFrame):
 
                     if feature["options"] is not None:
                         for opt in feature["options"]:
+                            if opt in ["sensor_config", "session_info"]:
+                                continue
                             opt_textbox = e_feat["options"][opt]
                             opt_textbox.setText(str(feature["options"][opt]))
 
