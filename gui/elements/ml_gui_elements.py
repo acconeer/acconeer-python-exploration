@@ -1748,6 +1748,7 @@ class TrainingSidePanel(QFrame):
             "training": QLabel("Training Settings: "),
             "epochs": QLabel("Epochs: "),
             "batch_size": QLabel("Batch size:"),
+            "optimizer": QLabel("Optimizer:"),
             "evaluate": QLabel("Evaluate Settings: "),
             "learning_rate": QLabel("Learning rate:"),
             "delta": QLabel("Min. delta"),
@@ -1802,13 +1803,22 @@ class TrainingSidePanel(QFrame):
         self.buttons["stop"].setEnabled(False)
         self.buttons["train"].setEnabled(False)
 
-        self.drop_down = QComboBox(self)
-        self.drop_down.setStyleSheet("background-color: white")
-        self.drop_down.setMinimumHeight(25)
-        self.drop_down.addItem("Train Accuracy")
-        self.drop_down.addItem("Train Loss")
-        self.drop_down.addItem("Eval. Accuracy")
-        self.drop_down.addItem("Eval. Loss")
+        self.dropout_list = QComboBox(self)
+        self.dropout_list.setStyleSheet("background-color: white")
+        self.dropout_list.setMinimumHeight(25)
+        self.dropout_list.addItem("Train Accuracy")
+        self.dropout_list.addItem("Train Loss")
+        self.dropout_list.addItem("Eval. Accuracy")
+        self.dropout_list.addItem("Eval. Loss")
+
+        self.optimizer_list = QComboBox(self)
+        self.optimizer_list.setStyleSheet("background-color: white")
+        self.optimizer_list.setMinimumHeight(25)
+        self.optimizer_list.addItem("Adam")
+        self.optimizer_list.addItem("Adagrad")
+        self.optimizer_list.addItem("Adadelta")
+        self.optimizer_list.addItem("RMSprop")
+        self.optimizer_list.currentIndexChanged.connect(self.optimizer_learnining_rate)
 
         self.radiobuttons = {
             "split": QRadioButton("Split data"),
@@ -1844,11 +1854,13 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(self.textboxes["epochs"], self.num, 2, 1, 2)
         self.grid.addWidget(self.labels["batch_size"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["batch_size"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.labels["optimizer"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.optimizer_list, self.num, 2, 1, 2)
         self.grid.addWidget(self.labels["learning_rate"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["learning_rate"], self.num, 2, 1, 2)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.checkboxes["early_dropout"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.drop_down, self.num, 2, 1, 2)
+        self.grid.addWidget(self.dropout_list, self.num, 2, 1, 2)
         self.grid.addWidget(self.labels["patience"], self.increment(), 0)
         self.grid.addWidget(self.textboxes["patience"], self.num, 1)
         self.grid.addWidget(self.labels["delta"], self.num, 2)
@@ -1944,11 +1956,25 @@ class TrainingSidePanel(QFrame):
         rate = float(self.textboxes["learning_rate"].text())
         return rate
 
+    def get_optimizer(self):
+        return self.optimizer_list.currentText()
+
+    def optimizer_learnining_rate(self):
+        opt = self.optimizer_list.currentText()
+        if opt == "Adam":
+            self.textboxes["learning_rate"].setText("0.001")
+        elif opt == "Adagrad":
+            self.textboxes["learning_rate"].setText("0.01")
+        elif opt == "Adadelta":
+            self.textboxes["learning_rate"].setText("1.0")
+        elif opt == "RMSprop":
+            self.textboxes["learning_rate"].setText("0.001")
+
     def get_dropout(self):
         if not self.checkboxes["early_dropout"].isChecked():
             return False
 
-        dropout = self.drop_down.currentText()
+        dropout = self.dropout_list.currentText()
         if dropout == "Train Accuracy":
             dropout = "acc"
         elif dropout == "Train Loss":
@@ -2003,6 +2029,7 @@ class TrainingSidePanel(QFrame):
             "session": self.keras.get_current_session(),
             "graph": self.keras.get_current_graph(),
             "learning_rate": self.get_learning_rate(),
+            "optimizer": self.get_optimizer(),
             "plot_cb": func,
         }
 
@@ -2108,7 +2135,7 @@ class TrainingSidePanel(QFrame):
                 val = float(self.sender().text())
             except Exception:
                 pass
-            if val <= 0 or val >= 1:
+            if val <= 0 or val >= 10:
                 if box in ["learning_rate", "delta"]:
                     val = "0.001"
                 if box == "split":

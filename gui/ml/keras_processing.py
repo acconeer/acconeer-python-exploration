@@ -1,5 +1,6 @@
 from keras.models import Model
 from keras import backend as K
+from keras import optimizers as Opt
 from keras.layers import (Dense, Dropout, Input, GaussianNoise, Activation, Conv1D, Conv2D,
                           MaxPool2D, Flatten, BatchNormalization)
 from keras.utils import to_categorical
@@ -65,11 +66,7 @@ class MachineLearning():
 
         self.model = Model(inputs=inputs, outputs=predictions)
 
-        self.model.compile(
-            loss="categorical_crossentropy",
-            optimizer="adam",
-            metrics=["accuracy"],
-        )
+        self.set_optimizer("adam")
 
     def init_model_2D(self, input_dimensions):
         self.y_dim = input_dimensions[0]
@@ -100,11 +97,7 @@ class MachineLearning():
         self.model = Model(inputs=inputs, outputs=predictions)
         self.model.summary()
 
-        self.model.compile(
-            loss="categorical_crossentropy",
-            optimizer="adam",
-            metrics=["accuracy"],
-        )
+        self.set_optimizer("Adam")
 
     def maxpool(self, x):
         x_pool = y_pool = 2
@@ -116,6 +109,26 @@ class MachineLearning():
         self.y_dim /= y_pool
 
         return MaxPool2D(pool_size=(y_pool, x_pool))(x)
+
+    def set_optimizer(self, optimizer, loss="categorical_crossentropy"):
+        if optimizer.lower() == "adam":
+            opt_handle = Opt.Adam()
+        elif optimizer.lower() == "adagrad":
+            opt_handle = Opt.Adagrad()
+        elif optimizer.lower() == "adadelta":
+            opt_handle = Opt.Adadelta()
+        elif optimizer.lower() == "rmsprop":
+            opt_handle = Opt.RMSprop()
+        else:
+            print("Unknown optimizer {}. Using Adam!".format(optimizer))
+            opt_handle = Opt.Adam()
+
+        print("Setting model optimizer to {}".format(optimizer))
+        self.model.compile(
+            loss="categorical_crossentropy",
+            optimizer=opt_handle,
+            metrics=["accuracy"],
+        )
 
     def train(self, train_params):
         try:
@@ -183,8 +196,14 @@ class MachineLearning():
             tf_session = self.tf_session.as_default()
             tf_graph = self.tf_graph.as_default()
 
+        optimizer = None
+        if train_params.get("optimizer"):
+            optimizer = train_params["optimizer"]
+
         with tf_session:
             with tf_graph:
+                if optimizer is not None:
+                    self.set_optimizer(optimizer)
                 if "learning_rate" in train_params:
                     K.set_value(model.optimizer.lr, train_params["learning_rate"])
                 history = model.fit(x,
@@ -276,15 +295,25 @@ class MachineLearning():
         feature_lists = []
         frame_settings_list = []
         feature_map_dims = []
+        files_loaded = 0
+        files_failed = []
         for file in files:
-            file_data = np.load(file, allow_pickle=True).item()
-            data.append(file_data)
-            configs.append(file_data["frame_data"]["sensor_config"])
-            feature_lists.append(file_data["feature_list"])
-            frame_settings_list.append(file_data["frame_settings"])
-            feature_map_dims.append(
-                file_data["frame_data"]["ml_frame_data"]["frame_list"][0]["feature_map"].shape
-                )
+            try:
+                file_data = np.load(file, allow_pickle=True).item()
+                configs.append(file_data["frame_data"]["sensor_config"])
+                feature_lists.append(file_data["feature_list"])
+                frame_settings_list.append(file_data["frame_settings"])
+                feature_map_dims.append(
+                    file_data["frame_data"]["ml_frame_data"]["frame_list"][0]["feature_map"].shape
+                    )
+                data.append(file_data)
+            except Exception:
+                files_failed.append(file)
+            else:
+                files_loaded += 1
+
+        if not files_loaded:
+            return {"success": False, "message": "No valid files found"}
 
         data_type = "training"
         if load_test_data:
@@ -312,7 +341,7 @@ class MachineLearning():
                 message = "Load training data first!"
                 return {"success": False, "message": message}
 
-        for i in range(1, len(files)):
+        for i in range(1, files_loaded):
             # TODO: Check that files are compatible
             map_dims = self.model_dimensions["input"]
             if map_dims != feature_map_dims[i]:
@@ -363,6 +392,11 @@ class MachineLearning():
         message += "Found labels:<br>"
         for label in self.labels_dict:
             message += label + "<br>"
+
+        if files_failed:
+            message += "Failed to load some files:<br>"
+            for f in files_failed:
+                message += f + "<br>"
 
         data = {
             "x_data": feature_map_data,
