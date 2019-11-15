@@ -186,32 +186,40 @@ def pg_brush_cycler(i=0):
 
 
 class SmoothMax:
-    def __init__(self, f, hysteresis=0.5, tau_decay=2.0, tau_grow=0.5):
-        self.h = hysteresis
-        self.ax = np.exp(-1 / (tau_decay * f))
+    def __init__(self, f=None, hysteresis=0.5, tau_decay=2.0, tau_grow=0.5):
+        self.fixed_dt = 1 / f if (f is not None and f > 0) else None
+        self.hyst = hysteresis
+        self.tau_decay = tau_decay
+        self.tau_grow = tau_grow
 
-        if tau_grow > 1e-3:
-            self.ay = np.exp(-1 / (tau_grow * f))
-        else:
-            self.ay = 0
-
+        self.last_t = 0
         self.x = -1
         self.y = -1
 
     def update(self, m):
         m = max(m, 1e-12)
 
+        if self.fixed_dt is None:
+            now = time.time()
+            dt = now - self.last_t
+            self.last_t = now
+        else:
+            dt = self.fixed_dt
+
+        ax = np.exp(-dt / self.tau_decay) if self.tau_decay > 1e-3 else 0
+        ay = np.exp(-dt / self.tau_grow) if self.tau_grow > 1e-3 else 0
+
         if m > self.x:
             self.x = m
         else:
-            self.x = (1 - self.ax) * m + self.ax * self.x
+            self.x = (1 - ax) * m + ax * self.x
 
         if self.y < 0:
             self.y = self.x
         elif self.x > self.y:
-            self.y = (1 - self.ay) * self.x * (1 + self.h) + self.ay * self.y
-        elif self.x < (1 - self.h) * self.y:
-            self.y = self.x / (1 - self.h)
+            self.y = (1 - ay) * self.x * (1 + self.hyst) + ay * self.y
+        elif self.x < (1 - self.hyst) * self.y:
+            self.y = self.x / (1 - self.hyst)
 
         return self.y
 
