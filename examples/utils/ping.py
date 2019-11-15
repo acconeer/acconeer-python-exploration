@@ -17,8 +17,6 @@ def main():
 
     config = configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
-    config.range_interval = [0.2, 0.6]
-    config.sweep_rate = 10
 
     info = client.connect()
     print("connect info:", info)
