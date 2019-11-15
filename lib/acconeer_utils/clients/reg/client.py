@@ -206,13 +206,13 @@ class RegClient(BaseClient):
         req = protocol.BufferReadRequest(addr)
         self._send_packet(req)
 
-        log.debug("sent buf r req: addr: {:3}".format(addr))
+        log.debug("sent buf r req: addr: 0x{:02x}".format(addr))
 
         res = self._recv_packet()
         if not isinstance(res, protocol.BufferReadResponse):
             raise ClientError("got unexpected type of frame")
 
-        log.debug("recv buf r res: addr: {:3} len: {}".format(addr, len(res.buffer)))
+        log.debug("recv buf r res: addr: 0x{:02x} len: {}".format(addr, len(res.buffer)))
 
         return res.buffer
 
@@ -227,7 +227,7 @@ class RegClient(BaseClient):
         req = protocol.RegReadRequest(addr)
         self._send_packet(req)
 
-        log.debug("sent reg r req: addr: {:3}".format(addr))
+        log.debug("sent reg r req: addr: 0x{:02x}".format(addr))
 
         res = self._recv_packet()
         if not isinstance(res, protocol.RegReadResponse):
@@ -235,7 +235,7 @@ class RegClient(BaseClient):
 
         enc_val = res.reg_val.val
 
-        log.debug("recv reg r res: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
+        log.debug("recv reg r res: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
 
         return enc_val
 
@@ -250,7 +250,7 @@ class RegClient(BaseClient):
         req = protocol.RegWriteRequest(rrv)
         self._send_packet(req)
 
-        log.debug("sent reg w req: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
+        log.debug("sent reg w req: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
 
         if expect_response:
             res = self._recv_packet()
@@ -671,7 +671,7 @@ class SPICommProcess(mp.Process):
         self.dev.spi_master_single_write(b)
         enc_val = self.dev.spi_master_single_read(4)
         if do_log:
-            log.debug("reg r res: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
+            log.debug("reg r res: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
         return enc_val
 
     def write_reg(self, reg, val, do_log=True):
@@ -684,7 +684,7 @@ class SPICommProcess(mp.Process):
         b = bytearray([protocol.REG_WRITE_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
         if do_log:
-            log.debug("reg w req: addr: {:3} val: {}".format(addr, fmt_enc_val(enc_val)))
+            log.debug("reg w req: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
         self.dev.spi_master_single_write(enc_val)
 
     def read_buf_raw(self, addr, size):
