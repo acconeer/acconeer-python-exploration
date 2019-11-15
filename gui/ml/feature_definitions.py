@@ -365,7 +365,7 @@ class FeatureSparseFFT:
 
         hanning = np.hanning(point_repeats)[:, np.newaxis, np.newaxis]
         doppler = abs(np.fft.rfft(hanning * (arr - np.mean(arr, axis=0, keepdims=True)), axis=0))
-        fft_psd = np.sum(doppler, axis=1)
+        fft_psd = np.mean(doppler, axis=1)
 
         freq_bins = fft_psd.shape[0]
         freq_cutoff = int(high_pass * freq_bins)
@@ -430,7 +430,7 @@ class FeatureSparsePresence:
             return None
 
         start_idx = np.argmin((dist_vec - start)**2)
-        stop_idx = np.argmin((dist_vec - stop)**2)
+        stop_idx = np.argmin((dist_vec - stop)**2) + 1
 
         stop_idx = max(start_idx + 1, stop_idx)
 
@@ -472,7 +472,7 @@ class FeatureSparsePresence:
         try:
             start = float(options["Start"])
             stop = float(options["Stop"])
-            size = int(np.ceil((stop - start) / 0.06))
+            size = int(np.ceil((stop - start) / 0.06)) + 1
         except Exception as e:
             print("Failed to calculate feature hight!\n ", e)
             return 1
