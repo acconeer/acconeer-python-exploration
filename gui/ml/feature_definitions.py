@@ -1,5 +1,13 @@
 import numpy as np
 
+try:
+    from examples.processing import presence_detection_sparse
+except Exception as e:
+    print("Could not import presence detector:\n", e)
+    DETECTORS_SUPPORTED = False
+else:
+    DETECTORS_SUPPORTED = True
+
 
 def get_features():
     features = {
@@ -39,8 +47,16 @@ def get_features():
             "class": FeatureSparseFFT,
             "model": "2D",
             "data_type": "sparse",
-        }
+        },
     }
+
+    if DETECTORS_SUPPORTED:
+        features["sparse_presence"] = {
+            "name": "Presence Sparse",
+            "class": FeatureSparsePresence,
+            "model": "2D",
+            "data_type": "sparse",
+        }
 
     return features
 
@@ -368,6 +384,95 @@ class FeatureSparseFFT:
             return 1
         try:
             size = int(np.ceil(options["subsweeps"] * options["High pass"] / 2))
+        except Exception as e:
+            print("Failed to calculate feature hight!\n ", e)
+            return 1
+        return int(size)
+
+
+class FeatureSparsePresence:
+    def __init__(self):
+        # output data
+        self.data = {
+            "presence": "Presence",
+        }
+        # text, value, limits
+        self.options = [
+            ("Start", 0.2, [0.06, 7], float),
+            ("Stop", 0.4, [0.06, 7], float),
+        ]
+
+        self.detector_processor = None
+        self.history = None
+
+    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+        try:
+            num_sensors = win_data["sparse_data"].shape[0]
+            if self.detector_processor is None:
+                self.detector_processor = [None] * num_sensors
+                self.history = None
+            arr = win_data["sparse_data"][sensor_idx, :, :, :]
+            sensor_config = options["sensor_config"]
+            session_info = options["session_info"]
+        except Exception as e:
+            print("sparse_data not available!\n", e)
+            return None
+
+        point_repeats, data_len, win_len = arr.shape
+        data_start = dist_vec[0]
+        data_stop = dist_vec[-1]
+
+        # dist_vec is in m
+        start = max(data_start, options["Start"])
+        stop = min(data_stop, options["Stop"])
+
+        if start >= data_stop:
+            return None
+
+        start_idx = np.argmin((dist_vec - start)**2)
+        stop_idx = np.argmin((dist_vec - stop)**2)
+
+        stop_idx = max(start_idx + 1, stop_idx)
+
+        if self.detector_processor[sensor_idx] is None:
+            detector_config = presence_detection_sparse.get_processing_config()
+            detector_config.detection_threshold = 0
+            detector_config.inter_frame_fast_cutoff = 100
+            detector_config.inter_frame_slow_cutoff = 0.85
+            detector_config.inter_frame_deviation_time_const = 0.17
+            detector_handle = presence_detection_sparse.PresenceDetectionSparseProcessor
+            self.detector_processor[sensor_idx] = detector_handle(
+                sensor_config,
+                detector_config,
+                session_info
+                )
+            self.detector_processor[sensor_idx].depth_filter_length = 1
+
+        detector_output = self.detector_processor[sensor_idx].process(arr[:, :, 0])
+        presence = detector_output["depthwise_presence"]
+
+        if self.history is None:
+            self.history = np.zeros((num_sensors, len(presence), win_len))
+
+        self.history[sensor_idx, :, :] = np.roll(self.history[sensor_idx, :, :], 1, axis=1)
+        self.history[sensor_idx, :, 0] = presence
+
+        data = {
+            "presence": self.history[sensor_idx, start_idx:stop_idx, :],
+        }
+
+        return data
+
+    def get_options(self):
+        return self.data, self.options
+
+    def get_size(self, options=None):
+        if options is None:
+            return 1
+        try:
+            start = float(options["Start"])
+            stop = float(options["Stop"])
+            size = int(np.ceil((stop - start) / 0.06))
         except Exception as e:
             print("Failed to calculate feature hight!\n ", e)
             return 1

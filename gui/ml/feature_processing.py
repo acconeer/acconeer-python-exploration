@@ -215,6 +215,8 @@ class FeatureProcessing:
         for feat in self.feature_list:
             cb = feat["cb"]
             options = feat["options"]
+            options["sensor_config"] = data["sensor_config"]
+            options["session_info"] = data["session_info"]
             output = feat["output"]
             sensors = feat["sensors"]
             name = feat["name"]
@@ -343,6 +345,8 @@ class FeatureProcessing:
         for feat in feature_list:
             cb = feat["cb"]
             options = feat["options"]
+            options["sensor_config"] = data["sensor_config"]
+            options["session_info"] = data["session_info"]
             output = feat["output"]
             sensors = feat["sensors"]
 
