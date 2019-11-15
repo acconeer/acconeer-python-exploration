@@ -1,9 +1,9 @@
-from abc import ABCMeta, abstractmethod
+import abc
 from copy import copy
 import numpy as np
 
 
-class BaseSessionConfig(metaclass=ABCMeta):
+class BaseSessionConfig(abc.ABC):
     _sweep_rate = 30
     _sensors = [1]
 
@@ -28,6 +28,11 @@ class BaseSessionConfig(metaclass=ABCMeta):
         return s
 
     @property
+    @abc.abstractmethod
+    def mode(self):
+        pass
+
+    @property
     def sweep_rate(self):
         return self._sweep_rate
 
@@ -50,11 +55,6 @@ class BaseSessionConfig(metaclass=ABCMeta):
         else:
             raise TypeError("given sensor(s) must be either an int or a list of ints")
         self._sensors = arg
-
-    @property
-    @abstractmethod
-    def mode(self):
-        pass
 
 
 class BaseServiceConfig(BaseSessionConfig):
