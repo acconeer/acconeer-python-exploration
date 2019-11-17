@@ -418,6 +418,9 @@ class FeatureProcessing:
                 self.motion_config.inter_frame_fast_cutoff = 100
                 self.motion_config.inter_frame_slow_cutoff = 1
                 self.motion_config.inter_frame_deviation_time_const = 0.1
+                self.motion_config.intra_frame_weight = 0.7
+                self.motion_config.intra_frame_time_const = 0.1
+                self.motion_config.detection_threshold = 0
                 self.motion_class = presence_detection_sparse.PresenceDetectionSparseProcessor
                 self.motion_processors = self.motion_class(
                     sensor_config,
@@ -695,10 +698,12 @@ class PGUpdater:
                     self.predictions_plot_window.plot(pen=pen, name=label)
                     )
 
-    def reset_data(self, sensor_config, processing_config):
+    def reset_data(self, sensor_config=None, processing_config=None):
         self.first = True
-        self.sensor_config = sensor_config
-        self.processing_config = processing_config
+        if sensor_config is not None:
+            self.sensor_config = sensor_config
+        if processing_config is not None:
+            self.processing_config = processing_config
 
     def update(self, data):
         feat_map = None
@@ -814,6 +819,9 @@ class PGUpdater:
                 )
         else:
             self.border_rolling.hide()
+
+        if feat_map is None:
+            return
 
         self.feat_plot_image.setYRange(0, feat_map.shape[0])
 

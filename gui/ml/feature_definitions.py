@@ -365,7 +365,7 @@ class FeatureSparseFFT:
 
         hanning = np.hanning(point_repeats)[:, np.newaxis, np.newaxis]
         doppler = abs(np.fft.rfft(hanning * (arr - np.mean(arr, axis=0, keepdims=True)), axis=0))
-        fft_psd = np.mean(doppler, axis=1)
+        fft_psd = np.mean(doppler, axis=1) / 10000
 
         freq_bins = fft_psd.shape[0]
         freq_cutoff = int(high_pass * freq_bins)
@@ -438,8 +438,11 @@ class FeatureSparsePresence:
             detector_config = presence_detection_sparse.get_processing_config()
             detector_config.detection_threshold = 0
             detector_config.inter_frame_fast_cutoff = 100
-            detector_config.inter_frame_slow_cutoff = 0.85
-            detector_config.inter_frame_deviation_time_const = 0.17
+            detector_config.inter_frame_slow_cutoff = 0.9
+            detector_config.inter_frame_deviation_time_const = 0.05
+            detector_config.intra_frame_time_const = 0.03
+            detector_config.intra_frame_weight = 0.8
+            detector_config.output_time_const = 0.01
             detector_handle = presence_detection_sparse.PresenceDetectionSparseProcessor
             self.detector_processor[sensor_idx] = detector_handle(
                 sensor_config,

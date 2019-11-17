@@ -1440,6 +1440,8 @@ class FeatureInspectFrame(QFrame):
             self.current_frame_data = f_current
 
             try:
+                if init:
+                    self.graph.reset_data()
                 self.graph.update(fdata)
             except Exception as e:
                 print("Error processing frame:\n", e)
@@ -1591,8 +1593,11 @@ class LabelingGraph(QFrame):
     def update(self, plot_data):
         self.label_graph_widget.update(plot_data)
 
-    def reset_data(self):
-        self.label_graph_widget.reset_data()
+    def reset_data(self, sensor_config=None, processing_config=None):
+        self.label_graph_widget.reset_data(
+            sensor_config=sensor_config,
+            processing_config=processing_config
+            )
 
 
 class TrainingFrame(QFrame):
@@ -1739,6 +1744,7 @@ class TrainingSidePanel(QFrame):
         self.eval_mode = None
         self.feature_list = None
         self.train_model_shape = None
+        self.save_best_folder = None
 
         self.gui_handle = gui_handle
         self.keras = self.gui_handle.ml_keras_model = kp.MachineLearning()
@@ -1777,14 +1783,13 @@ class TrainingSidePanel(QFrame):
             "save_best": QCheckBox("Save best iteration"),
             "early_dropout": QCheckBox("Early dropout"),
         }
-        for cb in self.checkboxes:
-            self.checkboxes[cb].setEnabled(False)
-        self.checkboxes["early_dropout"].setEnabled(True)
         self.checkboxes["early_dropout"].setChecked(True)
+        self.checkboxes["save_best"].clicked.connect(self.save_best)
 
         self.buttons = {
             "train": QPushButton("Train", self),
             "stop": QPushButton("Stop", self),
+            "validate": QPushButton("Validate", self),
             "load_train_data": QPushButton("Load training data"),
             "load_test_data": QPushButton("Load test data"),
             "save_model": QPushButton("Save model"),
@@ -1801,9 +1806,11 @@ class TrainingSidePanel(QFrame):
         self.buttons["clear_model"].clicked.connect(partial(self.model_operation, "clear_model"))
         self.buttons["clear_training"].clicked.connect(partial(self.model_operation, "clear_data"))
         self.buttons["load_model"].clicked.connect(partial(self.model_operation, "load_model"))
+        self.buttons["validate"].clicked.connect(partial(self.model_operation, "validate_model"))
 
         self.buttons["stop"].setEnabled(False)
         self.buttons["train"].setEnabled(False)
+        self.buttons["validate"].setEnabled(False)
 
         self.dropout_list = QComboBox(self)
         self.dropout_list.setStyleSheet("background-color: white")
@@ -1851,6 +1858,7 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(self.buttons["load_train_data"], self.increment(), 0, 1, 4)
         self.grid.addWidget(self.buttons["train"], self.increment(), 0, 1, 4)
         self.grid.addWidget(self.buttons["stop"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.buttons["validate"], self.increment(), 0, 1, 4)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["epochs"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["epochs"], self.num, 2, 1, 2)
@@ -1920,6 +1928,8 @@ class TrainingSidePanel(QFrame):
                     self.test_data = status["data"]
                 self.gui_handle.info_handle(status["message"])
                 self.buttons["train"].setEnabled(True)
+                if self.gui_handle.eval_sidepanel.model_data["loaded"]:
+                    self.buttons["validate"].setEnabled(True)
             else:
                 self.gui_handle.error_message(status["message"])
                 return
@@ -1994,6 +2004,24 @@ class TrainingSidePanel(QFrame):
 
         return {"monitor": dropout, "patience": patience, "min_delta": delta}
 
+    def save_best(self):
+        enabled = self.sender().isChecked()
+        if enabled:
+            title = "Select folder to save best iteration"
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
+
+            folder = QtWidgets.QFileDialog.getExistingDirectory(
+                self, title, options=options)
+
+            if folder:
+                self.save_best_folder = folder
+            else:
+                self.save_best_folder = None
+                self.sender().setCheck(False)
+        else:
+            self.save_best_folder = None
+
     def train(self, mode):
         if mode == "stop":
             try:
@@ -2002,6 +2030,7 @@ class TrainingSidePanel(QFrame):
                 pass
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
+            self.buttons["validate"].setEnabled(True)
             return
 
         if self.train_data is None:
@@ -2010,13 +2039,23 @@ class TrainingSidePanel(QFrame):
         x = self.train_data["x_data"]
         y = self.train_data["y_labels"]
 
-        save_best = False
         ep = int(self.textboxes["epochs"].text())
         batch = int(self.textboxes["batch_size"].text())
         func = self.gui_handle.training.show_results
 
         self.buttons["stop"].setEnabled(True)
         self.buttons["train"].setEnabled(False)
+        self.buttons["validate"].setEnabled(False)
+
+        if self.save_best_folder is not None:
+            save_best_info = {
+                "folder": self.save_best_folder,
+                "feature_list": self.train_data["feature_list"],
+                "frame_settings": self.train_data["frame_settings"],
+                "sensor_config": self.train_data["sensor_config"],
+            }
+        else:
+            save_best_info = None
 
         # Todo: Finalize threaded training
         thread_training = True
@@ -2026,7 +2065,7 @@ class TrainingSidePanel(QFrame):
             "epochs": ep,
             "batch_size": batch,
             "eval_data": self.get_evaluation_mode(),
-            "save_best": save_best,
+            "save_best": save_best_info,
             "dropout": self.get_dropout(),
             "session": self.keras.get_current_session(),
             "graph": self.keras.get_current_graph(),
@@ -2047,6 +2086,7 @@ class TrainingSidePanel(QFrame):
             self.is_training(False)
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
+            self.buttons["validate"].setEnabled(True)
             try:
                 confusion_matrix = self.keras.confusion_matrix(y, self.keras.predict(x))
                 self.gui_handle.training.update_confusion_matrix(confusion_matrix)
@@ -2076,6 +2116,7 @@ class TrainingSidePanel(QFrame):
             self.keras.set_current_session(data[2])
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
+            self.buttons["validate"].setEnabled(True)
             confusion_matrix = self.keras.confusion_matrix(
                 self.train_data["y_labels"],
                 self.keras.predict(self.train_data["x_data"])
@@ -2117,10 +2158,12 @@ class TrainingSidePanel(QFrame):
                 self.keras.clear_model(reinit=True)
             self.gui_handle.training.show_results(flush_data=True)
             self.gui_handle.training.update_confusion_matrix(None)
+            self.buttons["validate"].setEnabled(False)
         if op == "clear_data":
             if self.gui_handle.eval_sidepanel.model_loaded():
                 self.keras.clear_training_data()
             self.buttons["train"].setEnabled(False)
+            self.buttons["validate"].setEnabled(False)
             self.model_data = None
             self.gui_handle.training.show_results(flush_data=True)
             self.gui_handle.eval_sidepanel.model_data["loaded"] = False
@@ -2128,6 +2171,18 @@ class TrainingSidePanel(QFrame):
             self.gui_handle.training.update_confusion_matrix(None)
         if op == "load_model":
             self.gui_handle.eval_sidepanel.load_model()
+        if op == "validate_model":
+            if self.train_data is None:
+                self.gui_handle.error_message("No training data loaded")
+                self.button["validate"].setEnabled(False)
+                return
+            try:
+                x = self.train_data["x_data"]
+                y = self.train_data["y_labels"]
+                confusion_matrix = self.keras.confusion_matrix(y, self.keras.predict(x))
+                self.gui_handle.training.update_confusion_matrix(confusion_matrix)
+            except Exception as e:
+                self.gui_handle.error_message("Failed to validate data!<br>{}".format(e))
 
     def check_vals(self, box):
         success = True

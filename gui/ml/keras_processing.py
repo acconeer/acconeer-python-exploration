@@ -4,7 +4,7 @@ from keras import optimizers as Opt
 from keras.layers import (Dense, Dropout, Input, GaussianNoise, Activation, Conv1D, Conv2D,
                           MaxPool2D, Flatten, BatchNormalization)
 from keras.utils import to_categorical
-from keras.callbacks import EarlyStopping, ModelCheckpoint, Callback
+from keras.callbacks import EarlyStopping, Callback
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 
@@ -157,10 +157,17 @@ class MachineLearning():
         if "plot_cb" in train_params:
             plot_cb = train_params["plot_cb"]
             stop_cb = None
+            save_best = None
             if "stop_cb" in train_params:
                 stop_cb = train_params["stop_cb"]
+            if "save_best" in train_params:
+                save_best = train_params["save_best"]
             steps = int(np.ceil(x.shape[0] / batch_size))
-            func = TrainCallback(plot_cb=plot_cb, steps_per_epoch=steps, stop_cb=stop_cb)
+            func = TrainCallback(plot_cb=plot_cb,
+                                 steps_per_epoch=steps,
+                                 stop_cb=stop_cb,
+                                 save_best=save_best,
+                                 parent=self)
             cb.append(func)
             verbose = 0
         else:
@@ -178,9 +185,11 @@ class MachineLearning():
                                                   )
                 cb.append(cb_early_stop)
 
+        # This will only save the model, nothing else!
+        '''
         if train_params.get("save_best"):
-            cb_best = ModelCheckpoint(train_params["save_best"],
-                                      monitor="val_acc",
+            cb_best = ModelCheckpoint(os.path.join(train_params["save_best"], "best_model.npy"),
+                                      monitor="val_loss",
                                       verbose=0,
                                       save_best_only=True,
                                       save_weights_only=False,
@@ -188,6 +197,7 @@ class MachineLearning():
                                       period=1
                                       )
             cb.append(cb_best)
+        '''
 
         if run_threaded:
             tf_session = train_params["session"].as_default()
@@ -538,12 +548,16 @@ class MachineLearning():
 
 
 class TrainCallback(Callback):
-    def __init__(self, plot_cb=None, steps_per_epoch=None, stop_cb=None):
+    def __init__(self, plot_cb=None, steps_per_epoch=None, stop_cb=None, save_best=None,
+                 parent=None):
+        self.parent = parent
         self.plot = plot_cb
         self.stop_cb = stop_cb
         self.steps_per_epoch = steps_per_epoch
         self.epoch = 0
         self.batch = 0
+        self.save_best = save_best
+        self.val_loss = np.inf
 
     def on_batch_end(self, batch, logs=None):
         self.batch += 1
@@ -552,6 +566,20 @@ class TrainCallback(Callback):
     def on_epoch_end(self, epoch, logs=None):
         self.epoch += 1
         self.send_data(logs)
+
+        if self.save_best:
+            try:
+                if logs["val_loss"] < self.val_loss:
+                    self.val_loss = logs["val_loss"]
+                    fname = "model_epoch_{}_val_loss_{:.04f}".format(self.epoch, self.val_loss)
+                    fname = os.path.join(self.save_best["folder"], fname)
+                    self.parent.save_model(fname,
+                                           self.save_best["feature_list"],
+                                           self.save_best["sensor_config"],
+                                           self.save_best["frame_settings"],
+                                           )
+            except Exception as e:
+                print(e)
 
     def send_data(self, data):
         if "steps_per_epoch" not in data:
