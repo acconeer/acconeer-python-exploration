@@ -31,9 +31,9 @@ def test_envelope(setup):
     client, sensor = setup
 
     config = configs.EnvelopeServiceConfig(sensor=sensor)
-    session_info = client.start_streaming(config)
+    session_info = client.start_session(config)
     _, sweep = client.get_next()
-    client.stop_streaming()
+    client.stop_session()
 
     assert sweep.shape == (session_info["data_length"], )
 

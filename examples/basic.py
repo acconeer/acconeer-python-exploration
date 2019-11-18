@@ -57,12 +57,12 @@ def main():
 
     # Start streaming data from the session. This call will block until
     # the sensor has confirmed that streaming has started.
-    client.start_streaming()
+    client.start_session()
 
-    # Alternatively, start_streaming can be given the config instead. In
+    # Alternatively, start_session can be given the config instead. In
     # that case, the client will call setup_session(config) for you
     # before starting the stream. For example:
-    # session_info = client.start_streaming(config)
+    # session_info = client.start_session(config)
     # As this will call setup_session in the background, this will also
     # connect if not already connected.
 
@@ -78,10 +78,10 @@ def main():
     # We're done, stop streaming. All buffered/waiting sweeps are thrown
     # away. This call will block until the sensor has confirmed that
     # streaming/session has ended.
-    client.stop_streaming()
+    client.stop_session()
 
-    # Calling stop_streaming before disconnect is not necessary as
-    # disconnect will call stop_streaming if streaming is started.
+    # Calling stop_session before disconnect is not necessary as
+    # disconnect will call stop_session if streaming is started.
 
     # Remember to always call disconnect to do so gracefully
     client.disconnect()

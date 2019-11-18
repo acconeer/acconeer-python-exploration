@@ -50,7 +50,7 @@ def main():
     interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
-    client.start_streaming()
+    client.start_session()
 
     init = True
     while not interrupt_handler.got_signal:

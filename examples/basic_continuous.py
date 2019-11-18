@@ -32,7 +32,7 @@ def main():
 
     # Now would be the time to set up plotting, signal processing, etc.
 
-    client.start_streaming()
+    client.start_session()
 
     # Normally, hitting Ctrl-C will raise a KeyboardInterrupt which in
     # most cases immediately terminates the script. This often becomes

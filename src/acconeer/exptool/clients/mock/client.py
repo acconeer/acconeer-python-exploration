@@ -36,7 +36,7 @@ class MockClient(BaseClient):
 
         return self._mocker.session_info
 
-    def _start_streaming(self):
+    def _start_session(self):
         self._start_time = time()
         self._data_count = 0
 
@@ -64,7 +64,7 @@ class MockClient(BaseClient):
 
         return info, data
 
-    def _stop_streaming(self):
+    def _stop_session(self):
         pass
 
     def _disconnect(self):

@@ -60,7 +60,7 @@ class BaseClient(metaclass=ABCMeta):
 
         return session_info
 
-    def start_streaming(self, config=None):
+    def start_session(self, config=None):
         if self._streaming_started:
             raise ClientError("already streaming")
 
@@ -72,7 +72,7 @@ class BaseClient(metaclass=ABCMeta):
         if not self._session_setup_done:
             raise ClientError("session needs to be set up before starting stream")
 
-        self._start_streaming()
+        self._start_session()
         self._streaming_started = True
         return ret
 
@@ -82,11 +82,11 @@ class BaseClient(metaclass=ABCMeta):
 
         return self._get_next()
 
-    def stop_streaming(self):
+    def stop_session(self):
         if not self._streaming_started:
             raise ClientError("not streaming")
 
-        self._stop_streaming()
+        self._stop_session()
         self._streaming_started = False
 
     def disconnect(self):
@@ -94,7 +94,7 @@ class BaseClient(metaclass=ABCMeta):
             raise ClientError("not connected")
 
         if self._streaming_started:
-            self.stop_streaming()
+            self.stop_session()
 
         self._disconnect()
         self._connected = False
@@ -108,7 +108,7 @@ class BaseClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def _start_streaming(self):
+    def _start_session(self):
         pass
 
     @abstractmethod
@@ -116,7 +116,7 @@ class BaseClient(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def _stop_streaming(self):
+    def _stop_session(self):
         pass
 
     @abstractmethod

@@ -158,7 +158,7 @@ class UARTClient(BaseClient):
 
         return info
 
-    def _start_streaming(self):
+    def _start_session(self):
         self._write_reg("main_control", "activate")
 
     def _get_next(self):
@@ -185,7 +185,7 @@ class UARTClient(BaseClient):
         else:
             return [info], np.expand_dims(data, 0)
 
-    def _stop_streaming(self):
+    def _stop_session(self):
         self._write_reg("main_control", "stop", expect_response=False)
 
         t0 = time()
@@ -449,8 +449,8 @@ class SPIClient(BaseClient):
 
         return info
 
-    def _start_streaming(self):
-        self.__cmd_proc("start_streaming")
+    def _start_session(self):
+        self.__cmd_proc("start_session")
         self._seq_num = None
 
     def _get_next(self):
@@ -478,8 +478,8 @@ class SPIClient(BaseClient):
         else:
             return [info], np.expand_dims(data, 0)
 
-    def _stop_streaming(self):
-        self.__cmd_proc("stop_streaming")
+    def _stop_session(self):
+        self.__cmd_proc("stop_session")
 
     def _disconnect(self):
         self.__cmd_proc("disconnect")
@@ -520,7 +520,7 @@ class SPIClient(BaseClient):
     def __cmd_proc(self, cmd, *args):
         log.debug("sending cmd to proc: {}".format(cmd))
         self._cmd_queue.put((cmd, args))
-        if cmd == "stop_streaming":
+        if cmd == "stop_session":
             while True:
                 ret_cmd, _ = self._data_queue.get()
                 if ret_cmd == cmd:
@@ -574,7 +574,7 @@ class SPICommProcess(mp.Process):
                 ret = getattr(self, cmd)(*cmd_args)
                 self.data_q.put((cmd, ret))
 
-                if cmd == "start_streaming":
+                if cmd == "start_session":
                     self.poll()
                 elif cmd == "disconnect":
                     break
@@ -641,7 +641,7 @@ class SPICommProcess(mp.Process):
         else:
             self.poll_timeout = 1.0
 
-    def start_streaming(self):
+    def start_session(self):
         self.write_reg("main_control", "activate")
         sleep(SPI_MAIN_CTRL_SLEEP)
         self.write_reg("main_control", "clear_status")
@@ -654,7 +654,7 @@ class SPICommProcess(mp.Process):
         else:
             self.fixed_buf_size = None
 
-    def stop_streaming(self):
+    def stop_session(self):
         self.write_reg("main_control", "stop")
 
     def disconnect(self):

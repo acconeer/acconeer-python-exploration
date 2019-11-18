@@ -38,7 +38,7 @@ class Detector(Thread):
         session_info = client.setup_session(self.config)
         print("Session info:\n", session_info, "\n")
 
-        client.start_streaming()
+        client.start_session()
         while not self.terminating:
             sweep_info, sweep_data = client.get_next()
 

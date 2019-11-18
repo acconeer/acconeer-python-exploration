@@ -20,7 +20,7 @@ def main():
     config.range_interval = [0.2, 0.6]
     config.sweep_rate = 50
 
-    info = client.start_streaming(config)
+    info = client.start_session(config)
 
     interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")

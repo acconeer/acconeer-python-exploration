@@ -34,7 +34,7 @@ def main():
     plot_process = PlotProcess(fig_updater)
     plot_process.start()
 
-    client.start_streaming()
+    client.start_session()
 
     interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")

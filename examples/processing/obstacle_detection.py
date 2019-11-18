@@ -41,7 +41,7 @@ def main():
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
-    client.start_streaming()
+    client.start_session()
 
     interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")

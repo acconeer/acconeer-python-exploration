@@ -20,7 +20,7 @@ def main():
 
     info = client.connect()
     print("connect info:", info)
-    client.start_streaming(config)
+    client.start_session(config)
     client.get_next()
     client.disconnect()
 

@@ -77,7 +77,7 @@ class SocketClient(BaseClient):
 
         return info
 
-    def _start_streaming(self):
+    def _start_session(self):
         if not self._session_ready:
             self._init_session()
 
@@ -100,7 +100,7 @@ class SocketClient(BaseClient):
 
         return protocol.decode_stream_frame(header, payload, self.squeeze, self._num_subsweeps)
 
-    def _stop_streaming(self):
+    def _stop_session(self):
         cmd = {"cmd": "stop_streaming"}
         self._send_cmd(cmd)
 

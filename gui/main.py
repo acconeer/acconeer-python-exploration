@@ -1474,8 +1474,8 @@ class GUI(QMainWindow):
                 conf.sensor = sensor
                 try:
                     self.client.setup_session(conf)
-                    self.client.start_streaming()
-                    self.client.stop_streaming()
+                    self.client.start_session()
+                    self.client.stop_session()
                     connection_success = True
                     sensors_available.append(sensor)
                 except Exception as e:
@@ -1493,7 +1493,7 @@ class GUI(QMainWindow):
             self.set_gui_state("server_connected", False)
             self.sig_scan.emit("stop", "", None)
             try:
-                self.client.stop_streaming()
+                self.client.stop_session()
             except Exception:
                 pass
 
@@ -2583,7 +2583,7 @@ class Threaded_Scan(QtCore.QThread):
                 check_msg = "ok" if check else "mismatch"
                 self.emit("session_info", check_msg, session_info)
                 self.radar.prepare_processing(self, self.params, session_info)
-                self.client.start_streaming()
+                self.client.start_session()
             except Exception as e:
                 self.emit("client_error", "Failed to setup streaming!\n"
                           "{}".format(self.format_error(e)))
@@ -2601,7 +2601,7 @@ class Threaded_Scan(QtCore.QThread):
                 self.emit("client_error", msg)
 
             try:
-                self.client.stop_streaming()
+                self.client.stop_session()
             except Exception:
                 pass
 
