@@ -1,10 +1,22 @@
 import abc
+import enum
 from copy import copy
 import numpy as np
 
+from acconeer.exptool.modes import Mode
+
+
+class ConfigEnum(enum.Enum):
+    @property
+    def label(self):
+        return self.value[0]
+
+    @property
+    def json_value(self):
+        return self.value[1]
+
 
 class BaseSessionConfig(abc.ABC):
-    _sweep_rate = 30
     _sensors = [1]
 
     def __init__(self, **kwargs):
@@ -33,16 +45,6 @@ class BaseSessionConfig(abc.ABC):
         pass
 
     @property
-    def sweep_rate(self):
-        return self._sweep_rate
-
-    @sweep_rate.setter
-    def sweep_rate(self, rate):
-        if rate < 1:
-            raise ValueError("sweep rate must be >= 1")
-        self._sweep_rate = rate
-
-    @property
     def sensor(self):
         return self._sensors
 
@@ -53,26 +55,29 @@ class BaseSessionConfig(abc.ABC):
         elif isinstance(arg, list) and all([isinstance(e, int) for e in arg]):
             arg = copy(arg)
         else:
-            raise TypeError("given sensor(s) must be either an int or a list of ints")
+            raise TypeError("sensor(s) must be an int or a list of ints")
         self._sensors = arg
 
 
 class BaseServiceConfig(BaseSessionConfig):
-    _gain = 0.5
+    class RepetitionMode(ConfigEnum):
+        HOST_DRIVEN = ("Host driven", "on_demand")
+        SENSOR_DRIVEN = ("Sensor driven", "streaming")
+
+    class Profile(ConfigEnum):
+        PROFILE_1 = ("1 (max resolution)", 1)
+        PROFILE_2 = ("2", 2)
+        PROFILE_3 = ("3", 3)
+        PROFILE_4 = ("4", 4)
+        PROFILE_5 = ("5 (max SNR)", 5)
+
     _range_start = 0.2
     _range_length = 0.6
-    _hw_accelerated_average_samples = 7
-    _experimental_stitching = None
-
-    @property
-    def gain(self):
-        return self._gain
-
-    @gain.setter
-    def gain(self, gain):
-        if not 0 <= gain <= 1:
-            raise ValueError("gain must be between 0 and 1")
-        self._gain = gain
+    _repetition_mode = RepetitionMode.HOST_DRIVEN
+    _update_rate = None
+    _gain = 0.5
+    _hw_accelerated_average_samples = 10
+    _profile = Profile.PROFILE_2
 
     @property
     def range_start(self):
@@ -80,9 +85,7 @@ class BaseServiceConfig(BaseSessionConfig):
 
     @range_start.setter
     def range_start(self, start):
-        if getattr(self, "session_profile", None) != EnvelopeServiceConfig.DIRECT_LEAKAGE:
-            if start < 0:
-                raise ValueError("range start must be positive")
+        start = float(start)
         self._range_start = start
 
     @property
@@ -91,21 +94,10 @@ class BaseServiceConfig(BaseSessionConfig):
 
     @range_length.setter
     def range_length(self, length):
-        if length < 0:
-            raise ValueError("range length must be positive")
+        length = float(length)
+        if length < 0.0:
+            raise ValueError("range_length must be >= 0.0")
         self._range_length = length
-
-    @property
-    def range_interval(self):
-        if None in [self._range_start, self._range_length]:
-            return None
-        return np.array([self.range_start, self.range_end])
-
-    @range_interval.setter
-    def range_interval(self, interval):
-        start, end = interval
-        self.range_start = start
-        self.range_length = end - start
 
     @property
     def range_end(self):
@@ -114,51 +106,108 @@ class BaseServiceConfig(BaseSessionConfig):
         return self._range_start + self._range_length
 
     @range_end.setter
-    def range_end(self, range_end):
-        self.range_length = range_end - self.range_start
+    def range_end(self, end):
+        end = float(end)
+        self.range_length = end - self.range_start
+
+    @property
+    def range_interval(self):
+        return np.array([self.range_start, self.range_end])
+
+    @range_interval.setter
+    def range_interval(self, interval):
+        start, end = interval
+        start = float(start)
+        end = float(end)
+        self.range_start = start
+        self.range_end = end
+
+    @property
+    def repetition_mode(self):
+        return self._repetition_mode
+
+    @repetition_mode.setter
+    def repetition_mode(self, repetition_mode):
+        if not isinstance(repetition_mode, self.RepetitionMode):
+            raise TypeError("repetition_mode must be of type RepetitionMode")
+        self._repetition_mode = repetition_mode
+
+    @property
+    def update_rate(self):
+        return self._update_rate
+
+    @update_rate.setter
+    def update_rate(self, rate):
+        if rate is not None:
+            rate = float(rate)
+            if rate <= 0.0:
+                raise ValueError("update_rate must None or > 0")
+        self._update_rate = rate
+
+    @property
+    def gain(self):
+        return self._gain
+
+    @gain.setter
+    def gain(self, gain):
+        gain = float(gain)
+        if not 0.0 <= gain <= 1.0:
+            raise ValueError("gain must be between 0.0 and 1.0")
+        self._gain = gain
 
     @property
     def hw_accelerated_average_samples(self):
         return self._hw_accelerated_average_samples
 
     @hw_accelerated_average_samples.setter
-    def hw_accelerated_average_samples(self, hw_accelerated_average_samples):
-        if hw_accelerated_average_samples < 1:
-            raise ValueError("number of hardware accelerated average samples must be >= 1")
-        if hw_accelerated_average_samples > 63:
-            raise ValueError("number of hardware accelerated average samples must be <= 63")
-        self._hw_accelerated_average_samples = hw_accelerated_average_samples
+    def hw_accelerated_average_samples(self, hwaas):
+        hwaas = int(hwaas)
+        if not 1 <= hwaas <= 63:
+            raise ValueError("hw_accelerated_average_samples must be between 1 and 63, inclusive")
+        self._hw_accelerated_average_samples = hwaas
 
     @property
-    def experimental_stitching(self):
-        return self._experimental_stitching
+    def profile(self):
+        return self._profile
 
-    @experimental_stitching.setter
-    def experimental_stitching(self, experimental_stitching):
-        self._experimental_stitching = experimental_stitching
+    @profile.setter
+    def profile(self, profile):
+        if not isinstance(profile, self.Profile):
+            raise ValueError("profile must be of type Profile")
+        self._profile = profile
 
 
 class BaseDenseServiceConfig(BaseServiceConfig):
-    _running_average_factor = None
+    _downsampling_factor = 1
+    _noise_level_normalization = True
 
     @property
-    def running_average_factor(self):
-        return self._running_average_factor
+    def downsampling_factor(self):
+        return self._downsampling_factor
 
-    @running_average_factor.setter
-    def running_average_factor(self, factor):
-        if not (0 <= factor < 1):
-            raise ValueError("running average factor must be between 0 and 1")
-        self._running_average_factor = factor
+    @downsampling_factor.setter
+    def downsampling_factor(self, factor):
+        factor = int(factor)
+        if factor not in [1, 2, 4]:
+            raise ValueError("downsampling_factor must be 1, 2, or 4")
+        self._downsampling_factor = factor
+
+    @property
+    def noise_level_normalization(self):
+        return self._noise_level_normalization
+
+    @noise_level_normalization.setter
+    def noise_level_normalization(self, enabled):
+        enabled = bool(enabled)
+        self._noise_level_normalization = enabled
 
 
-class PowerBinServiceConfig(BaseServiceConfig):
-    _hw_accelerated_average_samples = 8
+class PowerBinServiceConfig(BaseDenseServiceConfig):
     _bin_count = None
 
     @property
     def mode(self):
-        return "power_bin"
+        return Mode.POWER_BINS
 
     @property
     def bin_count(self):
@@ -166,133 +215,116 @@ class PowerBinServiceConfig(BaseServiceConfig):
 
     @bin_count.setter
     def bin_count(self, count):
-        if count <= 0:
-            raise ValueError("bin count must be > 0")
+        if count is not None:
+            count = int(count)
+            if count <= 0:
+                raise ValueError("bin_count must be None or > 0")
         self._bin_count = count
 
 
 class EnvelopeServiceConfig(BaseDenseServiceConfig):
-    MAX_DEPTH_RESOLUTION = 0
-    MAX_SNR = 1
-    DIRECT_LEAKAGE = 2
-    PROFILES = [MAX_DEPTH_RESOLUTION, MAX_SNR, DIRECT_LEAKAGE]
-
-    _session_profile = MAX_SNR
-    _compensate_phase = None
+    _running_average_factor = 0.7
 
     @property
     def mode(self):
-        return "envelope"
+        return Mode.ENVELOPE
 
     @property
-    def compensate_phase(self):
-        return self._compensate_phase
+    def running_average_factor(self):
+        return self._running_average_factor
 
-    @compensate_phase.setter
-    def compensate_phase(self, enabled):
-        self._compensate_phase = enabled
-
-    @property
-    def session_profile(self):
-        return self._session_profile
-
-    @session_profile.setter
-    def session_profile(self, profile):
-        if profile not in self.PROFILES:
-            raise ValueError("invalid profile")
-        self._session_profile = profile
+    @running_average_factor.setter
+    def running_average_factor(self, factor):
+        factor = float(factor)
+        if not (0 <= factor < 1):
+            raise ValueError("running_average_factor must be between 0.0 and 1.0")
+        self._running_average_factor = factor
 
 
 class IQServiceConfig(BaseDenseServiceConfig):
-    SAMPLING_MODE_A = 0
-    SAMPLING_MODE_B = 1
-    SAMPLING_MODES = [SAMPLING_MODE_A, SAMPLING_MODE_B]
+    class SamplingMode(ConfigEnum):
+        A = ("A", 0)
+        B = ("B", 1)
 
-    _sampling_mode = SAMPLING_MODE_A
-    _stepsize = 1
+    _sampling_mode = SamplingMode.A
 
     @property
     def mode(self):
-        return "iq"
+        return Mode.IQ
 
     @property
     def sampling_mode(self):
         return self._sampling_mode
 
     @sampling_mode.setter
-    def sampling_mode(self, sampling_mode):
-        if sampling_mode not in self.SAMPLING_MODES:
-            raise ValueError("invalid sampling mode")
-        self._sampling_mode = sampling_mode
-
-    @property
-    def stepsize(self):
-        return self._stepsize
-
-    @stepsize.setter
-    def stepsize(self, stepsize):
-        if stepsize not in [1, 2, 4]:
-            raise ValueError("stepsize must be 1, 2, or 4")
-        self._stepsize = stepsize
+    def sampling_mode(self, mode):
+        if not isinstance(mode, self.SamplingMode):
+            raise ValueError("sampling_mode must be of type SamplingMode")
+        self._sampling_mode = mode
 
 
 class SparseServiceConfig(BaseServiceConfig):
-    SAMPLING_MODE_A = 0
-    SAMPLING_MODE_B = 1
-    SAMPLING_MODES = [SAMPLING_MODE_A, SAMPLING_MODE_B]
+    class SamplingMode(ConfigEnum):
+        A = ("A", 0)
+        B = ("B", 1)
 
-    _hw_accelerated_average_samples = 60
-    _number_of_subsweeps = 16
-    _subsweep_rate = None
-    _stepsize = 1
-    _sampling_mode = SAMPLING_MODE_B
+    _sweeps_per_frame = 16
+    _sweep_rate = None
+    _sampling_mode = SamplingMode.B
+    _downsampling_factor = 1
 
     @property
     def mode(self):
-        return "sparse"
+        return Mode.SPARSE
 
     @property
-    def number_of_subsweeps(self):
-        return self._number_of_subsweeps
+    def sweeps_per_frame(self):
+        return self._sweeps_per_frame
 
-    @number_of_subsweeps.setter
-    def number_of_subsweeps(self, number_of_subsweeps):
-        if number_of_subsweeps < 1:
-            raise ValueError("number of subsweeps must be > 0")
-        self._number_of_subsweeps = number_of_subsweeps
+    @sweeps_per_frame.setter
+    def sweeps_per_frame(self, sweeps_per_frame):
+        sweeps_per_frame = int(sweeps_per_frame)
+        if sweeps_per_frame < 1:
+            raise ValueError("sweeps_per_frame must be at least 1")
+        self._sweeps_per_frame = sweeps_per_frame
+
+    @property
+    def sweep_rate(self):
+        return self._sweep_rate
+
+    @sweep_rate.setter
+    def sweep_rate(self, rate):
+        if rate is not None:
+            rate = float(rate)
+            if rate <= 0.0:
+                raise ValueError("sweep_rate must None or > 0")
+        self._sweep_rate = rate
 
     @property
     def sampling_mode(self):
         return self._sampling_mode
 
     @sampling_mode.setter
-    def sampling_mode(self, sampling_mode):
-        if sampling_mode not in self.SAMPLING_MODES:
-            raise ValueError("invalid sampling mode")
-        self._sampling_mode = sampling_mode
+    def sampling_mode(self, mode):
+        if not isinstance(mode, self.SamplingMode):
+            raise ValueError("sampling_mode must be of type SamplingMode")
+        self._sampling_mode = mode
 
     @property
-    def subsweep_rate(self):
-        return self._subsweep_rate
+    def downsampling_factor(self):
+        return self._downsampling_factor
 
-    @subsweep_rate.setter
-    def subsweep_rate(self, subsweep_rate):
-        if subsweep_rate is not None and subsweep_rate <= 0.0:
-            raise ValueError("subsweep rate must be > 0 or None")
-        self._subsweep_rate = subsweep_rate
-
-    @property
-    def stepsize(self):
-        return self._stepsize
-
-    @stepsize.setter
-    def stepsize(self, stepsize):
-        if stepsize < 1:
-            raise ValueError("stepsize must be at least 1")
-        self._stepsize = stepsize
+    @downsampling_factor.setter
+    def downsampling_factor(self, factor):
+        factor = int(factor)
+        if factor < 1:
+            raise ValueError("downsampling_factor must be at least 1")
+        self._downsampling_factor = factor
 
 
-class DistancePeakDetectorConfig(BaseServiceConfig):
-    @property
-    def mode(self):
-        return "distance_peak_fix_threshold"
+MODE_TO_CONFIG_CLASS_MAP = {
+    Mode.POWER_BINS: PowerBinServiceConfig,
+    Mode.ENVELOPE: EnvelopeServiceConfig,
+    Mode.IQ: IQServiceConfig,
+    Mode.SPARSE: SparseServiceConfig,
+}
