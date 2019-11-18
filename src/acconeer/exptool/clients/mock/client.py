@@ -1,14 +1,24 @@
+import logging
+from time import sleep, time
+
 import numpy as np
 from scipy.signal import butter, filtfilt
-from time import time, sleep
-import logging
 
 from acconeer.exptool import SDK_VERSION
 from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
-from acconeer.exptool.configs import EnvelopeServiceConfig
+from acconeer.exptool.configs import BaseServiceConfig
+from acconeer.exptool.modes import Mode
 
 
 log = logging.getLogger(__name__)
+
+
+START_KEY = "range_start_m"
+LENGTH_KEY = "range_length_m"
+STEP_LENGTH_KEY = "step_length_m"
+MISSED_GET_NEXT_KEY = "missed_data"
+DATA_SATURATED_KEY = "data_saturated"
+DATA_LENGTH_KEY = "data_length"
 
 
 class MockClient(BaseClient):
@@ -22,19 +32,28 @@ class MockClient(BaseClient):
         self._config = config
 
         update_rate_limit = 100
-        if config.experimental_stitching or config.sweep_rate > update_rate_limit:
+
+        if config.mode == Mode.SPARSE:
+            if config.sweep_rate is not None:
+                sparse_frame_rate_limit = config.sweep_rate / config.sweeps_per_frame
+                update_rate_limit = min(update_rate_limit, sparse_frame_rate_limit)
+
+        if config.update_rate is None:
             self._update_rate = update_rate_limit
+            self._missed = False
         else:
-            self._update_rate = config.sweep_rate
+            self._update_rate = min(config.update_rate, update_rate_limit)
+            self._missed = config.update_rate > self._update_rate
 
         try:
-            mock_class = mock_class_map[config.mode]
+            mock_class = MOCK_CLASS_MAP[config.mode]
         except KeyError as e:
             raise ClientError("mode not supported") from e
 
         self._mocker = mock_class(config)
-
-        return self._mocker.session_info
+        info = self._mocker.session_info
+        info["stitch_count"] = 0
+        return info
 
     def _start_session(self):
         self._start_time = time()
@@ -54,13 +73,17 @@ class MockClient(BaseClient):
         num_sensors = len(config.sensor)
 
         if self.squeeze and num_sensors == 1:
-            return self._mocker.get_next(*args, 0)
+            info, data = self._mocker.get_next(*args, 0)
+            info[MISSED_GET_NEXT_KEY] = self._missed
         else:
             idx_offset = max(0, (num_sensors - 1) / 2)
             out = [self._mocker.get_next(*args, i - idx_offset) for i in range(num_sensors)]
             info, data = zip(*out)
             data = np.array(data)
             info = list(info)
+
+            for d in info:
+                d[MISSED_GET_NEXT_KEY] = self._missed
 
         return info, data
 
@@ -77,12 +100,15 @@ class DenseMocker:
     def __init__(self, config):
         self.config = config
 
-        self.num_depths = int(round(config.range_length / self.BASE_STEP_LENGTH)) + 1
+        step_length = self.BASE_STEP_LENGTH * config.downsampling_factor
+
+        self.num_depths = int(round(config.range_length / step_length)) + 1
 
         self.session_info = {
-            "actual_range_start": config.range_start,
-            "actual_range_length": config.range_length,
-            "data_length": self.num_depths,
+            START_KEY: config.range_start,
+            LENGTH_KEY: config.range_length,
+            DATA_LENGTH_KEY: self.num_depths,
+            STEP_LENGTH_KEY: step_length,
         }
 
         self.range_center = config.range_start + config.range_length / 2
@@ -92,8 +118,7 @@ class DenseMocker:
 class EnvelopeMocker(DenseMocker):
     def get_next(self, t, i, offset):
         info = {
-            "data_saturated": False,
-            "sequence_number": i,
+            DATA_SATURATED_KEY: False,
         }
 
         noise = 100 + 20 * np.random.randn(self.num_depths)
@@ -103,8 +128,8 @@ class EnvelopeMocker(DenseMocker):
         center = self.range_center
         center += np.random.randn() * 0.2e-3
         center += offset * 0.1
-        profile = getattr(self.config, "session_profile", None)
-        s = 0.01 if profile == EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION else 0.04
+        profile = getattr(self.config, "profile", BaseServiceConfig.Profile.PROFILE_2)
+        s = 0.01 + (profile.json_value - 1.0) * 0.03
         signal = ampl * np.exp(-np.square((self.depths - center) / s))
 
         data = signal + noise
@@ -115,8 +140,7 @@ class EnvelopeMocker(DenseMocker):
 class IQMocker(DenseMocker):
     def get_next(self, t, i, offset):
         info = {
-            "data_saturated": False,
-            "sequence_number": i,
+            DATA_SATURATED_KEY: False,
         }
 
         noise = np.random.randn(self.num_depths) + 1j * np.random.randn(self.num_depths)
@@ -141,13 +165,16 @@ class PowerBinMocker(EnvelopeMocker):
     def __init__(self, config):
         self.config = config
 
+        step_length = self.BASE_STEP_LENGTH * config.downsampling_factor
+
         self.num_depths = config.bin_count or int(round(config.range_length / 0.1)) + 1
 
         self.session_info = {
-            "actual_range_start": config.range_start,
-            "actual_range_length": config.range_length,
-            "data_length": self.num_depths,
-            "actual_bin_count": self.num_depths,
+            START_KEY: config.range_start,
+            LENGTH_KEY: config.range_length,
+            DATA_LENGTH_KEY: self.num_depths,
+            STEP_LENGTH_KEY: step_length,
+            "bin_count": self.num_depths,
         }
 
         self.range_center = config.range_start + config.range_length / 2
@@ -160,20 +187,21 @@ class SparseMocker:
     def __init__(self, config):
         self.config = config
 
+        step_length = 0.06 * config.downsampling_factor
+
         start_point = int(round(config.range_start / self.BASE_STEP_LENGTH))
-        end_point = int(round(config.range_end / self.BASE_STEP_LENGTH))
-
-        self.num_depths = end_point - start_point + 1
-
         start = start_point * self.BASE_STEP_LENGTH
+        length_point = int(round((config.range_end - start) / step_length))
+        self.num_depths = length_point + 1
+        end_point = start_point + length_point
         end = end_point * self.BASE_STEP_LENGTH
 
         self.session_info = {
-            "actual_range_start": start,
-            "actual_range_length": end - start,
-            "data_length": self.num_depths * config.number_of_subsweeps,
-            "actual_subsweep_rate": 1e3,
-            "actual_stepsize": 0.06 * getattr(config, "stepsize", 1),
+            START_KEY: start,
+            LENGTH_KEY: end - start,
+            DATA_LENGTH_KEY: self.num_depths * config.sweeps_per_frame,
+            STEP_LENGTH_KEY: step_length,
+            "sweep_rate": config.sweep_rate or 5e3,
         }
 
         self.range_center = (start + end) / 2
@@ -181,25 +209,24 @@ class SparseMocker:
 
     def get_next(self, t, i, offset):
         info = {
-            "data_saturated": False,
-            "sequence_number": i,
+            DATA_SATURATED_KEY: False,
         }
 
-        num_subsweeps = self.config.number_of_subsweeps
+        num_sweeps = self.config.sweeps_per_frame
 
-        noise = 100 * np.random.randn(num_subsweeps, self.num_depths)
+        noise = 100 * np.random.randn(num_sweeps, self.num_depths)
 
         xs = self.depths - self.range_center + 0.1 * np.sin(t)
         signal = 5000 * np.exp(-np.square(xs / 0.1)) * np.sin(xs / 2.5e-3)
 
-        data = noise + np.tile(signal[None, :], [num_subsweeps, 1])
+        data = noise + np.tile(signal[None, :], [num_sweeps, 1])
 
         return info, data
 
 
-mock_class_map = {
-    "envelope": EnvelopeMocker,
-    "iq": IQMocker,
-    "sparse": SparseMocker,
-    "power_bin": PowerBinMocker,
+MOCK_CLASS_MAP = {
+    Mode.ENVELOPE: EnvelopeMocker,
+    Mode.IQ: IQMocker,
+    Mode.SPARSE: SparseMocker,
+    Mode.POWER_BINS: PowerBinMocker,
 }
