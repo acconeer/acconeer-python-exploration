@@ -1,24 +1,150 @@
-import numpy as np
+import abc
 import logging
-from time import time, sleep
 import multiprocessing as mp
+import platform
 import queue
 import signal
 import traceback
-import platform
+from collections import namedtuple
+from time import sleep, time
 
-from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
-from acconeer.exptool.clients.reg import protocol, utils
-from acconeer.exptool.clients import links
+import numpy as np
+
 from acconeer.exptool import libft4222
+from acconeer.exptool.clients import links
+from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
+from acconeer.exptool.clients.reg import protocol, regmap
+from acconeer.exptool.modes import Mode
 
 
 log = logging.getLogger(__name__)
 
-SPI_MAIN_CTRL_SLEEP = 0.3
+ModeInfo = namedtuple("ModeInfo", ["fixed_buffer_size", "byte_per_element"])
+
+MODE_INFOS = {
+    Mode.POWER_BINS: ModeInfo(True, 2),
+    Mode.ENVELOPE: ModeInfo(True, 2),
+    Mode.IQ: ModeInfo(True, 4),
+    Mode.SPARSE: ModeInfo(True, 2),
+}
+
+Product = namedtuple("Product", ["name", "id", "baudrate"])
+
+PRODUCTS = [
+    Product("XM112", 0xACC0, 3000000),
+    Product("XM122", 0xACC1, 1000000),
+]
 
 
-class UARTClient(BaseClient):
+class RegBaseClient(BaseClient):
+    _STATUS_TIMEOUT = 1.0
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._streaming_control_val = "no_streaming"  # Override in subclass (UART)
+
+        self._mode = None
+        self._config = None
+        self._data_length = None
+
+    def _setup_session(self, config):
+        if len(config.sensor) > 1:
+            raise ValueError("the register protocol does not support multiple sensors")
+        if config.sensor[0] != 1:
+            raise ValueError("the register protocol currently only supports using sensor 1")
+
+        mode = config.mode
+        self._mode = mode
+        self._config = config
+
+        self._write_reg("main_control", "stop")
+        self._write_reg("mode_selection", mode)
+        self._write_reg("update_rate", 0)
+
+        for key, reg in regmap.get_config_key_to_reg_map(mode).items():
+            val = getattr(config, key)
+
+            if val is None:
+                continue
+
+            self._write_reg(reg, val)
+
+        self._write_reg("sensor_power_mode", "active")
+        self._write_reg("streaming_control", self._streaming_control_val)
+
+        self._write_reg("main_control", "create")
+        self._wait_status(regmap.STATUS_FLAGS.CREATED)
+
+        info = {}
+        info_regs = regmap.get_session_info_regs(mode)
+        for reg in info_regs:
+            k = reg.stripped_name
+            k = regmap.STRIPPED_NAME_TO_INFO_REMAP.get(k, k)
+
+            if k is None:
+                continue
+
+            info[k] = self._read_reg(reg)
+
+        if MODE_INFOS[mode].fixed_buffer_size:
+            self._data_length = info.get("data_length")
+
+            log.info("data length: {}".format(self._data_length))
+            log.info("buffer size: {} B".format(self._buffer_size))
+        else:
+            self._data_length = None
+
+        if self._data_rate is not None:
+            log.info("requested data rate: {:.2f} Mbit/s".format(self._data_rate * 1e-6))
+
+        return info
+
+    def _wait_status(self, val, mask=None):
+        val = regmap.STATUS_FLAGS(val)
+
+        if mask is None:
+            mask = val
+        else:
+            mask = regmap.STATUS_FLAGS(mask)
+
+        start_time = time()
+
+        while time() - start_time < self._STATUS_TIMEOUT:
+            status = self._read_reg(regmap.STATUS_REG)
+
+            status_error = status & regmap.STATUS_MASKS.ERROR_MASK
+
+            if status_error:
+                raise ClientError("server error: " + str(status_error).split(".")[1])
+
+            if (status & mask) == val:
+                return
+
+    @property
+    def _buffer_size(self):  # B
+        if self._data_length is None or self._mode is None:
+            return None
+
+        return self._data_length * MODE_INFOS[self._mode].byte_per_element
+
+    @property
+    def _data_rate(self):  # Mbit/s
+        if self._buffer_size is None or self._config.update_rate is None:
+            return None
+
+        return self._buffer_size * 8 * self._config.update_rate
+
+    @abc.abstractmethod
+    def _read_reg(self, reg):
+        pass
+
+    @abc.abstractmethod
+    def _write_reg(self, reg, val):
+        pass
+
+
+class UARTClient(RegBaseClient):
     _XM112_LED_PIN = 67
 
     DEFAULT_BASE_BAUDRATE = 115200
@@ -27,15 +153,14 @@ class UARTClient(BaseClient):
     def __init__(self, port, **kwargs):
         super().__init__(**kwargs)
 
+        self._streaming_control_val = "uart_streaming"
+
         if platform.system().lower() == "windows":
             self._link = links.SerialLink(port)
         else:
             self._link = links.SerialProcessLink(port)
 
         self.override_baudrate = kwargs.get("override_baudrate")
-
-        self._mode = protocol.NO_MODE
-        self._num_subsweeps = None
 
     def _connect(self):
         self._link.timeout = self.CONNECT_ROUTINE_TIMEOUT
@@ -49,7 +174,7 @@ class UARTClient(BaseClient):
             except links.LinkError as e:
                 raise ClientError("could not connect, no response") from e
         else:
-            baudrates = [product.baudrate for product in protocol.PRODUCTS]
+            baudrates = [product.baudrate for product in PRODUCTS]
             baudrates.append(self.DEFAULT_BASE_BAUDRATE)
             baudrates = sorted(list(set(baudrates)))
 
@@ -71,8 +196,8 @@ class UARTClient(BaseClient):
             else:
                 raise ClientError("could not connect, no response")
 
-            product_id = self._read_reg("product_id")
-            product = {product.id: product for product in protocol.PRODUCTS}[product_id]
+            product_id = self._read_reg("product_identification")
+            product = {product.id: product for product in PRODUCTS}[product_id]
 
             if baudrate != product.baudrate:
                 log.debug("switching to {} baud...".format(product.baudrate))
@@ -84,12 +209,6 @@ class UARTClient(BaseClient):
 
         self._link.timeout = self._link.DEFAULT_TIMEOUT
 
-        ver = self._read_reg("product_version")
-        if ver < protocol.MIN_VERSION:
-            log.warning("server version is not supported (too old)")
-        elif ver != protocol.DEV_VERSION:
-            log.warning("server version might not be fully supported")
-
         version_buffer = self._read_buf_raw()
         version_info = decode_version_buffer(version_buffer)
 
@@ -99,67 +218,18 @@ class UARTClient(BaseClient):
         return info
 
     def _setup_session(self, config):
-        if len(config.sensor) > 1:
-            raise ValueError("the register protocol does not support multiple sensors")
-        if config.sensor[0] != 1:
-            raise ValueError("the register protocol currently only supports using sensor 1")
+        ret = super()._setup_session(config)
 
-        mode = protocol.get_mode(config.mode)
-        self._mode = mode
+        if self._data_rate is not None:
+            if self._data_rate > 2 / 3 * self._link.baudrate:
+                log.warning("data rate might be too high")
 
-        self._write_reg("main_control", "stop")
-
-        self._write_reg("mode_selection", mode)
-
-        if config.experimental_stitching:
-            self._write_reg("repetition_mode", "max")
-            log.warning("experimental stitching on - switching to max freq. mode")
-        else:
-            self._write_reg("repetition_mode", "fixed")
-
-        self._write_reg("streaming_control", "uart")
-        self._write_reg("sensor_power_mode", "d")
-
-        if mode == "iq":
-            self._write_reg("output_data_compression", 1)
-
-        rvs = utils.get_reg_vals_for_config(config)
-        for rv in rvs:
-            self._write_reg_raw(rv.addr, rv.val)
-
-        self._write_reg("main_control", "create")
-        status = self._read_reg("status")
-
-        if status & protocol.STATUS_ERROR_ON_SERVICE_CREATION_MASK:
-            raise ClientError("session setup failed")
-
-        info = {}
-        info_regs = utils.get_session_info_regs(mode)
-        for reg in info_regs:
-            info[reg.name] = self._read_reg(reg, mode)
-
-        self._num_subsweeps = info.get("number_of_subsweeps")
-
-        # data rate check
-        data_length = info.get("data_length")
-        freq = info.get("frequency")
-        bpp = protocol.BYTE_PER_POINT.get(mode)
-        if data_length:
-            log.debug("data length: {}".format(data_length))
-
-            if bpp and freq and not config.experimental_stitching:
-                data_rate = 8 * bpp * data_length * freq
-                log_text = "data rate: {:.2f} Mbit/s".format(data_rate*1e-6)
-                if data_rate > 2/3 * self._link.baudrate:
-                    log.warning(log_text)
-                    log.warning("data rate might be too high")
-                else:
-                    log.info(log_text)
-
-        return info
+        return ret
 
     def _start_session(self):
         self._write_reg("main_control", "activate")
+        # self._wait_status(regmap.STATUS_FLAGS.ACTIVATED)
+        # TODO: how can we handle streaming and reading/writing registers at the same time?
 
     def _get_next(self):
         packet = self._recv_packet(allow_recovery_skip=True)
@@ -170,15 +240,22 @@ class UARTClient(BaseClient):
         info = {}
         for addr, enc_val in packet.result_info:
             try:
-                reg = protocol.get_reg(addr, self._mode)
-                val = protocol.decode_reg_val(reg, enc_val)
+                reg = regmap.get_reg(addr, self._mode)
+                val = reg.decode(enc_val)
             except protocol.ProtocolError:
                 log.info("got unknown reg val in result info")
                 log.info("addr: {}, value: {}".format(addr, fmt_enc_val(enc_val)))
             else:
-                info[reg.name] = val
+                k = reg.stripped_name
+                k = regmap.STRIPPED_NAME_TO_INFO_REMAP.get(k, k)
 
-        data = protocol.decode_output_buffer(packet.buffer, self._mode, self._num_subsweeps)
+                if k is None:
+                    continue
+
+                info[k] = val
+
+        sweeps_per_frame = getattr(self._config, "sweeps_per_frame", None)
+        data = protocol.decode_output_buffer(packet.buffer, self._mode, sweeps_per_frame)
 
         if self.squeeze:
             return info, data
@@ -200,6 +277,7 @@ class UARTClient(BaseClient):
             raise ClientError("timeout while stopping session")
 
     def _disconnect(self):
+        self._write_reg("uart_baudrate", self.DEFAULT_BASE_BAUDRATE)
         self._link.disconnect()
 
     def _read_buf_raw(self, addr=protocol.MAIN_BUFFER_ADDR):
@@ -217,13 +295,13 @@ class UARTClient(BaseClient):
         return res.buffer
 
     def _read_reg(self, reg, mode=None):
-        mode = mode or self._mode
-        reg = protocol.get_reg(reg, mode)
+        mode = self._mode if mode is None else mode
+        reg = regmap.get_reg(reg, mode)
         enc_val = self._read_reg_raw(reg.addr)
-        return protocol.decode_reg_val(reg, enc_val)
+        return reg.decode(enc_val)
 
     def _read_reg_raw(self, addr):
-        addr = protocol.get_addr_for_reg(addr)
+        addr = regmap.get_reg_addr(addr)
         req = protocol.RegReadRequest(addr)
         self._send_packet(req)
 
@@ -240,12 +318,12 @@ class UARTClient(BaseClient):
         return enc_val
 
     def _write_reg(self, reg, val, expect_response=True):
-        reg = protocol.get_reg(reg, self._mode)
-        enc_val = protocol.encode_reg_val(reg, val)
+        reg = regmap.get_reg(reg, self._mode)
+        enc_val = reg.encode(val)
         self._write_reg_raw(reg.addr, enc_val, expect_response)
 
     def _write_reg_raw(self, addr, enc_val, expect_response=True):
-        addr = protocol.get_addr_for_reg(addr)
+        addr = regmap.get_reg_addr(addr)
         rrv = protocol.RegVal(addr, enc_val)
         req = protocol.RegWriteRequest(rrv)
         self._send_packet(req)
@@ -269,13 +347,13 @@ class UARTClient(BaseClient):
         buf_1 = self._link.recv(1 + protocol.LEN_FIELD_SIZE)
 
         start_marker = buf_1[0]
-        packet_len = int.from_bytes(buf_1[1:], protocol.BO)
+        packet_len = int.from_bytes(buf_1[1 :], protocol.BO)
 
         if start_marker != protocol.START_MARKER:
             raise ClientError("got invalid frame (incorrect start marker)")
 
         buf_2 = self._link.recv(packet_len + 2)
-        packet = buf_2[:-1]
+        packet = buf_2[: -1]
         end_marker = buf_2[-1]
 
         if end_marker != protocol.END_MARKER:
@@ -303,7 +381,7 @@ class UARTClient(BaseClient):
                     log.debug("recovery attempt failed")
                     continue
 
-                packet = buf_2[si+1+protocol.LEN_FIELD_SIZE:-1]
+                packet = buf_2[si + 1 + protocol.LEN_FIELD_SIZE : -1]
                 break
 
             log.warning("successfully recovered from corrupt frame")
@@ -313,26 +391,24 @@ class UARTClient(BaseClient):
     def _handshake(self):
         self._write_reg("main_control", "stop", expect_response=False)
 
-        exp_addr = protocol.get_addr_for_reg("main_control")
-        exp_enc_val = protocol.encode_reg_val("main_control", "stop")
+        exp_addr = regmap.get_reg_addr("main_control")
+        exp_enc_val = regmap.get_reg("main_control").encode("stop")
         exp_reg_val = protocol.RegVal(exp_addr, exp_enc_val)
         exp_packet = protocol.RegWriteResponse(exp_reg_val)
         exp_frame = protocol.insert_packet_into_frame(exp_packet)
         self._link.recv_until(exp_frame)
 
-        idn_reg = self._read_reg("product_id")
-        possible_ids = [product.id for product in protocol.PRODUCTS]
+        idn_reg = self._read_reg("product_identification")
+        possible_ids = [product.id for product in PRODUCTS]
         if idn_reg not in possible_ids:
             raise ClientError("unexpected product id")
 
 
-class SPIClient(BaseClient):
+class SPIClient(RegBaseClient):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._mode = protocol.NO_MODE
+
         self._proc = None
-        self._num_subsweeps = None
-        self._experimental_stitching = None
 
     def _connect(self):
         self._cmd_queue = mp.Queue()
@@ -340,7 +416,7 @@ class SPIClient(BaseClient):
         args = (
             self._cmd_queue,
             self._data_queue,
-            )
+        )
         self._proc = SPICommProcess(*args)
         self._proc.start()
 
@@ -348,16 +424,10 @@ class SPIClient(BaseClient):
 
         log.debug("connected")
 
-        idn_reg = self._read_reg("product_id")
-        possible_ids = [product.id for product in protocol.PRODUCTS]
+        idn_reg = self._read_reg("product_identification")
+        possible_ids = [product.id for product in PRODUCTS]
         if idn_reg not in possible_ids:
             raise ClientError("unexpected product id")
-
-        ver = self._read_reg("product_version")
-        if ver < protocol.MIN_VERSION:
-            log.warning("server version is not supported (too old)")
-        elif ver != protocol.DEV_VERSION:
-            log.warning("server version might not be fully supported")
 
         version_buffer = self._read_main_buffer()
         version_info = decode_version_buffer(version_buffer)
@@ -368,69 +438,20 @@ class SPIClient(BaseClient):
         return info
 
     def _setup_session(self, config):
-        if len(config.sensor) > 1:
-            raise ValueError("the register protocol does not support multiple sensors")
-        if config.sensor[0] != 1:
-            raise ValueError("the register protocol currently only supports using sensor 1")
-
-        mode = protocol.get_mode(config.mode)
-        self._mode = mode
-
-        self._experimental_stitching = bool(config.experimental_stitching)
-        sweep_rate = None if config.experimental_stitching else config.sweep_rate
-        self.__cmd_proc("set_mode_and_rate", mode, sweep_rate)
-
-        self._write_reg("main_control", "stop")
-
-        self._write_reg("mode_selection", mode)
-
-        if config.experimental_stitching:
-            self._write_reg("repetition_mode", "max")
-            log.warning("experimental stitching on - switching to max freq. mode")
-        else:
-            self._write_reg("repetition_mode", "fixed")
-
-        self._write_reg("streaming_control", "disable")
-        self._write_reg("sensor_power_mode", "d")
-
-        if mode == "iq":
-            self._write_reg("output_data_compression", 1)
-
-        rvs = utils.get_reg_vals_for_config(config)
-        for rv in rvs:
-            self._write_reg_raw(rv.addr, rv.val)
-
-        self._write_reg("main_control", "create")
-        sleep(SPI_MAIN_CTRL_SLEEP)
-        status = self._read_reg("status")
-
-        if status & protocol.STATUS_ERROR_ON_SERVICE_CREATION_MASK:
-            raise ClientError("session setup failed")
-
-        info = {}
-        info_regs = utils.get_session_info_regs(mode)
-        for reg in info_regs:
-            info[reg.name] = self._read_reg(reg)
-
-        self._num_subsweeps = info.get("number_of_subsweeps")
-
-        # data rate check
-        data_length = info.get("data_length")
-        freq = info.get("frequency")
-        bpp = protocol.BYTE_PER_POINT.get(mode)
-        if data_length:
-            log.debug("assumed data length: {}".format(data_length))
-
-            if bpp and freq and not config.experimental_stitching:
-                data_rate = 8 * bpp * data_length * freq
-                log_text = "data rate: {:.2f} Mbit/s".format(data_rate*1e-6)
-                log.info(log_text)
-
-        return info
+        ret = super()._setup_session(config)
+        self.__cmd_proc("update_state", self._mode, self._config, self._buffer_size)
+        return ret
 
     def _start_session(self):
+        self._write_reg("main_control", "activate")
+        self._wait_status(regmap.STATUS_FLAGS.ACTIVATED)
+
+        if self._buffer_size is not None:
+            self._wait_status(regmap.STATUS_FLAGS.DATA_READY)
+            reported_buffer_size = self._read_reg("output_buffer_length")
+            assert self._buffer_size == reported_buffer_size
+
         self.__cmd_proc("start_session")
-        self._seq_num = None
 
     def _get_next(self):
         ret_cmd, ret_args = self._data_queue.get()
@@ -440,17 +461,8 @@ class SPIClient(BaseClient):
             raise ClientError
         info, buffer = ret_args
 
-        data = protocol.decode_output_buffer(buffer, self._mode, self._num_subsweeps)
-
-        if not self._experimental_stitching:
-            cur_seq_num = info.get("sequence_number")
-            if cur_seq_num:
-                if self._seq_num:
-                    if cur_seq_num > self._seq_num + 1:
-                        log.info("missed sweep")
-                    if cur_seq_num <= self._seq_num:
-                        log.info("got same sweep twice")
-                self._seq_num = cur_seq_num
+        sweeps_per_frame = getattr(self._config, "sweeps_per_frame", None)
+        data = protocol.decode_output_buffer(buffer, self._mode, sweeps_per_frame)
 
         if self.squeeze:
             return info, data
@@ -460,36 +472,39 @@ class SPIClient(BaseClient):
     def _stop_session(self):
         self.__cmd_proc("stop_session")
 
+        mask = regmap.STATUS_FLAGS.CREATED | regmap.STATUS_FLAGS.ACTIVATED
+        self._wait_status(0, mask=mask)
+
     def _disconnect(self):
         self.__cmd_proc("disconnect")
         self._proc.join(1)
 
     def _read_reg(self, reg):
-        reg = protocol.get_reg(reg, self._mode)
+        reg = regmap.get_reg(reg, self._mode)
         enc_val = self._read_reg_raw(reg.addr)
-        return protocol.decode_reg_val(reg, enc_val)
+        return reg.decode(enc_val)
 
     def _read_reg_raw(self, addr):
-        addr = protocol.get_addr_for_reg(addr)
+        addr = regmap.get_reg_addr(addr)
         enc_val = self.__cmd_proc("read_reg_raw", addr)
         return enc_val
 
     def _write_reg(self, reg, val):
-        reg = protocol.get_reg(reg, self._mode)
-        enc_val = protocol.encode_reg_val(reg, val)
+        reg = regmap.get_reg(reg, self._mode)
+        enc_val = reg.encode(val)
         self._write_reg_raw(reg.addr, enc_val)
 
     def _write_reg_raw(self, addr, enc_val):
-        addr = protocol.get_addr_for_reg(addr)
+        addr = regmap.get_reg_addr(addr)
         self.__cmd_proc("write_reg_raw", addr, enc_val)
 
     def read_buf_raw(self, addr, size):
-        addr = protocol.get_addr_for_reg(addr)
+        addr = regmap.get_reg_addr(addr)
         buffer = self.__cmd_proc("read_buf_raw", addr, size)
         return buffer
 
     def _read_main_buffer(self):
-        buffer_size = self._read_reg("output_data_buffer_length")
+        buffer_size = self._read_reg("output_buffer_length")
         if buffer_size > 0:
             buffer = self.read_buf_raw(protocol.MAIN_BUFFER_ADDR, buffer_size)
         else:
@@ -524,7 +539,6 @@ class SPICommProcess(mp.Process):
         self.cmd_q = cmd_q
         self.data_q = data_q
         self.mode = None
-        self.consecutive_error_count = 0
 
     def run(self):
         self.log = logging.getLogger(__name__)
@@ -561,43 +575,42 @@ class SPICommProcess(mp.Process):
                 raise ClientError("unknown cmd {}".format(cmd))
 
     def poll(self):
-        self.consecutive_error_count = 0
-
         while self.cmd_q.empty():
             ret = self.get_next()
             self.data_q.put(("get_next", ret))
 
     def get_next(self):
         poll_t = time()
+
         while True:
             status = self.read_reg("status", do_log=False)
-            if not status:
+
+            if status & regmap.STATUS_MASKS.ERROR_MASK:
+                raise ClientError("server error: " + str(status).split(".")[1])
+            elif status & regmap.STATUS_FLAGS.DATA_READY:
+                break
+            else:
                 if (time() - poll_t) > self.poll_timeout:
                     raise ClientError("gave up polling")
+
                 continue
-            elif status & protocol.STATUS_DATA_READY_MASK:
-                self.consecutive_error_count = 0
-                break
-            elif status & protocol.STATUS_ERROR_MASK:
-                self.write_reg("main_control", "clear_status")
-                log.info("lost sweep due to server error")
 
-                self.consecutive_error_count += 1
-                if self.consecutive_error_count >= 3:
-                    raise ClientError("too many server errors")
-            else:
-                raise ClientError("got unexpected status ({})".format(status))
-
-        buffer_size = self.fixed_buf_size or self.read_reg("output_data_buffer_length")
+        buffer_size = self.fixed_buf_size or self.read_reg("output_buffer_length")
         if buffer_size > 0:
             buffer = self.read_buf_raw(protocol.MAIN_BUFFER_ADDR, buffer_size)
         else:
             buffer = bytearray()
 
         info = {}
-        info_regs = utils.get_sweep_info_regs(self.mode)
+        info_regs = regmap.get_data_info_regs(self.mode)
         for reg in info_regs:
-            info[reg.name] = self.read_reg(reg, do_log=False)
+            k = reg.stripped_name
+            k = regmap.STRIPPED_NAME_TO_INFO_REMAP.get(k, k)
+
+            if k is None:
+                continue
+
+            info[k] = self.read_reg(reg, do_log=False)
 
         self.write_reg("main_control", "clear_status", do_log=False)
 
@@ -613,25 +626,18 @@ class SPICommProcess(mp.Process):
         self.dev.set_suspend_out(False)
         self.dev.set_wake_up_interrupt(False)
 
-    def set_mode_and_rate(self, mode, sweep_rate):
+    def update_state(self, mode, config, buffer_size):
         self.mode = mode
-        if sweep_rate:
-            self.poll_timeout = (2/sweep_rate + 0.5)
-        else:
+
+        if config.update_rate is None:
             self.poll_timeout = 1.0
+        else:
+            self.poll_timeout = 2 / config.update_rate + 0.5
+
+        self.fixed_buf_size = buffer_size
 
     def start_session(self):
-        self.write_reg("main_control", "activate")
-        sleep(SPI_MAIN_CTRL_SLEEP)
-        self.write_reg("main_control", "clear_status")
-
-        if protocol.FIXED_BUF_SIZE.get(self.mode):
-            self.fixed_buf_size = self.read_reg("output_data_buffer_length")
-            log.info("using fixed buffer size of {}".format(self.fixed_buf_size))
-            if self.fixed_buf_size == 0:
-                raise ClientError("got unexpected buffer length of 0")
-        else:
-            self.fixed_buf_size = None
+        pass
 
     def stop_session(self):
         self.write_reg("main_control", "stop")
@@ -640,12 +646,12 @@ class SPICommProcess(mp.Process):
         self.dev.close()
 
     def read_reg(self, reg, do_log=True):
-        reg = protocol.get_reg(reg, self.mode)
+        reg = regmap.get_reg(reg, self.mode)
         enc_val = self.read_reg_raw(reg.addr, do_log=do_log)
-        return protocol.decode_reg_val(reg, enc_val)
+        return reg.decode(enc_val)
 
     def read_reg_raw(self, addr, do_log=True):
-        addr = protocol.get_addr_for_reg(addr)
+        addr = regmap.get_reg_addr(addr)
         b = bytearray([protocol.REG_READ_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
         enc_val = self.dev.spi_master_single_read(4)
@@ -654,12 +660,12 @@ class SPICommProcess(mp.Process):
         return enc_val
 
     def write_reg(self, reg, val, do_log=True):
-        reg = protocol.get_reg(reg, self.mode)
-        enc_val = protocol.encode_reg_val(reg, val)
+        reg = regmap.get_reg(reg, self.mode)
+        enc_val = reg.encode(val)
         self.write_reg_raw(reg.addr, enc_val, do_log=do_log)
 
     def write_reg_raw(self, addr, enc_val, do_log=True):
-        addr = protocol.get_addr_for_reg(addr)
+        addr = regmap.get_reg_addr(addr)
         b = bytearray([protocol.REG_WRITE_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
         if do_log:

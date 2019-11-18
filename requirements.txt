@@ -8,3 +8,5 @@ pyqtgraph
 PyQt5
 h5py
 Flask
+pyyaml
+attrs

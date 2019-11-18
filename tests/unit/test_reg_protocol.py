@@ -1,12 +1,7 @@
-import pytest
-
 import acconeer.exptool.clients.reg.protocol as ptcl
+from acconeer.exptool.clients.reg import regmap
+from acconeer.exptool.modes import Mode
 
-
-test_mode = "envelope"
-test_mode_val = 2
-test_reg = ptcl.REG_LOOKUP[ptcl.NO_MODE]["main_control"]
-test_mode_reg = ptcl.REG_LOOKUP["envelope"]["running_average_factor"]
 
 unp_reg_val = ptcl.RegVal(2, b"\x03\x00\x00\x00")
 unp_reg_read_res = ptcl.RegReadResponse(unp_reg_val)
@@ -29,43 +24,6 @@ pkd_reg_write_req_frame.extend(pkd_reg_write_req_packet)
 pkd_reg_write_req_frame.append(ptcl.END_MARKER)
 
 
-def test_get_mode():
-    assert ptcl.get_mode(test_mode) == test_mode
-    assert ptcl.get_mode(test_mode_val) == test_mode
-    assert ptcl.get_mode(None) is ptcl.NO_MODE
-
-    with pytest.raises(ptcl.ProtocolError):
-        ptcl.get_mode(2**17)
-
-
-def test_get_reg():
-    assert ptcl.get_reg(test_reg.name) == test_reg
-    assert ptcl.get_reg(test_reg.name, test_mode) == test_reg
-    assert ptcl.get_reg(test_reg.name, test_mode_val) == test_reg
-    assert ptcl.get_reg(test_mode_reg.name, test_mode) == test_mode_reg
-    assert ptcl.get_reg(test_mode_reg.name, test_mode_val) == test_mode_reg
-    assert ptcl.get_reg(test_reg) == test_reg
-    assert ptcl.get_reg(test_reg.addr) == test_reg
-
-    with pytest.raises(ptcl.ProtocolError):
-        ptcl.get_reg(test_mode_reg.name)
-
-
-def test_get_addr_for_reg():
-    assert ptcl.get_addr_for_reg(test_reg) == test_reg.addr
-    assert ptcl.get_addr_for_reg(123) == 123
-
-
-def test_encode_reg_val():
-    assert ptcl.encode_reg_val("mode_selection", "envelope") == b"\x02\x00\x00\x00"
-    assert ptcl.encode_reg_val("range_start", 0.06) == b"\x3c\x00\x00\x00"
-
-
-def test_decode_reg_val():
-    assert ptcl.decode_reg_val("mode_selection", b"\x02\x00\x00\x00") == "envelope"
-    assert ptcl.decode_reg_val("range_start", b"\x3c\x00\x00\x00") == 0.06
-
-
 def test_unpack_packet():
     unpacked = ptcl.unpack_packet(pkd_reg_read_res_packet)
     assert unpacked == unp_reg_read_res
@@ -77,8 +35,9 @@ def test_unpack_reg_read_res_segment():
 
 
 def test_unpack_stream_data_segment():
-    rv_addr = ptcl.get_addr_for_reg(test_mode_reg)
-    rv_enc_val = ptcl.encode_reg_val(test_mode_reg, 123)
+    reg = regmap.get_reg("run_factor", Mode.ENVELOPE)
+    rv_addr = reg.addr
+    rv_enc_val = reg.encode(123)
     rvs = [ptcl.RegVal(rv_addr, rv_enc_val)]
     buffer = bytearray(b'\x12\x34\x56')
     unp_stream_data = ptcl.StreamData(rvs, buffer)

@@ -1,0 +1,474 @@
+mode_selection:
+  address: 2
+  type: enum
+  category: general
+  values:
+    power_bins:
+      value: 1
+    envelope:
+      value: 2
+    iq:
+      value: 3
+    sparse:
+      value: 4
+    distance_peak_fixed:
+      value: 256
+    obstacle:
+      value: 768
+    presence:
+      value: 1024
+main_control:
+  address: 3
+  access: w
+  type: enum
+  category: general
+  values:
+    stop:
+      value: 0
+    create:
+      value: 1
+    activate:
+      value: 2
+    create_and_activate:
+      value: 3
+    clear_status:
+      value: 4
+streaming_control:
+  address: 5
+  type: enum
+  category: general
+  values:
+    no_streaming:
+      value: 0
+    uart_streaming:
+      value: 1
+status:
+  address: 6
+  access: r
+  type: bitmask
+  category: general
+  bits:
+    none:
+      value: 0
+    sticky_mask:
+      value: 255
+    clear_mask:
+      value: 4294967040
+    error_mask:
+      value: 4294901760
+    created:
+      value: 1
+    activated:
+      value: 2
+    data_ready:
+      value: 256
+    error:
+      value: 65536
+    error_invalid_command:
+      value: 131072
+    error_set_mode:
+      value: 262144
+    error_creation:
+      value: 524288
+    error_activation:
+      value: 1048576
+uart_baudrate:
+  address: 7
+  type: uint32
+  category: general
+  values:
+    default:
+      value: 115200
+module_power_mode:
+  address: 10
+  type: enum
+  category: config
+  values:
+    running:
+      value: 0
+    sleep:
+      value: 1
+    deepsleep:
+      value: 2
+product_identification:
+  address: 16
+  type: enum
+  category: general
+  access: r
+  values:
+    xm112:
+      value: 44224
+    xm122:
+      value: 44225
+product_version:
+  address: 17
+  type: uint32
+  category: general
+  access: r
+product_max_uart_baudrate:
+  address: 18
+  type: uint32
+  category: general
+  access: r
+range_start:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 32
+  type: int32
+  scale: 1000
+  category: config
+range_length:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 33
+  type: int32
+  scale: 1000
+  category: config
+repetition_mode:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 34
+  type: enum
+  category: config
+  values:
+    streaming:
+      value: 1
+    on_demand:
+      value: 2
+update_rate:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 35
+  type: int32
+  scale: 1000
+  category: config
+gain:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 36
+  type: int32
+  scale: 1000
+  category: config
+sensor_power_mode:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 37
+  type: enum
+  category: config
+  values:
+    'off':
+      value: 0
+    sleep:
+      value: 1
+    ready:
+      value: 2
+    active:
+      value: 3
+tx_disable:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 38
+  category: config
+  type: boolean
+decrease_tx_emission:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 39
+  type: boolean
+  category: config
+profile_selection:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 40
+  type: enum
+  category: config
+  values:
+    profile_1:
+      value: 1
+    profile_2:
+      value: 2
+    profile_3:
+      value: 3
+    profile_4:
+      value: 4
+    profile_5:
+      value: 5
+downsampling_factor:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 41
+  type: uint32
+  category: config
+hw_acc_average_samples:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 48
+  type: uint32
+  category: config
+noise_level_normalization:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  address: 49
+  type: boolean
+  category: config
+pb_req_bin_count:
+  modes:
+  - power_bins
+  address: 64
+  type: uint32
+  category: config
+env_run_factor:
+  modes:
+  - envelope
+  address: 64
+  type: int32
+  scale: 1000
+  category: config
+iq_sampling_mode:
+  modes:
+  - iq
+  address: 65
+  type: enum
+  category: config
+  values:
+    a:
+      value: 0
+    b:
+      value: 1
+sparse_sweeps_per_frame:
+  modes:
+  - sparse
+  address: 64
+  type: uint32
+  category: config
+sparse_req_sweep_rate:
+  modes:
+  - sparse
+  address: 65
+  type: int32
+  scale: 1000
+  category: config
+sparse_sampling_mode:
+  modes:
+  - sparse
+  address: 66
+  type: enum
+  category: config
+  values:
+    a:
+      value: 0
+    b:
+      value: 1
+pb_start:
+  modes:
+  - power_bins
+  address: 129
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+pb_length:
+  modes:
+  - power_bins
+  address: 130
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+pb_bin_count:
+  modes:
+  - power_bins
+  address: 131
+  access: r
+  type: uint16
+  category: metadata
+pb_stitch_count:
+  modes:
+  - power_bins
+  address: 132
+  access: r
+  type: uint16
+  category: metadata
+pb_step_length:
+  modes:
+  - power_bins
+  address: 133
+  access: r
+  type: int32
+  scale: 1000000
+  category: metadata
+env_start:
+  modes:
+  - envelope
+  address: 129
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+env_length:
+  modes:
+  - envelope
+  address: 130
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+env_data_length:
+  modes:
+  - envelope
+  address: 131
+  access: r
+  type: uint16
+  category: metadata
+env_stitch_count:
+  modes:
+  - envelope
+  address: 132
+  access: r
+  type: uint16
+  category: metadata
+env_step_length:
+  modes:
+  - envelope
+  address: 133
+  access: r
+  type: int32
+  scale: 1000000
+  category: metadata
+iq_start:
+  modes:
+  - iq
+  address: 129
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+iq_length:
+  modes:
+  - iq
+  address: 130
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+iq_data_length:
+  modes:
+  - iq
+  address: 131
+  access: r
+  type: uint16
+  category: metadata
+iq_stitch_count:
+  modes:
+  - iq
+  address: 132
+  access: r
+  type: uint16
+  category: metadata
+iq_step_length:
+  modes:
+  - iq
+  address: 133
+  access: r
+  type: int32
+  scale: 1000000
+  category: metadata
+sp_start:
+  modes:
+  - sparse
+  address: 129
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+sp_length:
+  modes:
+  - sparse
+  address: 130
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+sp_data_length:
+  modes:
+  - sparse
+  address: 131
+  access: r
+  type: uint16
+  category: metadata
+sp_sweep_rate:
+  modes:
+  - sparse
+  address: 132
+  access: r
+  type: int32
+  scale: 1000
+  category: metadata
+sp_step_length:
+  modes:
+  - sparse
+  address: 133
+  access: r
+  type: int32
+  scale: 1000000
+  category: metadata
+data_saturated:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 160
+  access: r
+  type: boolean
+  category: result_info
+missed_data:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 161
+  access: r
+  type: boolean
+  category: result_info
+output_buffer_length:
+  address: 233
+  access: r
+  type: uint32
+  category: general
