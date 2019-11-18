@@ -1423,6 +1423,11 @@ class FeatureInspectFrame(QFrame):
         total_frames = len(f_histdata) - 1
         frame_nr = int(min(total_frames, frame_nr))
 
+        if action == "frames" and frame_nr == self.current_frame_nr:
+            return
+        elif action == "sweeps" and number == self.current_sweep:
+            return
+
         sweep_data = self.gui_handle.data
         f_info = fdata["ml_frame_data"]["frame_info"]
         n_sweeps = len(sweep_data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
@@ -1436,6 +1441,7 @@ class FeatureInspectFrame(QFrame):
             f_current = f_histdata[frame_nr]
             for key in f_histdata[frame_nr]:
                 f_current[key] = f_histdata[frame_nr][key]
+                fdata["ml_frame_data"]["current_frame"][key] = f_histdata[frame_nr][key]
             label = f_current["label"]
             self.current_frame_data = f_current
 
@@ -1462,8 +1468,6 @@ class FeatureInspectFrame(QFrame):
                 print("No sweep data available")
                 return
             label = self.textboxes["label"].text()
-
-        f_current = fdata["ml_frame_data"]["current_frame"]
 
         sweep = number
         sweep = max(0, sweep)

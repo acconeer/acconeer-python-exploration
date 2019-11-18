@@ -216,7 +216,9 @@ class FeatureProcessing:
             cb = feat["cb"]
             options = feat["options"]
             options["sensor_config"] = data["sensor_config"]
-            options["session_info"] = data["session_info"]
+            if "session_info" in data:
+                options["session_info"] = data["session_info"]
+
             output = feat["output"]
             sensors = feat["sensors"]
             name = feat["name"]
