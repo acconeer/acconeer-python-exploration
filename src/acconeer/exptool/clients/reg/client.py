@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 SPI_MAIN_CTRL_SLEEP = 0.3
 
 
-class RegClient(BaseClient):
+class UARTClient(BaseClient):
     _XM112_LED_PIN = 67
 
     DEFAULT_BASE_BAUDRATE = 115200
@@ -347,7 +347,7 @@ class RegClient(BaseClient):
             raise ClientError("unexpected product id")
 
 
-class RegSPIClient(BaseClient):
+class SPIClient(BaseClient):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._mode = protocol.NO_MODE

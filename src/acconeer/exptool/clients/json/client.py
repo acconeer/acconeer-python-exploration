@@ -12,7 +12,7 @@ from acconeer.exptool.clients.base import decode_version_str
 log = logging.getLogger(__name__)
 
 
-class JSONClient(BaseClient):
+class SocketClient(BaseClient):
     def __init__(self, host, **kwargs):
         super().__init__(**kwargs)
 

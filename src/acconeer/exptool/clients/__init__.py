@@ -1,6 +1,6 @@
-from .reg.client import RegClient as UARTClient
-from .reg.client import RegSPIClient as SPIClient
-from .json.client import JSONClient as SocketClient
+from .reg.client import UARTClient
+from .reg.client import SPIClient
+from .json.client import SocketClient
 from .mock.client import MockClient
 
 
