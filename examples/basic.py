@@ -1,5 +1,5 @@
 from acconeer.exptool.clients import UARTClient, SPIClient, SocketClient
-from acconeer.exptool.clients import configs
+from acconeer.exptool import configs
 from acconeer.exptool import example_utils
 
 

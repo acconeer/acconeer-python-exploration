@@ -2,7 +2,7 @@ import numpy as np
 from PyQt5 import QtCore
 import pyqtgraph as pg
 
-from acconeer.exptool.clients import configs
+from acconeer.exptool import configs
 from acconeer.exptool import example_utils
 
 import logging

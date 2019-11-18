@@ -5,7 +5,7 @@ import logging
 
 from acconeer.exptool import SDK_VERSION
 from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
-from acconeer.exptool.clients.configs import EnvelopeServiceConfig
+from acconeer.exptool.configs import EnvelopeServiceConfig
 
 
 log = logging.getLogger(__name__)

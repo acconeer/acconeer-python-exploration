@@ -1,7 +1,7 @@
 import numpy as np
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.clients import configs
+from acconeer.exptool import configs
 from acconeer.exptool import example_utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 

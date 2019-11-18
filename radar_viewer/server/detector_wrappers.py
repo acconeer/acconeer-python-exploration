@@ -3,7 +3,7 @@ import numpy as np
 from threading import Thread
 from acconeer.exptool.clients.reg.client import RegClient
 from acconeer.exptool.clients.json.client import JSONClient
-from acconeer.exptool.clients import configs
+from acconeer.exptool import configs
 from acconeer.exptool import example_utils
 
 
