@@ -1,3 +1,4 @@
+import operator
 from argparse import ArgumentParser
 import signal
 import numpy as np
@@ -189,15 +190,14 @@ class SmoothMax:
     def __init__(self, f=None, hysteresis=0.5, tau_decay=2.0, tau_grow=0.5):
         self.fixed_dt = 1 / f if (f is not None and f > 0) else None
         self.hyst = hysteresis
-        self.tau_decay = tau_decay
-        self.tau_grow = tau_grow
+        self.tc_decay = tau_decay
+        self.tc_grow = tau_grow
 
         self.last_t = 0
-        self.x = -1
-        self.y = -1
+        self.x = self.y = -1
 
-    def update(self, m):
-        m = max(m, 1e-12)
+    def update(self, data):
+        m = max(np.max(data), 1e-12)
 
         if self.fixed_dt is None:
             now = time.time()
@@ -206,8 +206,8 @@ class SmoothMax:
         else:
             dt = self.fixed_dt
 
-        ax = np.exp(-dt / self.tau_decay) if self.tau_decay > 1e-3 else 0
-        ay = np.exp(-dt / self.tau_grow) if self.tau_grow > 1e-3 else 0
+        ax = np.exp(-dt / self.tc_decay) if self.tc_decay > 1e-3 else 0
+        ay = np.exp(-dt / self.tc_grow) if self.tc_grow > 1e-3 else 0
 
         if m > self.x:
             self.x = m
@@ -222,6 +222,61 @@ class SmoothMax:
             self.y = self.x / (1 - self.hyst)
 
         return self.y
+
+
+class SmoothLimits:
+    def __init__(self, f=None, hysteresis=0.3, tau_decay=1.5, tau_grow=0.3):
+        self.fixed_dt = 1 / f if (f is not None and f > 0) else None
+        self.hyst = hysteresis
+        self.tc_decay = tau_decay
+        self.tc_grow = tau_grow
+
+        self.last_t = 0
+        self.x = self.y = self.z = None
+
+    def update(self, data):
+        data_lims = (np.min(data), np.max(data))
+
+        if self.fixed_dt is None:
+            now = time.time()
+            dt = now - self.last_t
+            self.last_t = now
+        else:
+            dt = self.fixed_dt
+
+        if self.x is None:  # First call
+            self.x = list(data_lims)
+            self.y = list(data_lims)
+            self.z = list(data_lims)
+            return list(data_lims)
+
+        ad = np.exp(-dt / self.tc_decay) if self.tc_decay > 1e-3 else 0
+        ag = np.exp(-dt / self.tc_grow) if self.tc_grow > 1e-3 else 0
+
+        ops = (operator.lt, operator.gt)
+        idxs = (0, 1)
+
+        for op, i in zip(ops, idxs):
+            if op(data_lims[i], self.x[i]):
+                self.x[i] = data_lims[i]
+            else:
+                self.x[i] = (1 - ad) * data_lims[i] + ad * self.x[i]
+
+        for op, i in zip(ops, idxs):
+            if op(self.x[i], self.y[i]):
+                self.y[i] = (1 - ag) * self.x[i] + ag * self.y[i]
+            else:
+                self.y[i] = self.x[i]
+
+        for op, i, j in zip(ops, idxs, reversed(idxs)):
+            y_hyst = self.y[i] + (self.y[i] - self.y[j]) * (1 / (1 - self.hyst) - 1)
+
+            if op(self.y[i], self.z[i]):
+                self.z[i] = self.y[i]
+            elif op(self.z[i], y_hyst):
+                self.z[i] = y_hyst
+
+        return self.z
 
 
 pg_phase_ticks = [
