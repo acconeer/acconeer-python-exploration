@@ -187,7 +187,7 @@ def _load_dll():
         return
 
     system = platform.system().lower()
-    bin_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "bin")
+    bin_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/libft4222")
     if system == "linux":
         lib_path = glob(os.path.join(bin_dir, "libft4222.so*"))[0]
         dll = ctypes.CDLL(lib_path)
