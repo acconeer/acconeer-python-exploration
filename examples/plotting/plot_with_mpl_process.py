@@ -1,9 +1,9 @@
 import numpy as np
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
-from acconeer_utils.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
+from acconeer.exptool.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 def main():

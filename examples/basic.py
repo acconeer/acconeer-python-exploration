@@ -1,6 +1,6 @@
-from acconeer_utils.clients import UARTClient, SPIClient, SocketClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
+from acconeer.exptool.clients import UARTClient, SPIClient, SocketClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
 
 
 def main():
@@ -10,7 +10,7 @@ def main():
     args = example_utils.ExampleArgumentParser().parse_args()
 
     # Logging is done using the logging module with a logger named
-    # acconeer_utils. We call another helper function which sets up the
+    # acconeer.exptool. We call another helper function which sets up the
     # logging according to the verbosity level set in the arguments.
     # -q  or --quiet:   ERROR   (typically not used)
     # default:          WARNING

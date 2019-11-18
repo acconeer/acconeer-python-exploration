@@ -1,4 +1,4 @@
-from acconeer_utils.clients.reg import protocol
+from acconeer.exptool.clients.reg import protocol
 
 
 def get_regs_for_mode(mode):

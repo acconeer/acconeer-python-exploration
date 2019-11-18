@@ -1,10 +1,10 @@
 import json
 import numpy as np
 from threading import Thread
-from acconeer_utils.clients.reg.client import RegClient
-from acconeer_utils.clients.json.client import JSONClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
+from acconeer.exptool.clients.reg.client import RegClient
+from acconeer.exptool.clients.json.client import JSONClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
 
 
 class Detector(Thread):

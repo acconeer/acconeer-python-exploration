@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 import logging
 from distutils.version import StrictVersion
 
-from acconeer_utils import SDK_VERSION
+from acconeer.exptool import SDK_VERSION
 
 
 log = logging.getLogger(__name__)

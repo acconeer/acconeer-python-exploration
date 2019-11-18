@@ -4,10 +4,10 @@ from matplotlib.colors import LinearSegmentedColormap
 import sys
 import os
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
-from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
+from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))  # noqa: E402
 from examples.processing import presence_detection_sparse

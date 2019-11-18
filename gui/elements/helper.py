@@ -7,12 +7,12 @@ from PyQt5.QtWidgets import (
 import sys
 import os
 from argparse import ArgumentParser
-import acconeer_utils
+import acconeer.exptool
 
 
 def lib_version_up_to_date(gui_handle=None):
     fdir = os.path.dirname(os.path.realpath(__file__))
-    fn = os.path.join(fdir, "../../lib/acconeer_utils/__init__.py")
+    fn = os.path.join(fdir, "../../src/acconeer/exptool/__init__.py")
     if os.path.isfile(fn):
         with open(fn, "r") as f:
             lines = [line.strip() for line in f.readlines()]
@@ -26,7 +26,7 @@ def lib_version_up_to_date(gui_handle=None):
     else:
         fs_lib_ver = None
 
-    used_lib_ver = getattr(acconeer_utils, "__version__", None)
+    used_lib_ver = getattr(acconeer.exptool, "__version__", None)
 
     rerun_text = "You probably need to rerun setup.py (python setup.py install --user)"
     error_text = None

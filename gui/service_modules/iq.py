@@ -2,12 +2,12 @@ import numpy as np
 from PyQt5 import QtCore
 import pyqtgraph as pg
 
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
 
 import logging
 
-log = logging.getLogger("acconeer_utils.examples.gui_iq")
+log = logging.getLogger("acconeer.exptool.examples.gui_iq")
 
 
 def get_processing_config():

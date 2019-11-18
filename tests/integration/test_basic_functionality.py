@@ -1,8 +1,8 @@
 import pytest
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.example_utils import autodetect_serial_port
-from acconeer_utils.clients import configs
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.example_utils import autodetect_serial_port
+from acconeer.exptool.clients import configs
 
 
 @pytest.fixture(scope="module")

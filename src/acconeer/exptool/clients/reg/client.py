@@ -7,10 +7,10 @@ import signal
 import traceback
 import platform
 
-from acconeer_utils.clients.base import BaseClient, ClientError, decode_version_str
-from acconeer_utils.clients.reg import protocol, utils
-from acconeer_utils.clients import links
-from acconeer_utils import libft4222
+from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
+from acconeer.exptool.clients.reg import protocol, utils
+from acconeer.exptool.clients import links
+from acconeer.exptool import libft4222
 
 
 log = logging.getLogger(__name__)

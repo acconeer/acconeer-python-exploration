@@ -1,11 +1,11 @@
 import numpy as np
 import pyqtgraph as pg
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
-from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
-from acconeer_utils.structs import configbase
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
+from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.structs import configbase
 
 
 def main():

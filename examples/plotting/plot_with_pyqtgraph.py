@@ -2,9 +2,9 @@ import numpy as np
 from pyqtgraph.Qt import QtWidgets
 import pyqtgraph as pg
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
 
 
 def main():

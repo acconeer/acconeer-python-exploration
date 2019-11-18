@@ -3,10 +3,10 @@ from copy import deepcopy
 import logging
 from distutils.version import StrictVersion
 
-from acconeer_utils.clients.base import BaseClient, ClientError
-from acconeer_utils.clients import links
-from acconeer_utils.clients.json import protocol
-from acconeer_utils.clients.base import decode_version_str
+from acconeer.exptool.clients.base import BaseClient, ClientError
+from acconeer.exptool.clients import links
+from acconeer.exptool.clients.json import protocol
+from acconeer.exptool.clients.base import decode_version_str
 
 
 log = logging.getLogger(__name__)

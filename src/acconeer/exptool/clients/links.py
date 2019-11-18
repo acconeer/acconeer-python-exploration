@@ -9,7 +9,7 @@ import logging
 import traceback
 import platform
 
-from acconeer_utils.clients.base import ClientError
+from acconeer.exptool.clients.base import ClientError
 
 
 log = logging.getLogger(__name__)

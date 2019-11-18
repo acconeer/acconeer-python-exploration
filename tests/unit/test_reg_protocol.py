@@ -1,6 +1,6 @@
 import pytest
 
-import acconeer_utils.clients.reg.protocol as ptcl
+import acconeer.exptool.clients.reg.protocol as ptcl
 
 
 test_mode = "envelope"

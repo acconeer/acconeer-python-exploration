@@ -1,9 +1,9 @@
 import numpy as np
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
-from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
+from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():

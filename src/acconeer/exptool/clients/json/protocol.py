@@ -3,7 +3,7 @@ from collections import namedtuple
 import json
 import numpy as np
 
-from acconeer_utils.clients.base import ClientError
+from acconeer.exptool.clients.base import ClientError
 
 
 KeyConfigAttrPair = namedtuple("KeyConfigAttrPair", ["key", "config_attr", "required"])

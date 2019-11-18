@@ -4,13 +4,13 @@ from PyQt5 import QtCore
 import pyqtgraph as pg
 from scipy.fftpack import fft, fftshift
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
-from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
+from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 import logging
-log = logging.getLogger("acconeer_utils.examples.obstacle_detection")
+log = logging.getLogger("acconeer.exptool.examples.obstacle_detection")
 
 MAX_SPEED = 8.00          # Max speed to be resolved with FFT in cm/s
 WAVELENGTH = 0.49         # Wavelength of radar in cm

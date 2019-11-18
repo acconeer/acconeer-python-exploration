@@ -20,11 +20,11 @@ from PyQt5 import QtCore, QtWidgets
 import pyqtgraph as pg
 
 try:
-    from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-    from acconeer_utils.clients.mock.client import MockClient
-    from acconeer_utils.clients import configs
-    from acconeer_utils import example_utils
-    from acconeer_utils.structs import configbase
+    from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+    from acconeer.exptool.clients.mock.client import MockClient
+    from acconeer.exptool.clients import configs
+    from acconeer.exptool import example_utils
+    from acconeer.exptool.structs import configbase
 
     sys.path.append(os.path.dirname(__file__))  # noqa: E402
     sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402

@@ -4,11 +4,11 @@ from scipy.signal import butter, sosfilt
 import pyqtgraph as pg
 from PyQt5 import QtCore
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils.clients import configs
-from acconeer_utils import example_utils
-from acconeer_utils.pg_process import PGProcess, PGProccessDiedException
-from acconeer_utils.structs import configbase
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.clients import configs
+from acconeer.exptool import example_utils
+from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.structs import configbase
 
 
 env_max = 0.3

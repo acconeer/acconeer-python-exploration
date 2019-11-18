@@ -5,7 +5,7 @@ try:
     from matplotlib.colors import LinearSegmentedColormap
     from PyQt5 import QtCore
     import pyqtgraph as pg
-    from acconeer_utils import example_utils
+    from acconeer.exptool import example_utils
     PYQT_PLOTTING_AVAILABLE = True
 except ImportError:
     PYQT_PLOTTING_AVAILABLE = False

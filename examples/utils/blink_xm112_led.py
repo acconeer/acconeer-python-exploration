@@ -1,7 +1,7 @@
 from time import sleep
 
-from acconeer_utils.clients.reg.client import RegClient
-from acconeer_utils import example_utils
+from acconeer.exptool.clients.reg.client import RegClient
+from acconeer.exptool import example_utils
 
 
 def main():

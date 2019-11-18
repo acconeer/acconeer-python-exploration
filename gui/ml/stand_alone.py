@@ -1,8 +1,8 @@
 import numpy as np
 import sys
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils import example_utils
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool import example_utils
 
 import keras_processing as kp
 import feature_processing as feature_proc

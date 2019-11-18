@@ -19,7 +19,7 @@ import keras_processing as kp
 import feature_processing as feature_proc
 import feature_definitions as feature_def
 from helper import SensorSelection, QHLine, QVLine, Count, GUI_Styles, ErrorFormater
-from acconeer_utils import example_utils
+from acconeer.exptool import example_utils
 
 
 class FeatureSelectFrame(QFrame):

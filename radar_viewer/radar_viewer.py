@@ -10,8 +10,8 @@ import traceback
 sys.path.append(os.path.dirname(__file__))  # noqa: E402
 from server import http_server
 
-from acconeer_utils.clients import SocketClient, SPIClient, UARTClient
-from acconeer_utils import example_utils
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool import example_utils
 
 
 def check_connection(args):

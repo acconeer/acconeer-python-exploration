@@ -3,9 +3,9 @@ from scipy.signal import butter, filtfilt
 from time import time, sleep
 import logging
 
-from acconeer_utils import SDK_VERSION
-from acconeer_utils.clients.base import BaseClient, ClientError, decode_version_str
-from acconeer_utils.clients.configs import EnvelopeServiceConfig
+from acconeer.exptool import SDK_VERSION
+from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
+from acconeer.exptool.clients.configs import EnvelopeServiceConfig
 
 
 log = logging.getLogger(__name__)
