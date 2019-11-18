@@ -21,25 +21,24 @@ def main():
 
     config = configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
-    config.range_interval = [0.2, 0.6]
-    config.sweep_rate = 60
-    config.gain = 0.65
+    config.update_rate = 30
 
-    info = client.setup_session(config)
-    num_points = info["data_length"]
-    xs = np.linspace(*config.range_interval, num_points)
-    num_hist = 2*config.sweep_rate
+    session_info = client.setup_session(config)
 
-    hist_data = np.zeros([num_hist, num_points])
-    hist_max = np.zeros(num_hist)
-    smooth_max = utils.SmoothMax(config.sweep_rate)
+    start = session_info["range_start_m"]
+    length = session_info["range_length_m"]
+    num_depths = session_info["data_length"]
+    step_length = session_info["step_length_m"]
+    depths = np.linspace(start, start + length, num_depths)
+    num_hist = 2 * int(round(config.update_rate))
+    hist_data = np.zeros([num_hist, depths.size])
+    smooth_max = utils.SmoothMax(config.update_rate)
 
     app = QtWidgets.QApplication([])
     pg.setConfigOption("background", "w")
     pg.setConfigOption("foreground", "k")
     pg.setConfigOptions(antialias=True)
     win = pg.GraphicsLayoutWidget()
-    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
     win.setWindowTitle("Acconeer PyQtGraph example")
 
     env_plot = win.addPlot(title="Envelope")
@@ -53,34 +52,30 @@ def main():
     hist_plot.setLabel("bottom", "Time (s)")
     hist_plot.setLabel("left", "Depth (m)")
     hist_image_item = pg.ImageItem()
-    hist_image_item.translate(-2, config.range_start)
-    hist_image_item.scale(2/num_hist, config.range_length/num_points)
+    hist_image_item.translate(-2, start)
+    hist_image_item.scale(2 / num_hist, step_length)
     hist_plot.addItem(hist_image_item)
 
-    # try to get a colormap from matplotlib
-    try:
-        hist_image_item.setLookupTable(utils.pg_mpl_cmap("viridis"))
-    except ImportError:
-        pass
+    # Get a nice colormap from matplotlib
+    hist_image_item.setLookupTable(utils.pg_mpl_cmap("viridis"))
 
     win.show()
 
     interrupt_handler = utils.ExampleInterruptHandler()
+    win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
     print("Press Ctrl-C to end session")
 
     client.start_session()
 
     while not interrupt_handler.got_signal:
-        info, sweep = client.get_next()
+        info, data = client.get_next()
 
         hist_data = np.roll(hist_data, -1, axis=0)
-        hist_data[-1] = sweep
-        hist_max = np.roll(hist_max, -1)
-        hist_max[-1] = np.max(sweep)
-        y_max = smooth_max.update(np.amax(hist_max))
-        env_curve.setData(xs, sweep)
-        env_plot.setYRange(0, y_max)
-        hist_image_item.updateImage(hist_data, levels=(0, y_max))
+        hist_data[-1] = data
+
+        env_curve.setData(depths, data)
+        env_plot.setYRange(0, smooth_max.update(data))
+        hist_image_item.updateImage(hist_data, levels=(0, np.max(hist_data) * 1.05))
 
         app.processEvents()
 

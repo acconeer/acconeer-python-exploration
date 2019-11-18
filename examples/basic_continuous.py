@@ -25,7 +25,7 @@ def main():
     config = configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
     config.range_interval = [0.2, 0.3]
-    config.sweep_rate = 5
+    config.update_rate = 5
 
     session_info = client.setup_session(config)
     print("Session info:\n", session_info, "\n")

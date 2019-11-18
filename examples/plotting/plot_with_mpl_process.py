@@ -22,15 +22,12 @@ def main():
 
     config = configs.IQServiceConfig()
     config.sensor = args.sensors
-    config.range_interval = [0.2, 0.6]
-    config.sweep_rate = 30
-    config.gain = 0.6
-    # config.running_average_factor = 0.5
+    config.update_rate = 60
 
-    info = client.setup_session(config)
-    num_points = info["data_length"]
+    session_info = client.setup_session(config)
+    depths = utils.get_range_depths(config, session_info)
 
-    fig_updater = ExampleFigureUpdater(config, num_points)
+    fig_updater = ExampleFigureUpdater(depths)
     plot_process = PlotProcess(fig_updater)
     plot_process.start()
 
@@ -58,9 +55,8 @@ def main():
 
 
 class ExampleFigureUpdater(FigureUpdater):
-    def __init__(self, config, num_points):
-        self.interval = config.range_interval
-        self.num_points = num_points
+    def __init__(self, depths):
+        self.depths = depths
 
     def setup(self, fig):
         self.axs = {
@@ -71,20 +67,19 @@ class ExampleFigureUpdater(FigureUpdater):
         for ax in self.axs.values():
             ax.grid(True)
             ax.set_xlabel("Depth (m)")
-            ax.set_xlim(self.interval)
+            ax.set_xlim(self.depths[0], self.depths[-1])
 
         self.axs["amplitude"].set_title("Amplitude")
-        self.axs["amplitude"].set_ylim(0, 0.5)
+        self.axs["amplitude"].set_ylim(0, 5000)
         self.axs["phase"].set_title("Phase")
         utils.mpl_setup_yaxis_for_phase(self.axs["phase"])
 
         fig.canvas.set_window_title("Acconeer matplotlib process example")
-        fig.set_size_inches(10, 7)
+        fig.set_size_inches(8, 6)
         fig.tight_layout()
 
     def first(self, d):
-        xs = np.linspace(*self.interval, self.num_points)
-
+        xs = self.depths
         self.all_arts = {}
         for key, ax in self.axs.items():
             self.all_arts[key] = [ax.plot(xs, ys)[0] for ys in d[key]]

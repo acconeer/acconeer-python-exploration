@@ -21,17 +21,18 @@ def main():
 
     client.squeeze = False
 
-    config = configs.SparseServiceConfig()
-    config.sensor = args.sensors
-    config.range_interval = [0.24, 1.20]
-    config.sweep_rate = 60
-    config.number_of_subsweeps = 16
-    # config.hw_accelerated_average_samples = 60
-    # config.stepsize = 1
+    sensor_config = configs.SparseServiceConfig()
+    sensor_config.sensor = args.sensors
+    sensor_config.range_interval = [0.24, 1.20]
+    sensor_config.sweeps_per_frame = 16
+    sensor_config.hw_accelerated_average_samples = 60
+    sensor_config.sampling_mode = sensor_config.SamplingMode.A
+    sensor_config.profile = sensor_config.Profile.PROFILE_3
+    sensor_config.gain = 0.6
 
-    client.setup_session(config)
+    session_info = client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(config)
+    pg_updater = PGUpdater(sensor_config, None, session_info)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -41,7 +42,7 @@ def main():
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
-        info, data = client.get_next()
+        data_info, data = client.get_next()
 
         try:
             pg_process.put_data(data)
@@ -54,17 +55,18 @@ def main():
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config=None):
-        self.config = sensor_config
+    def __init__(self, sensor_config, processing_config, session_info):
+        self.sensor_config = sensor_config
+        self.depths = utils.get_range_depths(sensor_config, session_info)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer sparse example")
 
         self.plots = []
         self.scatters = []
-        self.smooth_maxs = []
-        for sensor_id in self.config.sensor:
-            if len(self.config.sensor) > 1:
+        self.smooth_lims = []
+        for sensor_id in self.sensor_config.sensor:
+            if len(self.sensor_config.sensor) > 1:
                 plot = win.addPlot(title="Sensor {}".format(sensor_id))
             else:
                 plot = win.addPlot()
@@ -78,17 +80,16 @@ class PGUpdater:
 
             self.plots.append(plot)
             self.scatters.append(scatter)
-            self.smooth_maxs.append(utils.SmoothMax(self.config.sweep_rate))
+            self.smooth_lims.append(utils.SmoothLimits(self.sensor_config.update_rate))
 
     def update(self, data):
-        num_sensors, num_subsweeps, num_depths = data.shape
-        xs = np.tile(np.linspace(*self.config.range_interval, num_depths), num_subsweeps)
+        xs = np.tile(self.depths, self.sensor_config.sweeps_per_frame)
 
-        for i in range(num_sensors):
+        for i, _ in enumerate(self.sensor_config.sensor):
             ys = data[i].flatten()
             self.scatters[i].setData(xs, ys)
-            m = self.smooth_maxs[i].update(max(2500, np.amax(np.abs(ys))))
-            self.plots[i].setYRange(-m, m)
+            lims = self.smooth_lims[i].update(ys)
+            self.plots[i].setYRange(*lims)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-import numpy as np
 import pyqtgraph as pg
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
@@ -21,16 +20,13 @@ def main():
 
     client.squeeze = False
 
-    config = configs.PowerBinServiceConfig()
-    config.sensor = args.sensors
-    config.range_interval = [0.1, 0.7]
-    config.sweep_rate = 60
-    config.gain = 0.6
-    # config.bin_count = 8
+    sensor_config = configs.PowerBinServiceConfig()
+    sensor_config.sensor = args.sensors
+    sensor_config.range_interval = [0.1, 0.7]
 
-    client.setup_session(config)
+    session_info = client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(config)
+    pg_updater = PGUpdater(sensor_config, None, session_info)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -40,7 +36,7 @@ def main():
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
-        info, data = client.get_next()
+        data_info, data = client.get_next()
 
         try:
             pg_process.put_data(data)
@@ -53,43 +49,35 @@ def main():
 
 
 class PGUpdater:
-    def __init__(self, sensor_config, processing_config=None):
-        self.config = sensor_config
-
-        self.sweep_index = 0
+    def __init__(self, sensor_config, processing_config, session_info):
+        self.sensor_config = sensor_config
+        self.depths = utils.get_range_depths(sensor_config, session_info)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer power bins example")
 
-        self.plot = win.addPlot(title="Power bins")
+        self.plot = win.addPlot()
         self.plot.showGrid(x=True, y=True)
         self.plot.setLabel("bottom", "Depth (m)")
         self.plot.setLabel("left", "Amplitude")
 
         self.curves = []
-        for i in range(len(self.config.sensor)):
-            pen = utils.pg_pen_cycler(i)
+        for i, _ in enumerate(self.sensor_config.sensor):
             curve = self.plot.plot(
-                    pen=pen,
-                    symbol="o",
-                    symbolPen="k",
-                    symbolBrush=pg.mkBrush(utils.color_cycler(i))
-                    )
+                pen=utils.pg_pen_cycler(i),
+                symbol="o",
+                symbolPen="k",
+                symbolBrush=pg.mkBrush(utils.color_cycler(i)),
+            )
             self.curves.append(curve)
 
-        self.smooth_max = utils.SmoothMax(self.config.sweep_rate)
+        self.smooth_max = utils.SmoothMax(self.sensor_config.update_rate)
 
     def update(self, data):
-        if self.sweep_index == 0:
-            num_points = data.shape[1]
-            self.xs = np.linspace(*self.config.range_interval, num_points)
+        for curve, ys in zip(self.curves, data):
+            curve.setData(self.depths, ys)
 
-        for i in range(data.shape[0]):
-            self.curves[i].setData(self.xs, data[i])
-
-        self.plot.setYRange(0, self.smooth_max.update(np.amax(data)))
-
-        self.sweep_index += 1
+        self.plot.setYRange(0, self.smooth_max.update(data))
 
 
 if __name__ == "__main__":

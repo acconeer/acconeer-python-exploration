@@ -20,20 +20,17 @@ def main():
 
     client.squeeze = False
 
-    config = configs.IQServiceConfig()
-    config.sensor = args.sensors
-    config.range_interval = [0.2, 0.6]
-    config.sweep_rate = 30
-    config.gain = 0.6
-    config.sampling_mode = config.SAMPLING_MODE_A
-    # config.running_average_factor = 0.5
-    # config.hw_accelerated_average_samples = 7
-    # config.stepsize = 1
+    sensor_config = configs.IQServiceConfig()
+    sensor_config.sensor = args.sensors
+    sensor_config.range_interval = [0.2, 1.0]
+    sensor_config.profile = sensor_config.Profile.PROFILE_2
+    sensor_config.sampling_mode = sensor_config.SamplingMode.B
+    sensor_config.hw_accelerated_average_samples = 20
+    sensor_config.downsampling_factor = 2
 
-    info = client.setup_session(config)
-    num_points = info["data_length"]
+    session_info = client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(config, num_points)
+    pg_updater = PGUpdater(sensor_config, None, session_info)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -43,7 +40,7 @@ def main():
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
-        info, data = client.get_next()
+        data_info, data = client.get_next()
 
         try:
             pg_process.put_data(data)
@@ -56,14 +53,14 @@ def main():
 
 
 class PGUpdater:
-    def __init__(self, config, num_points):
-        self.config = config
-        self.num_points = num_points
+    def __init__(self, sensor_config, processing_config, session_info):
+        self.sensor_config = sensor_config
+        self.depths = utils.get_range_depths(sensor_config, session_info)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer IQ example")
 
-        self.ampl_plot = win.addPlot(title="IQ")
+        self.ampl_plot = win.addPlot()
         self.ampl_plot.showGrid(x=True, y=True)
         self.ampl_plot.setLabel("bottom", "Depth (m)")
         self.ampl_plot.setLabel("left", "Amplitude")
@@ -77,20 +74,19 @@ class PGUpdater:
 
         self.ampl_curves = []
         self.phase_curves = []
-        for i in range(len(self.config.sensor)):
+        for i, _ in enumerate(self.sensor_config.sensor):
             pen = utils.pg_pen_cycler(i)
             self.ampl_curves.append(self.ampl_plot.plot(pen=pen))
             self.phase_curves.append(self.phase_plot.plot(pen=pen))
 
-        self.xs = np.linspace(*self.config.range_interval, self.num_points)
-        self.smooth_max = utils.SmoothMax(self.config.sweep_rate)
+        self.smooth_max = utils.SmoothMax(self.sensor_config.update_rate)
 
     def update(self, data):
-        for i in range(data.shape[0]):
-            self.ampl_curves[i].setData(self.xs, np.abs(data[i]))
-            self.phase_curves[i].setData(self.xs, np.angle(data[i]))
+        for ampl_curve, phase_curve, ys in zip(self.ampl_curves, self.phase_curves, data):
+            ampl_curve.setData(self.depths, np.abs(ys))
+            phase_curve.setData(self.depths, np.angle(ys))
 
-        self.ampl_plot.setYRange(0, self.smooth_max.update(np.amax(np.abs(data))))
+        self.ampl_plot.setYRange(0, self.smooth_max.update(np.abs(data)))
 
 
 if __name__ == "__main__":

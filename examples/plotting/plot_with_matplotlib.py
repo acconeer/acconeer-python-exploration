@@ -20,14 +20,12 @@ def main():
 
     config = configs.IQServiceConfig()
     config.sensor = args.sensors
-    config.range_interval = [0.2, 0.6]
-    config.sweep_rate = 10
-    config.gain = 0.6
+    config.update_rate = 10
 
-    info = client.setup_session(config)
-    num_points = info["data_length"]
+    session_info = client.setup_session(config)
+    depths = utils.get_range_depths(config, session_info)
 
-    amplitude_y_max = 0.3
+    amplitude_y_max = 1000
 
     fig, (amplitude_ax, phase_ax) = plt.subplots(2)
     fig.set_size_inches(8, 6)
@@ -43,9 +41,8 @@ def main():
     phase_ax.set_ylabel("Phase")
     utils.mpl_setup_yaxis_for_phase(phase_ax)
 
-    xs = np.linspace(*config.range_interval, num_points)
-    amplitude_line = amplitude_ax.plot(xs, np.zeros_like(xs))[0]
-    phase_line = phase_ax.plot(xs, np.zeros_like(xs))[0]
+    amplitude_line = amplitude_ax.plot(depths, np.zeros_like(depths))[0]
+    phase_line = phase_ax.plot(depths, np.zeros_like(depths))[0]
 
     fig.tight_layout()
     plt.ion()
@@ -57,10 +54,10 @@ def main():
     client.start_session()
 
     while not interrupt_handler.got_signal:
-        info, sweep = client.get_next()
+        info, data = client.get_next()
 
-        amplitude = np.abs(sweep)
-        phase = np.angle(sweep)
+        amplitude = np.abs(data)
+        phase = np.angle(data)
 
         max_amplitude = np.max(amplitude)
         if max_amplitude > amplitude_y_max:
