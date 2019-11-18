@@ -168,8 +168,8 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ### Services
 
-- `power_bin.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html)) \
-  Demonstrates the power bin service.
+- `power_bins.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html)) \
+  Demonstrates the power bins service.
 - `envelope.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/envelope.html)) \
   Demonstrates the envelope service.
 - `iq.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html)) \

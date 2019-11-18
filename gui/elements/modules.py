@@ -6,7 +6,7 @@ from helper import PassthroughProcessor
 import service_modules.envelope as envelope_module
 import service_modules.iq as iq_module
 import service_modules.sparse as sparse_module
-import service_modules.power_bin as power_bin_module
+import service_modules.power_bins as power_bins_module
 import examples.processing.breathing as breathing_module
 import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_sparse as presence_detection_sparse_module
@@ -105,9 +105,9 @@ MODULE_INFOS = [
         True,
     ),
     ModuleInfo(
-        "Power bin",
-        power_bin_module,
-        power_bin_module.get_sensor_config,
+        "Power bins",
+        power_bins_module,
+        power_bins_module.get_sensor_config,
         PassthroughProcessor,
         False,
         False,

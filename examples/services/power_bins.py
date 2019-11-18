@@ -59,9 +59,9 @@ class PGUpdater:
         self.sweep_index = 0
 
     def setup(self, win):
-        win.setWindowTitle("Acconeer power bin example")
+        win.setWindowTitle("Acconeer power bins example")
 
-        self.plot = win.addPlot(title="Power bin")
+        self.plot = win.addPlot(title="Power bins")
         self.plot.showGrid(x=True, y=True)
         self.plot.setLabel("bottom", "Depth (m)")
         self.plot.setLabel("left", "Amplitude")

@@ -155,17 +155,17 @@ Each Detector is built on top of a Service, i.e. you have the possibility to use
 At `acconeer.com <https://acconeer.com>`_ we have several movies showing demos where the Acconeer sensor is used in different use cases. These demo movies come with use case specific reference applications, which are available for download at our GitHub page. These reference applications are written in C code and use our Services and Detectors, check out these examples to get inspiration on how to build your product with the Acconeer sensor.
 
 
-Envelope and Power bin Services
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Envelope and Power bins Services
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:numref:`fig_power_bins_demo` and :numref:`fig_env_demo` show outputs from the Power bin and Envelope Services obtained with one of the scripts in Exploration tool, the setup and environment are identical for the two data sets. Here it can be seen that Power bin and Envelope Services provides output of the same type, i.e. amplitude of received signal as a function of distance. The difference lies in the signal processing done and the Power bin output has lower SNR, lower resolution in range, but requires less processing and memory allocation than Envelope.
+:numref:`fig_power_bins_demo` and :numref:`fig_env_demo` show outputs from the Power bins and Envelope Services obtained with one of the scripts in Exploration tool, the setup and environment are identical for the two data sets. Here it can be seen that Power bins and Envelope Services provides output of the same type, i.e. amplitude of received signal as a function of distance. The difference lies in the signal processing done and the Power bins output has lower SNR, lower resolution in range, but requires less processing and memory allocation than Envelope.
 
 .. _fig_power_bins_demo:
 .. figure:: /_static/introduction/fig_power_bins_demo.png
     :scale: 60
     :align: center
 
-    Output from the Power bin service in Exploration Tool.
+    Output from the Power bins service in Exploration Tool.
 
 
 .. _fig_env_demo:
@@ -179,7 +179,7 @@ Envelope and Power bin Services
 IQ Service
 ^^^^^^^^^^
 
-The IQ Service provides data in cartesian form, which is shown in :numref:`fig_iq_demo` with distance on the third axis, data taken with the same setup as for Envelope and Power bin in :numref:`fig_power_bins_demo` and :numref:`fig_env_demo`.
+The IQ Service provides data in cartesian form, which is shown in :numref:`fig_iq_demo` with distance on the third axis, data taken with the same setup as for Envelope and Power bins in :numref:`fig_power_bins_demo` and :numref:`fig_env_demo`.
 
 .. _fig_iq_demo:
 .. figure:: /_static/introduction/fig_iq_demo.png
@@ -188,7 +188,7 @@ The IQ Service provides data in cartesian form, which is shown in :numref:`fig_i
 
     Output from the Envelope service in Exploration Tool.
 
-The cartesian data can be transformed to polar data providing phase and amplitude of the signal. Having the phase of the signal available makes it possible to perform more accurate measurements as compared to the Power bin and Envelope Services where only the amplitude is available. This is illustrated in :numref:`fig_wavelet` where an object is moving towards the radar. The envelope of the signal only varies slightly when the object is moving, while the value of the coherent signal at a fixed time delay varies substantially. This change will be present in the phase of the data from the IQ Service API.
+The cartesian data can be transformed to polar data providing phase and amplitude of the signal. Having the phase of the signal available makes it possible to perform more accurate measurements as compared to the Power bins and Envelope Services where only the amplitude is available. This is illustrated in :numref:`fig_wavelet` where an object is moving towards the radar. The envelope of the signal only varies slightly when the object is moving, while the value of the coherent signal at a fixed time delay varies substantially. This change will be present in the phase of the data from the IQ Service API.
 
 .. _fig_wavelet:
 .. figure:: /_static/introduction/fig_wavelet.png
