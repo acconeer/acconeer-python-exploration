@@ -1,13 +1,13 @@
 from acconeer.exptool.clients import UARTClient, SPIClient, SocketClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 def main():
     # To simplify the examples, we use a generic argument parser. It
     # lets you choose between UART/socket, set which sensor(s) to use,
     # and the verbosity level of the logging.
-    args = example_utils.ExampleArgumentParser().parse_args()
+    args = utils.ExampleArgumentParser().parse_args()
 
     # Logging is done using the logging module with a logger named
     # acconeer.exptool. We call another helper function which sets up the
@@ -16,7 +16,7 @@ def main():
     # default:          WARNING
     # -v  or --verbose: INFO
     # -vv or --debug:   DEBUG
-    example_utils.config_logging(args)
+    utils.config_logging(args)
 
     # Pick client depending on whether socket, SPI, or UART is used
     if args.socket_addr:
@@ -24,7 +24,7 @@ def main():
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     # Create a configuration to run on the sensor. A good first choice

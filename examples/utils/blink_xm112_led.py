@@ -1,19 +1,19 @@
 from time import sleep
 
 from acconeer.exptool.clients.reg.client import RegClient
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 def main():
-    args = example_utils.ExampleArgumentParser().parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser().parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         raise Exception("Socket is not supported")
     elif args.spi:
         raise Exception("SPI is not supported")
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = RegClient(port)
 
     client.connect()

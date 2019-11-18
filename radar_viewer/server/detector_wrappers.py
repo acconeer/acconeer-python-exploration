@@ -4,7 +4,7 @@ from threading import Thread
 from acconeer.exptool.clients.reg.client import RegClient
 from acconeer.exptool.clients.json.client import JSONClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 class Detector(Thread):
@@ -22,12 +22,12 @@ class Detector(Thread):
         args = self._demo_ctrl.streaming_client_args
         print("args:", args)
 
-        example_utils.config_logging(args)
+        utils.config_logging(args)
 
         if args.socket_addr:
             client = JSONClient(args.socket_addr)
         else:
-            port = args.serial_port or example_utils.autodetect_serial_port()
+            port = args.serial_port or utils.autodetect_serial_port()
             client = RegClient(port)
 
         try:

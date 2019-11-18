@@ -6,7 +6,7 @@ from scipy.fftpack import fft, fftshift
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 import logging
@@ -20,15 +20,15 @@ FUSION_HISTORY = 30       # Max history for sensor fusion
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -43,7 +43,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = ObstacleDetectionProcessor(sensor_config, processing_config, session_info)
@@ -673,8 +673,8 @@ class PGUpdater:
         self.env_ax.addLegend()
         self.env_ax.setYRange(0, 0.1)
 
-        self.env_ampl = self.env_ax.plot(pen=example_utils.pg_pen_cycler(0), name="Envelope")
-        self.fft_max = self.env_ax.plot(pen=example_utils.pg_pen_cycler(1, "--"), name="FFT max")
+        self.env_ampl = self.env_ax.plot(pen=utils.pg_pen_cycler(0), name="Envelope")
+        self.fft_max = self.env_ax.plot(pen=utils.pg_pen_cycler(1, "--"), name="FFT max")
 
         self.peak_dist_text = pg.TextItem(color="k", anchor=(0, 1))
         self.env_ax.addItem(self.peak_dist_text)
@@ -691,7 +691,7 @@ class PGUpdater:
         self.obstacle_im = pg.ImageItem()
         self.obstacle_ax.setLabel("bottom", "Velocity (cm/s)")
         self.obstacle_ax.setLabel("left", "Distance (cm)")
-        self.obstacle_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+        self.obstacle_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
         self.obstacle_ax.addItem(self.obstacle_im)
 
         self.obstacle_ax.setXRange(-self.max_velocity, self.max_velocity)
@@ -719,7 +719,7 @@ class PGUpdater:
             self.obstacle_bg_im = pg.ImageItem()
             self.obstacle_bg_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_bg_ax.setLabel("left", "Distance (cm)")
-            self.obstacle_bg_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+            self.obstacle_bg_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
             self.obstacle_bg_ax.addItem(self.obstacle_bg_im)
             row_idx += 1
 
@@ -730,14 +730,14 @@ class PGUpdater:
             self.obstacle_thresh_im = pg.ImageItem()
             self.obstacle_thresh_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_thresh_ax.setLabel("left", "Distance (cm)")
-            self.obstacle_thresh_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+            self.obstacle_thresh_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
             self.obstacle_thresh_ax.addItem(self.obstacle_thresh_im)
             row_idx += 1
 
         if self.advanced_plots["fusion_map"]:
-            b = example_utils.color_cycler(0)
-            r = example_utils.color_cycler(1)
-            p = example_utils.color_cycler(4)
+            b = utils.color_cycler(0)
+            r = utils.color_cycler(1)
+            p = utils.color_cycler(4)
             spos = self.sensor_separation / 2
             pos0 = self.sensor_config.range_start * 100
             pos1 = self.sensor_config.range_end * 100
@@ -762,7 +762,7 @@ class PGUpdater:
             self.fusion_hist = []
             for i in range(self.fusion_max_obstacles):
                 self.fusion_hist.append(
-                    self.fusion_ax.plot(pen=example_utils.pg_pen_cycler(2, "--"))
+                    self.fusion_ax.plot(pen=utils.pg_pen_cycler(2, "--"))
                     )
                 self.fusion_ax.addItem(self.fusion_hist[i])
                 self.fusion_hist[i].setZValue(10)
@@ -777,10 +777,10 @@ class PGUpdater:
                 self.fusion_right_shadow_hist = []
                 for i in range(self.fusion_max_shadows):
                     self.fusion_left_shadow_hist.append(
-                        self.fusion_ax.plot(pen=example_utils.pg_pen_cycler(0, "--"))
+                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(0, "--"))
                         )
                     self.fusion_right_shadow_hist.append(
-                        self.fusion_ax.plot(pen=example_utils.pg_pen_cycler(1, "--"))
+                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(1, "--"))
                         )
                     self.fusion_ax.addItem(self.fusion_left_shadow_hist[i])
                     self.fusion_ax.addItem(self.fusion_right_shadow_hist[i])
@@ -876,22 +876,22 @@ class PGUpdater:
         for i in range(self.nr_locals):
             if self.hist_plots["velocity"][1]:
                 self.hist_plots["velocity"][0].append(
-                    self.peak_hist_ax_c.plot(pen=example_utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_c.plot(pen=utils.pg_pen_cycler(i),
                                              name="Veloctiy {:d}".format(i)))
             if self.hist_plots["angle"][1]:
                 self.hist_plots["angle"][0].append(
-                    self.peak_hist_ax_r.plot(pen=example_utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_r.plot(pen=utils.pg_pen_cycler(i),
                                              name="Angle {:d}".format(i)))
             if self.hist_plots["distance"][1]:
                 self.hist_plots["distance"][0].append(
-                    self.peak_hist_ax_l.plot(pen=example_utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_l.plot(pen=utils.pg_pen_cycler(i),
                                              name="Distance {:d}".format(i)))
             if self.hist_plots["amplitude"][1]:
                 self.hist_plots["amplitude"][0].append(
-                    self.peak_hist_ax_r1.plot(pen=example_utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_r1.plot(pen=utils.pg_pen_cycler(i),
                                               name="Amplitude {:d}".format(i)))
 
-        self.smooth_max = example_utils.SmoothMax(
+        self.smooth_max = utils.SmoothMax(
                 self.sensor_config.sweep_rate,
                 tau_decay=1,
                 tau_grow=0.2

@@ -19,7 +19,7 @@ import keras_processing as kp
 import feature_processing as feature_proc
 import feature_definitions as feature_def
 from helper import SensorSelection, QHLine, QVLine, Count, GUI_Styles, ErrorFormater
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 class FeatureSelectFrame(QFrame):
@@ -208,7 +208,7 @@ class FeatureSelectFrame(QFrame):
         other_items = []
         other_items.append(QLabel(name))
         self._layout.addWidget(other_items[0], row, self.num)
-        c = example_utils.color_cycler(self.enabled_count.pre_incr())
+        c = utils.color_cycler(self.enabled_count.pre_incr())
         other_items[0].setStyleSheet("background-color: {}".format(c))
 
         options = {}
@@ -596,7 +596,7 @@ class FeatureSelectFrame(QFrame):
         self.feat_plot.setAutoDownsample(True)
         self.feat_plot_image.addItem(self.feat_plot)
 
-        lut = example_utils.pg_mpl_cmap("viridis")
+        lut = utils.pg_mpl_cmap("viridis")
         self.feat_plot.setLookupTable(lut)
 
         self.feature_areas = []
@@ -665,8 +665,8 @@ class FeatureSelectFrame(QFrame):
                     if x_size > x_max_size:
                         x_max_size = x_size
                     rect = pg.QtGui.QGraphicsRectItem(0, y_max_size, x_size, feature_size)
-                    rect.setPen(example_utils.pg_pen_cycler(feature["count"]))
-                    rect.setBrush(example_utils.pg_brush_cycler(feature["count"]))
+                    rect.setPen(utils.pg_pen_cycler(feature["count"]))
+                    rect.setBrush(utils.pg_brush_cycler(feature["count"]))
                     rect.setOpacity(0.5)
                     rect.setZValue(2)
                     self.feat_plot_image.addItem(rect)
@@ -2470,7 +2470,7 @@ class CalibrationDialog(QDialog):
 
         cal_plot.updateImage(calibration_data.T, levels=(0, 256))
 
-        lut = example_utils.pg_mpl_cmap("viridis")
+        lut = utils.pg_mpl_cmap("viridis")
         cal_plot.setLookupTable(lut)
 
         layout.addWidget(win)

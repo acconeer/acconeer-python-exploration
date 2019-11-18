@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(__file__))  # noqa: E402
 from server import http_server
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 def check_connection(args):
@@ -22,7 +22,7 @@ def check_connection(args):
         elif args.spi:
             client = SPIClient()
         else:
-            port = args.serial_port or example_utils.autodetect_serial_port()
+            port = args.serial_port or utils.autodetect_serial_port()
             client = UARTClient(port)
 
         client.connect()
@@ -42,8 +42,8 @@ def open_browser_delayed():
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if not check_connection(args):
         print("Please check connection to radar sensor module or streaming server")

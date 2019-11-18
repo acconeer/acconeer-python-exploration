@@ -1,7 +1,7 @@
 import pytest
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.example_utils import autodetect_serial_port
+from acconeer.exptool.utils import autodetect_serial_port
 from acconeer.exptool import configs
 
 

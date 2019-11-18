@@ -6,7 +6,7 @@ from PyQt5 import QtCore
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 from acconeer.exptool.structs import configbase
 
@@ -15,15 +15,15 @@ env_max = 0.3
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -38,7 +38,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = BreathingProcessor(sensor_config, processing_config, session_info)
@@ -262,8 +262,8 @@ class PGUpdater:
         win.resize(800, 600)
 
         self.peak_plot = win.addPlot(title="IQ at peak")
-        example_utils.pg_setup_polar_plot(self.peak_plot, 0.3)
-        self.peak_curve = self.peak_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        utils.pg_setup_polar_plot(self.peak_plot, 0.3)
+        self.peak_curve = self.peak_plot.plot(pen=utils.pg_pen_cycler(0))
         self.peak_scatter = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=15)
         self.peak_plot.addItem(self.peak_scatter)
         self.peak_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
@@ -275,11 +275,11 @@ class PGUpdater:
         self.env_plot.showGrid(x=True, y=True)
         self.env_plot.setYRange(0, 0.3)
         self.env_curve = self.env_plot.plot(
-                pen=example_utils.pg_pen_cycler(0),
+                pen=utils.pg_pen_cycler(0),
                 name="Envelope",
                 )
         self.delta_curve = self.env_plot.plot(
-                pen=example_utils.pg_pen_cycler(1),
+                pen=utils.pg_pen_cycler(1),
                 name="Phase delta",
                 )
         self.peak_vline = pg.InfiniteLine(pen=pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine))
@@ -292,7 +292,7 @@ class PGUpdater:
         self.move_plot.setLabel("left", "Movement (mm)")
         self.move_plot.setYRange(-2, 2)
         self.move_plot.setXRange(-self.hist_plot_len_s, 0)
-        self.move_curve = self.move_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        self.move_curve = self.move_plot.plot(pen=utils.pg_pen_cycler(0))
         self.move_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
         self.move_text_item.setPos(self.move_xs[0], -2)
         self.move_plot.addItem(self.move_text_item)
@@ -301,7 +301,7 @@ class PGUpdater:
         self.zoom_plot.showGrid(x=True, y=True)
         self.zoom_plot.setLabel("bottom", "Time (s)")
         self.zoom_plot.setLabel("left", "Movement (mm)")
-        self.zoom_curve = self.zoom_plot.plot(pen=example_utils.pg_pen_cycler(0))
+        self.zoom_curve = self.zoom_plot.plot(pen=utils.pg_pen_cycler(0))
 
     def update(self, data):
         self.process_data(data)

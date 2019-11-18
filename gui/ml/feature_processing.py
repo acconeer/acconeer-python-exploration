@@ -5,7 +5,7 @@ try:
     from matplotlib.colors import LinearSegmentedColormap
     from PyQt5 import QtCore
     import pyqtgraph as pg
-    from acconeer.exptool import example_utils
+    from acconeer.exptool import utils
     PYQT_PLOTTING_AVAILABLE = True
 except ImportError:
     PYQT_PLOTTING_AVAILABLE = False
@@ -624,7 +624,7 @@ class PGUpdater:
         self.feat_plot_image.setLabel("left", "Features")
         self.feat_plot_image.setLabel("bottom", "Sweeps")
 
-        lut = example_utils.pg_mpl_cmap("viridis")
+        lut = utils.pg_mpl_cmap("viridis")
         self.feat_plot.setLookupTable(lut)
 
         self.feat_plot_image.setXRange(0, 40)
@@ -664,7 +664,7 @@ class PGUpdater:
         self.hist_plots = []
         self.hist_plot_peaks = []
 
-        lut = example_utils.pg_mpl_cmap("viridis")
+        lut = utils.pg_mpl_cmap("viridis")
 
         for s in range(4):
             legend_text = "Sensor {}".format(s+1)
@@ -695,7 +695,7 @@ class PGUpdater:
             if label_num < len(self.prediction_plots):
                 continue
             else:
-                pen = example_utils.pg_pen_cycler(label_num)
+                pen = utils.pg_pen_cycler(label_num)
                 self.prediction_plots.append(
                     self.predictions_plot_window.plot(pen=pen, name=label)
                     )
@@ -743,7 +743,7 @@ class PGUpdater:
             nr_sensors = len(sensors)
             self.hist_plot_max_y = np.zeros(nr_sensors)
 
-            lut = example_utils.pg_mpl_cmap("viridis")
+            lut = utils.pg_mpl_cmap("viridis")
             if mode == "sparse":
                 cmap_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
                 cmap = LinearSegmentedColormap.from_list("mycmap", cmap_cols)

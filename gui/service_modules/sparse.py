@@ -6,7 +6,7 @@ import os
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))  # noqa: E402
@@ -14,15 +14,15 @@ from examples.processing import presence_detection_sparse
 
 
 def main():
-    args = example_utils.ExampleArgumentParser().parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser().parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     client.squeeze = False
@@ -40,7 +40,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -94,7 +94,7 @@ class Processor:
         except AssertionError:
             self.pd_processors = None
 
-        self.smooth_max = example_utils.SmoothMax(sensor_config.sweep_rate)
+        self.smooth_max = utils.SmoothMax(sensor_config.sweep_rate)
 
         self.data_history = np.zeros([history_len, num_sensors, num_depths])
         self.presence_history = np.zeros([history_len, num_sensors, num_depths])
@@ -171,7 +171,7 @@ class PGUpdater:
 
             presence_history_plot = win.addPlot(title="Movement history", row=2, col=i)
             presence_history_im = pg.ImageItem(autoDownsample=True)
-            presence_history_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+            presence_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
             presence_history_plot.addItem(presence_history_im)
             presence_history_plot.setLabel("bottom", "Time (s)")
             presence_history_plot.setLabel("left", "Depth (m)")

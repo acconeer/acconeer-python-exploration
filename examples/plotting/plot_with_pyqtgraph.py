@@ -4,19 +4,19 @@ import pyqtgraph as pg
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     config = configs.EnvelopeServiceConfig()
@@ -32,7 +32,7 @@ def main():
 
     hist_data = np.zeros([num_hist, num_points])
     hist_max = np.zeros(num_hist)
-    smooth_max = example_utils.SmoothMax(config.sweep_rate)
+    smooth_max = utils.SmoothMax(config.sweep_rate)
 
     app = QtWidgets.QApplication([])
     pg.setConfigOption("background", "w")
@@ -59,13 +59,13 @@ def main():
 
     # try to get a colormap from matplotlib
     try:
-        hist_image_item.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+        hist_image_item.setLookupTable(utils.pg_mpl_cmap("viridis"))
     except ImportError:
         pass
 
     win.show()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     client.start_streaming()

@@ -4,20 +4,20 @@ from scipy import signal
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -32,7 +32,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = PresenceDetectionProcessor(sensor_config, processing_config, session_info)
@@ -354,11 +354,11 @@ class PGUpdater:
         self.phi_plot.setLabel("bottom", "Samples")
         self.phi_plot.addLegend()
         self.filt_phi_curve = self.phi_plot.plot(
-                pen=example_utils.pg_pen_cycler(0),
+                pen=utils.pg_pen_cycler(0),
                 name="Filtered",
                 )
         self.raw_phi_curve = self.phi_plot.plot(
-                pen=example_utils.pg_pen_cycler(1),
+                pen=utils.pg_pen_cycler(1),
                 name="Raw",
                 )
 
@@ -367,11 +367,11 @@ class PGUpdater:
         self.spect_plot.showGrid(x=True, y=True)
         self.spect_plot.setLabel("left", "Power")
         self.spect_plot.setLabel("bottom", "Frequency (Hz)")
-        self.spect_curve = self.spect_plot.plot(pen=example_utils.pg_pen_cycler(1))
-        self.spect_smax = example_utils.SmoothMax(self.config.sweep_rate / 15)
-        self.spect_dft_inf_line = pg.InfiniteLine(pen=example_utils.pg_pen_cycler(1, "--"))
+        self.spect_curve = self.spect_plot.plot(pen=utils.pg_pen_cycler(1))
+        self.spect_smax = utils.SmoothMax(self.config.sweep_rate / 15)
+        self.spect_dft_inf_line = pg.InfiniteLine(pen=utils.pg_pen_cycler(1, "--"))
         self.spect_plot.addItem(self.spect_dft_inf_line)
-        self.spect_est_inf_line = pg.InfiniteLine(pen=example_utils.pg_pen_cycler(0, "--"))
+        self.spect_est_inf_line = pg.InfiniteLine(pen=utils.pg_pen_cycler(0, "--"))
         self.spect_plot.addItem(self.spect_est_inf_line)
         self.spect_plot.setXRange(0, 1)
         self.spect_plot.setYRange(0, 1)
@@ -386,11 +386,11 @@ class PGUpdater:
         self.fest_plot.setLabel("bottom", "Samples")
         self.fest_plot.addLegend()
         self.fest_curve = self.fest_plot.plot(
-                pen=example_utils.pg_pen_cycler(0),
+                pen=utils.pg_pen_cycler(0),
                 name="Breathing est.",
                 )
         self.fest_dft_curve = self.fest_plot.plot(
-                pen=example_utils.pg_pen_cycler(1),
+                pen=utils.pg_pen_cycler(1),
                 name="DFT est.",
                 )
         self.fest_plot.setXRange(0, 1)

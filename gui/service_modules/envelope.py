@@ -3,7 +3,7 @@ from PyQt5 import QtCore
 import pyqtgraph as pg
 
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 import logging
 
@@ -218,12 +218,12 @@ class PGUpdater:
         self.hist_plots = []
         self.hist_plot_peaks = []
 
-        lut = example_utils.pg_mpl_cmap("viridis")
-        hist_pen = example_utils.pg_pen_cycler(1)
+        lut = utils.pg_mpl_cmap("viridis")
+        hist_pen = utils.pg_pen_cycler(1)
 
         for s in range(self.num_sensors):
             legend_text = "Sensor {}".format(self.sensor_config.sensor[s])
-            pen = example_utils.pg_pen_cycler(s+1)
+            pen = utils.pg_pen_cycler(s+1)
             self.envelope_plots.append(
                 self.envelope_plot_window.plot(range(10), np.zeros(10), pen=pen, name=legend_text)
                 )
@@ -271,7 +271,7 @@ class PGUpdater:
             self.env_plot_max_y = np.zeros(self.num_sensors)
             self.envelope_plot_window.setXRange(xstart, xend)
 
-            self.smooth_envelope = example_utils.SmoothMax(
+            self.smooth_envelope = utils.SmoothMax(
                 int(self.sensor_config.sweep_rate),
                 tau_decay=1,
                 tau_grow=0.2

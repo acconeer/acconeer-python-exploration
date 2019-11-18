@@ -2,20 +2,20 @@ import numpy as np
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
-    args = example_utils.ExampleArgumentParser().parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser().parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     client.squeeze = False
@@ -39,7 +39,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
@@ -73,17 +73,17 @@ class PGUpdater:
         self.phase_plot.setLabel("bottom", "Depth (m)")
         self.phase_plot.setLabel("left", "Phase")
         self.phase_plot.setYRange(-np.pi, np.pi)
-        self.phase_plot.getAxis("left").setTicks(example_utils.pg_phase_ticks)
+        self.phase_plot.getAxis("left").setTicks(utils.pg_phase_ticks)
 
         self.ampl_curves = []
         self.phase_curves = []
         for i in range(len(self.config.sensor)):
-            pen = example_utils.pg_pen_cycler(i)
+            pen = utils.pg_pen_cycler(i)
             self.ampl_curves.append(self.ampl_plot.plot(pen=pen))
             self.phase_curves.append(self.phase_plot.plot(pen=pen))
 
         self.xs = np.linspace(*self.config.range_interval, self.num_points)
-        self.smooth_max = example_utils.SmoothMax(self.config.sweep_rate)
+        self.smooth_max = utils.SmoothMax(self.config.sweep_rate)
 
     def update(self, data):
         for i in range(data.shape[0]):

@@ -3,20 +3,20 @@ import pyqtgraph as pg
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -30,7 +30,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
@@ -69,12 +69,12 @@ class PGUpdater:
             x=[],
             height=[],
             width=0,
-            brush=pg.mkBrush(example_utils.color_cycler()),
+            brush=pg.mkBrush(utils.color_cycler()),
         )
 
         self.plot.addItem(self.bar_graph)
 
-        self.smooth_max = example_utils.SmoothMax(self.sensor_config.sweep_rate)
+        self.smooth_max = utils.SmoothMax(self.sensor_config.sweep_rate)
 
     def update(self, data):
         if self.sweep_index == 0:

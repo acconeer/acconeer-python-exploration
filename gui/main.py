@@ -23,7 +23,7 @@ try:
     from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
     from acconeer.exptool.clients.mock.client import MockClient
     from acconeer.exptool import configs
-    from acconeer.exptool import example_utils
+    from acconeer.exptool import utils
     from acconeer.exptool.structs import configbase
 
     sys.path.append(os.path.dirname(__file__))  # noqa: E402
@@ -1420,7 +1420,7 @@ class GUI(QMainWindow):
         log_level = logging.INFO
         if self.checkboxes["verbose"].isChecked():
             log_level = logging.DEBUG
-        example_utils.set_loglevel(log_level)
+        utils.set_loglevel(log_level)
 
     def connect_to_server(self):
         if not self.get_gui_state("server_connected"):
@@ -2687,7 +2687,7 @@ def watchdog(event):
 
 if __name__ == "__main__":
     if lib_version_up_to_date():
-        example_utils.config_logging(level=logging.INFO)
+        utils.config_logging(level=logging.INFO)
 
         app = QApplication(sys.argv)
         ex = GUI()

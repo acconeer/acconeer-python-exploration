@@ -3,19 +3,19 @@ import matplotlib.pyplot as plt
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     config = configs.IQServiceConfig()
@@ -41,7 +41,7 @@ def main():
     amplitude_ax.set_ylabel("Amplitude")
     amplitude_ax.set_ylim(0, 1.1 * amplitude_y_max)
     phase_ax.set_ylabel("Phase")
-    example_utils.mpl_setup_yaxis_for_phase(phase_ax)
+    utils.mpl_setup_yaxis_for_phase(phase_ax)
 
     xs = np.linspace(*config.range_interval, num_points)
     amplitude_line = amplitude_ax.plot(xs, np.zeros_like(xs))[0]
@@ -51,7 +51,7 @@ def main():
     plt.ion()
     plt.show()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     client.start_streaming()

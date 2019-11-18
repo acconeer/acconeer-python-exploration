@@ -1,18 +1,18 @@
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 
 def main():
-    args = example_utils.ExampleArgumentParser().parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser().parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     # Normally when using a single sensor, get_next will return
@@ -42,7 +42,7 @@ def main():
     # and we can take care of the signal ourselves. In case you get
     # impatient, hitting Ctrl-C a couple of more times will raise a
     # KeyboardInterrupt which hopefully terminates the script.
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session\n")
 
     while not interrupt_handler.got_signal:

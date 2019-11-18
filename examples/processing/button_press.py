@@ -4,7 +4,7 @@ from PyQt5 import QtCore
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 from acconeer.exptool.structs import configbase
 
@@ -16,15 +16,15 @@ DETECTION_SHOW_S = 2
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -39,7 +39,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = ButtonPressProcessor(sensor_config, processing_config, session_info)
@@ -234,11 +234,11 @@ class PGUpdater:
         self.sign_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
         self.sign_hist_plot.setYRange(0, OUTPUT_MAX_SIGNAL)
         self.sign_hist_curve = self.sign_hist_plot.plot(
-                pen=example_utils.pg_pen_cycler(0),
+                pen=utils.pg_pen_cycler(0),
                 name="Envelope signal",
                 )
         self.sign_lp_hist_curve = self.sign_hist_plot.plot(
-                pen=example_utils.pg_pen_cycler(1),
+                pen=utils.pg_pen_cycler(1),
                 name="Filtered envelope signal",
                 )
 
@@ -250,7 +250,7 @@ class PGUpdater:
         self.rel_dev_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
         self.rel_dev_hist_plot.setYRange(0, OUTPUT_MAX_REL_DEV)
         self.rel_dev_lp_hist_curve = self.rel_dev_hist_plot.plot(
-                pen=example_utils.pg_pen_cycler(0),
+                pen=utils.pg_pen_cycler(0),
                 name="Relative deviation",
                 )
 
@@ -258,7 +258,7 @@ class PGUpdater:
                 pen=None,
                 symbol='o',
                 symbolSize=20,
-                symbolBrush=example_utils.color_cycler(1),
+                symbolBrush=utils.color_cycler(1),
                 name="Detections",
                 )
         self.rel_dev_hist_plot.addItem(self.detection_dots)
@@ -283,13 +283,13 @@ class PGUpdater:
         self.rel_dev_hist_plot.addItem(self.detection_text_item)
         self.detection_text_item.hide()
 
-        self.smooth_max_signal = example_utils.SmoothMax(
+        self.smooth_max_signal = utils.SmoothMax(
                 self.sensor_config.sweep_rate,
                 hysteresis=0.6,
                 tau_decay=3,
                 )
 
-        self.smooth_max_rel_dev = example_utils.SmoothMax(
+        self.smooth_max_rel_dev = utils.SmoothMax(
                 self.sensor_config.sweep_rate,
                 hysteresis=0.6,
                 tau_decay=3,

@@ -3,20 +3,20 @@ import pyqtgraph as pg
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 
 
 def main():
-    args = example_utils.ExampleArgumentParser().parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser().parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     client.squeeze = False
@@ -37,7 +37,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
@@ -78,7 +78,7 @@ class PGUpdater:
 
             self.plots.append(plot)
             self.scatters.append(scatter)
-            self.smooth_maxs.append(example_utils.SmoothMax(self.config.sweep_rate))
+            self.smooth_maxs.append(utils.SmoothMax(self.config.sweep_rate))
 
     def update(self, data):
         num_sensors, num_subsweeps, num_depths = data.shape

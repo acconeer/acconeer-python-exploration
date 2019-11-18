@@ -2,20 +2,20 @@ import numpy as np
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.mpl_process import PlotProcess, PlotProccessDiedException, FigureUpdater
 
 
 def main():
-    args = example_utils.ExampleArgumentParser().parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser().parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     client.squeeze = False
@@ -36,7 +36,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
@@ -76,7 +76,7 @@ class ExampleFigureUpdater(FigureUpdater):
         self.axs["amplitude"].set_title("Amplitude")
         self.axs["amplitude"].set_ylim(0, 0.5)
         self.axs["phase"].set_title("Phase")
-        example_utils.mpl_setup_yaxis_for_phase(self.axs["phase"])
+        utils.mpl_setup_yaxis_for_phase(self.axs["phase"])
 
         fig.canvas.set_window_title("Acconeer matplotlib process example")
         fig.set_size_inches(10, 7)

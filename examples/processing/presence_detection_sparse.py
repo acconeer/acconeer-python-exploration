@@ -6,7 +6,7 @@ from PyQt5 import QtCore
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 from acconeer.exptool.structs import configbase
 
@@ -15,15 +15,15 @@ OUTPUT_MAX = 10
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -38,7 +38,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = PresenceDetectionSparseProcessor(sensor_config, processing_config, session_info)
@@ -425,15 +425,15 @@ class PGUpdater:
         self.data_plot.setYRange(-2**15, 2**15)
         self.sweep_scatter = pg.ScatterPlotItem(
                 size=10,
-                brush=example_utils.pg_brush_cycler(0),
+                brush=utils.pg_brush_cycler(0),
                 )
         self.fast_scatter = pg.ScatterPlotItem(
                 size=10,
-                brush=example_utils.pg_brush_cycler(1),
+                brush=utils.pg_brush_cycler(1),
                 )
         self.slow_scatter = pg.ScatterPlotItem(
                 size=10,
-                brush=example_utils.pg_brush_cycler(2),
+                brush=utils.pg_brush_cycler(2),
                 )
         self.data_plot.addItem(self.sweep_scatter)
         self.data_plot.addItem(self.fast_scatter)
@@ -449,8 +449,8 @@ class PGUpdater:
         self.noise_plot.showGrid(x=True, y=True)
         self.noise_plot.setLabel("bottom", "Depth (m)")
         self.noise_plot.setLabel("left", "Amplitude")
-        self.noise_curve = self.noise_plot.plot(pen=example_utils.pg_pen_cycler())
-        self.noise_smooth_max = example_utils.SmoothMax(self.sensor_config.sweep_rate)
+        self.noise_curve = self.noise_plot.plot(pen=utils.pg_pen_cycler())
+        self.noise_smooth_max = utils.SmoothMax(self.sensor_config.sweep_rate)
 
         # Depthwise presence plot
 
@@ -465,7 +465,7 @@ class PGUpdater:
         zero_curve = self.move_plot.plot(self.depths, np.zeros_like(self.depths))
         self.inter_curve = self.move_plot.plot()
         self.total_curve = self.move_plot.plot()
-        self.move_smooth_max = example_utils.SmoothMax(
+        self.move_smooth_max = utils.SmoothMax(
                 self.sensor_config.sweep_rate,
                 tau_decay=1.0,
                 tau_grow=0.25,
@@ -481,14 +481,14 @@ class PGUpdater:
         fbi = pg.FillBetweenItem(
                 zero_curve,
                 self.inter_curve,
-                brush=example_utils.pg_brush_cycler(0),
+                brush=utils.pg_brush_cycler(0),
                 )
         self.move_plot.addItem(fbi)
 
         fbi = pg.FillBetweenItem(
                 self.inter_curve,
                 self.total_curve,
-                brush=example_utils.pg_brush_cycler(1),
+                brush=utils.pg_brush_cycler(1),
                 )
         self.move_plot.addItem(fbi)
 
@@ -500,7 +500,7 @@ class PGUpdater:
         self.move_hist_plot.setLabel("left", "Score (limited to {})".format(OUTPUT_MAX))
         self.move_hist_plot.setXRange(-self.history_length_s, 0)
         self.move_hist_plot.setYRange(0, OUTPUT_MAX)
-        self.move_hist_curve = self.move_hist_plot.plot(pen=example_utils.pg_pen_cycler())
+        self.move_hist_curve = self.move_hist_plot.plot(pen=utils.pg_pen_cycler())
         limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
         self.move_hist_plot.addItem(limit_line)
         self.limit_lines.append(limit_line)
@@ -611,13 +611,13 @@ class PGUpdater:
             self.present_text_item.hide()
             self.not_present_text_item.show()
 
-        brush = example_utils.pg_brush_cycler(0)
+        brush = utils.pg_brush_cycler(0)
         for sector in self.sectors:
             sector.setBrush(brush)
 
         if data["presence_detected"]:
             index = (data["presence_distance_index"] + self.sector_offset) // self.sector_size
-            self.sectors[index].setBrush(example_utils.pg_brush_cycler(1))
+            self.sectors[index].setBrush(utils.pg_brush_cycler(1))
 
 
 def get_range_depths(sensor_config, session_info):

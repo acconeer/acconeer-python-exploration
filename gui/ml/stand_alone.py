@@ -2,14 +2,14 @@ import numpy as np
 import sys
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 
 import keras_processing as kp
 import feature_processing as feature_proc
 
 
 def main():
-    parser = example_utils.ExampleArgumentParser(num_sens=2)
+    parser = utils.ExampleArgumentParser(num_sens=2)
     add_args(parser)
     args = parser.parse_args()
 
@@ -35,19 +35,19 @@ def main():
     feature_process.set_feature_list(feature_list)
     feature_process.set_frame_settings(frame_settings)
 
-    example_utils.config_logging(args)
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     info = client.setup_session(config)
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     client.start_streaming()

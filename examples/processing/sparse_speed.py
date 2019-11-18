@@ -6,7 +6,7 @@ from PyQt5 import QtCore
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 from acconeer.exptool.structs import configbase
 
@@ -21,15 +21,15 @@ FFT_OVERSAMPLING_FACTOR = 4
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -44,7 +44,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -296,7 +296,7 @@ class PGUpdater:
             plot.hideAxis("left")
             plot.hideAxis("bottom")
             plot.plot(np.arange(self.num_subsweeps), np.zeros(self.num_subsweeps))
-            curve = plot.plot(pen=example_utils.pg_pen_cycler())
+            curve = plot.plot(pen=utils.pg_pen_cycler())
             self.data_plots.append(plot)
             self.data_curves.append(curve)
 
@@ -305,12 +305,12 @@ class PGUpdater:
         self.sd_plot = win.addPlot(row=1, col=0, colspan=self.num_depths)
         self.sd_plot.setLabel("left", "Normalized PSD (dB)")
         self.sd_plot.showGrid(x=True, y=True)
-        self.sd_curve = self.sd_plot.plot(pen=example_utils.pg_pen_cycler())
+        self.sd_curve = self.sd_plot.plot(pen=utils.pg_pen_cycler())
         dashed_pen = pg.mkPen("k", width=2, style=QtCore.Qt.DashLine)
         self.sd_threshold_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
         self.sd_plot.addItem(self.sd_threshold_line)
 
-        self.smooth_max = example_utils.SmoothMax(
+        self.smooth_max = utils.SmoothMax(
                 self.est_update_rate,
                 tau_decay=0.5,
                 tau_grow=0,
@@ -339,7 +339,7 @@ class PGUpdater:
         self.sequences_plot.showGrid(y=True)
         self.sequences_plot.setXRange(-NUM_SAVED_SEQUENCES + 0.5, 0.5)
         tmp = np.flip(np.arange(NUM_SAVED_SEQUENCES) == 0)
-        brushes = [pg.mkBrush(example_utils.color_cycler(n)) for n in tmp]
+        brushes = [pg.mkBrush(utils.color_cycler(n)) for n in tmp]
         self.bar_graph = pg.BarGraphItem(
                 x=np.arange(-NUM_SAVED_SEQUENCES, 0) + 1,
                 height=np.zeros(NUM_SAVED_SEQUENCES),
@@ -408,7 +408,7 @@ class PGUpdater:
         mask = ~np.isnan(vs)
         ts = -np.flip(np.arange(vs.size)) * self.dt
         bs = data["belongs_to_last_sequence"]
-        brushes = [example_utils.pg_brush_cycler(int(b)) for b in bs[mask]]
+        brushes = [utils.pg_brush_cycler(int(b)) for b in bs[mask]]
 
         self.vel_scatter.setData(ts[mask], vs[mask], brush=brushes)
 

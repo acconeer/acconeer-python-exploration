@@ -3,21 +3,21 @@ import pyqtgraph as pg
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import configs
-from acconeer.exptool import example_utils
+from acconeer.exptool import utils
 from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
 from acconeer.exptool.structs import configbase
 
 
 def main():
-    args = example_utils.ExampleArgumentParser(num_sens=1).parse_args()
-    example_utils.config_logging(args)
+    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
+    utils.config_logging(args)
 
     if args.socket_addr:
         client = SocketClient(args.socket_addr)
     elif args.spi:
         client = SPIClient()
     else:
-        port = args.serial_port or example_utils.autodetect_serial_port()
+        port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
     sensor_config = get_sensor_config()
@@ -32,7 +32,7 @@ def main():
 
     client.start_streaming()
 
-    interrupt_handler = example_utils.ExampleInterruptHandler()
+    interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -130,18 +130,18 @@ class PGUpdater:
             plot.hideAxis("left")
             plot.hideAxis("bottom")
             plot.plot(np.arange(self.num_subsweeps), np.zeros(self.num_subsweeps))
-            curve = plot.plot(pen=example_utils.pg_pen_cycler())
+            curve = plot.plot(pen=utils.pg_pen_cycler())
             self.plots.append(plot)
             self.curves.append(curve)
 
         self.ft_plot = win.addPlot(row=1, col=0, colspan=self.num_depths)
         self.ft_im = pg.ImageItem(autoDownsample=True)
-        self.ft_im.setLookupTable(example_utils.pg_mpl_cmap("viridis"))
+        self.ft_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
         self.ft_plot.addItem(self.ft_im)
         self.ft_plot.setLabel("bottom", "Depth (cm)")
         self.ft_plot.getAxis("bottom").setTickSpacing(6 * self.stepsize, 6)
 
-        self.smooth_max = example_utils.SmoothMax(
+        self.smooth_max = utils.SmoothMax(
                 self.smooth_max_f,
                 tau_grow=0,
                 tau_decay=0.5,
