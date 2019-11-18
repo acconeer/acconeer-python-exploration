@@ -196,14 +196,14 @@ class Processor:
                 nfft=self.fft_length,
                 )
 
-        psd = np.max(psds, axis=1)
-        asd = np.sqrt(psd)
+        psd = np.max(psds, axis=1)  # Power Spectral Density
+        asd = np.sqrt(psd)  # Amplitude Spectral Density
 
         inst_noise_est = np.mean(asd[(-self.num_noise_est_bins - 1):-1])
-        sf = self.dynamic_sf(self.noise_est_sf)
+        sf = self.dynamic_sf(self.noise_est_sf)  # Smoothing factor
         self.noise_est = sf * self.noise_est + (1.0 - sf) * inst_noise_est
 
-        nasd = asd / self.noise_est
+        nasd = asd / self.noise_est  # Normalized Amplitude Spectral Density
 
         threshold = max(self.min_threshold, np.max(nasd) * self.dynamic_threshold)
         over = nasd > threshold
@@ -257,8 +257,9 @@ class Processor:
 
         return {
             "sweep": sweep,
-            "sd": nasd_temporal_max,
-            "sd_threshold": temporal_max_threshold,
+            "nasd": nasd,
+            "nasd_temporal_max": nasd_temporal_max,
+            "temporal_max_threshold": temporal_max_threshold,
             "vel_history": self.est_vel_history,
             "vel": output_vel,
             "sequence_vels": self.sequence_vels,
@@ -394,8 +395,8 @@ class PGUpdater:
 
         # Spectral density plot
 
-        psd_db = 20 * np.log10(data["sd"])
-        psd_threshold_db = 20 * np.log10(data["sd_threshold"])
+        psd_db = 20 * np.log10(data["nasd_temporal_max"])
+        psd_threshold_db = 20 * np.log10(data["temporal_max_threshold"])
         m = self.smooth_max.update(max(2 * psd_threshold_db, np.max(psd_db)))
         self.sd_plot.setYRange(0, m)
         self.sd_curve.setData(self.bin_vs * self.unit.scale, psd_db)
