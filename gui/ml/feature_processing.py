@@ -424,22 +424,37 @@ class FeatureProcessing:
                 self.motion_config.intra_frame_time_const = 0.1
                 self.motion_config.detection_threshold = 0
                 self.motion_class = presence_detection_sparse.PresenceDetectionSparseProcessor
-                self.motion_processors = self.motion_class(
-                    sensor_config,
-                    self.motion_config,
-                    data["session_info"]
-                    )
+                motion_processors_list = []
+                for i in range(num_sensors):
+                    motion_processors_list.append(
+                        self.motion_class(
+                            sensor_config,
+                            self.motion_config,
+                            data["session_info"]
+                            )
+                        )
+                self.motion_processors = motion_processors_list
             else:
-                motion_score = self.motion_processors.process(data["iq_data"][0, :, :])
-                motion_score = motion_score["depthwise_presence"]
-                self.motion_score_normalized = np.nanmax(motion_score)
+                motion_score = 0
+                for i in range(num_sensors):
+                    score = self.motion_processors[i].process(data["iq_data"][i, :, :])
+                    score = score["depthwise_presence"]
+                    max_score = np.nanmax(score)
+                    if max_score > motion_score:
+                        motion_score = max_score
+                self.motion_score_normalized = motion_score
                 if self.motion_score_normalized > self.auto_threshold:
                     detected = True
-                    self.motion_processors = self.motion_class(
-                        sensor_config,
-                        self.motion_config,
-                        data["session_info"]
-                        )
+                    motion_processors_list = []
+                    for i in range(num_sensors):
+                        motion_processors_list.append(
+                            self.motion_class(
+                                sensor_config,
+                                self.motion_config,
+                                data["session_info"]
+                                )
+                            )
+                    self.motion_processors = motion_processors_list
                     return detected
         else:
             if self.motion_score is None:
