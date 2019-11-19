@@ -1,5 +1,4 @@
 import copy
-import enum
 import json
 import logging
 import os
@@ -51,6 +50,7 @@ try:
         Label,
         SensorSelection,
         lib_version_up_to_date,
+        LoadState
     )
     from modules import (
         MODULE_INFOS,
@@ -67,12 +67,6 @@ if "win32" in sys.platform.lower():
     import ctypes
     myappid = "acconeer.exploration.tool"
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-
-
-class LoadState(enum.Enum):
-    UNLOADED = enum.auto()
-    BUFFERED = enum.auto()
-    LOADED = enum.auto()
 
 
 class GUI(QMainWindow):

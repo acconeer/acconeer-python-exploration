@@ -21,6 +21,7 @@ from keras.layers import (
 from keras.models import Model
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
+from sklearn.utils import class_weight
 
 
 try:
@@ -39,7 +40,7 @@ class MachineLearning():
             "dimensionality": model_dimension,
             "input": None,
             "output": None,
-            "init_shape":  None,
+            "init_shape": None,
         }
         self.model_params = None
 
@@ -88,7 +89,7 @@ class MachineLearning():
         inputs = Input(shape=input_dimensions)
 
         max_kernel = min(self.y_dim, self.x_dim)
-        k = min(3, max_kernel)
+        k = min(2, max_kernel)
 
         x = Conv2D(filters=32, kernel_size=(k, k), padding="same", activation="relu")(inputs)
         x = self.maxpool(x)
@@ -164,6 +165,10 @@ class MachineLearning():
         else:
             eval_data = None
 
+        y_ints = [d.argmax() for d in y]
+        class_weights = class_weight.compute_class_weight('balanced', np.unique(y_ints), y_ints)
+        class_weights = dict(enumerate(class_weights))
+
         cb = []
         if "plot_cb" in train_params:
             plot_cb = train_params["plot_cb"]
@@ -233,7 +238,8 @@ class MachineLearning():
                                     batch_size=batch_size,
                                     callbacks=cb,
                                     validation_data=eval_data,
-                                    verbose=verbose
+                                    verbose=verbose,
+                                    class_weight=class_weights,
                                     )
 
         if run_threaded:
@@ -264,12 +270,12 @@ class MachineLearning():
         if len(x.shape) != len(self.model.input_shape):
             print("Wrong data shapes:\n Model: {}\n Test: {}\n".format(self.model.input_shape,
                                                                        x.shape,))
+            pass
             return None
 
         with self.tf_graph.as_default():
             with self.tf_session.as_default():
                 prediction = self.model.predict(x)
-
         result = list()
         for pred in prediction:
             res = {}
@@ -326,7 +332,7 @@ class MachineLearning():
                 frame_settings_list.append(file_data["frame_settings"])
                 feature_map_dims.append(
                     file_data["frame_data"]["ml_frame_data"]["frame_list"][0]["feature_map"].shape
-                    )
+                )
                 data.append(file_data)
             except Exception:
                 files_failed.append(file)
@@ -348,7 +354,7 @@ class MachineLearning():
                 "frame_settings": frame_settings_list[0],
                 "sensor_config": configs[0],
                 "model_dimensions": self.model_dimensions,
-                }
+            }
             if model_exists:
                 self.model_dimensions["input"] = self.model.input_shape[1:-1]
                 self.model_dimensions["output"] = self.model.output_shape[-1]
@@ -473,7 +479,7 @@ class MachineLearning():
             return {
                 "loaded": False,
                 "message": message,
-                }
+            }
         else:
             message = "Loaded model with input shape:<br>{}<br>".format(self.model.input_shape)
             message += "Using {} features.".format(len(feature_list))
@@ -484,7 +490,7 @@ class MachineLearning():
             "feature_list": feature_list,
             "sensor_config": sensor_config,
             "frame_settings": frame_settings,
-            }
+        }
 
     def clear_model(self, reinit=False):
         if self.model is not None:
@@ -678,6 +684,7 @@ class KerasPlotting:
             for key in self.history_plots:
                 self.history_plots[key].setData([], [])
             self.history["epoch_idx"].append(0)
+            self.history["val_x"].append(0)
             self.progress_acc.setText("")
             self.progress_loss.setText("")
             self.current_epoch = 0
@@ -708,6 +715,10 @@ class KerasPlotting:
         if "batch" in data:
             batch = data["batch"] + 1
 
+        if len(h["acc"]) == 1:
+            h["val_acc"].append(h["acc"][0])
+            h["val_loss"].append(h["loss"][0])
+
         increment = 1
         if "steps_per_epoch" in data:
             spe = data["steps_per_epoch"]
@@ -733,7 +744,6 @@ class KerasPlotting:
         if len(h["val_acc"]):
             train_idx = h["epoch_idx"][max(0, epoch - self.epoch_history)]
             val_idx = max(0, epoch - self.epoch_history)
-
             max_acc = max(max(h["val_acc"][val_idx:]), max(h["acc"][train_idx:]))
             min_acc = min(min(h["val_acc"][val_idx:]), min(h["acc"][train_idx:]))
 
@@ -743,7 +753,7 @@ class KerasPlotting:
             self.acc_plot_window.setYRange(max(0.9 * min_acc, 0), 1.1 * max_acc)
             self.loss_plot_window.setYRange(max(0.9 * min_loss, 0), 1.1 * max_loss)
             self.progress_acc.setPos(max(0, epoch - self.epoch_history), max(0.9 * min_acc, 0))
-            self.progress_loss.setPos(max(0, epoch - self.epoch_history), max(0.9 * min_loss, 0))
+            self.progress_loss.setPos(max(0, epoch - self.epoch_history), max(0.9 * max_loss, 0))
 
             if self.tendency_plots:
                 acc_z = np.polyfit(h["val_x"][val_idx:], h["val_acc"][val_idx:], 1)

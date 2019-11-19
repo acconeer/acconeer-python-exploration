@@ -2,6 +2,7 @@ import colorsys
 import datetime
 import os
 import sys
+import time
 from functools import partial
 
 import numpy as np
@@ -29,13 +30,14 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool import utils
+from acconeer.exptool import recording, utils
 from acconeer.exptool.modes import Mode
 
 import feature_definitions as feature_def
 import feature_processing as feature_proc
 import keras_processing as kp
-from helper import Count, ErrorFormater, GUI_Styles, QHLine, QVLine, SensorSelection
+from helper import Count, ErrorFormater, GUI_Styles, LoadState, QHLine, QVLine, SensorSelection
+from modules import MODULE_KEY_TO_MODULE_INFO_MAP
 
 
 class FeatureSelectFrame(QFrame):
@@ -234,7 +236,7 @@ class FeatureSelectFrame(QFrame):
             textboxes[text].setStyleSheet("background-color: white")
             textboxes[text].editingFinished.connect(
                 partial(self.update_feature_params, limits, data_type, value)
-                )
+            )
             options[text] = textboxes[text]
             self._layout.addWidget(labels[text], row, self.increment())
             self._layout.addWidget(textboxes[text], row, self.increment())
@@ -243,7 +245,7 @@ class FeatureSelectFrame(QFrame):
             multi_sensors=True,
             error_handler=None,
             callback=self.update_feature_plot
-            )
+        )
         available_sensors = [1]
         try:
             available_sensors = self.gui_handle.get_sensors()
@@ -370,7 +372,6 @@ class FeatureSelectFrame(QFrame):
             entry = {}
             entry["key"] = key
             entry["name"] = feat["name"]
-            entry["cb"] = feat["cb"]
             entry["sensors"] = feat["sensors"].get_sensors()
 
             for s in entry["sensors"]:
@@ -425,7 +426,7 @@ class FeatureSelectFrame(QFrame):
             feature = {}
             feature["key"] = feat["key"]
             feature["name"] = feat["name"]
-            feature["class"] = feat["cb"]
+            feature["class"] = self.features[feat["key"]]["class"]
             feature["sensors"] = feat["sensors"]
 
         self.remove_feature(clear_all=True)
@@ -535,7 +536,7 @@ class FeatureSelectFrame(QFrame):
                     k,
                     config_is_valid[k][0],
                     config_is_valid[k][1],
-                    )
+                )
                 is_valid = False
 
         if len(model_dimensions) > 1:
@@ -699,7 +700,7 @@ class FeatureSelectFrame(QFrame):
             self.gui_handle.sig_scan.emit("update_feature_list", None, self.get_feature_list())
             self.feature_testing = False
 
-    def plot_feature(self,  data):
+    def plot_feature(self, data):
         feat_map = None
         if data["ml_frame_data"] is not None:
             frame_data = data["ml_frame_data"]
@@ -786,7 +787,7 @@ class FeatureExtractFrame(QFrame):
         self.plot_widget = feature_proc.PGUpdater(
             self.gui_handle.save_gui_settings_to_sensor_config(),
             self.gui_handle.update_service_params()
-            )
+        )
         self.plot_widget.setup(feature_canvas)
 
         self.grid.addWidget(feature_canvas, 5, 0, 1, self.nr_col)
@@ -807,6 +808,9 @@ class FeatureSidePanel(QFrame):
         self.grid.setContentsMargins(9, 0, 9, 9)
         self.grid.setColumnStretch(0, 1)
         self.grid.setColumnStretch(1, 1)
+        self.last_filename = None
+        self.last_folder = None
+        self.batch_params = None
 
         self.format_error = ErrorFormater()
 
@@ -824,6 +828,7 @@ class FeatureSidePanel(QFrame):
             "empty_1": QLabel(""),
             "empty_2": QLabel(""),
             "empty_3": QLabel(""),
+            "loaded_file": QLabel(""),
         }
 
         self.textboxes = {
@@ -849,6 +854,8 @@ class FeatureSidePanel(QFrame):
             "trigger": QPushButton("&Trigger", self),
             "create_calib": QPushButton("Create calibration", self),
             "show_calib": QPushButton("Show calibration", self),
+            "load_batch": QPushButton("Load batch", self),
+            "process_batch": QPushButton("Process batch", self),
         }
 
         self.buttons["load_settings"].clicked.connect(self.load_data)
@@ -857,14 +864,17 @@ class FeatureSidePanel(QFrame):
         self.buttons["show_calib"].clicked.connect(self.calibration_handling)
         self.buttons["save_settings"].clicked.connect(self.save_data)
         self.buttons["save_session"].clicked.connect(self.save_data)
+        self.buttons["load_batch"].clicked.connect(self.batch_process)
+        self.buttons["process_batch"].clicked.connect(self.batch_process)
         self.buttons["trigger"].clicked.connect(
             lambda: self.gui_handle.sig_scan.emit(
                 "update_feature_extraction",
                 "triggered",
                 True
-                )
             )
+        )
         self.buttons["show_calib"].setEnabled(False)
+        self.buttons["process_batch"].setEnabled(False)
 
         self.checkboxes = {
             "rolling": QCheckBox("Rolling frame", self),
@@ -874,14 +884,19 @@ class FeatureSidePanel(QFrame):
                 "update_feature_extraction",
                 "rolling",
                 self.checkboxes["rolling"].isChecked()
-                )
             )
+        )
 
         self.radiobuttons = {
             "auto": QRadioButton("auto"),
             "single": QRadioButton("single"),
             "continuous": QRadioButton("cont."),
         }
+
+        self.auto_mode = QComboBox(self)
+        self.auto_mode.setStyleSheet("background-color: white")
+        self.auto_mode.addItem("Presence detection")
+        self.auto_mode.addItem("Feature detection")
 
         self.radiobuttons["auto"].setChecked(True)
         self.radio_frame = QFrame()
@@ -894,25 +909,29 @@ class FeatureSidePanel(QFrame):
         self.radio_frame.grid.addWidget(self.radiobuttons["continuous"], 2, 2)
         self.radio_frame.grid.addWidget(self.checkboxes["rolling"], 3, 0, 1, 2)
         self.radio_frame.grid.addWidget(self.buttons["trigger"], 4, 0, 1, 3)
-        self.radio_frame.grid.addWidget(self.labels["auto_thrshld_offset"], 5, 0)
-        self.radio_frame.grid.addWidget(self.textboxes["auto_threshold"], 5, 1)
-        self.radio_frame.grid.addWidget(self.textboxes["auto_offset"], 5, 2)
-        self.radio_frame.grid.addWidget(self.labels["dead_time"], 6, 0)
-        self.radio_frame.grid.addWidget(self.textboxes["dead_time"], 6, 1, 1, 2)
+        self.radio_frame.grid.addWidget(self.auto_mode, 5, 0, 1, 3)
+        self.radio_frame.grid.addWidget(self.labels["auto_thrshld_offset"], 6, 0)
+        self.radio_frame.grid.addWidget(self.textboxes["auto_threshold"], 6, 1)
+        self.radio_frame.grid.addWidget(self.textboxes["auto_offset"], 6, 2)
+        self.radio_frame.grid.addWidget(self.labels["dead_time"], 7, 0)
+        self.radio_frame.grid.addWidget(self.textboxes["dead_time"], 7, 1, 1, 2)
 
         for toggle in self.radiobuttons:
             self.radiobuttons[toggle].toggled.connect(
                 partial(self.frame_settings_storage, "collection_mode")
-                )
+            )
         self.textboxes["auto_threshold"].editingFinished.connect(
             partial(self.frame_settings_storage, "auto_threshold")
-            )
+        )
         self.textboxes["dead_time"].editingFinished.connect(
             partial(self.frame_settings_storage, "dead_time")
-            )
+        )
         self.textboxes["auto_offset"].editingFinished.connect(
             partial(self.frame_settings_storage, "auto_offset")
-            )
+        )
+        self.auto_mode.currentIndexChanged.connect(
+            partial(self.frame_settings_storage, "collection_mode")
+        )
         self.frame_settings_storage()
 
         for key in self.textboxes:
@@ -941,18 +960,19 @@ class FeatureSidePanel(QFrame):
         self.grid.addWidget(self.buttons["save_settings"], self.num, 1)
         self.grid.addWidget(self.buttons["load_session"], self.increment(), 0)
         self.grid.addWidget(self.buttons["save_session"], self.num, 1)
+        self.grid.addWidget(self.buttons["load_batch"], self.increment(), 0)
+        self.grid.addWidget(self.buttons["process_batch"], self.num, 1)
+        self.grid.addWidget(self.labels["loaded_file"], self.increment(), 0, 1, 2)
 
         self.textboxes["frame_size"].setEnabled(False)
 
         self.grid.setRowStretch(self.increment(), 1)
 
+        # Hide these elements
         self.modes = {
             "feature_select": [
-                self.labels["empty_1"],
-                self.h_lines["h_line_2"],
-                self.labels["collection_mode"],
                 self.radio_frame,
-                ],
+            ],
             "feature_extract": [
                 self.labels["frame_time"],
                 self.labels["update_rate"],
@@ -960,17 +980,15 @@ class FeatureSidePanel(QFrame):
                 self.textboxes["update_rate"],
                 self.buttons["create_calib"],
                 self.buttons["show_calib"],
-                ],
+            ],
             "feature_inspect": [
                 self.labels["frame_time"],
                 self.labels["update_rate"],
                 self.textboxes["frame_time"],
                 self.textboxes["update_rate"],
                 self.labels["empty_1"],
-                self.h_lines["h_line_2"],
-                self.labels["collection_mode"],
                 self.radio_frame,
-                ],
+            ],
             "eval": [
                 self.labels["empty_1"],
                 self.labels["empty_2"],
@@ -979,6 +997,7 @@ class FeatureSidePanel(QFrame):
                 self.labels["frame_time"],
                 self.labels["update_rate"],
                 self.labels["frame_size"],
+                self.labels["loaded_file"],
                 self.h_lines["h_line_1"],
                 self.h_lines["h_line_3"],
                 self.textboxes["frame_time"],
@@ -990,7 +1009,9 @@ class FeatureSidePanel(QFrame):
                 self.buttons["save_settings"],
                 self.buttons["create_calib"],
                 self.buttons["show_calib"],
-                ],
+                self.buttons["load_batch"],
+                self.buttons["process_batch"],
+            ],
             "train": [],
         }
 
@@ -1063,7 +1084,14 @@ class FeatureSidePanel(QFrame):
             if "auto_offset" in frame_settings:
                 self.textboxes["auto_offset"].setText(str(frame_settings["auto_offset"]))
             if "collection_mode" in frame_settings:
-                self.radiobuttons[frame_settings["collection_mode"]].setChecked(True)
+                collection_mode = frame_settings["collection_mode"]
+                if "auto" in collection_mode:
+                    if "feature map" in collection_mode:
+                        self.auto_mode.setCurrentIndex(1)
+                    else:
+                        self.auto_mode.setCurrentIndex(0)
+                    collection_mode = "auto"
+                self.radiobuttons[collection_mode].setChecked(True)
             if "rolling" in frame_settings:
                 self.checkboxes["rolling"].setChecked(frame_settings["rolling"])
             if frame_settings.get("calibration") is not None:
@@ -1080,16 +1108,19 @@ class FeatureSidePanel(QFrame):
     def calc_values(self, key, edditing):
         try:
             frame_time = float(self.textboxes["frame_time"].text())
-            update_rate = int(self.textboxes["update_rate"].text())
+            update_rate = float(self.textboxes["update_rate"].text())
         except Exception:
             if not edditing:
                 print("{} is not a valid input for {}!".format(self.textboxes[key].text(), key))
                 if key == "frame_time":
                     self.textboxes["frame_time"].setText("1")
                 if key == "update_rate":
-                    self.textboxes["update_rate"].setText(
-                        self.gui_handle.textboxes["update_rate"].text()
-                        )
+                    sensor_config = self.gui_handle.get_sensor_config()
+                    if sensor_config is None:
+                        update_rate = "50.0"
+                    else:
+                        update_rate = "{:.1f}".format(sensor_config.update_rate)
+                    self.textboxes["update_rate"].setText(update_rate)
                 return
             else:
                 return
@@ -1122,6 +1153,7 @@ class FeatureSidePanel(QFrame):
         self.labels["dead_time"].hide()
         self.textboxes["dead_time"].hide()
         self.textboxes["auto_offset"].hide()
+        self.auto_mode.hide()
 
         if self.radiobuttons["auto"].isChecked():
             self.labels["auto_thrshld_offset"].show()
@@ -1129,6 +1161,7 @@ class FeatureSidePanel(QFrame):
             self.labels["dead_time"].show()
             self.textboxes["dead_time"].show()
             self.textboxes["auto_offset"].show()
+            self.auto_mode.show()
         if self.radiobuttons["continuous"].isChecked():
             self.checkboxes["rolling"].show()
         if self.radiobuttons["single"].isChecked():
@@ -1136,6 +1169,8 @@ class FeatureSidePanel(QFrame):
 
         for m in self.radiobuttons:
             if self.radiobuttons[m].isChecked():
+                if m == "auto" and "feature detection" in self.auto_mode.currentText().lower():
+                    m = "auto_feature_based"
                 break
         return m
 
@@ -1172,8 +1207,12 @@ class FeatureSidePanel(QFrame):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, title, "", "NumPy data files (*.npy)", options=options)
 
+        self.labels["loaded_file"].setText("")
+        self.last_filename = None
+
         if filename:
             try:
+                self.last_folder = os.path.split(filename)[0]
                 data = np.load(filename, allow_pickle=True)
             except Exception as e:
                 error_text = self.format_error.error_to_text(e)
@@ -1203,44 +1242,53 @@ class FeatureSidePanel(QFrame):
                 return calibration
         else:
             try:
-                sweep_data = data.item()["sweep_data"]
+                sweep_data = recording.unpack(data.item()["sweep_data"])
                 frame_data = data.item()["frame_data"]
                 feature_list = data.item()["feature_list"]
                 self.gui_handle.feature_select.update_feature_list(feature_list)
                 try:
                     self.gui_handle.feature_extract.set_label(
                         frame_data["ml_frame_data"]["current_frame"]["label"]
-                        )
+                    )
                 except Exception as e:
                     error_text = self.format_error.error_to_text(e)
                     print("No label stored ({})".format(error_text))
 
-                module_label = sweep_data[0]["service_type"]
-                data_len = len(sweep_data)
-                conf = sweep_data[0]["sensor_config"]
+                module_info = MODULE_KEY_TO_MODULE_INFO_MAP[sweep_data.module_key]
                 index = self.gui_handle.module_dd.findText(
-                    module_label,
+                    module_info.label,
                     QtCore.Qt.MatchFixedString
-                    )
+                )
                 if index >= 0:
                     self.gui_handle.module_dd.setCurrentIndex(index)
                     self.gui_handle.update_canvas()
+
+                data_len = len(sweep_data.data.data)
+                conf = self.gui_handle.get_sensor_config()
+                conf._loads(sweep_data.sensor_config_dump)
+                frame_data["sensor_config"] = conf
+
+                self.gui_handle.data = sweep_data
+                self.gui_handle.ml_data = frame_data
                 self.gui_handle.load_gui_settings_from_sensor_config(conf)
                 self.gui_handle.textboxes["sweep_buffer"].setText(str(data_len))
                 self.gui_handle.buttons["replay_buffered"].setEnabled(True)
+                self.gui_handle.set_gui_state("load_state", LoadState.LOADED)
+                self.gui_handle.set_multi_sensors()
                 self.gui_handle.set_sensors(conf.sensor)
-                self.gui_handle.data = sweep_data
-                self.gui_handle.ml_data = frame_data
                 self.gui_handle.feature_inspect.update_frame("frames", 1, init=True)
                 self.gui_handle.feature_inspect.update_sliders()
                 print("Found data with {} sweeps and {} feature frames.".format(
                     data_len,
                     len(frame_data["ml_frame_data"]["frame_list"]))
-                    )
+                )
             except Exception as e:
                 error_text = self.format_error.error_to_text(e)
                 error_handle("Failed to load data:<br> {}".format(error_text))
                 return
+
+        self.last_filename = os.path.split(filename)[1]
+        self.labels["loaded_file"].setText(str(self.last_filename))
 
         try:
             frame_settings = data.item()["frame_settings"]
@@ -1249,39 +1297,54 @@ class FeatureSidePanel(QFrame):
             error_text = self.format_error.error_to_text(e)
             error_handle("Failed to load frame settings:<br> {}".format(error_text))
 
-    def save_data(self):
+    def save_data(self, filename=None):
         feature_list = self.gui_handle.feature_select.get_feature_list()
         action = self.sender().text()
 
-        title = "Save feature settings"
-        fname = 'ml_feature_settings_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
-        if "session" in action:
-            title = "Save session data"
-            fname = 'ml_session_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
-            fname += "_{}".format(self.gui_handle.feature_extract.get_label())
+        if filename:
+            action = "session"
+        else:
+            title = "Save feature settings"
+            fname = 'ml_feature_settings_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+            if "session" in action:
+                title = "Save session data"
+                fname = 'ml_session_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+                fname += "_{}".format(self.gui_handle.feature_extract.get_label())
+                if self.last_folder is not None:
+                    fname = os.path.join(self.last_folder, fname)
 
-        options = QtWidgets.QFileDialog.Options()
-        options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        file_types = "NumPy data files (*.npy)"
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
+            file_types = "NumPy data files (*.npy)"
 
-        filename, info = QtWidgets.QFileDialog.getSaveFileName(
-            self, title, fname, file_types, options=options)
+            filename, info = QtWidgets.QFileDialog.getSaveFileName(
+                self, title, fname, file_types, options=options)
 
-        if not filename:
-            return
+            if not filename:
+                return
+            self.last_folder = os.path.split(filename)[0]
 
         data = {
-                "feature_list": feature_list,
-                "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
-            }
+            "feature_list": feature_list,
+            "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
+        }
         if "session" in action:
+            record = self.gui_handle.data
+            try:
+                self.gui_handle.save_legacy_processing_config_dump_to_record(record)
+            except Exception:
+                pass
+
+            self.gui_handle.ml_data.pop("sensor_config")
+
+            packed_record = recording.pack(record)
             title = "Save session data"
             data = {
                 "feature_list": self.gui_handle.ml_data["ml_frame_data"]["feature_list"],
-                "sweep_data": self.gui_handle.data,
+                "sweep_data": packed_record,
                 "frame_data": self.gui_handle.ml_data,
                 "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings()
-                }
+            }
 
         try:
             np.save(filename, data, allow_pickle=True)
@@ -1331,6 +1394,117 @@ class FeatureSidePanel(QFrame):
             self.frame_settings["calibration"] = calibration
             self.buttons["show_calib"].setEnabled(True)
             self.buttons["create_calib"].setText("Clear calibration")
+
+    def batch_process(self):
+        action = self.sender().text().lower()
+        if "load" in action:
+            title = "Select files for batch processing"
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
+            filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
+                self, title, "", "NumPy data files (*.npy)", options=options)
+            if filenames:
+                self.batch_params = {
+                    "file_list": filenames,
+                }
+                self.buttons["process_batch"].setEnabled(True)
+            else:
+                self.patch_params = None
+                self.buttons["process_batch"].setEnabled(False)
+        else:
+            if self.batch_params is None:
+                self.buttons["process_batch"].setEnabled(False)
+                return
+            else:
+                pass
+            overwrite_label = False
+            skipped_files = []
+
+            dialog = BatchProcessDialog(self)
+            dialog.exec_()
+
+            new_label = dialog.get_state()
+
+            if new_label is None:
+                return
+            elif isinstance(new_label, str):
+                overwrite_label = True
+                self.gui_handle.feature_extract.set_label(new_label)
+
+            dialog.deleteLater()
+
+            first = True
+            for filename in enumerate(self.batch_params["file_list"]):
+                filename = filename[1]
+                try:
+                    data = np.load(filename, allow_pickle=True)
+                except Exception as e:
+                    print(e)
+                    skipped_files.append((filename, "Failed to load"))
+                    continue
+
+                sweep_data = data.item()["sweep_data"]
+                frame_data = data.item()["frame_data"]
+                data_len = len(sweep_data)
+
+                if first:
+                    first = False
+                    module_label = sweep_data[0]["service_type"]
+                    conf = sweep_data[0]["sensor_config"]
+                    self.gui_handle.load_gui_settings_from_sensor_config(conf)
+                    index = self.gui_handle.module_dd.findText(
+                        module_label,
+                        QtCore.Qt.MatchFixedString
+                    )
+                    if self.gui_handle.module_dd.currentIndex() == 0:
+                        self.gui_handle.module_dd.setCurrentIndex(index)
+                    elif index != self.gui_handle.module_dd.currentIndex():
+                        print("Module missmatch!!!")
+                        return
+                else:
+                    pass
+
+                if not overwrite_label:
+                    try:
+                        self.gui_handle.feature_extract.set_label(
+                            frame_data["ml_frame_data"]["current_frame"]["label"]
+                        )
+                    except Exception:
+                        skipped_files.append((filename, "No label"))
+                        continue
+
+                self.gui_handle.textboxes["sweep_buffer"].setText(str(data_len))
+                self.gui_handle.buttons["replay_buffered"].setEnabled(True)
+                self.gui_handle.set_sensors(conf.sensor)
+                self.gui_handle.data = sweep_data
+                self.gui_handle.ml_data = frame_data
+
+                print("Found data with {} sweeps and {} feature frames.".format(
+                    data_len,
+                    len(frame_data["ml_frame_data"]["frame_list"]))
+                )
+
+                try:
+                    self.gui_handle.buttons["replay_buffered"].click()
+                    time.sleep(0.5)
+                    while self.gui_handle.buttons["stop"].isEnabled():
+                        QApplication.processEvents()
+                        pass
+                except Exception as e:
+                    print(e)
+                    skipped_files.append((filename, "Processing failed"))
+                    continue
+
+                try:
+                    f = filename[:-3] + "_batch_processed.npy"
+                    self.save_data(filename=f)
+                except Exception as e:
+                    print(e)
+                    skipped_files.append((filename, "Failed to save"))
+                    continue
+
+            for skipped in skipped_files:
+                print(skipped)
 
 
 class FeatureInspectFrame(QFrame):
@@ -1478,10 +1652,10 @@ class FeatureInspectFrame(QFrame):
             self.textboxes["label"].setText(label)
             self.labels["current_sweep"].setText(
                 "Sweep: {} / {}".format(self.current_sweep_nr + 1, n_sweeps + 1)
-                )
+            )
             self.labels["current_frame"].setText(
                 "Frame: {} / {}".format(frame_nr + 1, total_frames + 1)
-                )
+            )
             self.set_slider_value("sweep_slider", self.current_sweep_nr)
             return
         else:
@@ -1507,7 +1681,7 @@ class FeatureInspectFrame(QFrame):
                 record,
                 frame_start,
                 label
-                )
+            )
         except Exception as e:
             self.gui_handle.error_message("Failed to calculate new feature frame<br>{}".format(e))
 
@@ -1589,7 +1763,7 @@ class FeatureInspectFrame(QFrame):
         if self.gui_handle.data is None or self.gui_handle.ml_data is None:
             return
 
-        nr_sweeps = len(self.gui_handle.data)
+        nr_sweeps = len(self.gui_handle.data.data)
         frame_size = self.gui_handle.ml_data["ml_frame_data"]["frame_info"]["frame_size"]
         nr_frames = len(self.gui_handle.ml_data["ml_frame_data"]["frame_list"])
 
@@ -1680,7 +1854,7 @@ class FeatureInspectFrame(QFrame):
                             record,
                             frame_start,
                             label
-                            )
+                        )
                     except Exception as e:
                         errors.append(e)
                     else:
@@ -1732,7 +1906,7 @@ class LabelingGraph(QFrame):
         self.label_graph_widget.reset_data(
             sensor_config=sensor_config,
             processing_config=processing_config
-            )
+        )
 
 
 class TrainingFrame(QFrame):
@@ -1748,6 +1922,11 @@ class TrainingFrame(QFrame):
         for i in range(101):
             rgb = colorsys.hsv_to_rgb(i / 300., 1.0, 1.0)
             self.color_table.append([round(255*x) for x in rgb])
+
+        self.color_table_off = []
+        for i in range(101):
+            rgb = colorsys.hsv_to_rgb(1.0, i**2/100.0**2, 1.0)
+            self.color_table_off.append([round(255*x) for x in rgb])
 
         self.labels = {
             "input_dimension": QLabel("Feature dimensions: "),
@@ -1807,6 +1986,8 @@ class TrainingFrame(QFrame):
         self.cm_widget.setRowCount(row)
         self.cm_widget.setColumnCount(col)
 
+        sum_correct = 0
+
         for r in range(row):
             row_sum = np.sum(matrix[r, :])
             for c in range(col):
@@ -1815,9 +1996,14 @@ class TrainingFrame(QFrame):
                 self.cm_widget.setItem(r, c, QTableWidgetItem(entry))
                 self.cm_widget.item(r, c).setForeground(QBrush(QtCore.Qt.black))
                 color = self.color_table[int(percent)]
+                if r != c:
+                    color = self.color_table_off[int(percent)]
+                else:
+                    sum_correct += percent / col
                 self.cm_widget.item(r, c).setBackground(QColor(*color))
                 self.cm_widget.item(r, c).setFlags(QtCore.Qt.ItemIsEnabled)
 
+        print(sum_correct)
         self.cm_widget.setHorizontalHeaderLabels(labels)
         self.cm_widget.setVerticalHeaderLabels(labels)
 
@@ -1896,7 +2082,6 @@ class TrainingSidePanel(QFrame):
             "learning_rate": QLabel("Learning rate:"),
             "delta": QLabel("Min. delta"),
             "patience": QLabel("Patience"),
-            "save_load_reset": QLabel("Save/Load/Reset: "),
             "train": QLabel("Train: "),
         }
         self.textboxes = {
@@ -1990,10 +2175,16 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["training"], self.increment(), 0, 1, 4)
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["load_train_data"], self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["train"], self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["stop"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.buttons["load_train_data"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["clear_training"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.buttons["train"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["stop"], self.num, 2, 1, 2)
         self.grid.addWidget(self.buttons["validate"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.buttons["load_model"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["save_model"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.buttons["clear_model"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["epochs"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["epochs"], self.num, 2, 1, 2)
@@ -2015,13 +2206,6 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.radio_frame, self.increment(), 0, 1, 4)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
-        self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.labels["save_load_reset"], self.increment(), 0, 1, 4)
-        self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["save_model"], self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["load_model"], self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["clear_model"], self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["clear_training"], self.increment(), 0, 1, 4)
 
         self.grid.setRowStretch(self.increment(), 1)
 
@@ -2255,7 +2439,7 @@ class TrainingSidePanel(QFrame):
             confusion_matrix = self.keras.confusion_matrix(
                 self.train_data["y_labels"],
                 self.keras.predict(self.train_data["x_data"])
-                )
+            )
             self.gui_handle.training.update_confusion_matrix(confusion_matrix)
         elif message_type == "update_plots":
             self.gui_handle.training.show_results(data)
@@ -2284,7 +2468,7 @@ class TrainingSidePanel(QFrame):
                         self.train_data["feature_list"],
                         self.train_data["sensor_config"],
                         self.train_data["frame_settings"],
-                        )
+                    )
                 except Exception as e:
                     self.gui_handle.error_message("Failed to save model:\n {}".format(e))
                     return
@@ -2431,7 +2615,7 @@ class EvalFrame(QFrame):
             self.gui_handle.save_gui_settings_to_sensor_config(),
             self.gui_handle.update_service_params(),
             predictions=True
-            )
+        )
         self.plot_widget.setup(feature_canvas)
 
         self.grid.addWidget(feature_canvas, self.increment(), 0, 1, self.nr_col)
@@ -2510,7 +2694,7 @@ class EvalSidePanel(QFrame):
                 warning = "Sensor missmatch detected!<br>"
                 warning += "The model needs {} sensors!<br>Run anyway?".format(
                     len(required_sensors)
-                    )
+                )
                 if show_warning and not self.gui_handle.warning_message(warning):
                     return False
         else:
@@ -2691,6 +2875,56 @@ class AugmentDataDialog(QDialog):
         self.accept()
 
 
+class BatchProcessDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.setMinimumWidth(350)
+        self.setModal(True)
+        self.setWindowTitle("Batch processing")
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.action = None
+
+        description = QLabel("Keep labels or use new label?")
+        self.label_text = QLineEdit("")
+        layout.addWidget(description)
+        layout.addWidget(self.label_text)
+        layout.addStretch(1)
+
+        buttons_widget = QWidget(self)
+        layout.addWidget(buttons_widget)
+        hbox = QHBoxLayout()
+        buttons_widget.setLayout(hbox)
+        hbox.addStretch(1)
+        keep_btn = QPushButton("Keep")
+        keep_btn.clicked.connect(self.set_state)
+        hbox.addWidget(keep_btn)
+        new_btn = QPushButton("Use new")
+        new_btn.clicked.connect(self.set_state)
+        hbox.addWidget(new_btn)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.setDefault(True)
+        cancel_btn.clicked.connect(self.set_state)
+        hbox.addWidget(cancel_btn)
+
+    def get_state(self):
+        return self.action
+
+    def set_state(self):
+        mode = self.sender().text()
+        if mode == "Keep":
+            self.action = True
+            self.accept()
+        elif mode == "Use new":
+            self.action = self.label_text.text()
+            self.accept()
+        else:
+            self.reject()
+
+
 class SpinBoxAndSliderWidget(QFrame):
     def __init__(self, tag, callback=None):
         super().__init__()
@@ -2718,7 +2952,7 @@ class SpinBoxAndSliderWidget(QFrame):
         self.slider_range = {
             "start": QLabel("0"),
             "stop": QLabel("100"),
-            }
+        }
         slider_layout = QtWidgets.QHBoxLayout(slider_widget)
         slider_layout.setContentsMargins(0, 0, 0, 0)
         slider_layout.addWidget(self.slider_range["start"])

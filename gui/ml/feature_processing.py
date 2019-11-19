@@ -6,6 +6,8 @@ import numpy as np
 
 from acconeer.exptool.modes import Mode
 
+import feature_definitions as feature_def
+
 
 try:
     from matplotlib.colors import LinearSegmentedColormap
@@ -45,10 +47,13 @@ class FeatureProcessing:
         self.dead_time_reset = 10
         self.dead_time = 0
         self.triggered = False
+        self.trigger_feature_based = False
         self.win_data = None
         self.collection_mode = "auto"
         self.motion_processors = None
         self.store_features = store_features
+        self.feature_lookup = feature_def.get_features()
+        self.feature_callbacks = {}
         self.setup(sensor_config, feature_list)
 
     def setup(self, sensor_config, feature_list=None):
@@ -73,9 +78,11 @@ class FeatureProcessing:
 
     def set_feature_list(self, feature_list):
         self.feature_list = feature_list
+        self.feature_callbacks = {}
         try:
             self.init_feature_cb()
-        except Exception:
+        except Exception as e:
+            print(e)
             pass
 
         self.flush_data()
@@ -96,6 +103,13 @@ class FeatureProcessing:
         if params.get("collection_mode") is not None:
             self.collection_mode = params["collection_mode"]
             self.sweep_counter = -1
+            if self.collection_mode == "auto_feature_based":
+                self.collection_mode = "continuous"
+                self.trigger_feature_based = True
+                self.rolling = True
+            else:
+                self.trigger_feature_based = False
+                self.motion_score_normalized = None
         if params.get("frame_label") is not None:
             self.label = params["frame_label"]
         if params.get("triggered") is not None:
@@ -121,8 +135,14 @@ class FeatureProcessing:
     def init_feature_cb(self):
         if self.feature_list is None:
             return
-        for feature in self.feature_list:
-            feature["cb"] = feature["cb"]()
+        for feat in self.feature_list:
+            if "cb" in feat:
+                if callable(feat["cb"]):
+                    self.feature_callbacks[feat] = feat["cb"]()
+                else:
+                    self.feature_callbacks[feat] = feat["cb"].__init__()
+            else:
+                self.feature_callbacks[feat["key"]] = self.feature_lookup[feat["key"]]["class"]()
 
     def prepare_data_container(self, data):
         mode = data["sensor_config"].mode
@@ -134,13 +154,13 @@ class FeatureProcessing:
             num_sensors, data_len = data["iq_data"].shape
 
         self.win_data = {
-                'env_data': np.zeros((num_sensors, data_len, n_sweeps))
-            }
+            'env_data': np.zeros((num_sensors, data_len, n_sweeps))
+        }
 
         if mode == Mode.SPARSE:
             self.win_data['sparse_data'] = np.zeros(
                 (num_sensors, point_repeats, data_len, n_sweeps)
-                )
+            )
         else:
             self.win_data['iq_data'] = np.zeros((num_sensors, data_len, n_sweeps))
 
@@ -221,23 +241,31 @@ class FeatureProcessing:
 
         feature_map = []
         for feat in self.feature_list:
-            cb = feat["cb"]
-            options = feat["options"]
-            options["sensor_config"] = data["sensor_config"]
-            if "session_info" in data:
-                options["session_info"] = data["session_info"]
+            cb = self.feature_callbacks[feat["key"]]
+            if "session_info":
+                session_info = data["session_info"]
+            else:
+                session_info = None
 
             output = feat["output"]
             sensors = feat["sensors"]
             name = feat["name"]
             model_dims = feat["model_dimension"]
 
+            win_params = {
+                "options": feat["options"],
+                "dist_vec": data["x_mm"],
+                "sensor_config": data["sensor_config"],
+                "session_info": session_info,
+            }
+
             for s in sensors:
                 idx = self.sensor_map[str(s)]
                 if idx is None:
                     continue
+                win_params["sensor_idx"] = idx
 
-                feat_data = cb.extract_feature(self.win_data, idx, options, data["x_mm"])
+                feat_data = cb.extract_feature(self.win_data, win_params)
 
                 if output is not None:
                     if feat_data is None:
@@ -268,18 +296,27 @@ class FeatureProcessing:
                 fmap /= self.calibration
 
         current_frame = {
-           "label": self.label,
-           "frame_nr": len(self.markers),
-           "feature_map": fmap,
-           "frame_marker": self.sweep_number - self.frame_size - self.frame_pad,
-           "frame_complete": False,
-           "sweep_counter": self.sweep_counter,
-           "sweep_number": self.sweep_number,
-           "calibration": self.calibration,
+            "label": self.label,
+            "frame_nr": len(self.markers),
+            "feature_map": fmap,
+            "frame_marker": self.sweep_number - self.frame_size - self.frame_pad,
+            "frame_complete": False,
+            "sweep_counter": self.sweep_counter,
+            "sweep_number": self.sweep_number,
+            "calibration": self.calibration,
         }
 
+        trigger_feature_based = not self.trigger_feature_based
+        if self.trigger_feature_based and fmap is not None:
+            if self.sweep_number > self.frame_size:
+                trigger_feature_based = self.auto_motion_detect(fmap, feature_based=True)
+
         if self.sweep_counter >= n_sweeps:
-            current_frame["frame_complete"] = True
+            if trigger_feature_based:
+                current_frame["frame_complete"] = True
+            else:
+                current_frame["feature_map"] = None
+                self.markers.pop(-1)
             if not self.rolling:
                 self.sweep_counter = 0
                 self.motion_detected = False
@@ -290,8 +327,7 @@ class FeatureProcessing:
                 self.triggered = False
                 self.reset_data(data)
         else:
-            if not self.rolling:
-                current_frame["frame_complete"] = False
+            current_frame["frame_complete"] = False
             if self.collection_mode == "auto":
                 if not self.motion_detected:
                     current_frame["feature_map"] = None
@@ -309,16 +345,19 @@ class FeatureProcessing:
             if self.store_features:
                 self.frame_list.append(copy.deepcopy(current_frame))
 
+        if not self.store_features:
+            self.sweep_number = max(self.sweep_number, 2 * self.frame_size)
+
         frame_data = {
             "current_frame": current_frame,
             "frame_markers": self.markers,
             "frame_info": {
                 "frame_pad": self.frame_pad,
                 "frame_size": self.frame_size,
-                },
+            },
             "feature_list": self.feature_list,
             "frame_list": self.frame_list,
-            "motion_score": np.max(self.motion_score_normalized),
+            "motion_score": self.motion_score_normalized,
             "model_dimension": model_dims
         }
 
@@ -354,21 +393,28 @@ class FeatureProcessing:
 
         feature_map = []
         for feat in feature_list:
-            cb = feat["cb"]
-            options = feat["options"]
-            options["sensor_config"] = data["sensor_config"]
-            options["session_info"] = data["session_info"]
+            cb = self.feature_callbacks[feat["key"]]
+            if "session_info":
+                session_info = data["session_info"]
+            else:
+                session_info = None
             output = feat["output"]
             sensors = feat["sensors"]
+
+            win_params = {
+                "options": feat["options"],
+                "dist_vec": data["x_mm"],
+                "sensor_config": data["sensor_config"],
+                "session_info": session_info,
+            }
 
             for s in sensors:
                 idx = self.sensor_map[str(s)]
                 if idx is None:
                     continue
+                win_params["sensor_idx"] = idx
 
-                feat_data = feat_data = cb.extract_feature(
-                    self.win_data, idx, options, data["x_mm"]
-                    )
+                feat_data = feat_data = cb.extract_feature(self.win_data, win_params)
 
                 if output is not None:
                     for out in output:
@@ -395,14 +441,14 @@ class FeatureProcessing:
                 fmap /= self.calibration
 
         current_frame = {
-           "label": label,
-           "frame_nr": data["ml_frame_data"]["current_frame"]["frame_nr"],
-           "feature_map": fmap,
-           "frame_marker": start,
-           "frame_complete": True,
-           "sweep_counter": n_sweeps,
-           "sweep_number": frame_stop,
-           "calibration": self.calibration,
+            "label": label,
+            "frame_nr": data["ml_frame_data"]["current_frame"]["frame_nr"],
+            "feature_map": fmap,
+            "frame_marker": start,
+            "frame_complete": True,
+            "sweep_counter": n_sweeps,
+            "sweep_number": frame_stop,
+            "calibration": self.calibration,
         }
 
         data["ml_frame_data"]["current_frame"] = current_frame
@@ -425,8 +471,31 @@ class FeatureProcessing:
         self.m += 1
         return self.m
 
-    def auto_motion_detect(self, data):
+    def auto_motion_detect(self, data, feature_based=False):
         detected = False
+
+        if feature_based:
+            wing = self.auto_offset
+            if len(data.shape) == 2:
+                if wing >= (self.frame_size / 2):
+                    self.motion_score_normalized = "Reduce offset!"
+                    detected = True
+                else:
+                    center = np.sum(data[:, wing:-wing]) / (self.frame_size - 2 * wing)
+                    left = np.sum(data[:, 0:wing]) / wing
+                    right = np.sum(data[:, -(wing + 1):-1]) / wing
+                    if right == 0 or left == 0:
+                        self.motion_score_normalized = 0
+                        return detected
+                    if left / right > 0.9 and left / right < 1.1:
+                        self.motion_score_normalized = 2 * center / (left + right)
+                        if self.motion_score_normalized > self.auto_threshold:
+                            detected = True
+            else:
+                self.motion_score_normalized = "Not implemented"
+                detected = True
+            return detected
+
         num_sensors = data["iq_data"].shape[0]
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
@@ -439,11 +508,12 @@ class FeatureProcessing:
             if self.motion_processors is None:
                 self.motion_config = presence_detection_sparse.get_processing_config()
                 self.motion_config.inter_frame_fast_cutoff = 100
-                self.motion_config.inter_frame_slow_cutoff = 1
-                self.motion_config.inter_frame_deviation_time_const = 0.1
-                self.motion_config.intra_frame_weight = 0.7
-                self.motion_config.intra_frame_time_const = 0.1
+                self.motion_config.inter_frame_slow_cutoff = 0.9
+                self.motion_config.inter_frame_deviation_time_const = 0.05
+                self.motion_config.intra_frame_weight = 0.8
+                self.motion_config.intra_frame_time_const = 0.03
                 self.motion_config.detection_threshold = 0
+                self.motion_config.output_time_const = 0.01
                 self.motion_class = presence_detection_sparse.PresenceDetectionSparseProcessor
                 motion_processors_list = []
                 for i in range(num_sensors):
@@ -452,8 +522,8 @@ class FeatureProcessing:
                             sensor_config,
                             self.motion_config,
                             data["session_info"]
-                            )
                         )
+                    )
                 self.motion_processors = motion_processors_list
             else:
                 motion_score = 0
@@ -473,13 +543,13 @@ class FeatureProcessing:
                                 sensor_config,
                                 self.motion_config,
                                 data["session_info"]
-                                )
                             )
+                        )
                     self.motion_processors = motion_processors_list
                     return detected
         else:
             if self.motion_score is None:
-                self.motion_score_normalized = np.zeros(num_sensors)
+                self.motion_score_normalized = 0
                 self.motion_score = np.full(num_sensors, np.inf)
 
             for i in range(num_sensors):
@@ -489,12 +559,16 @@ class FeatureProcessing:
                     if self.motion_score[i] == np.inf:
                         self.motion_score[i] = motion_score
 
-                self.motion_score_normalized[i] = motion_score / self.motion_score[i]
+                self.motion_score_normalized = max(
+                    self.motion_score_normalized,
+                    motion_score / self.motion_score[i]
+                )
 
-                if self.motion_score_normalized[i] > self.auto_threshold:
+                if self.motion_score_normalized > self.auto_threshold:
                     self.motion_pass_counter += 1
                     if self.motion_pass_counter >= self.motion_pass:
                         self.motion_pass_counter = 0
+                        self.motion_score = None
                         detected = True
                         return detected
                 else:
@@ -580,7 +654,7 @@ class DataProcessor:
                     self.num_sensors, self.data_len = sweep.shape
                 self.hist_env = np.zeros(
                     (self.num_sensors, self.data_len, self.image_buffer)
-                    )
+                )
 
         iq = sweep.copy()
 
@@ -667,12 +741,12 @@ class PGUpdater:
             pos=0,
             angle=90,
             pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
-            )
+        )
         self.border_left = pg.InfiniteLine(
             pos=0,
             angle=90,
             pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
-            )
+        )
         self.border_rolling = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(width=2))
 
         self.detected_text = pg.TextItem(color="r", anchor=(0, 1))
@@ -704,7 +778,7 @@ class PGUpdater:
             hist_title = "History {}".format(legend_text)
             self.hist_plot_images.append(
                 self.history_plot_window.addPlot(row=0, col=s, title=hist_title)
-                )
+            )
             self.hist_plot_images[s].setLabel("left", "Distance (mm)")
             self.hist_plot_images[s].setLabel("bottom", "Time (s)")
             self.hist_plots.append(pg.ImageItem())
@@ -731,7 +805,7 @@ class PGUpdater:
                 pen = utils.pg_pen_cycler(label_num)
                 self.prediction_plots.append(
                     self.predictions_plot_window.plot(pen=pen, name=label)
-                    )
+                )
 
     def reset_data(self, sensor_config=None, processing_config=None):
         self.first = True
@@ -813,7 +887,7 @@ class PGUpdater:
                 self.hist_plots[sensor-1].updateImage(
                     data["hist_env"][idx, :, :].T,
                     levels=(0, ymax_level)
-                    )
+                )
 
         if self.show_predictions and data.get("prediction") is not None:
             self.predictions_plot_window.show()
@@ -841,7 +915,9 @@ class PGUpdater:
                 motion_score = frame_data.pop("motion_score", None)
                 text = "Waiting..."
                 if motion_score is not None:
-                    text = "Waiting.. (Motion score: {:.1f})".format(motion_score)
+                    if isinstance(motion_score, float):
+                        motion_score = "{:.1f}".format(motion_score)
+                    text = "Waiting.. (Motion score: {})".format(motion_score)
                 self.detected_text.setText(text)
                 return
             else:
@@ -851,7 +927,7 @@ class PGUpdater:
             self.border_rolling.show()
             self.border_rolling.setValue(
                 frame_data["current_frame"]["sweep_counter"] - frame_pad
-                )
+            )
         else:
             self.border_rolling.hide()
 

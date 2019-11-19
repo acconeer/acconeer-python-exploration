@@ -3,6 +3,8 @@ import time
 import traceback
 import warnings
 
+from PyQt5.QtCore import QThread
+
 from acconeer.exptool.recording import Recorder
 
 
@@ -133,6 +135,8 @@ class DataProcessing:
             if parent.parent.get_gui_state("ml_tab") != "feature_extract":
                 if rate is not None:
                     time.sleep(1.0 / rate)
+            else:
+                QThread.msleep(3)
 
             subdata = subdata[sensor_list]
             self.process(subdata, subinfo, do_record=False)

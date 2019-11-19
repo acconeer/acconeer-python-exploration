@@ -86,8 +86,11 @@ class FeaturePeak:
             ("LP filter", 0.1, [0, 1], float),
         ]
 
-    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+    def extract_feature(self, win_data, win_params):
         try:
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
             arr = win_data["env_data"][sensor_idx, :, :]
         except Exception:
             print("env_data not available!")
@@ -136,11 +139,14 @@ class FeatureAverages1D():
             ("Stop", 0.4, [0.06, 7], float),
         ]
 
-    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+    def extract_feature(self, win_data, win_params):
         try:
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
             arr = win_data["env_data"][sensor_idx, :, :]
-        except Exception:
-            print("env_data not available!")
+        except Exception as e:
+            print("env_data not available!\n", e)
             return None
 
         # dist_vec is in mm
@@ -189,11 +195,14 @@ class FeatureAverages2D():
             ("Stop", 0.4, [0.06, 7], float),
         ]
 
-    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+    def extract_feature(self, win_data, win_params):
         try:
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
             arr = win_data["env_data"][sensor_idx, :, :]
-        except Exception:
-            print("env_data not available!")
+        except Exception as e:
+            print("env_data not available!\n", e)
             return None
 
         # dist_vec is in mm
@@ -239,14 +248,17 @@ class FeatureAmplitudeRatios1D():
             ("Stop", 0.4, [0.06, 7], float),
         ]
 
-    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+    def extract_feature(self, win_data, win_params):
         try:
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
             if sensor_idx == 1:
                 arr = win_data["env_data"]
             else:
                 return None
-        except Exception:
-            print("env_data not available!")
+        except Exception as e:
+            print("env_data not available!\n", e)
             return None
 
         # dist_vec is in mm
@@ -291,11 +303,14 @@ class FeatureSweep:
             ("Down sample", 8, [1, 124], int),
         ]
 
-    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+    def extract_feature(self, win_data, win_params):
         try:
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
             arr = win_data["env_data"][sensor_idx, :, :]
-        except Exception:
-            print("env_data not available!")
+        except Exception as e:
+            print("env_data not available!\n", e)
             return None
 
         # dist_vec is in mm
@@ -342,15 +357,21 @@ class FeatureSparseFFT:
             ("Stop", 0.4, [0.06, 7], float),
             ("High pass", 1, [0, 1], float),
         ]
+        self.fft = None
+        self.noise_floor = None
 
-    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+    def extract_feature(self, win_data, win_params):
         try:
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
             arr = win_data["sparse_data"][sensor_idx, :, :, :]
-        except Exception:
-            print("sparse_data not available!")
+        except Exception as e:
+            print("sparse_data not available!\n", e)
             return None
 
         point_repeats, data_len, win_len = arr.shape
+        num_sensors = win_data["sparse_data"].shape[0]
         data_start = dist_vec[0]
         data_stop = dist_vec[-1]
 
@@ -367,17 +388,32 @@ class FeatureSparseFFT:
 
         stop_idx = max(start_idx + 1, stop_idx)
 
-        arr = arr[:, start_idx:stop_idx, :]
+        sweep = arr[:, start_idx:stop_idx, 0]
 
-        hanning = np.hanning(point_repeats)[:, np.newaxis, np.newaxis]
-        doppler = abs(np.fft.rfft(hanning * (arr - np.mean(arr, axis=0, keepdims=True)), axis=0))
+        hanning = np.hanning(point_repeats)[:, np.newaxis]
+        doppler = np.fft.rfft(hanning * (sweep - np.mean(sweep, axis=0, keepdims=True)), axis=0)
+        doppler = abs(doppler)
         fft_psd = np.mean(doppler, axis=1) / 10000
 
         freq_bins = fft_psd.shape[0]
         freq_cutoff = int(high_pass * freq_bins)
 
+        if self.fft is None:
+            self.fft = np.zeros((num_sensors, freq_bins, win_len))
+        if self.noise_floor is None:
+            self.noise_floor = np.full(num_sensors, np.inf)
+
+        threshold = 1.0
+        m = np.mean(fft_psd) * threshold
+        if m < self.noise_floor[sensor_idx]:
+            self.noise_floor[sensor_idx] = m
+
+        fft_psd /= self.noise_floor[sensor_idx]
+        self.fft[sensor_idx, :, :] = np.roll(self.fft[sensor_idx, :, :], 1, axis=1)
+        self.fft[sensor_idx, :, 0] = fft_psd
+
         data = {
-            "fft": fft_psd[0:freq_cutoff, :],
+            "fft": self.fft[sensor_idx, 0:freq_cutoff, :],
         }
 
         return data
@@ -411,15 +447,18 @@ class FeatureSparsePresence:
         self.detector_processor = None
         self.history = None
 
-    def extract_feature(self, win_data, sensor_idx, options=None, dist_vec=None):
+    def extract_feature(self, win_data, win_params):
         try:
             num_sensors = win_data["sparse_data"].shape[0]
             if self.detector_processor is None:
                 self.detector_processor = [None] * num_sensors
                 self.history = None
+            sensor_config = win_params["sensor_config"]
+            session_info = win_params["session_info"]
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
             arr = win_data["sparse_data"][sensor_idx, :, :, :]
-            sensor_config = options["sensor_config"]
-            session_info = options["session_info"]
         except Exception as e:
             print("sparse_data not available!\n", e)
             return None
@@ -454,7 +493,7 @@ class FeatureSparsePresence:
                 sensor_config,
                 detector_config,
                 session_info
-                )
+            )
             self.detector_processor[sensor_idx].depth_filter_length = 1
 
         detector_output = self.detector_processor[sensor_idx].process(arr[:, :, 0])

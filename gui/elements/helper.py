@@ -1,3 +1,4 @@
+import enum
 import os
 import sys
 from argparse import ArgumentParser
@@ -71,6 +72,12 @@ def lib_version_up_to_date(gui_handle=None):
                     sys.stdout.write("Please respond with 'y' or 'n' "
                                      "(or 'Y' or 'N').\n")
         return True
+
+
+class LoadState(enum.Enum):
+    UNLOADED = enum.auto()
+    BUFFERED = enum.auto()
+    LOADED = enum.auto()
 
 
 class AdvancedSerialDialog(QDialog):
