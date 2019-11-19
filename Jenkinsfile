@@ -12,7 +12,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'flake8'
-                // sh 'python3 setup.py -q install --user'
+                sh 'python3 setup.py -q install --user'
                 // sh 'pytest -v --timeout=60 --timeout_method=thread'
                 // sh 'sphinx-build -QW -b html docs docs/_build'
             }
