@@ -1,8 +1,7 @@
 import json
 import numpy as np
 from threading import Thread
-from acconeer.exptool.clients.reg.client import RegClient
-from acconeer.exptool.clients.json.client import JSONClient
+from acconeer.exptool.clients import UARTClient, SocketClient
 from acconeer.exptool import configs
 from acconeer.exptool import utils
 
@@ -25,10 +24,10 @@ class Detector(Thread):
         utils.config_logging(args)
 
         if args.socket_addr:
-            client = JSONClient(args.socket_addr)
+            client = SocketClient(args.socket_addr)
         else:
             port = args.serial_port or utils.autodetect_serial_port()
-            client = RegClient(port)
+            client = UARTClient(port)
 
         try:
             client.connect()

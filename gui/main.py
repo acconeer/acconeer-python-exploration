@@ -20,8 +20,7 @@ from PyQt5 import QtCore, QtWidgets
 import pyqtgraph as pg
 
 try:
-    from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-    from acconeer.exptool.clients.mock.client import MockClient
+    from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient, MockClient
     from acconeer.exptool import configs
     from acconeer.exptool import utils
     from acconeer.exptool.structs import configbase

@@ -1,6 +1,6 @@
 from time import sleep
 
-from acconeer.exptool.clients.reg.client import RegClient
+from acconeer.exptool.clients import UARTClient
 from acconeer.exptool import utils
 
 
@@ -14,11 +14,11 @@ def main():
         raise Exception("SPI is not supported")
     else:
         port = args.serial_port or utils.autodetect_serial_port()
-        client = RegClient(port)
+        client = UARTClient(port)
 
     client.connect()
 
-    pin = RegClient._XM112_LED_PIN
+    pin = UARTClient._XM112_LED_PIN
 
     client._write_gpio(pin, 1)
     val = client._read_gpio(pin)
