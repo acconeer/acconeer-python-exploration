@@ -273,7 +273,7 @@ class PGUpdater:
 
         self.num_subsweeps = sensor_config.number_of_subsweeps
         self.subsweep_rate = session_info["actual_subsweep_rate"]
-        self.depths = get_range_depths(sensor_config, session_info)
+        self.depths = utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.est_update_rate = self.subsweep_rate / self.num_subsweeps
 
@@ -432,13 +432,6 @@ class PGUpdater:
         if hs[-1] > 1e-3:
             html = self.vel_html_fmt.format(hs[-1], self.unit.label)
             self.sequences_text_item.setHtml(html)
-
-
-def get_range_depths(sensor_config, session_info):
-    range_start = session_info["actual_range_start"]
-    range_end = range_start + session_info["actual_range_length"]
-    num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
-    return np.linspace(range_start, range_end, num_depths)
 
 
 if __name__ == "__main__":

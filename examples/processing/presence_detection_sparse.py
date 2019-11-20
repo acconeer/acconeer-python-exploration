@@ -208,7 +208,7 @@ class PresenceDetectionSparseProcessor:
 
     def __init__(self, sensor_config, processing_config, session_info):
         self.num_subsweeps = sensor_config.number_of_subsweeps
-        self.depths = get_range_depths(sensor_config, session_info)
+        self.depths = utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.f = sensor_config.sweep_rate
 
@@ -396,7 +396,7 @@ class PGUpdater:
         self.processing_config = processing_config
 
         self.history_length_s = processing_config.history_length_s
-        self.depths = get_range_depths(sensor_config, session_info)
+        self.depths = utils.get_range_depths(sensor_config, session_info)
 
         max_num_of_sectors = max(6, self.depths.size // 3)
         self.sector_size = max(1, -(-self.depths.size // max_num_of_sectors))
@@ -618,13 +618,6 @@ class PGUpdater:
         if data["presence_detected"]:
             index = (data["presence_distance_index"] + self.sector_offset) // self.sector_size
             self.sectors[index].setBrush(utils.pg_brush_cycler(1))
-
-
-def get_range_depths(sensor_config, session_info):
-    range_start = session_info["actual_range_start"]
-    range_end = range_start + session_info["actual_range_length"]
-    num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
-    return np.linspace(range_start, range_end, num_depths)
 
 
 if __name__ == "__main__":

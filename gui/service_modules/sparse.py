@@ -83,7 +83,7 @@ def get_processing_config():
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
         num_sensors = len(sensor_config.sensor)
-        num_depths = len(get_range_depths(sensor_config, session_info))
+        num_depths = len(utils.get_range_depths(sensor_config, session_info))
         history_len = processing_config["image_buffer"]["value"]
 
         pd_config = presence_detection_sparse.get_processing_config()
@@ -130,7 +130,7 @@ class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
 
-        self.depths = get_range_depths(sensor_config, session_info)
+        self.depths = utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.num_subsweeps = sensor_config.number_of_subsweeps
         self.xs = np.tile(self.depths, self.num_subsweeps)
@@ -203,13 +203,6 @@ class PGUpdater:
 
             m = np.max(d["presence_history"][:, i]) * 1.1
             self.presence_history_ims[i].updateImage(d["presence_history"][:, i], levels=(0, m))
-
-
-def get_range_depths(sensor_config, session_info):
-    range_start = session_info["actual_range_start"]
-    range_end = range_start + session_info["actual_range_length"]
-    num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
-    return np.linspace(range_start, range_end, num_depths)
 
 
 if __name__ == "__main__":

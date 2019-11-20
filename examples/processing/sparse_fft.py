@@ -109,7 +109,7 @@ class PGUpdater:
         self.stepsize = sensor_config.stepsize
         self.num_subsweeps = sensor_config.number_of_subsweeps
         self.subsweep_rate = session_info["actual_subsweep_rate"]
-        self.depths = get_range_depths(sensor_config, session_info)
+        self.depths = utils.get_range_depths(sensor_config, session_info)
         self.actual_stepsize_m = session_info["actual_stepsize"]
         self.num_depths = self.depths.size
         self.f_res = self.subsweep_rate / self.num_subsweeps
@@ -183,13 +183,6 @@ class PGUpdater:
         m = max(m, 1e4)
         m = self.smooth_max.update(m)
         self.ft_im.updateImage(data["abs_fft"], levels=(0, m * 1.05))
-
-
-def get_range_depths(sensor_config, session_info):
-    range_start = session_info["actual_range_start"]
-    range_end = range_start + session_info["actual_range_length"]
-    num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
-    return np.linspace(range_start, range_end, num_depths)
 
 
 if __name__ == "__main__":
