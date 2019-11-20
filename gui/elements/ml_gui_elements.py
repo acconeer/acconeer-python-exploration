@@ -1319,7 +1319,7 @@ class FeatureInspectFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
         super().__init__()
 
-        self.current_sweep = 0
+        self.current_sweep_nr = 0
         self.current_frame_nr = -1
         self.current_frame_data = None
         self.nr_col = 2
@@ -1362,6 +1362,7 @@ class FeatureInspectFrame(QFrame):
             "update_to_new": QPushButton("to new frame", self),
             "update_to_none": QPushButton("remove frame", self),
             "write_to_all": QPushButton("Write label to all frames", self),
+            "augment_data": QPushButton("Data augmentation", self),
         }
 
         for i in self.buttons:
@@ -1369,6 +1370,7 @@ class FeatureInspectFrame(QFrame):
                 self.buttons[i].clicked.connect(self.update_frame_data)
             elif "write" in i:
                 self.buttons[i].clicked.connect(self.update_frame_labels)
+        self.buttons["augment_data"].clicked.connect(self.augment_data)
 
         self.update_box = QFrame()
         self.update_box.grid = QtWidgets.QGridLayout(self.update_box)
@@ -1388,6 +1390,7 @@ class FeatureInspectFrame(QFrame):
         self.update_box.grid.addWidget(self.buttons["update_to_current"], 1, 5)
         self.update_box.grid.addWidget(self.buttons["update_to_new"], 2, 5)
         self.update_box.grid.addWidget(self.buttons["update_to_none"], 3, 5)
+        self.update_box.grid.addWidget(self.buttons["augment_data"], 4, 5)
         self.update_box.setLayout(self.update_box.grid)
         self.update_box.setFrameStyle(QFrame.Panel | QFrame.Raised)
         self.update_box.grid.setRowStretch(10, 1)
@@ -1425,7 +1428,7 @@ class FeatureInspectFrame(QFrame):
 
         if action == "frames" and frame_nr == self.current_frame_nr:
             return
-        elif action == "sweeps" and number == self.current_sweep:
+        elif action == "sweeps" and number == self.current_sweep_nr:
             return
 
         sweep_data = self.gui_handle.data
@@ -1452,16 +1455,16 @@ class FeatureInspectFrame(QFrame):
             except Exception as e:
                 print("Error processing frame:\n", e)
 
-            self.current_sweep = f_current["frame_marker"] + 1
+            self.current_sweep_nr = f_current["frame_marker"] + 1
             self.current_frame_nr = frame_nr
             self.textboxes["label"].setText(label)
             self.labels["current_sweep"].setText(
-                "Sweep: {} / {}".format(self.current_sweep + 1, n_sweeps + 1)
+                "Sweep: {} / {}".format(self.current_sweep_nr + 1, n_sweeps + 1)
                 )
             self.labels["current_frame"].setText(
                 "Frame: {} / {}".format(frame_nr + 1, total_frames + 1)
                 )
-            self.set_slider_value("sweep_slider", self.current_sweep)
+            self.set_slider_value("sweep_slider", self.current_sweep_nr)
             return
         else:
             if self.gui_handle.data is None:
@@ -1473,7 +1476,7 @@ class FeatureInspectFrame(QFrame):
         sweep = max(0, sweep)
         sweep = int(min(n_sweeps, sweep))
 
-        frame_start = sweep + 1
+        frame_start = sweep - 1
 
         if self.feature_process is None:
             self.feature_process = feature_proc.FeatureProcessing(fdata["sensor_config"])
@@ -1490,7 +1493,7 @@ class FeatureInspectFrame(QFrame):
         except Exception as e:
             self.gui_handle.error_message("Failed to calculate new feature frame<br>{}".format(e))
 
-        self.current_sweep = sweep
+        self.current_sweep_nr = sweep
 
         if init:
             self.graph.reset_data()
@@ -1577,6 +1580,115 @@ class FeatureInspectFrame(QFrame):
 
     def set_slider_value(self, tag, value):
         self.sliders[tag].set_value(value)
+
+    def augment_data(self):
+        fdata = self.gui_handle.ml_data
+        if fdata is None:
+            print("No feature data available!")
+            return
+        dialog = AugmentDataDialog(self)
+        dialog.exec_()
+
+        action, offsets = dialog.get_state()
+
+        if action is None:
+            return
+
+        dialog.deleteLater()
+
+        if not len(offsets):
+            return
+        else:
+            try:
+                offsets.sort()
+            except Exception as e:
+                print(e)
+                return
+
+        f_histdata = fdata["ml_frame_data"]["frame_list"]
+        sweep_data = self.gui_handle.data
+
+        frame_nr = self.current_frame_nr
+
+        f_info = fdata["ml_frame_data"]["frame_info"]
+
+        n_sweeps = len(sweep_data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
+
+        if frame_nr < 0:
+            print("No feature data available!")
+            return
+
+        label = self.textboxes["label"].text()
+
+        if self.feature_process is None:
+            self.feature_process = feature_proc.FeatureProcessing(fdata["sensor_config"])
+
+        self.feature_process.set_feature_list(fdata["ml_frame_data"]["feature_list"])
+
+        if action == "all":
+            frame_nr = 0
+        sweep_nr = f_histdata[frame_nr]["frame_marker"]
+        old_frame_nr = frame_nr
+
+        while frame_nr >= 0:
+            new_frame_nr = []
+            count = 0
+            for o in offsets:
+                if o < 0:
+                    new_frame_nr.append(frame_nr + count)
+                    old_frame_nr += 1
+                else:
+                    new_frame_nr.append(frame_nr + count + 1)
+                count += 1
+
+            if new_frame_nr[0] < 0:
+                zero = -new_frame_nr[0]
+                for idx, val in enumerate(new_frame_nr):
+                    new_frame_nr[idx] = val + zero
+
+            errors = []
+            added = 1
+            for idx, o in enumerate(offsets):
+                frame_start = sweep_nr + o
+                if frame_start < 0:
+                    print("Start sweep is less than 0 for offset {}!".format(o))
+                elif frame_start > n_sweeps:
+                    print("Start sweep is larger than total for offset {}!".format(o))
+                else:
+                    try:
+                        fdata = self.feature_process.feature_extraction_window(
+                            fdata,
+                            sweep_data,
+                            frame_start,
+                            label
+                            )
+                    except Exception as e:
+                        errors.append(e)
+                    else:
+                        f_new = {}
+                        f_modified = fdata["ml_frame_data"]["current_frame"]
+                        for key in f_modified:
+                            f_new[key] = f_modified[key]
+                        f_histdata.insert(new_frame_nr[idx], f_new)
+                        added += 1
+            if errors:
+                self.gui_handle.error_message("Failed to calculate some feature frames")
+            if action == "all":
+                frame_nr += added
+                if frame_nr >= len(f_histdata):
+                    frame_nr = -1
+                else:
+                    sweep_nr = f_histdata[frame_nr]["frame_marker"]
+            else:
+                frame_nr = -1
+
+        self.update_sliders()
+
+        if action == "current":
+            f = old_frame_nr
+        else:
+            f = 0
+        self.gui_handle.feature_inspect.update_frame("frames", f + 1)
 
 
 class LabelingGraph(QFrame):
@@ -2492,6 +2604,72 @@ class CalibrationDialog(QDialog):
 
     def get_state(self):
         return
+
+
+class AugmentDataDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.setMinimumWidth(350)
+        self.setModal(True)
+        self.setWindowTitle("Agument data")
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.offsets = []
+        self.action = None
+
+        warn = QLabel("Don't use augmentation with history depentend data!")
+        description = QLabel("Select sweep offsets separeated by ',' to augment data:")
+        self.offsets_text = QLineEdit("-15, -10, 10, 15")
+        layout.addWidget(warn)
+        layout.addWidget(description)
+        layout.addWidget(self.offsets_text)
+        layout.addStretch(1)
+
+        buttons_widget = QWidget(self)
+        layout.addWidget(buttons_widget)
+        hbox = QHBoxLayout()
+        buttons_widget.setLayout(hbox)
+        hbox.addStretch(1)
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.set_offsets)
+        hbox.addWidget(close_btn)
+        this_btn = QPushButton("This frame")
+        this_btn.clicked.connect(self.set_offsets)
+        hbox.addWidget(this_btn)
+        all_btn = QPushButton("All frames")
+        all_btn.setDefault(True)
+        all_btn.clicked.connect(self.set_offsets)
+        hbox.addWidget(all_btn)
+
+    def get_state(self):
+        return self.action, self.offsets
+
+    def set_offsets(self):
+        mode = self.sender().text()
+        if mode == "Close":
+            self.reject()
+            return
+
+        offsets = self.offsets_text.text()
+        try:
+            offsets = offsets.split(",")
+            for idx, o in enumerate(offsets):
+                self.offsets.append(int(o))
+        except Exception as e:
+            print("Error parsing offsets!\n", e)
+            self.offsets = []
+            self.reject()
+            return
+
+        if "All" in mode:
+            self.action = "all"
+        else:
+            self.action = "current"
+
+        self.accept()
 
 
 class SpinBoxAndSliderWidget(QFrame):

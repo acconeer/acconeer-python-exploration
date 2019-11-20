@@ -389,7 +389,7 @@ class FeatureProcessing:
            "label": label,
            "frame_nr": data["ml_frame_data"]["current_frame"]["frame_nr"],
            "feature_map": fmap,
-           "frame_marker": start - 1,
+           "frame_marker": start,
            "frame_complete": True,
            "sweep_counter": n_sweeps,
            "sweep_number": frame_stop,
