@@ -10,6 +10,8 @@ import serial.tools.list_ports
 import pyqtgraph as pg
 from PyQt5 import QtCore
 
+from acconeer.exptool.modes import Mode
+
 
 class ExampleArgumentParser(ArgumentParser):
     def __init__(self, num_sens="+"):
@@ -351,3 +353,17 @@ class FreqCounter:
                 self.lp_dt = dt
 
         self.last_t = now
+
+
+def get_range_depths(sensor_config, session_info):
+    range_start = session_info["range_start_m"]
+    range_end = range_start + session_info["range_length_m"]
+
+    if sensor_config.mode == Mode.SPARSE:
+        num_depths = session_info["data_length"] // sensor_config.sweeps_per_frame
+    elif sensor_config.mode == Mode.POWER_BINS:
+        num_depths = session_info["bin_count"]
+    else:
+        num_depths = session_info["data_length"]
+
+    return np.linspace(range_start, range_end, num_depths)
