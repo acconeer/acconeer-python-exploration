@@ -26,8 +26,6 @@ RegWriteResponse = namedtuple("RegWriteResponse", ["reg_val"])
 BufferReadRequest = namedtuple("BufferReadRequest", ["addr"])
 BufferReadResponse = namedtuple("BufferReadResponse", ["addr", "buffer"])
 StreamData = namedtuple("StreamData", ["result_info", "buffer"])
-GPIOPin = namedtuple("GPIOPin", ["pin"])
-GPIOPinAndVal = namedtuple("GPIOPinAndVal", ["pin", "val"])
 
 
 class ProtocolError(Exception):
@@ -51,8 +49,6 @@ REG_READ_RESPONSE = 0xF6
 REG_WRITE_REQUEST = 0xF9
 REG_WRITE_RESPONSE = 0xF5
 STREAM_PACKET = 0xFE
-GPIO_READ = 0xA0
-GPIO_WRITE = 0xA1
 
 STREAM_RESULT_INFO = 0xFD
 STREAM_BUFFER = 0xFE
@@ -602,8 +598,6 @@ def unpack_packet(packet):
         return unpack_buf_read_res_segment(segment)
     elif packet_type == STREAM_PACKET:
         return unpack_stream_data_segment(segment)
-    elif packet_type in [GPIO_READ, GPIO_WRITE]:
-        return unpack_gpio_pin_and_val(segment)
     else:
         raise ProtocolError("unknown packet type")
 
@@ -669,14 +663,6 @@ def unpack_stream_data_segment(segment):
     return StreamData(result_info, buffer)
 
 
-def unpack_gpio_pin_and_val(segment):
-    if len(segment) != 3:
-        raise ProtocolError("unexpected package length")
-
-    pin, _, val = segment
-    return GPIOPinAndVal(pin, val)
-
-
 def pack_reg_val(reg_val):
     if len(reg_val.val) != REG_SIZE:
         raise ProtocolError("register value must be {} bytes".format(REG_SIZE))
@@ -700,12 +686,6 @@ def pack_packet(packet):
     elif isinstance(packet, RegWriteResponse):
         packet_type = REG_WRITE_RESPONSE
         packet_data = pack_reg_val(packet.reg_val)
-    elif isinstance(packet, GPIOPin):
-        packet_type = GPIO_READ
-        packet_data = bytearray([packet.pin])
-    elif isinstance(packet, GPIOPinAndVal):
-        packet_type = GPIO_WRITE
-        packet_data = bytearray([packet.pin, packet.val])
     elif isinstance(packet, BufferReadRequest):
         packet_type = BUF_READ_REQUEST
         packet_data = bytearray()

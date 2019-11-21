@@ -261,27 +261,6 @@ class UARTClient(BaseClient):
 
             log.debug("recv reg w res: ok")
 
-    def _read_gpio(self, pin):
-        req = protocol.GPIOPin(pin)
-        self._send_packet(req)
-
-        res = self._recv_packet()
-
-        if not isinstance(res, protocol.GPIOPinAndVal):
-            raise ClientError("got unexpected packet (expected gpio pin and value)")
-
-        return res.val
-
-    def _write_gpio(self, pin, val):
-        req = protocol.GPIOPinAndVal(pin, val)
-        self._send_packet(req)
-
-        res = self._recv_packet()
-        if not isinstance(res, protocol.GPIOPinAndVal):
-            raise ClientError("got unexpected packet (expected gpio pin and value)")
-        if res.val != val:
-            raise ClientError("gpio write failed")
-
     def _send_packet(self, packet):
         frame = protocol.insert_packet_into_frame(packet)
         self._link.send(frame)
