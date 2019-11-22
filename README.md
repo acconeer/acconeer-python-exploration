@@ -55,16 +55,16 @@ If you have PyQt4 installed, it might conflict with PyQt5. If this is the case f
 
 Install all Python dependencies using pip:
 ```
-python -m pip install --user setuptools wheel
-python -m pip install --user -r requirements.txt
+python -m pip install -U --user setuptools wheel
+python -m pip install -U --user -r requirements.txt
 ```
 Depending on your environment, you might have to replace `python` with `python3` or `py`.
 
-#### Installing acconeer.exptool
+#### Installing the acconeer.exptool library
 
-Install the supplied Acconeer utilities module `acconeer.exptool`:
+Install the supplied library `acconeer.exptool`:
 ```
-python setup.py install --user
+python -m pip install -U --user .
 ```
 _**Note: The utilities module has to be reinstalled after any change in `acconeer.exptool`, and therefore it is recommended to reinstall after each update of the Exploration Kit.**_
 
@@ -120,7 +120,7 @@ EXPERIMENTAL deep learning:
 
 If you want to test our new deep learning interface please install additional requirements
 ```
-python -m pip install --user -r requirements_ml.txt
+python -m pip install -U --user -r requirements_ml.txt
 ```
 This will install Keras, TensorFlow and Scikit-learn.
 You can then start the machine learning GUI with
