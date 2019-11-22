@@ -1,8 +1,7 @@
 import pytest
 
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool.utils import autodetect_serial_port
-from acconeer.exptool import configs
+from acconeer.exptool import configs, clients
 
 
 @pytest.fixture(scope="module")
@@ -10,15 +9,18 @@ def setup(request):
     conn_type, *args = request.param
 
     if conn_type == "spi":
-        client = SPIClient()
+        client = clients.SPIClient()
         sensor = 1
     elif conn_type == "uart":
         port = args[0] or autodetect_serial_port()
-        client = UARTClient(port)
+        client = clients.UARTClient(port)
         sensor = 1
     elif conn_type == "socket":
-        client = SocketClient(args[0])
+        client = clients.SocketClient(args[0])
         sensor = int(args[1])
+    elif conn_type == "mock":
+        client = clients.MockClient()
+        sensor = 1
     else:
         pytest.fail()
 

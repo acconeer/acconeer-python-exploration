@@ -20,6 +20,12 @@ def pytest_addoption(parser):
             nargs=2,
             )
 
+    parser.addoption(
+            "--mock",
+            dest="mock",
+            action="store_true",
+            )
+
 
 def pytest_generate_tests(metafunc):
     FIXTURE_NAME = "setup"
@@ -39,4 +45,8 @@ def pytest_generate_tests(metafunc):
         if socket is not None:
             params.append(("socket", *socket))
 
-        metafunc.parametrize(FIXTURE_NAME, params, indirect=True)
+        mock = metafunc.config.getoption("mock")
+        if mock:
+            params.append(("mock", ))
+
+        metafunc.parametrize(FIXTURE_NAME, params, indirect=True, ids=lambda p: p[0])
