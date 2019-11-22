@@ -1,17 +1,14 @@
 import numpy as np
+import pyqtgraph as pg
 from numpy import pi
 from scipy.signal import butter, sosfilt
-import pyqtgraph as pg
+
 from PyQt5 import QtCore
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 from acconeer.exptool.structs import configbase
-
-
-env_max = 0.3
 
 
 def main():
@@ -44,8 +41,8 @@ def main():
     processor = BreathingProcessor(sensor_config, processing_config, session_info)
 
     while not interrupt_handler.got_signal:
-        info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        info, data = client.get_next()
+        plot_data = processor.process(data)
 
         if plot_data is not None:
             try:
@@ -60,9 +57,10 @@ def main():
 
 def get_sensor_config():
     config = configs.IQServiceConfig()
-    config.range_interval = [0.3, 0.80]
-    config.sweep_rate = 80
-    config.gain = 0.7
+    config.range_interval = [0.3, 0.8]
+    config.update_rate = 80
+    config.gain = 0.5
+    config.repetition_mode = configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
 
 
@@ -70,12 +68,12 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
     VERSION = 1
 
     hist_plot_len = configbase.FloatParameter(
-            label="Plot length",
-            unit="s",
-            default_value=10,
-            limits=(1, 30),
-            decimals=0,
-            )
+        label="Plot length",
+        unit="s",
+        default_value=10,
+        limits=(1, 30),
+        decimals=0,
+    )
 
 
 get_processing_config = ProcessingConfiguration
@@ -92,7 +90,9 @@ class BreathingProcessor:
     def __init__(self, sensor_config, processing_config, session_info):
         self.config = sensor_config
 
-        self.f = sensor_config.sweep_rate
+        assert sensor_config.update_rate is not None
+
+        self.f = sensor_config.update_rate
         self.hist_plot_len = int(round(processing_config.hist_plot_len * self.f))
         self.breath_hist_len = max(2000, self.hist_plot_len)
 
@@ -101,9 +101,9 @@ class BreathingProcessor:
         self.breath_history = np.zeros(self.breath_hist_len, dtype="float")
         self.pulse_history = np.zeros(self.hist_plot_len, dtype="float")
 
-        self.breath_sos = np.concatenate(butter(2, 2 * 0.3/self.f))
+        self.breath_sos = np.concatenate(butter(2, 2 * 0.3 / self.f))
         self.breath_zi = np.zeros((1, 2))
-        self.pulse_sos = np.concatenate(butter(2, 2 * np.array([5])/self.f))
+        self.pulse_sos = np.concatenate(butter(2, 2 * np.array([5]) / self.f))
         self.pulse_zi = np.zeros((1, 2))
 
         self.last_lp_sweep = None
@@ -128,7 +128,7 @@ class BreathingProcessor:
             self.lp_peak_loc = self.lp(peak_loc, self.lp_peak_loc, self.peak_loc_alpha)
 
             peak_idx = int(round(self.lp_peak_loc))
-            peak = np.mean(self.lp_sweep[peak_idx-50:peak_idx+50])
+            peak = np.mean(self.lp_sweep[peak_idx - 50 : peak_idx + 50])
             self.push(peak, self.peak_history)
 
             delta = self.lp_sweep * np.conj(self.last_lp_sweep)
@@ -138,12 +138,9 @@ class BreathingProcessor:
                 self.lp_phase_weights = phase_weights
             else:
                 self.lp_phase_weights = self.lp(
-                        phase_weights,
-                        self.lp_phase_weights,
-                        self.phase_weights_alpha
-                        )
+                    phase_weights, self.lp_phase_weights, self.phase_weights_alpha)
 
-            weights = np.abs(self.lp_phase_weights) * (env/env_max)
+            weights = np.abs(self.lp_phase_weights) * env
 
             delta_dist = np.dot(weights, np.angle(delta))
             delta_dist *= 2.5 / (2.0 * pi * sum(weights + 0.00001))
@@ -156,8 +153,6 @@ class BreathingProcessor:
 
             y_pulse, self.pulse_zi = sosfilt(self.pulse_sos, np.array([y]), zi=self.pulse_zi)
             self.push(y_pulse, self.pulse_history)
-
-            env_delta = 10*self.lp_phase_weights + 0.5*env_max
 
             maxs = self.find_peaks(self.breath_history, 100)
             mins = self.find_peaks(-self.breath_history, 100)
@@ -184,7 +179,7 @@ class BreathingProcessor:
                 else:
                     inhale_dist = mins[min_idx, 1] + maxs[max_idx, 1]
                     if (inhale_dist > 1 and inhale_dist < 20):
-                        inhale_time = maxs[max_idx, 0]-mins[min_idx, 0]
+                        inhale_time = maxs[max_idx, 0] - mins[min_idx, 0]
                         exhale = False
                         if first_peak is None:
                             first_peak = mins[min_idx, 0]
@@ -205,17 +200,19 @@ class BreathingProcessor:
                 bpm_text = None
 
             # Make an explicit copy, otherwise flip will not return a new object
-            breath_hist_plot = np.array(np.flip(self.breath_history[:self.hist_plot_len], axis=0))
+            breath_hist_plot = self.breath_history[: self.hist_plot_len]
+            breath_hist_plot = np.array(np.flip(breath_hist_plot, axis=0))
             breath_hist_plot -= (np.max(breath_hist_plot) + np.min(breath_hist_plot)) * 0.5
 
-            zoom_hist_plot = np.array(np.flip(self.pulse_history[:self.hist_plot_len], axis=0))
+            zoom_hist_plot = self.pulse_history[: self.hist_plot_len // 2]
+            zoom_hist_plot = np.array(np.flip(zoom_hist_plot, axis=0))
             zoom_hist_plot -= (max(zoom_hist_plot) + min(zoom_hist_plot)) * 0.5
 
             out_data = {
-                "peak_hist": self.peak_history[:100],
-                "peak_std_mm": 2.5 * np.std(np.unwrap(np.angle(self.peak_history)))/2.0/pi,
+                "peak_hist": self.peak_history[: 100],
+                "peak_std_mm": 2.5 * np.std(np.unwrap(np.angle(self.peak_history))) / (2.0 * pi),
                 "env_ampl": abs(self.lp_sweep),
-                "env_delta": env_delta,
+                "env_delta": self.lp_phase_weights,
                 "peak_idx": peak_idx,
                 "breathing_history": breath_hist_plot,
                 "breathing_text": bpm_text,
@@ -227,65 +224,66 @@ class BreathingProcessor:
         return out_data
 
     def lp(self, new, state, alpha):
-        return alpha*state + (1-alpha)*new
+        return alpha * state + (1 - alpha) * new
 
     def push(self, val, arr):
         res = np.empty_like(arr)
         res[0] = val
-        res[1:] = arr[:-1]
+        res[1 :] = arr[: -1]
         arr[...] = res
 
     def find_peaks(self, env, width):
         n = len(env)
         peaks = np.zeros((0, 2))
         for idx in range(0, n, width):
-            mi = np.argmax(env[idx:min(idx+width, n)])+idx
-            mi2 = np.argmax(env[max(mi-width, 0):min(mi+width, n)])
+            mi = np.argmax(env[idx : min(idx + width, n)]) + idx
+            mi2 = np.argmax(env[max(mi - width, 0) : min(mi + width, n)])
             mi2 += max(mi - width, 0)
-            if mi == mi2 and (0 < mi < n-1):
+            if mi == mi2 and (0 < mi < n - 1):
                 peaks = np.concatenate((peaks, np.array([[mi, env[mi]]])), axis=0)
         return peaks
 
 
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.config = sensor_config
+        assert sensor_config.update_rate is not None
 
-        f = sensor_config.sweep_rate
+        f = sensor_config.update_rate
+        self.depths = utils.get_range_depths(sensor_config, session_info)
         self.hist_plot_len_s = processing_config.hist_plot_len
         self.hist_plot_len = int(round(self.hist_plot_len_s * f))
-        self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / self.config.sweep_rate
-        self.plot_index = 0
+        self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / f
+        self.smooth_max = utils.SmoothMax(f, hysteresis=0.4, tau_decay=1.5)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer breathing example")
         win.resize(800, 600)
 
         self.peak_plot = win.addPlot(title="IQ at peak")
-        utils.pg_setup_polar_plot(self.peak_plot, 0.3)
+        utils.pg_setup_polar_plot(self.peak_plot, 1)
         self.peak_curve = self.peak_plot.plot(pen=utils.pg_pen_cycler(0))
         self.peak_scatter = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=15)
         self.peak_plot.addItem(self.peak_scatter)
         self.peak_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
         self.peak_plot.addItem(self.peak_text_item)
-        self.peak_text_item.setPos(-0.3*1.15, -0.3*1.15)
+        self.peak_text_item.setPos(-1.15, -1.15)
 
         self.env_plot = win.addPlot(title="Envelope and delta")
         self.env_plot.addLegend()
         self.env_plot.showGrid(x=True, y=True)
-        self.env_plot.setYRange(0, 0.3)
         self.env_curve = self.env_plot.plot(
-                pen=utils.pg_pen_cycler(0),
-                name="Envelope",
-                )
+            pen=utils.pg_pen_cycler(0),
+            name="Envelope",
+        )
         self.delta_curve = self.env_plot.plot(
-                pen=utils.pg_pen_cycler(1),
-                name="Phase delta",
-                )
+            pen=utils.pg_pen_cycler(1),
+            name="Phase delta",
+        )
         self.peak_vline = pg.InfiniteLine(pen=pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine))
         self.env_plot.addItem(self.peak_vline)
 
         win.nextRow()
+
         self.move_plot = win.addPlot(title="Breathing movement")
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Time (s)")
@@ -304,32 +302,31 @@ class PGUpdater:
         self.zoom_curve = self.zoom_plot.plot(pen=utils.pg_pen_cycler(0))
 
     def update(self, data):
-        self.process_data(data)
+        envelope = data["env_ampl"]
+        m = self.smooth_max.update(envelope)
+        plot_delta = data["env_delta"] * m * 2e-5 + 0.5 * m
 
-        self.peak_scatter.setData([self.peak_re], [self.peak_im])
-        self.peak_curve.setData(self.peak_hist_re, self.peak_hist_im)
-        self.peak_text_item.setText(self.peak_std_text)
-        self.env_curve.setData(self.env_xs, data["env_ampl"])
-        self.delta_curve.setData(self.env_xs, data["env_delta"])
-        self.peak_vline.setValue(self.peak_x)
+        norm_peak_hist_re = np.real(data["peak_hist"]) / m
+        norm_peak_hist_im = np.imag(data["peak_hist"]) / m
+        peak_std_text = "Std: {:.3f}mm".format(data["peak_std_mm"])
+        peak_x = self.depths[data["peak_idx"]]
+
+        self.env_plot.setYRange(0, m)
+        self.env_curve.setData(self.depths, envelope)
+        self.delta_curve.setData(self.depths, plot_delta)
+
+        self.peak_scatter.setData([norm_peak_hist_re[0]], [norm_peak_hist_im[0]])
+        self.peak_curve.setData(norm_peak_hist_re, norm_peak_hist_im)
+        self.peak_text_item.setText(peak_std_text)
+        self.peak_vline.setValue(peak_x)
+
+        m = max(2, max(np.abs(data["breathing_history"])))
+
         self.move_curve.setData(self.move_xs, data["breathing_history"])
-        m = max(2, max(np.abs(data['breathing_history'])))
         self.move_plot.setYRange(-m, m)
         self.move_text_item.setPos(self.move_xs[0], -m)
-        self.zoom_curve.setData(self.move_xs, data["zoom_hist"])
+        self.zoom_curve.setData(self.move_xs[self.move_xs.size // 2 :], data["zoom_hist"])
         self.move_text_item.setText(data["breathing_text"])
-
-    def process_data(self, data):
-        if self.plot_index == 0:
-            self.env_xs = np.linspace(*self.config.range_interval, data["env_ampl"].size)
-
-        self.peak_hist_re = np.real(data["peak_hist"])
-        self.peak_hist_im = np.imag(data["peak_hist"])
-        self.peak_re = self.peak_hist_re[0]
-        self.peak_im = self.peak_hist_im[0]
-        self.peak_std_text = "Std: {:.3f}mm".format(data["peak_std_mm"])
-        self.peak_x = self.env_xs[data["peak_idx"]]
-        self.plot_index += 1
 
 
 if __name__ == "__main__":
