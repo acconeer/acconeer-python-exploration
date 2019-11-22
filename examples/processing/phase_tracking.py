@@ -1,11 +1,11 @@
 import numpy as np
 import pyqtgraph as pg
+
 from PyQt5 import QtCore
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
     sensor_config = get_sensor_config()
     sensor_config.sensor = args.sensors
 
-    processing_config = get_processing_config()
+    processing_config = None
 
     session_info = client.setup_session(sensor_config)
 
@@ -56,18 +56,16 @@ def main():
 def get_sensor_config():
     config = configs.IQServiceConfig()
     config.range_interval = [0.3, 0.6]
-    config.sweep_rate = 80
-    config.gain = 0.7
+    config.update_rate = 80
+    config.repetition_mode = configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
-
-
-def get_processing_config():
-    return {}
 
 
 class PhaseTrackingProcessor:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.f = sensor_config.sweep_rate
+        assert sensor_config.update_rate is not None
+
+        self.f = sensor_config.update_rate
         self.dt = 1 / self.f
 
         num_hist_points = int(round(self.f * 3))
@@ -81,9 +79,9 @@ class PhaseTrackingProcessor:
         n = len(sweep)
 
         ampl = np.abs(sweep)
-        power = ampl*ampl
+        power = np.square(ampl)
         if np.sum(power) > 1e-6:
-            com = np.sum(np.arange(n)/n * power) / np.sum(power)  # center of mass
+            com = np.sum(np.arange(n) / n * power) / np.sum(power)  # center of mass
         else:
             com = 0
 
@@ -93,16 +91,16 @@ class PhaseTrackingProcessor:
             plot_data = None
         else:
             a = self.alpha(0.1, self.dt)
-            self.lp_ampl = a*ampl + (1 - a)*self.lp_ampl
+            self.lp_ampl = a * ampl + (1 - a) * self.lp_ampl
             a = self.alpha(0.25, self.dt)
-            self.lp_com = a*com + (1-a)*self.lp_com
+            self.lp_com = a * com + (1 - a) * self.lp_com
 
             com_idx = int(self.lp_com * n)
             delta_angle = np.angle(sweep[com_idx] * np.conj(self.last_sweep[com_idx]))
-            vel = self.f * 2.5 * delta_angle / (2*np.pi)
+            vel = self.f * 2.5 * delta_angle / (2 * np.pi)
 
             a = self.alpha(0.1, self.dt)
-            self.lp_vel = a*vel + (1 - a)*self.lp_vel
+            self.lp_vel = a * vel + (1 - a) * self.lp_vel
 
             dp = self.lp_vel / self.f
             self.hist_pos = np.roll(self.hist_pos, -1)
@@ -110,9 +108,10 @@ class PhaseTrackingProcessor:
 
             hist_len = len(self.hist_pos)
             plot_hist_pos = self.hist_pos - self.hist_pos.mean()
-            plot_hist_pos_zoom = self.hist_pos[hist_len//2:] - self.hist_pos[hist_len//2:].mean()
+            cut_hist_pos = self.hist_pos[hist_len // 2 :]
+            plot_hist_pos_zoom = cut_hist_pos - cut_hist_pos.mean()
 
-            iq_val = np.exp(1j*np.angle(sweep[com_idx])) * self.lp_ampl[com_idx]
+            iq_val = np.exp(1j * np.angle(sweep[com_idx])) * self.lp_ampl[com_idx]
 
             plot_data = {
                 "abs": self.lp_ampl,
@@ -128,13 +127,13 @@ class PhaseTrackingProcessor:
         return plot_data
 
     def alpha(self, tau, dt):
-        return 1 - np.exp(-dt/tau)
+        return 1 - np.exp(-dt / tau)
 
 
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.config = sensor_config
-        self.interval = sensor_config.range_interval
+        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.smooth_max = utils.SmoothMax(sensor_config.update_rate)
 
     def setup(self, win):
         win.resize(800, 600)
@@ -156,17 +155,14 @@ class PGUpdater:
         self.arg_plot.setLabel("left", "Phase")
         self.arg_plot.setYRange(-np.pi, np.pi)
         self.arg_plot.getAxis("left").setTicks(utils.pg_phase_ticks)
-        self.arg_curve = self.arg_plot.plot(pen=utils.pg_pen_cycler(0))
+        self.arg_curve = self.arg_plot.plot(pen=utils.pg_pen_cycler())
         self.arg_inf_line = pg.InfiniteLine(pen=pen)
         self.arg_plot.addItem(self.arg_inf_line)
 
         self.iq_plot = win.addPlot(row=1, col=1, title="IQ at line")
-        utils.pg_setup_polar_plot(self.iq_plot, 0.5)
+        utils.pg_setup_polar_plot(self.iq_plot, 1)
         self.iq_curve = self.iq_plot.plot(pen=utils.pg_pen_cycler())
-        self.iq_scatter = pg.ScatterPlotItem(
-                brush=pg.mkBrush(utils.color_cycler()),
-                size=15,
-                )
+        self.iq_scatter = pg.ScatterPlotItem(brush=pg.mkBrush(utils.color_cycler()), size=15)
         self.iq_plot.addItem(self.iq_scatter)
 
         self.hist_plot = win.addPlot(row=0, col=1, colspan=2)
@@ -183,27 +179,28 @@ class PGUpdater:
         self.hist_zoom_curve = self.hist_zoom_plot.plot(pen=utils.pg_pen_cycler())
         self.hist_zoom_plot.setYRange(-0.5, 0.5)
 
-        self.smooth_max = utils.SmoothMax(self.config.sweep_rate)
         self.first = True
 
     def update(self, data):
         if self.first:
-            self.xs = np.linspace(*self.interval, len(data["abs"]))
             self.ts = np.linspace(-3, 0, len(data["hist_pos"]))
             self.ts_zoom = np.linspace(-1.5, 0, len(data["hist_pos_zoom"]))
             self.first = False
 
-        com_x = (1-data["com"])*self.interval[0] + data["com"]*self.interval[1]
+        com_x = (1 - data["com"]) * self.depths[0] + data["com"] * self.depths[-1]
+        m = self.smooth_max.update(data["abs"])
 
-        self.abs_curve.setData(self.xs, data["abs"])
-        self.abs_plot.setYRange(0, self.smooth_max.update(np.amax(data["abs"])))
+        self.abs_curve.setData(self.depths, data["abs"])
+        self.abs_plot.setYRange(0, m)
         self.abs_inf_line.setValue(com_x)
-        self.arg_curve.setData(self.xs, data["arg"])
+        self.arg_curve.setData(self.depths, data["arg"])
         self.arg_inf_line.setValue(com_x)
         self.hist_curve.setData(self.ts, data["hist_pos"])
         self.hist_zoom_curve.setData(self.ts_zoom, data["hist_pos_zoom"])
-        self.iq_curve.setData([0, np.real(data["iq_val"])], [0, np.imag(data["iq_val"])])
-        self.iq_scatter.setData([np.real(data["iq_val"])], [np.imag(data["iq_val"])])
+
+        norm_iq_val = data["iq_val"] / m
+        self.iq_curve.setData([0, np.real(norm_iq_val)], [0, np.imag(norm_iq_val)])
+        self.iq_scatter.setData([np.real(norm_iq_val)], [np.imag(norm_iq_val)])
 
 
 if __name__ == "__main__":
