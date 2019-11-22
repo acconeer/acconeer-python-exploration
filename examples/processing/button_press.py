@@ -1,11 +1,11 @@
 import numpy as np
 import pyqtgraph as pg
+
 from PyQt5 import QtCore
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 from acconeer.exptool.structs import configbase
 
 
@@ -61,11 +61,13 @@ def main():
 
 def get_sensor_config():
     config = configs.EnvelopeServiceConfig()
-    config.session_profile = configs.EnvelopeServiceConfig.DIRECT_LEAKAGE
+    config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_1
     config.range_interval = [0.04, 0.05]
     config.running_average_factor = 0.01
-    config.sweep_rate = 60
+    config.maximize_signal_attenuation = True
+    config.update_rate = 60
     config.gain = 0.2
+    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
 
 
@@ -130,7 +132,9 @@ class ButtonPressProcessor:
     # sf: smoothing factor [dimensionless]
 
     def __init__(self, sensor_config, processing_config, session_info):
-        self.f = sensor_config.sweep_rate
+        assert sensor_config.update_rate is not None
+
+        self.f = sensor_config.update_rate
 
         self.signal_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
         self.signal_lp_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
@@ -216,10 +220,12 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
+        assert sensor_config.update_rate is not None
+
         self.setup_is_done = False
 
         self.sweep_index_of_latest_detection = 0
-        self.sweeps_detection_show = DETECTION_SHOW_S * sensor_config.sweep_rate
+        self.sweeps_detection_show = DETECTION_SHOW_S * sensor_config.update_rate
 
     def setup(self, win):
         win.setWindowTitle("Acconeer Button Press Example")
@@ -284,13 +290,13 @@ class PGUpdater:
         self.detection_text_item.hide()
 
         self.smooth_max_signal = utils.SmoothMax(
-                self.sensor_config.sweep_rate,
+                self.sensor_config.update_rate,
                 hysteresis=0.6,
                 tau_decay=3,
                 )
 
         self.smooth_max_rel_dev = utils.SmoothMax(
-                self.sensor_config.sweep_rate,
+                self.sensor_config.update_rate,
                 hysteresis=0.6,
                 tau_decay=3,
                 )
