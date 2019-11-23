@@ -1,30 +1,30 @@
 def pytest_addoption(parser):
     parser.addoption(
-            "--uart",
-            dest="uart",
-            metavar="port",
-            nargs="?",
-            const="",
-            )
+        "--uart",
+        dest="uart",
+        metavar="port",
+        nargs="?",
+        const="",
+    )
 
     parser.addoption(
-            "--spi",
-            dest="spi",
-            action="store_true",
-            )
+        "--spi",
+        dest="spi",
+        action="store_true",
+    )
 
     parser.addoption(
-            "--socket",
-            dest="socket",
-            metavar="socket_args",
-            nargs=2,
-            )
+        "--socket",
+        dest="socket",
+        metavar="socket_args",
+        nargs=2,
+    )
 
     parser.addoption(
-            "--mock",
-            dest="mock",
-            action="store_true",
-            )
+        "--mock",
+        dest="mock",
+        action="store_true",
+    )
 
 
 def ids_fun(setup):

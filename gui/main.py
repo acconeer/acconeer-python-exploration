@@ -723,7 +723,7 @@ class GUI(QMainWindow):
             "feature_inspect": (QWidget(self.main_widget), "Feature inspection"),
             "train": (QWidget(self.main_widget), "Train Network"),
             "eval": (QWidget(self.main_widget), "Use Network"),
-            }
+        }
 
         self.tabs_text_to_key = {
             "Configure service": "main",
@@ -744,20 +744,20 @@ class GUI(QMainWindow):
 
         self.feature_select = self.ml_elements.FeatureSelectFrame(
             self.main_widget,
-            gui_handle=self
-            )
+            gui_handle=self,
+        )
         self.tabs["feature_select"].layout.addWidget(self.feature_select)
 
         self.feature_extract = self.ml_elements.FeatureExtractFrame(
             self.main_widget,
-            gui_handle=self
-            )
+            gui_handle=self,
+        )
         self.tabs["feature_extract"].layout.addWidget(self.feature_extract)
 
         self.feature_inspect = self.ml_elements.FeatureInspectFrame(
             self.main_widget,
-            gui_handle=self
-            )
+            gui_handle=self,
+        )
         self.tabs["feature_inspect"].layout.addWidget(self.feature_inspect)
 
         self.training = self.ml_elements.TrainingFrame(self.main_widget, gui_handle=self)
@@ -1208,8 +1208,7 @@ class GUI(QMainWindow):
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
                 self.feature_sidepanel.textboxes["sweep_rate"].setText(
-                    self.textboxes["sweep_rate"].text()
-                    )
+                    self.textboxes["sweep_rate"].text())
                 self.feature_select.check_limits()
 
             elif tab == "feature_extract":
@@ -1222,8 +1221,7 @@ class GUI(QMainWindow):
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
                 self.feature_sidepanel.textboxes["sweep_rate"].setText(
-                    self.textboxes["sweep_rate"].text()
-                    )
+                    self.textboxes["sweep_rate"].text())
 
                 if self.ml_feature_plot_widget is None:
                     self.feature_extract.init_graph()
@@ -1475,12 +1473,12 @@ class GUI(QMainWindow):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-                self,
-                "Load scan",
-                "",
-                "HDF5 data files (*.h5);; NumPy data files (*.npz)",
-                options=options
-                )
+            self,
+            "Load scan",
+            "",
+            "HDF5 data files (*.h5);; NumPy data files (*.npz)",
+            options=options
+        )
 
         if not filename:
             return
@@ -1544,7 +1542,7 @@ class GUI(QMainWindow):
         title = "Save scan"
         file_types = "HDF5 data files (*.h5);; NumPy data files (*.npz)"
         filename, info = QtWidgets.QFileDialog.getSaveFileName(
-                self, title, "", file_types, options=options)
+            self, title, "", file_types, options=options)
 
         if not filename:
             return
