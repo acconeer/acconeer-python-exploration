@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+import abc
 import logging
 from distutils.version import StrictVersion
 
@@ -8,8 +8,8 @@ from acconeer.exptool import SDK_VERSION
 log = logging.getLogger(__name__)
 
 
-class BaseClient(metaclass=ABCMeta):
-    @abstractmethod
+class BaseClient(abc.ABC):
+    @abc.abstractmethod
     def __init__(self, **kwargs):
         self.squeeze = kwargs.get("squeeze", True)
 
@@ -99,27 +99,27 @@ class BaseClient(metaclass=ABCMeta):
         self._disconnect()
         self._connected = False
 
-    @abstractmethod
+    @abc.abstractmethod
     def _connect(self):
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def _setup_session(self, config):
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def _start_session(self):
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def _get_next(self):
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def _stop_session(self):
         pass
 
-    @abstractmethod
+    @abc.abstractmethod
     def _disconnect(self):
         pass
 
