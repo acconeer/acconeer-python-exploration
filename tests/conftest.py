@@ -27,6 +27,13 @@ def pytest_addoption(parser):
             )
 
 
+def ids_fun(setup):
+    try:
+        return setup[0]
+    except Exception:
+        return ""
+
+
 def pytest_generate_tests(metafunc):
     FIXTURE_NAME = "setup"
 
@@ -49,4 +56,4 @@ def pytest_generate_tests(metafunc):
         if mock:
             params.append(("mock", ))
 
-        metafunc.parametrize(FIXTURE_NAME, params, indirect=True, ids=lambda p: p[0])
+        metafunc.parametrize(FIXTURE_NAME, params, indirect=True, ids=ids_fun)
