@@ -12,6 +12,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'flake8'
+                sh 'isort --check-only'
                 sh 'python3 -m pip install -U --user .'
                 sh 'pytest -v tests/unit'
                 sh 'pytest -v tests/integration --mock'
