@@ -16,7 +16,7 @@ pipeline {
                 sh 'pytest -v tests/unit'
                 sh 'pytest -v tests/integration --mock'
                 // sh 'pytest -v --timeout=60 --timeout_method=thread tests/gui'
-                // sh 'sphinx-build -QW -b html docs docs/_build'
+                sh 'sphinx-build -QW -b html docs docs/_build'
             }
         }
     }
