@@ -1,10 +1,10 @@
 import multiprocessing as mp
-import signal
 import queue
-
+import signal
 from time import sleep, time
 
 import pyqtgraph as pg
+
 from PyQt5 import QtWidgets
 
 

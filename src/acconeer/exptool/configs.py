@@ -1,6 +1,7 @@
 import abc
 import enum
 from copy import copy
+
 import numpy as np
 
 from acconeer.exptool.modes import Mode

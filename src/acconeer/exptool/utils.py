@@ -1,13 +1,15 @@
-import operator
-from argparse import ArgumentParser
-import signal
-import numpy as np
-from datetime import datetime
 import logging
+import operator
+import signal
 import sys
 import time
-import serial.tools.list_ports
+from argparse import ArgumentParser
+from datetime import datetime
+
+import numpy as np
 import pyqtgraph as pg
+import serial.tools.list_ports
+
 from PyQt5 import QtCore
 
 from acconeer.exptool.modes import Mode

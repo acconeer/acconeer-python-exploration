@@ -1,13 +1,14 @@
-from abc import ABCMeta, abstractmethod
-import serial
-import socket
-from time import time, sleep
+import logging
 import multiprocessing as mp
+import platform
 import queue
 import signal
-import logging
+import socket
 import traceback
-import platform
+from abc import ABCMeta, abstractmethod
+from time import sleep, time
+
+import serial
 
 from acconeer.exptool.clients.base import ClientError
 

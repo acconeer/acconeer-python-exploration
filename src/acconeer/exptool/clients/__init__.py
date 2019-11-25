@@ -1,7 +1,6 @@
-from .reg.client import UARTClient
-from .reg.client import SPIClient
 from .json.client import SocketClient
 from .mock.client import MockClient
+from .reg.client import SPIClient, UARTClient
 
 
 __all__ = [

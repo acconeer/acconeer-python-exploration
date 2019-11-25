@@ -1,9 +1,11 @@
-from weakref import WeakKeyDictionary
 import json
-from enum import Enum
-import numpy as np
 import os
 from copy import copy
+from enum import Enum
+from weakref import WeakKeyDictionary
+
+import numpy as np
+
 
 try:
     from PyQt5 import QtCore

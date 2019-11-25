@@ -1,10 +1,10 @@
-import platform
-from glob import glob
-import os
-import enum
 import ctypes
 import ctypes.util
-from ctypes import byref, POINTER
+import enum
+import os
+import platform
+from ctypes import POINTER, byref
+from glob import glob
 
 
 C_PVOID = ctypes.c_void_p

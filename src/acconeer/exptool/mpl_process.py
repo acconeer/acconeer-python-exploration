@@ -1,10 +1,11 @@
 import multiprocessing as mp
+import queue
 import signal
+import sys
+from time import sleep, time
+
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from time import time, sleep
-import sys
-import queue
 
 
 class PlotProcess:
