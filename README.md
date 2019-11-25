@@ -175,7 +175,7 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 - `iq.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html)) \
   Demonstrates the IQ service.
 - `sparse.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html)) \
-  Demonstrates the Sparse service. Currently this is an experimental service, see more in the [disclaimer](https://acconeer-python-exploration.readthedocs.io/en/latest/disclaimer.html).
+  Demonstrates the Sparse service.
 
 ### Processing
 
