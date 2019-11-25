@@ -37,7 +37,7 @@ try:
 except Exception:
     import traceback
     traceback.print_exc()
-    print("\nPlease update your libraries with 'python setup.py install --user'")
+    print("\nPlease update your library with 'python -m pip install -U --user .'")
     sys.exit(1)
 
 if "win32" in sys.platform.lower():

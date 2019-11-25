@@ -28,7 +28,7 @@ def lib_version_up_to_date(gui_handle=None):
 
     used_lib_ver = getattr(acconeer.exptool, "__version__", None)
 
-    rerun_text = "You probably need to rerun setup.py (python setup.py install --user)"
+    rerun_text = "You probably need to reinstall the library (python -m pip install -U --user .)"
     error_text = None
     if used_lib_ver:
         sb_text = "Lib v{}".format(used_lib_ver)
