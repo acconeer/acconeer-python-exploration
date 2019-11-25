@@ -81,7 +81,7 @@ def pg_process_program(q, exit_event, updater, max_freq):
         app.processEvents()
 
         if max_freq and data is not None:
-            sleep_time = 1/max_freq - (time() - data_time)
+            sleep_time = 1 / max_freq - (time() - data_time)
             if sleep_time > 0.005:
                 sleep(sleep_time)
 

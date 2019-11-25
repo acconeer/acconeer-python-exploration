@@ -274,35 +274,35 @@ class Device:
     def spi_master_init(self, io_line=SPIMode.SPI_IO_SINGLE, clock=SPIClock.CLK_NONE,
                         cpol=SPICPOL.CLK_IDLE_LOW, cpha=SPICPHA.CLK_LEADING, sso_map=1):
         status = funs["FT4222_SPIMaster_Init"](
-                self.handle,
-                get_enum_val(io_line),
-                get_enum_val(clock),
-                get_enum_val(cpol),
-                get_enum_val(cpha),
-                sso_map
-                )
+            self.handle,
+            get_enum_val(io_line),
+            get_enum_val(clock),
+            get_enum_val(cpol),
+            get_enum_val(cpha),
+            sso_map
+        )
         check_status(status)
 
     def spi_set_driving_strength(self, clock=DrivingStrength.DS_8MA, io=DrivingStrength.DS_8MA,
                                  sso=DrivingStrength.DS_8MA):
         status = funs["FT4222_SPI_SetDrivingStrength"](
-                self.handle,
-                get_enum_val(clock),
-                get_enum_val(io),
-                get_enum_val(sso)
-                )
+            self.handle,
+            get_enum_val(clock),
+            get_enum_val(io),
+            get_enum_val(sso)
+        )
         check_status(status)
 
     def spi_master_single_read(self, num_bytes, is_end_transaction=True):
         read_buffer = (ctypes.c_uint8 * num_bytes)()
         size_transferred = ctypes.c_uint16()
         status = funs["FT4222_SPIMaster_SingleRead"](
-                self.handle,
-                read_buffer,
-                num_bytes,
-                byref(size_transferred),
-                is_end_transaction
-                )
+            self.handle,
+            read_buffer,
+            num_bytes,
+            byref(size_transferred),
+            is_end_transaction
+        )
 
         assert size_transferred.value == num_bytes
         check_status(status)
@@ -314,12 +314,12 @@ class Device:
         write_buffer = (ctypes.c_uint8 * num_bytes)(*data)
         size_transferred = ctypes.c_uint16()
         status = funs["FT4222_SPIMaster_SingleWrite"](
-                self.handle,
-                write_buffer,
-                num_bytes,
-                byref(size_transferred),
-                is_end_transaction
-                )
+            self.handle,
+            write_buffer,
+            num_bytes,
+            byref(size_transferred),
+            is_end_transaction
+        )
 
         assert size_transferred.value == num_bytes
         check_status(status)
@@ -330,13 +330,13 @@ class Device:
         write_buffer = (ctypes.c_uint8 * num_bytes)(*write_data)
         size_transferred = ctypes.c_uint16()
         status = funs["FT4222_SPIMaster_SingleReadWrite"](
-                self.handle,
-                read_buffer,
-                write_buffer,
-                num_bytes,
-                byref(size_transferred),
-                is_end_transaction
-                )
+            self.handle,
+            read_buffer,
+            write_buffer,
+            num_bytes,
+            byref(size_transferred),
+            is_end_transaction
+        )
 
         assert size_transferred.value == num_bytes
         check_status(status)

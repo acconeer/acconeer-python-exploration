@@ -209,10 +209,10 @@ class SerialProcessLink(BaseSerialLink):
         )
 
         self._process = mp.Process(
-                target=serial_process_program,
-                args=args,
-                daemon=True,
-                )
+            target=serial_process_program,
+            args=args,
+            daemon=True,
+        )
 
         self._process.start()
 
@@ -271,8 +271,8 @@ class SerialProcessLink(BaseSerialLink):
 
             self.__get_into_buf()
 
-        data = self._buf[:i+n]
-        self._buf = self._buf[i+n:]
+        data = self._buf[: i + n]
+        self._buf = self._buf[i + n :]
         return data
 
     def send(self, data):

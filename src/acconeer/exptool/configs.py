@@ -37,7 +37,7 @@ class BaseSessionConfig(abc.ABC):
         vals = [getattr(self, a) for a in attrs]
         d = {a: ("-" if v is None else v) for a, v in zip(attrs, vals)}
         s = self.__class__.__name__
-        s += "".join(["\n  {:.<25} {}".format(a+" ", v) for (a, v) in d.items()])
+        s += "".join(["\n  {:.<25} {}".format(a + " ", v) for (a, v) in d.items()])
         return s
 
     @property

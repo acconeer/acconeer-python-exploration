@@ -113,12 +113,12 @@ class PidgetStub(Pidget):
         self.error_label.setText(str(e))
 
         self.setStyleSheet((
-                "#frame {"
-                "background-color: bisque;"
-                "border: 1px solid lightgrey;"
-                "border-radius: 3px;"
-                "}"
-                ))
+            "#frame {"
+            "background-color: bisque;"
+            "border: 1px solid lightgrey;"
+            "border-radius: 3px;"
+            "}"
+        ))
 
         self.error_frame.show()
 
@@ -972,18 +972,18 @@ class ReferenceDataPidget(PidgetStub):
 
         if save:
             filename, info = QFileDialog.getSaveFileName(
-                    self,
-                    caption,
-                    suggested_filename,
-                    file_types,
-                    )
+                self,
+                caption,
+                suggested_filename,
+                file_types,
+            )
         else:
             filename, info = QFileDialog.getOpenFileName(
-                    self,
-                    caption,
-                    suggested_filename,
-                    file_types,
-                    )
+                self,
+                caption,
+                suggested_filename,
+                file_types,
+            )
 
         return filename
 

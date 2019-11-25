@@ -28,21 +28,21 @@ class ExampleArgumentParser(ArgumentParser):
             help="connect via uart (using register-based protocol)",
             nargs="?",
             const="",  # as argparse does not support setting const to None
-            )
+        )
         server_group.add_argument(
             "-s",
             "--socket",
             metavar="address",
             dest="socket_addr",
             help="connect via socket on given address (using json-based protocol)",
-            )
+        )
         server_group.add_argument(
             "-spi",
             "--spi",
             dest="spi",
             help="connect via spi (using register-based protocol)",
             action="store_true",
-            )
+        )
 
         self.add_argument(
             "--sensor",
@@ -295,17 +295,17 @@ def pg_setup_polar_plot(plot, max_r=1):
     plot.setAspectLocked()
     plot.disableAutoRange()
     s = 1.15
-    plot.setXRange(-s*max_r, s*max_r)
-    plot.setYRange(-s*max_r, s*max_r)
+    plot.setXRange(-s * max_r, s * max_r)
+    plot.setYRange(-s * max_r, s * max_r)
 
     for i, r in enumerate(np.linspace(0, max_r, 5)[1:]):
-        circle = pg.QtGui.QGraphicsEllipseItem(-r, -r, r*2, r*2)
+        circle = pg.QtGui.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
         circle.setPen(pg.mkPen("k" if i == 3 else 0.5))
         plot.addItem(circle)
 
         if i == 3:
             text_item = pg.TextItem(text=str(r), color="k", anchor=(0, 1))
-            text_item.setPos(np.cos(np.pi/8)*r, np.sin(np.pi/8)*r)
+            text_item.setPos(np.cos(np.pi / 8) * r, np.sin(np.pi / 8) * r)
             plot.addItem(text_item)
 
     for i in range(8):
@@ -317,9 +317,9 @@ def pg_setup_polar_plot(plot, max_r=1):
         ax = (-x + 1) / 2
         ay = (y + 1) / 2
         text_item = pg.TextItem(text, color="k", anchor=(ax, ay))
-        text_item.setPos(max_r*x*1.02, max_r*y*1.02)
+        text_item.setPos(max_r * x * 1.02, max_r * y * 1.02)
         plot.addItem(text_item)
-        plot.plot([0, max_r*x], [0, max_r*y], pen=pg.mkPen(0.5))
+        plot.plot([0, max_r * x], [0, max_r * y], pen=pg.mkPen(0.5))
 
 
 def pg_mpl_cmap(name):
@@ -342,8 +342,8 @@ class FreqCounter:
         if self.last_t:
             dt = now - self.last_t
             if self.lp_dt:
-                self.lp_dt = self.a * self.lp_dt + (1-self.a) * dt
-                f = 1/self.lp_dt
+                self.lp_dt = self.a * self.lp_dt + (1 - self.a) * dt
+                f = 1 / self.lp_dt
                 dt_ms = self.lp_dt * 1e3
                 if self.num_bits:
                     data_rate = self.num_bits * f * 1e-6
