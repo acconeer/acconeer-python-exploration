@@ -1,9 +1,8 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
 
 
 def main():

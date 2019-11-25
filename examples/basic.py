@@ -1,6 +1,5 @@
-from acconeer.exptool.clients import UARTClient, SPIClient, SocketClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
+from acconeer.exptool import configs, utils
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 
 
 def main():
