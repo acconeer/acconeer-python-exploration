@@ -1,15 +1,17 @@
+import logging
+
 import numpy as np
-from numpy import pi, unravel_index
-from PyQt5 import QtCore
 import pyqtgraph as pg
+from numpy import pi, unravel_index
 from scipy.fftpack import fft, fftshift
 
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from PyQt5 import QtCore
 
-import logging
+from acconeer.exptool import configs, utils
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+
+
 log = logging.getLogger("acconeer.exptool.examples.obstacle_detection")
 
 MAX_SPEED = 8.00          # Max speed to be resolved with FFT in cm/s
@@ -66,7 +68,8 @@ def main():
 def get_sensor_config():
     config = configs.IQServiceConfig()
     config.range_interval = [0.1, 0.5]
-    config.sweep_rate = int(np.ceil(MAX_SPEED * 4 / WAVELENGTH))
+    config.repetition_mode = configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.update_rate = int(np.ceil(MAX_SPEED * 4 / WAVELENGTH))
     config.gain = 0.7
     return config
 
@@ -294,7 +297,7 @@ class ObstacleDetectionProcessor:
                     "min_y_spread": 4,                                      # cm
                     "min_x_spread": 4,                                      # cm
                     "decay_time": 5,                                        # cycles
-                    "step_time": 1 / self.sensor_config.sweep_rate,         # s
+                    "step_time": 1 / self.sensor_config.update_rate,        # s
                     "min_distance": self.sensor_config.range_start * 100,   # cm
                 }
                 self.fusion_handle.setup(fusion_params)
@@ -311,7 +314,7 @@ class ObstacleDetectionProcessor:
                 "left_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
                 "right_shadow_y": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
                 "right_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
-                }
+            }
 
             for i in range(len_range):
                 self.hamming_map[i, :] = np.hamming(self.fft_len)
@@ -344,7 +347,7 @@ class ObstacleDetectionProcessor:
         for s in range(nr_sensors):
             self.push(sweep[s, :], self.sweep_map[s, :, :])
 
-            signalFFT = fftshift(fft(self.sweep_map[s, :, :]*self.hamming_map, axis=1), axes=1)
+            signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
             self.fft_psd[s, :, :] = np.square(np.abs(signalFFT))
             signalPSD = self.fft_psd[s, :, :]
             if self.use_bg and self.sweep_index == self.fft_len - 1:
@@ -372,7 +375,7 @@ class ObstacleDetectionProcessor:
 
                 for i in range(self.nr_locals):
                     bin_index = (fft_peaks[i, 2] - zero)
-                    velocity = (bin_index / zero) * WAVELENGTH * self.sensor_config.sweep_rate / 4
+                    velocity = (bin_index / zero) * WAVELENGTH * self.sensor_config.update_rate / 4
                     angle = np.arccos(self.clamp(abs(velocity) / self.robot_velocity, -1.0, 1.0))
                     angle = np.sign(velocity) * angle / pi * 180
                     peak_idx = int(fft_peaks[i, 0])
@@ -583,10 +586,10 @@ class ObstacleDetectionProcessor:
 
         s0 = arr[peak_idx]
         for i in range(peak_idx):
-            if peak_idx-i < 0:
+            if peak_idx - i < 0:
                 peak_idx = 0
                 break
-            if arr[peak_idx-i] < s0*ratio:
+            if arr[peak_idx - i] < s0 * ratio:
                 peak_idx -= i
                 break
 
@@ -613,7 +616,7 @@ class ObstacleDetectionProcessor:
                                 null_frequency, null_frequency + frequency_gradient,
                                 thresh, min_thresh)
 
-        thresh_add = self.close_threshold_addition * (self.close_dist_limit-dist) / \
+        thresh_add = self.close_threshold_addition * (self.close_dist_limit - dist) / \
             (self.close_dist_limit - self.sensor_config.range_interval[0] * 100)
         thresh += self.clamp(thresh_add, 0, self.close_threshold_addition)
 
@@ -625,7 +628,7 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.map_max = 0
         self.width = 3
-        self.max_velocity = WAVELENGTH / 4 * self.sensor_config.sweep_rate  # cm/s
+        self.max_velocity = WAVELENGTH / 4 * self.sensor_config.update_rate  # cm/s
         self.peak_hist_len = processing_config["peak_hist"]["value"]
         self.dist_index = processing_config["downsampling"]["value"]
         self.nr_locals = processing_config["nr_peaks"]["value"]
@@ -638,7 +641,7 @@ class PGUpdater:
 
         self.hist_plots = {
             "velocity": [[], processing_config["velocity_history"]["value"]],
-            "angle":    [[], processing_config["angle_history"]["value"]],
+            "angle": [[], processing_config["angle_history"]["value"]],
             "distance": [[], processing_config["distance_history"]["value"]],
             "amplitude": [[], processing_config["amplitude_history"]["value"]],
         }
@@ -648,8 +651,8 @@ class PGUpdater:
                 self.num_hist_plots += 1
         self.advanced_plots = {
             "background_map": processing_config["background_map"]["value"],
-            "threshold_map":  processing_config["threshold_map"]["value"],
-            "fusion_map":  processing_config["fusion_map"]["value"],
+            "threshold_map": processing_config["threshold_map"]["value"],
+            "fusion_map": processing_config["fusion_map"]["value"],
             "show_shadows": False,
         }
 
@@ -678,7 +681,7 @@ class PGUpdater:
 
         self.peak_dist_text = pg.TextItem(color="k", anchor=(0, 1))
         self.env_ax.addItem(self.peak_dist_text)
-        self.peak_dist_text.setPos(self.sensor_config.range_start*100, 0)
+        self.peak_dist_text.setPos(self.sensor_config.range_start * 100, 0)
         self.peak_dist_text.setZValue(3)
 
         self.env_peak_vline = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(width=2,
@@ -705,17 +708,16 @@ class PGUpdater:
 
         self.peak_fft_text = pg.TextItem(color="w", anchor=(0, 1))
         self.obstacle_ax.addItem(self.peak_fft_text)
-        self.peak_fft_text.setPos(-self.max_velocity, self.sensor_config.range_start*100)
+        self.peak_fft_text.setPos(-self.max_velocity, self.sensor_config.range_start * 100)
 
         self.peak_val_text = pg.TextItem(color="w", anchor=(0, 0))
         self.obstacle_ax.addItem(self.peak_val_text)
-        self.peak_val_text.setPos(-self.max_velocity, self.sensor_config.range_end*100)
+        self.peak_val_text.setPos(-self.max_velocity, self.sensor_config.range_end * 100)
 
         row_idx += 1
         if self.advanced_plots["background_map"]:
             self.obstacle_bg_ax = win.addPlot(
-                row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle background"
-                )
+                row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle background")
             self.obstacle_bg_im = pg.ImageItem()
             self.obstacle_bg_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_bg_ax.setLabel("left", "Distance (cm)")
@@ -725,8 +727,7 @@ class PGUpdater:
 
         if self.advanced_plots["threshold_map"]:
             self.obstacle_thresh_ax = win.addPlot(
-                row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle threshold"
-                )
+                row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle threshold")
             self.obstacle_thresh_im = pg.ImageItem()
             self.obstacle_thresh_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_thresh_ax.setLabel("left", "Distance (cm)")
@@ -742,11 +743,11 @@ class PGUpdater:
             pos0 = self.sensor_config.range_start * 100
             pos1 = self.sensor_config.range_end * 100
             self.fusion_ax = win.addPlot(
-                    row=row_idx,
-                    col=0,
-                    colspan=self.num_hist_plots,
-                    title="Fused obstacle map"
-                )
+                row=row_idx,
+                col=0,
+                colspan=self.num_hist_plots,
+                title="Fused obstacle map",
+            )
             self.fusion_legend = self.fusion_ax.addLegend()
             self.fusion_ax.showGrid(True, True)
             self.fusion_ax.setLabel("bottom", "X (cm)")
@@ -761,9 +762,7 @@ class PGUpdater:
             self.fusion_scatter.setZValue(10)
             self.fusion_hist = []
             for i in range(self.fusion_max_obstacles):
-                self.fusion_hist.append(
-                    self.fusion_ax.plot(pen=utils.pg_pen_cycler(2, "--"))
-                    )
+                self.fusion_hist.append(self.fusion_ax.plot(pen=utils.pg_pen_cycler(2, "--")))
                 self.fusion_ax.addItem(self.fusion_hist[i])
                 self.fusion_hist[i].setZValue(10)
 
@@ -777,29 +776,27 @@ class PGUpdater:
                 self.fusion_right_shadow_hist = []
                 for i in range(self.fusion_max_shadows):
                     self.fusion_left_shadow_hist.append(
-                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(0, "--"))
-                        )
+                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(0, "--")))
                     self.fusion_right_shadow_hist.append(
-                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(1, "--"))
-                        )
+                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(1, "--")))
                     self.fusion_ax.addItem(self.fusion_left_shadow_hist[i])
                     self.fusion_ax.addItem(self.fusion_right_shadow_hist[i])
 
             self.left_sensor = pg.InfiniteLine(
                 pos=-spos,
                 angle=90,
-                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
-                )
+                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine),
+            )
             self.right_sensor = pg.InfiniteLine(
                 pos=spos,
                 angle=90,
-                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
-                )
+                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine),
+            )
             self.detection_limit = pg.InfiniteLine(
                 pos=self.sensor_config.range_start * 100,
                 angle=0,
-                pen=pg.mkPen(color=p, width=2, style=QtCore.Qt.DotLine)
-                )
+                pen=pg.mkPen(color=p, width=2, style=QtCore.Qt.DotLine),
+            )
             self.fusion_ax.addItem(self.left_sensor)
             self.fusion_ax.addItem(self.right_sensor)
             self.fusion_ax.addItem(self.detection_limit)
@@ -839,8 +836,8 @@ class PGUpdater:
             self.peak_hist_ax_l.setXRange(0, self.peak_hist_len)
             self.peak_hist_ax_l.showGrid(True, True)
             self.peak_hist_ax_l.addLegend(offset=(-10, 10))
-            self.peak_hist_ax_l.setYRange(self.sensor_config.range_start*100,
-                                          self.sensor_config.range_end*100)
+            self.peak_hist_ax_l.setYRange(
+                self.sensor_config.range_start * 100, self.sensor_config.range_end * 100)
             hist_col += 1
 
         if self.hist_plots["velocity"][1]:
@@ -892,10 +889,10 @@ class PGUpdater:
                                               name="Amplitude {:d}".format(i)))
 
         self.smooth_max = utils.SmoothMax(
-                self.sensor_config.sweep_rate,
-                tau_decay=1,
-                tau_grow=0.2
-                )
+            self.sensor_config.update_rate,
+            tau_decay=1,
+            tau_grow=0.2,
+        )
 
         self.plot_index = 0
 
@@ -913,21 +910,21 @@ class PGUpdater:
 
             self.obstacle_im.translate(-self.max_velocity, pos0)
             self.obstacle_im.scale(
-                    2 * self.max_velocity/nfft,
-                    self.sensor_config.range_length * 100/num_points*ds
-                    )
+                2 * self.max_velocity / nfft,
+                self.sensor_config.range_length * 100 / num_points * ds
+            )
             if self.advanced_plots["background_map"]:
                 self.obstacle_bg_im.translate(-self.max_velocity, pos0)
                 self.obstacle_bg_im.scale(
-                        2 * self.max_velocity / nfft,
-                        self.sensor_config.range_length * 100 / num_points * ds
-                        )
+                    2 * self.max_velocity / nfft,
+                    self.sensor_config.range_length * 100 / num_points * ds
+                )
             if self.advanced_plots["threshold_map"]:
                 self.obstacle_thresh_im.translate(-self.max_velocity, pos0)
                 self.obstacle_thresh_im.scale(
-                        2 * self.max_velocity / nfft,
-                        self.sensor_config.range_length * 100 / num_points * ds
-                        )
+                    2 * self.max_velocity / nfft,
+                    self.sensor_config.range_length * 100 / num_points * ds
+                )
             show_fusion = self.advanced_plots["fusion_map"]
             show_shadows = self.advanced_plots["show_shadows"]
             if show_fusion:
@@ -949,9 +946,7 @@ class PGUpdater:
                     self.left_sensor_text.setText("Sensor {}".format(id2))
                     if show_shadows:
                         self.fusion_legend.addItem(
-                            self.left_sensor_shadows,
-                            "Sensor {}".format(id2)
-                            )
+                            self.left_sensor_shadows, "Sensor {}".format(id2))
 
                 if nr_sensors == 1:
                     self.left_sensor_text.hide()
@@ -969,7 +964,7 @@ class PGUpdater:
             dist = self.env_xs[data["fft_peaks"][:, 0].astype(int)]
             vel = (data["fft_peaks"][:, 1] / data["fft_map"].shape[2] * 2 - 1) * self.max_velocity
             peak_fft_text = "Dist: {:.1f}cm, Speed/Angle: {:.1f}cm/s / {:.0f}".format(
-                                dist[0], data["velocity"], data["angle"])
+                dist[0], data["velocity"], data["angle"])
 
             half_pixel = self.max_velocity / np.floor(data["fft_map"].shape[2] / 2) / 2
             self.obstacle_peak.setData(vel + half_pixel, dist)
@@ -1010,8 +1005,8 @@ class PGUpdater:
 
         fft_data = data["fft_map"][0].T
 
-        g = 1/2.2
-        fft_data = 254/(map_max + 1.0e-9)**g * fft_data**g
+        g = 1 / 2.2
+        fft_data = 254 / (map_max + 1.0e-9)**g * fft_data**g
 
         fft_data[fft_data > 254] = 254
 
@@ -1027,7 +1022,7 @@ class PGUpdater:
         if data["fft_bg"] is not None and self.advanced_plots["background_map"]:
             map_max = np.max(np.max(data["fft_bg"]))
             fft_data = data["fft_bg"].T
-            fft_data = 254/map_max**g * fft_data**g
+            fft_data = 254 / map_max**g * fft_data**g
 
             fft_data[fft_data > 254] = 254
 
@@ -1040,21 +1035,21 @@ class PGUpdater:
             self.fusion_scatter.setData(
                 data["fused_obstacles"][0][0, :],
                 data["fused_obstacles"][1][0, :]
-                )
+            )
             for i in range(self.fusion_max_obstacles):
                 self.fusion_hist[i].setData(
                     data["fused_obstacles"][0][:, i],
                     data["fused_obstacles"][1][:, i]
-                    )
+                )
             if self.advanced_plots["show_shadows"]:
                 self.left_sensor_shadows.setData(
                     data["left_shadows"][0][0, :],
                     data["left_shadows"][1][0, :]
-                    )
+                )
                 self.right_sensor_shadows.setData(
                     data["right_shadows"][0][0, :],
                     data["right_shadows"][1][0, :]
-                    )
+                )
         self.plot_index += 1
 
 
@@ -1219,9 +1214,9 @@ class SensorFusion():
                 "vec": o["predicted"],
                 "x1": o["x1"],
                 "x2": o["x1"],
-                "y":  y,
+                "y": y,
                 "match_position": o["match_position"]
-                }
+            }
 
             overlap_idx, d = self.check_overlap(obstacle, obst_hist, mode="history")
             if overlap_idx:
@@ -1357,10 +1352,10 @@ class SensorFusion():
     def create_fused_obstacle(self, obst_data):
         if obst_data:
             new_fused = {
-               "predicted": self.predict(obst_data["vec"]),
-               "decay_time": self.fusion_params["decay_time"],
-               "updated": True,
-                }
+                "predicted": self.predict(obst_data["vec"]),
+                "decay_time": self.fusion_params["decay_time"],
+                "updated": True,
+            }
             for key in obst_data:
                 new_fused[key] = obst_data[key]
             self.fused_obstacles.append(new_fused)
@@ -1520,9 +1515,7 @@ class SensorFusion():
         data["vy"] = np.round(vy, 1)
         data["y"] = np.round(y, 1)
         data["side"] = side
-        data["vec"] = np.asarray(
-            (x1[0], x2[0], y[0], vt, vy, data["angle"], data["amplitude"])
-            )
+        data["vec"] = np.asarray((x1[0], x2[0], y[0], vt, vy, data["angle"], data["amplitude"]))
         data["vec"][0:6] = np.round(data["vec"][0:6], 1)
 
         return data
@@ -1539,7 +1532,7 @@ class SensorFusion():
             fmt = (
                 "{}: X {:.1f}({:.1f}>{:.1f})/{:.2f}({:.2}>{:.1f})"
                 "Y {:.1f}/({:.1f}>{:.1f}) true {:.1f} a {:.1f}"
-                )
+            )
             print(fmt.format(i, o["vec"][0], o["x1"][1], o["x1"][2],
                              o["vec"][1], o["x2"][1], o["x2"][2],
                              o["vec"][2], o["y"][1], o["y"][2],
