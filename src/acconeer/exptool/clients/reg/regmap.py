@@ -137,6 +137,7 @@ CONFIG_TO_STRIPPED_REG_NAME_MAP = {
     "running_average_factor": "run_factor",
     "sweeps_per_frame": "sweeps_per_frame",
     "noise_level_normalization": "noise_level_normalization",
+    "maximize_signal_attenuation": "maximize_signal_attenuation",
     "range_end": None,
     "range_interval": None,
     "sensor": None,

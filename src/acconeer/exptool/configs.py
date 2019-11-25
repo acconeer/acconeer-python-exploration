@@ -78,6 +78,7 @@ class BaseServiceConfig(BaseSessionConfig):
     _update_rate = None
     _gain = 0.5
     _hw_accelerated_average_samples = 10
+    _maximize_signal_attenuation = False
     _profile = Profile.PROFILE_2
 
     @property
@@ -166,6 +167,15 @@ class BaseServiceConfig(BaseSessionConfig):
         if not 1 <= hwaas <= 63:
             raise ValueError("hw_accelerated_average_samples must be between 1 and 63, inclusive")
         self._hw_accelerated_average_samples = hwaas
+
+    @property
+    def maximize_signal_attenuation(self):
+        return self._maximize_signal_attenuation
+
+    @maximize_signal_attenuation.setter
+    def maximize_signal_attenuation(self, enabled):
+        enabled = bool(enabled)
+        self._maximize_signal_attenuation = enabled
 
     @property
     def profile(self):

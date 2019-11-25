@@ -277,6 +277,7 @@ CONFIG_TO_CMD_KEY_MAP = {
     "bin_count": "bin_count",
     "downsampling_factor": "downsampling_factor",
     "noise_level_normalization": "noise_level_normalization",
+    "maximize_signal_attenuation": "maximize_signal_attenuation",
     "running_average_factor": "running_average_factor",
     "sampling_mode": "sampling_mode",
     "sweeps_per_frame": "sweeps_per_frame",

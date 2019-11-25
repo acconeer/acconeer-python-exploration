@@ -246,6 +246,15 @@ noise_level_normalization:
   address: 49
   type: boolean
   category: config
+maximize_signal_attenuation:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 50
+  type: boolean
+  category: config
 pb_req_bin_count:
   modes:
   - power_bins
