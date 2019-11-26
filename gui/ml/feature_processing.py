@@ -34,7 +34,7 @@ def get_range_depths(sensor_config, session_info):
 
 
 class FeatureProcessing:
-    def __init__(self, sensor_config, feature_list=None):
+    def __init__(self, sensor_config, feature_list=None, store_features=False):
         self.rolling = False
         self.frame_size = 25
         self.sweep_counter = -1
@@ -56,6 +56,7 @@ class FeatureProcessing:
         self.win_data = None
         self.collection_mode = "auto"
         self.motion_processors = None
+        self.store_features = store_features
         self.setup(sensor_config, feature_list)
 
     def setup(self, sensor_config, feature_list=None):
@@ -313,7 +314,8 @@ class FeatureProcessing:
         self.sweep_number += 1
 
         if current_frame["feature_map"] is not None and current_frame["frame_complete"]:
-            self.frame_list.append(copy.deepcopy(current_frame))
+            if self.store_features:
+                self.frame_list.append(copy.deepcopy(current_frame))
 
         frame_data = {
             "current_frame": current_frame,
@@ -551,7 +553,7 @@ class DataProcessor:
 
         self.image_buffer = processing_config["image_buffer"]["value"]
 
-        self.feature_process = FeatureProcessing(self.sensor_config)
+        self.feature_process = FeatureProcessing(self.sensor_config, store_features=True)
         feature_list = self.feature_list.get_feature_list()
         self.feature_process.set_feature_list(feature_list)
         self.feature_process.set_frame_settings(self.frame_settings)
