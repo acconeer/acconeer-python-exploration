@@ -1,13 +1,14 @@
 from enum import Enum
+
 import numpy as np
-from scipy.signal import welch
 import pyqtgraph as pg
+from scipy.signal import welch
+
 from PyQt5 import QtCore
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 from acconeer.exptool.structs import configbase
 
 
@@ -50,8 +51,8 @@ def main():
     processor = Processor(sensor_config, processing_config, session_info)
 
     while not interrupt_handler.got_signal:
-        info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        info, data = client.get_next()
+        plot_data = processor.process(data)
 
         if plot_data is not None:
             try:
@@ -66,19 +67,12 @@ def main():
 
 def get_sensor_config():
     config = configs.SparseServiceConfig()
-
-    config.range_interval = [0.30, 0.48]
-    config.stepsize = 3
-    config.sampling_mode = configs.SparseServiceConfig.SAMPLING_MODE_A
-    config.number_of_subsweeps = 512
-    config.gain = 0.5
+    config.profile = configs.SparseServiceConfig.Profile.PROFILE_4
+    config.sampling_mode = configs.SparseServiceConfig.SamplingMode.A
+    config.range_interval = [0.36, 0.54]
+    config.downsampling_factor = 3
+    config.sweeps_per_frame = 512
     config.hw_accelerated_average_samples = 60
-    # config.subsweep_rate = 6e3
-
-    # force max frequency
-    config.sweep_rate = 200
-    config.experimental_stitching = True
-
     return config
 
 
@@ -99,43 +93,43 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
             return self.value[1]
 
     min_speed = configbase.FloatParameter(
-            label="Minimum speed",
-            unit="m/s",
-            default_value=0.2,
-            limits=(0, 5),
-            decimals=1,
-            updateable=True,
-            order=0,
-            )
+        label="Minimum speed",
+        unit="m/s",
+        default_value=0.2,
+        limits=(0, 5),
+        decimals=1,
+        updateable=True,
+        order=0,
+    )
 
     shown_speed_unit = configbase.EnumParameter(
-            label="Speed unit",
-            default_value=SpeedUnit.METER_PER_SECOND,
-            enum=SpeedUnit,
-            updateable=True,
-            order=100,
-            )
+        label="Speed unit",
+        default_value=SpeedUnit.METER_PER_SECOND,
+        enum=SpeedUnit,
+        updateable=True,
+        order=100,
+    )
 
     show_data_plot = configbase.BoolParameter(
-            label="Show data",
-            default_value=False,
-            updateable=True,
-            order=110,
-            )
+        label="Show data",
+        default_value=False,
+        updateable=True,
+        order=110,
+    )
 
     show_sd_plot = configbase.BoolParameter(
-            label="Show spectral density",
-            default_value=True,
-            updateable=True,
-            order=120,
-            )
+        label="Show spectral density",
+        default_value=True,
+        updateable=True,
+        order=120,
+    )
 
     show_vel_history_plot = configbase.BoolParameter(
-            label="Show speed history",
-            default_value=True,
-            updateable=True,
-            order=130,
-            )
+        label="Show speed history",
+        default_value=True,
+        updateable=True,
+        order=130,
+    )
 
 
 get_processing_config = ProcessingConfiguration
@@ -143,21 +137,21 @@ get_processing_config = ProcessingConfiguration
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.num_subsweeps = sensor_config.number_of_subsweeps
-        subsweep_rate = session_info["actual_subsweep_rate"]
-        est_update_rate = subsweep_rate / self.num_subsweeps
+        self.sweeps_per_frame = sensor_config.sweeps_per_frame
+        sweep_rate = session_info["sweep_rate"]
+        est_frame_rate = sweep_rate / self.sweeps_per_frame
 
-        self.fft_length = (self.num_subsweeps // 2) * FFT_OVERSAMPLING_FACTOR
+        self.fft_length = (self.sweeps_per_frame // 2) * FFT_OVERSAMPLING_FACTOR
         self.num_noise_est_bins = 3
         noise_est_tc = 1.0
         self.min_threshold = 4.0
         self.dynamic_threshold = 0.1
 
-        self.sequence_timeout_count = int(round(SEQUENCE_TIMEOUT_LENGTH * est_update_rate))
-        est_vel_history_size = int(round(est_update_rate * EST_VEL_HISTORY_LENGTH))
-        sd_history_size = int(round(est_update_rate * SD_HISTORY_LENGTH))
-        self.noise_est_sf = self.tc_to_sf(noise_est_tc, est_update_rate)
-        self.bin_fs = np.fft.rfftfreq(self.fft_length) * subsweep_rate
+        self.sequence_timeout_count = int(round(est_frame_rate * SEQUENCE_TIMEOUT_LENGTH))
+        est_vel_history_size = int(round(est_frame_rate * EST_VEL_HISTORY_LENGTH))
+        sd_history_size = int(round(est_frame_rate * SD_HISTORY_LENGTH))
+        self.noise_est_sf = self.tc_to_sf(noise_est_tc, est_frame_rate)
+        self.bin_fs = np.fft.rfftfreq(self.fft_length) * sweep_rate
         self.bin_vs = self.bin_fs * HALF_WAVELENGTH
 
         num_bins = self.bin_fs.size
@@ -183,18 +177,18 @@ class Processor:
     def dynamic_sf(self, static_sf):
         return min(static_sf, 1.0 - 1.0 / (1.0 + self.update_idx))
 
-    def process(self, sweep):
+    def process(self, frame):
         # Basic speed estimate
 
-        zero_mean_sweep = sweep - sweep.mean(axis=0, keepdims=True)
+        zero_mean_frame = frame - frame.mean(axis=0, keepdims=True)
 
         _, psds = welch(
-                zero_mean_sweep,
-                nperseg=self.num_subsweeps // 2,
-                detrend=False,
-                axis=0,
-                nfft=self.fft_length,
-                )
+            zero_mean_frame,
+            nperseg=self.sweeps_per_frame // 2,
+            detrend=False,
+            axis=0,
+            nfft=self.fft_length,
+        )
 
         psd = np.max(psds, axis=1)  # Power Spectral Density
         asd = np.sqrt(psd)  # Amplitude Spectral Density
@@ -256,7 +250,7 @@ class Processor:
         self.update_idx += 1
 
         return {
-            "sweep": sweep,
+            "frame": frame,
             "nasd": nasd,
             "nasd_temporal_max": nasd_temporal_max,
             "temporal_max_threshold": temporal_max_threshold,
@@ -271,14 +265,14 @@ class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
         self.processing_config = processing_config
 
-        self.num_subsweeps = sensor_config.number_of_subsweeps
-        self.subsweep_rate = session_info["actual_subsweep_rate"]
+        self.sweeps_per_frame = sensor_config.sweeps_per_frame
+        self.sweep_rate = session_info["sweep_rate"]
         self.depths = utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
-        self.est_update_rate = self.subsweep_rate / self.num_subsweeps
+        self.est_update_rate = self.sweep_rate / self.sweeps_per_frame
 
-        fft_length = (self.num_subsweeps // 2) * FFT_OVERSAMPLING_FACTOR
-        self.bin_vs = np.fft.rfftfreq(fft_length) * self.subsweep_rate * HALF_WAVELENGTH
+        fft_length = (self.sweeps_per_frame // 2) * FFT_OVERSAMPLING_FACTOR
+        self.bin_vs = np.fft.rfftfreq(fft_length) * self.sweep_rate * HALF_WAVELENGTH
         self.dt = 1.0 / self.est_update_rate
 
         self.setup_is_done = False
@@ -292,10 +286,10 @@ class PGUpdater:
             title = "{:.0f} cm".format(100 * self.depths[i])
             plot = win.addPlot(row=0, col=i, title=title)
             plot.showGrid(x=True, y=True)
-            plot.setYRange(-2**15, 2**15)
+            plot.setYRange(0, 2**16)
             plot.hideAxis("left")
             plot.hideAxis("bottom")
-            plot.plot(np.arange(self.num_subsweeps), np.zeros(self.num_subsweeps))
+            plot.plot(np.arange(self.sweeps_per_frame), 2**15 * np.ones(self.sweeps_per_frame))
             curve = plot.plot(pen=utils.pg_pen_cycler())
             self.data_plots.append(plot)
             self.data_curves.append(curve)
@@ -311,11 +305,11 @@ class PGUpdater:
         self.sd_plot.addItem(self.sd_threshold_line)
 
         self.smooth_max = utils.SmoothMax(
-                self.est_update_rate,
-                tau_decay=0.5,
-                tau_grow=0,
-                hysteresis=0.2,
-                )
+            self.est_update_rate,
+            tau_decay=0.5,
+            tau_grow=0,
+            hysteresis=0.2,
+        )
 
         # Rolling speed plot
 
@@ -341,11 +335,11 @@ class PGUpdater:
         tmp = np.flip(np.arange(NUM_SAVED_SEQUENCES) == 0)
         brushes = [pg.mkBrush(utils.color_cycler(n)) for n in tmp]
         self.bar_graph = pg.BarGraphItem(
-                x=np.arange(-NUM_SAVED_SEQUENCES, 0) + 1,
-                height=np.zeros(NUM_SAVED_SEQUENCES),
-                width=0.8,
-                brushes=brushes,
-                )
+            x=np.arange(-NUM_SAVED_SEQUENCES, 0) + 1,
+            height=np.zeros(NUM_SAVED_SEQUENCES),
+            width=0.8,
+            brushes=brushes,
+        )
         self.sequences_plot.addItem(self.bar_graph)
 
         self.sequences_text_item = pg.TextItem(anchor=(0.5, 0))
@@ -390,7 +384,7 @@ class PGUpdater:
     def update(self, data):
         # Data plots
 
-        for i, ys in enumerate(data["sweep"].T):
+        for i, ys in enumerate(data["frame"].T):
             self.data_curves[i].setData(ys)
 
         # Spectral density plot
