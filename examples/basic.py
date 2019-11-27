@@ -72,7 +72,7 @@ def main():
 
     for i in range(3):
         data_info, data = client.get_next()
-        print("Sweep {}:\n".format(i+1), data_info, "\n", data, "\n")
+        print("Sweep {}:\n".format(i + 1), data_info, "\n", data, "\n")
 
     # We're done, stop the session. All buffered/waiting data is thrown
     # away. This call will block until the server has confirmed that the
