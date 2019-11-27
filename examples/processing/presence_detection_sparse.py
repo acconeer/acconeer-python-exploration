@@ -1,13 +1,13 @@
 import numpy as np
+import pyqtgraph as pg
 from numpy import cos, pi, sqrt, square
 from scipy.special import binom
-import pyqtgraph as pg
+
 from PyQt5 import QtCore
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 from acconeer.exptool.structs import configbase
 
 
@@ -44,8 +44,8 @@ def main():
     processor = PresenceDetectionSparseProcessor(sensor_config, processing_config, session_info)
 
     while not interrupt_handler.got_signal:
-        info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        info, data = client.get_next()
+        plot_data = processor.process(data)
 
         if plot_data is not None:
             try:
@@ -60,141 +60,142 @@ def main():
 
 def get_sensor_config():
     config = configs.SparseServiceConfig()
+    config.profile = configs.SparseServiceConfig.Profile.PROFILE_3
+    config.sampling_mode = configs.SparseServiceConfig.SamplingMode.B
     config.range_interval = [0.3, 1.3]
-    config.sweep_rate = 80
-    config.gain = 0.6
-    config.number_of_subsweeps = 32
+    config.update_rate = 80
+    config.sweeps_per_frame = 32
     return config
 
 
 class ProcessingConfiguration(configbase.ProcessingConfig):
-    VERSION = 3
+    VERSION = 4
 
     detection_threshold = configbase.FloatParameter(
-            label="Detection threshold",
-            default_value=1.5,
-            limits=(0, OUTPUT_MAX / 2),
-            updateable=True,
-            order=0,
-            help="Level at which the detector output is considered as \"present\".",
-            )
+        label="Detection threshold",
+        default_value=1.5,
+        limits=(0, OUTPUT_MAX / 2),
+        updateable=True,
+        order=0,
+        help="Level at which the detector output is considered as \"present\".",
+    )
 
     inter_frame_fast_cutoff = configbase.FloatParameter(
-            label="Inter fast cutoff freq.",
-            unit="Hz",
-            default_value=20.0,
-            limits=(1, 100),
-            logscale=True,
-            updateable=True,
-            order=10,
-            help=(
-                "Cutoff frequency of the low pass filter for the fast filtered subsweep mean."
-                " No filtering is applied if the cutoff is set over half the sweep frequency"
-                " (Nyquist limit)."
-            ),
-            )
+        label="Inter fast cutoff freq.",
+        unit="Hz",
+        default_value=20.0,
+        limits=(1, 100),
+        logscale=True,
+        updateable=True,
+        order=10,
+        help=(
+            "Cutoff frequency of the low pass filter for the fast filtered sweep mean."
+            " No filtering is applied if the cutoff is set over half the frame rate"
+            " (Nyquist limit)."
+        ),
+    )
 
     inter_frame_slow_cutoff = configbase.FloatParameter(
-            label="Inter slow cutoff freq.",
-            unit="Hz",
-            default_value=0.2,
-            limits=(0.01, 1),
-            logscale=True,
-            updateable=True,
-            order=20,
-            help="Cutoff frequency of the low pass filter for the slow filtered subsweep mean.",
-            )
+        label="Inter slow cutoff freq.",
+        unit="Hz",
+        default_value=0.2,
+        limits=(0.01, 1),
+        logscale=True,
+        updateable=True,
+        order=20,
+        help="Cutoff frequency of the low pass filter for the slow filtered sweep mean.",
+    )
 
     inter_frame_deviation_time_const = configbase.FloatParameter(
-            label="Inter deviation time const.",
-            unit="s",
-            default_value=0.5,
-            limits=(0, 3),
-            updateable=True,
-            order=30,
-            help=(
-                "Time constant of the low pass filter for the (inter-frame) deviation between"
-                " fast and slow."
-            ),
-            )
+        label="Inter deviation time const.",
+        unit="s",
+        default_value=0.5,
+        limits=(0, 3),
+        updateable=True,
+        order=30,
+        help=(
+            "Time constant of the low pass filter for the (inter-frame) deviation between"
+            " fast and slow."
+        ),
+    )
 
     intra_frame_time_const = configbase.FloatParameter(
-            label="Intra time const.",
-            unit="s",
-            default_value=0.15,
-            limits=(0, 0.5),
-            updateable=True,
-            order=40,
-            help="Time constant for the intra frame part.",
-            )
+        label="Intra time const.",
+        unit="s",
+        default_value=0.15,
+        limits=(0, 0.5),
+        updateable=True,
+        order=40,
+        help="Time constant for the intra frame part.",
+    )
 
     intra_frame_weight = configbase.FloatParameter(
-            label="Intra weight",
-            default_value=0.6,
-            limits=(0, 1),
-            updateable=True,
-            order=50,
-            help=(
-                "The weight of the intra-frame part in the final output. A value of 1 corresponds"
-                " to only using the intra-frame part and a value of 0 corresponds to only using"
-                " the inter-frame part."
-            ),
-            )
+        label="Intra weight",
+        default_value=0.6,
+        limits=(0, 1),
+        updateable=True,
+        order=50,
+        help=(
+            "The weight of the intra-frame part in the final output. A value of 1 corresponds"
+            " to only using the intra-frame part and a value of 0 corresponds to only using"
+            " the inter-frame part."
+        ),
+    )
 
     output_time_const = configbase.FloatParameter(
-            label="Output time const.",
-            unit="s",
-            default_value=0.5,
-            limits=(0, 3),
-            updateable=True,
-            order=60,
-            help="Time constant of the low pass filter for the detector output."
-            )
+        label="Output time const.",
+        unit="s",
+        default_value=0.5,
+        limits=(0, 3),
+        updateable=True,
+        order=60,
+        help="Time constant of the low pass filter for the detector output."
+    )
 
-    show_sweep = configbase.BoolParameter(  # TODO: rename param, don't use sweep
-            label="Show data scatter plot",
-            default_value=True,
-            updateable=True,
-            order=100,
-            help=(
-                "Show the plot of the current data frame along with the fast and slow filtered"
-                " mean sweep (used in the inter-frame part)."
-            ),
-            )
+    show_data = configbase.BoolParameter(
+        label="Show data scatter plot",
+        default_value=True,
+        updateable=True,
+        order=100,
+        help=(
+            "Show the plot of the current data frame along with the fast and slow filtered"
+            " mean sweep (used in the inter-frame part)."
+        ),
+    )
 
     show_noise = configbase.BoolParameter(
-            label="Show noise",
-            default_value=False,
-            updateable=True,
-            order=110,
-            help="Show the noise estimation plot.",
-            pidget_location="advanced",
-            )
+        label="Show noise",
+        default_value=False,
+        updateable=True,
+        order=110,
+        help="Show the noise estimation plot.",
+        pidget_location="advanced",
+    )
 
     show_depthwise_output = configbase.BoolParameter(
-            label="Show depthwise presence",
-            default_value=True,
-            updateable=True,
-            order=120,
-            help="Show the depthwise presence output plot.",
-            )
+        label="Show depthwise presence",
+        default_value=True,
+        updateable=True,
+        order=120,
+        help="Show the depthwise presence output plot.",
+    )
 
     show_sectors = configbase.BoolParameter(
-            label="Show distance sectors",
-            default_value=False,
-            updateable=True,
-            order=130,
-            )
+        label="Show distance sectors",
+        default_value=False,
+        updateable=True,
+        order=130,
+    )
 
     history_length_s = configbase.FloatParameter(
-            label="History length",
-            unit="s",
-            default_value=5,
-            limits=(1, 20),
-            decimals=0,
-            order=200,
-            pidget_location="advanced",
-            )
+        label="History length",
+        unit="s",
+        default_value=5,
+        limits=(1, 20),
+        decimals=0,
+        order=200,
+        pidget_location="advanced",
+    )
 
 
 get_processing_config = ProcessingConfiguration
@@ -207,25 +208,26 @@ class PresenceDetectionSparseProcessor:
     # sf: smoothing factor [dimensionless]
 
     def __init__(self, sensor_config, processing_config, session_info):
-        self.num_subsweeps = sensor_config.number_of_subsweeps
+        self.sweeps_per_frame = sensor_config.sweeps_per_frame
         self.depths = utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
-        self.f = sensor_config.sweep_rate
+        self.f = sensor_config.update_rate
 
         # Fixed parameters
         self.noise_est_diff_order = 3
         self.depth_filter_length = 3
         noise_tc = 1.0
 
-        assert self.num_subsweeps > self.noise_est_diff_order
+        assert sensor_config.update_rate is not None
+        assert self.sweeps_per_frame > self.noise_est_diff_order
 
         self.noise_sf = self.tc_to_sf(noise_tc, self.f)
 
         nd = self.noise_est_diff_order
         self.noise_norm_factor = np.sqrt(np.sum(np.square(binom(nd, np.arange(nd + 1)))))
 
-        self.fast_lp_mean_subsweep = np.zeros(self.num_depths)
-        self.slow_lp_mean_subsweep = np.zeros(self.num_depths)
+        self.fast_lp_mean_sweep = np.zeros(self.num_depths)
+        self.slow_lp_mean_sweep = np.zeros(self.num_depths)
         self.lp_inter_dev = np.zeros(self.num_depths)
         self.lp_intra_dev = np.zeros(self.num_depths)
         self.lp_noise = np.zeros(self.num_depths)
@@ -235,7 +237,7 @@ class PresenceDetectionSparseProcessor:
         self.presence_distance = 0
 
         self.presence_history = np.zeros(int(round(self.f * processing_config.history_length_s)))
-        self.sweep_index = 0
+        self.update_index = 0
 
         self.update_processing_config(processing_config)
 
@@ -269,7 +271,7 @@ class PresenceDetectionSparseProcessor:
         return np.exp(-1.0 / (tc * fs))
 
     def dynamic_sf(self, static_sf):
-        return min(static_sf, 1.0 - 1.0 / (1.0 + self.sweep_index))
+        return min(static_sf, 1.0 - 1.0 / (1.0 + self.update_index))
 
     def abs_dev(self, a, axis=None, ddof=0, subtract_mean=True):
         if subtract_mean:
@@ -295,61 +297,53 @@ class PresenceDetectionSparseProcessor:
             a = np.pad(a, pad_width, "constant")
             return np.correlate(a, b, mode="same")[pad_width: -pad_width]
 
-    def process(self, sweep):
-        # Due to backwards compatibility reasons, here in the
-        # Exploration code base, frames are referred to as sweeps, and
-        # sweeps are referred to as subsweeps. Using frames and sweeps
-        # is preferred, and will switched to in Exploration v3.
-        #
-        # For example, the "sweep" input parameter will be renamed to
-        # "frame", and "mean_subsweep" will be renamed to "mean_sweep".
-
+    def process(self, frame):
         # Noise estimation
 
         nd = self.noise_est_diff_order
-        noise = self.abs_dev(np.diff(sweep, n=nd, axis=0), axis=0, subtract_mean=False)
+        noise = self.abs_dev(np.diff(frame, n=nd, axis=0), axis=0, subtract_mean=False)
         noise /= self.noise_norm_factor
         sf = self.dynamic_sf(self.noise_sf)
         self.lp_noise = sf * self.lp_noise + (1.0 - sf) * noise
 
         # Intra-frame part
 
-        subsweep_dev = self.abs_dev(sweep, axis=0, ddof=1)
+        sweep_dev = self.abs_dev(frame, axis=0, ddof=1)
 
         sf = self.dynamic_sf(self.intra_sf)
-        self.lp_intra_dev = sf * self.lp_intra_dev + (1.0 - sf) * subsweep_dev
+        self.lp_intra_dev = sf * self.lp_intra_dev + (1.0 - sf) * sweep_dev
 
         norm_lp_intra_dev = np.divide(
-                self.lp_intra_dev,
-                self.lp_noise,
-                out=np.zeros(self.num_depths),
-                where=(self.lp_noise > 1.0),
-                )
+            self.lp_intra_dev,
+            self.lp_noise,
+            out=np.zeros(self.num_depths),
+            where=(self.lp_noise > 1.0),
+        )
 
         intra = self.depth_filter(norm_lp_intra_dev)
 
         # Inter-frame part
 
-        mean_subsweep = sweep.mean(axis=0)
+        mean_sweep = frame.mean(axis=0)
 
         sf = self.dynamic_sf(self.fast_sf)
-        self.fast_lp_mean_subsweep = sf * self.fast_lp_mean_subsweep + (1.0 - sf) * mean_subsweep
+        self.fast_lp_mean_sweep = sf * self.fast_lp_mean_sweep + (1.0 - sf) * mean_sweep
 
         sf = self.dynamic_sf(self.slow_sf)
-        self.slow_lp_mean_subsweep = sf * self.slow_lp_mean_subsweep + (1.0 - sf) * mean_subsweep
+        self.slow_lp_mean_sweep = sf * self.slow_lp_mean_sweep + (1.0 - sf) * mean_sweep
 
-        inter_dev = np.abs(self.fast_lp_mean_subsweep - self.slow_lp_mean_subsweep)
+        inter_dev = np.abs(self.fast_lp_mean_sweep - self.slow_lp_mean_sweep)
         sf = self.dynamic_sf(self.inter_dev_sf)
         self.lp_inter_dev = sf * self.lp_inter_dev + (1.0 - sf) * inter_dev
 
         norm_lp_dev = np.divide(
-                self.lp_inter_dev,
-                self.lp_noise,
-                out=np.zeros_like(self.lp_inter_dev),
-                where=(self.lp_noise > 1.0),
-                )
+            self.lp_inter_dev,
+            self.lp_noise,
+            out=np.zeros_like(self.lp_inter_dev),
+            where=(self.lp_noise > 1.0),
+        )
 
-        norm_lp_dev *= np.sqrt(self.num_subsweeps)
+        norm_lp_dev *= np.sqrt(self.sweeps_per_frame)
 
         inter = self.depth_filter(norm_lp_dev)
 
@@ -372,9 +366,9 @@ class PresenceDetectionSparseProcessor:
             self.presence_distance = self.depths[self.presence_distance_index]
 
         out_data = {
-            "sweep": sweep,
-            "fast": self.fast_lp_mean_subsweep,
-            "slow": self.slow_lp_mean_subsweep,
+            "frame": frame,
+            "fast": self.fast_lp_mean_sweep,
+            "slow": self.slow_lp_mean_sweep,
             "noise": self.lp_noise,
             "inter": inter * self.inter_weight,
             "intra": intra * self.intra_weight,
@@ -385,7 +379,7 @@ class PresenceDetectionSparseProcessor:
             "presence_detected": presence_detected,
         }
 
-        self.sweep_index += 1
+        self.update_index += 1
 
         return out_data
 
@@ -415,50 +409,50 @@ class PGUpdater:
         # Data plot
 
         self.data_plot = win.addPlot(
-                row=0,
-                col=0,
-                title="Frame (blue), fast (orange), and slow (green)",
-                )
+            row=0,
+            col=0,
+            title="Frame (blue), fast (orange), and slow (green)",
+        )
         self.data_plot.showGrid(x=True, y=True)
         self.data_plot.setLabel("bottom", "Depth (m)")
         self.data_plot.setLabel("left", "Amplitude")
-        self.data_plot.setYRange(-2**15, 2**15)
-        self.sweep_scatter = pg.ScatterPlotItem(
-                size=10,
-                brush=utils.pg_brush_cycler(0),
-                )
+        self.data_plot.setYRange(0, 2**16)
+        self.frame_scatter = pg.ScatterPlotItem(
+            size=10,
+            brush=utils.pg_brush_cycler(0),
+        )
         self.fast_scatter = pg.ScatterPlotItem(
-                size=10,
-                brush=utils.pg_brush_cycler(1),
-                )
+            size=10,
+            brush=utils.pg_brush_cycler(1),
+        )
         self.slow_scatter = pg.ScatterPlotItem(
-                size=10,
-                brush=utils.pg_brush_cycler(2),
-                )
-        self.data_plot.addItem(self.sweep_scatter)
+            size=10,
+            brush=utils.pg_brush_cycler(2),
+        )
+        self.data_plot.addItem(self.frame_scatter)
         self.data_plot.addItem(self.fast_scatter)
         self.data_plot.addItem(self.slow_scatter)
 
         # Noise estimation plot
 
         self.noise_plot = win.addPlot(
-                row=1,
-                col=0,
-                title="Noise",
-                )
+            row=1,
+            col=0,
+            title="Noise",
+        )
         self.noise_plot.showGrid(x=True, y=True)
         self.noise_plot.setLabel("bottom", "Depth (m)")
         self.noise_plot.setLabel("left", "Amplitude")
         self.noise_curve = self.noise_plot.plot(pen=utils.pg_pen_cycler())
-        self.noise_smooth_max = utils.SmoothMax(self.sensor_config.sweep_rate)
+        self.noise_smooth_max = utils.SmoothMax(self.sensor_config.update_rate)
 
         # Depthwise presence plot
 
         self.move_plot = win.addPlot(
-                row=2,
-                col=0,
-                title="Depthwise presence",
-                )
+            row=2,
+            col=0,
+            title="Depthwise presence",
+        )
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Depth (m)")
         self.move_plot.setLabel("left", "Norm. ampl.")
@@ -466,10 +460,10 @@ class PGUpdater:
         self.inter_curve = self.move_plot.plot()
         self.total_curve = self.move_plot.plot()
         self.move_smooth_max = utils.SmoothMax(
-                self.sensor_config.sweep_rate,
-                tau_decay=1.0,
-                tau_grow=0.25,
-                )
+            self.sensor_config.update_rate,
+            tau_decay=1.0,
+            tau_grow=0.25,
+        )
 
         self.move_depth_line = pg.InfiniteLine(pen=pg.mkPen("k", width=1.5))
         self.move_depth_line.hide()
@@ -479,17 +473,17 @@ class PGUpdater:
         self.limit_lines.append(limit_line)
 
         fbi = pg.FillBetweenItem(
-                zero_curve,
-                self.inter_curve,
-                brush=utils.pg_brush_cycler(0),
-                )
+            zero_curve,
+            self.inter_curve,
+            brush=utils.pg_brush_cycler(0),
+        )
         self.move_plot.addItem(fbi)
 
         fbi = pg.FillBetweenItem(
-                self.inter_curve,
-                self.total_curve,
-                brush=utils.pg_brush_cycler(1),
-                )
+            self.inter_curve,
+            self.total_curve,
+            brush=utils.pg_brush_cycler(1),
+        )
         self.move_plot.addItem(fbi)
 
         # Presence history plot
@@ -514,12 +508,12 @@ class PGUpdater:
         self.present_text_item = pg.TextItem(
             fill=pg.mkColor(0xff, 0x7f, 0x0e, 200),
             anchor=(0.5, 0),
-            )
+        )
         self.not_present_text_item = pg.TextItem(
             html=not_present_html,
             fill=pg.mkColor(0x1f, 0x77, 0xb4, 180),
             anchor=(0.5, 0),
-            )
+        )
 
         pos = (-self.history_length_s / 2, 0.95 * OUTPUT_MAX)
         self.present_text_item.setPos(*pos)
@@ -565,7 +559,7 @@ class PGUpdater:
         if not self.setup_is_done:
             return
 
-        self.data_plot.setVisible(self.processing_config.show_sweep)
+        self.data_plot.setVisible(self.processing_config.show_data)
         self.noise_plot.setVisible(self.processing_config.show_noise)
         self.move_plot.setVisible(self.processing_config.show_depthwise_output)
         self.sector_plot.setVisible(self.processing_config.show_sectors)
@@ -574,10 +568,11 @@ class PGUpdater:
             line.setPos(processing_config.detection_threshold)
 
     def update(self, data):
-        self.sweep_scatter.setData(
-                np.tile(self.depths, self.sensor_config.number_of_subsweeps),
-                data["sweep"].flatten(),
-                )
+        self.frame_scatter.setData(
+            np.tile(self.depths, self.sensor_config.sweeps_per_frame),
+            data["frame"].flatten(),
+        )
+
         self.fast_scatter.setData(self.depths, data["fast"])
         self.slow_scatter.setData(self.depths, data["slow"])
 
