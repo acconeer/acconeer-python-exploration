@@ -65,6 +65,7 @@ def get_sensor_config():
     config.range_interval = [0.3, 1.3]
     config.update_rate = 80
     config.sweeps_per_frame = 32
+    config.hw_accelerated_average_samples = 60
     return config
 
 
