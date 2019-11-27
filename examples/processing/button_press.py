@@ -75,51 +75,51 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
     VERSION = 2
 
     signal_tc_s = configbase.FloatParameter(
-            label="Signal time constant",
-            unit="s",
-            default_value=5.0,
-            limits=(0.01, 10),
-            logscale=True,
-            updateable=True,
-            order=10,
-            help="Time constant of the low pass filter for the signal.",
-            )
+        label="Signal time constant",
+        unit="s",
+        default_value=5.0,
+        limits=(0.01, 10),
+        logscale=True,
+        updateable=True,
+        order=10,
+        help="Time constant of the low pass filter for the signal.",
+    )
 
     rel_dev_tc_s = configbase.FloatParameter(
-            label="Relative deviation time constant",
-            unit="s",
-            default_value=0.2,
-            limits=(0.01, 2),
-            logscale=True,
-            updateable=True,
-            order=20,
-            help=" Time constant of the low pass filter for the relative deviation.",
-            )
+        label="Relative deviation time constant",
+        unit="s",
+        default_value=0.2,
+        limits=(0.01, 2),
+        logscale=True,
+        updateable=True,
+        order=20,
+        help=" Time constant of the low pass filter for the relative deviation.",
+    )
 
     threshold = configbase.FloatParameter(
-            label="Detection threshold",
-            default_value=0.04,
-            decimals=3,
-            limits=(0.001, 0.5),
-            updateable=True,
-            logscale=True,
-            order=30,
-            help="Level at which the detector output is considered as a \"button press\".",
-            )
+        label="Detection threshold",
+        default_value=0.04,
+        decimals=3,
+        limits=(0.001, 0.5),
+        updateable=True,
+        logscale=True,
+        order=30,
+        help="Level at which the detector output is considered as a \"button press\".",
+    )
 
     buttonpress_length_s = configbase.FloatParameter(
-            label="Button press length",
-            unit="s",
-            default_value=2.0,
-            limits=(0.01, 5),
-            logscale=False,
-            updateable=True,
-            order=40,
-            help=(
-                 "The time after a detected button press when no further detection"
-                 " should occur."
-            ),
-            )
+        label="Button press length",
+        unit="s",
+        default_value=2.0,
+        limits=(0.01, 5),
+        logscale=False,
+        updateable=True,
+        order=40,
+        help=(
+            "The time after a detected button press when no further detection"
+            " should occur."
+        ),
+    )
 
 
 get_processing_config = ProcessingConfiguration
@@ -153,7 +153,7 @@ class ButtonPressProcessor:
 
         self.sf_signal = np.exp(-1.0 / (processing_config.signal_tc_s * self.f))
         self.sf_rel_dev = np.exp(-1.0 / (processing_config.rel_dev_tc_s * self.f))
-        self.buttonpress_length_sweeps = processing_config.buttonpress_length_s*self.f
+        self.buttonpress_length_sweeps = processing_config.buttonpress_length_s * self.f
 
     def process(self, sweep):
         # Sum the full sweep to a single number
@@ -164,7 +164,7 @@ class ButtonPressProcessor:
         self.signal_lp = sf * self.signal_lp + (1.0 - sf) * signal
 
         # The relative difference
-        rel_dev = np.square((signal - self.signal_lp)/self.signal_lp)
+        rel_dev = np.square((signal - self.signal_lp) / self.signal_lp)
 
         # Exponential filtering of the difference
         sf = min(self.sf_rel_dev, 1.0 - 1.0 / (1.0 + self.sweep_index))
@@ -196,7 +196,7 @@ class ButtonPressProcessor:
             self.detection_history.append(self.sweep_index)
 
         while len(self.detection_history) > 0 and \
-                (self.sweep_index - self.detection_history[0]) > HISTORY_LENGTH_S*self.f:
+                (self.sweep_index - self.detection_history[0]) > HISTORY_LENGTH_S * self.f:
             self.detection_history.remove(self.detection_history[0])
 
         out_data = {
@@ -204,7 +204,7 @@ class ButtonPressProcessor:
             "signal_lp_history": self.signal_lp_history,
             "rel_dev_history": self.rel_dev_history,
             "rel_dev_lp_history": self.rel_dev_lp_history,
-            "detection_history": (np.array(self.detection_history) - self.sweep_index)/self.f,
+            "detection_history": (np.array(self.detection_history) - self.sweep_index) / self.f,
             "detection": detection,
             "sweep_index": self.sweep_index,
             "threshold": self.threshold,
@@ -240,13 +240,13 @@ class PGUpdater:
         self.sign_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
         self.sign_hist_plot.setYRange(0, OUTPUT_MAX_SIGNAL)
         self.sign_hist_curve = self.sign_hist_plot.plot(
-                pen=utils.pg_pen_cycler(0),
-                name="Envelope signal",
-                )
+            pen=utils.pg_pen_cycler(0),
+            name="Envelope signal",
+        )
         self.sign_lp_hist_curve = self.sign_hist_plot.plot(
-                pen=utils.pg_pen_cycler(1),
-                name="Filtered envelope signal",
-                )
+            pen=utils.pg_pen_cycler(1),
+            name="Filtered envelope signal",
+        )
 
         win.nextRow()
 
@@ -256,17 +256,17 @@ class PGUpdater:
         self.rel_dev_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
         self.rel_dev_hist_plot.setYRange(0, OUTPUT_MAX_REL_DEV)
         self.rel_dev_lp_hist_curve = self.rel_dev_hist_plot.plot(
-                pen=utils.pg_pen_cycler(0),
-                name="Relative deviation",
-                )
+            pen=utils.pg_pen_cycler(0),
+            name="Relative deviation",
+        )
 
         self.detection_dots = self.rel_dev_hist_plot.plot(
-                pen=None,
-                symbol='o',
-                symbolSize=20,
-                symbolBrush=utils.color_cycler(1),
-                name="Detections",
-                )
+            pen=None,
+            symbol='o',
+            symbolSize=20,
+            symbolBrush=utils.color_cycler(1),
+            name="Detections",
+        )
         self.rel_dev_hist_plot.addItem(self.detection_dots)
 
         limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
@@ -280,26 +280,26 @@ class PGUpdater:
         detection_html = self.detection_html_format.format("Button press detected!")
 
         self.detection_text_item = pg.TextItem(
-                html=detection_html,
-                fill=pg.mkColor(255, 140, 0),
-                anchor=(0.5, 0),
-                )
+            html=detection_html,
+            fill=pg.mkColor(255, 140, 0),
+            anchor=(0.5, 0),
+        )
 
-        self.detection_text_item.setPos(-HISTORY_LENGTH_S/2, 0.95 * OUTPUT_MAX_REL_DEV)
+        self.detection_text_item.setPos(-HISTORY_LENGTH_S / 2, 0.95 * OUTPUT_MAX_REL_DEV)
         self.rel_dev_hist_plot.addItem(self.detection_text_item)
         self.detection_text_item.hide()
 
         self.smooth_max_signal = utils.SmoothMax(
-                self.sensor_config.update_rate,
-                hysteresis=0.6,
-                tau_decay=3,
-                )
+            self.sensor_config.update_rate,
+            hysteresis=0.6,
+            tau_decay=3,
+        )
 
         self.smooth_max_rel_dev = utils.SmoothMax(
-                self.sensor_config.update_rate,
-                hysteresis=0.6,
-                tau_decay=3,
-                )
+            self.sensor_config.update_rate,
+            hysteresis=0.6,
+            tau_decay=3,
+        )
 
         self.setup_is_done = True
         self.update_processing_config()
@@ -330,12 +330,12 @@ class PGUpdater:
         self.sign_hist_curve.setData(hist_xs, signal_hist_ys)
         self.sign_lp_hist_curve.setData(hist_xs, signal_lp_hist_ys)
         self.rel_dev_lp_hist_curve.setData(hist_xs, rel_dev_lp_hist_ys)
-        self.detection_dots.setData(t_detections, data["threshold"]*np.ones(len(t_detections)))
+        self.detection_dots.setData(t_detections, data["threshold"] * np.ones(len(t_detections)))
 
-        m = np.amax(signal_hist_ys) if signal_hist_ys.size > 0 else 1
+        m = np.max(signal_hist_ys) if signal_hist_ys.size > 0 else 1
         self.sign_hist_plot.setYRange(0, self.smooth_max_signal.update(m))
 
-        m = np.amax(rel_dev_lp_hist_ys) if rel_dev_lp_hist_ys.size > 0 else 1e-3
+        m = np.max(rel_dev_lp_hist_ys) if rel_dev_lp_hist_ys.size > 0 else 1e-3
         m = max(2 * data["threshold"], m)
         ymax = self.smooth_max_rel_dev.update(m)
         self.rel_dev_hist_plot.setYRange(0, ymax)
