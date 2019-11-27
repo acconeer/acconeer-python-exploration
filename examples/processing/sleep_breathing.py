@@ -2,10 +2,9 @@ import numpy as np
 import pyqtgraph as pg
 from scipy import signal
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 
 
 def main():
@@ -55,7 +54,7 @@ def main():
 def get_sensor_config():
     config = configs.IQServiceConfig()
     config.range_interval = [0.4, 0.8]
-    config.sweep_rate = 60
+    config.update_rate = 60
     config.gain = 0.6
     return config
 
@@ -126,7 +125,7 @@ class PresenceDetectionProcessor:
         # Time constant low-pass filter on IQ-data [s] | 0.04
         tau_iq = 0.04
         # Time constant low-pass filter on IQ-data [s] | 150
-        self.f_s = self.config.sweep_rate
+        self.f_s = self.config.update_rate
         # Spatial or Range down sampling factor | 124
         self.D = int(processing_config["D"]["value"])
         # Lowest frequency of interest [Hz] | 0.1
@@ -175,21 +174,21 @@ class PresenceDetectionProcessor:
             out_data = None
         elif self.sweep_index < self.sweeps_in_block:
             self.data_s_d_mat[self.sweep_index, :] = self.iq_lp_filter_time(
-                    self.data_s_d_mat[self.sweep_index - 1, :],
-                    self.downsample(sweep, self.D)
-                    )
+                self.data_s_d_mat[self.sweep_index - 1, :],
+                self.downsample(sweep, self.D)
+            )
 
             temp_phi = self.unwrap_phase(
-                    self.phi_vec[self.sweep_index - 1],
-                    self.data_s_d_mat[self.sweep_index, :],
-                    self.data_s_d_mat[self.sweep_index - 1, :]
-                    )
+                self.phi_vec[self.sweep_index - 1],
+                self.data_s_d_mat[self.sweep_index, :],
+                self.data_s_d_mat[self.sweep_index - 1, :]
+            )
 
             self.phi_vec[self.sweep_index] = self.unwrap_phase(
-                    self.phi_vec[self.sweep_index - 1],
-                    self.data_s_d_mat[self.sweep_index, :],
-                    self.data_s_d_mat[self.sweep_index - 1, :]
-                    )
+                self.phi_vec[self.sweep_index - 1],
+                self.data_s_d_mat[self.sweep_index, :],
+                self.data_s_d_mat[self.sweep_index - 1, :]
+            )
 
             phi_filt = signal.lfilter(self.b, self.a, self.phi_vec, axis=0)
 
@@ -214,16 +213,16 @@ class PresenceDetectionProcessor:
             # Lowpass filter IQ data downsampled in distance points
             self.data_s_d_mat = np.roll(self.data_s_d_mat, -1, axis=0)
             self.data_s_d_mat[-1, :] = self.iq_lp_filter_time(
-                    self.data_s_d_mat[-1, :],
-                    self.downsample(sweep, self.D)
-                    )
+                self.data_s_d_mat[-1, :],
+                self.downsample(sweep, self.D)
+            )
 
             # Phase unwrapping of IQ data
             temp_phi = self.unwrap_phase(
-                    self.phi_vec[-1],
-                    self.data_s_d_mat[-1, :],
-                    self.data_s_d_mat[-2, :]
-                    )
+                self.phi_vec[-1],
+                self.data_s_d_mat[-1, :],
+                self.data_s_d_mat[-2, :]
+            )
             self.phi_vec = np.roll(self.phi_vec, -1, axis=0)
             self.phi_vec[-1] = temp_phi
 
@@ -261,7 +260,7 @@ class PresenceDetectionProcessor:
         return out_data
 
     def downsample(self, data, n):
-        return data[::n]
+        return data[:: n]
 
     def iq_lp_filter_time(self, state, new_data):
         return self.alpha_iq * state + (1 - self.alpha_iq) * new_data
@@ -279,7 +278,7 @@ class PresenceDetectionProcessor:
         return P, dft_est, P[idx_f]
 
     def noise_est(self, P):
-        return np.mean(np.sort(P)[:(self.dft_points//2)-1])
+        return np.mean(np.sort(P)[: (self.dft_points // 2) - 1])
 
     def half_peak_frequency(self, P, f_est):
         idx_half = int(f_est / (2 * self.delta_f))
@@ -287,9 +286,9 @@ class PresenceDetectionProcessor:
             return 0
         else:
             return (1 / self.delta_f) * (
-                        (self.dft_f_vec[idx_half+1] - f_est / 2) * P[idx_half]
-                        + (f_est/2 - self.dft_f_vec[idx_half]) * P[idx_half + 1]
-                    )
+                (self.dft_f_vec[idx_half + 1] - f_est / 2) * P[idx_half]
+                + (f_est / 2 - self.dft_f_vec[idx_half]) * P[idx_half + 1]
+            )
 
     def breath_freq_est(self, P):
         f_idx = np.argmax(P)
@@ -306,7 +305,7 @@ class PresenceDetectionProcessor:
             f_est = f_est / 2
             P_peak = P_half
 
-        if self.f_low < f_est < self.f_high and P_peak > self.lambda_p*self.noise_est(P):
+        if self.f_low < f_est < self.f_high and P_peak > self.lambda_p * self.noise_est(P):
             f_est_valid = True
         else:
             f_est_valid = False
@@ -319,15 +318,14 @@ class PresenceDetectionProcessor:
         f_idx = np.argmax(P)
 
         if 0 < f_idx < P.size and P.size > 3:
-            f_est = self.dft_f_vec[f_idx] \
-                    + self.delta_f / 2 * (
-                            (np.log(P[f_idx+1])-np.log(P[f_idx-1]))
-                            / (2*np.log(P[f_idx]) - np.log(P[f_idx+1]) - np.log(P[f_idx-1]))
-                        )
+            f_est = self.dft_f_vec[f_idx] + self.delta_f / 2 * (
+                (np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
+                / (2 * np.log(P[f_idx]) - np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
+            )
             P_peak = P[f_idx] + np.exp(
-                        1/8 * np.square(np.log(P[f_idx+1]) - np.log(P[f_idx-1]))
-                        / (2*np.log(P[f_idx]) - np.log(P[f_idx+1]) - np.log(P[f_idx-1]))
-                    )
+                1 / 8 * np.square(np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
+                / (2 * np.log(P[f_idx]) - np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
+            )
 
             if not (self.f_low < f_est < self.f_high):
                 f_est = 0
@@ -354,21 +352,22 @@ class PGUpdater:
         self.phi_plot.setLabel("bottom", "Samples")
         self.phi_plot.addLegend()
         self.filt_phi_curve = self.phi_plot.plot(
-                pen=utils.pg_pen_cycler(0),
-                name="Filtered",
-                )
+            pen=utils.pg_pen_cycler(0),
+            name="Filtered",
+        )
         self.raw_phi_curve = self.phi_plot.plot(
-                pen=utils.pg_pen_cycler(1),
-                name="Raw",
-                )
+            pen=utils.pg_pen_cycler(1),
+            name="Raw",
+        )
 
         win.nextRow()
+
         self.spect_plot = win.addPlot(title="Power spectrum")
         self.spect_plot.showGrid(x=True, y=True)
         self.spect_plot.setLabel("left", "Power")
         self.spect_plot.setLabel("bottom", "Frequency (Hz)")
         self.spect_curve = self.spect_plot.plot(pen=utils.pg_pen_cycler(1))
-        self.spect_smax = utils.SmoothMax(self.config.sweep_rate / 15)
+        self.spect_smax = utils.SmoothMax(self.config.update_rate / 15)
         self.spect_dft_inf_line = pg.InfiniteLine(pen=utils.pg_pen_cycler(1, "--"))
         self.spect_plot.addItem(self.spect_dft_inf_line)
         self.spect_est_inf_line = pg.InfiniteLine(pen=utils.pg_pen_cycler(0, "--"))
@@ -386,13 +385,13 @@ class PGUpdater:
         self.fest_plot.setLabel("bottom", "Samples")
         self.fest_plot.addLegend()
         self.fest_curve = self.fest_plot.plot(
-                pen=utils.pg_pen_cycler(0),
-                name="Breathing est.",
-                )
+            pen=utils.pg_pen_cycler(0),
+            name="Breathing est.",
+        )
         self.fest_dft_curve = self.fest_plot.plot(
-                pen=utils.pg_pen_cycler(1),
-                name="DFT est.",
-                )
+            pen=utils.pg_pen_cycler(1),
+            name="DFT est.",
+        )
         self.fest_plot.setXRange(0, 1)
         self.fest_plot.setYRange(0, 0.5)
         self.fest_text_item = pg.TextItem(anchor=(0, 0), color="k")
@@ -408,24 +407,24 @@ class PGUpdater:
         else:
             snr = data["snr"]
             if snr == 0:
-                s = "SNR: N/A | {:.0f} dB".format(10*np.log10(data["lambda_p"]))
+                s = "SNR: N/A | {:.0f} dB".format(10 * np.log10(data["lambda_p"]))
             else:
                 fmt = "SNR: {:.0f} | {:.0f} dB"
-                s = fmt.format(10*np.log10(snr), 10*np.log10(data["lambda_p"]))
+                s = fmt.format(10 * np.log10(snr), 10 * np.log10(data["lambda_p"]))
             self.spect_text_item.setText(s)
             self.spect_text_item.setAnchor((0, 1))
             self.spect_text_item.setPos(0, 0)
 
             f_est = data["f_est"]
             if f_est > 0:
-                s = "Latest frequency estimate: {:.2f} Hz | {:.0f} BPM".format(f_est, f_est*60)
+                s = "Latest frequency estimate: {:.2f} Hz | {:.0f} BPM".format(f_est, f_est * 60)
                 self.fest_text_item.setText(s)
 
             self.fest_plot.enableAutoRange(x=True)
             self.spect_curve.setData(data["x_dft"], data["power_spectrum"])
             self.spect_dft_inf_line.setValue(data["f_dft_est"])
             self.spect_est_inf_line.setValue(data["f_est"])
-            self.spect_plot.setYRange(0, self.spect_smax.update(np.amax(data["power_spectrum"])))
+            self.spect_plot.setYRange(0, self.spect_smax.update(data["power_spectrum"]))
             self.fest_curve.setData(np.squeeze(data["f_est_hist"]))
             self.fest_dft_curve.setData(np.squeeze(data["f_dft_est_hist"]))
 
