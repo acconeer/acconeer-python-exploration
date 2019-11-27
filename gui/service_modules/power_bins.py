@@ -1,10 +1,9 @@
 import numpy as np
 import pyqtgraph as pg
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 
 
 def main():
@@ -22,9 +21,9 @@ def main():
     sensor_config = get_sensor_config()
     sensor_config.sensor = args.sensors
 
-    client.setup_session(sensor_config)
+    session_info = client.setup_session(sensor_config)
 
-    pg_updater = PGUpdater(sensor_config, None)
+    pg_updater = PGUpdater(sensor_config, None, session_info)
     pg_process = PGProcess(pg_updater)
     pg_process.start()
 
@@ -52,42 +51,37 @@ def get_sensor_config():
 
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.sensor_config = sensor_config
-
-        self.sweep_index = 0
+        self.session_info = session_info
+        self.smooth_max = utils.SmoothMax(sensor_config.update_rate)
 
     def setup(self, win):
-        win.setWindowTitle("Acconeer power bins example")
+        num_depths = self.session_info["bin_count"]
+        start = self.session_info["range_start_m"]
+        length = self.session_info["range_length_m"]
+        end = start + length
 
-        self.plot = win.addPlot(title="Power bins")
+        xs = np.linspace(start, end, num_depths * 2 + 1)[1::2]
+        bin_width = 0.8 * length / num_depths
+
+        self.plot = win.addPlot()
         self.plot.showGrid(x=True, y=True)
         self.plot.setLabel("bottom", "Depth (m)")
         self.plot.setLabel("left", "Amplitude")
+        self.plot.setXRange(start, end)
         self.plot.setYRange(0, 1)
 
         self.bar_graph = pg.BarGraphItem(
-            x=[],
-            height=[],
-            width=0,
+            x=xs,
+            height=np.zeros_like(xs),
+            width=bin_width,
             brush=pg.mkBrush(utils.color_cycler()),
         )
 
         self.plot.addItem(self.bar_graph)
 
-        self.smooth_max = utils.SmoothMax(self.sensor_config.sweep_rate)
-
     def update(self, data):
-        if self.sweep_index == 0:
-            num_points = data.size
-            self.xs = np.linspace(*self.sensor_config.range_interval, num_points * 2 + 1)[1::2]
-            bin_width = 0.8 * (self.sensor_config.range_length / num_points)
-            self.plot.setXRange(*self.sensor_config.range_interval)
-            self.bar_graph.setOpts(x=self.xs, width=bin_width)
-
         self.bar_graph.setOpts(height=data)
-        self.plot.setYRange(0, self.smooth_max.update(np.max(data)))
-
-        self.sweep_index += 1
+        self.plot.setYRange(0, self.smooth_max.update(data))
 
 
 if __name__ == "__main__":
