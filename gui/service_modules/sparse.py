@@ -1,16 +1,19 @@
+import os
+import sys
+
 import numpy as np
 import pyqtgraph as pg
 from matplotlib.colors import LinearSegmentedColormap
-import sys
-import os
 
+from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-from acconeer.exptool.pg_process import PGProcess, PGProccessDiedException
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+from acconeer.exptool.structs import configbase
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))  # noqa: E402
-from examples.processing import presence_detection_sparse
+
+from examples.processing import presence_detection_sparse  # isort:skip
 
 
 def main():
@@ -46,8 +49,8 @@ def main():
     processor = Processor(sensor_config, processing_config, session_info)
 
     while not interrupt_handler.got_signal:
-        info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        info, data = client.get_next()
+        plot_data = processor.process(data)
 
         if plot_data is not None:
             try:
@@ -63,28 +66,28 @@ def main():
 def get_sensor_config():
     sensor_config = configs.SparseServiceConfig()
     sensor_config.range_interval = [0.24, 1.20]
-    sensor_config.sweep_rate = 60
-    sensor_config.number_of_subsweeps = 16
+    sensor_config.update_rate = 60
+    sensor_config.sampling_mode = configs.SparseServiceConfig.SamplingMode.A
     return sensor_config
 
 
-def get_processing_config():
-    return {
-        "image_buffer": {
-            "name": "Image history",
-            "value": 100,
-            "limits": [10, 10000],
-            "type": int,
-            "text": None,
-        },
-    }
+class ProcessingConfiguration(configbase.ProcessingConfig):
+    VERSION = 1
+
+    history_length = configbase.IntParameter(
+        label="History length",
+        default_value=100,
+    )
+
+
+get_processing_config = ProcessingConfiguration
 
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
         num_sensors = len(sensor_config.sensor)
-        num_depths = len(utils.get_range_depths(sensor_config, session_info))
-        history_len = processing_config["image_buffer"]["value"]
+        num_depths = utils.get_range_depths(sensor_config, session_info).size
+        history_len = processing_config.history_length
 
         pd_config = presence_detection_sparse.get_processing_config()
         processor_class = presence_detection_sparse.PresenceDetectionSparseProcessor
@@ -94,12 +97,8 @@ class Processor:
         except AssertionError:
             self.pd_processors = None
 
-        self.smooth_max = utils.SmoothMax(sensor_config.sweep_rate)
-
-        self.data_history = np.zeros([history_len, num_sensors, num_depths])
+        self.data_history = np.ones([history_len, num_sensors, num_depths]) * 2**15
         self.presence_history = np.zeros([history_len, num_sensors, num_depths])
-
-        self.sweep_index = 0
 
     def process(self, data):
         if self.pd_processors:
@@ -112,16 +111,11 @@ class Processor:
         self.data_history = np.roll(self.data_history, -1, axis=0)
         self.data_history[-1] = data.mean(axis=1)
 
-        smooth_max = self.smooth_max.update(np.max(np.abs(data)))
-
         out_data = {
             "data": data,
-            "data_smooth_max": smooth_max,
             "data_history": self.data_history,
             "presence_history": self.presence_history,
         }
-
-        self.sweep_index += 1
 
         return out_data
 
@@ -129,19 +123,23 @@ class Processor:
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
+        self.processing_config = processing_config
 
         self.depths = utils.get_range_depths(sensor_config, session_info)
-        self.num_depths = self.depths.size
-        self.num_subsweeps = sensor_config.number_of_subsweeps
-        self.xs = np.tile(self.depths, self.num_subsweeps)
-        self.time_res = 1.0 / self.sensor_config.sweep_rate
-        self.depth_res = session_info["actual_stepsize"]
-
-        history_len = processing_config["image_buffer"]["value"]
-        self.history_len_s = history_len * self.time_res
+        self.depth_res = session_info["step_length_m"]
+        self.xs = np.tile(self.depths, sensor_config.sweeps_per_frame)
+        self.smooth_limits = utils.SmoothLimits(sensor_config.update_rate)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer sparse example")
+
+        # For history images:
+        rate = self.sensor_config.update_rate
+        xlabel = "Frames" if rate is None else "Time (s)"
+        x_scale = 1.0 if rate is None else 1.0 / rate
+        y_scale = self.depth_res
+        x_offset = -self.processing_config.history_length * x_scale
+        y_offset = self.depths[0] - 0.5 * self.depth_res
 
         self.data_plots = []
         self.scatters = []
@@ -153,7 +151,6 @@ class PGUpdater:
             data_plot.showGrid(x=True, y=True)
             data_plot.setLabel("bottom", "Depth (m)")
             data_plot.setLabel("left", "Amplitude")
-            data_plot.setYRange(-2**15, 2**15)
             scatter = pg.ScatterPlotItem(size=10)
             data_plot.addItem(scatter)
 
@@ -166,38 +163,39 @@ class PGUpdater:
             data_history_im = pg.ImageItem(autoDownsample=True)
             data_history_im.setLookupTable(lut)
             data_history_plot.addItem(data_history_im)
-            data_history_plot.setLabel("bottom", "Time (s)")
+            data_history_plot.setLabel("bottom", xlabel)
             data_history_plot.setLabel("left", "Depth (m)")
 
             presence_history_plot = win.addPlot(title="Movement history", row=2, col=i)
             presence_history_im = pg.ImageItem(autoDownsample=True)
             presence_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
             presence_history_plot.addItem(presence_history_im)
-            presence_history_plot.setLabel("bottom", "Time (s)")
+            presence_history_plot.setLabel("bottom", xlabel)
             presence_history_plot.setLabel("left", "Depth (m)")
+
+            for im in [presence_history_im, data_history_im]:
+                im.resetTransform()
+                im.translate(x_offset, y_offset)
+                im.scale(x_scale, y_scale)
 
             self.data_plots.append(data_plot)
             self.scatters.append(scatter)
             self.data_history_ims.append(data_history_im)
             self.presence_history_ims.append(presence_history_im)
 
-            for im in [presence_history_im, data_history_im]:
-                im.resetTransform()
-                im.translate(-self.history_len_s, self.depths[0] - self.depth_res / 2)
-                im.scale(self.time_res, self.depth_res)
-
     def update(self, d):
+        data_limits = self.smooth_limits.update(d["data"])
+
         for i in range(len(self.sensor_config.sensor)):
             ys = d["data"][i].flatten()
             self.scatters[i].setData(self.xs, ys)
-            m = max(500, d["data_smooth_max"])
-            self.data_plots[i].setYRange(-m, m)
+            self.data_plots[i].setYRange(*data_limits)
 
-            data_history_adj = d["data_history"][:, i]
+            data_history_adj = d["data_history"][:, i] - 2**15
             sign = np.sign(data_history_adj)
             data_history_adj = np.abs(data_history_adj)
             data_history_adj /= data_history_adj.max()
-            data_history_adj = np.power(data_history_adj, 1/2.2)  # gamma correction
+            data_history_adj = np.power(data_history_adj, 1 / 2.2)  # gamma correction
             data_history_adj *= sign
             self.data_history_ims[i].updateImage(data_history_adj, levels=(-1.05, 1.05))
 
