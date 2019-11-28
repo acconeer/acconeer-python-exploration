@@ -439,7 +439,8 @@ class SPIClient(RegBaseClient):
 
     def _setup_session(self, config):
         ret = super()._setup_session(config)
-        self.__cmd_proc("update_state", self._mode, self._config, self._buffer_size)
+        update_rate = self._config.update_rate
+        self.__cmd_proc("update_state", self._mode, update_rate, self._buffer_size)
         return ret
 
     def _start_session(self):
@@ -626,13 +627,13 @@ class SPICommProcess(mp.Process):
         self.dev.set_suspend_out(False)
         self.dev.set_wake_up_interrupt(False)
 
-    def update_state(self, mode, config, buffer_size):
+    def update_state(self, mode, update_rate, buffer_size):
         self.mode = mode
 
-        if config.update_rate is None:
+        if update_rate is None:
             self.poll_timeout = 1.0
         else:
-            self.poll_timeout = 2 / config.update_rate + 0.5
+            self.poll_timeout = 2 / update_rate + 0.5
 
         self.fixed_buf_size = buffer_size
 
