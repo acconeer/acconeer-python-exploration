@@ -433,6 +433,7 @@ class PGUpdater:
         self.data_plot.addItem(self.frame_scatter)
         self.data_plot.addItem(self.fast_scatter)
         self.data_plot.addItem(self.slow_scatter)
+        self.frame_smooth_limits = utils.SmoothLimits(self.sensor_config.update_rate)
 
         # Noise estimation plot
 
@@ -576,10 +577,11 @@ class PGUpdater:
 
         self.fast_scatter.setData(self.depths, data["fast"])
         self.slow_scatter.setData(self.depths, data["slow"])
+        self.data_plot.setYRange(*self.frame_smooth_limits.update(data["frame"]))
 
         noise = data["noise"]
         self.noise_curve.setData(self.depths, noise)
-        self.noise_plot.setYRange(0, self.noise_smooth_max.update(np.max(noise)))
+        self.noise_plot.setYRange(0, self.noise_smooth_max.update(noise))
 
         movement_x = data["presence_distance"]
 
