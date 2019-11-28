@@ -50,8 +50,8 @@ class BaseClient(abc.ABC):
         self._session_setup_done = True
 
         try:
-            start_ok = abs(config.range_start - session_info["actual_range_start"]) < 0.01
-            len_ok = abs(config.range_length - session_info["actual_range_length"]) < 0.01
+            start_ok = abs(config.range_start - session_info["range_start_m"]) < 0.01
+            len_ok = abs(config.range_length - session_info["range_length_m"]) < 0.01
         except (AttributeError, KeyError, TypeError):
             pass
         else:
