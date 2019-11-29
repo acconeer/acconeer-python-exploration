@@ -68,9 +68,9 @@ if "win32" in sys.platform.lower():
 
 class GUI(QMainWindow):
     DEFAULT_BAUDRATE = 3000000
-    ACC_IMG_FILENAME = os.path.join(os.path.dirname(__file__), "elements/acc.png")
-    LAST_CONF_FILENAME = os.path.join(os.path.dirname(__file__), "last_config.npy")
-    LAST_ML_CONF_FILENAME = os.path.join(os.path.dirname(__file__), "last_ml_config.npy")
+    ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
+    LAST_CONF_FILENAME = os.path.join(HERE, "last_config.npy")
+    LAST_ML_CONF_FILENAME = os.path.join(HERE, "last_ml_config.npy")
     MAX_CL_SWEEPS = 10000
 
     ENVELOPE_PROFILES = [
