@@ -1,44 +1,64 @@
-import os
-import re
-import sys
-import ntpath
-import numpy as np
-import serial.tools.list_ports
-import h5py
-import logging
-import signal
-import threading
 import copy
 import json
+import logging
+import ntpath
+import os
+import re
+import signal
+import sys
+import threading
+import traceback
 
-from PyQt5.QtWidgets import (QComboBox, QMainWindow, QApplication, QWidget, QLabel, QLineEdit,
-                             QCheckBox, QFrame, QPushButton, QTabWidget, QStackedWidget)
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSignal
-from PyQt5 import QtCore, QtWidgets
-
+import h5py
+import numpy as np
 import pyqtgraph as pg
+import serial.tools.list_ports
+
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFrame,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QPushButton,
+    QStackedWidget,
+    QTabWidget,
+    QWidget,
+)
+
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(HERE)
+sys.path.append(os.path.abspath(os.path.join(HERE, "..")))
+sys.path.append(os.path.abspath(os.path.join(HERE, "ml")))
+sys.path.append(os.path.abspath(os.path.join(HERE, "elements")))
+
 
 try:
-    from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient, MockClient
-    from acconeer.exptool import configs
-    from acconeer.exptool import utils
+    from acconeer.exptool import clients, configs, utils
     from acconeer.exptool.structs import configbase
 
-    sys.path.append(os.path.dirname(__file__))  # noqa: E402
-    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # noqa: E402
-    sys.path.append(os.path.join(os.path.dirname(__file__), "ml/"))   # noqa: E402
-    sys.path.append(os.path.join(os.path.dirname(__file__), "elements/"))   # noqa: E402
-
     import data_processing
+    from helper import (
+        AdvancedSerialDialog,
+        CollapsibleSection,
+        Count,
+        GUIArgumentParser,
+        Label,
+        SensorSelection,
+        lib_version_up_to_date,
+    )
     from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
-    from helper import (Label, CollapsibleSection, Count, AdvancedSerialDialog, GUIArgumentParser,
-                        SensorSelection, lib_version_up_to_date)
 except Exception:
-    import traceback
     traceback.print_exc()
     print("\nPlease update your library with 'python -m pip install -U --user .'")
     sys.exit(1)
+
 
 if "win32" in sys.platform.lower():
     import ctypes
@@ -335,7 +355,7 @@ class GUI(QMainWindow):
         processing_config = self.update_service_params()
 
         if session_info is None:
-            session_info = MockClient().setup_session(sensor_config)
+            session_info = clients.MockClient().setup_session(sensor_config)
 
         self.service_widget = self.current_module_info.module.PGUpdater(
             sensor_config, processing_config, session_info)
@@ -1429,14 +1449,14 @@ class GUI(QMainWindow):
 
             if self.interface_dd.currentText().lower() == "socket":
                 host = self.textboxes["host"].text()
-                self.client = SocketClient(host)
+                self.client = clients.SocketClient(host)
                 statusbar_connection_info = "socket ({})".format(host)
             elif self.interface_dd.currentText().lower() == "spi":
-                self.client = SPIClient()
+                self.client = clients.SPIClient()
                 statusbar_connection_info = "SPI"
                 max_num = 1
             elif self.interface_dd.currentText().lower() == "simulated":
-                self.client = MockClient()
+                self.client = clients.MockClient()
                 statusbar_connection_info = "simulated interface"
             else:
                 port = self.ports_dd.currentText()
@@ -1447,7 +1467,7 @@ class GUI(QMainWindow):
                 if self.override_baudrate:
                     print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
 
-                self.client = UARTClient(port, override_baudrate=self.override_baudrate)
+                self.client = clients.UARTClient(port, override_baudrate=self.override_baudrate)
                 max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
 

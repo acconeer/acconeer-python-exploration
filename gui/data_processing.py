@@ -1,9 +1,12 @@
-import numpy as np
 import time
 import traceback
+import warnings
+
+import numpy as np
+
 from PyQt5.QtCore import QThread
 
-import warnings
+
 warnings.filterwarnings("ignore")
 
 
