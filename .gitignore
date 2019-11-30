@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 venv/
 env/
-*.npy
 
 # setup.py
 dist/
@@ -24,6 +23,8 @@ docs/_build
 
 # Data
 *.h5
+*.npy
+*.npz
 
 # LaTeX
 *.aux
