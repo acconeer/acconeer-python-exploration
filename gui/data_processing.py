@@ -17,7 +17,6 @@ class DataProcessing:
         self.sensor_config = params["sensor_config"]
         self.mode = self.sensor_config.mode
         self.service_type = params["service_type"]
-        self.sweeps = self.gui_handle.sweep_count
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
         self.service_params = params["service_params"]
@@ -27,9 +26,6 @@ class DataProcessing:
 
         if isinstance(self.service_params, dict):
             self.service_params["processing_handle"] = self
-
-        if self.sweeps < 0:
-            self.sweeps = self.hist_len
 
         self.hist_len_index = 0
 
@@ -41,7 +37,6 @@ class DataProcessing:
         self.abort = True
 
     def init_vars(self):
-        self.sweep = 0
         self.record = []
         self.n_std_avg = 0
         self.abort = False
@@ -82,13 +77,12 @@ class DataProcessing:
             plot_data = self.external.process(sweep_data)
             if plot_data is not None:
                 self.draw_canvas(plot_data)
-                self.sweep += 1
                 if isinstance(plot_data, dict) and plot_data.get("send_process_data") is not None:
                     self.parent.emit("process_data", "", plot_data["send_process_data"])
 
         self.record_data(sweep_data, info)
 
-        return plot_data, self.record, self.sweep
+        return plot_data, self.record
 
     def record_data(self, sweep_data, info):
         plot_data = {
@@ -108,13 +102,6 @@ class DataProcessing:
     def process_saved_data(self, data, parent):
         self.parent = parent
         self.init_vars()
-        self.sweep = 0
-
-        try:
-            self.sweeps = len(data)
-        except Exception as e:
-            self.parent.emit("error", "Wrong file format\n {}".format(e))
-            return
 
         info_available = True
         is_session_format_new = True

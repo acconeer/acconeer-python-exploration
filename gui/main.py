@@ -92,7 +92,6 @@ class GUI(QMainWindow):
 
         self.data = None
         self.client = None
-        self.sweep_count = -1
         self.sweep_buffer = 500
         self.sweep_number = 0
         self.sweeps_skipped = 0
@@ -198,7 +197,6 @@ class GUI(QMainWindow):
             "sensor": ("Sensor", "sensor"),
             "gain": ("Gain", "sensor"),
             "sweep_rate": ("Update rate", "sensor"),
-            "sweeps": ("Number of sweeps", "sensor"),
             "sweep_buffer": ("Sweep buffer", "scan"),
             "range_start": ("Start (m)", "sensor"),
             "range_end": ("Stop (m)", "sensor"),
@@ -229,7 +227,6 @@ class GUI(QMainWindow):
         textbox_info = {
             "host": ("192.168.1.100", "connection"),
             "sweep_rate": ("10", "sensor"),
-            "sweeps": ("-1", "sensor"),
             "gain": ("0.4", "sensor"),
             "range_start": ("0.18", "sensor"),
             "range_end": ("0.72", "sensor"),
@@ -665,8 +662,6 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.textboxes["number_of_subsweeps"], c.val, 1)
         self.settings_section.grid.addWidget(self.labels["subsweep_rate"], c.pre_incr(), 0)
         self.settings_section.grid.addWidget(self.textboxes["subsweep_rate"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["sweeps"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["sweeps"], c.val, 1)
         self.settings_section.grid.addWidget(self.env_profiles_dd, c.pre_incr(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.sampling_mode_dd, c.pre_incr(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["stitching"], c.pre_incr(), 0, 1, 2)
@@ -909,9 +904,6 @@ class GUI(QMainWindow):
                 self.advanced_section.hide()
 
     def sensor_defaults_handler(self):
-        self.sweep_count = -1
-        self.textboxes["sweeps"].setText("-1")
-
         sensor_config_class = self.current_module_info.sensor_config_class
         default_config = None if sensor_config_class is None else sensor_config_class()
 
@@ -1427,8 +1419,6 @@ class GUI(QMainWindow):
             text = "{{:{}}}".format(fmt).format(val)
             self.textboxes[key].setText(text)
 
-        self.sweep_count = -1
-
         session_profile = getattr(config, "session_profile", None)
         if session_profile is not None:
             text = [text for v, text in self.ENVELOPE_PROFILES if v == session_profile][0]
@@ -1457,7 +1447,6 @@ class GUI(QMainWindow):
         ]
         config.sweep_rate = int(self.textboxes["sweep_rate"].text())
         config.gain = float(self.textboxes["gain"].text())
-        self.sweep_count = int(self.textboxes["sweeps"].text())
         hwaas = int(self.textboxes["hw_accelerated_average_samples"].text())
         config.hw_accelerated_average_samples = hwaas
         if self.current_data_type == "power_bin":
@@ -1587,17 +1576,6 @@ class GUI(QMainWindow):
             except ValueError as e:
                 errors.append(str(e))
                 self.textboxes[key].setText(default_text)
-
-        sweeps = self.is_float(self.textboxes["sweeps"].text(), is_positive=False)
-        if sweeps == -1:
-            pass
-        elif sweeps >= 1:
-            if not self.textboxes["sweeps"].text().isdigit():
-                errors.append("Sweeps must be a -1 or an int larger than 0!\n")
-                self.textboxes["sweeps"].setText("-1")
-        else:
-            errors.append("Sweeps must be -1 or an int larger than 0!\n")
-            self.textboxes["sweeps"].setText("-1")
 
         min_start_range = 0 if "leakage" in self.env_profiles_dd.currentText().lower() else 0.06
         start = self.is_float(self.textboxes["range_start"].text(), is_positive=False)
@@ -2228,7 +2206,6 @@ class GUI(QMainWindow):
         self.interface_dd.setCurrentIndex(last_config["interface"])
         self.ports_dd.setCurrentIndex(last_config["port"])
         self.textboxes["host"].setText(last_config["host"])
-        self.sweep_count = last_config["sweep_count"]
 
         if last_config.get("override_baudrate"):
             self.override_baudrate = last_config["override_baudrate"]
@@ -2277,7 +2254,6 @@ class GUI(QMainWindow):
         last_config = {
             "sensor_config_map": self.module_label_to_sensor_config_map,
             "processing_config_dumps": processing_config_dumps,
-            "sweep_count": self.sweep_count,
             "host": self.textboxes["host"].text(),
             "sweep_buffer": self.textboxes["sweep_buffer"].text(),
             "interface": self.interface_dd.currentIndex(),
@@ -2362,9 +2338,6 @@ class Threaded_Scan(QtCore.QThread):
         self.data = parent.data
         self.parent = parent
         self.running = True
-        self.sweep_count = parent.sweep_count
-        if self.sweep_count == -1:
-            self.sweep_count = np.inf
 
         self.finished.connect(self.stop_thread)
 
@@ -2389,9 +2362,7 @@ class Threaded_Scan(QtCore.QThread):
                 while self.running:
                     info, sweep = self.client.get_next()
                     self.emit("sweep_info", "", info)
-                    plot_data, data, sweep_number = self.radar.process(sweep, info)
-                    if sweep_number + 1 >= self.sweep_count:
-                        self.running = False
+                    plot_data, data = self.radar.process(sweep, info)
             except Exception as e:
                 msg = "Failed to communicate with server!\n{}".format(self.format_error(e))
                 self.emit("client_error", msg)
