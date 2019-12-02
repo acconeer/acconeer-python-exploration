@@ -309,7 +309,7 @@ class GUI(QMainWindow):
                     grid = self.advanced_sensor_config_section.grid
                     count = self.advanced_sensor_param_count
                 else:
-                    grid = self.settings_section.grid
+                    grid = self.basic_sensor_config_section.grid
                     count = self.basic_sensor_param_count
 
                 grid.addWidget(pidget, count.val, 0, 1, 2)
@@ -354,7 +354,7 @@ class GUI(QMainWindow):
             self.last_sensor_config = sensor_config
 
         if sensor_config is None:
-            self.settings_section.setVisible(False)
+            self.basic_sensor_config_section.setVisible(False)
             self.advanced_sensor_config_section.setVisible(False)
             return
 
@@ -369,7 +369,7 @@ class GUI(QMainWindow):
                     has_basic_params = True
 
         if self.get_gui_state("ml_tab") == "main":
-            self.settings_section.setVisible(has_basic_params)
+            self.basic_sensor_config_section.setVisible(has_basic_params)
             self.advanced_sensor_config_section.setVisible(has_advanced_params)
 
     def refresh_processing_pidgets(self):
@@ -640,15 +640,15 @@ class GUI(QMainWindow):
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], c.val, 1)
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer_ml"], c.val, 1)
 
-        self.settings_section = CollapsibleSection("Sensor settings")
-        self.main_sublayout.addWidget(self.settings_section, 4, 0)
+        self.basic_sensor_config_section = CollapsibleSection("Sensor settings")
+        self.main_sublayout.addWidget(self.basic_sensor_config_section, 4, 0)
         c = self.basic_sensor_param_count
-        self.settings_section.grid.addWidget(
+        self.basic_sensor_config_section.grid.addWidget(
             self.buttons["sensor_defaults"], c.post_incr(), 0, 1, 2)
-        self.settings_section.grid.addWidget(self.labels["sensor"], c.val, 0)
+        self.basic_sensor_config_section.grid.addWidget(self.labels["sensor"], c.val, 0)
 
         sensor_selection = SensorSelection(error_handler=self.error_message)
-        self.settings_section.grid.addWidget(sensor_selection, c.post_incr(), 1)
+        self.basic_sensor_config_section.grid.addWidget(sensor_selection, c.post_incr(), 1)
         self.sensor_widgets["main"] = sensor_selection
         self.set_multi_sensors()
 
@@ -1115,7 +1115,7 @@ class GUI(QMainWindow):
         self.num_missed_frames = 0
         self.threaded_scan.start()
 
-        self.settings_section.body_widget.setEnabled(False)
+        self.basic_sensor_config_section.body_widget.setEnabled(False)
 
         if isinstance(processing_config, configbase.Config):
             self.basic_processing_config_section.body_widget.setEnabled(True)
@@ -1174,10 +1174,10 @@ class GUI(QMainWindow):
         if state == "ml_tab":
             tab = val
             self.feature_sidepanel.select_mode(val)
-            self.settings_section.body_widget.setEnabled(True)
+            self.basic_sensor_config_section.body_widget.setEnabled(True)
             self.server_section.hide()
             self.basic_processing_config_section.hide()
-            self.settings_section.hide()
+            self.basic_sensor_config_section.hide()
             self.control_section.hide()
             self.feature_section.hide()
             self.eval_section.hide()
@@ -1188,7 +1188,7 @@ class GUI(QMainWindow):
             if tab == "main":
                 if "Select service" not in self.current_module_label:
                     self.basic_processing_config_section.show()
-                self.settings_section.show()
+                self.basic_sensor_config_section.show()
                 self.server_section.show()
                 self.control_section.show()
                 self.textboxes["sweep_buffer"].show()
@@ -1196,7 +1196,7 @@ class GUI(QMainWindow):
 
             elif tab == "feature_select":
                 self.feature_section.button_event(override=False)
-                self.settings_section.show()
+                self.basic_sensor_config_section.show()
                 self.feature_section.show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
@@ -1232,10 +1232,10 @@ class GUI(QMainWindow):
                 self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
 
             elif tab == "eval":
-                self.settings_section.body_widget.setEnabled(False)
+                self.basic_sensor_config_section.body_widget.setEnabled(False)
                 self.feature_section.show()
                 self.eval_section.show()
-                self.settings_section.show()
+                self.basic_sensor_config_section.show()
                 self.server_section.show()
                 self.control_section.show()
                 self.textboxes["sweep_buffer"].show()
@@ -1262,7 +1262,7 @@ class GUI(QMainWindow):
         self.basic_processing_config_section.body_widget.setEnabled(True)
 
         if self.get_gui_state("ml_tab") in ["main", "feature_select"]:
-            self.settings_section.body_widget.setEnabled(True)
+            self.basic_sensor_config_section.body_widget.setEnabled(True)
 
         if self.get_gui_state("ml_mode"):
             self.feature_select.buttons["start"].setEnabled(True)
