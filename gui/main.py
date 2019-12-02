@@ -384,7 +384,7 @@ class GUI(QMainWindow):
 
         has_basic_params = has_advanced_params = False
         for param in processing_config._get_params():
-            if param.pidget_class is not None:
+            if param.visible:
                 if param.category == configbase.Category.ADVANCED:
                     has_advanced_params = True
                 else:

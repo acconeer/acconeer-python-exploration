@@ -370,11 +370,12 @@ class Parameter:
         self.label = kwargs.pop("label")
         self.is_live_updateable = kwargs.pop("updateable", False)
         self.does_dump = kwargs.pop("does_dump", False)
-        self.pidget_class = kwargs.pop("pidget_class", None)
         self.category = kwargs.pop("category", Category.BASIC)
         self.order = kwargs.pop("order", -1)
         self.help = kwargs.pop("help", None)
         self.visible = kwargs.pop("visible", True)
+
+        self._pidget_class = kwargs.pop("_pidget_class", None)
 
         # don't care if unused
         kwargs.pop("default_value", None)
@@ -382,6 +383,11 @@ class Parameter:
         if kwargs:
             a_key = next(iter(kwargs.keys()))
             raise TypeError("Got unexpected keyword argument ({})".format(a_key))
+
+        if not self.visible:
+            self._pidget_class = None
+        elif self._pidget_class is None:
+            self.visible = False
 
         self.pidgets = WeakKeyDictionary()
 
@@ -398,11 +404,11 @@ class Parameter:
         return self.pidgets.get(obj)
 
     def create_pidget(self, obj):
-        if self.pidget_class is None:
+        if self._pidget_class is None:
             return None
 
         if obj not in self.pidgets:
-            self.pidgets[obj] = self.pidget_class(self, obj)
+            self.pidgets[obj] = self._pidget_class(self, obj)
 
         return self.pidgets[obj]
 
@@ -487,7 +493,7 @@ class BoolParameter(ValueParameter):
     type_str = "bool"
 
     def __init__(self, **kwargs):
-        kwargs.setdefault("pidget_class", BoolCheckboxPidget)
+        kwargs.setdefault("_pidget_class", BoolCheckboxPidget)
 
         super().__init__(**kwargs)
 
@@ -499,7 +505,7 @@ class EnumParameter(ValueParameter):
     def __init__(self, **kwargs):
         self.enum = kwargs.pop("enum")
 
-        kwargs.setdefault("pidget_class", ComboBoxPidget)
+        kwargs.setdefault("_pidget_class", ComboBoxPidget)
 
         super().__init__(**kwargs)
 
@@ -525,7 +531,7 @@ class IntParameter(NumberParameter):
     def __init__(self, **kwargs):
         self.step = kwargs.pop("step", 1)
 
-        kwargs.setdefault("pidget_class", IntSpinBoxPidget)
+        kwargs.setdefault("_pidget_class", IntSpinBoxPidget)
 
         super().__init__(**kwargs)
 
@@ -556,7 +562,7 @@ class FloatParameter(NumberParameter):
         self.decimals = kwargs.pop("decimals", 2)
         self.logscale = kwargs.pop("logscale", False)
 
-        kwargs.setdefault("pidget_class", FloatSpinBoxAndSliderPidget)
+        kwargs.setdefault("_pidget_class", FloatSpinBoxAndSliderPidget)
 
         super().__init__(**kwargs)
 
@@ -585,7 +591,7 @@ class FloatParameter(NumberParameter):
 
 class FloatRangeParameter(FloatParameter):
     def __init__(self, **kwargs):
-        kwargs.setdefault("pidget_class", FloatRangeSpinBoxesPidget)
+        kwargs.setdefault("_pidget_class", FloatRangeSpinBoxesPidget)
 
         super().__init__(**kwargs)
 
@@ -996,7 +1002,7 @@ class ReferenceDataPidget(PidgetStub):
 class ReferenceDataParameter(ClassParameter):
     def __init__(self, **kwargs):
         kwargs.setdefault("label", "Background")
-        kwargs.setdefault("pidget_class", ReferenceDataPidget)
+        kwargs.setdefault("_pidget_class", ReferenceDataPidget)
         kwargs.setdefault("objtype", ReferenceData)
         kwargs.setdefault("updateable", True)
 
