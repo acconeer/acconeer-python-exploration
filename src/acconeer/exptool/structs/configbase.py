@@ -1,4 +1,5 @@
 import enum
+import inspect
 import json
 import os
 from copy import copy
@@ -95,8 +96,9 @@ class PidgetStub(Pidget):
         self.default_css = "#frame {border: 1px solid lightgrey; border-radius: 3px;}"
         self.setStyleSheet(self.default_css)
 
-        if param.help:
-            self.setToolTip(param.help)
+        doc = param.generate_doc()
+        if doc:
+            self.setToolTip(doc)
 
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 6, 0, 6)
@@ -479,7 +481,10 @@ class Parameter:
         pass
 
     def generate_doc(self):
-        return self.help
+        if self.help is None:
+            return None
+
+        return inspect.cleandoc(self.help)
 
 
 class ConstantParameter(Parameter):
@@ -553,8 +558,10 @@ class ValueParameter(Parameter):
 
     def generate_doc(self):
         s = ""
-        if self.help:
-            s += self.help
+
+        s_help = super().generate_doc()
+        if s_help:
+            s += s_help
             s += "\n\n"
 
         type_str = getattr(self, "type_str", None)
@@ -775,6 +782,9 @@ def get_virtual_parameter_class(base_class):
 
         def _sanitize(self, value):
             pass
+
+        def generate_doc(self):
+            return None
 
     return VirtualParameter
 
