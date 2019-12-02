@@ -482,6 +482,21 @@ class Parameter:
         return self.help
 
 
+class ConstantParameter(Parameter):
+    def __init__(self, **kwargs):
+        self.value = kwargs.pop("value")
+        super().__init__(**kwargs)
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+
+        return self.value
+
+    def __set__(self, obj, value):
+        raise AttributeError("Unsettable parameter")
+
+
 class ValueParameter(Parameter):
     def __init__(self, **kwargs):
         self.default_value = kwargs.pop("default_value")
