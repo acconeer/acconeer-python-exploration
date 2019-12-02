@@ -62,24 +62,30 @@ class DataProcessing:
         except Exception:
             traceback.print_exc()
 
-    def process(self, sweep_data, info):
+    def process(self, unsqueezed_data, info):
+        if self.multi_sensor:
+            in_data = unsqueezed_data
+        else:
+            assert unsqueezed_data.shape[0] == 1
+            in_data = unsqueezed_data[0]
+
         if self.first_run:
             ext = self.gui_handle.external
             if self.ml_plotting:
                 ext = self.gui_handle.ml_external
             self.external = ext(self.sensor_config, self.service_params, self.session_info)
             self.first_run = False
-            plot_data = self.external.process(sweep_data)
+            out_data = self.external.process(in_data)
         else:
-            plot_data = self.external.process(sweep_data)
-            if plot_data is not None:
-                self.draw_canvas(plot_data)
-                if isinstance(plot_data, dict) and plot_data.get("send_process_data") is not None:
-                    self.parent.emit("process_data", "", plot_data["send_process_data"])
+            out_data = self.external.process(in_data)
+            if out_data is not None:
+                self.draw_canvas(out_data)
+                if isinstance(out_data, dict) and out_data.get("send_process_data") is not None:
+                    self.parent.emit("process_data", "", out_data["send_process_data"])
 
-        self.record_data(sweep_data, info)
+        self.record_data(unsqueezed_data, info)
 
-        return plot_data, self.record
+        return out_data, self.record
 
     def record_data(self, sweep_data, info):
         plot_data = {
@@ -103,7 +109,6 @@ class DataProcessing:
         rate = getattr(self.sensor_config, "update_rate", None)
         selected_sensors = self.sensor_config.sensor
         stored_sensors = data[0]["sensor_config"].sensor
-        nr_sensors = len(stored_sensors)
 
         sensor_list = []
         matching_sensors = []
@@ -121,10 +126,6 @@ class DataProcessing:
 
         self.sensor_config.sensor = matching_sensors
 
-        squeezed_dim = 1
-        if self.mode == "sparse":
-            squeezed_dim = 2
-
         for i, data_step in enumerate(data):
             info = data[i]["info"][0]
 
@@ -133,15 +134,7 @@ class DataProcessing:
                     if rate is not None:
                         time.sleep(1.0 / rate)
 
-                sweep_data = data_step["sweep_data"]
-
-                # Only send data for selected sensors
-                if self.multi_sensor and nr_sensors > 1:
-                    sweep_data = data_step["sweep_data"][sensor_list, :]
-
-                # Make sure we send squeezed data to detectors not supporting multiple sensors
-                if not self.multi_sensor and len(sweep_data.shape) > squeezed_dim:
-                    sweep_data = data_step["sweep_data"][sensor_list[0], :]
+                sweep_data = data_step["sweep_data"][sensor_list, :]
 
                 self.process(sweep_data, info)
                 self.parent.emit("sweep_info", "", info)

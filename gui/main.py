@@ -295,9 +295,6 @@ class GUI(QMainWindow):
 
         canvas = pg.GraphicsLayoutWidget()
 
-        if self.client:
-            self.client.squeeze = not self.current_module_info.multi_sensor
-
         if not refresh:
             self.set_multi_sensors()
 
@@ -1342,6 +1339,8 @@ class GUI(QMainWindow):
                 self.client = clients.UARTClient(port, override_baudrate=self.override_baudrate)
                 max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
+
+            self.client.squeeze = False
 
             try:
                 info = self.client.connect()
