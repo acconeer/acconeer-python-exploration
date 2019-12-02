@@ -100,7 +100,7 @@ MODULE_INFOS = [
         "Envelope",
         envelope_module,
         envelope_module.get_sensor_config,
-        envelope_module.EnvelopeProcessor,
+        envelope_module.Processor,
         True,
         True,
     ),

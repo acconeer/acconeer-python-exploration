@@ -1,335 +1,261 @@
+from enum import Enum
+
 import numpy as np
-from PyQt5 import QtCore
 import pyqtgraph as pg
 
-from acconeer.exptool import configs
-from acconeer.exptool import utils
-
-import logging
-
-log = logging.getLogger("acconeer.exptool.examples.gui_envelope")
+from acconeer.exptool import clients, configs, utils
+from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+from acconeer.exptool.structs import configbase
 
 
-def get_processing_config():
-    return {
-        "image_buffer": {
-            "name": "Image history",
-            "value": 100,
-            "limits": [10, 16384],
-            "type": int,
-            "text": None,
-        },
-        "averaging": {
-            "name": "Averaging",
-            "value": 0,
-            "limits": [0, 0.9999],
-            "type": float,
-            "text": None,
-        },
-    }
+def main():
+    args = utils.ExampleArgumentParser().parse_args()
+    utils.config_logging(args)
+
+    if args.socket_addr:
+        client = clients.SocketClient(args.socket_addr)
+    elif args.spi:
+        client = clients.SPIClient()
+    else:
+        port = args.serial_port or utils.autodetect_serial_port()
+        client = clients.UARTClient(port)
+
+    client.squeeze = False
+
+    sensor_config = get_sensor_config()
+    processing_config = get_processing_config()
+    sensor_config.sensor = args.sensors
+
+    session_info = client.setup_session(sensor_config)
+
+    pg_updater = PGUpdater(sensor_config, processing_config, session_info)
+    pg_process = PGProcess(pg_updater)
+    pg_process.start()
+
+    client.start_session()
+
+    interrupt_handler = utils.ExampleInterruptHandler()
+    print("Press Ctrl-C to end session")
+
+    processor = Processor(sensor_config, processing_config, session_info)
+
+    while not interrupt_handler.got_signal:
+        info, data = client.get_next()
+        plot_data = processor.process(data)
+
+        if plot_data is not None:
+            try:
+                pg_process.put_data(plot_data)
+            except PGProccessDiedException:
+                break
+
+    print("Disconnecting...")
+    pg_process.close()
+    client.disconnect()
 
 
 def get_sensor_config():
-    return configs.EnvelopeServiceConfig()
+    config = configs.EnvelopeServiceConfig()
+    config.range_interval = [0.2, 0.8]
+    config.hw_accelerated_average_samples = 15
+    config.update_rate = 30
+    return config
 
 
-class EnvelopeProcessor:
+class ProcessingConfig(configbase.ProcessingConfig):
+    VERSION = 1
+
+    class BackgroundMode(Enum):
+        SUBTRACT = "Subtract"
+        LIMIT = "Limit"
+
+    bg_buffer_length = configbase.IntParameter(
+        default_value=50,
+        limits=(1, 200),
+        label="Background buffer length",
+        order=0,
+    )
+
+    bg = configbase.ReferenceDataParameter(
+        label="Background",
+        order=10,
+    )
+
+    bg_mode = configbase.EnumParameter(
+        label="Background mode",
+        default_value=BackgroundMode.SUBTRACT,
+        enum=BackgroundMode,
+        updateable=True,
+        order=20,
+    )
+
+    history_length = configbase.IntParameter(
+        default_value=100,
+        limits=(10, 1000),
+        label="History length",
+        order=30,
+    )
+
+
+get_processing_config = ProcessingConfig
+
+
+class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.data_processing = processing_config["processing_handle"]
-        self.sensor_config = sensor_config
-        self.mode = self.sensor_config.mode
-        self.start_x = self.sensor_config.range_interval[0]
-        self.stop_x = self.sensor_config.range_interval[1]
-        self.sweep = 0
-        self.time_filter = processing_config["averaging"]["value"]
+        self.processing_config = processing_config
 
-        if "create_clutter" in processing_config:
-            self.create_cl = processing_config["create_clutter"]
-            self.use_cl = processing_config["use_clutter"]
-            self.cl_file = processing_config["clutter_file"]
-            self.sweeps = processing_config["sweeps_requested"]
-        else:
-            self.create_cl = None
-            self.use_cl = None
-            self.cl_file = None
-            self.sweeps = -1
+        self.processing_config.bg.buffered_data = None
+        self.processing_config.bg.error = None
 
-        self.rate = 1/self.sensor_config.sweep_rate
+        depths = utils.get_range_depths(sensor_config, session_info)
+        num_depths = depths.size
+        num_sensors = len(sensor_config.sensor)
 
-        self.image_buffer = processing_config["image_buffer"]["value"]
+        buffer_length = self.processing_config.bg_buffer_length
+        self.bg_buffer = np.zeros([buffer_length, num_sensors, num_depths])
 
-        if self.sweeps < 0:
-            self.sweeps = self.image_buffer
+        history_length = self.processing_config.history_length
+        self.history = np.zeros([history_length, num_sensors, num_depths])
 
-        if self.create_cl:
-            self.sweeps = max(self.sweeps, 100)
+        self.data_index = 0
 
-    def update_processing_config(self, processing_config):
-        self.use_cl = processing_config["use_clutter"]
+    def process(self, data):
+        if self.data_index < self.bg_buffer.shape[0]:
+            self.bg_buffer[self.data_index] = data
+        if self.data_index == self.bg_buffer.shape[0] - 1:
+            self.processing_config.bg.buffered_data = self.bg_buffer.mean(axis=0)
 
-    def process(self, sweep):
-        snr = {}
-        peak_data = {}
+        bg = None
+        output_data = data
+        if self.processing_config.bg.error is None:
+            loaded_bg = self.processing_config.bg.loaded_data
 
-        if len(sweep.shape) == 1:
-            sweep = np.expand_dims(sweep, 0)
-
-        if self.sweep == 0:
-            self.num_sensors, self.data_len = sweep.shape
-            self.env_x_mm = np.linspace(self.start_x, self.stop_x, self.data_len) * 1000
-
-            self.cl_empty = np.zeros(self.data_len)
-            self.last_env = np.zeros((self.num_sensors, self.data_len))
-
-            if self.data_processing is not None and self.num_sensors == 1:
-                self.cl, _, self.n_std_avg = \
-                    self.data_processing.load_clutter_data(self.data_len, self.cl_file)
-            else:
-                self.cl = self.n_std_avg = self.cl_empty
-                self.create_cl = False
-                if self.use_cl:
-                    print("Background not supported for multiple sensors!")
-                    self.use_cl = False
-
-            self.hist_env = np.zeros(
-                (self.num_sensors, len(self.env_x_mm), self.image_buffer)
-                )
-            self.peak_history = np.zeros(
-                (self.num_sensors, self.image_buffer),
-                dtype="float"
-                )
-
-        env = sweep.copy()
-
-        env = np.abs(env)
-
-        for s in range(self.num_sensors):
-            if self.use_cl:
+            if loaded_bg is None:
+                pass
+            elif not isinstance(loaded_bg, np.ndarray):
+                self.processing_config.bg.error = "Wrong type"
+            elif np.iscomplexobj(loaded_bg):
+                self.processing_config.bg.error = "Wrong type (is complex)"
+            elif loaded_bg.shape != data.shape:
+                self.processing_config.bg.error = "Dimension mismatch"
+            elif self.processing_config.bg.use:
                 try:
-                    env[s, :] = env[s, :] - self.cl
-                    env[s, env[s, :] < 0] = 0
-                except Exception as e:
-                    log.error("Background has wrong format!\n{}".format(e))
-                    self.use_cl = False
-                    self.cl = np.zeros(self.data_len)
+                    subtract_mode = ProcessingConfig.BackgroundMode.SUBTRACT
+                    if self.processing_config.bg_mode == subtract_mode:
+                        output_data = np.maximum(0, data - loaded_bg)
+                    else:
+                        output_data = np.maximum(data, loaded_bg)
+                except Exception:
+                    self.processing_config.bg.error = "Invalid data"
+                else:
+                    bg = loaded_bg
 
-            time_filter = self.time_filter
-            if time_filter >= 0:
-                if self.sweep < np.ceil(1.0 / (1.0 - self.time_filter) - 1):
-                    time_filter = min(1.0 - 1.0 / (self.sweep + 1), self.time_filter)
-                if self.sweep:
-                    env[s, :] = (1 - time_filter) * env[s, :] + time_filter * self.last_env[s, :]
-                self.last_env[s, :] = env[s, :].copy()
+        self.history = np.roll(self.history, -1, axis=0)
+        self.history[-1] = output_data
 
-        if self.create_cl:
-            if self.sweep == 0:
-                self.cl = np.zeros((self.sweeps, len(self.cl)))
-            self.cl[self.sweep, :] = env[0, :]
-
-        peak_data = {
-            'peak_idx': np.zeros(self.num_sensors),
-            'peak_mm': np.zeros(self.num_sensors),
-            'peak_amp': np.zeros(self.num_sensors),
-            'snr': np.zeros(self.num_sensors),
-            }
-        env_max = np.zeros(self.num_sensors)
-
-        hist_plots = []
-        for s in range(self.num_sensors):
-            peak_idx = np.argmax(env[s, :])
-            peak_mm = self.env_x_mm[peak_idx]
-            if peak_mm < self.start_x * 1000:
-                peak_mm = self.stop_x * 1000
-            peak_data['peak_mm'][s] = peak_mm
-            peak_data['peak_idx'][s] = peak_idx
-            env_max[s] = np.max(env[s, :])
-            peak_data['peak_amp'][s] = env_max[s]
-
-            snr = None
-            signal = env[s, peak_idx]
-            if self.use_cl and self.n_std_avg[peak_idx] > 0:
-                noise = self.n_std_avg[peak_idx]
-                snr = 20*np.log10(signal / noise)
-            else:
-                # Simple noise estimate: noise ~ mean(envelope)
-                noise = np.mean(env[s, :])
-                snr = 20*np.log10(signal / noise)
-            peak_data["snr"][s] = snr
-
-            hist_plots.append(np.flip(self.peak_history[s, :], axis=0))
-            self.peak_history[s, :] = np.roll(self.peak_history[s, :], 1)
-            self.peak_history[s, 0] = peak_mm
-
-            self.hist_env[s, :, :] = np.roll(self.hist_env[s, :, :], 1, axis=1)
-            self.hist_env[s, :, 0] = env[s, :]
-
-        cl = self.cl
-        if self.create_cl:
-            cl = self.cl[self.sweep, :]
-        elif not self.use_cl:
-            cl = self.cl_empty
-
-        plot_data = {
-            "iq_data": sweep,
-            "env_ampl": env,
-            "env_clutter": cl,
-            "clutter_raw": self.cl,
-            "env_max": env_max,
-            "n_std_avg": self.n_std_avg,
-            "hist_plots": hist_plots,
-            "hist_env": self.hist_env,
-            "sensor_config": self.sensor_config,
-            "peaks": peak_data,
-            "x_mm": self.env_x_mm,
-            "cl_file": self.cl_file,
-            "sweep": self.sweep,
-            "num_sensors": self.num_sensors,
+        output = {
+            "output_data": output_data,
+            "bg": bg,
+            "history": self.history,
         }
 
-        self.sweep += 1
+        self.data_index += 1
 
-        return plot_data
+        return output
 
 
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.env_plot_max_y = 1
         self.sensor_config = sensor_config
-        self.num_sensors = len(sensor_config.sensor)
+        self.processing_config = processing_config
+
+        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depth_res = session_info["step_length_m"]
+        self.smooth_max = utils.SmoothMax(sensor_config.update_rate)
+
+        self.setup_is_done = False
 
     def setup(self, win):
-        win.setWindowTitle("Acconeer envelope mode example")
-        self.envelope_plot_window = win.addPlot(row=0, col=0, title="Envelope",
-                                                colspan=self.num_sensors)
-        self.envelope_plot_window.showGrid(x=True, y=True)
-        self.envelope_plot_window.addLegend(offset=(-10, 10))
-        self.envelope_plot_window.setYRange(0, 1)
-        self.envelope_plot_window.setLabel("left", "Amplitude")
-        self.envelope_plot_window.setLabel("bottom", "Distance (mm)")
+        num_sensors = len(self.sensor_config.sensor)
 
-        self.peak_text = pg.TextItem(text="", color=(1, 1, 1), anchor=(0, 1), fill="#f0f0f0")
-        self.peak_text.setZValue(3)
-        self.envelope_plot_window.addItem(self.peak_text)
+        self.ampl_plot = win.addPlot(row=0, colspan=num_sensors)
+        self.ampl_plot.showGrid(x=True, y=True)
+        self.ampl_plot.setLabel("bottom", "Depth (m)")
+        self.ampl_plot.setLabel("left", "Amplitude")
+        self.ampl_plot.setXRange(*self.depths.take((0, -1)))
+        self.ampl_plot.addLegend(offset=(-10, 10))
 
-        self.envelope_plots = []
-        self.peak_vlines = []
-        self.clutter_plots = []
-        self.hist_plot_images = []
-        self.hist_plots = []
-        self.hist_plot_peaks = []
+        self.ampl_curves = []
+        self.bg_curves = []
+        for i, sensor_id in enumerate(self.sensor_config.sensor):
+            legend = "Sensor {}".format(sensor_id)
+            ampl_curve = self.ampl_plot.plot(pen=utils.pg_pen_cycler(i), name=legend)
+            bg_curve = self.ampl_plot.plot(pen=utils.pg_pen_cycler(i, style="--"))
+            self.ampl_curves.append(ampl_curve)
+            self.bg_curves.append(bg_curve)
 
-        lut = utils.pg_mpl_cmap("viridis")
-        hist_pen = utils.pg_pen_cycler(1)
+        rate = self.sensor_config.update_rate
+        xlabel = "Sweeps" if rate is None else "Time (s)"
+        x_scale = 1.0 if rate is None else 1.0 / rate
+        y_scale = self.depth_res
+        x_offset = -self.processing_config.history_length * x_scale
+        y_offset = self.depths[0] - 0.5 * self.depth_res
+        is_single_sensor = len(self.sensor_config.sensor) == 1
 
-        for s in range(self.num_sensors):
-            legend_text = "Sensor {}".format(self.sensor_config.sensor[s])
-            pen = utils.pg_pen_cycler(s+1)
-            self.envelope_plots.append(
-                self.envelope_plot_window.plot(range(10), np.zeros(10), pen=pen, name=legend_text)
-                )
-            self.peak_vlines.append(
-                pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine))
-                )
-            self.envelope_plot_window.addItem(self.peak_vlines[s])
+        self.history_plots = []
+        self.history_ims = []
+        for i, sensor_id in enumerate(self.sensor_config.sensor):
+            title = None if is_single_sensor else "Sensor {}".format(sensor_id)
+            plot = win.addPlot(row=1, col=i, title=title)
+            plot.setLabel("bottom", xlabel)
+            plot.setLabel("left", "Depth (m)")
+            im = pg.ImageItem(autoDownsample=True)
+            im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+            im.resetTransform()
+            im.translate(x_offset, y_offset)
+            im.scale(x_scale, y_scale)
+            plot.addItem(im)
+            self.history_plots.append(plot)
+            self.history_ims.append(im)
 
-            hist_title = "Envelope history"
-            if self.num_sensors == 1:
-                pen = pg.mkPen(0.2, width=2, style=QtCore.Qt.DotLine)
-                self.clutter_plots.append(
-                    self.envelope_plot_window.plot(
-                        range(10),
-                        np.zeros(10),
-                        pen=pen,
-                        name="Background")
-                    )
-                self.clutter_plots[0].setZValue(2)
-            else:
-                hist_title = "History {}".format(legend_text)
+        self.setup_is_done = True
+        self.update_processing_config()
 
-            self.hist_plot_images.append(win.addPlot(row=2, col=s,
-                                                     title=hist_title))
-            self.hist_plot_images[s].setLabel("left", "Distance (mm)")
-            self.hist_plot_images[s].setLabel("bottom", "Time (s)")
-            self.hist_plots.append(pg.ImageItem())
-            self.hist_plots[s].setAutoDownsample(True)
-            self.hist_plots[s].setLookupTable(lut)
-            self.hist_plot_images[s].addItem(self.hist_plots[s])
+    def update_processing_config(self, processing_config=None):
+        if processing_config is None:
+            processing_config = self.processing_config
+        else:
+            self.processing_config = processing_config
 
-            self.hist_plot_peaks.append(
-                self.hist_plot_images[s].plot(range(10), np.zeros(10), pen=hist_pen))
+        if not self.setup_is_done:
+            return
 
-    def update(self, data):
-        xstart = data["x_mm"][0]
-        xend = data["x_mm"][-1]
-        xdim = data["hist_env"].shape[1]
+        bg = processing_config.bg
+        has_bg = bg.use and bg.loaded_data is not None and bg.error is None
+        limit_mode = ProcessingConfig.BackgroundMode.LIMIT
+        show_bg = has_bg and processing_config.bg_mode == limit_mode
 
-        num_sensors = len(data["env_ampl"])
-        if self.num_sensors < num_sensors:
-            num_sensors = self.num_sensors
+        for curve in self.bg_curves:
+            curve.setVisible(show_bg)
 
-        if data["sweep"] <= 2:
-            self.env_plot_max_y = np.zeros(self.num_sensors)
-            self.envelope_plot_window.setXRange(xstart, xend)
+    def update(self, d):
+        sweeps = d["output_data"]
+        bgs = d["bg"]
+        histories = d["history"]
 
-            self.smooth_envelope = utils.SmoothMax(
-                int(self.sensor_config.sweep_rate),
-                tau_decay=1,
-                tau_grow=0.2
-                )
+        for i, _ in enumerate(self.sensor_config.sensor):
+            self.ampl_curves[i].setData(self.depths, sweeps[i])
 
-            for s in range(num_sensors):
-                self.peak_text.setPos(xstart, 0)
+            if bgs is not None:
+                self.bg_curves[i].setData(self.depths, bgs[i])
 
-                yax = self.hist_plot_images[s].getAxis("left")
-                y = np.round(np.arange(0, xdim+xdim/9, xdim/9))
-                labels = np.round(np.arange(xstart, xend+(xend-xstart)/9,
-                                  (xend-xstart)/9))
-                ticks = [list(zip(y, labels))]
-                yax.setTicks(ticks)
-                self.hist_plot_images[s].setYRange(0, xdim)
+            im = self.history_ims[i]
+            history = histories[:, i]
+            im.updateImage(history, levels=(0, 1.05 * history.max()))
 
-                s_buff = data["hist_env"].shape[2]
-                t_buff = s_buff / data["sensor_config"].sweep_rate
-                tax = self.hist_plot_images[s].getAxis("bottom")
-                t = np.round(np.arange(0, s_buff + 1, s_buff / min(10 / self.num_sensors, s_buff)))
-                labels = np.round(t / s_buff * t_buff, decimals=3)
-                ticks = [list(zip(t, labels))]
-                tax.setTicks(ticks)
+        m = self.smooth_max.update(sweeps.max())
+        self.ampl_plot.setYRange(0, m)
 
-        peaks = data["peaks"]
-        peak_txt = "Peak: N/A"
-        for s in range(num_sensors):
-            sensor = self.sensor_config.sensor[s]
-            if peaks:
-                self.peak_vlines[s].setValue(peaks["peak_mm"][s])
-                if s == 0:
-                    peak_txt = ""
-                if np.isfinite(peaks["snr"][s]):
-                    peak_txt += "Peak S{}: {:.1f}mm, SNR: {:.1f}dB".format(
-                        sensor, peaks["peak_mm"][s], peaks["snr"][s])
-                else:
-                    peak_txt += "Peak S{}: %.1fmm".format(sensor, peaks["peak_mm"][s])
-                if s < num_sensors - 1:
-                    peak_txt += "\n"
 
-            max_val = max(np.max(data["env_clutter"] + data["env_ampl"][s]),
-                          np.max(data["env_clutter"]))
-            peak_line = np.flip((data["hist_plots"][s] - xstart) / (xend - xstart) * xdim, axis=0)
-
-            self.envelope_plots[s].setData(data["x_mm"], data["env_ampl"][s] + data["env_clutter"])
-
-            self.envelope_plot_window.setYRange(0, self.smooth_envelope.update(max_val))
-
-            if num_sensors == 1 and len(self.clutter_plots):
-                self.clutter_plots[0].setData(data["x_mm"], data["env_clutter"])
-
-            ymax_level = min(1.5 * np.max(np.max(data["hist_env"][s, :, :])),
-                             self.env_plot_max_y[s])
-
-            self.hist_plots[s].updateImage(data["hist_env"][s, :, :].T, levels=(0, ymax_level))
-            self.hist_plot_peaks[s].setData(peak_line)
-            self.hist_plot_peaks[s].setZValue(2)
-
-            if max_val > self.env_plot_max_y[s]:
-                self.env_plot_max_y[s] = 1.2 * max_val
-        self.peak_text.setText(peak_txt, color=(1, 1, 1))
+if __name__ == "__main__":
+    main()
