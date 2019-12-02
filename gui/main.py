@@ -289,8 +289,8 @@ class GUI(QMainWindow):
             self.buttons["sensor_defaults"].setEnabled(False)
             self.refresh_pidgets()
             return canvas
-        else:
-            self.buttons["sensor_defaults"].setEnabled(True)
+
+        self.buttons["sensor_defaults"].setEnabled(True)
 
         canvas = pg.GraphicsLayoutWidget()
 
