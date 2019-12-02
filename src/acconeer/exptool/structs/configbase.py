@@ -24,6 +24,17 @@ from PyQt5.QtWidgets import (
 )
 
 
+def _limits_for_qt(set_limits):
+    limits = [-1e9, 1e9]
+
+    if set_limits is not None:
+        for i in range(2):
+            if set_limits[i] is not None:
+                limits[i] = set_limits[i]
+
+    return limits
+
+
 class Category(enum.Enum):
     BASIC = enum.auto()
     ADVANCED = enum.auto()
@@ -187,12 +198,7 @@ class IntSpinBoxPidget(PidgetStub):
         self.spin_box.setSingleStep(param.step)
         self.spin_box.valueChanged.connect(self._subwidget_event_handler)
         self.spin_box.setKeyboardTracking(False)
-
-        if param.limits is None:
-            self.spin_box.setRange(-1e9, 1e9)
-        else:
-            self.spin_box.setRange(*param.limits)
-
+        self.spin_box.setRange(*_limits_for_qt(param.limits))
         self.grid.addWidget(self.spin_box, 0, 1, 1, 1)
 
         self.update()
@@ -224,8 +230,7 @@ class FloatRangeSpinBoxesPidget(PidgetStub):
             spin_box.setSingleStep(10**(-param.decimals))
             spin_box.valueChanged.connect(lambda v, i=i: self.__spin_box_event_handler(v, i))
             spin_box.setKeyboardTracking(False)
-            spin_box.setMinimum(param.limits[0])
-            spin_box.setMaximum(param.limits[1])
+            spin_box.setRange(*_limits_for_qt(param.limits))
             self.grid.addWidget(spin_box, 1, i, 1, 1)
             self.spin_boxes.append(spin_box)
 
@@ -261,18 +266,54 @@ class FloatSpinBoxPidget(PidgetStub):
         self.spin_box = QDoubleSpinBox(self)
         self.spin_box.setDecimals(param.decimals)
         self.spin_box.setSingleStep(10**(-param.decimals))
-        self.spin_box.valueChanged.connect(self._subwidget_event_handler)
         self.spin_box.setKeyboardTracking(False)
-        self.spin_box.setMinimum(param.limits[0])
-        self.spin_box.setMaximum(param.limits[1])
-        self.grid.addWidget(self.spin_box, 0, 1, 1, 1)
+        self.spin_box.setRange(*_limits_for_qt(param.limits))
+
+        if param.is_optional:
+            self.checkbox = QCheckBox(param.optional_label, self)
+            self.checkbox.setTristate(False)
+            self.checkbox.stateChanged.connect(self.__checkbox_event_handler)
+
+            self.grid.setColumnStretch(1, 1)
+            self.grid.addWidget(self.checkbox, 0, 1, 1, 1)
+
+            self.grid.setColumnStretch(2, 1)
+            self.grid.addWidget(self.spin_box, 0, 2, 1, 1)
+
+            self.spin_box.setValue(self.param.optional_default_set_value)
+        else:
+            self.checkbox = None
+            self.grid.addWidget(self.spin_box, 0, 1, 1, 1)
+
+        self.spin_box.valueChanged.connect(self.__spin_box_event_handler)
 
         self.update()
 
     def _update(self):
         super()._update()
         value = self._get_param_value()
-        self.spin_box.setValue(value)
+        is_set = value is not None
+
+        if is_set:
+            self.spin_box.setValue(value)
+
+        self.spin_box.setEnabled(is_set)
+        self.checkbox.setChecked(is_set)
+
+    def __checkbox_event_handler(self, val):
+        if val:
+            val = self.spin_box.value()
+        else:
+            val = None
+
+        self._subwidget_event_handler(val)
+
+    def __spin_box_event_handler(self, val):
+        if self.param.is_optional:
+            if not self.checkbox.isChecked():
+                val = None
+
+        self._subwidget_event_handler(val)
 
 
 class FloatSpinBoxAndSliderPidget(PidgetStub):
@@ -296,8 +337,7 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
         self.spin_box.setSingleStep(10**(-param.decimals))
         self.spin_box.valueChanged.connect(self._subwidget_event_handler)
         self.spin_box.setKeyboardTracking(False)
-        self.spin_box.setMinimum(param.limits[0])
-        self.spin_box.setMaximum(param.limits[1])
+        self.spin_box.setRange(*_limits_for_qt(param.limits))
         self.grid.addWidget(self.spin_box, 0, 1, 1, 1)
 
         slider_widget = QWidget()
@@ -415,6 +455,15 @@ class Parameter:
 class ValueParameter(Parameter):
     def __init__(self, **kwargs):
         self.default_value = kwargs.pop("default_value")
+        self.is_optional = kwargs.pop("optional", False)
+
+        if self.is_optional:
+            self.optional_label = kwargs.pop("optional_label", "Set")
+
+            if self.default_value is None:
+                self.optional_default_set_value = kwargs.pop("optional_default_set_value")
+            else:
+                self.optional_default_set_value = self.default_value
 
         kwargs.setdefault("does_dump", True)
 
@@ -443,7 +492,10 @@ class ValueParameter(Parameter):
         obj._parameter_event_handler()
 
     def sanitize(self, value):
-        return self._sanitize(value)
+        if not (self.is_optional and value is None):
+            value = self._sanitize(value)
+
+        return value
 
     def _sanitize(self, value):
         return value
@@ -535,9 +587,9 @@ class IntParameter(NumberParameter):
         if self.limits is not None:
             lower, upper = self.limits
 
-            if value < lower:
+            if lower is not None and value < lower:
                 raise ValueError("Given value is too low")
-            if value > upper:
+            if upper is not None and value > upper:
                 raise ValueError("Given value is too high")
 
         return value
@@ -550,7 +602,11 @@ class FloatParameter(NumberParameter):
         self.decimals = kwargs.pop("decimals", 2)
         self.logscale = kwargs.pop("logscale", False)
 
-        kwargs.setdefault("_pidget_class", FloatSpinBoxAndSliderPidget)
+        limits = kwargs.get("limits", None)
+        if limits is not None and not any([lim is None for lim in limits]):
+            kwargs.setdefault("_pidget_class", FloatSpinBoxAndSliderPidget)
+        else:
+            kwargs.setdefault("_pidget_class", FloatSpinBoxPidget)
 
         super().__init__(**kwargs)
 
@@ -569,9 +625,9 @@ class FloatParameter(NumberParameter):
         if self.limits is not None:
             lower, upper = self.limits
 
-            if value < lower:
+            if lower is not None and value < lower:
                 raise ValueError("Given value is too low")
-            if value > upper:
+            if upper is not None and value > upper:
                 raise ValueError("Given value is too high")
 
         return value
