@@ -365,6 +365,8 @@ class GUI(QMainWindow):
                 grid.addWidget(pidget, count.val, 0, 1, 2)
                 count.post_incr()
 
+        self.refresh_pidgets()
+
     def refresh_pidgets(self):
         processing_config = self.get_processing_config()
 
@@ -683,9 +685,6 @@ class GUI(QMainWindow):
             self.buttons["save_process_data"], 1, 1)
 
         self.main_sublayout.setRowStretch(7, 1)
-
-        self.basic_processing_config_section.hide()
-        self.advanced_processing_config_section.hide()
 
     def init_panel_scroll_area(self):
         self.panel_scroll_area = QtWidgets.QScrollArea()
