@@ -771,6 +771,14 @@ class Config:
             raise AttributeError(fmt.format(self.__class__.__name__, name))
 
 
+class SensorConfig(Config):
+    pass
+
+
+class ProcessingConfig(Config):
+    pass
+
+
 class ReferenceData:
     def __init__(self, param, parent_instance, buffer_size=50):
         self._param = param
@@ -881,10 +889,6 @@ class ReferenceData:
 
     def __notify(self):
         self._parent_instance._parameter_event_handler()
-
-
-class ProcessingConfig(Config):
-    pass
 
 
 class ReferenceDataPidget(PidgetStub):
