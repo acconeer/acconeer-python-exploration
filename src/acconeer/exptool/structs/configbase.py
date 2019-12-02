@@ -6,26 +6,22 @@ from weakref import WeakKeyDictionary
 
 import numpy as np
 
-
-try:
-    from PyQt5 import QtCore
-    from PyQt5.QtWidgets import (
-        QWidget,
-        QFrame,
-        QGridLayout,
-        QDoubleSpinBox,
-        QSlider,
-        QLabel,
-        QHBoxLayout,
-        QVBoxLayout,
-        QSpinBox,
-        QCheckBox,
-        QPushButton,
-        QFileDialog,
-        QComboBox,
-    )
-except ImportError:
-    pass
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSlider,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class Category(enum.Enum):
