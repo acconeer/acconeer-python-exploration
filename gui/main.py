@@ -353,13 +353,13 @@ class GUI(QMainWindow):
 
                 loc = pidget.param.pidget_location
                 if loc == "advanced":
-                    grid = self.advanced_params_layout_grid
+                    grid = self.advanced_processing_config_section.grid
                     count = self.param_grid_count
                 elif loc == "control":
                     grid = self.control_section.grid
                     count = self.control_grid_count
                 else:
-                    grid = self.serviceparams_sublayout_grid
+                    grid = self.basic_processing_config_section.grid
                     count = self.param_grid_count
 
                 grid.addWidget(pidget, count.val, 0, 1, 2)
@@ -377,8 +377,8 @@ class GUI(QMainWindow):
             # TODO: else return here when migration to configbase is done
 
         if processing_config is None:
-            self.service_section.hide()
-            self.advanced_section.hide()
+            self.basic_processing_config_section.hide()
+            self.advanced_processing_config_section.hide()
             return
 
         # TODO: remove the follow check when migration to configbase is done
@@ -399,8 +399,8 @@ class GUI(QMainWindow):
                     has_basic_params = True
 
         if self.get_gui_state("ml_tab") == "main":
-            self.service_section.setVisible(has_basic_params)
-            self.advanced_section.setVisible(has_advanced_params)
+            self.basic_processing_config_section.setVisible(has_basic_params)
+            self.advanced_processing_config_section.setVisible(has_advanced_params)
 
     def pidget_processing_config_event_handler(self, processing_config):
         if threading.current_thread().name != "MainThread":
@@ -667,22 +667,25 @@ class GUI(QMainWindow):
         self.settings_section.grid.addWidget(self.sampling_mode_dd, c.pre_incr(), 0, 1, 2)
         self.settings_section.grid.addWidget(self.labels["stitching"], c.pre_incr(), 0, 1, 2)
 
-        self.service_section = CollapsibleSection("Processing settings")
-        self.main_sublayout.addWidget(self.service_section, 5, 0)
-        self.service_section.grid.addWidget(self.buttons["service_defaults"], 0, 0, 1, 2)
-        self.serviceparams_sublayout_grid = self.service_section.grid
+        self.basic_processing_config_section = CollapsibleSection("Processing settings")
+        self.main_sublayout.addWidget(self.basic_processing_config_section, 5, 0)
+        self.basic_processing_config_section.grid.addWidget(
+            self.buttons["service_defaults"], 0, 0, 1, 2)
 
-        self.advanced_section = CollapsibleSection("Advanced settings", init_collapsed=True)
-        self.main_sublayout.addWidget(self.advanced_section, 6, 0)
-        self.advanced_section.grid.addWidget(self.buttons["advanced_defaults"], 0, 0, 1, 2)
-        self.advanced_section.grid.addWidget(self.buttons["load_process_data"], 1, 0)
-        self.advanced_section.grid.addWidget(self.buttons["save_process_data"], 1, 1)
-        self.advanced_params_layout_grid = self.advanced_section.grid
+        self.advanced_processing_config_section = CollapsibleSection(
+            "Advanced processing settings", init_collapsed=True)
+        self.main_sublayout.addWidget(self.advanced_processing_config_section, 6, 0)
+        self.advanced_processing_config_section.grid.addWidget(
+            self.buttons["advanced_defaults"], 0, 0, 1, 2)
+        self.advanced_processing_config_section.grid.addWidget(
+            self.buttons["load_process_data"], 1, 0)
+        self.advanced_processing_config_section.grid.addWidget(
+            self.buttons["save_process_data"], 1, 1)
 
         self.main_sublayout.setRowStretch(7, 1)
 
-        self.service_section.hide()
-        self.advanced_section.hide()
+        self.basic_processing_config_section.hide()
+        self.advanced_processing_config_section.hide()
 
     def init_panel_scroll_area(self):
         self.panel_scroll_area = QtWidgets.QScrollArea()
@@ -842,9 +845,9 @@ class GUI(QMainWindow):
 
                 advanced_available = bool(param_dict.get("advanced"))
                 if advanced_available:
-                    grid = self.advanced_params_layout_grid
+                    grid = self.advanced_processing_config_section.grid
                 else:
-                    grid = self.serviceparams_sublayout_grid
+                    grid = self.basic_processing_config_section.grid
 
                 param_gui_dict["advanced"] = advanced_available
 
@@ -896,13 +899,13 @@ class GUI(QMainWindow):
 
         if start_up_mode is None:
             if self.get_gui_state("ml_tab") == "main":
-                self.service_section.setVisible(bool(params))
+                self.basic_processing_config_section.setVisible(bool(params))
 
             if advanced_available:
-                self.advanced_section.show()
-                self.advanced_section.button_event(override=True)
+                self.advanced_processing_config_section.show()
+                self.advanced_processing_config_section.button_event(override=True)
             else:
-                self.advanced_section.hide()
+                self.advanced_processing_config_section.hide()
 
     def sensor_defaults_handler(self):
         sensor_config_class = self.current_module_info.sensor_config_class
@@ -1134,12 +1137,12 @@ class GUI(QMainWindow):
         self.settings_section.body_widget.setEnabled(False)
 
         if isinstance(processing_config, configbase.Config):
-            self.service_section.body_widget.setEnabled(True)
+            self.basic_processing_config_section.body_widget.setEnabled(True)
             self.buttons["service_defaults"].setEnabled(False)
             self.buttons["advanced_defaults"].setEnabled(False)
             processing_config._state = configbase.Config.State.LIVE
         else:
-            self.service_section.body_widget.setEnabled(False)
+            self.basic_processing_config_section.body_widget.setEnabled(False)
 
         self.buttons["connect"].setEnabled(False)
         self.buttons["replay_buffered"].setEnabled(False)
@@ -1195,7 +1198,7 @@ class GUI(QMainWindow):
             self.feature_sidepanel.select_mode(val)
             self.settings_section.body_widget.setEnabled(True)
             self.server_section.hide()
-            self.service_section.hide()
+            self.basic_processing_config_section.hide()
             self.settings_section.hide()
             self.control_section.hide()
             self.feature_section.hide()
@@ -1206,7 +1209,7 @@ class GUI(QMainWindow):
 
             if tab == "main":
                 if "Select service" not in self.current_module_label:
-                    self.service_section.show()
+                    self.basic_processing_config_section.show()
                 self.settings_section.show()
                 self.server_section.show()
                 self.control_section.show()
@@ -1278,7 +1281,7 @@ class GUI(QMainWindow):
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
         self.buttons["start"].setEnabled(True)
-        self.service_section.body_widget.setEnabled(True)
+        self.basic_processing_config_section.body_widget.setEnabled(True)
 
         if self.get_gui_state("ml_tab") in ["main", "feature_select"]:
             self.settings_section.body_widget.setEnabled(True)
