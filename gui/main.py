@@ -1,7 +1,6 @@
 import copy
 import json
 import logging
-import ntpath
 import os
 import re
 import signal
@@ -71,7 +70,6 @@ class GUI(QMainWindow):
     ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
     LAST_CONF_FILENAME = os.path.join(HERE, "last_config.npy")
     LAST_ML_CONF_FILENAME = os.path.join(HERE, "last_ml_config.npy")
-    MAX_CL_SWEEPS = 10000
 
     ENVELOPE_PROFILES = [
         (configs.EnvelopeServiceConfig.MAX_SNR, "Max SNR"),
@@ -92,19 +90,16 @@ class GUI(QMainWindow):
 
         self.under_test = under_test
 
-        self.cl_file = False
         self.data = None
         self.client = None
         self.sweep_count = -1
         self.sweep_buffer = 500
-        self.cl_supported = False
         self.sweep_number = 0
         self.sweeps_skipped = 0
         self.service_labels = {}
         self.service_params = None
         self.service_defaults = None
         self.advanced_process_data = {"use_data": False, "process_data": None}
-        self.creating_cl = False
         self.override_baudrate = None
         self.session_info = None
         self.threaded_scan = None
@@ -207,8 +202,6 @@ class GUI(QMainWindow):
             "sweep_buffer": ("Sweep buffer", "scan"),
             "range_start": ("Start (m)", "sensor"),
             "range_end": ("Stop (m)", "sensor"),
-            "clutter": ("Background settings", "scan"),
-            "clutter_status": ("", "scan"),
             "interface": ("Interface", "connection"),
             "bin_count": ("Power bins", "sensor"),
             "number_of_subsweeps": ("Sweeps per frame", "sensor"),
@@ -218,7 +211,6 @@ class GUI(QMainWindow):
             "sweep_info": ("", "statusbar"),
             "saturated": ("Warning: Data saturated, reduce gain!", "statusbar"),
             "stitching": ("Experimental stitching enabled!", "sensor"),
-            "empty_02": ("", "scan"),
             "libver": ("", "statusbar"),
         }
 
@@ -231,9 +223,6 @@ class GUI(QMainWindow):
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
         self.labels["stitching"].setVisible(False)
         self.labels["stitching"].setStyleSheet("color: red")
-        self.labels["clutter_status"].setStyleSheet("color: red")
-        self.labels["clutter_status"].setVisible(False)
-        self.labels["empty_02"].hide()
 
     def init_textboxes(self):
         # key: text, group
@@ -266,7 +255,6 @@ class GUI(QMainWindow):
     def init_checkboxes(self):
         # text, status, visible, enabled, function
         checkbox_info = {
-            "clutter_file": ("", False, False, True, self.update_scan),
             "verbose": ("Verbose logging", False, True, True, self.set_log_level),
             "opengl": ("OpenGL", False, True, True, self.enable_opengl),
         }
@@ -298,17 +286,6 @@ class GUI(QMainWindow):
         enable_stepsize = self.current_data_type in ["sparse", "iq"]
         self.textboxes["stepsize"].setVisible(enable_stepsize)
         self.labels["stepsize"].setVisible(enable_stepsize)
-
-        self.cl_supported = False
-        if self.current_module_label in ["IQ", "Envelope"]:
-            self.cl_supported = True
-
-        if self.get_gui_state("ml_tab") == "main":
-            self.buttons["create_cl"].setVisible(self.cl_supported)
-            self.buttons["load_cl"].setVisible(self.cl_supported)
-            self.labels["clutter"].setVisible(self.cl_supported)
-        self.buttons["create_cl"].setEnabled(self.cl_supported)
-        self.buttons["load_cl"].setEnabled(self.cl_supported)
 
         if self.current_module_info.module is None:
             canvas = Label(self.ACC_IMG_FILENAME)
@@ -566,14 +543,6 @@ class GUI(QMainWindow):
             "start": ("Start", self.start_scan, False, False, "scan"),
             "connect": ("Connect", self.connect_to_server, True, False, "connection"),
             "stop": ("Stop", self.stop_scan, False, False, "scan"),
-            "create_cl": (
-                "Scan Background",
-                lambda: self.start_scan(create_cl=True),
-                False,
-                False,
-                "scan",
-            ),
-            "load_cl": ("Load Background", self.load_clutter_file, False, False, "scan"),
             "load_scan": ("Load Scan", lambda: self.load_scan(), True, False, "scan"),
             "save_scan": ("Save Scan", lambda: self.save_scan(self.data), False, False, "scan"),
             "replay_buffered": (
@@ -664,12 +633,6 @@ class GUI(QMainWindow):
         self.control_section.grid.addWidget(self.labels["sweep_buffer"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], c.val, 1)
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer_ml"], c.val, 1)
-        self.control_section.grid.addWidget(self.labels["empty_02"], c.pre_incr(), 0)
-        self.control_section.grid.addWidget(self.labels["clutter_status"], c.pre_incr(), 0, 1, 2)
-        self.control_section.grid.addWidget(self.labels["clutter"], c.pre_incr(), 0)
-        self.control_section.grid.addWidget(self.buttons["create_cl"], c.pre_incr(), 0)
-        self.control_section.grid.addWidget(self.buttons["load_cl"], c.val, 1)
-        self.control_section.grid.addWidget(self.checkboxes["clutter_file"], c.pre_incr(), 0, 1, 2)
 
         self.settings_section = CollapsibleSection("Sensor settings")
         self.main_sublayout.addWidget(self.settings_section, 4, 0)
@@ -1074,7 +1037,7 @@ class GUI(QMainWindow):
         retval = msg.exec_()
         return retval == 1024
 
-    def start_scan(self, create_cl=False, from_file=False):
+    def start_scan(self, from_file=False):
         if self.get_gui_state("has_loaded_data") and not from_file:
             self.set_gui_state("has_loaded_data", False)
         if self.current_module_info.module is None:
@@ -1102,49 +1065,13 @@ class GUI(QMainWindow):
             # We need to fix sensors here, which are overwritten in above call
             self.data[0]["sensor_config"] = saved_sensor_config
 
-        if create_cl and len(sensor_config.sensor) > 1:
-            self.error_message("Background is only supported for single sensor operation!\n")
-            return
-
         if data_source == "file":
             self.set_gui_state("replaying_data", True)
-
-        if create_cl:
-            self.sweep_buffer = min(self.sweep_buffer, self.MAX_CL_SWEEPS)
-            self.creating_cl = True
-            self.labels["empty_02"].hide()
-            self.labels["clutter_status"].show()
-            if self.cl_file:
-                self.load_clutter_file(force_unload=True)
-            self.input_clutter_sweeps()
-            if self.clutter_sweeps is None:
-                return
-        else:
-            self.creating_cl = False
-            self.clutter_sweeps = None
-
-        use_cl = False
-        if self.checkboxes["clutter_file"].isChecked():
-            use_cl = True
 
         self.update_canvas(force_update=True)
 
         processing_config = self.update_service_params()
-        mode = self.current_module_label
-        if mode == "Envelope" or mode == "IQ":
-            processing_config = copy.deepcopy(self.update_service_params())
-            processing_config["clutter_file"] = self.cl_file
-            processing_config["use_clutter"] = use_cl
-            processing_config["create_clutter"] = create_cl
-            if not create_cl:
-                processing_config["sweeps_requested"] = self.sweep_count
-            else:
-                processing_config["sweeps_requested"] = self.clutter_sweeps
-
         sensor_config = self.save_gui_settings_to_sensor_config()
-        if create_cl and len(sensor_config.sensor) > 1:
-            self.error_message("Background can only be measured for one sensor at a time!\n")
-            return
 
         sweep_buffer = self.sweep_buffer
         feature_list = None
@@ -1191,9 +1118,6 @@ class GUI(QMainWindow):
 
         params = {
             "sensor_config": sensor_config,
-            "clutter_file": self.cl_file,
-            "use_clutter": use_cl,
-            "create_clutter": create_cl,
             "data_source": data_source,
             "service_type": self.current_module_label,
             "sweep_buffer": sweep_buffer,
@@ -1209,8 +1133,6 @@ class GUI(QMainWindow):
         self.buttons["start"].setEnabled(False)
         self.buttons["load_scan"].setEnabled(False)
         self.buttons["save_scan"].setEnabled(False)
-        self.buttons["create_cl"].setEnabled(False)
-        self.buttons["load_cl"].setEnabled(False)
         self.module_dd.setEnabled(False)
         self.buttons["stop"].setEnabled(True)
         self.checkboxes["opengl"].setEnabled(False)
@@ -1252,8 +1174,6 @@ class GUI(QMainWindow):
             connected = val
             if connected:
                 self.buttons["start"].setEnabled(True)
-                self.buttons["create_cl"].setEnabled(self.cl_supported)
-                self.buttons["load_cl"].setEnabled(self.cl_supported)
                 self.buttons["connect"].setText("Disconnect")
                 self.buttons["connect"].setStyleSheet("QPushButton {color: red}")
                 self.buttons["advanced_port"].setEnabled(False)
@@ -1269,11 +1189,8 @@ class GUI(QMainWindow):
                 self.buttons["connect"].setText("Connect")
                 self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
                 self.buttons["start"].setEnabled(False)
-                self.buttons["create_cl"].setEnabled(False)
                 self.buttons["advanced_port"].setEnabled(True)
                 self.statusBar().showMessage("Not connected")
-                if self.cl_supported:
-                    self.buttons["load_cl"].setEnabled(True)
 
         if state == "has_loaded_data":
             if val:
@@ -1296,7 +1213,6 @@ class GUI(QMainWindow):
             self.textboxes["sweep_buffer_ml"].hide()
             self.textboxes["sweep_buffer"].hide()
             self.module_dd.show()
-            cl_supported = self.cl_supported
 
             if tab == "main":
                 if "Select service" not in self.current_module_label:
@@ -1319,7 +1235,6 @@ class GUI(QMainWindow):
                 self.feature_select.check_limits()
 
             elif tab == "feature_extract":
-                cl_supported = False
                 self.server_section.show()
                 self.control_section.show()
                 self.feature_section.button_event(override=False)
@@ -1347,7 +1262,6 @@ class GUI(QMainWindow):
 
             elif tab == "eval":
                 self.settings_section.body_widget.setEnabled(False)
-                cl_supported = False
                 self.feature_section.show()
                 self.eval_section.show()
                 self.settings_section.show()
@@ -1360,11 +1274,6 @@ class GUI(QMainWindow):
                     self.eval_model.init_graph()
                     self.ml_use_model_plot_widget = self.eval_model.plot_widget
 
-            self.buttons["create_cl"].setVisible(cl_supported)
-            self.buttons["load_cl"].setVisible(cl_supported)
-            self.buttons["load_cl"].setEnabled(cl_supported)
-            self.labels["clutter"].setVisible(cl_supported)
-
     def get_gui_state(self, state):
         if state in self.gui_states:
             return self.gui_states[state]
@@ -1372,20 +1281,9 @@ class GUI(QMainWindow):
             print("{} is an unknown state!".format(state))
             return
 
-    def update_scan(self):
-        if self.cl_file:
-            clutter_file = self.cl_file
-            if not self.checkboxes["clutter_file"].isChecked():
-                clutter_file = None
-            self.sig_scan.emit("set_clutter_flag", "", clutter_file)
-
     def stop_scan(self):
         self.sig_scan.emit("stop", "", None)
         self.buttons["load_scan"].setEnabled(True)
-        self.buttons["load_cl"].setEnabled(self.cl_supported)
-        self.buttons["create_cl"].setEnabled(self.cl_supported)
-        self.labels["empty_02"].show()
-        self.labels["clutter_status"].hide()
         self.module_dd.setEnabled(True)
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
@@ -1416,24 +1314,6 @@ class GUI(QMainWindow):
         self.enable_tabs(True)
 
         self.set_gui_state("scan_is_running", False)
-
-    def input_clutter_sweeps(self):
-        input_dialog = QtWidgets.QInputDialog(self)
-        input_dialog.setInputMode(QtWidgets.QInputDialog.IntInput)
-        input_dialog.setFixedSize(400, 200)
-        input_dialog.setIntRange(0, 3e6)
-        input_dialog.setIntValue(100)
-        input_dialog.setOption(QtWidgets.QInputDialog.UsePlainTextEditForTextInput)
-        input_dialog.setWindowTitle("Sweep count")
-        input_dialog.setLabelText(
-                "Over how many sweeps do you want to estimate the background?"
-                )
-
-        if input_dialog.exec_() == QtWidgets.QDialog.Accepted:
-            self.clutter_sweeps = int(input_dialog.intValue())
-        else:
-            self.clutter_sweeps = None
-        input_dialog.deleteLater()
 
     def set_log_level(self):
         log_level = logging.INFO
@@ -1835,34 +1715,6 @@ class GUI(QMainWindow):
             field.setText(str(val))
         return val, out_of_range
 
-    def load_clutter_file(self, force_unload=False, fname=None):
-        if not fname:
-            if "unload" in self.buttons["load_cl"].text().lower() or force_unload:
-                self.cl_file = None
-                self.checkboxes["clutter_file"].setVisible(False)
-                self.checkboxes["clutter_file"].setChecked(False)
-                self.buttons["load_cl"].setText("Load Background")
-                self.buttons["load_cl"].setStyleSheet("QPushButton {color: black}")
-            else:
-                options = QtWidgets.QFileDialog.Options()
-                options |= QtWidgets.QFileDialog.DontUseNativeDialog
-                fname, _ = QtWidgets.QFileDialog.getOpenFileName(
-                    self,
-                    "Load background file",
-                    "",
-                    "NumPy data Files (*.npy)",
-                    options=options
-                    )
-
-        if fname:
-            self.cl_file = fname
-            self.checkboxes["clutter_file"].setVisible(True)
-            s = "Background: {}".format(ntpath.basename(fname))
-            self.checkboxes["clutter_file"].setText(s)
-            self.checkboxes["clutter_file"].setChecked(True)
-            self.buttons["load_cl"].setText("Unload background")
-            self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
-
     def load_scan(self, restart=False):
         if restart:
             self.start_scan(from_file=True)
@@ -1879,7 +1731,6 @@ class GUI(QMainWindow):
                 )
 
         if filename:
-            cl_file = None
             if filename.endswith(".h5"):
                 try:
                     f = h5py.File(filename, "r")
@@ -1995,12 +1846,6 @@ class GUI(QMainWindow):
                     conf.sensor = 1
                 nr_sensors = len(conf.sensor)
 
-                cl_file = None
-                try:
-                    cl_file = f["clutter_file"][()]
-                except Exception:
-                    pass
-
                 has_sweep_info = True
                 nr = None
                 try:
@@ -2026,7 +1871,6 @@ class GUI(QMainWindow):
                             "sweep_data": sweeps[i],
                             "service_type": module_label,
                             "sensor_config": conf,
-                            "cl_file": cl_file,
                             "info": [
                                 {
                                     "sequence_number": int(nr[i, s]),
@@ -2039,7 +1883,6 @@ class GUI(QMainWindow):
                             "sweep_data": sweeps[i],
                             "service_type": module_label,
                             "sensor_config": conf,
-                            "cl_file": cl_file,
                         } for i in length]
 
                 self.data[0]["session_info"] = session_info
@@ -2047,7 +1890,6 @@ class GUI(QMainWindow):
                 try:
                     data = np.load(filename, allow_pickle=True)
                     module_label = data[0]["service_type"]
-                    cl_file = data[0]["cl_file"]
                     conf = data[0]["sensor_config"]
                 except Exception as e:
                     self.error_message("{}".format(e))
@@ -2063,19 +1905,10 @@ class GUI(QMainWindow):
             self.set_sensors(conf.sensor)
             self.load_gui_settings_from_sensor_config(conf)
 
-            if isinstance(cl_file, str) or isinstance(cl_file, os.PathLike):
-                if len(cl_file):
-                    try:
-                        os.path.isfile(cl_file)
-                        self.load_clutter_file(fname=cl_file)
-                    except Exception as e:
-                        print("Background file not found")
-                        print(e)
-
             print("Loaded file with {} sweeps.".format(len(self.data)))
             self.start_scan(from_file=True)
 
-    def save_scan(self, data, clutter=False):
+    def save_scan(self, data):
         mode = self.current_module_label
         if "sleep" in mode.lower():
             if int(self.textboxes["sweep_buffer"].text()) < 1000:
@@ -2086,29 +1919,12 @@ class GUI(QMainWindow):
 
         title = "Save scan"
         file_types = "HDF5 data files (*.h5);; NumPy data files (*.npy)"
-        if clutter:
-            title = "Save background"
-            file_types = "NumPy data files (*.npy)"
+
         filename, info = QtWidgets.QFileDialog.getSaveFileName(
                 self, title, "", file_types, options=options)
 
         if filename:
-            if clutter:
-                try:
-                    np.save(filename, data)
-                except Exception as e:
-                    self.error_message("Failed to save file:\n {:s}".format(e))
-                    return
-                self.cl_file = filename
-                if "npy" not in filename.lower():
-                    self.cl_file += ".npy"
-                label_text = "Background: {}".format(ntpath.basename(filename))
-                self.checkboxes["clutter_file"].setText(label_text)
-                self.checkboxes["clutter_file"].setChecked(True)
-                self.checkboxes["clutter_file"].setVisible(True)
-                self.buttons["load_cl"].setText("Unload background")
-                self.buttons["load_cl"].setStyleSheet("QPushButton {color: red}")
-            else:
+            if True:  # TODO: clean up
                 if "h5" in info:
                     sweep_data = []
                     info_available = True
@@ -2168,10 +1984,6 @@ class GUI(QMainWindow):
                         self.error_message("Failed to save file:\n {:s}".format(e))
                         return
 
-                    cl_file = None
-                    if self.cl_file:
-                        cl_file = self.cl_file
-
                     f.create_dataset("imag", data=np.imag(sweep_data), dtype=np.float32)
                     f.create_dataset("real", data=np.real(sweep_data), dtype=np.float32)
                     f.create_dataset("sweep_rate", data=int(self.textboxes["sweep_rate"].text()),
@@ -2183,8 +1995,6 @@ class GUI(QMainWindow):
                     f.create_dataset("gain", data=float(sensor_config.gain), dtype=np.float32)
                     f.create_dataset("sensor", data=sensor_config.sensor, dtype=np.int)
                     f.create_dataset("service_type", data=mode.lower(),
-                                     dtype=h5py.special_dtype(vlen=str))
-                    f.create_dataset("clutter_file", data=cl_file,
                                      dtype=h5py.special_dtype(vlen=str))
                     f.create_dataset("profile", data=self.env_profiles_dd.currentIndex(),
                                      dtype=np.int)
@@ -2309,15 +2119,10 @@ class GUI(QMainWindow):
                 self.stop_scan()
                 if self.get_gui_state("server_connected"):
                     self.connect_to_server()
-                self.buttons["create_cl"].setEnabled(False)
                 self.buttons["start"].setEnabled(False)
-            elif "clutter" in message_type:
-                self.load_clutter_file(force_unload=True)
             elif "proccessing" in message_type:
                 self.stop_scan()
             self.error_message("{}".format(message))
-        elif message_type == "clutter_data":
-            self.save_scan(data, clutter=True)
         elif message_type == "scan_data":
             if not self.get_gui_state("replaying_data"):
                 self.data = data
@@ -2389,12 +2194,6 @@ class GUI(QMainWindow):
             self.labels["saturated"].setStyleSheet("color: red")
         else:
             self.labels["saturated"].setStyleSheet("color: #f0f0f0")
-
-        if self.creating_cl:
-            sweeps = self.sweep_number - self.sweeps_skipped
-            clutter_status = "Scanning background sweep {:d} of {:d}".format(sweeps,
-                                                                             self.clutter_sweeps)
-            self.labels["clutter_status"].setText(clutter_status)
 
     def update_ranges(self, data):
         old_start = float(self.textboxes["range_start"].text())
@@ -2583,10 +2382,6 @@ class Threaded_Scan(QtCore.QThread):
         if self.sweep_count == -1:
             self.sweep_count = np.inf
 
-        if isinstance(params["service_params"], dict):
-            if params["service_params"].get("create_clutter"):
-                self.sweep_count = params["service_params"]["sweeps_requested"]
-
         self.finished.connect(self.stop_thread)
 
     def stop_thread(self):
@@ -2651,11 +2446,6 @@ class Threaded_Scan(QtCore.QThread):
             if self.running:
                 self.running = False
                 self.radar.abort_processing()
-                if self.params["create_clutter"]:
-                    self.emit("error", "Background scan not finished. "
-                              "Wait for sweep buffer to fill to finish background scan")
-        elif message_type == "set_clutter_flag":
-            self.radar.set_clutter_flag(data)
         elif message_type == "update_feature_extraction":
             self.radar.update_feature_extraction(message, data)
         elif message_type == "update_feature_list":

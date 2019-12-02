@@ -2,8 +2,6 @@ import time
 import traceback
 import warnings
 
-import numpy as np
-
 from PyQt5.QtCore import QThread
 
 
@@ -19,9 +17,6 @@ class DataProcessing:
         self.sensor_config = params["sensor_config"]
         self.mode = self.sensor_config.mode
         self.service_type = params["service_type"]
-        self.create_cl = params["create_clutter"]
-        self.use_cl = params["use_clutter"]
-        self.cl_file = params["clutter_file"]
         self.sweeps = self.gui_handle.sweep_count
         self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
@@ -32,9 +27,6 @@ class DataProcessing:
 
         if isinstance(self.service_params, dict):
             self.service_params["processing_handle"] = self
-
-            if self.create_cl:
-                self.sweeps = self.service_params["sweeps_requested"]
 
         if self.sweeps < 0:
             self.sweeps = self.hist_len
@@ -55,18 +47,6 @@ class DataProcessing:
         self.abort = False
         self.first_run = True
         self.skip = 0
-
-        self.cl = np.zeros((0, 1))
-        self.cl_iq = np.zeros((0, 1), dtype="complex")
-
-    def set_clutter_flag(self, enable):
-        self.use_cl = enable
-
-        try:
-            self.service_params["use_clutter"] = enable
-            self.external.update_processing_config(self.service_params)
-        except Exception:
-            pass
 
     def update_feature_extraction(self, param, value=None):
         if isinstance(value, dict):
@@ -90,56 +70,6 @@ class DataProcessing:
         except Exception:
             traceback.print_exc()
 
-    def load_clutter_data(self, cl_length, cl_file=None):
-        load_success = True
-        error = None
-
-        if cl_file:
-            try:
-                cl_data = np.load(cl_file, allow_pickle=True)
-            except Exception as e:
-                error = "Cannot load clutter ({})\n\n{}".format(cl_file, e)
-                load_success = False
-        else:
-            load_success = False
-
-        if load_success:
-            try:
-                cl = cl_data.item()["cl_env"]
-                cl_iq = cl_data.item()["cl_iq"]
-                thrshld = cl_data.item()["cl_env_std"]
-                cl_config = cl_data.item()["config"]
-                if not np.isclose(cl_config.gain, self.sensor_config.gain):
-                    load_success = False
-                    error = "Wrong gain:\n Clutter is {} and scan is {}".format(
-                        cl_config.gain, self.sensor_config.gain)
-                if not np.isclose(cl_config.range_interval,
-                                  self.sensor_config.range_interval).any():
-                    error = "Wrong range:\n Clutter is {} and scan is {}".format(
-                        cl_config.range_interval, self.sensor_config.range_interval)
-                if cl_config.mode != self.sensor_config.mode:
-                    error = "Wrong modes:\n Clutter is {} and scan is {}".format(
-                        cl_config.mode, self.sensor_config.mode)
-                if error:
-                    load_success = False
-            except Exception as e:
-                error = "Error loading clutter:\n {}".format(self.parent.format_error(e))
-                load_success = False
-
-        if not load_success:
-            cl = np.zeros(cl_length)
-            thrshld = cl
-            cl_iq = cl
-            self.use_cl = False
-            if error:
-                try:
-                    error += "\nFile: {:s}\n".format(cl_file)
-                except Exception:
-                    pass
-                self.parent.emit("clutter_error", error)
-
-        return (cl, cl_iq, thrshld)
-
     def process(self, sweep_data, info):
         if self.first_run:
             ext = self.gui_handle.external
@@ -156,36 +86,15 @@ class DataProcessing:
                 if isinstance(plot_data, dict) and plot_data.get("send_process_data") is not None:
                     self.parent.emit("process_data", "", plot_data["send_process_data"])
 
-                if self.create_cl and self.sweep == self.sweeps - 1:
-                    self.process_clutter_data(plot_data["clutter_raw"])
-
         self.record_data(sweep_data, info)
 
         return plot_data, self.record, self.sweep
-
-    def process_clutter_data(self, cl_data):
-        cl = np.zeros((3, len(cl_data[0])))
-        cl[0] = np.mean(np.abs(cl_data), axis=0)
-        cl[2] = np.mean(cl_data, axis=0)
-
-        for i in range(len(cl_data[0])):
-            cl[1, i] = np.std(cl_data[:, i])
-
-        cl_data = {
-            "cl_env": cl[0],
-            "cl_env_std": cl[1],
-            "cl_iq": cl[2],
-            "config": self.sensor_config,
-        }
-
-        self.parent.emit("clutter_data", "", cl_data)
 
     def record_data(self, sweep_data, info):
         plot_data = {
             "service_type": self.service_type,
             "sweep_data": sweep_data,
             "sensor_config": self.sensor_config,
-            "cl_file": self.cl_file,
             "info": info,
         }
 
@@ -200,7 +109,6 @@ class DataProcessing:
         self.parent = parent
         self.init_vars()
         self.sweep = 0
-        self.create_cl = False
 
         try:
             self.sweeps = len(data)
