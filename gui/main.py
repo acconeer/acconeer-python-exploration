@@ -1116,6 +1116,7 @@ class GUI(QMainWindow):
         self.threaded_scan.start()
 
         self.basic_sensor_config_section.body_widget.setEnabled(False)
+        self.advanced_sensor_config_section.body_widget.setEnabled(False)
 
         if isinstance(processing_config, configbase.Config):
             self.basic_processing_config_section.body_widget.setEnabled(True)
@@ -1175,9 +1176,11 @@ class GUI(QMainWindow):
             tab = val
             self.feature_sidepanel.select_mode(val)
             self.basic_sensor_config_section.body_widget.setEnabled(True)
+            self.advanced_sensor_config_section.body_widget.setEnabled(True)
             self.server_section.hide()
             self.basic_processing_config_section.hide()
             self.basic_sensor_config_section.hide()
+            self.advanced_sensor_config_section.hide()
             self.control_section.hide()
             self.feature_section.hide()
             self.eval_section.hide()
@@ -1189,6 +1192,7 @@ class GUI(QMainWindow):
                 if "Select service" not in self.current_module_label:
                     self.basic_processing_config_section.show()
                 self.basic_sensor_config_section.show()
+                self.advanced_sensor_config_section.show()
                 self.server_section.show()
                 self.control_section.show()
                 self.textboxes["sweep_buffer"].show()
@@ -1197,6 +1201,7 @@ class GUI(QMainWindow):
             elif tab == "feature_select":
                 self.feature_section.button_event(override=False)
                 self.basic_sensor_config_section.show()
+                self.advanced_sensor_config_section.show()
                 self.feature_section.show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
@@ -1233,9 +1238,11 @@ class GUI(QMainWindow):
 
             elif tab == "eval":
                 self.basic_sensor_config_section.body_widget.setEnabled(False)
+                self.advanced_sensor_config_section.body_widget.setEnabled(False)
                 self.feature_section.show()
                 self.eval_section.show()
                 self.basic_sensor_config_section.show()
+                self.advanced_sensor_config_section.show()
                 self.server_section.show()
                 self.control_section.show()
                 self.textboxes["sweep_buffer"].show()
@@ -1263,6 +1270,7 @@ class GUI(QMainWindow):
 
         if self.get_gui_state("ml_tab") in ["main", "feature_select"]:
             self.basic_sensor_config_section.body_widget.setEnabled(True)
+            self.advanced_sensor_config_section.body_widget.setEnabled(True)
 
         if self.get_gui_state("ml_mode"):
             self.feature_select.buttons["start"].setEnabled(True)
