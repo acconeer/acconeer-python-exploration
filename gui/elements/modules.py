@@ -1,20 +1,19 @@
 from collections import namedtuple
 from types import ModuleType
 
-from helper import PassthroughProcessor
-
-import service_modules.envelope as envelope_module
-import service_modules.iq as iq_module
-import service_modules.sparse as sparse_module
-import service_modules.power_bins as power_bins_module
 import examples.processing.breathing as breathing_module
+import examples.processing.button_press as button_press_module
+import examples.processing.obstacle_detection as obstacle_detection_module
 import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_sparse as presence_detection_sparse_module
+import examples.processing.sleep_breathing as sleep_breathing_module
 import examples.processing.sparse_fft as sparse_fft_module
 import examples.processing.sparse_speed as sparse_speed_module
-import examples.processing.sleep_breathing as sleep_breathing_module
-import examples.processing.obstacle_detection as obstacle_detection_module
-import examples.processing.button_press as button_press_module
+import service_modules.envelope as envelope_module
+import service_modules.iq as iq_module
+import service_modules.power_bins as power_bins_module
+import service_modules.sparse as sparse_module
+from helper import PassthroughProcessor
 
 
 def multi_sensor_wrap(module):

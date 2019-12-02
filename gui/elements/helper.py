@@ -1,12 +1,24 @@
+import os
+import sys
+from argparse import ArgumentParser
+
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QFrame, QVBoxLayout, QHBoxLayout, QToolButton, QGridLayout, QCheckBox,
-    QLineEdit, QDialog, QPushButton, QSpinBox
+    QCheckBox,
+    QDialog,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSpinBox,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
-import sys
-import os
-from argparse import ArgumentParser
+
 import acconeer.exptool
 
 

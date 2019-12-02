@@ -1,25 +1,40 @@
-import datetime
-import numpy as np
-import sys
-import os
 import colorsys
-import pyqtgraph as pg
+import datetime
+import os
+import sys
 from functools import partial
 
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import (QComboBox, QApplication, QWidget, QLabel, QLineEdit,
-                             QCheckBox, QFrame, QPushButton, QRadioButton, QVBoxLayout,
-                             QSpinBox, QSlider, QTableWidget, QTableWidgetItem, QDialog,
-                             QHBoxLayout,
-                             )
-from PyQt5.QtGui import QColor, QBrush
-from PyQt5.QtCore import pyqtSignal
+import numpy as np
+import pyqtgraph as pg
 
-import keras_processing as kp
-import feature_processing as feature_proc
-import feature_definitions as feature_def
-from helper import SensorSelection, QHLine, QVLine, Count, GUI_Styles, ErrorFormater
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QRadioButton,
+    QSlider,
+    QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
 from acconeer.exptool import utils
+
+import feature_definitions as feature_def
+import feature_processing as feature_proc
+import keras_processing as kp
+from helper import Count, ErrorFormater, GUI_Styles, QHLine, QVLine, SensorSelection
 
 
 class FeatureSelectFrame(QFrame):
