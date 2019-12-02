@@ -4,6 +4,7 @@ import os
 from copy import copy
 from weakref import WeakKeyDictionary
 
+import attr
 import numpy as np
 
 from PyQt5 import QtCore
@@ -40,6 +41,25 @@ class Category(enum.Enum):
     ADVANCED = enum.auto()
 
 
+class Severity(enum.IntEnum):
+    ERROR = enum.auto()
+    WARNING = enum.auto()
+
+
+@attr.s
+class Alert:
+    param = attr.ib()
+    msg = attr.ib()
+
+
+class Error(Alert):
+    severity = Severity.ERROR
+
+
+class Warning(Alert):
+    severity = Severity.WARNING
+
+
 class Pidget(QFrame):
     def __init__(self, param, parent_instance):
         super().__init__()
@@ -51,12 +71,12 @@ class Pidget(QFrame):
 
         self.hide()
 
-    def update(self):
+    def update(self, alerts=None):
         self._enable_event_handler = False
-        self._update()
+        self._update(alerts)
         self._enable_event_handler = True
 
-    def _update(self):
+    def _update(self, *args, **kwargs):
         pass
 
     def _get_param_value(self):
@@ -87,17 +107,17 @@ class PidgetStub(Pidget):
         self.grid = QGridLayout(self.grid_widget)
         self.grid.setContentsMargins(6, 0, 6, 0)
 
-        self.error_frame = QFrame()
-        self.error_frame.setStyleSheet(".QFrame {border-top: 1px solid lightgrey;}")
-        error_layout = QHBoxLayout(self.error_frame)
-        error_layout.setContentsMargins(6, 6, 6, 0)
-        self.error_label = QLabel()
-        self.error_label.setStyleSheet("color: orangered; font-weight: bold;")
-        error_layout.addWidget(self.error_label)
-        self.layout.addWidget(self.error_frame)
-        self._unset_error()
+        self.alert_frame = QFrame()
+        self.alert_frame.setStyleSheet(".QFrame {border-top: 1px solid lightgrey;}")
+        alert_layout = QHBoxLayout(self.alert_frame)
+        alert_layout.setContentsMargins(6, 6, 6, 0)
+        self.alert_label = QLabel()
+        self.alert_label.setStyleSheet("color: #333333; font-weight: 600;")
+        alert_layout.addWidget(self.alert_label)
+        self.layout.addWidget(self.alert_frame)
+        self._set_alert(None)
 
-    def _update(self):
+    def _update(self, alerts):
         state = self._parent_instance._state
 
         if state != Config.State.UNLOADED:
@@ -109,31 +129,41 @@ class PidgetStub(Pidget):
             visible = False
 
         self.setVisible(bool(visible))
-
         self.setEnabled(state != Config.State.LIVE or self.param.is_live_updateable)
+        self._set_alert(alerts)
 
-    def _set_error(self, e):
-        self.error_label.setText(str(e))
+    def _set_alert(self, alerts):
+        if not alerts:
+            self.alert_frame.hide()
+            self.setStyleSheet(self.default_css)
+            return
+
+        if isinstance(alerts, Alert):
+            alert = alerts
+        else:
+            alerts = sorted(alerts, key=lambda a: a.severity)
+            alert = alerts[0]
+
+        if alert.severity == Severity.ERROR:
+            bg = "FFB9A8"
+        else:
+            bg = "FFDFA8"
 
         self.setStyleSheet((
-            "#frame {"
-            "background-color: bisque;"
+            "#frame {{"
+            "background-color: #{};"
             "border: 1px solid lightgrey;"
             "border-radius: 3px;"
-            "}"
-        ))
-
-        self.error_frame.show()
-
-    def _unset_error(self):
-        self.error_frame.hide()
-        self.setStyleSheet(self.default_css)
+            "}}"
+        ).format(bg))
+        self.alert_label.setText(alert.msg)
+        self.alert_frame.show()
 
     def _subwidget_event_handler(self, val):
         try:
             super()._subwidget_event_handler(val)
-        except ValueError as e:
-            self._set_error(e)
+        except ValueError:
+            pass  # TODO
 
 
 class ComboBoxPidget(PidgetStub):
@@ -154,8 +184,8 @@ class ComboBoxPidget(PidgetStub):
 
         self.update()
 
-    def _update(self):
-        super()._update()
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
         value = self._get_param_value()
         index = list(self.param.enum.__members__.values()).index(value)
         self.cb.setCurrentIndex(index)
@@ -176,8 +206,8 @@ class BoolCheckboxPidget(PidgetStub):
 
         self.update()
 
-    def _update(self):
-        super()._update()
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
         value = self._get_param_value()
         self.checkbox.setChecked(value)
 
@@ -203,8 +233,8 @@ class IntSpinBoxPidget(PidgetStub):
 
         self.update()
 
-    def _update(self):
-        super()._update()
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
         value = self._get_param_value()
         self.spin_box.setValue(value)
 
@@ -236,8 +266,8 @@ class FloatRangeSpinBoxesPidget(PidgetStub):
 
         self.update()
 
-    def _update(self):
-        super()._update()
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
         values = self._get_param_value()
 
         for spin_box, val in zip(self.spin_boxes, values):
@@ -289,8 +319,8 @@ class FloatSpinBoxPidget(PidgetStub):
 
         self.update()
 
-    def _update(self):
-        super()._update()
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
         value = self._get_param_value()
         is_set = value is not None
 
@@ -354,8 +384,8 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
 
         self.update()
 
-    def _update(self):
-        super()._update()
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
         value = self._get_param_value()
         self.spin_box.setValue(value)
         self.slider.setValue(self.__to_slider_scale(value))
@@ -422,10 +452,10 @@ class Parameter:
         if doc:
             self.__doc__ = doc.strip()
 
-    def update_pidget(self, obj):
+    def update_pidget(self, obj, alerts=None):
         pidget = self.get_pidget(obj)
         if pidget is not None:
-            pidget.update()
+            pidget.update(alerts)
 
     def get_pidget(self, obj):
         return self.pidgets.get(obj)
@@ -768,10 +798,15 @@ class Config:
         pidgets = [param.create_pidget(self) for param in params]
         return pidgets
 
-    def _update_pidgets(self):
-        params = self._get_params()
-        for param in params:
-            param.update_pidget(self)
+    def _update_pidgets(self, additional_alerts=[]):
+        alerts = self.check()
+        if alerts is None:
+            alerts = []
+        alerts.extend(additional_alerts)
+
+        for key, param in self._get_keys_and_params():
+            param_alerts = [a for a in alerts if a.param in [key, param]]
+            param.update_pidget(self, param_alerts)
 
     def _parameter_event_handler(self):
         for event_handler in self._event_handlers:
@@ -794,6 +829,9 @@ class Config:
     def _state(self, state):
         self.__state = state
         self._update_pidgets()
+
+    def check(self):
+        return []
 
     def __setattr__(self, name, value):
         if hasattr(self, name):
@@ -948,8 +986,8 @@ class ReferenceDataPidget(PidgetStub):
 
         self.update()
 
-    def _update(self):
-        super()._update()
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
 
         config = self._get_param_value()
 
@@ -989,9 +1027,9 @@ class ReferenceDataPidget(PidgetStub):
         self.use_cb.setVisible(config.is_loaded)
 
         if config.error:
-            self._set_error(config.error)
+            self._set_alert(Error(None, config.error))
         else:
-            self._unset_error()
+            self._set_alert(None)
 
     def __buffer_btn_clicked(self):
         config = self._get_param_value()
