@@ -2133,8 +2133,6 @@ class GUI(QMainWindow):
         elif "sweep_info" in message_type:
             self.update_sweep_info(data)
         elif "session_info" in message_type:
-            if message == "mismatch":
-                self.update_ranges(data)
             self.session_info = data
             self.reload_pg_updater(session_info=data)
         elif "process_data" in message_type:
@@ -2191,17 +2189,6 @@ class GUI(QMainWindow):
             self.labels["saturated"].setStyleSheet("color: red")
         else:
             self.labels["saturated"].setStyleSheet("color: #f0f0f0")
-
-    def update_ranges(self, data):
-        old_start = float(self.textboxes["range_start"].text())
-        old_end = float(self.textboxes["range_end"].text())
-        start = data["actual_range_start"]
-        self.textboxes["range_start"].setText("{:.2f}".format(start))
-        end = start + data["actual_range_length"]
-        self.textboxes["range_end"].setText("{:.2f}".format(end))
-        print("Updated range settings to match session info!")
-        print("Start {:.3f} -> {:.3f}".format(old_start, start))
-        print("End   {:.3f} -> {:.3f}".format(old_end, end))
 
     def start_up(self):
         if not self.under_test:
@@ -2390,9 +2377,7 @@ class Threaded_Scan(QtCore.QThread):
 
             try:
                 session_info = self.client.setup_session(self.sensor_config)
-                check = self.check_session_info(session_info)
-                check_msg = "ok" if check else "mismatch"
-                self.emit("session_info", check_msg, session_info)
+                self.emit("session_info", "", session_info)
                 self.radar.prepare_processing(self, self.params, session_info)
                 self.client.start_session()
             except Exception as e:
@@ -2458,21 +2443,6 @@ class Threaded_Scan(QtCore.QThread):
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
         return err
-
-    def check_session_info(self, data):
-        try:
-            start = self.sensor_config.range_start
-            length = self.sensor_config.range_length
-            start_ok = abs(start - data["actual_range_start"]) < 0.01
-            len_ok = abs(length - data["actual_range_length"]) < 0.01
-        except (AttributeError, KeyError, TypeError):
-            pass
-        else:
-            if not start_ok or not len_ok:
-                self.sensor_config.range_start = data["actual_range_start"]
-                self.sensor_config.range_length = data["actual_range_length"]
-                return False
-        return True
 
 
 def sigint_handler(gui):
