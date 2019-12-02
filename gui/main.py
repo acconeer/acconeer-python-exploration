@@ -387,7 +387,7 @@ class GUI(QMainWindow):
 
         processing_config._state = configbase.Config.State.LOADED
 
-        has_standard_params = has_advanced_params = False
+        has_basic_params = has_advanced_params = False
         for param in processing_config._get_params():
             if param.pidget_class is not None:
                 loc = param.pidget_location
@@ -396,10 +396,10 @@ class GUI(QMainWindow):
                 elif loc == "control":
                     pass
                 else:
-                    has_standard_params = True
+                    has_basic_params = True
 
         if self.get_gui_state("ml_tab") == "main":
-            self.service_section.setVisible(has_standard_params)
+            self.service_section.setVisible(has_basic_params)
             self.advanced_section.setVisible(has_advanced_params)
 
     def pidget_processing_config_event_handler(self, processing_config):
