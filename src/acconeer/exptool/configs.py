@@ -1,9 +1,6 @@
-import abc
 import enum
-from copy import copy
 
-import numpy as np
-
+import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool.modes import Mode
 
 
@@ -17,47 +14,12 @@ class ConfigEnum(enum.Enum):
         return self.value[1]
 
 
-class BaseSessionConfig(abc.ABC):
-    _sensors = [1]
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            if not hasattr(self.__class__, k):
-                raise KeyError("unknown setting: {}".format(k))
-            setattr(self, k, v)
-
-    def __setattr__(self, name, value):
-        if hasattr(self, name):
-            object.__setattr__(self, name, value)
-        else:
-            raise AttributeError("{} has no setting {}".format(self.__class__.__name__, name))
-
-    def __str__(self):
-        attrs = [a for a in dir(self) if not a.startswith("_") and a.islower()]
-        vals = [getattr(self, a) for a in attrs]
-        d = {a: ("-" if v is None else v) for a, v in zip(attrs, vals)}
-        s = self.__class__.__name__
-        s += "".join(["\n  {:.<25} {}".format(a + " ", v) for (a, v) in d.items()])
-        return s
-
-    @property
-    @abc.abstractmethod
-    def mode(self):
-        pass
-
-    @property
-    def sensor(self):
-        return self._sensors
-
-    @sensor.setter
-    def sensor(self, arg):
-        if isinstance(arg, int):
-            arg = [arg]
-        elif isinstance(arg, list) and all([isinstance(e, int) for e in arg]):
-            arg = copy(arg)
-        else:
-            raise TypeError("sensor(s) must be an int or a list of ints")
-        self._sensors = arg
+class BaseSessionConfig(cb.SensorConfig):
+    sensor = cb.SensorParameter(
+        label="Sensor(s)",
+        default_value=[1],
+        order=0,
+    )
 
 
 class BaseServiceConfig(BaseSessionConfig):
@@ -66,271 +28,242 @@ class BaseServiceConfig(BaseSessionConfig):
         SENSOR_DRIVEN = ("Sensor driven", "streaming")
 
     class Profile(ConfigEnum):
-        PROFILE_1 = ("1 (max resolution)", 1)
-        PROFILE_2 = ("2", 2)
-        PROFILE_3 = ("3", 3)
-        PROFILE_4 = ("4", 4)
-        PROFILE_5 = ("5 (max SNR)", 5)
+        PROFILE_1 = ("1 (max resolution)", 1, 0.10)
+        PROFILE_2 = ("2", 2, 0.12)
+        PROFILE_3 = ("3", 3, 0.18)
+        PROFILE_4 = ("4", 4, 0.36)
+        PROFILE_5 = ("5 (max SNR)", 5, 0.60)
 
-    _range_start = 0.2
-    _range_length = 0.6
-    _repetition_mode = RepetitionMode.HOST_DRIVEN
-    _update_rate = None
-    _gain = 0.5
-    _hw_accelerated_average_samples = 10
-    _maximize_signal_attenuation = False
-    _profile = Profile.PROFILE_2
+        @property
+        def approx_direct_leakage_length(self):
+            return self.value[2]
 
-    @property
-    def range_start(self):
-        return self._range_start
+    range_interval = cb.FloatRangeParameter(
+        label="Range interval",
+        default_value=[0.18, 0.78],
+        limits=(-0.7, 7.0),
+        order=10,
+    )
 
-    @range_start.setter
-    def range_start(self, start):
-        start = float(start)
-        self._range_start = start
+    range_start = cb.get_virtual_parameter_class(cb.FloatParameter)(
+        label="Range start",
+        get_fun=lambda conf: conf.range_interval[0],
+        visible=False,
+    )
 
-    @property
-    def range_length(self):
-        return self._range_length
+    range_length = cb.get_virtual_parameter_class(cb.FloatParameter)(
+        label="Range length",
+        get_fun=lambda conf: conf.range_interval[1] - conf.range_interval[0],
+        visible=False,
+    )
 
-    @range_length.setter
-    def range_length(self, length):
-        length = float(length)
-        if length < 0.0:
-            raise ValueError("range_length must be >= 0.0")
-        self._range_length = length
+    range_end = cb.get_virtual_parameter_class(cb.FloatParameter)(
+        label="Range end",
+        get_fun=lambda conf: conf.range_interval[1],
+        visible=False,
+    )
 
-    @property
-    def range_end(self):
-        if None in [self._range_start, self._range_length]:
-            return None
-        return self._range_start + self._range_length
+    repetition_mode = cb.EnumParameter(
+        label="Repetition mode",
+        enum=RepetitionMode,
+        default_value=RepetitionMode.HOST_DRIVEN,
+        order=1010,
+        category=cb.Category.ADVANCED,
+    )
 
-    @range_end.setter
-    def range_end(self, end):
-        end = float(end)
-        self.range_length = end - self.range_start
+    update_rate = cb.FloatParameter(
+        label="Update rate",
+        unit="Hz",
+        default_value=None,
+        limits=(0.1, None),
+        decimals=1,
+        optional=True,
+        optional_label="Limit",
+        optional_default_set_value=50.0,
+        order=30,
+    )
 
-    @property
-    def range_interval(self):
-        return np.array([self.range_start, self.range_end])
+    gain = cb.FloatParameter(
+        label="Gain",
+        default_value=0.5,
+        limits=(0.0, 1.0),
+        decimals=2,
+        order=1040,
+        category=cb.Category.ADVANCED,
+    )
 
-    @range_interval.setter
-    def range_interval(self, interval):
-        start, end = interval
-        start = float(start)
-        end = float(end)
-        self.range_start = start
-        self.range_end = end
+    hw_accelerated_average_samples = cb.IntParameter(
+        label="HW accel. average samples",
+        default_value=10,
+        limits=(1, 63),
+        order=1030,
+        category=cb.Category.ADVANCED,
+    )
 
-    @property
-    def repetition_mode(self):
-        return self._repetition_mode
+    maximize_signal_attenuation = cb.BoolParameter(
+        label="Max signal attenuation",
+        default_value=False,
+        order=2000,
+        category=cb.Category.ADVANCED,
+    )
 
-    @repetition_mode.setter
-    def repetition_mode(self, repetition_mode):
-        if not isinstance(repetition_mode, self.RepetitionMode):
-            raise TypeError("repetition_mode must be of type RepetitionMode")
-        self._repetition_mode = repetition_mode
+    profile = cb.EnumParameter(
+        label="Profile",
+        enum=Profile,
+        default_value=Profile.PROFILE_2,
+        order=20,
+    )
 
-    @property
-    def update_rate(self):
-        return self._update_rate
+    downsampling_factor = cb.IntParameter(
+        label="Downsampling factor",
+        default_value=1,
+        limits=(1, None),
+        order=1020,
+        category=cb.Category.ADVANCED,
+    )
 
-    @update_rate.setter
-    def update_rate(self, rate):
-        if rate is not None:
-            rate = float(rate)
-            if rate <= 0.0:
-                raise ValueError("update_rate must None or > 0")
-        self._update_rate = rate
+    def check(self):
+        alerts = []
 
-    @property
-    def gain(self):
-        return self._gain
+        if self.repetition_mode == __class__.RepetitionMode.SENSOR_DRIVEN:
+            if self.update_rate is None:
+                alerts.append(cb.Error("update_rate", "Must be set when sensor driven"))
 
-    @gain.setter
-    def gain(self, gain):
-        gain = float(gain)
-        if not 0.0 <= gain <= 1.0:
-            raise ValueError("gain must be between 0.0 and 1.0")
-        self._gain = gain
+        if self.gain > 0.9:
+            alerts.append(cb.Warning("gain", "Too high gain causes degradation"))
 
-    @property
-    def hw_accelerated_average_samples(self):
-        return self._hw_accelerated_average_samples
+        if self.range_start < self.profile.approx_direct_leakage_length:
+            alerts.append(cb.Warning("range_interval", "Direct leakage might be seen"))
 
-    @hw_accelerated_average_samples.setter
-    def hw_accelerated_average_samples(self, hwaas):
-        hwaas = int(hwaas)
-        if not 1 <= hwaas <= 63:
-            raise ValueError("hw_accelerated_average_samples must be between 1 and 63, inclusive")
-        self._hw_accelerated_average_samples = hwaas
-
-    @property
-    def maximize_signal_attenuation(self):
-        return self._maximize_signal_attenuation
-
-    @maximize_signal_attenuation.setter
-    def maximize_signal_attenuation(self, enabled):
-        enabled = bool(enabled)
-        self._maximize_signal_attenuation = enabled
-
-    @property
-    def profile(self):
-        return self._profile
-
-    @profile.setter
-    def profile(self, profile):
-        if not isinstance(profile, self.Profile):
-            raise ValueError("profile must be of type Profile")
-        self._profile = profile
+        return alerts
 
 
 class BaseDenseServiceConfig(BaseServiceConfig):
-    _downsampling_factor = 1
-    _noise_level_normalization = True
+    noise_level_normalization = cb.BoolParameter(
+        label="Noise level normalization",
+        default_value=True,
+        order=2010,
+        category=cb.Category.ADVANCED,
+    )
 
-    @property
-    def downsampling_factor(self):
-        return self._downsampling_factor
+    def check(self):
+        alerts = super().check()
 
-    @downsampling_factor.setter
-    def downsampling_factor(self, factor):
-        factor = int(factor)
-        if factor not in [1, 2, 4]:
-            raise ValueError("downsampling_factor must be 1, 2, or 4")
-        self._downsampling_factor = factor
+        if self.downsampling_factor not in [1, 2, 4]:
+            alerts.append(cb.Error("downsampling_factor", "Must be 1, 2, or 4"))
 
-    @property
-    def noise_level_normalization(self):
-        return self._noise_level_normalization
-
-    @noise_level_normalization.setter
-    def noise_level_normalization(self, enabled):
-        enabled = bool(enabled)
-        self._noise_level_normalization = enabled
+        return alerts
 
 
 class PowerBinServiceConfig(BaseDenseServiceConfig):
-    _bin_count = None
+    mode = cb.ConstantParameter(
+        label="Mode",
+        value=Mode.POWER_BINS,
+    )
 
-    @property
-    def mode(self):
-        return Mode.POWER_BINS
+    bin_count = cb.IntParameter(
+        label="Bin count",
+        default_value=5,
+        limits=(1, None),
+        order=5,
+    )
 
-    @property
-    def bin_count(self):
-        return self._bin_count
-
-    @bin_count.setter
-    def bin_count(self, count):
-        if count is not None:
-            count = int(count)
-            if count <= 0:
-                raise ValueError("bin_count must be None or > 0")
-        self._bin_count = count
+    def check(self):
+        alerts = super().check()
+        return alerts
 
 
 class EnvelopeServiceConfig(BaseDenseServiceConfig):
-    _running_average_factor = 0.7
+    mode = cb.ConstantParameter(
+        label="Mode",
+        value=Mode.ENVELOPE,
+    )
 
-    @property
-    def mode(self):
-        return Mode.ENVELOPE
+    running_average_factor = cb.FloatParameter(
+        label="Running avg. factor",
+        default_value=0.7,
+        limits=(0.0, 1.0),
+        order=500,
+    )
 
-    @property
-    def running_average_factor(self):
-        return self._running_average_factor
-
-    @running_average_factor.setter
-    def running_average_factor(self, factor):
-        factor = float(factor)
-        if not (0 <= factor < 1):
-            raise ValueError("running_average_factor must be between 0.0 and 1.0")
-        self._running_average_factor = factor
+    def check(self):
+        alerts = super().check()
+        return alerts
 
 
 class IQServiceConfig(BaseDenseServiceConfig):
     class SamplingMode(ConfigEnum):
-        A = ("A", 0)
-        B = ("B", 1)
+        A = ("A (less correlation)", 0)
+        B = ("B (more SNR)", 1)
 
-    _sampling_mode = SamplingMode.A
+    mode = cb.ConstantParameter(
+        label="Mode",
+        value=Mode.IQ,
+    )
 
-    @property
-    def mode(self):
-        return Mode.IQ
+    sampling_mode = cb.EnumParameter(
+        label="Sampling mode",
+        enum=SamplingMode,
+        default_value=SamplingMode.A,
+        order=1000,
+        category=cb.Category.ADVANCED,
+    )
 
-    @property
-    def sampling_mode(self):
-        return self._sampling_mode
-
-    @sampling_mode.setter
-    def sampling_mode(self, mode):
-        if not isinstance(mode, self.SamplingMode):
-            raise ValueError("sampling_mode must be of type SamplingMode")
-        self._sampling_mode = mode
+    def check(self):
+        alerts = super().check()
+        return alerts
 
 
 class SparseServiceConfig(BaseServiceConfig):
     class SamplingMode(ConfigEnum):
-        A = ("A", 0)
-        B = ("B", 1)
+        A = ("A (less correlation)", 0)
+        B = ("B (more SNR)", 1)
 
-    _sweeps_per_frame = 16
-    _sweep_rate = None
-    _sampling_mode = SamplingMode.B
-    _downsampling_factor = 1
+    mode = cb.ConstantParameter(
+        label="Mode",
+        value=Mode.SPARSE,
+    )
 
-    @property
-    def mode(self):
-        return Mode.SPARSE
+    sweeps_per_frame = cb.IntParameter(
+        label="Sweeps per frame",
+        default_value=16,
+        limits=(1, 2048),
+        order=50,
+    )
 
-    @property
-    def sweeps_per_frame(self):
-        return self._sweeps_per_frame
+    sweep_rate = cb.FloatParameter(
+        label="Sweep rate",
+        unit="Hz",
+        default_value=None,
+        limits=(1, None),
+        decimals=0,
+        optional=True,
+        optional_default_set_value=3000.0,
+        order=40,
+    )
 
-    @sweeps_per_frame.setter
-    def sweeps_per_frame(self, sweeps_per_frame):
-        sweeps_per_frame = int(sweeps_per_frame)
-        if sweeps_per_frame < 1:
-            raise ValueError("sweeps_per_frame must be at least 1")
-        self._sweeps_per_frame = sweeps_per_frame
+    sampling_mode = cb.EnumParameter(
+        label="Sampling mode",
+        enum=SamplingMode,
+        default_value=SamplingMode.B,
+        order=1000,
+        category=cb.Category.ADVANCED,
+    )
 
-    @property
-    def sweep_rate(self):
-        return self._sweep_rate
+    def check(self):
+        alerts = super().check()
 
-    @sweep_rate.setter
-    def sweep_rate(self, rate):
-        if rate is not None:
-            rate = float(rate)
-            if rate <= 0.0:
-                raise ValueError("sweep_rate must None or > 0")
-        self._sweep_rate = rate
+        if self.sampling_mode == __class__.SamplingMode.B:
+            if self.sweeps_per_frame > 64:
+                alerts.append(cb.Error("sweeps_per_frame", "Must be < 64 with sampling mode B"))
 
-    @property
-    def sampling_mode(self):
-        return self._sampling_mode
+        if self.sweep_rate is not None and self.update_rate is not None:
+            max_frame_rate = self.sweep_rate / self.sweeps_per_frame
 
-    @sampling_mode.setter
-    def sampling_mode(self, mode):
-        if not isinstance(mode, self.SamplingMode):
-            raise ValueError("sampling_mode must be of type SamplingMode")
-        self._sampling_mode = mode
+            if self.update_rate > max_frame_rate:
+                alerts.append(cb.Error("sweep_rate", "Too low for current update rate"))
 
-    @property
-    def downsampling_factor(self):
-        return self._downsampling_factor
-
-    @downsampling_factor.setter
-    def downsampling_factor(self, factor):
-        factor = int(factor)
-        if factor < 1:
-            raise ValueError("downsampling_factor must be at least 1")
-        self._downsampling_factor = factor
+        return alerts
 
 
 MODE_TO_CONFIG_CLASS_MAP = {

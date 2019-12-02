@@ -71,18 +71,8 @@ class GUI(QMainWindow):
     LAST_CONF_FILENAME = os.path.join(HERE, "last_config.npy")
     LAST_ML_CONF_FILENAME = os.path.join(HERE, "last_ml_config.npy")
 
-    ENVELOPE_PROFILES = [
-        (configs.EnvelopeServiceConfig.MAX_SNR, "Max SNR"),
-        (configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION, "Max depth resolution"),
-        (configs.EnvelopeServiceConfig.DIRECT_LEAKAGE, "Direct leakage"),
-    ]
-
-    SAMPLING_MODES = [
-        (0, "Sampling mode A"),
-        (1, "Sampling mode B"),
-    ]
-
     sig_scan = pyqtSignal(str, str, object)
+    sig_sensor_config_pidget_event = pyqtSignal(object)
     sig_processing_config_pidget_event = pyqtSignal(object)
 
     def __init__(self, under_test=False):
@@ -118,6 +108,8 @@ class GUI(QMainWindow):
         self.current_module_label = None
         self.canvas = None
         self.multi_sensor_interface = True
+        self.basic_sensor_param_count = Count()
+        self.advanced_sensor_param_count = Count()
         self.control_grid_count = Count()
         self.param_grid_count = Count(2)
         self.sensor_widgets = {}
@@ -135,6 +127,8 @@ class GUI(QMainWindow):
             self.args = gui_inarg.parse_args()
 
         self.set_gui_state("ml_mode", self.args.machine_learning)
+        self.sig_sensor_config_pidget_event.connect(
+            self.pidget_sensor_config_event_handler)
         self.sig_processing_config_pidget_event.connect(
             self.pidget_processing_config_event_handler)
 
@@ -193,59 +187,36 @@ class GUI(QMainWindow):
         pg.setConfigOptions(antialias=True)
 
     def init_labels(self):
-        # key: text, group
+        # key: (text)
         label_info = {
-            "sensor": ("Sensor", "sensor"),
-            "gain": ("Gain", "sensor"),
-            "sweep_rate": ("Update rate", "sensor"),
-            "sweep_buffer": ("Sweep buffer", "scan"),
-            "range_start": ("Start (m)", "sensor"),
-            "range_end": ("Stop (m)", "sensor"),
-            "interface": ("Interface", "connection"),
-            "bin_count": ("Power bins", "sensor"),
-            "number_of_subsweeps": ("Sweeps per frame", "sensor"),
-            "subsweep_rate": ("Sweep rate", "sensor"),
-            "stepsize": ("Stepsize", "sensor"),
-            "hw_accelerated_average_samples": ("HW Acc. avg. samples", "sensor"),
-            "sweep_info": ("", "statusbar"),
-            "saturated": ("Warning: Data saturated, reduce gain!", "statusbar"),
-            "stitching": ("Experimental stitching enabled!", "sensor"),
-            "libver": ("", "statusbar"),
+            "sensor": ("Sensor",),
+            "sweep_buffer": ("Sweep buffer",),
+            "interface": ("Interface",),
+            "sweep_info": ("",),
+            "saturated": ("Warning: Data saturated, reduce gain!",),
+            "libver": ("",),
         }
 
         self.labels = {}
-        for key, (text, _) in label_info.items():
+        for key, (text,) in label_info.items():
             lbl = QLabel(self)
             lbl.setText(text)
             self.labels[key] = lbl
 
         self.labels["saturated"].setStyleSheet("color: #f0f0f0")
-        self.labels["stitching"].setVisible(False)
-        self.labels["stitching"].setStyleSheet("color: red")
 
     def init_textboxes(self):
-        # key: text, group
+        # key: (text)
         textbox_info = {
-            "host": ("192.168.1.100", "connection"),
-            "sweep_rate": ("10", "sensor"),
-            "gain": ("0.4", "sensor"),
-            "range_start": ("0.18", "sensor"),
-            "range_end": ("0.72", "sensor"),
-            "sweep_buffer": ("100", "scan"),
-            "sweep_buffer_ml": ("unlimited", "scan"),
-            "bin_count": ("-1", "sensor"),
-            "number_of_subsweeps": ("16", "sensor"),
-            "subsweep_rate": ("-1", "sensor"),
-            "stepsize": ("1", "sensor"),
-            "hw_accelerated_average_samples": ("10", "sensor"),
+            "host": ("192.168.1.100",),
+            "sweep_buffer": ("100",),
+            "sweep_buffer_ml": ("unlimited",),
         }
 
         self.textboxes = {}
-        for key, (text, _) in textbox_info.items():
+        for key, (text,) in textbox_info.items():
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
-            if key != "host" and key != "sweep_buffer_ml":
-                self.textboxes[key].editingFinished.connect(self.check_values)
 
         self.textboxes["sweep_buffer_ml"].setVisible(False)
         self.textboxes["sweep_buffer_ml"].setEnabled(False)
@@ -269,21 +240,6 @@ class GUI(QMainWindow):
 
     def init_graphs(self, refresh=False):
         processing_config = self.get_default_processing_config()
-
-        mode_is_sparse = (self.current_data_type == "sparse")
-        self.textboxes["number_of_subsweeps"].setVisible(mode_is_sparse)
-        self.labels["number_of_subsweeps"].setVisible(mode_is_sparse)
-        self.textboxes["subsweep_rate"].setVisible(mode_is_sparse)
-        self.labels["subsweep_rate"].setVisible(mode_is_sparse)
-        mode_is_power_bin = (self.current_data_type == "power_bin")
-        self.textboxes["bin_count"].setVisible(mode_is_power_bin)
-        self.labels["bin_count"].setVisible(mode_is_power_bin)
-        self.env_profiles_dd.setVisible(self.current_data_type == "envelope")
-        self.sampling_mode_dd.setVisible(self.current_data_type in ["iq", "sparse"])
-
-        enable_stepsize = self.current_data_type in ["sparse", "iq"]
-        self.textboxes["stepsize"].setVisible(enable_stepsize)
-        self.labels["stepsize"].setVisible(enable_stepsize)
 
         if self.current_module_info.module is None:
             canvas = Label(self.ACC_IMG_FILENAME)
@@ -335,6 +291,27 @@ class GUI(QMainWindow):
         self.service_widget.setup(canvas)
 
     def init_pidgets(self):
+        self.last_sensor_config = None
+
+        for sensor_config in self.module_label_to_sensor_config_map.values():
+            sensor_config._event_handlers.add(self.pidget_sensor_config_event_handler)
+            pidgets = sensor_config._create_pidgets()
+
+            for pidget in pidgets:
+                if pidget is None:
+                    continue
+
+                category = pidget.param.category
+                if category == configbase.Category.ADVANCED:
+                    grid = self.advanced_sensor_config_section.grid
+                    count = self.advanced_sensor_param_count
+                else:
+                    grid = self.settings_section.grid
+                    count = self.basic_sensor_param_count
+
+                grid.addWidget(pidget, count.val, 0, 1, 2)
+                count.post_incr()
+
         self.last_processing_config = None
 
         for processing_config in self.module_label_to_processing_config_map.values():
@@ -361,6 +338,38 @@ class GUI(QMainWindow):
         self.refresh_pidgets()
 
     def refresh_pidgets(self):
+        self.refresh_sensor_pidgets()
+        self.refresh_processing_pidgets()
+
+    def refresh_sensor_pidgets(self):
+        sensor_config = self.get_sensor_config()
+
+        if self.last_sensor_config != sensor_config:
+            if self.last_sensor_config is not None:
+                self.last_sensor_config._state = configbase.Config.State.UNLOADED
+
+            self.last_sensor_config = sensor_config
+
+        if sensor_config is None:
+            self.settings_section.setVisible(False)
+            self.advanced_sensor_config_section.setVisible(False)
+            return
+
+        sensor_config._state = configbase.Config.State.LOADED
+
+        has_basic_params = has_advanced_params = False
+        for param in sensor_config._get_params():
+            if param.visible:
+                if param.category == configbase.Category.ADVANCED:
+                    has_advanced_params = True
+                else:
+                    has_basic_params = True
+
+        if self.get_gui_state("ml_tab") == "main":
+            self.settings_section.setVisible(has_basic_params)
+            self.advanced_sensor_config_section.setVisible(has_advanced_params)
+
+    def refresh_processing_pidgets(self):
         processing_config = self.get_processing_config()
 
         if self.last_processing_config != processing_config:
@@ -368,8 +377,6 @@ class GUI(QMainWindow):
                 self.last_processing_config._state = configbase.Config.State.UNLOADED
 
             self.last_processing_config = processing_config
-
-            # TODO: else return here when migration to configbase is done
 
         if processing_config is None:
             self.basic_processing_config_section.hide()
@@ -394,6 +401,13 @@ class GUI(QMainWindow):
             self.basic_processing_config_section.setVisible(has_basic_params)
             self.advanced_processing_config_section.setVisible(has_advanced_params)
 
+    def pidget_sensor_config_event_handler(self, sensor_config):
+        if threading.current_thread().name != "MainThread":
+            self.sig_sensor_config_pidget_event.emit(sensor_config)
+            return
+
+        self.update_pidgets_on_event(sensor_config=sensor_config)
+
     def pidget_processing_config_event_handler(self, processing_config):
         if threading.current_thread().name != "MainThread":
             self.sig_processing_config_pidget_event.emit(processing_config)
@@ -412,7 +426,27 @@ class GUI(QMainWindow):
         except AttributeError:
             pass
 
-        processing_config._update_pidgets()
+        self.update_pidgets_on_event(processing_config=processing_config)
+
+    def update_pidgets_on_event(self, sensor_config=None, processing_config=None):
+        if sensor_config is None:
+            sensor_config = self.get_sensor_config()
+
+            if sensor_config is None:
+                return
+
+        if processing_config is None:
+            processing_config = self.get_processing_config()
+
+        if isinstance(processing_config, configbase.Config):
+            processing_config._update_pidgets()
+
+        if hasattr(processing_config, "check_sensor_config"):
+            alerts = processing_config.check_sensor_config(sensor_config)
+        else:
+            alerts = []
+
+        sensor_config._update_pidgets(alerts)
 
     def init_dropdowns(self):
         self.module_dd = QComboBox(self)
@@ -436,15 +470,6 @@ class GUI(QMainWindow):
         self.ports_dd = QComboBox(self)
         self.ports_dd.hide()
         self.update_ports()
-
-        self.env_profiles_dd = QComboBox(self)
-        for _, text in self.ENVELOPE_PROFILES:
-            self.env_profiles_dd.addItem(text)
-        self.env_profiles_dd.currentIndexChanged.connect(self.set_profile)
-
-        self.sampling_mode_dd = QComboBox(self)
-        for _, text in self.SAMPLING_MODES:
-            self.sampling_mode_dd.addItem(text)
 
     def enable_opengl(self):
         if self.checkboxes["opengl"].isChecked():
@@ -486,18 +511,6 @@ class GUI(QMainWindow):
         sensors = self.sensor_widgets[widget_name].get_sensors()
 
         return sensors
-
-    def set_profile(self):
-        profile = self.env_profiles_dd.currentText().lower()
-
-        if "snr" in profile:
-            self.textboxes["gain"].setText(str(0.45))
-        elif "depth" in profile:
-            self.textboxes["gain"].setText(str(0.8))
-        elif "leakage" in profile:
-            self.textboxes["gain"].setText(str(0.2))
-            self.textboxes["range_start"].setText(str(0))
-            self.textboxes["range_end"].setText(str(0.3))
 
     def update_ports(self):
         port_infos = serial.tools.list_ports.comports()
@@ -626,47 +639,28 @@ class GUI(QMainWindow):
 
         self.settings_section = CollapsibleSection("Sensor settings")
         self.main_sublayout.addWidget(self.settings_section, 4, 0)
-        c = Count()
-        self.settings_section.grid.addWidget(self.buttons["sensor_defaults"], c.val, 0, 1, 2)
-        self.settings_section.grid.addWidget(self.labels["sensor"], c.pre_incr(), 0)
+        c = self.basic_sensor_param_count
+        self.settings_section.grid.addWidget(
+            self.buttons["sensor_defaults"], c.post_incr(), 0, 1, 2)
+        self.settings_section.grid.addWidget(self.labels["sensor"], c.val, 0)
 
         sensor_selection = SensorSelection(error_handler=self.error_message)
-        self.settings_section.grid.addWidget(sensor_selection, c.val, 1)
+        self.settings_section.grid.addWidget(sensor_selection, c.post_incr(), 1)
         self.sensor_widgets["main"] = sensor_selection
         self.set_multi_sensors()
 
-        self.settings_section.grid.addWidget(self.labels["range_start"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.labels["range_end"], c.val, 1)
-        self.settings_section.grid.addWidget(self.textboxes["range_start"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["range_end"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["sweep_rate"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["sweep_rate"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["gain"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["gain"], c.val, 1)
-        self.settings_section.grid.addWidget(
-            self.labels["hw_accelerated_average_samples"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(
-            self.textboxes["hw_accelerated_average_samples"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["stepsize"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["stepsize"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["bin_count"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["bin_count"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["number_of_subsweeps"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["number_of_subsweeps"], c.val, 1)
-        self.settings_section.grid.addWidget(self.labels["subsweep_rate"], c.pre_incr(), 0)
-        self.settings_section.grid.addWidget(self.textboxes["subsweep_rate"], c.val, 1)
-        self.settings_section.grid.addWidget(self.env_profiles_dd, c.pre_incr(), 0, 1, 2)
-        self.settings_section.grid.addWidget(self.sampling_mode_dd, c.pre_incr(), 0, 1, 2)
-        self.settings_section.grid.addWidget(self.labels["stitching"], c.pre_incr(), 0, 1, 2)
+        self.advanced_sensor_config_section = CollapsibleSection(
+            "Advanced sensor settings", init_collapsed=True)
+        self.main_sublayout.addWidget(self.advanced_sensor_config_section, 5, 0)
 
         self.basic_processing_config_section = CollapsibleSection("Processing settings")
-        self.main_sublayout.addWidget(self.basic_processing_config_section, 5, 0)
+        self.main_sublayout.addWidget(self.basic_processing_config_section, 6, 0)
         self.basic_processing_config_section.grid.addWidget(
             self.buttons["service_defaults"], 0, 0, 1, 2)
 
         self.advanced_processing_config_section = CollapsibleSection(
             "Advanced processing settings", init_collapsed=True)
-        self.main_sublayout.addWidget(self.advanced_processing_config_section, 6, 0)
+        self.main_sublayout.addWidget(self.advanced_processing_config_section, 7, 0)
         self.advanced_processing_config_section.grid.addWidget(
             self.buttons["advanced_defaults"], 0, 0, 1, 2)
         self.advanced_processing_config_section.grid.addWidget(
@@ -897,14 +891,15 @@ class GUI(QMainWindow):
                 self.advanced_processing_config_section.hide()
 
     def sensor_defaults_handler(self):
-        sensor_config_class = self.current_module_info.sensor_config_class
-        default_config = None if sensor_config_class is None else sensor_config_class()
+        config = self.get_sensor_config()
 
-        if default_config is None:
+        if config is None:
             return
 
-        self.module_label_to_sensor_config_map[self.current_module_label] = default_config
-        self.load_gui_settings_from_sensor_config()
+        default_config = self.current_module_info.sensor_config_class()
+        config._loads(default_config._dumps())
+
+        self.load_gui_settings_from_sensor_config()  # TODO
 
     def service_defaults_handler(self):
         processing_config = self.get_processing_config()
@@ -1385,88 +1380,11 @@ class GUI(QMainWindow):
             except Exception:
                 pass
 
-    def load_gui_settings_from_sensor_config(self, config=None):
-        if config is None:
-            config = self.get_sensor_config()
+    def load_gui_settings_from_sensor_config(self, config=None):  # TODO
+        return
 
-        if config is None:
-            return
-
-        # key: (default, format)
-        d = {
-            "range_start": (0.2, ".2f"),
-            "range_end": (0.8, ".2f"),
-            "gain": (0.5, ".2f"),
-            "sweep_rate": (30, ".0f"),
-            "number_of_subsweeps": (16, "d"),
-            "bin_count": (-1, "d"),
-            "hw_accelerated_average_samples": (10, "d"),
-            "stepsize": (1, "d"),
-            "subsweep_rate": (-1, ".1f"),
-        }
-
-        for key, (default, fmt) in d.items():
-            if not hasattr(config, key):
-                continue
-
-            val = getattr(config, key)
-            val = default if val is None else val
-            text = "{{:{}}}".format(fmt).format(val)
-            self.textboxes[key].setText(text)
-
-        session_profile = getattr(config, "session_profile", None)
-        if session_profile is not None:
-            text = [text for v, text in self.ENVELOPE_PROFILES if v == session_profile][0]
-            index = self.env_profiles_dd.findText(text, QtCore.Qt.MatchFixedString)
-            self.env_profiles_dd.setCurrentIndex(index)
-
-        sampling_mode = getattr(config, "sampling_mode", None)
-        if sampling_mode is not None:
-            text = [text for v, text in self.SAMPLING_MODES if v == sampling_mode][0]
-            index = self.sampling_mode_dd.findText(text, QtCore.Qt.MatchFixedString)
-            self.sampling_mode_dd.setCurrentIndex(index)
-
-        self.check_values()
-
-    def save_gui_settings_to_sensor_config(self):
-        config = self.get_sensor_config()
-
-        if config is None:
-            return None
-
-        stitching = self.check_values()
-        config.experimental_stitching = stitching
-        config.range_interval = [
-                float(self.textboxes["range_start"].text()),
-                float(self.textboxes["range_end"].text()),
-        ]
-        config.sweep_rate = int(self.textboxes["sweep_rate"].text())
-        config.gain = float(self.textboxes["gain"].text())
-        hwaas = int(self.textboxes["hw_accelerated_average_samples"].text())
-        config.hw_accelerated_average_samples = hwaas
-        if self.current_data_type == "power_bin":
-            bin_count = int(self.textboxes["bin_count"].text())
-            if bin_count > 0:
-                config.bin_count = bin_count
-        if self.current_data_type == "sparse":
-            config.number_of_subsweeps = int(self.textboxes["number_of_subsweeps"].text())
-
-            subsweep_rate = float(self.textboxes["subsweep_rate"].text())
-            if subsweep_rate <= 0:
-                subsweep_rate = None
-            config.subsweep_rate = subsweep_rate
-        if self.current_data_type == "envelope":
-            profile_text = self.env_profiles_dd.currentText()
-            profile_val = [v for v, text in self.ENVELOPE_PROFILES if text == profile_text][0]
-            config.session_profile = profile_val
-        if self.current_data_type in ["iq", "sparse"]:
-            config.stepsize = int(self.textboxes["stepsize"].text())
-
-            current_text = self.sampling_mode_dd.currentText()
-            sampling_mode_val = [v for v, text in self.SAMPLING_MODES if text == current_text][0]
-            config.sampling_mode = sampling_mode_val
-
-        return config
+    def save_gui_settings_to_sensor_config(self):  # TODO
+        return self.get_sensor_config()
 
     def update_service_params(self):
         if isinstance(self.get_processing_config(), configbase.Config):
@@ -1515,147 +1433,6 @@ class GUI(QMainWindow):
             self.error_message("".join(errors))
 
         return self.service_params
-
-    def check_values(self):
-        mode = self.current_data_type
-        if mode is None:
-            return
-
-        errors = []
-
-        # key, type, optional (None if <= 0)
-        checked_params = [
-            ("hw_accelerated_average_samples", int, False),
-            ("stepsize", int, False),
-            ("number_of_subsweeps", int, False),
-            ("gain", float, False),
-            ("sweep_rate", float, False),
-            ("subsweep_rate", float, True),
-        ]
-
-        config_class = self.current_module_info.sensor_config_class
-
-        if hasattr(config_class(), "sampling_mode"):
-            current_text = self.sampling_mode_dd.currentText()
-            sampling_mode_val = [v for v, text in self.SAMPLING_MODES if text == current_text][0]
-        else:
-            sampling_mode_val = None
-
-        for key, objtype, optional in checked_params:
-            default_config = config_class()
-
-            if sampling_mode_val is not None:
-                default_config.sampling_mode = sampling_mode_val
-
-            if not hasattr(default_config, key):
-                continue
-
-            default_val = getattr(default_config, key)
-            default_text = str("-1" if default_val is None and optional else str(default_val))
-
-            text = self.textboxes[key].text()
-
-            try:
-                val = objtype(text)
-            except ValueError:
-                errors.append("Value must be of type " + objtype.__name__)
-                self.textboxes[key].setText(default_text)
-                continue
-
-            if optional:
-                if val <= 0:
-                    val = None
-
-            try:
-                setattr(default_config, key, val)
-            except ValueError as e:
-                errors.append(str(e))
-                self.textboxes[key].setText(default_text)
-
-        min_start_range = 0 if "leakage" in self.env_profiles_dd.currentText().lower() else 0.06
-        start = self.is_float(self.textboxes["range_start"].text(), is_positive=False)
-        start, e = self.check_limit(start, self.textboxes["range_start"], min_start_range, 6.94)
-        if e:
-            errors.append("Start range must be between {}m and 6.94m!\n".format(min_start_range))
-
-        end = self.is_float(self.textboxes["range_end"].text())
-        if "envelope" in mode.lower() and "leakage" in self.env_profiles_dd.currentText():
-            end, e = self.check_limit(end, self.textboxes["range_end"], -0.50, 7.03)
-        else:
-            end, e = self.check_limit(end, self.textboxes["range_end"], 0.12, 7.03)
-
-        if e:
-            errors.append("End range must be between 0.12m and 7.0m!\n")
-
-        r = end - start
-
-        env_max_range = 0.96
-        iq_max_range = 0.72
-        sparse_max_range = None
-        if sampling_mode_val is not None:
-            number_of_subsweeps = float(self.textboxes["number_of_subsweeps"].text())
-            if sampling_mode_val == configs.SparseServiceConfig.SAMPLING_MODE_B:
-                if number_of_subsweeps > 64:
-                    number_of_subsweeps = 64
-                    self.textboxes["number_of_subsweeps"].setText(str(number_of_subsweeps))
-                    errors.append("Number of subsweeps must be less than 64 for mode B!<br>")
-            elif sampling_mode_val == configs.SparseServiceConfig.SAMPLING_MODE_A:
-                stepsize = float(self.textboxes["stepsize"].text())
-                sparse_max_range = 0.06 * stepsize * 2048 / number_of_subsweeps - 0.06
-
-        if self.current_data_type in ["iq", "envelope"]:
-            if self.interface_dd.currentText().lower() == "socket":
-                env_max_range = 6.88
-                iq_max_range = 6.88
-            else:
-                env_max_range = 5.0
-                iq_max_range = 3.0
-        elif sparse_max_range is not None:
-            if r > sparse_max_range:
-                end = start + sparse_max_range
-                self.textboxes["range_end"].setText(str(end))
-                errors.append(
-                    "Max range for {} sweeps per frame is {}m!<br>".format(number_of_subsweeps,
-                                                                           sparse_max_range)
-                    )
-
-        stitching = False
-        if r < 0:
-            errors.append("Range must not be less than 0!\n")
-            self.textboxes["range_end"].setText(str(start + 0.06))
-            end = start + 0.06
-            r = end - start
-
-        if self.current_data_type == "envelope":
-            if r > env_max_range:
-                errors.append("Envelope range must be less than %.2fm!\n" % env_max_range)
-                self.textboxes["range_end"].setText(str(start + env_max_range))
-                end = start + env_max_range
-                r = end - start
-            elif r > 0.96:
-                stitching = True
-
-        if self.current_data_type == "iq":
-            if r > iq_max_range:
-                errors.append("IQ range must be less than %.2fm!\n" % iq_max_range)
-                self.textboxes["range_end"].setText(str(start + iq_max_range))
-                end = start + iq_max_range
-                r = end - start
-            elif r > 0.72:
-                stitching = True
-
-        self.labels["stitching"].setVisible(stitching)
-        self.textboxes["sweep_rate"].setEnabled(not stitching)
-
-        if len(errors):
-            QtWidgets.qApp.processEvents()
-            self.error_message("".join(errors))
-
-        if self.get_gui_state("ml_mode"):
-            sweep_rate = self.textboxes["sweep_rate"].text()
-            self.feature_sidepanel.textboxes["sweep_rate"].setText(sweep_rate)
-
-        return stitching
 
     def is_float(self, val, is_positive=True):
         try:
@@ -2173,10 +1950,16 @@ class GUI(QMainWindow):
                     print("Could not load ml settings from last session\n{}".format(e))
 
     def load_last_config(self, last_config):
-        # Restore sensor configs
-        for key in self.module_label_to_sensor_config_map.keys():
-            if key in last_config["sensor_config_map"]:
-                self.module_label_to_sensor_config_map[key] = last_config["sensor_config_map"][key]
+        # Restore sensor configs (configbase)
+        dumps = last_config.get("sensor_config_dumps", {})
+        for key, conf in self.module_label_to_sensor_config_map.items():
+            if key in dumps:
+                dump = last_config["sensor_config_dumps"][key]
+                try:
+                    conf._loads(dump)
+                except Exception:
+                    print("Could not load sensor config for \'{}\'".format(key))
+                    conf._reset()  # TODO: load module defaults
 
         # Restore processing configs (configbase)
         dumps = last_config.get("processing_config_dumps", {})
@@ -2198,7 +1981,7 @@ class GUI(QMainWindow):
         if last_config.get("override_baudrate"):
             self.override_baudrate = last_config["override_baudrate"]
 
-        # Restore processing configs
+        # Restore processing configs (legacy)
         if last_config["service_settings"]:
             for module_label in last_config["service_settings"]:
                 processing_config = self.get_default_processing_config(module_label)
@@ -2218,6 +2001,7 @@ class GUI(QMainWindow):
                         self.service_labels[module_label][key]["box"].setText(text)
 
     def closeEvent(self, event=None):
+        # Legacy processing params
         service_params = {}
         for mode in self.service_labels:
             if service_params.get(mode) is None:
@@ -2232,6 +2016,13 @@ class GUI(QMainWindow):
                         val = self.service_labels[mode][key]["box"].text()
                         service_params[mode][key]["box"] = val
 
+        sensor_config_dumps = {}
+        for module_label, config in self.module_label_to_sensor_config_map.items():
+            try:
+                sensor_config_dumps[module_label] = config._dumps()
+            except AttributeError:
+                pass
+
         processing_config_dumps = {}
         for module_label, config in self.module_label_to_processing_config_map.items():
             try:
@@ -2240,7 +2031,7 @@ class GUI(QMainWindow):
                 pass
 
         last_config = {
-            "sensor_config_map": self.module_label_to_sensor_config_map,
+            "sensor_config_dumps": sensor_config_dumps,
             "processing_config_dumps": processing_config_dumps,
             "host": self.textboxes["host"].text(),
             "sweep_buffer": self.textboxes["sweep_buffer"].text(),
@@ -2268,6 +2059,7 @@ class GUI(QMainWindow):
             self.client.disconnect()
         except Exception:
             pass
+
         self.close()
 
     def get_sensor_config(self):

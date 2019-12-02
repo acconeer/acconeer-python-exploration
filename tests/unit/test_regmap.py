@@ -2,6 +2,7 @@ import inspect
 
 import pytest
 
+import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool import configs
 from acconeer.exptool.clients.reg import regmap
 from acconeer.exptool.modes import Mode
@@ -54,7 +55,7 @@ def test_config_to_reg_map_completeness():
 
     all_config_attrs = set()
     for mode, config_class in configs.MODE_TO_CONFIG_CLASS_MAP.items():
-        attrs = [k for k, v in inspect.getmembers(config_class) if isinstance(v, property)]
+        attrs = [k for k, v in inspect.getmembers(config_class) if isinstance(v, cb.Parameter)]
         all_config_attrs.update(attrs)
 
         for attr in attrs:
