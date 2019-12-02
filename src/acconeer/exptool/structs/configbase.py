@@ -684,7 +684,10 @@ class FloatRangeParameter(FloatParameter):
         if values[0] > values[1]:
             raise ValueError("Invalid range")
 
-        return values
+        return np.array(values)
+
+    def dump(self, obj):
+        return list(self.__get__(obj))
 
 
 class ClassParameter(Parameter):
