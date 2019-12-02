@@ -1044,14 +1044,12 @@ class GUI(QMainWindow):
             self.error_message("Please select a service or detector")
             return
 
-        data_source = "stream"
         if from_file:
             try:
                 saved_sensor_config = copy.deepcopy(self.data[0]["sensor_config"])
                 self.load_gui_settings_from_sensor_config(saved_sensor_config)
             except Exception:
                 print("Warning, could not restore config from cached data!")
-            data_source = "file"
         self.sweep_buffer = 500
 
         try:
@@ -1065,7 +1063,6 @@ class GUI(QMainWindow):
             # We need to fix sensors here, which are overwritten in above call
             self.data[0]["sensor_config"] = saved_sensor_config
 
-        if data_source == "file":
             self.set_gui_state("replaying_data", True)
 
         self.update_canvas(force_update=True)
@@ -1118,7 +1115,7 @@ class GUI(QMainWindow):
 
         params = {
             "sensor_config": sensor_config,
-            "data_source": data_source,
+            "data_source": "file" if from_file else "stream",
             "service_type": self.current_module_label,
             "sweep_buffer": sweep_buffer,
             "service_params": processing_config,
