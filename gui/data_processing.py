@@ -151,7 +151,7 @@ class DataProcessing:
         else:
             plot_data = self.external.process(sweep_data)
             if plot_data is not None:
-                self.draw_canvas(self.sweep, plot_data, "update_external_plots")
+                self.draw_canvas(plot_data)
                 self.sweep += 1
                 if isinstance(plot_data, dict) and plot_data.get("send_process_data") is not None:
                     self.parent.emit("process_data", "", plot_data["send_process_data"])
@@ -277,26 +277,8 @@ class DataProcessing:
             if not info_available:
                 self.info[0]["sequence_number"] += 1
 
-    def draw_canvas(self, sweep_index, plot_data, cmd="update_plots",
-                    skip_frames=False):
-        if not skip_frames:
-            self.update_plots(plot_data, cmd=cmd)
-            QThread.msleep(3)
-            return
+    def draw_canvas(self, plot_data):
+        self.parent.emit("update_external_plots", "", plot_data)
+        QThread.msleep(3)
 
-        if self.skip <= 1:
-            if sweep_index == 0:
-                self.time = time.time()
-            self.update_plots(plot_data, cmd=cmd)
-            rate = time.time() - self.time
-            self.time = time.time()
-            self.skip = rate / self.rate
-            if self.skip > 1:
-                self.skip = np.ceil(self.skip)
-        else:
-            self.skip -= 1
-            if self.skip <= 1:
-                self.time = time.time()
-
-    def update_plots(self, plot_data, cmd="update_plots"):
-        self.parent.emit(cmd, "", plot_data)
+        # TODO: use a queue for plot_data
