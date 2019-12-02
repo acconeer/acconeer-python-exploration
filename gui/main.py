@@ -93,8 +93,8 @@ class GUI(QMainWindow):
         self.data = None
         self.client = None
         self.sweep_buffer = 500
-        self.sweep_number = 0
-        self.sweeps_skipped = 0
+        self.num_recv_frames = 0
+        self.num_missed_frames = 0
         self.service_labels = {}
         self.service_params = None
         self.service_defaults = None
@@ -1126,8 +1126,8 @@ class GUI(QMainWindow):
         self.buttons["stop"].setEnabled(True)
         self.checkboxes["opengl"].setEnabled(False)
 
-        self.sweep_number = 0
-        self.sweeps_skipped = 0
+        self.num_recv_frames = 0
+        self.num_missed_frames = 0
         self.threaded_scan.start()
 
         self.settings_section.body_widget.setEnabled(False)
@@ -2133,40 +2133,33 @@ class GUI(QMainWindow):
         else:
             self.service_widget.update(data)
 
-    def update_sweep_info(self, data):
-        if isinstance(data, list):
-            self.sweeps_skipped += data[0]["sequence_number"] - (self.sweep_number + 1)
-            self.sweep_number = data[0]["sequence_number"]
-        else:
-            self.sweeps_skipped += data["sequence_number"] - (self.sweep_number + 1)
-            self.sweep_number = data["sequence_number"]
+    def update_sweep_info(self, infos):
+        if not isinstance(infos, list):  # If squeezed
+            infos = [infos]
 
-        nr = ""
-        if self.sweep_number > 1e6:
-            self.sweep_number = 1e6
-            nr = ">"
+        missed = any([e.get("missed_data", False) for e in infos])
+        saturated = any([e.get("data_saturated", False) for e in infos])
 
-        skip = ""
-        if self.sweeps_skipped > 1e6:
-            self.sweeps_skipped = 1e6
-            skip = ">"
+        if missed:
+            self.num_missed_frames += 1
 
-        self.labels["sweep_info"].setText("Sweeps: {:s}{:d} (skipped {:s}{:d})".format(
-            nr, self.sweep_number, skip, self.sweeps_skipped))
+        self.num_recv_frames += 1
 
-        saturated = False
-        if isinstance(data, list):
-            for i in range(len(data)):
-                if data[i].get("data_saturated"):
-                    saturated = True
-                    break
-        elif data.get("data_saturated"):
-            saturated = True
+        show_lim = int(1e6)
+        num_missed_show = min(self.num_missed_frames, show_lim)
+        missed_sym = ">" if num_missed_show >= show_lim else ""
+        num_recv_show = min(self.num_recv_frames, show_lim)
+        recv_sym = ">" if num_recv_show >= show_lim else ""
 
-        if saturated:
-            self.labels["saturated"].setStyleSheet("color: red")
-        else:
-            self.labels["saturated"].setStyleSheet("color: #f0f0f0")
+        text = "Frames: {:s}{:d} (missed {:s}{:d})".format(
+            recv_sym,
+            num_recv_show,
+            missed_sym,
+            num_missed_show,
+        )
+        self.labels["sweep_info"].setText(text)
+
+        self.labels["saturated"].setVisible(saturated)
 
     def start_up(self):
         if not self.under_test:
