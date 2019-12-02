@@ -1,4 +1,3 @@
-import numpy as np
 import sys
 
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
@@ -45,28 +44,20 @@ def main():
         port = args.serial_port or utils.autodetect_serial_port()
         client = UARTClient(port)
 
-    info = client.setup_session(config)
+    session_info = client.setup_session(config)
 
     interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     client.start_session()
 
-    init = True
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
-        if init:
-            init = False
-            num_sensors, data_len = sweep.shape
-            start_x = config.range_interval[0]
-            stop_x = config.range_interval[1]
-            x_mm = np.linspace(start_x, stop_x, data_len) * 1000
+
         data = {
-            "x_mm": x_mm,
             "iq_data": sweep,
-            "env_ampl": abs(sweep),
             "sensor_config": config,
-            "num_sensors": num_sensors,
+            "session_info": session_info,
         }
 
         ml_frame_data = feature_process.feature_extraction(data)

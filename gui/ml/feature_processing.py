@@ -1,5 +1,7 @@
 import numpy as np
 import copy
+import sys
+import os
 
 try:
     from matplotlib.colors import LinearSegmentedColormap
@@ -11,14 +13,28 @@ except ImportError:
     PYQT_PLOTTING_AVAILABLE = False
 
 try:
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
     from examples.processing import presence_detection_sparse
     SPARSE_AUTO_DETECTION = True
 except ImportError:
+    print("Could not import presence detector!\n")
     SPARSE_AUTO_DETECTION = False
 
 
+def get_range_depths(sensor_config, session_info):
+    range_start = session_info["actual_range_start"]
+    range_end = range_start + session_info["actual_range_length"]
+    if sensor_config.mode == "sparse":
+        num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
+    elif sensor_config.mode == "power_bins":
+        num_depths = session_info["bin_count"]
+    else:
+        num_depths = session_info["data_length"]
+    return np.linspace(range_start, range_end, num_depths) * 1000
+
+
 class FeatureProcessing:
-    def __init__(self, sensor_config, feature_list=None):
+    def __init__(self, sensor_config, feature_list=None, store_features=False):
         self.rolling = False
         self.frame_size = 25
         self.sweep_counter = -1
@@ -40,6 +56,7 @@ class FeatureProcessing:
         self.win_data = None
         self.collection_mode = "auto"
         self.motion_processors = None
+        self.store_features = store_features
         self.setup(sensor_config, feature_list)
 
     def setup(self, sensor_config, feature_list=None):
@@ -166,6 +183,7 @@ class FeatureProcessing:
     def feature_extraction(self, data):
         n_sweeps = self.frame_size + 2 * self.frame_pad
         offset = min(self.frame_size, self.auto_offset)
+        self.check_data(data)
 
         if self.sweep_counter == -1:
             self.prepare_data_container(data)
@@ -209,8 +227,6 @@ class FeatureProcessing:
 
         self.sweep_counter += 1
 
-        x_mm = data['x_mm']
-
         feature_map = []
         for feat in self.feature_list:
             cb = feat["cb"]
@@ -229,7 +245,7 @@ class FeatureProcessing:
                 if idx is None:
                     continue
 
-                feat_data = cb.extract_feature(self.win_data, idx, options, x_mm)
+                feat_data = cb.extract_feature(self.win_data, idx, options, data["x_mm"])
 
                 if output is not None:
                     if feat_data is None:
@@ -298,7 +314,8 @@ class FeatureProcessing:
         self.sweep_number += 1
 
         if current_frame["feature_map"] is not None and current_frame["frame_complete"]:
-            self.frame_list.append(copy.deepcopy(current_frame))
+            if self.store_features:
+                self.frame_list.append(copy.deepcopy(current_frame))
 
         frame_data = {
             "current_frame": current_frame,
@@ -325,7 +342,7 @@ class FeatureProcessing:
         frame_stop = frame_start + self.frame_size + 2 * self.frame_pad
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
-
+        self.check_data(data)
         self.prepare_data_container(data)
 
         for idx, marker in enumerate(range(frame_start, frame_stop)):
@@ -389,7 +406,7 @@ class FeatureProcessing:
            "label": label,
            "frame_nr": data["ml_frame_data"]["current_frame"]["frame_nr"],
            "feature_map": fmap,
-           "frame_marker": start - 1,
+           "frame_marker": start,
            "frame_complete": True,
            "sweep_counter": n_sweeps,
            "sweep_number": frame_stop,
@@ -400,18 +417,29 @@ class FeatureProcessing:
 
         return data
 
+    def check_data(self, data):
+        if data.get("x_mm") is None:
+            data["x_mm"] = get_range_depths(data["sensor_config"], data["session_info"])
+
+        if data.get("env_ampl") is None:
+            sweep = data["iq_data"]
+            if data["sensor_config"].mode == "sparse":
+                data['env_ampl'] = sweep.mean(axis=1)
+            else:
+                data['env_ampl'] = np.abs(sweep)
+
     def indexer(self, i):
         self.m += 1
         return self.m
 
     def auto_motion_detect(self, data):
         detected = False
-        num_sensors = data["num_sensors"]
+        num_sensors = data["iq_data"].shape[0]
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
 
         if mode == "sparse" and not SPARSE_AUTO_DETECTION:
-            if self.sweep_counter == 0:
+            if self.sweep_counter <= 10:
                 print("Warning: Auto movement detection with spares not available.")
 
         if mode == "sparse" and SPARSE_AUTO_DETECTION:
@@ -424,22 +452,37 @@ class FeatureProcessing:
                 self.motion_config.intra_frame_time_const = 0.1
                 self.motion_config.detection_threshold = 0
                 self.motion_class = presence_detection_sparse.PresenceDetectionSparseProcessor
-                self.motion_processors = self.motion_class(
-                    sensor_config,
-                    self.motion_config,
-                    data["session_info"]
-                    )
+                motion_processors_list = []
+                for i in range(num_sensors):
+                    motion_processors_list.append(
+                        self.motion_class(
+                            sensor_config,
+                            self.motion_config,
+                            data["session_info"]
+                            )
+                        )
+                self.motion_processors = motion_processors_list
             else:
-                motion_score = self.motion_processors.process(data["iq_data"][0, :, :])
-                motion_score = motion_score["depthwise_presence"]
-                self.motion_score_normalized = np.nanmax(motion_score)
+                motion_score = 0
+                for i in range(num_sensors):
+                    score = self.motion_processors[i].process(data["iq_data"][i, :, :])
+                    score = score["depthwise_presence"]
+                    max_score = np.nanmax(score)
+                    if max_score > motion_score:
+                        motion_score = max_score
+                self.motion_score_normalized = motion_score
                 if self.motion_score_normalized > self.auto_threshold:
                     detected = True
-                    self.motion_processors = self.motion_class(
-                        sensor_config,
-                        self.motion_config,
-                        data["session_info"]
-                        )
+                    motion_processors_list = []
+                    for i in range(num_sensors):
+                        motion_processors_list.append(
+                            self.motion_class(
+                                sensor_config,
+                                self.motion_config,
+                                data["session_info"]
+                                )
+                            )
+                    self.motion_processors = motion_processors_list
                     return detected
         else:
             if self.motion_score is None:
@@ -510,7 +553,7 @@ class DataProcessor:
 
         self.image_buffer = processing_config["image_buffer"]["value"]
 
-        self.feature_process = FeatureProcessing(self.sensor_config)
+        self.feature_process = FeatureProcessing(self.sensor_config, store_features=True)
         feature_list = self.feature_list.get_feature_list()
         self.feature_process.set_feature_list(feature_list)
         self.feature_process.set_frame_settings(self.frame_settings)
@@ -533,18 +576,15 @@ class DataProcessor:
         mode = self.sensor_config.mode
 
         if self.sweep == 0:
+            self.x_mm = get_range_depths(self.sensor_config, self.session_info)
             if mode == "sparse":
                 self.num_sensors, point_repeats, self.data_len = sweep.shape
                 self.hist_env = np.zeros((self.num_sensors, self.data_len, self.image_buffer))
-                depths = np.linspace(*self.sensor_config.range_interval, self.data_len)
-                self.x_mm = np.tile(depths, point_repeats)
             else:
                 self.data_len = sweep.size
                 self.num_sensors = 1
                 if len(sweep.shape) > 1:
                     self.num_sensors, self.data_len = sweep.shape
-
-                self.x_mm = np.linspace(self.start_x, self.stop_x, self.data_len) * 1000
                 self.hist_env = np.zeros(
                     (self.num_sensors, self.data_len, self.image_buffer)
                     )

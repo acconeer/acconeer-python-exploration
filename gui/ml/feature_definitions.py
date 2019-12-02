@@ -1,6 +1,9 @@
 import numpy as np
+import sys
+import os
 
 try:
+    sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
     from examples.processing import presence_detection_sparse
 except Exception as e:
     print("Could not import presence detector:\n", e)
@@ -348,9 +351,9 @@ class FeatureSparseFFT:
         data_start = dist_vec[0]
         data_stop = dist_vec[-1]
 
-        # dist_vec is in m
-        start = max(data_start, options["Start"])
-        stop = min(data_stop, options["Stop"])
+        # dist_vec is in mm
+        start = max(data_start, options["Start"] * 1000)
+        stop = min(data_stop, options["Stop"] * 1000)
         high_pass = options["High pass"]
 
         if start >= data_stop:
@@ -422,9 +425,9 @@ class FeatureSparsePresence:
         data_start = dist_vec[0]
         data_stop = dist_vec[-1]
 
-        # dist_vec is in m
-        start = max(data_start, options["Start"])
-        stop = min(data_stop, options["Stop"])
+        # dist_vec is in mm
+        start = max(data_start, options["Start"] * 1000)
+        stop = min(data_stop, options["Stop"] * 1000)
 
         if start >= data_stop:
             return None
