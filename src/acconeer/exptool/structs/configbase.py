@@ -518,6 +518,10 @@ class NumberParameter(ValueParameter):
         self.unit = kwargs.pop("unit", None)
         self.limits = kwargs.pop("limits", None)
 
+        if self.limits is not None:
+            assert isinstance(self.limits, (tuple, list))
+            assert len(self.limits) == 2
+
         super().__init__(**kwargs)
 
 
