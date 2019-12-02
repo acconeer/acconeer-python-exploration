@@ -38,10 +38,8 @@ class DataProcessing:
 
     def init_vars(self):
         self.record = []
-        self.n_std_avg = 0
         self.abort = False
         self.first_run = True
-        self.skip = 0
 
     def update_feature_extraction(self, param, value=None):
         if isinstance(value, dict):
@@ -131,8 +129,6 @@ class DataProcessing:
             info = data[i]["info"][0]
 
             if not self.abort:
-                self.skip = 0
-
                 if parent.parent.get_gui_state("ml_tab") != "feature_extract":
                     time.sleep(self.rate)
 

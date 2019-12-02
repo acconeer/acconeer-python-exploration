@@ -140,7 +140,7 @@ class GUI(QMainWindow):
         self.module_label_to_sensor_config_map = {}
         self.module_label_to_processing_config_map = {}
         self.current_module_info = MODULE_INFOS[0]
-        for idx, mi in enumerate(MODULE_INFOS):
+        for mi in MODULE_INFOS:
             if mi.sensor_config_class is not None:
                 self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
 
@@ -339,7 +339,7 @@ class GUI(QMainWindow):
     def init_pidgets(self):
         self.last_processing_config = None
 
-        for module_label, processing_config in self.module_label_to_processing_config_map.items():
+        for processing_config in self.module_label_to_processing_config_map.values():
             if not isinstance(processing_config, configbase.Config):
                 continue
 
@@ -1922,7 +1922,7 @@ class GUI(QMainWindow):
 
                     sequence_number = []
                     data_saturated = []
-                    for i in range(nr_sensor):
+                    for _ in range(nr_sensor):
                         sequence_number.append([])
                         data_saturated.append([])
 
@@ -2362,7 +2362,7 @@ class Threaded_Scan(QtCore.QThread):
                 while self.running:
                     info, sweep = self.client.get_next()
                     self.emit("sweep_info", "", info)
-                    plot_data, data = self.radar.process(sweep, info)
+                    _, data = self.radar.process(sweep, info)
             except Exception as e:
                 msg = "Failed to communicate with server!\n{}".format(self.format_error(e))
                 self.emit("client_error", msg)
