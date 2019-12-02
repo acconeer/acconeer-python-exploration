@@ -524,7 +524,7 @@ class IntParameter(NumberParameter):
         super().__init__(**kwargs)
 
     def _sanitize(self, value):
-        if isinstance(value, float):
+        if isinstance(value, float) and not value.is_integer():
             raise ValueError("Not an integer")
 
         try:
