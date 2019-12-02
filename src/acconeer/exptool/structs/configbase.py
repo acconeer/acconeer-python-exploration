@@ -684,6 +684,12 @@ class Config:
         self._event_handlers = set()
         self.__state = Config.State.UNLOADED
 
+    def __str__(self):
+        d = {k: p.dump(self) for k, p in self._get_keys_and_params() if p.does_dump}
+        s = self.__class__.__name__
+        s += "".join(["\n  {:.<35} {}".format(a + " ", v) for (a, v) in d.items()])
+        return s
+
     def _loads(self, s):
         d = json.loads(s)
 
