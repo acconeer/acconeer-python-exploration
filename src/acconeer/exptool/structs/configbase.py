@@ -773,6 +773,9 @@ def get_virtual_parameter_class(base_class):
         def __delete__(self, obj):
             pass
 
+        def _sanitize(self, value):
+            pass
+
     return VirtualParameter
 
 
