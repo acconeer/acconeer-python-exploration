@@ -92,7 +92,7 @@ MODULE_INFOS = [
         "IQ",
         iq_module,
         iq_module.get_sensor_config,
-        iq_module.IQProcessor,
+        iq_module.Processor,
         True,
         True,
     ),
