@@ -1,7 +1,9 @@
-import numpy as np
 import copy
-import sys
 import os
+import sys
+
+import numpy as np
+
 
 try:
     from matplotlib.colors import LinearSegmentedColormap

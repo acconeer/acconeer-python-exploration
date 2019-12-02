@@ -1,9 +1,10 @@
 import json
-import numpy as np
 from threading import Thread
-from acconeer.exptool.clients import UARTClient, SocketClient
-from acconeer.exptool import configs
-from acconeer.exptool import utils
+
+import numpy as np
+
+from acconeer.exptool import configs, utils
+from acconeer.exptool.clients import SocketClient, UARTClient
 
 
 class Detector(Thread):

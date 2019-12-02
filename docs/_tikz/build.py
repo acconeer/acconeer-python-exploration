@@ -1,9 +1,9 @@
-import sys
 import os
-import shutil
-from glob import glob
-from subprocess import run, DEVNULL
 import platform
+import shutil
+import sys
+from glob import glob
+from subprocess import DEVNULL, run
 
 
 def main():

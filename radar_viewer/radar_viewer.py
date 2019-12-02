@@ -1,29 +1,25 @@
 import multiprocessing
 import sys
-import time
-import os
-
-import webbrowser
 import threading
+import time
 import traceback
+import webbrowser
 
-sys.path.append(os.path.dirname(__file__))  # noqa: E402
+from acconeer.exptool import clients, utils
+
 from server import http_server
-
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool import utils
 
 
 def check_connection(args):
     print("Checking connection to radar")
     try:
         if args.socket_addr:
-            client = SocketClient(args.socket_addr)
+            client = clients.SocketClient(args.socket_addr)
         elif args.spi:
-            client = SPIClient()
+            client = clients.SPIClient()
         else:
             port = args.serial_port or utils.autodetect_serial_port()
-            client = UARTClient(port)
+            client = clients.UARTClient(port)
 
         client.connect()
         client.disconnect()

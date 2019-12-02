@@ -1,15 +1,15 @@
-from functools import wraps, update_wrapper
+import os
+import signal
 from datetime import datetime
-from server.demo_control import DemoControl
-from server.detector_wrappers import EnvelopeHandler, IQHandler, PowerBinHandler, SparseHandler
-
-from threading import Thread
-from threading import Timer
+from functools import update_wrapper, wraps
+from threading import Thread, Timer
 
 import flask
 from flask import request
-import os
-import signal
+
+from server.demo_control import DemoControl
+from server.detector_wrappers import EnvelopeHandler, IQHandler, PowerBinHandler, SparseHandler
+
 
 # TODO: The Flask framework does not support a global shared state like the demo_ctrl object
 #       below. It seems to work anyway when using the build in development server. For better

@@ -1,11 +1,16 @@
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 from PyQt5 import QtCore
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))  # noqa: E402
-from gui.main import GUI
-from gui.elements.modules import MODULE_INFOS
+
+here = os.path.dirname(os.path.realpath(__file__))  # noqa: E402
+sys.path.append(os.path.abspath(os.path.join(here, "../..")))  # noqa: E402
+
+from gui.elements.modules import MODULE_INFOS  # isort:skip
+from gui.main import GUI  # isort:skip
 
 
 MOCK_INTERFACE = "Simulated"

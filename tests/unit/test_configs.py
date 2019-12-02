@@ -1,4 +1,4 @@
-from acconeer.exptool import modes, configs
+from acconeer.exptool import configs, modes
 
 
 def test_mode_to_config_map():

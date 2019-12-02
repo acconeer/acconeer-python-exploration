@@ -1,10 +1,10 @@
 import sys
 
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool import utils
+from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 
-import keras_processing as kp
 import feature_processing as feature_proc
+import keras_processing as kp
 
 
 def main():

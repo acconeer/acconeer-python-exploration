@@ -1,16 +1,27 @@
-from keras.models import Model
-from keras import backend as K
-from keras import optimizers as Opt
-from keras.layers import (Dense, Dropout, Input, GaussianNoise, Activation, Conv1D, Conv2D,
-                          MaxPool2D, Flatten, BatchNormalization)
-from keras.utils import to_categorical
-from keras.callbacks import EarlyStopping, Callback
-from sklearn.model_selection import train_test_split
-import tensorflow as tf
+import os
+import sys
 
 import numpy as np
-import sys
-import os
+import tensorflow as tf
+from keras import backend as K
+from keras import optimizers as Opt
+from keras.callbacks import Callback, EarlyStopping
+from keras.layers import (
+    Activation,
+    BatchNormalization,
+    Conv1D,
+    Conv2D,
+    Dense,
+    Dropout,
+    Flatten,
+    GaussianNoise,
+    Input,
+    MaxPool2D,
+)
+from keras.models import Model
+from keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+
 
 try:
     import pyqtgraph as pg
