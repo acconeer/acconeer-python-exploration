@@ -348,13 +348,9 @@ class GUI(QMainWindow):
                 if pidget is None:
                     continue
 
-                loc = pidget.param.pidget_location
-                if loc == "advanced":
+                if pidget.param.category == configbase.Category.ADVANCED:
                     grid = self.advanced_processing_config_section.grid
                     count = self.param_grid_count
-                elif loc == "control":
-                    grid = self.control_section.grid
-                    count = self.control_grid_count
                 else:
                     grid = self.basic_processing_config_section.grid
                     count = self.param_grid_count
@@ -389,11 +385,8 @@ class GUI(QMainWindow):
         has_basic_params = has_advanced_params = False
         for param in processing_config._get_params():
             if param.pidget_class is not None:
-                loc = param.pidget_location
-                if loc == "advanced":
+                if param.category == configbase.Category.ADVANCED:
                     has_advanced_params = True
-                elif loc == "control":
-                    pass
                 else:
                     has_basic_params = True
 

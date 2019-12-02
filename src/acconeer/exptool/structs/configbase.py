@@ -1,7 +1,7 @@
+import enum
 import json
 import os
 from copy import copy
-from enum import Enum
 from weakref import WeakKeyDictionary
 
 import numpy as np
@@ -26,6 +26,11 @@ try:
     )
 except ImportError:
     pass
+
+
+class Category(enum.Enum):
+    BASIC = enum.auto()
+    ADVANCED = enum.auto()
 
 
 class Pidget(QFrame):
@@ -366,7 +371,7 @@ class Parameter:
         self.is_live_updateable = kwargs.pop("updateable", False)
         self.does_dump = kwargs.pop("does_dump", False)
         self.pidget_class = kwargs.pop("pidget_class", None)
-        self.pidget_location = kwargs.pop("pidget_location", None)
+        self.category = kwargs.pop("category", Category.BASIC)
         self.order = kwargs.pop("order", -1)
         self.help = kwargs.pop("help", None)
         self.visible = kwargs.pop("visible", True)
@@ -659,7 +664,7 @@ def get_virtual_parameter_class(base_class):
 
 
 class Config:
-    class State(Enum):
+    class State(enum.Enum):
         UNLOADED = 1
         LOADED = 2
         LIVE = 3

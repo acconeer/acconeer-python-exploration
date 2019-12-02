@@ -170,7 +170,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         updateable=True,
         order=110,
         help="Show the noise estimation plot.",
-        pidget_location="advanced",
+        category=configbase.Category.ADVANCED,
     )
 
     show_depthwise_output = configbase.BoolParameter(
@@ -195,7 +195,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         limits=(1, 20),
         decimals=0,
         order=200,
-        pidget_location="advanced",
+        category=configbase.Category.ADVANCED,
     )
 
 
