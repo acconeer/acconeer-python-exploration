@@ -2347,6 +2347,7 @@ class Threaded_Scan(QtCore.QThread):
                 self.radar.prepare_processing(self, self.params, session_info)
                 self.client.start_session()
             except Exception as e:
+                traceback.print_exc()
                 self.emit("client_error", "Failed to setup streaming!\n"
                           "{}".format(self.format_error(e)))
                 self.running = False
@@ -2357,6 +2358,7 @@ class Threaded_Scan(QtCore.QThread):
                     self.emit("sweep_info", "", info)
                     _, data = self.radar.process(sweep, info)
             except Exception as e:
+                traceback.print_exc()
                 msg = "Failed to communicate with server!\n{}".format(self.format_error(e))
                 self.emit("client_error", msg)
 
