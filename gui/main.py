@@ -1445,7 +1445,7 @@ class GUI(QMainWindow):
         if not self.get_gui_state("server_connected"):
             max_num = 4
             if self.current_module_info.module is None:
-                self.module_dd.setCurrentIndex(2)
+                self.module_dd.setCurrentIndex(1)
 
             if self.interface_dd.currentText().lower() == "socket":
                 host = self.textboxes["host"].text()
