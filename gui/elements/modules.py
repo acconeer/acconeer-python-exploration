@@ -1,6 +1,8 @@
 from collections import namedtuple
 from types import ModuleType
 
+from acconeer.exptool.modes import Mode
+
 import examples.processing.breathing as breathing_module
 import examples.processing.button_press as button_press_module
 import examples.processing.obstacle_detection as obstacle_detection_module
@@ -70,6 +72,7 @@ def multi_sensor_wrap(module):
 multi_sensor_sparse_speed_module = multi_sensor_wrap(sparse_speed_module)
 
 ModuleInfo = namedtuple("ModuleInfo", [
+    "key",
     "label",
     "module",
     "sensor_config_class",
@@ -80,6 +83,7 @@ ModuleInfo = namedtuple("ModuleInfo", [
 
 MODULE_INFOS = [
     ModuleInfo(
+        None,
         "Select service or detector",
         None,
         None,
@@ -88,6 +92,7 @@ MODULE_INFOS = [
         True,
     ),
     ModuleInfo(
+        Mode.ENVELOPE.name.lower(),
         "Envelope",
         envelope_module,
         envelope_module.get_sensor_config,
@@ -96,6 +101,7 @@ MODULE_INFOS = [
         True,
     ),
     ModuleInfo(
+        Mode.IQ.name.lower(),
         "IQ",
         iq_module,
         iq_module.get_sensor_config,
@@ -104,6 +110,7 @@ MODULE_INFOS = [
         True,
     ),
     ModuleInfo(
+        Mode.POWER_BINS.name.lower(),
         "Power bins",
         power_bins_module,
         power_bins_module.get_sensor_config,
@@ -112,6 +119,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        Mode.SPARSE.name.lower(),
         "Sparse",
         sparse_module,
         sparse_module.get_sensor_config,
@@ -120,6 +128,7 @@ MODULE_INFOS = [
         True,
     ),
     ModuleInfo(
+        "sparse_presence",
         "Presence detection (sparse)",
         presence_detection_sparse_module,
         presence_detection_sparse_module.get_sensor_config,
@@ -128,6 +137,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        "sparse_fft",
         "Sparse FFT (sparse)",
         sparse_fft_module,
         sparse_fft_module.get_sensor_config,
@@ -136,6 +146,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        "sparse_speed",
         "Speed (sparse)",
         multi_sensor_sparse_speed_module,
         multi_sensor_sparse_speed_module.get_sensor_config,
@@ -144,6 +155,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        "iq_breathing",
         "Breathing (IQ)",
         breathing_module,
         breathing_module.get_sensor_config,
@@ -152,6 +164,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        "iq_phase_tracking",
         "Phase tracking (IQ)",
         phase_tracking_module,
         phase_tracking_module.get_sensor_config,
@@ -160,6 +173,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        "iq_sleep_breathing",
         "Sleep breathing (IQ)",
         sleep_breathing_module,
         sleep_breathing_module.get_sensor_config,
@@ -168,6 +182,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        "iq_obstacle",
         "Obstacle detection (IQ)",
         obstacle_detection_module,
         obstacle_detection_module.get_sensor_config,
@@ -176,6 +191,7 @@ MODULE_INFOS = [
         False,
     ),
     ModuleInfo(
+        "envelope_button_press",
         "Button Press (envelope)",
         button_press_module,
         button_press_module.get_sensor_config,
@@ -185,4 +201,5 @@ MODULE_INFOS = [
     ),
 ]
 
+MODULE_KEY_TO_MODULE_INFO_MAP = {mi.key: mi for mi in MODULE_INFOS}
 MODULE_LABEL_TO_MODULE_INFO_MAP = {mi.label: mi for mi in MODULE_INFOS}
