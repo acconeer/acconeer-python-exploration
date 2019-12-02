@@ -85,7 +85,7 @@ class GUI(QMainWindow):
 
         self.data = None
         self.client = None
-        self.sweep_buffer = 500
+        self.sweep_buffer = 1000
         self.num_recv_frames = 0
         self.num_missed_frames = 0
         self.service_labels = {}
@@ -212,7 +212,7 @@ class GUI(QMainWindow):
         # key: (text)
         textbox_info = {
             "host": ("192.168.1.100",),
-            "sweep_buffer": ("100",),
+            "sweep_buffer": (str(self.sweep_buffer),),
             "sweep_buffer_ml": ("unlimited",),
         }
 
@@ -1029,11 +1029,13 @@ class GUI(QMainWindow):
 
         try:
             self.sweep_buffer = int(self.textboxes["sweep_buffer"].text())
-        except Exception:
-            self.error_message("Sweep buffer needs to be a positive integer\n")
-        else:
-            self.sweep_buffer = 500
-            self.textboxes["sweep_buffer"].setText("500")
+            assert self.sweep_buffer > 0
+        except (ValueError, AssertionError):
+            self.sweep_buffer = 1000
+            self.error_message("Sweep buffer needs to be a positive integer")
+            return
+        finally:
+            self.textboxes["sweep_buffer"].setText(str(self.sweep_buffer))
 
         sensor_config = self.get_sensor_config()
 
