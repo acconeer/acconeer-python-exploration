@@ -43,6 +43,10 @@ class BaseServiceConfig(BaseSessionConfig):
         default_value=[0.18, 0.78],
         limits=(-0.7, 7.0),
         order=10,
+        help=r"""
+            The measured depth range. The start and end values will be rounded to the closest
+            measurement point available.
+        """,
     )
 
     range_start = cb.get_virtual_parameter_class(cb.FloatParameter)(
@@ -81,6 +85,22 @@ class BaseServiceConfig(BaseSessionConfig):
         optional_label="Limit",
         optional_default_set_value=50.0,
         order=30,
+        help=r"""
+            The data frame rate :math:`f_f` from the service.
+
+            .. attention::
+
+               Setting the update rate too high might result in missed data frames.
+
+            In sparse, the maximum possible update rate depends on the *sweeps per frame*
+            :math:`N_s` and *sweep rate* :math:`f_s`:
+
+            .. math::
+
+               \frac{1}{f_f} > N_s \cdot \frac{1}{f_s} + \text{overhead*}
+
+            \* *The overhead largely depends on data frame size and data transfer speeds.*
+        """
     )
 
     gain = cb.FloatParameter(
@@ -90,6 +110,14 @@ class BaseServiceConfig(BaseSessionConfig):
         decimals=2,
         order=1040,
         category=cb.Category.ADVANCED,
+        help=r"""
+            The receiver gain used in the sensor. If the gain is too low, objects may not be
+            visible, or it may result in poor signal quality due to quantization errors. If the
+            gain is too high, strong reflections may saturate the data. We recommend not setting
+            the gain higher than necessary due to signal quality reasons.
+
+            Must be between 0 and 1 inclusive, where 1 is the highest possible gain.
+        """,
     )
 
     hw_accelerated_average_samples = cb.IntParameter(
@@ -98,6 +126,15 @@ class BaseServiceConfig(BaseSessionConfig):
         limits=(1, 63),
         order=1030,
         category=cb.Category.ADVANCED,
+        help=r"""
+            Number of samples taken to obtain a single point in the data. These are averaged
+            directly in the sensor hardware - no extra computations are done in the MCU.
+
+            The time needed to measure a sweep is roughly proportional to the HWAAS. Hence, if
+            there's a need to obtain a higher sweep rate, HWAAS could be decreased.
+
+            Must be at least 1 and not greater than 63.
+        """,
     )
 
     maximize_signal_attenuation = cb.BoolParameter(
@@ -120,6 +157,23 @@ class BaseServiceConfig(BaseSessionConfig):
         limits=(1, None),
         order=1020,
         category=cb.Category.ADVANCED,
+        help=r"""
+            The range downsampling by an integer factor. A factor of 1 means no downsampling, thus
+            sampling with the smallest possible depth interval. A factor 2 samples every other
+            point, and so on. In Envelope and IQ, the finest interval is ~0.5 mm. In Power Bins,
+            it is the same but then further downsampled in post-processing.
+            In sparse, it is ~6 cm.
+
+            The downsampling is performed by skipping measurements in the sensor, and therefore
+            gives lower memory usage, lower power consumption, and lower duty cycle.
+
+            In sparse, setting a too large factor might result in gaps in the data where moving
+            objects "disappear" between sampling points.
+
+            In Envelope, IQ, and Power Bins, the factor must be 1, 2, or 4.
+            In sparse, it must be at least 1.
+            Setting a factor greater than 1 might affect the range end point.
+        """,
     )
 
     def check(self):
@@ -229,6 +283,11 @@ class SparseServiceConfig(BaseServiceConfig):
         default_value=16,
         limits=(1, 2048),
         order=50,
+        help=r"""
+            The number of sweeps per frame :math:`N_s`.
+
+            Must be at least 1, and not greater than 64 when using sampling mode B.
+        """,
     )
 
     sweep_rate = cb.FloatParameter(
@@ -240,6 +299,24 @@ class SparseServiceConfig(BaseServiceConfig):
         optional=True,
         optional_default_set_value=3000.0,
         order=40,
+        help=r"""
+            The sparse sweep rate :math:`f_s`. If not set, this will take the maximum possible
+            value.
+
+            The maximum possible sweep rate...
+
+            - Is roughly inversely proportional to the number of depth points measured (affected
+              by the **range interval** and **downsampling factor**).
+            - Is roughly inversely proportional to **HW accelerated average samples**.
+            - Depends on the **sampling mode**. Mode A is roughly :math:`4/3 \approx 130\%` slower
+              than mode B with the same configuration.
+
+            To get the maximum possible rate, leave this value unset and look at the :ref:`sweep
+            rate <sparse-info-sweep-rate>` in the session info (metadata).
+
+            .. tip::
+               If you do not need a specific sweep rate, we recommend leaving it unset.
+        """,
     )
 
     sampling_mode = cb.EnumParameter(
@@ -248,6 +325,19 @@ class SparseServiceConfig(BaseServiceConfig):
         default_value=SamplingMode.B,
         order=1000,
         category=cb.Category.ADVANCED,
+        help=r"""
+            The sampling mode changes how the hardware accelerated averaging is done. Mode A is
+            optimized for maximal independence of the depth points, giving a higher depth
+            resolution than mode B. Mode B is instead optimized for maximal SNR per unit time
+            spent on measuring. This makes it more energy efficient and suitable for cases where
+            small movements are to be detected over long ranges. Mode A is more suitable for
+            applications like gesture recognition, measuring the distance to a movement, and
+            speed measurements.
+
+            Mode B typically gives roughly 3 dB better SNR per unit time than mode A. However,
+            please note that very short ranges of only one or a few points are suboptimal with
+            mode B. In those cases, always use mode A.
+        """,
     )
 
     def check(self):
