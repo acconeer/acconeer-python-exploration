@@ -17,7 +17,6 @@ class DataProcessing:
         self.sensor_config = params["sensor_config"]
         self.mode = self.sensor_config.mode
         self.service_type = params["service_type"]
-        self.rate = 1/params["sensor_config"].sweep_rate
         self.hist_len = params["sweep_buffer"]
         self.service_params = params["service_params"]
         self.multi_sensor = params["multi_sensor"]
@@ -101,6 +100,7 @@ class DataProcessing:
         self.parent = parent
         self.init_vars()
 
+        rate = getattr(self.sensor_config, "update_rate", None)
         selected_sensors = self.sensor_config.sensor
         stored_sensors = data[0]["sensor_config"].sensor
         nr_sensors = len(stored_sensors)
@@ -130,7 +130,8 @@ class DataProcessing:
 
             if not self.abort:
                 if parent.parent.get_gui_state("ml_tab") != "feature_extract":
-                    time.sleep(self.rate)
+                    if rate is not None:
+                        time.sleep(1.0 / rate)
 
                 sweep_data = data_step["sweep_data"]
 
