@@ -1,8 +1,11 @@
+import json
 import time
 import traceback
 import warnings
 
 from PyQt5.QtCore import QThread
+
+from acconeer.exptool.recording import Recorder
 
 
 warnings.filterwarnings("ignore")
@@ -15,20 +18,28 @@ class DataProcessing:
         self.parent = parent
         self.gui_handle = self.parent.parent
         self.sensor_config = params["sensor_config"]
-        self.mode = self.sensor_config.mode
-        self.service_type = params["service_type"]
-        self.hist_len = params["sweep_buffer"]
-        self.service_params = params["service_params"]
+        self.processing_config = params["service_params"]
         self.multi_sensor = params["multi_sensor"]
+
+        hist_len = params["sweep_buffer"]
+        if hist_len is not None and hist_len < 1:
+            hist_len = None
 
         self.ml_plotting = params["ml_plotting"]
 
-        if isinstance(self.service_params, dict):
-            self.service_params["processing_handle"] = self
-
-        self.hist_len_index = 0
+        if isinstance(self.processing_config, dict):  # Legacy
+            self.processing_config["processing_handle"] = self
 
         self.session_info = session_info
+
+        self.recorder = Recorder(
+            sensor_config=self.sensor_config,
+            session_info=session_info,
+            module_key=params["module_info"].key,
+            processing_config=self.processing_config,
+            rss_version=params.get("rss_version", None),
+            max_len=hist_len,
+        )
 
         self.init_vars()
 
@@ -36,7 +47,6 @@ class DataProcessing:
         self.abort = True
 
     def init_vars(self):
-        self.record = []
         self.abort = False
         self.first_run = True
 
@@ -62,7 +72,7 @@ class DataProcessing:
         except Exception:
             traceback.print_exc()
 
-    def process(self, unsqueezed_data, info):
+    def process(self, unsqueezed_data, info, do_record=True):
         if self.multi_sensor:
             in_data = unsqueezed_data
         else:
@@ -73,7 +83,7 @@ class DataProcessing:
             ext = self.gui_handle.external
             if self.ml_plotting:
                 ext = self.gui_handle.ml_external
-            self.external = ext(self.sensor_config, self.service_params, self.session_info)
+            self.external = ext(self.sensor_config, self.processing_config, self.session_info)
             self.first_run = False
             out_data = self.external.process(in_data)
         else:
@@ -83,32 +93,19 @@ class DataProcessing:
                 if isinstance(out_data, dict) and out_data.get("send_process_data") is not None:
                     self.parent.emit("process_data", "", out_data["send_process_data"])
 
-        self.record_data(unsqueezed_data, info)
+        if do_record:
+            self.recorder.sample(info, unsqueezed_data)
 
-        return out_data, self.record
+        return out_data, self.recorder.record
 
-    def record_data(self, sweep_data, info):
-        plot_data = {
-            "service_type": self.service_type,
-            "sweep_data": sweep_data,
-            "sensor_config": self.sensor_config,
-            "info": info,
-        }
-
-        if self.hist_len_index >= self.hist_len:
-            self.record.pop(0)
-        else:
-            self.hist_len_index += 1
-
-        self.record.append(plot_data.copy())
-
-    def process_saved_data(self, data, parent):
+    def process_saved_data(self, record, parent):
         self.parent = parent
         self.init_vars()
 
-        rate = getattr(self.sensor_config, "update_rate", None)
+        sensor_config_dict = json.loads(record.sensor_config_dump)
+        rate = sensor_config_dict.get("update_rate", None)
         selected_sensors = self.sensor_config.sensor
-        stored_sensors = data[0]["sensor_config"].sensor
+        stored_sensors = sensor_config_dict["sensor"]
 
         sensor_list = []
         matching_sensors = []
@@ -126,18 +123,17 @@ class DataProcessing:
 
         self.sensor_config.sensor = matching_sensors
 
-        for i, data_step in enumerate(data):
-            info = data[i]["info"][0]
+        for subinfo, subdata in record:
+            if self.abort:
+                break
 
-            if not self.abort:
-                if parent.parent.get_gui_state("ml_tab") != "feature_extract":
-                    if rate is not None:
-                        time.sleep(1.0 / rate)
+            if parent.parent.get_gui_state("ml_tab") != "feature_extract":
+                if rate is not None:
+                    time.sleep(1.0 / rate)
 
-                sweep_data = data_step["sweep_data"][sensor_list, :]
-
-                self.process(sweep_data, info)
-                self.parent.emit("sweep_info", "", info)
+            subdata = subdata[sensor_list]
+            self.process(subdata, subinfo, do_record=False)
+            self.parent.emit("sweep_info", "", subinfo)
 
     def draw_canvas(self, plot_data):
         self.parent.emit("update_external_plots", "", plot_data)

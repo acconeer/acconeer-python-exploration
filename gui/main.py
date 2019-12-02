@@ -8,7 +8,6 @@ import sys
 import threading
 import traceback
 
-import h5py
 import numpy as np
 import pyqtgraph as pg
 import serial.tools.list_ports
@@ -39,7 +38,7 @@ sys.path.append(os.path.abspath(os.path.join(HERE, "elements")))
 
 
 try:
-    from acconeer.exptool import clients, configs, utils
+    from acconeer.exptool import clients, recording, utils
     from acconeer.exptool.structs import configbase
 
     import data_processing
@@ -52,7 +51,11 @@ try:
         SensorSelection,
         lib_version_up_to_date,
     )
-    from modules import MODULE_INFOS, MODULE_LABEL_TO_MODULE_INFO_MAP
+    from modules import (
+        MODULE_INFOS,
+        MODULE_LABEL_TO_MODULE_INFO_MAP,
+        MODULE_KEY_TO_MODULE_INFO_MAP,
+    )
 except Exception:
     traceback.print_exc()
     print("\nPlease update your library with 'python -m pip install -U --user .'")
@@ -487,7 +490,7 @@ class GUI(QMainWindow):
     def set_multi_sensors(self):
         multi_sensor = False
         if self.get_gui_state("has_loaded_data"):
-            multi_sensor = len(self.data[0]["sensor_config"].sensor) > 1
+            multi_sensor = len(json.loads(self.data.sensor_config_dump)["sensor"]) > 1
         elif self.multi_sensor_interface:
             multi_sensor = self.current_module_info.multi_sensor
 
@@ -1024,25 +1027,18 @@ class GUI(QMainWindow):
             self.error_message("Please select a service or detector")
             return
 
-        if from_file:
-            try:
-                saved_sensor_config = copy.deepcopy(self.data[0]["sensor_config"])
-                self.load_gui_settings_from_sensor_config(saved_sensor_config)
-            except Exception:
-                print("Warning, could not restore config from cached data!")
-        self.sweep_buffer = 500
-
         try:
             self.sweep_buffer = int(self.textboxes["sweep_buffer"].text())
         except Exception:
             self.error_message("Sweep buffer needs to be a positive integer\n")
+        else:
+            self.sweep_buffer = 500
             self.textboxes["sweep_buffer"].setText("500")
 
-        sensor_config = self.save_gui_settings_to_sensor_config()
-        if from_file:
-            # We need to fix sensors here, which are overwritten in above call
-            self.data[0]["sensor_config"] = saved_sensor_config
+        sensor_config = self.get_sensor_config()
 
+        if from_file:
+            sensor_config._loads(self.data.sensor_config_dump)
             self.set_gui_state("replaying_data", True)
 
         self.update_canvas(force_update=True)
@@ -1096,11 +1092,12 @@ class GUI(QMainWindow):
         params = {
             "sensor_config": sensor_config,
             "data_source": "file" if from_file else "stream",
-            "service_type": self.current_module_label,
+            "module_info": self.current_module_info,
             "sweep_buffer": sweep_buffer,
             "service_params": processing_config,
             "ml_plotting": ml_plotting,
             "multi_sensor": self.current_module_info.multi_sensor,
+            "rss_version": getattr(self, "rss_version", None),
         }
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
@@ -1170,10 +1167,7 @@ class GUI(QMainWindow):
                 self.statusBar().showMessage("Not connected")
 
         if state == "has_loaded_data":
-            if val:
-                if isinstance(self.data, list) and self.data[0].get("sensor_config"):
-                    self.set_multi_sensors()
-            else:
+            if not val:
                 self.buttons["replay_buffered"].setEnabled(False)
             self.init_graphs()
 
@@ -1341,6 +1335,7 @@ class GUI(QMainWindow):
                 self.error_message(err_message)
                 return
 
+            self.rss_version = info.get("version_str", None)
             max_num = info.get("board_sensor_count", max_num)
 
             conf = self.get_sensor_config()
@@ -1473,341 +1468,85 @@ class GUI(QMainWindow):
                 self,
                 "Load scan",
                 "",
-                "HDF5 data files (*.h5);; NumPy data files (*.npy)",
+                "HDF5 data files (*.h5);; NumPy data files (*.npz)",
                 options=options
                 )
 
-        if filename:
-            if filename.endswith(".h5"):
-                try:
-                    f = h5py.File(filename, "r")
-                except Exception as e:
-                    self.error_message("{}".format(e))
-                    print(e)
-                    return
+        if not filename:
+            return
 
-                try:
-                    real = np.asarray(list(f["real"]))
-                    im = np.asarray(list(f["imag"]))
-                except Exception as e:
-                    self.error_message("{}".format(e))
-                    return
+        try:
+            record = recording.load(filename)
+        except Exception as e:
+            traceback.print_exc()
+            self.error_message("Failed to load file:\n {:s}".format(e))
+            return
 
-                try:
-                    module_label = f["service_type"][()]
-                except Exception:
-                    if np.any(np.nonzero(im.flatten())):
-                        module_label = "IQ"
-                    else:
-                        module_label = "Envelope"
+        try:
+            module_info = MODULE_KEY_TO_MODULE_INFO_MAP[record.module_key]
+            index = self.module_dd.findText(module_info.label, QtCore.Qt.MatchFixedString)
+        except Exception:
+            has_loaded_module = False
+            print("Can't find the module for the loaded data")
+        else:
+            has_loaded_module = True
 
-                    print("Service type not stored, autodetected {}".format(module_label))
+        if not has_loaded_module:  # Just try loading the data in the service-only module
+            try:
+                module_info = MODULE_KEY_TO_MODULE_INFO_MAP[record.mode.name.lower()]
+                index = self.module_dd.findText(module_info.label, QtCore.Qt.MatchFixedString)
+            except Exception:
+                self.error_message("Unknown mode in loaded file")
+                return
 
-                index = self.module_dd.findText(module_label, QtCore.Qt.MatchFixedString)
-                if index >= 0:
-                    self.module_dd.setCurrentIndex(index)
-                    self.update_canvas()
-                else:
-                    self.error_message("Unknown module in loaded data")
-                    return
+        self.module_dd.setCurrentIndex(index)
+        self.update_canvas()
 
-                conf = copy.deepcopy(self.get_sensor_config())
+        self.data = record
 
-                try:
-                    if self.current_data_type == "iq":
-                        sweeps = real + 1j * im
-                    else:
-                        sweeps = real
+        sensor_config = self.get_sensor_config()
+        sensor_config._loads(record.sensor_config_dump)
 
-                    length = range(len(sweeps))
-                except Exception as e:
-                    self.error_message("{}".format(e))
-                    return
+        self.set_multi_sensors()
+        self.set_sensors(sensor_config.sensor)
 
-                try:
-                    self.env_profiles_dd.setCurrentIndex(f["profile"][()])
-                except Exception:
-                    print("Could not restore envelope profile")
+        if has_loaded_module:
+            processing_config = self.get_processing_config()
+            if isinstance(processing_config, configbase.ProcessingConfig):
+                if record.processing_config_dump is not None:
+                    processing_config._loads(record.processing_config_dump)
 
-                try:
-                    session_info = json.loads(f["session_info"][()])
-                except Exception:
-                    print("Could not restore session info")
-                    session_info = None
+        self.set_gui_state("has_loaded_data", True)
+        self.start_scan(from_file=True)
 
-                processing_config = self.get_processing_config()
-                if isinstance(processing_config, configbase.Config):
-                    try:
-                        s = f["processing_config_dump"][()]
-                        processing_config._loads(s)
-                    except Exception:
-                        print("Could not restore processing config")
-                else:
-                    try:
-                        module_label = self.current_module_label
-                        if self.service_params is not None:
-                            if module_label in self.service_labels:
-                                for key in self.service_labels[module_label]:
-                                    if "box" in self.service_labels[module_label][key]:
-                                        val = self.service_params[key]["type"](f[key][()])
-                                        if self.service_params[key]["type"] == np.float:
-                                            val = str("{:.4f}".format(val))
-                                        else:
-                                            val = str(val)
-                                        self.service_labels[module_label][key]["box"].setText(val)
-                    except Exception:
-                        print("Could not restore processing parameters")
+    def save_scan(self, record):
+        if len(record.data) == 0:
+            self.error_message("No data to save")
+            return
 
-                try:
-                    conf.sweep_rate = f["sweep_rate"][()]
-                    conf.range_interval = [f["start"][()], f["end"][()]]
-                    hwaas = f["hw_accelerated_average_samples"][()]
-                    conf.hw_accelerated_average_samples = int(hwaas)
-                    if self.current_data_type == "power_bin":
-                        conf.bin_count = int(f["bin_count"][()])
-                    if self.current_data_type == "sparse":
-                        conf.number_of_subsweeps = int(f["number_of_subsweeps"][()])
-                        subsweep_rate = f["subsweep_rate"][()]
-                        conf.subsweep_rate = subsweep_rate if subsweep_rate > 0 else None
-                        try:
-                            conf.sampling_mode = int(f["sampling_mode"][()])
-                        except Exception:
-                            print("Sampling mode not stored")
-                            if conf.number_of_subsweeps > 64:
-                                conf.sampling_mode = configs.SparseServiceConfig.SAMPLING_MODE_A
-                            else:
-                                conf.sampling_mode = configs.SparseServiceConfig.SAMPLING_MODE_B
-                    if self.current_data_type in ["sparse", "iq"]:
-                        conf.stepsize = int(f["stepsize"][()])
-                except Exception as e:
-                    print("Config not stored in file: ", e)
-                    conf.range_interval = [
-                            float(self.textboxes["range_start"].text()),
-                            float(self.textboxes["range_end"].text()),
-                    ]
-                    conf.sweep_rate = int(self.textboxes["sweep_rate"].text())
-                try:
-                    conf.sensor = list(map(int, f["sensor"][()]))
-                except Exception as e:
-                    print("Sensor selection not stored: ", e)
-                    conf.sensor = 1
-                nr_sensors = len(conf.sensor)
-
-                has_sweep_info = True
-                nr = None
-                try:
-                    nr = np.asarray(list(f["sequence_number"]))
-                except Exception:
-                    has_sweep_info = False
-                    print("Session info not stored!")
-
-                try:
-                    sat = np.asarray(list(f["data_saturated"]))
-                except Exception:
-                    if nr is not None:
-                        sat = np.full(nr.shape, False)
-                    print("Saturaded info not stored!")
-
-                if nr is not None and nr_sensors == 1:
-                    sat = np.expand_dims(sat, axis=1)
-                    nr = np.expand_dims(nr, axis=1)
-
-                if has_sweep_info:
-                    self.data = [
-                        {
-                            "sweep_data": sweeps[i],
-                            "service_type": module_label,
-                            "sensor_config": conf,
-                            "info": [
-                                {
-                                    "sequence_number": int(nr[i, s]),
-                                    "data_saturated": bool(sat[i, s]),
-                                } for s in range(nr_sensors)],
-                        } for i in length]
-                else:
-                    self.data = [
-                        {
-                            "sweep_data": sweeps[i],
-                            "service_type": module_label,
-                            "sensor_config": conf,
-                        } for i in length]
-
-                self.data[0]["session_info"] = session_info
-            else:
-                try:
-                    data = np.load(filename, allow_pickle=True)
-                    module_label = data[0]["service_type"]
-                    conf = data[0]["sensor_config"]
-                except Exception as e:
-                    self.error_message("{}".format(e))
-                    return
-                index = self.module_dd.findText(module_label, QtCore.Qt.MatchFixedString)
-                if index >= 0:
-                    self.module_dd.setCurrentIndex(index)
-                    self.update_canvas()
-                self.data = data
-
-            self.set_gui_state("has_loaded_data", True)
-
-            self.set_sensors(conf.sensor)
-            self.load_gui_settings_from_sensor_config(conf)
-
-            print("Loaded file with {} sweeps.".format(len(self.data)))
-            self.start_scan(from_file=True)
-
-    def save_scan(self, data):
-        mode = self.current_module_label
-        if "sleep" in mode.lower():
+        if "sleep" in self.current_module_label.lower():
             if int(self.textboxes["sweep_buffer"].text()) < 1000:
                 self.error_message("Please set sweep buffer to >= 1000")
                 return
+
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-
         title = "Save scan"
-        file_types = "HDF5 data files (*.h5);; NumPy data files (*.npy)"
-
+        file_types = "HDF5 data files (*.h5);; NumPy data files (*.npz)"
         filename, info = QtWidgets.QFileDialog.getSaveFileName(
                 self, title, "", file_types, options=options)
 
-        if filename:
-            if True:  # TODO: clean up
-                if "h5" in info:
-                    sweep_data = []
-                    info_available = True
-                    saturated_available = True
+        if not filename:
+            return
 
-                    # check for session info data
-                    try:
-                        nr_sensor = len(data[0]["sensor_config"].sensor)
-                        data[0]["info"][0]["sequence_number"]
-                    except Exception as e:
-                        print("Error saving session info: ", e)
-                        info_available = False
-
-                    # check for data saturated info
-                    try:
-                        data[0]["info"][0]["data_saturated"]
-                    except Exception as e:
-                        print("Error saving saturation data: ", e)
-                        saturated_available = False
-
-                    sequence_number = []
-                    data_saturated = []
-                    for _ in range(nr_sensor):
-                        sequence_number.append([])
-                        data_saturated.append([])
-
-                    for sweep in data:
-                        sweep_data.append(sweep["sweep_data"])
-                        if info_available:
-                            for s in range(nr_sensor):
-                                if info_available:
-                                    session = sweep["info"][s]["sequence_number"]
-                                    sequence_number[s].append(session)
-                                if saturated_available:
-                                    saturated = sweep["info"][s]["data_saturated"]
-                                    data_saturated[s].append(saturated)
-
-                    sweep_data = np.asarray(sweep_data)
-                    if info_available:
-                        sequence_number = np.asarray(sequence_number).T
-                        if saturated_available:
-                            data_saturated = np.asarray(data_saturated).T
-                        else:
-                            data_saturated = np.full(sequence_number, False)
-
-                    try:
-                        sensor_config = data[0]["sensor_config"]
-                    except Exception as e:
-                        self.error_message("Cannot fetch sensor_config!\n {:s}".format(e))
-                        return
-
-                    if ".h5" not in filename:
-                        filename = filename + ".h5"
-                    try:
-                        f = h5py.File(filename, "w")
-                    except Exception as e:
-                        self.error_message("Failed to save file:\n {:s}".format(e))
-                        return
-
-                    f.create_dataset("imag", data=np.imag(sweep_data), dtype=np.float32)
-                    f.create_dataset("real", data=np.real(sweep_data), dtype=np.float32)
-                    f.create_dataset("sweep_rate", data=int(self.textboxes["sweep_rate"].text()),
-                                     dtype=np.float32)
-                    f.create_dataset("start", data=float(sensor_config.range_start),
-                                     dtype=np.float32)
-                    f.create_dataset("end", data=float(sensor_config.range_end),
-                                     dtype=np.float32)
-                    f.create_dataset("gain", data=float(sensor_config.gain), dtype=np.float32)
-                    f.create_dataset("sensor", data=sensor_config.sensor, dtype=np.int)
-                    f.create_dataset("service_type", data=mode.lower(),
-                                     dtype=h5py.special_dtype(vlen=str))
-                    f.create_dataset("profile", data=self.env_profiles_dd.currentIndex(),
-                                     dtype=np.int)
-                    if info_available:
-                        f.create_dataset("sequence_number", data=sequence_number, dtype=np.int)
-                        f.create_dataset("data_saturated", data=data_saturated, dtype='u1')
-
-                    keys = [
-                        "bin_count",
-                        "number_of_subsweeps",
-                        "hw_accelerated_average_samples",
-                        "stepsize",
-                        "sampling_mode"
-                    ]
-
-                    for key in keys:
-                        val = getattr(sensor_config, key, None)
-                        if val is not None:
-                            f.create_dataset(key, data=int(val), dtype=np.int)
-
-                    if hasattr(sensor_config, "subsweep_rate"):
-                        val = sensor_config.subsweep_rate
-                        if val is None:
-                            val = -1
-                        f.create_dataset("subsweep_rate", data=val, dtype=np.float32)
-
-                    f.create_dataset(
-                            "session_info",
-                            data=json.dumps(self.session_info),
-                            dtype=h5py.special_dtype(vlen=str),
-                            )
-
-                    processing_config = self.get_processing_config()
-                    if isinstance(processing_config, configbase.Config):
-                        s = processing_config._dumps()
-                        f.create_dataset(
-                                "processing_config_dump",
-                                data=s,
-                                dtype=h5py.special_dtype(vlen=str),
-                                )
-                    else:
-                        if mode in self.service_labels:
-                            for key in self.service_params:
-                                if key == "processing_handle":
-                                    continue
-                                try:
-                                    f.create_dataset(key, data=self.service_params[key]["value"],
-                                                     dtype=np.float32)
-                                except Exception:
-                                    pass
-                else:
-                    try:
-                        if isinstance(processing_config, configbase.Config):
-                            s = processing_config._dumps()
-                            data[0]["processing_config_dump"] = s
-                        else:
-                            data[0]["service_params"] = self.service_params
-
-                        data[0]["session_info"] = self.session_info
-                    except Exception:
-                        pass
-                    try:
-                        np.save(filename, data)
-                    except Exception as e:
-                        self.error_message("Failed to save file:\n {:s}".format(e))
-                        return
+        try:
+            if "h5" in info:
+                recording.save_h5(filename, record)
+            else:
+                recording.save_npz(filename, record)
+        except Exception as e:
+            traceback.print_exc()
+            self.error_message("Failed to save file:\n {:s}".format(e))
 
     def handle_advanced_process_data(self, action=None):
         load_text = self.buttons["load_process_data"].text()
@@ -2126,7 +1865,7 @@ class Threaded_Scan(QtCore.QThread):
 
     def run(self):
         if self.params["data_source"] == "stream":
-            data = None
+            record = None
 
             try:
                 session_info = self.client.setup_session(self.sensor_config)
@@ -2143,7 +1882,7 @@ class Threaded_Scan(QtCore.QThread):
                 while self.running:
                     info, sweep = self.client.get_next()
                     self.emit("sweep_info", "", info)
-                    _, data = self.radar.process(sweep, info)
+                    _, record = self.radar.process(sweep, info)
             except Exception as e:
                 traceback.print_exc()
                 msg = "Failed to communicate with server!\n{}".format(self.format_error(e))
@@ -2154,22 +1893,16 @@ class Threaded_Scan(QtCore.QThread):
             except Exception:
                 pass
 
-            if data is not None and len(data) > 0:
-                data[0]["session_info"] = session_info
-                self.emit("scan_data", "", data)
+            if record is not None and len(record.data) > 0:
+                self.emit("scan_data", "", record)
         elif self.params["data_source"] == "file":
+            self.emit("session_info", "ok", self.data.session_info)
+
             try:
-                session_info = self.data[0]["session_info"]
-                assert session_info is not None
-                self.emit("session_info", "ok", session_info)
-            except (IndexError, KeyError, AttributeError, AssertionError):
-                # TODO: infer session info
-                print("No session info")
-                session_info = None
-            try:
-                self.radar.prepare_processing(self, self.params, session_info)
+                self.radar.prepare_processing(self, self.params, self.data.session_info)
                 self.radar.process_saved_data(self.data, self)
             except Exception as e:
+                traceback.print_exc()
                 error = self.format_error(e)
                 self.emit("processing_error", "Error while replaying data:<br>" + error)
         else:
