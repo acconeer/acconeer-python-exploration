@@ -705,6 +705,21 @@ class FloatRangeParameter(FloatParameter):
         return list(self.__get__(obj))
 
 
+class SensorParameter(ValueParameter):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _sanitize(self, arg):
+        if isinstance(arg, int):
+            arg = [arg]
+        elif isinstance(arg, list) and all([isinstance(e, int) for e in arg]):
+            arg = copy(arg)
+        else:
+            raise ValueError("sensor(s) must be an int or a list of ints")
+
+        return arg
+
+
 class ClassParameter(Parameter):
     def __init__(self, **kwargs):
         self.objtype = kwargs.pop("objtype")
