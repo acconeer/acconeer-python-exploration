@@ -387,9 +387,9 @@ class Parameter:
 
         self.pidgets = WeakKeyDictionary()
 
-        doc = self.generate_doc().strip()
+        doc = self.generate_doc()
         if doc:
-            self.__doc__ = doc
+            self.__doc__ = doc.strip()
 
     def update_pidget(self, obj):
         pidget = self.get_pidget(obj)
