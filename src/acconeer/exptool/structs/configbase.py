@@ -101,15 +101,6 @@ class PidgetStub(Pidget):
 
         self.setEnabled(state != Config.State.LIVE or self.param.is_live_updateable)
 
-        try:
-            self.param.recheck(self._parent_instance)
-        except AttributeError:
-            pass
-        except ValueError as e:
-            self._set_error(e)
-        else:
-            self._unset_error()
-
     def _set_error(self, e):
         self.error_label.setText(str(e))
 
@@ -424,7 +415,6 @@ class Parameter:
 class ValueParameter(Parameter):
     def __init__(self, **kwargs):
         self.default_value = kwargs.pop("default_value")
-        self.override_check_fun = kwargs.pop("override_check_fun", None)
 
         kwargs.setdefault("does_dump", True)
 
@@ -432,14 +422,16 @@ class ValueParameter(Parameter):
 
         super().__init__(**kwargs)
 
+        self.default_value = self.sanitize(self.default_value)
+
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
 
-        return copy(self.values.get(obj, default=self.check(obj, self.default_value)))
+        return copy(self.values.get(obj, default=self.default_value))
 
     def __set__(self, obj, value):
-        value = self.check(obj, value)
+        value = self.sanitize(value)
         self.values[obj] = value
 
     def __delete__(self, obj):
@@ -450,15 +442,11 @@ class ValueParameter(Parameter):
 
         obj._parameter_event_handler()
 
-    def check(self, obj, value):
-        check_fun = self.override_check_fun or self._check
-        return check_fun(obj, value)
+    def sanitize(self, value):
+        return self._sanitize(value)
 
-    def _check(self, obj, value):
+    def _sanitize(self, value):
         return value
-
-    def recheck(self, obj):
-        self.check(obj, self.__get__(obj))
 
     def dump(self, obj):
         return self.__get__(obj)
@@ -493,7 +481,7 @@ class BoolParameter(ValueParameter):
 
         super().__init__(**kwargs)
 
-    def _check(self, obj, value):
+    def _sanitize(self, value):
         return bool(value)
 
 
@@ -535,7 +523,7 @@ class IntParameter(NumberParameter):
 
         super().__init__(**kwargs)
 
-    def _check(self, obj, value):
+    def _sanitize(self, value):
         if isinstance(value, float):
             raise ValueError("Not an integer")
 
@@ -570,7 +558,7 @@ class FloatParameter(NumberParameter):
             assert self.limits is not None
             assert self.limits[1] > self.limits[0] > 0
 
-    def _check(self, obj, value):
+    def _sanitize(self, value):
         try:
             value = float(value)
         except ValueError:
@@ -595,7 +583,7 @@ class FloatRangeParameter(FloatParameter):
 
         super().__init__(**kwargs)
 
-    def _check(self, obj, arg):
+    def _sanitize(self, arg):
         try:
             values = list(arg)
         except (ValueError, TypeError):
@@ -605,7 +593,7 @@ class FloatRangeParameter(FloatParameter):
             raise ValueError("Given range does not have two values")
 
         for i in range(2):
-            values[i] = super()._check(obj, values[i])
+            values[i] = super()._sanitize(values[i])
 
         if values[0] > values[1]:
             raise ValueError("Invalid range")
@@ -741,18 +729,6 @@ class Config:
 
     def _get_params(self):
         return [a for k, a in self._get_keys_and_params()]
-
-    @property
-    def _is_valid(self):
-        for param in self._get_params():
-            try:
-                param.recheck(self)
-            except AttributeError:
-                pass
-            except ValueError:
-                return False
-
-        return True
 
     @property
     def _state(self):
