@@ -83,7 +83,7 @@ class GUI(QMainWindow):
     ]
 
     sig_scan = pyqtSignal(str, str, object)
-    sig_pidget_event = pyqtSignal(object)
+    sig_processing_config_pidget_event = pyqtSignal(object)
 
     def __init__(self, under_test=False):
         super().__init__()
@@ -135,7 +135,8 @@ class GUI(QMainWindow):
             self.args = gui_inarg.parse_args()
 
         self.set_gui_state("ml_mode", self.args.machine_learning)
-        self.sig_pidget_event.connect(self.pidget_processing_config_event_handler)
+        self.sig_processing_config_pidget_event.connect(
+            self.pidget_processing_config_event_handler)
 
         self.module_label_to_sensor_config_map = {}
         self.module_label_to_processing_config_map = {}
@@ -403,7 +404,7 @@ class GUI(QMainWindow):
 
     def pidget_processing_config_event_handler(self, processing_config):
         if threading.current_thread().name != "MainThread":
-            self.sig_pidget_event.emit(processing_config)
+            self.sig_processing_config_pidget_event.emit(processing_config)
             return
 
         # Processor
