@@ -103,20 +103,6 @@ class DataProcessing:
         self.parent = parent
         self.init_vars()
 
-        info_available = True
-        is_session_format_new = True
-
-        try:
-            sequence_offset = max(data[0]["info"][0]["sequence_number"] - 1, 0)
-        except Exception:
-            try:
-                sequence_offset = max(data[0]["info"]["sequence_number"] - 1, 0)
-                is_session_format_new = False
-            except Exception:
-                info_available = False
-                self.info = [{"sequence_number": 1}]
-                print("Session info not available")
-
         selected_sensors = self.sensor_config.sensor
         stored_sensors = data[0]["sensor_config"].sensor
         nr_sensors = len(stored_sensors)
@@ -142,14 +128,8 @@ class DataProcessing:
             squeezed_dim = 2
 
         for i, data_step in enumerate(data):
-            if info_available:
-                if not is_session_format_new:
-                    info = data[i]["info"]
-                else:
-                    info = data[i]["info"][0]
-                info["sequence_number"] -= sequence_offset
-            else:
-                info = self.info.copy()
+            info = data[i]["info"][0]
+
             if not self.abort:
                 self.skip = 0
 
@@ -168,9 +148,6 @@ class DataProcessing:
 
                 self.process(sweep_data, info)
                 self.parent.emit("sweep_info", "", info)
-
-            if not info_available:
-                self.info[0]["sequence_number"] += 1
 
     def draw_canvas(self, plot_data):
         self.parent.emit("update_external_plots", "", plot_data)
