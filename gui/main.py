@@ -108,7 +108,7 @@ class GUI(QMainWindow):
             "replaying_data": False,
             "ml_plotting_extraction": False,
             "ml_plotting_evaluation": False,
-            "ml_mode": False,
+            "ml_mode": bool(self.args.machine_learning),
             "ml_tab": "main",
             "scan_is_running": False,
         }
@@ -129,7 +129,6 @@ class GUI(QMainWindow):
         self.ml_plotting_evaluation = False
         self.ml_data = None
 
-        self.set_gui_state("ml_mode", self.args.machine_learning)
         self.sig_sensor_config_pidget_event.connect(
             self.pidget_sensor_config_event_handler)
         self.sig_processing_config_pidget_event.connect(
