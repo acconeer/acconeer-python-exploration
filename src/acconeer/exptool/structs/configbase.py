@@ -45,6 +45,7 @@ class Category(enum.Enum):
 class Severity(enum.IntEnum):
     ERROR = enum.auto()
     WARNING = enum.auto()
+    INFO = enum.auto()
 
 
 @attr.s
@@ -59,6 +60,10 @@ class Error(Alert):
 
 class Warning(Alert):
     severity = Severity.WARNING
+
+
+class Info(Alert):
+    severity = Severity.INFO
 
 
 class Pidget(QFrame):
@@ -148,8 +153,10 @@ class PidgetStub(Pidget):
 
         if alert.severity == Severity.ERROR:
             bg = "FFB9A8"
-        else:
+        elif alert.severity == Severity.WARNING:
             bg = "FFDFA8"
+        else:
+            bg = "FFFFEE"
 
         self.setStyleSheet((
             "#frame {{"

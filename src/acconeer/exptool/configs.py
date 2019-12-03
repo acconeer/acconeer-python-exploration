@@ -187,7 +187,7 @@ class BaseServiceConfig(BaseSessionConfig):
             alerts.append(cb.Warning("gain", "Too high gain causes degradation"))
 
         if self.range_start < self.profile.approx_direct_leakage_length:
-            alerts.append(cb.Warning("range_interval", "Direct leakage might be seen"))
+            alerts.append(cb.Info("range_interval", "Direct leakage might be seen"))
 
         return alerts
 
