@@ -206,6 +206,13 @@ class BaseDenseServiceConfig(BaseServiceConfig):
         if self.downsampling_factor not in [1, 2, 4]:
             alerts.append(cb.Error("downsampling_factor", "Must be 1, 2, or 4"))
 
+        if self.repetition_mode == __class__.RepetitionMode.SENSOR_DRIVEN:
+            chunks = self.range_length / 0.06
+            chunks += 2 if self.mode == Mode.IQ else 0
+            points_per_chunk = 124 / self.downsampling_factor
+            if points_per_chunk * chunks > 2048:
+                alerts.append(cb.Error("range_interval", "Too large for buffer"))
+
         return alerts
 
 
