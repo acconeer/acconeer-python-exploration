@@ -83,6 +83,12 @@ class GUI(QMainWindow):
 
         self.under_test = under_test
 
+        gui_inarg = GUIArgumentParser()
+        if under_test:
+            self.args = gui_inarg.parse_args([])
+        else:
+            self.args = gui_inarg.parse_args()
+
         self.data = None
         self.client = None
         self.sweep_buffer = 1000
@@ -122,12 +128,6 @@ class GUI(QMainWindow):
         self.ml_plotting_extraction = False
         self.ml_plotting_evaluation = False
         self.ml_data = None
-
-        gui_inarg = GUIArgumentParser()
-        if under_test:
-            self.args = gui_inarg.parse_args([])
-        else:
-            self.args = gui_inarg.parse_args()
 
         self.set_gui_state("ml_mode", self.args.machine_learning)
         self.sig_sensor_config_pidget_event.connect(
