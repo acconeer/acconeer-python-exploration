@@ -231,6 +231,10 @@ class PowerBinServiceConfig(BaseDenseServiceConfig):
 
     def check(self):
         alerts = super().check()
+
+        if self.range_length / self.bin_count < 0.016:
+            alerts.append(cb.Error("bin_count", "Too high for current range"))
+
         return alerts
 
 
