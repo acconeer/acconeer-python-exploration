@@ -111,6 +111,7 @@ class GUI(QMainWindow):
             "ml_mode": bool(self.args.machine_learning),
             "ml_tab": "main",
             "scan_is_running": False,
+            "has_config_error": False,
         }
 
         self.current_data_type = None
@@ -342,6 +343,7 @@ class GUI(QMainWindow):
     def refresh_pidgets(self):
         self.refresh_sensor_pidgets()
         self.refresh_processing_pidgets()
+        self.update_pidgets_on_event()
 
     def refresh_sensor_pidgets(self):
         sensor_config = self.get_sensor_config()
@@ -440,15 +442,22 @@ class GUI(QMainWindow):
         if processing_config is None:
             processing_config = self.get_processing_config()
 
+        all_alerts = []
+
         if isinstance(processing_config, configbase.Config):
-            processing_config._update_pidgets()
+            alerts = processing_config._update_pidgets()
+            all_alerts.extend(alerts)
 
         if hasattr(processing_config, "check_sensor_config"):
-            alerts = processing_config.check_sensor_config(sensor_config)
+            pass_on_alerts = processing_config.check_sensor_config(sensor_config)
         else:
-            alerts = []
+            pass_on_alerts = []
 
-        sensor_config._update_pidgets(alerts)
+        alerts = sensor_config._update_pidgets(pass_on_alerts)
+        all_alerts.extend(alerts)
+
+        has_error = any([a.severity == configbase.Severity.ERROR for a in all_alerts])
+        self.set_gui_state("has_config_error", has_error)
 
     def init_dropdowns(self):
         self.module_dd = QComboBox(self)
@@ -1105,7 +1114,6 @@ class GUI(QMainWindow):
         self.threaded_scan.sig_scan.connect(self.thread_receive)
         self.sig_scan.connect(self.threaded_scan.receive)
 
-        self.buttons["start"].setEnabled(False)
         self.buttons["load_scan"].setEnabled(False)
         self.buttons["save_scan"].setEnabled(False)
         self.module_dd.setEnabled(False)
@@ -1146,10 +1154,15 @@ class GUI(QMainWindow):
             print("{} is an unknown state!".format(state))
             return
 
+        self.buttons["start"].setEnabled(all([
+            self.gui_states["server_connected"],
+            not self.gui_states["scan_is_running"],
+            not self.gui_states["has_config_error"],
+        ]))
+
         if state == "server_connected":
             connected = val
             if connected:
-                self.buttons["start"].setEnabled(True)
                 self.buttons["connect"].setText("Disconnect")
                 self.buttons["connect"].setStyleSheet("QPushButton {color: red}")
                 self.buttons["advanced_port"].setEnabled(False)
@@ -1164,7 +1177,6 @@ class GUI(QMainWindow):
             else:
                 self.buttons["connect"].setText("Connect")
                 self.buttons["connect"].setStyleSheet("QPushButton {color: black}")
-                self.buttons["start"].setEnabled(False)
                 self.buttons["advanced_port"].setEnabled(True)
                 self.statusBar().showMessage("Not connected")
 
@@ -1264,7 +1276,6 @@ class GUI(QMainWindow):
         self.module_dd.setEnabled(True)
         self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
-        self.buttons["start"].setEnabled(True)
         self.basic_processing_config_section.body_widget.setEnabled(True)
 
         if self.get_gui_state("ml_tab") in ["main", "feature_select"]:
@@ -1612,7 +1623,6 @@ class GUI(QMainWindow):
                 self.stop_scan()
                 if self.get_gui_state("server_connected"):
                     self.connect_to_server()
-                self.buttons["start"].setEnabled(False)
             elif "proccessing" in message_type:
                 self.stop_scan()
             self.error_message("{}".format(message))
@@ -1621,8 +1631,6 @@ class GUI(QMainWindow):
                 self.data = data
         elif message_type == "scan_done":
             self.stop_scan()
-            if not self.get_gui_state("server_connected"):
-                self.buttons["start"].setEnabled(False)
         elif "update_external_plots" in message_type:
             if data is not None:
                 self.update_external_plots(data)

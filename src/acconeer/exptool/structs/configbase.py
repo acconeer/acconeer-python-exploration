@@ -854,6 +854,8 @@ class Config:
             param_alerts = [a for a in alerts if a.param in [key, param]]
             param.update_pidget(self, param_alerts)
 
+        return alerts
+
     def _parameter_event_handler(self):
         for event_handler in self._event_handlers:
             event_handler(self)
