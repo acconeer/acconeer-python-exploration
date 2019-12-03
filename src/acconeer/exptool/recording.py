@@ -30,6 +30,9 @@ class Record:
     lib_version = attr.ib(type=Optional[str], default=None)
     timestamp = attr.ib(type=Optional[str], default=None)
 
+    # Legacy (optional):
+    legacy_processing_config_dump = attr.ib(type=Optional[str], default=None)
+
     def __attrs_post_init__(self):
         self._iter_index = None
 

@@ -1532,6 +1532,11 @@ class GUI(QMainWindow):
             if isinstance(processing_config, configbase.ProcessingConfig):
                 if record.processing_config_dump is not None:
                     processing_config._loads(record.processing_config_dump)
+            else:
+                try:
+                    self.load_legacy_processing_config_dump(record)
+                except Exception:
+                    traceback.print_exc()
 
         self.set_gui_state("has_loaded_data", True)
         self.start_scan(from_file=True)
@@ -1557,6 +1562,11 @@ class GUI(QMainWindow):
             return
 
         try:
+            self.save_legacy_processing_config_dump_to_record(record)
+        except Exception:
+            traceback.print_exc()
+
+        try:
             if "h5" in info:
                 recording.save_h5(filename, record)
             else:
@@ -1564,6 +1574,47 @@ class GUI(QMainWindow):
         except Exception as e:
             traceback.print_exc()
             self.error_message("Failed to save file:\n {:s}".format(e))
+
+    def load_legacy_processing_config_dump(self, record):
+        try:
+            d = json.loads(record.legacy_processing_config_dump)
+        except Exception:
+            return
+
+        assert isinstance(self.get_processing_config(), dict)
+
+        for k, v in d.items():
+            try:
+                param = self.service_params[k]
+                objtype = param.get("type", None)
+                if objtype is None:
+                    continue
+
+                v = objtype(v)
+                self.service_params[k]["value"] = v
+                box = self.service_labels[self.current_module_info.label][k]["box"]
+                box.setText(str(v))
+            except Exception:
+                traceback.print_exc()
+
+    def save_legacy_processing_config_dump_to_record(self, record):
+        if not (self.service_params and isinstance(self.service_params, dict)):
+            return
+
+        d = {}
+        for key in self.service_params:
+            if key == "processing_handle":
+                continue
+
+            try:
+                val = self.service_params[key]["value"]
+                json.dumps(val)  # Make sure it's serializable
+                d[key] = val
+            except Exception:
+                traceback.print_exc()
+
+        if d:
+            record.legacy_processing_config_dump = json.dumps(d)
 
     def handle_advanced_process_data(self, action=None):
         load_text = self.buttons["load_process_data"].text()
