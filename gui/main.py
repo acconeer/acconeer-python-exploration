@@ -38,7 +38,7 @@ sys.path.append(os.path.abspath(os.path.join(HERE, "elements")))
 
 
 try:
-    from acconeer.exptool import clients, recording, utils
+    from acconeer.exptool import clients, configs, recording, utils
     from acconeer.exptool.structs import configbase
 
     import data_processing
@@ -1356,7 +1356,7 @@ class GUI(QMainWindow):
             self.rss_version = info.get("version_str", None)
             max_num = info.get("board_sensor_count", max_num)
 
-            conf = self.get_sensor_config()
+            conf = configs.EnvelopeServiceConfig()
             sensor = 1
             sensors_available = []
             connection_success = False
@@ -1619,7 +1619,9 @@ class GUI(QMainWindow):
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
-            if "client" in message_type:
+            if message_type == "session_setup_error":
+                self.error_message("Failed to setup session (bad config?)")
+            elif "client" in message_type:
                 self.stop_scan()
                 if self.get_gui_state("server_connected"):
                     self.connect_to_server()
@@ -1887,6 +1889,9 @@ class Threaded_Scan(QtCore.QThread):
                 self.emit("session_info", "", session_info)
                 self.radar.prepare_processing(self, self.params, session_info)
                 self.client.start_session()
+            except clients.base.SessionSetupError:
+                self.running = False
+                self.emit("session_setup_error", "")
             except Exception as e:
                 traceback.print_exc()
                 self.emit("client_error", "Failed to setup streaming!\n"
