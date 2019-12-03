@@ -10,7 +10,7 @@ var curves = [];
 var maxCurves = 100;
 var width = 100;
 var length = 150;
-var height = 0.005;
+var height = 0.02;
 
 lineMaterial = new THREE.LineBasicMaterial({
   color: 0x2888A9, linewidth: 1

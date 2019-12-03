@@ -11,7 +11,7 @@ var iqGeo = [];
 var iqDot = [];
 var length = 25;
 var axisLength = 100;
-var dataValueLength = 100;
+var dataValueLength = 0.01;
 var pointSize = 0.4;
 
 lineMaterial = new THREE.LineBasicMaterial({

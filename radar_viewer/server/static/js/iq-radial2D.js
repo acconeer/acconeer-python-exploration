@@ -9,7 +9,7 @@ var lineWidth = 4;
 var pointRadius = 5;
 var tailDuration = 0.5;
 var tailWidth = 1.5;
-var phaseAmplitude = 5;
+var phaseAmplitude = 0.0001;
 
 initChartDrawLinePlugin();
 
@@ -126,12 +126,12 @@ getData(function(data) {
 
   var amplitude = [];
   for(var i = 0; i < data.length; i++) {
-    amplitude[i] = Math.sqrt(data[i]['re'] * data[i]['re'] + data[i]['im'] * data[i]['im']);
+    amplitude[i] = phaseAmplitude * Math.sqrt(data[i]['re'] * data[i]['re'] + data[i]['im'] * data[i]['im']);
   }
 
   phase = Math.atan2(data[index]['re'], data[index]['im']);
   // Scale the amplitude to be between 0 and 1
-  scaledAmp = Math.tanh(amplitude[index] * phaseAmplitude);
+  scaledAmp = Math.tanh(2 * amplitude[index]);
 
   re = scaledAmp * Math.cos(phase);
   im = scaledAmp * Math.sin(phase);

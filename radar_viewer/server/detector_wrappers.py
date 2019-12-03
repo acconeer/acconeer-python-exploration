@@ -63,12 +63,12 @@ class Detector(Thread):
         args = self._demo_ctrl.streaming_client_args
         self.config.sensor = args.sensors
 
-        self.config.sweep_rate = 10
+        self.config.update_rate = 10
 
         if "range_start" in params and "range_end" in params:
             self.config.range_interval = [float(params["range_start"]), float(params["range_end"])]
         if "frequency" in params:
-            self.config.sweep_rate = float(params["frequency"])
+            self.config.update_rate = float(params["frequency"])
         if "gain" in params:
             self.config.gain = float(params["gain"])
         if "average" in params:
@@ -103,10 +103,16 @@ class EnvelopeHandler(Detector):
         self.update_config(params)
 
         if "profile" in params:
-            if params["profile"] == "0":
-                self.config.session_profile = configs.EnvelopeServiceConfig.MAX_SNR
-            elif params["profile"] == "1":
-                self.config.session_profile = configs.EnvelopeServiceConfig.MAX_DEPTH_RESOLUTION
+            if params["profile"] == "1":
+                self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_1
+            elif params["profile"] == "2":
+                self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_2
+            elif params["profile"] == "2":
+                self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_3
+            elif params["profile"] == "2":
+                self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_4
+            elif params["profile"] == "2":
+                self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_5
             else:
                 print("Unknown profile")
 
@@ -136,6 +142,7 @@ class SparseHandler(Detector):
     def __init__(self, demo_ctrl, params):
         super().__init__(demo_ctrl, self.detector_name)
         self.config = configs.SparseServiceConfig()
+        self.config.sampling_mode = configs.SparseServiceConfig.SamplingMode.A
         self.update_config(params)
 
     def process_data(self, a):

@@ -8,7 +8,7 @@ All rights reserved
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-  <title>Envelopes 2D</title>
+  <title>Envelope 2D</title>
 
   <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32">
   <link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
@@ -21,7 +21,7 @@ All rights reserved
       <div class="row justify-content-between my-4">
         <div class="col-auto d-flex my-2" data-aos="fade-down">
           <a href="index.html" title="Go back" class="backarrow"></a>
-          <h1 class="logo my-auto ml-3 ml-md-5">Envelopes 2D Demo</h1>
+          <h1 class="logo my-auto ml-3 ml-md-5">Envelope 2D Demo</h1>
         </div>
         <div class="col-auto d-flex my-2" data-aos="fade-down" data-aos-delay="100">
           <a href="#" title="Show settings" class="settingsicon" data-toggle="modal" data-target="#settings"></a>
@@ -71,9 +71,9 @@ All rights reserved
               <div class="form-group col-12">
                 <label>Amplitude max plot range</label>
                 <div class="input-group mb-3">
-                  <input required type="number" name="plot_range" step="1" min="1000" max="20000" class="form-control" value="10000">
+                  <input required type="number" name="plot_range" step="1" min="1000" max="15000" class="form-control" value="5000">
                   <div class="input-group-append">
-                    <span class="input-group-text">1k - 20k</span>
+                    <span class="input-group-text">1k - 15k</span>
                   </div>
                 </div>
               </div>
@@ -119,8 +119,11 @@ All rights reserved
               <div class="form-group col-12">
                 <label for="profile">Profile</label>
                 <select id="profile" class="form-control" name="profile">
-                  <option selected value="0">Max SNR</option>
-                  <option value="1">Max depth resolution</option>
+                  <option value="1">Profile 1</option>
+                  <option selected value="2">Profile 2</option>
+                  <option value="3">Profile 3</option>
+                  <option value="4">Profile 4</option>
+                  <option value="5">Profile 5</option>
                 </select>
               </div>
             </div>

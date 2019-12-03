@@ -39,7 +39,7 @@ getData(function(data) {
       }
       points.push({
         x: xpos,
-        y: sweep[j]
+        y: sweep[j] - 32768
       });
     }
   }
