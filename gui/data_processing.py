@@ -29,6 +29,9 @@ class DataProcessing:
 
         if isinstance(self.processing_config, dict):  # Legacy
             self.processing_config["processing_handle"] = self
+            record_processing_config = None
+        else:
+            record_processing_config = self.processing_config
 
         self.session_info = session_info
 
@@ -36,7 +39,7 @@ class DataProcessing:
             sensor_config=self.sensor_config,
             session_info=session_info,
             module_key=params["module_info"].key,
-            processing_config=self.processing_config,
+            processing_config=record_processing_config,
             rss_version=params.get("rss_version", None),
             max_len=hist_len,
         )
