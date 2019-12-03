@@ -9,8 +9,8 @@ from PyQt5 import QtCore
 here = os.path.dirname(os.path.realpath(__file__))  # noqa: E402
 sys.path.append(os.path.abspath(os.path.join(here, "../..")))  # noqa: E402
 
-from gui.elements.modules import MODULE_INFOS  # isort:skip
 from gui.main import GUI  # isort:skip
+from gui.elements.modules import MODULE_INFOS  # isort:skip
 
 
 MOCK_INTERFACE = "Simulated"
