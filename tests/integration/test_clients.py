@@ -42,6 +42,26 @@ def test_run_a_session(setup):
     client.stop_session()
 
 
+def test_run_illegal_session(setup):
+    client, sensor = setup
+
+    if isinstance(client, clients.MockClient):
+        return
+
+    config = configs.EnvelopeServiceConfig()
+    config.sensor = sensor
+    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.range_interval = [0.2, 2.0]  # too long without stitching
+
+    with pytest.raises(clients.base.SessionSetupError):
+        client.setup_session(config)
+
+    config.range_interval = [0.2, 0.4]
+    client.start_session(config)
+    client.get_next()
+    client.stop_session()
+
+
 @pytest.mark.parametrize("mode", modes.Mode)
 def test_sanity_check_output(setup, mode):
     client, sensor = setup
