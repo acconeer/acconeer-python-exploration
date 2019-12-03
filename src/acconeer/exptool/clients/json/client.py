@@ -7,7 +7,12 @@ from time import time
 import numpy as np
 
 from acconeer.exptool.clients import links
-from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
+from acconeer.exptool.clients.base import (
+    BaseClient,
+    ClientError,
+    SessionSetupError,
+    decode_version_str,
+)
 from acconeer.exptool.modes import Mode, get_mode
 
 
@@ -149,7 +154,7 @@ class SocketClient(BaseClient):
             if retry:
                 return self._init_session(retry=False)
             else:
-                raise ClientError("server error while initializing session")
+                raise SessionSetupError
         elif header["status"] != "ok":
             raise ClientError("got unexpected header")
 

@@ -12,7 +12,12 @@ import numpy as np
 
 from acconeer.exptool import libft4222
 from acconeer.exptool.clients import links
-from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
+from acconeer.exptool.clients.base import (
+    BaseClient,
+    ClientError,
+    SessionSetupError,
+    decode_version_str,
+)
 from acconeer.exptool.clients.reg import protocol, regmap
 from acconeer.exptool.modes import Mode
 
@@ -116,7 +121,10 @@ class RegBaseClient(BaseClient):
             status_error = status & regmap.STATUS_MASKS.ERROR_MASK
 
             if status_error:
-                raise ClientError("server error: " + str(status_error).split(".")[1])
+                if status_error & regmap.STATUS_FLAGS.ERROR_CREATION:
+                    raise SessionSetupError
+                else:
+                    raise ClientError("server error: " + str(status_error).split(".")[1])
 
             if (status & mask) == val:
                 return

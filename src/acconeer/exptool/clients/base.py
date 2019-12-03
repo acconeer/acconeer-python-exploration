@@ -128,6 +128,10 @@ class ClientError(Exception):
     pass
 
 
+class SessionSetupError(ClientError):
+    pass
+
+
 def decode_version_str(version: str):
     if "-" in version:
         strict_version = StrictVersion(version.split("-")[0])
