@@ -1124,8 +1124,8 @@ class GUI(QMainWindow):
         self.num_missed_frames = 0
         self.threaded_scan.start()
 
-        self.basic_sensor_config_section.body_widget.setEnabled(False)
-        self.advanced_sensor_config_section.body_widget.setEnabled(False)
+        self.buttons["sensor_defaults"].setEnabled(False)
+        self.get_sensor_config()._state = configbase.Config.State.LIVE
 
         if isinstance(processing_config, configbase.Config):
             self.basic_processing_config_section.body_widget.setEnabled(True)
@@ -1278,16 +1278,15 @@ class GUI(QMainWindow):
         self.buttons["connect"].setEnabled(True)
         self.basic_processing_config_section.body_widget.setEnabled(True)
 
-        if self.get_gui_state("ml_tab") in ["main", "feature_select"]:
-            self.basic_sensor_config_section.body_widget.setEnabled(True)
-            self.advanced_sensor_config_section.body_widget.setEnabled(True)
-
         if self.get_gui_state("ml_mode"):
             self.feature_select.buttons["start"].setEnabled(True)
             self.feature_select.buttons["stop"].setEnabled(False)
             self.feature_sidepanel.textboxes["sweep_rate"].setEnabled(True)
             if self.data is not None:
                 self.feature_select.buttons["replay_buffered"].setEnabled(True)
+
+        self.buttons["sensor_defaults"].setEnabled(True)
+        self.get_sensor_config()._state = configbase.Config.State.LOADED
 
         processing_config = self.get_processing_config()
         if isinstance(processing_config, configbase.Config):
