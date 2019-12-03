@@ -1741,6 +1741,9 @@ class GUI(QMainWindow):
             for module_label in last_config["service_settings"]:
                 processing_config = self.get_default_processing_config(module_label)
 
+                if not processing_config:
+                    continue
+
                 if isinstance(processing_config, configbase.Config):
                     continue
 
