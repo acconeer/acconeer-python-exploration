@@ -203,6 +203,9 @@ class BaseDenseServiceConfig(BaseServiceConfig):
     def check(self):
         alerts = super().check()
 
+        if self.range_length < 1e-6:
+            alerts.append(cb.Warning("range_interval", "Will only return a single point"))
+
         if self.downsampling_factor not in [1, 2, 4]:
             alerts.append(cb.Error("downsampling_factor", "Must be 1, 2, or 4"))
 
@@ -217,6 +220,8 @@ class BaseDenseServiceConfig(BaseServiceConfig):
 
 
 class PowerBinServiceConfig(BaseDenseServiceConfig):
+    _MIN_BIN_SIZE = 0.016
+
     mode = cb.ConstantParameter(
         label="Mode",
         value=Mode.POWER_BINS,
@@ -232,7 +237,9 @@ class PowerBinServiceConfig(BaseDenseServiceConfig):
     def check(self):
         alerts = super().check()
 
-        if self.range_length / self.bin_count < 0.016:
+        if self.range_length < self._MIN_BIN_SIZE:
+            alerts.append(cb.Error("range_interval", "Too short"))
+        elif self.range_length / self.bin_count < self._MIN_BIN_SIZE:
             alerts.append(cb.Error("bin_count", "Too high for current range"))
 
         return alerts
