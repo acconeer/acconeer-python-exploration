@@ -1,6 +1,6 @@
-# Acconeer Exploration Kit
+# Acconeer Exploration Tool
 
-_**Explore the Next Sense**_ with Acconeer's Python Exploration Kit! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and GUI in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
+_**Explore the Next Sense**_ with Acconeer's Python Exploration Tool! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and GUI in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
 
 To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Streaming or Module server, which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
@@ -8,22 +8,22 @@ This release is developed for [Acconeer SDK and Module SW](https://developer.acc
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">
-  <img alt="The GUI in action" src="docs/_static/gui.png">
+  <img alt="The GUI in action" src="docs/_static/gui.png" width=85%>
 </p>
 
 ## Quickstart for Windows
 
-There is a portable version of the Exploration Kit for Windows:
+There is a portable version of the Exploration Tool for Windows:
 
 * [Download](https://developer.acconeer.com/download/portable_exploration_tool-zip/) the zip file and extract
 * Double click the `update.bat` file and wait for the installation to finish, which takes a couple of minutes
 * Double click the `run_gui.bat`
 
-For an in-depth evaluation we recommend a full installation of the Exploartion Kit as described below.
+For an in-depth evaluation we recommend a full installation of the Exploartion Tool as described below.
 
 ## Documentation
 
-Additional documentation is available on [Read the Docs](https://acconeer-python-exploration.readthedocs.io).
+Additional documentation is available [here](https://acconeer-python-exploration.readthedocs.io).
 
 ## Setting up your evaluation kit
 
@@ -66,7 +66,7 @@ Install the supplied library `acconeer.exptool`:
 ```
 python -m pip install -U --user .
 ```
-_**Note: The utilities module has to be reinstalled after any change in `acconeer.exptool`, and therefore it is recommended to reinstall after each update of the Exploration Kit.**_
+_**Note: The utilities module has to be reinstalled after any change in `acconeer.exptool`, and therefore it is recommended to reinstall after each update of the Exploration Tool.**_
 
 #### XM112+XB112 serial on Linux
 
