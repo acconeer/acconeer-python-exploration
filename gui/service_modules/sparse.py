@@ -68,6 +68,8 @@ def get_sensor_config():
     sensor_config.range_interval = [0.24, 1.20]
     sensor_config.update_rate = 60
     sensor_config.sampling_mode = configs.SparseServiceConfig.SamplingMode.A
+    sensor_config.profile = configs.SparseServiceConfig.Profile.PROFILE_3
+    sensor_config.hw_accelerated_average_samples = 60
     return sensor_config
 
 
