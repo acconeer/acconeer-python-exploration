@@ -66,6 +66,21 @@ class Info(Alert):
     severity = Severity.INFO
 
 
+def wrap_qwidget(cls):
+    class QWidgetWrapper(cls):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+        def wheelEvent(self, event):
+            if self.hasFocus():
+                super().wheelEvent(event)
+            else:
+                event.ignore()
+
+    return QWidgetWrapper
+
+
 class Pidget(QFrame):
     def __init__(self, param, parent_instance):
         super().__init__()
@@ -184,7 +199,7 @@ class ComboBoxPidget(PidgetStub):
         label = QLabel(param.label, self)
         self.grid.addWidget(label, 0, 0, 1, 1)
 
-        self.cb = QComboBox()
+        self.cb = wrap_qwidget(QComboBox)()
         members = param.enum.__members__.values()
         label_attrib_name = "label" if hasattr(param.enum, "label") else "value"
         self.cb.addItems([getattr(e, label_attrib_name) for e in members])
@@ -233,7 +248,7 @@ class IntSpinBoxPidget(PidgetStub):
         label.setText(param.label + suffix)
         self.grid.addWidget(label, 0, 0, 1, 1)
 
-        self.spin_box = QSpinBox(self)
+        self.spin_box = wrap_qwidget(QSpinBox)(self)
         self.spin_box.setSingleStep(param.step)
         self.spin_box.valueChanged.connect(self._subwidget_event_handler)
         self.spin_box.setKeyboardTracking(False)
@@ -264,7 +279,7 @@ class FloatRangeSpinBoxesPidget(PidgetStub):
 
         self.spin_boxes = []
         for i in range(2):
-            spin_box = QDoubleSpinBox(self)
+            spin_box = wrap_qwidget(QDoubleSpinBox)(self)
             spin_box.setDecimals(param.decimals)
             spin_box.setSingleStep(10**(-param.decimals))
             spin_box.valueChanged.connect(lambda v, i=i: self.__spin_box_event_handler(v, i))
@@ -302,7 +317,7 @@ class FloatSpinBoxPidget(PidgetStub):
         label.setText(param.label + suffix)
         self.grid.addWidget(label, 0, 0, 1, 1)
 
-        self.spin_box = QDoubleSpinBox(self)
+        self.spin_box = wrap_qwidget(QDoubleSpinBox)(self)
         self.spin_box.setDecimals(param.decimals)
         self.spin_box.setSingleStep(10**(-param.decimals))
         self.spin_box.setKeyboardTracking(False)
@@ -371,7 +386,7 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
         label.setText(param.label + suffix)
         self.grid.addWidget(label, 0, 0, 1, 1)
 
-        self.spin_box = QDoubleSpinBox(self)
+        self.spin_box = wrap_qwidget(QDoubleSpinBox)(self)
         self.spin_box.setDecimals(param.decimals)
         self.spin_box.setSingleStep(10**(-param.decimals))
         self.spin_box.valueChanged.connect(self._subwidget_event_handler)
@@ -383,7 +398,7 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
         slider_layout = QHBoxLayout(slider_widget)
         slider_layout.setContentsMargins(0, 0, 0, 0)
         slider_layout.addWidget(QLabel(str(param.limits[0])))
-        self.slider = QSlider(QtCore.Qt.Horizontal)
+        self.slider = wrap_qwidget(QSlider)(QtCore.Qt.Horizontal)
         self.slider.setRange(0, self.NUM_SLIDER_STEPS)
         self.slider.sliderPressed.connect(self.__slider_event_handler)
         self.slider.valueChanged.connect(self.__slider_event_handler)
