@@ -1355,7 +1355,7 @@ class GUI(QMainWindow):
             self.rss_version = info.get("version_str", None)
             max_num = info.get("board_sensor_count", max_num)
 
-            conf = configs.EnvelopeServiceConfig()
+            conf = configs.SparseServiceConfig()
             sensor = 1
             sensors_available = []
             connection_success = False
