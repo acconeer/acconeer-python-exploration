@@ -1171,7 +1171,6 @@ class GUI(QMainWindow):
         if state == "has_loaded_data":
             if not val:
                 self.buttons["replay_buffered"].setEnabled(False)
-            self.init_graphs()
 
         if state == "ml_tab":
             tab = val
