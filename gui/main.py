@@ -1168,10 +1168,6 @@ class GUI(QMainWindow):
                 self.buttons["advanced_port"].setEnabled(True)
                 self.statusBar().showMessage("Not connected")
 
-        if state == "has_loaded_data":
-            if not val:
-                self.buttons["replay_buffered"].setEnabled(False)
-
         if state == "ml_tab":
             tab = val
             self.feature_sidepanel.select_mode(val)
