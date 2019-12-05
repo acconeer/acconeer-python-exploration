@@ -266,11 +266,6 @@ class GUI(QMainWindow):
 
             self.add_params(self.service_params)
 
-        if refresh:
-            self.save_gui_settings_to_sensor_config()
-        else:
-            self.load_gui_settings_from_sensor_config()
-
         self.reload_pg_updater(canvas=canvas)
 
         self.refresh_pidgets()
@@ -910,8 +905,6 @@ class GUI(QMainWindow):
         default_config = self.current_module_info.sensor_config_class()
         config._loads(default_config._dumps())
 
-        self.load_gui_settings_from_sensor_config()  # TODO
-
     def service_defaults_handler(self):
         processing_config = self.get_processing_config()
 
@@ -959,8 +952,6 @@ class GUI(QMainWindow):
 
             new_canvas = self.init_graphs(refresh=(not switching_module))
             self.swap_canvas(new_canvas)
-
-        self.load_gui_settings_from_sensor_config()
 
     def swap_canvas(self, new_canvas):
         if self.canvas is not None:
