@@ -246,11 +246,8 @@ class GUI(QMainWindow):
 
         if self.current_module_info.module is None:
             canvas = Label(self.ACC_IMG_FILENAME)
-            self.buttons["sensor_defaults"].setEnabled(False)
             self.refresh_pidgets()
             return canvas
-
-        self.buttons["sensor_defaults"].setEnabled(True)
 
         canvas = pg.GraphicsLayoutWidget()
 
@@ -1115,7 +1112,6 @@ class GUI(QMainWindow):
         self.num_missed_frames = 0
         self.threaded_scan.start()
 
-        self.buttons["sensor_defaults"].setEnabled(False)
         self.get_sensor_config()._state = configbase.Config.State.LIVE
 
         if isinstance(processing_config, configbase.Config):
@@ -1150,6 +1146,8 @@ class GUI(QMainWindow):
             not self.gui_states["scan_is_running"],
             not self.gui_states["has_config_error"],
         ]))
+
+        self.buttons["sensor_defaults"].setEnabled(not self.gui_states["scan_is_running"])
 
         if state == "server_connected":
             connected = val
@@ -1272,7 +1270,6 @@ class GUI(QMainWindow):
             if self.data is not None:
                 self.feature_select.buttons["replay_buffered"].setEnabled(True)
 
-        self.buttons["sensor_defaults"].setEnabled(True)
         self.get_sensor_config()._state = configbase.Config.State.LOADED
 
         processing_config = self.get_processing_config()
