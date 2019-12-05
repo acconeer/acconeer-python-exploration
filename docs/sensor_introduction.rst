@@ -9,13 +9,13 @@ This document serves as an introduction to Acconeer’s sensor technology and pr
 
 When starting to use the Acconeer sensor there are different alternatives for both hardware and software setup and we are adding more as we get to know your needs. Check out our website to see our current offer of sensors, modules, and evaluation kits. A typical development flow to get started is to setup one of our evaluation kits and:
 
-* Use the `Exploration Tool <https://github.com/acconeer/acconeer-python-exploration>`_ to get data from sensor into Python to start application development for your use case
+* Use the `Exploration Tool <https://github.com/acconeer/acconeer-python-exploration>`__ to get data from sensor into Python to start application development for your use case
 
 * Use our Reference applications to get guidance on use case specific software solutions
 
 * Use Acconeer SDK or Acconeer Module Software to start software development
 
-To further support and guide you through the development process we also provide several user guides, data sheets, reference schematics, and reference layouts, which you can find at `acconeer.com <https://acconeer.com>`_. Also check out our Demo videos `Demo videos <https://www.youtube.com/channel/UC56HMJfKPSpamS-kMHXOcAw>`_ and `Application page <https://www.acconeer.com/applications>`_ to get inspiration on how you can solve different use cases and how the Acconeer sensor can be used in your application.
+To further support and guide you through the development process we also provide several user guides, data sheets, reference schematics, and reference layouts, which you can find at `acconeer.com <https://acconeer.com>`__. Also check out our `demo videos <https://www.youtube.com/channel/UC56HMJfKPSpamS-kMHXOcAw>`__ and `application page <https://www.acconeer.com/applications>`__ to get inspiration on how you can solve different use cases and how the Acconeer sensor can be used in your application.
 
 .. figure:: /_static/introduction/fig_selected_use_cases.png
     :scale: 30
@@ -86,7 +86,7 @@ The A111 sensor is the core of the hardware offer and is available in module and
 
     System structure, the RSS software runs on a host that controls the sensor.
 
-RSS is provided as library files and is written in C and designed to be portable between different platforms, a list of currently supported processor architectures and toolchains are available at the `Acconeer developer site <https://developer.acconeer.com>`_. Apart from RSS, Acconeer provides Example applications and stubbed software integration source code in the Software development kits (SDKs) as well as full reference integrations for selected platforms.
+RSS is provided as library files and is written in C and designed to be portable between different platforms, a list of currently supported processor architectures and toolchains are available at the `Acconeer developer site <https://developer.acconeer.com>`__. Apart from RSS, Acconeer provides Example applications and stubbed software integration source code in the Software development kits (SDKs) as well as full reference integrations for selected platforms.
 
 Acconeer provide four types of applications:
 
@@ -145,7 +145,7 @@ For the Stand-alone module setup the customer should use the RSS library and Sof
 The Acconeer Tools
 ^^^^^^^^^^^^^^^^^^
 
-To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration Tool requires that the Streaming server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The Streaming Server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration Tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`_. An overview of how Exploration Tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
+To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration Tool requires that the Streaming server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The Streaming Server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration Tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`__. An overview of how Exploration Tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
 
 .. _fig_sw_hw_if:
 .. figure:: /_static/introduction/fig_sw_hw_if.png
@@ -167,9 +167,9 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 
     Available Detectors and Services.
 
-Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see Section `Acconeer tools`_) to observe the different outputs and understand what they represent, each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`_.
+Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see Section `Acconeer tools`_) to observe the different outputs and understand what they represent, each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`__.
 
-At `developer.acconeer.com <https://developer.acconeer.com>`_, we have several movies showing demos where the Acconeer sensor is used in different use cases. These demo movies come with use case specific reference applications, which are available for download at our GitHub page. These reference applications are written in C code and use our Services and Detectors, check out these examples to get inspiration on how to build your product with the Acconeer sensor.
+At `developer.acconeer.com <https://developer.acconeer.com>`__, we have several movies showing demos where the Acconeer sensor is used in different use cases. These demo movies come with use case specific reference applications, which are available for download at our GitHub page. These reference applications are written in C code and use our Services and Detectors, check out these examples to get inspiration on how to build your product with the Acconeer sensor.
 
 
 Services
@@ -225,13 +225,13 @@ Sparse service
 
 The other services, :ref:`envelope-service`, :ref:`iq-service`, and :ref:`pb-service`, are all based on sampling the incoming waves several times per wavelength (effectively ~2.5 mm). In the Sparse service, the incoming waves are instead sampled approximately every 6 cm and the amount of processing is minimal, which makes Sparse data fundamentally different from data generated by the other services.
 
-Due to the highly undersampled signal from the sparse service, it should not be used to measure the reflections of static objects. Instead, the sparse service should be used for situations, where detecting moving objects is desired. Sparse is optimal for this, as it produces sequences of very time accurate measurements at these sparsely located sampling points. More details `here <https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html>`_.
+Due to the highly undersampled signal from the sparse service, it should not be used to measure the reflections of static objects. Instead, the sparse service should be used for situations, where detecting moving objects is desired. Sparse is optimal for this, as it produces sequences of very time accurate measurements at these sparsely located sampling points. More details `here <https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html>`__.
 
 
 Detectors
 ^^^^^^^^^
 
-Detectors take Service data as input and produce a result as the output that can be used by the application. Currently we have four Detectors available that produce different types of results and that are based on different Services. User guides for the different Detectors are available at `acconeer.com  <https://developer.acconeer.com/>`_ and the Detectors are also available in the Exploration Tool.
+Detectors take Service data as input and produce a result as the output that can be used by the application. Currently we have four Detectors available that produce different types of results and that are based on different Services. User guides for the different Detectors are available at `acconeer.com  <https://developer.acconeer.com/>`__ and the Detectors are also available in the Exploration Tool.
 
 In addition, we provide several Reference applications which uses Services or Detector to demonstrate how to develop applications based on our technology, you can find these at the Acconeer GitHub.
 
@@ -245,7 +245,7 @@ Finds peaks in the data provided from the Envelope Service and provides the dist
 Presence detector
 ~~~~~~~~~~~~~~~~~
 
-Detects changes in the environment over time based on data from the Sparse service. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html>`_.
+Detects changes in the environment over time based on data from the Sparse service. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html>`__.
 
 
 Distance basic detector
@@ -257,7 +257,7 @@ Low complexity distance detection based on finding the maximum of the data provi
 Obstacle detector
 ~~~~~~~~~~~~~~~~~
 
-Assumes that the Acconeer sensor is placed on a moving object with a known velocity, such as a robotic vacuum cleaner or lawn mower. The Detector creates a virtual antenna array and uses synthetic aperture radar (SAR) signal processing to localize objects. This Detector is used in the Obstacle localization demo movie. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html>`_.
+Assumes that the Acconeer sensor is placed on a moving object with a known velocity, such as a robotic vacuum cleaner or lawn mower. The detector creates a virtual antenna array and uses synthetic aperture radar (SAR) signal processing to localize objects. This detector is used in the Obstacle localization demo movie. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html>`__.
 
 
 .. _ System Overview:
@@ -432,7 +432,7 @@ The range can be further increased based on the configuration of the sensor, as 
 
 Radar sensor performance metrics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Radar sensor performance metrics (RSPMs) for the Acconeer radar system provides useful information on the performance of the system: sensor, RSS and reference integration. The list contains the RSPMs that are applicable to services that produce radar data. However, not all RSPMs are applicable to all radar services. The RSPMs is used in our `Radar Datasheet <https://developer.acconeer.com/download/a111-datasheet-pdf/>`_.
+Radar sensor performance metrics (RSPMs) for the Acconeer radar system provides useful information on the performance of the system: sensor, RSS and reference integration. The list contains the RSPMs that are applicable to services that produce radar data. However, not all RSPMs are applicable to all radar services. The RSPMs is used in our `Radar Datasheet <https://developer.acconeer.com/download/a111-datasheet-pdf/>`__.
 
 
 Radar loop gain
@@ -594,7 +594,7 @@ A sweep is defined as a distance measurement range, starting at the distance *st
 
 A number of sweeps :math:`N_s` are sampled after each other and the time between each sweep is :math:`\Delta t_s`, which is configurable. We usually refer to this as the *update rate* :math:`f_s=1/\Delta t_s`.
 
-In addition, the sparse service introduces a concept of frames defined `here <https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html>`_.
+In addition, the sparse service introduces a concept of frames defined `here <https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html>`__.
 
 
 Repetition modes
@@ -674,7 +674,7 @@ Configuration summary
 Physical integration aspects
 ----------------------------
 
-The A111 sensor contains the mmWave front-end, digital control logic, digitization of received signal and memory, all in one package. To integrate it in your application it is required to have a reference frequency or XTAL (20-80 MHz), 1.8 V supply, and a host processor, as illustrated in :numref:`fig_host_platform`, supported platforms and reference schematics are available at `developer.acconeer.com <https://developer.acconeer.com>`_.
+The A111 sensor contains the mmWave front-end, digital control logic, digitization of received signal and memory, all in one package. To integrate it in your application it is required to have a reference frequency or XTAL (20-80 MHz), 1.8 V supply, and a host processor, as illustrated in :numref:`fig_host_platform`, supported platforms and reference schematics are available at `developer.acconeer.com <https://developer.acconeer.com>`__.
 
 
 .. _fig_host_platform:
@@ -695,7 +695,7 @@ In addition to the above it is also important for optimized integration to consi
     Setup configuration for radar loop pattern measurements.
 
 
-The radiation pattern of the integrated antennas will be affected by anything that is put on top of the sensor as a cover. The transmission through a material is given by 1-:math:`\gamma`, where :math:`\gamma` is the reflectivity calculated in Equation 3. Hence, materials with low reflectivity are good materials to use as a cover on top of the sensor, plastic is a good choice and the sensor is not sensitive to the color of the material. Figure 21 shows the measured Radar loop pattern for 3 different scenarios, plastic (ABS), gorilla glass (GorillaGlass) and free space (FS). To further optimize the cover integration the thickness of the material should be considered. One can also use a layered cover which uses materials of different :math:`\varepsilon` for optimum matching to the medium in which the signal is going to propagate or even to increase the directivity, as shown in Figure 21, where the beam width has been decreased by adding material on top of the sensor. More information on the EM integration aspects can be found in “Electromagnetic Integration - Basic Guidelines” document available at `developer.acconeer.com <https://developer.acconeer.com>`_.
+The radiation pattern of the integrated antennas will be affected by anything that is put on top of the sensor as a cover. The transmission through a material is given by 1-:math:`\gamma`, where :math:`\gamma` is the reflectivity calculated in Equation 3. Hence, materials with low reflectivity are good materials to use as a cover on top of the sensor, plastic is a good choice and the sensor is not sensitive to the color of the material. Figure 21 shows the measured Radar loop pattern for 3 different scenarios, plastic (ABS), gorilla glass (GorillaGlass) and free space (FS). To further optimize the cover integration the thickness of the material should be considered. One can also use a layered cover which uses materials of different :math:`\varepsilon` for optimum matching to the medium in which the signal is going to propagate or even to increase the directivity, as shown in Figure 21, where the beam width has been decreased by adding material on top of the sensor. More information on the EM integration aspects can be found in “Electromagnetic Integration - Basic Guidelines” document available at `developer.acconeer.com <https://developer.acconeer.com>`__.
 
 
 .. _fig_h_plan_pattern:
