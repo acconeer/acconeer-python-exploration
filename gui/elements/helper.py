@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QPushButton,
     QSpinBox,
     QToolButton,
@@ -237,144 +236,111 @@ class SensorSelection(QFrame):
         super().__init__()
 
         self.error_handler = error_handler
-        self.multi_sensors = multi_sensors
-        self.cb = callback
-        self.select_hist = [1, 0, 0, 0]
+        self.callback = callback
 
-        # text, checked, visible, enabled, function
-        checkbox_info = {
-            "sensor_1": ("1", True, True, True, lambda: self.sensor_limits(1)),
-            "sensor_2": ("2", False, True, True, lambda: self.sensor_limits(2)),
-            "sensor_3": ("3", False, True, True, lambda: self.sensor_limits(3)),
-            "sensor_4": ("4", False, True, True, lambda: self.sensor_limits(4)),
-        }
-
-        self.checkboxes = {}
-        for key, (text, checked, visible, enabled, func) in checkbox_info.items():
-            cb = QCheckBox(text, self)
-            cb.setChecked(checked)
-            cb.setVisible(visible)
-            cb.setEnabled(enabled)
-            if func:
-                cb.stateChanged.connect(func)
-            self.checkboxes[key] = cb
-
-        self.textbox = QLineEdit()
-        self.textbox.setText("1")
-        self.textbox.editingFinished.connect(lambda: self.check_value())
+        self.drawing = False
+        self.selected = [1]
+        self.sources = None
+        self.module_multi_sensor_support = multi_sensors
 
         self.grid = QtWidgets.QGridLayout(self)
         self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.addWidget(self.checkboxes["sensor_1"], 0, 0)
-        self.grid.addWidget(self.checkboxes["sensor_2"], 0, 1)
-        self.grid.addWidget(self.checkboxes["sensor_3"], 0, 2)
-        self.grid.addWidget(self.checkboxes["sensor_4"], 0, 3)
-        self.grid.addWidget(self.textbox, 0, 4)
 
-        self.set_multi_sensor_support(multi_sensors)
+        self.checkboxes = []
+        self.radio_buttons = []
+        for i in range(4):
+            s = i + 1
 
-    def get_sensors(self):
-        sensors = []
-        if self.multi_sensors:
-            for s in range(1, 5):
-                sensor_id = "sensor_{:d}".format(s)
-                if self.checkboxes[sensor_id].isChecked():
-                    sensors.append(s)
-        else:
-            sensors.append(int(self.textbox.text()))
+            cb = QCheckBox(str(s), self)
+            cb.stateChanged.connect(lambda val, cb=cb: self.checkbox_event_handler(val, cb))
+            self.checkboxes.append(cb)
+            self.grid.addWidget(cb, 0, i)
 
-        return sensors
+            rb = QtWidgets.QRadioButton(str(s), self)
+            rb.toggled.connect(lambda val, rb=rb: self.radio_button_event_handler(val, rb))
+            self.radio_buttons.append(rb)
+            self.grid.addWidget(rb, 1, i)
 
-    def set_sensors(self, sensors):
-        if not sensors:
-            sensors = []
+        self.draw()
 
-        if not isinstance(sensors, list):
-            sensors = [sensors]
-
-        try:
-            if len(sensors) > 1:
-                self.set_multi_sensor_support(True)
-        except Exception as e:
-            self.error_handler("Could not set sensor {}".format(e))
-
-        if self.multi_sensors:
-            for s in range(1, 5):
-                enabled = s in sensors
-                sensor_id = "sensor_{:d}".format(s)
-                self.checkboxes[sensor_id].setChecked(enabled)
-        else:
-            if isinstance(sensors, list):
-                sensors = sensors[0]
-            try:
-                self.textbox.setText(str(sensors))
-            except Exception as e:
-                self.error_handler("Could not set sensor {}".format(e))
-
-    def set_multi_sensor_support(self, multi_sensors):
-        if multi_sensors is None:
-            multi_sensors = False
-        self.multi_sensors = multi_sensors
-
-        if isinstance(multi_sensors, list):
-            multi_sensors = True
-
-        self.textbox.setVisible(not multi_sensors)
-
-        for s in range(1, 5):
-            sensor_id = "sensor_{:d}".format(s)
-            self.checkboxes[sensor_id].setVisible(multi_sensors)
-
-        if multi_sensors:
-            self.sensor_limits()
-
-    def check_value(self):
-        error = None
-        if not self.textbox.text().isdigit():
-            error = "Sensor must be an integer between 1 and 4!\n"
-            self.textbox["sensor"].setText("1")
-        else:
-            sensor = int(self.textbox.text())
-            e = sensor < 1 or sensor > 4
-            if e:
-                error = "Sensor must be an integer between 1 and 4!\n"
-                self.textbox.setText("1")
-
-        if error is not None and self.error_message is not None:
-            self.error_handler(error)
-
-    def sensor_limits(self, sensor=None):
-        if not self.multi_sensors:
+    def checkbox_event_handler(self, state, cb):
+        if self.drawing:
             return
 
-        if sensor:
-            if self.checkboxes["sensor_%d" % sensor].isChecked():
-                if sensor not in self.select_hist:
-                    self.select_hist.insert(0, sensor)
-                    self.select_hist.pop(4)
-            if not self.checkboxes["sensor_%d" % sensor].isChecked():
-                if sensor in self.select_hist:
-                    self.select_hist.pop(self.select_hist.index(sensor))
-                    self.select_hist.insert(3, 0)
+        s = int(cb.text())
 
-        # if self.multi_sensors is a list, we limit the max nr of sensor to its length
-        if isinstance(self.multi_sensors, list):
-            allowed_nr = len(self.multi_sensors)
-            current_nr = len(self.get_sensors())
-            diff = current_nr - allowed_nr
-            s = 3
-            while diff > 0 and s >= 0:
-                if self.select_hist[s]:
-                    sensor_id = "sensor_{:d}".format(self.select_hist[s])
-                    self.checkboxes[sensor_id].setChecked(False)
-                    self.select_hist[s] = 0
-                    self.select_hist.pop(s)
-                    self.select_hist.insert(3, 0)
-                    diff = len(self.get_sensors()) - len(self.multi_sensors)
-                s -= 1
+        if state:  # checked
+            if s not in self.selected:
+                self.selected.insert(0, s)
+        else:
+            if s in self.selected:
+                self.selected.remove(s)
 
-        if self.cb is not None:
-            self.cb()
+        self.draw()
+
+    def radio_button_event_handler(self, selected, rb):
+        if self.drawing or not selected:
+            return
+
+        s = int(rb.text())
+        self.selected = [s]
+        self.draw()
+
+    def draw(self):
+        self.drawing = True
+
+        for i, (cb, rb) in enumerate(zip(self.checkboxes, self.radio_buttons)):
+            s = i + 1
+
+            if self.sources:
+                enabled = s in self.sources
+            else:
+                enabled = True
+
+            cb.setEnabled(enabled)
+            rb.setEnabled(enabled)
+
+            cb.setVisible(bool(self.module_multi_sensor_support))
+            rb.setVisible(not bool(self.module_multi_sensor_support))
+
+        for i, cb in enumerate(self.checkboxes):
+            s = i + 1
+            cb.setChecked(s in self.selected)
+            rb.setChecked(False)
+
+        if self.selected:
+            self.radio_buttons[self.selected[0] - 1].setChecked(True)
+
+        self.drawing = False
+
+        if self.callback is not None:
+            self.callback()
+
+    def sanitize(self):
+        if self.sources:
+            self.selected = [s for s in self.selected if s in self.sources]
+
+        if self.module_multi_sensor_support:
+            if isinstance(self.module_multi_sensor_support, list):
+                lim = self.module_multi_sensor_support[1]
+                self.selected = self.selected[: lim]
+        else:
+            if self.selected:
+                self.selected = [self.selected[0]]
+
+    def get_sensors(self):
+        return list(sorted(self.selected))
+
+    def set_sensors(self, sensors):
+        self.selected = sensors
+        self.sanitize()
+        self.draw()
+
+    def set_multi_sensor_support(self, sources, module_multi_sensor_support):
+        self.sources = sources
+        self.module_multi_sensor_support = module_multi_sensor_support
+        self.sanitize()
+        self.draw()
 
 
 class ErrorFormater:

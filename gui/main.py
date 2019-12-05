@@ -1,4 +1,5 @@
 import copy
+import enum
 import json
 import logging
 import os
@@ -68,6 +69,12 @@ if "win32" in sys.platform.lower():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
+class LoadState(enum.Enum):
+    UNLOADED = enum.auto()
+    BUFFERED = enum.auto()
+    LOADED = enum.auto()
+
+
 class GUI(QMainWindow):
     DEFAULT_BAUDRATE = 3000000
     ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
@@ -90,6 +97,7 @@ class GUI(QMainWindow):
             self.args = gui_inarg.parse_args()
 
         self.data = None
+        self.data_source = None
         self.client = None
         self.num_recv_frames = 0
         self.num_missed_frames = 0
@@ -102,7 +110,7 @@ class GUI(QMainWindow):
         self.threaded_scan = None
 
         self.gui_states = {
-            "has_loaded_data": False,
+            "load_state": LoadState.UNLOADED,
             "server_connected": False,
             "replaying_data": False,
             "ml_plotting_extraction": False,
@@ -116,7 +124,7 @@ class GUI(QMainWindow):
         self.current_data_type = None
         self.current_module_label = None
         self.canvas = None
-        self.multi_sensor_interface = True
+        self.sensors_available = None
         self.basic_sensor_param_count = Count()
         self.advanced_sensor_param_count = Count()
         self.control_grid_count = Count()
@@ -179,6 +187,7 @@ class GUI(QMainWindow):
         self.show()
         self.start_up()
         lib_version_up_to_date(gui_handle=self)
+        self.set_gui_state(None, None)
 
         self.radar = data_processing.DataProcessing()
 
@@ -192,7 +201,9 @@ class GUI(QMainWindow):
         # key: (text)
         label_info = {
             "sensor": ("Sensor",),
-            "sweep_buffer": ("Sweep buffer",),
+            "sweep_buffer": ("Max buffered frames",),
+            "data_source": ("",),
+            "stored_frames": ("",),
             "interface": ("Interface",),
             "sweep_info": ("",),
             "saturated": ("Warning: Data saturated, reduce gain!",),
@@ -210,18 +221,19 @@ class GUI(QMainWindow):
     def init_textboxes(self):
         # key: (text)
         textbox_info = {
-            "host": ("192.168.1.100",),
-            "sweep_buffer": ("1000",),
-            "sweep_buffer_ml": ("unlimited",),
+            "host": ("192.168.1.100", True),
+            "sweep_buffer": ("1000", True),
+            "stored_frames": ("0", False),
+            "sweep_buffer_ml": ("unlimited", False),
         }
 
         self.textboxes = {}
-        for key, (text,) in textbox_info.items():
+        for key, (text, enabled) in textbox_info.items():
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
+            self.textboxes[key].setEnabled(enabled)
 
         self.textboxes["sweep_buffer_ml"].setVisible(False)
-        self.textboxes["sweep_buffer_ml"].setEnabled(False)
 
     def init_checkboxes(self):
         # text, status, visible, enabled, function
@@ -251,8 +263,6 @@ class GUI(QMainWindow):
         canvas = pg.GraphicsLayoutWidget()
 
         if not refresh:
-            self.set_multi_sensors()
-
             if not (processing_config and isinstance(processing_config, dict)):
                 self.service_params = None
                 self.service_defaults = None
@@ -487,20 +497,16 @@ class GUI(QMainWindow):
             self.update_canvas(force_update=True)
 
     def set_multi_sensors(self):
-        multi_sensor = False
-        if self.get_gui_state("has_loaded_data"):
-            multi_sensor = len(json.loads(self.data.sensor_config_dump)["sensor"]) > 1
-        elif self.multi_sensor_interface:
-            multi_sensor = self.current_module_info.multi_sensor
+        module_multi_sensor_support = self.current_module_info.multi_sensor
 
-        sensor = self.get_sensors()
+        if self.get_gui_state("load_state") == LoadState.LOADED:
+            source_sensors = json.loads(self.data.sensor_config_dump)["sensor"]
+        else:
+            source_sensors = self.sensors_available
 
         for name in self.sensor_widgets:
-            self.sensor_widgets[name].set_multi_sensor_support(multi_sensor)
-
-        if not multi_sensor and self.multi_sensor_interface:
-            if isinstance(sensor, list) and len(sensor):
-                self.set_sensors(sensor[0])
+            self.sensor_widgets[name].set_multi_sensor_support(
+                source_sensors, module_multi_sensor_support)
 
     def set_sensors(self, sensors):
         for name in self.sensor_widgets:
@@ -542,17 +548,30 @@ class GUI(QMainWindow):
 
         dialog.deleteLater()
 
+    def start_btn_clicked(self):
+        if self.get_gui_state("load_state") == LoadState.LOADED:
+            self.data = None
+            self.set_gui_state("load_state", LoadState.UNLOADED)
+        else:
+            self.start_scan()
+
+    def save_file_btn_clicked(self):
+        self.save_scan(self.data)
+
+    def replay_btn_clicked(self):
+        self.load_scan(restart=True)
+
     def init_buttons(self):
         # key: text, function, enabled, hidden, group
         button_info = {
-            "start": ("Start", self.start_scan, False, False, "scan"),
+            "start": ("Start", self.start_btn_clicked, False, False, "scan"),
             "connect": ("Connect", self.connect_to_server, True, False, "connection"),
             "stop": ("Stop", self.stop_scan, False, False, "scan"),
-            "load_scan": ("Load Scan", lambda: self.load_scan(), True, False, "scan"),
-            "save_scan": ("Save Scan", lambda: self.save_scan(self.data), False, False, "scan"),
+            "load_scan": ("Load from file", self.load_scan, True, False, "scan"),
+            "save_scan": ("Save to file", self.save_file_btn_clicked, False, False, "scan"),
             "replay_buffered": (
-                "Replay buffered/loaded",
-                lambda: self.load_scan(restart=True),
+                "Replay",
+                self.replay_btn_clicked,
                 False,
                 False,
                 "scan",
@@ -635,9 +654,12 @@ class GUI(QMainWindow):
         self.control_section.grid.addWidget(self.buttons["save_scan"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.buttons["load_scan"], c.val, 1)
         self.control_section.grid.addWidget(self.buttons["replay_buffered"], c.pre_incr(), 0, 1, 2)
+        self.control_section.grid.addWidget(self.labels["data_source"], c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.labels["sweep_buffer"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], c.val, 1)
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer_ml"], c.val, 1)
+        self.control_section.grid.addWidget(self.labels["stored_frames"], c.pre_incr(), 0)
+        self.control_section.grid.addWidget(self.textboxes["stored_frames"], c.val, 1)
 
         self.basic_sensor_config_section = CollapsibleSection("Sensor settings")
         self.main_sublayout.addWidget(self.basic_sensor_config_section, 4, 0)
@@ -649,7 +671,6 @@ class GUI(QMainWindow):
         sensor_selection = SensorSelection(error_handler=self.error_message)
         self.basic_sensor_config_section.grid.addWidget(sensor_selection, c.post_incr(), 1)
         self.sensor_widgets["main"] = sensor_selection
-        self.set_multi_sensors()
 
         self.advanced_sensor_config_section = CollapsibleSection(
             "Advanced sensor settings", init_collapsed=True)
@@ -937,10 +958,13 @@ class GUI(QMainWindow):
         switching_data_type = self.current_data_type != data_type
         self.current_data_type = data_type
 
-        if switching_data_type:
+        if self.get_gui_state("load_state") == LoadState.LOADED:
+            if switching_data_type:
+                self.data = None
+                self.set_gui_state("load_state", LoadState.UNLOADED)
+        elif switching_module:
             self.data = None
-            self.set_gui_state("has_loaded_data", False)
-            self.buttons["replay_buffered"].setEnabled(False)
+            self.set_gui_state("load_state", LoadState.UNLOADED)
 
         if force_update or switching_module:
             if not switching_module:
@@ -962,20 +986,17 @@ class GUI(QMainWindow):
         if self.gui_states["server_connected"]:
             self.connect_to_server()
 
-        self.multi_sensor_interface = True
         if "serial" in self.interface_dd.currentText().lower():
             self.ports_dd.show()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
             self.update_ports()
-            self.multi_sensor_interface = False
         elif "spi" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
-            self.multi_sensor_interface = False
         elif "socket" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].show()
@@ -1016,6 +1037,10 @@ class GUI(QMainWindow):
         return retval == 1024
 
     def start_scan(self, from_file=False):
+        if not self.get_sensors():
+            self.error_message("Please select at least one sensor")
+            return
+
         if self.current_module_info.module is None:
             self.error_message("Please select a service or detector")
             return
@@ -1096,9 +1121,7 @@ class GUI(QMainWindow):
         self.threaded_scan.sig_scan.connect(self.thread_receive)
         self.sig_scan.connect(self.threaded_scan.receive)
 
-        self.buttons["load_scan"].setEnabled(False)
         self.module_dd.setEnabled(False)
-        self.buttons["stop"].setEnabled(True)
         self.checkboxes["opengl"].setEnabled(False)
 
         self.num_recv_frames = 0
@@ -1116,7 +1139,6 @@ class GUI(QMainWindow):
             self.basic_processing_config_section.body_widget.setEnabled(False)
 
         self.buttons["connect"].setEnabled(False)
-        self.buttons["replay_buffered"].setEnabled(False)
         self.enable_tabs(False)
 
         self.set_gui_state("scan_is_running", True)
@@ -1124,28 +1146,80 @@ class GUI(QMainWindow):
         if self.get_gui_state("ml_mode"):
             self.feature_select.buttons["stop"].setEnabled(True)
             self.feature_select.buttons["start"].setEnabled(False)
-            self.feature_select.buttons["replay_buffered"].setEnabled(False)
             self.feature_sidepanel.textboxes["sweep_rate"].setEnabled(False)
 
     def set_gui_state(self, state, val):
         if state in self.gui_states:
             self.gui_states[state] = val
+        elif state is None:
+            pass
         else:
             print("{} is an unknown state!".format(state))
             return
 
+        states = self.gui_states
+
+        # Visible, enabled, text
+
+        # Start button
         self.buttons["start"].setEnabled(all([
-            self.gui_states["server_connected"],
-            not self.gui_states["scan_is_running"],
-            not self.gui_states["has_config_error"],
+            states["server_connected"] or states["load_state"] == LoadState.LOADED,
+            not states["scan_is_running"],
+            not states["has_config_error"],
         ]))
+        if states["load_state"] == LoadState.LOADED:
+            self.buttons["start"].setText("New measurement")
+        else:
+            self.buttons["start"].setText("Start measurement")
 
+        # Stop button
+        self.buttons["stop"].setEnabled(states["scan_is_running"])
+
+        # Save to file button
         self.buttons["save_scan"].setEnabled(all([
-            not self.gui_states["scan_is_running"],
-            self.gui_states["has_loaded_data"]
+            states["load_state"] != LoadState.UNLOADED,
+            not states["scan_is_running"],
         ]))
 
-        self.buttons["sensor_defaults"].setEnabled(not self.gui_states["scan_is_running"])
+        # Load from file button
+        self.buttons["load_scan"].setEnabled(not states["scan_is_running"])
+
+        # Replay button
+        self.buttons["replay_buffered"].setEnabled(all([
+            states["load_state"] != LoadState.UNLOADED,
+            not states["scan_is_running"],
+        ]))
+
+        # Data source
+        self.labels["data_source"].setVisible(states["load_state"] == LoadState.LOADED)
+        try:
+            text = "Loaded " + os.path.basename(self.data_source)
+        except Exception:
+            text = ""
+        self.labels["data_source"].setText(text)
+
+        # Sweep buffer
+        self.labels["sweep_buffer"].setVisible(states["load_state"] != LoadState.LOADED)
+        self.textboxes["sweep_buffer"].setVisible(states["load_state"] != LoadState.LOADED)
+        self.textboxes["sweep_buffer"].setEnabled(not states["scan_is_running"])
+
+        # Stored frames
+        if states["load_state"] == LoadState.LOADED:
+            text = "Number of frames"
+        else:
+            text = "Buffered frames"
+        self.labels["stored_frames"].setText(text)
+        try:
+            num_stored = len(self.data.data)
+        except Exception:
+            num_stored = 0
+        self.textboxes["stored_frames"].setText(str(num_stored))
+
+        # Other
+
+        self.set_multi_sensors()
+
+        self.buttons["sensor_defaults"].setEnabled(not states["scan_is_running"])
 
         if state == "server_connected":
             connected = val
@@ -1251,9 +1325,7 @@ class GUI(QMainWindow):
 
     def stop_scan(self):
         self.sig_scan.emit("stop", "", None)
-        self.buttons["load_scan"].setEnabled(True)
         self.module_dd.setEnabled(True)
-        self.buttons["stop"].setEnabled(False)
         self.buttons["connect"].setEnabled(True)
         self.basic_processing_config_section.body_widget.setEnabled(True)
 
@@ -1273,8 +1345,6 @@ class GUI(QMainWindow):
             processing_config._state = configbase.Config.State.LOADED
 
         self.checkboxes["opengl"].setEnabled(True)
-        if self.data is not None:
-            self.buttons["replay_buffered"].setEnabled(True)
         self.set_gui_state("replaying_data", False)
         self.enable_tabs(True)
 
@@ -1332,31 +1402,45 @@ class GUI(QMainWindow):
             self.rss_version = info.get("version_str", None)
             max_num = info.get("board_sensor_count", max_num)
 
-            conf = configs.SparseServiceConfig()
-            sensor = 1
-            sensors_available = []
-            connection_success = False
-            error = None
-            while sensor <= max_num:
-                conf.sensor = sensor
-                try:
-                    self.client.setup_session(conf)
-                    self.client.start_session()
-                    self.client.stop_session()
-                    connection_success = True
-                    sensors_available.append(sensor)
-                except Exception as e:
-                    print("Sensor {:d} not available".format(sensor))
-                    error = e
-                sensor += 1
-            if connection_success:
-                self.set_sensors(sensors_available)
-                self.set_gui_state("server_connected", True)
-                self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
+            if isinstance(self.client, clients.SocketClient):
+                sensor_count = info.get("board_sensor_count", 4)
+                config = configs.SparseServiceConfig()
+                self.sensors_available = []
+                for i in range(sensor_count):
+                    sensor = i + 1
+                    config.sensor = sensor
+                    try:
+                        self.client.start_session(config)
+                        self.client.stop_session()
+                    except clients.base.SessionSetupError:
+                        pass
+                    except Exception:
+                        self.error_message("Could not connect to server")
+                        return
+                    else:
+                        self.sensors_available.append(sensor)
+            elif isinstance(self.client, clients.MockClient):
+                self.sensors_available = [1, 2, 3, 4]
             else:
-                self.error_message("Could not connect to server!\n{}".format(error))
+                self.sensors_available = [1]
+
+            if not self.sensors_available:
+                self.error_message("No sensors available, check connections")
+                try:
+                    self.client.disconnect()
+                except Exception:
+                    pass
                 return
+
+            if isinstance(self.client, clients.MockClient):
+                self.set_sensors([1])
+            else:
+                self.set_sensors(self.sensors_available)
+            self.set_gui_state("server_connected", True)
+            self.set_gui_state("load_state", LoadState.UNLOADED)
+            self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
         else:
+            self.sensors_available = None
             self.set_gui_state("server_connected", False)
             self.sig_scan.emit("stop", "", None)
             try:
@@ -1453,6 +1537,8 @@ class GUI(QMainWindow):
 
     def load_scan(self, restart=False):
         if restart:
+            if self.get_gui_state("load_state") == LoadState.BUFFERED:
+                self.set_sensors(self.data.sensor_config.sensor)
             self.start_scan(from_file=True)
             return
 
@@ -1501,6 +1587,7 @@ class GUI(QMainWindow):
         sensor_config = self.get_sensor_config()
         sensor_config._loads(record.sensor_config_dump)
 
+        self.set_gui_state("load_state", LoadState.LOADED)
         self.set_multi_sensors()
         self.set_sensors(sensor_config.sensor)
 
@@ -1515,7 +1602,7 @@ class GUI(QMainWindow):
                 except Exception:
                     traceback.print_exc()
 
-        self.set_gui_state("has_loaded_data", True)
+        self.data_source = filename
         self.start_scan(from_file=True)
 
     def save_scan(self, record):
@@ -1651,9 +1738,10 @@ class GUI(QMainWindow):
                 self.stop_scan()
             self.error_message("{}".format(message))
         elif message_type == "scan_data":
-            if not self.get_gui_state("replaying_data"):
+            if self.get_gui_state("load_state") != LoadState.LOADED:
                 self.data = data
-                self.set_gui_state("has_loaded_data", True)
+                self.data_source = None
+                self.set_gui_state("load_state", LoadState.BUFFERED)
         elif message_type == "scan_done":
             self.stop_scan()
         elif "update_external_plots" in message_type:
