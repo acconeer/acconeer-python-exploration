@@ -1017,8 +1017,6 @@ class GUI(QMainWindow):
         return retval == 1024
 
     def start_scan(self, from_file=False):
-        if self.get_gui_state("has_loaded_data") and not from_file:
-            self.set_gui_state("has_loaded_data", False)
         if self.current_module_info.module is None:
             self.error_message("Please select a service or detector")
             return
@@ -1103,7 +1101,6 @@ class GUI(QMainWindow):
         self.sig_scan.connect(self.threaded_scan.receive)
 
         self.buttons["load_scan"].setEnabled(False)
-        self.buttons["save_scan"].setEnabled(False)
         self.module_dd.setEnabled(False)
         self.buttons["stop"].setEnabled(True)
         self.checkboxes["opengl"].setEnabled(False)
@@ -1145,6 +1142,11 @@ class GUI(QMainWindow):
             self.gui_states["server_connected"],
             not self.gui_states["scan_is_running"],
             not self.gui_states["has_config_error"],
+        ]))
+
+        self.buttons["save_scan"].setEnabled(all([
+            not self.gui_states["scan_is_running"],
+            self.gui_states["has_loaded_data"]
         ]))
 
         self.buttons["sensor_defaults"].setEnabled(not self.gui_states["scan_is_running"])
@@ -1281,7 +1283,6 @@ class GUI(QMainWindow):
         self.checkboxes["opengl"].setEnabled(True)
         if self.data is not None:
             self.buttons["replay_buffered"].setEnabled(True)
-            self.buttons["save_scan"].setEnabled(True)
         self.set_gui_state("replaying_data", False)
         self.enable_tabs(True)
 
@@ -1660,6 +1661,7 @@ class GUI(QMainWindow):
         elif message_type == "scan_data":
             if not self.get_gui_state("replaying_data"):
                 self.data = data
+                self.set_gui_state("has_loaded_data", True)
         elif message_type == "scan_done":
             self.stop_scan()
         elif "update_external_plots" in message_type:
