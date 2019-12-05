@@ -1530,11 +1530,6 @@ class GUI(QMainWindow):
             self.error_message("No data to save")
             return
 
-        if "sleep" in self.current_module_label.lower():
-            if int(self.textboxes["sweep_buffer"].text()) < 1000:
-                self.error_message("Please set sweep buffer to >= 1000")
-                return
-
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         title = "Save scan"
