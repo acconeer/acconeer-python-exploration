@@ -1157,9 +1157,6 @@ class GUI(QMainWindow):
                 self.buttons["connect"].setText("Disconnect")
                 self.buttons["connect"].setStyleSheet("QPushButton {color: red}")
                 self.buttons["advanced_port"].setEnabled(False)
-                self.buttons["replay_buffered"].setEnabled(False)
-                self.gui_states["has_loaded_data"] = False
-                self.data = None
                 self.set_multi_sensors()
                 if self.get_gui_state("ml_mode"):
                     self.feature_select.update_sensors(self.save_gui_settings_to_sensor_config())
