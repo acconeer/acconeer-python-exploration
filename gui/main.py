@@ -44,6 +44,7 @@ try:
     import data_processing
     from helper import (
         AdvancedSerialDialog,
+        BiggerMessageBox,
         CollapsibleSection,
         Count,
         GUIArgumentParser,
@@ -1009,10 +1010,26 @@ class GUI(QMainWindow):
 
         self.set_multi_sensors()
 
-    def error_message(self, error):
-        em = QtWidgets.QErrorMessage(self.main_widget)
-        em.setWindowTitle("Error")
-        em.showMessage(error.replace("\n", "<br>"))
+    def error_message(self, text, info_text=None):
+        if self.under_test:
+            raise Exception
+
+        if not text:
+            return
+
+        message_box = BiggerMessageBox(self.main_widget)
+        message_box.setIcon(QtWidgets.QMessageBox.Warning)
+        message_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        message_box.setWindowTitle("Alert")
+
+        message_box.setText(text.replace("\n", "<br>"))
+        if info_text:
+            message_box.setInformativeText(info_text.replace("\n", "<br>"))
+        if any(sys.exc_info()):
+            detailed_text = traceback.format_exc()
+            message_box.setDetailedText(detailed_text)
+
+        message_box.exec_()
 
     def info_handle(self, info, detailed_info=None):
         msg = QtWidgets.QMessageBox(self.main_widget)

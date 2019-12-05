@@ -162,6 +162,13 @@ class GUIArgumentParser(ArgumentParser):
                           action="store_true")
 
 
+class BiggerMessageBox(QtWidgets.QMessageBox):
+    def resizeEvent(self, event):
+        result = super().resizeEvent(event)
+        self.setFixedWidth(500)
+        return result
+
+
 class Label(QLabel):
     def __init__(self, img, img_scale=0.7):
         super(Label, self).__init__()
