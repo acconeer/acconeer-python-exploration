@@ -40,6 +40,7 @@ class BaseServiceConfig(BaseSessionConfig):
 
     range_interval = cb.FloatRangeParameter(
         label="Range interval",
+        unit="m",
         default_value=[0.18, 0.78],
         limits=(-0.7, 7.0),
         order=10,
@@ -283,6 +284,10 @@ class IQServiceConfig(BaseDenseServiceConfig):
 
     def check(self):
         alerts = super().check()
+
+        if self.range_start < (0.06 - 1e-6):
+            alerts.append(cb.Error("range_interval", "Start must be >= 0.06 m"))
+
         return alerts
 
 
