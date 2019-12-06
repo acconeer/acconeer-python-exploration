@@ -191,6 +191,11 @@ class GUI(QMainWindow):
 
         self.radar = data_processing.DataProcessing()
 
+        timer = QtCore.QTimer(self)
+        timer.timeout.connect(self.plot_timer_fun)
+        timer.start(15)
+        self.plot_queue = []
+
     def init_pyqtgraph(self):
         pg.setConfigOption("background", "#f0f0f0")
         pg.setConfigOption("foreground", "k")
@@ -1766,7 +1771,14 @@ class GUI(QMainWindow):
                 self.ml_use_model_plot_widget.update(data)
             self.ml_data = data
         else:
-            self.service_widget.update(data)
+            self.plot_queue.append(data)
+
+    def plot_timer_fun(self):
+        if not self.plot_queue:
+            return
+
+        data, *self.plot_queue = self.plot_queue[-2:]
+        self.service_widget.update(data)
 
     def update_sweep_info(self, infos):
         if not isinstance(infos, list):  # If squeezed

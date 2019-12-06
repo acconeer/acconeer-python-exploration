@@ -3,8 +3,6 @@ import time
 import traceback
 import warnings
 
-from PyQt5.QtCore import QThread
-
 from acconeer.exptool.recording import Recorder
 
 
@@ -140,6 +138,3 @@ class DataProcessing:
 
     def draw_canvas(self, plot_data):
         self.parent.emit("update_external_plots", "", plot_data)
-        QThread.msleep(3)
-
-        # TODO: use a queue for plot_data
