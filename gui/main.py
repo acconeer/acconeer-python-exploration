@@ -1358,7 +1358,6 @@ class GUI(QMainWindow):
 
     def connect_to_server(self):
         if not self.get_gui_state("server_connected"):
-            max_num = 4
             if self.current_module_info.module is None:
                 self.module_dd.setCurrentIndex(1)
 
@@ -1369,7 +1368,6 @@ class GUI(QMainWindow):
             elif self.interface_dd.currentText().lower() == "spi":
                 self.client = clients.SPIClient()
                 statusbar_connection_info = "SPI"
-                max_num = 1
             elif self.interface_dd.currentText().lower() == "simulated":
                 self.client = clients.MockClient()
                 statusbar_connection_info = "simulated interface"
@@ -1383,7 +1381,6 @@ class GUI(QMainWindow):
                     print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
 
                 self.client = clients.UARTClient(port, override_baudrate=self.override_baudrate)
-                max_num = 1
                 statusbar_connection_info = "UART ({})".format(port)
 
             self.client.squeeze = False
@@ -1400,7 +1397,6 @@ class GUI(QMainWindow):
                 return
 
             self.rss_version = info.get("version_str", None)
-            max_num = info.get("board_sensor_count", max_num)
 
             if isinstance(self.client, clients.SocketClient):
                 sensor_count = info.get("board_sensor_count", 4)
