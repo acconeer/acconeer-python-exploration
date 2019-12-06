@@ -45,17 +45,46 @@ htmlhelp_basename = "acconeer-python-exploration-docs"
 latex_elements = {
     "papersize": "a4paper",
     "pointsize": "11pt",
+    "fontpkg": r"""
+        \usepackage{helvet}
+        \renewcommand{\familydefault}{\sfdefault}
+    """,
+    "tableofcontents": "",
+    "sphinxsetup": ",".join([
+        r"hmargin={1.2in, 1.2in}",
+    ]),
+    "preamble": r"""
+        \usepackage{titling}
+        \usepackage{graphicx}
+        \graphicspath{{../../_static/}}
+    """,
+    "maketitle": r"""
+        \vspace*{50mm}
+        \begin{center}
+            \includegraphics[width=100mm]{logo.pdf}
+            \par
+            \vspace*{15mm}
+            {
+                \huge
+                \thetitle
+            }
+        \end{center}
+        \newpage
+        \tableofcontents
+        \newpage
+    """,
 }
 
 # (startdocname, targetname, title, author, documentclass, toctree_only)
 latex_documents = [
     (
-        master_doc,
-        "acconeer-python-exploration.tex",
-        "acconeer-python-exploration Documentation",
-        "Acconeer",
-        "manual",
-    ),
+        "sensor_introduction",
+        "sensor_introduction.tex",
+        "Sensor Introduction",
+        author,
+        "howto",
+        False,
+    )
 ]
 
 
