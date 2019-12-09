@@ -1151,7 +1151,7 @@ class GUI(QMainWindow):
         if self.get_gui_state("ml_mode"):
             self.feature_select.buttons["stop"].setEnabled(True)
             self.feature_select.buttons["start"].setEnabled(False)
-            self.feature_sidepanel.textboxes["sweep_rate"].setEnabled(False)
+            self.feature_sidepanel.textboxes["update_rate"].setEnabled(False)
 
     def set_gui_state(self, state, val):
         if state in self.gui_states:
@@ -1259,6 +1259,12 @@ class GUI(QMainWindow):
             self.textboxes["sweep_buffer"].hide()
             self.module_dd.show()
 
+            sensor_config = self.get_sensor_config()
+            if sensor_config is None:
+                update_rate = "50.0"
+            else:
+                update_rate = str(int(sensor_config.update_rate))
+
             if tab == "main":
                 if "Select service" not in self.current_module_label:
                     self.basic_processing_config_section.show()
@@ -1276,8 +1282,8 @@ class GUI(QMainWindow):
                 self.feature_section.show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
-                self.feature_sidepanel.textboxes["sweep_rate"].setText(
-                    self.textboxes["sweep_rate"].text())
+
+                self.feature_sidepanel.textboxes["update_rate"].setText(update_rate)
                 self.feature_select.check_limits()
 
             elif tab == "feature_extract":
@@ -1289,8 +1295,7 @@ class GUI(QMainWindow):
                 self.textboxes["sweep_buffer_ml"].show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
-                self.feature_sidepanel.textboxes["sweep_rate"].setText(
-                    self.textboxes["sweep_rate"].text())
+                self.feature_sidepanel.textboxes["update_rate"].setText(update_rate)
 
                 if self.ml_feature_plot_widget is None:
                     self.feature_extract.init_graph()
@@ -1337,7 +1342,7 @@ class GUI(QMainWindow):
         if self.get_gui_state("ml_mode"):
             self.feature_select.buttons["start"].setEnabled(True)
             self.feature_select.buttons["stop"].setEnabled(False)
-            self.feature_sidepanel.textboxes["sweep_rate"].setEnabled(True)
+            self.feature_sidepanel.textboxes["update_rate"].setEnabled(True)
             if self.data is not None:
                 self.feature_select.buttons["replay_buffered"].setEnabled(True)
 

@@ -813,7 +813,7 @@ class FeatureSidePanel(QFrame):
 
         self.labels = {
             "frame_time": QLabel("Frame time [s]"),
-            "sweep_rate": QLabel("Sweep rate [Hz]"),
+            "update_rate": QLabel("Update rate [Hz]"),
             "frame_size": QLabel("Sweeps per frame"),
             "auto_thrshld_offset": QLabel("Thrshld/Offset:"),
             "dead_time": QLabel("Dead time:"),
@@ -827,7 +827,7 @@ class FeatureSidePanel(QFrame):
 
         self.textboxes = {
             "frame_time": QLineEdit(str(1)),
-            "sweep_rate": QLineEdit(str(30)),
+            "update_rate": QLineEdit(str(30)),
             "frame_size": QLineEdit(str(30)),
             "auto_threshold": QLineEdit("1.5"),
             "dead_time": QLineEdit("10"),
@@ -925,8 +925,8 @@ class FeatureSidePanel(QFrame):
         self.grid.addWidget(self.h_lines["h_line_1"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.labels["frame_time"], self.increment(), 0)
         self.grid.addWidget(self.textboxes["frame_time"], self.num, 1)
-        self.grid.addWidget(self.labels["sweep_rate"], self.increment(), 0)
-        self.grid.addWidget(self.textboxes["sweep_rate"], self.num, 1)
+        self.grid.addWidget(self.labels["update_rate"], self.increment(), 0)
+        self.grid.addWidget(self.textboxes["update_rate"], self.num, 1)
         self.grid.addWidget(self.labels["frame_size"], self.increment(), 0)
         self.grid.addWidget(self.textboxes["frame_size"], self.num, 1)
         self.grid.addWidget(self.buttons["create_calib"], self.increment(), 0)
@@ -954,17 +954,17 @@ class FeatureSidePanel(QFrame):
                 ],
             "feature_extract": [
                 self.labels["frame_time"],
-                self.labels["sweep_rate"],
+                self.labels["update_rate"],
                 self.textboxes["frame_time"],
-                self.textboxes["sweep_rate"],
+                self.textboxes["update_rate"],
                 self.buttons["create_calib"],
                 self.buttons["show_calib"],
                 ],
             "feature_inspect": [
                 self.labels["frame_time"],
-                self.labels["sweep_rate"],
+                self.labels["update_rate"],
                 self.textboxes["frame_time"],
-                self.textboxes["sweep_rate"],
+                self.textboxes["update_rate"],
                 self.labels["empty_1"],
                 self.h_lines["h_line_2"],
                 self.labels["collection_mode"],
@@ -976,12 +976,12 @@ class FeatureSidePanel(QFrame):
                 self.labels["frame_settings"],
                 self.labels["save_load"],
                 self.labels["frame_time"],
-                self.labels["sweep_rate"],
+                self.labels["update_rate"],
                 self.labels["frame_size"],
                 self.h_lines["h_line_1"],
                 self.h_lines["h_line_3"],
                 self.textboxes["frame_time"],
-                self.textboxes["sweep_rate"],
+                self.textboxes["update_rate"],
                 self.textboxes["frame_size"],
                 self.buttons["load_session"],
                 self.buttons["save_session"],
@@ -998,13 +998,13 @@ class FeatureSidePanel(QFrame):
             senders = [
                 "frame_label",
                 "frame_size",
-                "sweep_rate",
+                "update_rate",
                 "collection_mode",
                 "auto_threshold",
                 "auto_offset",
                 "dead_time",
                 "rolling",
-                "sweep_rate",
+                "update_rate",
                 "calibration",
             ]
         elif not isinstance(senders, list):
@@ -1014,7 +1014,7 @@ class FeatureSidePanel(QFrame):
             try:
                 if sender == "frame_label":
                     self.frame_settings[sender] = self.gui_handle.feature_extract.get_label()
-                elif sender in ["frame_size", "sweep_rate", "dead_time", "auto_offset"]:
+                elif sender in ["frame_size", "update_rate", "dead_time", "auto_offset"]:
                     self.frame_settings[sender] = int(self.textboxes[sender].text())
                 elif sender in ["frame_time", "auto_threshold"]:
                     self.frame_settings[sender] = float(self.textboxes[sender].text())
@@ -1053,8 +1053,8 @@ class FeatureSidePanel(QFrame):
                 self.gui_handle.feature_extract.set_label(frame_settings["frame_label"])
             if "frame_time" in frame_settings:
                 self.textboxes["frame_time"].setText(str(frame_settings["frame_time"]))
-            if "sweep_rate" in frame_settings:
-                self.textboxes["sweep_rate"].setText(str(frame_settings["sweep_rate"]))
+            if "update_rate" in frame_settings:
+                self.textboxes["update_rate"].setText(str(frame_settings["update_rate"]))
             if "dead_time" in frame_settings:
                 self.textboxes["dead_time"].setText(str(frame_settings["dead_time"]))
             if "auto_threshold" in frame_settings:
@@ -1079,15 +1079,15 @@ class FeatureSidePanel(QFrame):
     def calc_values(self, key, edditing):
         try:
             frame_time = float(self.textboxes["frame_time"].text())
-            sweep_rate = int(self.textboxes["sweep_rate"].text())
+            update_rate = int(self.textboxes["update_rate"].text())
         except Exception:
             if not edditing:
                 print("{} is not a valid input for {}!".format(self.textboxes[key].text(), key))
                 if key == "frame_time":
                     self.textboxes["frame_time"].setText("1")
-                if key == "sweep_rate":
-                    self.textboxes["sweep_rate"].setText(
-                        self.gui_handle.textboxes["sweep_rate"].text()
+                if key == "update_rate":
+                    self.textboxes["update_rate"].setText(
+                        self.gui_handle.textboxes["update_rate"].text()
                         )
                 return
             else:
@@ -1098,10 +1098,12 @@ class FeatureSidePanel(QFrame):
                 self.textboxes["frame_time"].setText("1")
                 frame_time = 1
 
-        if key == "sweep_rate":
-            self.gui_handle.textboxes["sweep_rate"].setText(self.textboxes["sweep_rate"].text())
+        if key == "update_rate":
+            sensor_config = self.get_sensor_config()
+            if sensor_config is not None:
+                sensor_config.update_rate = float(self.textboxes["update_rate"].text())
 
-        sweeps = int(sweep_rate * frame_time)
+        sweeps = int(update_rate * frame_time)
 
         self.textboxes["frame_size"].setText(str(sweeps))
 
