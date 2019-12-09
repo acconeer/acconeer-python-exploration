@@ -48,9 +48,9 @@ try:
         Count,
         GUIArgumentParser,
         Label,
+        LoadState,
         SensorSelection,
         lib_version_up_to_date,
-        LoadState
     )
     from modules import (
         MODULE_INFOS,
