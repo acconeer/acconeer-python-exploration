@@ -182,6 +182,8 @@ def unpack(packed: dict) -> Record:
     kwargs["data"] = packed["data"]
     kwargs["data_info"] = json.loads(packed["data_info"])
 
+    assert len(kwargs["data"]) == len(kwargs["data_info"])
+
     return Record(**kwargs)
 
 
