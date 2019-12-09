@@ -1364,9 +1364,6 @@ class GUI(QMainWindow):
 
     def connect_to_server(self):
         if not self.get_gui_state("server_connected"):
-            if self.current_module_info.module is None:
-                self.module_dd.setCurrentIndex(1)
-
             if self.interface_dd.currentText().lower() == "socket":
                 host = self.textboxes["host"].text()
                 self.client = clients.SocketClient(host)
@@ -1441,6 +1438,8 @@ class GUI(QMainWindow):
             self.set_gui_state("server_connected", True)
             self.set_gui_state("load_state", LoadState.UNLOADED)
             self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
+            if self.current_module_info.module is None:
+                self.module_dd.setCurrentIndex(1)
         else:
             self.sensors_available = None
             self.set_gui_state("server_connected", False)
