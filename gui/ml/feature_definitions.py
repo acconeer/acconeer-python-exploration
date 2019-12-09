@@ -386,10 +386,10 @@ class FeatureSparseFFT:
         return self.data, self.options
 
     def get_size(self, options=None):
-        if options is None or "subsweeps" not in options:
+        if options is None or "sweeps_per_frame" not in options:
             return 1
         try:
-            size = int(np.ceil(options["subsweeps"] * options["High pass"] / 2))
+            size = int(np.ceil(options["sweeps_per_frame"] * options["High pass"] / 2))
         except Exception as e:
             print("Failed to calculate feature hight!\n ", e)
             return 1

@@ -1070,11 +1070,10 @@ class GUI(QMainWindow):
         sensor_config = self.save_gui_settings_to_sensor_config()
 
         feature_list = None
-        ml_plotting = False
+        ml_settings = None
         ml_mode = self.get_gui_state("ml_tab")
         if ml_mode != "main":
             is_eval_mode = (ml_mode == "eval")
-            ml_plotting = True
             if is_eval_mode:
                 if self.eval_sidepanel.model_loaded() is False:
                     self.error_message("Please load a model first!\n")
@@ -1100,7 +1099,7 @@ class GUI(QMainWindow):
                 frame_settings["collection_mode"] = "continuous"
                 frame_settings["rolling"] = True
 
-            processing_config["ml_settings"] = {
+            ml_settings = {
                 "feature_list": feature_list,
                 "frame_settings": frame_settings,
                 "evaluate": is_eval_mode,
@@ -1117,7 +1116,7 @@ class GUI(QMainWindow):
             "module_info": self.current_module_info,
             "sweep_buffer": sweep_buffer,
             "service_params": processing_config,
-            "ml_plotting": ml_plotting,
+            "ml_settings": ml_settings,
             "multi_sensor": self.current_module_info.multi_sensor,
             "rss_version": getattr(self, "rss_version", None),
         }
@@ -1263,7 +1262,7 @@ class GUI(QMainWindow):
             if sensor_config is None:
                 update_rate = "50.0"
             else:
-                update_rate = str(int(sensor_config.update_rate))
+                update_rate = "{:.1f}".format(sensor_config.update_rate)
 
             if tab == "main":
                 if "Select service" not in self.current_module_label:

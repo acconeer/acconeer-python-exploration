@@ -47,7 +47,7 @@ class FeatureSelectFrame(QFrame):
         self.gui_handle = gui_handle
         self.has_valid_config = False
         self.feature_testing = False
-        self.sparse_subsweeps = False
+        self.sweeps_per_frame = None
 
         self.limits = {
             "start": 0,
@@ -499,9 +499,9 @@ class FeatureSelectFrame(QFrame):
             config_end = sensor_config.range_end
             config_sensors = sensor_config.sensor
             config_data_type = sensor_config.mode
-            self.sparse_subsweeps = False
+            self.sweeps_per_frame = None
             if config_data_type == Mode.SPARSE:
-                self.sparse_subsweeps = sensor_config.number_of_subsweeps
+                self.sweeps_per_frame = sensor_config.sweeps_per_frame
         except Exception:
             if error_handle is None:
                 return self.error_text.setText("No service selected!")
@@ -663,8 +663,8 @@ class FeatureSelectFrame(QFrame):
             feature_opts = self.get_feature_list([feature])[0]["options"]
             feature_size = 1
             if feature["size_cb"] is not None:
-                if self.sparse_subsweeps:
-                    feature_opts["subsweeps"] = self.sparse_subsweeps
+                if self.sweeps_per_frame:
+                    feature_opts["sweeps_per_frame"] = self.sweeps_per_frame
                 feature_size = feature["size_cb"](feature_opts)
             out_multiplier = 0
             for out in feature["output"]:
@@ -1015,9 +1015,9 @@ class FeatureSidePanel(QFrame):
             try:
                 if sender == "frame_label":
                     self.frame_settings[sender] = self.gui_handle.feature_extract.get_label()
-                elif sender in ["frame_size", "update_rate", "dead_time", "auto_offset"]:
+                elif sender in ["frame_size", "dead_time", "auto_offset"]:
                     self.frame_settings[sender] = int(self.textboxes[sender].text())
-                elif sender in ["frame_time", "auto_threshold"]:
+                elif sender in ["frame_time", "update_rate", "auto_threshold"]:
                     self.frame_settings[sender] = float(self.textboxes[sender].text())
                 elif sender == "rolling":
                     self.frame_settings[sender] = self.checkboxes[sender].isChecked()
@@ -1100,7 +1100,7 @@ class FeatureSidePanel(QFrame):
                 frame_time = 1
 
         if key == "update_rate":
-            sensor_config = self.get_sensor_config()
+            sensor_config = self.gui_handle.get_sensor_config()
             if sensor_config is not None:
                 sensor_config.update_rate = float(self.textboxes["update_rate"].text())
 

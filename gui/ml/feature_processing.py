@@ -25,18 +25,6 @@ except ImportError:
     SPARSE_AUTO_DETECTION = False
 
 
-def get_range_depths(sensor_config, session_info):
-    range_start = session_info["actual_range_start"]
-    range_end = range_start + session_info["actual_range_length"]
-    if sensor_config.mode == Mode.SPARSE:
-        num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
-    elif sensor_config.mode == "power_bins":
-        num_depths = session_info["bin_count"]
-    else:
-        num_depths = session_info["data_length"]
-    return np.linspace(range_start, range_end, num_depths) * 1000
-
-
 class FeatureProcessing:
     def __init__(self, sensor_config, feature_list=None, store_features=False):
         self.rolling = False
@@ -423,7 +411,8 @@ class FeatureProcessing:
 
     def check_data(self, data):
         if data.get("x_mm") is None:
-            data["x_mm"] = get_range_depths(data["sensor_config"], data["session_info"])
+            data["x_mm"] = utils.get_range_depths(data["sensor_config"], data["session_info"])
+            data["x_mm"] *= 1000
 
         if data.get("env_ampl") is None:
             sweep = data["iq_data"]
@@ -535,35 +524,35 @@ class FeatureProcessing:
 class DataProcessor:
     hist_len = 100
 
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, ml_settings, session_info):
         self.session_info = session_info
         self.sensor_config = sensor_config
         self.mode = self.sensor_config.mode
         self.start_x = self.sensor_config.range_interval[0]
         self.stop_x = self.sensor_config.range_interval[1]
         self.sweep = 0
-        self.feature_list = processing_config["ml_settings"]["feature_list"]
-        self.frame_settings = processing_config["ml_settings"]["frame_settings"]
+        self.feature_list = ml_settings["feature_list"]
+        self.frame_settings = ml_settings["frame_settings"]
         self.enable_plotting = True
 
         self.evaluate = False
         self.prediction_hist = None
-        if processing_config["ml_settings"]["evaluate"]:
+        if ml_settings["evaluate"]:
             self.evaluate = self.feature_list.predict
 
-        self.rate = 1/self.sensor_config.sweep_rate
+        self.rate = 1 / self.sensor_config.update_rate
 
         self.num_sensors = sensor_config.sensor
 
-        self.image_buffer = processing_config["image_buffer"]["value"]
+        self.image_buffer = 100
 
         self.feature_process = FeatureProcessing(self.sensor_config, store_features=True)
         feature_list = self.feature_list.get_feature_list()
         self.feature_process.set_feature_list(feature_list)
         self.feature_process.set_frame_settings(self.frame_settings)
 
-    def update_processing_config(self, processing_config=None, frame_settings=None, trigger=None,
-                                 feature_list=None):
+    def update_ml_settings(self, ml_settings=None, frame_settings=None, trigger=None,
+                           feature_list=None):
         if frame_settings is not None:
             self.feature_process.set_frame_settings(frame_settings)
 
@@ -580,7 +569,7 @@ class DataProcessor:
         mode = self.sensor_config.mode
 
         if self.sweep == 0:
-            self.x_mm = get_range_depths(self.sensor_config, self.session_info)
+            self.x_mm = utils.get_range_depths(self.sensor_config, self.session_info) * 1000
             if mode == Mode.SPARSE:
                 self.num_sensors, point_repeats, self.data_len = sweep.shape
                 self.hist_env = np.zeros((self.num_sensors, self.data_len, self.image_buffer))
@@ -897,7 +886,7 @@ class PGUpdater:
         yax.setTicks(ticks)
         plot.setYRange(0, xdim)
 
-        t_buff = s_buff / data["sensor_config"].sweep_rate
+        t_buff = s_buff / data["sensor_config"].update_rate
         tax = plot.getAxis("bottom")
         t = np.round(np.arange(0, s_buff + 1, s_buff / min(10 / num_sensors, s_buff)))
         labels = np.round(t / s_buff * t_buff, decimals=3)

@@ -23,7 +23,7 @@ class DataProcessing:
         if hist_len is not None and hist_len < 1:
             hist_len = None
 
-        self.ml_plotting = params["ml_plotting"]
+        self.ml_settings = params["ml_settings"]
 
         if isinstance(self.processing_config, dict):  # Legacy
             self.processing_config["processing_handle"] = self
@@ -57,19 +57,19 @@ class DataProcessing:
         else:
             settings = {param: value}
         try:
-            self.external.update_processing_config(frame_settings=settings)
+            self.external.update_ml_settings(frame_settings=settings)
         except Exception:
             traceback.print_exc()
 
     def send_feature_trigger(self):
         try:
-            self.external.update_processing_config(trigger=True)
+            self.external.update_ml_settings(trigger=True)
         except Exception:
             traceback.print_exc()
 
     def update_feature_list(self, feature_list):
         try:
-            self.external.update_processing_config(feature_list=feature_list)
+            self.external.update_ml_settings(feature_list=feature_list)
         except Exception:
             traceback.print_exc()
 
@@ -82,9 +82,11 @@ class DataProcessing:
 
         if self.first_run:
             ext = self.gui_handle.external
-            if self.ml_plotting:
+            processing_config = self.processing_config
+            if self.ml_settings is not None:
                 ext = self.gui_handle.ml_external
-            self.external = ext(self.sensor_config, self.processing_config, self.session_info)
+                processing_config = self.ml_settings
+            self.external = ext(self.sensor_config, processing_config, self.session_info)
             self.first_run = False
             out_data = self.external.process(in_data)
         else:
