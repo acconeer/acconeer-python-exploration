@@ -1215,6 +1215,9 @@ class GUI(QMainWindow):
 
         # Other
 
+        for sensor_widget in self.sensor_widgets.values():
+            sensor_widget.setEnabled(not states["scan_is_running"])
+
         self.set_multi_sensors()
 
         self.buttons["sensor_defaults"].setEnabled(not states["scan_is_running"])
