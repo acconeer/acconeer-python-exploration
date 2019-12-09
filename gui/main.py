@@ -1401,40 +1401,41 @@ class GUI(QMainWindow):
 
             self.rss_version = info.get("version_str", None)
 
-            if isinstance(self.client, clients.SocketClient):
-                sensor_count = info.get("board_sensor_count", 4)
-                config = configs.SparseServiceConfig()
-                self.sensors_available = []
-                for i in range(sensor_count):
-                    sensor = i + 1
-                    config.sensor = sensor
-                    try:
-                        self.client.start_session(config)
-                        self.client.stop_session()
-                    except clients.base.SessionSetupError:
-                        pass
-                    except Exception:
-                        self.error_message("Could not connect to server")
-                        return
-                    else:
-                        self.sensors_available.append(sensor)
-            elif isinstance(self.client, clients.MockClient):
-                self.sensors_available = [1, 2, 3, 4]
-            else:
-                self.sensors_available = [1]
+            connected_sensors = [1]  # for the initial set
+            self.sensors_available = [1]  # for the sensor widget(s)
 
-            if not self.sensors_available:
-                self.error_message("No sensors available, check connections")
+            if isinstance(self.client, clients.SocketClient):
+                sensor_count = min(info.get("board_sensor_count", 4), 4)
+                self.sensors_available = list(range(1, sensor_count + 1))
+
+                if sensor_count > 1:
+                    config = configs.SparseServiceConfig()
+                    connected_sensors = []
+                    for i in range(sensor_count):
+                        sensor = i + 1
+                        config.sensor = sensor
+                        try:
+                            self.client.start_session(config)
+                            self.client.stop_session()
+                        except clients.base.SessionSetupError:
+                            pass
+                        except Exception:
+                            self.error_message("Could not connect to server")
+                            return
+                        else:
+                            connected_sensors.append(sensor)
+            elif isinstance(self.client, clients.MockClient):
+                self.sensors_available = list(range(1, 5))
+
+            if not connected_sensors:
+                self.error_message("No sensors connected, check connections")
                 try:
                     self.client.disconnect()
                 except Exception:
                     pass
                 return
 
-            if isinstance(self.client, clients.MockClient):
-                self.set_sensors([1])
-            else:
-                self.set_sensors(self.sensors_available)
+            self.set_sensors(connected_sensors)
             self.set_gui_state("server_connected", True)
             self.set_gui_state("load_state", LoadState.UNLOADED)
             self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
