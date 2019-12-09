@@ -1449,9 +1449,9 @@ class FeatureInspectFrame(QFrame):
         elif action == "sweeps" and number == self.current_sweep_nr:
             return
 
-        sweep_data = self.gui_handle.data
+        record = self.gui_handle.data
         f_info = fdata["ml_frame_data"]["frame_info"]
-        n_sweeps = len(sweep_data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
+        n_sweeps = len(record.data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
 
         if frame_nr < 0:
             print("No feature data available!")
@@ -1485,7 +1485,7 @@ class FeatureInspectFrame(QFrame):
             self.set_slider_value("sweep_slider", self.current_sweep_nr)
             return
         else:
-            if self.gui_handle.data is None:
+            if record is None:
                 print("No sweep data available")
                 return
             label = self.textboxes["label"].text()
@@ -1504,7 +1504,7 @@ class FeatureInspectFrame(QFrame):
         try:
             fdata = self.feature_process.feature_extraction_window(
                 fdata,
-                sweep_data,
+                record,
                 frame_start,
                 label
                 )
@@ -1624,13 +1624,14 @@ class FeatureInspectFrame(QFrame):
                 return
 
         f_histdata = fdata["ml_frame_data"]["frame_list"]
-        sweep_data = self.gui_handle.data
 
         frame_nr = self.current_frame_nr
 
         f_info = fdata["ml_frame_data"]["frame_info"]
 
-        n_sweeps = len(sweep_data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
+        record = self.gui_handle.data
+
+        n_sweeps = len(record.data) - f_info["frame_size"] - 2 * f_info["frame_pad"]
 
         if frame_nr < 0:
             print("No feature data available!")
@@ -1676,7 +1677,7 @@ class FeatureInspectFrame(QFrame):
                     try:
                         fdata = self.feature_process.feature_extraction_window(
                             fdata,
-                            sweep_data,
+                            record,
                             frame_start,
                             label
                             )

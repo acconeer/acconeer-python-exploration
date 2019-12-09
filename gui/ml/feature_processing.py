@@ -336,7 +336,7 @@ class FeatureProcessing:
 
         return frame_data
 
-    def feature_extraction_window(self, data, sweep_data, start, label=""):
+    def feature_extraction_window(self, data, record, start, label=""):
         self.frame_pad = data["ml_frame_data"]["frame_info"]["frame_pad"]
         self.frame_size = data["ml_frame_data"]["frame_info"]["frame_size"]
         self.calibration = data["ml_frame_data"]["current_frame"].get("calibration")
@@ -352,12 +352,12 @@ class FeatureProcessing:
         for idx, marker in enumerate(range(frame_start, frame_stop)):
             data_step = {
                 "sensor_config": data["sensor_config"],
-                "iq_data": sweep_data[marker]["sweep_data"],
+                "iq_data": record.data[marker],
             }
             if mode == Mode.SPARSE:
-                data_step["env_ampl"] = np.abs(sweep_data[marker]["sweep_data"].mean(axis=1))
+                data_step["env_ampl"] = np.abs(record.data[marker].mean(axis=1))
             else:
-                data_step["env_ampl"] = np.abs(sweep_data[marker]["sweep_data"])
+                data_step["env_ampl"] = np.abs(record.data[marker])
             win_idx = n_sweeps - idx - 1
             if data_step["env_ampl"].shape != self.win_data["env_data"].shape[0:2]:
                 data_step["iq_data"] = data_step["iq_data"][self.sensor_array]
