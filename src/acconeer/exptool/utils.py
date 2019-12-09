@@ -12,6 +12,7 @@ import serial.tools.list_ports
 
 from PyQt5 import QtCore
 
+import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool.modes import Mode
 
 
@@ -97,6 +98,8 @@ def mpl_setup_yaxis_for_phase(ax):
 
 
 def timestamp():
+    """Get the current date and time formatted as 1999-12-31_23-59-59"""
+
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
@@ -357,7 +360,9 @@ class FreqCounter:
         self.last_t = now
 
 
-def get_range_depths(sensor_config, session_info):
+def get_range_depths(sensor_config: cb.SensorConfig, session_info: dict) -> np.ndarray:
+    """Get range depths in meters."""
+
     range_start = session_info["range_start_m"]
     range_end = range_start + session_info["range_length_m"]
 
