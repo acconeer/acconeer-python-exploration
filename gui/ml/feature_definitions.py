@@ -3,6 +3,8 @@ import sys
 
 import numpy as np
 
+from acconeer.exptool.modes import Mode
+
 
 try:
     sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
@@ -19,39 +21,38 @@ def get_features():
         "sweep": {
             "name": "Range segment",
             "class": FeatureSweep,
-
             "model": "2D",
-            "data_type": "envelope",
+            "data_type": Mode.ENVELOPE,
         },
         "peak": {
             "name": "Peak",
             "class": FeaturePeak,
             "model": "2D",
-            "data_type": "envelope",
+            "data_type": Mode.ENVELOPE,
         },
         "averages_1d": {
             "name": "Averages 1D",
             "class": FeatureAverages1D,
             "model": "1D",
-            "data_type": "envelope",
+            "data_type": Mode.ENVELOPE,
         },
         "averages_2d": {
             "name": "Averages 2D",
             "class": FeatureAverages2D,
             "model": "2D",
-            "data_type": "envelope",
+            "data_type": Mode.ENVELOPE,
         },
         "amplitude_ratios_1d": {
             "name": "Amplitude Ratios 1D",
             "class": FeatureAmplitudeRatios1D,
             "model": "1D",
-            "data_type": "envelope",
+            "data_type": Mode.ENVELOPE,
         },
         "sparse_fft": {
             "name": "Sparse FFT",
             "class": FeatureSparseFFT,
             "model": "2D",
-            "data_type": "sparse",
+            "data_type": Mode.SPARSE,
         },
     }
 
@@ -60,7 +61,7 @@ def get_features():
             "name": "Presence Sparse",
             "class": FeatureSparsePresence,
             "model": "2D",
-            "data_type": "sparse",
+            "data_type": Mode.SPARSE,
         }
 
     return features

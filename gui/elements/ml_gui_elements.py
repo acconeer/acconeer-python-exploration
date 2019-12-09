@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import (
 )
 
 from acconeer.exptool import utils
+from acconeer.exptool.modes import Mode
 
 import feature_definitions as feature_def
 import feature_processing as feature_proc
@@ -52,7 +53,7 @@ class FeatureSelectFrame(QFrame):
             "start": 0,
             "end": np.inf,
             "sensors": [1, 2, 3, 4],
-            "data_type": "envelope",
+            "data_type": Mode.ENVELOPE,
             "model_dimension": 2,
         }
 
@@ -499,7 +500,7 @@ class FeatureSelectFrame(QFrame):
             config_sensors = sensor_config.sensor
             config_data_type = sensor_config.mode
             self.sparse_subsweeps = False
-            if "sparse" in config_data_type:
+            if config_data_type == Mode.SPARSE:
                 self.sparse_subsweeps = sensor_config.number_of_subsweeps
         except Exception:
             if error_handle is None:
@@ -547,11 +548,11 @@ class FeatureSelectFrame(QFrame):
             error_message += "{}<br>".format(model_dimensions)
 
         data_types_valid = True
-        if "sparse" in feature_data_types and "sparse" not in config_data_type:
+        if Mode.SPARSE in feature_data_types and config_data_type != Mode.SPARSE:
             data_types_valid = False
-        if "iq" in feature_data_types and "iq" not in config_data_type:
+        if Mode.IQ in feature_data_types and config_data_type != Mode.IQ:
             data_types_valid = False
-        if "iq" in feature_data_types and "sparse" in feature_data_types:
+        if Mode.IQ in feature_data_types and Mode.SPARSE in feature_data_types:
             data_types_valid = False
 
         if not data_types_valid:
@@ -2515,10 +2516,10 @@ class EvalSidePanel(QFrame):
             self.gui_handle.set_sensors(self.model_data["sensor_config"].sensor)
 
         try:
-            mode = self.model_data["sensor_config"].mode
-            if "iq" in mode.lower():
+            config_mode = self.model_data["sensor_config"].mode
+            if config_mode == Mode.IQ:
                 mode = "IQ"
-            elif "envelope" in mode.lower():
+            elif config_mode == Mode.ENVELOPE:
                 mode = "Envelope"
             else:
                 mode = "Sparse"

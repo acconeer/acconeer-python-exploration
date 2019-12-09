@@ -4,6 +4,8 @@ import sys
 
 import numpy as np
 
+from acconeer.exptool.modes import Mode
+
 
 try:
     from matplotlib.colors import LinearSegmentedColormap
@@ -26,7 +28,7 @@ except ImportError:
 def get_range_depths(sensor_config, session_info):
     range_start = session_info["actual_range_start"]
     range_end = range_start + session_info["actual_range_length"]
-    if sensor_config.mode == "sparse":
+    if sensor_config.mode == Mode.SPARSE:
         num_depths = session_info["data_length"] // sensor_config.number_of_subsweeps
     elif sensor_config.mode == "power_bins":
         num_depths = session_info["bin_count"]
@@ -138,7 +140,7 @@ class FeatureProcessing:
         mode = data["sensor_config"].mode
         n_sweeps = self.frame_size + 2 * self.frame_pad
 
-        if mode == "sparse":
+        if mode == Mode.SPARSE:
             num_sensors, point_repeats, data_len = data["iq_data"].shape
         else:
             num_sensors, data_len = data["iq_data"].shape
@@ -147,7 +149,7 @@ class FeatureProcessing:
                 'env_data': np.zeros((num_sensors, data_len, n_sweeps))
             }
 
-        if mode == "sparse":
+        if mode == Mode.SPARSE:
             self.win_data['sparse_data'] = np.zeros(
                 (num_sensors, point_repeats, data_len, n_sweeps)
                 )
@@ -156,7 +158,7 @@ class FeatureProcessing:
 
     def add_sweep(self, data, win_idx=0):
         mode = data["sensor_config"].mode
-        if mode == "sparse":
+        if mode == Mode.SPARSE:
             self.win_data['sparse_data'][:, :, :, win_idx] = data['iq_data'][:, :, :]
         else:
             self.win_data['iq_data'][:, :, win_idx] = data['iq_data'][:, :]
@@ -165,7 +167,7 @@ class FeatureProcessing:
 
     def roll_data(self, data):
         mode = data["sensor_config"].mode
-        if mode == "sparse":
+        if mode == Mode.SPARSE:
             self.win_data['sparse_data'] = np.roll(self.win_data['sparse_data'], 1, axis=3)
         else:
             self.win_data['iq_data'] = np.roll(self.win_data['iq_data'], 1, axis=2)
@@ -352,7 +354,7 @@ class FeatureProcessing:
                 "sensor_config": data["sensor_config"],
                 "iq_data": sweep_data[marker]["sweep_data"],
             }
-            if mode == "sparse":
+            if mode == Mode.SPARSE:
                 data_step["env_ampl"] = np.abs(sweep_data[marker]["sweep_data"].mean(axis=1))
             else:
                 data_step["env_ampl"] = np.abs(sweep_data[marker]["sweep_data"])
@@ -425,7 +427,7 @@ class FeatureProcessing:
 
         if data.get("env_ampl") is None:
             sweep = data["iq_data"]
-            if data["sensor_config"].mode == "sparse":
+            if data["sensor_config"].mode == Mode.SPARSE:
                 data['env_ampl'] = sweep.mean(axis=1)
             else:
                 data['env_ampl'] = np.abs(sweep)
@@ -440,11 +442,11 @@ class FeatureProcessing:
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
 
-        if mode == "sparse" and not SPARSE_AUTO_DETECTION:
+        if mode == Mode.SPARSE and not SPARSE_AUTO_DETECTION:
             if self.sweep_counter <= 10:
                 print("Warning: Auto movement detection with spares not available.")
 
-        if mode == "sparse" and SPARSE_AUTO_DETECTION:
+        if mode == Mode.SPARSE and SPARSE_AUTO_DETECTION:
             if self.motion_processors is None:
                 self.motion_config = presence_detection_sparse.get_processing_config()
                 self.motion_config.inter_frame_fast_cutoff = 100
@@ -579,7 +581,7 @@ class DataProcessor:
 
         if self.sweep == 0:
             self.x_mm = get_range_depths(self.sensor_config, self.session_info)
-            if mode == "sparse":
+            if mode == Mode.SPARSE:
                 self.num_sensors, point_repeats, self.data_len = sweep.shape
                 self.hist_env = np.zeros((self.num_sensors, self.data_len, self.image_buffer))
             else:
@@ -594,7 +596,7 @@ class DataProcessor:
         iq = sweep.copy()
 
         env = None
-        if mode == "sparse":
+        if mode == Mode.SPARSE:
             env = sweep.mean(axis=1)
         else:
             env = np.abs(iq)
@@ -786,7 +788,7 @@ class PGUpdater:
             self.hist_plot_max_y = np.zeros(nr_sensors)
 
             lut = utils.pg_mpl_cmap("viridis")
-            if mode == "sparse":
+            if mode == Mode.SPARSE:
                 cmap_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
                 cmap = LinearSegmentedColormap.from_list("mycmap", cmap_cols)
                 cmap._init()
@@ -802,7 +804,7 @@ class PGUpdater:
 
         for idx, sensor in enumerate(sensors):
 
-            if mode == "sparse":
+            if mode == Mode.SPARSE:
                 data_history_adj = data["hist_env"][idx, :, :].T
                 sign = np.sign(data_history_adj)
                 data_history_adj = np.abs(data_history_adj)
