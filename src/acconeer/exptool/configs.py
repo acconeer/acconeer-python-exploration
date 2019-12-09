@@ -376,6 +376,13 @@ class SparseServiceConfig(BaseServiceConfig):
             if self.update_rate > max_frame_rate:
                 alerts.append(cb.Error("sweep_rate", "Too low for current update rate"))
 
+        # Pessimistic buffer size check
+        start_p = int(round(self.range_start / 0.06 - 0.01))
+        end_p = int(round(self.range_end / 0.06 + 0.01))
+        sweep_size = (end_p - start_p) // self.downsampling_factor + 1
+        if sweep_size * self.sweeps_per_frame > 2048:
+            alerts.append(cb.Error("range_interval", "Too long for buffer"))
+
         return alerts
 
 
