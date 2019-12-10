@@ -340,6 +340,7 @@ class GUI(QMainWindow):
                 count.post_incr()
 
         self.refresh_pidgets()
+        self.set_gui_state(None, None)
 
     def refresh_pidgets(self):
         self.refresh_sensor_pidgets()
@@ -1143,8 +1144,6 @@ class GUI(QMainWindow):
         self.num_missed_frames = 0
         self.threaded_scan.start()
 
-        self.get_sensor_config()._state = configbase.Config.State.LIVE
-
         if isinstance(processing_config, configbase.Config):
             self.basic_processing_config_section.body_widget.setEnabled(True)
             self.buttons["service_defaults"].setEnabled(False)
@@ -1231,6 +1230,15 @@ class GUI(QMainWindow):
         self.textboxes["stored_frames"].setText(str(num_stored))
 
         # Other
+
+        sensor_config = self.get_sensor_config()
+        if sensor_config:
+            if states["load_state"] == LoadState.LOADED:
+                sensor_config._state = configbase.Config.State.LOADED_READONLY
+            elif not states["scan_is_running"]:
+                sensor_config._state = configbase.Config.State.LOADED
+            else:
+                sensor_config._state = configbase.Config.State.LIVE
 
         for sensor_widget in self.sensor_widgets.values():
             sensor_widget.setEnabled(not states["scan_is_running"])
@@ -1358,8 +1366,6 @@ class GUI(QMainWindow):
             self.feature_sidepanel.textboxes["update_rate"].setEnabled(True)
             if self.data is not None:
                 self.feature_select.buttons["replay_buffered"].setEnabled(True)
-
-        self.get_sensor_config()._state = configbase.Config.State.LOADED
 
         processing_config = self.get_processing_config()
         if isinstance(processing_config, configbase.Config):

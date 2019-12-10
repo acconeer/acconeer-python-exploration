@@ -151,7 +151,13 @@ class PidgetStub(Pidget):
             visible = False
 
         self.setVisible(bool(visible))
-        self.setEnabled(state != Config.State.LIVE or self.param.is_live_updateable)
+
+        enabled = (
+            state == Config.State.LOADED
+            or state == Config.State.LIVE and self.param.is_live_updateable
+        )
+        self.setEnabled(enabled)
+
         self._set_alert(alerts)
 
     def _set_alert(self, alerts):
@@ -813,9 +819,10 @@ def get_virtual_parameter_class(base_class):
 
 class Config:
     class State(enum.Enum):
-        UNLOADED = 1
-        LOADED = 2
-        LIVE = 3
+        UNLOADED = enum.auto()
+        LOADED = enum.auto()
+        LOADED_READONLY = enum.auto()
+        LIVE = enum.auto()
 
     VERSION = None
 
