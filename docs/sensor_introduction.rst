@@ -1,3 +1,5 @@
+.. _sensor-intro:
+
 Radar sensor introduction
 =========================
 

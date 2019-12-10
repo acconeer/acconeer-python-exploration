@@ -11,7 +11,7 @@ The power bins values are calculated using an algorithm optimized for low comput
 
 For use cases with weaker radar echoes, i.e., lower SNR, or when the resolution of the signal is important, we recommend using the Envelope, IQ or Sparse data service instead.
 
-The Power Bins service can be configured with different pulse length profiles, `see <https://acconeer-python-exploration.readthedocs.io/en/latest/sensor_introduction.html>`_.
+The Power Bins service can be configured with different pulse length profiles, see the :ref:`sensor-intro`.
 
 ``power_bins.py`` contains example code on how the Power Bins service can be used.
 
@@ -21,3 +21,11 @@ For further reading on the power bins service we refer to the `Power Bins docume
 
 .. _`Power bins documentation`: https://developer.acconeer.com/download/power-bins-service-user-guide-pdf/
 .. _`Acconeer developer page`: https://developer.acconeer.com/
+
+Configuration parameters
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: acconeer.exptool.configs.PowerBinServiceConfig
+   :members:
+   :inherited-members:
+   :exclude-members: State, Profile, RepetitionMode

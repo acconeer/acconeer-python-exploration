@@ -33,6 +33,9 @@ class BaseSessionConfig(cb.SensorConfig):
         label="Sensor(s)",
         default_value=[1],
         order=0,
+        help=r"""
+            The sensor(s) to be configured.
+        """,
     )
 
 
@@ -88,6 +91,23 @@ class BaseServiceConfig(BaseSessionConfig):
         default_value=RepetitionMode.HOST_DRIVEN,
         order=1010,
         category=cb.Category.ADVANCED,
+        help=r"""
+            RSS supports two different repetition modes. They determine how and when data
+            acquisition occurs. They are:
+
+            * **On demand / host driven**: The sensor produces data when requested by the
+              application. Hence, the application is responsible for timing the data acquisition.
+              This is the default mode, and may be used with lower power modes.
+
+            * **Streaming / sensor driven**: The sensor produces data at a fixed rate, given by a
+              configurable accurate hardware timer. This mode is recommended if exact timing
+              between updates is required.
+
+            Exploration Tool is capable of setting the update rate also in *on demand (host
+            driven)* mode. Thus, the difference between the modes becomes subtle. This is why *on
+            demand* and *streaming* are called *host driven* and *sensor driven* respectively in
+            Exploration Tool.
+        """,
     )
 
     update_rate = cb.FloatParameter(
@@ -115,7 +135,7 @@ class BaseServiceConfig(BaseSessionConfig):
                \frac{1}{f_f} > N_s \cdot \frac{1}{f_s} + \text{overhead*}
 
             \* *The overhead largely depends on data frame size and data transfer speeds.*
-        """
+        """,
     )
 
     gain = cb.FloatParameter(
@@ -132,6 +152,12 @@ class BaseServiceConfig(BaseSessionConfig):
             the gain higher than necessary due to signal quality reasons.
 
             Must be between 0 and 1 inclusive, where 1 is the highest possible gain.
+
+            .. note::
+               When Sensor normalization is active, the change in the data due to changing gain is
+               removed after normalization. Therefore, the data might seen unaffected by changes
+               in the gain, except very high (receiver saturation) or very low (quantization
+               error) gain.
         """,
     )
 
@@ -146,7 +172,8 @@ class BaseServiceConfig(BaseSessionConfig):
             directly in the sensor hardware - no extra computations are done in the MCU.
 
             The time needed to measure a sweep is roughly proportional to the HWAAS. Hence, if
-            there's a need to obtain a higher sweep rate, HWAAS could be decreased.
+            there's a need to obtain a higher sweep rate, HWAAS could be decreased. Note that
+            HWAAS does not affect the amount of data transmitted from the sensor over SPI.
 
             Must be at least 1 and not greater than 63.
         """,
@@ -164,6 +191,22 @@ class BaseServiceConfig(BaseSessionConfig):
         enum=Profile,
         default_value=Profile.PROFILE_2,
         order=20,
+        help=r"""
+            The main configuration of all the services are the profiles, numbered 1 to 5. The
+            difference between the profiles is the length of the radar pulse and the way the
+            incoming pulse is sampled. Profiles with low numbers use short pulses while the higher
+            profiles use longer pulses.
+
+            Profile 1 is recommended for measuring strong reflectors or distance  measurements in
+            the first couple of decimeters close to the sensor. For distance measurements at longer
+            distances profile 2 and 3 are recommended. Finally, profile 4 and 5 are designed for
+            motion or presence detection at longer distances, where an optimal signal to noise
+            ratio is preferred over an accurate distance measurement.
+
+            The previous profile Maximize Depth Resolution and Maximize SNR are now profile 1 and
+            2. The previous Direct Leakage Profile is obtained by the use of the Maximize Signal
+            Attenuation parameter.
+        """,
     )
 
     downsampling_factor = cb.IntParameter(
@@ -213,6 +256,26 @@ class BaseDenseServiceConfig(BaseServiceConfig):
         default_value=True,
         order=2010,
         category=cb.Category.ADVANCED,
+        help=r"""
+            With the SW version 2 release, a sensor signal normalization functionality is activated
+            by default for the Power Bins, Envelope, and IQ Service. This results in a more
+            constant signal for different temperatures and sensors. Applications where the
+            amplitude radar of sweeps are compared to a previously recorded signal or a threshold
+            should see a substantially increase in performance. The radar sweep are normalized to
+            have similar amplitude independent of sensor gain and hardware averaging, resulting in
+            only minor visible effect in the sweeps when adjusting these parameters.
+
+            More technically, the functionality is implemented to collect data when starting the
+            service, but not transmitting pulses. This data is then used to determine the current
+            sensitivity of receiving part of the radar by estimating the power level of the noise,
+            which then is used to normalize the collected sweeps. In the most low-power systems,
+            where a service is created to collect just a single short sweep before turning off, the
+            sensor normalization can add a non-negligible part to the power consumption.
+
+            Sensor normalization is not implemented in the Sparse service. Instead the Presence
+            detector, using data from the Sparse service, implement this functionality in as
+            similar way.
+        """,
     )
 
     def check(self):
