@@ -1582,9 +1582,14 @@ class GUI(QMainWindow):
 
         try:
             record = recording.load(filename)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
-            self.error_message("Failed to load file:\n {:s}".format(e))
+            self.error_message((
+                "Failed to load file"
+                "\n\n"
+                "Note: loading data fetched with RSS v1 is not supported. To load old data, please"
+                " use an older version of the Exploration Tool."
+            ))
             return
 
         try:
