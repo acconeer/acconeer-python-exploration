@@ -30,7 +30,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool import recording, utils
+from acconeer.exptool import configs, recording, utils
 from acconeer.exptool.modes import Mode
 
 import feature_definitions as feature_def
@@ -1273,9 +1273,9 @@ class FeatureSidePanel(QFrame):
                 self.gui_handle.load_gui_settings_from_sensor_config(conf)
                 self.gui_handle.textboxes["sweep_buffer"].setText(str(data_len))
                 self.gui_handle.buttons["replay_buffered"].setEnabled(True)
-                self.gui_handle.set_gui_state("load_state", LoadState.LOADED)
                 self.gui_handle.set_multi_sensors()
                 self.gui_handle.set_sensors(conf.sensor)
+                self.gui_handle.set_gui_state("load_state", LoadState.LOADED)
                 self.gui_handle.feature_inspect.update_frame("frames", 1, init=True)
                 self.gui_handle.feature_inspect.update_sliders()
                 print("Found data with {} sweeps and {} feature frames.".format(
@@ -1330,10 +1330,6 @@ class FeatureSidePanel(QFrame):
         }
         if "session" in action:
             record = self.gui_handle.data
-            try:
-                self.gui_handle.save_legacy_processing_config_dump_to_record(record)
-            except Exception:
-                pass
 
             self.gui_handle.ml_data.pop("sensor_config")
 
@@ -1343,7 +1339,8 @@ class FeatureSidePanel(QFrame):
                 "feature_list": self.gui_handle.ml_data["ml_frame_data"]["feature_list"],
                 "sweep_data": packed_record,
                 "frame_data": self.gui_handle.ml_data,
-                "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings()
+                "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
+                "sensor_config": record.sensor_config_dump,
             }
 
         try:
@@ -1443,17 +1440,18 @@ class FeatureSidePanel(QFrame):
                     skipped_files.append((filename, "Failed to load"))
                     continue
 
-                sweep_data = data.item()["sweep_data"]
+                sweep_data = recording.unpack(data.item()["sweep_data"])
                 frame_data = data.item()["frame_data"]
-                data_len = len(sweep_data)
+                sensor_config = data.item()["sensor_config"]
+                data_len = len(sweep_data.data.data)
 
                 if first:
                     first = False
-                    module_label = sweep_data[0]["service_type"]
-                    conf = sweep_data[0]["sensor_config"]
+                    conf = configs.load(sensor_config)
                     self.gui_handle.load_gui_settings_from_sensor_config(conf)
+                    module_info = MODULE_KEY_TO_MODULE_INFO_MAP[sweep_data.module_key]
                     index = self.gui_handle.module_dd.findText(
-                        module_label,
+                        module_info,
                         QtCore.Qt.MatchFixedString
                     )
                     if self.gui_handle.module_dd.currentIndex() == 0:
@@ -2139,6 +2137,7 @@ class TrainingSidePanel(QFrame):
         self.dropout_list.addItem("Train Loss")
         self.dropout_list.addItem("Eval. Accuracy")
         self.dropout_list.addItem("Eval. Loss")
+        self.dropout_list.setCurrentIndex(3)
 
         self.optimizer_list = QComboBox(self)
         self.optimizer_list.setStyleSheet("background-color: white")
@@ -2148,6 +2147,7 @@ class TrainingSidePanel(QFrame):
         self.optimizer_list.addItem("Adadelta")
         self.optimizer_list.addItem("RMSprop")
         self.optimizer_list.currentIndexChanged.connect(self.optimizer_learnining_rate)
+        self.optimizer_list.setCurrentIndex(1)
 
         self.radiobuttons = {
             "split": QRadioButton("Split data"),

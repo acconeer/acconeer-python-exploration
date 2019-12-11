@@ -118,7 +118,7 @@ If you modify code in those files, the changes will trickle down to the GUI once
 
 Large values for "Image history" (IQ and Envelope service) may slow down plotting severely.
 
-EXPERIMENTAL deep learning **(currently broken)**:
+EXPERIMENTAL deep learning:
 
 If you want to test our new deep learning interface please install additional requirements
 ```

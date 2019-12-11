@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 import numpy as np
 import tensorflow as tf
@@ -22,6 +23,8 @@ from keras.models import Model
 from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.utils import class_weight
+
+from acconeer.exptool import configs
 
 
 try:
@@ -318,7 +321,7 @@ class MachineLearning():
     def load_train_data(self, files, model_exists=False, load_test_data=False):
         err_tip = "<br>Try clearing training before loading more data!"
         data = []
-        configs = []
+        stored_configs = []
         feature_lists = []
         frame_settings_list = []
         feature_map_dims = []
@@ -327,7 +330,8 @@ class MachineLearning():
         for file in files:
             try:
                 file_data = np.load(file, allow_pickle=True).item()
-                configs.append(file_data["frame_data"]["sensor_config"])
+                conf = configs.load(file_data["sensor_config"])
+                stored_configs.append(conf)
                 feature_lists.append(file_data["feature_list"])
                 frame_settings_list.append(file_data["frame_settings"])
                 feature_map_dims.append(
@@ -335,6 +339,8 @@ class MachineLearning():
                 )
                 data.append(file_data)
             except Exception:
+                print("File error in:\n", file)
+                traceback.print_exc()
                 files_failed.append(file)
             else:
                 files_loaded += 1
@@ -352,7 +358,7 @@ class MachineLearning():
             self.model_params = {
                 "feature_list": feature_lists[0],
                 "frame_settings": frame_settings_list[0],
-                "sensor_config": configs[0],
+                "sensor_config": stored_configs[0],
                 "model_dimensions": self.model_dimensions,
             }
             if model_exists:
@@ -445,7 +451,7 @@ class MachineLearning():
                 "labels_dict": self.labels_dict,
                 "model_dimensions": self.model_dimensions,
                 "feature_list": feature_list,
-                "sensor_config": sensor_config,
+                "sensor_config": sensor_config._dumps(),
                 "model": self.model,
                 "frame_settings": frame_settings,
             }
@@ -466,7 +472,7 @@ class MachineLearning():
             self.model_dimensions = info.item()["model_dimensions"]
             self.label_num = self.model_dimensions["output"]
             feature_list = info.item()["feature_list"]
-            sensor_config = info.item()["sensor_config"]
+            sensor_config = configs.load(info.item()["sensor_config"])
             frame_settings = info.item()["frame_settings"]
             self.tf_session = K.get_session()
             self.tf_graph = tf.get_default_graph()
