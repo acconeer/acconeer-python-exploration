@@ -1,7 +1,7 @@
 import enum
 
 import acconeer.exptool.structs.configbase as cb
-from acconeer.exptool.modes import Mode
+from acconeer.exptool.modes import Mode, get_mode
 
 
 class ConfigEnum(enum.Enum):
@@ -12,6 +12,19 @@ class ConfigEnum(enum.Enum):
     @property
     def json_value(self):
         return self.value[1]
+
+
+class ModeParameter(cb.ConstantParameter):
+    def __init__(self, **kwargs):
+        assert isinstance(kwargs["value"], Mode)
+        kwargs.setdefault("does_dump", True)
+        super().__init__(**kwargs)
+
+    def dump(self, obj):
+        return self.__get__(obj).name
+
+    def load(self, obj, value):
+        assert get_mode(value) == self.value
 
 
 class BaseSessionConfig(cb.SensorConfig):
@@ -223,7 +236,7 @@ class BaseDenseServiceConfig(BaseServiceConfig):
 class PowerBinServiceConfig(BaseDenseServiceConfig):
     _MIN_BIN_SIZE = 0.016
 
-    mode = cb.ConstantParameter(
+    mode = ModeParameter(
         label="Mode",
         value=Mode.POWER_BINS,
     )
@@ -247,7 +260,7 @@ class PowerBinServiceConfig(BaseDenseServiceConfig):
 
 
 class EnvelopeServiceConfig(BaseDenseServiceConfig):
-    mode = cb.ConstantParameter(
+    mode = ModeParameter(
         label="Mode",
         value=Mode.ENVELOPE,
     )
@@ -269,7 +282,7 @@ class IQServiceConfig(BaseDenseServiceConfig):
         A = ("A (less correlation)", 0)
         B = ("B (more SNR)", 1)
 
-    mode = cb.ConstantParameter(
+    mode = ModeParameter(
         label="Mode",
         value=Mode.IQ,
     )
@@ -296,7 +309,7 @@ class SparseServiceConfig(BaseServiceConfig):
         A = ("A (less correlation)", 0)
         B = ("B (more SNR)", 1)
 
-    mode = cb.ConstantParameter(
+    mode = ModeParameter(
         label="Mode",
         value=Mode.SPARSE,
     )

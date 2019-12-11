@@ -8,6 +8,8 @@ from acconeer.exptool import clients, configs, modes, recording
 
 def test_recording(tmp_path):
     config = configs.EnvelopeServiceConfig()
+    config.downsampling_factor = 2
+
     mocker = clients.MockClient()
     mocker.squeeze = False
     session_info = mocker.start_session(config)
@@ -43,3 +45,5 @@ def test_recording(tmp_path):
             assert getattr(record, a.name) == getattr(loaded_record, a.name)
 
         assert np.all(record.data == loaded_record.data)
+
+    assert record.sensor_config.downsampling_factor == config.downsampling_factor
