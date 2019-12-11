@@ -7,13 +7,21 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 import numpy as np
-import pyqtgraph as pg
 import serial.tools.list_ports
-
-from PyQt5 import QtCore
 
 import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool.modes import Mode
+
+
+try:
+    import pyqtgraph as pg
+except ImportError:
+    pg = None
+
+try:
+    from PyQt5 import QtCore
+except ImportError:
+    QtCore = None
 
 
 class ExampleArgumentParser(ArgumentParser):
