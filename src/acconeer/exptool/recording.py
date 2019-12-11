@@ -52,9 +52,7 @@ class Record:
 
     @property
     def sensor_config(self):
-        config = configs.MODE_TO_CONFIG_CLASS_MAP[self.mode]()
-        config._loads(self.sensor_config_dump)
-        return config
+        return configs.load(self.sensor_config_dump, self.mode)
 
 
 class Recorder:

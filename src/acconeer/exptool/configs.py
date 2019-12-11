@@ -1,4 +1,5 @@
 import enum
+import json
 
 import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool.modes import Mode, get_mode
@@ -405,3 +406,13 @@ MODE_TO_CONFIG_CLASS_MAP = {
     Mode.IQ: IQServiceConfig,
     Mode.SPARSE: SparseServiceConfig,
 }
+
+
+def load(dump, mode=None):
+    if mode is None:
+        mode = json.loads(dump)["mode"]
+
+    mode = get_mode(mode)
+    config = MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config._loads(dump)
+    return config
