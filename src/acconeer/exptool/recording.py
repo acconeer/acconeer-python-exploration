@@ -95,7 +95,13 @@ class Recorder:
 
         self.record.data = []
 
-    def sample(self, data_info: list, data: np.ndarray):  # should be unsqueezed
+    def sample(self, data_info: list, data: np.ndarray):
+        expected_num_dims = 3 if self.record.mode == modes.Mode.SPARSE else 2
+        if data.ndim != expected_num_dims:  # then assume data is squeezed
+            # unsqueeze (add back sensor dim)
+            data = data[None, ...]
+            data_info = [data_info]
+
         self.record.data.append(data.copy())
         self.record.data_info.append(copy.deepcopy(data_info))
 
@@ -105,6 +111,7 @@ class Recorder:
 
     def close(self):
         self.record.data = np.array(self.record.data)
+        return self.record
 
 
 def save(filename: str, record: Record):
