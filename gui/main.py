@@ -1617,9 +1617,10 @@ class GUI(QMainWindow):
         sensor_config = self.get_sensor_config()
         sensor_config._loads(record.sensor_config_dump)
 
-        self.set_gui_state("load_state", LoadState.LOADED)
+        # Order is important for the following 3 calls
         self.set_multi_sensors()
         self.set_sensors(sensor_config.sensor)
+        self.set_gui_state("load_state", LoadState.LOADED)
 
         if has_loaded_module:
             processing_config = self.get_processing_config()
