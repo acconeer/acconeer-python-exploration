@@ -21,7 +21,7 @@ class LinkError(ClientError):
 
 
 class BaseLink(metaclass=ABCMeta):
-    DEFAULT_TIMEOUT = 3
+    DEFAULT_TIMEOUT = 2
 
     @abstractmethod
     def __init__(self):
@@ -118,8 +118,6 @@ class SocketLink(BaseLink):
 
 
 class BaseSerialLink(BaseLink):
-    DEFAULT_TIMEOUT = 2
-
     def __init__(self, baudrate=115200):
         super().__init__()
         self._timeout = self.DEFAULT_TIMEOUT
