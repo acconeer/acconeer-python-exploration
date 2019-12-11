@@ -1413,13 +1413,17 @@ class GUI(QMainWindow):
 
             try:
                 info = self.client.connect()
-            except Exception as e:
-                err_message = "Could not connect to server!<br>{}".format(e)
-                if type(e).__name__ == "SerialException":
-                    err_message = "Did you select the right COM port?<br>"
-                    err_message += "Try unplugging and plugging back in the module!<br>"
-                    err_message += "{}".format(e)
-                self.error_message(err_message)
+            except Exception:
+                text = "Could not connect to server"
+                info_text = None
+
+                if isinstance(self.client, clients.UARTClient):
+                    info_text = (
+                        "Did you select the right COM port?"
+                        " Try unplugging and plugging back in the module!"
+                    )
+
+                self.error_message(text, info_text=info_text)
                 return
 
             self.rss_version = info.get("version_str", None)
