@@ -33,13 +33,6 @@ MODE_INFOS = {
     Mode.SPARSE: ModeInfo(True, 2),
 }
 
-Product = namedtuple("Product", ["name", "id", "baudrate"])
-
-PRODUCTS = [
-    Product("XM112", 0xACC0, 3000000),
-    Product("XM122", 0xACC1, 1000000),
-]
-
 
 class RegBaseClient(BaseClient):
     _STATUS_TIMEOUT = 3.0
@@ -184,7 +177,7 @@ class UARTClient(RegBaseClient):
             except links.LinkError as e:
                 raise ClientError("could not connect, no response") from e
         else:
-            baudrates = [product.baudrate for product in PRODUCTS]
+            baudrates = [int(3e6), int(1e6)]
             baudrates.append(self.DEFAULT_BASE_BAUDRATE)
             baudrates = sorted(list(set(baudrates)))
 
@@ -206,16 +199,15 @@ class UARTClient(RegBaseClient):
             else:
                 raise ClientError("could not connect, no response")
 
-            product_id = self._read_reg("product_identification")
-            product = {product.id: product for product in PRODUCTS}[product_id]
+            product_max_baudrate = self._read_reg("product_max_uart_baudrate")
 
-            if baudrate != product.baudrate:
-                log.debug("switching to {} baud...".format(product.baudrate))
-                self._write_reg("uart_baudrate", product.baudrate)
-                self._link.baudrate = product.baudrate
+            if baudrate != product_max_baudrate:
+                log.debug("switching to {} baud...".format(product_max_baudrate))
+                self._write_reg("uart_baudrate", product_max_baudrate)
+                self._link.baudrate = product_max_baudrate
                 sleep(0.2)
                 self._handshake()
-                log.debug("handshake succeeded at {} baud".format(product.baudrate))
+                log.debug("handshake succeeded at {} baud".format(product_max_baudrate))
 
         self._link.timeout = self._link.DEFAULT_TIMEOUT
 
@@ -408,11 +400,6 @@ class UARTClient(RegBaseClient):
         exp_frame = protocol.insert_packet_into_frame(exp_packet)
         self._link.recv_until(exp_frame)
 
-        idn_reg = self._read_reg("product_identification")
-        possible_ids = [product.id for product in PRODUCTS]
-        if idn_reg not in possible_ids:
-            raise ClientError("unexpected product id")
-
 
 class SPIClient(RegBaseClient):
     def __init__(self, **kwargs):
@@ -433,11 +420,6 @@ class SPIClient(RegBaseClient):
         self.__cmd_proc("connect")
 
         log.debug("connected")
-
-        idn_reg = self._read_reg("product_identification")
-        possible_ids = [product.id for product in PRODUCTS]
-        if idn_reg not in possible_ids:
-            raise ClientError("unexpected product id")
 
         version_buffer = self._read_main_buffer()
         version_info = decode_version_buffer(version_buffer)
