@@ -31,6 +31,22 @@ def _limits_for_qt(set_limits):
     return limits
 
 
+def try_rst_to_html(s):
+    try:
+        return rst_to_html(s)
+    except Exception:
+        return s
+
+
+def rst_to_html(s):
+    import re
+    from docutils.core import publish_parts
+
+    s = re.sub(r":ref:`([\s\S]+?)\s*<([\s\S]+)>`", r"\1", s, re.MULTILINE)
+    parts = publish_parts(s, writer_name="html")
+    return parts["body"]
+
+
 def wrap_qwidget(cls):
     class QWidgetWrapper(cls):
         def __init__(self, *args, **kwargs):
@@ -83,6 +99,7 @@ class PidgetStub(Pidget):
 
         doc = param.generate_doc()
         if doc:
+            doc = try_rst_to_html(doc)
             self.setToolTip(doc)
 
         self.layout = QVBoxLayout(self)

@@ -10,3 +10,4 @@ h5py
 Flask
 pyyaml
 attrs
+docutils
