@@ -356,6 +356,7 @@ class FeatureSparseFFT:
             ("Start", 0.2, [0.06, 7], float),
             ("Stop", 0.4, [0.06, 7], float),
             ("High pass", 1, [0, 1], float),
+            ("Flip", True, None, bool),
         ]
         self.fft = None
         self.noise_floor = None
@@ -397,6 +398,7 @@ class FeatureSparseFFT:
 
         freq_bins = fft_psd.shape[0]
         freq_cutoff = int(high_pass * freq_bins)
+        freq_cutoff_flipped = int((1.0 - high_pass) * freq_bins)
 
         if self.fft is None:
             self.fft = np.zeros((num_sensors, freq_bins, win_len))
@@ -410,11 +412,17 @@ class FeatureSparseFFT:
 
         fft_psd /= self.noise_floor[sensor_idx]
         self.fft[sensor_idx, :, :] = np.roll(self.fft[sensor_idx, :, :], 1, axis=1)
-        self.fft[sensor_idx, :, 0] = fft_psd
 
-        data = {
-            "fft": self.fft[sensor_idx, 0:freq_cutoff, :],
-        }
+        if options["Flip"] and not np.mod(sensor_idx, 2):
+            self.fft[sensor_idx, :, 0] = np.flip(fft_psd, 0)
+            data = {
+                "fft": self.fft[sensor_idx, freq_cutoff_flipped:, :],
+            }
+        else:
+            self.fft[sensor_idx, :, 0] = fft_psd
+            data = {
+                "fft": self.fft[sensor_idx, 0:freq_cutoff+1, :],
+            }
 
         return data
 
@@ -429,7 +437,7 @@ class FeatureSparseFFT:
         except Exception as e:
             print("Failed to calculate feature hight!\n ", e)
             return 1
-        return int(size)
+        return size + 1
 
 
 class FeatureSparsePresence:

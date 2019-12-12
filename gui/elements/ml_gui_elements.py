@@ -44,7 +44,10 @@ class FeatureSelectFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
         super().__init__()
         self.styles = GUI_Styles()
-        self.nr_col = 13
+        self.param_col = 2
+        self.sensor_col = self.param_col + 2
+        self.remove_col = self.sensor_col + 2
+        self.nr_col = self.remove_col + 1
         self.row_idx = Count(2)
         self.gui_handle = gui_handle
         self.has_valid_config = False
@@ -98,12 +101,13 @@ class FeatureSelectFrame(QFrame):
 
     def create_grid(self):
         self._layout.addWidget(QLabel("Feature"), 0, 0)
-        self._layout.addWidget(QLabel("Parameters"), 0, 2, 1, 9)
-        self._layout.addWidget(QLabel("Sensors"), 0, 10)
+        self._layout.addWidget(QLabel("Parameters"), 0, self.param_col)
+        self._layout.addWidget(QLabel("Sensors"), 0, self.sensor_col)
         self._layout.addWidget(QHLine(), 1, 0, 1, self.nr_col)
         self.name_vline = QVLine()
         self.params_vline = QVLine()
         self.sensor_vline = QVLine()
+        self.remove_vline = QVLine()
         self.error_text = QLabel("")
         self.error_text.setStyleSheet("QLabel {color: red}")
 
@@ -112,6 +116,20 @@ class FeatureSelectFrame(QFrame):
             "stop": QPushButton("Stop", self),
             "replay_buffered": QPushButton("Replay buffered", self),
         }
+
+        self.drop_down = QComboBox(self)
+        self.drop_down.setStyleSheet("background-color: white")
+        self.drop_down.addItem("Add feature")
+
+        self.bottom_widget = QWidget(self)
+        bottom_box = QHBoxLayout()
+        bottom_box.setAlignment(QtCore.Qt.AlignLeft)
+        self.bottom_widget.setLayout(bottom_box)
+        bottom_box.addWidget(self.drop_down)
+        bottom_box.addWidget(self.buttons["start"])
+        bottom_box.addWidget(self.buttons["stop"])
+        bottom_box.addWidget(self.buttons["replay_buffered"])
+        bottom_box.addWidget(self.error_text)
 
         for b in self.buttons:
             button = self.buttons[b]
@@ -123,25 +141,21 @@ class FeatureSelectFrame(QFrame):
             self._layout.removeWidget(self.name_vline)
             self._layout.removeWidget(self.params_vline)
             self._layout.removeWidget(self.sensor_vline)
-            self._layout.removeWidget(self.drop_down)
-            self._layout.removeWidget(self.error_text)
-            for b in self.buttons:
-                self._layout.removeWidget(self.button[b])
+            self._layout.removeWidget(self.remove_vline)
+            self._layout.removeWidget(self.bottom_widget)
         except Exception:
             pass
 
         self._layout.addWidget(self.name_vline, 0, 1, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.params_vline, 0, 9, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.sensor_vline, 0, 11, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.drop_down, self.row_idx.pre_incr(), 0, 1, 4)
-        self._layout.addWidget(self.buttons["start"], self.row_idx.val, 4)
-        self._layout.addWidget(self.buttons["stop"], self.row_idx.val, 5)
-        self._layout.addWidget(self.buttons["replay_buffered"], self.row_idx.val, 6)
-        self._layout.addWidget(self.error_text, self.row_idx.val, 7, 1, self.nr_col - 7)
+        self._layout.addWidget(self.params_vline, 0, self.param_col + 1, self.row_idx.val + 1, 1)
+        self._layout.addWidget(self.sensor_vline, 0, self.sensor_col + 1, self.row_idx.val + 1, 1)
+        self._layout.addWidget(self.remove_vline, 0, self.remove_col + 1, self.row_idx.val + 1, 1)
+        self._layout.addWidget(self.bottom_widget, self.row_idx.val + 1, 0, 1, self.nr_col)
 
         self.drop_down.setCurrentIndex(0)
 
         self._layout.setRowStretch(self.row_idx.val + 2, 1)
+        self._layout.setColumnStretch(self.nr_col, 1)
 
         self.update_feature_plot()
 
@@ -176,14 +190,10 @@ class FeatureSelectFrame(QFrame):
             except Exception as e:
                 print("Failed to add feature!\n", e)
 
-        self.drop_down = QComboBox(self)
-        self.drop_down.setStyleSheet("background-color: white")
-        self.drop_down.addItem("Add feature")
         for key in self.feature_list:
             self.drop_down.addItem(self.feature_list[key]["name"])
 
         self.drop_down.currentIndexChanged.connect(self.add_features_details)
-        self._layout.addWidget(self.drop_down, 2, 0, 1, 6)
 
     def add_features_details(self, data, key=None):
         if not key:
@@ -221,7 +231,7 @@ class FeatureSelectFrame(QFrame):
         textboxes = {}
 
         self.num = 0
-        row = self.row_idx.val
+        row = self.row_idx.pre_incr()
 
         other_items = []
         other_items.append(QLabel(name))
@@ -229,17 +239,28 @@ class FeatureSelectFrame(QFrame):
         c = utils.color_cycler(self.enabled_count.pre_incr())
         other_items[0].setStyleSheet("background-color: {}".format(c))
 
+        options_widget = QWidget(self)
+        options_box = QHBoxLayout()
+        options_box.setAlignment(QtCore.Qt.AlignLeft)
+        options_widget.setLayout(options_box)
+        self._layout.addWidget(options_widget, row, self.param_col)
         options = {}
         for (text, value, limits, data_type) in opts:
             labels[text] = QLabel(text)
-            textboxes[text] = QLineEdit(str(value))
-            textboxes[text].setStyleSheet("background-color: white")
-            textboxes[text].editingFinished.connect(
+            if data_type == bool:
+                textboxes[text] = QCheckBox(self)
+                textboxes[text].setChecked(value)
+                edit = textboxes[text].stateChanged
+            else:
+                textboxes[text] = QLineEdit(str(value))
+                textboxes[text].setStyleSheet("background-color: white")
+                edit = textboxes[text].editingFinished
+            edit.connect(
                 partial(self.update_feature_params, limits, data_type, value)
             )
             options[text] = textboxes[text]
-            self._layout.addWidget(labels[text], row, self.increment())
-            self._layout.addWidget(textboxes[text], row, self.increment())
+            options_box.addWidget(labels[text])
+            options_box.addWidget(textboxes[text])
 
         sensors = SensorSelection(
             multi_sensors=True,
@@ -253,25 +274,30 @@ class FeatureSelectFrame(QFrame):
             pass
         sensors.set_sensors(available_sensors)
 
-        self._layout.addWidget(sensors, row, 10)
+        self._layout.addWidget(sensors, row, self.sensor_col)
 
         c_button = QPushButton("remove", self)
         c_button.setStyleSheet(self.styles.get_button_style())
         c_button.clicked.connect(self.remove_feature)
 
-        self._layout.addWidget(c_button, row, 12)
+        self._layout.addWidget(c_button, row, self.remove_col)
 
-        self.num = -1
         row = self.row_idx.pre_incr()
 
-        out_data = {}
         other_items.append(QLabel("Output [{}D]".format(model)))
-        self._layout.addWidget(other_items[1], row, self.increment())
-        for o in output:
+        self._layout.addWidget(other_items[1], row, 0)
+
+        output_widget = QWidget(self)
+        output_box = QHBoxLayout()
+        output_box.setAlignment(QtCore.Qt.AlignLeft)
+        output_widget.setLayout(output_box)
+        self._layout.addWidget(output_widget, row, self.param_col)
+        out_data = {}
+        for idx, o in enumerate(output):
             out_data[o] = QCheckBox(output[o], self)
             out_data[o].stateChanged.connect(self.update_feature_plot)
-            self._layout.addWidget(out_data[o], row, self.increment())
-            if self.num == 3:
+            output_box.addWidget(out_data[o])
+            if idx == 0:
                 out_data[o].setChecked(True)
             if len(output) == 1:
                 out_data[o].setVisible(False)
@@ -293,7 +319,11 @@ class FeatureSelectFrame(QFrame):
             "count": self.enabled_count.val,
             "size_cb": size_cb,
             "model_dimension": model,
-            "sensor_data_type": sensor_data_type
+            "sensor_data_type": sensor_data_type,
+            "options_box": options_box,
+            "options_widget": options_widget,
+            "output_box": output_box,
+            "output_widget": output_widget,
         }
 
         self.enabled_features.append(feature_params)
@@ -316,19 +346,23 @@ class FeatureSelectFrame(QFrame):
                 if idx < lpos:
                     continue
 
+                options_widgets = []
+                output_widgets = []
                 widgets = []
                 widgets.append(feature["sensors"])
                 widgets.append(feature["c_button"])
+                widgets.append(feature["options_widget"])
+                widgets.append(feature["output_widget"])
 
                 for i in feature["other_items"]:
                     widgets.append(i)
 
                 for key in feature["textboxes"]:
-                    widgets.append(feature["textboxes"][key])
-                    widgets.append(feature["labels"][key])
+                    options_widgets.append(feature["textboxes"][key])
+                    options_widgets.append(feature["labels"][key])
 
                 for key in feature["output"]:
-                    widgets.append(feature["output"][key])
+                    output_widgets.append(feature["output"][key])
 
                 if idx == lpos:
                     for w in widgets:
@@ -343,7 +377,7 @@ class FeatureSelectFrame(QFrame):
                         self._layout.addWidget(w, pos[0] - 3, pos[1], pos[2], pos[3])
 
             pop_list.append(lpos)
-            self.row_idx.decr(val=4)
+            self.row_idx.decr(val=3)
             if len(pop_list) == len(self.enabled_features):
                 self.row_idx.set_val(1)
 
@@ -382,7 +416,10 @@ class FeatureSelectFrame(QFrame):
             if feat["options"] is not None:
                 for opt in feat["options"]:
                     opt_cb = feat["options"][opt]
-                    entry["options"][opt] = float(opt_cb.text())
+                    if isinstance(opt_cb, QtWidgets.QCheckBox):
+                        entry["options"][opt] = opt_cb.isChecked()
+                    else:
+                        entry["options"][opt] = float(opt_cb.text())
                     if opt == "Start":
                         start = float(opt_cb.text())
                         if start < min_start:
@@ -450,7 +487,8 @@ class FeatureSelectFrame(QFrame):
                             if opt in ["sensor_config", "session_info"]:
                                 continue
                             opt_textbox = e_feat["options"][opt]
-                            opt_textbox.setText(str(feature["options"][opt]))
+                            if not isinstance(opt_textbox, QtWidgets.QCheckBox):
+                                opt_textbox.setText(str(feature["options"][opt]))
 
                     if feature["output"] is not None:
                         for out in feature["output"]:
@@ -620,24 +658,25 @@ class FeatureSelectFrame(QFrame):
         self.main.addWidget(win)
 
     def update_feature_params(self, limits, data_type, default):
-        out_of_limits = False
-        val = -1
-        try:
-            val = data_type(self.sender().text())
-        except Exception:
-            out_of_limits = True
+        if data_type != bool:
+            out_of_limits = False
+            val = -1
+            try:
+                val = data_type(self.sender().text())
+            except Exception:
+                out_of_limits = True
 
-        if limits is not None:
-            if isinstance(limits, list) and len(limits) == 2:
-                if val < limits[0]:
-                    val = limits[0]
-                    out_of_limits = True
-                if val > limits[1]:
-                    val = limits[1]
-                    out_of_limits = True
+            if limits is not None:
+                if isinstance(limits, list) and len(limits) == 2:
+                    if val < limits[0]:
+                        val = limits[0]
+                        out_of_limits = True
+                    if val > limits[1]:
+                        val = limits[1]
+                        out_of_limits = True
 
-        if out_of_limits:
-            self.sender().setText(str(default))
+            if out_of_limits:
+                self.sender().setText(str(default))
 
         self.update_feature_plot()
         return
@@ -1451,7 +1490,7 @@ class FeatureSidePanel(QFrame):
                     self.gui_handle.load_gui_settings_from_sensor_config(conf)
                     module_info = MODULE_KEY_TO_MODULE_INFO_MAP[sweep_data.module_key]
                     index = self.gui_handle.module_dd.findText(
-                        module_info,
+                        module_info.label,
                         QtCore.Qt.MatchFixedString
                     )
                     if self.gui_handle.module_dd.currentIndex() == 0:
