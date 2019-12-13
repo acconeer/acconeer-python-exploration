@@ -3,9 +3,6 @@
 Presence detection (sparse)
 ===========================
 
-.. warning::
-   The nomenclature currently differs between the Acconeer SDK and Exploration tool due to backwards compatibility reasons. In the Exploration code base, **frames** are referred to as **sweeps** and **sweeps** are referred to as **subsweeps**. Using frames and sweep is preferred, and will switched to in Exploration v3. Throughout this guide, we use the preferred nomenclature.
-
 This is a presence detection algorithm built on top of the :ref:`sparse-service` service -- based on measuring changes in the radar response over time. The algorithm has two main parts which are weighed together:
 
 Inter-frame deviation -- detecting (slower) movements *between* frames
