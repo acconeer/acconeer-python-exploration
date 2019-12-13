@@ -250,7 +250,7 @@ class UARTClient(RegBaseClient):
             try:
                 reg = regmap.get_reg(addr, self._mode)
                 val = reg.decode(enc_val)
-            except protocol.ProtocolError:
+            except (protocol.ProtocolError, ValueError):
                 log.info("got unknown reg val in result info")
                 log.info("addr: {}, value: {}".format(addr, fmt_enc_val(enc_val)))
             else:
