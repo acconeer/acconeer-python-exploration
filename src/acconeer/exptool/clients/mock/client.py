@@ -26,7 +26,10 @@ class MockClient(BaseClient):
         super().__init__(**kwargs)
 
     def _connect(self):
-        return decode_version_str(SDK_VERSION)
+        info = {}
+        info.update(decode_version_str(SDK_VERSION))
+        info["mock"] = True
+        return info
 
     def _setup_session(self, config):
         self._config = config

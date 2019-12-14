@@ -27,15 +27,16 @@ class BaseClient(abc.ABC):
         if info is None:
             info = {}
 
-        try:
-            log.info("reported version: {}".format(info["version_str"]))
+        if not info.get("mock"):
+            try:
+                log.info("reported version: {}".format(info["version_str"]))
 
-            if info["strict_version"] < StrictVersion(SDK_VERSION):
-                log.warning("old server version - please upgrade server")
-            elif info["strict_version"] > StrictVersion(SDK_VERSION):
-                log.warning("new server version - please upgrade client")
-        except KeyError:
-            log.warning("could not read software version (might be too old)")
+                if info["strict_version"] < StrictVersion(SDK_VERSION):
+                    log.warning("old server version - please upgrade server")
+                elif info["strict_version"] > StrictVersion(SDK_VERSION):
+                    log.warning("new server version - please upgrade client")
+            except KeyError:
+                log.warning("could not read software version (might be too old)")
 
         return info
 
