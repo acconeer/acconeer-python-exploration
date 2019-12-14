@@ -493,8 +493,10 @@ class Config:
 
     @_state.setter
     def _state(self, state):
+        state_changed = self.__state != state
         self.__state = state
-        self._update_pidgets()
+        if state_changed:
+            self._update_pidgets()
 
     def check(self):
         return []
