@@ -69,6 +69,7 @@ class PGUpdater:
                 plot = win.addPlot(title="Sensor {}".format(sensor_id))
             else:
                 plot = win.addPlot()
+            plot.setMenuEnabled(False)
             plot.showGrid(x=True, y=True)
             plot.setLabel("bottom", "Depth (m)")
             plot.setLabel("left", "Amplitude")

@@ -425,6 +425,7 @@ class PGUpdater:
             col=0,
             title="Frame (blue), fast (orange), and slow (green)",
         )
+        self.data_plot.setMenuEnabled(False)
         self.data_plot.showGrid(x=True, y=True)
         self.data_plot.setLabel("bottom", "Depth (m)")
         self.data_plot.setLabel("left", "Amplitude")
@@ -453,6 +454,7 @@ class PGUpdater:
             col=0,
             title="Noise",
         )
+        self.noise_plot.setMenuEnabled(False)
         self.noise_plot.showGrid(x=True, y=True)
         self.noise_plot.setLabel("bottom", "Depth (m)")
         self.noise_plot.setLabel("left", "Amplitude")
@@ -466,6 +468,7 @@ class PGUpdater:
             col=0,
             title="Depthwise presence",
         )
+        self.move_plot.setMenuEnabled(False)
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Depth (m)")
         self.move_plot.setLabel("left", "Norm. ampl.")
@@ -502,6 +505,7 @@ class PGUpdater:
         # Presence history plot
 
         self.move_hist_plot = pg.PlotItem(title="Presence history")
+        self.move_hist_plot.setMenuEnabled(False)
         self.move_hist_plot.showGrid(x=True, y=True)
         self.move_hist_plot.setLabel("bottom", "Time (s)")
         self.move_hist_plot.setLabel("left", "Score (limited to {})".format(OUTPUT_MAX))

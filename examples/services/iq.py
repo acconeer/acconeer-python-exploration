@@ -60,11 +60,13 @@ class PGUpdater:
         win.setWindowTitle("Acconeer IQ example")
 
         self.ampl_plot = win.addPlot()
+        self.ampl_plot.setMenuEnabled(False)
         self.ampl_plot.showGrid(x=True, y=True)
         self.ampl_plot.setLabel("bottom", "Depth (m)")
         self.ampl_plot.setLabel("left", "Amplitude")
         win.nextRow()
         self.phase_plot = win.addPlot()
+        self.phase_plot.setMenuEnabled(False)
         self.phase_plot.showGrid(x=True, y=True)
         self.phase_plot.setLabel("bottom", "Depth (m)")
         self.phase_plot.setLabel("left", "Phase")

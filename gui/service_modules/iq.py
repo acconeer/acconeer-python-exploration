@@ -105,6 +105,7 @@ class PGUpdater:
         num_sensors = len(self.sensor_config.sensor)
 
         self.ampl_plot = win.addPlot(row=0, col=0, colspan=num_sensors)
+        self.ampl_plot.setMenuEnabled(False)
         self.ampl_plot.showGrid(x=True, y=True)
         self.ampl_plot.setLabel("bottom", "Depth (m)")
         self.ampl_plot.setLabel("left", "Amplitude")
@@ -112,6 +113,7 @@ class PGUpdater:
         self.ampl_plot.addLegend(offset=(-10, 10))
 
         self.phase_plot = win.addPlot(row=1, col=0, colspan=num_sensors)
+        self.phase_plot.setMenuEnabled(False)
         self.phase_plot.showGrid(x=True, y=True)
         self.phase_plot.setLabel("bottom", "Depth (m)")
         self.phase_plot.setLabel("left", "Phase")
@@ -142,6 +144,7 @@ class PGUpdater:
         for i, sensor_id in enumerate(self.sensor_config.sensor):
             title = None if is_single_sensor else "Sensor {}".format(sensor_id)
             plot = win.addPlot(row=2, col=i, title=title)
+            plot.setMenuEnabled(False)
             plot.setLabel("bottom", xlabel)
             plot.setLabel("left", "Depth (m)")
             im = pg.ImageItem(autoDownsample=True)

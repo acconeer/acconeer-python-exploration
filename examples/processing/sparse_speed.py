@@ -285,6 +285,7 @@ class PGUpdater:
         for i in range(self.num_depths):
             title = "{:.0f} cm".format(100 * self.depths[i])
             plot = win.addPlot(row=0, col=i, title=title)
+            plot.setMenuEnabled(False)
             plot.showGrid(x=True, y=True)
             plot.setYRange(0, 2**16)
             plot.hideAxis("left")
@@ -297,6 +298,7 @@ class PGUpdater:
         # Spectral density plot
 
         self.sd_plot = win.addPlot(row=1, col=0, colspan=self.num_depths)
+        self.sd_plot.setMenuEnabled(False)
         self.sd_plot.setLabel("left", "Normalized PSD (dB)")
         self.sd_plot.showGrid(x=True, y=True)
         self.sd_curve = self.sd_plot.plot(pen=utils.pg_pen_cycler())
@@ -314,6 +316,7 @@ class PGUpdater:
         # Rolling speed plot
 
         self.vel_plot = pg.PlotItem()
+        self.vel_plot.setMenuEnabled(False)
         self.vel_plot.setLabel("bottom", "Time (s)")
         self.vel_plot.showGrid(x=True, y=True)
         self.vel_plot.setXRange(-EST_VEL_HISTORY_LENGTH, 0)
@@ -329,6 +332,7 @@ class PGUpdater:
         # Sequence speed plot
 
         self.sequences_plot = pg.PlotItem()
+        self.sequences_plot.setMenuEnabled(False)
         self.sequences_plot.setLabel("bottom", "History")
         self.sequences_plot.showGrid(y=True)
         self.sequences_plot.setXRange(-NUM_SAVED_SEQUENCES + 0.5, 0.5)

@@ -234,6 +234,7 @@ class PGUpdater:
         dashed_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
 
         self.sign_hist_plot = win.addPlot(title="Signal history")
+        self.sign_hist_plot.setMenuEnabled(False)
         self.sign_hist_plot.addLegend()
         self.sign_hist_plot.showGrid(x=True, y=True)
         self.sign_hist_plot.setLabel("bottom", "Time (s)")
@@ -251,6 +252,7 @@ class PGUpdater:
         win.nextRow()
 
         self.rel_dev_hist_plot = win.addPlot(title="Relative deviation history")
+        self.rel_dev_hist_plot.setMenuEnabled(False)
         self.rel_dev_hist_plot.showGrid(x=True, y=True)
         self.rel_dev_hist_plot.setLabel("bottom", "Time (s)")
         self.rel_dev_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)

@@ -125,6 +125,7 @@ class PGUpdater:
         for i in range(self.depths.size):
             title = "{:.0f} cm".format(100 * self.depths[i])
             plot = win.addPlot(row=0, col=i, title=title)
+            plot.setMenuEnabled(False)
             plot.showGrid(x=True, y=True)
             plot.setYRange(0, 2**16)
             plot.hideAxis("left")
@@ -135,6 +136,7 @@ class PGUpdater:
             self.curves.append(curve)
 
         self.ft_plot = win.addPlot(row=1, col=0, colspan=self.depths.size)
+        self.ft_plot.setMenuEnabled(False)
         self.ft_im = pg.ImageItem(autoDownsample=True)
         self.ft_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
         self.ft_plot.addItem(self.ft_im)

@@ -56,6 +56,7 @@ class PGUpdater:
         win.setWindowTitle("Acconeer power bins example")
 
         self.plot = win.addPlot()
+        self.plot.setMenuEnabled(False)
         self.plot.showGrid(x=True, y=True)
         self.plot.setLabel("bottom", "Depth (m)")
         self.plot.setLabel("left", "Amplitude")

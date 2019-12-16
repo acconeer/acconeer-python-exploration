@@ -64,6 +64,7 @@ class PGUpdater:
         bin_width = 0.8 * length / num_depths
 
         self.plot = win.addPlot()
+        self.plot.setMenuEnabled(False)
         self.plot.showGrid(x=True, y=True)
         self.plot.setLabel("bottom", "Depth (m)")
         self.plot.setLabel("left", "Amplitude")

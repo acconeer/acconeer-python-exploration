@@ -347,6 +347,7 @@ class PGUpdater:
         phi_title = "Breathing motion (detection range: {} m to {} m)" \
                     .format(*self.config.range_interval)
         self.phi_plot = win.addPlot(title=phi_title)
+        self.phi_plot.setMenuEnabled(False)
         self.phi_plot.showGrid(x=True, y=True)
         self.phi_plot.setLabel("left", "Amplitude")
         self.phi_plot.setLabel("bottom", "Samples")
@@ -363,6 +364,7 @@ class PGUpdater:
         win.nextRow()
 
         self.spect_plot = win.addPlot(title="Power spectrum")
+        self.spect_plot.setMenuEnabled(False)
         self.spect_plot.showGrid(x=True, y=True)
         self.spect_plot.setLabel("left", "Power")
         self.spect_plot.setLabel("bottom", "Frequency (Hz)")
@@ -380,6 +382,7 @@ class PGUpdater:
 
         win.nextRow()
         self.fest_plot = win.addPlot(title="Breathing estimation history")
+        self.fest_plot.setMenuEnabled(False)
         self.fest_plot.showGrid(x=True, y=True)
         self.fest_plot.setLabel("left", "Frequency (Hz)")
         self.fest_plot.setLabel("bottom", "Samples")

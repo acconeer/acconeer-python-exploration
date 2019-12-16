@@ -140,6 +140,7 @@ class PGUpdater:
         win.setWindowTitle("Acconeer phase tracking example")
 
         self.abs_plot = win.addPlot(row=0, col=0)
+        self.abs_plot.setMenuEnabled(False)
         self.abs_plot.showGrid(x=True, y=True)
         self.abs_plot.setLabel("left", "Amplitude")
         self.abs_plot.setLabel("bottom", "Depth (m)")
@@ -150,6 +151,7 @@ class PGUpdater:
         self.abs_plot.addItem(self.abs_inf_line)
 
         self.arg_plot = win.addPlot(row=1, col=0)
+        self.arg_plot.setMenuEnabled(False)
         self.arg_plot.showGrid(x=True, y=True)
         self.arg_plot.setLabel("bottom", "Depth (m)")
         self.arg_plot.setLabel("left", "Phase")
@@ -160,12 +162,14 @@ class PGUpdater:
         self.arg_plot.addItem(self.arg_inf_line)
 
         self.iq_plot = win.addPlot(row=1, col=1, title="IQ at line")
+        self.iq_plot.setMenuEnabled(False)
         utils.pg_setup_polar_plot(self.iq_plot, 1)
         self.iq_curve = self.iq_plot.plot(pen=utils.pg_pen_cycler())
         self.iq_scatter = pg.ScatterPlotItem(brush=pg.mkBrush(utils.color_cycler()), size=15)
         self.iq_plot.addItem(self.iq_scatter)
 
         self.hist_plot = win.addPlot(row=0, col=1, colspan=2)
+        self.hist_plot.setMenuEnabled(False)
         self.hist_plot.showGrid(x=True, y=True)
         self.hist_plot.setLabel("bottom", "Time (s)")
         self.hist_plot.setLabel("left", "Tracking (mm)")
@@ -173,6 +177,7 @@ class PGUpdater:
         self.hist_plot.setYRange(-5, 5)
 
         self.hist_zoom_plot = win.addPlot(row=1, col=2)
+        self.hist_zoom_plot.setMenuEnabled(False)
         self.hist_zoom_plot.showGrid(x=True, y=True)
         self.hist_zoom_plot.setLabel("bottom", "Time (s)")
         self.hist_zoom_plot.setLabel("left", "Tracking (mm)")

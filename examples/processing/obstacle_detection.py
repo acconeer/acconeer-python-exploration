@@ -670,6 +670,7 @@ class PGUpdater:
 
         row_idx = 0
         self.env_ax = win.addPlot(row=row_idx, col=0, colspan=4, title="Envelope and max FFT")
+        self.env_ax.setMenuEnabled(False)
         self.env_ax.setLabel("bottom", "Depth (cm)")
         self.env_ax.setXRange(*(self.sensor_config.range_interval * 100))
         self.env_ax.showGrid(True, True)
@@ -691,6 +692,7 @@ class PGUpdater:
 
         self.obstacle_ax = win.addPlot(row=row_idx, col=0, colspan=self.num_hist_plots,
                                        title="Obstacle map")
+        self.obstacle_ax.setMenuEnabled(False)
         self.obstacle_im = pg.ImageItem()
         self.obstacle_ax.setLabel("bottom", "Velocity (cm/s)")
         self.obstacle_ax.setLabel("left", "Distance (cm)")
@@ -718,6 +720,7 @@ class PGUpdater:
         if self.advanced_plots["background_map"]:
             self.obstacle_bg_ax = win.addPlot(
                 row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle background")
+            self.obstacle_bg_ax.setMenuEnabled(False)
             self.obstacle_bg_im = pg.ImageItem()
             self.obstacle_bg_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_bg_ax.setLabel("left", "Distance (cm)")
@@ -728,6 +731,7 @@ class PGUpdater:
         if self.advanced_plots["threshold_map"]:
             self.obstacle_thresh_ax = win.addPlot(
                 row=row_idx, col=0, colspan=self.num_hist_plots, title="Obstacle threshold")
+            self.obstacle_thresh_ax.setMenuEnabled(False)
             self.obstacle_thresh_im = pg.ImageItem()
             self.obstacle_thresh_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_thresh_ax.setLabel("left", "Distance (cm)")
@@ -748,6 +752,7 @@ class PGUpdater:
                 colspan=self.num_hist_plots,
                 title="Fused obstacle map",
             )
+            self.fusion_ax.setMenuEnabled(False)
             self.fusion_legend = self.fusion_ax.addLegend()
             self.fusion_ax.showGrid(True, True)
             self.fusion_ax.setLabel("bottom", "X (cm)")
@@ -832,6 +837,7 @@ class PGUpdater:
         row_idx += self.num_hist_plots
         if self.hist_plots["distance"][1]:
             self.peak_hist_ax_l = win.addPlot(row=row_idx, col=hist_col, title="Distance history")
+            self.peak_hist_ax_l.setMenuEnabled(False)
             self.peak_hist_ax_l.setLabel("bottom", "Sweep")
             self.peak_hist_ax_l.setXRange(0, self.peak_hist_len)
             self.peak_hist_ax_l.showGrid(True, True)
@@ -842,6 +848,7 @@ class PGUpdater:
 
         if self.hist_plots["velocity"][1]:
             self.peak_hist_ax_c = win.addPlot(row=row_idx, col=hist_col, title="Velocity history")
+            self.peak_hist_ax_c.setMenuEnabled(False)
             self.peak_hist_ax_c.setLabel("bottom", "Sweep")
             self.peak_hist_ax_c.setXRange(0, self.peak_hist_len)
             limit = np.round(self.max_velocity / 10) * 10
@@ -854,6 +861,7 @@ class PGUpdater:
 
         if self.hist_plots["angle"][1]:
             self.peak_hist_ax_r = win.addPlot(row=row_idx, col=hist_col, title="Angle history")
+            self.peak_hist_ax_r.setMenuEnabled(False)
             self.peak_hist_ax_r.setLabel("bottom", "Sweep")
             self.peak_hist_ax_r.setXRange(0, self.peak_hist_len)
             self.peak_hist_ax_r.showGrid(True, True)
@@ -864,6 +872,7 @@ class PGUpdater:
         if self.hist_plots["amplitude"][1]:
             self.peak_hist_ax_r1 = win.addPlot(row=row_idx, col=hist_col,
                                                title="Amplitude history")
+            self.peak_hist_ax_r1.setMenuEnabled(False)
             self.peak_hist_ax_r1.setLabel("bottom", "Sweep")
             self.peak_hist_ax_r1.setXRange(0, self.peak_hist_len)
             self.peak_hist_ax_r1.showGrid(True, True)
