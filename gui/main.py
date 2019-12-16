@@ -1597,6 +1597,9 @@ class GUI(QMainWindow):
             return
 
         try:
+            if record.module_key is None:
+                raise Exception
+
             module_info = MODULE_KEY_TO_MODULE_INFO_MAP[record.module_key]
             index = self.module_dd.findText(module_info.label, QtCore.Qt.MatchFixedString)
         except Exception:
