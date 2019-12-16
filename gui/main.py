@@ -523,11 +523,27 @@ class GUI(QMainWindow):
 
     def update_ports(self):
         port_infos = serial.tools.list_ports.comports()
-        ports = [port_info[0] for port_info in port_infos]
 
         try:
             opsys = os.uname()
-            if "microsoft" in opsys.release.lower() and "linux" in opsys.sysname.lower():
+            in_wsl = "microsoft" in opsys.release.lower() and "linux" in opsys.sysname.lower()
+        except Exception:
+            in_wsl = False
+
+        select = -1
+        if not in_wsl and os.name == "posix":
+            ports = []
+            for i, (port, desc, _) in enumerate(port_infos):
+                if desc.lower() in {"xb112", "xb122"}:
+                    ports.append("{} ({})".format(port, desc))
+                    select = i
+                else:
+                    ports.append(port)
+        else:
+            ports = [port for port, desc, _ in port_infos]
+
+        try:
+            if in_wsl:
                 print("WSL detected. Limiting serial ports")
                 ports_reduced = []
                 for p in ports:
@@ -539,6 +555,8 @@ class GUI(QMainWindow):
 
         self.ports_dd.clear()
         self.ports_dd.addItems(ports)
+        if select >= 0:
+            self.ports_dd.setCurrentIndex(select)
 
     def advanced_port(self):
         dialog = AdvancedSerialDialog(self.override_baudrate, self)
@@ -1399,9 +1417,11 @@ class GUI(QMainWindow):
                 statusbar_connection_info = "simulated interface"
             else:
                 port = self.ports_dd.currentText()
-                if "scan" in port.lower():
+                if not port:
                     self.error_message("Please select port first!")
                     return
+
+                port, *_ = port.split(" ")
 
                 if self.override_baudrate:
                     print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
