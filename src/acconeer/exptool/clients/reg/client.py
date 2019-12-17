@@ -42,7 +42,7 @@ PRODUCTS = [
 
 
 class RegBaseClient(BaseClient):
-    _STATUS_TIMEOUT = 1.0
+    _STATUS_TIMEOUT = 3.0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -128,6 +128,8 @@ class RegBaseClient(BaseClient):
 
             if (status & mask) == val:
                 return
+
+        raise ClientError("timeout while waiting for status")
 
     @property
     def _buffer_size(self):  # B
