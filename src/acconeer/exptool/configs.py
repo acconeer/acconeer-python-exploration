@@ -184,6 +184,11 @@ class BaseServiceConfig(BaseSessionConfig):
         default_value=False,
         order=2000,
         category=cb.Category.ADVANCED,
+        help=r"""
+            When measuring in the direct leakage (around 0m), this setting can be enabled to
+            minimize saturation in the receiver. We recommend not using this setting in normal
+            operation.
+        """,
     )
 
     profile = cb.EnumParameter(
