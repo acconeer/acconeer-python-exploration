@@ -212,7 +212,7 @@ class SmoothMax:
         self.x = self.y = -1
 
     def update(self, data):
-        m = max(np.max(data), 1e-12)
+        m = max(np.nanmax(data), 1e-12)
 
         if self.fixed_dt is None:
             now = time.time()
@@ -250,7 +250,7 @@ class SmoothLimits:
         self.x = self.y = self.z = None
 
     def update(self, data):
-        data_lims = (np.min(data), np.max(data))
+        data_lims = (np.nanmin(data), np.nanmax(data))
 
         if self.fixed_dt is None:
             now = time.time()
