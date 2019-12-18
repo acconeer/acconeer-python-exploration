@@ -19,7 +19,7 @@ There is a portable version of the Exploration Tool for Windows:
 * Double click the `update.bat` file and wait for the installation to finish, which takes a couple of minutes
 * Double click the `run_gui.bat`
 
-For an in-depth evaluation we recommend a full installation of the Exploartion Tool as described below.
+For an in-depth evaluation we recommend a full installation as described below.
 
 ## Documentation
 
@@ -51,16 +51,14 @@ Tested on:
 
 #### Dependencies
 
-Setuptools, wheel, NumPy, SciPy, PySerial, matplotlib, PyQtGraph, PyQt5, h5py, Flask.
-
-If you have PyQt4 installed, it might conflict with PyQt5. If this is the case for you, we recommend using virtual environments to separate the two installations.
-
-Install all Python dependencies using pip:
+All Python package dependencies are listed in `requirements.txt`. Install them using pip:
 ```
 python -m pip install -U --user setuptools wheel
 python -m pip install -U --user -r requirements.txt
 ```
 Depending on your environment, you might have to replace `python` with `python3` or `py`.
+
+If you have PyQt4 installed, it might conflict with PyQt5. If this is the case for you, we recommend using virtual environments to separate the two installations.
 
 #### Installing the acconeer.exptool library
 
@@ -68,11 +66,11 @@ Install the supplied library `acconeer.exptool`:
 ```
 python -m pip install -U --user .
 ```
-_**Note: The utilities module has to be reinstalled after any change in `acconeer.exptool`, and therefore it is recommended to reinstall after each update of the Exploration Tool.**_
+**Note: The library has to be reinstalled after any change under `src/`, and it is therefore recommended to reinstall after every update.**
 
-#### XM112+XB112 serial on Linux
+#### Connecting to an XM112 or XM122 module through UART on Linux
 
-If you are running Linux together with the XM112, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
+If you are running Linux together with an XM112 or XM122 module through UART, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
 ```
 sudo usermod -a -G dialout your-user-name
 ```
@@ -80,9 +78,9 @@ For the changes to take effect, you will need to log out and in again.
 
 Note: If you have ModemManager installed and running it might try to connect to the XM112, which has proven to cause problems. If you are having issues, try disabling the ModemManager service.
 
-#### XM112+XB112 SPI
+#### Connecting to an XM112 through SPI on Linux
 
-If you are using Linux together with the XM112+XB112, you probably need permission to access the SPI bridge USB device. Either run the scripts with `sudo`, or create an udev rule as follows. Create and edit:
+If you are using Linux together with an XM112, you probably need permission to access the SPI bridge USB device. Either run the scripts with `sudo`, or create an udev rule as follows. Create and edit:
 ```
 sudo nano /etc/udev/rules.d/50-ft4222.rules
 ```
@@ -101,22 +99,19 @@ Using the GUI is the easiest way to start exploring Acconeer's radar sensor and 
 python gui/main.py
 ```
 
-In the top right box of the GUI, named "Connection Settings", select the interface you wish to use
-- SPI: the GUI will try to autodetect a sensor connected via USB
-- Socket: specify the IP address of your RaspberryPi, running the streaming server
-- Serial: specify the COM port that is assigned to the sensor (press "scan ports" to detect available ports)
+In the top right box of the GUI, named _Connection_, select the interface you wish to use
+- SPI: autodetects an XM112 connected to USB2 (USB1 is also needed for power)
+- Socket: specify the IP address of your Raspberry Pi running the streaming server
+- Serial: specify the serial port that is assigned to the sensor
 
-After pressing "Connect", a connection should be established.
-In the box below, labeled "Scan Controls", select the service you want to test and configure the sensor and service settings to your specific setup.
-Once you press "Start", the GUI will start fetching data from the sensor and plotting the results.
-You cannot change "Sensor" or "Processing" settings while scanning.
-After pressing "Stop", you can save (and later load data) or just replay the data stored in the sweep buffer.
-For basic examples you can also test background cancelation methods using the "Scan Background" or "Load Background" buttons.
+After pressing _Connect_, a connection should be established.
+In the box below labeled _Scan controls_, select the service or processing example you want to test.
+Now you may tune the sensor and processing settings to your specific setup.
+Once you press _Start measurement_, the application will start fetching data from the sensor and plotting the results.
+After pressing _Stop_, you can save (and later load data) or just replay the data stored in the buffer.
 
-Note that except for Power bins, Envelope and IQ, the GUI is loading examples from the examples/processing folder.
-If you modify code in those files, the changes will trickle down to the GUI once you reload it.
-
-Large values for "Image history" (IQ and Envelope service) may slow down plotting severely.
+Except for Envelope, IQ, Power bins, and Sparse, the GUI is loading modules from the examples directory.
+If you modify code in those files, the changes will appear in the GUI once you reload it.
 
 EXPERIMENTAL deep learning:
 
