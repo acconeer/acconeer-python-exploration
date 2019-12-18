@@ -1,6 +1,7 @@
 import logging
 import operator
 import signal
+import struct
 import sys
 import time
 from argparse import ArgumentParser
@@ -382,3 +383,7 @@ def get_range_depths(sensor_config: cb.SensorConfig, session_info: dict) -> np.n
         num_depths = session_info["data_length"]
 
     return np.linspace(range_start, range_end, num_depths)
+
+
+def hex_to_rgb_tuple(hex_color):
+    return struct.unpack("BBB", bytes.fromhex(hex_color.lstrip("#")))
