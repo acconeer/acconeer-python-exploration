@@ -760,6 +760,7 @@ class GUI(QMainWindow):
             "feature_select": (QWidget(self.main_widget), "Feature configuration"),
             "feature_extract": (QWidget(self.main_widget), "Feature extraction"),
             "feature_inspect": (QWidget(self.main_widget), "Feature inspection"),
+            "model_select": (QWidget(self.main_widget), "Model parameters"),
             "train": (QWidget(self.main_widget), "Train Network"),
             "eval": (QWidget(self.main_widget), "Use Network"),
         }
@@ -769,6 +770,7 @@ class GUI(QMainWindow):
             "Feature configuration": "feature_select",
             "Feature extraction": "feature_extract",
             "Feature inspection": "feature_inspect",
+            "Model parameters": "model_select",
             "Train Network": "train",
             "Use Network": "eval",
         }
@@ -799,6 +801,12 @@ class GUI(QMainWindow):
         )
         self.tabs["feature_inspect"].layout.addWidget(self.feature_inspect)
 
+        self.model_select = self.ml_elements.ModelSelectFrame(
+            self.main_widget,
+            gui_handle=self,
+        )
+        self.tabs["model_select"].layout.addWidget(self.model_select)
+
         self.training = self.ml_elements.TrainingFrame(self.main_widget, gui_handle=self)
         self.tabs["train"].layout.addWidget(self.training)
 
@@ -809,7 +817,8 @@ class GUI(QMainWindow):
         # feature select/extract/inspect frame
         self.feature_section = CollapsibleSection("Feature settings", init_collapsed=False)
         self.main_sublayout.addWidget(self.feature_section, 3, 0)
-        self.feature_sidepanel = self.ml_elements.FeatureSidePanel(self.main_widget, self)
+        self.feature_sidepanel = self.ml_elements.FeatureSidePanel(
+            self.panel_scroll_area_widget, self)
         self.feature_section.grid.addWidget(self.feature_sidepanel, 0, 0, 1, 2)
         self.feature_section.hide()
         self.feature_section.button_event(override=False)
@@ -1346,6 +1355,9 @@ class GUI(QMainWindow):
                 self.feature_inspect.update_frame("frames", 1, init=True)
                 self.feature_inspect.update_sliders()
 
+            elif tab == "model_select":
+                self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
+
             elif tab == "train":
                 self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
 
@@ -1878,6 +1890,7 @@ class GUI(QMainWindow):
                     last = np.load(self.LAST_ML_CONF_FILENAME, allow_pickle=True)
                     self.feature_select.update_feature_list(last.item()["feature_list"])
                     self.feature_sidepanel.set_frame_settings(last.item()["frame_settings"])
+                    self.model_select.update_layer_list(last.item()["model_layers"])
                 except Exception as e:
                     print("Could not load ml settings from last session\n{}".format(e))
 
@@ -1984,6 +1997,9 @@ class GUI(QMainWindow):
                     last_ml_config = {
                         "feature_list": self.feature_select.get_feature_list(),
                         "frame_settings": self.feature_sidepanel.get_frame_settings(),
+                        "model_layers": self.model_select.get_layer_list(
+                            include_inactive_layers=True
+                        ),
                     }
                 except Exception:
                     pass

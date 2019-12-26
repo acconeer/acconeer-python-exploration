@@ -1,14 +1,30 @@
+import os
 import sys
 
-from acconeer.exptool import utils
+from acconeer.exptool import imock, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 
-import feature_processing as feature_proc
-import keras_processing as kp
+
+imock.add_mock_packages(imock.GRAPHICS_LIBS)
+
+# If you run stand_alone.py from ..gui/ml
+sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "../../")))
+
+# If you run stand_alone from another folder
+path_to_exploration_tool = "/home/pi/acconeer-exploration-tool"
+
+sys.path.append(os.path.realpath(path_to_exploration_tool))
+
+try:
+    import gui.ml.keras_processing as kp
+    import gui.ml.feature_processing as feature_proc
+except Exception:
+    print("Failed to import deeplearning libraries, please specify acconeer-exploration-folder!")
+    exit(1)
 
 
 def main():
-    parser = utils.ExampleArgumentParser(num_sens=2)
+    parser = utils.ExampleArgumentParser()
     add_args(parser)
     args = parser.parse_args()
 
@@ -21,7 +37,7 @@ def main():
     keras_proc = kp.MachineLearning()
     model_data = keras_proc.load_model(filename)
 
-    print(model_data["message"])
+    print(model_data["message"].replace("<br>", "\n"))
 
     if not model_data["loaded"]:
         return False
@@ -29,6 +45,12 @@ def main():
     config = model_data["sensor_config"]
     feature_list = model_data["feature_list"]
     frame_settings = model_data["frame_settings"]
+
+    print("\nFeature detection settings:")
+    for setting in frame_settings:
+        if "label" in setting:
+            continue
+        print("{}: {}".format(setting, frame_settings[setting]))
 
     feature_process = feature_proc.FeatureProcessing(config)
     feature_process.set_feature_list(feature_list)
@@ -47,7 +69,7 @@ def main():
     session_info = client.setup_session(config)
 
     interrupt_handler = utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
+    print("\nPress Ctrl-C to end session")
 
     client.start_session()
 
@@ -66,26 +88,17 @@ def main():
 
         if complete and feature_map is not None:
             predict = keras_proc.predict(feature_map)[0]
-            prediction_label = predict["prediction"]
-            print(prediction_label)
+            label = predict["prediction"]
+            confidence = predict["confidence"]
+            print("Prediction: {:10s} ({:6.2f}%)\r".format(label, confidence * 100), end="")
 
     print("Disconnecting...")
     client.disconnect()
 
 
 def add_args(parser):
-    parser.add_argument("--load-train-set", dest="train_data",
-                        help="Load training data", default="")
-    parser.add_argument("--evaluate", dest="evaluate",
-                        help="Sensor", default="")
-    parser.add_argument("--save-best", dest="save_best",
-                        help="Save model", default=None)
-    parser.add_argument("--save-model", dest="model_save_name",
-                        help="Save model", default=None)
     parser.add_argument("--load-model", dest="model_file_name",
                         help="Load model", default=None)
-    parser.add_argument("-load-eval-set", dest="eval_data",
-                        help="Sensor", action="store_true")
 
 
 if __name__ == "__main__":

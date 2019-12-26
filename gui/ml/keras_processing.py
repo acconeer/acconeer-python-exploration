@@ -26,6 +26,8 @@ from sklearn.utils import class_weight
 
 from acconeer.exptool import configs
 
+import layer_definitions
+
 
 try:
     import pyqtgraph as pg
@@ -54,11 +56,8 @@ class MachineLearning():
         else:
             print("Incorrect dimension input ", dim)
 
-    def init_model_1D(self, input_dimensions):
-        print("\nInitiating 1D model with {:d} inputs and {:d} outputs".format(input_dimensions[0],
-                                                                               self.label_num))
-
-        inputs = Input(shape=input_dimensions)
+    def init_default_model_1D(self):
+        inputs = Input(shape=self.model_dimensions["init_shape"])
 
         use_cnn = True
         if use_cnn:
@@ -83,12 +82,10 @@ class MachineLearning():
 
         self.set_optimizer("adam")
 
-    def init_model_2D(self, input_dimensions):
+    def init_default_model_2D(self):
+        input_dimensions = self.model_dimensions["init_shape"]
         self.y_dim = input_dimensions[0]
         self.x_dim = input_dimensions[1]
-        print("\nInitiating 2d model with {:d}x{:d} inputs"
-              " and {:d} outputs".format(self.y_dim, self.x_dim,
-                                         self.label_num))
         inputs = Input(shape=input_dimensions)
 
         max_kernel = min(self.y_dim, self.x_dim)
@@ -110,13 +107,12 @@ class MachineLearning():
         predictions = Dense(self.label_num, activation="softmax")(x)
 
         self.model = Model(inputs=inputs, outputs=predictions)
-        self.model.summary()
 
         self.set_optimizer("Adam")
 
     def maxpool(self, x):
         x_pool = y_pool = 2
-        if self.y_dim <= 9 or self.x_dim <= 9:
+        if self.y_dim <= 15 or self.x_dim <= 15:
             y_pool = 1
             x_pool = 1
 
@@ -124,6 +120,66 @@ class MachineLearning():
         self.y_dim /= y_pool
 
         return MaxPool2D(pool_size=(y_pool, x_pool))(x)
+
+    def init_model(self):
+        model_dim = self.model_dimensions["dimensionality"]
+        input_dimensions = self.model_dimensions["init_shape"]
+
+        if model_dim == 1:
+            print("\nInitiating 1D model with {:d} inputs"
+                  " and {:d} outputs".format(input_dimensions[0], self.label_num))
+        elif model_dim == 2:
+            print("\nInitiating 2d model with {:d}x{:d} inputs"
+                  " and {:d} outputs".format(*input_dimensions, self.label_num))
+
+        if "layer_list" not in self.model_params:
+            if model_dim == 1:
+                self.init_default_model_1D()
+            elif model_dim == 2:
+                self.init_default_model_2D()
+            return True
+        else:
+            layer_list = self.model_params["layer_list"]
+
+        inputs = Input(shape=input_dimensions)
+        nr_layers = len(layer_list)
+        layer_callbacks = layer_definitions.get_layers()
+
+        print("Building model with {} layers...".format(nr_layers))
+
+        x = None
+        nr_layers = len(layer_list)
+        for idx, layer in enumerate(layer_list):
+            try:
+                cb = layer_callbacks[layer['name']]['class']
+            except KeyError:
+                print("Layer {} not found in layer_definitions.py!".format(layer['name']))
+
+            try:
+                options = {}
+                if layer["params"] is not None:
+                    for entry in layer["params"]:
+                        opt = layer["params"][entry]
+                        if isinstance(opt, list):
+                            options[entry] = tuple(opt)
+                        else:
+                            options[entry] = opt
+                print("{}: Adding {} with\n{}".format(idx + 1, layer['name'], options))
+                if idx == 0 and nr_layers > 1:
+                    x = cb(**options)(inputs)
+                elif idx > 0 and idx < nr_layers - 1:
+                    x = cb(**options)(x)
+                else:
+                    options.pop("units")
+                    predictions = cb(self.label_num, **options)(x)
+            except Exception as e:
+                return "Layer nr. {} failed. Error adding {}\n{}".format(idx + 1, layer['name'], e)
+
+        self.model = Model(inputs=inputs, outputs=predictions)
+
+        self.set_optimizer("Adam")
+
+        return True
 
     def set_optimizer(self, optimizer, loss="categorical_crossentropy"):
         if optimizer.lower() == "adam":
@@ -318,7 +374,7 @@ class MachineLearning():
                 return key
         return None
 
-    def load_train_data(self, files, model_exists=False, load_test_data=False):
+    def load_train_data(self, files, layer_list=None, model_exists=False, load_test_data=False):
         err_tip = "<br>Try clearing training before loading more data!"
         data = []
         stored_configs = []
@@ -360,6 +416,7 @@ class MachineLearning():
                 "frame_settings": frame_settings_list[0],
                 "sensor_config": stored_configs[0],
                 "model_dimensions": self.model_dimensions,
+                "layer_list": layer_list,
             }
             if model_exists:
                 self.model_dimensions["input"] = self.model.input_shape[1:-1]
@@ -397,6 +454,7 @@ class MachineLearning():
             feature_map_data = np.expand_dims(
                 feature_map_data,
                 self.model_dimensions["dimensionality"] + 1)
+        self.model_dimensions["nr_of_training_maps"] = feature_map_data.shape[0]
 
         if data_type == "training":
             data_labels, self.label_num, self.labels_dict = self.label_conversion(labels)
@@ -417,11 +475,10 @@ class MachineLearning():
 
         if data_type == "training":
             self.model_dimensions["init_shape"] = feature_map_data.shape[1:]
-            print(self.model_dimensions)
             if not model_exists:
-                self.clear_model(reinit=True)
+                model_status = self.clear_model(reinit=True)
 
-        message = "Loaded {} data with shape {}<br>".format(data_type, feature_map_data.shape)
+        message = "Loaded {} data with shape {}\n".format(data_type, feature_map_data.shape)
         message += "Found labels:<br>"
         for label in self.labels_dict:
             message += label + "<br>"
@@ -438,9 +495,31 @@ class MachineLearning():
             "feature_list": self.model_params["feature_list"],
             "sensor_config": self.model_params["sensor_config"],
             "frame_settings": self.model_params["frame_settings"],
-            "model_dimensions": self.model_params["model_dimensions"],
+            "model_input": self.model_dimensions["input"],
+            "model_output": self.model_dimensions["output"],
+            "nr_of_training_maps": self.model_dimensions["nr_of_training_maps"],
         }
-        return {"data": data, "success": True, "message": message}
+
+        info = {
+            "data": data,
+            "success": True,
+            "message": message,
+            "model_loaded": False,
+            "model_status": model_status,
+        }
+
+        if model_status is True:
+            counted = self.count_variables()
+            data["trainable"] = counted["trainable"]
+            data["non_trainable"] = counted["non_trainable"]
+            data["keras_layer_info"] = self.model.layers
+            data["layer_list"] = layer_list
+            info["model_loaded"] = True
+        else:
+            if not isinstance(model_status, str):
+                info["model_status"] = "Model not initialized"
+
+        return info
 
     def load_test_data(self, files):
         return self.load_train_data(files, load_test_data=True)
@@ -487,16 +566,68 @@ class MachineLearning():
                 "message": message,
             }
         else:
-            message = "Loaded model with input shape:<br>{}<br>".format(self.model.input_shape)
-            message += "Using {} features.".format(len(feature_list))
+            message = "Loaded model with:\n"\
+                      "input shape    :{}\n"\
+                      "output shape   :{}\n"\
+                      "nr of features :{}\n"\
+                      "Trained with {} features".format(
+                          self.model_dimensions["input"],
+                          self.model_dimensions["output"],
+                          len(feature_list),
+                          self.model_dimensions.get("nr_of_training_maps", "N/A")
+                      )
+            self.model_params = {
+                "feature_list": feature_list,
+                "frame_settings": frame_settings,
+                "sensor_config": sensor_config,
+                "model_dimensions": self.model_dimensions,
+            }
+            gui_layer_conf = layer_definitions.get_layers()
+            layer_list = []
+            for l in self.model.layers:
+                l_conf = l.get_config()
+                l_name = l_conf["name"].rsplit("_", 1)[0]
+                if l_name in gui_layer_conf:
+                    g_conf = gui_layer_conf[l_name]["params"]
+                    layer = {
+                        "name": l_name,
+                        "class": gui_layer_conf[l_name]["class_str"],
+                        "params": {},
+                    }
+                    if g_conf is None:
+                        layer["params"] = None
+                    else:
+                        for p in l_conf:
+                            if p in g_conf:
+                                if isinstance(l_conf[p], tuple):
+                                    layer["params"][p] = list(l_conf[p])
+                                else:
+                                    layer["params"][p] = l_conf[p]
+                    layer_list.append(layer)
+                else:
+                    if l_name != "input":
+                        print("Keras layer {} not found in layer_definitions.py!".format(l_name))
 
-        return {
+        counted = self.count_variables()
+        loaded_model = {
             "loaded": True,
             "message": message,
             "feature_list": feature_list,
             "sensor_config": sensor_config,
             "frame_settings": frame_settings,
+            "layer_list": layer_list,           # GUI format layer list
+            "keras_layer_info": self.model.layers,  # Keras format layer list
+            "trainable": counted["trainable"],
+            "non_trainable": counted["non_trainable"],
+            "model_input": self.model_dimensions["input"],
+            "model_output": self.model_dimensions["output"],
         }
+        try:
+            loaded_model["nr_of_training_maps"] = self.model_dimensions["nr_of_training_maps"]
+        except KeyError:
+            loaded_model["nr_of_training_maps"] = 0
+
+        return loaded_model
 
     def clear_model(self, reinit=False):
         if self.model is not None:
@@ -505,15 +636,33 @@ class MachineLearning():
             self.model = None
 
         if reinit and self.model_dimensions is not None:
-            model_shape = self.model_dimensions["init_shape"]
             self.tf_session = K.get_session()
             self.tf_graph = tf.get_default_graph()
             with self.tf_session.as_default():
                 with self.tf_graph.as_default():
-                    if self.model_dimensions["dimensionality"] == 1:
-                        self.init_model_1D(model_shape)
-                    else:
-                        self.init_model_2D(model_shape)
+                    return self.init_model()
+        else:
+            return False
+
+    def update_model_layers(self, layer_list):
+        self.model_params["layer_list"] = layer_list
+        success = self.clear_model(reinit=True)
+
+        if success:
+            return self.model.layers
+        else:
+            return None
+
+    def count_variables(self):
+        if self.model is not None:
+            trainable = int(
+                np.sum([K.count_params(p) for p in set(self.model.trainable_weights)]))
+            non_trainable = int(
+                np.sum([K.count_params(p) for p in set(self.model.non_trainable_weights)]))
+        else:
+            return None
+
+        return ({"trainable": trainable, "non_trainable": non_trainable})
 
     def get_current_session(self, graph=None):
         return self.tf_session

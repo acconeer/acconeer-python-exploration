@@ -3,23 +3,22 @@ import os
 import sys
 
 import numpy as np
+import pyqtgraph as pg
+from matplotlib.colors import LinearSegmentedColormap
 
+from PyQt5 import QtCore
+
+from acconeer.exptool import imock, utils
 from acconeer.exptool.modes import Mode
 
-import feature_definitions as feature_def
+import gui.ml.feature_definitions as feature_def
+
+
+imock.add_mock_packages(imock.GRAPHICS_LIBS)
 
 
 try:
-    from matplotlib.colors import LinearSegmentedColormap
-    from PyQt5 import QtCore
-    import pyqtgraph as pg
-    from acconeer.exptool import utils
-    PYQT_PLOTTING_AVAILABLE = True
-except ImportError:
-    PYQT_PLOTTING_AVAILABLE = False
-
-try:
-    sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
+    sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "../../")))
     from examples.processing import presence_detection_sparse
     SPARSE_AUTO_DETECTION = True
 except ImportError:
@@ -710,9 +709,6 @@ class DataProcessor:
 class PGUpdater:
     def __init__(self, sensor_config=None, processing_config=None, predictions=False,
                  info_text=True):
-
-        if not PYQT_PLOTTING_AVAILABLE:
-            print("Warning: Plotting functionality not available.")
 
         self.env_plot_max_y = 0
         self.hist_plot_max_y = 0

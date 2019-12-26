@@ -3,10 +3,12 @@ import datetime
 import os
 import sys
 import time
+import traceback
 from functools import partial
 
 import numpy as np
 import pyqtgraph as pg
+import yaml
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSignal
@@ -26,6 +28,7 @@ from PyQt5.QtWidgets import (
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -36,13 +39,21 @@ from acconeer.exptool.modes import Mode
 import feature_definitions as feature_def
 import feature_processing as feature_proc
 import keras_processing as kp
+import layer_definitions as layer_def
 from helper import Count, ErrorFormater, GUI_Styles, LoadState, QHLine, QVLine, SensorSelection
 from modules import MODULE_KEY_TO_MODULE_INFO_MAP
 
 
+HERE = os.path.dirname(os.path.realpath(__file__))
+HERE = os.path.abspath(os.path.join(HERE, '..'))
+DEFAULT_MODEL_FILENAME_2D = os.path.join(HERE, "ml", "default_layers_2D.yaml")
+TRAIN_TAB = 5
+MODEL_TAB = 4
+
+
 class FeatureSelectFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
-        super().__init__()
+        super().__init__(parent)
         self.styles = GUI_Styles()
         self.param_col = 2
         self.sensor_col = self.param_col + 2
@@ -70,6 +81,7 @@ class FeatureSelectFrame(QFrame):
         self.main = QtWidgets.QSplitter(self)
         self.main.setOrientation(QtCore.Qt.Vertical)
         self.main.setStyleSheet("QSplitter::handle{background: lightgrey}")
+        self.main.setFrameStyle(QFrame.Panel | QFrame.Sunken)
         self._grid.addWidget(self.main)
 
         self.feature_frame_scroll = QtWidgets.QScrollArea(self.main)
@@ -112,16 +124,16 @@ class FeatureSelectFrame(QFrame):
         self.error_text.setStyleSheet("QLabel {color: red}")
 
         self.buttons = {
-            "start": QPushButton("Test extraction", self),
-            "stop": QPushButton("Stop", self),
-            "replay_buffered": QPushButton("Replay buffered", self),
+            "start": QPushButton("Test extraction"),
+            "stop": QPushButton("Stop"),
+            "replay_buffered": QPushButton("Replay buffered"),
         }
 
-        self.drop_down = QComboBox(self)
+        self.drop_down = QComboBox()
         self.drop_down.setStyleSheet("background-color: white")
         self.drop_down.addItem("Add feature")
 
-        self.bottom_widget = QWidget(self)
+        self.bottom_widget = QWidget()
         bottom_box = QHBoxLayout()
         bottom_box.setAlignment(QtCore.Qt.AlignLeft)
         self.bottom_widget.setLayout(bottom_box)
@@ -210,7 +222,7 @@ class FeatureSelectFrame(QFrame):
                     print("Something went wrong!\n", e)
                     return
 
-        self._layout.removeWidget(self.drop_down)
+        self._layout.removeWidget(self.bottom_widget)
 
         feat = self.features[key]
         name = feat["name"]
@@ -779,7 +791,7 @@ class FeatureSelectFrame(QFrame):
 
 class FeatureExtractFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
-        super().__init__()
+        super().__init__(parent)
 
         self.gui_handle = gui_handle
 
@@ -840,13 +852,14 @@ class FeatureExtractFrame(QFrame):
 
 class FeatureSidePanel(QFrame):
     def __init__(self, parent, gui_handle):
-        super().__init__()
+        super().__init__(parent)
 
         self.gui_handle = gui_handle
-        self.grid = QtWidgets.QGridLayout(self)
+        self.grid = QtWidgets.QGridLayout()
         self.grid.setContentsMargins(9, 0, 9, 9)
         self.grid.setColumnStretch(0, 1)
         self.grid.setColumnStretch(1, 1)
+        self.setLayout(self.grid)
         self.last_filename = None
         self.last_folder = None
         self.batch_params = None
@@ -886,15 +899,15 @@ class FeatureSidePanel(QFrame):
         }
 
         self.buttons = {
-            "load_settings": QPushButton("Load settings", self),
-            "save_settings": QPushButton("Save settings", self),
-            "load_session": QPushButton("Load session", self),
-            "save_session": QPushButton("Save session", self),
-            "trigger": QPushButton("&Trigger", self),
-            "create_calib": QPushButton("Create calibration", self),
-            "show_calib": QPushButton("Show calibration", self),
-            "load_batch": QPushButton("Load batch", self),
-            "process_batch": QPushButton("Process batch", self),
+            "load_settings": QPushButton("Load settings"),
+            "save_settings": QPushButton("Save settings"),
+            "load_session": QPushButton("Load session"),
+            "save_session": QPushButton("Save session"),
+            "trigger": QPushButton("&Trigger"),
+            "create_calib": QPushButton("Create calibration"),
+            "show_calib": QPushButton("Show calibration"),
+            "load_batch": QPushButton("Load batch"),
+            "process_batch": QPushButton("Process batch"),
         }
 
         self.buttons["load_settings"].clicked.connect(self.load_data)
@@ -916,7 +929,7 @@ class FeatureSidePanel(QFrame):
         self.buttons["process_batch"].setEnabled(False)
 
         self.checkboxes = {
-            "rolling": QCheckBox("Rolling frame", self),
+            "rolling": QCheckBox("Rolling frame"),
         }
         self.checkboxes["rolling"].clicked.connect(
             lambda: self.gui_handle.sig_scan.emit(
@@ -939,8 +952,9 @@ class FeatureSidePanel(QFrame):
 
         self.radiobuttons["auto"].setChecked(True)
         self.radio_frame = QFrame()
-        self.radio_frame.grid = QtWidgets.QGridLayout(self.radio_frame)
+        self.radio_frame.grid = QtWidgets.QGridLayout()
         self.radio_frame.grid.setContentsMargins(0, 0, 0, 0)
+        self.radio_frame.setLayout(self.radio_frame.grid)
         self.radio_frame.grid.addWidget(self.labels["collection_mode"], 0, 0, 1, 3)
         self.radio_frame.grid.addWidget(self.h_lines["h_line_2"], 1, 0, 1, 3)
         self.radio_frame.grid.addWidget(self.radiobuttons["auto"], 2, 0)
@@ -1546,7 +1560,7 @@ class FeatureSidePanel(QFrame):
 
 class FeatureInspectFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
-        super().__init__()
+        super().__init__(parent)
 
         self.current_sweep_nr = 0
         self.current_frame_nr = -1
@@ -1656,7 +1670,8 @@ class FeatureInspectFrame(QFrame):
         frame_nr = int(min(total_frames, frame_nr))
 
         if action == "frames" and frame_nr == self.current_frame_nr:
-            return
+            if frame_nr != 1:
+                return
         elif action == "sweeps" and number == self.current_sweep_nr:
             return
 
@@ -1683,6 +1698,7 @@ class FeatureInspectFrame(QFrame):
                 self.graph.update(fdata)
             except Exception as e:
                 print("Error processing frame:\n", e)
+                traceback.print_exc()
 
             self.current_sweep_nr = f_current["frame_marker"] + 1
             self.current_frame_nr = frame_nr
@@ -1923,7 +1939,7 @@ class FeatureInspectFrame(QFrame):
 
 class LabelingGraph(QFrame):
     def __init__(self, parent, gui_handle=None):
-        super().__init__()
+        super().__init__(parent)
 
         featproc = feature_proc
         canvas = pg.GraphicsLayoutWidget()
@@ -1948,10 +1964,11 @@ class LabelingGraph(QFrame):
 
 class TrainingFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
-        super().__init__()
+        super().__init__(parent)
 
-        self.grid = QtWidgets.QGridLayout(self)
+        self.grid = QtWidgets.QGridLayout()
         self.grid.setContentsMargins(9, 0, 9, 9)
+        self.setLayout(self.grid)
 
         self.graph = TrainingGraph(self)
 
@@ -2078,10 +2095,13 @@ class TrainingFrame(QFrame):
     def show_results(self, plot_data=None, flush_data=False):
         self.graph.process(plot_data, flush_data)
 
-    def set_feature_dimensions(self, dims):
-        self.labels["data_length"].setText(str(dims[0]))
-        self.labels["ydim"].setText(str(dims[1]))
-        self.labels["xdim"].setText(str(dims[2]))
+    def set_feature_dimensions(self, dims, training_maps):
+        self.labels["data_length"].setText(str(training_maps))
+        self.labels["ydim"].setText(str(dims[0]))
+        if len(dims) > 1:
+            self.labels["xdim"].setText(str(dims[1]))
+        else:
+            self.labels["xdim"].setText(str(0))
 
     def get_feature_dimensions(self):
         return self.textboxes["input_dimension"].text()
@@ -2095,7 +2115,7 @@ class TrainingSidePanel(QFrame):
     sig_scan = pyqtSignal(str, str, object)
 
     def __init__(self, parent, gui_handle):
-        super().__init__()
+        super().__init__(parent)
 
         self.train_data = None
         self.test_data = None
@@ -2107,8 +2127,9 @@ class TrainingSidePanel(QFrame):
         self.gui_handle = gui_handle
         self.keras = self.gui_handle.ml_keras_model = kp.MachineLearning()
 
-        self.grid = QtWidgets.QGridLayout(self)
+        self.grid = QtWidgets.QGridLayout()
         self.grid.setContentsMargins(9, 0, 9, 9)
+        self.setLayout(self.grid)
 
         self.labels = {
             "training": QLabel("Training Settings: "),
@@ -2122,9 +2143,9 @@ class TrainingSidePanel(QFrame):
             "train": QLabel("Train: "),
         }
         self.textboxes = {
-            "epochs": QLineEdit("100", self),
-            "batch_size": QLineEdit("128", self),
-            "split": QLineEdit("0.2", self),
+            "epochs": QLineEdit("100"),
+            "batch_size": QLineEdit("128"),
+            "split": QLineEdit("0.2"),
             "learning_rate": QLineEdit("0.001"),
             "delta": QLineEdit("0.001"),
             "patience": QLineEdit("5"),
@@ -2144,15 +2165,15 @@ class TrainingSidePanel(QFrame):
         self.checkboxes["save_best"].clicked.connect(self.save_best)
 
         self.buttons = {
-            "train": QPushButton("Train", self),
-            "stop": QPushButton("Stop", self),
-            "validate": QPushButton("Validate", self),
+            "train": QPushButton("Train"),
+            "stop": QPushButton("Stop"),
+            "validate": QPushButton("Validate"),
             "load_train_data": QPushButton("Load training data"),
             "load_test_data": QPushButton("Load test data"),
             "save_model": QPushButton("Save model"),
             "clear_model": QPushButton("Clear model"),
             "clear_training": QPushButton("Clear training/test data"),
-            "load_model": QPushButton("Load model", self),
+            "load_model": QPushButton("Load model"),
         }
 
         self.buttons["train"].clicked.connect(partial(self.train, "train"))
@@ -2169,8 +2190,7 @@ class TrainingSidePanel(QFrame):
         self.buttons["train"].setEnabled(False)
         self.buttons["validate"].setEnabled(False)
 
-        self.dropout_list = QComboBox(self)
-        self.dropout_list.setStyleSheet("background-color: white")
+        self.dropout_list = QComboBox()
         self.dropout_list.setMinimumHeight(25)
         self.dropout_list.addItem("Train Accuracy")
         self.dropout_list.addItem("Train Loss")
@@ -2178,8 +2198,7 @@ class TrainingSidePanel(QFrame):
         self.dropout_list.addItem("Eval. Loss")
         self.dropout_list.setCurrentIndex(3)
 
-        self.optimizer_list = QComboBox(self)
-        self.optimizer_list.setStyleSheet("background-color: white")
+        self.optimizer_list = QComboBox()
         self.optimizer_list.setMinimumHeight(25)
         self.optimizer_list.addItem("Adam")
         self.optimizer_list.addItem("Adagrad")
@@ -2264,11 +2283,16 @@ class TrainingSidePanel(QFrame):
             self, title, "", "NumPy data files (*.npy)", options=options)
 
         model_exists = self.gui_handle.eval_sidepanel.model_loaded()
+        layer_list = self.gui_handle.model_select.get_layer_list()
 
         if filenames:
             try:
                 if mode == "training":
-                    status = self.keras.load_train_data(filenames, model_exists=model_exists)
+                    status = self.keras.load_train_data(
+                        filenames,
+                        layer_list=layer_list,
+                        model_exists=model_exists,
+                    )
                 else:
                     status = self.keras.load_test_data(filenames)
             except Exception as e:
@@ -2284,16 +2308,34 @@ class TrainingSidePanel(QFrame):
                     )
                 else:
                     self.test_data = status["data"]
-                self.gui_handle.info_handle(status["message"])
-                self.buttons["train"].setEnabled(True)
+
+                self.gui_handle.model_select.allow_update(status["success"])
+                if status["model_loaded"]:
+                    self.buttons["train"].setEnabled(True)
+                    self.gui_handle.info_handle(status["message"])
+                    self.gui_handle.model_select.set_layer_shapes(
+                        self.train_data["keras_layer_info"]
+                    )
+                    self.gui_handle.model_select.dump_layers(
+                        self.train_data["layer_list"],
+                        "last_model.yaml"
+                    )
+                else:
+                    message = status["message"] + status["model_status"]
+                    self.gui_handle.error_message(message)
+
                 if self.gui_handle.eval_sidepanel.model_data["loaded"]:
                     self.buttons["validate"].setEnabled(True)
             else:
                 self.gui_handle.error_message(status["message"])
+                self.model_operation("clear_data")
                 return
 
             if mode == "training":
-                self.gui_handle.training.set_feature_dimensions(self.train_data["x_data"].shape)
+                self.gui_handle.training.set_feature_dimensions(
+                    self.train_data["model_input"],
+                    self.train_data["nr_of_training_maps"]
+                )
                 self.gui_handle.training.show_results(flush_data=True)
 
     def get_evaluation_mode(self):
@@ -2394,6 +2436,10 @@ class TrainingSidePanel(QFrame):
         if self.train_data is None:
             self.gui_handle.error_message("No training data loaded")
             return
+        else:
+            # Make sure correct layer list is displayed
+            self.gui_handle.model_select.update_layer_list(self.train_data["layer_list"])
+            self.gui_handle.tab_parent.setCurrentIndex(TRAIN_TAB)
         x = self.train_data["x_data"]
         y = self.train_data["y_labels"]
 
@@ -2501,12 +2547,19 @@ class TrainingSidePanel(QFrame):
                 self, title, fname, file_types, options=options)
 
             if filename:
+                if self.train_data is None and not self.gui_handle.eval_sidepanel.model_loaded():
+                    self.gui_handle.info_message("No model data available:\n")
+                    return
+                elif self.train_data is not None:
+                    model_data_handle = self.train_data
+                else:
+                    model_data_handle = self.gui_handle.eval_sidepanel.model_data
                 try:
                     self.keras.save_model(
                         filename,
-                        self.train_data["feature_list"],
-                        self.train_data["sensor_config"],
-                        self.train_data["frame_settings"],
+                        model_data_handle["feature_list"],
+                        model_data_handle["sensor_config"],
+                        model_data_handle["frame_settings"],
                     )
                 except Exception as e:
                     self.gui_handle.error_message("Failed to save model:\n {}".format(e))
@@ -2529,6 +2582,7 @@ class TrainingSidePanel(QFrame):
             self.gui_handle.training.update_confusion_matrix(None)
         if op == "load_model":
             self.gui_handle.eval_sidepanel.load_model()
+            self.gui_handle.tab_parent.setCurrentIndex(MODEL_TAB)
         if op == "validate_model":
             if self.train_data is None:
                 self.gui_handle.error_message("No training data loaded")
@@ -2582,7 +2636,7 @@ class TrainingSidePanel(QFrame):
 
 class TrainingGraph(QFrame):
     def __init__(self, parent, gui_handle=None):
-        super().__init__()
+        super().__init__(parent)
 
         canvas = pg.GraphicsLayoutWidget()
         self.training_graph_widget = kp.KerasPlotting()
@@ -2602,9 +2656,632 @@ class TrainingGraph(QFrame):
         QApplication.processEvents()
 
 
+class ModelSelectFrame(QFrame):
+    def __init__(self, parent, gui_handle=None):
+        super().__init__(parent)
+        self.param_col = 2
+        self.remove_col = self.param_col + 2
+        self.nr_col = self.remove_col + 1
+        self.row_idx = Count(2)
+        self.gui_handle = gui_handle
+
+        self._grid = QtWidgets.QGridLayout()
+        self._grid.setContentsMargins(0, 0, 0, 0)
+        self._grid.setSpacing(0)
+        self.setLayout(self._grid)
+
+        self.model_frame_scroll = QtWidgets.QScrollArea()
+        self.model_frame_scroll.setFrameShape(QFrame.NoFrame)
+        self.model_frame_scroll.setWidgetResizable(True)
+        self.model_frame_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.model_frame_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+
+        self.model_frame = QFrame(self.model_frame_scroll)
+        self.model_frame_scroll.setWidget(self.model_frame)
+
+        self._grid.addWidget(self.model_frame_scroll)
+        self._layout = QtWidgets.QGridLayout()
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(0)
+        self._layout.setAlignment(QtCore.Qt.AlignCenter)
+        self.model_frame.setLayout(self._layout)
+
+        self.enabled_layers = []
+        self.layers = layer_def.get_layers()
+        self.trainable_text = QLabel("")
+
+        self.enabled_count = Count()
+        self.create_grid()
+        self.parse_layers()
+        self.update_grid()
+
+        self.layer_drop_down.setCurrentIndex(0)
+        self._grid.addWidget(self.bottom_widget, 1, 0)
+
+    def create_grid(self):
+        self._layout.addWidget(QLabel("Layer"), 0, 0)
+        self._layout.addWidget(QLabel("Parameters"), 0, self.param_col)
+        self._layout.addWidget(QHLine(), 1, 0, 1, self.nr_col)
+        self.name_vline = QVLine()
+        self.params_vline = QVLine()
+        self.remove_vline = QVLine()
+        self.error_text = QLabel("")
+        self.error_text.setStyleSheet("QLabel {color: red}")
+
+        self.buttons = {
+            "update": QPushButton("Update model"),
+            "reset": QPushButton("Reset layers"),
+            "load": QPushButton("Load layers"),
+            "save": QPushButton("Save layers"),
+        }
+        self.buttons["update"].setEnabled(False)
+
+        self.layer_drop_down = QComboBox()
+        self.layer_drop_down.setStyleSheet("background-color: white")
+        self.layer_drop_down.addItem("Add layer")
+
+        self.bottom_widget = QWidget()
+        bottom = QVBoxLayout()
+        bottom.setContentsMargins(2, 2, 2, 2)
+        bottom.setSpacing(2)
+        self.bottom_widget.setLayout(bottom)
+        bottom_first = QWidget()
+        first = QHBoxLayout()
+        first.setContentsMargins(2, 2, 2, 2)
+        first.setSpacing(2)
+        first.setAlignment(QtCore.Qt.AlignLeft)
+        bottom_first.setLayout(first)
+        first.addWidget(self.layer_drop_down)
+        first.addWidget(self.buttons["update"])
+        first.addWidget(self.buttons["reset"])
+        first.addWidget(self.buttons["load"])
+        first.addWidget(self.buttons["save"])
+        first.addWidget(self.error_text)
+        bottom_second = QWidget()
+        second = QHBoxLayout()
+        second.setContentsMargins(2, 2, 2, 2)
+        second.setSpacing(2)
+        second.setAlignment(QtCore.Qt.AlignLeft)
+        bottom_second.setLayout(second)
+        self.model_variables = {
+            "trainable": QLabel(""),
+            "non_trainable": QLabel(""),
+            "total": QLabel(""),
+        }
+        for l in self.model_variables:
+            second.addWidget(self.model_variables[l])
+
+        bottom.addWidget(bottom_first)
+        bottom.addWidget(bottom_second)
+
+        for b in self.buttons:
+            button = self.buttons[b]
+            button.clicked.connect(self.model_actions)
+
+    def model_actions(self):
+        action = self.sender().text()
+        if action == "Reset layers":
+            if os.path.isfile("last_model.yaml"):
+                f = "last_model.yaml"
+            else:
+                f = DEFAULT_MODEL_FILENAME_2D
+            self.load_layers(f)
+        elif action == "Update model":
+            if self.gui_handle.training_sidepanel.train_data is None:
+                self.gui_handle.error_message("Load training data first!")
+            else:
+                layer_list = self.get_layer_list()
+                keras_layer_info = self.gui_handle.training_sidepanel.keras.update_model_layers(
+                    layer_list
+                )
+                self.gui_handle.training_sidepanel.train_data["layer_list"] = layer_list
+                self.set_layer_shapes(keras_layer_info)
+                self.allow_update()
+        else:
+            title = "Save/Load layer settings"
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
+            file_types = "YAML layer data files (*.yaml)"
+
+            if action == "Save layers":
+                filename, info = QtWidgets.QFileDialog.getSaveFileName(
+                    self, title, "", file_types, options=options)
+            elif action == "Load layers":
+                filename, info = QtWidgets.QFileDialog.getOpenFileName(
+                    self, title, "", file_types, options=options)
+
+            if not filename:
+                return
+
+            if action == "Load layers":
+                self.load_layers(filename)
+            elif action == "Save layers":
+                if os.path.splitext(filename)[1] != ".yaml":
+                    os.path.join(filename, ".yaml")
+                self.dump_layers(self.get_layer_list(include_inactive_layers=True), filename)
+
+    def dump_layers(self, layers, filename):
+        try:
+            with open(filename, 'w') as f_handle:
+                yaml.dump(layers, f_handle, default_flow_style=False)
+        except Exception as e:
+            print("Failed to dump layers to file {}!\n".format(filename), e)
+
+    def load_layers(self, filename):
+        try:
+            with open(filename, 'r') as f_handle:
+                layers = yaml.load(f_handle)
+            self.update_layer_list(layers)
+        except Exception as e:
+            print("Failed to load layers\n", e)
+        return layers
+
+    def update_grid(self):
+        try:
+            self._layout.removeWidget(self.name_vline)
+            self._layout.removeWidget(self.params_vline)
+            self._layout.removeWidget(self.remove_vline)
+        except Exception:
+            pass
+
+        for i in range(self.row_idx.val):
+            self._layout.setRowStretch(i, 0)
+
+        layer_nr = 1
+        for idx, l in enumerate(self.enabled_layers):
+            l["layer_control"].update_value(idx + 1)
+            if l["is_active"]:
+                l["other_items"][1].setText("Layer {}".format(layer_nr))
+                layer_nr += 1
+            else:
+                l["other_items"][1].setText("Layer inactive")
+
+        self._layout.addWidget(self.name_vline, 0, 1, self.row_idx.val + 1, 1)
+        self._layout.addWidget(self.params_vline, 0, self.param_col + 1, self.row_idx.val + 1, 1)
+        self._layout.addWidget(self.remove_vline, 0, self.remove_col + 1, self.row_idx.val + 1, 1)
+
+        self.layer_drop_down.setCurrentIndex(0)
+
+        self._layout.setRowStretch(self.row_idx.val + 2, 1)
+        self._layout.setColumnStretch(3, 1)
+        self._layout.setColumnStretch(self.nr_col, 1)
+
+    def increment(self, skip=[1]):
+        self.num += 1
+        self.increment_skip(skip)
+        return self.num
+
+    def parse_layers(self):
+        self.layer_list = {}
+        self.name_to_key = {}
+
+        for key in self.layers:
+            try:
+                layer = self.layers[key]
+                name = layer["class_str"]
+                self.layer_list[key] = {
+                    "name": name,
+                    "params": layer["params"],
+                    "dimensions": layer["dimensions"],
+                }
+                self.name_to_key[name] = key
+            except Exception as e:
+                print("Failed to add layer!\n", e)
+
+        for key in self.layer_list:
+            self.layer_drop_down.addItem(self.layer_list[key]["name"])
+
+        self.layer_drop_down.currentIndexChanged.connect(self.add_layer_details)
+
+    def add_layer_details(self, data, key=None):
+        if not key:
+            index = self.sender().currentIndex()
+            if index == 0:
+                return
+            else:
+                try:
+                    key = self.name_to_key[self.sender().currentText()]
+                except KeyError:
+                    print("Unknown feature: {}\n".format(self.sender().currentText()))
+                    return
+                except Exception as e:
+                    print("Something went wrong!\n", e)
+                    return
+
+        self._layout.removeWidget(self.bottom_widget)
+
+        layer = self.layers[key]
+        dimensions = layer["dimensions"]
+        layer_params = layer["params"]
+        self.num = 0
+        row = self.row_idx.pre_incr()
+
+        other_items = []
+        other_items.append(QLabel(key))
+        self._layout.addWidget(other_items[0], row, self.num)
+
+        params_widget = QWidget(self)
+        params_box = QHBoxLayout()
+        params_box.setAlignment(QtCore.Qt.AlignLeft)
+        params_widget.setLayout(params_box)
+        self._layout.addWidget(params_widget, row, self.param_col)
+        params = {}
+        labels = {}
+        if layer_params is not None:
+            for text in layer_params:
+                p = layer_params[text]
+                labels[text] = QLabel(text)
+                params_box.addWidget(labels[text])
+                if p[0] == "drop_down":
+                    limits = data_type = value = None
+                    params[text] = QComboBox(self)
+                    params[text].setStyleSheet("background-color: white")
+                    for item in p[1]:
+                        params[text].addItem(item)
+                    edit = params[text].currentIndexChanged
+                else:
+                    value, data_type, limits = p
+                    if data_type == bool:
+                        params[text] = QCheckBox(self)
+                        params[text].setChecked(value)
+                        edit = params[text].stateChanged
+                    else:
+                        box = []
+                        edit = []
+                        if isinstance(value, tuple):
+                            box.append(QLabel("("))
+                            for index, v in enumerate(value):
+                                box.append(QLineEdit(str(v)))
+                                if index < len(value) - 1:
+                                    box.append(QLabel("x"))
+                            box.append(QLabel(")"))
+                        else:
+                            box.append(QLineEdit(str(value)))
+                        params[text] = box
+                        for entry in box:
+                            if isinstance(entry, QtWidgets.QLineEdit):
+                                entry.setStyleSheet("background-color: white")
+                                edit.append(entry.editingFinished)
+                                entry.setMaximumWidth(40)
+
+                if not isinstance(edit, list):
+                    edit = [edit]
+                if not isinstance(params[text], list):
+                    params[text] = [params[text]]
+
+                for entry in edit:
+                    entry.connect(
+                        partial(self.update_layer_params, limits, data_type, value)
+                    )
+
+                for entry in params[text]:
+                    entry.setFixedHeight(25)
+                    params_box.addWidget(entry)
+                params_box.addStretch(1)
+        else:
+            params = None
+            place_holder = QLabel("")
+            place_holder.setFixedHeight(25)
+            params_box.addWidget(place_holder)
+        params_box.addStretch(100)
+
+        layer_output_shape = QLabel("")
+        self._layout.addWidget(layer_output_shape, row + 1, self.param_col)
+
+        layer_position = len(self.enabled_layers) + 1
+        layer_control = ModelLayerSpinBox(layer_position, self, callback=self.update_layer)
+        self._layout.addWidget(layer_control, row, self.remove_col, 2, 1)
+
+        row = self.row_idx.pre_incr()
+
+        other_items.append(QLabel("Layer {}".format(len(self.enabled_layers) + 1)))
+        self._layout.addWidget(other_items[1], row, 0)
+
+        other_items.append(QHLine())
+
+        self._layout.addWidget(other_items[2], self.row_idx.pre_incr(), 0, 1, self.nr_col)
+
+        layer_params = {
+            "key": key,
+            "name": self.layer_list[key]["name"],
+            "params": params,
+            "labels": labels,
+            "other_items": other_items,
+            "layer_control": layer_control,
+            "count": self.enabled_count.val,
+            "dimensions": dimensions,
+            "layer_output_shape": layer_output_shape,
+            "params_box": params_box,
+            "params_widget": params_widget,
+            "is_active": True,
+        }
+
+        self.enabled_layers.append(layer_params)
+
+        self.update_grid()
+
+    def update_layer(self, action=None, layer_position=None, value=None):
+        if action == "remove_layer":
+            self.remove_layer(pos=layer_position)
+        if action == "is_active":
+            layer = self.enabled_layers[layer_position-1]
+            layer["is_active"] = value
+            layer["params_widget"].setEnabled(value)
+            for w in layer["other_items"]:
+                w.setEnabled(value)
+            self.update_grid()
+        if action == "move_layer":
+            self.move_layer(layer_position - 1, value - 1)
+
+        self.allow_update(set_red=True)
+
+        self.set_layer_shapes(None)
+
+    def allow_update(self, allow=None, set_red=False):
+        if allow is not None:
+            self.buttons["update"].setEnabled(allow)
+
+        if set_red and self.buttons["update"].isEnabled():
+            c = "red"
+        elif self.buttons["update"].isEnabled():
+            c = "black"
+        else:
+            c = "grey"
+
+        self.buttons["update"].setStyleSheet("QPushButton {{color: {}}}".format(c))
+
+    def move_layer(self, layer_pos, move_to):
+        out_of_limits = False
+        insert_pos = []
+        to_pos = 0
+
+        touch_layers = [layer_pos, move_to]
+
+        if move_to >= len(self.enabled_layers) or move_to < 0:
+            out_of_limits = True
+
+        for idx, layer in enumerate(self.enabled_layers):
+            if out_of_limits or idx not in touch_layers:
+                continue
+
+            widgets = []
+            widgets.append(layer["layer_control"])
+            widgets.append(layer["params_widget"])
+            widgets.append(layer["layer_output_shape"])
+
+            for i in layer["other_items"]:
+                widgets.append(i)
+
+            if idx == layer_pos:
+                for w in widgets:
+                    i = self._layout.indexOf(w)
+                    pos = self._layout.getItemPosition(i)
+                    insert_pos.append(pos)
+                    self._layout.removeWidget(w)
+                reinsert = widgets
+            else:
+                if move_to < layer_pos:
+                    shift_index = 3
+                else:
+                    shift_index = -3
+
+                if idx == move_to:
+                    i = self._layout.indexOf(widgets[0])
+                    pos = self._layout.getItemPosition(i)
+                    to_pos = pos[0]
+
+                for w in widgets:
+                    i = self._layout.indexOf(w)
+                    pos = self._layout.getItemPosition(i)
+                    self._layout.removeWidget(w)
+                    self._layout.addWidget(w, pos[0] + shift_index, pos[1], pos[2], pos[3])
+
+        if not out_of_limits:
+            shift_index = to_pos - insert_pos[0][0]
+            for w, pos in zip(reinsert, insert_pos):
+                self._layout.addWidget(w, pos[0] + shift_index, pos[1], pos[2], pos[3])
+
+            self.enabled_layers.insert(move_to, self.enabled_layers.pop(layer_pos))
+
+        self.update_grid()
+
+    def remove_layer(self, pos=None, clear_all=False):
+        if not clear_all:
+            if pos is None:
+                button = self.sender()
+                button_idx = self._layout.indexOf(button)
+                pos = self._layout.getItemPosition(button_idx)
+                list_pos = [int((pos[0] - 2) / 3)]
+            else:
+                list_pos = [pos-1]
+        else:
+            list_pos = list(range(len(self.enabled_layers)))
+
+        pop_list = []
+        for lpos in list_pos:
+            for idx, layer in enumerate(self.enabled_layers):
+
+                if idx < lpos:
+                    continue
+
+                widgets = []
+                widgets.append(layer["layer_control"])
+                widgets.append(layer["params_widget"])
+                widgets.append(layer["layer_output_shape"])
+
+                for i in layer["other_items"]:
+                    widgets.append(i)
+
+                if idx == lpos:
+                    for w in widgets:
+                        self._layout.removeWidget(w)
+                        w.deleteLater()
+                        w = None
+                else:
+                    for w in widgets:
+                        idx = self._layout.indexOf(w)
+                        pos = self._layout.getItemPosition(idx)
+                        self._layout.removeWidget(w)
+                        self._layout.addWidget(w, pos[0] - 3, pos[1], pos[2], pos[3])
+
+            pop_list.append(lpos)
+            self.row_idx.decr(val=3)
+            if len(pop_list) == len(self.enabled_layers):
+                self.row_idx.set_val(1)
+
+        pop_list.sort(reverse=True)
+        for i in pop_list:
+            self.enabled_layers.pop(i)
+
+        self.update_grid()
+
+    def get_layer_list(self, enabled_layers=None, include_inactive_layers=False):
+        l_list = []
+
+        if enabled_layers is None:
+            enabled_layers = self.enabled_layers
+        if not isinstance(enabled_layers, list):
+            enabled_layers = [enabled_layers]
+
+        for idx, layer in enumerate(enabled_layers):
+            if not layer["is_active"] and not include_inactive_layers:
+                continue
+            key = layer["key"]
+            list_entry = {
+                "name": key,
+                "class": layer["name"],
+                "params": {},
+                "is_active": layer["is_active"],
+            }
+            if layer["params"] is not None:
+                for opt in layer["params"]:
+                    param_list = []
+                    for p in layer["params"][opt]:
+                        if isinstance(p, QtWidgets.QCheckBox):
+                            param_list.append(p.isChecked())
+                        elif isinstance(p, QtWidgets.QComboBox):
+                            param_list.append(p.currentText())
+                        elif isinstance(p, QLineEdit):
+                            convert_cb = self.layers[key]['params'][opt][1]
+                            param_list.append(convert_cb(p.text()))
+                    if len(param_list) > 1:
+                        list_entry["params"][opt] = param_list
+                    else:
+                        list_entry["params"][opt] = param_list[0]
+            else:
+                list_entry["params"] = None
+
+            l_list.append(list_entry)
+
+        return l_list
+
+    def update_layer_list(self, saved_layer_list):
+        # check if layer list is valid
+        if saved_layer_list is None:
+            return
+        try:
+            for saved in saved_layer_list:
+                layer = {}
+                layer["name"] = saved["name"]
+                layer["class"] = saved["class"]
+        except Exception as e:
+            print("Layer list not compatible!\n", e)
+            return
+
+        self.remove_layer(clear_all=True)
+
+        error_message = "Feature Classes not found:\n"
+        all_found = True
+        for s_layer in saved_layer_list:
+            try:
+                layer_key = s_layer["name"]
+                self.add_layer_details(None, key=layer_key)
+            except Exception:
+                error_message += ("Feature Name: {}\n".format(s_layer["name"]))
+                all_found = False
+            else:
+                if layer_key in self.layer_list:
+                    e_layer = self.enabled_layers[-1]
+                else:
+                    print("Unknown layer key {}". format(layer_key))
+                    continue
+
+                is_active = s_layer.get("is_active", True)
+                if not is_active:
+                    e_layer["layer_control"].set_active(False)
+
+                if s_layer["params"] is None:
+                    continue
+
+                for p in s_layer["params"]:
+                    saved_value = s_layer["params"][p]
+                    boxes = e_layer["params"][p]
+                    for box in boxes:
+                        if isinstance(box, QtWidgets.QCheckBox):
+                            box.setChecked(saved_value[0])
+                        elif isinstance(box, QtWidgets.QComboBox):
+                            index = box.findText(saved_value[0], QtCore.Qt.MatchFixedString)
+                            if index >= 0:
+                                box.setCurrentIndex(index)
+                        elif isinstance(box, QtWidgets.QLineEdit):
+                            added = 0
+                            if isinstance(saved_value, list):
+                                box.setText(str(saved_value[added]))
+                                added += 1
+                            else:
+                                box.setText(str(saved_value))
+
+        if not all_found:
+            try:
+                self.gui_handle.error_message(error_message)
+            except Exception:
+                print(error_message)
+        QApplication.processEvents()
+
+        return all_found
+
+    def set_layer_shapes(self, keras_layer_list):
+        if keras_layer_list is None:
+            for layer in self.enabled_layers:
+                layer["layer_output_shape"].setText("")
+            for key in self.model_variables:
+                self.model_variables[key].setText("")
+        else:
+            active_layers = []
+            for i, l in enumerate(self.enabled_layers):
+                if l["is_active"]:
+                    active_layers.append(i)
+            for idx, layer in enumerate(keras_layer_list):
+                if idx == 0:
+                    continue
+                out = "Output: {}".format(layer.output_shape)
+                self.enabled_layers[active_layers[idx-1]]["layer_output_shape"].setText(out)
+            try:
+                variables = self.gui_handle.training_sidepanel.keras.count_variables()
+                if variables is not None:
+                    total = 0
+                    for key in variables:
+                        text = "{}: {}".format(key, variables[key])
+                        total += variables[key]
+                        self.model_variables[key].setText(text)
+                    self.model_variables["total"].setText("Total: {}".format(total))
+            except Exception as e:
+                print("Failed to parse trainable variables!\n", e)
+
+    def clearLayout(self):
+        while self._layout.count():
+            child = self._layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+    def update_layer_params(self, limits, data_type, default):
+        # ToDo
+        return
+
+
 class EvalFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
-        super().__init__()
+        super().__init__(parent)
 
         self.feature_process = None
         self.gui_handle = gui_handle
@@ -2670,7 +3347,7 @@ class EvalFrame(QFrame):
 
 class EvalSidePanel(QFrame):
     def __init__(self, parent, gui_handle):
-        super().__init__()
+        super().__init__(parent)
 
         self.keras = None
 
@@ -2705,6 +3382,7 @@ class EvalSidePanel(QFrame):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, title, "", "NumPy data files (*.npy)", options=options)
 
+        self.gui_handle.model_select.allow_update(False)
         if not filename:
             return
 
@@ -2719,6 +3397,16 @@ class EvalSidePanel(QFrame):
             self.gui_handle.feature_select.update_feature_list(d["feature_list"])
             self.gui_handle.feature_sidepanel.set_frame_settings(d["frame_settings"])
             self.config_is_valid(show_warning=False)
+            self.gui_handle.model_select.update_layer_list(self.model_data["layer_list"])
+            self.gui_handle.model_select.set_layer_shapes(self.model_data["keras_layer_info"])
+            self.gui_handle.training.set_feature_dimensions(
+                self.model_data["model_input"],
+                self.model_data["nr_of_training_maps"]
+            )
+            self.gui_handle.model_select.dump_layers(
+                self.model_data["layer_list"],
+                "last_model.yaml"
+            )
         except Exception as e:
             self.gui_handle.error_message("Failed to load model data:<br> {}".format(e))
             self.model_data["loaded"] = False
@@ -2964,6 +3652,64 @@ class BatchProcessDialog(QDialog):
             self.reject()
 
 
+class ModelLayerSpinBox(QFrame):
+    def __init__(self, value, parent, callback=None):
+        super().__init__(parent)
+        self.value = value
+        self.cb = callback
+        width = 60
+        height = 25
+
+        self.grid = QtWidgets.QGridLayout(self)
+        self.grid.setContentsMargins(1, 1, 1, 1)
+        self.grid.setSpacing(1)
+        self.grid.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.x = QPushButton("Remove")
+        self.grid.addWidget(self.x, 0, 1)
+        self.x.clicked.connect(partial(self._update, "x-button"))
+        self.x.setFixedWidth(width)
+        self.x.setFixedHeight(height)
+
+        self.up = QToolButton()
+        self.up.setArrowType(QtCore.Qt.UpArrow)
+        self.grid.addWidget(self.up, 0, 0)
+        self.up.clicked.connect(partial(self._update, "up"))
+        self.up.setFixedWidth(width)
+        self.up.setFixedHeight(height)
+
+        self.down = QToolButton()
+        self.down.setArrowType(QtCore.Qt.DownArrow)
+        self.grid.addWidget(self.down, 1, 0)
+        self.down.clicked.connect(partial(self._update, "down"))
+        self.down.setFixedWidth(width)
+        self.down.setFixedHeight(height)
+
+        self.check = QCheckBox("Active", self)
+        self.check.setChecked(True)
+        self.check.stateChanged.connect(partial(self._update, "is_active"))
+        self.grid.addWidget(self.check, 1, 1)
+        self.check.setMinimumWidth(width)
+        self.check.setMaximumWidth(width)
+
+    def _update(self, source):
+        if source == "up":
+            self.cb("move_layer", self.value, self.value - 1)
+        elif source == "down":
+            self.cb("move_layer", self.value, self.value + 1)
+        elif source == "x-button":
+            self.cb("remove_layer", self.value)
+        elif source == "is_active":
+            self.cb("is_active", self.value, self.check.isChecked())
+
+    def update_value(self, value):
+        value = max(value, 1)
+        self.value = value
+
+    def set_active(self, enabled):
+        self.check.setChecked(enabled)
+
+
 class SpinBoxAndSliderWidget(QFrame):
     def __init__(self, tag, callback=None):
         super().__init__()
@@ -3010,15 +3756,18 @@ class SpinBoxAndSliderWidget(QFrame):
 
     def _update(self, source):
         value = self.box[source].value()
-        self.spin_box.setValue(value)
-        self.slider.setValue(value)
+        self.set_value(value)
 
         if self.cb is not None:
             self.cb(self.tag, value)
 
     def set_value(self, value):
+        self.spin_box.blockSignals(True)
+        self.slider.blockSignals(True)
         self.spin_box.setValue(value)
         self.slider.setValue(value)
+        self.spin_box.blockSignals(False)
+        self.slider.blockSignals(False)
 
     def set_limits(self, limits):
         for element in self.box:
