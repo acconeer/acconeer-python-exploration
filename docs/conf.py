@@ -23,7 +23,11 @@ extensions = [
 
 autodoc_member_order = "bysource"
 
-graphviz_dot_args = []
+graphviz_dot_args = [
+    "-Gfontname=sans-serif",
+    "-Efontname=sans-serif",
+    "-Nfontname=sans-serif",
+]
 graphviz_output_format = "svg"
 
 source_suffix = ".rst"
