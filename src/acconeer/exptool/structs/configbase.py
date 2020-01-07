@@ -3,7 +3,6 @@ import inspect
 import json
 import os
 from copy import copy
-from weakref import WeakKeyDictionary
 
 import attr
 import numpy as np
@@ -62,11 +61,15 @@ class Parameter:
         elif self._pidget_class is None:
             self.visible = False
 
-        self.pidgets = WeakKeyDictionary()
-
         doc = self.generate_doc()
         if doc:
             self.__doc__ = doc.strip()
+
+        self._attr_name = None
+
+    @property
+    def pidget_attr_key(self):
+        return "__pidget_" + self._attr_name
 
     def update_pidget(self, obj, alerts=None):
         pidget = self.get_pidget(obj)
@@ -74,7 +77,7 @@ class Parameter:
             pidget.update(alerts)
 
     def get_pidget(self, obj):
-        return self.pidgets.get(obj)
+        return obj.__dict__.get(self.pidget_attr_key)
 
     def create_pidget(self, obj):
         from acconeer.exptool.structs import qtpidgets
@@ -82,11 +85,13 @@ class Parameter:
         if self._pidget_class is None:
             return None
 
-        if obj not in self.pidgets:
-            pidget_class = getattr(qtpidgets, self._pidget_class)
-            self.pidgets[obj] = pidget_class(self, obj)
+        key = self.pidget_attr_key
 
-        return self.pidgets[obj]
+        if key not in obj.__dict__:
+            pidget_class = getattr(qtpidgets, self._pidget_class)
+            obj.__dict__[key] = pidget_class(self, obj)
+
+        return obj.__dict__[key]
 
     def pidget_event_handler(self, *args, **kwargs):
         pass
@@ -134,24 +139,26 @@ class ValueParameter(Parameter):
 
         kwargs.setdefault("does_dump", True)
 
-        self.values = WeakKeyDictionary()
-
         super().__init__(**kwargs)
 
         self.default_value = self.sanitize(self.default_value)
+
+    @property
+    def value_attr_key(self):
+        return "__value_" + self._attr_name
 
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
 
-        return copy(self.values.get(obj, default=self.default_value))
+        return copy(obj.__dict__.get(self.value_attr_key, self.default_value))
 
     def __set__(self, obj, value):
         value = self.sanitize(value)
-        self.values[obj] = value
+        obj.__dict__[self.value_attr_key] = value
 
     def __delete__(self, obj):
-        self.values.pop(obj, None)
+        obj.__dict__.pop(self.value_attr_key, None)
 
     def pidget_event_handler(self, obj, val):
         self.__set__(obj, val)  # might raise an exception
@@ -348,24 +355,28 @@ class ClassParameter(Parameter):
     def __init__(self, **kwargs):
         self.objtype = kwargs.pop("objtype")
 
-        self.instances = WeakKeyDictionary()
-
         super().__init__(**kwargs)
+
+    @property
+    def instance_attr_key(self):
+        return "__instance_" + self._attr_name
 
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
 
-        if obj not in self.instances:
-            self.instances[obj] = self.objtype(self, obj)
+        key = self.instance_attr_key
 
-        return self.instances[obj]
+        if key not in obj.__dict__:
+            obj.__dict__[key] = self.objtype(self, obj)
+
+        return obj.__dict__[key]
 
     def __set__(self, obj, value):
         raise AttributeError("Unsettable parameter")
 
     def __delete__(self, obj):
-        self.instances.pop(obj, None)
+        obj.__dict__.pop(self.instance_attr_key, None)
 
 
 def get_virtual_parameter_class(base_class):
@@ -406,7 +417,16 @@ def get_virtual_parameter_class(base_class):
     return VirtualParameter
 
 
-class Config:
+class ConfigMeta(type):
+    def __new__(cls, name, bases, d):
+        for key, val in d.items():
+            if isinstance(val, Parameter):
+                val._attr_name = key
+
+        return super(ConfigMeta, cls).__new__(cls, name, bases, d)
+
+
+class Config(metaclass=ConfigMeta):
     class State(enum.Enum):
         UNLOADED = enum.auto()
         LOADED = enum.auto()
