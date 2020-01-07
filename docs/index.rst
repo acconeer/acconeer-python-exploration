@@ -21,6 +21,7 @@ Table of contents
    :caption: Setting up your EVK
 
    XM112 <evk_setup/xm112>
+   XM122 <evk_setup/xm122>
    Raspberry Pi <evk_setup/raspberry>
 
 .. toctree::
