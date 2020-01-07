@@ -611,16 +611,6 @@ RSS supports two different *repetition modes*. They determine how and when data 
 Note, Exploration Tool is capable of setting the update rate also in *on demand* mode. Thus, the difference between the modes becomes subtle. This is why *on demand* and *streaming* are called *host driven* and *sensor driven* respectively in Exploration Tool.
 
 
-Signal Averaging and Gain
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In addition to the Profile configuration parameter, two main configuration parameters are available in all Services to optimize the signal quality:
-
-* Hardware Accelerated Average Samples (HWAAS) is related to the number of pulses averaged in the radar to produce one data point. A high number will increase the radar loop gain but each sweep will take longer to acquire and therefore limit the maximum update rate.
-
-* The gain of the amplifiers in the sensor. Adjusting this parameter so the ADC isn't saturated and at the same time the signal is above the quantization noise is necessary. A gain figure of 0.5 is often a good start.
-
-
 Power modes
 ^^^^^^^^^^^
 
