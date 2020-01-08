@@ -49,16 +49,6 @@ class BaseClient(abc.ABC):
 
         session_info = self._setup_session(config)
         self._session_setup_done = True
-
-        try:
-            start_ok = abs(config.range_start - session_info["range_start_m"]) < 0.01
-            len_ok = abs(config.range_length - session_info["range_length_m"]) < 0.01
-        except (AttributeError, KeyError, TypeError):
-            pass
-        else:
-            if not start_ok or not len_ok:
-                log.warning("actual measured range differs from the requested")
-
         return session_info
 
     def start_session(self, config=None):
