@@ -31,11 +31,25 @@ def setup(request):
     client.disconnect()
 
 
-def test_run_a_session(setup):
+def test_run_a_host_driven_session(setup):
     client, sensor = setup
 
     config = configs.EnvelopeServiceConfig()
     config.sensor = sensor
+    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.HOST_DRIVEN
+
+    client.start_session(config)
+    client.get_next()
+    client.stop_session()
+
+
+def test_run_a_sensor_driven_session(setup):
+    client, sensor = setup
+
+    config = configs.EnvelopeServiceConfig()
+    config.sensor = sensor
+    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.update_rate = 10
 
     client.start_session(config)
     client.get_next()
@@ -51,6 +65,7 @@ def test_run_illegal_session(setup):
     config = configs.EnvelopeServiceConfig()
     config.sensor = sensor
     config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.update_rate = 10
     config.range_interval = [0.2, 2.0]  # too long without stitching
 
     with pytest.raises(clients.base.SessionSetupError):
