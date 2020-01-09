@@ -17,11 +17,26 @@ def main():
     config = configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
 
-    info = client.connect()
-    print("connect info:", info)
-    client.start_session(config)
-    client.get_next()
+    print(config)
+
+    connect_info = client.connect()
+    print("connect info:")
+    print_dict(connect_info)
+
+    session_info = client.start_session(config)
+    print("session_info:")
+    print_dict(session_info)
+
+    data_info, data = client.get_next()
+    print("data_info:")
+    print_dict(data_info)
+
     client.disconnect()
+
+
+def print_dict(d):
+    for k, v in d.items():
+        print("  {:.<35} {}".format(k + " ", v))
 
 
 if __name__ == "__main__":
