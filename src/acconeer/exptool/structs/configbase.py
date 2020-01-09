@@ -221,6 +221,19 @@ class EnumParameter(ValueParameter):
 
         super().__init__(**kwargs)
 
+    def _sanitize(self, value):
+        if isinstance(value, self.enum):
+            return value
+
+        if not isinstance(value, str):
+            raise ValueError("Must be a {} or str (member name)".format(self.enum.__name__))
+
+        try:
+            return self.enum[value.upper()]
+        except KeyError as e:
+            msg = "{} is not a valid {} member name".format(value, self.enum.__name__)
+            raise ValueError(msg) from e
+
     def dump(self, obj):
         return self.__get__(obj).name
 
