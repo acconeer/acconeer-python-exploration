@@ -155,6 +155,8 @@ class UARTClient(RegBaseClient):
     CONNECT_ROUTINE_TIMEOUT = 0.6
 
     def __init__(self, port, **kwargs):
+        self.override_baudrate = kwargs.pop("override_baudrate")
+
         super().__init__(**kwargs)
 
         self._streaming_control_val = "uart_streaming"
@@ -163,8 +165,6 @@ class UARTClient(RegBaseClient):
             self._link = links.SerialLink(port)
         else:
             self._link = links.SerialProcessLink(port)
-
-        self.override_baudrate = kwargs.get("override_baudrate")
 
     def _connect(self):
         self._link.timeout = self.CONNECT_ROUTINE_TIMEOUT

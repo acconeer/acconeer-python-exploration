@@ -11,7 +11,11 @@ log = logging.getLogger(__name__)
 class BaseClient(abc.ABC):
     @abc.abstractmethod
     def __init__(self, **kwargs):
-        self.squeeze = kwargs.get("squeeze", True)
+        self.squeeze = kwargs.pop("squeeze", True)
+
+        if kwargs:
+            a_key = next(iter(kwargs.keys()))
+            raise TypeError("Got unexpected keyword argument ({})".format(a_key))
 
         self._connected = False
         self._session_setup_done = False
