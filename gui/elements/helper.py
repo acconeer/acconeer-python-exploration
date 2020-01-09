@@ -409,20 +409,3 @@ class Count:
 
     def set_val(self, val):
         self.val = val
-
-
-class GUI_Styles:
-    def get_button_style(self):
-        return (
-            "QPushButton {"
-            "background-color: #f0f0f0;"
-            "border-width: 1px;"
-            "border-color: #339;"
-            "}"
-            "QPushButton:pressed {"
-            "background-color: red;"
-            "}"
-            "QPushButton:hover:!pressed {"
-            "background-color: lightcoral;"
-            "}"
-        )

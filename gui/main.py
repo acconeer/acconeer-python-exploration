@@ -752,17 +752,16 @@ class GUI(QMainWindow):
 
     def init_tabs(self):
         self.tab_parent = QTabWidget(self.main_widget)
-        self.tab_parent.setStyleSheet("background: #f0f0f0")
         self.tab_parent.resize(300, 200)
 
         self.tabs = {
-            "collect": (QWidget(self.main_widget), "Configure service"),
-            "feature_select": (QWidget(self.main_widget), "Feature configuration"),
-            "feature_extract": (QWidget(self.main_widget), "Feature extraction"),
-            "feature_inspect": (QWidget(self.main_widget), "Feature inspection"),
-            "model_select": (QWidget(self.main_widget), "Model parameters"),
-            "train": (QWidget(self.main_widget), "Train Network"),
-            "eval": (QWidget(self.main_widget), "Use Network"),
+            "collect": (QWidget(self.tab_parent), "Configure service"),
+            "feature_select": (QWidget(self.tab_parent), "Feature configuration"),
+            "feature_extract": (QWidget(self.tab_parent), "Feature extraction"),
+            "feature_inspect": (QWidget(self.tab_parent), "Feature inspection"),
+            "model_select": (QWidget(self.tab_parent), "Model parameters"),
+            "train": (QWidget(self.tab_parent), "Train Network"),
+            "eval": (QWidget(self.tab_parent), "Use Network"),
         }
 
         self.tabs_text_to_key = {
@@ -779,6 +778,8 @@ class GUI(QMainWindow):
             self.tab_parent.addTab(tab, label)
             tab.layout = QtWidgets.QVBoxLayout()
             tab.setLayout(tab.layout)
+            tab.setObjectName("child")
+            tab.setStyleSheet("QWidget#child{background: #f0f0f0}")
             self.tabs[key] = tab
 
         self.tab_parent.currentChanged.connect(self.tab_changed)

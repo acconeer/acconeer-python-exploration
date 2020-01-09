@@ -40,7 +40,7 @@ import feature_definitions as feature_def
 import feature_processing as feature_proc
 import keras_processing as kp
 import layer_definitions as layer_def
-from helper import Count, ErrorFormater, GUI_Styles, LoadState, QHLine, QVLine, SensorSelection
+from helper import Count, ErrorFormater, LoadState, QHLine, QVLine, SensorSelection
 from modules import MODULE_KEY_TO_MODULE_INFO_MAP
 
 
@@ -49,12 +49,15 @@ HERE = os.path.abspath(os.path.join(HERE, '..'))
 DEFAULT_MODEL_FILENAME_2D = os.path.join(HERE, "ml", "default_layers_2D.yaml")
 TRAIN_TAB = 5
 MODEL_TAB = 4
+REMOVE_BUTTON_STYLE = (
+    "QPushButton:pressed {background-color: red;}"
+    "QPushButton:hover:!pressed {background-color: lightcoral;}"
+)
 
 
 class FeatureSelectFrame(QFrame):
     def __init__(self, parent, gui_handle=None):
         super().__init__(parent)
-        self.styles = GUI_Styles()
         self.param_col = 2
         self.sensor_col = self.param_col + 2
         self.remove_col = self.sensor_col + 2
@@ -130,7 +133,6 @@ class FeatureSelectFrame(QFrame):
         }
 
         self.drop_down = QComboBox()
-        self.drop_down.setStyleSheet("background-color: white")
         self.drop_down.addItem("Add feature")
 
         self.bottom_widget = QWidget()
@@ -265,7 +267,6 @@ class FeatureSelectFrame(QFrame):
                 edit = textboxes[text].stateChanged
             else:
                 textboxes[text] = QLineEdit(str(value))
-                textboxes[text].setStyleSheet("background-color: white")
                 edit = textboxes[text].editingFinished
             edit.connect(
                 partial(self.update_feature_params, limits, data_type, value)
@@ -289,7 +290,7 @@ class FeatureSelectFrame(QFrame):
         self._layout.addWidget(sensors, row, self.sensor_col)
 
         c_button = QPushButton("remove", self)
-        c_button.setStyleSheet(self.styles.get_button_style())
+        c_button.setStyleSheet(REMOVE_BUTTON_STYLE)
         c_button.clicked.connect(self.remove_feature)
 
         self._layout.addWidget(c_button, row, self.remove_col)
@@ -817,7 +818,6 @@ class FeatureExtractFrame(QFrame):
             "h_line_1": QHLine(),
         }
 
-        self.textboxes["label"].setStyleSheet("background-color: lightcoral")
         self.textboxes["label"].setAlignment(QtCore.Qt.AlignHCenter)
         self.labels["label"].setFixedWidth(200)
         self.labels["empty_2"].setFixedWidth(200)
@@ -945,8 +945,7 @@ class FeatureSidePanel(QFrame):
             "continuous": QRadioButton("cont."),
         }
 
-        self.auto_mode = QComboBox(self)
-        self.auto_mode.setStyleSheet("background-color: white")
+        self.auto_mode = QComboBox()
         self.auto_mode.addItem("Presence detection")
         self.auto_mode.addItem("Feature detection")
 
@@ -2136,7 +2135,7 @@ class TrainingSidePanel(QFrame):
             "epochs": QLabel("Epochs: "),
             "batch_size": QLabel("Batch size:"),
             "optimizer": QLabel("Optimizer:"),
-            "evaluate": QLabel("Evaluate Settings: "),
+            "evaluate": QLabel("Validation settings: "),
             "learning_rate": QLabel("Learning rate:"),
             "delta": QLabel("Min. delta"),
             "patience": QLabel("Patience"),
@@ -2243,7 +2242,6 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(self.buttons["save_model"], self.num, 2, 1, 2)
         self.grid.addWidget(self.buttons["clear_model"], self.increment(), 0, 1, 4)
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
-        self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["epochs"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["epochs"], self.num, 2, 1, 2)
         self.grid.addWidget(self.labels["batch_size"], self.increment(), 0, 1, 2)
@@ -2252,14 +2250,12 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(self.optimizer_list, self.num, 2, 1, 2)
         self.grid.addWidget(self.labels["learning_rate"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["learning_rate"], self.num, 2, 1, 2)
-        self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.checkboxes["early_dropout"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.dropout_list, self.num, 2, 1, 2)
         self.grid.addWidget(self.labels["patience"], self.increment(), 0)
         self.grid.addWidget(self.textboxes["patience"], self.num, 1)
         self.grid.addWidget(self.labels["delta"], self.num, 2)
         self.grid.addWidget(self.textboxes["delta"], self.num, 3)
-        self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.checkboxes["save_best"], self.increment(), 0, 1, 2)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.radio_frame, self.increment(), 0, 1, 4)
@@ -2439,6 +2435,7 @@ class TrainingSidePanel(QFrame):
         else:
             # Make sure correct layer list is displayed
             self.gui_handle.model_select.update_layer_list(self.train_data["layer_list"])
+            self.gui_handle.model_select.allow_update(set_red=False)
             self.gui_handle.tab_parent.setCurrentIndex(TRAIN_TAB)
         x = self.train_data["x_data"]
         y = self.train_data["y_labels"]
@@ -2717,7 +2714,6 @@ class ModelSelectFrame(QFrame):
         self.buttons["update"].setEnabled(False)
 
         self.layer_drop_down = QComboBox()
-        self.layer_drop_down.setStyleSheet("background-color: white")
         self.layer_drop_down.addItem("Add layer")
 
         self.bottom_widget = QWidget()
@@ -2915,7 +2911,6 @@ class ModelSelectFrame(QFrame):
                 if p[0] == "drop_down":
                     limits = data_type = value = None
                     params[text] = QComboBox(self)
-                    params[text].setStyleSheet("background-color: white")
                     for item in p[1]:
                         params[text].addItem(item)
                     edit = params[text].currentIndexChanged
@@ -2940,7 +2935,6 @@ class ModelSelectFrame(QFrame):
                         params[text] = box
                         for entry in box:
                             if isinstance(entry, QtWidgets.QLineEdit):
-                                entry.setStyleSheet("background-color: white")
                                 edit.append(entry.editingFinished)
                                 entry.setMaximumWidth(40)
 
@@ -3301,8 +3295,6 @@ class EvalFrame(QFrame):
         }
         self.textboxes = {
         }
-        for t in self.textboxes:
-            self.textboxes[t].setStyleSheet("background-color: white")
 
         self.checkboxes = {
         }
@@ -3670,6 +3662,7 @@ class ModelLayerSpinBox(QFrame):
         self.x.clicked.connect(partial(self._update, "x-button"))
         self.x.setFixedWidth(width)
         self.x.setFixedHeight(height)
+        self.x.setStyleSheet(REMOVE_BUTTON_STYLE)
 
         self.up = QToolButton()
         self.up.setArrowType(QtCore.Qt.UpArrow)
@@ -3726,7 +3719,6 @@ class SpinBoxAndSliderWidget(QFrame):
         self.grid.addWidget(label, 0, 0, 1, 1)
 
         self.spin_box = QSpinBox(self)
-        self.spin_box.setStyleSheet("background-color: white")
         self.spin_box.setRange(0, 100)
         self.spin_box.setSingleStep(1)
         self.spin_box.valueChanged.connect(partial(self._update, "spin_box"))
