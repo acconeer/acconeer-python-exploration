@@ -39,7 +39,7 @@ and :math:`D` is a range downsampling factor, typically close to 100. The purpos
 
 The next step is a simple noise reducing low-pass filter in the time (or sweep) dimension,
 
-.. math:: \bar{x}[s,d] = \alpha_{iq} \bar{x}[s-1,d] \alpha_{iq} + (1 - \alpha_{iq}) x_D[s,d]
+.. math:: \bar{x}[s,d] = \alpha_{iq} \bar{x}[s-1,d] + (1 - \alpha_{iq}) x_D[s,d]
 
 where :math:`\alpha_{iq} = \exp \left\lbrace -2 / (\tau_{iq} f_s ) \right\rbrace` is the filter coefficient.
 
