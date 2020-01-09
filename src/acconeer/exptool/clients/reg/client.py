@@ -155,7 +155,7 @@ class UARTClient(RegBaseClient):
     CONNECT_ROUTINE_TIMEOUT = 0.6
 
     def __init__(self, port, **kwargs):
-        self.override_baudrate = kwargs.pop("override_baudrate")
+        self.override_baudrate = kwargs.pop("override_baudrate", None)
 
         super().__init__(**kwargs)
 
