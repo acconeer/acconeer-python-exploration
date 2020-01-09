@@ -4,6 +4,7 @@ import multiprocessing as mp
 import platform
 import queue
 import signal
+import sys
 import traceback
 from collections import namedtuple
 from time import sleep, time
@@ -541,9 +542,9 @@ class SPICommProcess(mp.Process):
         try:
             self._run()
         except Exception:
-            print("Exception raised in SPI communication process:\n")
+            print("Exception raised in SPI communication process:\n", file=sys.stderr)
             traceback.print_exc()
-            print("\n\n")
+            print("\n\n", file=sys.stderr)
             self.data_q.put(("error", ()))
 
         while True:
