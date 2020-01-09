@@ -56,7 +56,7 @@ def test_run_a_sensor_driven_session(setup):
     client.stop_session()
 
 
-def test_run_illegal_session(setup):
+def test_run_illegal_config(setup):
     client, sensor = setup
 
     if isinstance(client, clients.MockClient):
@@ -68,8 +68,11 @@ def test_run_illegal_session(setup):
     config.update_rate = 10
     config.range_interval = [0.2, 2.0]  # too long without stitching
 
-    with pytest.raises(clients.base.SessionSetupError):
+    with pytest.raises(clients.base.IllegalConfigError):
         client.setup_session(config)
+
+    with pytest.raises(clients.base.SessionSetupError):
+        client.setup_session(config, check_config=False)
 
     config.range_interval = [0.2, 0.4]
     client.start_session(config)
@@ -177,7 +180,7 @@ def test_repetition_mode(setup):
     client, sensor = setup
 
     def measure(config):
-        client.start_session(config)
+        client.start_session(config, check_config=False)
         client.get_next()
         t0 = time.time()
 

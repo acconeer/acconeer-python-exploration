@@ -3,6 +3,7 @@ import logging
 from distutils.version import StrictVersion
 
 from acconeer.exptool import SDK_VERSION
+from acconeer.exptool.structs import configbase
 
 
 log = logging.getLogger(__name__)
@@ -44,7 +45,10 @@ class BaseClient(abc.ABC):
 
         return info
 
-    def setup_session(self, config):
+    def setup_session(self, config, check_config=True):
+        if check_config:
+            self._check_config(config)
+
         if self._streaming_started:
             raise ClientError("can't setup session while streaming")
 
@@ -55,14 +59,14 @@ class BaseClient(abc.ABC):
         self._session_setup_done = True
         return session_info
 
-    def start_session(self, config=None):
+    def start_session(self, config=None, check_config=True):
         if self._streaming_started:
             raise ClientError("already streaming")
 
         if config is None:
             ret = None
         else:
-            ret = self.setup_session(config)
+            ret = self.setup_session(config, check_config=check_config)
 
         if not self._session_setup_done:
             raise ClientError("session needs to be set up before starting stream")
@@ -94,6 +98,20 @@ class BaseClient(abc.ABC):
         self._disconnect()
         self._connected = False
 
+    def _check_config(self, config):
+        try:
+            alerts = config.check()
+        except AttributeError:
+            return
+
+        try:
+            error_alert = next(a for a in alerts if a.severity == configbase.Severity.ERROR)
+        except StopIteration:
+            return
+
+        msg = "error in config: {}: {}".format(error_alert.param, error_alert.msg)
+        raise IllegalConfigError(msg)
+
     @abc.abstractmethod
     def _connect(self):
         pass
@@ -120,6 +138,10 @@ class BaseClient(abc.ABC):
 
 
 class ClientError(Exception):
+    pass
+
+
+class IllegalConfigError(ClientError):
     pass
 
 
