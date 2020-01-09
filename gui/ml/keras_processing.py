@@ -41,6 +41,8 @@ class MachineLearning():
     def __init__(self, model_dimension=2):
         self.labels_dict = None
         self.model = None
+        self.model_data = {"loaded": False}
+        self.training_data = {"loaded": False}
         self.model_dimensions = {
             "dimensionality": model_dimension,
             "input": None,
@@ -137,7 +139,7 @@ class MachineLearning():
                 self.init_default_model_1D()
             elif model_dim == 2:
                 self.init_default_model_2D()
-            return True
+            return {"loaded": True, "model_status": ""}
         else:
             layer_list = self.model_params["layer_list"]
 
@@ -173,13 +175,17 @@ class MachineLearning():
                     options.pop("units")
                     predictions = cb(self.label_num, **options)(x)
             except Exception as e:
-                return "Layer nr. {} failed. Error adding {}\n{}".format(idx + 1, layer['name'], e)
+                return {
+                    "loaded": False,
+                    "model_messsage": "\nLayer nr. {} failed."
+                                      " Error adding {}\n{}".format(idx + 1, layer['name'], e)
+                }
 
         self.model = Model(inputs=inputs, outputs=predictions)
 
         self.set_optimizer("Adam")
 
-        return True
+        return {"loaded": True, "model_message": ""}
 
     def set_optimizer(self, optimizer, loss="categorical_crossentropy"):
         if optimizer.lower() == "adam":
@@ -202,13 +208,18 @@ class MachineLearning():
         )
 
     def train(self, train_params):
-        try:
-            x = train_params["x"]
-            y = train_params["y"]
-            epochs = train_params["epochs"]
-            batch_size = train_params["batch_size"]
-        except Exception as e:
-            print("Incorrect training parameters! ", e)
+        if self.training_data["loaded"]:
+            try:
+                x = self.training_data["x_data"]
+                y = self.model_data["y_labels"]
+                epochs = train_params["epochs"]
+                batch_size = train_params["batch_size"]
+            except Exception as e:
+                print("Incorrect training parameters! ", e)
+                return False
+        else:
+            print("Training data not loaded!")
+            return False
 
         model = self.model
         run_threaded = False
@@ -316,7 +327,11 @@ class MachineLearning():
                 print("\nTest result:")
                 print("Loss: ", test_loss, "Accuracy: ", test_acc)
 
-    def predict(self, x):
+    def predict(self, x="internal"):
+        if x == "internal" and self.training_data["loaded"]:
+            # Predict training data
+            x = self.training_data["x_data"]
+
         if len(x.shape) == len(self.model.input_shape) - 1:
             if x.shape[0] == self.model.input_shape[1]:
                 x = np.expand_dims(x, 0)
@@ -375,7 +390,7 @@ class MachineLearning():
         return None
 
     def load_train_data(self, files, layer_list=None, model_exists=False, load_test_data=False):
-        err_tip = "<br>Try clearing training before loading more data!"
+        err_tip = "\nTry clearing training before loading more data!"
         data = []
         stored_configs = []
         feature_lists = []
@@ -383,6 +398,11 @@ class MachineLearning():
         feature_map_dims = []
         files_loaded = 0
         files_failed = []
+        info = {
+            "success": False,
+            "message": "",
+            "model_initialized": False,
+        }
         for file in files:
             try:
                 file_data = np.load(file, allow_pickle=True).item()
@@ -402,12 +422,14 @@ class MachineLearning():
                 files_loaded += 1
 
         if not files_loaded:
-            return {"success": False, "message": "No valid files found"}
+            info["message"] = "No valid files found"
+            return {"info": info}
 
         data_type = "training"
         if load_test_data:
             if self.labels_dict is None:
-                return {"data": data, "success": False, "message": "Load train data first"}
+                message = "Load train data first"
+                return {"info": info}
             data_type = "test"
 
         if data_type == "training":
@@ -428,18 +450,19 @@ class MachineLearning():
                     self.model_dimensions["dimensionality"] = 1
         else:
             if self.model_params is None:
-                message = "Load training data first!"
-                return {"success": False, "message": message}
+                info["message"] = "Load training data first!"
+                return {"info": info}
 
         for i in range(1, files_loaded):
             # TODO: Check that files are compatible
             map_dims = self.model_dimensions["input"]
             if map_dims != feature_map_dims[i]:
-                message = "Input dimenions not matching: <br> Model {} - Data {}".format(
+                message = "Input dimenions not matching:\nModel {} - Data {}".format(
                     map_dims,
                     feature_map_dims[i])
                 message += err_tip
-                return {"success": False, "message": message}
+                info["message"] = message
+                return {"info": info}
 
         labels = []
         feature_maps = []
@@ -463,11 +486,11 @@ class MachineLearning():
             else:
                 output = self.model_dimensions["output"]
                 if self.label_num != output:
-                    message = "Output dimenions not matching: <br> Model {} - Data {}".format(
+                    message = "Output dimenions not matching:\nModel {} - Data {}".format(
                         output,
                         self.label_num)
-                    message += err_tip
-                    return {"success": False, "message": message}
+                    info["message"] = message + err_tip
+                    return {"info": info}
         else:
             data_labels = self.label_assignment(labels, self.labels_dict)
 
@@ -477,19 +500,21 @@ class MachineLearning():
             self.model_dimensions["init_shape"] = feature_map_data.shape[1:]
             if not model_exists:
                 model_status = self.clear_model(reinit=True)
+            else:
+                model_status = {"loaded": True, "model_message": ""}
 
         message = "Loaded {} data with shape {}\n".format(data_type, feature_map_data.shape)
-        message += "Found labels:<br>"
+        message += "Found labels:\n"
         for label in self.labels_dict:
-            message += label + "<br>"
+            message += label + "\n"
 
         if files_failed:
-            message += "Failed to load some files:<br>"
+            message += "Failed to load some files:\n"
             for f in files_failed:
-                message += f + "<br>"
+                message += f + "\n"
 
-        data = {
-            "x_data": feature_map_data,
+        self.model_data = {
+            "loaded": model_status["loaded"],
             "y_labels": label_categories,
             "label_list": self.get_label_list(),
             "feature_list": self.model_params["feature_list"],
@@ -500,26 +525,38 @@ class MachineLearning():
             "nr_of_training_maps": self.model_dimensions["nr_of_training_maps"],
         }
 
+        loaded_data = self.training_data
+        if data_type == "training":
+            self.training_data = {
+                "loaded": True,
+                "x_data": feature_map_data,
+            }
+        else:
+            self.test_data = {
+                "loaded": True,
+                "test_data": feature_map_data,
+            }
+            loaded_data = self.test_data
+
         info = {
             "data": data,
             "success": True,
             "message": message,
-            "model_loaded": False,
-            "model_status": model_status,
+            "model_initialized": model_status["loaded"],
+            "model_status": model_status["model_message"],
         }
 
-        if model_status is True:
+        if model_status["loaded"] is True:
             counted = self.count_variables()
-            data["trainable"] = counted["trainable"]
-            data["non_trainable"] = counted["non_trainable"]
-            data["keras_layer_info"] = self.model.layers
-            data["layer_list"] = layer_list
-            info["model_loaded"] = True
+            self.model_data["trainable"] = counted["trainable"]
+            self.model_data["non_trainable"] = counted["non_trainable"]
+            self.model_data["keras_layer_info"] = self.model.layers
+            self.model_data["layer_list"] = layer_list
         else:
             if not isinstance(model_status, str):
                 info["model_status"] = "Model not initialized"
 
-        return info
+        return {"info": info, "model_data": self.model_data, "loaded_data": loaded_data}
 
     def load_test_data(self, files):
         return self.load_train_data(files, load_test_data=True)
@@ -533,18 +570,23 @@ class MachineLearning():
                 "sensor_config": sensor_config._dumps(),
                 "model": self.model,
                 "frame_settings": frame_settings,
+                "nr_of_training_maps": self.model_dimensions["nr_of_training_maps"],
             }
             np.save(file, info)
         except Exception as e:
-            message = "Error saving model:<br>{}".format(e)
+            message = "Error saving model:\n{}".format(e)
         else:
             message = None
 
         return message
 
+    def get_model_data(self):
+        return self.model_data
+
     def load_model(self, file):
         try:
             del self.model
+            self.model_data["loaded"] = False
             info = np.load(file, allow_pickle=True)
             self.model = info.item()["model"]
             self.labels_dict = info.item()["labels_dict"]
@@ -560,22 +602,12 @@ class MachineLearning():
                     self.model._make_predict_function()
         except Exception as e:
             error_text = self.error_to_text(e)
-            message = "Error in load model:<br>{}".format(error_text)
+            message = "Error in load model:\n{}".format(error_text)
             return {
                 "loaded": False,
                 "message": message,
             }
         else:
-            message = "Loaded model with:\n"\
-                      "input shape    :{}\n"\
-                      "output shape   :{}\n"\
-                      "nr of features :{}\n"\
-                      "Trained with {} features".format(
-                          self.model_dimensions["input"],
-                          self.model_dimensions["output"],
-                          len(feature_list),
-                          self.model_dimensions.get("nr_of_training_maps", "N/A")
-                      )
             self.model_params = {
                 "feature_list": feature_list,
                 "frame_settings": frame_settings,
@@ -609,13 +641,34 @@ class MachineLearning():
                         print("Keras layer {} not found in layer_definitions.py!".format(l_name))
 
         counted = self.count_variables()
-        loaded_model = {
+
+        labels = self.get_label_list()
+        data_labels = self.label_assignment(labels, self.labels_dict)
+        label_categories = to_categorical(data_labels, self.label_num)
+
+        message = "Loaded model with:\n"\
+                  "input shape    :{}\n"\
+                  "output shape   :{}\n"\
+                  "nr of features :{}\n"\
+                  "labels         :{}\n"\
+                  "Trained with {} features".format(
+                      self.model_dimensions["input"],
+                      self.model_dimensions["output"],
+                      len(feature_list),
+                      labels,
+                      self.model_dimensions.get("nr_of_training_maps", "N/A")
+                  )
+
+        self.model_data = {
             "loaded": True,
             "message": message,
+            "x_data": None,
+            "y_labels": label_categories,
+            "label_list": labels,
             "feature_list": feature_list,
             "sensor_config": sensor_config,
             "frame_settings": frame_settings,
-            "layer_list": layer_list,           # GUI format layer list
+            "layer_list": layer_list,               # GUI format layer list
             "keras_layer_info": self.model.layers,  # Keras format layer list
             "trainable": counted["trainable"],
             "non_trainable": counted["non_trainable"],
@@ -623,11 +676,11 @@ class MachineLearning():
             "model_output": self.model_dimensions["output"],
         }
         try:
-            loaded_model["nr_of_training_maps"] = self.model_dimensions["nr_of_training_maps"]
+            self.model_data["nr_of_training_maps"] = self.model_dimensions["nr_of_training_maps"]
         except KeyError:
-            loaded_model["nr_of_training_maps"] = 0
+            self.model_data["nr_of_training_maps"] = 0
 
-        return loaded_model
+        return self.model_data
 
     def clear_model(self, reinit=False):
         if self.model is not None:
@@ -642,16 +695,24 @@ class MachineLearning():
                 with self.tf_graph.as_default():
                     return self.init_model()
         else:
-            return False
+            return {"loaded": False, "model_message": ""}
 
     def update_model_layers(self, layer_list):
         self.model_params["layer_list"] = layer_list
-        success = self.clear_model(reinit=True)
+        model_status = self.clear_model(reinit=True)
 
-        if success:
-            return self.model.layers
+        if model_status["model_loaded"]:
+            self.model_data["keras_layer_info"] = self.model.layers
+            return self.model_params
         else:
             return None
+
+        info = {
+            "model_initialized": False,
+            "model_message": model_status["model_message"],
+        }
+
+        return {"info": info, "model_data": self.model_data}
 
     def count_variables(self):
         if self.model is not None:
@@ -714,7 +775,7 @@ class MachineLearning():
     def error_to_text(self, error):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        err_text = "File: {}<br>Line: {}<br>Error: {}".format(fname, exc_tb.tb_lineno, error)
+        err_text = "File: {}\nLine: {}\nError: {}".format(fname, exc_tb.tb_lineno, error)
 
         return err_text
 

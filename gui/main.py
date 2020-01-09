@@ -744,9 +744,11 @@ class GUI(QMainWindow):
         if self.get_gui_state("ml_mode"):
             import ml_gui_elements as ml_gui
             import feature_processing
+            import ml_state
             self.ml_elements = ml_gui
             self.ml_external = feature_processing.DataProcessor
             self.ml_module = feature_processing
+            self.ml_state = ml_state.MLState(self)
             self.init_tabs()
             self.init_ml_panels()
 
@@ -1119,7 +1121,7 @@ class GUI(QMainWindow):
                     self.error_message("Please load a model first!\n")
                     return
                 frame_settings = self.eval_sidepanel.get_frame_settings()
-                feature_list = self.eval_sidepanel
+                feature_list = self.eval_sidepanel.get_feature_list()
                 sensor = sensor_config.sensor.copy()
                 sensor_config = self.eval_sidepanel.get_sensor_config()
                 sensor_config.sensor = sensor
@@ -1128,11 +1130,7 @@ class GUI(QMainWindow):
             else:
                 frame_settings = self.feature_sidepanel.get_frame_settings()
                 sweep_buffer = np.inf
-                feature_list = self.feature_select
-
-            e_handle = self.error_message
-            if not self.feature_select.check_limits(sensor_config, error_handle=e_handle):
-                return
+                feature_list = self.feature_select.get_feature_list()
 
             if ml_mode == "feature_select":
                 frame_settings["frame_pad"] = 0
@@ -1144,10 +1142,13 @@ class GUI(QMainWindow):
                 "frame_settings": frame_settings,
                 "evaluate": is_eval_mode,
             }
-
-            if ml_mode == "eval":
+            if is_eval_mode:
+                ml_settings["evaluate_func"] = self.eval_sidepanel.predict
                 self.ml_use_model_plot_widget.reset_data(sensor_config, processing_config)
             elif ml_mode == "feature_extract":
+                e_handle = self.error_message
+                if not self.feature_select.check_limits(sensor_config, error_handle=e_handle):
+                    return
                 self.ml_feature_plot_widget.reset_data(sensor_config, processing_config)
 
         params = {

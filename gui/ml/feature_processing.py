@@ -604,14 +604,13 @@ class DataProcessor:
         self.start_x = self.sensor_config.range_interval[0]
         self.stop_x = self.sensor_config.range_interval[1]
         self.sweep = 0
-        self.feature_list = ml_settings["feature_list"]
         self.frame_settings = ml_settings["frame_settings"]
         self.enable_plotting = True
 
         self.evaluate = False
         self.prediction_hist = None
         if ml_settings["evaluate"]:
-            self.evaluate = self.feature_list.predict
+            self.evaluate = ml_settings["evaluate_func"]
 
         self.rate = 1 / self.sensor_config.update_rate
 
@@ -620,8 +619,7 @@ class DataProcessor:
         self.image_buffer = 100
 
         self.feature_process = FeatureProcessing(self.sensor_config, store_features=True)
-        feature_list = self.feature_list.get_feature_list()
-        self.feature_process.set_feature_list(feature_list)
+        self.feature_process.set_feature_list(ml_settings["feature_list"])
         self.feature_process.set_frame_settings(self.frame_settings)
 
     def update_ml_settings(self, ml_settings=None, frame_settings=None, trigger=None,

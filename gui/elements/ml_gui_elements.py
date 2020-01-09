@@ -40,6 +40,7 @@ import feature_definitions as feature_def
 import feature_processing as feature_proc
 import keras_processing as kp
 import layer_definitions as layer_def
+import ml_state
 from helper import Count, ErrorFormater, LoadState, QHLine, QVLine, SensorSelection
 from modules import MODULE_KEY_TO_MODULE_INFO_MAP
 
@@ -1989,14 +1990,14 @@ class TrainingFrame(QFrame):
             "times": QLabel(" x "),
             "ydim": QLabel("0"),
             "confusion_matrix": QLabel("Confusion Matrix"),
-            "data_info": QLabel("Traning data info"),
+            "label_info": QLabel("Label info"),
         }
 
         self.labels["confusion_matrix"].setAlignment(QtCore.Qt.AlignHCenter)
-        self.labels["data_info"].setAlignment(QtCore.Qt.AlignHCenter)
+        self.labels["label_info"].setAlignment(QtCore.Qt.AlignHCenter)
 
         self.cm_widget = QTableWidget()
-        self.data_widget = QTableWidget()
+        self.label_widget = QTableWidget()
         self.cm_widget.setMinimumWidth(700)
         self.grid.setColumnStretch(0, 1)
 
@@ -2014,9 +2015,9 @@ class TrainingFrame(QFrame):
         self.grid.addWidget(self.graph, self.increment(), 0, 1, 2)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 2)
         self.grid.addWidget(self.labels["confusion_matrix"], self.increment(), 0)
-        self.grid.addWidget(self.labels["data_info"], self.num, 1)
+        self.grid.addWidget(self.labels["label_info"], self.num, 1)
         self.grid.addWidget(self.cm_widget, self.increment(), 0)
-        self.grid.addWidget(self.data_widget, self.num, 1)
+        self.grid.addWidget(self.label_widget, self.num, 1)
 
     def update_confusion_matrix(self, confusion_matrix):
         for r in range(self.cm_widget.rowCount()):
@@ -2060,36 +2061,39 @@ class TrainingFrame(QFrame):
         self.cm_widget.setHorizontalHeaderLabels(labels)
         self.cm_widget.setVerticalHeaderLabels(labels)
 
-    def update_data_table(self, label_cat, label_list):
-        for r in range(self.data_widget.rowCount()):
-            for c in range(self.data_widget.columnCount()):
-                self.data_widget.removeCellWidget(r, c)
-        self.data_widget.setRowCount(0)
-        self.data_widget.setColumnCount(0)
+    def update_data_table(self, label_cat, label_list, loaded=False):
+        for r in range(self.label_widget.rowCount()):
+            for c in range(self.label_widget.columnCount()):
+                self.label_widget.removeCellWidget(r, c)
+        self.label_widget.setRowCount(0)
+        self.label_widget.setColumnCount(0)
 
         if label_cat is None:
             return
 
         try:
             label_cat = np.asarray(label_cat)
-            label_nums = [int(np.sum(label_cat[:, i])) for i in range(label_cat.shape[1])]
+            if loaded:
+                label_nums = ["N/A"] * len(label_list)
+            else:
+                label_nums = [int(np.sum(label_cat[:, i])) for i in range(label_cat.shape[1])]
             row = len(label_list)
             col = 1
         except Exception as e:
             print(e)
             return
 
-        self.data_widget.setRowCount(row)
-        self.data_widget.setColumnCount(1)
+        self.label_widget.setRowCount(row)
+        self.label_widget.setColumnCount(1)
 
         for r in range(row):
             for c in range(col):
                 entry = "{}".format(label_nums[r])
-                self.data_widget.setItem(r, c, QTableWidgetItem(entry))
-                self.data_widget.item(r, c).setForeground(QBrush(QtCore.Qt.black))
-                self.data_widget.item(r, c).setFlags(QtCore.Qt.ItemIsEnabled)
-        self.data_widget.setHorizontalHeaderLabels(["Number"])
-        self.data_widget.setVerticalHeaderLabels(label_list)
+                self.label_widget.setItem(r, c, QTableWidgetItem(entry))
+                self.label_widget.item(r, c).setForeground(QBrush(QtCore.Qt.black))
+                self.label_widget.item(r, c).setFlags(QtCore.Qt.ItemIsEnabled)
+        self.label_widget.setHorizontalHeaderLabels(["Number"])
+        self.label_widget.setVerticalHeaderLabels(label_list)
 
     def show_results(self, plot_data=None, flush_data=False):
         self.graph.process(plot_data, flush_data)
@@ -2116,15 +2120,14 @@ class TrainingSidePanel(QFrame):
     def __init__(self, parent, gui_handle):
         super().__init__(parent)
 
-        self.train_data = None
         self.test_data = None
         self.eval_mode = None
-        self.feature_list = None
         self.train_model_shape = None
         self.save_best_folder = None
 
         self.gui_handle = gui_handle
-        self.keras = self.gui_handle.ml_keras_model = kp.MachineLearning()
+        self.ml_state = self.gui_handle.ml_state
+        self.keras_handle = self.ml_state.keras_handle
 
         self.grid = QtWidgets.QGridLayout()
         self.grid.setContentsMargins(9, 0, 9, 9)
@@ -2170,7 +2173,8 @@ class TrainingSidePanel(QFrame):
             "load_train_data": QPushButton("Load training data"),
             "load_test_data": QPushButton("Load test data"),
             "save_model": QPushButton("Save model"),
-            "clear_model": QPushButton("Clear model"),
+            "clear_model": QPushButton("Clear weights"),
+            "remove_model": QPushButton("Remove model"),
             "clear_training": QPushButton("Clear training/test data"),
             "load_model": QPushButton("Load model"),
         }
@@ -2181,6 +2185,7 @@ class TrainingSidePanel(QFrame):
         self.buttons["load_test_data"].clicked.connect(self.load_train_data)
         self.buttons["save_model"].clicked.connect(partial(self.model_operation, "save_model"))
         self.buttons["clear_model"].clicked.connect(partial(self.model_operation, "clear_model"))
+        self.buttons["remove_model"].clicked.connect(partial(self.model_operation, "remove_model"))
         self.buttons["clear_training"].clicked.connect(partial(self.model_operation, "clear_data"))
         self.buttons["load_model"].clicked.connect(partial(self.model_operation, "load_model"))
         self.buttons["validate"].clicked.connect(partial(self.model_operation, "validate_model"))
@@ -2228,8 +2233,12 @@ class TrainingSidePanel(QFrame):
             self.radiobuttons[toggle].toggled.connect(self.get_evaluation_mode)
         self.buttons["load_test_data"].setEnabled(False)
 
+        status_widget = ml_state.MLStateWidget(self, gui_handle)
+        self.gui_handle.ml_state.add_status_widget(status_widget)
+
         self.num = -1
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
+        self.grid.addWidget(status_widget, self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["training"], self.increment(), 0, 1, 4)
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.buttons["load_train_data"], self.increment(), 0, 1, 2)
@@ -2240,7 +2249,8 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.buttons["load_model"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["save_model"], self.num, 2, 1, 2)
-        self.grid.addWidget(self.buttons["clear_model"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.buttons["clear_model"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["remove_model"], self.num, 2, 1, 2)
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["epochs"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["epochs"], self.num, 2, 1, 2)
@@ -2284,44 +2294,50 @@ class TrainingSidePanel(QFrame):
         if filenames:
             try:
                 if mode == "training":
-                    status = self.keras.load_train_data(
+                    data = self.keras_handle.load_train_data(
                         filenames,
                         layer_list=layer_list,
                         model_exists=model_exists,
                     )
                 else:
-                    status = self.keras.load_test_data(filenames)
+                    data = self.keras_handle.load_test_data(filenames)
             except Exception as e:
                 self.gui_handle.error_message("Failed to load {} data:\n {}".format(mode, e))
                 return
 
+            status = data["info"]
+
             if status["success"]:
                 if mode == "training":
-                    self.train_data = status["data"]
+                    self.ml_state.set_training_data_status(True, filenames)
                     self.gui_handle.training.update_data_table(
-                        status["data"]["y_labels"],
-                        status["data"]["label_list"]
+                        data["model_data"]["y_labels"],
+                        data["model_data"]["label_list"]
                     )
                 else:
-                    self.test_data = status["data"]
+                    self.ml_state.set_test_data_status(True, filenames)
 
                 self.gui_handle.model_select.allow_update(status["success"])
-                if status["model_loaded"]:
+                if status["model_initialized"]:
+                    if model_exists:
+                        s = self.ml_state.get_model_source()
+                    else:
+                        s = "internal"
+                    self.ml_state.set_model_data(data["model_data"], source=s)
                     self.buttons["train"].setEnabled(True)
                     self.gui_handle.info_handle(status["message"])
                     self.gui_handle.model_select.set_layer_shapes(
-                        self.train_data["keras_layer_info"]
+                        data["model_data"]["keras_layer_info"]
                     )
                     self.gui_handle.model_select.dump_layers(
-                        self.train_data["layer_list"],
+                        data["model_data"]["layer_list"],
                         "last_model.yaml"
                     )
+                    self.buttons["validate"].setEnabled(True)
                 else:
                     message = status["message"] + status["model_status"]
+                    print(status["model_status"])
                     self.gui_handle.error_message(message)
-
-                if self.gui_handle.eval_sidepanel.model_data["loaded"]:
-                    self.buttons["validate"].setEnabled(True)
             else:
                 self.gui_handle.error_message(status["message"])
                 self.model_operation("clear_data")
@@ -2329,8 +2345,8 @@ class TrainingSidePanel(QFrame):
 
             if mode == "training":
                 self.gui_handle.training.set_feature_dimensions(
-                    self.train_data["model_input"],
-                    self.train_data["nr_of_training_maps"]
+                    data["model_data"]["model_input"],
+                    data["model_data"]["nr_of_training_maps"]
                 )
                 self.gui_handle.training.show_results(flush_data=True)
 
@@ -2429,16 +2445,18 @@ class TrainingSidePanel(QFrame):
             self.buttons["validate"].setEnabled(True)
             return
 
-        if self.train_data is None:
+        model_data = self.ml_state.get_model_data()
+        if model_data["loaded"] is False:
+            self.gui_handle.error_message("Model not ready")
+            return
+        if self.ml_state.get_training_data_status() is False:
             self.gui_handle.error_message("No training data loaded")
             return
-        else:
-            # Make sure correct layer list is displayed
-            self.gui_handle.model_select.update_layer_list(self.train_data["layer_list"])
-            self.gui_handle.model_select.allow_update(set_red=False)
-            self.gui_handle.tab_parent.setCurrentIndex(TRAIN_TAB)
-        x = self.train_data["x_data"]
-        y = self.train_data["y_labels"]
+
+        # Make sure correct layer list is displayed
+        self.gui_handle.model_select.update_layer_list(model_data["layer_list"])
+        self.gui_handle.model_select.allow_update(set_red=False)
+        self.gui_handle.tab_parent.setCurrentIndex(TRAIN_TAB)
 
         ep = int(self.textboxes["epochs"].text())
         batch = int(self.textboxes["batch_size"].text())
@@ -2451,9 +2469,9 @@ class TrainingSidePanel(QFrame):
         if self.save_best_folder is not None:
             save_best_info = {
                 "folder": self.save_best_folder,
-                "feature_list": self.train_data["feature_list"],
-                "frame_settings": self.train_data["frame_settings"],
-                "sensor_config": self.train_data["sensor_config"],
+                "feature_list": model_data["feature_list"],
+                "frame_settings": model_data["frame_settings"],
+                "sensor_config": model_data["sensor_config"],
             }
         else:
             save_best_info = None
@@ -2461,50 +2479,44 @@ class TrainingSidePanel(QFrame):
         # Todo: Finalize threaded training
         thread_training = True
         model_params = {
-            "x": x,
-            "y": y,
             "epochs": ep,
             "batch_size": batch,
             "eval_data": self.get_evaluation_mode(),
             "save_best": save_best_info,
             "dropout": self.get_dropout(),
-            "session": self.keras.get_current_session(),
-            "graph": self.keras.get_current_graph(),
+            "session": self.keras_handle.get_current_session(),
+            "graph": self.keras_handle.get_current_graph(),
             "learning_rate": self.get_learning_rate(),
             "optimizer": self.get_optimizer(),
             "plot_cb": func,
         }
 
         if thread_training:
-            model_params["model"] = self.keras
+            model_params["model"] = self.keras_handle
             self.threaded_train = Threaded_Training(model_params, parent=self)
             self.threaded_train.sig_scan.connect(self.thread_receive)
             self.sig_scan.connect(self.threaded_train.receive)
             self.threaded_train.start()
         else:
             self.is_training(True)
-            self.train_history = self.keras.train(model_params)
+            self.train_history = self.keras_handle.train(model_params)
             self.is_training(False)
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
             self.buttons["validate"].setEnabled(True)
             try:
-                confusion_matrix = self.keras.confusion_matrix(y, self.keras.predict(x))
+                confusion_matrix = self.keras_handle.confusion_matrix(
+                    model_data["y_labels"], self.keras_handle.predict()
+                )
                 self.gui_handle.training.update_confusion_matrix(confusion_matrix)
             except Exception as e:
                 print(e)
 
-        side_panel_data = self.gui_handle.eval_sidepanel.model_data
-        side_panel_data["feature_list"] = self.train_data["feature_list"]
-        side_panel_data["sensor_config"] = self.train_data["sensor_config"]
-        side_panel_data["loaded"] = True
-        side_panel_data["frame_settings"] = self.train_data["frame_settings"]
-
         try:
-            self.gui_handle.load_gui_settings_from_sensor_config(self.train_data["sensor_config"])
-            self.gui_handle.set_sensors(self.train_data["sensor_config"].sensor)
-            self.gui_handle.feature_select.update_feature_list(self.train_data["feature_list"])
-            self.gui_handle.feature_sidepanel.set_frame_settings(self.train_data["frame_settings"])
+            self.gui_handle.load_gui_settings_from_sensor_config(model_data["sensor_config"])
+            self.gui_handle.set_sensors(model_data["sensor_config"].sensor)
+            self.gui_handle.feature_select.update_feature_list(model_data["feature_list"])
+            self.gui_handle.feature_sidepanel.set_frame_settings(model_data["frame_settings"])
         except Exception as e:
             print(e)
 
@@ -2514,13 +2526,14 @@ class TrainingSidePanel(QFrame):
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
         elif message_type == "training_done":
-            self.keras.set_current_session(data[2])
+            model_data = self.ml_state.get_model_data()
+            self.keras_handle.set_current_session(data[2])
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
             self.buttons["validate"].setEnabled(True)
-            confusion_matrix = self.keras.confusion_matrix(
-                self.train_data["y_labels"],
-                self.keras.predict(self.train_data["x_data"])
+            confusion_matrix = self.keras_handle.confusion_matrix(
+                model_data["y_labels"],
+                self.keras_handle.predict()
             )
             self.gui_handle.training.update_confusion_matrix(confusion_matrix)
         elif message_type == "update_plots":
@@ -2530,8 +2543,11 @@ class TrainingSidePanel(QFrame):
             print(message_type, message, data)
 
     def model_operation(self, op):
+        model_data = self.ml_state.get_model_data()
+        model_ready = model_data["loaded"]
+        training_ready = self.ml_state.get_training_data_status()
         if op == "save_model":
-            if not self.gui_handle.eval_sidepanel.model_data["loaded"]:
+            if not model_ready:
                 print("No model data available")
                 return
             title = "Save model and settings"
@@ -2544,51 +2560,57 @@ class TrainingSidePanel(QFrame):
                 self, title, fname, file_types, options=options)
 
             if filename:
-                if self.train_data is None and not self.gui_handle.eval_sidepanel.model_loaded():
+                if not model_ready:
                     self.gui_handle.info_message("No model data available:\n")
                     return
-                elif self.train_data is not None:
-                    model_data_handle = self.train_data
-                else:
-                    model_data_handle = self.gui_handle.eval_sidepanel.model_data
                 try:
-                    self.keras.save_model(
+                    self.keras_handle.save_model(
                         filename,
-                        model_data_handle["feature_list"],
-                        model_data_handle["sensor_config"],
-                        model_data_handle["frame_settings"],
+                        model_data["feature_list"],
+                        model_data["sensor_config"],
+                        model_data["frame_settings"],
                     )
                 except Exception as e:
                     self.gui_handle.error_message("Failed to save model:\n {}".format(e))
                     return
         if op == "clear_model":
-            if self.gui_handle.eval_sidepanel.model_loaded():
-                self.keras.clear_model(reinit=True)
+            if model_ready:
+                self.keras_handle.clear_model(reinit=True)
             self.gui_handle.training.show_results(flush_data=True)
             self.gui_handle.training.update_confusion_matrix(None)
             self.buttons["validate"].setEnabled(False)
-        if op == "clear_data":
-            if self.gui_handle.eval_sidepanel.model_loaded():
-                self.keras.clear_training_data()
+
+        elif op == "remove_model":
+            self.keras_handle.clear_model()
+            self.ml_state.set_model_data(None)
+
+        elif op == "clear_data":
+            if model_ready:
+                self.keras_handle.clear_training_data()
+                self.ml_state.set_model_data(None)
             self.buttons["train"].setEnabled(False)
             self.buttons["validate"].setEnabled(False)
-            self.model_data = None
             self.gui_handle.training.show_results(flush_data=True)
-            self.gui_handle.eval_sidepanel.model_data["loaded"] = False
             self.gui_handle.training.update_data_table(None, None)
             self.gui_handle.training.update_confusion_matrix(None)
-        if op == "load_model":
+            self.gui_handle.model_select.set_layer_shapes(None)
+            self.ml_state.set_training_data_status(False)
+            self.ml_state.set_test_data_status(False)
+
+        elif op == "load_model":
             self.gui_handle.eval_sidepanel.load_model()
             self.gui_handle.tab_parent.setCurrentIndex(MODEL_TAB)
-        if op == "validate_model":
-            if self.train_data is None:
+
+        elif op == "validate_model":
+            if not training_ready:
                 self.gui_handle.error_message("No training data loaded")
                 self.button["validate"].setEnabled(False)
                 return
             try:
-                x = self.train_data["x_data"]
-                y = self.train_data["y_labels"]
-                confusion_matrix = self.keras.confusion_matrix(y, self.keras.predict(x))
+                confusion_matrix = self.keras_handle.confusion_matrix(
+                    model_data["y_labels"],
+                    self.keras_handle.predict()
+                )
                 self.gui_handle.training.update_confusion_matrix(confusion_matrix)
             except Exception as e:
                 self.gui_handle.error_message("Failed to validate data!<br>{}".format(e))
@@ -2661,6 +2683,8 @@ class ModelSelectFrame(QFrame):
         self.nr_col = self.remove_col + 1
         self.row_idx = Count(2)
         self.gui_handle = gui_handle
+        self.ml_state = gui_handle.ml_state
+        self.keras_handle = self.ml_state.keras_handle
 
         self._grid = QtWidgets.QGridLayout()
         self._grid.setContentsMargins(0, 0, 0, 0)
@@ -2696,14 +2720,19 @@ class ModelSelectFrame(QFrame):
         self._grid.addWidget(self.bottom_widget, 1, 0)
 
     def create_grid(self):
-        self._layout.addWidget(QLabel("Layer"), 0, 0)
-        self._layout.addWidget(QLabel("Parameters"), 0, self.param_col)
+        self.labels = {
+            "error_text": QLabel(""),
+            "layer_header": QLabel("Layer"),
+            "param_header": QLabel("Parameters"),
+        }
+        self.labels["error_text"].setStyleSheet("QLabel {color: red}")
+
+        self._layout.addWidget(self.labels["layer_header"], 0, 0)
+        self._layout.addWidget(self.labels["param_header"], 0, self.param_col)
         self._layout.addWidget(QHLine(), 1, 0, 1, self.nr_col)
         self.name_vline = QVLine()
         self.params_vline = QVLine()
         self.remove_vline = QVLine()
-        self.error_text = QLabel("")
-        self.error_text.setStyleSheet("QLabel {color: red}")
 
         self.buttons = {
             "update": QPushButton("Update model"),
@@ -2732,7 +2761,8 @@ class ModelSelectFrame(QFrame):
         first.addWidget(self.buttons["reset"])
         first.addWidget(self.buttons["load"])
         first.addWidget(self.buttons["save"])
-        first.addWidget(self.error_text)
+        first.addStretch(2)
+        first.addWidget(self.labels["error_text"])
         bottom_second = QWidget()
         second = QHBoxLayout()
         second.setContentsMargins(2, 2, 2, 2)
@@ -2763,11 +2793,11 @@ class ModelSelectFrame(QFrame):
                 f = DEFAULT_MODEL_FILENAME_2D
             self.load_layers(f)
         elif action == "Update model":
-            if self.gui_handle.training_sidepanel.train_data is None:
-                self.gui_handle.error_message("Load training data first!")
+            if self.ml_state.get_model_status() is False:
+                self.gui_handle.error_message("Load model or training data first!")
             else:
                 layer_list = self.get_layer_list()
-                keras_layer_info = self.gui_handle.training_sidepanel.keras.update_model_layers(
+                keras_layer_info = self.keras_handle.update_model_layers(
                     layer_list
                 )
                 self.gui_handle.training_sidepanel.train_data["layer_list"] = layer_list
@@ -2811,6 +2841,15 @@ class ModelSelectFrame(QFrame):
         except Exception as e:
             print("Failed to load layers\n", e)
         return layers
+
+    def allow_layer_edit(self, allow):
+        self.model_frame.setEnabled(allow)
+        self.bottom_widget.setEnabled(allow)
+
+        if allow:
+            self.labels["error_text"].setText("")
+        else:
+            self.labels["error_text"].setText("Cannot edit layers for models loaded from file!")
 
     def update_grid(self):
         try:
@@ -3021,6 +3060,11 @@ class ModelSelectFrame(QFrame):
             c = "black"
         else:
             c = "grey"
+
+        if c == "red":
+            self.labels["error_text"].setText("Layers edited, update model to apply changes!")
+        else:
+            self.labels["error_text"].setText("")
 
         self.buttons["update"].setStyleSheet("QPushButton {{color: {}}}".format(c))
 
@@ -3251,7 +3295,7 @@ class ModelSelectFrame(QFrame):
                 out = "Output: {}".format(layer.output_shape)
                 self.enabled_layers[active_layers[idx-1]]["layer_output_shape"].setText(out)
             try:
-                variables = self.gui_handle.training_sidepanel.keras.count_variables()
+                variables = self.keras_handle.count_variables()
                 if variables is not None:
                     total = 0
                     for key in variables:
@@ -3280,7 +3324,6 @@ class EvalFrame(QFrame):
         self.feature_process = None
         self.gui_handle = gui_handle
         self.nr_col = 2
-        self.model_data = {"loaded": False}
 
         self.grid = QtWidgets.QGridLayout(self)
         self.grid.setContentsMargins(9, 0, 9, 9)
@@ -3341,14 +3384,14 @@ class EvalSidePanel(QFrame):
     def __init__(self, parent, gui_handle):
         super().__init__(parent)
 
-        self.keras = None
-
+        self.ml_state = gui_handle.ml_state
+        self.keras_handle = self.ml_state.keras_handle
         self.gui_handle = gui_handle
+
         self.grid = QtWidgets.QGridLayout(self)
         self.grid.setContentsMargins(9, 0, 9, 9)
         self.grid.setColumnStretch(0, 1)
         self.grid.setColumnStretch(1, 1)
-        self.model_data = {"loaded": False}
 
         self.buttons = {
             "load_model": QPushButton("Load Model", self),
@@ -3366,8 +3409,6 @@ class EvalSidePanel(QFrame):
         return self.num
 
     def load_model(self):
-        if self.keras is None:
-            self.keras = self.gui_handle.ml_keras_model
         title = "Load model data"
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -3375,52 +3416,57 @@ class EvalSidePanel(QFrame):
             self, title, "", "NumPy data files (*.npy)", options=options)
 
         self.gui_handle.model_select.allow_update(False)
+
         if not filename:
             return
 
-        self.model_data = self.keras.load_model(filename)
-        if not self.model_data["loaded"]:
-            self.gui_handle.error_message(self.model_data["message"])
+        d = self.keras_handle.load_model(filename)
+        if not d["loaded"]:
+            self.gui_handle.error_message(d["message"])
+            self.gui_handle.ml_state.set_model_data(None)
             return
 
-        d = self.model_data
         try:
+            self.gui_handle.ml_state.set_model_data(d, source=filename)
             self.gui_handle.load_gui_settings_from_sensor_config(d["sensor_config"])
             self.gui_handle.feature_select.update_feature_list(d["feature_list"])
             self.gui_handle.feature_sidepanel.set_frame_settings(d["frame_settings"])
             self.config_is_valid(show_warning=False)
-            self.gui_handle.model_select.update_layer_list(self.model_data["layer_list"])
-            self.gui_handle.model_select.set_layer_shapes(self.model_data["keras_layer_info"])
+            self.gui_handle.model_select.update_layer_list(d["layer_list"])
+            self.gui_handle.model_select.set_layer_shapes(d["keras_layer_info"])
             self.gui_handle.training.set_feature_dimensions(
-                self.model_data["model_input"],
-                self.model_data["nr_of_training_maps"]
+                d["model_input"],
+                d["nr_of_training_maps"]
             )
-            self.gui_handle.model_select.dump_layers(
-                self.model_data["layer_list"],
-                "last_model.yaml"
-            )
+            self.gui_handle.training.update_data_table(d["y_labels"], d["label_list"], loaded=True)
+            self.gui_handle.model_select.dump_layers(d["layer_list"], "last_model.yaml")
         except Exception as e:
-            self.gui_handle.error_message("Failed to load model data:<br> {}".format(e))
-            self.model_data["loaded"] = False
+            self.gui_handle.error_message("Failed to load model data:\n{}".format(e))
+            d["loaded"] = False
+            self.gui_handle.ml_state.set_model_data(None)
         else:
-            self.gui_handle.info_handle(self.model_data["message"])
+            self.gui_handle.info_handle(d["message"])
 
     def config_is_valid(self, show_warning=True):
+        model_data = self.ml_state.get_model_data()
+        if not model_data["loaded"]:
+            self.gui_handle.warning_message("Model not loaded!")
+            return False
         if self.gui_handle.get_gui_state("server_connected"):
             available_sensors = self.gui_handle.get_sensors()
-            required_sensors = self.model_data["sensor_config"].sensor
+            required_sensors = model_data["sensor_config"].sensor
             if len(available_sensors) < len(required_sensors):
-                warning = "Sensor missmatch detected!<br>"
-                warning += "The model needs {} sensors!<br>Run anyway?".format(
+                warning = "Sensor missmatch detected!\n"
+                warning += "The model needs {} sensors!\nRun anyway?".format(
                     len(required_sensors)
                 )
                 if show_warning and not self.gui_handle.warning_message(warning):
                     return False
         else:
-            self.gui_handle.set_sensors(self.model_data["sensor_config"].sensor)
+            self.gui_handle.set_sensors(model_data["sensor_config"].sensor)
 
         try:
-            config_mode = self.model_data["sensor_config"].mode
+            config_mode = model_data["sensor_config"].mode
             if config_mode == Mode.IQ:
                 mode = "IQ"
             elif config_mode == Mode.ENVELOPE:
@@ -3428,7 +3474,7 @@ class EvalSidePanel(QFrame):
             else:
                 mode = "Sparse"
             if self.gui_handle.module_dd.currentText() != mode:
-                warning = "Service missmatch detected!<br>"
+                warning = "Service missmatch detected!\n"
                 warning += "The model needs {}! Change to correct service?".format(mode)
                 if show_warning and not self.gui_handle.warning_message(warning):
                     return False
@@ -3442,36 +3488,35 @@ class EvalSidePanel(QFrame):
         return True
 
     def predict(self, feature_map):
-        if self.keras is None:
-            self.keras = self.gui_handle.ml_keras_model
-        prediction = self.keras.predict(feature_map)[0]
+        prediction = self.keras_handle.predict(feature_map)[0]
         self.gui_handle.eval_model.update_prediction(prediction)
 
         return prediction
 
     def get_feature_list(self):
-        if self.model_data["loaded"]:
-            return self.model_data["feature_list"]
+        model_data = self.ml_state.get_model_data()
+        if model_data["loaded"]:
+            return model_data["feature_list"]
         else:
             return None
 
     def get_frame_settings(self):
-        if self.model_data["loaded"]:
-            return self.model_data["frame_settings"]
+        model_data = self.ml_state.get_model_data()
+        if model_data["loaded"]:
+            return model_data["frame_settings"]
         else:
             return None
 
     def get_sensor_config(self):
-        if self.model_data["loaded"]:
-            return self.model_data["sensor_config"]
+        model_data = self.ml_state.get_model_data()
+        if model_data["loaded"]:
+            return model_data["sensor_config"]
         else:
             return None
 
     def model_loaded(self):
-        return self.model_data["loaded"]
-
-    def get_model_shape(self):
-        return self.model_data["model_shape"]
+        model_data = self.ml_state.get_model_data()
+        return model_data["loaded"]
 
 
 class CalibrationDialog(QDialog):
