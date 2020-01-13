@@ -111,7 +111,8 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         label="Inter deviation time const.",
         unit="s",
         default_value=0.5,
-        limits=(0, 3),
+        limits=(0.01, 30),
+        logscale=True,
         updateable=True,
         order=30,
         help=(
@@ -147,7 +148,8 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         label="Output time const.",
         unit="s",
         default_value=0.5,
-        limits=(0, 3),
+        limits=(0.01, 30),
+        logscale=True,
         updateable=True,
         order=60,
         help="Time constant of the low pass filter for the detector output."
