@@ -375,7 +375,8 @@ class FeatureProcessing:
         self.check_data(data)
         self.prepare_data_container(data)
 
-        for idx, marker in enumerate(range(frame_start, frame_stop)):
+        feature_map = []
+        for marker in range(frame_start, frame_stop):
             data_step = {
                 "sensor_config": data["sensor_config"],
                 "iq_data": record.data[marker],
@@ -384,44 +385,44 @@ class FeatureProcessing:
                 data_step["env_ampl"] = np.abs(record.data[marker].mean(axis=1))
             else:
                 data_step["env_ampl"] = np.abs(record.data[marker])
-            win_idx = n_sweeps - idx - 1
             if data_step["env_ampl"].shape != self.win_data["env_data"].shape[0:2]:
                 data_step["iq_data"] = data_step["iq_data"][self.sensor_array]
                 data_step["env_ampl"] = data_step["env_ampl"][self.sensor_array]
-            self.add_sweep(data_step, win_idx=win_idx)
+            self.roll_data(data)
+            self.add_sweep(data_step)
 
-        feature_map = []
-        for feat in feature_list:
-            cb = self.feature_callbacks[feat["key"]]
-            if "session_info":
-                session_info = data["session_info"]
-            else:
-                session_info = None
-            output = feat["output"]
-            sensors = feat["sensors"]
+            for feat in feature_list:
+                cb = self.feature_callbacks[feat["key"]]
+                if "session_info":
+                    session_info = data["session_info"]
+                else:
+                    session_info = None
+                output = feat["output"]
+                sensors = feat["sensors"]
 
-            win_params = {
-                "options": feat["options"],
-                "dist_vec": data["x_mm"],
-                "sensor_config": data["sensor_config"],
-                "session_info": session_info,
-            }
+                win_params = {
+                    "options": feat["options"],
+                    "dist_vec": data["x_mm"],
+                    "sensor_config": data["sensor_config"],
+                    "session_info": session_info,
+                }
 
-            for s in sensors:
-                idx = self.sensor_map[str(s)]
-                if idx is None:
-                    continue
-                win_params["sensor_idx"] = idx
+                for s in sensors:
+                    idx = self.sensor_map[str(s)]
+                    if idx is None:
+                        continue
+                    win_params["sensor_idx"] = idx
 
-                feat_data = feat_data = cb.extract_feature(self.win_data, win_params)
+                    feat_data = feat_data = cb.extract_feature(self.win_data, win_params)
 
-                if output is not None:
-                    for out in output:
-                        if output[out]:
-                            try:
-                                feature_map.append(feat_data[out])
-                            except Exception:
-                                pass
+                    if marker == frame_stop - 1:
+                        if output is not None:
+                            for out in output:
+                                if output[out]:
+                                    try:
+                                        feature_map.append(feat_data[out])
+                                    except Exception:
+                                        pass
 
         fmap = None
         if len(feature_map):

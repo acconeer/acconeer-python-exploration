@@ -413,7 +413,7 @@ class FeatureSparseFFT:
         fft_psd /= self.noise_floor[sensor_idx]
         self.fft[sensor_idx, :, :] = np.roll(self.fft[sensor_idx, :, :], 1, axis=1)
 
-        if options["Flip"] and not np.mod(sensor_idx, 2):
+        if options["Flip"]:
             self.fft[sensor_idx, :, 0] = np.flip(fft_psd, 0)
             data = {
                 "fft": self.fft[sensor_idx, freq_cutoff_flipped:, :],

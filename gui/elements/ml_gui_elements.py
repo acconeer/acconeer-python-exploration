@@ -40,7 +40,6 @@ import feature_definitions as feature_def
 import feature_processing as feature_proc
 import keras_processing as kp
 import layer_definitions as layer_def
-import ml_state
 from helper import Count, ErrorFormater, LoadState, QHLine, QVLine, SensorSelection
 from modules import MODULE_KEY_TO_MODULE_INFO_MAP
 
@@ -91,7 +90,7 @@ class FeatureSelectFrame(QFrame):
         self.feature_frame_scroll = QtWidgets.QScrollArea(self.main)
         self.feature_frame_scroll.setFrameShape(QFrame.NoFrame)
         self.feature_frame_scroll.setWidgetResizable(True)
-        self.feature_frame_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+        self.feature_frame_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.feature_frame_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.feature_frame_scroll.setMinimumWidth(1000)
         self.feature_frame_scroll.setMinimumHeight(350)
@@ -100,10 +99,10 @@ class FeatureSelectFrame(QFrame):
         self.feature_frame_scroll.setWidget(self.feature_frame)
 
         self.main.addWidget(self.feature_frame_scroll)
-        self._layout = QtWidgets.QGridLayout(self.feature_frame)
-        self._layout.setContentsMargins(10, 5, 10, 5)
-        self._layout.setSpacing(10)
-        self.feature_frame.setLayout(self._layout)
+        self.f_layout = QtWidgets.QGridLayout(self.feature_frame)
+        self.f_layout.setContentsMargins(10, 5, 10, 5)
+        self.f_layout.setSpacing(10)
+        self.feature_frame.setLayout(self.f_layout)
 
         self.enabled_features = []
         self.features = feature_def.get_features()
@@ -112,14 +111,15 @@ class FeatureSelectFrame(QFrame):
         self.create_grid()
         self.parse_features()
         self.create_feature_plot()
+        self._grid.setRowStretch(0, 1)
 
         self.drop_down.setCurrentIndex(1)
 
     def create_grid(self):
-        self._layout.addWidget(QLabel("Feature"), 0, 0)
-        self._layout.addWidget(QLabel("Parameters"), 0, self.param_col)
-        self._layout.addWidget(QLabel("Sensors"), 0, self.sensor_col)
-        self._layout.addWidget(QHLine(), 1, 0, 1, self.nr_col)
+        self.f_layout.addWidget(QLabel("Feature"), 0, 0)
+        self.f_layout.addWidget(QLabel("Parameters"), 0, self.param_col)
+        self.f_layout.addWidget(QLabel("Sensors"), 0, self.sensor_col)
+        self.f_layout.addWidget(QHLine(), 1, 0, 1, self.nr_col)
         self.name_vline = QVLine()
         self.params_vline = QVLine()
         self.sensor_vline = QVLine()
@@ -146,6 +146,8 @@ class FeatureSelectFrame(QFrame):
         bottom_box.addWidget(self.buttons["replay_buffered"])
         bottom_box.addWidget(self.error_text)
 
+        self._grid.addWidget(self.bottom_widget)
+
         for b in self.buttons:
             button = self.buttons[b]
             button.clicked.connect(partial(self.gui_handle.buttons[b].click))
@@ -153,26 +155,28 @@ class FeatureSelectFrame(QFrame):
 
     def update_grid(self):
         try:
-            self._layout.removeWidget(self.name_vline)
-            self._layout.removeWidget(self.params_vline)
-            self._layout.removeWidget(self.sensor_vline)
-            self._layout.removeWidget(self.remove_vline)
-            self._layout.removeWidget(self.bottom_widget)
+            self.f_layout.removeWidget(self.name_vline)
+            self.f_layout.removeWidget(self.params_vline)
+            self.f_layout.removeWidget(self.sensor_vline)
+            self.f_layout.removeWidget(self.remove_vline)
         except Exception:
             pass
 
-        self._layout.addWidget(self.name_vline, 0, 1, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.params_vline, 0, self.param_col + 1, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.sensor_vline, 0, self.sensor_col + 1, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.remove_vline, 0, self.remove_col + 1, self.row_idx.val + 1, 1)
-        self._layout.addWidget(self.bottom_widget, self.row_idx.val + 1, 0, 1, self.nr_col)
+        self.f_layout.addWidget(self.name_vline, 0, 1, self.row_idx.val + 1, 1)
+        self.f_layout.addWidget(self.params_vline, 0, self.param_col + 1, self.row_idx.val + 1, 1)
+        self.f_layout.addWidget(self.sensor_vline, 0, self.sensor_col + 1, self.row_idx.val + 1, 1)
+        self.f_layout.addWidget(self.remove_vline, 0, self.remove_col + 1, self.row_idx.val + 1, 1)
 
         self.drop_down.setCurrentIndex(0)
 
-        self._layout.setRowStretch(self.row_idx.val + 2, 1)
-        self._layout.setColumnStretch(self.nr_col, 1)
+        self.f_layout.setRowStretch(self.row_idx.val + 1, 1)
+        self.f_layout.setColumnStretch(self.nr_col, 1)
 
         self.update_feature_plot()
+
+    def allow_feature_edit(self, allow):
+        self.feature_frame.setEnabled(allow)
+        self.drop_down.setEnabled(allow)
 
     def increment(self, skip=[1]):
         self.num += 1
@@ -225,8 +229,6 @@ class FeatureSelectFrame(QFrame):
                     print("Something went wrong!\n", e)
                     return
 
-        self._layout.removeWidget(self.bottom_widget)
-
         feat = self.features[key]
         name = feat["name"]
         cb = feat["class"]
@@ -250,7 +252,7 @@ class FeatureSelectFrame(QFrame):
 
         other_items = []
         other_items.append(QLabel(name))
-        self._layout.addWidget(other_items[0], row, self.num)
+        self.f_layout.addWidget(other_items[0], row, self.num)
         c = utils.color_cycler(self.enabled_count.pre_incr())
         other_items[0].setStyleSheet("background-color: {}".format(c))
 
@@ -258,7 +260,7 @@ class FeatureSelectFrame(QFrame):
         options_box = QHBoxLayout()
         options_box.setAlignment(QtCore.Qt.AlignLeft)
         options_widget.setLayout(options_box)
-        self._layout.addWidget(options_widget, row, self.param_col)
+        self.f_layout.addWidget(options_widget, row, self.param_col)
         options = {}
         for (text, value, limits, data_type) in opts:
             labels[text] = QLabel(text)
@@ -288,24 +290,24 @@ class FeatureSelectFrame(QFrame):
             pass
         sensors.set_sensors(available_sensors)
 
-        self._layout.addWidget(sensors, row, self.sensor_col)
+        self.f_layout.addWidget(sensors, row, self.sensor_col)
 
         c_button = QPushButton("remove", self)
         c_button.setStyleSheet(REMOVE_BUTTON_STYLE)
         c_button.clicked.connect(self.remove_feature)
 
-        self._layout.addWidget(c_button, row, self.remove_col)
+        self.f_layout.addWidget(c_button, row, self.remove_col)
 
         row = self.row_idx.pre_incr()
 
         other_items.append(QLabel("Output [{}D]".format(model)))
-        self._layout.addWidget(other_items[1], row, 0)
+        self.f_layout.addWidget(other_items[1], row, 0)
 
         output_widget = QWidget(self)
         output_box = QHBoxLayout()
         output_box.setAlignment(QtCore.Qt.AlignLeft)
         output_widget.setLayout(output_box)
-        self._layout.addWidget(output_widget, row, self.param_col)
+        self.f_layout.addWidget(output_widget, row, self.param_col)
         out_data = {}
         for idx, o in enumerate(output):
             out_data[o] = QCheckBox(output[o], self)
@@ -318,7 +320,7 @@ class FeatureSelectFrame(QFrame):
 
         other_items.append(QHLine())
 
-        self._layout.addWidget(other_items[2], self.row_idx.pre_incr(), 0, 1, self.nr_col)
+        self.f_layout.addWidget(other_items[2], self.row_idx.pre_incr(), 0, 1, self.nr_col)
 
         feature_params = {
             "name": name,
@@ -347,8 +349,8 @@ class FeatureSelectFrame(QFrame):
     def remove_feature(self, clear_all=False):
         if not clear_all:
             button = self.sender()
-            button_idx = self._layout.indexOf(button)
-            pos = self._layout.getItemPosition(button_idx)
+            button_idx = self.f_layout.indexOf(button)
+            pos = self.f_layout.getItemPosition(button_idx)
             list_pos = [int((pos[0] - 2) / 3)]
         else:
             list_pos = list(range(len(self.enabled_features)))
@@ -380,15 +382,15 @@ class FeatureSelectFrame(QFrame):
 
                 if idx == lpos:
                     for w in widgets:
-                        self._layout.removeWidget(w)
+                        self.f_layout.removeWidget(w)
                         w.deleteLater()
                         w = None
                 else:
                     for w in widgets:
-                        idx = self._layout.indexOf(w)
-                        pos = self._layout.getItemPosition(idx)
-                        self._layout.removeWidget(w)
-                        self._layout.addWidget(w, pos[0] - 3, pos[1], pos[2], pos[3])
+                        idx = self.f_layout.indexOf(w)
+                        pos = self.f_layout.getItemPosition(idx)
+                        self.f_layout.removeWidget(w)
+                        self.f_layout.addWidget(w, pos[0] - 3, pos[1], pos[2], pos[3])
 
             pop_list.append(lpos)
             self.row_idx.decr(val=3)
@@ -642,8 +644,8 @@ class FeatureSelectFrame(QFrame):
         return self.has_valid_config
 
     def clearLayout(self):
-        while self._layout.count():
-            child = self._layout.takeAt(0)
+        while self.f_layout.count():
+            child = self.f_layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
 
@@ -856,6 +858,7 @@ class FeatureSidePanel(QFrame):
         super().__init__(parent)
 
         self.gui_handle = gui_handle
+        self.ml_state = gui_handle.ml_state
         self.grid = QtWidgets.QGridLayout()
         self.grid.setContentsMargins(9, 0, 9, 9)
         self.grid.setColumnStretch(0, 1)
@@ -880,7 +883,6 @@ class FeatureSidePanel(QFrame):
             "collection_mode": QLabel("Feature collection mode:"),
             "empty_1": QLabel(""),
             "empty_2": QLabel(""),
-            "empty_3": QLabel(""),
             "loaded_file": QLabel(""),
         }
 
@@ -900,8 +902,6 @@ class FeatureSidePanel(QFrame):
         }
 
         self.buttons = {
-            "load_settings": QPushButton("Load settings"),
-            "save_settings": QPushButton("Save settings"),
             "load_session": QPushButton("Load session"),
             "save_session": QPushButton("Save session"),
             "trigger": QPushButton("&Trigger"),
@@ -911,11 +911,9 @@ class FeatureSidePanel(QFrame):
             "process_batch": QPushButton("Process batch"),
         }
 
-        self.buttons["load_settings"].clicked.connect(self.load_data)
         self.buttons["load_session"].clicked.connect(self.load_data)
         self.buttons["create_calib"].clicked.connect(self.calibration_handling)
         self.buttons["show_calib"].clicked.connect(self.calibration_handling)
-        self.buttons["save_settings"].clicked.connect(self.save_data)
         self.buttons["save_session"].clicked.connect(self.save_data)
         self.buttons["load_batch"].clicked.connect(self.batch_process)
         self.buttons["process_batch"].clicked.connect(self.batch_process)
@@ -1009,8 +1007,6 @@ class FeatureSidePanel(QFrame):
         self.grid.addWidget(self.labels["empty_2"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.labels["save_load"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.h_lines["h_line_3"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.buttons["load_settings"], self.increment(), 0)
-        self.grid.addWidget(self.buttons["save_settings"], self.num, 1)
         self.grid.addWidget(self.buttons["load_session"], self.increment(), 0)
         self.grid.addWidget(self.buttons["save_session"], self.num, 1)
         self.grid.addWidget(self.buttons["load_batch"], self.increment(), 0)
@@ -1018,6 +1014,7 @@ class FeatureSidePanel(QFrame):
         self.grid.addWidget(self.labels["loaded_file"], self.increment(), 0, 1, 2)
 
         self.textboxes["frame_size"].setEnabled(False)
+        self.textboxes["update_rate"].setEnabled(False)
 
         self.grid.setRowStretch(self.increment(), 1)
 
@@ -1025,12 +1022,18 @@ class FeatureSidePanel(QFrame):
         self.modes = {
             "feature_select": [
                 self.radio_frame,
+                self.labels["empty_2"],
             ],
             "feature_extract": [
+                self.labels["empty_1"],
+                self.h_lines["h_line_1"],
+                self.labels["frame_settings"],
                 self.labels["frame_time"],
                 self.labels["update_rate"],
+                self.labels["frame_size"],
                 self.textboxes["frame_time"],
                 self.textboxes["update_rate"],
+                self.textboxes["frame_size"],
                 self.buttons["create_calib"],
                 self.buttons["show_calib"],
             ],
@@ -1058,8 +1061,6 @@ class FeatureSidePanel(QFrame):
                 self.textboxes["frame_size"],
                 self.buttons["load_session"],
                 self.buttons["save_session"],
-                self.buttons["load_settings"],
-                self.buttons["save_settings"],
                 self.buttons["create_calib"],
                 self.buttons["show_calib"],
                 self.buttons["load_batch"],
@@ -1073,7 +1074,6 @@ class FeatureSidePanel(QFrame):
             senders = [
                 "frame_label",
                 "frame_size",
-                "update_rate",
                 "collection_mode",
                 "auto_threshold",
                 "auto_offset",
@@ -1298,7 +1298,9 @@ class FeatureSidePanel(QFrame):
                 sweep_data = recording.unpack(data.item()["sweep_data"])
                 frame_data = data.item()["frame_data"]
                 feature_list = data.item()["feature_list"]
-                self.gui_handle.feature_select.update_feature_list(feature_list)
+                if self.ml_state.get_state("settings_locked"):
+                    print("Settings locked, not loading feature list from file!")
+                    self.gui_handle.feature_select.update_feature_list(feature_list)
                 try:
                     self.gui_handle.feature_extract.set_label(
                         frame_data["ml_frame_data"]["current_frame"]["label"]
@@ -1580,8 +1582,6 @@ class FeatureInspectFrame(QFrame):
             "update": QLabel("Update frame data: "),
             "current_frame": QLabel("Frame: NA"),
             "current_sweep": QLabel("Sweep: NA"),
-            "adv_sweeps": QLabel("Advance sweeps: "),
-            "adv_frame": QLabel("Advance frame: "),
             "label": QLabel("Label: ")
         }
         self.textboxes = {
@@ -1670,7 +1670,7 @@ class FeatureInspectFrame(QFrame):
         frame_nr = int(min(total_frames, frame_nr))
 
         if action == "frames" and frame_nr == self.current_frame_nr:
-            if frame_nr != 1:
+            if frame_nr != 0:
                 return
         elif action == "sweeps" and number == self.current_sweep_nr:
             return
@@ -1983,12 +1983,6 @@ class TrainingFrame(QFrame):
             self.color_table_off.append([round(255*x) for x in rgb])
 
         self.labels = {
-            "input_dimension": QLabel("Feature dimensions: "),
-            "data_length": QLabel("0"),
-            "with": QLabel(" features with "),
-            "xdim": QLabel("0"),
-            "times": QLabel(" x "),
-            "ydim": QLabel("0"),
             "confusion_matrix": QLabel("Confusion Matrix"),
             "label_info": QLabel("Label info"),
         }
@@ -2001,23 +1995,14 @@ class TrainingFrame(QFrame):
         self.cm_widget.setMinimumWidth(700)
         self.grid.setColumnStretch(0, 1)
 
-        self.dims = QWidget(self)
-        self.dims.grid = QtWidgets.QGridLayout(self.dims)
-        self.dims.grid.addWidget(self.labels["data_length"], 0, 0)
-        self.dims.grid.addWidget(self.labels["with"], 0, 1)
-        self.dims.grid.addWidget(self.labels["ydim"], 0, 2)
-        self.dims.grid.addWidget(self.labels["times"], 0, 3)
-        self.dims.grid.addWidget(self.labels["xdim"], 0, 4)
-        self.dims.grid.setColumnStretch(5, 1)
         self.num = 0
-        self.grid.addWidget(self.labels["input_dimension"], self.num, 0)
-        self.grid.addWidget(self.dims, self.num, 1)
-        self.grid.addWidget(self.graph, self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.graph, self.num, 0, 1, 2)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 2)
         self.grid.addWidget(self.labels["confusion_matrix"], self.increment(), 0)
         self.grid.addWidget(self.labels["label_info"], self.num, 1)
         self.grid.addWidget(self.cm_widget, self.increment(), 0)
         self.grid.addWidget(self.label_widget, self.num, 1)
+        self.grid.setRowStretch(self.num, 1)
 
     def update_confusion_matrix(self, confusion_matrix):
         for r in range(self.cm_widget.rowCount()):
@@ -2049,15 +2034,19 @@ class TrainingFrame(QFrame):
                 entry = "{} ({:.2f}%)".format(matrix[r, c], percent)
                 self.cm_widget.setItem(r, c, QTableWidgetItem(entry))
                 self.cm_widget.item(r, c).setForeground(QBrush(QtCore.Qt.black))
-                color = self.color_table[int(percent)]
+                try:
+                    int_percent = int(percent)
+                except ValueError:
+                    int_percent = 0
+                color = self.color_table[int_percent]
                 if r != c:
-                    color = self.color_table_off[int(percent)]
+                    color = self.color_table_off[int_percent]
                 else:
                     sum_correct += percent / col
                 self.cm_widget.item(r, c).setBackground(QColor(*color))
                 self.cm_widget.item(r, c).setFlags(QtCore.Qt.ItemIsEnabled)
 
-        print(sum_correct)
+        print("Overall accuracy: {:.2f}".format(sum_correct))
         self.cm_widget.setHorizontalHeaderLabels(labels)
         self.cm_widget.setVerticalHeaderLabels(labels)
 
@@ -2098,17 +2087,6 @@ class TrainingFrame(QFrame):
     def show_results(self, plot_data=None, flush_data=False):
         self.graph.process(plot_data, flush_data)
 
-    def set_feature_dimensions(self, dims, training_maps):
-        self.labels["data_length"].setText(str(training_maps))
-        self.labels["ydim"].setText(str(dims[0]))
-        if len(dims) > 1:
-            self.labels["xdim"].setText(str(dims[1]))
-        else:
-            self.labels["xdim"].setText(str(0))
-
-    def get_feature_dimensions(self):
-        return self.textboxes["input_dimension"].text()
-
     def increment(self):
         self.num += 1
         return self.num
@@ -2128,12 +2106,14 @@ class TrainingSidePanel(QFrame):
         self.gui_handle = gui_handle
         self.ml_state = self.gui_handle.ml_state
         self.keras_handle = self.ml_state.keras_handle
+        self.model_operation = self.gui_handle.ml_model_ops.model_operation
 
         self.grid = QtWidgets.QGridLayout()
         self.grid.setContentsMargins(9, 0, 9, 9)
         self.setLayout(self.grid)
 
         self.labels = {
+            "model_header": QLabel("Load Training: "),
             "training": QLabel("Training Settings: "),
             "epochs": QLabel("Epochs: "),
             "batch_size": QLabel("Batch size:"),
@@ -2172,22 +2152,14 @@ class TrainingSidePanel(QFrame):
             "validate": QPushButton("Validate"),
             "load_train_data": QPushButton("Load training data"),
             "load_test_data": QPushButton("Load test data"),
-            "save_model": QPushButton("Save model"),
-            "clear_model": QPushButton("Clear weights"),
-            "remove_model": QPushButton("Remove model"),
             "clear_training": QPushButton("Clear training/test data"),
-            "load_model": QPushButton("Load model"),
         }
 
         self.buttons["train"].clicked.connect(partial(self.train, "train"))
         self.buttons["stop"].clicked.connect(partial(self.train, "stop"))
         self.buttons["load_train_data"].clicked.connect(self.load_train_data)
         self.buttons["load_test_data"].clicked.connect(self.load_train_data)
-        self.buttons["save_model"].clicked.connect(partial(self.model_operation, "save_model"))
-        self.buttons["clear_model"].clicked.connect(partial(self.model_operation, "clear_model"))
-        self.buttons["remove_model"].clicked.connect(partial(self.model_operation, "remove_model"))
         self.buttons["clear_training"].clicked.connect(partial(self.model_operation, "clear_data"))
-        self.buttons["load_model"].clicked.connect(partial(self.model_operation, "load_model"))
         self.buttons["validate"].clicked.connect(partial(self.model_operation, "validate_model"))
 
         self.buttons["stop"].setEnabled(False)
@@ -2233,24 +2205,17 @@ class TrainingSidePanel(QFrame):
             self.radiobuttons[toggle].toggled.connect(self.get_evaluation_mode)
         self.buttons["load_test_data"].setEnabled(False)
 
-        status_widget = ml_state.MLStateWidget(self, gui_handle)
-        self.gui_handle.ml_state.add_status_widget(status_widget)
-
         self.num = -1
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
-        self.grid.addWidget(status_widget, self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.labels["training"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.labels["model_header"], self.increment(), 0, 1, 4)
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.buttons["load_train_data"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["clear_training"], self.num, 2, 1, 2)
         self.grid.addWidget(self.buttons["train"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["stop"], self.num, 2, 1, 2)
         self.grid.addWidget(self.buttons["validate"], self.increment(), 0, 1, 4)
-        self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
-        self.grid.addWidget(self.buttons["load_model"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.buttons["save_model"], self.num, 2, 1, 2)
-        self.grid.addWidget(self.buttons["clear_model"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.buttons["remove_model"], self.num, 2, 1, 2)
+        self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.labels["training"], self.increment(), 0, 1, 4)
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["epochs"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.textboxes["epochs"], self.num, 2, 1, 2)
@@ -2288,7 +2253,7 @@ class TrainingSidePanel(QFrame):
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
             self, title, "", "NumPy data files (*.npy)", options=options)
 
-        model_exists = self.gui_handle.eval_sidepanel.model_loaded()
+        model_exists = self.ml_state.get_model_status()
         layer_list = self.gui_handle.model_select.get_layer_list()
 
         if filenames:
@@ -2308,6 +2273,18 @@ class TrainingSidePanel(QFrame):
             status = data["info"]
 
             if status["success"]:
+                # Update sensor settings from training data
+                if model_exists:
+                    s = self.ml_state.get_model_source()
+                else:
+                    s = "internal"
+                self.ml_state.set_model_data(data["model_data"], source=s)
+                self.gui_handle.ml_model_ops.config_is_valid(show_warning=False)
+                conf = self.gui_handle.get_sensor_config()
+                model_conf_dump = data["model_data"]["sensor_config"]._dumps()
+                conf._loads(model_conf_dump)
+                self.gui_handle.set_sensors(data["model_data"]["sensor_config"].sensor)
+
                 if mode == "training":
                     self.ml_state.set_training_data_status(True, filenames)
                     self.gui_handle.training.update_data_table(
@@ -2319,11 +2296,6 @@ class TrainingSidePanel(QFrame):
 
                 self.gui_handle.model_select.allow_update(status["success"])
                 if status["model_initialized"]:
-                    if model_exists:
-                        s = self.ml_state.get_model_source()
-                    else:
-                        s = "internal"
-                    self.ml_state.set_model_data(data["model_data"], source=s)
                     self.buttons["train"].setEnabled(True)
                     self.gui_handle.info_handle(status["message"])
                     self.gui_handle.model_select.set_layer_shapes(
@@ -2336,7 +2308,6 @@ class TrainingSidePanel(QFrame):
                     self.buttons["validate"].setEnabled(True)
                 else:
                     message = status["message"] + status["model_status"]
-                    print(status["model_status"])
                     self.gui_handle.error_message(message)
             else:
                 self.gui_handle.error_message(status["message"])
@@ -2344,10 +2315,6 @@ class TrainingSidePanel(QFrame):
                 return
 
             if mode == "training":
-                self.gui_handle.training.set_feature_dimensions(
-                    data["model_data"]["model_input"],
-                    data["model_data"]["nr_of_training_maps"]
-                )
                 self.gui_handle.training.show_results(flush_data=True)
 
     def get_evaluation_mode(self):
@@ -2504,13 +2471,7 @@ class TrainingSidePanel(QFrame):
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
             self.buttons["validate"].setEnabled(True)
-            try:
-                confusion_matrix = self.keras_handle.confusion_matrix(
-                    model_data["y_labels"], self.keras_handle.predict()
-                )
-                self.gui_handle.training.update_confusion_matrix(confusion_matrix)
-            except Exception as e:
-                print(e)
+            self.gui_handle.ml_model_ops.generate_confusion_matrix(model_data["y_labels"])
 
         try:
             self.gui_handle.load_gui_settings_from_sensor_config(model_data["sensor_config"])
@@ -2531,89 +2492,12 @@ class TrainingSidePanel(QFrame):
             self.buttons["stop"].setEnabled(False)
             self.buttons["train"].setEnabled(True)
             self.buttons["validate"].setEnabled(True)
-            confusion_matrix = self.keras_handle.confusion_matrix(
-                model_data["y_labels"],
-                self.keras_handle.predict()
-            )
-            self.gui_handle.training.update_confusion_matrix(confusion_matrix)
+            self.gui_handle.ml_model_ops.generate_confusion_matrix(model_data["y_labels"])
         elif message_type == "update_plots":
             self.gui_handle.training.show_results(data)
         else:
             print("Thread data not implemented! {}".format(message_type))
             print(message_type, message, data)
-
-    def model_operation(self, op):
-        model_data = self.ml_state.get_model_data()
-        model_ready = model_data["loaded"]
-        training_ready = self.ml_state.get_training_data_status()
-        if op == "save_model":
-            if not model_ready:
-                print("No model data available")
-                return
-            title = "Save model and settings"
-            options = QtWidgets.QFileDialog.Options()
-            options |= QtWidgets.QFileDialog.DontUseNativeDialog
-
-            file_types = "NumPy data files (*.npy)"
-            fname = 'model_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
-            filename, info = QtWidgets.QFileDialog.getSaveFileName(
-                self, title, fname, file_types, options=options)
-
-            if filename:
-                if not model_ready:
-                    self.gui_handle.info_message("No model data available:\n")
-                    return
-                try:
-                    self.keras_handle.save_model(
-                        filename,
-                        model_data["feature_list"],
-                        model_data["sensor_config"],
-                        model_data["frame_settings"],
-                    )
-                except Exception as e:
-                    self.gui_handle.error_message("Failed to save model:\n {}".format(e))
-                    return
-        if op == "clear_model":
-            if model_ready:
-                self.keras_handle.clear_model(reinit=True)
-            self.gui_handle.training.show_results(flush_data=True)
-            self.gui_handle.training.update_confusion_matrix(None)
-            self.buttons["validate"].setEnabled(False)
-
-        elif op == "remove_model":
-            self.keras_handle.clear_model()
-            self.ml_state.set_model_data(None)
-
-        elif op == "clear_data":
-            if model_ready:
-                self.keras_handle.clear_training_data()
-                self.ml_state.set_model_data(None)
-            self.buttons["train"].setEnabled(False)
-            self.buttons["validate"].setEnabled(False)
-            self.gui_handle.training.show_results(flush_data=True)
-            self.gui_handle.training.update_data_table(None, None)
-            self.gui_handle.training.update_confusion_matrix(None)
-            self.gui_handle.model_select.set_layer_shapes(None)
-            self.ml_state.set_training_data_status(False)
-            self.ml_state.set_test_data_status(False)
-
-        elif op == "load_model":
-            self.gui_handle.eval_sidepanel.load_model()
-            self.gui_handle.tab_parent.setCurrentIndex(MODEL_TAB)
-
-        elif op == "validate_model":
-            if not training_ready:
-                self.gui_handle.error_message("No training data loaded")
-                self.button["validate"].setEnabled(False)
-                return
-            try:
-                confusion_matrix = self.keras_handle.confusion_matrix(
-                    model_data["y_labels"],
-                    self.keras_handle.predict()
-                )
-                self.gui_handle.training.update_confusion_matrix(confusion_matrix)
-            except Exception as e:
-                self.gui_handle.error_message("Failed to validate data!<br>{}".format(e))
 
     def check_vals(self, box):
         success = True
@@ -2793,16 +2677,24 @@ class ModelSelectFrame(QFrame):
                 f = DEFAULT_MODEL_FILENAME_2D
             self.load_layers(f)
         elif action == "Update model":
-            if self.ml_state.get_model_status() is False:
+            model_ready = self.ml_state.get_model_status()
+            training_ready = self.ml_state.get_training_data_status()
+            if not model_ready and not training_ready:
                 self.gui_handle.error_message("Load model or training data first!")
             else:
                 layer_list = self.get_layer_list()
-                keras_layer_info = self.keras_handle.update_model_layers(
+                status = self.keras_handle.update_model_layers(
                     layer_list
                 )
-                self.gui_handle.training_sidepanel.train_data["layer_list"] = layer_list
-                self.set_layer_shapes(keras_layer_info)
-                self.allow_update()
+                if status["info"]["model_initialized"]:
+                    print(status["model_data"])
+                    self.set_layer_shapes(status["model_data"]["keras_layer_info"])
+                    self.ml_state.set_model_data(status["model_data"])
+                    self.allow_update()
+                else:
+                    self.ml_state.set_model_data(None)
+                    self.gui_handle.error_message(status["info"]["model_message"])
+                    self.allow_update(True)
         else:
             title = "Save/Load layer settings"
             options = QtWidgets.QFileDialog.Options()
@@ -3380,33 +3272,103 @@ class EvalFrame(QFrame):
         return self.num
 
 
-class EvalSidePanel(QFrame):
-    def __init__(self, parent, gui_handle):
+class ModelOperations(QFrame):
+    def __init__(self, parent):
         super().__init__(parent)
 
-        self.ml_state = gui_handle.ml_state
+        self.gui_handle = parent
+        self.ml_state = self.gui_handle.ml_state
         self.keras_handle = self.ml_state.keras_handle
-        self.gui_handle = gui_handle
 
-        self.grid = QtWidgets.QGridLayout(self)
-        self.grid.setContentsMargins(9, 0, 9, 9)
-        self.grid.setColumnStretch(0, 1)
-        self.grid.setColumnStretch(1, 1)
+    def model_operation(self, op):
+        model_ready = self.ml_state.get_model_status()
+        training_ready = self.ml_state.get_training_data_status()
+        training_buttons = self.gui_handle.training_sidepanel.buttons
+        if op == "save_model":
+            if not model_ready:
+                print("No model data available")
+                return
+            title = "Save model and settings"
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
-        self.buttons = {
-            "load_model": QPushButton("Load Model", self),
-        }
+            file_types = "NumPy data files (*.npy)"
+            fname = 'model_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+            filename, info = QtWidgets.QFileDialog.getSaveFileName(
+                self, title, fname, file_types, options=options)
 
-        self.buttons["load_model"].clicked.connect(self.load_model)
+            if filename:
+                if not model_ready:
+                    self.gui_handle.info_message("No model data available:\n")
+                    return
+                try:
+                    model_data = self.ml_state.get_model_data()
+                    self.keras_handle.save_model(
+                        filename,
+                        model_data["feature_list"],
+                        model_data["sensor_config"],
+                        model_data["frame_settings"],
+                    )
+                except Exception as e:
+                    self.gui_handle.error_message("Failed to save model:\n {}".format(e))
+                    return
+        if op == "clear_model":
+            if model_ready:
+                self.keras_handle.clear_model(reinit=True)
+            self.gui_handle.training.show_results(flush_data=True)
+            self.gui_handle.training.update_confusion_matrix(None)
+            training_buttons["validate"].setEnabled(False)
 
-        self.num = 0
-        self.grid.addWidget(self.buttons["load_model"], self.num, 0, 1, 2)
+        elif op == "remove_model":
+            self.keras_handle.clear_model()
+            self.ml_state.set_model_data(None)
 
-        self.grid.setRowStretch(self.increment(), 1)
+        elif op == "clear_data":
+            if model_ready:
+                self.keras_handle.clear_training_data()
+                self.ml_state.set_model_data(None)
+            training_buttons["train"].setEnabled(False)
+            training_buttons["validate"].setEnabled(False)
+            self.gui_handle.training.show_results(flush_data=True)
+            self.gui_handle.training.update_data_table(None, None)
+            self.gui_handle.training.update_confusion_matrix(None)
+            self.gui_handle.model_select.set_layer_shapes(None)
+            self.ml_state.set_training_data_status(False)
+            self.ml_state.set_test_data_status(False)
 
-    def increment(self):
-        self.num += 1
-        return self.num
+        elif op == "load_model":
+            self.load_model()
+            self.gui_handle.tab_parent.setCurrentIndex(MODEL_TAB)
+
+        elif op == "validate_model":
+            if not training_ready:
+                self.gui_handle.error_message("No training data loaded")
+                training_buttons["validate"].setEnabled(False)
+                return
+            self.generate_confusion_matrix(self.ml_state.get_model_data()["y_labels"])
+
+    def generate_confusion_matrix(self, y_data):
+        success = True
+        error = ""
+
+        message_handle = self.gui_handle.info_handle(
+            "Computing confusion matrix, please wait...",
+            blocking=False
+        )
+        QApplication.processEvents()
+        try:
+            confusion_matrix = self.keras_handle.confusion_matrix(
+                y_data,
+                self.keras_handle.predict()
+            )
+            self.gui_handle.training.update_confusion_matrix(confusion_matrix)
+        except Exception as e:
+            success = False
+            error = "Failed to compute confusion matrix!\n{}".format(e)
+        message_handle.close()
+        message_handle.deleteLater()
+        if not success:
+            self.gui_handle.error_message(error)
 
     def load_model(self):
         title = "Load model data"
@@ -3428,16 +3390,18 @@ class EvalSidePanel(QFrame):
 
         try:
             self.gui_handle.ml_state.set_model_data(d, source=filename)
-            self.gui_handle.load_gui_settings_from_sensor_config(d["sensor_config"])
+            self.config_is_valid(show_warning=False)
+            conf = self.gui_handle.get_sensor_config()
+            model_conf_dump = d["sensor_config"]._dumps()
+            conf._loads(model_conf_dump)
+            self.gui_handle.set_sensors(d["sensor_config"].sensor)
             self.gui_handle.feature_select.update_feature_list(d["feature_list"])
             self.gui_handle.feature_sidepanel.set_frame_settings(d["frame_settings"])
-            self.config_is_valid(show_warning=False)
             self.gui_handle.model_select.update_layer_list(d["layer_list"])
             self.gui_handle.model_select.set_layer_shapes(d["keras_layer_info"])
-            self.gui_handle.training.set_feature_dimensions(
-                d["model_input"],
-                d["nr_of_training_maps"]
-            )
+            if d["y_labels"] is None:
+                self.ml_state.set_training_data_status(False)
+                self.ml_state.set_test_data_status(False)
             self.gui_handle.training.update_data_table(d["y_labels"], d["label_list"], loaded=True)
             self.gui_handle.model_select.dump_layers(d["layer_list"], "last_model.yaml")
         except Exception as e:
@@ -3492,31 +3456,6 @@ class EvalSidePanel(QFrame):
         self.gui_handle.eval_model.update_prediction(prediction)
 
         return prediction
-
-    def get_feature_list(self):
-        model_data = self.ml_state.get_model_data()
-        if model_data["loaded"]:
-            return model_data["feature_list"]
-        else:
-            return None
-
-    def get_frame_settings(self):
-        model_data = self.ml_state.get_model_data()
-        if model_data["loaded"]:
-            return model_data["frame_settings"]
-        else:
-            return None
-
-    def get_sensor_config(self):
-        model_data = self.ml_state.get_model_data()
-        if model_data["loaded"]:
-            return model_data["sensor_config"]
-        else:
-            return None
-
-    def model_loaded(self):
-        model_data = self.ml_state.get_model_data()
-        return model_data["loaded"]
 
 
 class CalibrationDialog(QDialog):

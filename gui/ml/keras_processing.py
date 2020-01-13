@@ -43,6 +43,7 @@ class MachineLearning():
         self.model = None
         self.model_data = {"loaded": False}
         self.training_data = {"loaded": False}
+        self.test_data = {"loaded": False}
         self.model_dimensions = {
             "dimensionality": model_dimension,
             "input": None,
@@ -177,8 +178,8 @@ class MachineLearning():
             except Exception as e:
                 return {
                     "loaded": False,
-                    "model_messsage": "\nLayer nr. {} failed."
-                                      " Error adding {}\n{}".format(idx + 1, layer['name'], e)
+                    "model_message": "\nLayer nr. {} failed."
+                                     " Error adding {}\n{}".format(idx + 1, layer['name'], e)
                 }
 
         self.model = Model(inputs=inputs, outputs=predictions)
@@ -364,8 +365,7 @@ class MachineLearning():
             result.append(res)
         return result
 
-    def label_conversion(self, labels):
-        labels_dict = {}
+    def label_conversion(self, labels, labels_dict={}):
         label_num = 0
         converted_labels = np.zeros(len(labels))
         for i, label in enumerate(labels):
@@ -464,13 +464,13 @@ class MachineLearning():
                 info["message"] = message
                 return {"info": info}
 
-        labels = []
+        raw_labels = []
         feature_maps = []
         for d in data:
             fdata = d["frame_data"]["ml_frame_data"]["frame_list"]
             for data_idx in fdata:
                 feature_maps.append(data_idx["feature_map"])
-                labels.append(data_idx["label"])
+                raw_labels.append(data_idx["label"])
 
         feature_map_data = np.stack(feature_maps)
         if self.model_dimensions["dimensionality"] == 2:
@@ -480,10 +480,11 @@ class MachineLearning():
         self.model_dimensions["nr_of_training_maps"] = feature_map_data.shape[0]
 
         if data_type == "training":
-            data_labels, self.label_num, self.labels_dict = self.label_conversion(labels)
             if not model_exists:
+                data_labels, self.label_num, self.labels_dict = self.label_conversion(raw_labels)
                 self.model_dimensions["output"] = self.label_num
             else:
+                data_labels = self.label_assignment(raw_labels, self.labels_dict)
                 output = self.model_dimensions["output"]
                 if self.label_num != output:
                     message = "Output dimenions not matching:\nModel {} - Data {}".format(
@@ -492,7 +493,7 @@ class MachineLearning():
                     info["message"] = message + err_tip
                     return {"info": info}
         else:
-            data_labels = self.label_assignment(labels, self.labels_dict)
+            data_labels = self.label_assignment(raw_labels, self.labels_dict)
 
         label_categories = to_categorical(data_labels, self.label_num)
 
@@ -530,11 +531,13 @@ class MachineLearning():
             self.training_data = {
                 "loaded": True,
                 "x_data": feature_map_data,
+                "raw_labels": raw_labels,
             }
         else:
             self.test_data = {
                 "loaded": True,
                 "test_data": feature_map_data,
+                "raw_labels": raw_labels,
             }
             loaded_data = self.test_data
 
@@ -643,8 +646,18 @@ class MachineLearning():
         counted = self.count_variables()
 
         labels = self.get_label_list()
-        data_labels = self.label_assignment(labels, self.labels_dict)
-        label_categories = to_categorical(data_labels, self.label_num)
+        label_categories = None
+        if self.training_data["loaded"]:
+            try:
+                data_labels = self.label_assignment(
+                    self.training_data["raw_labels"],
+                    self.labels_dict
+                )
+                label_categories = to_categorical(data_labels, self.label_num)
+            except Exception as e:
+                print("Loaded data incompatible with model data!\n", e)
+                self.trainning = {"loaded": False}
+                label_categories = None
 
         message = "Loaded model with:\n"\
                   "input shape    :{}\n"\
@@ -662,7 +675,6 @@ class MachineLearning():
         self.model_data = {
             "loaded": True,
             "message": message,
-            "x_data": None,
             "y_labels": label_categories,
             "label_list": labels,
             "feature_list": feature_list,
@@ -687,30 +699,33 @@ class MachineLearning():
             K.clear_session()
             del self.model
             self.model = None
+            self.model_data["loaded"] = False
 
         if reinit and self.model_dimensions is not None:
             self.tf_session = K.get_session()
             self.tf_graph = tf.get_default_graph()
             with self.tf_session.as_default():
                 with self.tf_graph.as_default():
-                    return self.init_model()
+                    status = self.init_model()
+                    if not status["loaded"]:
+                        self.clear_model()
+                    else:
+                        self.model_data["loaded"] = True
+                    return status
         else:
-            return {"loaded": False, "model_message": ""}
+            return {"loaded": False, "model_message": "Nothing to reinitialize!"}
 
     def update_model_layers(self, layer_list):
         self.model_params["layer_list"] = layer_list
         model_status = self.clear_model(reinit=True)
 
-        if model_status["model_loaded"]:
-            self.model_data["keras_layer_info"] = self.model.layers
-            return self.model_params
-        else:
-            return None
-
         info = {
-            "model_initialized": False,
+            "model_initialized": model_status["loaded"],
             "model_message": model_status["model_message"],
         }
+
+        if model_status["loaded"]:
+            self.model_data["keras_layer_info"] = self.model.layers
 
         return {"info": info, "model_data": self.model_data}
 
@@ -735,8 +750,9 @@ class MachineLearning():
         K.set_session(session)
 
     def clear_training_data(self):
-        self.model_params = None
-        self.clear_model()
+        self.model_params["y_labels"] = None
+        self.training_data = {"loaded": False}
+        self.test_data = {"loaded": False}
 
     def get_labels(self):
         return self.labels_dict
