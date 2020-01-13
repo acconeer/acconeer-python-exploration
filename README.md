@@ -72,7 +72,7 @@ python -m pip install -U --user .
 
 If you are running Linux together with an XM112 or XM122 module through UART, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
 ```
-sudo usermod -a -G dialout your-user-name
+sudo usermod -a -G dialout $USER
 ```
 For the changes to take effect, you will need to log out and in again.
 
