@@ -1,7 +1,9 @@
 .. _sensor-intro:
 
+
 Radar sensor introduction
 =========================
+
 
 Welcome!
 --------
@@ -144,7 +146,7 @@ For the Stand-alone module setup the customer should use the RSS library and Sof
 
 .. _Acconeer tools:
 
-The Acconeer Tools
+The Acconeer tools
 ^^^^^^^^^^^^^^^^^^
 
 To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration Tool requires that the Streaming server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The Streaming Server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration Tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`__. An overview of how Exploration Tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
@@ -188,7 +190,6 @@ Envelope and Power Bins services
     :align: center
 
     Output from the Power Bins service in Exploration Tool. Each bin correspond to a region of the scanned range, where Bin 1 is closest to the sensor.
-
 
 .. _fig_env_demo:
 .. figure:: /_static/introduction/fig_env_demo.png
@@ -275,7 +276,6 @@ The Acconeer sensor is a mm wavelength pulsed coherent radar, which means that i
     :align: center
 
     Illustration of the time domain transmitted signal from the Acconeer A111 sensor, a radar sweep typically consists of thousands of pulses. The length of the pulses can be controlled by setting Profile.
-
 
 These transmitted signals are reflected by an object and the time elapsed between transmission and reception of the reflected signal (:math:`t_{delay}`) is used to calculate the distance to the object by using
 
@@ -377,7 +377,7 @@ The range can be further increased based on the configuration of the sensor, as 
 
 .. _Table 2:
 
-    .. table:: Typical ranges without lens
+    .. table:: Typical ranges using the envelope service and Profile 2, **without radar lens**.
         :align: center
         :widths: auto
 
@@ -403,10 +403,9 @@ The range can be further increased based on the configuration of the sensor, as 
         Football                               Y     Y     N     N     N
         ====================================== ===== ===== ===== ===== =====
 
-
 .. _Table 3:
 
-    .. table:: Typical ranges with 7dB radar lens
+    .. table:: Typical ranges using the envelope service and Profile 2, **with 7 dB radar lens**.
         :align: center
         :widths: auto
 
@@ -431,6 +430,7 @@ The range can be further increased based on the configuration of the sensor, as 
         PET Bottle with water (h=14, r=4.2cm)  Y     Y     Y     N     N
         Football                               Y     Y     Y     N     N
         ====================================== ===== ===== ===== ===== =====
+
 
 Radar sensor performance metrics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -474,7 +474,7 @@ The Acconeer radar systems are based on a time diluted measurement that splits u
 Half-power beamwidth
 ~~~~~~~~~~~~~~~~~~~~
 
-The radiation pattern determines the angle between the half-power (-3 dB) points of the main lobe of the radiation pattern. The radiation pattern of the sensor depends on both the antenna-in-package design and the hardware integration of the sensor, such as surrounding components, ground plane size, and added di-electric lenses for directivity optimizations, valid for both vertical and horizontal plane.
+The half-power beamwidth (HPBW) radiation pattern determines the angle between the half-power (-3 dB) points of the main lobe of the radiation pattern. The radiation pattern of the sensor depends on both the antenna-in-package design and the hardware integration of the sensor, such as surrounding components, ground plane size, and added di-electric lenses for directivity optimizations, valid for both vertical and horizontal plane.
 
 
 Distance jitter
@@ -543,7 +543,6 @@ Depth resolution, :math:`d_{res}`, is the ability to resolve reflections which a
 
     Illustration of received signal containing 2 echoes. A longer pulse increases the radar loop gain, but also limits the depth resolution. The displayed data corresponds to the two setups in :numref:`fig_scenario`.
 
-
 .. _fig_scenario:
 .. figure:: /_static/introduction/fig_scenario.png
     :scale: 60
@@ -560,26 +559,26 @@ If angular information is needed one possibility is to mechanically move the sen
     :scale: 60
     :align: center
 
-    Illustration of how the leakage between the Tx and Rx antenna will appear in the Envelope Service data for a short and a long pulse.
+    Illustration of how the leakage between the Tx and Rx antenna will appear in the Envelope Service data for Profile 1 and Profile 2 pulse lengths.
 
 .. _Table 4:
 
-    .. table:: Pulse profiles
+    .. table:: **Rough** comparison of the envelope service behavior for different profiles.
         :align: center
         :widths: auto
 
-        ================ ======================== ====================== ========
-        Profile          Relative SNR improvement Depth resolution       Comments
-        ================ ======================== ====================== ========
-        Profile 1        TBD                      TBD                    TBD
-        Profile 2        TBD                      TBD                    TBD
-        Profile 3        TBD                      TBD                    TBD
-        Profile 4        TBD                      TBD                    TBD
-        Profile 5        TBD                      TBD                    TBD
-        ================ ======================== ====================== ========
+        ========== ============================= ===================
+        Profile    Relative SNR improvement [dB] Direct leakage [m]
+        ========== ============================= ===================
+        Profile 1  0                             ~0.06
+        Profile 2  ~7                            ~0.10
+        Profile 3  ~11                           ~0.18
+        Profile 4  ~13                           ~0.36
+        Profile 5  ~16                           ~0.60
+        ========== ============================= ===================
 
 
-Signal Averaging and Gain
+Signal averaging and gain
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In addition to the Profile configuration parameter, two main configuration parameters are available in all Services to optimize the signal quality:
@@ -618,16 +617,16 @@ The power save mode configuration sets what state the sensor waits in between me
 
 Another important aspect of the power save mode is when using the service in repetition mode Streaming. In streaming mode the service is also configured with an update rate at which the sensor produce new data. The update rate is maintained by the sensor itself using either internally generated clock or using the externally applied clock on XIN/XOUT pins. Besides the fact that power save mode *Active* gives the highest possible update rate, it also gives the best update rate accuracy. Likewise, the power save mode *Sleep* gives a lower possible update rate than *Active* and also a lower update rate accuracy. Bare in mind that also in streaming mode the maximum update rate is not only determined by the power save mode but also profile, length, and hardware accelerated average samples. Power save mode *Off* and *Hibernate* is not supported in streaming mode since the sensor is turned off between its measurements and thus cannot keep an update rate. In addition, the power save mode *Hibernate* is only supported when using Sparse service.
 
-`Table 5`_ concludes the power save mode configurations,
+`Table 5`_ concludes the power save mode configurations.
 
 .. _Table 5:
 
-    .. table:: Power save modes
+    .. table:: Power save modes.
         :align: center
         :widths: auto
 
         ================== ==================== ============== =========================
-        Power save mode    Current dissipation  Response time  Update rate accuracy
+        Power save mode    Current consumption  Response time  Update rate accuracy
         ================== ==================== ============== =========================
         Off                Lowest               Longest        Not applicable
         Hibernate          ...                  ...            Not applicable
@@ -636,13 +635,13 @@ Another important aspect of the power save mode is when using the service in rep
         Active             Highest              Shortest       Best
         ================== ==================== ============== =========================
 
- As part of the deactivation process of the service the sensor is disabled, which is the same state as power save mode *Off*.
+As part of the deactivation process of the service the sensor is disabled, which is the same state as power save mode *Off*.
+
 
 Configuration summary
 ^^^^^^^^^^^^^^^^^^^^^
 
 `Table 6`_ shows a list of important parameters that are available through our API and that can be used to optimize the performance for a specific use case, refer to product documentation and user guides for a complete list of all parameters and how to use them.
-
 
 .. _Table 6:
 
@@ -654,21 +653,22 @@ Configuration summary
         Parameter          Comment
         ================== ==============================================================================================
         Profile            Selects between the pulse length profiles. Trade off between SNR and depth resolution.
-        Start              Start of sweep [m]
-        Length             Length of sweep, independently of Start range  [m]
-        HWAAS              Amount of radar pulse averaging in the sensor
-        Receiver gain      Adjust to accommodate received signal level
-        Update rate        Desired rate at which sweeps are generated [Hz] (in repetition mode streaming)
-        Power save mode    Tradeoff between power consumption and rate and accuracy at which sweeps are generated
+        Start              Start of sweep [m].
+        Length             Length of sweep, independently of Start range  [m].
+        HWAAS              Amount of radar pulse averaging in the sensor.
+        Receiver gain      Adjust to accommodate received signal level.
+        Repetition mode    On demand or Streaming.
+        Update rate        Desired rate at which sweeps are generated [Hz] (in repetition mode Streaming).
+        Power save mode    Tradeoff between power consumption and rate and accuracy at which sweeps are generated.
         ================== ==============================================================================================
 
 .. _Physical integration aspects:
+
 
 Physical integration aspects
 ----------------------------
 
 The A111 sensor contains the mmWave front-end, digital control logic, digitization of received signal and memory, all in one package. To integrate it in your application it is required to have a reference frequency or XTAL (20-80 MHz), 1.8 V supply, and a host processor, as illustrated in :numref:`fig_host_platform`, supported platforms and reference schematics are available at `developer.acconeer.com <https://developer.acconeer.com>`__.
-
 
 .. _fig_host_platform:
 .. figure:: /_static/introduction/fig_host_platform.png
@@ -679,14 +679,12 @@ The A111 sensor contains the mmWave front-end, digital control logic, digitizati
 
 In addition to the above it is also important for optimized integration to consider the electromagnetic (EM) environment, both in terms of what is placed on top of the sensor as well as to the side of the sensor. To evaluate the EM integration a Radar loop measurement can be conducted by placing an object in front of the sensor and rotating the sensor around its own axis, as illustrated in :numref:`fig_radar_loop_pattern`. The received energy from e.g. the Envelope Service can then be used to plot the amplitude versus rotation angle (:math:`\theta`).
 
-
 .. _fig_radar_loop_pattern:
 .. figure:: /_static/introduction/fig_radar_loop_pattern.png
     :scale: 60
     :align: center
 
     Setup configuration for radar loop pattern measurements.
-
 
 The radiation pattern of the integrated antennas will be affected by anything that is put on top of the sensor as a cover. The transmission through a material is given by 1-:math:`\gamma`, where :math:`\gamma` is the reflectivity calculated in Equation 3. Hence, materials with low reflectivity are good materials to use as a cover on top of the sensor, plastic is a good choice and the sensor is not sensitive to the color of the material. Figure 21 shows the measured Radar loop pattern for 3 different scenarios, plastic (ABS), gorilla glass (GorillaGlass) and free space (FS). To further optimize the cover integration the thickness of the material should be considered. One can also use a layered cover which uses materials of different :math:`\varepsilon` for optimum matching to the medium in which the signal is going to propagate or even to increase the directivity, as shown in Figure 21, where the beam width has been decreased by adding material on top of the sensor. More information on the EM integration aspects can be found in “Electromagnetic Integration - Basic Guidelines” document available at `developer.acconeer.com <https://developer.acconeer.com>`__.
 
