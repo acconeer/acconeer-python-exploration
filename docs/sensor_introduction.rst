@@ -504,7 +504,7 @@ The close-in range determines the radar system limits on how close to the radar 
 Power consumption
 ~~~~~~~~~~~~~~~~~
 
-The power consumption determines the radar sensor power usage for different configurations as service depends, the power mode, the update rate, downsampling, sweep length, etc.
+The power consumption determines the radar sensor power usage for different configurations as service depends, the power save mode, the update rate, downsampling, sweep length, etc.
 
 
 .. _Configuring the Acconeer sensor:
@@ -604,19 +604,19 @@ Repetition modes
 
 RSS supports two different *repetition modes*. They determine how and when data acquisition occurs. They are:
 
-* **On demand**: The sensor produces data when requested by the application. Hence, the application is responsible for timing the data acquisition. This is the default mode, and may be used with lower power modes.
+* **On demand**: The sensor produces data when requested by the application. Hence, the application is responsible for timing the data acquisition. This is the default mode, and may be used with all power save modes.
 
 * **Streaming**: The sensor produces data at a fixed rate, given by a configurable accurate hardware timer. This mode is recommended if exact timing between updates is required.
 
 Note, Exploration Tool is capable of setting the update rate also in *on demand* mode. Thus, the difference between the modes becomes subtle. This is why *on demand* and *streaming* are called *host driven* and *sensor driven* respectively in Exploration Tool.
 
 
-Power modes
-^^^^^^^^^^^
+Power save modes
+^^^^^^^^^^^^^^^^
 
-The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are four power modes see `Table 5`_.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
+The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are five power save modes see `Table 5`_.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
 
-Another important aspect of the power save mode is when using the service in repetition mode Streaming. In streaming mode the service is also configured with an update rate at which the sensor produce new data. The update rate is maintained by the sensor itself using either internally generated clock or using the externally applied clock on XIN/XOUT pins. Besides the fact that power save mode *Active* gives the highest possible update rate, it also gives the best update rate accuracy. Likewise, the power save mode *Sleep* gives a lower possible update rate than *Active* and also a lower update rate accuracy. Bare in mind that also in streaming mode the maximum update rate is not only determined by the power save mode but also profile, length, and hardware accelerated average samples. The power save mode *Off* is not supported in streaming mode since the sensor is turned off completely between its measurements and thus cannot keep an update rate.
+Another important aspect of the power save mode is when using the service in repetition mode Streaming. In streaming mode the service is also configured with an update rate at which the sensor produce new data. The update rate is maintained by the sensor itself using either internally generated clock or using the externally applied clock on XIN/XOUT pins. Besides the fact that power save mode *Active* gives the highest possible update rate, it also gives the best update rate accuracy. Likewise, the power save mode *Sleep* gives a lower possible update rate than *Active* and also a lower update rate accuracy. Bare in mind that also in streaming mode the maximum update rate is not only determined by the power save mode but also profile, length, and hardware accelerated average samples. Power save mode *Off* and *Hibernate* is not supported in streaming mode since the sensor is turned off between its measurements and thus cannot keep an update rate. In addition, the power save mode *Hibernate* is only supported when using Sparse service.
 
 `Table 5`_ concludes the power save mode configurations,
 
@@ -630,6 +630,7 @@ Another important aspect of the power save mode is when using the service in rep
         Power save mode    Current dissipation  Response time  Update rate accuracy
         ================== ==================== ============== =========================
         Off                Lowest               Longest        Not applicable
+        Hibernate          ...                  ...            Not applicable
         Sleep              ...                  ...            Worst
         Ready              ...                  ...            ...
         Active             Highest              Shortest       Best

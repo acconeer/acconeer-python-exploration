@@ -97,7 +97,7 @@ class BaseServiceConfig(BaseSessionConfig):
 
             * **On demand / host driven**: The sensor produces data when requested by the
               application. Hence, the application is responsible for timing the data acquisition.
-              This is the default mode, and may be used with lower power modes.
+              This is the default mode, and may be used with all power save modes.
 
             * **Streaming / sensor driven**: The sensor produces data at a fixed rate, given by a
               configurable accurate hardware timer. This mode is recommended if exact timing
