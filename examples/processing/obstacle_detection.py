@@ -14,11 +14,13 @@ from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 
 log = logging.getLogger("acconeer.exptool.examples.obstacle_detection")
 
-MAX_SPEED = 8.00          # Max speed to be resolved with FFT in cm/s
-WAVELENGTH = 0.49         # Wavelength of radar in cm
-FUSION_MAX_OBSTACLES = 5  # Max obstacles for sensor fusion
-FUSION_MAX_SHADOWS = 10   # Max obstacles for sensor fusion shadows
-FUSION_HISTORY = 30       # Max history for sensor fusion
+MAX_SPEED = 8.00                         # Max speed to be resolved with FFT in cm/s
+WAVELENGTH = 0.49                        # Wavelength of radar in cm
+FUSION_MAX_OBSTACLES = 5                 # Max obstacles for sensor fusion
+FUSION_MAX_SHADOWS = 10                  # Max obstacles for sensor fusion shadows
+FUSION_HISTORY = 30                      # Max history for sensor fusion
+BACKGROUND_PLATEAU_INTERPOLATION = 0.25  # Default plateau for background parameterization
+BACKGROUND_PLATEAU_FACTOR = 1.25         # Default factor for background parameterization
 
 
 def main():
@@ -84,7 +86,7 @@ def get_processing_config():
         },
         "threshold": {  # Ignore data below threshold in FFT window for moving objects
             "name": "Moving Threshold",
-            "value": 0.1,
+            "value": 0.05,
             "limits": [0.0, 100],
             "type": float,
         },
@@ -104,7 +106,7 @@ def get_processing_config():
         },
         "calib": {
             "name": "Background iterations",
-            "value": 0,
+            "value": 10,
             "limits": [0, 1000],
             "type": int,
             "advanced": True,
@@ -132,7 +134,7 @@ def get_processing_config():
         },
         "static_distance": {
             "name": "Distance limit far",
-            "value": 25,
+            "value": 45,
             "limits": [0.0, 1000],
             "type": float,
             "advanced": True,
@@ -188,6 +190,11 @@ def get_processing_config():
         },
         "background_map": {
             "name": "Show background",
+            "value": True,
+            "advanced": True,
+        },
+        "use_parameterization": {
+            "name": "Use bg parameterization",
             "value": False,
             "advanced": True,
         },
@@ -198,7 +205,7 @@ def get_processing_config():
         },
         "distance_history": {
             "name": "Show distance history",
-            "value": False,
+            "value": True,
             "advanced": True,
         },
         "velocity_history": {
@@ -208,7 +215,7 @@ def get_processing_config():
         },
         "angle_history": {
             "name": "Show angle history",
-            "value": False,
+            "value": True,
             "advanced": True,
         },
         "amplitude_history": {
@@ -276,6 +283,7 @@ class ObstacleDetectionProcessor:
         self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
         self.fusion_history = FUSION_HISTORY
         self.fusion_max_shadows = FUSION_MAX_SHADOWS
+        self.use_bg_parameterization = processing_config["use_parameterization"]["value"]
 
     def process(self, sweep):
         if len(sweep.shape) == 1:
@@ -283,6 +291,8 @@ class ObstacleDetectionProcessor:
 
         if self.downsampling:
             sweep = sweep[:, ::self.downsampling]
+
+        sweep /= 2**12
 
         nr_sensors, len_range = sweep.shape
 
@@ -328,15 +338,31 @@ class ObstacleDetectionProcessor:
             self.threshold_map = np.zeros((len_range, self.fft_len))
 
             if self.saved_bg is not None:
-                if hasattr(self.saved_bg, "shape") and self.saved_bg.shape == self.fft_bg.shape:
-                    self.fft_bg = self.saved_bg
-                    self.use_bg = False
-                    log.info("Using saved FFT background data!")
+                if isinstance(self.saved_bg, dict):
+                    try:
+                        for s in range(nr_sensors):
+                            # Generate background from piece-wise-linear (pwl) interpolation
+                            self.generate_background_from_pwl_params(
+                                self.fft_bg[s, :, :],
+                                self.saved_bg
+                            )
+                            self.use_bg = False
+                            self.use_bg_parameterization = False
+                        log.info("Using saved parameterized FFT background data!")
+                    except Exception:
+                        log.warning("Could not reconstruct background!")
+                elif hasattr(self.saved_bg, "shape"):
+                    if self.saved_bg.shape == self.fft_bg.shape:
+                        self.fft_bg = self.saved_bg
+                        self.use_bg = False
+                        log.info("Using saved FFT background data!")
+                    else:
+                        log.warning("Saved background has wrong shape/type!")
+                        log.warning("Required shape {}".format(self.fft_bg.shape))
+                        if hasattr(self.saved_bg, "shape"):
+                            log.warning("Supplied shape {}".format(self.saved_bg.shape))
                 else:
-                    log.warning("Saved background has wrong shape/type!")
-                    log.warning("Required shape {}".format(self.fft_bg.shape))
-                    if hasattr(self.saved_bg, "shape"):
-                        log.warning("Supplied shape {}".format(self.saved_bg.shape))
+                    log.warning("Received unsupported background data!")
 
             for dist in range(len_range):
                 for freq in range(self.fft_len):
@@ -354,6 +380,17 @@ class ObstacleDetectionProcessor:
                 self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
                 if s == nr_sensors - 1:
                     self.bg_avg += 1
+                    if self.bg_avg == self.use_bg and self.use_bg_parameterization:
+                        for i in range(nr_sensors):
+                            bg_params = self.parameterize_bg(self.fft_bg[i, :, :])
+                            print("Background parameters for sensor {}:".format(i))
+                            for param in bg_params:
+                                print("{}: {}".format(param, bg_params[param]))
+                            if self.use_bg_parameterization:
+                                self.generate_background_from_pwl_params(
+                                    self.fft_bg[s, :, :],
+                                    bg_params
+                                )
 
             signalPSD -= self.fft_bg[s, :, :]
             signalPSD[signalPSD < 0] = 0
@@ -436,6 +473,11 @@ class ObstacleDetectionProcessor:
             fft_bg = self.fft_bg[0, :, :]
             fft_bg_send = self.fft_bg
 
+        if self.use_bg:
+            iterations_left = self.use_bg - self.bg_avg
+        else:
+            iterations_left = 0
+
         threshold_map = None
         if self.sweep_index == 1:
             threshold_map = self.threshold_map
@@ -451,6 +493,7 @@ class ObstacleDetectionProcessor:
             "fft_peaks": fft_peaks,
             "peak_hist": self.peak_hist[0, :, :, :],
             "fft_bg": fft_bg,
+            "fft_bg_iterations_left": iterations_left,
             "threshold_map": threshold_map,
             "send_process_data": fft_bg_send,
             "fused_obstacles": [f_data["fused_x"], f_data["fused_y"]],
@@ -467,6 +510,8 @@ class ObstacleDetectionProcessor:
         return out_data
 
     def remap(self, val, x1, x2, y1, y2):
+        if x1 == x2:
+            return val
         m = (y2 - y1) / (x2 - x1)
         b = y1 - m * x1
         return val * m + b
@@ -487,6 +532,193 @@ class ObstacleDetectionProcessor:
         res[0] = val
         res[1:] = vec[:-1]
         vec[...] = res
+
+    def parameterize_bg(self, fft_bg):
+        dist_len = fft_bg.shape[0]
+
+        static_idx = int(self.fft_len / 2)
+        adjacent_idx = [int(static_idx - 1), int(static_idx + 1)]
+        moving_range = [*range(adjacent_idx[0]), *range(adjacent_idx[1] + 1, self.fft_len)]
+        pwl_static_points = 5
+
+        static_pwl_amp = []
+        static_pwl_dist = []
+
+        static_sum = 0.0
+        adjacent_sum = np.zeros(2)
+        moving_sum = 0.0
+        moving_sum_sqr = 0.0
+        moving_mean_array = np.zeros(dist_len)
+
+        moving_max = 0.0
+        moving_min = 0.0
+
+        for dist_index in range(dist_len):
+            static_sum += fft_bg[dist_index, static_idx]
+            adjacent_sum[0] += fft_bg[dist_index, adjacent_idx[0]]
+            adjacent_sum[1] += fft_bg[dist_index, adjacent_idx[1]]
+
+            current_dist_moving_sum = 0.0
+            for freq_index in moving_range:
+                val = fft_bg[dist_index, freq_index]
+                current_dist_moving_sum += val
+                if val > moving_max:
+                    moving_max = val
+                if val < moving_min:
+                    moving_min = val
+                moving_sum += val
+                moving_sum_sqr += val * val
+
+            moving_mean_array[dist_index] = current_dist_moving_sum / len(moving_range)
+
+        segs = self.adapt_background_segment_step(moving_mean_array, dist_len)
+        segs_nr = int(len(segs) / 2)
+        moving_pwl_dist = segs[0:segs_nr]
+        moving_pwl_amp = segs[segs_nr:]
+
+        adjacent_sum_max = np.max(adjacent_sum)
+
+        if adjacent_sum_max == 0:
+            static_adjacent_factor = 0
+        else:
+            static_adjacent_factor = static_sum / adjacent_sum_max
+
+        bin_width = dist_len / pwl_static_points
+
+        pwl_y_max = 0
+        pwl_x_max = 0
+        for point_index in range(pwl_static_points):
+            dist_begin = int(point_index * bin_width)
+            dist_end = int((point_index + 1) * bin_width)
+
+            if point_index == pwl_static_points:
+                dist_end = dist_len
+
+            pwl_x_max = 0.0
+            pwl_y_max = 0.0
+            for dist_index in range(dist_begin, dist_end):
+                val = fft_bg[dist_index, static_idx]
+                if val > pwl_y_max:
+                    pwl_x_max = dist_index
+                    pwl_y_max = val
+
+            static_pwl_dist.append(pwl_x_max)
+            static_pwl_amp.append(pwl_y_max)
+
+        for i in range(pwl_static_points):
+            if static_pwl_amp[i] < moving_max:
+                static_pwl_amp[i] = moving_max
+
+        bg_params = {
+            "static_pwl_dist": static_pwl_dist,
+            "static_pwl_amp": static_pwl_amp,
+            "moving_pwl_dist": moving_pwl_dist,
+            "moving_pwl_amp": moving_pwl_amp,
+            "static_adjacent_factor": static_adjacent_factor,
+            "moving_max": moving_max,
+        }
+
+        return bg_params
+
+    def adapt_background_segment_step(self, data_y, data_length):
+        mid_index = int(data_length / 2)
+
+        y1 = 0
+        for i in range(mid_index):
+            if y1 < data_y[i]:
+                y1 = data_y[i]
+
+        y2 = 0
+        for i in range(mid_index, int(data_length)):
+            if y2 < data_y[i]:
+                y2 = data_y[i]
+
+        # Check the plateau levels and return early if the step is non-decreasing
+        if y1 <= y2:
+            y1 = y2
+            x1 = 0
+            x2 = float(data_length - 1)
+            return [x1, x2, y1, y2]
+
+        intersection_threshold = self.remap(BACKGROUND_PLATEAU_INTERPOLATION, 0, 1, y2, y1)
+        if (intersection_threshold > y2 * BACKGROUND_PLATEAU_FACTOR):
+            intersection_threshold = y2 * BACKGROUND_PLATEAU_FACTOR
+
+        intersection_index = mid_index
+        while (intersection_index > 1 and data_y[intersection_index - 1] < intersection_threshold):
+            intersection_index -= 1
+
+        x2 = float(intersection_index)
+        y2 = data_y[intersection_index]
+
+        if intersection_index <= 1:
+            x1 = 0
+            return [x1, x2, y1, y2]
+
+        max_neg_slope = 0
+        for i in range(intersection_index):
+            neg_slope = (data_y[i] - y2) / float(intersection_index - i)
+            if max_neg_slope < neg_slope:
+                max_neg_slope = neg_slope
+        x1 = x2 - (y1 - y2) / max_neg_slope
+
+        return [x1, x2, y1, y2]
+
+    def generate_background_from_pwl_params(self, fft_bg, bg_params):
+        static_idx = int(self.fft_len / 2)
+        adjacent_idx = [int(static_idx - 1), int(static_idx + 1)]
+        moving_range = [*range(adjacent_idx[0]), *range(adjacent_idx[1] + 1, self.fft_len)]
+        pwl_static_points = 5
+        pwl_moving_points = 2
+        dist_len = fft_bg.shape[0]
+        fac = bg_params["static_adjacent_factor"]
+        static_pwl_amp = bg_params["static_pwl_amp"]
+        static_pwl_dist = bg_params["static_pwl_dist"]
+        moving_pwl_amp = bg_params["moving_pwl_amp"]
+        moving_pwl_dist = bg_params["moving_pwl_dist"]
+        moving_max = bg_params["moving_max"]
+
+        self.apply_pwl_segments(
+            fft_bg, static_idx, static_pwl_dist, static_pwl_amp, pwl_static_points
+        )
+
+        for dist_index in range(dist_len):
+            static_val = fft_bg[dist_index, 8]
+            if static_val < moving_max:
+                static_val = moving_max
+                fft_bg[dist_index, static_idx] = static_val
+
+            interp_adjacent = moving_max
+            if fac > 0:
+                interp_adjacent = static_val / fac
+                fft_bg[dist_index, adjacent_idx] = interp_adjacent
+
+        for freq_index in moving_range:
+            self.apply_pwl_segments(
+                fft_bg, freq_index, moving_pwl_dist, moving_pwl_amp, pwl_moving_points
+            )
+
+    def apply_pwl_segments(self, fft_bg, freq_index, pwl_dist, pwl_amp, pwl_points):
+        dist_len = fft_bg.shape[0]
+
+        x_start = 0
+        x_stop = pwl_dist[0]
+        y_start = pwl_amp[0]
+        y_stop = pwl_amp[0]
+
+        segment_stop = 0
+        for dist_index in range(dist_len):
+            if x_stop < dist_index:
+                x_start = x_stop
+                y_start = y_stop
+                segment_stop += 1
+                if segment_stop < pwl_points:
+                    x_stop = pwl_dist[segment_stop]
+                    y_stop = pwl_amp[segment_stop]
+                else:
+                    x_stop = dist_len - 1
+            interp = self.remap(dist_index, x_start, x_stop, y_start, y_stop)
+            fft_bg[dist_index, freq_index] = interp
 
     def find_peaks(self, arr):
         if not self.nr_locals:
@@ -715,6 +947,10 @@ class PGUpdater:
         self.peak_val_text = pg.TextItem(color="w", anchor=(0, 0))
         self.obstacle_ax.addItem(self.peak_val_text)
         self.peak_val_text.setPos(-self.max_velocity, self.sensor_config.range_end * 100)
+
+        self.bg_estimation_text = pg.TextItem(color="w", anchor=(0, 1))
+        self.obstacle_ax.addItem(self.bg_estimation_text)
+        self.bg_estimation_text.setPos(-self.max_velocity, self.sensor_config.range_start * 100)
 
         row_idx += 1
         if self.advanced_plots["background_map"]:
@@ -980,6 +1216,13 @@ class PGUpdater:
         else:
             self.obstacle_peak.setData([], [])
 
+        if data["fft_bg_iterations_left"]:
+            bg_text = "Stay clear of sensors, estimating background! {} iterations left"
+            bg_text = bg_text.format(data["fft_bg_iterations_left"])
+            peak_fft_text = ""
+        else:
+            bg_text = ""
+
         for i in range(self.nr_locals):
             if self.hist_plots["distance"][1]:
                 self.hist_plots["distance"][0][i].setData(data["peak_hist"][i, 0, :],
@@ -998,6 +1241,7 @@ class PGUpdater:
 
         self.peak_dist_text.setText(peak_dist_text)
         self.peak_fft_text.setText(peak_fft_text)
+        self.bg_estimation_text.setText(bg_text)
         self.peak_val_text.setText("FFT max: %.3f" % map_max)
 
         self.env_ampl.setData(self.env_xs, data["env_ampl"])
@@ -1069,14 +1313,15 @@ class SensorFusion():
         self.iteration = 0
 
         self.fusion_params = {
-            "separation": 15,       # cm
-            "obstacle_spread": 10,  # degrees
-            "min_y_spread": 2,      # cm
-            "min_x_spread": 4,      # cm
-            "max_x_spread": 15,     # cm
-            "decay_time": 5,        # cycles
-            "step_time": 0,         # s
-            "min_distance": 6,      # cm
+            "separation": 15,                 # cm
+            "obstacle_spread": 10,            # degrees
+            "min_y_spread": 2,                # cm
+            "min_x_spread": 4,                # cm
+            "max_x_spread": 15,               # cm
+            "decay_time": 5,                  # cycles
+            "step_time": 0,                   # s
+            "min_distance": 6,                # cm
+            "use_as_noise_filter:": False     # increases decaytime if known obstacle
         }
         self.fused_obstacles = []
 
@@ -1350,7 +1595,12 @@ class SensorFusion():
         fused_obst = self.fused_obstacles[fused_idx]
         for key in new_obst_data:
             fused_obst[key] = new_obst_data[key]
-        fused_obst["decay_time"] = min(fused_obst["decay_time"] + 1, decay_time)
+
+        if self.fusion_params["use_as_noise_filter"]:
+            fused_obst["decay_time"] = min(fused_obst["decay_time"] + 1, decay_time * 2)
+        else:
+            fused_obst["decay_time"] = min(fused_obst["decay_time"] + 1, decay_time)
+
         fused_obst["predicted"] = self.predict(new_obst_data["vec"])
         fused_obst["updated"] = True
 
@@ -1524,7 +1774,17 @@ class SensorFusion():
         data["vy"] = np.round(vy, 1)
         data["y"] = np.round(y, 1)
         data["side"] = side
-        data["vec"] = np.asarray((x1[0], x2[0], y[0], vt, vy, data["angle"], data["amplitude"]))
+        data["vec"] = np.asarray((
+            x1[0],
+            x2[0],
+            y[0],
+            vt,
+            vy,
+            data["angle"],
+            data["amplitude"],
+            distance,
+            v,)
+        )
         data["vec"][0:6] = np.round(data["vec"][0:6], 1)
 
         return data

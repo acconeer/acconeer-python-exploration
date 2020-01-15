@@ -3,6 +3,8 @@ import os
 import sys
 from argparse import ArgumentParser
 
+import numpy as np
+
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
@@ -12,6 +14,7 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QSpinBox,
     QToolButton,
@@ -78,6 +81,150 @@ class LoadState(enum.Enum):
     UNLOADED = enum.auto()
     BUFFERED = enum.auto()
     LOADED = enum.auto()
+
+
+class HandleAdvancedProcessData(QDialog):
+    def __init__(self, mode, data_text, parent):
+        super().__init__(parent)
+
+        self.mode = mode
+        self.data_text = data_text
+        self.parent = parent
+        self.data = None
+
+        # Examples only supporting loading of advacnded data
+        loading_only_examples = []
+
+        loading_only = False
+        for m in loading_only_examples:
+            if m in self.mode.lower():
+                loading_only = True
+
+        self.setMinimumWidth(350)
+        self.setModal(True)
+        self.setWindowTitle("Load advanced process data")
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        texts = [
+            "Load {} specific data from file".format(self.mode),
+            "or define data via 'Specify'",
+        ]
+
+        for text in texts:
+            lbl = QLabel(text, self)
+            lbl.setWordWrap(True)
+            layout.addWidget(lbl)
+            if loading_only:
+                break
+
+        layout.addStretch(1)
+
+        if not loading_only:
+            self.generate_parameter_inputs(layout)
+            layout.addStretch(1)
+
+        buttons_widget = QWidget(self)
+        layout.addWidget(buttons_widget)
+        hbox = QHBoxLayout()
+        buttons_widget.setLayout(hbox)
+        hbox.addStretch(1)
+
+        load_btn = QPushButton("Load")
+        load_btn.setDefault(True)
+        load_btn.clicked.connect(self.load)
+        hbox.addWidget(load_btn)
+
+        if not loading_only:
+            spec_btn = QPushButton("Specify")
+            spec_btn.clicked.connect(self.get_params)
+            hbox.addWidget(spec_btn)
+
+        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn.clicked.connect(self.reject)
+        hbox.addWidget(self.cancel_btn)
+
+    def close_dialog(self):
+        self.cancel_btn.click()
+
+    def load(self):
+        self.close_dialog()
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fname, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Load " + self.data_text, "", "NumPy data Files (*.npy)", options=options
+        )
+        if fname:
+            try:
+                self.data = np.load(fname, allow_pickle=True)
+            except Exception:
+                self.parent.error_message("Failed to load " + self.data_text + "\n")
+                self.data = None
+
+    def generate_parameter_inputs(self, layout):
+        parameter_wiget = QWidget(self)
+        parameter_wiget._grid = QtWidgets.QGridLayout()
+        parameter_wiget.setLayout(parameter_wiget._grid)
+
+        self.inputs = None
+
+        if "obstacle" in self.mode.lower():
+            self.inputs = [
+                [None, None, "Static PWL distance 1"],
+                [None, None, "Static PWL distance 2"],
+                [None, None, "Static PWL distance 3"],
+                [None, None, "Static PWL distance 4"],
+                [None, None, "Static PWL distance 5"],
+                [None, None, "Static PWL amplitude 1"],
+                [None, None, "Static PWL amplitude 2"],
+                [None, None, "Static PWL amplitude 3"],
+                [None, None, "Static PWL amplitude 4"],
+                [None, None, "Static PWL amplitude 5"],
+                [None, None, "Moving PWL distance 1"],
+                [None, None, "Moving PWL distance 2"],
+                [None, None, "Moving PWL amplitude 1"],
+                [None, None, "Moving PWL amplitude 2"],
+                [None, None, "Static adjacent factor"],
+                [None, None, "Moving max"],
+            ]
+
+        if self.inputs is not None:
+            for idx, i in enumerate(self.inputs):
+                i[0] = QLabel(i[-1])
+                i[1] = QLineEdit("0", self)
+                parameter_wiget._grid.addWidget(i[0], idx, 0)
+                parameter_wiget._grid.addWidget(i[1], idx, 1)
+
+        layout.addWidget(parameter_wiget)
+
+    def get_params(self):
+        if "obstacle" in self.mode.lower():
+            self.data = {
+                "static_pwl_dist": [],
+                "static_pwl_amp": [],
+                "moving_pwl_dist": [],
+                "moving_pwl_amp": [],
+            }
+            for i in self.inputs:
+                val = float(i[1].text())
+                if "Static PWL distance" in i[-1]:
+                    self.data["static_pwl_dist"].append(val)
+                elif "Static PWL amplitude" in i[-1]:
+                    self.data["static_pwl_amp"].append(val)
+                elif "Moving PWL distance" in i[-1]:
+                    self.data["moving_pwl_dist"].append(val)
+                elif "Moving PWL amplitude" in i[-1]:
+                    self.data["moving_pwl_amp"].append(val)
+                elif "Static adjacent factor" in i[-1]:
+                    self.data["static_adjacent_factor"] = val
+                elif "Moving max" in i[-1]:
+                    self.data["moving_max"] = val
+
+        self.close_dialog()
+
+    def get_data(self):
+        return self.data
 
 
 class AdvancedSerialDialog(QDialog):

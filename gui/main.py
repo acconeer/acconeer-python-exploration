@@ -48,6 +48,7 @@ try:
         CollapsibleSection,
         Count,
         GUIArgumentParser,
+        HandleAdvancedProcessData,
         Label,
         LoadState,
         SensorSelection,
@@ -1768,25 +1769,27 @@ class GUI(QMainWindow):
             else:
                 self.error_message(data_text + " data not availble!".format())
         elif action == "load":
-            if "Unload" in load_text:
+            loaded = False
+            if "Unload" not in load_text:
+                mode = self.current_module_label
+                dialog = HandleAdvancedProcessData(mode, data_text, self)
+                dialog.exec_()
+                data = dialog.get_data()
+                if data is not None:
+                    loaded = True
+
+                dialog.deleteLater()
+
+            if loaded:
+                self.advanced_process_data["use_data"] = True
+                self.advanced_process_data["process_data"] = data
+                self.buttons["load_process_data"].setText(load_text.replace("Load", "Unload"))
+                self.buttons["load_process_data"].setStyleSheet("QPushButton {color: red}")
+            else:
                 self.buttons["load_process_data"].setText(load_text.replace("Unload", "Load"))
                 self.buttons["load_process_data"].setStyleSheet("QPushButton {color: black}")
                 self.advanced_process_data["use_data"] = False
-            else:
-                options = QtWidgets.QFileDialog.Options()
-                options |= QtWidgets.QFileDialog.DontUseNativeDialog
-                fname, _ = QtWidgets.QFileDialog.getOpenFileName(
-                    self, "Load " + data_text, "", "NumPy data Files (*.npy)", options=options)
-                if fname:
-                    try:
-                        content = np.load(fname, allow_pickle=True)
-                        self.advanced_process_data["process_data"] = content
-                    except Exception as e:
-                        self.error_message("Failed to load " + data_text + "\n{}".format(e))
-                        return
-                    self.advanced_process_data["use_data"] = True
-                    self.buttons["load_process_data"].setText(load_text.replace("Load", "Unload"))
-                    self.buttons["load_process_data"].setStyleSheet("QPushButton {color: red}")
+                self.advanced_process_data["process_data"] = None
         else:
             print("Process data action not implemented")
 
