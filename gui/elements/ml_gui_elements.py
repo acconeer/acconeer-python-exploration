@@ -48,7 +48,6 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 HERE = os.path.abspath(os.path.join(HERE, '..'))
 DEFAULT_MODEL_FILENAME_2D = os.path.join(HERE, "ml", "default_layers_2D.yaml")
 TRAIN_TAB = 5
-MODEL_TAB = 4
 REMOVE_BUTTON_STYLE = (
     "QPushButton:pressed {background-color: red;}"
     "QPushButton:hover:!pressed {background-color: lightcoral;}"
@@ -84,7 +83,6 @@ class FeatureSelectFrame(QFrame):
         self.main = QtWidgets.QSplitter(self)
         self.main.setOrientation(QtCore.Qt.Vertical)
         self.main.setStyleSheet("QSplitter::handle{background: lightgrey}")
-        self.main.setFrameStyle(QFrame.Panel | QFrame.Sunken)
         self._grid.addWidget(self.main)
 
         self.feature_frame_scroll = QtWidgets.QScrollArea(self.main)
@@ -100,8 +98,8 @@ class FeatureSelectFrame(QFrame):
 
         self.main.addWidget(self.feature_frame_scroll)
         self.f_layout = QtWidgets.QGridLayout(self.feature_frame)
-        self.f_layout.setContentsMargins(10, 5, 10, 5)
-        self.f_layout.setSpacing(10)
+        self.f_layout.setContentsMargins(2, 2, 2, 2)
+        self.f_layout.setSpacing(5)
         self.feature_frame.setLayout(self.f_layout)
 
         self.enabled_features = []
@@ -123,20 +121,20 @@ class FeatureSelectFrame(QFrame):
         self.name_vline = QVLine()
         self.params_vline = QVLine()
         self.sensor_vline = QVLine()
-        self.remove_vline = QVLine()
-        self.error_text = QLabel("")
-        self.error_text.setStyleSheet("QLabel {color: red}")
 
         self.buttons = {
             "start": QPushButton("Test extraction"),
             "stop": QPushButton("Stop"),
             "replay_buffered": QPushButton("Replay buffered"),
+            "set_to_feature": QPushButton("Sensor to Feature"),
+            "set_to_sensor": QPushButton("Feature to Sensor"),
         }
 
         self.drop_down = QComboBox()
         self.drop_down.addItem("Add feature")
 
-        self.bottom_widget = QWidget()
+        self.bottom_widget = QFrame()
+        self.bottom_widget.setFrameStyle(QFrame.Panel | QFrame.Raised)
         bottom_box = QHBoxLayout()
         bottom_box.setAlignment(QtCore.Qt.AlignLeft)
         self.bottom_widget.setLayout(bottom_box)
@@ -144,32 +142,36 @@ class FeatureSelectFrame(QFrame):
         bottom_box.addWidget(self.buttons["start"])
         bottom_box.addWidget(self.buttons["stop"])
         bottom_box.addWidget(self.buttons["replay_buffered"])
-        bottom_box.addWidget(self.error_text)
+        bottom_box.addStretch(1)
+        bottom_box.addWidget(QLabel("Match sensor settings:"))
+        bottom_box.addWidget(self.buttons["set_to_feature"])
+        bottom_box.addWidget(self.buttons["set_to_sensor"])
 
         self._grid.addWidget(self.bottom_widget)
 
         for b in self.buttons:
             button = self.buttons[b]
-            button.clicked.connect(partial(self.gui_handle.buttons[b].click))
-            button.setEnabled(False)
+            if "set" not in b:
+                button.clicked.connect(partial(self.gui_handle.buttons[b].click))
+                button.setEnabled(False)
+            else:
+                button.clicked.connect(self.match_settings)
 
     def update_grid(self):
         try:
             self.f_layout.removeWidget(self.name_vline)
             self.f_layout.removeWidget(self.params_vline)
             self.f_layout.removeWidget(self.sensor_vline)
-            self.f_layout.removeWidget(self.remove_vline)
         except Exception:
             pass
 
         self.f_layout.addWidget(self.name_vline, 0, 1, self.row_idx.val + 1, 1)
         self.f_layout.addWidget(self.params_vline, 0, self.param_col + 1, self.row_idx.val + 1, 1)
         self.f_layout.addWidget(self.sensor_vline, 0, self.sensor_col + 1, self.row_idx.val + 1, 1)
-        self.f_layout.addWidget(self.remove_vline, 0, self.remove_col + 1, self.row_idx.val + 1, 1)
 
         self.drop_down.setCurrentIndex(0)
 
-        self.f_layout.setRowStretch(self.row_idx.val + 1, 1)
+        self.f_layout.setRowStretch(self.row_idx.val + 3, 1)
         self.f_layout.setColumnStretch(self.nr_col, 1)
 
         self.update_feature_plot()
@@ -262,6 +264,7 @@ class FeatureSelectFrame(QFrame):
         options_widget.setLayout(options_box)
         self.f_layout.addWidget(options_widget, row, self.param_col)
         options = {}
+        gui_conf = self.gui_handle.get_sensor_config()
         for (text, value, limits, data_type) in opts:
             labels[text] = QLabel(text)
             if data_type == bool:
@@ -270,6 +273,10 @@ class FeatureSelectFrame(QFrame):
                 edit = textboxes[text].stateChanged
             else:
                 textboxes[text] = QLineEdit(str(value))
+                if text == "Start" and gui_conf is not None:
+                    textboxes[text].setText(str(gui_conf.range_start))
+                if text == "Stop" and gui_conf is not None:
+                    textboxes[text].setText(str(gui_conf.range_end))
                 edit = textboxes[text].editingFinished
             edit.connect(
                 partial(self.update_feature_params, limits, data_type, value)
@@ -473,6 +480,42 @@ class FeatureSelectFrame(QFrame):
 
         return f_list
 
+    def match_settings(self):
+        action = self.sender().text()
+
+        # Update Limits
+        self.get_feature_list()
+
+        if action == "Sensor to Feature":
+            sensor_conf = self.gui_handle.get_sensor_config()
+            if sensor_conf is None:
+                return
+            for feature in self.enabled_features:
+                if "Start" in feature["options"]:
+                    feature["options"]["Start"].setText(str(sensor_conf.range_start))
+                if "Stop" in feature["options"]:
+                    feature["options"]["Stop"].setText(str(sensor_conf.range_end))
+                feature["sensors"].set_sensors(sensor_conf.sensor)
+        elif action == "Feature to Sensor":
+            if len(self.enabled_features) == 0:
+                return
+            module_key = self.limits["sensor_data_types"][0].value
+            module_info = MODULE_KEY_TO_MODULE_INFO_MAP[module_key]
+            index = self.gui_handle.module_dd.findText(
+                module_info.label,
+                QtCore.Qt.MatchFixedString
+            )
+            if index != self.gui_handle.module_dd.currentIndex():
+                self.gui_handle.module_dd.setCurrentIndex(index)
+                self.gui_handle.update_canvas()
+            conf = self.gui_handle.get_sensor_config()
+            conf.sensor = self.limits["sensors"]
+            conf.range_interval = [self.limits["start"], self.limits["end"]]
+        else:
+            print("Action {} not supported!.".format(action))
+
+        self.update_feature_plot()
+
     def update_feature_list(self, saved_feature_list):
         # check if feature list is valid
         for feat in saved_feature_list:
@@ -484,14 +527,14 @@ class FeatureSelectFrame(QFrame):
 
         self.remove_feature(clear_all=True)
 
-        error_message = "Feature Classes not found:<br>"
+        error_message = "Feature Classes not found:\n"
         all_found = True
         for feature in saved_feature_list:
             try:
                 feature_key = feature["key"]
                 self.add_features_details(None, key=feature_key)
             except Exception:
-                error_message += ("Feature Name: {}<br>".format(feature["name"]))
+                error_message += ("Feature Name:\n{}\n".format(feature["name"]))
                 all_found = False
             else:
                 if feature_key in self.feature_list:
@@ -505,6 +548,8 @@ class FeatureSelectFrame(QFrame):
                             opt_textbox = e_feat["options"][opt]
                             if not isinstance(opt_textbox, QtWidgets.QCheckBox):
                                 opt_textbox.setText(str(feature["options"][opt]))
+                            elif isinstance(opt_textbox, QtWidgets.QCheckBox):
+                                opt_textbox.setChecked(feature["options"][opt])
 
                     if feature["output"] is not None:
                         for out in feature["output"]:
@@ -516,6 +561,8 @@ class FeatureSelectFrame(QFrame):
                 self.gui_handle.error_message(error_message)
             except Exception:
                 print(error_message)
+
+        self.update_feature_plot()
 
         return all_found
 
@@ -532,16 +579,29 @@ class FeatureSelectFrame(QFrame):
         self.sensor_config = sensor_config
 
     def check_limits(self, sensor_config=None, error_handle=None):
+        QApplication.processEvents()
         if sensor_config is None:
             sensor_config = self.gui_handle.save_gui_settings_to_sensor_config()
 
+        # Update limits
         self.get_feature_list()
+
+        if len(self.enabled_features) == 0:
+            self.has_valid_config = False
+            self.set_error_text("No features added!")
+            return False
+
         feat_start = self.limits["start"]
         feat_end = self.limits["end"]
         feat_sensors = self.limits["sensors"]
         feature_data_types = self.limits["sensor_data_types"]
         model_dimensions = self.limits["model_dimensions"]
         error_message = None
+
+        if len(feat_sensors) == 0:
+            self.set_error_text("No sensor input configured!")
+            self.has_valid_config = False
+            return False
 
         config_is_valid = {
             "start": [feat_start, None, False],
@@ -559,7 +619,7 @@ class FeatureSelectFrame(QFrame):
                 self.sweeps_per_frame = sensor_config.sweeps_per_frame
         except Exception:
             if error_handle is None:
-                return self.error_text.setText("No service selected!")
+                return self.set_error_text("No service selected!")
             else:
                 error_message("Sensor_config has wrong format!")
                 return False
@@ -575,18 +635,17 @@ class FeatureSelectFrame(QFrame):
         config_is_valid["sensors"][1] = config_sensors
         config_is_valid["sensors"][2] = True
 
-        if len(feat_sensors) > len(config_sensors):
-            for sensor in feat_sensors:
-                if sensor not in config_sensors:
-                    config_is_valid["sensors"][2] = False
-                    break
+        for sensor in feat_sensors:
+            if sensor not in config_sensors:
+                config_is_valid["sensors"][2] = False
+                break
 
         is_valid = True
         for k in config_is_valid:
             if not config_is_valid[k][2]:
                 if error_message is None:
-                    error_message = "Configuration missmatch detected:<br>"
-                error_message += "Settings for {}:<br> Features: {}<br>Sensor: {}<br>".format(
+                    error_message = "Configuration mismatch:\n"
+                error_message += "Settings for {}:\n Features:\n{}\nSensor:\n{}\n".format(
                     k,
                     config_is_valid[k][0],
                     config_is_valid[k][1],
@@ -595,12 +654,12 @@ class FeatureSelectFrame(QFrame):
 
         if len(model_dimensions) > 1:
             is_valid = False
-            err = "Features with different model dimensions detected:<br>"
+            err = "Features with different dimensions:\n"
             if error_message is None:
                 error_message = err
             else:
                 error_message += err
-            error_message += "{}<br>".format(model_dimensions)
+            error_message += "{}\n".format(model_dimensions)
 
         data_types_valid = True
         if Mode.SPARSE in feature_data_types and config_data_type != Mode.SPARSE:
@@ -612,22 +671,22 @@ class FeatureSelectFrame(QFrame):
 
         if not data_types_valid:
             is_valid = False
-            err = "Inconsistent sensor data types detected:<br>"
+            err = "Inconsistent sensor data types\n"
             if error_message is None:
                 error_message = err
             else:
                 error_message += err
-            error_message += "Features: "
+            error_message += "Features:\n"
             for d in feature_data_types:
                 error_message += "{} ".format(d)
-            error_message += "<br>Sensor: {}<br>".format(config_data_type)
+            error_message += "\nSensor:\n{}\n".format(config_data_type)
 
         if not is_valid:
             self.buttons["start"].setEnabled(False)
             self.buttons["replay_buffered"].setEnabled(False)
             self.has_valid_config = False
             if error_handle is None:
-                self.error_text.setText(error_message)
+                self.set_error_text(error_message)
             else:
                 error_handle(error_message)
             return False
@@ -637,7 +696,7 @@ class FeatureSelectFrame(QFrame):
                 self.buttons["start"].setEnabled(True)
                 if self.gui_handle.data is not None:
                     self.buttons["replay_buffered"].setEnabled(True)
-            self.error_text.setText("")
+            self.set_error_text()
             return True
 
     def is_config_valid(self):
@@ -650,6 +709,13 @@ class FeatureSelectFrame(QFrame):
                 child.widget().deleteLater()
 
     def create_feature_plot(self):
+        info_plot_frame = QFrame(self)
+        grid = QtWidgets.QGridLayout()
+        info_plot_frame.setLayout(grid)
+        grid.setContentsMargins(2, 2, 10, 0)
+        grid.setSpacing(0)
+        self.main.addWidget(info_plot_frame)
+
         win = pg.GraphicsLayoutWidget()
         win.setWindowTitle("Feature plotting")
         self.feat_plot_image = win.addPlot(row=0, col=0)
@@ -671,7 +737,27 @@ class FeatureSelectFrame(QFrame):
         self.feat_plot.setLookupTable(lut)
 
         self.feature_areas = []
-        self.main.addWidget(win)
+        grid.addWidget(win, 0, 0, 2, 1)
+        info_header = QLabel("Configuration status:")
+        info_header.setFixedWidth(200)
+        info_header.setFixedHeight(20)
+        info_header.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        self.error_text = QLabel()
+        self.error_text.setFixedWidth(200)
+        self.error_text.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        self.error_text.setWordWrap(True)
+        grid.addWidget(info_header, 0, 1)
+        grid.addWidget(self.error_text, 1, 1)
+        self.set_error_text("No service selected")
+
+    def set_error_text(self, text=None):
+        if text is None:
+            self.error_text.setStyleSheet("QLabel {color: green}")
+            self.error_text.setText("Ready to collect features")
+
+        else:
+            self.error_text.setStyleSheet("QLabel {color: red}")
+            self.error_text.setText(text)
 
     def update_feature_params(self, limits, data_type, default):
         if data_type != bool:
@@ -878,11 +964,13 @@ class FeatureSidePanel(QFrame):
             "frame_size": QLabel("Sweeps per frame"),
             "auto_thrshld_offset": QLabel("Thrshld/Offset:"),
             "dead_time": QLabel("Dead time:"),
-            "save_load": QLabel("Save/load feature settings:"),
+            "save_load": QLabel("Save/load session data:"),
+            "batch_header": QLabel("Batch proccess session data:"),
             "frame_settings": QLabel("Frame settings:"),
             "collection_mode": QLabel("Feature collection mode:"),
             "empty_1": QLabel(""),
             "empty_2": QLabel(""),
+            "empty_3": QLabel(""),
             "loaded_file": QLabel(""),
         }
 
@@ -899,6 +987,7 @@ class FeatureSidePanel(QFrame):
             "h_line_1": QHLine(),
             "h_line_2": QHLine(),
             "h_line_3": QHLine(),
+            "h_line_4": QHLine(),
         }
 
         self.buttons = {
@@ -1009,6 +1098,9 @@ class FeatureSidePanel(QFrame):
         self.grid.addWidget(self.h_lines["h_line_3"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["load_session"], self.increment(), 0)
         self.grid.addWidget(self.buttons["save_session"], self.num, 1)
+        self.grid.addWidget(self.labels["empty_3"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.labels["batch_header"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.h_lines["h_line_4"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["load_batch"], self.increment(), 0)
         self.grid.addWidget(self.buttons["process_batch"], self.num, 1)
         self.grid.addWidget(self.labels["loaded_file"], self.increment(), 0, 1, 2)
@@ -1040,22 +1132,30 @@ class FeatureSidePanel(QFrame):
             "feature_inspect": [
                 self.labels["frame_time"],
                 self.labels["update_rate"],
+                self.labels["batch_header"],
+                self.labels["empty_3"],
+                self.h_lines["h_line_4"],
                 self.textboxes["frame_time"],
                 self.textboxes["update_rate"],
                 self.labels["empty_1"],
+                self.buttons["load_batch"],
+                self.buttons["process_batch"],
                 self.radio_frame,
             ],
             "eval": [
                 self.labels["empty_1"],
                 self.labels["empty_2"],
+                self.labels["empty_3"],
                 self.labels["frame_settings"],
                 self.labels["save_load"],
                 self.labels["frame_time"],
                 self.labels["update_rate"],
                 self.labels["frame_size"],
                 self.labels["loaded_file"],
+                self.labels["batch_header"],
                 self.h_lines["h_line_1"],
                 self.h_lines["h_line_3"],
+                self.h_lines["h_line_4"],
                 self.textboxes["frame_time"],
                 self.textboxes["update_rate"],
                 self.textboxes["frame_size"],
@@ -1512,7 +1612,7 @@ class FeatureSidePanel(QFrame):
                     if self.gui_handle.module_dd.currentIndex() == 0:
                         self.gui_handle.module_dd.setCurrentIndex(index)
                     elif index != self.gui_handle.module_dd.currentIndex():
-                        print("Module missmatch!!!")
+                        print("Module mismatch!!!")
                         return
                 else:
                     pass
@@ -1575,6 +1675,7 @@ class FeatureInspectFrame(QFrame):
         self.grid.setContentsMargins(9, 0, 9, 9)
         self.grid.setColumnStretch(0, 1)
         self.grid.setColumnStretch(1, 1)
+        self.setLayout(self.grid)
 
         self.graph = LabelingGraph(self)
 
@@ -2031,7 +2132,11 @@ class TrainingFrame(QFrame):
             row_sum = np.sum(matrix[r, :])
             for c in range(col):
                 percent = matrix[r, c] / row_sum * 100
-                entry = "{} ({:.2f}%)".format(matrix[r, c], percent)
+                if np.isnan(percent) or np.isinf(percent):
+                    percent = 0
+                    entry = "{} (N/A)".format(matrix[r, c])
+                else:
+                    entry = "{} ({:.2f}%)".format(matrix[r, c], percent)
                 self.cm_widget.setItem(r, c, QTableWidgetItem(entry))
                 self.cm_widget.item(r, c).setForeground(QBrush(QtCore.Qt.black))
                 try:
@@ -2043,6 +2148,8 @@ class TrainingFrame(QFrame):
                     color = self.color_table_off[int_percent]
                 else:
                     sum_correct += percent / col
+                if "N/A" in entry:
+                    color = self.color_table_off[0]
                 self.cm_widget.item(r, c).setBackground(QColor(*color))
                 self.cm_widget.item(r, c).setFlags(QtCore.Qt.ItemIsEnabled)
 
@@ -2150,6 +2257,7 @@ class TrainingSidePanel(QFrame):
             "train": QPushButton("Train"),
             "stop": QPushButton("Stop"),
             "validate": QPushButton("Validate"),
+            "clear_weights": QPushButton("Clear weights"),
             "load_train_data": QPushButton("Load training data"),
             "load_test_data": QPushButton("Load test data"),
             "clear_training": QPushButton("Clear training/test data"),
@@ -2161,6 +2269,9 @@ class TrainingSidePanel(QFrame):
         self.buttons["load_test_data"].clicked.connect(self.load_train_data)
         self.buttons["clear_training"].clicked.connect(partial(self.model_operation, "clear_data"))
         self.buttons["validate"].clicked.connect(partial(self.model_operation, "validate_model"))
+        self.buttons["clear_weights"].clicked.connect(
+            partial(self.model_operation, "clear_weights")
+        )
 
         self.buttons["stop"].setEnabled(False)
         self.buttons["train"].setEnabled(False)
@@ -2213,7 +2324,8 @@ class TrainingSidePanel(QFrame):
         self.grid.addWidget(self.buttons["clear_training"], self.num, 2, 1, 2)
         self.grid.addWidget(self.buttons["train"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["stop"], self.num, 2, 1, 2)
-        self.grid.addWidget(self.buttons["validate"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.buttons["validate"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["clear_weights"], self.num, 2, 1, 2)
         self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 4)
         self.grid.addWidget(self.labels["training"], self.increment(), 0, 1, 4)
         self.grid.addWidget(QHLine(), self.increment(), 0, 1, 4)
@@ -2306,6 +2418,10 @@ class TrainingSidePanel(QFrame):
                         "last_model.yaml"
                     )
                     self.buttons["validate"].setEnabled(True)
+                    if not model_exists:
+                        self.gui_handle.feature_select.update_feature_list(
+                            data["model_data"]["feature_list"]
+                        )
                 else:
                     message = status["message"] + status["model_status"]
                     self.gui_handle.error_message(message)
@@ -2593,7 +2709,6 @@ class ModelSelectFrame(QFrame):
 
         self.enabled_layers = []
         self.layers = layer_def.get_layers()
-        self.trainable_text = QLabel("")
 
         self.enabled_count = Count()
         self.create_grid()
@@ -2676,6 +2791,7 @@ class ModelSelectFrame(QFrame):
             else:
                 f = DEFAULT_MODEL_FILENAME_2D
             self.load_layers(f)
+            self.ml_state.set_state("layers_changed", True)
         elif action == "Update model":
             model_ready = self.ml_state.get_model_status()
             training_ready = self.ml_state.get_training_data_status()
@@ -2683,13 +2799,11 @@ class ModelSelectFrame(QFrame):
                 self.gui_handle.error_message("Load model or training data first!")
             else:
                 layer_list = self.get_layer_list()
-                status = self.keras_handle.update_model_layers(
-                    layer_list
-                )
+                status = self.keras_handle.update_model_layers(layer_list)
                 if status["info"]["model_initialized"]:
-                    print(status["model_data"])
                     self.set_layer_shapes(status["model_data"]["keras_layer_info"])
-                    self.ml_state.set_model_data(status["model_data"])
+                    s = self.ml_state.get_model_source()
+                    self.ml_state.set_model_data(status["model_data"], source=s)
                     self.allow_update()
                 else:
                     self.ml_state.set_model_data(None)
@@ -2938,6 +3052,7 @@ class ModelSelectFrame(QFrame):
         if action == "move_layer":
             self.move_layer(layer_position - 1, value - 1)
 
+        self.ml_state.set_state("layers_changed", True)
         self.allow_update(set_red=True)
 
         self.set_layer_shapes(None)
@@ -3218,36 +3333,11 @@ class EvalFrame(QFrame):
         self.nr_col = 2
 
         self.grid = QtWidgets.QGridLayout(self)
-        self.grid.setContentsMargins(9, 0, 9, 9)
+        self.grid.setContentsMargins(0, 0, 0, 0)
         self.grid.setColumnStretch(0, 1)
         self.grid.setColumnStretch(1, 1)
 
-        self.labels = {
-            "prediction_label": QLabel("Prediction: "),
-            "prediction": QLabel(""),
-            "probability_label": QLabel("Probability: "),
-            "probability": QLabel(""),
-        }
-        self.textboxes = {
-        }
-
-        self.checkboxes = {
-        }
-
-        self.buttons = {
-        }
-
-        self.num = 0
-        self.grid.addWidget(QLabel(""), self.num, 0, 1, 2)
-        self.grid.addWidget(self.labels["prediction_label"], self.increment(), 0)
-        self.grid.addWidget(self.labels["prediction"], self.num, 1)
-        self.grid.addWidget(self.labels["probability_label"], self.increment(), 0)
-        self.grid.addWidget(self.labels["probability"], self.num, 1)
-        self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 2)
-        self.grid.addWidget(QHLine(), self.increment(), 0, 1, 2)
-        self.grid.addWidget(QLabel(""), self.increment(), 0, 1, 2)
-
-        return
+        self.setLayout(self.grid)
 
     def init_graph(self):
         if self.gui_handle.current_module_label == "Select service":
@@ -3261,15 +3351,7 @@ class EvalFrame(QFrame):
         )
         self.plot_widget.setup(feature_canvas)
 
-        self.grid.addWidget(feature_canvas, self.increment(), 0, 1, self.nr_col)
-
-    def update_prediction(self, prediction):
-        self.labels["prediction"].setText(prediction["prediction"])
-        self.labels["probability"].setText("{:3.2f}%".format(prediction["confidence"] * 100))
-
-    def increment(self):
-        self.num += 1
-        return self.num
+        self.grid.addWidget(feature_canvas, 0, 0, 1, self.nr_col)
 
 
 class ModelOperations(QFrame):
@@ -3312,20 +3394,16 @@ class ModelOperations(QFrame):
                 except Exception as e:
                     self.gui_handle.error_message("Failed to save model:\n {}".format(e))
                     return
-        if op == "clear_model":
+        if op == "clear_weights":
             if model_ready:
                 self.keras_handle.clear_model(reinit=True)
             self.gui_handle.training.show_results(flush_data=True)
             self.gui_handle.training.update_confusion_matrix(None)
-            training_buttons["validate"].setEnabled(False)
 
-        elif op == "remove_model":
-            self.keras_handle.clear_model()
-            self.ml_state.set_model_data(None)
-
-        elif op == "clear_data":
+        elif op == "clear_data" or op == "remove_model":
             if model_ready:
-                self.keras_handle.clear_training_data()
+                if op == "clear_data":
+                    self.keras_handle.clear_training_data()
                 self.ml_state.set_model_data(None)
             training_buttons["train"].setEnabled(False)
             training_buttons["validate"].setEnabled(False)
@@ -3333,12 +3411,13 @@ class ModelOperations(QFrame):
             self.gui_handle.training.update_data_table(None, None)
             self.gui_handle.training.update_confusion_matrix(None)
             self.gui_handle.model_select.set_layer_shapes(None)
-            self.ml_state.set_training_data_status(False)
-            self.ml_state.set_test_data_status(False)
+
+            if op == "clear_data":
+                self.ml_state.set_training_data_status(False)
+                self.ml_state.set_test_data_status(False)
 
         elif op == "load_model":
             self.load_model()
-            self.gui_handle.tab_parent.setCurrentIndex(MODEL_TAB)
 
         elif op == "validate_model":
             if not training_ready:
@@ -3346,6 +3425,7 @@ class ModelOperations(QFrame):
                 training_buttons["validate"].setEnabled(False)
                 return
             self.generate_confusion_matrix(self.ml_state.get_model_data()["y_labels"])
+            self.gui_handle.tab_parent.setCurrentIndex(TRAIN_TAB)
 
     def generate_confusion_matrix(self, y_data):
         success = True
@@ -3392,6 +3472,10 @@ class ModelOperations(QFrame):
             self.gui_handle.ml_state.set_model_data(d, source=filename)
             self.config_is_valid(show_warning=False)
             conf = self.gui_handle.get_sensor_config()
+            not_found = []
+            for s in d["sensor_config"].sensor:
+                if s not in conf.sensor:
+                    not_found.append(s)
             model_conf_dump = d["sensor_config"]._dumps()
             conf._loads(model_conf_dump)
             self.gui_handle.set_sensors(d["sensor_config"].sensor)
@@ -3409,7 +3493,11 @@ class ModelOperations(QFrame):
             d["loaded"] = False
             self.gui_handle.ml_state.set_model_data(None)
         else:
-            self.gui_handle.info_handle(d["message"])
+            m = d["message"]
+            if len(not_found):
+                m += "\nNot all required sensors might be available!\nMissing: {}"
+                m = m.format(not_found)
+            self.gui_handle.info_handle(m)
 
     def config_is_valid(self, show_warning=True):
         model_data = self.ml_state.get_model_data()
@@ -3419,11 +3507,13 @@ class ModelOperations(QFrame):
         if self.gui_handle.get_gui_state("server_connected"):
             available_sensors = self.gui_handle.get_sensors()
             required_sensors = model_data["sensor_config"].sensor
-            if len(available_sensors) < len(required_sensors):
-                warning = "Sensor missmatch detected!\n"
-                warning += "The model needs {} sensors!\nRun anyway?".format(
-                    len(required_sensors)
-                )
+            all_found = True
+            for r in required_sensors:
+                if r not in available_sensors:
+                    all_found = False
+            if not all_found:
+                warning = "Sensor mismatch detected!\n"
+                warning += "The model needs sensors {}!\nRun anyway?".format(required_sensors)
                 if show_warning and not self.gui_handle.warning_message(warning):
                     return False
         else:
@@ -3438,7 +3528,7 @@ class ModelOperations(QFrame):
             else:
                 mode = "Sparse"
             if self.gui_handle.module_dd.currentText() != mode:
-                warning = "Service missmatch detected!\n"
+                warning = "Service mismatch detected!\n"
                 warning += "The model needs {}! Change to correct service?".format(mode)
                 if show_warning and not self.gui_handle.warning_message(warning):
                     return False
@@ -3453,7 +3543,6 @@ class ModelOperations(QFrame):
 
     def predict(self, feature_map):
         prediction = self.keras_handle.predict(feature_map)[0]
-        self.gui_handle.eval_model.update_prediction(prediction)
 
         return prediction
 

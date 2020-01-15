@@ -757,7 +757,10 @@ class PGUpdater:
         self.border_right.hide()
         self.border_rolling.hide()
 
-        self.history_plot_window = win.addLayout(row=1, col=0)
+        r = 1
+        if self.show_predictions:
+            r = 2
+        self.history_plot_window = win.addLayout(row=r, col=0)
 
         self.envelope_plots = []
         self.peak_vlines = []
@@ -774,7 +777,6 @@ class PGUpdater:
             self.hist_plot_images.append(
                 self.history_plot_window.addPlot(row=0, col=s, title=hist_title)
             )
-            self.hist_plot_images[s].setLabel("left", "Distance (mm)")
             self.hist_plot_images[s].setLabel("bottom", "Time (s)")
             self.hist_plots.append(pg.ImageItem())
             self.hist_plots[s].setAutoDownsample(True)
@@ -782,7 +784,7 @@ class PGUpdater:
             self.hist_plot_images[s].addItem(self.hist_plots[s])
 
         if self.show_predictions:
-            self.predictions_plot_window = win.addPlot(row=2, col=0, title="Prediction results")
+            self.predictions_plot_window = win.addPlot(row=1, col=0, title="Prediction results")
             self.predictions_plot_window.showGrid(x=True, y=True)
             self.predictions_plot_window.addLegend(offset=(-10, 10))
             self.predictions_plot_window.setYRange(0, 1)
@@ -857,13 +859,15 @@ class PGUpdater:
                     self.hist_plot_images[i].show()
                     self.set_axis(data, self.hist_plot_images[i])
                     self.hist_plots[i].setLookupTable(lut)
+                    if (i + 1) == sensors[0]:
+                        self.hist_plot_images[i].setLabel("left", "Distance (mm)")
                 else:
                     self.hist_plot_images[i].hide()
 
         for idx, sensor in enumerate(sensors):
 
             if mode == Mode.SPARSE:
-                data_history_adj = data["hist_env"][idx, :, :].T
+                data_history_adj = data["hist_env"][idx, :, :].T - 2**15
                 sign = np.sign(data_history_adj)
                 data_history_adj = np.abs(data_history_adj)
                 data_history_adj /= data_history_adj.max()
@@ -886,6 +890,11 @@ class PGUpdater:
 
         if self.show_predictions and data.get("prediction") is not None:
             self.predictions_plot_window.show()
+            prediction_text = "{} ({:.2f}%)".format(
+                data["prediction"]["prediction"],
+                data["prediction"]["confidence"] * 100,
+            )
+            self.predictions_plot_window.setTitle(prediction_text)
             predictions = data["prediction"]["label_predictions"]
             pred_num = data["prediction"]["number_labels"]
             pred_history = data["prediction_hist"]

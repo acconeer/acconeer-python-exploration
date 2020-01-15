@@ -370,7 +370,7 @@ class GUI(QMainWindow):
                 else:
                     has_basic_params = True
 
-        if self.get_gui_state("ml_tab") == "main":
+        if self.get_gui_state("ml_tab") in ["main", "feature_select", "eval"]:
             self.basic_sensor_config_section.setVisible(has_basic_params)
             self.advanced_sensor_config_section.setVisible(has_advanced_params)
 
@@ -773,8 +773,8 @@ class GUI(QMainWindow):
             "feature_extract": (QWidget(self.tab_parent), "Feature extraction"),
             "feature_inspect": (QWidget(self.tab_parent), "Feature inspection"),
             "model_select": (QWidget(self.tab_parent), "Model parameters"),
-            "train": (QWidget(self.tab_parent), "Train Network"),
-            "eval": (QWidget(self.tab_parent), "Use Network"),
+            "train": (QWidget(self.tab_parent), "Train Model"),
+            "eval": (QWidget(self.tab_parent), "Use Model"),
         }
 
         self.tabs_text_to_key = {
@@ -783,8 +783,8 @@ class GUI(QMainWindow):
             "Feature extraction": "feature_extract",
             "Feature inspection": "feature_inspect",
             "Model parameters": "model_select",
-            "Train Network": "train",
-            "Use Network": "eval",
+            "Train Model": "train",
+            "Use Model": "eval",
         }
 
         for key, (tab, label) in self.tabs.items():
@@ -1270,8 +1270,9 @@ class GUI(QMainWindow):
             self.module_dd.show()
 
             if tab == "main":
-                self.basic_sensor_config_section.show()
-                self.advanced_sensor_config_section.show()
+                if states["server_connected"]:
+                    self.basic_sensor_config_section.show()
+                    self.advanced_sensor_config_section.show()
                 self.server_section.show()
                 self.control_section.show()
                 self.textboxes["sweep_buffer"].show()
@@ -1279,8 +1280,10 @@ class GUI(QMainWindow):
 
             elif tab == "feature_select":
                 self.feature_section.button_event(override=False)
-                self.basic_sensor_config_section.show()
-                self.advanced_sensor_config_section.show()
+                if states["server_connected"]:
+                    self.basic_sensor_config_section.show()
+                    self.advanced_sensor_config_section.show()
+                self.server_section.show()
                 self.feature_section.show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
                 self.set_sensors(self.get_sensors(widget_name="main"))
@@ -1314,10 +1317,12 @@ class GUI(QMainWindow):
                 self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
 
             elif tab == "eval":
-                self.feature_section.show()
-                self.basic_sensor_config_section.show()
+                if states["server_connected"]:
+                    self.basic_sensor_config_section.show()
+                    self.advanced_sensor_config_section.show()
                 self.server_section.show()
                 self.control_section.show()
+                self.feature_section.show()
                 self.textboxes["sweep_buffer"].show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
 
@@ -1369,6 +1374,7 @@ class GUI(QMainWindow):
                 not states["scan_is_running"],
                 config_is_valid,
             ]))
+            self.feature_select.check_limits()
 
     def get_gui_state(self, state):
         if state in self.gui_states:
@@ -1787,7 +1793,11 @@ class GUI(QMainWindow):
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
             if message_type == "session_setup_error":
-                self.error_message("Failed to setup session (bad config?)")
+                error = "Failed to setup session (bad config)!\n"
+                if "socket" in self.interface_dd.currentText().lower():
+                    error += "Check that selected sensors are connected and working!\n"
+                    error += "Check Streaming server log for erros!"
+                self.error_message(error)
             elif "client" in message_type:
                 self.stop_scan()
                 if self.get_gui_state("server_connected"):

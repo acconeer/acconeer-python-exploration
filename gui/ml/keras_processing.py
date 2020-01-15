@@ -352,15 +352,26 @@ class MachineLearning():
             with self.tf_session.as_default():
                 prediction = self.model.predict(x)
         result = list()
+
+        num2label = {}
+        for key in self.labels_dict:
+            num2label[self.labels_dict[key]] = key
+
         for pred in prediction:
+            confidence = 0
+            prediction_label = ""
             res = {}
             category = {}
             for p in range(len(pred)):
-                category[self.labelnum2text(p, self.labels_dict)] = [pred[p], p]
+                label = num2label[p]
+                if pred[p] > confidence:
+                    prediction_label = label
+                    confidence = pred[p]
+                category[label] = [pred[p], p]
             res["label_predictions"] = category
             res["number_labels"] = len(pred)
-            res["prediction"] = self.labelnum2text(np.argmax(pred), self.labels_dict)
-            res["confidence"] = max(pred)
+            res["prediction"] = prediction_label
+            res["confidence"] = confidence
             res["label_num"] = np.argmax(pred)
             result.append(res)
         return result

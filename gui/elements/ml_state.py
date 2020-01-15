@@ -6,6 +6,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QFrame, QLabel, QPushButton
 
 import keras_processing as kp
+from helper import QHLine, QVLine
 
 
 class MLState:
@@ -13,6 +14,7 @@ class MLState:
         self.states = {
             "model_ready": False,
             "model_source": None,
+            "layers_changed": False,
             "training_data_ready": False,
             "training_data_files": [],
             "test_data_ready": False,
@@ -119,6 +121,7 @@ class MLState:
         else:
             state = model_data["loaded"]
             self.model_data = model_data
+        self.set_state("layers_changed", False)
         self.set_state("settings_locked", state)
         self.set_state("model_file", source)
         self.set_state("model_ready", state)
@@ -180,13 +183,13 @@ class MLState:
             self.update_widgets("locked_status", text, color=c)
 
         if self.states["model_ready"] and self.states["training_data_ready"]:
-            next_text = "Eval. or train"
+            next_text = "Evaluate or train loaded model"
         elif self.states["model_ready"] and not self.states["training_data_ready"]:
-            next_text = "Eval. or load training"
+            next_text = "Evaluate loaded model or load training data"
         elif not self.states["model_ready"] and self.states["training_data_ready"]:
-            next_text = "Update model layers"
+            next_text = "Update model layers to initialize model or load a model"
         else:
-            next_text = "Load training or model"
+            next_text = "Collect data or load session/training/model data"
 
         self.update_widgets("next_step", next_text)
 
@@ -242,7 +245,7 @@ class MLStateWidget(QFrame):
             "test_header": QLabel("Test data: "),
             "test_data_files": QLabel("Not loaded"),
             "next": QLabel("Next: "),
-            "next_step": QLabel("Load train data or model"),
+            "next_step": QLabel("Collect data or load session/training/model data"),
         }
 
         self.buttons = {
@@ -261,19 +264,26 @@ class MLStateWidget(QFrame):
         self.labels["model_file"].setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
 
         info_grid.addWidget(self.labels["model_header:"], 0, 0)
-        info_grid.addWidget(self.labels["model_ready"], 0, 1)
-        info_grid.addWidget(self.labels["model_dims"], 0, 2)
-        info_grid.addWidget(self.labels["model_in_out"], 0, 3)
-        info_grid.addWidget(self.labels["model_source"], 0, 4)
-        info_grid.addWidget(self.labels["model_file"], 0, 5, 2, 1)
-        info_grid.addWidget(self.labels["training_header"], 1, 0)
-        info_grid.addWidget(self.labels["training_data_files"], 1, 1)
-        info_grid.addWidget(self.labels["test_header"], 1, 2)
-        info_grid.addWidget(self.labels["test_data_files"], 1, 3)
-        info_grid.addWidget(self.labels["next"], 2, 0)
-        info_grid.addWidget(self.labels["next_step"], 2, 1)
+        info_grid.addWidget(self.labels["model_ready"], 0, 2)
+        info_grid.addWidget(self.labels["model_dims"], 0, 4)
+        info_grid.addWidget(self.labels["model_in_out"], 0, 6)
+        info_grid.addWidget(self.labels["model_source"], 0, 8)
+        info_grid.addWidget(self.labels["model_file"], 0, 9, 3, 1)
+        info_grid.addWidget(self.labels["training_header"], 2, 0)
+        info_grid.addWidget(self.labels["training_data_files"], 2, 2)
+        info_grid.addWidget(self.labels["test_header"], 2, 4)
+        info_grid.addWidget(self.labels["test_data_files"], 2, 6)
+        info_grid.addWidget(self.labels["next"], 4, 0)
+        info_grid.addWidget(self.labels["next_step"], 4, 2, 1, 6)
 
-        info_grid.setColumnStretch(5, 2)
+        info_grid.addWidget(QVLine(), 0, 1, 5, 1)
+        info_grid.addWidget(QVLine(), 0, 3, 4, 1)
+        info_grid.addWidget(QVLine(), 0, 5, 4, 1)
+        info_grid.addWidget(QVLine(), 0, 7, 4, 1)
+        info_grid.addWidget(QHLine(), 1, 0, 1, 8)
+        info_grid.addWidget(QHLine(), 3, 0, 1, 8)
+
+        info_grid.setColumnStretch(9, 2)
 
         button_grid.addWidget(self.labels["locked_status"], 0, 0)
         button_grid.addWidget(self.buttons["load_model"], 0, 1)
