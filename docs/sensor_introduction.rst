@@ -279,19 +279,15 @@ The Acconeer sensor is a mm wavelength pulsed coherent radar, which means that i
 
 These transmitted signals are reflected by an object and the time elapsed between transmission and reception of the reflected signal (:math:`t_{delay}`) is used to calculate the distance to the object by using
 
-.. _Equation 1:
-
 .. math::
-    :label: Equation 1
+    :label: eq_dist
 
     d=\frac{t_{delay}v}{2}
 
-.. _Equation 2:
+.. math::
+    :label: eq_speed_of_light
 
-    .. math::
-        :label: Equation 2
-
-        v=\frac{c_0}{\sqrt{\varepsilon_r}}
+    v=\frac{c_0}{\sqrt{\varepsilon_r}}
 
 where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' in the denominator of is due to the fact that :math:`t_{delay}` is the time for the signal to travel to the object and back, hence to get the distance to the object a division by 2 is needed, as illustrated in :numref:`fig_sensor_wave_object`. As :math:`f_{RF}` is 60.5 GHz one wavelength (:math:`\lambda`) is roughly 5 mm, which then corresponds to a distance to the object of 2.5 mm.
 
@@ -319,39 +315,35 @@ Reflectivity
 
 The amount of energy received back to the Rx antenna depends on the reflectivity of the object (:math:`\gamma`), the radar cross section (RCS) of the object (:math:`\sigma`), and the distance to the object (:math:`R`). A reflection occurs when there is a difference in relative permittivity between two media that the signal is propagating through. :math:`\gamma` is then given as
 
+.. math::
+    :label: eq_reflectivity
 
-.. _Equation 3:
+    \gamma=\left(\frac{\sqrt{\varepsilon_1}-\sqrt{\varepsilon_2}}{\sqrt{\varepsilon_1}+\sqrt{\varepsilon_2}}\right)^2
 
-    .. math::
-        :label: Equation 3
+where :math:`\varepsilon_1` and :math:`\varepsilon_2` is the relative permittivity, at 60 GHz, on either side of the boundary. The relative permittivity for common materials can be found in various data bases, but keep in mind that it is frequency dependent. As an example, :numref:`tab_material` lists approximate values for the real part of the relative permittivity for some common materials.
 
-        \gamma=\left(\frac{\sqrt{\varepsilon_1}-\sqrt{\varepsilon_2}}{\sqrt{\varepsilon_1}+\sqrt{\varepsilon_2}}\right)^2
+.. _tab_material:
+.. table:: Relative permittivity of common materials
+    :align: center
+    :widths: auto
 
-where :math:`\varepsilon_1` and :math:`\varepsilon_2` is the relative permittivity, at 60 GHz, on either side of the boundary. The relative permittivity for common materials can be found in various data bases, but keep in mind that it is frequency dependent. As an example, `Table 1`_ lists approximate values for the real part of the relative permittivity for some common materials.
-
-.. _Table 1:
-
-    .. table:: Relative permittivity of common materials
-        :align: center
-        :widths: auto
-
-        ==================== ===================================== ===========================================
-        Material             :math:`real(\varepsilon_1)` at 60 GHz :math:`\gamma` with air boundary
-        ==================== ===================================== ===========================================
-        ABS plastic          2.48                                  0.049
-        Mobile phone glass   6.9                                   0.02
-        Plaster              2.7                                   0.059
-        Concrete             4                                     0.11
-        Wood                 2.4                                   0.046
-        Textile              2                                     0.029
-        Metal                --                                    1
-        Human skin           8                                     0.22
-        Water                11.1                                  0.28
-        Air                  1                                     0
-        ==================== ===================================== ===========================================
+    ==================== ===================================== ===========================================
+    Material             Real(:math:`\varepsilon`) at 60 GHz   :math:`\gamma` with air boundary
+    ==================== ===================================== ===========================================
+    ABS plastic          2.48                                  0.049
+    Mobile phone glass   6.9                                   0.02
+    Plaster              2.7                                   0.059
+    Concrete             4                                     0.11
+    Wood                 2.4                                   0.046
+    Textile              2                                     0.029
+    Metal                --                                    1
+    Human skin           8                                     0.22
+    Water                11.1                                  0.28
+    Air                  1                                     0
+    ==================== ===================================== ===========================================
 
 
-`Table 1`_ shows that some materials are semi-transparent to 60 GHz signals and it is hence possible to detect reflecting objects behind a surface of these materials, each boundary with a change in permittivity gives a reflection. This is a useful property in applications where the use case requires that the sensor measures through, e.g., a wall, clothing or plastic housing.
+:numref:`tab_material` shows that some materials are semi-transparent to 60 GHz signals and it is hence possible to detect reflecting objects behind a surface of these materials, each boundary with a change in permittivity gives a reflection. This is a useful property in applications where the use case requires that the sensor measures through, e.g., a wall, clothing or plastic housing.
 
 
 Radar cross section
@@ -372,64 +364,62 @@ For most objects it is not possible to analytically calculate :math:`\sigma`, in
 Typical ranges for different objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In `Table 2`_ and `Table 3`_ the visibility for a range of objects with common shapes (cylinder, plate, etc.) and of varying reflectivity, i.e. materials, is shown. Objects are at normal incidence and the governing system parameters are :math:`\sigma`, :math:`\gamma`, and C, as show in `Equation 4`_. The envelope service was used to collect the data with Profile 2. The object counts as distinguishable from the noise with a SNR > 10 dB (Y), barely visible between 5 dB and 10 dB (-) and not visible with a SNR < 5 dB (N).
-The range can be further increased based on the configuration of the sensor, as described in Section `Configuring the Acconeer sensor`_ and by optimizing the physical integration, as will be described in Section `Physical integration aspects`_. As an example for such an optimization `Table 3`_ shows results with an added radar Fresnel lens.
+In :numref:`tab_range_wo_lens` and :numref:`tab_range_w_lens` the visibility for a range of objects with common shapes (cylinder, plate, etc.) and of varying reflectivity, i.e. materials, is shown. Objects are at normal incidence and the governing system parameters are :math:`\sigma`, :math:`\gamma`, and C, as shown in Eq. :eq:`eq_radar_eq`. The envelope service was used to collect the data with Profile 2. The object counts as distinguishable from the noise with a SNR > 10 dB (Y), barely visible between 5 dB and 10 dB (-) and not visible with a SNR < 5 dB (N).
+The range can be further increased based on the configuration of the sensor, as described in Section `Configuring the Acconeer sensor`_ and by optimizing the physical integration, as will be described in Section `Physical integration aspects`_. As an example for such an optimization :numref:`tab_range_wo_lens` shows results with an added radar Fresnel lens.
 
-.. _Table 2:
+.. _tab_range_wo_lens:
+.. table:: Typical ranges using the envelope service and Profile 2, **without radar lens**.
+    :align: center
+    :widths: auto
 
-    .. table:: Typical ranges using the envelope service and Profile 2, **without radar lens**.
-        :align: center
-        :widths: auto
+    =============================================== ===== ===== ===== ===== =====
+    Object                                          0.5 m 1 m   2 m   5 m   10 m
+    =============================================== ===== ===== ===== ===== =====
+    Corner reflector (*a* = 4 cm)                   Y     Y     Y     Y     N
+    Planar water surface                            Y     Y     Y     Y     Y
+    Disc (*r* = 4 cm)                               Y     Y     Y     Y     Y
+    Cu Plate (10x10 cm)                             Y     Y     Y     Y     Y
+    PET plastic Plate (10x10 cm)                    Y     Y     Y     Y     --
+    Wood Plate (10x10 cm)                           Y     Y     --    N     N
+    Cardboard Plate (10x10 cm)                      Y     Y     Y     N     N
+    Al Cylinder (*h* = 30, *r* = 2 cm)              Y     Y     --    N     N
+    Cu Cylinder (*h* = 12, *r* = 1.6 cm)            Y     Y     Y     N     N
+    PP plastic Cylinder (*h* = 12, *r* = 1.6 cm)    Y     N     N     N     N
+    Leg                                             Y     Y     --    N     N
+    Hand (front)                                    Y     Y     N     N     N
+    Torso (front)                                   Y     Y     Y     N     N
+    Head                                            Y     Y     N     N     N
+    Glass with water (*h* = 8.5, *r* = 2.7 cm)      Y     Y     N     N     N
+    PET Bottle with water (*h* = 14, *r* = 4.2 cm)  Y     Y     N     N     N
+    Football                                        Y     Y     N     N     N
+    =============================================== ===== ===== ===== ===== =====
 
-        ====================================== ===== ===== ===== ===== =====
-        Object                                 0.5 m 1 m   2 m   5 m   10 m
-        ====================================== ===== ===== ===== ===== =====
-        Corner reflector (a=4cm)               Y     Y     Y     Y     N
-        Planar water surface                   Y     Y     Y     Y     Y
-        Disc (r=4cm)                           Y     Y     Y     Y     Y
-        Cu Plate (10x10cm)                     Y     Y     Y     Y     Y
-        PET plastic Plate (10x10cm)            Y     Y     Y     Y     --
-        Wood Plate (10x10cm)                   Y     Y     --    N     N
-        Cardboard Plate (10x10cm)              Y     Y     Y     N     N
-        Al Cylinder (h=30, r =2cm)             Y     Y     --    N     N
-        Cu Cylinder (h=12, r =1.6cm)           Y     Y     Y     N     N
-        PP plastic Cylinder (h=12, r =1.6cm)   Y     N     N     N     N
-        Leg                                    Y     Y     --    N     N
-        Hand (front)                           Y     Y     N     N     N
-        Torso (front)                          Y     Y     Y     N     N
-        Head                                   Y     Y     N     N     N
-        Glass with water (h=8.5, r=2.7cm)      Y     Y     N     N     N
-        PET Bottle with water (h=14, r=4.2cm)  Y     Y     N     N     N
-        Football                               Y     Y     N     N     N
-        ====================================== ===== ===== ===== ===== =====
+.. _tab_range_w_lens:
+.. table:: Typical ranges using the envelope service and Profile 2, **with 7 dB radar lens**.
+    :align: center
+    :widths: auto
 
-.. _Table 3:
-
-    .. table:: Typical ranges using the envelope service and Profile 2, **with 7 dB radar lens**.
-        :align: center
-        :widths: auto
-
-        ====================================== ===== ===== ===== ===== =====
-        Object                                 0.5 m 1 m   2 m   5 m   10 m
-        ====================================== ===== ===== ===== ===== =====
-        Corner reflector (a=4cm)               Y     Y     Y     Y     Y
-        Planar water surface                   Y     Y     Y     Y     Y
-        Disc (r=4cm)                           Y     Y     Y     Y     Y
-        Cu Plate (10x10cm)                     Y     Y     Y     Y     Y
-        PET plastic Plate (10x10cm)            Y     Y     Y     Y     Y
-        Wood Plate (10x10cm)                   Y     Y     Y     Y     N
-        Cardboard Plate (10x10cm)              Y     Y     Y     Y     --
-        Al Cylinder (h=30, r =2cm)             Y     Y     Y     Y     --
-        Cu Cylinder (h=12, r =1.6cm)           Y     Y     Y     Y     --
-        PP plastic Cylinder (h=12, r =1.6cm)   Y     Y     Y     N     N
-        Leg                                    Y     Y     Y     Y     N
-        Hand (front)                           Y     Y     Y     N     N
-        Torso (front)                          Y     Y     Y     Y     N
-        Head                                   Y     Y     Y     --    N
-        Glass with water (h=8.5, r=2.7cm)      Y     Y     Y     --    N
-        PET Bottle with water (h=14, r=4.2cm)  Y     Y     Y     N     N
-        Football                               Y     Y     Y     N     N
-        ====================================== ===== ===== ===== ===== =====
+    ============================================== ===== ===== ===== ===== =====
+    Object                                         0.5 m 1 m   2 m   5 m   10 m
+    ============================================== ===== ===== ===== ===== =====
+    Corner reflector (*a* = 4 cm)                  Y     Y     Y     Y     Y
+    Planar water surface                           Y     Y     Y     Y     Y
+    Disc (*r* = 4 cm)                              Y     Y     Y     Y     Y
+    Cu Plate (10x10 cm)                            Y     Y     Y     Y     Y
+    PET plastic Plate (10x10 cm)                   Y     Y     Y     Y     Y
+    Wood Plate (10x10 cm)                          Y     Y     Y     Y     N
+    Cardboard Plate (10x10 cm)                     Y     Y     Y     Y     --
+    Al Cylinder (*h* = 30, *r* = 2 cm)             Y     Y     Y     Y     --
+    Cu Cylinder (*h* = 12, *r* = 1.6 cm)           Y     Y     Y     Y     --
+    PP plastic Cylinder (*h* = 12, *r* = 1.6 cm)   Y     Y     Y     N     N
+    Leg                                            Y     Y     Y     Y     N
+    Hand (front)                                   Y     Y     Y     N     N
+    Torso (front)                                  Y     Y     Y     Y     N
+    Head                                           Y     Y     Y     --    N
+    Glass with water (*h* = 8.5, *r* = 2.7 cm)     Y     Y     Y     --    N
+    PET Bottle with water (*h* = 14, *r* = 4.2 cm) Y     Y     Y     N     N
+    Football                                       Y     Y     Y     N     N
+    ============================================== ===== ===== ===== ===== =====
 
 
 Radar sensor performance metrics
@@ -442,12 +432,10 @@ Radar loop gain
 
 The SNR can be modelled as a function of a limited number of parameters: the RCS of the object (:math:`\sigma`), the distance to the object (:math:`R`), the reflectivity of the object (:math:`\gamma`), and a radar sensor dependent constant referred to as radar loop gain (:math:`C`). The SNR (in dB) is then given by
 
-.. _Equation 4:
+.. math::
+    :label: eq_radar_eq
 
-    .. math::
-        :label: Equation 4
-
-        SNR_{dB}=10\log_{10}\frac{S}{N}=C_{dB}+\sigma_{dB}+\gamma_{dB}-k10\log_{10}(R)
+    \mathrm{SNR}_{dB}=10\log_{10}\frac{S}{N}=C_{dB}+\sigma_{dB}+\gamma_{dB}-k10\log_{10}R
 
 :numref:`fig_rx_power_vs_dist` shows how the received energy drops with increasing :math:`R` for objects where the exponent :math:`k` is equal to 4, which applies for objects which are smaller than the area which is illuminated coherently by the radar. For objects that are larger than this area the :math:`k` is smaller than 4, with a lower limit of :math:`k = 2`  when the object is a large flat surface.
 
@@ -522,15 +510,12 @@ The first step is to select pulse length profile to optimize on either depth res
 
 Depth resolution, :math:`d_{res}`, is the ability to resolve reflections which are closely spaced, and hence depends on :math:`t_{pulse}` according to
 
-.. _Equation 5:
+.. math::
+    :label: eq_d_res
 
-    .. math::
-        :label: Equation 5
+    d_{res} \approx \frac{t_{pulse}v}{2}
 
-        d_{res} \approx \frac{t_{pulse}v}{2}
-
-
-:numref:`fig_distance_resolution` illustrates how the ability to resolve closely spaced reflections can be improved by decreasing :math:`t_{pulse}`. On the other hand, decreasing :math:`t_{pulse}` means that the total energy in the pulse is decreased and hence decrease the SNR in the receiver, this is the trade-off that is made by selecting between the five profiles. Each service can be configured with five different pulse length profiles (see `Table 6`_), where
+:numref:`fig_distance_resolution` illustrates how the ability to resolve closely spaced reflections can be improved by decreasing :math:`t_{pulse}`. On the other hand, decreasing :math:`t_{pulse}` means that the total energy in the pulse is decreased and hence decrease the SNR in the receiver, this is the trade-off that is made by selecting between the five profiles. Each service can be configured with five different pulse length profiles (see :numref:`tab_profiles`), where
 
 * shorter pulses provides higher distance resolution at the cost of a reduced SNR
 
@@ -561,21 +546,20 @@ If angular information is needed one possibility is to mechanically move the sen
 
     Illustration of how the leakage between the Tx and Rx antenna will appear in the Envelope Service data for Profile 1 and Profile 2 pulse lengths.
 
-.. _Table 4:
+.. _tab_profiles:
+.. table:: **Rough** comparison of the envelope service behavior for different profiles.
+    :align: center
+    :widths: auto
 
-    .. table:: **Rough** comparison of the envelope service behavior for different profiles.
-        :align: center
-        :widths: auto
-
-        ========== ============================= ===================
-        Profile    Relative SNR improvement [dB] Direct leakage [m]
-        ========== ============================= ===================
-        Profile 1  0                             ~0.06
-        Profile 2  ~7                            ~0.10
-        Profile 3  ~11                           ~0.18
-        Profile 4  ~13                           ~0.36
-        Profile 5  ~16                           ~0.60
-        ========== ============================= ===================
+    ========== ============================= ===================
+    Profile    Relative SNR improvement [dB] Direct leakage [m]
+    ========== ============================= ===================
+    Profile 1  0                             ~0.06
+    Profile 2  ~7                            ~0.10
+    Profile 3  ~11                           ~0.18
+    Profile 4  ~13                           ~0.36
+    Profile 5  ~16                           ~0.60
+    ========== ============================= ===================
 
 
 Signal averaging and gain
@@ -613,27 +597,26 @@ Note, Exploration Tool is capable of setting the update rate also in *on demand*
 Power save modes
 ^^^^^^^^^^^^^^^^
 
-The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are five power save modes see `Table 5`_.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
+The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are five power save modes see :numref:`tab_power_save_modes`.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
 
 Another important aspect of the power save mode is when using the service in repetition mode Streaming. In streaming mode the service is also configured with an update rate at which the sensor produce new data. The update rate is maintained by the sensor itself using either internally generated clock or using the externally applied clock on XIN/XOUT pins. Besides the fact that power save mode *Active* gives the highest possible update rate, it also gives the best update rate accuracy. Likewise, the power save mode *Sleep* gives a lower possible update rate than *Active* and also a lower update rate accuracy. Bare in mind that also in streaming mode the maximum update rate is not only determined by the power save mode but also profile, length, and hardware accelerated average samples. Power save mode *Off* and *Hibernate* is not supported in streaming mode since the sensor is turned off between its measurements and thus cannot keep an update rate. In addition, the power save mode *Hibernate* is only supported when using Sparse service.
 
-`Table 5`_ concludes the power save mode configurations.
+:numref:`tab_power_save_modes` concludes the power save mode configurations.
 
-.. _Table 5:
+.. _tab_power_save_modes:
+.. table:: Power save modes.
+    :align: center
+    :widths: auto
 
-    .. table:: Power save modes.
-        :align: center
-        :widths: auto
-
-        ================== ==================== ============== =========================
-        Power save mode    Current consumption  Response time  Update rate accuracy
-        ================== ==================== ============== =========================
-        Off                Lowest               Longest        Not applicable
-        Hibernate          ...                  ...            Not applicable
-        Sleep              ...                  ...            Worst
-        Ready              ...                  ...            ...
-        Active             Highest              Shortest       Best
-        ================== ==================== ============== =========================
+    ================== ==================== ============== =====================
+    Power save mode    Current consumption  Response time  Update rate accuracy
+    ================== ==================== ============== =====================
+    Off                Lowest               Longest        Not applicable
+    Hibernate          ...                  ...            Not applicable
+    Sleep              ...                  ...            Worst
+    Ready              ...                  ...            ...
+    Active             Highest              Shortest       Best
+    ================== ==================== ============== =====================
 
 As part of the deactivation process of the service the sensor is disabled, which is the same state as power save mode *Off*.
 
@@ -641,29 +624,27 @@ As part of the deactivation process of the service the sensor is disabled, which
 Configuration summary
 ^^^^^^^^^^^^^^^^^^^^^
 
-`Table 6`_ shows a list of important parameters that are available through our API and that can be used to optimize the performance for a specific use case, refer to product documentation and user guides for a complete list of all parameters and how to use them.
+:numref:`tab_sensor_params` shows a list of important parameters that are available through our API and that can be used to optimize the performance for a specific use case, refer to product documentation and user guides for a complete list of all parameters and how to use them.
 
-.. _Table 6:
+.. _tab_sensor_params:
+.. table:: List of sensor parameters
+    :align: center
+    :widths: auto
 
-    .. table:: List of sensor parameters
-        :align: center
-        :widths: auto
-
-        ================== ==============================================================================================
-        Parameter          Comment
-        ================== ==============================================================================================
-        Profile            Selects between the pulse length profiles. Trade off between SNR and depth resolution.
-        Start              Start of sweep [m].
-        Length             Length of sweep, independently of Start range  [m].
-        HWAAS              Amount of radar pulse averaging in the sensor.
-        Receiver gain      Adjust to accommodate received signal level.
-        Repetition mode    On demand or Streaming.
-        Update rate        Desired rate at which sweeps are generated [Hz] (in repetition mode Streaming).
-        Power save mode    Tradeoff between power consumption and rate and accuracy at which sweeps are generated.
-        ================== ==============================================================================================
+    ================== ==============================================================================================
+    Parameter          Comment
+    ================== ==============================================================================================
+    Profile            Selects between the pulse length profiles. Trade off between SNR and depth resolution.
+    Start              Start of sweep [m].
+    Length             Length of sweep, independently of Start range  [m].
+    HWAAS              Amount of radar pulse averaging in the sensor.
+    Receiver gain      Adjust to accommodate received signal level.
+    Repetition mode    On demand or Streaming.
+    Update rate        Desired rate at which sweeps are generated [Hz] (in repetition mode Streaming).
+    Power save mode    Tradeoff between power consumption and rate and accuracy at which sweeps are generated.
+    ================== ==============================================================================================
 
 .. _Physical integration aspects:
-
 
 Physical integration aspects
 ----------------------------
@@ -688,7 +669,6 @@ In addition to the above it is also important for optimized integration to consi
 
 The radiation pattern of the integrated antennas will be affected by anything that is put on top of the sensor as a cover. The transmission through a material is given by 1-:math:`\gamma`, where :math:`\gamma` is the reflectivity calculated in Equation 3. Hence, materials with low reflectivity are good materials to use as a cover on top of the sensor, plastic is a good choice and the sensor is not sensitive to the color of the material. Figure 21 shows the measured Radar loop pattern for 3 different scenarios, plastic (ABS), gorilla glass (GorillaGlass) and free space (FS). To further optimize the cover integration the thickness of the material should be considered. One can also use a layered cover which uses materials of different :math:`\varepsilon` for optimum matching to the medium in which the signal is going to propagate or even to increase the directivity, as shown in Figure 21, where the beam width has been decreased by adding material on top of the sensor. More information on the EM integration aspects can be found in “Electromagnetic Integration - Basic Guidelines” document available at `developer.acconeer.com <https://developer.acconeer.com>`__.
 
-
 .. _fig_h_plan_pattern:
 .. figure:: /_static/introduction/fig_h_plan_pattern.png
     :scale: 60
@@ -708,8 +688,13 @@ Disclaimer
 ----------
 
 The information herein is believed to be correct as of the date issued. Acconeer AB (**“Acconeer”**) will not be responsible for damages of any nature resulting from the use or reliance upon the information contained herein. Acconeer makes no warranties, expressed or implied, of merchantability or fitness for a particular purpose or course of performance or usage of trade. Therefore, it is the user’s responsibility to thoroughly test the product in their particular application to determine its performance, efficacy and safety. Users should obtain the latest relevant information before placing orders.
+
 Unless Acconeer has explicitly designated an individual Acconeer product as meeting the requirement of a particular industry standard, Acconeer is not responsible for any failure to meet such industry standard requirements.
+
 Unless explicitly stated herein this document Acconeer has not performed any regulatory conformity test. It is the user’s responsibility to assure that necessary regulatory conditions are met and approvals have been obtained when using the product. Regardless of whether the product has passed any conformity test, this document does not constitute any regulatory approval of the user’s product or application using Acconeer’s product.
+
 Nothing contained herein is to be considered as permission or a recommendation to infringe any patent or any other intellectual property right. No license, express or implied, to any intellectual property right is granted by Acconeer herein.
+
 Acconeer reserves the right to at any time correct, change, amend, enhance, modify, and improve this document and/or Acconeer products without notice.
+
 This document supersedes and replaces all information supplied prior to the publication hereof.
