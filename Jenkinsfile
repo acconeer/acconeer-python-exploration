@@ -11,6 +11,7 @@ pipeline {
     stages {
         stage('Test') {
             steps {
+                sh 'python3 internal/check_permissions.py'
                 sh 'flake8'
                 sh 'isort --check-only'
                 sh 'python3 -m pip install -U --user .'
