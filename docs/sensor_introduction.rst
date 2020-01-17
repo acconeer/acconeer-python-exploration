@@ -698,3 +698,17 @@ Nothing contained herein is to be considered as permission or a recommendation t
 Acconeer reserves the right to at any time correct, change, amend, enhance, modify, and improve this document and/or Acconeer products without notice.
 
 This document supersedes and replaces all information supplied prior to the publication hereof.
+
+Document history
+----------------
+
+.. table::
+    :align: center
+    :widths: auto
+
+    =========== ====================================== ======= ============
+    Author      Comments                               Version Date
+    =========== ====================================== ======= ============
+    Acconeer AB Added power save mode Hibernate.       2.1     2020-01-17
+    Acconeer AB Initial version for API 2.0.           2.0     2019-12-01
+    =========== ====================================== ======= ============
