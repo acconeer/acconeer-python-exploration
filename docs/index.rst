@@ -30,3 +30,11 @@ Table of contents
 
    services/index
    processing/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Deep learning interface
+
+   Introduction <deep_learning/introduction>
+
+   deep_learning/work_steps/index

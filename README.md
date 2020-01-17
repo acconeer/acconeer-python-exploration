@@ -124,7 +124,7 @@ You can then start the machine learning GUI with
 ```
 python gui/main.py -ml
 ```
-Please keep in mind that the deep learning interface is WIP and documentation is not available at this point.
+Please keep in mind that the deep learning interface is "work in progress"; initial documentation is available here ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/deep_learning/introduction.html)).
 
 ## Running an example script on your local machine
 
