@@ -5,7 +5,7 @@ scipy
 pyserial
 matplotlib
 pyqtgraph
-PyQt5
+PyQt5==5.14
 h5py
 Flask
 pyyaml
