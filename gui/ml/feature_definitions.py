@@ -407,7 +407,7 @@ class FeatureSparseFFT:
 
         threshold = 1.0
         m = np.mean(fft_psd) * threshold
-        if m < self.noise_floor[sensor_idx]:
+        if m < self.noise_floor[sensor_idx] and m > 1E-8:
             self.noise_floor[sensor_idx] = m
 
         fft_psd /= self.noise_floor[sensor_idx]

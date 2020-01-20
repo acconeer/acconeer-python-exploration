@@ -506,11 +506,17 @@ class FeatureSelectFrame(QFrame):
                 QtCore.Qt.MatchFixedString
             )
             if index != self.gui_handle.module_dd.currentIndex():
-                self.gui_handle.module_dd.setCurrentIndex(index)
-                self.gui_handle.update_canvas()
+                message = "Do you want to change the service to {}?".format(module_key)
+                if self.gui_handle.warning_message(message):
+                    self.gui_handle.module_dd.setCurrentIndex(index)
+                    self.gui_handle.update_canvas()
             conf = self.gui_handle.get_sensor_config()
             conf.sensor = self.limits["sensors"]
-            conf.range_interval = [self.limits["start"], self.limits["end"]]
+            try:
+                conf.range_interval = [self.limits["start"], self.limits["end"]]
+            except Exception:
+                # This error needs to be actively fixed by the user in the GUI.
+                pass
         else:
             print("Action {} not supported!.".format(action))
 
@@ -621,8 +627,15 @@ class FeatureSelectFrame(QFrame):
             if error_handle is None:
                 return self.set_error_text("No service selected!")
             else:
-                error_message("Sensor_config has wrong format!")
+                error_handle("Sensor_config has wrong format!")
                 return False
+
+        is_valid = True
+        if feat_start > feat_end:
+            if error_message is None:
+                error_message = "Configuration mismatch:\n"
+            error_message += "Feature start must be less than feature end!\n"
+            is_valid = False
 
         config_is_valid["start"][1] = config_start
         if feat_start >= config_start and feat_start < config_end:
@@ -640,7 +653,6 @@ class FeatureSelectFrame(QFrame):
                 config_is_valid["sensors"][2] = False
                 break
 
-        is_valid = True
         for k in config_is_valid:
             if not config_is_valid[k][2]:
                 if error_message is None:
@@ -1020,11 +1032,7 @@ class FeatureSidePanel(QFrame):
             "rolling": QCheckBox("Rolling frame"),
         }
         self.checkboxes["rolling"].clicked.connect(
-            lambda: self.gui_handle.sig_scan.emit(
-                "update_feature_extraction",
-                "rolling",
-                self.checkboxes["rolling"].isChecked()
-            )
+            partial(self.frame_settings_storage, "rolling")
         )
 
         self.radiobuttons = {
@@ -1077,8 +1085,9 @@ class FeatureSidePanel(QFrame):
         for key in self.textboxes:
             if key in ["auto_threshold", "dead_time", "auto_offset"]:
                 continue
-            self.textboxes[key].editingFinished.connect(partial(self.calc_values, key, False))
-            self.textboxes[key].textChanged.connect(partial(self.calc_values, key, True))
+            tag = key
+            self.textboxes[key].editingFinished.connect(partial(self.calc_values, tag, False))
+            self.textboxes[key].textChanged.connect(partial(self.calc_values, tag, True))
 
         self.num = 0
         self.grid.addWidget(self.labels["frame_settings"], self.increment(), 0, 1, 2)
@@ -1170,18 +1179,19 @@ class FeatureSidePanel(QFrame):
         }
 
     def frame_settings_storage(self, senders=None):
+        all_senders = [
+            "frame_label",
+            "frame_size",
+            "collection_mode",
+            "auto_threshold",
+            "auto_offset",
+            "dead_time",
+            "rolling",
+            "update_rate",
+            "calibration",
+        ]
         if senders is None:
-            senders = [
-                "frame_label",
-                "frame_size",
-                "collection_mode",
-                "auto_threshold",
-                "auto_offset",
-                "dead_time",
-                "rolling",
-                "update_rate",
-                "calibration",
-            ]
+            senders = all_senders
         elif not isinstance(senders, list):
             senders = [senders]
 
@@ -1204,19 +1214,27 @@ class FeatureSidePanel(QFrame):
         # ToDo: Complete frame padding functionality
         self.frame_settings["frame_pad"] = 0
 
+        if self.frame_settings["frame_size"] <= 0:
+            print("Warning: Frame size must be larger than 0!")
+            self.frame_settings["frame_size"] = 1
+
         sig = None
         if self.gui_handle.get_gui_state("scan_is_running"):
             sig = self.gui_handle.sig_scan
 
             # Only allow hot updating frame size when feature select preview
             if self.gui_handle.get_gui_state("ml_tab") == "feature_select":
-                sender = "frame_size"
-                senders = [sender]
+                senders = ["frame_size"]
+
+            # Make sure to update collection mode properly
+            if len(senders) == 1:
+                if senders[0] in ["rolling", "collection_mode"]:
+                    senders = all_senders
 
             if len(senders) > 1:
                 sig.emit("update_feature_extraction", None, self.frame_settings)
             else:
-                sig.emit("update_feature_extraction", sender, self.frame_settings[senders[0]])
+                sig.emit("update_feature_extraction", senders[0], self.frame_settings[senders[0]])
 
     def get_frame_settings(self):
         self.frame_settings_storage()
@@ -1400,6 +1418,7 @@ class FeatureSidePanel(QFrame):
                 feature_list = data.item()["feature_list"]
                 if self.ml_state.get_state("settings_locked"):
                     print("Settings locked, not loading feature list from file!")
+                else:
                     self.gui_handle.feature_select.update_feature_list(feature_list)
                 try:
                     self.gui_handle.feature_extract.set_label(

@@ -91,7 +91,7 @@ class FeatureProcessing:
             print("Frame settings needs to be a dict!")
             return
         if params.get("frame_size") is not None:
-            self.frame_size = params["frame_size"]
+            self.frame_size = max(params["frame_size"], 1)
             self.sweep_counter = -1
         if params.get("frame_pad") is not None:
             self.frame_pad = params["frame_pad"]
@@ -221,13 +221,10 @@ class FeatureProcessing:
                 self.markers.append(self.sweep_number)
 
         if self.collection_mode == "continuous":
-            if self.rolling:
-                self.roll_data(data)
-                self.add_sweep(data)
-                if self.sweep_counter > self.frame_pad + 1:
-                    self.markers.append(self.sweep_number)
-            else:
-                self.add_sweep(data, win_idx=self.sweep_counter)
+            self.roll_data(data)
+            self.add_sweep(data)
+            if self.rolling and self.sweep_counter > self.frame_pad + 1:
+                self.markers.append(self.sweep_number)
 
         if self.collection_mode == "single":
             self.roll_data(data)
@@ -238,45 +235,14 @@ class FeatureProcessing:
 
         self.sweep_counter += 1
 
-        feature_map = []
-        for feat in self.feature_list:
-            cb = self.feature_callbacks[feat["key"]]
-            if "session_info":
-                session_info = data["session_info"]
-            else:
-                session_info = None
+        win_params = {
+            "options": None,
+            "dist_vec": data["x_mm"],
+            "sensor_config": data["sensor_config"],
+            "session_info": data.get("session_info", None),
+        }
 
-            output = feat["output"]
-            sensors = feat["sensors"]
-            name = feat["name"]
-            model_dims = feat["model_dimension"]
-
-            win_params = {
-                "options": feat["options"],
-                "dist_vec": data["x_mm"],
-                "sensor_config": data["sensor_config"],
-                "session_info": session_info,
-            }
-
-            for s in sensors:
-                idx = self.sensor_map[str(s)]
-                if idx is None:
-                    continue
-                win_params["sensor_idx"] = idx
-
-                feat_data = cb.extract_feature(self.win_data, win_params)
-
-                if output is not None:
-                    if feat_data is None:
-                        if name not in self.feature_error:
-                            self.feature_error.append(name)
-                    else:
-                        for out in output:
-                            if output[out]:
-                                try:
-                                    feature_map.append(feat_data[out])
-                                except Exception:
-                                    pass
+        feature_map = self.generate_feature_map(win_params)
 
         fmap = None
         if len(feature_map):
@@ -324,7 +290,6 @@ class FeatureProcessing:
                 self.sweep_counter = n_sweeps
             if self.collection_mode == "single":
                 self.triggered = False
-                self.reset_data(data)
         else:
             current_frame["frame_complete"] = False
             if self.collection_mode == "auto":
@@ -357,7 +322,7 @@ class FeatureProcessing:
             "feature_list": self.feature_list,
             "frame_list": self.frame_list,
             "motion_score": self.motion_score_normalized,
-            "model_dimension": model_dims
+            "model_dimension": self.feature_list[0]["model_dimension"],
         }
 
         return frame_data
@@ -367,7 +332,7 @@ class FeatureProcessing:
         self.frame_size = data["ml_frame_data"]["frame_info"]["frame_size"]
         self.calibration = data["ml_frame_data"]["current_frame"].get("calibration")
         n_sweeps = self.frame_size + 2 * self.frame_pad
-        feature_list = data["ml_frame_data"]["feature_list"]
+        self.set_feature_list(data["ml_frame_data"]["feature_list"])
         frame_start = start - self.frame_pad
         frame_stop = frame_start + self.frame_size + 2 * self.frame_pad
         sensor_config = data["sensor_config"]
@@ -375,7 +340,13 @@ class FeatureProcessing:
         self.check_data(data)
         self.prepare_data_container(data)
 
-        feature_map = []
+        win_params = {
+            "options": None,
+            "dist_vec": data["x_mm"],
+            "sensor_config": data["sensor_config"],
+            "session_info": data.get("session_info", None),
+        }
+
         for marker in range(frame_start, frame_stop):
             data_step = {
                 "sensor_config": data["sensor_config"],
@@ -391,38 +362,7 @@ class FeatureProcessing:
             self.roll_data(data)
             self.add_sweep(data_step)
 
-            for feat in feature_list:
-                cb = self.feature_callbacks[feat["key"]]
-                if "session_info":
-                    session_info = data["session_info"]
-                else:
-                    session_info = None
-                output = feat["output"]
-                sensors = feat["sensors"]
-
-                win_params = {
-                    "options": feat["options"],
-                    "dist_vec": data["x_mm"],
-                    "sensor_config": data["sensor_config"],
-                    "session_info": session_info,
-                }
-
-                for s in sensors:
-                    idx = self.sensor_map[str(s)]
-                    if idx is None:
-                        continue
-                    win_params["sensor_idx"] = idx
-
-                    feat_data = feat_data = cb.extract_feature(self.win_data, win_params)
-
-                    if marker == frame_stop - 1:
-                        if output is not None:
-                            for out in output:
-                                if output[out]:
-                                    try:
-                                        feature_map.append(feat_data[out])
-                                    except Exception:
-                                        pass
+            feature_map = self.generate_feature_map(win_params)
 
         fmap = None
         if len(feature_map):
@@ -454,6 +394,39 @@ class FeatureProcessing:
         data["ml_frame_data"]["current_frame"] = current_frame
 
         return data
+
+    def generate_feature_map(self, win_params):
+        feature_map = []
+        for feat in self.feature_list:
+            cb = self.feature_callbacks[feat["key"]]
+
+            output = feat["output"]
+            sensors = feat["sensors"]
+            name = feat["name"]
+
+            win_params["options"] = feat["options"]
+
+            for s in sensors:
+                idx = self.sensor_map[str(s)]
+                if idx is None:
+                    continue
+                win_params["sensor_idx"] = idx
+
+                feat_data = cb.extract_feature(self.win_data, win_params)
+
+                if output is not None:
+                    if feat_data is None:
+                        if name not in self.feature_error:
+                            self.feature_error.append(name)
+                    else:
+                        for out in output:
+                            if output[out]:
+                                try:
+                                    feature_map.append(feat_data[out])
+                                except Exception:
+                                    pass
+
+        return feature_map
 
     def check_data(self, data):
         if data.get("x_mm") is None:

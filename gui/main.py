@@ -769,7 +769,7 @@ class GUI(QMainWindow):
         self.ml_parent_widget.addWidget(self.ml_info_widget)
 
         self.tabs = {
-            "collect": (QWidget(self.tab_parent), "Configure service"),
+            "collect": (QWidget(self.tab_parent), "Select service"),
             "feature_select": (QWidget(self.tab_parent), "Feature configuration"),
             "feature_extract": (QWidget(self.tab_parent), "Feature extraction"),
             "feature_inspect": (QWidget(self.tab_parent), "Feature inspection"),
@@ -779,7 +779,7 @@ class GUI(QMainWindow):
         }
 
         self.tabs_text_to_key = {
-            "Configure service": "main",
+            "Select service": "main",
             "Feature configuration": "feature_select",
             "Feature extraction": "feature_extract",
             "Feature inspection": "feature_inspect",
