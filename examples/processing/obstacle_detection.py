@@ -99,7 +99,7 @@ def get_processing_config():
         },
         "downsampling": {
             "name": "Downsample scale",
-            "value": 8,
+            "value": 1,
             "limits": [0, 124],
             "type": int,
             "advanced": True,
@@ -739,7 +739,9 @@ class ObstacleDetectionProcessor:
         if peak is not None:
             peak_avg = self.calc_peak_avg(peak, arr)
             local_peaks = np.zeros((self.nr_locals, self.peak_prop_num), dtype=float)
-            local_peaks[0, 0:2] = peak
+            dist_edge = self.edge(arr[:, peak[1]], peak[0], self.edge_ratio)
+            local_peaks[0, 0] = dist_edge
+            local_peaks[0, 1] = peak[1]
             local_peaks[0, 2] = peak_avg
             local_peaks[0, 3] = np.round(peak_val, decimals=4)
             peaks_found += 1
@@ -1142,7 +1144,7 @@ class PGUpdater:
         self.plot_index = 0
 
     def update(self, data):
-        ds = max(self.downsampling, 8)  # downsampling
+        ds = max(self.downsampling, 1)  # downsampling
         nfft = data["fft_map"].shape[2]
         if self.plot_index == 0:
             nr_sensors = data["fft_map"].shape[0]
