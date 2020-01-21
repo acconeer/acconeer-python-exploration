@@ -279,6 +279,9 @@ class UARTClient(RegBaseClient):
         else:
             raise ClientError("timeout while stopping session")
 
+        mask = regmap.STATUS_FLAGS.CREATED | regmap.STATUS_FLAGS.ACTIVATED
+        self._wait_status(0, mask=mask)
+
     def _disconnect(self):
         self._write_reg("uart_baudrate", self.DEFAULT_BASE_BAUDRATE)
         self._link.disconnect()
