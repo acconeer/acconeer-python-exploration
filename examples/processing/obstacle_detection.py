@@ -314,7 +314,6 @@ class ObstacleDetectionProcessor:
 
             self.sweep_map = np.zeros((nr_sensors, len_range, self.fft_len), dtype="complex")
             self.fft_bg = np.zeros((nr_sensors, len_range, self.fft_len))
-            self.fft_psd = np.zeros((nr_sensors, len_range, self.fft_len))
             self.hamming_map = np.zeros((len_range, self.fft_len))
 
             self.fusion_data = {
@@ -369,13 +368,14 @@ class ObstacleDetectionProcessor:
                     self.threshold_map[dist, freq] = self.variable_thresholding(
                         freq, dist, self.threshold, self.static_threshold)
 
+        fft_psd = np.empty((nr_sensors, len_range, self.fft_len))
         fused_obstacles = {}
         for s in range(nr_sensors):
             self.push(sweep[s, :], self.sweep_map[s, :, :])
 
             signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
-            self.fft_psd[s, :, :] = np.square(np.abs(signalFFT))
-            signalPSD = self.fft_psd[s, :, :]
+            fft_psd[s, :, :] = np.square(np.abs(signalFFT))
+            signalPSD = fft_psd[s, :, :]
             if self.use_bg and self.sweep_index == self.fft_len - 1:
                 self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
                 if s == nr_sensors - 1:
@@ -486,7 +486,7 @@ class ObstacleDetectionProcessor:
         out_data = {
             "env_ampl": env,
             "fft_max_env": fft_max_env,
-            "fft_map": self.fft_psd,
+            "fft_map": fft_psd,
             "peak_idx": peak_idx,
             "angle": angle,
             "velocity": velocity,
