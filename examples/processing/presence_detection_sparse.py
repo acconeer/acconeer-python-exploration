@@ -41,7 +41,7 @@ def main():
     interrupt_handler = utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
-    processor = PresenceDetectionSparseProcessor(sensor_config, processing_config, session_info)
+    processor = Processor(sensor_config, processing_config, session_info)
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
@@ -215,7 +215,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
 get_processing_config = ProcessingConfiguration
 
 
-class PresenceDetectionSparseProcessor:
+class Processor:
     # lp(f): low pass (filtered)
     # cut: cutoff frequency [Hz]
     # tc: time constant [s]
@@ -415,7 +415,6 @@ class PGUpdater:
 
     def setup(self, win):
         win.setWindowTitle("Acconeer presence detection example")
-        win.setAntialiasing(True)
 
         self.limit_lines = []
         dashed_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)

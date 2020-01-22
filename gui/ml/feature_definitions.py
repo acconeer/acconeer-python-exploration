@@ -502,7 +502,7 @@ class FeatureSparsePresence:
             detector_config.intra_frame_time_const = 0.03
             detector_config.intra_frame_weight = 0.8
             detector_config.output_time_const = 0.01
-            detector_handle = presence_detection_sparse.PresenceDetectionSparseProcessor
+            detector_handle = presence_detection_sparse.Processor
             self.detector_processor[sensor_idx] = detector_handle(
                 sensor_config,
                 detector_config,

@@ -92,7 +92,7 @@ class Processor:
         history_len = processing_config.history_length
 
         pd_config = presence_detection_sparse.get_processing_config()
-        processor_class = presence_detection_sparse.PresenceDetectionSparseProcessor
+        processor_class = presence_detection_sparse.Processor
 
         try:
             self.pd_processors = [processor_class(sensor_config, pd_config, session_info)]

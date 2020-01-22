@@ -70,6 +70,7 @@ def multi_sensor_wrap(module):
 
 
 multi_sensor_sparse_speed_module = multi_sensor_wrap(sparse_speed_module)
+multi_sensor_presence_detection_sparse_module = multi_sensor_wrap(presence_detection_sparse_module)
 
 ModuleInfo = namedtuple("ModuleInfo", [
     "key",
@@ -130,10 +131,10 @@ MODULE_INFOS = [
     ModuleInfo(
         "sparse_presence",
         "Presence detection (sparse)",
-        presence_detection_sparse_module,
-        presence_detection_sparse_module.get_sensor_config,
-        presence_detection_sparse_module.PresenceDetectionSparseProcessor,
-        False,
+        multi_sensor_presence_detection_sparse_module,
+        multi_sensor_presence_detection_sparse_module.get_sensor_config,
+        multi_sensor_presence_detection_sparse_module.Processor,
+        True,
         False,
     ),
     ModuleInfo(

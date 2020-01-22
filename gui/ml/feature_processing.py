@@ -487,7 +487,7 @@ class FeatureProcessing:
                 self.motion_config.intra_frame_time_const = 0.03
                 self.motion_config.detection_threshold = 0
                 self.motion_config.output_time_const = 0.01
-                self.motion_class = presence_detection_sparse.PresenceDetectionSparseProcessor
+                self.motion_class = presence_detection_sparse.Processor
                 motion_processors_list = []
                 for i in range(num_sensors):
                     motion_processors_list.append(
