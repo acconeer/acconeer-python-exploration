@@ -292,7 +292,7 @@ class ObstacleDetectionProcessor:
         if self.downsampling:
             sweep = sweep[:, ::self.downsampling]
 
-        sweep /= 2**12
+        sweep = sweep / 2**12
 
         nr_sensors, len_range = sweep.shape
 
