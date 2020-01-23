@@ -17,7 +17,7 @@ import oyaml as yaml
 
 
 here = os.path.dirname(os.path.realpath(__file__))
-exptool_package_path = os.path.join(here, "src", "acconeer", "exptool")
+exptool_package_path = os.path.join(here, "..", "src", "acconeer", "exptool")
 
 modes_module_path = os.path.join(exptool_package_path, "modes.py")
 modes_module_spec = importlib.util.spec_from_file_location(
