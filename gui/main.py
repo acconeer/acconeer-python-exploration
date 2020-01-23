@@ -993,11 +993,7 @@ class GUI(QMainWindow):
         switching_data_type = self.current_data_type != data_type
         self.current_data_type = data_type
 
-        if self.get_gui_state("load_state") == LoadState.LOADED:
-            if switching_data_type:
-                self.data = None
-                self.set_gui_state("load_state", LoadState.UNLOADED)
-        elif switching_module:
+        if switching_data_type:
             self.data = None
             self.set_gui_state("load_state", LoadState.UNLOADED)
 
@@ -1202,7 +1198,8 @@ class GUI(QMainWindow):
         ]))
 
         # Data source
-        self.labels["data_source"].setVisible(states["load_state"] == LoadState.LOADED)
+        self.labels["data_source"].setVisible(
+            bool(states["load_state"] == LoadState.LOADED and self.data_source))
         try:
             text = "Loaded " + os.path.basename(self.data_source)
         except Exception:
@@ -1594,8 +1591,7 @@ class GUI(QMainWindow):
 
     def load_scan(self, restart=False):
         if restart:
-            if self.get_gui_state("load_state") == LoadState.BUFFERED:
-                self.set_sensors(self.data.sensor_config.sensor)
+            self.set_gui_state("load_state", LoadState.LOADED)
             self.start_scan(from_file=True)
             return
 
