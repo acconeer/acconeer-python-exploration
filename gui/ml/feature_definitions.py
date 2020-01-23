@@ -67,8 +67,8 @@ def get_features():
     return features
 
 
-def m2idx(value, array):
-    idx = max(0, int(124/60 * (value * 1000 - array[0])))
+def distance2idx(value, dist_vec):
+    idx = np.argmin((dist_vec - value)**2)
     return int(idx)
 
 
@@ -98,8 +98,8 @@ class FeaturePeak:
 
         # dist_vec is in mm
         data_len, win_len = arr.shape
-        start = m2idx(options["Start"], dist_vec)
-        stop = min(m2idx(options["Stop"], dist_vec), data_len)
+        start = distance2idx(options["Start"], dist_vec)
+        stop = distance2idx(options["Stop"], dist_vec)
 
         if start >= stop:
             return None
@@ -151,8 +151,8 @@ class FeatureAverages1D():
 
         # dist_vec is in mm
         data_len, win_len = arr.shape
-        start = m2idx(options["Start"], dist_vec)
-        stop = min(m2idx(options["Stop"], dist_vec), data_len)
+        start = distance2idx(options["Start"], dist_vec)
+        stop = distance2idx(options["Stop"], dist_vec)
 
         if start >= stop:
             return None
@@ -207,8 +207,8 @@ class FeatureAverages2D():
 
         # dist_vec is in mm
         data_len, win_len = arr.shape
-        start = m2idx(options["Start"], dist_vec)
-        stop = min(m2idx(options["Stop"], dist_vec), data_len)
+        start = distance2idx(options["Start"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec)
 
         if start >= stop:
             return None
@@ -263,8 +263,8 @@ class FeatureAmplitudeRatios1D():
 
         # dist_vec is in mm
         nr_sensors, data_len, win_len = arr.shape
-        start = m2idx(options["Start"], dist_vec)
-        stop = min(m2idx(options["Stop"], dist_vec), data_len)
+        start = distance2idx(options["Start"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec)
 
         if start >= stop:
             return None
@@ -301,6 +301,7 @@ class FeatureSweep:
             ("Start", 0.2, [0.06, 7], float),
             ("Stop", 0.4, [0.06, 7], float),
             ("Down sample", 8, [1, 124], int),
+            ("Flip", False, None, bool),
         ]
 
     def extract_feature(self, win_data, win_params):
@@ -315,16 +316,21 @@ class FeatureSweep:
 
         # dist_vec is in mm
         data_len, win_len = arr.shape
-        start = m2idx(options["Start"], dist_vec)
-        stop = min(m2idx(options["Stop"], dist_vec), data_len)
+        start = distance2idx(options["Start"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec)
         downsampling = int(max(1, options["Down sample"]))
 
         if start >= stop:
             return None
 
-        data = {
-            "segment": arr[start:stop:downsampling, :],
-        }
+        if options["Flip"]:
+            data = {
+                "segment": np.flip(arr[start:stop:downsampling, :], 0),
+            }
+        else:
+            data = {
+                "segment": arr[start:stop:downsampling, :],
+            }
 
         return data
 

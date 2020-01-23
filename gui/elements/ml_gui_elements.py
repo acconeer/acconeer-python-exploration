@@ -879,6 +879,7 @@ class FeatureSelectFrame(QFrame):
         feat_map[feat_map > 254] = 254
 
         self.feat_plot.updateImage(feat_map.T, levels=(0, 256))
+        self.feat_plot_image.setYRange(0, feat_map.shape[0])
 
         return
 
