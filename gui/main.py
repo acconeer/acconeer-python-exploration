@@ -1296,6 +1296,7 @@ class GUI(QMainWindow):
                 self.control_section.show()
                 self.feature_section.button_event(override=False)
                 self.feature_section.show()
+                self.module_dd.hide()
                 self.buttons["start"].setText("Start extraction")
                 self.textboxes["sweep_buffer_ml"].show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
