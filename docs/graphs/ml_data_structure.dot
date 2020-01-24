@@ -1,0 +1,62 @@
+digraph {
+  pad=0.1
+  ranksep=0.4
+  nodesep=0.4
+  bgcolor="#ffffff00"
+  fontname=sans
+  fontsize=14
+  style=rounded
+  compound=true
+  node [fontname=sans, fontsize=12, shape=record, style=rounded]
+
+
+  subgraph cluster_1 {
+    session [label="<f0> sweep_data|<f1>feature_list|<f2>frame_settings|<f3>sensor_conf|<f4> frame_data"]
+    label="Deep learning session file";
+    graph[style=rounded];
+  }
+
+  subgraph cluster_2 {
+      sensor [label="<f0>sensor_conf|<f1>sensor_frame_data|<f2>service_info"]
+      label="Sensor frame data";
+      graph[style=rounded];
+  }
+
+  subgraph cluster_3 {
+    f_list [label="<f0>current_frame|<f1>frame_markers|<f2> frame_info|<f3>feature_list|<f4> frame_list"];
+    label="List of feature frames";
+    graph[style=rounded];
+  }
+
+  subgraph cluster_4 {
+    frame [label="<f0> label|<f1> frame_nr|<f2> feature_map|<f3> frame_marker|<f4> sweep_counter|<f5> sweep_counter_number|<f6> calibration"]
+    label="Individual feature frame data";
+    graph[style=rounded];
+  }
+
+  empty_1 [style=invis]
+
+  session:f0 -> empty_1 [style=invis]
+
+  empty_1 -> sensor:f1  [style=invis]
+
+  session:f0 -> sensor:f1 [lhead=cluster_2];
+
+  empty_2 [style=invis]
+
+  sensor:f1 -> empty_2 [style=invis];
+
+  empty_2 -> f_list:f3 [style=invis];
+
+  session:f4 -> f_list:f2 [lhead=cluster_3];
+
+  empty_3 [style=invis]
+
+  f_list:f0 -> empty_3 [style=invis]
+
+  empty_3 -> frame:f0  [style=invis]
+
+  f_list:f4 -> frame:f4 [lhead=cluster_4, label="frame_list[x]"];
+  f_list:f0 -> frame:f4 [lhead=cluster_4, label="frame nr x"];
+
+}

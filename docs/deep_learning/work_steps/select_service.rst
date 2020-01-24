@@ -14,6 +14,7 @@ Description of tab areas (roughly in order of work flow):
 3. Configure sensor settings
 4. Start/Stop measurement or Save/Load/Replay previous measurement
 5. Service specific plotting of sensor data frames
+6. Number of sensor data frames and number of missed data frames
 
 
 At this point, we assume that you have familiarized yourself with the general functionality of our standard GUI and the general functionality of our sensor (see :ref:`sensor-intro`).

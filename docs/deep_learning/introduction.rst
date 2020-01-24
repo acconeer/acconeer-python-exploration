@@ -57,6 +57,7 @@ All Keras/Tensorflow related functionality, such as training and predicting, is 
 
 .. _ml_data_flow_overview:
 
+.. _ml-stand-alone:
 
 Stand-alone use of model
 ------------------------
