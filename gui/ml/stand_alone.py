@@ -77,7 +77,7 @@ def main():
         info, sweep = client.get_next()
 
         data = {
-            "iq_data": sweep,
+            "sweep_data": sweep,
             "sensor_config": config,
             "session_info": session_info,
         }

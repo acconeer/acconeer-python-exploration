@@ -148,9 +148,9 @@ class FeatureProcessing:
         n_sweeps = self.frame_size + 2 * self.frame_pad
 
         if mode == Mode.SPARSE:
-            num_sensors, point_repeats, data_len = data["iq_data"].shape
+            num_sensors, point_repeats, data_len = data["sweep_data"].shape
         else:
-            num_sensors, data_len = data["iq_data"].shape
+            num_sensors, data_len = data["sweep_data"].shape
 
         self.win_data = {
             'env_data': np.zeros((num_sensors, data_len, n_sweeps))
@@ -166,9 +166,9 @@ class FeatureProcessing:
     def add_sweep(self, data, win_idx=0):
         mode = data["sensor_config"].mode
         if mode == Mode.SPARSE:
-            self.win_data['sparse_data'][:, :, :, win_idx] = data['iq_data'][:, :, :]
+            self.win_data['sparse_data'][:, :, :, win_idx] = data['sweep_data'][:, :, :]
         else:
-            self.win_data['iq_data'][:, :, win_idx] = data['iq_data'][:, :]
+            self.win_data['iq_data'][:, :, win_idx] = data['sweep_data'][:, :]
 
         self.win_data['env_data'][:, :, win_idx] = data['env_ampl'][:, :]
 
@@ -350,14 +350,14 @@ class FeatureProcessing:
         for marker in range(frame_start, frame_stop):
             data_step = {
                 "sensor_config": data["sensor_config"],
-                "iq_data": record.data[marker],
+                "sweep_data": record.data[marker],
             }
             if mode == Mode.SPARSE:
                 data_step["env_ampl"] = np.abs(record.data[marker].mean(axis=1))
             else:
                 data_step["env_ampl"] = np.abs(record.data[marker])
             if data_step["env_ampl"].shape != self.win_data["env_data"].shape[0:2]:
-                data_step["iq_data"] = data_step["iq_data"][self.sensor_array]
+                data_step["iq_data"] = data_step["sweep_data"][self.sensor_array]
                 data_step["env_ampl"] = data_step["env_ampl"][self.sensor_array]
             self.roll_data(data)
             self.add_sweep(data_step)
@@ -434,7 +434,7 @@ class FeatureProcessing:
             data["x_mm"] *= 1000
 
         if data.get("env_ampl") is None:
-            sweep = data["iq_data"]
+            sweep = data["sweep_data"]
             if data["sensor_config"].mode == Mode.SPARSE:
                 data['env_ampl'] = sweep.mean(axis=1)
             else:
@@ -469,7 +469,7 @@ class FeatureProcessing:
                 detected = True
             return detected
 
-        num_sensors = data["iq_data"].shape[0]
+        num_sensors = data["sweep_data"].shape[0]
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
 
@@ -501,7 +501,7 @@ class FeatureProcessing:
             else:
                 motion_score = 0
                 for i in range(num_sensors):
-                    score = self.motion_processors[i].process(data["iq_data"][i, :, :])
+                    score = self.motion_processors[i].process(data["sweep_data"][i, :, :])
                     score = score["depthwise_presence"]
                     max_score = np.nanmax(score)
                     if max_score > motion_score:
@@ -627,20 +627,20 @@ class DataProcessor:
                     (self.num_sensors, self.data_len, self.image_buffer)
                 )
 
-        iq = sweep.copy()
+        sweep_data = sweep.copy()
 
         env = None
         if mode == Mode.SPARSE:
             env = sweep.mean(axis=1)
         else:
-            env = np.abs(iq)
+            env = np.abs(sweep_data)
 
         for s in range(self.num_sensors):
             self.hist_env[s, :, :] = np.roll(self.hist_env[s, :, :], 1, axis=1)
             self.hist_env[s, :, 0] = env[s, :]
 
         plot_data = {
-            "iq_data": iq,
+            "sweep_data": sweep_data,
             "env_ampl": env,
             "hist_env": self.hist_env,
             "sensor_config": self.sensor_config,
