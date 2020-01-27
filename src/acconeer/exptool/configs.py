@@ -239,6 +239,17 @@ class BaseServiceConfig(BaseSessionConfig):
         """,
     )
 
+    tx_disable = cb.BoolParameter(
+        label="Disable TX",
+        default_value=False,
+        order=3000,
+        category=cb.Category.ADVANCED,
+        help=r"""
+            Disable the radio transmitter. If used to measure noise, we recommended also switching
+            off noise level normalization (if applicable).
+        """,
+    )
+
     def check(self):
         alerts = []
 

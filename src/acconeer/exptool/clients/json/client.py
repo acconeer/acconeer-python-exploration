@@ -287,6 +287,7 @@ CONFIG_TO_CMD_KEY_MAP = {
     "sampling_mode": "sampling_mode",
     "sweeps_per_frame": "sweeps_per_frame",
     "sweep_rate": "sweep_rate",
+    "tx_disable": "tx_disable",
 }
 
 SESSION_HEADER_TO_INFO_KEY_REMAP = {

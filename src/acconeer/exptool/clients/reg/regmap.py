@@ -138,6 +138,7 @@ CONFIG_TO_STRIPPED_REG_NAME_MAP = {
     "sweeps_per_frame": "sweeps_per_frame",
     "noise_level_normalization": "noise_level_normalization",
     "maximize_signal_attenuation": "maximize_signal_attenuation",
+    "tx_disable": "tx_disable",
     "range_end": None,
     "range_interval": None,
     "sensor": None,
