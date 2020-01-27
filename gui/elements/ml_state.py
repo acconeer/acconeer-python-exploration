@@ -197,7 +197,7 @@ class MLState:
         if state in self.states:
             return self.states[state]
         else:
-            print("MLState: Unknown state {} requtested".format(state))
+            print("MLState: Unknown state {} requested".format(state))
             return None
 
     def add_status_widget(self, widget):

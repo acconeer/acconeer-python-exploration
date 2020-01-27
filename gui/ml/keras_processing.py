@@ -498,7 +498,7 @@ class MachineLearning():
                 data_labels = self.label_assignment(raw_labels, self.labels_dict)
                 output = self.model_dimensions["output"]
                 if self.label_num != output:
-                    message = "Output dimenions not matching:\nModel {} - Data {}".format(
+                    message = "Output dimensions not matching:\nModel {} - Data {}".format(
                         output,
                         self.label_num)
                     info["message"] = message + err_tip

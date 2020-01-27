@@ -978,7 +978,7 @@ class FeatureSidePanel(QFrame):
             "auto_thrshld_offset": QLabel("Thrshld/Offset:"),
             "dead_time": QLabel("Dead time:"),
             "save_load": QLabel("Save/load session data:"),
-            "batch_header": QLabel("Batch proccess session data:"),
+            "batch_header": QLabel("Batch process session data:"),
             "frame_settings": QLabel("Frame settings:"),
             "collection_mode": QLabel("Feature collection mode:"),
             "empty_1": QLabel(""),
@@ -3635,8 +3635,8 @@ class AugmentDataDialog(QDialog):
         self.offsets = []
         self.action = None
 
-        warn = QLabel("Don't use augmentation with history depentend data!")
-        description = QLabel("Select sweep offsets separeated by ',' to augment data:")
+        warn = QLabel("Don't use augmentation with history dependent data!")
+        description = QLabel("Select sweep offsets separated by ',' to augment data:")
         self.offsets_text = QLineEdit("-15, -10, 10, 15")
         layout.addWidget(warn)
         layout.addWidget(description)

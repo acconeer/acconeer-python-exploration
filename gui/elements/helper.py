@@ -92,7 +92,7 @@ class HandleAdvancedProcessData(QDialog):
         self.parent = parent
         self.data = None
 
-        # Examples only supporting loading of advacnded data
+        # Examples only supporting loading of advanced data
         loading_only_examples = []
 
         loading_only = False
@@ -241,8 +241,8 @@ class AdvancedSerialDialog(QDialog):
         texts = [
             "Please note:",
             (
-                "Overriding the baudrate disables automatic"
-                " detection and negotiation of baudrate."
+                "Overriding the baud rate disables automatic"
+                " detection and negotiation of baud rate."
             ),
             "Only use on special hardware.",
         ]
@@ -254,7 +254,7 @@ class AdvancedSerialDialog(QDialog):
 
         layout.addStretch(1)
 
-        self.cb = QCheckBox("Override baudrate", self)
+        self.cb = QCheckBox("Override baud rate", self)
         self.cb.stateChanged.connect(self.cb_state_changed)
         layout.addWidget(self.cb)
 
