@@ -5,6 +5,7 @@ from acconeer.exptool.modes import Mode
 
 import examples.processing.breathing as breathing_module
 import examples.processing.button_press as button_press_module
+import examples.processing.distance_detector as distance_detector_module
 import examples.processing.obstacle_detection as obstacle_detection_module
 import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_sparse as presence_detection_sparse_module
@@ -69,6 +70,7 @@ def multi_sensor_wrap(module):
     return obj
 
 
+multi_sensor_distance_detector_module = multi_sensor_wrap(distance_detector_module)
 multi_sensor_sparse_speed_module = multi_sensor_wrap(sparse_speed_module)
 multi_sensor_presence_detection_sparse_module = multi_sensor_wrap(presence_detection_sparse_module)
 
@@ -198,6 +200,15 @@ MODULE_INFOS = [
         button_press_module.get_sensor_config,
         button_press_module.ButtonPressProcessor,
         False,
+        False,
+    ),
+    ModuleInfo(
+        "envelope_distance",
+        "Distance Detector (envelope)",
+        multi_sensor_distance_detector_module,
+        multi_sensor_distance_detector_module.get_sensor_config,
+        multi_sensor_distance_detector_module.Processor,
+        True,
         False,
     ),
 ]
