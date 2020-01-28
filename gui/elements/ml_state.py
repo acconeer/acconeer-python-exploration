@@ -32,7 +32,9 @@ class MLState:
             gui = self.gui_handle
             self.model_data["frame_settings"] = gui.feature_sidepanel.get_frame_settings()
             self.model_data["feature_list"] = gui.feature_select.get_feature_list()
-            self.model_data["sensor_config"] = gui.get_sensor_config()
+            gui_sensor_conf = gui.get_sensor_config()
+            if gui_sensor_conf is not None:
+                self.model_data["sensor_config"] = gui_sensor_conf
         return self.model_data
 
     def get_model_source(self):
@@ -192,6 +194,12 @@ class MLState:
             next_text = "Collect data or load session/training/model data"
 
         self.update_widgets("next_step", next_text)
+
+        model_ready = self.get_state("model_ready")
+        trainnin_ready = self.get_state("training_data_ready")
+        if model_ready and trainnin_ready:
+            self.gui_handle.training_sidepanel.buttons["train"].setEnabled(True)
+            self.gui_handle.training_sidepanel.buttons["validate"].setEnabled(True)
 
     def get_state(self, state):
         if state in self.states:

@@ -2558,7 +2558,7 @@ class TrainingSidePanel(QFrame):
 
         # Make sure correct layer list is displayed
         self.gui_handle.model_select.update_layer_list(model_data["layer_list"])
-        self.gui_handle.model_select.allow_update(set_red=False)
+        self.gui_handle.model_select.allow_update(False)
         self.gui_handle.tab_parent.setCurrentIndex(TRAIN_TAB)
 
         ep = int(self.textboxes["epochs"].text())
@@ -2816,6 +2816,7 @@ class ModelSelectFrame(QFrame):
             model_ready = self.ml_state.get_model_status()
             training_ready = self.ml_state.get_training_data_status()
             if not model_ready and not training_ready:
+                self.gui_handle.model_select.allow_update(False)
                 self.gui_handle.error_message("Load model or training data first!")
             else:
                 layer_list = self.get_layer_list()
@@ -2824,7 +2825,7 @@ class ModelSelectFrame(QFrame):
                     self.set_layer_shapes(status["model_data"]["keras_layer_info"])
                     s = self.ml_state.get_model_source()
                     self.ml_state.set_model_data(status["model_data"], source=s)
-                    self.allow_update()
+                    self.allow_update(False)
                 else:
                     self.ml_state.set_model_data(None)
                     self.gui_handle.error_message(status["info"]["model_message"])
@@ -3073,11 +3074,16 @@ class ModelSelectFrame(QFrame):
             self.move_layer(layer_position - 1, value - 1)
 
         self.ml_state.set_state("layers_changed", True)
-        self.allow_update(set_red=True)
+        self.allow_update(allow=True, set_red=True)
 
         self.set_layer_shapes(None)
 
     def allow_update(self, allow=None, set_red=False):
+        # Sanity check status
+        training_ready = self.ml_state.get_training_data_status()
+        if allow and not training_ready:
+            allow = False
+
         if allow is not None:
             self.buttons["update"].setEnabled(allow)
 
@@ -3424,9 +3430,12 @@ class ModelOperations(QFrame):
             if model_ready:
                 if op == "clear_data":
                     self.keras_handle.clear_training_data()
+                    self.gui_handle.model_select.allow_update(False)
+                else:
+                    self.gui_handle.model_select.allow_update(
+                        self.ml_state.get_training_data_status()
+                    )
                 self.ml_state.set_model_data(None)
-            training_buttons["train"].setEnabled(False)
-            training_buttons["validate"].setEnabled(False)
             self.gui_handle.training.show_results(flush_data=True)
             self.gui_handle.training.update_data_table(None, None)
             self.gui_handle.training.update_confusion_matrix(None)
@@ -3521,9 +3530,30 @@ class ModelOperations(QFrame):
 
     def config_is_valid(self, show_warning=True):
         model_data = self.ml_state.get_model_data()
+
+        model_mode = None
+        if model_data.get('sensor_config', None) is not None:
+            config_mode = model_data["sensor_config"].mode
+            if config_mode == Mode.IQ:
+                model_mode = "IQ"
+            elif config_mode == Mode.ENVELOPE:
+                model_mode = "Envelope"
+            else:
+                model_mode = "Sparse"
+
+        # Make sure the GUI has a valid sensor config
+        gui_sensor_conf = self.gui_handle.get_sensor_config()
+        if gui_sensor_conf is None and model_data.get('sensor_config', None) is not None:
+            index = self.gui_handle.module_dd.findText(model_mode, QtCore.Qt.MatchFixedString)
+            if index >= 0:
+                self.gui_handle.module_dd.setCurrentIndex(index)
+                self.gui_handle.update_canvas()
+
         if not model_data["loaded"]:
-            self.gui_handle.warning_message("Model not loaded!")
+            if show_warning:
+                self.gui_handle.warning_message("Model not loaded!")
             return False
+
         if self.gui_handle.get_gui_state("server_connected"):
             available_sensors = self.gui_handle.get_sensors()
             required_sensors = model_data["sensor_config"].sensor
@@ -3540,19 +3570,12 @@ class ModelOperations(QFrame):
             self.gui_handle.set_sensors(model_data["sensor_config"].sensor)
 
         try:
-            config_mode = model_data["sensor_config"].mode
-            if config_mode == Mode.IQ:
-                mode = "IQ"
-            elif config_mode == Mode.ENVELOPE:
-                mode = "Envelope"
-            else:
-                mode = "Sparse"
-            if self.gui_handle.module_dd.currentText() != mode:
+            if model_mode is not None and self.gui_handle.module_dd.currentText() != model_mode:
                 warning = "Service mismatch detected!\n"
-                warning += "The model needs {}! Change to correct service?".format(mode)
+                warning += "The model needs {}! Change to correct service?".format(model_mode)
                 if show_warning and not self.gui_handle.warning_message(warning):
                     return False
-                index = self.gui_handle.module_dd.findText(mode, QtCore.Qt.MatchFixedString)
+                index = self.gui_handle.module_dd.findText(model_mode, QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.gui_handle.module_dd.setCurrentIndex(index)
                     self.gui_handle.update_canvas()

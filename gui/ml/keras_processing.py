@@ -41,16 +41,29 @@ class MachineLearning():
     def __init__(self, model_dimension=2):
         self.labels_dict = None
         self.model = None
-        self.model_data = {"loaded": False}
         self.training_data = {"loaded": False}
         self.test_data = {"loaded": False}
+
+        self.model_data = {
+            "loaded": False,
+            "y_labels": None,
+            "label_list": None,
+            "feature_list": None,
+            "sensor_config": None,
+            "frame_settings": None,
+            "model_input": None,
+            "model_output": None,
+            "nr_of_training_maps": None,
+            "layer_list": None,
+            "model_dimensions": None,
+        }
+
         self.model_dimensions = {
             "dimensionality": model_dimension,
             "input": None,
             "output": None,
             "init_shape": None,
         }
-        self.model_params = None
 
     def set_model_dimensionality(self, dim):
         if isinstance(dim, int):
@@ -135,14 +148,13 @@ class MachineLearning():
             print("\nInitiating 2d model with {:d}x{:d} inputs"
                   " and {:d} outputs".format(*input_dimensions, self.label_num))
 
-        if "layer_list" not in self.model_params:
+        layer_list = self.model_data.get("layer_list", None)
+        if layer_list is None:
             if model_dim == 1:
                 self.init_default_model_1D()
             elif model_dim == 2:
                 self.init_default_model_2D()
-            return {"loaded": True, "model_status": ""}
-        else:
-            layer_list = self.model_params["layer_list"]
+            return {"loaded": True, "model_message": ""}
 
         inputs = Input(shape=input_dimensions)
         nr_layers = len(layer_list)
@@ -173,7 +185,7 @@ class MachineLearning():
                 elif idx > 0 and idx < nr_layers - 1:
                     x = cb(**options)(x)
                 else:
-                    options.pop("units")
+                    options.pop("units", None)
                     predictions = cb(self.label_num, **options)(x)
             except Exception as e:
                 return {
@@ -444,13 +456,6 @@ class MachineLearning():
             data_type = "test"
 
         if data_type == "training":
-            self.model_params = {
-                "feature_list": feature_lists[0],
-                "frame_settings": frame_settings_list[0],
-                "sensor_config": stored_configs[0],
-                "model_dimensions": self.model_dimensions,
-                "layer_list": layer_list,
-            }
             if model_exists:
                 self.model_dimensions["input"] = self.model.input_shape[1:-1]
                 self.model_dimensions["output"] = self.model.output_shape[-1]
@@ -460,7 +465,7 @@ class MachineLearning():
                 if feature_map_dims[0][1] == 1:
                     self.model_dimensions["dimensionality"] = 1
         else:
-            if self.model_params is None:
+            if not self.training_data["loaded"]:
                 info["message"] = "Load training data first!"
                 return {"info": info}
 
@@ -491,7 +496,7 @@ class MachineLearning():
         self.model_dimensions["nr_of_training_maps"] = feature_map_data.shape[0]
 
         if data_type == "training":
-            if not model_exists:
+            if not model_exists or not self.label_num:
                 data_labels, self.label_num, self.labels_dict = self.label_conversion(raw_labels)
                 self.model_dimensions["output"] = self.label_num
             else:
@@ -511,6 +516,7 @@ class MachineLearning():
         if data_type == "training":
             self.model_dimensions["init_shape"] = feature_map_data.shape[1:]
             if not model_exists:
+                self.model_data["layer_list"] = layer_list
                 model_status = self.clear_model(reinit=True)
             else:
                 model_status = {"loaded": True, "model_message": ""}
@@ -525,18 +531,6 @@ class MachineLearning():
             for f in files_failed:
                 message += f + "\n"
 
-        self.model_data = {
-            "loaded": model_status["loaded"],
-            "y_labels": label_categories,
-            "label_list": self.get_label_list(),
-            "feature_list": self.model_params["feature_list"],
-            "sensor_config": self.model_params["sensor_config"],
-            "frame_settings": self.model_params["frame_settings"],
-            "model_input": self.model_dimensions["input"],
-            "model_output": self.model_dimensions["output"],
-            "nr_of_training_maps": self.model_dimensions["nr_of_training_maps"],
-        }
-
         loaded_data = self.training_data
         if data_type == "training":
             self.training_data = {
@@ -544,6 +538,21 @@ class MachineLearning():
                 "x_data": feature_map_data,
                 "raw_labels": raw_labels,
             }
+            model_data = {
+                "loaded": model_status["loaded"],
+                "y_labels": label_categories,
+                "label_list": self.get_label_list(),
+                "feature_list": feature_lists[0],
+                "frame_settings": frame_settings_list[0],
+                "sensor_config": stored_configs[0],
+                "model_dimensions": self.model_dimensions,
+                "layer_list": layer_list,
+                "model_input": self.model_dimensions["input"],
+                "model_output": self.model_dimensions["output"],
+                "nr_of_training_maps": self.model_dimensions["nr_of_training_maps"],
+            }
+            for key in model_data:
+                self.model_data[key] = model_data[key]
         else:
             self.test_data = {
                 "loaded": True,
@@ -553,7 +562,6 @@ class MachineLearning():
             loaded_data = self.test_data
 
         info = {
-            "data": data,
             "success": True,
             "message": message,
             "model_initialized": model_status["loaded"],
@@ -622,12 +630,6 @@ class MachineLearning():
                 "message": message,
             }
         else:
-            self.model_params = {
-                "feature_list": feature_list,
-                "frame_settings": frame_settings,
-                "sensor_config": sensor_config,
-                "model_dimensions": self.model_dimensions,
-            }
             gui_layer_conf = layer_definitions.get_layers()
             layer_list = []
             for l in self.model.layers:
@@ -697,6 +699,7 @@ class MachineLearning():
             "non_trainable": counted["non_trainable"],
             "model_input": self.model_dimensions["input"],
             "model_output": self.model_dimensions["output"],
+            "model_dimensions": self.model_dimensions,
         }
         try:
             self.model_data["nr_of_training_maps"] = self.model_dimensions["nr_of_training_maps"]
@@ -727,7 +730,7 @@ class MachineLearning():
             return {"loaded": False, "model_message": "Nothing to reinitialize!"}
 
     def update_model_layers(self, layer_list):
-        self.model_params["layer_list"] = layer_list
+        self.model_data["layer_list"] = layer_list
         model_status = self.clear_model(reinit=True)
 
         info = {
@@ -761,7 +764,7 @@ class MachineLearning():
         K.set_session(session)
 
     def clear_training_data(self):
-        self.model_params["y_labels"] = None
+        self.model_data["y_labels"] = None
         self.training_data = {"loaded": False}
         self.test_data = {"loaded": False}
 
