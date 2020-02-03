@@ -72,6 +72,8 @@ status:
       value: 524288
     error_activation:
       value: 1048576
+    error_state:
+      value: 2097152
 uart_baudrate:
   address: 7
   type: uint32
@@ -182,6 +184,8 @@ sensor_power_mode:
       value: 2
     active:
       value: 3
+    hibernate:
+      value: 4
 tx_disable:
   modes:
   - envelope
