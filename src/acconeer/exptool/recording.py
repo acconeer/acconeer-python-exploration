@@ -193,16 +193,13 @@ def unpack(packed: dict) -> Record:
 
 
 def load_npz(filename: str) -> Record:
-    f = np.load(filename)
-
     packed = {}
-    for k in f.files:
-        v = f[k]
+    with np.load(filename, allow_pickle=False) as f:
+        for k, v in f.items():
+            if v.dtype.type is np.unicode_:
+                v = str(v)
 
-        if v.dtype.type is np.unicode_:
-            v = str(v)
-
-        packed[k] = v
+            packed[k] = v
 
     return unpack(packed)
 
