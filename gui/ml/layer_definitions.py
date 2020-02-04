@@ -11,6 +11,21 @@ from keras.layers import (
 )
 
 
+activations = [
+    "linear",
+    "relu",
+    "softmax",
+    "exponential",
+    "elu",
+    "selu",
+    "softplus",
+    "softsign",
+    "tanh",
+    "sigmoid",
+    "hard_sigmoid",
+]
+
+
 def get_layers():
     layers = {
         "conv1d": {
@@ -20,8 +35,8 @@ def get_layers():
             "params": {
                 "filters": [32, int, [0, np.inf]],
                 "kernel_size": [8, int, [1, np.inf]],
-                "padding": ["drop_down", ["same", "None", "even"]],
-                "activation": ["drop_down", ["relu"]],
+                "padding": ["drop_down", ["same", "valid", "causal"]],
+                "activation": ["drop_down", activations],
             },
         },
         "conv2d": {
@@ -32,8 +47,8 @@ def get_layers():
                 "filters": [32, int, [0, np.inf]],
                 "kernel_size": [(2, 2), int, [1, np.inf]],
                 "strides": [(1, 1), int, [0, np.inf]],
-                "padding": ["drop_down", ["same", "even", "None"]],
-                "activation": ["drop_down", ["relu"]],
+                "padding": ["drop_down", ["same", "valid"]],
+                "activation": ["drop_down", activations],
             },
         },
         "gaussian_noise": {
@@ -78,7 +93,7 @@ def get_layers():
             "dimensions": 0,
             "params": {
                 "units": [0, int, [0, np.inf]],
-                "activation": ["drop_down", ["softmax"]],
+                "activation": ["drop_down", activations],
             },
         },
     }

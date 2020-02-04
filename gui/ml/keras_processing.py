@@ -388,9 +388,10 @@ class MachineLearning():
             result.append(res)
         return result
 
-    def label_conversion(self, labels, labels_dict={}):
+    def label_conversion(self, labels):
         label_num = 0
         converted_labels = np.zeros(len(labels))
+        labels_dict = {}
         for i, label in enumerate(labels):
             try:
                 labels_dict[label]

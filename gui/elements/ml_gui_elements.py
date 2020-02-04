@@ -1504,9 +1504,14 @@ class FeatureSidePanel(QFrame):
             "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
         }
         if "session" in action:
+            if self.gui_handle.data is None or self.gui_handle.ml_data is None:
+                print("Missing data, cannot save session!")
+                return
+
             record = self.gui_handle.data
 
-            self.gui_handle.ml_data.pop("sensor_config")
+            # Temporarily remove sensor_config object for saving
+            sensor_config = self.gui_handle.ml_data.pop("sensor_config")
 
             packed_record = recording.pack(record)
             title = "Save session data"
@@ -1522,7 +1527,11 @@ class FeatureSidePanel(QFrame):
             np.save(filename, data, allow_pickle=True)
         except Exception as e:
             self.gui_handle.error_message("Failed to save settings:\n {}".format(e))
-            return
+
+        if "session" in action:
+            self.gui_handle.ml_data["sensor_config"] = sensor_config
+
+        return
 
     def calibration_handling(self):
         action = self.sender().text().lower()
@@ -2184,15 +2193,22 @@ class TrainingFrame(QFrame):
         self.label_widget.setRowCount(0)
         self.label_widget.setColumnCount(0)
 
-        if label_cat is None:
+        if not loaded and label_cat is None:
+            return
+
+        if label_list is None:
             return
 
         try:
-            label_cat = np.asarray(label_cat)
-            if loaded:
+            if loaded and label_cat is None:
                 label_nums = ["N/A"] * len(label_list)
             else:
                 label_nums = [int(np.sum(label_cat[:, i])) for i in range(label_cat.shape[1])]
+                if len(label_cat[0]) != len(label_list):
+                    print("Error: Found {} categories, but {} labels!".format(
+                        len(label_cat[0]), len(label_list))
+                    )
+                    return
             row = len(label_list)
             col = 1
         except Exception as e:
@@ -2979,6 +2995,10 @@ class ModelSelectFrame(QFrame):
                     params[text] = QComboBox(self)
                     for item in p[1]:
                         params[text].addItem(item)
+                    if "conv" in key.lower():
+                        params[text].setCurrentIndex(1)
+                    else:
+                        params[text].setCurrentIndex(2)
                     edit = params[text].currentIndexChanged
                 else:
                     value, data_type, limits = p
@@ -3087,9 +3107,9 @@ class ModelSelectFrame(QFrame):
         if allow is not None:
             self.buttons["update"].setEnabled(allow)
 
-        if set_red and self.buttons["update"].isEnabled():
+        if set_red and allow:
             c = "red"
-        elif self.buttons["update"].isEnabled():
+        elif allow:
             c = "black"
         else:
             c = "grey"
@@ -3291,7 +3311,7 @@ class ModelSelectFrame(QFrame):
                         if isinstance(box, QtWidgets.QCheckBox):
                             box.setChecked(saved_value[0])
                         elif isinstance(box, QtWidgets.QComboBox):
-                            index = box.findText(saved_value[0], QtCore.Qt.MatchFixedString)
+                            index = box.findText(saved_value, QtCore.Qt.MatchFixedString)
                             if index >= 0:
                                 box.setCurrentIndex(index)
                         elif isinstance(box, QtWidgets.QLineEdit):
@@ -3346,7 +3366,10 @@ class ModelSelectFrame(QFrame):
                 child.widget().deleteLater()
 
     def update_layer_params(self, limits, data_type, default):
-        # ToDo
+        self.ml_state.set_state("layers_changed", True)
+        self.allow_update(allow=True, set_red=True)
+
+        self.set_layer_shapes(None)
         return
 
 
@@ -3766,6 +3789,7 @@ class ModelLayerSpinBox(QFrame):
         self.value = value
         self.cb = callback
         width = 60
+        arrow_width = 30
         height = 25
 
         self.grid = QtWidgets.QGridLayout(self)
@@ -3784,14 +3808,14 @@ class ModelLayerSpinBox(QFrame):
         self.up.setArrowType(QtCore.Qt.UpArrow)
         self.grid.addWidget(self.up, 0, 0)
         self.up.clicked.connect(partial(self._update, "up"))
-        self.up.setFixedWidth(width)
+        self.up.setFixedWidth(arrow_width)
         self.up.setFixedHeight(height)
 
         self.down = QToolButton()
         self.down.setArrowType(QtCore.Qt.DownArrow)
         self.grid.addWidget(self.down, 1, 0)
         self.down.clicked.connect(partial(self._update, "down"))
-        self.down.setFixedWidth(width)
+        self.down.setFixedWidth(arrow_width)
         self.down.setFixedHeight(height)
 
         self.check = QCheckBox("Active", self)

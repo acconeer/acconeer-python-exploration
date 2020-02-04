@@ -6,7 +6,7 @@ Acconeer's deep learning interface (DLI) gives you the possibility to quickly co
 Using our DLI, you should be able to evaluate your use-case within a few hours, without writing a single line of code; all steps required to train and live-test a model are integrated into the DLI.
 It uses Keras as front-end for Tensorflow and the main requirement is to have a basic understanding of radar and how you could utilize our radar signals to realize your use-case.
 Common use-cases are gesture detection for control of electronic devices or material detection for use in robotics.
-We have a dedicated repository for deep learning examples on our `GitHub <https://github.com/shumatech/BOSSA>`_ page, where you can get ideas of how to approach your specific use-case.
+We have a dedicated repository for deep learning examples on our `GitHub <https://github.com/acconeer/acconeer-deep-learning-examples>`_ page, where you can get ideas of how to approach your specific use-case.
 
 For our deep learning examples and in general, the basic idea is to convert the sensor data into a 1 or 2 dimensional arrays, much like ordinary images.
 For training a Keras model, each of these images is tagged with a label, such as "move_hand_to_left" or "carpet".

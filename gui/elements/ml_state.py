@@ -123,6 +123,9 @@ class MLState:
         else:
             state = model_data["loaded"]
             self.model_data = model_data
+            if state and source is None:
+                source = "internal"
+
         self.set_state("layers_changed", False)
         self.set_state("settings_locked", state)
         self.set_state("model_file", source)
