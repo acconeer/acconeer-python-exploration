@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QProgressBar,
     QPushButton,
     QRadioButton,
     QSlider,
@@ -48,6 +49,7 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 HERE = os.path.abspath(os.path.join(HERE, '..'))
 DEFAULT_MODEL_FILENAME_2D = os.path.join(HERE, "ml", "default_layers_2D.yaml")
 TRAIN_TAB = 5
+FEATURE_EXTRACT_TAB = 2
 REMOVE_BUTTON_STYLE = (
     "QPushButton:pressed {background-color: red;}"
     "QPushButton:hover:!pressed {background-color: lightcoral;}"
@@ -953,6 +955,8 @@ class FeatureExtractFrame(QFrame):
 
 
 class FeatureSidePanel(QFrame):
+    sig_scan = pyqtSignal(str, str, object)
+
     def __init__(self, parent, gui_handle):
         super().__init__(parent)
 
@@ -965,7 +969,7 @@ class FeatureSidePanel(QFrame):
         self.setLayout(self.grid)
         self.last_filename = None
         self.last_folder = None
-        self.batch_params = None
+        self.file_list = None
 
         self.format_error = ErrorFormater()
 
@@ -1108,12 +1112,12 @@ class FeatureSidePanel(QFrame):
         self.grid.addWidget(self.h_lines["h_line_3"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["load_session"], self.increment(), 0)
         self.grid.addWidget(self.buttons["save_session"], self.num, 1)
+        self.grid.addWidget(self.labels["loaded_file"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.labels["empty_3"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.labels["batch_header"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.h_lines["h_line_4"], self.increment(), 0, 1, 2)
         self.grid.addWidget(self.buttons["load_batch"], self.increment(), 0)
         self.grid.addWidget(self.buttons["process_batch"], self.num, 1)
-        self.grid.addWidget(self.labels["loaded_file"], self.increment(), 0, 1, 2)
 
         self.textboxes["frame_size"].setEnabled(False)
         self.textboxes["update_rate"].setEnabled(False)
@@ -1472,13 +1476,10 @@ class FeatureSidePanel(QFrame):
             error_text = self.format_error.error_to_text(e)
             error_handle("Failed to load frame settings:<br> {}".format(error_text))
 
-    def save_data(self, filename=None):
+    def save_data(self, filename=None, action="session"):
         feature_list = self.gui_handle.feature_select.get_feature_list()
-        action = self.sender().text()
 
-        if filename:
-            action = "session"
-        else:
+        if action == "settings":
             title = "Save feature settings"
             fname = 'ml_feature_settings_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
             if "session" in action:
@@ -1499,11 +1500,12 @@ class FeatureSidePanel(QFrame):
                 return
             self.last_folder = os.path.split(filename)[0]
 
-        data = {
-            "feature_list": feature_list,
-            "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
-        }
-        if "session" in action:
+            data = {
+                "feature_list": feature_list,
+                "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
+            }
+
+        elif action == "session":
             if self.gui_handle.data is None or self.gui_handle.ml_data is None:
                 print("Missing data, cannot save session!")
                 return
@@ -1528,7 +1530,8 @@ class FeatureSidePanel(QFrame):
         except Exception as e:
             self.gui_handle.error_message("Failed to save settings:\n {}".format(e))
 
-        if "session" in action:
+        # Restore sensor config object
+        if action == "session":
             self.gui_handle.ml_data["sensor_config"] = sensor_config
 
         return
@@ -1585,108 +1588,92 @@ class FeatureSidePanel(QFrame):
             filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
                 self, title, "", "NumPy data files (*.npy)", options=options)
             if filenames:
-                self.batch_params = {
-                    "file_list": filenames,
-                }
+                self.file_list = filenames
                 self.buttons["process_batch"].setEnabled(True)
             else:
-                self.patch_params = None
+                self.file_list = None
                 self.buttons["process_batch"].setEnabled(False)
         else:
-            if self.batch_params is None:
+            if self.file_list is None:
                 self.buttons["process_batch"].setEnabled(False)
                 return
-            else:
-                pass
-            overwrite_label = False
-            skipped_files = []
 
             dialog = BatchProcessDialog(self)
             dialog.exec_()
 
-            new_label = dialog.get_state()
+            batch_params = dialog.get_state()
 
-            if new_label is None:
+            if not batch_params["process"]:
                 return
-            elif isinstance(new_label, str):
-                overwrite_label = True
-                self.gui_handle.feature_extract.set_label(new_label)
+            else:
+                batch_params["file_list"] = self.file_list
 
             dialog.deleteLater()
 
-            first = True
-            for filename in enumerate(self.batch_params["file_list"]):
-                filename = filename[1]
-                try:
-                    data = np.load(filename, allow_pickle=True)
-                except Exception as e:
-                    print(e)
-                    skipped_files.append((filename, "Failed to load"))
-                    continue
+            batch_params["gui_handle"] = self.gui_handle
 
-                sweep_data = recording.unpack(data.item()["sweep_data"])
-                frame_data = data.item()["frame_data"]
-                sensor_config = data.item()["sensor_config"]
-                data_len = len(sweep_data.data.data)
+            if batch_params["processing_mode"] == "all":
+                self.gui_handle.tab_parent.setCurrentIndex(FEATURE_EXTRACT_TAB)
 
-                if first:
-                    first = False
-                    conf = configs.load(sensor_config)
-                    self.gui_handle.load_gui_settings_from_sensor_config(conf)
-                    module_info = MODULE_KEY_TO_MODULE_INFO_MAP[sweep_data.module_key]
-                    index = self.gui_handle.module_dd.findText(
-                        module_info.label,
-                        QtCore.Qt.MatchFixedString
-                    )
-                    if self.gui_handle.module_dd.currentIndex() == 0:
-                        self.gui_handle.module_dd.setCurrentIndex(index)
-                    elif index != self.gui_handle.module_dd.currentIndex():
-                        print("Module mismatch!!!")
-                        return
-                else:
-                    pass
+            self.threaded_batch_process = Threaded_BatchProcess(
+                batch_params,
+                self.gui_handle,
+                parent=self
+            )
+            self.threaded_batch_process.sig_scan.connect(self.thread_receive)
+            self.sig_scan.connect(self.threaded_batch_process.receive)
+            self.threaded_batch_process.start()
 
-                if not overwrite_label:
-                    try:
-                        self.gui_handle.feature_extract.set_label(
-                            frame_data["ml_frame_data"]["current_frame"]["label"]
-                        )
-                    except Exception:
-                        skipped_files.append((filename, "No label"))
-                        continue
+            self.progress_bar = ProgressBar(self.threaded_batch_process.receive)
+            self.progress_bar.exec_()
+            self.threaded_batch_process.receive("stop", "", "")
+            try:
+                self.progress_bar.deleteLater()
+            except Exception:
+                # Might be closed elsewhere
+                pass
 
-                self.gui_handle.textboxes["sweep_buffer"].setText(str(data_len))
-                self.gui_handle.buttons["replay_buffered"].setEnabled(True)
-                self.gui_handle.set_sensors(conf.sensor)
-                self.gui_handle.data = sweep_data
-                self.gui_handle.ml_data = frame_data
-
-                print("Found data with {} sweeps and {} feature frames.".format(
-                    data_len,
-                    len(frame_data["ml_frame_data"]["frame_list"]))
-                )
-
-                try:
-                    self.gui_handle.buttons["replay_buffered"].click()
-                    time.sleep(0.5)
-                    while self.gui_handle.buttons["stop"].isEnabled():
-                        QApplication.processEvents()
-                        pass
-                except Exception as e:
-                    print(e)
-                    skipped_files.append((filename, "Processing failed"))
-                    continue
-
-                try:
-                    f = filename[:-3] + "_batch_processed.npy"
-                    self.save_data(filename=f)
-                except Exception as e:
-                    print(e)
-                    skipped_files.append((filename, "Failed to save"))
-                    continue
-
-            for skipped in skipped_files:
+    def thread_receive(self, message_type, message, data=None):
+        if "update_data" in message_type:
+            self.gui_handle.textboxes["sweep_buffer"].setText(str(data["sweep_buffer"]))
+            self.gui_handle.buttons["replay_buffered"].setEnabled(data["replay_buffered"])
+            self.gui_handle.set_sensors(data["sensors"])
+            self.gui_handle.data = data["sweep_data"]
+            self.gui_handle.ml_data = data["ml_data"]
+        elif message_type == "start_scan":
+            self.gui_handle.buttons["replay_buffered"].click()
+        elif message_type == "stop_scan":
+            self.gui_handle.buttons["stop"].click()
+        elif message_type == "update_sensor_config":
+            self.gui_handle.load_gui_settings_from_sensor_config(data)
+            self.gui_handle.set_sensors(data.sensor)
+        elif message_type == "set_module":
+            self.gui_handle.module_dd.setCurrentIndex(data)
+        elif message_type == "set_label":
+            self.gui_handle.feature_extract.set_label(data)
+        elif message_type == "update_progress":
+            try:
+                self.progress_bar.update_progress(data)
+            except Exception:
+                # Might have been closed already
+                pass
+        elif message_type == "update_file_info":
+            self.progress_bar.update_file_info(data)
+        elif message_type == "skipped_files":
+            for skipped in data:
                 print(skipped)
+        elif message_type == "batch_process_stopped":
+            try:
+                self.progress_bar.close()
+                self.progress_bar.deleteLater()
+            except Exception:
+                # Might be closed elsewhere
+                pass
+        elif message_type == "save_data":
+            self.gui_handle.feature_sidepanel.save_data(filename=data)
+        else:
+            print("Thread data not implemented! {}".format(message_type))
+            print(message_type, message, data)
 
 
 class FeatureInspectFrame(QFrame):
@@ -3741,28 +3728,61 @@ class BatchProcessDialog(QDialog):
         self.setModal(True)
         self.setWindowTitle("Batch processing")
 
-        layout = QVBoxLayout()
+        layout = QtWidgets.QGridLayout()
         self.setLayout(layout)
 
-        self.action = None
+        self.action = {
+            "process": False,
+            "new_label": None,
+            "processing_mode": "existing",
+        }
 
-        description = QLabel("Keep labels or use new label?")
         self.label_text = QLineEdit("")
-        layout.addWidget(description)
-        layout.addWidget(self.label_text)
-        layout.addStretch(1)
+        layout.addWidget(QLabel("Feature frame labels:"), 0, 0, 1, 2)
+        layout.addWidget(self.label_text, 1, 1)
+
+        self.radiobuttons_label = {
+            "keep": QRadioButton("Keep"),
+            "change": QRadioButton("Overwrite"),
+        }
+        for toggle in self.radiobuttons_label:
+            self.radiobuttons_label[toggle].toggled.connect(self.toggle_mode)
+        self.radiobuttons_label["keep"].setChecked(True)
+
+        radio_01 = QFrame()
+        radio_01.grid = QHBoxLayout()
+        radio_01.grid.setContentsMargins(0, 0, 0, 0)
+        radio_01.setLayout(radio_01.grid)
+        radio_01.grid.addWidget(self.radiobuttons_label["keep"])
+        radio_01.grid.addWidget(self.radiobuttons_label["change"])
+        layout.addWidget(radio_01, 1, 0)
+
+        layout.addWidget(QLabel(""), 2, 0)
+
+        layout.addWidget(QLabel("Feature frame processing mode:"), 3, 0, 1, 2)
+        self.radiobuttons_mode = {
+            "all": QRadioButton("Redo from all sweeps"),
+            "existing": QRadioButton("Change existing only"),
+        }
+        radio_02 = QFrame()
+        radio_02.grid = QHBoxLayout()
+        radio_02.grid.setContentsMargins(0, 0, 0, 0)
+        radio_02.setLayout(radio_02.grid)
+        radio_02.grid.addWidget(self.radiobuttons_mode["existing"])
+        radio_02.grid.addWidget(self.radiobuttons_mode["all"])
+        self.radiobuttons_mode["existing"].setChecked(True)
+        layout.addWidget(radio_02, 4, 0, 1, 2)
+
+        layout.addWidget(QLabel(""), 5, 0)
 
         buttons_widget = QWidget(self)
-        layout.addWidget(buttons_widget)
+        layout.addWidget(buttons_widget, 6, 0, 1, 2)
         hbox = QHBoxLayout()
         buttons_widget.setLayout(hbox)
+        process_btn = QPushButton("Process")
+        process_btn.clicked.connect(self.set_state)
+        hbox.addWidget(process_btn)
         hbox.addStretch(1)
-        keep_btn = QPushButton("Keep")
-        keep_btn.clicked.connect(self.set_state)
-        hbox.addWidget(keep_btn)
-        new_btn = QPushButton("Use new")
-        new_btn.clicked.connect(self.set_state)
-        hbox.addWidget(new_btn)
         cancel_btn = QPushButton("Cancel")
         cancel_btn.setDefault(True)
         cancel_btn.clicked.connect(self.set_state)
@@ -3771,13 +3791,22 @@ class BatchProcessDialog(QDialog):
     def get_state(self):
         return self.action
 
+    def toggle_mode(self):
+        mode = self.sender().text()
+        if "overwrite" in mode.lower():
+            change = True
+        else:
+            change = False
+        self.label_text.setEnabled(change)
+
     def set_state(self):
         mode = self.sender().text()
-        if mode == "Keep":
-            self.action = True
-            self.accept()
-        elif mode == "Use new":
-            self.action = self.label_text.text()
+        if mode == "Process":
+            self.action["process"] = True
+            if self.radiobuttons_label["change"].isChecked():
+                self.action["new_label"] = self.label_text.text()
+            if self.radiobuttons_mode["all"].isChecked():
+                self.action["processing_mode"] = "all"
             self.accept()
         else:
             self.reject()
@@ -3925,7 +3954,9 @@ class Threaded_Training(QtCore.QThread):
         self.stop = False
 
     def stop_thread(self):
-        self.quit()
+        self.stop = True
+        self.skip = True
+        self.stop()
 
     def run(self):
         self.training_params["plot_cb"] = self.update_plots
@@ -3961,3 +3992,253 @@ class Threaded_Training(QtCore.QThread):
 
     def stop_training(self):
         return self.stop
+
+
+class Threaded_BatchProcess(QtCore.QThread):
+    sig_scan = pyqtSignal(str, str, object)
+
+    def __init__(self, processing_params, gui_handle, parent=None):
+        QtCore.QThread.__init__(self, parent)
+
+        self.parent = parent
+        self.processing_params = processing_params
+        self.feature_process = None
+        self.skipped_files = []
+        self.gui_handle = gui_handle
+        self.finished.connect(self.stop_thread)
+        self.skip = False
+        self.stop = False
+        self.total_progress = 0
+        self.progress_steps = 0
+
+    def stop_thread(self):
+        self.emit("batch_process_stopped", "" , "")
+        self.emit("skipped_files", "", self.skipped_files)
+        self.quit()
+
+    def run(self):
+        nr_files = len(self.processing_params["file_list"])
+        self.progress_steps = 100 / nr_files
+        first = True
+        for i, filename in enumerate(self.processing_params["file_list"]):
+            self.skip = False
+            self.total_progress = i / nr_files * 100
+            self.update_progress()
+            if self.stop:
+                break
+            try:
+                data = np.load(filename, allow_pickle=True)
+            except Exception:
+                traceback.print_exc()
+                self.skipped_files.append((filename, "Failed to load"))
+                continue
+
+            try:
+                sweep_data = recording.unpack(data.item()["sweep_data"])
+                fdata = data.item()["frame_data"]
+                sensor_config = data.item()["sensor_config"]
+                conf = configs.load(sensor_config)
+                data_len = len(sweep_data.data.data)
+            except Exception:
+                traceback.print_exc()
+                self.skipped_files.append((filename, "Failed to load"))
+                continue
+
+            if first:
+                first = False
+                self.emit("update_sensor_config", "", conf)
+
+            module_info = MODULE_KEY_TO_MODULE_INFO_MAP[sweep_data.module_key]
+            index = self.gui_handle.module_dd.findText(
+                module_info.label,
+                QtCore.Qt.MatchFixedString
+            )
+
+            if self.gui_handle.module_dd.currentIndex() == 0:
+                self.emit("set_module", "", index)
+            elif index != self.gui_handle.module_dd.currentIndex():
+                self.skipped_files.append((filename, "Module mismatch"))
+                continue
+
+            if self.processing_params["new_label"] is None:
+                try:
+                    label = fdata["ml_frame_data"]["current_frame"]["label"]
+                except Exception:
+                    self.skipped_files.append((filename, "No label"))
+                    continue
+            else:
+                label = self.processing_params["new_label"]
+            self.emit("set_label", "", label)
+
+            # Keep backwards compatibility
+            if "iq_data" in fdata:
+                fdata["sweep_data"] = fdata.pop("iq_data")
+
+            updated_data = {
+                "sweep_buffer": data_len,
+                "replay_buffered": True,
+                "sensors": conf.sensor,
+                "sweep_data": sweep_data,
+                "ml_data": fdata,
+            }
+
+            info_txt = "Found data with {} sweeps and {} feature frames.".format(
+                data_len,
+                len(fdata["ml_frame_data"]["frame_list"]),
+            )
+            _, file = os.path.split(filename)
+            self.emit("update_file_info", "", [file, info_txt])
+
+            if self.processing_params["processing_mode"] == "existing":
+                res = self.change_existing_only(fdata, sweep_data, conf)
+                if res != "success":
+                    self.skipped_files.append((filename, "Processing {}".format(res)))
+                    continue
+                else:
+                    updated_data["ml_data"] = fdata
+                    self.emit("update_data", "", updated_data)
+            else:
+                self.emit("update_data", "", updated_data)
+                try:
+                    self.emit("start_scan", "", "")
+                    time.sleep(0.5)
+                    while self.gui_handle.buttons["stop"].isEnabled() and not self.skip:
+                        self.update_progress(self.gui_handle.num_recv_frames / data_len * 100)
+                        QApplication.processEvents()
+                except Exception:
+                    traceback.print_exc()
+                    self.skipped_files.append((filename, "Processing failed"))
+                    continue
+
+                if self.skip or self.stop:
+                    self.skipped_files.append((filename, "Processing skipped"))
+                    continue
+
+            try:
+                if not self.skip and not self.stop:
+                    f = filename[:-3] + "_batch_processed.npy"
+                    self.emit("save_data", "", f)
+            except Exception:
+                traceback.print_exc()
+                self.skipped_files.append((filename, "Failed to save"))
+                continue
+
+        self.stop_thread()
+
+    def change_existing_only(self, fdata, sweep_data, conf):
+        updated_feature_list = self.gui_handle.feature_select.get_feature_list()
+        fdata["ml_frame_data"]["feature_list"] = updated_feature_list
+        fdata["sensor_config"] = conf
+        if self.feature_process is None:
+            self.feature_process = feature_proc.FeatureProcessing(fdata["sensor_config"])
+            self.feature_process.set_feature_list(
+                updated_feature_list
+            )
+        frame_list = fdata["ml_frame_data"]["frame_list"]
+
+        nr_frames = len(frame_list)
+        try:
+            for nr, frame in enumerate(frame_list):
+                self.update_progress(file_progress=(nr / nr_frames * 100))
+                if self.processing_params["new_label"] is not None:
+                    label = self.processing_params["new_label"]
+                else:
+                    label = frame["label"]
+                frame_start = frame["frame_marker"]
+                fdata = self.feature_process.feature_extraction_window(
+                    fdata,
+                    sweep_data,
+                    frame_start,
+                    label
+                )
+                # Replace old feature frame with updated frame
+                f_modified = fdata["ml_frame_data"]["current_frame"]
+                for key in f_modified:
+                    frame[key] = f_modified[key]
+
+                if self.skip:
+                    return "skipped"
+        except Exception:
+            traceback.print_exc()
+            return "failed"
+        return "success"
+
+    def receive(self, message_type, message, data=None):
+        if message_type in ["stop", "skip_file"]:
+            if self.processing_params["processing_mode"] == "all":
+                self.emit("stop_scan", "", "")
+            if message_type == "stop":
+                self.stop = True
+                self.skip = True
+                self.stop_thread()
+            else:
+                self.skip = True
+        else:
+            print("Batch process thread received unknown signal: {}".format(message_type))
+
+    def emit(self, message_type, message, data=None):
+        self.sig_scan.emit(message_type, message, data)
+
+    def update_progress(self, file_progress=0):
+        total = self.total_progress + self.progress_steps * file_progress / 100
+        self.sig_scan.emit("update_progress", "", [file_progress, total])
+
+    def stop_processing(self):
+        return self.stop
+
+
+class ProgressBar(QDialog):
+    def __init__(self, thread_send):
+        super().__init__()
+
+        self.setMinimumWidth(500)
+        self.setModal(True)
+        self.setWindowTitle("Batch processing progress")
+
+        self.thread_send = thread_send
+
+        self.grid = QtWidgets.QGridLayout(self)
+        self.grid.setContentsMargins(1, 1, 1, 1)
+        self.grid.setSpacing(1)
+
+        self.total_progress = QProgressBar(self)
+        self.file_progress = QProgressBar(self)
+
+        self.btn_skip_file = QPushButton('Skip file', self)
+        self.btn_skip_file.clicked.connect(self.skip_file)
+
+        self.btn_cancel = QPushButton('Cancel', self)
+        self.btn_cancel.clicked.connect(self.cancel)
+
+        self.file_name = QLabel("")
+        self.file_props = QLabel("")
+
+        self.grid.addWidget(self.file_name, 0, 0, 1, 6)
+        self.grid.addWidget(QLabel(""), 1, 0)
+        self.grid.addWidget(self.file_props, 2, 0, 1, 6)
+        self.grid.addWidget(QLabel(""), 3, 0)
+        self.grid.addWidget(QLabel("Total:"), 4, 0)
+        self.grid.addWidget(self.total_progress, 4, 1, 1, 6)
+        self.grid.addWidget(QLabel(""), 5, 0)
+        self.grid.addWidget(QLabel("Current:"), 6, 0)
+        self.grid.addWidget(self.file_progress, 6, 1, 1, 6)
+        self.grid.addWidget(QLabel(""), 7, 0)
+        self.grid.addWidget(self.btn_skip_file, 8, 0)
+        self.grid.addWidget(self.btn_cancel, 8, 6)
+
+        self.grid.setRowStretch(1, 2)
+
+    def skip_file(self):
+        self.thread_send("skip_file", "", "")
+
+    def cancel(self):
+        self.thread_send("stop", "", "")
+        self.reject()
+
+    def update_progress(self, progress):
+        self.file_progress.setValue(progress[0])
+        self.total_progress.setValue(progress[1])
+
+    def update_file_info(self, info):
+        self.file_name.setText("File: " + info[0])
+        self.file_props.setText(info[1])
