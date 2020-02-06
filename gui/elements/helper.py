@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from collections import namedtuple
 
 import numpy as np
+import yaml
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QPixmap
@@ -132,13 +133,13 @@ class HandleAdvancedProcessData(QDialog):
         buttons_widget.setLayout(hbox)
         hbox.addStretch(1)
 
-        load_btn = QPushButton("Load")
+        load_btn = QPushButton("Load from file")
         load_btn.setDefault(True)
         load_btn.clicked.connect(self.load)
         hbox.addWidget(load_btn)
 
         if not loading_only:
-            spec_btn = QPushButton("Specify")
+            spec_btn = QPushButton("Set parameters")
             spec_btn.clicked.connect(self.get_params)
             hbox.addWidget(spec_btn)
 
@@ -189,6 +190,11 @@ class HandleAdvancedProcessData(QDialog):
                 [None, None, "Static adjacent factor"],
                 [None, None, "Moving max"],
             ]
+            helper_path = os.path.dirname(os.path.realpath(__file__))
+            param_file = os.path.join(
+                helper_path,
+                "../../examples/processing/obstacle_bg_params_dump.yaml"
+            )
 
         if self.inputs is not None:
             for idx, i in enumerate(self.inputs):
@@ -196,6 +202,14 @@ class HandleAdvancedProcessData(QDialog):
                 i[1] = QLineEdit("0", self)
                 parameter_wiget._grid.addWidget(i[0], idx, 0)
                 parameter_wiget._grid.addWidget(i[1], idx, 1)
+
+            try:
+                with open(param_file, 'r') as f_handle:
+                    params = yaml.load(f_handle)
+                self.set_params(params)
+            except Exception:
+                # Continue with empty inputs if file doesn't exist
+                print("Failed to set params from file")
 
         layout.addWidget(parameter_wiget)
 
@@ -218,11 +232,32 @@ class HandleAdvancedProcessData(QDialog):
                 elif "Moving PWL amplitude" in i[-1]:
                     self.data["moving_pwl_amp"].append(val)
                 elif "Static adjacent factor" in i[-1]:
-                    self.data["static_adjacent_factor"] = val
+                    self.data["static_adjacent_factor"] = [val]
                 elif "Moving max" in i[-1]:
-                    self.data["moving_max"] = val
+                    self.data["moving_max"] = [val]
 
         self.close_dialog()
+
+    def set_params(self, params):
+        if "obstacle" in self.mode.lower():
+            for key in params:
+                param = params[key]
+                for idx, val in enumerate(param):
+                    if key == "static_pwl_dist":
+                        input_key = "Static PWL distance {}".format(idx + 1)
+                    elif key == "static_pwl_amp":
+                        input_key = "Static PWL amplitude {}".format(idx + 1)
+                    elif key == "moving_pwl_dist":
+                        input_key = "Moving PWL distance {}".format(idx + 1)
+                    elif key == "moving_pwl_amp":
+                        input_key = "Moving PWL amplitude {}".format(idx + 1)
+                    elif key == "static_adjacent_factor":
+                        input_key = "Static adjacent factor"
+                    elif key == "moving_max":
+                        input_key = "Moving max"
+                    for entry in self.inputs:
+                        if entry[2] == input_key:
+                            entry[1].setText(str(val))
 
     def get_data(self):
         return self.data

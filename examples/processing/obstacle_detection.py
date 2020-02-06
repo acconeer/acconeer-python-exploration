@@ -1,7 +1,9 @@
 import logging
+import os
 
 import numpy as np
 import pyqtgraph as pg
+import yaml
 from numpy import pi, unravel_index
 from scipy.fftpack import fft, fftshift
 
@@ -21,6 +23,7 @@ FUSION_MAX_SHADOWS = 10                  # Max obstacles for sensor fusion shado
 FUSION_HISTORY = 30                      # Max history for sensor fusion
 BACKGROUND_PLATEAU_INTERPOLATION = 0.25  # Default plateau for background parameterization
 BACKGROUND_PLATEAU_FACTOR = 1.25         # Default factor for background parameterization
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 def main():
@@ -188,18 +191,23 @@ def get_processing_config():
             "type": float,
             "advanced": True,
         },
-        "background_map": {
-            "name": "Show background",
-            "value": True,
-            "advanced": True,
-        },
         "use_parameterization": {
             "name": "Use bg parameterization",
             "value": False,
             "advanced": True,
         },
+        "background_map": {
+            "name": "Show background",
+            "value": True,
+            "advanced": True,
+        },
         "threshold_map": {
             "name": "Show threshold map",
+            "value": False,
+            "advanced": True,
+        },
+        "show_line_outs": {
+            "name": "Show extra line outs",
             "value": False,
             "advanced": True,
         },
@@ -284,6 +292,7 @@ class ObstacleDetectionProcessor:
         self.fusion_history = FUSION_HISTORY
         self.fusion_max_shadows = FUSION_MAX_SHADOWS
         self.use_bg_parameterization = processing_config["use_parameterization"]["value"]
+        self.bg_params = []
 
     def process(self, sweep):
         if len(sweep.shape) == 1:
@@ -341,10 +350,13 @@ class ObstacleDetectionProcessor:
                     try:
                         for s in range(nr_sensors):
                             # Generate background from piece-wise-linear (pwl) interpolation
+                            self.bg_params.append(self.saved_bg)
                             self.generate_background_from_pwl_params(
                                 self.fft_bg[s, :, :],
                                 self.saved_bg
                             )
+                            if s == 0:
+                                self.dump_bg_params_to_yaml()
                             self.use_bg = False
                             self.use_bg_parameterization = False
                         log.info("Using saved parameterized FFT background data!")
@@ -376,28 +388,29 @@ class ObstacleDetectionProcessor:
             signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
             fft_psd[s, :, :] = np.square(np.abs(signalFFT))
             signalPSD = fft_psd[s, :, :]
+
             if self.use_bg and self.sweep_index == self.fft_len - 1:
                 self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
                 if s == nr_sensors - 1:
                     self.bg_avg += 1
                     if self.bg_avg == self.use_bg and self.use_bg_parameterization:
                         for i in range(nr_sensors):
-                            bg_params = self.parameterize_bg(self.fft_bg[i, :, :])
-                            print("Background parameters for sensor {}:".format(i))
-                            for param in bg_params:
-                                print("{}: {}".format(param, bg_params[param]))
+                            self.bg_params.append(self.parameterize_bg(self.fft_bg[i, :, :]))
+                            # only dump first sensor params
+                            if i == 0:
+                                self.dump_bg_params_to_yaml()
                             if self.use_bg_parameterization:
                                 self.generate_background_from_pwl_params(
                                     self.fft_bg[s, :, :],
-                                    bg_params
+                                    self.bg_params[s]
                                 )
 
-            signalPSD -= self.fft_bg[s, :, :]
-            signalPSD[signalPSD < 0] = 0
+            signalPSD_sub = signalPSD - self.fft_bg[s, :, :]
+            signalPSD_sub[signalPSD_sub < 0] = 0
             env = np.abs(sweep[s, :])
 
-            fft_peaks, peaks_found = self.find_peaks(signalPSD)
-            fft_max_env = env
+            fft_peaks, peaks_found = self.find_peaks(signalPSD_sub)
+            fft_max_env = signalPSD[:, 8]
             angle = None
             velocity = None
             peak_idx = np.argmax(env)
@@ -469,7 +482,7 @@ class ObstacleDetectionProcessor:
 
         fft_bg = None
         fft_bg_send = None
-        if self.sweep_index in range(self.fft_len + 1, self.fft_len + 15):
+        if self.sweep_index < 3 * self.fft_len:  # Make sure data gets send to plotting
             fft_bg = self.fft_bg[0, :, :]
             fft_bg_send = self.fft_bg
 
@@ -479,7 +492,7 @@ class ObstacleDetectionProcessor:
             iterations_left = 0
 
         threshold_map = None
-        if self.sweep_index == 1:
+        if self.sweep_index < 3 * self.fft_len:  # Make sure data gets send to plotting
             threshold_map = self.threshold_map
 
         f_data = self.fusion_data
@@ -500,6 +513,7 @@ class ObstacleDetectionProcessor:
             "left_shadows": [f_data["left_shadow_x"], f_data["left_shadow_y"]],
             "right_shadows": [f_data["right_shadow_x"], f_data["right_shadow_y"]],
             "sweep_index": self.sweep_index,
+            "peaks_found": peaks_found,
         }
 
         if (self.bg_avg < self.use_bg) and (self.sweep_index == self.fft_len - 1):
@@ -509,9 +523,19 @@ class ObstacleDetectionProcessor:
 
         return out_data
 
+    def dump_bg_params_to_yaml(self, filename=None, bg_params=None):
+        if filename is None:
+            filename = os.path.join(DIR_PATH, "obstacle_bg_params_dump.yaml")
+
+        if bg_params is None:
+            bg_params = self.bg_params[0]
+
+        with open(filename, 'w') as f_handle:
+            yaml.dump(bg_params, f_handle, default_flow_style=False)
+
     def remap(self, val, x1, x2, y1, y2):
         if x1 == x2:
-            return val
+            return y1
         m = (y2 - y1) / (x2 - x1)
         b = y1 - m * x1
         return val * m + b
@@ -576,7 +600,7 @@ class ObstacleDetectionProcessor:
         moving_pwl_dist = segs[0:segs_nr]
         moving_pwl_amp = segs[segs_nr:]
 
-        adjacent_sum_max = np.max(adjacent_sum)
+        adjacent_sum_max = max(adjacent_sum)
 
         if adjacent_sum_max == 0:
             static_adjacent_factor = 0
@@ -610,12 +634,12 @@ class ObstacleDetectionProcessor:
                 static_pwl_amp[i] = moving_max
 
         bg_params = {
-            "static_pwl_dist": static_pwl_dist,
-            "static_pwl_amp": static_pwl_amp,
-            "moving_pwl_dist": moving_pwl_dist,
-            "moving_pwl_amp": moving_pwl_amp,
-            "static_adjacent_factor": static_adjacent_factor,
-            "moving_max": moving_max,
+            "static_pwl_dist": [float(i) for i in static_pwl_dist],
+            "static_pwl_amp": [float(i) for i in static_pwl_amp],
+            "moving_pwl_dist": [float(i) for i in moving_pwl_dist],
+            "moving_pwl_amp": [float(i) for i in moving_pwl_amp],
+            "static_adjacent_factor": [float(static_adjacent_factor)],
+            "moving_max": [float(moving_max)],
         }
 
         return bg_params
@@ -671,12 +695,12 @@ class ObstacleDetectionProcessor:
         pwl_static_points = 5
         pwl_moving_points = 2
         dist_len = fft_bg.shape[0]
-        fac = bg_params["static_adjacent_factor"]
+        fac = bg_params["static_adjacent_factor"][0]
         static_pwl_amp = bg_params["static_pwl_amp"]
         static_pwl_dist = bg_params["static_pwl_dist"]
         moving_pwl_amp = bg_params["moving_pwl_amp"]
         moving_pwl_dist = bg_params["moving_pwl_dist"]
-        moving_max = bg_params["moving_max"]
+        moving_max = bg_params["moving_max"][0]
 
         self.apply_pwl_segments(
             fft_bg, static_idx, static_pwl_dist, static_pwl_amp, pwl_static_points
@@ -850,8 +874,14 @@ class ObstacleDetectionProcessor:
                                 null_frequency, null_frequency + frequency_gradient,
                                 thresh, min_thresh)
 
-        thresh_add = self.close_threshold_addition * (self.close_dist_limit - dist) / \
-            (self.close_dist_limit - self.sensor_config.range_interval[0] * 100)
+        thresh_add = self.remap(
+            dist,
+            self.sensor_config.range_start * 100,
+            self.sensor_config.range_start * 100 + self.close_dist_limit,
+            self.close_threshold_addition,
+            0.0,
+        )
+
         thresh += self.clamp(thresh_add, 0, self.close_threshold_addition)
 
         return thresh
@@ -872,6 +902,8 @@ class PGUpdater:
         self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
         self.fusion_max_shadows = FUSION_MAX_SHADOWS
         self.fusion_history = FUSION_HISTORY
+        self.fft_bg_data = None
+        self.threshold_data = None
 
         self.hist_plots = {
             "velocity": [[], processing_config["velocity_history"]["value"]],
@@ -886,6 +918,7 @@ class PGUpdater:
         self.advanced_plots = {
             "background_map": processing_config["background_map"]["value"],
             "threshold_map": processing_config["threshold_map"]["value"],
+            "show_line_outs": processing_config["show_line_outs"]["value"],
             "fusion_map": processing_config["fusion_map"]["value"],
             "show_shadows": False,
         }
@@ -908,11 +941,18 @@ class PGUpdater:
         self.env_ax.setLabel("bottom", "Depth (cm)")
         self.env_ax.setXRange(*(self.sensor_config.range_interval * 100))
         self.env_ax.showGrid(True, True)
-        self.env_ax.addLegend()
+        self.env_ax.addLegend(offset=(-10, 10))
         self.env_ax.setYRange(0, 0.1)
 
         self.env_ampl = self.env_ax.plot(pen=utils.pg_pen_cycler(0), name="Envelope")
-        self.fft_max = self.env_ax.plot(pen=utils.pg_pen_cycler(1, "--"), name="FFT max")
+        self.fft_max = self.env_ax.plot(pen=utils.pg_pen_cycler(1, "--"), name="FFT @ max")
+
+        if self.advanced_plots["show_line_outs"]:
+            self.fft_bg = self.env_ax.plot(pen=utils.pg_pen_cycler(2, "--"), name="BG @ max")
+            self.fft_thresh = self.env_ax.plot(
+                pen=utils.pg_pen_cycler(3, "--"),
+                name="Threshold @ max"
+            )
 
         self.peak_dist_text = pg.TextItem(color="k", anchor=(0, 1))
         self.env_ax.addItem(self.peak_dist_text)
@@ -1144,7 +1184,6 @@ class PGUpdater:
         self.plot_index = 0
 
     def update(self, data):
-        ds = max(self.downsampling, 1)  # downsampling
         nfft = data["fft_map"].shape[2]
         if self.plot_index == 0:
             nr_sensors = data["fft_map"].shape[0]
@@ -1158,19 +1197,19 @@ class PGUpdater:
             self.obstacle_im.translate(-self.max_velocity, pos0)
             self.obstacle_im.scale(
                 2 * self.max_velocity / nfft,
-                self.sensor_config.range_length * 100 / num_points * ds
+                self.sensor_config.range_length * 100 / num_points
             )
             if self.advanced_plots["background_map"]:
                 self.obstacle_bg_im.translate(-self.max_velocity, pos0)
                 self.obstacle_bg_im.scale(
                     2 * self.max_velocity / nfft,
-                    self.sensor_config.range_length * 100 / num_points * ds
+                    self.sensor_config.range_length * 100 / num_points
                 )
             if self.advanced_plots["threshold_map"]:
                 self.obstacle_thresh_im.translate(-self.max_velocity, pos0)
                 self.obstacle_thresh_im.scale(
                     2 * self.max_velocity / nfft,
-                    self.sensor_config.range_length * 100 / num_points * ds
+                    self.sensor_config.range_length * 100 / num_points
                 )
             show_fusion = self.advanced_plots["fusion_map"]
             show_shadows = self.advanced_plots["show_shadows"]
@@ -1244,7 +1283,6 @@ class PGUpdater:
         self.peak_dist_text.setText(peak_dist_text)
         self.peak_fft_text.setText(peak_fft_text)
         self.bg_estimation_text.setText(bg_text)
-        self.peak_val_text.setText("FFT max: %.3f" % map_max)
 
         self.env_ampl.setData(self.env_xs, data["env_ampl"])
         self.env_peak_vline.setValue(self.peak_x)
@@ -1254,11 +1292,47 @@ class PGUpdater:
             fft_max = np.max(data["fft_max_env"])
             env_max = max(env_max, fft_max)
 
-        self.env_ax.setYRange(0, self.smooth_max.update(env_max))
-
         self.fft_max.setData(self.env_xs, data["fft_max_env"])
 
+        if data["fft_bg"] is not None:
+            self.fft_bg_data = data["fft_bg"]
+
+        if self.advanced_plots["show_line_outs"]:
+            max_index = 8
+            max_bg = None
+            if data["fft_peaks"] is not None:
+                max_index = int(data["fft_peaks"][0, 1])
+            else:
+                try:
+                    max_index = np.asarray(unravel_index(
+                        np.argmax(data["fft_map"][0]), data["fft_map"][0].shape)
+                    )[1]
+                except Exception:
+                    pass
+            if self.fft_bg_data is not None:
+                max_bg = self.fft_bg_data[:, max_index]
+                self.fft_bg.setData(self.env_xs, max_bg)
+                env_max = max(np.max(max_bg), env_max)
+            if data["threshold_map"] is not None:
+                self.threshold_data = data["threshold_map"]
+            if self.threshold_data is not None:
+                thresh_max = self.threshold_data[:, max_index]
+                if max_bg is not None:
+                    thresh_max = thresh_max + max_bg
+                env_max = max(np.max(thresh_max), env_max)
+                self.fft_thresh.setData(self.env_xs, thresh_max)
+
+        self.env_ax.setYRange(0, self.smooth_max.update(env_max))
+
         fft_data = data["fft_map"][0].T
+        if self.fft_bg_data is not None:
+            max_wo_bg = map_max
+            fft_data = fft_data - self.fft_bg_data.T
+            fft_data[fft_data < 0] = 0
+            map_max = np.max(fft_data)
+            self.peak_val_text.setText("FFT max: {:.3f} ({:.3f})".format(map_max, max_wo_bg))
+        else:
+            self.peak_val_text.setText("FFT max: {:.3f}".format(map_max))
 
         g = 1 / 2.2
         fft_data = 254 / (map_max + 1.0e-9)**g * fft_data**g
@@ -1268,7 +1342,7 @@ class PGUpdater:
         map_min = -1
         map_max = 257
 
-        self.obstacle_im.updateImage(fft_data[:, ::ds], levels=(map_min, map_max))
+        self.obstacle_im.updateImage(fft_data, levels=(map_min, map_max))
 
         if data["threshold_map"] is not None and self.advanced_plots["threshold_map"]:
             thresh_max = np.max(data["threshold_map"])
@@ -1285,7 +1359,7 @@ class PGUpdater:
             map_min = -1
             map_max = 257
 
-            self.obstacle_bg_im.updateImage(fft_data[:, ::ds], levels=(map_min, map_max))
+            self.obstacle_bg_im.updateImage(fft_data, levels=(map_min, map_max))
 
         if self.advanced_plots["fusion_map"]:
             self.fusion_scatter.setData(
