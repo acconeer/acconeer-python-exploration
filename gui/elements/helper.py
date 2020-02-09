@@ -2,6 +2,7 @@ import enum
 import os
 import sys
 from argparse import ArgumentParser
+from collections import namedtuple
 
 import numpy as np
 
@@ -502,6 +503,61 @@ class SensorSelection(QFrame):
         self.module_multi_sensor_support = module_multi_sensor_support
         self.sanitize()
         self.draw()
+
+
+class SessionInfoView(QWidget):
+    Field = namedtuple("Field", ["label", "unit", "fmt_str", "get_fun"])
+
+    FIELDS = [
+        Field("Actual range start", "m", "{:.3f}", lambda d: d["range_start_m"]),
+        Field("Actual range length", "m", "{:.3f}", lambda d: d["range_length_m"]),
+        Field(
+            "Actual range end",
+            "m",
+            "{:.3f}",
+            lambda d: d["range_start_m"] + d["range_length_m"],
+        ),
+        Field("Step length", "mm", "{:.2f}", lambda d: d["step_length_m"] * 1e3),
+        Field("Number of data points", "", "{}", lambda d: d["data_length"]),
+        Field("Sweep rate", "Hz", "{:.0f}", lambda d: d["sweep_rate"]),
+    ]
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        grid = QGridLayout(self)
+        grid.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(grid)
+
+        self.field_widgets = []
+        for i, field in enumerate(self.FIELDS):
+            key_lbl = QLabel(field.label, self)
+            val_lbl = QLabel("", self)
+            unit_lbl = QLabel(field.unit, self)
+            grid.addWidget(key_lbl, i, 0)
+            grid.addWidget(val_lbl, i, 1, QtCore.Qt.AlignRight)
+            grid.addWidget(unit_lbl, i, 2)
+            self.field_widgets.append((key_lbl, val_lbl, unit_lbl))
+
+        self.no_info_lbl = QLabel("No active or buffered session", self)
+        grid.addWidget(self.no_info_lbl, i + 1, 0, 1, 3)
+
+        self.update()
+
+    def update(self, info=None):
+        self.no_info_lbl.setVisible(not info)
+
+        for field, widgets in zip(self.FIELDS, self.field_widgets):
+            try:
+                val = field.get_fun(info)
+                text = field.fmt_str.format(val)
+            except Exception:
+                text = None
+
+            for w in widgets:
+                w.setVisible(bool(text))
+
+            widgets[1].setText(str(text))
 
 
 class ErrorFormater:

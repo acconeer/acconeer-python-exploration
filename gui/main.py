@@ -53,6 +53,7 @@ try:
         Label,
         LoadState,
         SensorSelection,
+        SessionInfoView,
         lib_version_up_to_date,
     )
     from modules import (
@@ -576,6 +577,7 @@ class GUI(QMainWindow):
     def start_btn_clicked(self):
         if self.get_gui_state("load_state") == LoadState.LOADED:
             self.data = None
+            self.session_info_view.update(None)
             self.set_gui_state("load_state", LoadState.UNLOADED)
         else:
             self.start_scan()
@@ -702,14 +704,20 @@ class GUI(QMainWindow):
             "Advanced sensor settings", init_collapsed=True)
         self.main_sublayout.addWidget(self.advanced_sensor_config_section, 5, 0)
 
+        self.session_info_section = CollapsibleSection(
+            "Session information (sensor metadata)", init_collapsed=True)
+        self.main_sublayout.addWidget(self.session_info_section, 6, 0)
+        self.session_info_view = SessionInfoView(self.session_info_section)
+        self.session_info_section.grid.addWidget(self.session_info_view, 0, 0, 1, 2)
+
         self.basic_processing_config_section = CollapsibleSection("Processing settings")
-        self.main_sublayout.addWidget(self.basic_processing_config_section, 6, 0)
+        self.main_sublayout.addWidget(self.basic_processing_config_section, 7, 0)
         self.basic_processing_config_section.grid.addWidget(
             self.buttons["service_defaults"], 0, 0, 1, 2)
 
         self.advanced_processing_config_section = CollapsibleSection(
             "Advanced processing settings", init_collapsed=True)
-        self.main_sublayout.addWidget(self.advanced_processing_config_section, 7, 0)
+        self.main_sublayout.addWidget(self.advanced_processing_config_section, 8, 0)
         self.advanced_processing_config_section.grid.addWidget(
             self.buttons["advanced_defaults"], 0, 0, 1, 2)
         self.advanced_processing_config_section.grid.addWidget(
@@ -717,7 +725,7 @@ class GUI(QMainWindow):
         self.advanced_processing_config_section.grid.addWidget(
             self.buttons["save_process_data"], 1, 1)
 
-        self.main_sublayout.setRowStretch(7, 1)
+        self.main_sublayout.setRowStretch(9, 1)
 
     def init_panel_scroll_area(self):
         self.panel_scroll_area = QtWidgets.QScrollArea()
@@ -999,6 +1007,7 @@ class GUI(QMainWindow):
 
         if switching_data_type:
             self.data = None
+            self.session_info_view.update(None)
             self.set_gui_state("load_state", LoadState.UNLOADED)
 
         if force_update or switching_module:
@@ -1855,6 +1864,7 @@ class GUI(QMainWindow):
         elif "session_info" in message_type:
             self.session_info = data
             self.reload_pg_updater(session_info=data)
+            self.session_info_view.update(self.session_info)
         elif "process_data" in message_type:
             self.advanced_process_data["process_data"] = data
         elif "set_sensors" in message_type:
