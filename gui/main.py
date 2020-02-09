@@ -7,6 +7,7 @@ import signal
 import sys
 import threading
 import traceback
+from distutils.version import StrictVersion
 
 import numpy as np
 import pyqtgraph as pg
@@ -38,7 +39,7 @@ sys.path.append(os.path.abspath(os.path.join(HERE, "elements")))
 
 
 try:
-    from acconeer.exptool import clients, configs, recording, utils
+    from acconeer.exptool import clients, configs, recording, SDK_VERSION, utils
     from acconeer.exptool.structs import configbase
 
     import data_processing
@@ -111,6 +112,7 @@ class GUI(QMainWindow):
             "replaying_data": False,
             "scan_is_running": False,
             "has_config_error": False,
+            "connection_info": None,
             "ml_mode": bool(self.args.machine_learning),
             "ml_tab": "main",
             "ml_model_loaded": False,
@@ -207,6 +209,7 @@ class GUI(QMainWindow):
             "interface": ("Interface",),
             "sweep_info": ("",),
             "saturated": ("Warning: Data saturated, reduce gain!",),
+            "rssver": ("",),
             "libver": ("",),
         }
 
@@ -666,6 +669,7 @@ class GUI(QMainWindow):
         self.server_section.grid.addWidget(self.buttons["scan_ports"], 1, 1)
         self.server_section.grid.addWidget(self.buttons["advanced_port"], 2, 0, 1, 2)
         self.server_section.grid.addWidget(self.buttons["connect"], 3, 0, 1, 2)
+        self.server_section.grid.addWidget(self.labels["rssver"], 4, 0, 1, 2)
 
         self.control_section = CollapsibleSection("Scan controls")
         self.main_sublayout.addWidget(self.control_section, 1, 0)
@@ -1223,6 +1227,35 @@ class GUI(QMainWindow):
             num_stored = 0
         self.textboxes["stored_frames"].setText(str(num_stored))
 
+        # RSS version
+        lbl = self.labels["rssver"]
+
+        try:
+            strict_ver = states["connection_info"]["strict_version"]
+        except Exception:
+            strict_ver = None
+
+        if strict_ver is not None:
+            if strict_ver < StrictVersion(SDK_VERSION):
+                ver_mismatch = "RSS server"
+            elif strict_ver > StrictVersion(SDK_VERSION):
+                ver_mismatch = "Exploration Tool"
+            else:
+                ver_mismatch = None
+
+            text = "RSS v" + str(strict_ver)
+
+            if ver_mismatch:
+                text += " ({} upgrade recommended)".format(ver_mismatch)
+                lbl.setStyleSheet("QLabel {color: red}")
+            else:
+                lbl.setStyleSheet("")
+
+            lbl.setText(text)
+            lbl.show()
+        else:
+            lbl.hide()
+
         # Other
 
         sensor_config = self.get_sensor_config()
@@ -1490,12 +1523,14 @@ class GUI(QMainWindow):
                 self.set_sensors(connected_sensors)
             self.set_gui_state("server_connected", True)
             self.set_gui_state("load_state", LoadState.UNLOADED)
+            self.set_gui_state("connection_info", info)
             self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
             if self.current_module_info.module is None:
                 self.module_dd.setCurrentIndex(1)
         else:
             self.sensors_available = None
             self.set_gui_state("server_connected", False)
+            self.set_gui_state("connection_info", None)
             self.sig_scan.emit("stop", "", None)
             try:
                 self.client.stop_session()
