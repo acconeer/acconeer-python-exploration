@@ -149,7 +149,7 @@ class SessionSetupError(ClientError):
     pass
 
 
-def decode_version_str(version: str):
+def decode_version_str(version: str) -> dict:
     if "-" in version:
         strict_version = StrictVersion(version.split("-")[0])
     else:

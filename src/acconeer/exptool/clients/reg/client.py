@@ -679,7 +679,7 @@ def fmt_enc_val(enc_val):
     return " ".join(["{:02x}".format(x) for x in enc_val])
 
 
-def decode_version_buffer(version: bytearray):
+def decode_version_buffer(version: bytearray) -> dict:
     try:
         version_str = version.decode("ascii").strip()
         assert len(version_str) > 1
