@@ -81,6 +81,38 @@ def test_run_illegal_config(setup):
 
 
 @pytest.mark.parametrize("mode", modes.Mode)
+def test_squeeze(setup, mode):
+    client, sensor = setup
+
+    restore_squeeze = client.squeeze
+
+    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config.sensor = sensor
+
+    client.squeeze = True
+    client.start_session(config)
+    squeezed_data_info, squeezed_data = client.get_next()
+    client.stop_session()
+
+    client.squeeze = False
+    client.start_session(config)
+    unsqueezed_data_info, unsqueezed_data = client.get_next()
+    client.stop_session()
+
+    if mode == modes.Mode.SPARSE:
+        expected_squeezed_ndim = 2
+    else:
+        expected_squeezed_ndim = 1
+
+    assert unsqueezed_data.shape == squeezed_data[None, ...].shape
+    assert squeezed_data.ndim == expected_squeezed_ndim
+    assert unsqueezed_data.ndim == expected_squeezed_ndim + 1
+    assert squeezed_data_info.keys() == unsqueezed_data_info[0].keys()
+
+    client.squeeze = restore_squeeze
+
+
+@pytest.mark.parametrize("mode", modes.Mode)
 def test_sanity_check_output(setup, mode):
     client, sensor = setup
 
