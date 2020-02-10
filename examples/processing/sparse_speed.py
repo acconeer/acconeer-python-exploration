@@ -185,6 +185,7 @@ class Processor:
         _, psds = welch(
             zero_mean_frame,
             nperseg=self.sweeps_per_frame // 2,
+            window="hann",
             detrend=False,
             axis=0,
             nfft=self.fft_length,
