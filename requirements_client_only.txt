@@ -1,7 +1,6 @@
 setuptools
 wheel
 numpy
-scipy
 pyserial
 h5py
 pyyaml
