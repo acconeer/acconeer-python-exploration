@@ -158,6 +158,9 @@ class BaseServiceConfig(BaseSessionConfig):
                removed after normalization. Therefore, the data might seen unaffected by changes
                in the gain, except very high (receiver saturation) or very low (quantization
                error) gain.
+
+               Sensor normalization is not available for the Sparse service, but is enabled by
+               default for the other services - Envelope, IQ, and Power Bins.
         """,
     )
 
