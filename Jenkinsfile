@@ -5,67 +5,63 @@ pipeline {
     agent none
 
     stages {
-        stage('Parallel') {
-            parallel {
-                stage('Offline tests') {
+        stage('Offline tests') {
+            agent {
+                dockerfile {
+                    label 'exploration_tool'
+                }
+            }
+            steps {
+                sh 'python3 internal/check_permissions.py'
+                sh 'python3 internal/check_whitespace.py'
+                sh 'flake8'
+                sh 'isort --check-only'
+                sh 'python3 -m pip install -U --user .'
+                sh 'pytest -v tests/unit'
+                sh 'sphinx-build -QW -b html docs docs/_build'
+            }
+        }
+        stage('XM112 integration tests') {
+            options {
+                lock resource: '${env.NODE_NAME}-xm112'
+            }
+            stages {
+                stage('Flash') {
+                    agent {
+                        label 'exploration_tool'
+                    }
+                    steps {
+                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master", artifactName: "internal_stash_scripts_embedded.zip")
+                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master", artifactName: "internal_stash_xm112.zip")
+                        sh 'rm -rf stash'
+                        sh 'unzip -q internal_stash_scripts_embedded.zip -d stash'
+                        sh 'unzip -q internal_stash_xm112.zip -d stash'
+                        sh '(cd stash && PYTHONPATH=$PYTHONPATH:./scripts/integrator/embedded/ python3 scripts/integrator/module_server/flash.py)'
+                    }
+                }
+                stage('Integration tests') {
                     agent {
                         dockerfile {
                             label 'exploration_tool'
+                            args '--net=host --privileged'
                         }
                     }
                     steps {
-                        sh 'python3 internal/check_permissions.py'
-                        sh 'python3 internal/check_whitespace.py'
-                        sh 'flake8'
-                        sh 'isort --check-only'
-                        sh 'python3 -m pip install -U --user .'
-                        sh 'pytest -v tests/unit'
-                        sh 'sphinx-build -QW -b html docs docs/_build'
+                        sh 'python3 -m pip install -q -U --user .'
+                        sh 'pytest -v tests/integration --mock --uart --spi'
                     }
                 }
-                stage('XM112 integration tests') {
-                    options {
-                        lock resource: '${env.NODE_NAME}-xm112'
-                    }
-                    stages {
-                        stage('Flash') {
-                            agent {
-                                label 'exploration_tool'
-                            }
-                            steps {
-                                findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master", artifactName: "internal_stash_scripts_embedded.zip")
-                                findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master", artifactName: "internal_stash_xm112.zip")
-                                sh 'rm -rf stash'
-                                sh 'unzip -q internal_stash_scripts_embedded.zip -d stash'
-                                sh 'unzip -q internal_stash_xm112.zip -d stash'
-                                sh '(cd stash && PYTHONPATH=$PYTHONPATH:./scripts/integrator/embedded/ python3 scripts/integrator/module_server/flash.py)'
-                            }
-                        }
-                        stage('Integration tests') {
-                            agent {
-                                dockerfile {
-                                    label 'exploration_tool'
-                                    args '--net=host --privileged'
-                                }
-                            }
-                            steps {
-                                sh 'python3 -m pip install -q -U --user .'
-                                sh 'pytest -v tests/integration --mock --uart --spi'
-                            }
-                        }
-                    }
+            }
+        }
+        stage('GUI tests') {
+            agent {
+                dockerfile {
+                    label 'exploration_tool'
                 }
-                stage('GUI tests') {
-                    agent {
-                        dockerfile {
-                            label 'exploration_tool'
-                        }
-                    }
-                    steps {
-                        sh 'python3 -m pip install -U --user .'
-                        sh 'pytest -v --timeout=60 --timeout_method=thread tests/gui'
-                    }
-                }
+            }
+            steps {
+                sh 'python3 -m pip install -U --user .'
+                sh 'pytest -v --timeout=60 --timeout_method=thread tests/gui'
             }
         }
     }
