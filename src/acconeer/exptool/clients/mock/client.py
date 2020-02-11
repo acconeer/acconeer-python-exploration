@@ -2,7 +2,6 @@ import logging
 from time import sleep, time
 
 import numpy as np
-from scipy.signal import butter, filtfilt
 
 from acconeer.exptool import SDK_VERSION
 from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
@@ -125,7 +124,7 @@ class EnvelopeMocker(DenseMocker):
         }
 
         noise = 100 + 20 * np.random.randn(self.num_depths)
-        noise = filtfilt(*butter(2, 0.03), noise, method="gust")
+        noise = filtfilt_simple(noise, 0.98)
 
         ampl = 2000 + np.random.randn() * 20
         center = self.range_center
@@ -159,7 +158,7 @@ class IQMocker(DenseMocker):
 
         data = signal + noise
         data *= np.exp(-2j * np.pi * self.depths / 2.5e-3)
-        data = filtfilt(*butter(2, 0.03), data, method="gust")
+        data = filtfilt_simple(data, 0.98)
 
         return info, data
 
@@ -225,6 +224,20 @@ class SparseMocker:
         data = 2**15 + noise + np.tile(signal[None, :], [num_sweeps, 1])
 
         return info, data
+
+
+def lfilter_simple(x, sf):
+    y = np.zeros_like(x)
+    y[0] = x[0]
+
+    for i in range(1, len(x)):
+        y[i] = sf * y[i - 1] + (1 - sf) * x[i]
+
+    return y
+
+
+def filtfilt_simple(x, sf):
+    return np.flip(lfilter_simple(np.flip(lfilter_simple(x, sf)), sf))
 
 
 MOCK_CLASS_MAP = {
