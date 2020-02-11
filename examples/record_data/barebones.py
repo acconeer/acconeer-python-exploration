@@ -33,7 +33,7 @@ def main():
     client.start_session()
 
     n = 100
-    for i in range(100):
+    for i in range(n):
         data_info, data = client.get_next()
         recorder.sample(data_info, data)
         print("Sampled {:>4}/{}".format(i + 1, n), end="\r", flush=True)
