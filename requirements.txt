@@ -4,7 +4,7 @@ numpy
 scipy
 pyserial
 matplotlib
-pyqtgraph
+pyqtgraph==0.11.0rc0
 PyQt5==5.14
 h5py
 Flask
