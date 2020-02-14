@@ -1265,14 +1265,15 @@ class PGUpdater:
 
         fft_data[fft_data > 254] = 254
 
-        map_min = 0
-        map_max = 256
+        map_min = -1
+        map_max = 257
 
         self.obstacle_im.updateImage(fft_data[:, ::ds], levels=(map_min, map_max))
 
         if data["threshold_map"] is not None and self.advanced_plots["threshold_map"]:
             thresh_max = np.max(data["threshold_map"])
-            self.obstacle_thresh_im.updateImage(data["threshold_map"].T, levels=(0, thresh_max))
+            levels = (0, thresh_max * 1.05)
+            self.obstacle_thresh_im.updateImage(data["threshold_map"].T, levels=levels)
 
         if data["fft_bg"] is not None and self.advanced_plots["background_map"]:
             map_max = np.max(np.max(data["fft_bg"]))
@@ -1281,8 +1282,8 @@ class PGUpdater:
 
             fft_data[fft_data > 254] = 254
 
-            map_min = 0
-            map_max = 256
+            map_min = -1
+            map_max = 257
 
             self.obstacle_bg_im.updateImage(fft_data[:, ::ds], levels=(map_min, map_max))
 
