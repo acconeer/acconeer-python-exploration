@@ -289,6 +289,7 @@ CONFIG_TO_CMD_KEY_MAP = {
     "sweep_rate": "sweep_rate",
     "tx_disable": "tx_disable",
     "power_save_mode": "power_save_mode",
+    "depth_lowpass_cutoff_ratio": "depth_lowpass_cutoff_ratio",
 }
 
 SESSION_HEADER_TO_INFO_KEY_REMAP = {

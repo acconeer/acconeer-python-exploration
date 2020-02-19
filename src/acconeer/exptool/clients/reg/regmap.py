@@ -140,6 +140,9 @@ CONFIG_TO_STRIPPED_REG_NAME_MAP = {
     "maximize_signal_attenuation": "maximize_signal_attenuation",
     "tx_disable": "tx_disable",
     "power_save_mode": "sensor_power_mode",
+    "_depth_lowpass_cutoff_ratio_override": "depth_lpf_ratio_override",
+    "_depth_lowpass_cutoff_ratio_value": "depth_lpf_ratio_value",
+    "depth_lowpass_cutoff_ratio": None,
     "range_end": None,
     "range_interval": None,
     "sensor": None,
@@ -150,6 +153,8 @@ STRIPPED_NAME_TO_INFO_REMAP = {
     "start": "range_start_m",
     "length": "range_length_m",
     "step_length": "step_length_m",
+    "step_length": "step_length_m",
+    "depth_lpf_ratio_used": "depth_lowpass_cutoff_ratio",
 }
 
 ENUM_REMAP = {

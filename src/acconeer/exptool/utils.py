@@ -404,3 +404,7 @@ def pg_curve_set_data_with_nan(curve, x, y):
     z[~finite] = 0
     connect = np.logical_and(finite, np.roll(finite, -1))
     return curve.setData(x, z, connect=connect)
+
+
+def optional_or_else(value, default):
+    return default if value is None else value

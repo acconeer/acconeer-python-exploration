@@ -2,6 +2,7 @@ import enum
 import json
 
 import acconeer.exptool.structs.configbase as cb
+from acconeer.exptool import utils
 from acconeer.exptool.modes import Mode, get_mode
 
 
@@ -390,6 +391,41 @@ class IQServiceConfig(BaseDenseServiceConfig):
         default_value=SamplingMode.A,
         order=1000,
         category=cb.Category.ADVANCED,
+    )
+
+    depth_lowpass_cutoff_ratio = cb.FloatParameter(
+        label="Depth LPF cutoff ratio",
+        default_value=None,
+        limits=(0.0, 0.5),
+        decimals=6,
+        optional=True,
+        optional_default_set_value=0.5,
+        optional_label="Override",
+        order=2100,
+        category=cb.Category.ADVANCED,
+        help=r"""
+            Depth domain lowpass filter cutoff frequency ratio
+
+            The cutoff for the depth domain lowpass filter is specified as the ratio between the
+            spatial frequency cutoff and the sample frequency. A ratio of zero ratio will configure
+            the smoothest possible filter. A ratio of 0.5 (the Nyquist frequency) turns the filter
+            off.
+
+            If unset, i.e., if not overridden, the ratio will be chosen automatically. The used
+            ratio is returned in the session information (metadata) upon session setup (create).
+        """,
+    )
+
+    _depth_lowpass_cutoff_ratio_value = cb.get_virtual_parameter_class(cb.FloatParameter)(
+        label="Depth LPF cutoff ratio value",
+        get_fun=lambda conf: utils.optional_or_else(conf.depth_lowpass_cutoff_ratio, 0.0),
+        visible=False,
+    )
+
+    _depth_lowpass_cutoff_ratio_override = cb.get_virtual_parameter_class(cb.BoolParameter)(
+        label="Depth LPF cutoff ratio override",
+        get_fun=lambda conf: conf.depth_lowpass_cutoff_ratio is not None,
+        visible=False,
     )
 
     def check(self):

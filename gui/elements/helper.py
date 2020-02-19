@@ -556,6 +556,7 @@ class SessionInfoView(QWidget):
         Field("Number of data points", "", "{}", lambda d: d["data_length"]),
         Field("Sweep rate", "Hz", "{:.0f}", lambda d: d["sweep_rate"]),
         Field("Stitch count", "", "{}", lambda d: d["stitch_count"]),
+        Field("Depth LPF cutoff ratio", "", "{:.6f}", lambda d: d["depth_lowpass_cutoff_ratio"]),
     ]
 
     def __init__(self, parent):

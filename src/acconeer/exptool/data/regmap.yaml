@@ -195,15 +195,6 @@ tx_disable:
   address: 38
   category: config
   type: boolean
-decrease_tx_emission:
-  modes:
-  - envelope
-  - iq
-  - power_bins
-  - sparse
-  address: 39
-  type: boolean
-  category: config
 profile_selection:
   modes:
   - envelope
@@ -283,6 +274,19 @@ iq_sampling_mode:
       value: 0
     b:
       value: 1
+iq_depth_lpf_ratio_override:
+  modes:
+  - iq
+  address: 65
+  type: boolean
+  category: config
+iq_depth_lpf_ratio_value:
+  modes:
+  - iq
+  address: 66
+  type: int32
+  scale: 1000000
+  category: config
 sparse_sweeps_per_frame:
   modes:
   - sparse
@@ -417,6 +421,14 @@ iq_step_length:
   modes:
   - iq
   address: 133
+  access: r
+  type: int32
+  scale: 1000000
+  category: metadata
+iq_depth_lpf_ratio_used:
+  modes:
+  - iq
+  address: 134
   access: r
   type: int32
   scale: 1000000
