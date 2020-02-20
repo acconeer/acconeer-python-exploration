@@ -404,6 +404,9 @@ class FeatureProcessing:
             sensors = feat["sensors"]
             name = feat["name"]
 
+            if not isinstance(sensors, list):
+                sensors = [sensors]
+
             win_params["options"] = feat["options"]
 
             for s in sensors:

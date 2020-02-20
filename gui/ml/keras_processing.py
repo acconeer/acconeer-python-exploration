@@ -341,9 +341,13 @@ class MachineLearning():
                 print("Loss: ", test_loss, "Accuracy: ", test_acc)
 
     def predict(self, x="internal"):
-        if x == "internal" and self.training_data["loaded"]:
-            # Predict training data
-            x = self.training_data["x_data"]
+        if isinstance(x, str):
+            if self.training_data["loaded"]:
+                # Predict training data
+                x = self.training_data["x_data"]
+            else:
+                print("No training data available!")
+                return None
 
         if len(x.shape) == len(self.model.input_shape) - 1:
             if x.shape[0] == self.model.input_shape[1]:
@@ -357,7 +361,6 @@ class MachineLearning():
         if len(x.shape) != len(self.model.input_shape):
             print("Wrong data shapes:\n Model: {}\n Test: {}\n".format(self.model.input_shape,
                                                                        x.shape,))
-            pass
             return None
 
         with self.tf_graph.as_default():
