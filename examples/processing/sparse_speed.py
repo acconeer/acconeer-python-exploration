@@ -77,7 +77,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(configbase.ProcessingConfig):
-    VERSION = 1
+    VERSION = 2
 
     class SpeedUnit(Enum):
         METER_PER_SECOND = ("m/s", 1)
@@ -92,14 +92,24 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         def scale(self):
             return self.value[1]
 
+    threshold = configbase.FloatParameter(
+        label="Threshold",
+        default_value=4.0,
+        limits=(1, 100),
+        decimals=2,
+        updateable=True,
+        logscale=True,
+        order=0,
+    )
+
     min_speed = configbase.FloatParameter(
         label="Minimum speed",
         unit="m/s",
-        default_value=0.2,
+        default_value=0.5,
         limits=(0, 5),
         decimals=1,
         updateable=True,
-        order=0,
+        order=10,
     )
 
     shown_speed_unit = configbase.EnumParameter(
@@ -144,8 +154,6 @@ class Processor:
         self.fft_length = (self.sweeps_per_frame // 2) * FFT_OVERSAMPLING_FACTOR
         self.num_noise_est_bins = 3
         noise_est_tc = 1.0
-        self.min_threshold = 4.0
-        self.dynamic_threshold = 0.1
 
         self.sequence_timeout_count = int(round(est_frame_rate * SEQUENCE_TIMEOUT_LENGTH))
         est_vel_history_size = int(round(est_frame_rate * EST_VEL_HISTORY_LENGTH))
@@ -167,6 +175,7 @@ class Processor:
 
     def update_processing_config(self, processing_config):
         self.min_speed = processing_config.min_speed
+        self.threshold = processing_config.threshold
 
     def tc_to_sf(self, tc, fs):
         if tc <= 0.0:
@@ -200,8 +209,7 @@ class Processor:
 
         nasd = asd / self.noise_est  # Normalized Amplitude Spectral Density
 
-        threshold = max(self.min_threshold, np.max(nasd) * self.dynamic_threshold)
-        over = nasd > threshold
+        over = nasd > self.threshold
         est_idx = np.where(over)[0][-1] if np.any(over) else np.nan
 
         if est_idx > 0:  # evaluates to false if nan
@@ -245,8 +253,7 @@ class Processor:
 
         nasd_temporal_max = np.max(self.nasd_history, axis=0)
 
-        temporal_max_threshold = max(
-            self.min_threshold, np.max(nasd_temporal_max) * self.dynamic_threshold)
+        temporal_max_threshold = self.threshold
 
         self.update_idx += 1
 
