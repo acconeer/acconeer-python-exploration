@@ -220,7 +220,7 @@ class GUI(QMainWindow):
             lbl.setText(text)
             self.labels[key] = lbl
 
-        self.labels["saturated"].setStyleSheet("color: #f0f0f0")
+        self.labels["saturated"].setStyleSheet("color: #ff0000")
 
     def init_textboxes(self):
         # key: (text)
