@@ -387,3 +387,7 @@ def get_range_depths(sensor_config: cb.SensorConfig, session_info: dict) -> np.n
 
 def hex_to_rgb_tuple(hex_color):
     return struct.unpack("BBB", bytes.fromhex(hex_color.lstrip("#")))
+
+
+def is_power_of_2(n):
+    return (n & (n - 1) == 0) and n != 0
