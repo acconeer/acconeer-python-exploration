@@ -520,6 +520,7 @@ class SessionInfoView(QWidget):
         Field("Step length", "mm", "{:.2f}", lambda d: d["step_length_m"] * 1e3),
         Field("Number of data points", "", "{}", lambda d: d["data_length"]),
         Field("Sweep rate", "Hz", "{:.0f}", lambda d: d["sweep_rate"]),
+        Field("Stitch count", "", "{}", lambda d: d["stitch_count"]),
     ]
 
     def __init__(self, parent):
