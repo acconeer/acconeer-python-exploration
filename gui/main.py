@@ -221,6 +221,7 @@ class GUI(QMainWindow):
             self.labels[key] = lbl
 
         self.labels["saturated"].setStyleSheet("color: #ff0000")
+        self.labels["saturated"].setVisible(False)
 
     def init_textboxes(self):
         # key: (text)
