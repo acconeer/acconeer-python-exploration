@@ -226,6 +226,8 @@ class BoolCheckboxPidget(PidgetStub):
 
 class IntSpinBoxPidget(PidgetStub):
     def __init__(self, param, parent_instance):
+        assert isinstance(param, cb.IntParameter)
+
         super().__init__(param, parent_instance)
 
         self.grid.setColumnStretch(0, 7)
@@ -238,17 +240,56 @@ class IntSpinBoxPidget(PidgetStub):
 
         self.spin_box = wrap_qwidget(QSpinBox)(self)
         self.spin_box.setSingleStep(param.step)
-        self.spin_box.valueChanged.connect(self._subwidget_event_handler)
         self.spin_box.setKeyboardTracking(False)
         self.spin_box.setRange(*_limits_for_qt(param.limits))
-        self.grid.addWidget(self.spin_box, 0, 1, 1, 1)
+
+        if param.is_optional:
+            self.checkbox = QCheckBox(param.optional_label, self)
+            self.checkbox.setTristate(False)
+            self.checkbox.stateChanged.connect(self.__checkbox_event_handler)
+
+            self.grid.setColumnStretch(1, 1)
+            self.grid.addWidget(self.checkbox, 0, 1, 1, 1)
+
+            self.grid.setColumnStretch(2, 1)
+            self.grid.addWidget(self.spin_box, 0, 2, 1, 1)
+
+            self.spin_box.setValue(self.param.optional_default_set_value)
+        else:
+            self.checkbox = None
+            self.grid.addWidget(self.spin_box, 0, 1, 1, 1)
+
+        self.spin_box.valueChanged.connect(self.__spin_box_event_handler)
 
         self.update()
 
     def _update(self, *args, **kwargs):
         super()._update(*args, **kwargs)
         value = self._get_param_value()
-        self.spin_box.setValue(value)
+        is_set = value is not None
+
+        if is_set:
+            self.spin_box.setValue(value)
+
+        self.spin_box.setEnabled(is_set)
+
+        if self.checkbox is not None:
+            self.checkbox.setChecked(is_set)
+
+    def __checkbox_event_handler(self, val):
+        if val:
+            val = self.spin_box.value()
+        else:
+            val = None
+
+        self._subwidget_event_handler(val)
+
+    def __spin_box_event_handler(self, val):
+        if self.param.is_optional:
+            if not self.checkbox.isChecked():
+                val = None
+
+        self._subwidget_event_handler(val)
 
 
 class FloatRangeSpinBoxesPidget(PidgetStub):
@@ -340,7 +381,9 @@ class FloatSpinBoxPidget(PidgetStub):
             self.spin_box.setValue(value)
 
         self.spin_box.setEnabled(is_set)
-        self.checkbox.setChecked(is_set)
+
+        if self.checkbox is not None:
+            self.checkbox.setChecked(is_set)
 
     def __checkbox_event_handler(self, val):
         if val:
