@@ -292,7 +292,7 @@ class GUI(QMainWindow):
         processing_config = self.update_service_params()
 
         if session_info is None:
-            session_info = clients.MockClient().setup_session(sensor_config)
+            session_info = clients.MockClient().setup_session(sensor_config, check_config=False)
 
         self.service_widget = self.current_module_info.module.PGUpdater(
             sensor_config, processing_config, session_info)
