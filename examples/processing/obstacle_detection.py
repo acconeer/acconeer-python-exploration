@@ -401,8 +401,8 @@ class ObstacleDetectionProcessor:
                                 self.dump_bg_params_to_yaml()
                             if self.use_bg_parameterization:
                                 self.generate_background_from_pwl_params(
-                                    self.fft_bg[s, :, :],
-                                    self.bg_params[s]
+                                    self.fft_bg[i, :, :],
+                                    self.bg_params[i]
                                 )
 
             signalPSD_sub = signalPSD - self.fft_bg[s, :, :]
@@ -1177,7 +1177,7 @@ class PGUpdater:
 
         self.smooth_max = utils.SmoothMax(
             self.sensor_config.update_rate,
-            tau_decay=1,
+            tau_decay=0.2,
             tau_grow=0.2,
         )
 
@@ -1287,10 +1287,9 @@ class PGUpdater:
         self.env_ampl.setData(self.env_xs, data["env_ampl"])
         self.env_peak_vline.setValue(self.peak_x)
 
+        fft_max = np.max(data["fft_max_env"])
         env_max = np.max(data["env_ampl"])
-        if data["fft_peaks"] is not None:
-            fft_max = np.max(data["fft_max_env"])
-            env_max = max(env_max, fft_max)
+        env_max = max(env_max, fft_max)
 
         self.fft_max.setData(self.env_xs, data["fft_max_env"])
 
