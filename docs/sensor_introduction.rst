@@ -709,6 +709,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Minor fixes.                           2.2     2020-02-27
     Acconeer AB Added power save mode Hibernate.       2.1     2020-01-17
     Acconeer AB Initial version for API 2.0.           2.0     2019-12-01
     =========== ====================================== ======= ============
