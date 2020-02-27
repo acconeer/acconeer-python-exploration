@@ -50,7 +50,7 @@ There are different approaches to building radar systems, each with its own pros
 
     Pulsed coherent radar.
 
-The second feature is that it is coherent, which means that each transmitted signal has a stable time and phase reference on the pico second scale, which allows for high accuracy measurements. Coherent radar systems usually rely on a continuous generation of the radio signal, which consumes a lot of current independent on update rate, hence one of the innovations Acconeer have made is to combine the benefits of pulsed systems and the benefits of coherent systems into one product, the Pulsed Coherent Radar (PCR).
+The second feature is that it is coherent, which means that each transmitted signal has a stable time and phase reference on the pico second scale, which allows for high accuracy measurements. Coherent radar systems usually rely on a continuous generation of the radio signal, which consumes a lot of current independent on update rate, hence one of the innovations Acconeer has made is to combine the benefits of pulsed systems and the benefits of coherent systems into one product, the Pulsed Coherent Radar (PCR).
 The unique selling points of the PCR sensor are summarized in :numref:`fig_unique_selling_points`. The sensor makes it possible to perform high accuracy measurements while consuming very little power and the fast pulsing of the system makes it possible to track fast movements.
 
 .. _fig_unique_selling_points:
@@ -75,7 +75,7 @@ The Acconeer offer consists of two parts, hardware and software, as illustrated 
 
     The Acconeer offer.
 
-The A111 sensor is the core of the hardware offer and is available in module and in evaluation kits. The purpose of the evaluation kit is to provide a platform to get acquainted with the pulsed coherent radar and to start use case evaluation. The sensor evaluation kits are based on Raspberry Pi, which is a well-known and available platform which also allows you to connected other types of sensors. The module is an integration of the A111 and a microcontroller unit (MCU) and has its own evaluation kit. Just as the sensor evaluation kit it can be used to get familiar with the pulsed coherent radar technology and get started with use case development. It can also be included as a single unit in your product to decrease your development cost and decrease time to market.
+The A111 sensor is the core of the hardware offer and is available in modules and in evaluation kits. The purpose of the evaluation kit is to provide a platform to get acquainted with the pulsed coherent radar and to start use case evaluation. The sensor evaluation kits are based on Raspberry Pi, which is a well-known and available platform which also allows you to connected other types of sensors. The module is an integration of the A111 and a microcontroller unit (MCU) and has its own evaluation kit. Just as the sensor evaluation kit it can be used to get familiar with the pulsed coherent radar technology and get started with use case development. It can also be included as a single unit in your product to decrease your development cost and decrease time to market.
 
 :numref:`fig_system_structure` outlines the software structure, platform for running it, and communication interfaces. The software for controlling the A111 sensor and retrieving data from it is called Radar System Software (RSS) and provides output at two levels:
 
@@ -92,7 +92,7 @@ The A111 sensor is the core of the hardware offer and is available in module and
 
 RSS is provided as library files and is written in C and designed to be portable between different platforms, a list of currently supported processor architectures and toolchains are available at the `Acconeer developer site <https://developer.acconeer.com>`__. Apart from RSS, Acconeer provides Example applications and stubbed software integration source code in the Software development kits (SDKs) as well as full reference integrations for selected platforms.
 
-Acconeer provide four types of applications:
+Acconeer provides four types of applications:
 
 * Example applications: Example of how to use RSS, available in SDK at Acconeer developer site
 
@@ -108,13 +108,13 @@ Both RSS and Applications run on a host platform and Acconeer provides a softwar
 
 * For our EVK platforms we provide a software package and for
 
-    * Raspberry Pi it includes hardware abstraction layer, device drivers, and build environment provided as source code and is available in the SDK
+    * Raspberry Pi it includes hardware abstraction layer, device drivers, and build environment provided as source code
 
-    *-* Modules it includes hardware abstraction layer and build environment provided as source code and is available in the SDK
+    * Modules it includes hardware abstraction layer and build environment provided as source code
 
 * For STM32 platforms we provide example integration files and instructions for how to set up a project in STM32CubeIDE.
 
-* Other ARM Cortex M4 and M7 based platform can easily be used by writing a custom implantation of the HAL integration layer. A handful functions that use MCU specific driver functions for accessing timers, SPI and GPIO have to be implemented.
+* Other ARM Cortex M0, M4 and M7 based platform can easily be used by writing a custom implantation of the HAL integration layer. A handful functions that use MCU specific driver functions for accessing timers, SPI and GPIO have to be implemented.
 
 Based on these deliveries it is possible for the customer to create their own integration layer for any platform that uses a supported processor architecture. The currently available products and corresponding software deliveries are listed in :numref:`fig_product_sw_offer`, refer to documentation for each specific product for further details.
 
