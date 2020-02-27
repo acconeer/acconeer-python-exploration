@@ -291,8 +291,10 @@ class FloatParameter(NumberParameter):
         self.decimals = kwargs.pop("decimals", 2)
         self.logscale = kwargs.pop("logscale", False)
 
+        optional = kwargs.get("optional", False)
+
         limits = kwargs.get("limits", None)
-        if limits is not None and not any([lim is None for lim in limits]):
+        if limits is not None and not any([lim is None for lim in limits]) and not optional:
             kwargs.setdefault("_pidget_class", "FloatSpinBoxAndSliderPidget")
         else:
             kwargs.setdefault("_pidget_class", "FloatSpinBoxPidget")
