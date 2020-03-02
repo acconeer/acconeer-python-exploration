@@ -43,7 +43,7 @@ def main():
     client.disconnect()
 
     record = recorder.close()
-    recording.save("data.h5", record)
+    recording.save(filename, record)
     print("Saved to '{}'".format(filename))
 
 
