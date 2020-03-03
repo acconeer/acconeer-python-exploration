@@ -1482,24 +1482,26 @@ class FeatureSidePanel(QFrame):
         if action == "settings":
             title = "Save feature settings"
             fname = 'ml_feature_settings_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
-            if "session" in action:
-                title = "Save session data"
-                fname = 'ml_session_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
-                fname += "_{}".format(self.gui_handle.feature_extract.get_label())
-                if self.last_folder is not None:
-                    fname = os.path.join(self.last_folder, fname)
+        elif action == "session":
+            title = "Save session data"
+            fname = 'ml_session_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+            fname += "_{}".format(self.gui_handle.feature_extract.get_label())
 
-            options = QtWidgets.QFileDialog.Options()
-            options |= QtWidgets.QFileDialog.DontUseNativeDialog
-            file_types = "NumPy data files (*.npy)"
+        if self.last_folder is not None:
+            fname = os.path.join(self.last_folder, fname)
 
-            filename, info = QtWidgets.QFileDialog.getSaveFileName(
-                self, title, fname, file_types, options=options)
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        file_types = "NumPy data files (*.npy)"
 
-            if not filename:
-                return
-            self.last_folder = os.path.split(filename)[0]
+        filename, info = QtWidgets.QFileDialog.getSaveFileName(
+            self, title, fname, file_types, options=options)
 
+        if not filename:
+            return
+        self.last_folder = os.path.split(filename)[0]
+
+        if action == "settings":
             data = {
                 "feature_list": feature_list,
                 "frame_settings": self.gui_handle.feature_sidepanel.get_frame_settings(),
