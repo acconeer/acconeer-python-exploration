@@ -1727,6 +1727,9 @@ class GUI(QMainWindow):
         if not filename:
             return
 
+        record.mode = self.get_sensor_config().mode
+        record.module_key = self.current_module_info.key
+        record.processing_config_dump = self.get_processing_config()._dumps()
         try:
             self.save_legacy_processing_config_dump_to_record(record)
         except Exception:
