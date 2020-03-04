@@ -1729,11 +1729,18 @@ class GUI(QMainWindow):
 
         record.mode = self.get_sensor_config().mode
         record.module_key = self.current_module_info.key
-        record.processing_config_dump = self.get_processing_config()._dumps()
-        try:
-            self.save_legacy_processing_config_dump_to_record(record)
-        except Exception:
-            traceback.print_exc()
+
+        record.processing_config_dump = None
+        record.legacy_processing_config_dump = None
+
+        processing_config = self.get_processing_config()
+        if isinstance(processing_config, configbase.Config):
+            record.processing_config_dump = processing_config._dumps()
+        else:
+            try:
+                self.save_legacy_processing_config_dump_to_record(record)
+            except Exception:
+                traceback.print_exc()
 
         try:
             if "h5" in info:
