@@ -43,6 +43,7 @@ def main():
     client.disconnect()
 
     record = recorder.close()
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     recording.save(filename, record)
     print("Saved to '{}'".format(filename))
 
