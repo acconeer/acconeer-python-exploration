@@ -139,6 +139,7 @@ CONFIG_TO_STRIPPED_REG_NAME_MAP = {
     "noise_level_normalization": "noise_level_normalization",
     "maximize_signal_attenuation": "maximize_signal_attenuation",
     "tx_disable": "tx_disable",
+    "power_save_mode": "sensor_power_mode",
     "range_end": None,
     "range_interval": None,
     "sensor": None,

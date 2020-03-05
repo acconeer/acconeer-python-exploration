@@ -288,6 +288,7 @@ CONFIG_TO_CMD_KEY_MAP = {
     "sweeps_per_frame": "sweeps_per_frame",
     "sweep_rate": "sweep_rate",
     "tx_disable": "tx_disable",
+    "power_save_mode": "power_save_mode",
 }
 
 SESSION_HEADER_TO_INFO_KEY_REMAP = {

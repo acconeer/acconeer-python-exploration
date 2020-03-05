@@ -60,6 +60,7 @@ class RegBaseClient(BaseClient):
         self._write_reg("main_control", "stop")
         self._write_reg("mode_selection", mode)
         self._write_reg("update_rate", 0)
+        self._write_reg("sensor_power_mode", "active")
 
         for key, reg in regmap.get_config_key_to_reg_map(mode).items():
             val = getattr(config, key)
@@ -69,7 +70,6 @@ class RegBaseClient(BaseClient):
 
             self._write_reg(reg, val)
 
-        self._write_reg("sensor_power_mode", "active")
         self._write_reg("streaming_control", self._streaming_control_val)
 
         self._write_reg("main_control", "create")

@@ -55,6 +55,12 @@ class BaseServiceConfig(BaseSessionConfig):
         def approx_direct_leakage_length(self):
             return self.value[2]
 
+    class PowerSaveMode(ConfigEnum):
+        ACTIVE = ("Active", "active")
+        READY = ("Ready", "ready")
+        SLEEP = ("Sleep", "sleep")
+        OFF = ("Off", "off")
+
     range_interval = cb.FloatRangeParameter(
         label="Range interval",
         unit="m",
@@ -251,6 +257,14 @@ class BaseServiceConfig(BaseSessionConfig):
             Disable the radio transmitter. If used to measure noise, we recommended also switching
             off noise level normalization (if applicable).
         """,
+    )
+
+    power_save_mode = cb.EnumParameter(
+        label="Power save mode",
+        enum=PowerSaveMode,
+        default_value=PowerSaveMode.ACTIVE,
+        order=3100,
+        category=cb.Category.ADVANCED,
     )
 
     def check(self):
