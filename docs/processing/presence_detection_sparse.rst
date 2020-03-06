@@ -218,7 +218,7 @@ First, to remove any trends from fast motion in the frame, we differentiate over
 Then, take the mean absolute deviation:
 
 .. math::
-   \hat{n}(f, d) = \frac{1}{N_s - N_\text{diff}} \sum_{s=N_\text{diff}}^{N_s} | x^{(N_\text{diff})}(f, s, d) |
+   \hat{n}(f, d) = \frac{1}{N_s - N_\text{diff}} \sum_{s=1 + N_\text{diff}}^{N_s} | x^{(N_\text{diff})}(f, s, d) |
 
 And normalize such that the expectation value would be the same as if no differentiation was applied:
 
