@@ -1494,7 +1494,7 @@ class FeatureSidePanel(QFrame):
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         file_types = "NumPy data files (*.npy)"
 
-        if filename is None:
+        if not filename:
             filename, info = QtWidgets.QFileDialog.getSaveFileName(
                 self, title, fname, file_types, options=options)
 
