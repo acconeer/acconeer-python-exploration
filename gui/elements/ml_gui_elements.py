@@ -4168,14 +4168,17 @@ class Threaded_BatchProcess(QtCore.QThread):
 
     def receive(self, message_type, message, data=None):
         if message_type in ["stop", "skip_file"]:
-            if self.processing_params["processing_mode"] == "all":
-                self.emit("stop_scan", "", "")
             if message_type == "stop":
                 self.stop = True
                 self.skip = True
-                self.stop_thread()
             else:
                 self.skip = True
+
+            if self.processing_params["processing_mode"] == "all":
+                self.emit("stop_scan", "", "")
+
+            if message_type == "stop":
+                self.stop_thread()
         else:
             print("Batch process thread received unknown signal: {}".format(message_type))
 
@@ -4236,7 +4239,11 @@ class ProgressBar(QDialog):
 
     def cancel(self):
         self.thread_send("stop", "", "")
-        self.reject()
+        try:
+            self.reject()
+        except Exception:
+            # Might be closed already
+            pass
 
     def update_progress(self, progress):
         self.file_progress.setValue(progress[0])
