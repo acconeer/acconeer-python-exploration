@@ -553,12 +553,16 @@ class FeatureSelectFrame(QFrame):
                         for opt in feature["options"]:
                             if opt in ["sensor_config", "session_info"]:
                                 continue
-                            opt_textbox = e_feat["options"][opt]
-                            if not isinstance(opt_textbox, QtWidgets.QCheckBox):
-                                opt_textbox.setText(str(feature["options"][opt]))
-                            elif isinstance(opt_textbox, QtWidgets.QCheckBox):
-                                opt_textbox.setChecked(feature["options"][opt])
-
+                            try:
+                                opt_textbox = e_feat["options"][opt]
+                                if not isinstance(opt_textbox, QtWidgets.QCheckBox):
+                                    opt_textbox.setText(str(feature["options"][opt]))
+                                elif isinstance(opt_textbox, QtWidgets.QCheckBox):
+                                    opt_textbox.setChecked(feature["options"][opt])
+                            except Exception:
+                                # May fail if feature code has changed
+                                traceback.print_exc()
+                                print("Failed to set feature option!")
                     if feature["output"] is not None:
                         for out in feature["output"]:
                             out_checkbox = e_feat["output"][out]
@@ -2869,7 +2873,7 @@ class ModelSelectFrame(QFrame):
     def load_layers(self, filename):
         try:
             with open(filename, 'r') as f_handle:
-                layers = yaml.load(f_handle)
+                layers = yaml.full_load(f_handle)
             self.update_layer_list(layers)
         except Exception as e:
             print("Failed to load layers\n", e)
@@ -3504,9 +3508,9 @@ class ModelOperations(QFrame):
         if not filename:
             return
 
-        d = self.keras_handle.load_model(filename)
+        d, message = self.keras_handle.load_model(filename)
         if not d["loaded"]:
-            self.gui_handle.error_message(d["message"])
+            self.gui_handle.error_message(message)
             self.gui_handle.ml_state.set_model_data(None)
             return
 
@@ -3535,7 +3539,7 @@ class ModelOperations(QFrame):
             d["loaded"] = False
             self.gui_handle.ml_state.set_model_data(None)
         else:
-            m = d["message"]
+            m = message
             if len(not_found):
                 m += "\nNot all required sensors might be available!\nMissing: {}"
                 m = m.format(not_found)
@@ -3954,12 +3958,12 @@ class Threaded_Training(QtCore.QThread):
 
         self.finished.connect(self.stop_thread)
 
-        self.stop = False
+        self.stop_now = False
 
     def stop_thread(self):
-        self.stop = True
+        self.stop_now = True
         self.skip = True
-        self.stop()
+        self.quit()
 
     def run(self):
         self.training_params["plot_cb"] = self.update_plots
@@ -3977,7 +3981,7 @@ class Threaded_Training(QtCore.QThread):
 
     def receive(self, message_type, message, data=None):
         if message_type == "stop":
-            self.stop = True
+            self.stop_now = True
         else:
             print("Scan thread received unknown signal: {}".format(message_type))
 
@@ -3994,7 +3998,7 @@ class Threaded_Training(QtCore.QThread):
         return err
 
     def stop_training(self):
-        return self.stop
+        return self.stop_now
 
 
 class Threaded_BatchProcess(QtCore.QThread):
@@ -4130,13 +4134,15 @@ class Threaded_BatchProcess(QtCore.QThread):
 
     def change_existing_only(self, fdata, sweep_data, conf):
         updated_feature_list = self.gui_handle.feature_select.get_feature_list()
+        updated_frame_settings = self.gui_handle.feature_sidepanel.get_frame_settings()
         fdata["ml_frame_data"]["feature_list"] = updated_feature_list
+        fdata["ml_frame_data"]["frame_info"]["frame_pad"] = updated_frame_settings["frame_pad"]
+        fdata["ml_frame_data"]["frame_info"]["frame_size"] = updated_frame_settings["frame_size"]
         fdata["sensor_config"] = conf
         if self.feature_process is None:
             self.feature_process = feature_proc.FeatureProcessing(fdata["sensor_config"])
-            self.feature_process.set_feature_list(
-                updated_feature_list
-            )
+            self.feature_process.set_feature_list(updated_feature_list)
+            self.feature_process.set_frame_settings(updated_frame_settings)
         frame_list = fdata["ml_frame_data"]["frame_list"]
 
         nr_frames = len(frame_list)

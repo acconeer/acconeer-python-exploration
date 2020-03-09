@@ -122,7 +122,8 @@ class MLState:
             self.model_data = {"loaded": False}
         else:
             state = model_data["loaded"]
-            self.model_data = model_data
+            for key in model_data:
+                self.model_data[key] = model_data[key]
             if state and source is None:
                 source = "internal"
 
@@ -147,8 +148,8 @@ class MLState:
             if value:
                 text = "Ready"
                 in_out_text = "{} --> {}".format(
-                    self.model_data["model_input"],
-                    self.model_data["model_output"]
+                    self.model_data["input"],
+                    self.model_data["output"],
                 )
             else:
                 text = "Not initialized"

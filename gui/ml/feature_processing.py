@@ -46,6 +46,8 @@ class FeatureProcessing:
         self.dead_time_reset = 10
         self.dead_time = 0
         self.triggered = False
+        self.triggered_last = False
+        self.trigger_cool_down = 0
         self.trigger_feature_based = False
         self.win_data = None
         self.collection_mode = "auto"
@@ -451,6 +453,11 @@ class FeatureProcessing:
         detected = False
 
         if feature_based:
+            margin = .1
+            if self.trigger_cool_down:
+                self.trigger_cool_down -= 1
+                return detected
+
             wing = self.auto_offset
             if len(data.shape) == 2:
                 if wing >= (self.frame_size / 2):
@@ -462,14 +469,25 @@ class FeatureProcessing:
                     right = np.sum(data[:, -(wing + 1):-1]) / wing
                     if right == 0 or left == 0:
                         self.motion_score_normalized = 0
-                        return detected
-                    if left / right > 0.9 and left / right < 1.1:
+                    if (left / right > 1.0 - margin) and (left / right < 1.0 + margin):
                         self.motion_score_normalized = 2 * center / (left + right)
                         if self.motion_score_normalized > self.auto_threshold:
                             detected = True
+                    if center > (2 * self.auto_threshold * left):
+                        detected = True
+                    if center > (2 * self.auto_threshold * right):
+                        detected = True
+                    if left > 1.1 * center or right > 1.1 * center:
+                        detected = False
             else:
                 self.motion_score_normalized = "Not implemented"
                 detected = True
+
+            if not detected and self.triggered_last:
+                self.trigger_cool_down = self.dead_time_reset
+
+            self.triggered_last = detected
+
             return detected
 
         num_sensors = data["sweep_data"].shape[0]

@@ -44,36 +44,26 @@ class MachineLearning():
         self.training_data = {"loaded": False}
         self.test_data = {"loaded": False}
 
-        self.model_data = {
+        model_data = {
             "loaded": False,
             "y_labels": None,
             "label_list": None,
             "feature_list": None,
             "sensor_config": None,
             "frame_settings": None,
-            "model_input": None,
-            "model_output": None,
             "nr_of_training_maps": None,
             "layer_list": None,
-            "model_dimensions": None,
-        }
-
-        self.model_dimensions = {
-            "dimensionality": model_dimension,
             "input": None,
             "output": None,
-            "init_shape": None,
+            "keras_layer_info": None,
+            "trainable": None,
+            "non_trainable": None,
         }
 
-    def set_model_dimensionality(self, dim):
-        if isinstance(dim, int):
-            if dim > 0 and dim < 3:
-                self.model_dimensions["dimensionality"] = dim
-        else:
-            print("Incorrect dimension input ", dim)
+        self.model_data = ObjectDict(model_data)
 
     def init_default_model_1D(self):
-        inputs = Input(shape=self.model_dimensions["init_shape"])
+        inputs = Input(shape=self.model_data.input)
 
         use_cnn = True
         if use_cnn:
@@ -92,14 +82,14 @@ class MachineLearning():
         x = Dense(64, activation="relu")(x)
         x = Dense(64, activation="relu")(x)
 
-        predictions = Dense(self.label_num, activation="softmax")(x)
+        predictions = Dense(self.model_data.output, activation="softmax")(x)
 
         self.model = Model(inputs=inputs, outputs=predictions)
 
         self.set_optimizer("adam")
 
     def init_default_model_2D(self):
-        input_dimensions = self.model_dimensions["init_shape"]
+        input_dimensions = self.model_data.input
         self.y_dim = input_dimensions[0]
         self.x_dim = input_dimensions[1]
         inputs = Input(shape=input_dimensions)
@@ -120,7 +110,7 @@ class MachineLearning():
         x = self.maxpool(x)
         x = Flatten()(x)
         x = Dropout(rate=0.5)(x)
-        predictions = Dense(self.label_num, activation="softmax")(x)
+        predictions = Dense(self.model_data.output, activation="softmax")(x)
 
         self.model = Model(inputs=inputs, outputs=predictions)
 
@@ -138,17 +128,19 @@ class MachineLearning():
         return MaxPool2D(pool_size=(y_pool, x_pool))(x)
 
     def init_model(self):
-        model_dim = self.model_dimensions["dimensionality"]
-        input_dimensions = self.model_dimensions["init_shape"]
+        input_dim = self.model_data.input
+        output_dim = self.model_data.output
+
+        model_dim = len(input_dim) - 1
 
         if model_dim == 1:
             print("\nInitiating 1D model with {:d} inputs"
-                  " and {:d} outputs".format(input_dimensions[0], self.label_num))
+                  " and {:d} outputs".format(input_dim[0], output_dim))
         elif model_dim == 2:
             print("\nInitiating 2d model with {:d}x{:d} inputs"
-                  " and {:d} outputs".format(*input_dimensions, self.label_num))
+                  " and {:d} outputs".format(*input_dim, output_dim))
 
-        layer_list = self.model_data.get("layer_list", None)
+        layer_list = self.model_data.layer_list
         if layer_list is None:
             if model_dim == 1:
                 self.init_default_model_1D()
@@ -156,7 +148,7 @@ class MachineLearning():
                 self.init_default_model_2D()
             return {"loaded": True, "model_message": ""}
 
-        inputs = Input(shape=input_dimensions)
+        inputs = Input(shape=input_dim)
         nr_layers = len(layer_list)
         layer_callbacks = layer_definitions.get_layers()
 
@@ -186,7 +178,7 @@ class MachineLearning():
                     x = cb(**options)(x)
                 else:
                     options.pop("units", None)
-                    predictions = cb(self.label_num, **options)(x)
+                    predictions = cb(output_dim, **options)(x)
             except Exception as e:
                 return {
                     "loaded": False,
@@ -459,15 +451,17 @@ class MachineLearning():
                 return {"info": info}
             data_type = "test"
 
+        if feature_map_dims[0][1] == 1:
+            model_dimension = 1
+        else:
+            model_dimension = 2
+
         if data_type == "training":
             if model_exists:
-                self.model_dimensions["input"] = self.model.input_shape[1:-1]
-                self.model_dimensions["output"] = self.model.output_shape[-1]
+                self.model_data.input = self.model.input_shape[1:-1]
+                self.model_data.output = self.model.output_shape[-1]
             else:
-                self.model_dimensions["dimensionality"] = 2
-                self.model_dimensions["input"] = feature_map_dims[0]
-                if feature_map_dims[0][1] == 1:
-                    self.model_dimensions["dimensionality"] = 1
+                self.model_data.input = feature_map_dims[0]
         else:
             if not self.training_data["loaded"]:
                 info["message"] = "Load training data first!"
@@ -475,7 +469,7 @@ class MachineLearning():
 
         for i in range(1, files_loaded):
             # TODO: Check that files are compatible
-            map_dims = self.model_dimensions["input"]
+            map_dims = self.model_data.input
             if map_dims != feature_map_dims[i]:
                 message = "Input dimenions not matching:\nModel {} - Data {}".format(
                     map_dims,
@@ -493,19 +487,19 @@ class MachineLearning():
                 raw_labels.append(data_idx["label"])
 
         feature_map_data = np.stack(feature_maps)
-        if self.model_dimensions["dimensionality"] == 2:
+        if model_dimension == 2:
             feature_map_data = np.expand_dims(
                 feature_map_data,
-                self.model_dimensions["dimensionality"] + 1)
-        self.model_dimensions["nr_of_training_maps"] = feature_map_data.shape[0]
+                model_dimension + 1)
+        self.model_data.nr_of_training_maps = feature_map_data.shape[0]
 
         if data_type == "training":
             if not model_exists or not self.label_num:
                 data_labels, self.label_num, self.labels_dict = self.label_conversion(raw_labels)
-                self.model_dimensions["output"] = self.label_num
+                self.model_data.output = self.label_num
             else:
                 data_labels = self.label_assignment(raw_labels, self.labels_dict)
-                output = self.model_dimensions["output"]
+                output = self.model_data.output
                 if self.label_num != output:
                     message = "Output dimensions not matching:\nModel {} - Data {}".format(
                         output,
@@ -518,9 +512,9 @@ class MachineLearning():
         label_categories = to_categorical(data_labels, self.label_num)
 
         if data_type == "training":
-            self.model_dimensions["init_shape"] = feature_map_data.shape[1:]
+            self.model_data.input = feature_map_data.shape[1:]
             if not model_exists:
-                self.model_data["layer_list"] = layer_list
+                self.model_data.layer_list = layer_list
                 model_status = self.clear_model(reinit=True)
             else:
                 model_status = {"loaded": True, "model_message": ""}
@@ -549,12 +543,8 @@ class MachineLearning():
                 "feature_list": feature_lists[0],
                 "frame_settings": frame_settings_list[0],
                 "sensor_config": stored_configs[0],
-                "model_dimensions": self.model_dimensions,
-                "layer_list": layer_list,
-                "model_input": self.model_dimensions["input"],
-                "model_output": self.model_dimensions["output"],
-                "nr_of_training_maps": self.model_dimensions["nr_of_training_maps"],
             }
+
             for key in model_data:
                 self.model_data[key] = model_data[key]
         else:
@@ -574,10 +564,10 @@ class MachineLearning():
 
         if model_status["loaded"] is True:
             counted = self.count_variables()
-            self.model_data["trainable"] = counted["trainable"]
-            self.model_data["non_trainable"] = counted["non_trainable"]
-            self.model_data["keras_layer_info"] = self.model.layers
-            self.model_data["layer_list"] = layer_list
+            self.model_data.trainable = counted["trainable"]
+            self.model_data.non_trainable = counted["non_trainable"]
+            self.model_data.keras_layer_info = self.model.layers
+            self.model_data.layer_list = layer_list
         else:
             if not isinstance(model_status, str):
                 info["model_status"] = "Model not initialized"
@@ -589,14 +579,18 @@ class MachineLearning():
 
     def save_model(self, file, feature_list, sensor_config, frame_settings):
         try:
+            model_dimensions = {
+                "input": self.model_data.input,
+                "output": self.model_data.output,
+            }
             info = {
                 "labels_dict": self.labels_dict,
-                "model_dimensions": self.model_dimensions,
+                "model_dimensions": model_dimensions,
                 "feature_list": feature_list,
                 "sensor_config": sensor_config._dumps(),
                 "model": self.model,
                 "frame_settings": frame_settings,
-                "nr_of_training_maps": self.model_dimensions["nr_of_training_maps"],
+                "nr_of_training_maps": self.model_data.nr_of_training_maps,
             }
             np.save(file, info)
         except Exception as e:
@@ -609,20 +603,26 @@ class MachineLearning():
     def get_model_data(self):
         return self.model_data
 
+    def set_model_data(self, model_data):
+        for key in model_data:
+            if key in self.model_data:
+                self.model_data[key] = model_data[key]
+            else:
+                print("Unknown model parameter: {}".format(key))
+
     def load_model(self, file):
         try:
-            del self.model
-            self.model_data["loaded"] = False
+            self.clear_model()
             info = np.load(file, allow_pickle=True)
             self.model = info.item()["model"]
             self.labels_dict = info.item()["labels_dict"]
-            self.model_dimensions = info.item()["model_dimensions"]
-            self.label_num = self.model_dimensions["output"]
+            model_dimensions = info.item()["model_dimensions"]
+            self.label_num = model_dimensions["output"]
             feature_list = info.item()["feature_list"]
             sensor_config = configs.load(info.item()["sensor_config"])
             frame_settings = info.item()["frame_settings"]
             self.tf_session = K.get_session()
-            self.tf_graph = tf.get_default_graph()
+            self.tf_graph = tf.compat.v1.get_default_graph()
             with self.tf_session.as_default():
                 with self.tf_graph.as_default():
                     self.model._make_predict_function()
@@ -634,6 +634,10 @@ class MachineLearning():
                 "message": message,
             }
         else:
+            try:
+                self.model_data.nr_of_training_maps = info.item()["nr_of_training_maps"]
+            except KeyError:
+                self.model_data.nr_of_training_maps = 0
             gui_layer_conf = layer_definitions.get_layers()
             layer_list = []
             for l in self.model.layers:
@@ -676,22 +680,8 @@ class MachineLearning():
                 self.trainning = {"loaded": False}
                 label_categories = None
 
-        message = "Loaded model with:\n"\
-                  "input shape    :{}\n"\
-                  "output shape   :{}\n"\
-                  "nr of features :{}\n"\
-                  "labels         :{}\n"\
-                  "Trained with {} features".format(
-                      self.model_dimensions["input"],
-                      self.model_dimensions["output"],
-                      len(feature_list),
-                      labels,
-                      self.model_dimensions.get("nr_of_training_maps", "N/A")
-                  )
-
-        self.model_data = {
+        model_data = {
             "loaded": True,
-            "message": message,
             "y_labels": label_categories,
             "label_list": labels,
             "feature_list": feature_list,
@@ -701,27 +691,37 @@ class MachineLearning():
             "keras_layer_info": self.model.layers,  # Keras format layer list
             "trainable": counted["trainable"],
             "non_trainable": counted["non_trainable"],
-            "model_input": self.model_dimensions["input"],
-            "model_output": self.model_dimensions["output"],
-            "model_dimensions": self.model_dimensions,
+            "input": model_dimensions["input"],
+            "output": model_dimensions["output"],
         }
-        try:
-            self.model_data["nr_of_training_maps"] = self.model_dimensions["nr_of_training_maps"]
-        except KeyError:
-            self.model_data["nr_of_training_maps"] = 0
 
-        return self.model_data
+        self.set_model_data(model_data)
+
+        message = "Loaded model with:\n"\
+                  "input shape    :{}\n"\
+                  "output shape   :{}\n"\
+                  "nr of features :{}\n"\
+                  "labels         :{}\n"\
+                  "Trained with {} features".format(
+                      self.model_data.input,
+                      self.model_data.output,
+                      len(feature_list),
+                      labels,
+                      self.model_data.get("nr_of_training_maps", "N/A")
+                  )
+
+        return self.model_data, message
 
     def clear_model(self, reinit=False):
         if self.model is not None:
             K.clear_session()
             del self.model
             self.model = None
-            self.model_data["loaded"] = False
+            self.model_data.loaded = False
 
-        if reinit and self.model_dimensions is not None:
+        if reinit and self.model_data.input is not None:
             self.tf_session = K.get_session()
-            self.tf_graph = tf.get_default_graph()
+            self.tf_graph = tf.compat.v1.get_default_graph()
             with self.tf_session.as_default():
                 with self.tf_graph.as_default():
                     status = self.init_model()
@@ -733,6 +733,9 @@ class MachineLearning():
         else:
             return {"loaded": False, "model_message": "Nothing to reinitialize!"}
 
+    def set_model_layers(self, layer_list):
+        self.model_data["layer_list"] = layer_list
+
     def update_model_layers(self, layer_list):
         self.model_data["layer_list"] = layer_list
         model_status = self.clear_model(reinit=True)
@@ -743,7 +746,7 @@ class MachineLearning():
         }
 
         if model_status["loaded"]:
-            self.model_data["keras_layer_info"] = self.model.layers
+            self.model_data.keras_layer_info = self.model.layers
 
         return {"info": info, "model_data": self.model_data}
 
@@ -768,7 +771,7 @@ class MachineLearning():
         K.set_session(session)
 
     def clear_training_data(self):
-        self.model_data["y_labels"] = None
+        self.model_data.y_labels = None
         self.training_data = {"loaded": False}
         self.test_data = {"loaded": False}
 
@@ -864,6 +867,23 @@ class TrainCallback(Callback):
             except Exception as e:
                 print("Failed to call stop callback! ", e)
                 pass
+
+
+class ObjectDict(dict):
+    def __getattr__(self, key):
+        if key in self:
+            return self[key]
+        else:
+            raise AttributeError("Key {} not found".format(key))
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    def __delattr__(self, key):
+        if key in self:
+            del self[key]
+        else:
+            raise AttributeError("Key {} not found".format(key))
 
 
 class KerasPlotting:
