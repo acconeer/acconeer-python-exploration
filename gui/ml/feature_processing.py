@@ -255,7 +255,7 @@ class FeatureProcessing:
             if self.calibration.shape != fmap.shape:
                 print("Calibration data not matching feature shape!!!")
                 print("Calibration: {}".format(self.calibration.shape))
-                print("Feature map: {}".format(feature_map.shape))
+                print("Feature map: {}".format(fmap.shape))
                 self.calibration = None
             else:
                 fmap /= self.calibration
