@@ -1262,7 +1262,7 @@ class FeatureSidePanel(QFrame):
             if "collection_mode" in frame_settings:
                 collection_mode = frame_settings["collection_mode"]
                 if "auto" in collection_mode:
-                    if "feature map" in collection_mode:
+                    if "feature_based" in collection_mode:
                         self.auto_mode.setCurrentIndex(1)
                     else:
                         self.auto_mode.setCurrentIndex(0)
