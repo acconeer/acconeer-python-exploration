@@ -96,15 +96,13 @@ Acconeer provides four types of applications:
 
 * Example applications: Example of how to use RSS, available in SDK at Acconeer developer site
 
-* Reference applications: Use case specific reference application available at Acconeer GitHub
+* Reference applications: Use case specific reference application available in SDK at Acconeer developer site
 
 * Streaming server: Application streaming data from sensor evaluation kit to PC, available in SDK for Raspberry Pi at Acconeer developer site
 
 * Module server: Application providing a register write based interface to Acconeer modules, available in Module software image at Acconeer developer site.
 
 Both RSS and Applications run on a host platform and Acconeer provides a software integration reference with guidance on how to integrate to your host platform as well as specific integration for the modules and evaluation kits that Acconeer provides.
-
-* For our EVK platforms we provide a software package that includes hardware abstraction layer, device drivers, and build environment provided as source code and is available in the SDK.
 
 * For our EVK platforms we provide a software package and for
 
@@ -173,7 +171,7 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 
 Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see Section `Acconeer tools`_) to observe the different outputs and understand what they represent, each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`__.
 
-At `developer.acconeer.com <https://developer.acconeer.com>`__, we have several movies showing demos where the Acconeer sensor is used in different use cases. These demo movies come with use case specific reference applications, which are available for download at our GitHub page. These reference applications are written in C code and use our Services and Detectors, check out these examples to get inspiration on how to build your product with the Acconeer sensor.
+At `developer.acconeer.com <https://developer.acconeer.com>`__, we have several movies showing demos where the Acconeer sensor is used in different use cases. Together with the demo movies, corresponding reference applications are available in our different SDKs at Acconeer developer site. These reference applications are written in C code and use our Services and Detectors, check them out to get inspiration on how to build your product with the Acconeer sensor.
 
 
 Services
@@ -182,7 +180,7 @@ Services
 Envelope and Power Bins services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:numref:`fig_power_bins_demo` and :numref:`fig_env_demo` show outputs from the Power Bins and Envelope Services obtained with one of the scripts in Exploration Tool, the setup and environment are identical for the two data sets. Here it can be seen that Power Bins and Envelope Services provides output of the same type, i.e. amplitude of received signal as a function of distance. The difference lies in the signal processing done and the Power Bins output has lower SNR, lower resolution in range, but requires less processing and memory allocation than Envelope.
+:numref:`fig_power_bins_demo` and :numref:`fig_env_demo` show outputs from the Power Bins and Envelope Services obtained with one of the scripts in Exploration Tool, the setup and environment are identical for the two data sets. Here it can be seen that Power Bins and Envelope Services provide output of the same type, i.e. amplitude of received signal as a function of distance. The difference lies in the signal processing done and the Power Bins output has lower SNR, lower resolution in range, but requires less processing and memory allocation than Envelope.
 
 .. _fig_power_bins_demo:
 .. figure:: /_static/introduction/fig_power_bins_demo.png
@@ -236,7 +234,7 @@ Detectors
 
 Detectors take Service data as input and produce a result as the output that can be used by the application. Currently we have four Detectors available that produce different types of results and that are based on different Services. User guides for the different Detectors are available at `acconeer.com  <https://developer.acconeer.com/>`__ and the Detectors are also available in the Exploration Tool.
 
-In addition, we provide several Reference applications which uses Services or Detector to demonstrate how to develop applications based on our technology, you can find these at the Acconeer GitHub.
+In addition, we provide several Reference applications which use Services or Detectors to demonstrate how to develop applications based on our technology, you can find these in the various SDKs at Acconeer developer site.
 
 
 Distance peak detector
@@ -289,7 +287,7 @@ These transmitted signals are reflected by an object and the time elapsed betwee
 
     v=\frac{c_0}{\sqrt{\varepsilon_r}}
 
-where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' in the denominator of is due to the fact that :math:`t_{delay}` is the time for the signal to travel to the object and back, hence to get the distance to the object a division by 2 is needed, as illustrated in :numref:`fig_sensor_wave_object`. As :math:`f_{RF}` is 60.5 GHz one wavelength (:math:`\lambda`) is roughly 5 mm, which then corresponds to a distance to the object of 2.5 mm.
+where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' in the denominator of :eq:`eq_dist` is due to the fact that :math:`t_{delay}` is the time for the signal to travel to the object and back, hence to get the distance to the object a division by 2 is needed, as illustrated in :numref:`fig_sensor_wave_object`. As :math:`f_{RF}` is 60.5 GHz one wavelength (:math:`\lambda`) is roughly 5 mm, which then corresponds to a distance to the object of 2.5 mm.
 
 :numref:`fig_block_diagram` shows a block diagram of the A111 sensor. The signal is transmitted from the Tx antenna and received by the Rx antenna, both integrated in the top layer of the A111 package substrate. In addition to the mmWave radio the sensor consists of power management and digital control, signal quantization, memory and a timing circuit.
 
@@ -597,9 +595,9 @@ Note, Exploration Tool is capable of setting the update rate also in *on demand*
 Power save modes
 ^^^^^^^^^^^^^^^^
 
-The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are five power save modes see :numref:`tab_power_save_modes`.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
+The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are five power save modes, see :numref:`tab_power_save_modes`.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
 
-Another important aspect of the power save mode is when using the service in repetition mode Streaming. In streaming mode the service is also configured with an update rate at which the sensor produce new data. The update rate is maintained by the sensor itself using either internally generated clock or using the externally applied clock on XIN/XOUT pins. Besides the fact that power save mode *Active* gives the highest possible update rate, it also gives the best update rate accuracy. Likewise, the power save mode *Sleep* gives a lower possible update rate than *Active* and also a lower update rate accuracy. Bare in mind that also in streaming mode the maximum update rate is not only determined by the power save mode but also profile, length, and hardware accelerated average samples. Power save mode *Off* and *Hibernate* is not supported in streaming mode since the sensor is turned off between its measurements and thus cannot keep an update rate. In addition, the power save mode *Hibernate* is only supported when using Sparse service.
+Another important aspect of the power save mode is when using the service in repetition mode Streaming. In streaming mode the service is also configured with an update rate at which the sensor produces new data. The update rate is maintained by the sensor itself using either internally generated clock or using the externally applied clock on XIN/XOUT pins. Besides the fact that power save mode *Active* gives the highest possible update rate, it also gives the best update rate accuracy. Likewise, the power save mode *Sleep* gives a lower possible update rate than *Active* and also a lower update rate accuracy. Bare in mind that also in streaming mode the maximum update rate is not only determined by the power save mode but also profile, length, and hardware accelerated average samples. Power save mode *Off* and *Hibernate* is not supported in streaming mode since the sensor is turned off between its measurements and thus cannot keep an update rate. In addition, the power save mode *Hibernate* is only supported when using Sparse service.
 
 :numref:`tab_power_save_modes` concludes the power save mode configurations.
 
@@ -709,6 +707,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Minor fixes.                           2.3     2020-03-13
     Acconeer AB Minor fixes.                           2.2     2020-02-27
     Acconeer AB Added power save mode Hibernate.       2.1     2020-01-17
     Acconeer AB Initial version for API 2.0.           2.0     2019-12-01
