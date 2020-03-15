@@ -391,3 +391,16 @@ def hex_to_rgb_tuple(hex_color):
 
 def is_power_of_2(n):
     return (n & (n - 1) == 0) and n != 0
+
+
+def pg_curve_set_data_with_nan(curve, x, y):
+    # Workaround for PyQt5 related bug in PyQtGraph where curves don't render if they contain NaNs
+    # https://github.com/SainsburyWellcomeCentre/lasagna/issues/247
+    # https://github.com/pyqtgraph/pyqtgraph/issues/1057
+    # https://github.com/pyqtgraph/pyqtgraph/issues/1057#issuecomment-543190337
+
+    z = np.array(y)
+    finite = np.isfinite(z)
+    z[~finite] = 0
+    connect = np.logical_and(finite, np.roll(finite, -1))
+    return curve.setData(x, z, connect=connect)
