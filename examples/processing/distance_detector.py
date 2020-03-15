@@ -664,10 +664,11 @@ class PGUpdater:
         utils.pg_curve_set_data_with_nan(  # Workaround for bug in PyQt5/PyQtGraph
             self.threshold_curve, 100.0 * self.r, data["threshold"])
 
-        m = max(2 * np.nanmax(data["threshold"]),
-                np.max(data["sweep"]),
-                np.nanmax(data["last_mean_sweep"]),
-                )
+        m = np.nanmax(np.concatenate([
+            2 * data["threshold"],
+            data["sweep"],
+            data["last_mean_sweep"],
+        ]))
         ymax = self.smooth_max_sweep.update(m)
         self.sweep_plot.setYRange(0, ymax)
 
