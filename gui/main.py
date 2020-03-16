@@ -1702,7 +1702,10 @@ class GUI(QMainWindow):
             processing_config = self.get_processing_config()
             if isinstance(processing_config, configbase.ProcessingConfig):
                 if record.processing_config_dump is not None:
-                    processing_config._loads(record.processing_config_dump)
+                    try:
+                        processing_config._loads(record.processing_config_dump)
+                    except Exception:
+                        traceback.print_exc()
             else:
                 try:
                     self.load_legacy_processing_config_dump(record)
