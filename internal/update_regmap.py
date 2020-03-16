@@ -35,7 +35,7 @@ out_fn = os.path.join(exptool_package_path, "data", "regmap.yaml")
 assert os.path.exists(os.path.dirname(out_fn))
 
 with open(in_fn, "r") as in_f:
-    d = yaml.load(in_f, Loader=yaml.Loader)
+    d = yaml.full_load(in_f)
 
 
 def clean(d):

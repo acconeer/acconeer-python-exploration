@@ -247,9 +247,7 @@ def load_yaml():
     yaml_filename = os.path.abspath(os.path.join(here, "../../data/regmap.yaml"))
 
     with open(yaml_filename, "r") as f:
-        s = f.read()
-
-    raw_regs = yaml.load(s, Loader=yaml.Loader)
+        raw_regs = yaml.safe_load(f)
 
     REGISTERS = []
 

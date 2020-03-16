@@ -205,7 +205,7 @@ class HandleAdvancedProcessData(QDialog):
 
             try:
                 with open(param_file, 'r') as f_handle:
-                    params = yaml.load(f_handle)
+                    params = yaml.full_load(f_handle)
                 self.set_params(params)
             except Exception:
                 # Continue with empty inputs if file doesn't exist
