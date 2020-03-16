@@ -18,6 +18,7 @@ from keras.layers import (
     GaussianNoise,
     Input,
     MaxPool2D,
+    TimeDistributed,
 )
 from keras.models import Model
 from keras.utils import to_categorical
@@ -26,6 +27,7 @@ from sklearn.utils import class_weight
 
 from acconeer.exptool import configs
 
+import feature_processing as feature_proc
 import layer_definitions
 
 
@@ -37,12 +39,21 @@ except ImportError:
     PYQT_PLOTTING_AVAILABLE = False
 
 
+not_time_distributed = [
+    "GaussianNoise",
+    "Dropout",
+    "BatchNormalization",
+    "LSTM",
+]
+
+
 class MachineLearning():
     def __init__(self, model_dimension=2):
         self.labels_dict = None
         self.model = None
         self.training_data = {"loaded": False}
         self.test_data = {"loaded": False}
+        self.label_num = 0
 
         model_data = {
             "loaded": False,
@@ -53,6 +64,8 @@ class MachineLearning():
             "frame_settings": None,
             "nr_of_training_maps": None,
             "layer_list": None,
+            "feature_dimension": None,
+            "time_distributed": 1,
             "input": None,
             "output": None,
             "keras_layer_info": None,
@@ -88,6 +101,8 @@ class MachineLearning():
 
         self.set_optimizer("adam")
 
+        return {"loaded": True, "model_message": ""}
+
     def init_default_model_2D(self):
         input_dimensions = self.model_data.input
         self.y_dim = input_dimensions[0]
@@ -116,6 +131,8 @@ class MachineLearning():
 
         self.set_optimizer("Adam")
 
+        return {"loaded": True, "model_message": ""}
+
     def maxpool(self, x):
         x_pool = y_pool = 2
         if self.y_dim <= 15 or self.x_dim <= 15:
@@ -128,39 +145,61 @@ class MachineLearning():
         return MaxPool2D(pool_size=(y_pool, x_pool))(x)
 
     def init_model(self):
-        input_dim = self.model_data.input
+        input_dim = self.model_data.feature_dimension
         output_dim = self.model_data.output
 
-        model_dim = len(input_dim) - 1
+        if not isinstance(input_dim, list):
+            input_dim = list(input_dim)
 
-        if model_dim == 1:
-            print("\nInitiating 1D model with {:d} inputs"
-                  " and {:d} outputs".format(input_dim[0], output_dim))
-        elif model_dim == 2:
-            print("\nInitiating 2d model with {:d}x{:d} inputs"
-                  " and {:d} outputs".format(*input_dim, output_dim))
+        print("\nInitiating model with {:d}x{:d} inputs"
+              " and {:d} outputs".format(*input_dim, output_dim))
 
         layer_list = self.model_data.layer_list
         if layer_list is None:
-            if model_dim == 1:
-                self.init_default_model_1D()
-            elif model_dim == 2:
-                self.init_default_model_2D()
-            return {"loaded": True, "model_message": ""}
+            return {"loaded": False, "model_message": "Noe Layers defined"}
 
-        inputs = Input(shape=input_dim)
         nr_layers = len(layer_list)
         layer_callbacks = layer_definitions.get_layers()
 
+        lstm_mode = False
+        time_series = False
+        steps = self.model_data.time_distributed
         print("Building model with {} layers...".format(nr_layers))
+        if steps > 1:
+            input_dim[-1] = input_dim[-1] - steps + 1
+            input_dim = [steps] + input_dim
+            lstm_mode = True
+            time_series = True
+            print("Building TimeDistributed model with {} steps!".format(steps))
+
+        # Add single channel dimension
+        if input_dim[-1] != 1:
+            input_dim = input_dim + [1]
+
+        self.model_data.input = input_dim
+
+        inputs = Input(shape=input_dim)
 
         x = None
         nr_layers = len(layer_list)
         for idx, layer in enumerate(layer_list):
+            if not layer.get("is_active", True):
+                continue
             try:
                 cb = layer_callbacks[layer['name']]['class']
             except KeyError:
                 print("Layer {} not found in layer_definitions.py!".format(layer['name']))
+
+            # Wrap layers in TimeDistributed until first LSTM layer
+            if layer['name'] == "lstm":
+                lstm_mode = False
+                time_series = False
+                layer["params"].pop("steps")
+            if lstm_mode:
+                if layer['class'] not in not_time_distributed:
+                    time_series = True
+                else:
+                    time_series = False
 
             try:
                 options = {}
@@ -173,18 +212,28 @@ class MachineLearning():
                             options[entry] = opt
                 print("{}: Adding {} with\n{}".format(idx + 1, layer['name'], options))
                 if idx == 0 and nr_layers > 1:
-                    x = cb(**options)(inputs)
+                    if time_series:
+                        x = TimeDistributed(cb(**options))(inputs)
+                    else:
+                        x = cb(**options)(inputs)
                 elif idx > 0 and idx < nr_layers - 1:
-                    x = cb(**options)(x)
+                    if time_series:
+                        x = TimeDistributed(cb(**options))(x)
+                    else:
+                        x = cb(**options)(x)
                 else:
                     options.pop("units", None)
                     predictions = cb(output_dim, **options)(x)
             except Exception as e:
+                traceback.print_exc()
                 return {
                     "loaded": False,
                     "model_message": "\nLayer nr. {} failed."
                                      " Error adding {}\n{}".format(idx + 1, layer['name'], e)
                 }
+
+            if layer["name"] == "lstm":
+                layer["params"]["steps"] = steps
 
         self.model = Model(inputs=inputs, outputs=predictions)
 
@@ -245,21 +294,18 @@ class MachineLearning():
         class_weights = dict(enumerate(class_weights))
 
         cb = []
-        if "plot_cb" in train_params:
-            plot_cb = train_params["plot_cb"]
-            stop_cb = None
-            save_best = None
-            if "stop_cb" in train_params:
-                stop_cb = train_params["stop_cb"]
-            if "save_best" in train_params:
-                save_best = train_params["save_best"]
-            steps = int(np.ceil(x.shape[0] / batch_size))
-            func = TrainCallback(plot_cb=plot_cb,
-                                 steps_per_epoch=steps,
-                                 stop_cb=stop_cb,
-                                 save_best=save_best,
-                                 parent=self)
-            cb.append(func)
+        plot_cb = train_params.get("plot_cb", None)
+        stop_cb = train_params.get("stop_cb", None)
+        save_best = train_params.get("save_best", None)
+        steps = int(np.ceil(x.shape[0] / batch_size))
+        func = TrainCallback(plot_cb=plot_cb,
+                             steps_per_epoch=steps,
+                             stop_cb=stop_cb,
+                             save_best=save_best,
+                             parent=self)
+        cb.append(func)
+
+        if plot_cb is not None:
             verbose = 0
         else:
             verbose = 1
@@ -271,7 +317,7 @@ class MachineLearning():
                     cb_early_stop = EarlyStopping(monitor=dropout["monitor"],
                                                   min_delta=dropout["min_delta"],
                                                   patience=dropout["patience"],
-                                                  verbose=0,
+                                                  verbose=verbose,
                                                   mode="auto"
                                                   )
                 cb.append(cb_early_stop)
@@ -415,8 +461,9 @@ class MachineLearning():
         feature_lists = []
         frame_settings_list = []
         feature_map_dims = []
-        files_loaded = 0
+        files_loaded = []
         files_failed = []
+        model_exists = self.model_data.loaded
         info = {
             "success": False,
             "message": "",
@@ -438,9 +485,9 @@ class MachineLearning():
                 traceback.print_exc()
                 files_failed.append(file)
             else:
-                files_loaded += 1
+                files_loaded.append(file)
 
-        if not files_loaded:
+        if not len(files_loaded):
             info["message"] = "No valid files found"
             return {"info": info}
 
@@ -451,46 +498,68 @@ class MachineLearning():
                 return {"info": info}
             data_type = "test"
 
-        if feature_map_dims[0][1] == 1:
+        transpose = False
+        if feature_map_dims[0][0] == 1 or feature_map_dims[0][1] == 1:
             model_dimension = 1
+            if feature_map_dims[0][0] == 1:
+                feature_map_dims[0] = feature_map_dims[0][::-1]
+                transpose = True
         else:
             model_dimension = 2
 
         if data_type == "training":
-            if model_exists:
-                self.model_data.input = self.model.input_shape[1:-1]
-                self.model_data.output = self.model.output_shape[-1]
-            else:
-                self.model_data.input = feature_map_dims[0]
+            if not model_exists:
+                self.model_data.feature_dimension = feature_map_dims[0]
         else:
             if not self.training_data["loaded"]:
                 info["message"] = "Load training data first!"
                 return {"info": info}
 
-        for i in range(1, files_loaded):
+        for i in range(1, len(files_loaded)):
             # TODO: Check that files are compatible
-            map_dims = self.model_data.input
-            if map_dims != feature_map_dims[i]:
+            map_dims = self.model_data.feature_dimension
+            current_dim = feature_map_dims[i]
+            if transpose:
+                current_dim = current_dim[::-1]
+            if map_dims != current_dim:
                 message = "Input dimenions not matching:\nModel {} - Data {}".format(
                     map_dims,
                     feature_map_dims[i])
                 message += err_tip
                 info["message"] = message
+                print(files_loaded[i])
                 return {"info": info}
+
+        if data_type == "training":
+            if not model_exists:
+                if layer_list is not None:
+                    self.set_model_layers(layer_list)
 
         raw_labels = []
         feature_maps = []
-        for d in data:
+        frame_info = data[0]["frame_data"]["ml_frame_data"]["frame_info"]
+        for data_index, d in enumerate(data):
             fdata = d["frame_data"]["ml_frame_data"]["frame_list"]
-            for data_idx in fdata:
-                feature_maps.append(data_idx["feature_map"])
-                raw_labels.append(data_idx["label"])
+            if self.model_data.time_distributed:
+                time_series = frame_info.get("time_series", 1)
+                if self.model_data.time_distributed != time_series:
+                    print("Inconsistent time series values found:")
+                    print("Model: {}".format(self.model_data.time_distributed))
+                    print("Data : {}".format(time_series))
+            for subdata_index, frame in enumerate(fdata):
+                feature_map = frame["feature_map"]
+                if self.model_data.time_distributed > 1:
+                    feature_map = feature_proc.convert_time_series(feature_map, frame_info)
+                if transpose:
+                    feature_map = feature_map.T
+                feature_maps.append(feature_map)
+                raw_labels.append(frame["label"])
 
         feature_map_data = np.stack(feature_maps)
         if model_dimension == 2:
             feature_map_data = np.expand_dims(
                 feature_map_data,
-                model_dimension + 1)
+                len(feature_map_data) + 1)
         self.model_data.nr_of_training_maps = feature_map_data.shape[0]
 
         if data_type == "training":
@@ -512,9 +581,9 @@ class MachineLearning():
         label_categories = to_categorical(data_labels, self.label_num)
 
         if data_type == "training":
-            self.model_data.input = feature_map_data.shape[1:]
             if not model_exists:
-                self.model_data.layer_list = layer_list
+                if layer_list is not None:
+                    self.set_model_layers(layer_list)
                 model_status = self.clear_model(reinit=True)
             else:
                 model_status = {"loaded": True, "model_message": ""}
@@ -567,7 +636,6 @@ class MachineLearning():
             self.model_data.trainable = counted["trainable"]
             self.model_data.non_trainable = counted["non_trainable"]
             self.model_data.keras_layer_info = self.model.layers
-            self.model_data.layer_list = layer_list
         else:
             if not isinstance(model_status, str):
                 info["model_status"] = "Model not initialized"
@@ -577,11 +645,20 @@ class MachineLearning():
     def load_test_data(self, files):
         return self.load_train_data(files, load_test_data=True)
 
-    def save_model(self, file, feature_list, sensor_config, frame_settings):
+    def save_model(self, file, feature_list=None, sensor_config=None, frame_settings=None):
+        if feature_list is None:
+            feature_list = self.model_data.feature_list
+        if sensor_config is None:
+            sensor_config = self.model_data.sensor_config
+        if frame_settings is None:
+            frame_settings = self.model_data.frame_settings
+
         try:
             model_dimensions = {
                 "input": self.model_data.input,
                 "output": self.model_data.output,
+                "time_distributed": self.model_data.time_distributed,
+                "feature_dimension": self.model_data.feature_dimension,
             }
             info = {
                 "labels_dict": self.labels_dict,
@@ -621,6 +698,11 @@ class MachineLearning():
             feature_list = info.item()["feature_list"]
             sensor_config = configs.load(info.item()["sensor_config"])
             frame_settings = info.item()["frame_settings"]
+            time_distributed = model_dimensions.get("time_distributed", 1)
+            feature_dimension = model_dimensions.get(
+                "feature_dimension",
+                model_dimensions["input"][:-1]
+            )
             self.tf_session = K.get_session()
             self.tf_graph = tf.compat.v1.get_default_graph()
             with self.tf_session.as_default():
@@ -629,10 +711,7 @@ class MachineLearning():
         except Exception as e:
             error_text = self.error_to_text(e)
             message = "Error in load model:\n{}".format(error_text)
-            return {
-                "loaded": False,
-                "message": message,
-            }
+            return {"loaded": False}, message
         else:
             try:
                 self.model_data.nr_of_training_maps = info.item()["nr_of_training_maps"]
@@ -643,6 +722,9 @@ class MachineLearning():
             for l in self.model.layers:
                 l_conf = l.get_config()
                 l_name = l_conf["name"].rsplit("_", 1)[0]
+                if "time_distributed" in l_name:
+                    l_conf = l_conf["layer"]["config"]
+                    l_name = l_name = l_conf["name"].rsplit("_", 1)[0]
                 if l_name in gui_layer_conf:
                     g_conf = gui_layer_conf[l_name]["params"]
                     layer = {
@@ -693,51 +775,64 @@ class MachineLearning():
             "non_trainable": counted["non_trainable"],
             "input": model_dimensions["input"],
             "output": model_dimensions["output"],
+            "time_distributed": time_distributed,
+            "feature_dimension": feature_dimension,
         }
 
         self.set_model_data(model_data)
 
-        message = "Loaded model with:\n"\
-                  "input shape    :{}\n"\
-                  "output shape   :{}\n"\
-                  "nr of features :{}\n"\
-                  "labels         :{}\n"\
-                  "Trained with {} features".format(
-                      self.model_data.input,
-                      self.model_data.output,
-                      len(feature_list),
-                      labels,
+        message = "Loaded model with:\n"
+        message += "input shape    :{}\n".format(self.model_data.input)
+        if self.model_data.time_distributed > 1:
+            message += "time steps     :{}\n".format(self.model_data.time_distributed)
+        message += "output shape   :{}\n".format(self.model_data.output)
+        message += "nr of features :{}\n".format(len(feature_list))
+        message += "labels         :{}\n".format(labels)
+        message += "Trained with {} features".format(
                       self.model_data.get("nr_of_training_maps", "N/A")
                   )
 
         return self.model_data, message
 
+    def clear_session(self):
+        K.clear_session()
+        tf.keras.backend.clear_session()
+
     def clear_model(self, reinit=False):
         if self.model is not None:
-            K.clear_session()
+            self.clear_session()
             del self.model
             self.model = None
+        if not reinit:
+            for data in self.model_data:
+                self.model_data[data] = None
             self.model_data.loaded = False
 
-        if reinit and self.model_data.input is not None:
+        if reinit:
             self.tf_session = K.get_session()
             self.tf_graph = tf.compat.v1.get_default_graph()
             with self.tf_session.as_default():
                 with self.tf_graph.as_default():
                     status = self.init_model()
-                    if not status["loaded"]:
-                        self.clear_model()
-                    else:
+                    if status["loaded"]:
                         self.model_data["loaded"] = True
                     return status
         else:
             return {"loaded": False, "model_message": "Nothing to reinitialize!"}
 
     def set_model_layers(self, layer_list):
-        self.model_data["layer_list"] = layer_list
+        self.model_data.time_distributed = 1
+        for l in layer_list:
+            if "lstm" in l["name"] and l.get("is_active", True):
+                steps = l["params"].get("steps", None)
+                if steps is None:
+                    steps = 1
+                    print("Warning: Missing time steps for LSTM")
+                self.model_data.time_distributed = steps
+        self.model_data.layer_list = layer_list
 
     def update_model_layers(self, layer_list):
-        self.model_data["layer_list"] = layer_list
+        self.set_model_layers(layer_list)
         model_status = self.clear_model(reinit=True)
 
         info = {
@@ -774,6 +869,9 @@ class MachineLearning():
         self.model_data.y_labels = None
         self.training_data = {"loaded": False}
         self.test_data = {"loaded": False}
+        if not self.model.loaded:
+            self.label_num = 0
+            self.labels_dict = None
 
     def get_labels(self):
         return self.labels_dict

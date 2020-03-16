@@ -91,6 +91,19 @@ class MLState:
             frame_settings["collection_mode"] = "continuous"
             frame_settings["rolling"] = True
 
+        if is_eval_mode:
+            updated_frame_settings = self.get_frame_settings(from_gui=True)
+            refresh = [
+                "collection_mode",
+                "continuous",
+                "auto_threshold",
+                "auto_offset",
+                "dead_time",
+                "rolling",
+            ]
+            for param in refresh:
+                frame_settings[param] = updated_frame_settings.get(param, None)
+
         ml_settings = {
             "feature_list": feature_list,
             "frame_settings": frame_settings,
@@ -104,8 +117,16 @@ class MLState:
             )
         elif mode == "feature_extract":
             e_handle = gui.error_message
-            if not gui.feature_select.check_limits(params["sensor_config"], error_handle=e_handle):
+            settings_ok = gui.feature_select.check_limits(
+                params["sensor_config"],
+                error_handle=e_handle,
+                allow_change=True
+            )
+            if not settings_ok:
                 return False
+            else:
+                # Update sensor config
+                params["sensor_config"] = self.gui_handle.save_gui_settings_to_sensor_config()
             gui.ml_feature_plot_widget.reset_data(
                 params["sensor_config"],
                 params["service_params"]

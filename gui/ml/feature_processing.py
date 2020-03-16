@@ -1,6 +1,4 @@
 import copy
-import os
-import sys
 
 import numpy as np
 import pyqtgraph as pg
@@ -12,24 +10,17 @@ from acconeer.exptool import imock, utils
 from acconeer.exptool.modes import Mode
 
 import gui.ml.feature_definitions as feature_def
+import gui.ml.trigger_functions as trigger_func
 
 
 imock.add_mock_packages(imock.GRAPHICS_LIBS)
-
-
-try:
-    sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "../../")))
-    from examples.processing import presence_detection_sparse
-    SPARSE_AUTO_DETECTION = True
-except ImportError:
-    print("Could not import presence detector!\n")
-    SPARSE_AUTO_DETECTION = False
 
 
 class FeatureProcessing:
     def __init__(self, sensor_config, feature_list=None, store_features=False):
         self.rolling = False
         self.frame_size = 25
+        self.time_series = 1
         self.sweep_counter = -1
         self.motion_score = None
         self.motion_pass = 2
@@ -45,7 +36,7 @@ class FeatureProcessing:
         self.label = ""
         self.dead_time_reset = 10
         self.dead_time = 0
-        self.triggered = False
+        self.single_triggered = False
         self.triggered_last = False
         self.trigger_cool_down = 0
         self.trigger_feature_based = False
@@ -56,6 +47,9 @@ class FeatureProcessing:
         self.feature_lookup = feature_def.get_features()
         self.feature_callbacks = {}
         self.setup(sensor_config, feature_list)
+
+        self.trigger_cb = trigger_func.Trigger()
+        self.trigger_options = {}
 
     def setup(self, sensor_config, feature_list=None):
         self.feature_list = feature_list
@@ -70,7 +64,7 @@ class FeatureProcessing:
         self.motion_detected = False
         self.sweep_number = 0
         self.label = ""
-        self.triggered = False
+        self.single_triggered = False
         self.feature_error = []
         self.motion_processors = None
         self.motion_score = None
@@ -89,6 +83,7 @@ class FeatureProcessing:
         self.flush_data()
 
     def set_frame_settings(self, params):
+        set_trigger = False
         if not isinstance(params, dict):
             print("Frame settings needs to be a dict!")
             return
@@ -104,17 +99,14 @@ class FeatureProcessing:
         if params.get("collection_mode") is not None:
             self.collection_mode = params["collection_mode"]
             self.sweep_counter = -1
-            if self.collection_mode == "auto_feature_based":
-                self.collection_mode = "continuous"
-                self.trigger_feature_based = True
-                self.rolling = True
-            else:
-                self.trigger_feature_based = False
-                self.motion_score_normalized = None
+            if params["collection_mode"] not in ["continuous", "single"]:
+                set_trigger = True
+                self.collection_mode = "auto"
+                self.trigger_options["mode"] = params["collection_mode"]
         if params.get("frame_label") is not None:
             self.label = params["frame_label"]
         if params.get("triggered") is not None:
-            self.triggered = params["triggered"]
+            self.single_triggered = params["triggered"]
         if params.get("auto_threshold") is not None:
             self.auto_threshold = params["auto_threshold"]
         if params.get("dead_time") is not None:
@@ -122,6 +114,9 @@ class FeatureProcessing:
             self.dead_time = self.dead_time_reset
         if params.get("auto_offset") is not None:
             self.auto_offset = params["auto_offset"]
+        if params.get("time_series") is not None:
+            self.sweep_counter = -1
+            self.time_series = max(params["time_series"], 1)
         if params.get("calibration") is not None:
             if 0.0 in params["calibration"]:
                 print(np.where(params["calibration"] == 0.0))
@@ -130,8 +125,23 @@ class FeatureProcessing:
             else:
                 self.calibration = params["calibration"]
 
-        if self.collection_mode == "auto" or self.collection_mode == "single":
+        if self.collection_mode == "single":
             self.rolling = False
+
+        if self.collection_mode == "auto":
+            if self.trigger_options["mode"] == "presence_sparse":
+                self.rolling = False
+            else:
+                self.rolling = True
+
+        self.total_size = self.frame_size + 2 * self.frame_pad + (self.time_series - 1)
+
+        self.trigger_options["auto_threshold"] = self.auto_threshold
+        self.trigger_options["auto_offset"] = self.auto_offset
+        self.trigger_options["dead_time"] = self.dead_time_reset
+
+        if set_trigger:
+            self.trigger_cb.set_trigger_mode(self.trigger_options)
 
     def init_feature_cb(self):
         if self.feature_list is None:
@@ -147,7 +157,7 @@ class FeatureProcessing:
 
     def prepare_data_container(self, data):
         mode = data["sensor_config"].mode
-        n_sweeps = self.frame_size + 2 * self.frame_pad
+        n_sweeps = self.total_size
 
         if mode == Mode.SPARSE:
             num_sensors, point_repeats, data_len = data["sweep_data"].shape
@@ -194,29 +204,17 @@ class FeatureProcessing:
                     self.win_data[data][:, :, win_idx] = 0
 
     def feature_extraction(self, data):
-        n_sweeps = self.frame_size + 2 * self.frame_pad
-        offset = min(self.frame_size, self.auto_offset)
+        n_sweeps = self.total_size - 1
+        offset = min(self.frame_size - 1, self.auto_offset)
         self.check_data(data)
 
         if self.sweep_counter == -1:
             self.prepare_data_container(data)
             self.sweep_counter = 0
 
-        if self.collection_mode == "auto" and not self.motion_detected:
-            if self.dead_time:
-                self.dead_time -= 1
-            else:
-                if self.auto_motion_detect(data):
-                    self.motion_detected = True
-                    self.markers.append(self.sweep_number)
-                    self.dead_time = self.dead_time_reset
-
         if self.collection_mode == "auto":
             self.roll_data(data)
             self.add_sweep(data)
-            if not self.motion_detected:
-                if self.sweep_counter == offset:
-                    self.reset_data(data, win_idx=offset)
 
         if self.collection_mode != "auto":
             if self.sweep_counter == self.frame_pad + 1:
@@ -231,7 +229,7 @@ class FeatureProcessing:
         if self.collection_mode == "single":
             self.roll_data(data)
             self.add_sweep(data)
-            if not self.triggered:
+            if not self.single_triggered:
                 if self.sweep_counter == self.frame_pad:
                     self.reset_data(data, win_idx=self.frame_pad)
 
@@ -262,48 +260,59 @@ class FeatureProcessing:
             else:
                 fmap /= self.calibration
 
+        motion_score = 0
+        if self.collection_mode == "auto" and fmap is not None:
+            triggered, motion_score, message = self.trigger_cb.get_trigger(
+                data,
+                fmap,
+                self.trigger_options
+            )
+            if triggered:
+                self.motion_detected = True
+            if not self.motion_detected:
+                if self.sweep_counter == offset:
+                    self.reset_data(data, win_idx=offset)
+        elif fmap is not None:
+            triggered = True
+        else:
+            triggered = False
+
         current_frame = {
             "label": self.label,
             "frame_nr": len(self.markers),
             "feature_map": fmap,
-            "frame_marker": self.sweep_number - self.frame_size - self.frame_pad,
+            "frame_marker":
+                self.sweep_number - self.frame_size - self.frame_pad - (self.time_series - 1),
             "frame_complete": False,
             "sweep_counter": self.sweep_counter,
             "sweep_number": self.sweep_number,
             "calibration": self.calibration,
         }
 
-        trigger_feature_based = not self.trigger_feature_based
-        if self.trigger_feature_based and fmap is not None:
-            if self.sweep_number > self.frame_size:
-                trigger_feature_based = self.auto_motion_detect(fmap, feature_based=True)
-
         if self.sweep_counter >= n_sweeps:
-            if trigger_feature_based:
+            if triggered or self.motion_detected:
                 current_frame["frame_complete"] = True
+                self.markers.append(self.sweep_number)
             else:
                 current_frame["feature_map"] = None
-                self.markers.pop(-1)
+            self.motion_detected = False
             if not self.rolling:
-                self.sweep_counter = 0
-                self.motion_detected = False
-                self.reset_data(data)
+                self.sweep_counter = offset
+                self.reset_data(data, win_idx=offset)
             else:
                 self.sweep_counter = n_sweeps
             if self.collection_mode == "single":
-                self.triggered = False
+                self.single_triggered = False
         else:
             current_frame["frame_complete"] = False
             if self.collection_mode == "auto":
-                if not self.motion_detected:
+                if not self.motion_detected and not self.rolling:
                     current_frame["feature_map"] = None
-                    if self.sweep_counter > offset:
-                        self.sweep_counter = offset
+                    self.sweep_counter = min(self.sweep_counter, offset)
             if self.collection_mode == "single":
-                if not self.triggered:
+                if not self.single_triggered:
                     current_frame["feature_map"] = None
-                    if self.sweep_counter > self.frame_pad:
-                        self.sweep_counter = self.frame_pad
+                    self.sweep_counter = min(self.sweep_counter, self.frame_pad)
 
         self.sweep_number += 1
 
@@ -312,7 +321,10 @@ class FeatureProcessing:
                 self.frame_list.append(copy.deepcopy(current_frame))
 
         if not self.store_features:
-            self.sweep_number = max(self.sweep_number, 2 * self.frame_size)
+            self.sweep_number = max(
+                self.sweep_number,
+                2 * (self.frame_size + self.time_series - 1)
+            )
 
         frame_data = {
             "current_frame": current_frame,
@@ -320,10 +332,11 @@ class FeatureProcessing:
             "frame_info": {
                 "frame_pad": self.frame_pad,
                 "frame_size": self.frame_size,
+                "time_series": self.time_series,
             },
             "feature_list": self.feature_list,
             "frame_list": self.frame_list,
-            "motion_score": self.motion_score_normalized,
+            "motion_score": motion_score,
             "model_dimension": self.feature_list[0]["model_dimension"],
         }
 
@@ -332,11 +345,12 @@ class FeatureProcessing:
     def feature_extraction_window(self, data, record, start, label=""):
         self.frame_pad = data["ml_frame_data"]["frame_info"]["frame_pad"]
         self.frame_size = data["ml_frame_data"]["frame_info"]["frame_size"]
+        self.time_series = data["ml_frame_data"]["frame_info"].get("time_series", 1)
         self.calibration = data["ml_frame_data"]["current_frame"].get("calibration")
-        n_sweeps = self.frame_size + 2 * self.frame_pad
+        self.total_size = self.frame_size + 2 * self.frame_pad + (self.time_series - 1)
         self.set_feature_list(data["ml_frame_data"]["feature_list"])
         frame_start = start - self.frame_pad
-        frame_stop = frame_start + self.frame_size + 2 * self.frame_pad
+        frame_stop = frame_start + self.total_size
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
         self.check_data(data)
@@ -347,6 +361,7 @@ class FeatureProcessing:
             "dist_vec": data["x_mm"],
             "sensor_config": data["sensor_config"],
             "session_info": data.get("session_info", None),
+            "time_series": self.time_series,
         }
 
         for marker in range(frame_start, frame_stop):
@@ -388,7 +403,7 @@ class FeatureProcessing:
             "feature_map": fmap,
             "frame_marker": start,
             "frame_complete": True,
-            "sweep_counter": n_sweeps,
+            "sweep_counter": self.total_size,
             "sweep_number": frame_stop,
             "calibration": self.calibration,
         }
@@ -448,128 +463,6 @@ class FeatureProcessing:
     def indexer(self, i):
         self.m += 1
         return self.m
-
-    def auto_motion_detect(self, data, feature_based=False):
-        detected = False
-
-        if feature_based:
-            margin = .1
-            if self.trigger_cool_down:
-                self.trigger_cool_down -= 1
-                return detected
-
-            wing = self.auto_offset
-            if len(data.shape) == 2:
-                if wing >= (self.frame_size / 2):
-                    self.motion_score_normalized = "Reduce offset!"
-                    detected = True
-                else:
-                    center = np.sum(data[:, wing:-wing]) / (self.frame_size - 2 * wing)
-                    left = np.sum(data[:, 0:wing]) / wing
-                    right = np.sum(data[:, -(wing + 1):-1]) / wing
-                    if right == 0 or left == 0:
-                        self.motion_score_normalized = 0
-                    if (left / right > 1.0 - margin) and (left / right < 1.0 + margin):
-                        self.motion_score_normalized = 2 * center / (left + right)
-                        if self.motion_score_normalized > self.auto_threshold:
-                            detected = True
-                    if center > (2 * self.auto_threshold * left):
-                        detected = True
-                    if center > (2 * self.auto_threshold * right):
-                        detected = True
-                    if left > 1.1 * center or right > 1.1 * center:
-                        detected = False
-            else:
-                self.motion_score_normalized = "Not implemented"
-                detected = True
-
-            if not detected and self.triggered_last:
-                self.trigger_cool_down = self.dead_time_reset
-
-            self.triggered_last = detected
-
-            return detected
-
-        num_sensors = data["sweep_data"].shape[0]
-        sensor_config = data["sensor_config"]
-        mode = sensor_config.mode
-
-        if mode == Mode.SPARSE and not SPARSE_AUTO_DETECTION:
-            if self.sweep_counter <= 10:
-                print("Warning: Auto movement detection with spares not available.")
-
-        if mode == Mode.SPARSE and SPARSE_AUTO_DETECTION:
-            if self.motion_processors is None:
-                self.motion_config = presence_detection_sparse.get_processing_config()
-                self.motion_config.inter_frame_fast_cutoff = 100
-                self.motion_config.inter_frame_slow_cutoff = 0.9
-                self.motion_config.inter_frame_deviation_time_const = 0.05
-                self.motion_config.intra_frame_weight = 0.8
-                self.motion_config.intra_frame_time_const = 0.03
-                self.motion_config.detection_threshold = 0
-                self.motion_config.output_time_const = 0.01
-                self.motion_class = presence_detection_sparse.Processor
-                motion_processors_list = []
-                for i in range(num_sensors):
-                    motion_processors_list.append(
-                        self.motion_class(
-                            sensor_config,
-                            self.motion_config,
-                            data["session_info"]
-                        )
-                    )
-                self.motion_processors = motion_processors_list
-            else:
-                motion_score = 0
-                for i in range(num_sensors):
-                    score = self.motion_processors[i].process(data["sweep_data"][i, :, :])
-                    score = score["depthwise_presence"]
-                    max_score = np.nanmax(score)
-                    if max_score > motion_score:
-                        motion_score = max_score
-                self.motion_score_normalized = motion_score
-                if self.motion_score_normalized > self.auto_threshold:
-                    detected = True
-                    motion_processors_list = []
-                    for i in range(num_sensors):
-                        motion_processors_list.append(
-                            self.motion_class(
-                                sensor_config,
-                                self.motion_config,
-                                data["session_info"]
-                            )
-                        )
-                    self.motion_processors = motion_processors_list
-                    return detected
-        else:
-            if self.motion_score is None:
-                self.motion_score_normalized = 0
-                self.motion_score = np.full(num_sensors, np.inf)
-
-            for i in range(num_sensors):
-                motion_score = np.max(np.abs(data["env_ampl"][i, :]))
-
-                if motion_score < self.motion_score[i]:
-                    if self.motion_score[i] == np.inf:
-                        self.motion_score[i] = motion_score
-
-                self.motion_score_normalized = max(
-                    self.motion_score_normalized,
-                    motion_score / self.motion_score[i]
-                )
-
-                if self.motion_score_normalized > self.auto_threshold:
-                    self.motion_pass_counter += 1
-                    if self.motion_pass_counter >= self.motion_pass:
-                        self.motion_pass_counter = 0
-                        self.motion_score = None
-                        detected = True
-                        return detected
-                else:
-                    # Try to remove small scale variations
-                    self.motion_score[i] = 0.9 * self.motion_score[i] + 0.1 * motion_score
-
-        return detected
 
     def get_sensor_map(self, sensor_config):
         sensors = sensor_config.sensor
@@ -680,7 +573,18 @@ class DataProcessor:
         feature_map = plot_data["ml_frame_data"]["current_frame"]["feature_map"]
         complete = plot_data["ml_frame_data"]["current_frame"]["frame_complete"]
         if complete and self.evaluate and feature_map is not None:
-            plot_data["prediction"] = self.evaluate(feature_map)
+            if plot_data["ml_frame_data"]["frame_info"].get("time_series", 1) > 1:
+                feature_map = convert_time_series(
+                    plot_data["ml_frame_data"]["current_frame"]["feature_map"],
+                    plot_data["ml_frame_data"]["frame_info"]
+                )
+            try:
+                plot_data["prediction"] = self.evaluate(feature_map)
+            except Exception as e:
+                print(e)
+                plot_data["ml_frame_data"]["current_frame"]["frame_complete"] = False
+                return plot_data
+
             prediction_label = plot_data["prediction"]["prediction"]
             plot_data["ml_frame_data"]["frame_list"][-1]["label"] = prediction_label
 
@@ -697,6 +601,36 @@ class DataProcessor:
         self.sweep += 1
 
         return plot_data
+
+
+def convert_time_series(feature_map, frame_info):
+    frame_size = frame_info.get('frame_size')
+
+    if feature_map is None:
+        return None
+
+    time_series = frame_info.get('time_series', 1)
+    if time_series < 2:
+        print("Cannot convert time series. Time series < 2!")
+        return feature_map
+
+    if len(feature_map.shape) == 1:
+        print("Cannot convert time series. Feature map x dimension < 2!")
+        return feature_map
+
+    y, x = feature_map.shape
+
+    if x != frame_size + time_series - 1:
+        print("Cannot convert time series. Frame length {}, but should be {}".format(
+            x, frame_size + time_series - 1)
+        )
+        return feature_map
+
+    out_data = np.zeros((time_series, y, frame_size))
+    for i in range(time_series):
+        out_data[i, :, :] = feature_map[:, i:i+frame_size]
+
+    return out_data
 
 
 class PGUpdater:
@@ -805,6 +739,10 @@ class PGUpdater:
         if processing_config is not None:
             self.processing_config = processing_config
 
+        if self.show_predictions:
+            self.prediction_plots = []
+            self.predictions_plot_window.clear()
+
     def update(self, data):
         feat_map = None
         if data["ml_frame_data"] is not None:
@@ -812,6 +750,7 @@ class PGUpdater:
             feat_map = frame_data["current_frame"]["feature_map"]
             frame_size = frame_data["frame_info"]["frame_size"]
             frame_pad = frame_data["frame_info"]["frame_pad"]
+            time_series = frame_data["frame_info"].get("time_series", 1)
             frame_complete = frame_data["current_frame"]["frame_complete"]
             model_dimension = data["ml_frame_data"]["model_dimension"]
         else:
@@ -826,14 +765,14 @@ class PGUpdater:
         if self.first:
             self.first = False
             self.env_plot_max_y = 0
-            s_buff = frame_size + 2 * frame_pad
+            s_buff = frame_size + 2 * frame_pad + time_series - 1
             self.feat_plot.resetTransform()
             if model_dimension > 1:
                 self.feat_plot.translate(-frame_pad, 0)
             self.feat_plot_image.setXRange(-frame_pad, s_buff - frame_pad)
 
             self.border_left.setValue(0)
-            self.border_right.setValue(frame_size)
+            self.border_right.setValue(frame_size + time_series - 1)
 
             self.border_left.show()
             self.border_right.show()

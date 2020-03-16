@@ -356,7 +356,8 @@ class FeatureSparseFFT:
         # output data
         self.data = {
             "fft": "FFT PSD",
-            "fft_profile": "FFT Profile"
+            "fft_profile": "FFT Profile",
+            "fft_yprofile": "FFT y-Profile",
         }
         # text, value, limits
         self.options = [
@@ -433,14 +434,16 @@ class FeatureSparseFFT:
             }
 
         data["fft_profile"] = np.sum(data["fft"], axis=0)
+        data["fft_profile"] = data["fft_profile"] / np.max(data["fft_profile"]) * 256
+        data["fft_yprofile"] = np.sum(data["fft"], axis=1)
 
         # Apply normalized gamma stretch and subtract mean.
         if options["Stretch"]:
             map_max = 1.2 * np.max(data["fft"])
             g = 1 / 2.2
             data["fft"] = 254/(map_max + 1.0e-9)**g * data["fft"]**g
-
-            data["fft"] -= np.mean(data["fft"])
+            avgs = np.mean(data["fft"], axis=0)
+            data["fft"] -= np.min(avgs)
             data["fft"][data["fft"] < 0] = 0
 
         return data

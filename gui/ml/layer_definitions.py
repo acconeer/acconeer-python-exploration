@@ -1,8 +1,10 @@
 import numpy as np
 from keras.layers import (
+    LSTM,
     BatchNormalization,
     Conv1D,
     Conv2D,
+    ConvLSTM2D,
     Dense,
     Dropout,
     Flatten,
@@ -96,6 +98,32 @@ def get_layers():
                 "activation": ["drop_down", activations],
             },
         },
+        "convlstm2d": {
+            "class_str": "ConvLSTM2D",
+            "class": ConvLSTM2D,
+            "dimensions": 0,
+            "params": {
+                "filters": [32, int, [0, np.inf]],
+                "kernel_size": [8, int, [1, np.inf]],
+                "padding": ["drop_down", ["same", "valid", "causal"]],
+            },
+        },
+        "lstm": {
+            "class_str": "LSTM",
+            "class": LSTM,
+            "dimensions": 0,
+            "params": {
+                "steps": [60, int, [0, np.inf]],
+                "units": [32, int, [0, np.inf]],
+                "activation": ["drop_down", activations],
+                "recurrent_activation": ["drop_down", activations],
+                "return_sequences": True,
+            },
+        },
     }
+
+    # TODO: Finalize "Time series support"
+    layers.pop("lstm")
+    layers.pop("convlstm2d")
 
     return layers

@@ -482,8 +482,12 @@ class FeatureSelectFrame(QFrame):
 
         return f_list
 
-    def match_settings(self):
-        action = self.sender().text()
+    def match_settings(self, action=None):
+        if action is None:
+            action = self.sender().text()
+            bypass_confirmation = False
+        else:
+            bypass_confirmation = True
 
         # Update Limits
         self.get_feature_list()
@@ -509,16 +513,18 @@ class FeatureSelectFrame(QFrame):
             )
             if index != self.gui_handle.module_dd.currentIndex():
                 message = "Do you want to change the service to {}?".format(module_key)
-                if self.gui_handle.warning_message(message):
+                if bypass_confirmation or self.gui_handle.warning_message(message):
                     self.gui_handle.module_dd.setCurrentIndex(index)
                     self.gui_handle.update_canvas()
             conf = self.gui_handle.get_sensor_config()
             conf.sensor = self.limits["sensors"]
+            self.gui_handle.set_sensors(self.limits["sensors"])
             try:
                 conf.range_interval = [self.limits["start"], self.limits["end"]]
             except Exception:
                 # This error needs to be actively fixed by the user in the GUI.
                 pass
+            self.gui_handle.refresh_pidgets()
         else:
             print("Action {} not supported!.".format(action))
 
@@ -590,7 +596,7 @@ class FeatureSelectFrame(QFrame):
     def update_sensor_config(self, sensor_config):
         self.sensor_config = sensor_config
 
-    def check_limits(self, sensor_config=None, error_handle=None):
+    def check_limits(self, sensor_config=None, error_handle=None, allow_change=False):
         QApplication.processEvents()
         if sensor_config is None:
             sensor_config = self.gui_handle.save_gui_settings_to_sensor_config()
@@ -698,6 +704,14 @@ class FeatureSelectFrame(QFrame):
             for d in feature_data_types:
                 error_message += "{} ".format(d)
             error_message += "\nSensor:\n{}\n".format(config_data_type)
+
+        if not is_valid and allow_change:
+            message = "Settings mismatch. Match sensor settings?\n".format()
+            if self.gui_handle.warning_message(message, detailed_warning=error_message):
+                self.match_settings(action="Feature to Sensor")
+                is_valid = self.check_limits()
+            else:
+                error_handle = None
 
         if not is_valid:
             self.buttons["start"].setEnabled(False)
@@ -812,12 +826,19 @@ class FeatureSelectFrame(QFrame):
 
         self.feature_areas = []
 
-        frame_size = self.get_frame_size()
+        # If time series, feature is unrolled along time axis
+        ts = 1
+        try:
+            ts = self.gui_handle.feature_sidepanel.get_times_series()
+        except Exception:
+            # Pointer does not exist at start up
+            pass
+        frame_size = self.get_frame_size() + ts - 1
 
         self.feat_plot_image.setXRange(0, max(frame_size, 1))
 
         y_max_size = 0
-        x_max_size = 0
+        x_size = 0
         for feature in self.enabled_features:
             nr_sensors = len(feature["sensors"].get_sensors())
             feature_opts = self.get_feature_list([feature])[0]["options"]
@@ -838,8 +859,9 @@ class FeatureSelectFrame(QFrame):
                     x_size = int(feature["model_dimension"][0])
                     if x_size == 2:
                         x_size = frame_size
-                    if x_size > x_max_size:
-                        x_max_size = x_size
+                    else:
+                        x_size += (ts - 1)
+
                     rect = pg.QtGui.QGraphicsRectItem(0, y_max_size, x_size, feature_size)
                     rect.setPen(utils.pg_pen_cycler(feature["count"]))
                     rect.setBrush(utils.pg_brush_cycler(feature["count"]))
@@ -853,7 +875,10 @@ class FeatureSelectFrame(QFrame):
 
         self.feat_plot_image.setYRange(0, max(y_max_size, 1))
 
-        self.feat_dim_text.setText("Feature size: {} by {}".format(int(y_max_size), x_max_size))
+        size = "Feature size: {} by {}".format(int(y_max_size), x_size)
+        if ts > 1:
+            size += " unrolled ({}x{}x{})".format(int(y_max_size), int(x_size - (ts - 1)), ts)
+        self.feat_dim_text.setText(size)
 
         if scan_is_running and self.has_valid_config:
             self.gui_handle.sig_scan.emit("update_feature_list", None, self.get_feature_list())
@@ -983,6 +1008,7 @@ class FeatureSidePanel(QFrame):
             "frame_time": QLabel("Frame time [s]"),
             "update_rate": QLabel("Update rate [Hz]"),
             "frame_size": QLabel("Sweeps per frame"),
+            "time_series": QLabel("Time series"),
             "auto_thrshld_offset": QLabel("Thrshld/Offset:"),
             "dead_time": QLabel("Dead time:"),
             "save_load": QLabel("Save/load session data:"),
@@ -999,6 +1025,7 @@ class FeatureSidePanel(QFrame):
             "frame_time": QLineEdit(str(1)),
             "update_rate": QLineEdit(str(30)),
             "frame_size": QLineEdit(str(30)),
+            "time_series": QLineEdit(str(1)),
             "auto_threshold": QLineEdit("1.5"),
             "dead_time": QLineEdit("10"),
             "auto_offset": QLineEdit("5"),
@@ -1039,7 +1066,13 @@ class FeatureSidePanel(QFrame):
 
         self.checkboxes = {
             "rolling": QCheckBox("Rolling frame"),
+            "time_series": QCheckBox(""),
         }
+
+        self.checkboxes["time_series"].clicked.connect(self.toggle_time_series)
+        self.checkboxes["time_series"].setChecked(False)
+        self.toggle_time_series()
+
         self.checkboxes["rolling"].clicked.connect(
             partial(self.frame_settings_storage, "rolling")
         )
@@ -1053,6 +1086,8 @@ class FeatureSidePanel(QFrame):
         self.auto_mode = QComboBox()
         self.auto_mode.addItem("Presence detection")
         self.auto_mode.addItem("Feature detection")
+        # TODO: Finalize "Support model" triggering
+        # self.auto_mode.addItem("Support Model")
 
         self.radiobuttons["auto"].setChecked(True)
         self.radio_frame = QFrame()
@@ -1099,32 +1134,36 @@ class FeatureSidePanel(QFrame):
             self.textboxes[key].textChanged.connect(partial(self.calc_values, tag, True))
 
         self.num = 0
-        self.grid.addWidget(self.labels["frame_settings"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.h_lines["h_line_1"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.labels["frame_time"], self.increment(), 0)
-        self.grid.addWidget(self.textboxes["frame_time"], self.num, 1)
-        self.grid.addWidget(self.labels["update_rate"], self.increment(), 0)
-        self.grid.addWidget(self.textboxes["update_rate"], self.num, 1)
-        self.grid.addWidget(self.labels["frame_size"], self.increment(), 0)
-        self.grid.addWidget(self.textboxes["frame_size"], self.num, 1)
-        self.grid.addWidget(self.buttons["create_calib"], self.increment(), 0)
-        self.grid.addWidget(self.buttons["show_calib"], self.num, 1)
-        self.grid.addWidget(self.labels["empty_1"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.radio_frame, self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.labels["empty_2"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.labels["save_load"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.h_lines["h_line_3"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.buttons["load_session"], self.increment(), 0)
-        self.grid.addWidget(self.buttons["save_session"], self.num, 1)
-        self.grid.addWidget(self.labels["loaded_file"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.labels["empty_3"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.labels["batch_header"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.h_lines["h_line_4"], self.increment(), 0, 1, 2)
-        self.grid.addWidget(self.buttons["load_batch"], self.increment(), 0)
-        self.grid.addWidget(self.buttons["process_batch"], self.num, 1)
+        self.grid.addWidget(self.labels["frame_settings"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.h_lines["h_line_1"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.labels["frame_time"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.textboxes["frame_time"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.labels["update_rate"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.textboxes["update_rate"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.labels["frame_size"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.textboxes["frame_size"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.labels["time_series"], self.increment(), 0)
+        self.grid.addWidget(self.checkboxes["time_series"], self.num, 1)
+        self.grid.addWidget(self.textboxes["time_series"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.buttons["create_calib"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["show_calib"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.labels["empty_1"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.radio_frame, self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.labels["empty_2"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.labels["save_load"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.h_lines["h_line_3"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.buttons["load_session"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["save_session"], self.num, 2, 1, 2)
+        self.grid.addWidget(self.labels["loaded_file"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.labels["empty_3"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.labels["batch_header"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.h_lines["h_line_4"], self.increment(), 0, 1, 4)
+        self.grid.addWidget(self.buttons["load_batch"], self.increment(), 0, 1, 2)
+        self.grid.addWidget(self.buttons["process_batch"], self.num, 2, 1, 2)
 
         self.textboxes["frame_size"].setEnabled(False)
         self.textboxes["update_rate"].setEnabled(False)
+        self.textboxes["time_series"].setEnabled(False)
 
         self.grid.setRowStretch(self.increment(), 1)
 
@@ -1141,9 +1180,12 @@ class FeatureSidePanel(QFrame):
                 self.labels["frame_time"],
                 self.labels["update_rate"],
                 self.labels["frame_size"],
+                self.labels["time_series"],
                 self.textboxes["frame_time"],
                 self.textboxes["update_rate"],
                 self.textboxes["frame_size"],
+                self.textboxes["time_series"],
+                self.checkboxes["time_series"],
                 self.buttons["create_calib"],
                 self.buttons["show_calib"],
             ],
@@ -1152,9 +1194,12 @@ class FeatureSidePanel(QFrame):
                 self.labels["update_rate"],
                 self.labels["batch_header"],
                 self.labels["empty_3"],
+                self.labels["time_series"],
                 self.h_lines["h_line_4"],
                 self.textboxes["frame_time"],
                 self.textboxes["update_rate"],
+                self.textboxes["time_series"],
+                self.checkboxes["time_series"],
                 self.labels["empty_1"],
                 self.buttons["load_batch"],
                 self.buttons["process_batch"],
@@ -1171,12 +1216,15 @@ class FeatureSidePanel(QFrame):
                 self.labels["frame_size"],
                 self.labels["loaded_file"],
                 self.labels["batch_header"],
+                self.labels["time_series"],
                 self.h_lines["h_line_1"],
                 self.h_lines["h_line_3"],
                 self.h_lines["h_line_4"],
                 self.textboxes["frame_time"],
                 self.textboxes["update_rate"],
                 self.textboxes["frame_size"],
+                self.textboxes["time_series"],
+                self.checkboxes["time_series"],
                 self.buttons["load_session"],
                 self.buttons["save_session"],
                 self.buttons["create_calib"],
@@ -1186,6 +1234,11 @@ class FeatureSidePanel(QFrame):
             ],
             "train": [],
         }
+
+        # TODO: Finalize "Time series support"
+        self.modes["feature_select"].append(self.labels["time_series"])
+        self.modes["feature_select"].append(self.textboxes["time_series"])
+        self.modes["feature_select"].append(self.checkboxes["time_series"])
 
     def frame_settings_storage(self, senders=None):
         all_senders = [
@@ -1198,6 +1251,7 @@ class FeatureSidePanel(QFrame):
             "rolling",
             "update_rate",
             "calibration",
+            "time_series",
         ]
         if senders is None:
             senders = all_senders
@@ -1214,6 +1268,8 @@ class FeatureSidePanel(QFrame):
                     self.frame_settings[sender] = float(self.textboxes[sender].text())
                 elif sender == "rolling":
                     self.frame_settings[sender] = self.checkboxes[sender].isChecked()
+                elif sender in ["time_series"]:
+                    self.frame_settings[sender] = self.get_times_series()
             except Exception as e:
                 print("Wrong settings for {}:\n{}".format(sender, e))
 
@@ -1223,7 +1279,7 @@ class FeatureSidePanel(QFrame):
         # ToDo: Complete frame padding functionality
         self.frame_settings["frame_pad"] = 0
 
-        if self.frame_settings["frame_size"] <= 0:
+        if self.frame_settings.get("frame_size", 1) <= 0:
             print("Warning: Frame size must be larger than 0!")
             self.frame_settings["frame_size"] = 1
 
@@ -1233,7 +1289,7 @@ class FeatureSidePanel(QFrame):
 
             # Only allow hot updating frame size when feature select preview
             if self.gui_handle.get_gui_state("ml_tab") == "feature_select":
-                senders = ["frame_size"]
+                senders = ["frame_size", "time_series"]
 
             # Make sure to update collection mode properly
             if len(senders) == 1:
@@ -1255,6 +1311,13 @@ class FeatureSidePanel(QFrame):
                 self.gui_handle.feature_extract.set_label(frame_settings["frame_label"])
             if "frame_time" in frame_settings:
                 self.textboxes["frame_time"].setText(str(frame_settings["frame_time"]))
+            if "time_series" in frame_settings:
+                self.textboxes["time_series"].setText(str(frame_settings["time_series"]))
+                if frame_settings["time_series"] > 1:
+                    self.checkboxes["time_series"].setChecked(True)
+                else:
+                    self.checkboxes["time_series"].setChecked(False)
+                self.toggle_time_series()
             if "update_rate" in frame_settings:
                 self.textboxes["update_rate"].setText(str(frame_settings["update_rate"]))
             if "dead_time" in frame_settings:
@@ -1286,6 +1349,13 @@ class FeatureSidePanel(QFrame):
         self.frame_settings_storage()
 
     def calc_values(self, key, edditing):
+        sensor_config = self.gui_handle.get_sensor_config()
+        if sensor_config is None:
+            update_rate = "50.0"
+        else:
+            update_rate = "{:.1f}".format(sensor_config.update_rate)
+        self.textboxes["update_rate"].setText(update_rate)
+
         try:
             frame_time = float(self.textboxes["frame_time"].text())
             update_rate = float(self.textboxes["update_rate"].text())
@@ -1294,26 +1364,12 @@ class FeatureSidePanel(QFrame):
                 print("{} is not a valid input for {}!".format(self.textboxes[key].text(), key))
                 if key == "frame_time":
                     self.textboxes["frame_time"].setText("1")
-                if key == "update_rate":
-                    sensor_config = self.gui_handle.get_sensor_config()
-                    if sensor_config is None:
-                        update_rate = "50.0"
-                    else:
-                        update_rate = "{:.1f}".format(sensor_config.update_rate)
-                    self.textboxes["update_rate"].setText(update_rate)
-                return
-            else:
-                return
+            return
 
         if not edditing:
             if frame_time == 0:
                 self.textboxes["frame_time"].setText("1")
                 frame_time = 1
-
-        if key == "update_rate":
-            sensor_config = self.gui_handle.get_sensor_config()
-            if sensor_config is not None:
-                sensor_config.update_rate = float(self.textboxes["update_rate"].text())
 
         sweeps = int(update_rate * frame_time)
 
@@ -1349,10 +1405,41 @@ class FeatureSidePanel(QFrame):
 
         for m in self.radiobuttons:
             if self.radiobuttons[m].isChecked():
-                if m == "auto" and "feature detection" in self.auto_mode.currentText().lower():
-                    m = "auto_feature_based"
+                if m == "auto":
+                    if "feature detection" in self.auto_mode.currentText().lower():
+                        m = "auto_feature_based"
+                    elif "presence" in self.auto_mode.currentText().lower():
+                        m = "presence_sparse"
+                    elif "model" in self.auto_mode.currentText().lower():
+                        m = "support_model"
+
                 break
         return m
+
+    def toggle_time_series(self):
+        if self.checkboxes["time_series"].isChecked():
+            self.textboxes["time_series"].setEnabled(True)
+        else:
+            self.textboxes["time_series"].setEnabled(False)
+
+        self.frame_settings_storage("time_series")
+
+    def get_times_series(self):
+        error = False
+        ts = 1
+        if self.checkboxes["time_series"].isChecked():
+            try:
+                ts = int(self.textboxes["time_series"].text())
+            except Exception:
+                error = True
+            if ts < 2:
+                error = True
+
+        if error:
+            print("Time series must be int and larger 1!")
+            ts = 1
+
+        return ts
 
     def increment(self):
         self.num += 1
@@ -1382,10 +1469,15 @@ class FeatureSidePanel(QFrame):
         elif "calibration" in action:
             title = "Load session file for frame calibration"
 
+        if self.last_folder is not None:
+            fname = self.last_folder
+        else:
+            fname = ""
+
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, title, "", "NumPy data files (*.npy)", options=options)
+            self, title, fname, "NumPy data files (*.npy)", options=options)
 
         self.labels["loaded_file"].setText("")
         self.last_filename = None
@@ -2401,6 +2493,7 @@ class TrainingSidePanel(QFrame):
         layer_list = self.gui_handle.model_select.get_layer_list()
 
         if filenames:
+            self.gui_handle.model_select.dump_to_yaml(filenames, "last_train_files.yaml")
             try:
                 if mode == "training":
                     data = self.keras_handle.load_train_data(
@@ -2445,7 +2538,7 @@ class TrainingSidePanel(QFrame):
                     self.gui_handle.model_select.set_layer_shapes(
                         data["model_data"]["keras_layer_info"]
                     )
-                    self.gui_handle.model_select.dump_layers(
+                    self.gui_handle.model_select.dump_to_yaml(
                         data["model_data"]["layer_list"],
                         "last_model.yaml"
                     )
@@ -2863,14 +2956,14 @@ class ModelSelectFrame(QFrame):
             elif action == "Save layers":
                 if os.path.splitext(filename)[1] != ".yaml":
                     os.path.join(filename, ".yaml")
-                self.dump_layers(self.get_layer_list(include_inactive_layers=True), filename)
+                self.dump_to_yaml(self.get_layer_list(include_inactive_layers=True), filename)
 
-    def dump_layers(self, layers, filename):
+    def dump_to_yaml(self, layers, filename):
         try:
             with open(filename, 'w') as f_handle:
                 yaml.dump(layers, f_handle, default_flow_style=False)
         except Exception as e:
-            print("Failed to dump layers to file {}!\n".format(filename), e)
+            print("Failed to dump data to file {}!\n".format(filename), e)
 
     def load_layers(self, filename):
         try:
@@ -2986,13 +3079,19 @@ class ModelSelectFrame(QFrame):
                 p = layer_params[text]
                 labels[text] = QLabel(text)
                 params_box.addWidget(labels[text])
-                if p[0] == "drop_down":
+                if isinstance(p, bool):
+                    params[text] = QCheckBox(self)
+                    params[text].setChecked(p)
+                    edit = params[text].stateChanged
+                elif p[0] == "drop_down":
                     limits = data_type = value = None
                     params[text] = QComboBox(self)
                     for item in p[1]:
                         params[text].addItem(item)
                     if "conv" in key.lower():
                         params[text].setCurrentIndex(1)
+                    elif "lstm" in key.lower():
+                        params[text].setCurrentIndex(8)
                     else:
                         params[text].setCurrentIndex(2)
                     edit = params[text].currentIndexChanged
@@ -3305,7 +3404,7 @@ class ModelSelectFrame(QFrame):
                     boxes = e_layer["params"][p]
                     for box in boxes:
                         if isinstance(box, QtWidgets.QCheckBox):
-                            box.setChecked(saved_value[0])
+                            box.setChecked(saved_value)
                         elif isinstance(box, QtWidgets.QComboBox):
                             index = box.findText(saved_value, QtCore.Qt.MatchFixedString)
                             if index >= 0:
@@ -3342,7 +3441,10 @@ class ModelSelectFrame(QFrame):
                 if idx == 0:
                     continue
                 out = "Output: {}".format(layer.output_shape)
-                self.enabled_layers[active_layers[idx-1]]["layer_output_shape"].setText(out)
+                try:
+                    self.enabled_layers[active_layers[idx-1]]["layer_output_shape"].setText(out)
+                except Exception:
+                    pass
             try:
                 variables = self.keras_handle.count_variables()
                 if variables is not None:
@@ -3451,6 +3553,7 @@ class ModelOperations(QFrame):
                     self.keras_handle.clear_training_data()
                     self.gui_handle.model_select.allow_update(False)
                 else:
+                    self.keras_handle.clear_model()
                     self.gui_handle.model_select.allow_update(
                         self.ml_state.get_training_data_status()
                     )
@@ -3535,7 +3638,7 @@ class ModelOperations(QFrame):
                 self.ml_state.set_training_data_status(False)
                 self.ml_state.set_test_data_status(False)
             self.gui_handle.training.update_data_table(d["y_labels"], d["label_list"], loaded=True)
-            self.gui_handle.model_select.dump_layers(d["layer_list"], "last_model.yaml")
+            self.gui_handle.model_select.dump_to_yaml(d["layer_list"], "last_model.yaml")
         except Exception as e:
             self.gui_handle.error_message("Failed to load model data:\n{}".format(e))
             d["loaded"] = False

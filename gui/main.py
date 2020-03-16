@@ -1314,6 +1314,7 @@ class GUI(QMainWindow):
             self.basic_processing_config_section.hide()
             self.basic_sensor_config_section.hide()
             self.advanced_sensor_config_section.hide()
+            self.session_info_section.hide()
             self.control_section.hide()
             self.feature_section.hide()
             self.textboxes["sweep_buffer_ml"].hide()
@@ -1328,6 +1329,7 @@ class GUI(QMainWindow):
                 self.control_section.show()
                 self.textboxes["sweep_buffer"].show()
                 self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
+                self.session_info_section.show()
 
             elif tab == "feature_select":
                 self.feature_section.button_event(override=False)
@@ -1958,6 +1960,7 @@ class GUI(QMainWindow):
                     self.feature_select.update_feature_list(last.item()["feature_list"])
                     self.feature_sidepanel.set_frame_settings(last.item()["frame_settings"])
                     self.model_select.update_layer_list(last.item()["model_layers"])
+                    self.feature_sidepanel.last_folder = last.item().get("last_folder", None)
                 except Exception as e:
                     print("Could not load ml settings from last session\n{}".format(e))
 
@@ -2067,6 +2070,7 @@ class GUI(QMainWindow):
                         "model_layers": self.model_select.get_layer_list(
                             include_inactive_layers=True
                         ),
+                        "last_folder": self.feature_sidepanel.last_folder,
                     }
                 except Exception:
                     pass
