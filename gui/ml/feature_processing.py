@@ -937,7 +937,9 @@ class PGUpdater:
         map_max = 1.2 * np.max(feat_map)
         ymax_level = max(map_max, self.env_plot_max_y)
 
-        g = 1/2.2
+        # Disable post gamma stretch for the time being
+        # TODO: Add option in GUI to enable.
+        g = 1/1
         feat_map = 254/(ymax_level + 1.0e-9)**g * feat_map**g
 
         feat_map[feat_map > 254] = 254

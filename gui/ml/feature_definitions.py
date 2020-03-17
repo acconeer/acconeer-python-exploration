@@ -363,6 +363,7 @@ class FeatureSparseFFT:
             ("Stop", 0.4, [0.06, 7], float),
             ("High pass", 1, [0, 1], float),
             ("Flip", True, None, bool),
+            ("Stretch", False, None, bool)
         ]
         self.fft = None
         self.noise_floor = None
@@ -422,13 +423,22 @@ class FeatureSparseFFT:
         if options["Flip"]:
             self.fft[sensor_idx, :, 0] = np.flip(fft_psd, 0)
             data = {
-                "fft": self.fft[sensor_idx, freq_cutoff_flipped:, :],
+                "fft": self.fft[sensor_idx, freq_cutoff_flipped:, :].copy(),
             }
         else:
             self.fft[sensor_idx, :, 0] = fft_psd
             data = {
-                "fft": self.fft[sensor_idx, 0:freq_cutoff+1, :],
+                "fft": self.fft[sensor_idx, 0:freq_cutoff+1, :].copy(),
             }
+
+        # Apply normalized gamma stretch and subtract mean.
+        if options["Stretch"]:
+            map_max = 1.2 * np.max(data["fft"])
+            g = 1 / 2.2
+            data["fft"] = 254/(map_max + 1.0e-9)**g * data["fft"]**g
+
+            data["fft"] -= np.mean(data["fft"])
+            data["fft"][data["fft"] < 0] = 0
 
         return data
 
