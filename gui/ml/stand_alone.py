@@ -35,9 +35,9 @@ def main():
         sys.exit(1)
 
     keras_proc = kp.MachineLearning()
-    model_data = keras_proc.load_model(filename)
+    model_data, message = keras_proc.load_model(filename)
 
-    print(model_data["message"].replace("<br>", "\n"))
+    print(message.replace("<br>", "\n"))
 
     if not model_data["loaded"]:
         return False
