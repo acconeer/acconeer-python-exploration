@@ -2103,7 +2103,7 @@ class TrainingFrame(QFrame):
 
         self.color_table_off = []
         for i in range(101):
-            rgb = colorsys.hsv_to_rgb(1.0, i**2/100.0**2, 1.0)
+            rgb = colorsys.hsv_to_rgb(1.0, i**1.2/100.0**1.2, 1.0)
             self.color_table_off.append([round(255*x) for x in rgb])
 
         self.labels = {
@@ -2150,6 +2150,7 @@ class TrainingFrame(QFrame):
         self.cm_widget.setColumnCount(col)
 
         sum_correct = 0
+        sum_wrong = 0
 
         for r in range(row):
             row_sum = np.sum(matrix[r, :])
@@ -2169,14 +2170,15 @@ class TrainingFrame(QFrame):
                 color = self.color_table[int_percent]
                 if r != c:
                     color = self.color_table_off[int_percent]
+                    sum_wrong += matrix[r, c]
                 else:
-                    sum_correct += percent / col
+                    sum_correct += matrix[r, c]
                 if "N/A" in entry:
                     color = self.color_table_off[0]
                 self.cm_widget.item(r, c).setBackground(QColor(*color))
                 self.cm_widget.item(r, c).setFlags(QtCore.Qt.ItemIsEnabled)
 
-        print("Overall accuracy: {:.2f}".format(sum_correct))
+        print("Overall accuracy: {:.2f}".format(100 * sum_correct/(sum_wrong + sum_correct)))
         self.cm_widget.setHorizontalHeaderLabels(labels)
         self.cm_widget.setVerticalHeaderLabels(labels)
 
