@@ -9,7 +9,7 @@ root_dir = os.path.abspath(os.path.join(conf_dir, ".."))
 sys.path.append(root_dir)
 
 project = "acconeer-python-exploration"
-copyright = "2019, Acconeer AB"
+copyright = "2019 - 2020, Acconeer AB"
 author = "Acconeer AB"
 
 # version = ""  # The short X.Y version
