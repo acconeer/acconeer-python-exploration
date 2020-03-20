@@ -1,11 +1,15 @@
 import enum
 import inspect
 import json
+import logging
 import os
 from copy import copy
 
 import attr
 import numpy as np
+
+
+log = logging.getLogger(__name__)
 
 
 class Category(enum.Enum):
@@ -472,6 +476,10 @@ class Config(metaclass=ConfigMeta):
 
         params = dict(self._get_keys_and_params())
         for k, v in d.items():
+            if k not in params:
+                log.warning("Skipping unknown parameter {} when loading dump".format(k))
+                continue
+
             params[k].load(self, v)
 
         self._update_pidgets()
