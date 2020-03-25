@@ -98,8 +98,8 @@ class FeaturePeak:
 
         # dist_vec is in mm
         data_len, win_len = arr.shape
-        start = distance2idx(options["Start"], dist_vec)
-        stop = distance2idx(options["Stop"], dist_vec)
+        start = distance2idx(options["Start"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec)
 
         if start >= stop:
             return None
@@ -151,8 +151,8 @@ class FeatureAverages1D():
 
         # dist_vec is in mm
         data_len, win_len = arr.shape
-        start = distance2idx(options["Start"], dist_vec)
-        stop = distance2idx(options["Stop"], dist_vec)
+        start = distance2idx(options["Start"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec)
 
         if start >= stop:
             return None
