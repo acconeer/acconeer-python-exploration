@@ -1,5 +1,4 @@
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+from acconeer.exptool import clients, configs, utils
 from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 
 
@@ -8,12 +7,12 @@ def main():
     utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = clients.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = clients.SPIClient()
     else:
         port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        client = clients.UARTClient(port)
 
     client.squeeze = False
 
