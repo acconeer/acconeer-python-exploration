@@ -403,6 +403,70 @@ class UARTClient(RegBaseClient):
         self._link.recv_until(exp_frame)
 
 
+class PollingUARTClient(UARTClient):
+    def __init__(self, port, **kwargs):
+        self._measure_on_call = kwargs.pop("measure_on_call", True)
+
+        super().__init__(port, **kwargs)
+        self._streaming_control_val = "no_streaming"
+        self._link = links.SerialLink(port)  # don't use link in separate process
+
+        self._poll_timeout = 2.0  # TODO: set dynamically as in SPIClient
+
+    def _start_session(self):
+        self._write_reg("main_control", "activate")
+        self._wait_status(regmap.STATUS_FLAGS.ACTIVATED)
+
+    def _get_next(self):
+        if self._measure_on_call:
+            self._write_reg("main_control", "clear_status")
+
+        poll_t = time()
+
+        while True:
+            status = self._read_reg("status")
+
+            if status & regmap.STATUS_MASKS.ERROR_MASK:
+                raise ClientError("server error: " + str(status).split(".")[1])
+            elif status & regmap.STATUS_FLAGS.DATA_READY:
+                break
+            else:
+                if (time() - poll_t) > self._poll_timeout:
+                    raise ClientError("gave up polling")
+
+                continue
+
+        buffer = self._read_buf_raw()
+
+        info = {}
+        info_regs = regmap.get_data_info_regs(self._config.mode)
+        for reg in info_regs:
+            k = reg.stripped_name
+            k = regmap.STRIPPED_NAME_TO_INFO_REMAP.get(k, k)
+
+            if k is None:
+                continue
+
+            info[k] = self._read_reg(reg)
+
+        if not self._measure_on_call:
+            self._write_reg("main_control", "clear_status")
+
+        sweeps_per_frame = getattr(self._config, "sweeps_per_frame", None)
+        data = protocol.decode_output_buffer(buffer, self._mode, sweeps_per_frame)
+
+        if self.squeeze:
+            return info, data
+        else:
+            return [info], np.expand_dims(data, 0)
+
+    def _stop_session(self):
+        self._write_reg("main_control", "stop")
+
+        mask = regmap.STATUS_FLAGS.CREATED | regmap.STATUS_FLAGS.ACTIVATED
+        self._wait_status(0, mask=mask)
+
+
 class SPIClient(RegBaseClient):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
