@@ -149,8 +149,6 @@ class RegBaseClient(BaseClient):
 
 
 class UARTClient(RegBaseClient):
-    _XM112_LED_PIN = 67
-
     DEFAULT_BASE_BAUDRATE = 115200
     CONNECT_ROUTINE_TIMEOUT = 0.6
 
