@@ -142,7 +142,7 @@ def save_npz(filename: str, record: Record):
         filename = filename + ".npz"
 
     packed = pack(record)
-    np.savez(filename, **packed)
+    np.savez_compressed(filename, **packed)
 
 
 def save_h5(filename: str, record: Record):
@@ -155,12 +155,14 @@ def save_h5(filename: str, record: Record):
         for k, v in packed.items():
             if isinstance(v, str):
                 dtype = h5py.special_dtype(vlen=str)
+                compression = None
             elif isinstance(v, np.ndarray):
                 dtype = v.dtype
+                compression = "gzip"
             else:
                 raise TypeError
 
-            f.create_dataset(k, data=v, dtype=dtype)
+            f.create_dataset(k, data=v, dtype=dtype, compression=compression)
 
 
 def load(filename: str) -> Record:
@@ -209,3 +211,30 @@ def load_h5(filename: str) -> Record:
         packed = {k: v[()] for k, v in f.items()}
 
     return unpack(packed)
+
+
+if __name__ == "__main__":
+    import argparse
+    import os
+    import sys
+
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(dest="command")
+    subparsers.required = True
+
+    sp = subparsers.add_parser("resave")
+    sp.add_argument("source")
+    sp.add_argument("dest")
+    sp.add_argument("-f", "--force", action="store_true")
+
+    args = parser.parse_args()
+
+    # assume resave as it's currently the only option
+
+    if not args.force and os.path.exists(args.dest):
+        sys.stderr.write("error: destination file already exists (try using -f)\n")
+        sys.exit(1)
+
+    record = load(args.source)
+    save(args.dest, record)
