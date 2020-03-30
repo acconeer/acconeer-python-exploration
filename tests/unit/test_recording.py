@@ -2,12 +2,14 @@ import os
 
 import attr
 import numpy as np
+import pytest
 
 from acconeer.exptool import clients, configs, modes, recording
 
 
-def test_recording(tmp_path):
-    config = configs.EnvelopeServiceConfig()
+@pytest.mark.parametrize("mode", modes.Mode)
+def test_recording(tmp_path, mode):
+    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.downsampling_factor = 2
 
     mocker = clients.MockClient()
@@ -26,7 +28,7 @@ def test_recording(tmp_path):
     recorder.close()
     record = recorder.record
 
-    assert record.mode == modes.Mode.ENVELOPE
+    assert record.mode == mode
     assert record.sensor_config_dump == config._dumps()
     assert len(record.data) == 10
     assert len(record.data_info) == 10
