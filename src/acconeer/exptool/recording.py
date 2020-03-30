@@ -129,8 +129,15 @@ def pack(record: Record) -> dict:
     packed = attr.asdict(record, filter=lambda attr, v: attr.type in (str, Optional[str]))
     packed["mode"] = record.mode.name.lower()
     packed["session_info"] = json.dumps(record.session_info)
-    packed["data"] = np.array(record.data)
     packed["data_info"] = json.dumps(record.data_info)
+
+    data = np.array(record.data)
+    if np.isrealobj(data):
+        data_u16 = data.astype("u2")
+        if np.all(data == data_u16):
+            data = data_u16
+
+    packed["data"] = data
 
     packed = {k: v for k, v in packed.items() if v is not None}
 
@@ -177,6 +184,12 @@ def load(filename: str) -> Record:
 def unpack(packed: dict) -> Record:
     kwargs = {}
 
+    data = packed["data"]
+    if np.isrealobj(data):
+        data = data.astype("float")
+
+    kwargs["data"] = data
+
     for a in attr.fields(Record):
         k = a.name
         if a.type == str:
@@ -186,7 +199,6 @@ def unpack(packed: dict) -> Record:
 
     kwargs["mode"] = modes.get_mode(packed["mode"])
     kwargs["session_info"] = json.loads(packed["session_info"])
-    kwargs["data"] = packed["data"]
     kwargs["data_info"] = json.loads(packed["data_info"])
 
     assert len(kwargs["data"]) == len(kwargs["data_info"])
