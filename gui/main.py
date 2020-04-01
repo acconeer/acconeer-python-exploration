@@ -1218,6 +1218,8 @@ class GUI(QMainWindow):
             text = "Loaded " + os.path.basename(self.data_source)
         except Exception:
             text = ""
+        if len(text) > 50:
+            text = text[: 47] + "..."
         self.labels["data_source"].setText(text)
 
         # Sweep buffer
