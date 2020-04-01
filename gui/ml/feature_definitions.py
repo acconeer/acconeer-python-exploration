@@ -356,6 +356,7 @@ class FeatureSparseFFT:
         # output data
         self.data = {
             "fft": "FFT PSD",
+            "fft_profile": "FFT Profile"
         }
         # text, value, limits
         self.options = [
@@ -430,6 +431,8 @@ class FeatureSparseFFT:
             data = {
                 "fft": self.fft[sensor_idx, 0:freq_cutoff+1, :].copy(),
             }
+
+        data["fft_profile"] = np.sum(data["fft"], axis=0)
 
         # Apply normalized gamma stretch and subtract mean.
         if options["Stretch"]:
