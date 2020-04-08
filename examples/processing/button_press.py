@@ -224,9 +224,6 @@ class PGUpdater:
 
         self.setup_is_done = False
 
-        self.sweep_index_of_latest_detection = 0
-        self.sweeps_detection_show = DETECTION_SHOW_S * sensor_config.update_rate
-
     def setup(self, win):
         win.setWindowTitle("Acconeer Button Press Example")
 
@@ -343,13 +340,8 @@ class PGUpdater:
         self.rel_dev_hist_plot.setYRange(0, ymax)
         self.detection_text_item.setPos(-HISTORY_LENGTH_S / 2, 0.95 * ymax)
 
-        if data["detection"]:
-            self.detection_text_item.show()
-            self.sweep_index_of_latest_detection = data["sweep_index"]
-
-        sweeps_since_last_detection = data["sweep_index"] - self.sweep_index_of_latest_detection
-        if sweeps_since_last_detection > self.sweeps_detection_show:
-            self.detection_text_item.hide()
+        show_detection_text = t_detections.size > 0 and (-t_detections[-1]) < DETECTION_SHOW_S
+        self.detection_text_item.setVisible(show_detection_text)
 
 
 if __name__ == "__main__":
