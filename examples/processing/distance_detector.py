@@ -338,7 +338,7 @@ class Processor:
             found_peaks = self.find_peaks(self.last_mean_sweep, threshold)
             if len(found_peaks) > 1:
                 found_peaks = self.merge_peaks(found_peaks, np.round(PEAK_MERGE_LIMIT_M/self.dr))
-                found_peaks = self.sort_peaks(found_peaks, sweep)
+                found_peaks = self.sort_peaks(found_peaks, self.last_mean_sweep)
 
             # Adding main peak to history
             if len(found_peaks) > 0:
