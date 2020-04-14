@@ -2,6 +2,7 @@ from copy import copy
 from enum import Enum
 
 import numpy as np
+import pyqtgraph as pg
 
 from acconeer.exptool import clients, configs, utils
 from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
@@ -331,6 +332,8 @@ class Processor:
         else:
             print("Unknown thresholding method")
 
+        found_peaks = None
+
         # If a new averaged sweep is ready for processing
         if self.sweeps_since_mean >= self.nbr_average:
             self.sweeps_since_mean = 0
@@ -377,7 +380,8 @@ class Processor:
             "minor_peaks_hist_sweep_s": (np.array(self.minor_peaks_hist_sweep_idx)
                                          - self.sweep_index)/self.f,
             "minor_peaks_hist_dist": np.array(self.minor_peaks_hist_dist),
-            "sweep_index": self.sweep_index
+            "sweep_index": self.sweep_index,
+            "found_peaks": found_peaks,
         }
 
         self.sweep_index += 1
@@ -630,6 +634,24 @@ class PGUpdater:
             tau_decay=3,
         )
 
+        self.peak_lines = []
+        for i in range(3):
+            color_idx = 1 if i > 0 else 0
+            width = 2 if i == 0 else 1
+            color_tuple = utils.hex_to_rgb_tuple(utils.color_cycler(color_idx))
+            line = pg.InfiniteLine(pen=pg.mkPen(pg.mkColor(*color_tuple, 150), width=width))
+            self.sweep_plot.addItem(line)
+            self.peak_lines.append(line)
+
+        self.peak_text = pg.TextItem(
+            anchor=(0, 1),
+            color=utils.color_cycler(0),
+            fill=pg.mkColor(0xFF, 0xFF, 0xFF, 150),
+        )
+        self.peak_text.setPos(self.r[0] * 100, 0)
+        self.peak_text.setZValue(100)
+        self.sweep_plot.addItem(self.peak_text)
+
         win.nextRow()
 
         # Detection history Plot
@@ -678,6 +700,24 @@ class PGUpdater:
         self.main_peak.setData(data["main_peak_hist_sweep_s"], 100 * data["main_peak_hist_dist"])
         self.minor_peaks.setData(
             data["minor_peaks_hist_sweep_s"], 100*data["minor_peaks_hist_dist"])
+
+        if data["found_peaks"] is not None:
+            peaks = np.take(self.r, data["found_peaks"]) * 100.0
+            for i, line in enumerate(self.peak_lines):
+                try:
+                    peak = peaks[i]
+                except (TypeError, IndexError):
+                    line.hide()
+                else:
+                    line.setPos(peak)
+                    line.show()
+
+            if data["found_peaks"]:
+                text = "{:.2f} mm".format(peaks[0])
+            else:
+                text = "-"
+
+            self.peak_text.setText(text)
 
 
 if __name__ == "__main__":
