@@ -212,6 +212,7 @@ class GUI(QMainWindow):
             "saturated": ("Warning: Data saturated, reduce gain!",),
             "rssver": ("",),
             "libver": ("",),
+            "unsupported_mode": ("Mode not supported by server",),
         }
 
         self.labels = {}
@@ -220,8 +221,10 @@ class GUI(QMainWindow):
             lbl.setText(text)
             self.labels[key] = lbl
 
-        self.labels["saturated"].setStyleSheet("color: #ff0000")
-        self.labels["saturated"].setVisible(False)
+        for k in ["saturated", "unsupported_mode"]:
+            lbl = self.labels[k]
+            lbl.setStyleSheet("color: #ff0000")
+            lbl.setVisible(False)
 
     def init_textboxes(self):
         # key: (text)
@@ -678,6 +681,7 @@ class GUI(QMainWindow):
         self.main_sublayout.addWidget(self.control_section, 1, 0)
         c = self.control_grid_count
         self.control_section.grid.addWidget(self.module_dd, c.pre_incr(), 0, 1, 2)
+        self.control_section.grid.addWidget(self.labels["unsupported_mode"], c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.buttons["start"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.buttons["stop"], c.val, 1)
         self.control_section.grid.addWidget(self.buttons["save_scan"], c.pre_incr(), 0)
@@ -1184,7 +1188,7 @@ class GUI(QMainWindow):
 
         # Start button
         self.buttons["start"].setEnabled(all([
-            states["server_connected"] or states["load_state"] == LoadState.LOADED,
+            self.in_supported_mode or states["load_state"] == LoadState.LOADED,
             not states["scan_is_running"],
             not states["has_config_error"],
         ]))
@@ -1267,6 +1271,10 @@ class GUI(QMainWindow):
             lbl.show()
         else:
             lbl.hide()
+
+        # Unsupported mode warning
+        visible = self.in_supported_mode is not None and not self.in_supported_mode
+        self.labels["unsupported_mode"].setVisible(visible)
 
         # Other
 
@@ -2113,6 +2121,13 @@ class GUI(QMainWindow):
             return {}
 
         return module.get_processing_config()
+
+    @property
+    def in_supported_mode(self):
+        try:
+            return self.get_sensor_config().mode in self.client.supported_modes
+        except (AttributeError, TypeError):
+            return None
 
 
 class Threaded_Scan(QtCore.QThread):
