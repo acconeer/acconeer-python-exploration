@@ -8,7 +8,8 @@ from acconeer.exptool import clients, configs, modes, recording
 
 
 @pytest.mark.parametrize("mode", modes.Mode)
-def test_recording(tmp_path, mode):
+@pytest.mark.parametrize("ext", ["h5", "npz"])
+def test_recording(tmp_path, mode, ext):
     config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.downsampling_factor = 2
 
@@ -34,18 +35,12 @@ def test_recording(tmp_path, mode):
     assert len(record.data_info) == 10
     assert isinstance(record.data, np.ndarray)
 
-    for ext in ["h5", "npz"]:
-        filename = os.path.join(tmp_path, "record." + ext)
+    filename = os.path.join(tmp_path, "record." + ext)
 
-        recording.save(filename, record)
-        loaded_record = recording.load(filename)
+    recording.save(filename, record)
+    loaded_record = recording.load(filename)
 
-        for a in attr.fields(recording.Record):
-            if a.name == "data":
-                continue
-
-            assert getattr(record, a.name) == getattr(loaded_record, a.name)
-
-        assert np.all(record.data == loaded_record.data)
+    for a in attr.fields(recording.Record):
+        assert np.all(getattr(record, a.name) == getattr(loaded_record, a.name))
 
     assert record.sensor_config.downsampling_factor == config.downsampling_factor
