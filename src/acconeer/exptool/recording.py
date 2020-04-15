@@ -1,6 +1,7 @@
 import copy
 import datetime
 import json
+import time
 from typing import Optional
 
 import attr
@@ -29,6 +30,7 @@ class Record:
     rss_version = attr.ib(type=Optional[str], default=None)
     lib_version = attr.ib(type=Optional[str], default=None)
     timestamp = attr.ib(type=Optional[str], default=None)
+    sample_times = attr.ib(default=None)
 
     # Legacy (optional):
     legacy_processing_config_dump = attr.ib(type=Optional[str], default=None)
@@ -94,6 +96,9 @@ class Recorder:
         )
 
         self.record.data = []
+        self.record.sample_times = []
+
+        self.t0 = time.time()
 
     def sample(self, data_info: list, data: np.ndarray):
         expected_num_dims = 3 if self.record.mode == modes.Mode.SPARSE else 2
@@ -105,12 +110,16 @@ class Recorder:
         self.record.data.append(data.copy())
         self.record.data_info.append(copy.deepcopy(data_info))
 
+        self.record.sample_times.append(time.time() - self.t0)
+
         if self.max_len is not None and len(self.record.data) > self.max_len:
             self.record.data.pop(0)
             self.record.data_info.pop(0)
+            self.record.sample_times.pop(0)
 
     def close(self):
         self.record.data = np.array(self.record.data)
+        self.record.sample_times = np.array(self.record.sample_times)
         return self.record
 
 
@@ -138,6 +147,9 @@ def pack(record: Record) -> dict:
             data = data_u16
 
     packed["data"] = data
+
+    if record.sample_times is not None:
+        packed["sample_times"] = np.array(record.sample_times)
 
     packed = {k: v for k, v in packed.items() if v is not None}
 
@@ -200,6 +212,8 @@ def unpack(packed: dict) -> Record:
     kwargs["mode"] = modes.get_mode(packed["mode"])
     kwargs["session_info"] = json.loads(packed["session_info"])
     kwargs["data_info"] = json.loads(packed["data_info"])
+
+    kwargs["sample_times"] = packed.get("sample_times", None)
 
     assert len(kwargs["data"]) == len(kwargs["data_info"])
 

@@ -51,6 +51,13 @@ def print_record(record):
     for k, v in record.data_info[0][0].items():
         print("  {:.<35} {}".format(k + " ", v))
 
+    ts = record.sample_times
+    if ts is not None and ts.size >= 2:
+        print()
+        mean_dt = (ts[-1] - ts[0]) / (ts.size - 1)
+        mean_f = 1 / mean_dt
+        print("Mean sample rate (client side): {:.2f} Hz".format(mean_f))
+
     print("\n")
 
     print("Module (processing) key:", record.module_key)
