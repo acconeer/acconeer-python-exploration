@@ -125,6 +125,21 @@ class RegBaseClient(BaseClient):
 
         raise ClientError("timeout while waiting for status")
 
+    def _get_supported_modes(self):
+        supported_modes = set()
+        self._write_reg("main_control", "clear_status")
+
+        for mode in Mode:
+            self._write_reg("mode_selection", mode)
+            status = self._read_reg("status")
+
+            if status & regmap.STATUS_FLAGS.ERROR_SET_MODE:
+                self._write_reg("main_control", "clear_status")
+            else:
+                supported_modes.add(mode)
+
+        return supported_modes
+
     @property
     def _buffer_size(self):  # B
         if self._data_length is None or self._mode is None:

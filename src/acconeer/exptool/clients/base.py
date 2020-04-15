@@ -2,7 +2,7 @@ import abc
 import logging
 from distutils.version import StrictVersion
 
-from acconeer.exptool import SDK_VERSION
+from acconeer.exptool import SDK_VERSION, modes
 from acconeer.exptool.structs import configbase
 
 
@@ -21,6 +21,7 @@ class BaseClient(abc.ABC):
         self._connected = False
         self._session_setup_done = False
         self._streaming_started = False
+        self.supported_modes = None
 
     def connect(self):
         if self._connected:
@@ -43,6 +44,8 @@ class BaseClient(abc.ABC):
             except KeyError:
                 log.warning("could not read software version (might be too old)")
 
+        self.supported_modes = self._get_supported_modes()
+
         return info
 
     def setup_session(self, config, check_config=True):
@@ -54,6 +57,9 @@ class BaseClient(abc.ABC):
 
         if not self._connected:
             self.connect()
+
+        if check_config and config.mode not in self.supported_modes:
+            raise ClientError("Unsupported mode")
 
         session_info = self._setup_session(config)
         self._session_setup_done = True
@@ -97,6 +103,7 @@ class BaseClient(abc.ABC):
 
         self._disconnect()
         self._connected = False
+        self.supported_modes = None
 
     def _check_config(self, config):
         try:
@@ -111,6 +118,9 @@ class BaseClient(abc.ABC):
 
         msg = "error in config: {}: {}".format(error_alert.param, error_alert.msg)
         raise IllegalConfigError(msg)
+
+    def _get_supported_modes(self):
+        return set(modes.Mode)
 
     @abc.abstractmethod
     def _connect(self):
