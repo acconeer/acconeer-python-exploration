@@ -1946,6 +1946,13 @@ class GUI(QMainWindow):
 
         self.labels["saturated"].setVisible(saturated)
 
+        if self.get_gui_state("load_state") != LoadState.LOADED:
+            try:
+                text = str(min(self.num_recv_frames, int(self.textboxes["sweep_buffer"].text())))
+            except Exception:
+                text = ""
+            self.textboxes["stored_frames"].setText(text)
+
     def start_up(self):
         if not self.under_test:
             if os.path.isfile(self.LAST_CONF_FILENAME):
