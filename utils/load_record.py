@@ -80,6 +80,10 @@ def print_record(record):
     for k, v in m.items():
         print("{:.<37} {}".format(k + " ", v))
 
+    if record.note:
+        print()
+        print("Note: " + str(record.note))
+
 
 if __name__ == "__main__":
     main()

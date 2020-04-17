@@ -31,6 +31,7 @@ class Record:
     lib_version = attr.ib(type=Optional[str], default=None)
     timestamp = attr.ib(type=Optional[str], default=None)
     sample_times = attr.ib(default=None)
+    note = attr.ib(type=Optional[str], default=None)  # not to be used internally
 
     # Legacy (optional):
     legacy_processing_config_dump = attr.ib(type=Optional[str], default=None)
