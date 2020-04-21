@@ -483,7 +483,7 @@ class FeatureSelectFrame(QFrame):
         return f_list
 
     def match_settings(self, action=None):
-        if action is None:
+        if not action:
             action = self.sender().text()
             bypass_confirmation = False
         else:
