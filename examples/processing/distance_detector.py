@@ -136,7 +136,8 @@ class Processor:
             self.sc_bg_sweep_mean = self.sc_sum_bg_sweeps / self.sc_bg_nbr_sweeps
             mean_square = self.sc_sum_squared_bg_sweeps / self.sc_bg_nbr_sweeps
             square_mean = np.square(self.sc_bg_sweep_mean)
-            self.sc_bg_sweep_std = np.sqrt(mean_square - square_mean)
+            self.sc_bg_sweep_std = np.sqrt((mean_square - square_mean)
+                                           * self.sc_bg_nbr_sweeps / (self.sc_bg_nbr_sweeps - 1))
 
             self.sc_bg_calculated = True
 
