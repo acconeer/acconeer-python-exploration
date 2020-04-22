@@ -320,7 +320,7 @@ class Processor:
             threshold = self.sc_used_threshold
         elif self.threshold_type is ProcessingConfiguration.ThresholdType.CFAR:
             threshold = self.calculate_cfar_threshold(
-                self.last_mean_sweep,
+                self.current_mean_sweep,
                 self.idx_cfar_pts,
                 self.cfar_sensitivity,
                 self.cfar_one_sided,
