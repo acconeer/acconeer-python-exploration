@@ -993,8 +993,6 @@ class FeatureSidePanel(QFrame):
         self.ml_state = gui_handle.ml_state
         self.grid = QtWidgets.QGridLayout()
         self.grid.setContentsMargins(9, 0, 9, 9)
-        self.grid.setColumnStretch(0, 1)
-        self.grid.setColumnStretch(1, 1)
         self.setLayout(self.grid)
         self.last_filename = None
         self.last_folder = None
@@ -1020,6 +1018,7 @@ class FeatureSidePanel(QFrame):
             "empty_3": QLabel(""),
             "loaded_file": QLabel(""),
         }
+        self.labels["loaded_file"].setWordWrap(True)
 
         self.textboxes = {
             "frame_time": QLineEdit(str(1)),
@@ -1563,7 +1562,15 @@ class FeatureSidePanel(QFrame):
                 return
 
         self.last_filename = os.path.split(filename)[1]
-        self.labels["loaded_file"].setText(str(self.last_filename))
+        wrapped = ""
+        lenf = len(self.last_filename)
+        line_length = 40
+        for l in range(int(np.ceil(lenf / line_length))):
+            end = min((l + 1) * line_length, lenf)
+            wrapped += self.last_filename[l*line_length:end]
+            if end < lenf:
+                wrapped += " "
+        self.labels["loaded_file"].setText(wrapped)
 
         try:
             frame_settings = data.item()["frame_settings"]
