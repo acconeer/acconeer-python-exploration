@@ -391,10 +391,10 @@ class MachineLearning():
             if x.shape[0] == self.model.input_shape[1]:
                 x = np.expand_dims(x, 0)
             else:
-                x = np.expand_dims(x, len(x.shape))
+                x = np.expand_dims(x, -1)
         if len(x.shape) == len(self.model.input_shape) - 2:
             x = np.expand_dims(x, 0)
-            x = np.expand_dims(x, len(x.shape))
+            x = np.expand_dims(x, -1)
 
         if len(x.shape) != len(self.model.input_shape):
             print("Wrong data shapes:\n Model: {}\n Test: {}\n".format(self.model.input_shape,
@@ -557,9 +557,7 @@ class MachineLearning():
 
         feature_map_data = np.stack(feature_maps)
         if model_dimension == 2:
-            feature_map_data = np.expand_dims(
-                feature_map_data,
-                len(feature_map_data) + 1)
+            feature_map_data = np.expand_dims(feature_map_data, -1)
         self.model_data.nr_of_training_maps = feature_map_data.shape[0]
 
         if data_type == "training":
