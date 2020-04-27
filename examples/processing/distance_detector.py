@@ -132,7 +132,8 @@ class Processor:
         if self.sweep_index < self.sc_bg_nbr_sweeps:
             self.sc_sum_bg_sweeps += sweep
             self.sc_sum_squared_bg_sweeps += np.square(sweep)
-        elif not self.sc_bg_calculated:
+
+        if self.sweep_index >= self.sc_bg_nbr_sweeps - 1 and not self.sc_bg_calculated:
             self.sc_bg_sweep_mean = self.sc_sum_bg_sweeps / self.sc_bg_nbr_sweeps
             mean_square = self.sc_sum_squared_bg_sweeps / self.sc_bg_nbr_sweeps
             square_mean = np.square(self.sc_bg_sweep_mean)
@@ -145,6 +146,7 @@ class Processor:
                 self.sc_bg_sweep_mean,
                 self.sc_bg_sweep_std,
             ])
+            # self.sc_load_save_bg.loaded_data = self.sc_load_save_bg.buffered_data
 
         # Checking if user loaded a threshold and if it is compatible
         if self.sc_load_save_bg.error is None:
