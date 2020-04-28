@@ -394,7 +394,7 @@ class FeatureSparseFFT:
             return None
 
         start_idx = np.argmin((dist_vec - start)**2)
-        stop_idx = np.argmin((dist_vec - stop)**2)
+        stop_idx = np.argmin((dist_vec - stop)**2) + 1
 
         stop_idx = max(start_idx + 1, stop_idx)
 
