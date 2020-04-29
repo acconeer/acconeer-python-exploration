@@ -571,8 +571,11 @@ class FeatureSelectFrame(QFrame):
                                 print("Failed to set feature option!")
                     if feature["output"] is not None:
                         for out in feature["output"]:
-                            out_checkbox = e_feat["output"][out]
-                            out_checkbox.setChecked(feature["output"][out])
+                            try:
+                                out_checkbox = e_feat["output"][out]
+                                out_checkbox.setChecked(feature["output"][out])
+                            except Exception:
+                                print("Output {} not found!".format(out))
 
         if not all_found:
             try:
