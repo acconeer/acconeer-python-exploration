@@ -353,6 +353,10 @@ class FeatureProcessing:
         frame_stop = frame_start + self.total_size
         sensor_config = data["sensor_config"]
         mode = sensor_config.mode
+        if data.get("session_info", None) is None:
+            data["session_info"] = record.session_info
+        if data.get("sweep_data", None) is None:
+            data["sweep_data"] = record.data[0]
         self.check_data(data)
         self.prepare_data_container(data)
 
