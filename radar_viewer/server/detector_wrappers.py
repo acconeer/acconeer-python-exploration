@@ -107,11 +107,11 @@ class EnvelopeHandler(Detector):
                 self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_1
             elif params["profile"] == "2":
                 self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_2
-            elif params["profile"] == "2":
+            elif params["profile"] == "3":
                 self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_3
-            elif params["profile"] == "2":
+            elif params["profile"] == "4":
                 self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_4
-            elif params["profile"] == "2":
+            elif params["profile"] == "5":
                 self.config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_5
             else:
                 print("Unknown profile")
