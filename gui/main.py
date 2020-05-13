@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(HERE)
-sys.path.append(os.path.abspath(os.path.join(HERE, "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
 sys.path.append(os.path.abspath(os.path.join(HERE, "ml")))
 sys.path.append(os.path.abspath(os.path.join(HERE, "elements")))
 
