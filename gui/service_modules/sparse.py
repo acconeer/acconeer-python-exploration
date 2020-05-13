@@ -95,7 +95,10 @@ class Processor:
         processor_class = presence_detection_sparse.Processor
 
         try:
-            self.pd_processors = [processor_class(sensor_config, pd_config, session_info)]
+            self.pd_processors = []
+            for _ in sensor_config.sensor:
+                p = processor_class(sensor_config, pd_config, session_info)
+                self.pd_processors.append(p)
         except AssertionError:
             self.pd_processors = None
 
