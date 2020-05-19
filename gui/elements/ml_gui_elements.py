@@ -1591,7 +1591,11 @@ class FeatureSidePanel(QFrame):
         elif action == "session":
             title = "Save session data"
             fname = 'ml_session_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
-            fname += "_{}".format(self.gui_handle.feature_extract.get_label())
+            if self.gui_handle.get_gui_state("ml_tab") == "feature_inspect":
+                label = self.gui_handle.feature_inspect.textboxes["label"].text()
+            else:
+                label = self.gui_handle.feature_extract.get_label()
+            fname += "_{}".format(label)
 
         if self.last_folder is not None:
             fname = os.path.join(self.last_folder, fname)

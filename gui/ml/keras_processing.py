@@ -546,6 +546,7 @@ class MachineLearning():
                     print("Inconsistent time series values found:")
                     print("Model: {}".format(self.model_data.time_distributed))
                     print("Data : {}".format(time_series))
+                    frame_info["time_series"] = self.model_data.time_distributed
             for subdata_index, frame in enumerate(fdata):
                 feature_map = frame["feature_map"]
                 if self.model_data.time_distributed > 1:
@@ -805,6 +806,8 @@ class MachineLearning():
             for data in self.model_data:
                 self.model_data[data] = None
             self.model_data.loaded = False
+            self.label_num = 0
+            self.labels_dict = None
 
         if reinit:
             self.tf_session = K.get_session()
@@ -867,7 +870,7 @@ class MachineLearning():
         self.model_data.y_labels = None
         self.training_data = {"loaded": False}
         self.test_data = {"loaded": False}
-        if not self.model.loaded:
+        if not self.model_data.loaded:
             self.label_num = 0
             self.labels_dict = None
 

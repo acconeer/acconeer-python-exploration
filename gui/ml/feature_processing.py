@@ -18,6 +18,7 @@ imock.add_mock_packages(imock.GRAPHICS_LIBS)
 
 class FeatureProcessing:
     def __init__(self, sensor_config, feature_list=None, store_features=False):
+        self.awkward_array = None
         self.rolling = False
         self.frame_size = 25
         self.time_series = 1
@@ -248,8 +249,9 @@ class FeatureProcessing:
         if len(feature_map):
             try:
                 fmap = np.vstack(feature_map)
-            except Exception as e:
-                print("Unable to stack features to frame: {}".format(e))
+            except Exception:
+                # For testing purposes, try to stack anyway.
+                fmap = self.padded_stacking(feature_map)
 
         if self.calibration is not None:
             if self.calibration.shape != fmap.shape:
@@ -341,6 +343,46 @@ class FeatureProcessing:
         }
 
         return frame_data
+
+    def padded_stacking(self, list_of_feature_maps):
+        try:
+            nr_cols = 0
+            nr_rows = 0
+            for l in list_of_feature_maps:
+                l_shape = l.shape
+                if len(l_shape) == 1:
+                    nr_rows += 1
+                    nr_cols = max(nr_cols, l_shape[0])
+                else:
+                    nr_rows += l_shape[0]
+                    nr_cols = max(nr_cols, l_shape[1])
+            awkward_shape = (nr_rows, nr_cols)
+
+            if self.awkward_array is None:
+                self.awkward_array = np.zeros(awkward_shape)
+            elif self.awkward_array.shape != awkward_shape:
+                self.awkward_array = np.zeros(awkward_shape)
+            else:
+                self.awkward_array *= 0
+
+            row = 0
+            for l in list_of_feature_maps:
+                l_shape = l.shape
+                if len(l_shape) == 1:
+                    row_end = row + 1
+                    col_end = l_shape[0]
+                    row_add = 1
+                else:
+                    row_end = row + l_shape[0]
+                    col_end = l_shape[1]
+                    row_add = l_shape[0]
+                self.awkward_array[row:row_end, 0:col_end] = l
+                row += row_add
+        except Exception as e:
+            print("Unable to stack features to frame: {}".format(e))
+            return None
+
+        return self.awkward_array
 
     def feature_extraction_window(self, data, record, start, label=""):
         self.frame_pad = data["ml_frame_data"]["frame_info"]["frame_pad"]
@@ -876,6 +918,7 @@ class PGUpdater:
             return
 
         self.feat_plot_image.setYRange(0, feat_map.shape[0])
+        self.feat_plot_image.setXRange(0, feat_map.shape[1])
 
         map_max = 1.2 * np.max(feat_map)
         ymax_level = max(map_max, self.env_plot_max_y)

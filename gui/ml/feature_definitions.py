@@ -99,7 +99,7 @@ class FeaturePeak:
         # dist_vec is in mm
         data_len, win_len = arr.shape
         start = distance2idx(options["Start"] * 1000, dist_vec)
-        stop = distance2idx(options["Stop"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec) + 1
 
         if start >= stop:
             return None
@@ -152,7 +152,7 @@ class FeatureAverages1D():
         # dist_vec is in mm
         data_len, win_len = arr.shape
         start = distance2idx(options["Start"] * 1000, dist_vec)
-        stop = distance2idx(options["Stop"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec) + 1
 
         if start >= stop:
             return None
@@ -208,7 +208,7 @@ class FeatureAverages2D():
         # dist_vec is in mm
         data_len, win_len = arr.shape
         start = distance2idx(options["Start"] * 1000, dist_vec)
-        stop = distance2idx(options["Stop"] * 1000, dist_vec)
+        stop = distance2idx(options["Stop"] * 1000, dist_vec) + 1
 
         if start >= stop:
             return None
@@ -295,6 +295,7 @@ class FeatureSweep:
         # output data
         self.data = {
             "segment": "Segment",
+            "integrated": "Integrated"
         }
         # text, value, limits
         self.options = [
@@ -302,7 +303,15 @@ class FeatureSweep:
             ("Stop", 0.4, [0.06, 7], float),
             ("Down sample", 8, [1, 124], int),
             ("Flip", False, None, bool),
+            ("Stretch", False, None, bool),
+            ("Calibrate", False, None, bool),
         ]
+
+        self.idx = 0
+        self.bg = None
+        self.downsampling = None
+        self.calib = 100           # Number of frames to use for calibration
+        self.dead_time = 200       # Number of frames to wait after calibration
 
     def extract_feature(self, win_data, win_params):
         try:
@@ -310,6 +319,7 @@ class FeatureSweep:
             dist_vec = win_params["dist_vec"]
             options = win_params["options"]
             arr = win_data["env_data"][sensor_idx, :, :]
+            num_sensors = win_data["env_data"].shape[0]
         except Exception as e:
             print("env_data not available!\n", e)
             return None
@@ -320,19 +330,76 @@ class FeatureSweep:
         stop = distance2idx(options["Stop"] * 1000, dist_vec)
         downsampling = int(max(1, options["Down sample"]))
 
+        if downsampling != self.downsampling:
+            self.downsampling = downsampling
+            self.down_arr = None
+            self.idx = 0
+
+        last_vec = self.average(win_data["env_data"][sensor_idx, :, 0], self.downsampling)
+
+        if self.down_arr is None:
+            self.down_arr = np.zeros((num_sensors, last_vec.shape[0], win_len))
+
+        self.down_arr[sensor_idx, :, :] = np.roll(self.down_arr[sensor_idx, :, :], 1, axis=1)
+        self.down_arr[sensor_idx, :, 0] = last_vec
+
         if start >= stop:
             return None
 
+        if options.get("Calibrate", False):
+            if self.idx < self.calib:
+                if not self.idx:
+                    self.bg = np.zeros((num_sensors, self.down_arr.shape[1]))
+                self.bg[sensor_idx, :] = np.maximum(
+                        self.bg[sensor_idx, :],
+                        1.05 * self.down_arr[sensor_idx, :, 0]
+                )
+
+            if self.idx < self.calib + self.dead_time:
+                if sensor_idx == 3:
+                    self.idx += 1
+                return None
+            elif self.idx == self.calib + self.dead_time and sensor_idx == 0:
+                bg = np.empty_like(self.down_arr)
+                for s in range(len(win_params["sensor_config"].sensor)):
+                    for i in range(win_len):
+                        bg[s, :, i] = self.bg[s, :]
+                self.bg = bg
+                self.idx += 1
+
+            full_arr = self.down_arr / self.bg
+            full_arr[full_arr < 1] = 1
+        else:
+            full_arr = self.down_arr
+
+        if options["Stretch"]:
+            map_max = 1.2 * np.max(full_arr)
+            new_arr = full_arr[sensor_idx, :, :]
+            g = 1 / 2.2
+            new_arr = 254/(map_max - 1 + 1.0e-9)**g * (new_arr - 1)**g
+            new_arr[new_arr < 1] = 1
+        else:
+            new_arr = full_arr[sensor_idx, :, :]
+
         if options["Flip"]:
             data = {
-                "segment": np.flip(arr[start:stop:downsampling, :], 0),
+                "segment": np.flip(new_arr, 0),
             }
         else:
             data = {
-                "segment": arr[start:stop:downsampling, :],
+                "segment": new_arr,
             }
 
+        data["integrated"] = np.mean(data["segment"], axis=1)
+
         return data
+
+    def average(self, vec, n):
+        if n > 1:
+            end = n * int(len(vec) / n)
+            return np.mean(vec[:end].reshape(-1, n), 1)
+        else:
+            return vec
 
     def get_options(self):
         return self.data, self.options
@@ -434,8 +501,11 @@ class FeatureSparseFFT:
             }
 
         data["fft_profile"] = np.sum(data["fft"], axis=0)
-        data["fft_profile"] = data["fft_profile"] / np.max(data["fft_profile"]) * 256
-        data["fft_yprofile"] = np.sum(data["fft"], axis=1)
+        min_profile = np.min(data["fft_profile"])
+        max_profile = np.max(data["fft_profile"])
+        data["fft_profile"] = (data["fft_profile"] - min_profile) / max_profile * 256
+
+        data["fft_yprofile"] = np.sum(data["fft"], axis=1) / 6000 * 256
 
         # Apply normalized gamma stretch and subtract mean.
         if options["Stretch"]:
@@ -467,15 +537,22 @@ class FeatureSparsePresence:
         # output data
         self.data = {
             "presence": "Presence",
+            "presence_avg": "Time Average"
         }
         # text, value, limits
         self.options = [
             ("Start", 0.2, [0.06, 7], float),
             ("Stop", 0.4, [0.06, 7], float),
+            ("Calibrate Avg.", False, None, bool)
         ]
 
         self.detector_processor = None
         self.history = None
+        self.idx = 0
+        self.last_cal = False
+        self.avg_presence = None
+        self.calib = 100                # Number of frames to use for calibration
+        self.dead_time = 200            # Number of frames to wait after calibration
 
     def extract_feature(self, win_data, win_params):
         try:
@@ -499,7 +576,7 @@ class FeatureSparsePresence:
 
         # dist_vec is in mm
         start = max(data_start, options["Start"] * 1000)
-        stop = min(data_stop, options["Stop"] * 1000)
+        stop = min(data_stop, options["Stop"] * 1000) + 1
 
         if start >= data_stop:
             return None
@@ -535,9 +612,40 @@ class FeatureSparsePresence:
         self.history[sensor_idx, :, :] = np.roll(self.history[sensor_idx, :, :], 1, axis=1)
         self.history[sensor_idx, :, 0] = presence
 
+        presence = self.history[sensor_idx, start_idx:stop_idx, :]
+        avg_presence = np.mean(presence, axis=1)
+
+        if self.avg_presence is None:
+            self.avg_presence = np.zeros((num_sensors, len(avg_presence)))
+
+        if options.get("Calibrate Avg.", False):
+            if self.idx == 0:
+                self.bg = np.zeros((num_sensors, len(avg_presence)))
+            if self.idx < self.calib:
+                self.bg[sensor_idx, :] = np.maximum(self.bg[sensor_idx, :], 1.2 * avg_presence)
+                if sensor_idx == num_sensors - 1:
+                    self.idx += 1
+
+            avg_presence = avg_presence / self.bg[sensor_idx, :]
+            avg_presence[avg_presence < 1] = 1
+
+        self.avg_presence[sensor_idx, :] = avg_presence
+        avg_presence = avg_presence / np.max(self.avg_presence) * 256
+
         data = {
-            "presence": self.history[sensor_idx, start_idx:stop_idx, :],
+            "presence": presence,
+            "presence_avg": avg_presence,
         }
+
+        if self.last_cal != options.get("Calibrate Avg.", False):
+            self.idx = 0
+            self.last_cal = options.get("Calibrate Avg.", False)
+
+        if options.get("Calibrate Avg.", False):
+            if self.idx < self.calib + self.dead_time:
+                data = None
+                if sensor_idx == num_sensors - 1:
+                    self.idx += 1
 
         return data
 
