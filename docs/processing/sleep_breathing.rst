@@ -1,3 +1,5 @@
+.. _sleep-breathing:
+
 Sleep breathing
 ===============
 

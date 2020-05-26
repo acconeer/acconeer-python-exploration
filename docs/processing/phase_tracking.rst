@@ -1,3 +1,5 @@
+.. _phase-tracking:
+
 Phase tracking
 ==============
 

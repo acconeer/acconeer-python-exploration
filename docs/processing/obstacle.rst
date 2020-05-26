@@ -1,3 +1,5 @@
+.. _obstacle-detection:
+
 Obstacle detection
 ==================
 

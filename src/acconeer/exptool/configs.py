@@ -99,7 +99,7 @@ class BaseServiceConfig(BaseSessionConfig):
         order=1010,
         category=cb.Category.ADVANCED,
         help=r"""
-            RSS supports two different repetition modes. They determine how and when data
+            The RSS supports two different repetition modes. They determine how and when data
             acquisition occurs. They are:
 
             * **On demand / host driven**: The sensor produces data when requested by the
@@ -110,7 +110,7 @@ class BaseServiceConfig(BaseSessionConfig):
               configurable accurate hardware timer. This mode is recommended if exact timing
               between updates is required.
 
-            Exploration Tool is capable of setting the update rate also in *on demand (host
+            The Exploration Tool is capable of setting the update rate also in *on demand (host
             driven)* mode. Thus, the difference between the modes becomes subtle. This is why *on
             demand* and *streaming* are called *host driven* and *sensor driven* respectively in
             Exploration Tool.
@@ -128,7 +128,7 @@ class BaseServiceConfig(BaseSessionConfig):
         optional_default_set_value=50.0,
         order=30,
         help=r"""
-            The data frame rate :math:`f_f` from the service.
+            The rate :math:`f_f` at which the sensor sends frames to the host MCU.
 
             .. attention::
 
@@ -155,8 +155,8 @@ class BaseServiceConfig(BaseSessionConfig):
         help=r"""
             The receiver gain used in the sensor. If the gain is too low, objects may not be
             visible, or it may result in poor signal quality due to quantization errors. If the
-            gain is too high, strong reflections may saturate the data. We recommend not setting
-            the gain higher than necessary due to signal quality reasons.
+            gain is too high, strong reflections may result in saturated data. We recommend not
+            setting the gain higher than necessary due to signal quality reasons.
 
             Must be between 0 and 1 inclusive, where 1 is the highest possible gain.
 
@@ -196,8 +196,8 @@ class BaseServiceConfig(BaseSessionConfig):
         category=cb.Category.ADVANCED,
         help=r"""
             When measuring in the direct leakage (around 0m), this setting can be enabled to
-            minimize saturation in the receiver. We recommend not using this setting in normal
-            operation.
+            minimize saturation in the receiver. We do not recommend using this setting under
+            normal operation.
         """,
     )
 
@@ -212,11 +212,22 @@ class BaseServiceConfig(BaseSessionConfig):
             incoming pulse is sampled. Profiles with low numbers use short pulses while the higher
             profiles use longer pulses.
 
-            Profile 1 is recommended for measuring strong reflectors or distance  measurements in
-            the first couple of decimeters close to the sensor. For distance measurements at longer
-            distances profile 2 and 3 are recommended. Finally, profile 4 and 5 are designed for
-            motion or presence detection at longer distances, where an optimal signal to noise
-            ratio is preferred over an accurate distance measurement.
+            Profile 1 is recommended for:
+
+            - measuring strong reflectors, to avoid saturation of the received signal
+            - close range operation (<20 cm), due to the reduced direct leakage
+
+            Profile 2 and 3 are recommended for:
+
+            - operation at intermediate distances, (20 cm to 1 m)
+            - where a balance between SNR and depth resolution is acceptable
+
+            Profile 4 and 5 are recommended for:
+
+            - for Sparse service only
+            - operation at large distances (>1 m)
+            - motion or presence detection, where an optimal SNR ratio is preferred over a high
+              resolution distance measurement
 
             The previous profile Maximize Depth Resolution and Maximize SNR are now profile 1 and
             2. The previous Direct Leakage Profile is obtained by the use of the Maximize Signal
@@ -245,7 +256,8 @@ class BaseServiceConfig(BaseSessionConfig):
 
             In Envelope, IQ, and Power Bins, the factor must be 1, 2, or 4.
             In sparse, it must be at least 1.
-            Setting a factor greater than 1 might affect the range end point.
+            Setting a factor greater than 1 might affect the range end point and for IQ and
+            Envelope, also the first point.
         """,
     )
 
@@ -293,11 +305,13 @@ class BaseDenseServiceConfig(BaseServiceConfig):
         help=r"""
             With the SW version 2 release, a sensor signal normalization functionality is activated
             by default for the Power Bins, Envelope, and IQ Service. This results in a more
-            constant signal for different temperatures and sensors. Applications where the
-            amplitude radar of sweeps are compared to a previously recorded signal or a threshold
-            should see a substantially increase in performance. The radar sweep are normalized to
-            have similar amplitude independent of sensor gain and hardware averaging, resulting in
-            only minor visible effect in the sweeps when adjusting these parameters.
+            constant signal for different temperatures and sensors. The radar sweeps are normalized
+            to have similar amplitude independent of sensor gain and hardware averaging, resulting
+            in only minor visible effect in the sweeps when adjusting these parameters.
+
+            We recommend this setting especially for applications, where absolute radar amplitudes
+            are important, such as when comparing to a previously recorded signal or to a fixed
+            threshold.
 
             More technically, the functionality is implemented to collect data when starting the
             service, but not transmitting pulses. This data is then used to determine the current
@@ -306,9 +320,10 @@ class BaseDenseServiceConfig(BaseServiceConfig):
             where a service is created to collect just a single short sweep before turning off, the
             sensor normalization can add a non-negligible part to the power consumption.
 
-            Sensor normalization is not implemented in the Sparse service. Instead the Presence
-            detector, using data from the Sparse service, implement this functionality in as
-            similar way.
+            Please note, that due to the nature of Sparse data, the Sparse service does not support
+            noise level normalization. Instead, normalization during processing is recommended,
+            such as done in the Presence detector.
+
         """,
     )
 
@@ -344,6 +359,9 @@ class PowerBinServiceConfig(BaseDenseServiceConfig):
         default_value=5,
         limits=(1, None),
         order=5,
+        help=r"""
+            The number of bins to be used for creating the amplitude over distance histogram.
+        """,
     )
 
     def check(self):
@@ -469,13 +487,17 @@ class SparseServiceConfig(BaseServiceConfig):
         optional_default_set_value=3000.0,
         order=40,
         help=r"""
-            The sparse sweep rate :math:`f_s`. If not set, this will take the maximum possible
-            value.
+            In Sparse, each frame is a collection of several sweeps over the selected distance
+            range (sweeps per frame). The sweep rate :math:`f_s` is the rate at which sweeps are
+            performed, i.e. the rate at which each distance point is scanned. If you set the sweep
+            rate to 4000 Hz and the sweeps per frame to 32, each Sparse data frame will contain 32
+            sweeps over the selected distance range, where the sweeps are measured at a rate of
+            4000 Hz.
 
             The maximum possible sweep rate...
 
-            - Is roughly inversely proportional to the number of depth points measured (affected
-              by the **range interval** and **downsampling factor**).
+            - Is roughly inversely proportional to the number of depth points measured (affected by
+              the **range interval** and **downsampling factor**).
             - Is roughly inversely proportional to **HW accelerated average samples**.
             - Depends on the **sampling mode**. Mode A is roughly :math:`4/3 \approx 130\%` slower
               than mode B with the same configuration.
@@ -495,17 +517,22 @@ class SparseServiceConfig(BaseServiceConfig):
         order=1000,
         category=cb.Category.ADVANCED,
         help=r"""
-            The sampling mode changes how the hardware accelerated averaging is done. Mode A is
-            optimized for maximal independence of the depth points, giving a higher depth
-            resolution than mode B. Mode B is instead optimized for maximal SNR per unit time
-            spent on measuring. This makes it more energy efficient and suitable for cases where
-            small movements are to be detected over long ranges. Mode A is more suitable for
-            applications like gesture recognition, measuring the distance to a movement, and
-            speed measurements.
+            The sampling mode changes how the hardware accelerated averaging is done.
+            This may either increase SNR or reduce correlation.
 
-            Mode B typically gives roughly 3 dB better SNR per unit time than mode A. However,
-            please note that very short ranges of only one or a few points are suboptimal with
-            mode B. In those cases, always use mode A.
+            *Mode A* is:
+
+            - optimized for maximal independence of the depth points, giving a higher depth
+              resolution than mode B.
+            - more suitable for applications like gesture recognition, measuring the distance to a
+              movement, and speed measurements.
+
+            *Mode B* is:
+
+            - optimized for maximal SNR per unit time spent on measuring. This makes it more energy
+              efficient and suitable for cases where small movements are to be detected over long
+              ranges.
+            - resulting in roughly 3 dB better SNR per unit time than mode A.
         """,
     )
 

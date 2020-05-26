@@ -502,6 +502,7 @@ Configuring the Acconeer sensor
 
 The Acconeer sensor is highly configurable and can operate in many different modes where parameters are tuned to optimize the sensor performance for specific use cases.
 
+.. _sensor-introduction-pofiles:
 
 Profiles
 ^^^^^^^^
@@ -593,6 +594,7 @@ RSS supports two different *repetition modes*. They determine how and when data 
 
 Note, Exploration Tool is capable of setting the update rate also in *on demand* mode. Thus, the difference between the modes becomes subtle. This is why *on demand* and *streaming* are called *host driven* and *sensor driven* respectively in Exploration Tool.
 
+.. _power-save-modes:
 
 Power save modes
 ^^^^^^^^^^^^^^^^

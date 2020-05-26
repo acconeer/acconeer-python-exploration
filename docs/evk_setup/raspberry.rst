@@ -1,3 +1,5 @@
+.. _setup_raspberry:
+
 Setting up your Raspberry Pi EVK
 ================================
 
