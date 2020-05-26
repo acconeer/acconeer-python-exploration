@@ -11,6 +11,7 @@ import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_sparse as presence_detection_sparse_module
 import examples.processing.sleep_breathing as sleep_breathing_module
 import examples.processing.sparse_fft as sparse_fft_module
+import examples.processing.sparse_inter_fft as sparse_inter_fft_module
 import examples.processing.sparse_speed as sparse_speed_module
 import service_modules.envelope as envelope_module
 import service_modules.iq as iq_module
@@ -141,10 +142,19 @@ MODULE_INFOS = [
     ),
     ModuleInfo(
         "sparse_fft",
-        "Sparse FFT (sparse)",
+        "Sparse short-time FFT (sparse)",
         sparse_fft_module,
         sparse_fft_module.get_sensor_config,
         sparse_fft_module.Processor,
+        False,
+        False,
+    ),
+    ModuleInfo(
+        "sparse_inter_fft",
+        "Sparse long-time FFT (sparse)",
+        sparse_inter_fft_module,
+        sparse_inter_fft_module.get_sensor_config,
+        sparse_inter_fft_module.Processor,
         False,
         False,
     ),
