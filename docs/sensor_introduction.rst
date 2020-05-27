@@ -112,7 +112,9 @@ Both RSS and Applications run on a host platform and Acconeer provides a softwar
 
 * For STM32 platforms we provide example integration files and instructions for how to set up a project in STM32CubeIDE.
 
-* Other ARM Cortex M0, M4 and M7 based platform can easily be used by writing a custom implantation of the HAL integration layer. A handful functions that use MCU specific driver functions for accessing timers, SPI and GPIO have to be implemented.
+* Other ARM Cortex M0, M4 and M7 based platform can easily be used by writing a custom implementation of the HAL integration layer. A handful functions that use MCU specific driver functions for accessing timers, SPI and GPIO have to be implemented.
+
+For more detailed information on how to implement the HAL integration layer used by RSS, there is a user guide available at `acconeer.com <https://acconeer.com>`__.
 
 Based on these deliveries it is possible for the customer to create their own integration layer for any platform that uses a supported processor architecture. The currently available products and corresponding software deliveries are listed in :numref:`fig_product_sw_offer`, refer to documentation for each specific product for further details.
 
@@ -123,7 +125,7 @@ Based on these deliveries it is possible for the customer to create their own in
 
     Products and software deliverables.
 
-More SDK variants are available at Acconeer.com, they all contain RSS, Software integration, and Example applications. The Module software image contain RSS, software integration, and Module server and can be downloaded from acconeer.com.
+At `acconeer.com <https://acconeer.com>`__, there are more SDK variants and they all contain RSS, Software integration, and Example applications. The Module software image contains RSS, software integration, and Module server.
 The module can be used in two different setups:
 
 * Stand-alone module: The module has got no dependency on external controllers. The application is customized to a specific use case by the customer and runs on the embedded MCU. The customers application is accessing the RSS API via a software interface.
@@ -169,7 +171,7 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 
     Available Detectors and Services.
 
-Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see Section `Acconeer tools`_) to observe the different outputs and understand what they represent, each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`__.
+Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see Section `Acconeer tools`_) to observe the different outputs and understand what they represent. Each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`__.
 
 At `developer.acconeer.com <https://developer.acconeer.com>`__, we have several movies showing demos where the Acconeer sensor is used in different use cases. Together with the demo movies, corresponding reference applications are available in our different SDKs at Acconeer developer site. These reference applications are written in C code and use our Services and Detectors, check them out to get inspiration on how to build your product with the Acconeer sensor.
 
@@ -707,6 +709,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Minor fixes.                           2.4     2020-05-27
     Acconeer AB Minor fixes.                           2.3     2020-03-13
     Acconeer AB Minor fixes.                           2.2     2020-02-27
     Acconeer AB Added power save mode Hibernate.       2.1     2020-01-17
