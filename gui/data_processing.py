@@ -5,6 +5,7 @@ import warnings
 
 from PyQt5.QtCore import QThread
 
+from acconeer.exptool import modes
 from acconeer.exptool.recording import Recorder
 
 
@@ -109,6 +110,13 @@ class DataProcessing:
 
         sensor_config_dict = json.loads(record.sensor_config_dump)
         rate = sensor_config_dict.get("update_rate", None)
+        if rate is None and record.mode == modes.Mode.SPARSE:
+            sweep_rate = sensor_config_dict.get("sweep_rate", None)
+            if sweep_rate is None:
+                sweep_rate = record.session_info.get("sweep_rate", None)
+            if sweep_rate is not None:
+                rate = sweep_rate / sensor_config_dict.get("sweeps_per_frame", 16)
+
         selected_sensors = self.sensor_config.sensor
         stored_sensors = sensor_config_dict["sensor"]
 
