@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from copy import copy
+from types import SimpleNamespace
 
 import attr
 import numpy as np
@@ -68,6 +69,9 @@ class Parameter:
         doc = self.generate_doc()
         if doc:
             self.__doc__ = doc.strip()
+
+        self.help_obj = SimpleNamespace()
+        self.help_obj.__doc__ = None if self.help is None else inspect.cleandoc(self.help)
 
         self._attr_name = None
 
