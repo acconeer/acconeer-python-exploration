@@ -1191,6 +1191,7 @@ class GUI(QMainWindow):
             self.in_supported_mode or states["load_state"] == LoadState.LOADED,
             not states["scan_is_running"],
             not states["has_config_error"],
+            states["server_connected"] or states["load_state"] == LoadState.LOADED,
         ]))
         if states["load_state"] == LoadState.LOADED:
             self.buttons["start"].setText("New measurement")
