@@ -259,7 +259,22 @@ class PGUpdater:
         win.setWindowTitle("Acconeer breathing example")
         win.resize(800, 600)
 
-        self.peak_plot = win.addPlot(title="IQ at peak")
+        self.env_plot = win.addPlot(title="Amplitude of IQ data and change")
+        self.env_plot.setMenuEnabled(False)
+        self.env_plot.addLegend()
+        self.env_plot.showGrid(x=True, y=True)
+        self.env_curve = self.env_plot.plot(
+            pen=utils.pg_pen_cycler(0),
+            name="Amplitude of IQ data",
+        )
+        self.delta_curve = self.env_plot.plot(
+            pen=utils.pg_pen_cycler(1),
+            name="Phase change between sweeps",
+        )
+        self.peak_vline = pg.InfiniteLine(pen=pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine))
+        self.env_plot.addItem(self.peak_vline)
+
+        self.peak_plot = win.addPlot(title="Phase of IQ at peak")
         self.peak_plot.setMenuEnabled(False)
         utils.pg_setup_polar_plot(self.peak_plot, 1)
         self.peak_curve = self.peak_plot.plot(pen=utils.pg_pen_cycler(0))
@@ -269,22 +284,14 @@ class PGUpdater:
         self.peak_plot.addItem(self.peak_text_item)
         self.peak_text_item.setPos(-1.15, -1.15)
 
-        self.env_plot = win.addPlot(title="Envelope and delta")
-        self.env_plot.setMenuEnabled(False)
-        self.env_plot.addLegend()
-        self.env_plot.showGrid(x=True, y=True)
-        self.env_curve = self.env_plot.plot(
-            pen=utils.pg_pen_cycler(0),
-            name="Envelope",
-        )
-        self.delta_curve = self.env_plot.plot(
-            pen=utils.pg_pen_cycler(1),
-            name="Phase delta",
-        )
-        self.peak_vline = pg.InfiniteLine(pen=pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine))
-        self.env_plot.addItem(self.peak_vline)
-
         win.nextRow()
+
+        self.zoom_plot = win.addPlot(title="Relative movement")
+        self.zoom_plot.setMenuEnabled(False)
+        self.zoom_plot.showGrid(x=True, y=True)
+        self.zoom_plot.setLabel("bottom", "Time (s)")
+        self.zoom_plot.setLabel("left", "Movement (mm)")
+        self.zoom_curve = self.zoom_plot.plot(pen=utils.pg_pen_cycler(0))
 
         self.move_plot = win.addPlot(title="Breathing movement")
         self.move_plot.setMenuEnabled(False)
@@ -297,13 +304,6 @@ class PGUpdater:
         self.move_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
         self.move_text_item.setPos(self.move_xs[0], -2)
         self.move_plot.addItem(self.move_text_item)
-
-        self.zoom_plot = win.addPlot(title="Relative movement")
-        self.zoom_plot.setMenuEnabled(False)
-        self.zoom_plot.showGrid(x=True, y=True)
-        self.zoom_plot.setLabel("bottom", "Time (s)")
-        self.zoom_plot.setLabel("left", "Movement (mm)")
-        self.zoom_curve = self.zoom_plot.plot(pen=utils.pg_pen_cycler(0))
 
     def update(self, data):
         envelope = data["env_ampl"]
