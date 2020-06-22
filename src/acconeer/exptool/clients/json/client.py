@@ -290,6 +290,7 @@ CONFIG_TO_CMD_KEY_MAP = {
     "tx_disable": "tx_disable",
     "power_save_mode": "power_save_mode",
     "depth_lowpass_cutoff_ratio": "depth_lowpass_cutoff_ratio",
+    "asynchronous_measurement" : "asynchronous_measurement",
 }
 
 SESSION_HEADER_TO_INFO_KEY_REMAP = {

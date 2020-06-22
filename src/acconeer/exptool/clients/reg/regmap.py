@@ -139,6 +139,7 @@ CONFIG_TO_STRIPPED_REG_NAME_MAP = {
     "noise_level_normalization": "noise_level_normalization",
     "maximize_signal_attenuation": "maximize_signal_attenuation",
     "tx_disable": "tx_disable",
+    "asynchronous_measurement" : "asynchronous_measurement",
     "power_save_mode": "sensor_power_mode",
     "_depth_lowpass_cutoff_ratio_override": "depth_lpf_ratio_override",
     "_depth_lowpass_cutoff_ratio_value": "depth_lpf_ratio_value",

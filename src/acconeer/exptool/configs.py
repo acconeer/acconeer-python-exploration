@@ -286,12 +286,28 @@ class BaseServiceConfig(BaseSessionConfig):
         """,
     )
 
+    asynchronous_measurement = cb.BoolParameter(
+        label="Enable asynchronous measurement",
+        default_value=True,
+        order=3200,
+        category=cb.Category.ADVANCED,
+        help=r"""
+            Enabling asynchronous measurements will result in a faster update rate but introduces a
+            risk of interference between sensors.
+        """,
+    )
+
     def check(self):
         alerts = []
 
         if self.repetition_mode == __class__.RepetitionMode.SENSOR_DRIVEN:
+            msg = "Must be set when sensor driven"
+
             if self.update_rate is None:
-                alerts.append(cb.Error("update_rate", "Must be set when sensor driven"))
+                alerts.append(cb.Error("update_rate", msg))
+
+            if not self.asynchronous_measurement:
+                alerts.append(cb.Error("asynchronous_measurement", msg))
 
         if self.gain > 0.9:
             alerts.append(cb.Warning("gain", "Too high gain causes degradation"))
@@ -304,6 +320,12 @@ class BaseServiceConfig(BaseSessionConfig):
 
             if self.repetition_mode == __class__.RepetitionMode.SENSOR_DRIVEN:
                 alerts.append(cb.Error("power_save_mode", "Unavailable when sensor driven"))
+
+        psms = [__class__.PowerSaveMode.HIBERNATE, __class__.PowerSaveMode.OFF]
+        if self.power_save_mode in psms:
+            if self.asynchronous_measurement:
+                msg = "PSM hibernate/off is always synchronous"
+                alerts.append(cb.Info("asynchronous_measurement", msg))
 
         return alerts
 
