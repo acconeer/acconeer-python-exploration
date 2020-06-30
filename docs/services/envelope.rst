@@ -21,7 +21,7 @@ The Envelope service can be configured with different pulse length profiles, see
 For further reading on the envelope service we refer to the `Envelope documentation`_ on the `Acconeer developer page`_.
 
 .. _`Acconeer developer page`: https://developer.acconeer.com/
-.. _`Envelope documentation`: https://developer.acconeer.com/download/envelope-service-user-guide-pdf/
+.. _`Envelope documentation`: https://developer.acconeer.com/download/user-guide-envelope-service-pdf/
 
 Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
