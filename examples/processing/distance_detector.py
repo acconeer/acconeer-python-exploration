@@ -94,6 +94,8 @@ class Processor:
         self.main_peak_hist_dist = []
         self.minor_peaks_hist_sweep_idx = []
         self.minor_peaks_hist_dist = []
+        self.above_thres_hist_sweep_idx = []
+        self.above_thres_hist_dist = []
 
         self.r = utils.get_range_depths(sensor_config, session_info)
         self.dr = self.r[1] - self.r[0]
@@ -191,6 +193,18 @@ class Processor:
                 * np.mean(sweep[(idx + rel_indexes).astype(int)])
 
         return threshold
+
+    def find_first_point_above_threshold(self, sweep, threshold):
+
+        if threshold is None or np.all(np.isnan(threshold)):
+            return None
+
+        points_above = (sweep > threshold)
+
+        if not np.any(points_above):
+            return None
+
+        return np.argmax(points_above)
 
     def find_peaks(self, sweep, threshold):
         #  Not written for optimal speed.
@@ -320,7 +334,7 @@ class Processor:
         # Determining threshold
         if self.threshold_type is ProcessingConfiguration.ThresholdType.FIXED:
             threshold = self.fixed_threshold_level * np.ones(sweep.size)
-        elif self.threshold_type is ProcessingConfiguration.ThresholdType.STATIONARY_CLUTTER:
+        elif self.threshold_type is ProcessingConfiguration.ThresholdType.RECORDED:
             threshold = self.sc_used_threshold
         elif self.threshold_type is ProcessingConfiguration.ThresholdType.CFAR:
             threshold = self.calculate_cfar_threshold(
@@ -340,6 +354,11 @@ class Processor:
             self.last_mean_sweep = self.current_mean_sweep.copy()
             self.current_mean_sweep *= 0
 
+            # Find the first delay over threshold. Used in tank-level when monitoring changes
+            # in the direct leakage.
+            first_point_above_threshold = self.find_first_point_above_threshold(
+                self.last_mean_sweep, threshold)
+
             # First peak-finding, then peak-merging, finallay peak sorting.
             found_peaks = self.find_peaks(self.last_mean_sweep, threshold)
             if len(found_peaks) > 1:
@@ -356,6 +375,11 @@ class Processor:
                 self.minor_peaks_hist_sweep_idx.append(self.sweep_index)
                 self.minor_peaks_hist_dist.append(self.r[found_peaks[i]])
 
+            # Adding first distance above threshold to history
+            if first_point_above_threshold is not None:
+                self.above_thres_hist_sweep_idx.append(self.sweep_index)
+                self.above_thres_hist_dist.append(self.r[first_point_above_threshold])
+
             # Removing old main peaks from history
             while len(self.main_peak_hist_sweep_idx) > 0 and \
                     (self.sweep_index - self.main_peak_hist_sweep_idx[0]) \
@@ -370,6 +394,13 @@ class Processor:
                 self.minor_peaks_hist_sweep_idx.pop(0)
                 self.minor_peaks_hist_dist.pop(0)
 
+            # Removing old first distance above threshold from history
+            while len(self.above_thres_hist_sweep_idx) > 0 and \
+                    (self.sweep_index - self.above_thres_hist_sweep_idx[0]) \
+                    > self.history_length_s*self.f:
+                self.above_thres_hist_sweep_idx.pop(0)
+                self.above_thres_hist_dist.pop(0)
+
         out_data = {
             "sweep": sweep,
             "last_mean_sweep": self.last_mean_sweep,
@@ -380,6 +411,9 @@ class Processor:
             "minor_peaks_hist_sweep_s": (np.array(self.minor_peaks_hist_sweep_idx)
                                          - self.sweep_index)/self.f,
             "minor_peaks_hist_dist": np.array(self.minor_peaks_hist_dist),
+            "above_thres_hist_sweep_s": (np.array(self.above_thres_hist_sweep_idx)
+                                         - self.sweep_index)/self.f,
+            "above_thres_hist_dist": np.array(self.above_thres_hist_dist),
             "sweep_index": self.sweep_index,
             "found_peaks": found_peaks,
         }
@@ -392,7 +426,7 @@ class Processor:
 class ProcessingConfiguration(configbase.ProcessingConfig):
     class ThresholdType(Enum):
         FIXED = "Fixed"
-        STATIONARY_CLUTTER = "Stationary clutter"
+        RECORDED = "Recorded"
         CFAR = "CFAR"
 
     class PeakSorting(Enum):
@@ -405,7 +439,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
 
     nbr_average = configbase.FloatParameter(
         label="Sweep averaging",
-        default_value=10,
+        default_value=5,
         limits=(1, 100),
         logscale=True,
         decimals=0,
@@ -446,21 +480,21 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         default_value=20,
         limits=(2, 200),
         decimals=0,
-        visible=lambda conf: conf.threshold_type == conf.ThresholdType.STATIONARY_CLUTTER,
+        visible=lambda conf: conf.threshold_type == conf.ThresholdType.RECORDED,
         updateable=True,
         order=20,
         help=(
             "The number of (non-averaged) sweeps collected for calculating the Stationary"
-            " clutter threshold."
+            " Clutter threshold."
         ),
     )
 
     sc_load_save_bg = configbase.ReferenceDataParameter(
-        label="Stationary clutter threshold",
-        visible=lambda conf: conf.threshold_type == conf.ThresholdType.STATIONARY_CLUTTER,
+        label="Recorded threshold",
+        visible=lambda conf: conf.threshold_type == conf.ThresholdType.RECORDED,
         order=23,
         help=(
-            "Load/Save stationary clutter background from/to disk."
+            "Load/Save a recorded threshold from/to disk."
         ),
     )
 
@@ -469,7 +503,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         default_value=0.3,
         limits=(0.01, 1),
         logscale=True,
-        visible=lambda conf: conf.threshold_type == conf.ThresholdType.STATIONARY_CLUTTER,
+        visible=lambda conf: conf.threshold_type == conf.ThresholdType.RECORDED,
         decimals=4,
         updateable=True,
         order=24,
@@ -498,7 +532,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
 
     cfar_guard_cm = configbase.FloatParameter(
         label="CFAR guard",
-        default_value=3,
+        default_value=12,
         limits=(1, 20),
         unit="cm",
         decimals=1,
@@ -514,7 +548,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
 
     cfar_window_cm = configbase.FloatParameter(
         label="CFAR window",
-        default_value=8,
+        default_value=3,
         limits=(0.1, 20),
         unit="cm",
         decimals=1,
@@ -556,8 +590,22 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         logscale=True,
         unit="s",
         label="History length",
-        order=199,
+        order=198,
         help="Length of time history for plotting."
+    )
+
+    show_first_above_threshold = configbase.BoolParameter(
+        label="Show first distance above threshold",
+        default_value=False,
+        updateable=True,
+        order=199,
+        help=(
+            "When detect in the presence of object very close to the sensor, the "
+            "strong direct leakage might cause that no well shaped peaks are detected, "
+            "even though the envelope signal is above the threshold. Therefore the "
+            "first distace where the signal is above the threshold can be used as an "
+            "alternative to peak detection."
+        ),
     )
 
     def check_sensor_config(self, sensor_config):
@@ -599,6 +647,14 @@ class PGUpdater:
 
         if not self.setup_is_done:
             return
+
+        # Hide the first_distance_above_threshold data
+        self.first_distance_above_threshold.setVisible(
+            processing_config.show_first_above_threshold)
+
+        # ...and hide the marker and text in the legend.
+        self.hist_plot.legend.items[2][0].setVisible(processing_config.show_first_above_threshold)
+        self.hist_plot.legend.items[2][1].setVisible(processing_config.show_first_above_threshold)
 
         self.hist_plot.setXRange(-processing_config.history_length_s, 0)
 
@@ -681,6 +737,16 @@ class PGUpdater:
             name="Minor peaks",
         )
 
+        self.first_distance_above_threshold = self.hist_plot.plot(
+            pen=None,
+            symbol='o',
+            symbolSize=3,
+            symbolPen='k',
+            symbolBrush=utils.color_cycler(2),
+            name="First distance above threshold",
+            visible=False,
+        )
+
         self.setup_is_done = True
 
     def update(self, data):
@@ -700,6 +766,8 @@ class PGUpdater:
         self.main_peak.setData(data["main_peak_hist_sweep_s"], 100 * data["main_peak_hist_dist"])
         self.minor_peaks.setData(
             data["minor_peaks_hist_sweep_s"], 100*data["minor_peaks_hist_dist"])
+        self.first_distance_above_threshold.setData(
+            data["above_thres_hist_sweep_s"], 100*data["above_thres_hist_dist"])
 
         if data["found_peaks"] is not None:
             peaks = np.take(self.r, data["found_peaks"]) * 100.0
@@ -713,7 +781,7 @@ class PGUpdater:
                     line.show()
 
             if data["found_peaks"]:
-                text = "{:.2f} mm".format(peaks[0])
+                text = "{:.2f} cm".format(peaks[0])
             else:
                 text = "-"
 
