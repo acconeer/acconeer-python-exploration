@@ -60,6 +60,7 @@ class BaseServiceConfig(BaseSessionConfig):
         ACTIVE = ("Active", "active")
         READY = ("Ready", "ready")
         SLEEP = ("Sleep", "sleep")
+        HIBERNATE = ("Hibernate", "hibernate")
         OFF = ("Off", "off")
 
     range_interval = cb.FloatRangeParameter(
@@ -278,6 +279,11 @@ class BaseServiceConfig(BaseSessionConfig):
         default_value=PowerSaveMode.ACTIVE,
         order=3100,
         category=cb.Category.ADVANCED,
+        help=r"""
+            .. note::
+               Hibernation has limited hardware support. It is not supported by the Raspberry Pi
+               EVK:s and XM112.
+        """,
     )
 
     def check(self):
@@ -292,6 +298,12 @@ class BaseServiceConfig(BaseSessionConfig):
 
         if self.range_start < self.profile.approx_direct_leakage_length:
             alerts.append(cb.Info("range_interval", "Direct leakage might be seen"))
+
+        if self.power_save_mode == __class__.PowerSaveMode.HIBERNATE:
+            alerts.append(cb.Warning("power_save_mode", "Limited hardware support"))
+
+            if self.repetition_mode == __class__.RepetitionMode.SENSOR_DRIVEN:
+                alerts.append(cb.Error("power_save_mode", "Unavailable when sensor driven"))
 
         return alerts
 
@@ -342,6 +354,9 @@ class BaseDenseServiceConfig(BaseServiceConfig):
             points_per_chunk = 124 / self.downsampling_factor
             if points_per_chunk * chunks > 2048:
                 alerts.append(cb.Error("range_interval", "Too large for buffer"))
+
+        if self.power_save_mode == __class__.PowerSaveMode.HIBERNATE:
+            alerts.append(cb.Error("power_save_mode", "Not supported for this service"))
 
         return alerts
 
