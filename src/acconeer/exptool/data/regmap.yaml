@@ -4,19 +4,21 @@ mode_selection:
   category: general
   values:
     power_bins:
+      modes:
+      - power_bins
       value: 1
     envelope:
+      modes:
+      - envelope
       value: 2
     iq:
+      modes:
+      - iq
       value: 3
     sparse:
+      modes:
+      - sparse
       value: 4
-    distance_peak_fixed:
-      value: 256
-    obstacle:
-      value: 768
-    presence:
-      value: 1024
 main_control:
   address: 3
   access: w
@@ -83,15 +85,8 @@ uart_baudrate:
       value: 115200
 module_power_mode:
   address: 10
-  type: enum
+  type: uint32
   category: config
-  values:
-    running:
-      value: 0
-    sleep:
-      value: 1
-    deepsleep:
-      value: 2
 product_identification:
   address: 16
   type: enum
@@ -250,6 +245,15 @@ maximize_signal_attenuation:
   address: 50
   type: boolean
   category: config
+asynchronous_measurement:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 51
+  category: config
+  type: boolean
 pb_req_bin_count:
   modes:
   - power_bins
@@ -286,6 +290,12 @@ iq_depth_lpf_ratio_value:
   address: 66
   type: int32
   scale: 1000000
+  category: config
+iq_proximity_power:
+  modes:
+  - iq
+  address: 67
+  type: boolean
   category: config
 sparse_sweeps_per_frame:
   modes:
@@ -491,6 +501,13 @@ missed_data:
   address: 161
   access: r
   type: boolean
+  category: result_info
+proximity_power:
+  modes:
+  - iq
+  address: 162
+  access: r
+  type: uint16
   category: result_info
 output_buffer_length:
   address: 233
