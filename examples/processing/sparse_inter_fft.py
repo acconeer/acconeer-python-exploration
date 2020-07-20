@@ -263,13 +263,13 @@ class PGUpdater:
         self.collapsed_history_plot = win.addPlot(
             row=2, col=0, title="Collapsed sqrt(PSD) history")
         self.collapsed_history_plot.setMenuEnabled(False)
-        self.collapsed_history_im = pg.ImageItem(autoDownsample=True)
+        self.collapsed_history_im = pg.ImageItem()
         self.collapsed_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
         self.collapsed_history_plot.addItem(self.collapsed_history_im)
 
         self.dw_plot = win.addPlot(row=3, col=0, title="Depthwise PSD")
         self.dw_plot.setMenuEnabled(False)
-        self.dw_im = pg.ImageItem(autoDownsample=True)
+        self.dw_im = pg.ImageItem()
         self.dw_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
         self.dw_plot.addItem(self.dw_im)
         self.dw_plot.setLabel("bottom", "Depth (cm)")

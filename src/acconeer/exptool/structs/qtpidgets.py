@@ -28,7 +28,7 @@ def _limits_for_qt(set_limits):
             if set_limits[i] is not None:
                 limits[i] = set_limits[i]
 
-    return limits
+    return [int(round(x)) for x in limits]
 
 
 def try_rst_to_html(s):

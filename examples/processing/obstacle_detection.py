@@ -1351,7 +1351,7 @@ class PGUpdater:
         if data["fft_bg"] is not None and self.advanced_plots["background_map"]:
             map_max = np.max(np.max(data["fft_bg"]))
             fft_data = data["fft_bg"].T
-            fft_data = 254 / map_max**g * fft_data**g
+            fft_data = 254 / (map_max + 1e-6)**g * fft_data**g
 
             fft_data[fft_data > 254] = 254
 

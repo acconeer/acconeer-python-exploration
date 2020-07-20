@@ -608,7 +608,7 @@ class PGUpdater:
         m = max(m, 2 * self.processing_config.detection_threshold)
         self.move_plot.setYRange(0, m)
         self.move_depth_line.setPos(movement_x)
-        self.move_depth_line.setVisible(data["presence_detected"])
+        self.move_depth_line.setVisible(bool(data["presence_detected"]))
 
         move_hist_ys = data["presence_history"]
         move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))

@@ -364,8 +364,8 @@ class Label(QLabel):
         self.setPixmap(self.pixmap)
 
     def resizeEvent(self, event):
-        w = self.size().width() * self.img_scale
-        h = self.size().height() * self.img_scale
+        w = int(round(self.size().width() * self.img_scale))
+        h = int(round(self.size().height() * self.img_scale))
         scaled_size = QtCore.QSize(w, h)
 
         scaled_pixmap = self.pixmap.scaled(
