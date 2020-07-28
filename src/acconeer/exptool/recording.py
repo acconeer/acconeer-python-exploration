@@ -2,7 +2,8 @@ import copy
 import datetime
 import json
 import time
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 import attr
 import h5py
@@ -124,7 +125,9 @@ class Recorder:
         return self.record
 
 
-def save(filename: str, record: Record):
+def save(filename: Union[str, Path], record: Record):
+    filename = str(filename)
+
     if filename.lower().endswith(".h5"):
         return save_h5(filename, record)
     elif filename.lower().endswith(".npz"):
@@ -157,7 +160,9 @@ def pack(record: Record) -> dict:
     return packed
 
 
-def save_npz(filename: str, record: Record):
+def save_npz(filename: Union[str, Path], record: Record):
+    filename = str(filename)
+
     if not filename.lower().endswith(".npz"):
         filename = filename + ".npz"
 
@@ -165,7 +170,9 @@ def save_npz(filename: str, record: Record):
     np.savez_compressed(filename, **packed)
 
 
-def save_h5(filename: str, record: Record):
+def save_h5(filename: Union[str, Path], record: Record):
+    filename = str(filename)
+
     if not filename.lower().endswith(".h5"):
         filename = filename + ".h5"
 
@@ -185,7 +192,9 @@ def save_h5(filename: str, record: Record):
             f.create_dataset(k, data=v, dtype=dtype, compression=compression)
 
 
-def load(filename: str) -> Record:
+def load(filename: Union[str, Path]) -> Record:
+    filename = str(filename)
+
     if filename.lower().endswith(".h5"):
         return load_h5(filename)
     elif filename.lower().endswith(".npz"):
@@ -221,7 +230,9 @@ def unpack(packed: dict) -> Record:
     return Record(**kwargs)
 
 
-def load_npz(filename: str) -> Record:
+def load_npz(filename: Union[str, Path]) -> Record:
+    filename = str(filename)
+
     packed = {}
     with np.load(filename, allow_pickle=False) as f:
         for k, v in f.items():
@@ -233,7 +244,9 @@ def load_npz(filename: str) -> Record:
     return unpack(packed)
 
 
-def load_h5(filename: str) -> Record:
+def load_h5(filename: Union[str, Path]) -> Record:
+    filename = str(filename)
+
     with h5py.File(filename, "r") as f:
         packed = {k: v[()] for k, v in f.items()}
 

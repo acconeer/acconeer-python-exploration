@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import attr
 import numpy as np
@@ -9,7 +9,8 @@ from acconeer.exptool import clients, configs, modes, recording
 
 @pytest.mark.parametrize("mode", modes.Mode)
 @pytest.mark.parametrize("ext", ["h5", "npz"])
-def test_recording(tmp_path, mode, ext):
+@pytest.mark.parametrize("give_pathlib_path", [True, False])
+def test_recording(tmp_path, mode, ext, give_pathlib_path):
     config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.downsampling_factor = 2
 
@@ -35,7 +36,10 @@ def test_recording(tmp_path, mode, ext):
     assert len(record.data_info) == 10
     assert isinstance(record.data, np.ndarray)
 
-    filename = os.path.join(tmp_path, "record." + ext)
+    filename = Path(tmp_path).joinpath("record." + ext)
+
+    if not give_pathlib_path:
+        filename = str(filename)
 
     recording.save(filename, record)
     loaded_record = recording.load(filename)
