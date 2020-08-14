@@ -166,7 +166,7 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 
 .. _fig_detectors_services:
 .. figure:: /_static/introduction/fig_detectors_services.png
-    :scale: 80
+    :scale: 60
     :align: center
 
     Available Detectors and Services.
@@ -239,22 +239,16 @@ Detectors take Service data as input and produce a result as the output that can
 In addition, we provide several Reference applications which use Services or Detectors to demonstrate how to develop applications based on our technology, you can find these in the various SDKs at Acconeer developer site.
 
 
-Distance peak detector
+Distance detector
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Finds peaks in the data provided from the Envelope Service and provides the distance to these peaks. The peaks are identified if above a threshold, which can be set to be fixed, based on the response from the environment without the object to be identified, or based on receiver noise. This Detector is used for the characterization of the A111 in the data sheet.
+This is a distance detector algorithm built on top of the :ref:`envelope-service` service -- based on comparing the envelope sweep to a threshold and identifying one or more peaks in the envelope sweep, corresponding to objects in front of the radar. The algorithm both detects the presence of objects and estimates their distance to the radar. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/distance_detector.html>`__.
 
 
 Presence detector
 ~~~~~~~~~~~~~~~~~
 
 Detects changes in the environment over time based on data from the Sparse service. More details about the detector is found `here <https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html>`__.
-
-
-Distance basic detector
-~~~~~~~~~~~~~~~~~~~~~~~
-
-Low complexity distance detection based on finding the maximum of the data provided from the Envelope Service.
 
 
 Obstacle detector
@@ -711,6 +705,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Updated with new distance detector.    2.5     2020-08-14
     Acconeer AB Minor fixes.                           2.4     2020-05-27
     Acconeer AB Minor fixes.                           2.3     2020-03-13
     Acconeer AB Minor fixes.                           2.2     2020-02-27
