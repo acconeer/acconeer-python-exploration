@@ -100,8 +100,6 @@ class Recorder:
         self.record.data = []
         self.record.sample_times = []
 
-        self.t0 = time.time()
-
     def sample(self, data_info: list, data: np.ndarray):
         expected_num_dims = 3 if self.record.mode == modes.Mode.SPARSE else 2
         if data.ndim != expected_num_dims:  # then assume data is squeezed
@@ -112,7 +110,7 @@ class Recorder:
         self.record.data.append(data.copy())
         self.record.data_info.append(copy.deepcopy(data_info))
 
-        self.record.sample_times.append(time.time() - self.t0)
+        self.record.sample_times.append(time.time())
 
         if self.max_len is not None and len(self.record.data) > self.max_len:
             self.record.data.pop(0)
