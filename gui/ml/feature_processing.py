@@ -174,7 +174,7 @@ class FeatureProcessing:
                 (num_sensors, point_repeats, data_len, n_sweeps)
             )
         else:
-            self.win_data['iq_data'] = np.zeros((num_sensors, data_len, n_sweeps))
+            self.win_data['iq_data'] = np.zeros((num_sensors, data_len, n_sweeps), dtype="complex")
 
     def add_sweep(self, data, win_idx=0):
         mode = data["sensor_config"].mode
