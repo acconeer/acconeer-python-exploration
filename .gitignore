@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 venv/
 env/
+.tox/
 
 # setup.py
 dist/
