@@ -48,3 +48,29 @@ def test_recording(tmp_path, mode, ext, give_pathlib_path):
         assert np.all(getattr(record, a.name) == getattr(loaded_record, a.name))
 
     assert record.sensor_config.downsampling_factor == config.downsampling_factor
+
+
+def test_unknown_mode():
+    config = configs.EnvelopeServiceConfig()
+    mocker = clients.MockClient()
+    mocker.squeeze = False
+    session_info = mocker.start_session(config)
+    recorder = recording.Recorder(sensor_config=config, session_info=session_info)
+    data_info, data = mocker.get_next()
+    recorder.sample(data_info, data)
+    recorder.close()
+    record = recorder.record
+
+    packed = recording.pack(record)
+    assert "mode" in packed
+
+    with pytest.warns(None) as captured_warnings:
+        recording.unpack(packed)
+
+    assert len(captured_warnings) == 0
+
+    with pytest.warns(UserWarning):
+        packed["mode"] = "some_unknown_mode"
+        unpacked = recording.unpack(packed)
+
+    assert(unpacked.mode is None)

@@ -2,6 +2,7 @@ import copy
 import datetime
 import json
 import time
+import warnings
 from pathlib import Path
 from typing import Optional, Union
 
@@ -217,7 +218,14 @@ def unpack(packed: dict) -> Record:
         elif a.type == Optional[str]:
             kwargs[k] = packed.get(k, None)
 
-    kwargs["mode"] = modes.get_mode(packed["mode"])
+    try:
+        mode = modes.get_mode(packed["mode"])
+    except ValueError:
+        mode = None
+        warnings.warn("unknown mode encountered while unpacking record")
+
+    kwargs["mode"] = mode
+
     kwargs["session_info"] = json.loads(packed["session_info"])
     kwargs["data_info"] = json.loads(packed["data_info"])
 
