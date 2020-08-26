@@ -285,9 +285,9 @@ class IntParameter(NumberParameter):
             lower, upper = self.limits
 
             if lower is not None and value < lower:
-                raise ValueError("Given value is too low")
+                raise ValueError("Given value is too low ({} < {})".format(value, lower))
             if upper is not None and value > upper:
-                raise ValueError("Given value is too high")
+                raise ValueError("Given value is too high ({} > {})".format(value, upper))
 
         return value
 
@@ -325,9 +325,9 @@ class FloatParameter(NumberParameter):
             lower, upper = self.limits
 
             if lower is not None and value < lower:
-                raise ValueError("Given value is too low")
+                raise ValueError("Given value is too low ({} < {})".format(value, lower))
             if upper is not None and value > upper:
-                raise ValueError("Given value is too high")
+                raise ValueError("Given value is too high ({} > {})".format(value, upper))
 
         return value
 
