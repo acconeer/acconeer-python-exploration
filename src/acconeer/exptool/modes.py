@@ -16,6 +16,14 @@ def get_mode(mode):
         return mode
 
     if isinstance(mode, str):
-        return Mode(mode.strip().lower())
+        try:
+            return Mode(mode.strip().lower())
+        except ValueError:
+            pass
+
+        try:
+            return Mode.__members__[mode.strip().upper()]
+        except KeyError:
+            pass
 
     raise ValueError("unknown mode")

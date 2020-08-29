@@ -74,3 +74,25 @@ def test_unknown_mode():
         unpacked = recording.unpack(packed)
 
     assert(unpacked.mode is None)
+
+
+@pytest.mark.parametrize("mode", modes.Mode)
+def test_packing_mode(tmp_path, mode):
+    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config.downsampling_factor = 2
+
+    sensor_config_dump = config._dumps()
+    session_info = {"foo": "bar"}
+
+    record = recording.Record(
+        mode=mode,
+        sensor_config_dump=sensor_config_dump,
+        session_info=session_info,
+        data=[],
+        data_info=[],
+    )
+
+    packed = recording.pack(record)
+    restored = recording.unpack(packed)
+
+    assert restored.mode == mode

@@ -19,20 +19,25 @@ def test_value_get_set():
     assert conf.downsampling_factor == 1
 
 
-def test_value_dump_load():
-    conf = configs.SparseServiceConfig()
-    assert conf.downsampling_factor == 1
-    conf.downsampling_factor = 2
-    dump = conf._dumps()
+@pytest.mark.parametrize("mode", modes.Mode)
+def test_value_dump_load(mode):
+    config_cls = configs.MODE_TO_CONFIG_CLASS_MAP[mode]
+    config = config_cls()
+    assert config.downsampling_factor == 1
+    config.downsampling_factor = 2
+    dump = config._dumps()
 
-    conf = configs.SparseServiceConfig()
-    assert conf.downsampling_factor == 1
-    conf._loads(dump)
-    assert conf.downsampling_factor == 2
+    config = config_cls()
+    assert config.downsampling_factor == 1
+    config._loads(dump)
+    assert config.downsampling_factor == 2
 
-    conf = configs.EnvelopeServiceConfig()
+    another_mode = next(other_mode for other_mode in modes.Mode if other_mode != mode)
+    another_config_cls = configs.MODE_TO_CONFIG_CLASS_MAP[another_mode]
+
+    config = another_config_cls()
     with pytest.raises(AssertionError):
-        conf._loads(dump)
+        config._loads(dump)
 
 
 def dump_fun(config):

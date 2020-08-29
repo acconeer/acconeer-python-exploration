@@ -3,7 +3,7 @@ import pytest
 from acconeer.exptool import modes
 
 
-def test_get_modes():
+def test_special_cases():
     with pytest.raises(ValueError):
         modes.get_mode("does-not-exist")
 
@@ -11,6 +11,16 @@ def test_get_modes():
         modes.get_mode(object())
 
     assert modes.get_mode(None) is None
-    assert modes.get_mode("sparse") == modes.Mode.SPARSE
-    assert modes.get_mode("SPARSE") == modes.Mode.SPARSE
-    assert modes.get_mode(modes.Mode.SPARSE) == modes.Mode.SPARSE
+
+
+@pytest.mark.parametrize("mode", modes.Mode)
+def test_positive(mode):
+    assert modes.get_mode(mode) == mode
+
+    assert modes.get_mode(mode.name.lower()) == mode
+    assert modes.get_mode(mode.name.upper()) == mode
+    assert modes.get_mode(mode.name.title()) == mode
+
+    assert modes.get_mode(mode.value.lower()) == mode
+    assert modes.get_mode(mode.value.upper()) == mode
+    assert modes.get_mode(mode.value.title()) == mode
