@@ -1,3 +1,3 @@
-__version__ = "3.7.8"
+__version__ = "3.7.9"
 
-SDK_VERSION = "2.4.0"
+SDK_VERSION = "2.5.1"

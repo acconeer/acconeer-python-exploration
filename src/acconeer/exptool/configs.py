@@ -490,7 +490,7 @@ class IQServiceConfig(BaseDenseServiceConfig):
             alerts.append(cb.Error("range_interval", "Start must be >= 0.06 m"))
 
         if self.sampling_mode == __class__.SamplingMode.B:
-            alerts.append(cb.Warning("sampling_mode", "IQ sampling mode B is deprecated"))
+            alerts.append(cb.Error("sampling_mode", "IQ sampling mode B is removed"))
 
         return alerts
 
