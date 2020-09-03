@@ -782,6 +782,7 @@ class GUI(QMainWindow):
         self.ml_parent_widget.setStyleSheet("QSplitter::handle{background: lightgrey}")
         self.ml_parent_widget.setFrameStyle(QFrame.Panel | QFrame.Sunken)
         self.tab_parent = QTabWidget(self.ml_parent_widget)
+        self.tab_parent.setTabPosition(QTabWidget.South)
         self.ml_parent_widget.addWidget(self.tab_parent)
         self.ml_parent_widget.addWidget(self.ml_info_widget)
 
