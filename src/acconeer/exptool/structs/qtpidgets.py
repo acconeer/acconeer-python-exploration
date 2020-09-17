@@ -28,7 +28,7 @@ def _limits_for_qt(set_limits):
             if set_limits[i] is not None:
                 limits[i] = set_limits[i]
 
-    return [int(round(x)) for x in limits]
+    return limits
 
 
 def try_rst_to_html(s):
@@ -241,7 +241,7 @@ class IntSpinBoxPidget(PidgetStub):
         self.spin_box = wrap_qwidget(QSpinBox)(self)
         self.spin_box.setSingleStep(param.step)
         self.spin_box.setKeyboardTracking(False)
-        self.spin_box.setRange(*_limits_for_qt(param.limits))
+        self.spin_box.setRange(*(int(round(x)) for x in _limits_for_qt(param.limits)))
 
         if param.is_optional:
             self.checkbox = QCheckBox(param.optional_label, self)
