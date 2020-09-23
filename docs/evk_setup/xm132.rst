@@ -1,0 +1,32 @@
+.. _setup_xm132:
+
+Setting up your XM132
+=====================
+
+For detailed instructions, visit our `developer page <https://developer.acconeer.com/>`_.
+
+.. include:: find_serial_port.rst
+
+**Note that the XM132 has two serial ports. Usually, the first port is the one to use.**
+
+Flashing
+--------
+
+Download the module software from our `developer page <https://developer.acconeer.com/>`_. In the archive ``acconeer_xm132_module_software_v*.zip``, under ``bin``, you'll find ``acc_module_server_xm132.bin`` which is the file to flash.
+
+We recommend flashing using the Python library `stm32loader <https://github.com/florisla/stm32loader>`_. Install it with::
+
+   python -m pip install --user stm32loader
+
+Enter the bootloader by doing the following:
+
+- Hold down the DFU button
+- Push the RESET button
+- Release the RESET button
+- Let go of the DFU button
+
+Now you should be able to flash::
+
+   stm32loader -p /dev/ttyUSB0 -e -w -v -g 0x08000000 acc_module_server_xm132.bin
+
+Replace ``/dev/ttyUSB0`` with the serial port of your XM132.

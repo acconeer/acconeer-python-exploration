@@ -29,6 +29,8 @@ Additional documentation is available [here](https://acconeer-python-exploration
 
 * [Raspberry Pi (XC111+XR111 or XC112+XR112)](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/raspberry.html)
 * [XM112](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/xm112.html)
+* [XM122](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/xm122.html)
+* [XM132](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/xm132.html)
 
 For general help on getting started head over to the [Acconeer developer page](https://developer.acconeer.com/). There you will find both a getting started guide and a video showing you how to set up your evaluation kit. There you will also find the SDK download.
 
@@ -66,15 +68,15 @@ python -m pip install -U --user .
 ```
 **Note: The library has to be reinstalled after any change under `src/`, and it is therefore recommended to reinstall after every update.**
 
-#### Connecting to an XM112 or XM122 module through UART on Linux
+#### Connecting to a module through UART on Linux
 
-If you are running Linux together with an XM112 or XM122 module through UART, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
+If you are running Linux together with an XM112, XM122, or XM132 module through UART, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
 ```
 sudo usermod -a -G dialout $USER
 ```
 For the changes to take effect, you will need to log out and in again.
 
-Note: If you have ModemManager installed and running it might try to connect to the XM112, which has proven to cause problems. If you are having issues, try disabling the ModemManager service.
+Note: If you have ModemManager installed and running it might try to connect to the module, which has proven to cause problems. If you are having issues, try disabling the ModemManager service.
 
 #### Connecting to an XM112 through SPI on Linux
 
@@ -136,17 +138,17 @@ XM112+XB112 via SPI over USB:
 ```
 python examples/basic.py -spi
 ```
-XM112+XB112 via UART over USB, autodetecting the serial port:
+Any module via UART over USB, attempting to autodetect the serial port:
 ```
 python examples/basic.py -u
 ```
-XM112+XB112 via UART over USB, using a specific serial port:
+Any module via UART over USB, using a specific serial port:
 ```
-python examples/basic.py -u <your XM112 COM port e.g. COM3>
+python examples/basic.py -u <the serial port, for example COM3>
 ```
 _Again, depending on your environment, you might have to replace `python` with `python3` or `py`._
 
-Choosing which sensor(s) to be used can be done by adding the argument `--sensor <id 1> [id 2] ...`. The default is the sensor on port 1. This is not applicable for XM112.
+Choosing which sensor(s) to be used can be done by adding the argument `--sensor <id 1> [id 2] ...`. The default is the sensor on port 1. This is not applicable for the modules.
 
 Scripts can be terminated by pressing Ctrl-C in the terminal.
 

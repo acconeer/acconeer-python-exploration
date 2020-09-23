@@ -48,7 +48,7 @@ Installing the Exploration Tool GUI on a Raspberry Pi is not supported!
 (You can still use the Exploration Tool without graphical interface on the Raspberry Pi.)
 
 .. attention::
-    In order to get started, you need either a Raspberry Pi with an XC/XR112 (:ref:`setup_raspberry`) or one of our modules with the latest firmware (:ref:`setup_xm112`, :ref:`setup_xm122`).
+    In order to get started, you need either a Raspberry Pi with an XC/XR112 (:ref:`setup_raspberry`) or one of our modules with the latest firmware (:ref:`setup_xm112`, :ref:`setup_xm122`, :ref:`setup_xm132`).
 
 First, you should clone the Exploration Tool repository from `GitHub <https://github.com/acconeer/acconeer-python-exploration>`_.
 There, you can find detailed instructions for installing our libraries; in a nut-shell:
