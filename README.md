@@ -42,7 +42,7 @@ Python 3.6 or newer. Older versions have limited or no support.
 
 Tested on:
 
-* Python 3 (developed and tested on 3.6 and 3.7)
+* Python 3 (developed and tested on 3.6, 3.7 and 3.8)
 * Windows 10
 * Ubuntu 18.04 and 20.04
 * WSL (Windows Subsystem for Linux)
