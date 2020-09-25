@@ -70,7 +70,7 @@ The Acconeer offer consists of two parts, hardware and software, as illustrated 
 
 .. _fig_acconeer_offer:
 .. figure:: /_static/introduction/fig_acconeer_offer.png
-    :scale: 60
+    :scale: 65
     :align: center
 
     The Acconeer offer.
@@ -125,7 +125,7 @@ Based on these deliveries it is possible for the customer to create their own in
 
     Products and software deliverables.
 
-At `acconeer.com <https://acconeer.com>`__, there are more SDK variants and they all contain RSS, Software integration, and Example applications. The Module software image contains RSS, software integration, and Module server.
+At `acconeer.com <https://acconeer.com>`__, there are more modules and SDK variants and they all contain RSS, Software integration, and Example applications. The Module software image contains RSS, software integration, and Module server.
 The module can be used in two different setups:
 
 * Stand-alone module: The module has got no dependency on external controllers. The application is customized to a specific use case by the customer and runs on the embedded MCU. The customers application is accessing the RSS API via a software interface.
@@ -705,6 +705,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Product offer figure updated.          2.6     2020-09-28
     Acconeer AB Updated with new distance detector.    2.5     2020-08-14
     Acconeer AB Minor fixes.                           2.4     2020-05-27
     Acconeer AB Minor fixes.                           2.3     2020-03-13
