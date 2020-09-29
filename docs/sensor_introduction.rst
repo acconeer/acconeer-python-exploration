@@ -120,12 +120,12 @@ Based on these deliveries it is possible for the customer to create their own in
 
 .. _fig_product_sw_offer:
 .. figure:: /_static/introduction/fig_product_sw_offer.png
-    :scale: 50
+    :scale: 65
     :align: center
 
     Products and software deliverables.
 
-At `acconeer.com <https://acconeer.com>`__, there are more modules and SDK variants and they all contain RSS, Software integration, and Example applications. The Module software image contains RSS, software integration, and Module server.
+At `acconeer.com <https://acconeer.com>`__, there are modules and SDK variants and they all contain RSS, Software integration, and Example applications. The Module software image contains RSS, software integration, and Module server.
 The module can be used in two different setups:
 
 * Stand-alone module: The module has got no dependency on external controllers. The application is customized to a specific use case by the customer and runs on the embedded MCU. The customers application is accessing the RSS API via a software interface.
@@ -705,6 +705,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Product sw offer figure updated.       2.7     2020-09-29
     Acconeer AB Product offer figure updated.          2.6     2020-09-28
     Acconeer AB Updated with new distance detector.    2.5     2020-08-14
     Acconeer AB Minor fixes.                           2.4     2020-05-27
