@@ -22,7 +22,6 @@ def main():
     sensor_config.sensor = args.sensors
     sensor_config.range_interval = [0.2, 1.0]
     sensor_config.profile = sensor_config.Profile.PROFILE_2
-    sensor_config.sampling_mode = sensor_config.SamplingMode.B
     sensor_config.hw_accelerated_average_samples = 20
     sensor_config.downsampling_factor = 2
 
