@@ -97,6 +97,8 @@ product_identification:
       value: 44224
     xm122:
       value: 44225
+    xm132:
+      value: 44226
 product_version:
   address: 17
   type: uint32
