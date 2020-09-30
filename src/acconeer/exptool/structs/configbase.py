@@ -52,6 +52,7 @@ class Parameter:
         self.help = kwargs.pop("help", None)
         self.visible = kwargs.pop("visible", True)
         self.is_dummy = kwargs.pop("is_dummy", False)
+        self.enabled = kwargs.pop("enabled", True)
 
         self._pidget_class = kwargs.pop("_pidget_class", None)
 

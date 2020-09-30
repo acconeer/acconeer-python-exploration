@@ -138,6 +138,7 @@ class PidgetStub(Pidget):
             state == cb.Config.State.LOADED
             or state == cb.Config.State.LIVE and self.param.is_live_updateable
         )
+        enabled = enabled and self.param.enabled
         self.setEnabled(enabled)
 
         self._set_alert(alerts)
