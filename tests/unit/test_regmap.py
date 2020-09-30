@@ -30,15 +30,15 @@ def test_get_reg():
     with pytest.raises(ValueError):
         regmap.get_reg("does-not-exist")
 
-    assert regmap.get_reg("iq_sampling_mode").full_name == "iq_sampling_mode"
-    assert regmap.get_reg("iq_sampling_mode", "iq").full_name == "iq_sampling_mode"
-    assert regmap.get_reg("sampling_mode", "iq").full_name == "iq_sampling_mode"
+    assert regmap.get_reg("iq_stitch_count").full_name == "iq_stitch_count"
+    assert regmap.get_reg("iq_stitch_count", "iq").full_name == "iq_stitch_count"
+    assert regmap.get_reg("stitch_count", "iq").full_name == "iq_stitch_count"
 
     with pytest.raises(ValueError):
-        regmap.get_reg("iq_sampling_mode", "sparse")
+        regmap.get_reg("iq_stitch_count", "sparse")
 
     with pytest.raises(ValueError):
-        regmap.get_reg("sampling_mode")  # ambiguous
+        regmap.get_reg("stitch_count")  # ambiguous
 
     reg = regmap.get_reg("sp_start")
 
@@ -49,17 +49,19 @@ def test_get_reg():
 
 
 def test_config_to_reg_map_completeness():
-    m = regmap.CONFIG_TO_STRIPPED_REG_NAME_MAP
+    all_param_keys = set()
 
-    assert len(m) == len(set(m))
-
-    all_config_attrs = set()
     for mode, config_class in configs.MODE_TO_CONFIG_CLASS_MAP.items():
-        attrs = [k for k, v in inspect.getmembers(config_class) if isinstance(v, cb.Parameter)]
-        all_config_attrs.update(attrs)
+        params = {k: v for k, v in inspect.getmembers(config_class) if isinstance(v, cb.Parameter)}
+        all_param_keys.update(params.keys())
 
-        for attr in attrs:
-            reg_name = m[attr]
+        expected_config_key_to_reg_map = {}
+
+        for param_name, param in params.items():
+            if param.is_dummy:
+                continue
+
+            reg_name = regmap.CONFIG_TO_STRIPPED_REG_NAME_MAP[param_name]
 
             if reg_name is None:
                 continue
@@ -68,7 +70,12 @@ def test_config_to_reg_map_completeness():
 
             assert reg.category in [regmap.Category.CONFIG, regmap.Category.GENERAL]
 
-    assert all_config_attrs == set(m.keys())
+            expected_config_key_to_reg_map[param_name] = reg
+
+        assert regmap.get_config_key_to_reg_map(mode) == expected_config_key_to_reg_map
+
+    unknown_keys_in_map = set(regmap.CONFIG_TO_STRIPPED_REG_NAME_MAP.keys()) - all_param_keys
+    assert not unknown_keys_in_map
 
 
 def test_encode_bitset():

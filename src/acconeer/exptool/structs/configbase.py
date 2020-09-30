@@ -51,6 +51,7 @@ class Parameter:
         self.order = kwargs.pop("order", -1)
         self.help = kwargs.pop("help", None)
         self.visible = kwargs.pop("visible", True)
+        self.is_dummy = kwargs.pop("is_dummy", False)
 
         self._pidget_class = kwargs.pop("_pidget_class", None)
 

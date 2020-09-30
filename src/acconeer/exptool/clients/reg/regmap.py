@@ -228,14 +228,19 @@ get_data_info_regs = partial(get_regs_for_mode_in_category, Category.DATA_INFO)
 
 def get_config_key_to_reg_map(mode):  # {config_key: reg}
     mode = get_mode(mode)
-    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config_cls = configs.MODE_TO_CONFIG_CLASS_MAP[mode]
 
     m = {}
     for config_key, reg_name in CONFIG_TO_STRIPPED_REG_NAME_MAP.items():
         if reg_name is None:
             continue
 
-        if not hasattr(config, config_key):
+        try:
+            param = getattr(config_cls, config_key)
+        except AttributeError:
+            continue
+
+        if param.is_dummy:
             continue
 
         m[config_key] = get_reg(reg_name, mode)

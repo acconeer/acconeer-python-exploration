@@ -446,6 +446,7 @@ class IQServiceConfig(BaseDenseServiceConfig):
         default_value=SamplingMode.A,
         order=1000,
         category=cb.Category.ADVANCED,
+        is_dummy=True,
     )
 
     depth_lowpass_cutoff_ratio = cb.FloatParameter(

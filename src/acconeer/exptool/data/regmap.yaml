@@ -269,17 +269,6 @@ env_run_factor:
   type: int32
   scale: 1000
   category: config
-iq_sampling_mode:
-  modes:
-  - iq
-  address: 65
-  type: enum
-  category: config
-  values:
-    a:
-      value: 0
-    b:
-      value: 1
 iq_depth_lpf_ratio_override:
   modes:
   - iq
