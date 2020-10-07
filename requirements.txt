@@ -1,8 +1,9 @@
 setuptools
+packaging
 wheel
 numpy==1.19.3
 scipy
-pyserial==3.4
+pyserial==3.5
 matplotlib==3.2.1
 pyqtgraph==0.11.0
 PyQt5==5.14

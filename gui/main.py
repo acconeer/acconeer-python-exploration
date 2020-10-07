@@ -11,7 +11,6 @@ from distutils.version import StrictVersion
 
 import numpy as np
 import pyqtgraph as pg
-import serial.tools.list_ports
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSignal
@@ -533,8 +532,6 @@ class GUI(QMainWindow):
         return sensors
 
     def update_ports(self):
-        port_infos = serial.tools.list_ports.comports()
-
         try:
             opsys = os.uname()
             in_wsl = "microsoft" in opsys.release.lower() and "linux" in opsys.sysname.lower()
@@ -542,16 +539,17 @@ class GUI(QMainWindow):
             in_wsl = False
 
         select = -1
+        port_tag_tuples = utils.get_tagged_serial_ports()
         if not in_wsl and os.name == "posix":
             ports = []
-            for i, (port, desc, _) in enumerate(port_infos):
-                if desc.lower() in {"xb112", "xb122"}:
-                    ports.append("{} ({})".format(port, desc))
+            for i, (port, tag) in enumerate(port_tag_tuples):
+                tag_string = ""
+                if tag:
                     select = i
-                else:
-                    ports.append(port)
+                    tag_string = " ({})".format(tag)
+                ports.append(port + tag_string)
         else:
-            ports = [port for port, desc, _ in port_infos]
+            ports = [port for port, *_ in port_tag_tuples]
 
         try:
             if in_wsl:

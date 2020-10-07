@@ -13,6 +13,8 @@ import serial.tools.list_ports
 import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool.modes import Mode
 
+from packaging import version
+
 
 try:
     import pyqtgraph as pg
@@ -139,14 +141,71 @@ def set_loglevel(level):
     log.setLevel(level)
 
 
+def tag_serial_ports(port_infos):
+    """
+    Returns every port and Acconeer model number in a tuple if it's an
+    Acconeer product.
+
+    E.g:
+    [ ("/dev/ttyUSB0", None),   <- Not an Acconeer product
+      ("/dev/ttyUSB1", "XB112") <- An Acconeer product
+    ]
+
+    :param port_infos: Information about ports as given by
+        `serial.tools.list_ports.comports()`
+    :returns: List of tuples [(<port>, <model number> or None), ...]
+    """
+    port_tag_tuples = []
+
+    for i, port_object in enumerate(port_infos):
+        port = port_object.device
+        desc = port_object.product or port_object.description
+
+        if desc.lower() in {"xb112", "xb122"}:
+            port_tag_tuples.append((port, desc))
+
+        elif "xe132" in desc.lower():
+            if version.parse(serial.__version__) >= version.parse("3.5"):
+                # Special handling of xe132 with pyserial >= 3.5
+                interface = port_object.interface
+
+                if interface and "enhanced" in interface.lower():
+                    # Add the "enhanced" interface
+                    port_tag_tuples.append((port, "XE132"))
+                else:
+                    # Add the "standard" interface but don't tag it
+                    port_tag_tuples.append((port, None))
+
+            else:  # pyserial <= 3.4
+                # Add "?" to both to indicate that it could be either.
+                port_tag_tuples.append((port, "XE132 (?)"))
+        else:
+            port_tag_tuples.append((port, None))
+    return port_tag_tuples
+
+
+def get_tagged_serial_ports():
+    return tag_serial_ports(serial.tools.list_ports.comports())
+
+
 def autodetect_serial_port():
     port_infos = serial.tools.list_ports.comports()
 
-    for port_info in port_infos:
-        port, desc, _ = port_info
-        if desc.strip().lower() in ["xb112", "xb122"]:
-            print("Autodetected {} on {}\n".format(desc.strip(), port))
-            return port
+    tagged_serial_ports = tag_serial_ports(port_infos)
+    acconeer_port_infos = [pinfo for pinfo in tagged_serial_ports if pinfo[1]]
+
+    # Check for mutliple Acconeer devices;
+    if len(acconeer_port_infos) > 1:
+        print("Found multiple Acconeer products:", end="\n\n")
+        for port, tag in [('Serial port:', 'Model:')] + acconeer_port_infos:
+            print(f"\t{port:<15} {tag:}")
+        print("\nRun the script again and specify port using the \"-u\"/\"--uart\" flag.")
+        sys.exit()
+
+    if len(acconeer_port_infos) == 1:
+        port, tag = acconeer_port_infos[0]
+        print("Autodetected {} on {}\n".format(tag, port))
+        return port
 
     for port_info in port_infos:
         port, desc, _ = port_info
