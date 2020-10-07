@@ -127,4 +127,4 @@ Data saturated
 Disclaimer
 ----------
 
-The sparse service will have optimal performance using XM112 Module. A111 with batch number 10467, 10457 or 10178 (also when mounted on XR111 and XR112) should be avoided when using the sparse service.
+The sparse service will have optimal performance using any one of the XM112, XM122 or XM132 Modules. A111 with batch number 10467, 10457 or 10178 (also when mounted on XR111 and XR112) should be avoided when using the sparse service.

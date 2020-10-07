@@ -12,4 +12,4 @@ This document supersedes and replaces all information supplied prior to the publ
 
 In our code you might encounter features tagged “experimental”. This means that the feature in question is an early version that has a limited test scope, and the API and/or functionality might change in upcoming releases. The intention is to let users try these features out and we appreciate feedback.
 
-For best performance A111 (expect for batch numbers: 10467, 10457, 10178) or XM112 should be used.
+Best radar performance is achieved with all our modules XM112/XM122/XM132 and with our sensor A111, with exception for A111 sensors belonging to batch numbers: 10467, 10457, 10178.

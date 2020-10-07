@@ -58,10 +58,10 @@ If any error occurs while connecting, the GUI will display an error message; you
 .. attention::
     The GUI will NOT know, if you add or remove sensors after you have connected. You need to either disconnect and connect again to update or change the sensor selection yourself. If the selected sensor is not available, the GUI will bring up an error message!
 
-USB Module (XM112/122)
-^^^^^^^^^^^^^^^^^^^^^^
+USB Module (XM112/122/132)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Using our USB modules, you can either connect through Serial or SPI.
-The SPI interface allows for much higher data transfer rates than the Serial interface.
+The SPI interface allows for much higher data transfer rates than the Serial interface. However, it is only supported on the XM112.
 If you need to evaluate/tune a service or detector with high update rates, you should use the SPI interface to avoid accumulation of dropped frames.
 
 For SPI connections, simply select **SPI** and connect.
