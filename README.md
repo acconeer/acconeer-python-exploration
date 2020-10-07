@@ -100,7 +100,7 @@ python gui/main.py
 ```
 
 In the top right box of the GUI, named _Connection_, select the interface you wish to use
-- SPI: autodetects an XM112 connected to USB2 (USB1 is also needed for power)
+- SPI: auto-detects an XM112 connected to USB2 (USB1 is also needed for power)
 - Socket: specify the IP address of your Raspberry Pi running the streaming server
 - Serial: specify the serial port that is assigned to the sensor
 
@@ -138,7 +138,7 @@ XM112+XB112 via SPI over USB:
 ```
 python examples/basic.py -spi
 ```
-Any module via UART over USB, attempting to autodetect the serial port:
+Any module via UART over USB, attempting to auto-detect the serial port:
 ```
 python examples/basic.py -u
 ```
@@ -176,22 +176,36 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ### Processing
 
-- `presence_detection_sparse.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html)) \
-  An example of a presence/motion detection algorithm based on the sparse service.
-- `sparse_speed.py` \
-  An example of a speed detection algorithm estimating speeds of an approaching object based on the sparse service.
-- `sparse_fft.py` \
-  An example of a frequency analyzer to get an idea of the frequency content in the sparse service data.
-- `button_press.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/button_press.html)) \
-  An example of a "button press" detection algorithm detecting a motion at short distances (~3-5 cm) based on the envelope service, which could be used as "hidden" touch buttons.
-- `obstacle_detection.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html)) \
-  An example of an obstacle detection algorithm estimating the distance and angle to an approaching obstacle.
 - `breathing.py` \
   An example breathing detection algorithm.
-- `sleep_breathing.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/sleep_breathing.html)) \
-  An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
+- `button_press.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/button_press.html)) \
+  An example of a "button press" detection algorithm detecting a motion at short distances (~3-5 cm) based on the envelope service, which could be used as "hidden" touch buttons.
+- `distance_detector.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/distance_detector.html)) \
+  An example of the envelope-based distance detection algorithm that estimates the distance to an object.
+- `obstacle_detection.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html)) \
+  An example of an obstacle detection algorithm estimating the distance and angle to an approaching obstacle.
 - `phase_tracking.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/phase_tracking.html)) \
   An example of a relative movements tracking algorithm using phase information.
+- `presence_detection_sparse.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html)) \
+  An example of a presence/motion detection algorithm based on the sparse service.
+- `sleep_breathing.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/sleep_breathing.html)) \
+  An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
+- `sparse_fft.py` \
+  An example of a frequency analyzer to get an idea of the frequency content in the sparse service data.
+- `sparse_inter_fft.py` \
+  Another example of a frequency analyzer which keeps a history of frequency data at different distances.
+- `sparse_speed.py` \
+  An example of a speed detection algorithm estimating speeds of an approaching object based on the sparse service.
+
+### Record data
+
+- `barebones.py` \
+  A barebones stub that demonstrates how to save sensor data to file.
+- `with_cli.py` \
+  A stub for saving sensor data to file that uses command line arguments
+  allowing you to set the filename, etc.
+- `long_duration_split_files.py` \
+  A stub that demonstrates how you can split one recording session into multiple files.
 
 ### Plotting
 
