@@ -39,7 +39,7 @@ sys.path.append(os.path.abspath(os.path.join(HERE, "elements")))
 
 
 try:
-    from acconeer.exptool import clients, configs, recording, SDK_VERSION, utils
+    from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
     from acconeer.exptool.structs import configbase
 
     import data_processing
@@ -58,8 +58,8 @@ try:
     )
     from modules import (
         MODULE_INFOS,
-        MODULE_LABEL_TO_MODULE_INFO_MAP,
         MODULE_KEY_TO_MODULE_INFO_MAP,
+        MODULE_LABEL_TO_MODULE_INFO_MAP,
     )
 except Exception:
     traceback.print_exc()
@@ -762,8 +762,8 @@ class GUI(QMainWindow):
 
     def init_machine_learning(self):
         if self.get_gui_state("ml_mode"):
-            import ml_gui_elements as ml_gui
             import feature_processing
+            import ml_gui_elements as ml_gui
             import ml_state
             self.ml_elements = ml_gui
             self.ml_external = feature_processing.DataProcessor

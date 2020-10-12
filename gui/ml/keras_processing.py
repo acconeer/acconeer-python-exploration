@@ -33,7 +33,9 @@ import layer_definitions
 
 try:
     import pyqtgraph as pg
+
     from PyQt5 import QtCore
+
     PYQT_PLOTTING_AVAILABLE = True
 except ImportError:
     PYQT_PLOTTING_AVAILABLE = False

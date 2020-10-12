@@ -40,6 +40,7 @@ def try_rst_to_html(s):
 
 def rst_to_html(s):
     import re
+
     from docutils.core import publish_parts
 
     s = re.sub(r":ref:`([\s\S]+?)\s*<([\s\S]+)>`", r"\1", s, re.MULTILINE)

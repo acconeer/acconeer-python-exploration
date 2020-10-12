@@ -16,8 +16,8 @@ path_to_exploration_tool = "/home/pi/acconeer-exploration-tool"
 sys.path.append(os.path.realpath(path_to_exploration_tool))
 
 try:
-    import gui.ml.keras_processing as kp
     import gui.ml.feature_processing as feature_proc
+    import gui.ml.keras_processing as kp
 except Exception:
     print("Failed to import deeplearning libraries, please specify acconeer-exploration-folder!")
     exit(1)
