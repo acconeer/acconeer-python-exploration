@@ -12,13 +12,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'python3 internal/check_permissions.py'
-                sh 'python3 internal/check_whitespace.py'
-                sh 'flake8'
-                sh 'isort --check-only -vb'
-                sh 'python3 -m pip install -U --user .'
-                sh 'pytest -v tests/unit'
-                sh 'sphinx-build -QW -b html docs docs/_build'
+                sh 'tox'
             }
         }
         stage('XM112 integration tests') {

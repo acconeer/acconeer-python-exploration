@@ -1,17 +1,17 @@
 FROM ubuntu:18.04
 
 RUN apt-get update
-RUN apt-get install -y python3 python3-pip
-RUN apt-get install -y libgl1-mesa-glx
-RUN apt-get install -y libfontconfig1
-RUN apt-get install -y graphviz
-RUN apt-get install -y git
+RUN apt-get install -y python3.6 python3.6-distutils libgl1-mesa-glx libfontconfig1 graphviz git wget
 
-RUN python3 -m pip install flake8 isort pytest pytest-qt pytest-timeout
-RUN python3 -m pip install sphinx sphinx_rtd_theme
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python3.6 get-pip.py
+
+RUN python3.6 -m pip install pytest pytest-qt pytest-timeout tox sphinx sphinx_rtd_theme
 
 COPY requirements.txt /tmp/
-RUN python3 -m pip install -r /tmp/requirements.txt
+RUN python3.6 -m pip install -r /tmp/requirements.txt
+
+RUN ln -s /usr/bin/python3.6 /usr/local/bin/python3
 
 ENV QT_QPA_PLATFORM offscreen
 
