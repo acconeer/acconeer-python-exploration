@@ -256,6 +256,10 @@ def load_h5(filename: Union[str, Path]) -> Record:
     with h5py.File(filename, "r") as f:
         packed = {k: v[()] for k, v in f.items()}
 
+    for k, v in packed.items():
+        if isinstance(v, bytes):
+            packed[k] = v.decode()
+
     return unpack(packed)
 
 
