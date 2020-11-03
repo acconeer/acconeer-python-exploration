@@ -8,9 +8,9 @@ from acconeer.exptool.modes import Mode
 
 try:
     sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
-    from examples.processing import presence_detection_sparse
+    from examples.processing import distance_detector, presence_detection_sparse
 except Exception as e:
-    print("Could not import presence detector:\n", e)
+    print("Could not import detectors\n", e)
     DETECTORS_SUPPORTED = False
 else:
     DETECTORS_SUPPORTED = True
@@ -62,6 +62,12 @@ def get_features():
             "class": FeatureSparsePresence,
             "model": "2D",
             "data_type": Mode.SPARSE,
+        }
+        features["distance_envelope"] = {
+            "name": "Distance Envelope",
+            "class": FeatureDistanceEnvelope,
+            "model": "1D",
+            "data_type": Mode.ENVELOPE,
         }
 
     return features
@@ -663,3 +669,87 @@ class FeatureSparsePresence:
             print("Failed to calculate feature hight!\n ", e)
             return 1
         return int(size)
+
+
+class FeatureDistanceEnvelope:
+    def __init__(self):
+        # output data
+        self.data = {
+            "distance": "Distance",
+        }
+        # text, value, limits
+        self.options = [
+            ("Start", 0.2, [0.06, 7], float),
+            ("Stop", 0.4, [0.06, 7], float),
+            ("Sweep Avg.", 100, [1, 100], int),
+            ("Threshold", 600, [1, 20000], int),
+        ]
+
+        self.detector_processor = None
+
+    def extract_feature(self, win_data, win_params):
+        try:
+            num_sensors = win_data["env_data"].shape[0]
+            if self.detector_processor is None:
+                self.detector_processor = [None] * num_sensors
+                self.history = None
+            sensor_config = win_params["sensor_config"]
+            session_info = win_params["session_info"]
+            sensor_idx = win_params["sensor_idx"]
+            dist_vec = win_params["dist_vec"]
+            options = win_params["options"]
+            arr = win_data["env_data"][sensor_idx, :, :]
+        except Exception as e:
+            print("envelope_data not available!\n", e)
+            return None
+
+        data_len, win_len = arr.shape
+        data_start = dist_vec[0]
+        data_stop = dist_vec[-1]
+
+        # dist_vec is in mm
+        start = max(data_start, options["Start"] * 1000)
+        stop = min(data_stop, options["Stop"] * 1000) + 1
+
+        if start >= data_stop:
+            return None
+
+        start_idx = np.argmin((dist_vec - start)**2)
+        stop_idx = np.argmin((dist_vec - stop)**2) + 1
+
+        stop_idx = max(start_idx + 1, stop_idx)
+
+        if self.detector_processor[sensor_idx] is None:
+            detector_config = distance_detector.get_processing_config()
+            detector_config.nbr_average = options["Sweep Avg."]
+            detector_config.fixed_threshold = options["Threshold"]
+            detector_config.history_length_s = win_len
+
+            dist_enums = distance_detector.ProcessingConfiguration
+            detector_config.threshold_type = dist_enums.ThresholdType.FIXED
+            detector_config.peak_sorting_type = dist_enums.PeakSorting.STRONGEST
+
+            detector_handle = distance_detector.Processor
+            self.detector_processor[sensor_idx] = detector_handle(
+                sensor_config,
+                detector_config,
+                session_info
+            )
+
+        detector_output = self.detector_processor[sensor_idx].process(arr[:, 0])
+        distance = detector_output["main_peak_hist_dist"]
+
+        if not len(distance):
+            return None
+
+        data = {
+            "distance": distance[-1],
+        }
+
+        return data
+
+    def get_options(self):
+        return self.data, self.options
+
+    def get_size(self, options=None):
+        return 1
