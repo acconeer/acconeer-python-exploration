@@ -1691,6 +1691,9 @@ class GUI(QMainWindow):
         else:
             has_loaded_module = True
 
+        if index == -1:
+            has_loaded_module = False
+
         if not has_loaded_module:  # Just try loading the data in the service-only module
             try:
                 module_info = MODULE_KEY_TO_MODULE_INFO_MAP[record.mode.name.lower()]
