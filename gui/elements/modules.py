@@ -7,6 +7,7 @@ import examples.processing.breathing as breathing_module
 import examples.processing.button_press as button_press_module
 import examples.processing.distance_detector as distance_detector_module
 import examples.processing.obstacle_detection as obstacle_detection_module
+import examples.processing.parking as parking_module
 import examples.processing.phase_tracking as phase_tracking_module
 import examples.processing.presence_detection_sparse as presence_detection_sparse_module
 import examples.processing.sleep_breathing as sleep_breathing_module
@@ -72,6 +73,7 @@ def multi_sensor_wrap(module):
 
 
 multi_sensor_distance_detector_module = multi_sensor_wrap(distance_detector_module)
+multi_sensor_parking_module = multi_sensor_wrap(parking_module)
 multi_sensor_sparse_speed_module = multi_sensor_wrap(sparse_speed_module)
 multi_sensor_presence_detection_sparse_module = multi_sensor_wrap(presence_detection_sparse_module)
 
@@ -218,6 +220,15 @@ MODULE_INFOS = [
         multi_sensor_distance_detector_module,
         multi_sensor_distance_detector_module.get_sensor_config,
         multi_sensor_distance_detector_module.Processor,
+        True,
+        False,
+    ),
+    ModuleInfo(
+        "envelope_parking",
+        "Parking (envelope)",
+        multi_sensor_parking_module,
+        multi_sensor_parking_module.get_sensor_config,
+        multi_sensor_parking_module.Processor,
         True,
         False,
     ),
