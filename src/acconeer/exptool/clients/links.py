@@ -47,6 +47,18 @@ class BaseLink(metaclass=ABCMeta):
     def disconnect(self):
         pass
 
+    @property
+    def timeout(self):
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, val):
+        self._timeout = val
+        self._update_timeout()
+
+    def _update_timeout(self):
+        pass
+
 
 class SocketLink(BaseLink):
     _CHUNK_SIZE = 4096
@@ -58,9 +70,13 @@ class SocketLink(BaseLink):
         self._sock = None
         self._buf = None
 
+    def _update_timeout(self):
+        if self._sock is not None:
+            self._sock.settimeout(self._timeout)
+
     def connect(self):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.settimeout(self._timeout)
+        self._update_timeout()
 
         try:
             self._sock.connect((self._host, self._PORT))
@@ -130,11 +146,15 @@ class SerialLink(BaseSerialLink):
         self._port = port
         self._ser = None
 
+    def _update_timeout(self):
+        if self._ser is not None:
+            self._ser.timeout = self._timeout
+
     def connect(self):
         self._ser = serial.Serial()
         self._ser.port = self._port
         self._ser.baudrate = self._baudrate
-        self._ser.timeout = self._timeout
+        self._update_timeout()
         self._ser.open()
 
         if platform.system().lower() == "windows":
@@ -161,6 +181,7 @@ class SerialLink(BaseSerialLink):
 
     def disconnect(self):
         self._ser.close()
+        self._ser = None
 
     @property
     def baudrate(self):
@@ -172,17 +193,6 @@ class SerialLink(BaseSerialLink):
 
         if self._ser is not None and self._ser.is_open:
             self._ser.baudrate = new_baudrate
-
-    @property
-    def timeout(self):
-        return self._timeout
-
-    @timeout.setter
-    def timeout(self, new_timeout):
-        self._timeout = new_timeout
-
-        if self._ser is not None and self._ser.is_open:
-            self._ser.timeout = new_timeout
 
 
 class SerialProcessLink(BaseSerialLink):
@@ -320,14 +330,6 @@ class SerialProcessLink(BaseSerialLink):
         if self._process is not None and self._process.exitcode is None:
             log.debug("Changing baudrate to {}".format(new_baudrate))
             self._send_queue.put(("baudrate", new_baudrate))
-
-    @property
-    def timeout(self):
-        return self._timeout
-
-    @timeout.setter
-    def timeout(self, new_timeout):
-        self._timeout = new_timeout
 
 
 def serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
