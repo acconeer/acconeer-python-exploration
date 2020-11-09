@@ -86,6 +86,11 @@ class SocketClient(BaseClient):
         self._session_cmd = cmd
         info = self._init_session()
 
+        if "update_rate" in cmd:
+            self._link.timeout = 1 / cmd["update_rate"] + self._link.DEFAULT_TIMEOUT
+        else:
+            self._link.timeout = self._link.DEFAULT_TIMEOUT
+
         log.debug("setup session")
 
         return info
@@ -120,7 +125,7 @@ class SocketClient(BaseClient):
         self._send_cmd(cmd)
 
         t0 = time()
-        while time() - t0 < self._link._timeout:
+        while time() - t0 < self._link.timeout:
             header, _ = self._recv_frame()
             status = header["status"]
             if status == "end":
@@ -131,6 +136,8 @@ class SocketClient(BaseClient):
                 raise ClientError
         else:
             raise ClientError
+
+        self._link.timeout = self._link.DEFAULT_TIMEOUT
 
         self._session_ready = False
 

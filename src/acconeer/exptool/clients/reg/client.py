@@ -236,6 +236,11 @@ class UARTClient(RegBaseClient):
     def _setup_session(self, config):
         ret = super()._setup_session(config)
 
+        if self._config.update_rate:
+            self._link.timeout = 1 / self._config.update_rate + self._link.DEFAULT_TIMEOUT
+        else:
+            self._link.timeout = self._link.DEFAULT_TIMEOUT
+
         if self._data_rate is not None:
             if self._data_rate > 2 / 3 * self._link.baudrate:
                 log.warning("data rate might be too high")
@@ -282,7 +287,7 @@ class UARTClient(RegBaseClient):
         self._write_reg("main_control", "stop", expect_response=False)
 
         t0 = time()
-        while time() - t0 < self._link._timeout:
+        while time() - t0 < self._link.timeout:
             res = self._recv_packet()
 
             if isinstance(res, protocol.RegWriteResponse):
@@ -291,6 +296,8 @@ class UARTClient(RegBaseClient):
                 raise ClientError("got unexpected packet while stopping session")
         else:
             raise ClientError("timeout while stopping session")
+
+        self._link.timeout = self._link.DEFAULT_TIMEOUT
 
         mask = regmap.STATUS_FLAGS.CREATED | regmap.STATUS_FLAGS.ACTIVATED
         self._wait_status(0, mask=mask)
@@ -426,8 +433,6 @@ class PollingUARTClient(UARTClient):
         self._streaming_control_val = "no_streaming"
         self._link = links.SerialLink(port)  # don't use link in separate process
 
-        self._poll_timeout = 2.0  # TODO: set dynamically as in SPIClient
-
     def _start_session(self):
         self._write_reg("main_control", "activate")
         self._wait_status(regmap.STATUS_FLAGS.ACTIVATED)
@@ -446,7 +451,7 @@ class PollingUARTClient(UARTClient):
             elif status & regmap.STATUS_FLAGS.DATA_READY:
                 break
             else:
-                if (time() - poll_t) > self._poll_timeout:
+                if (time() - poll_t) > self._link.timeout:
                     raise ClientError("gave up polling")
 
                 continue
