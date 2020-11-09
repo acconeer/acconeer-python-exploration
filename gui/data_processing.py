@@ -91,13 +91,12 @@ class DataProcessing:
                 processing_config = self.ml_settings
             self.external = ext(self.sensor_config, processing_config, self.session_info)
             self.first_run = False
-            out_data = self.external.process(in_data)
-        else:
-            out_data = self.external.process(in_data)
-            if out_data is not None:
-                self.draw_canvas(out_data)
-                if isinstance(out_data, dict) and out_data.get("send_process_data") is not None:
-                    self.parent.emit("process_data", "", out_data["send_process_data"])
+
+        out_data = self.external.process(in_data)
+        if out_data is not None:
+            self.draw_canvas(out_data)
+            if isinstance(out_data, dict) and out_data.get("send_process_data") is not None:
+                self.parent.emit("process_data", "", out_data["send_process_data"])
 
         if do_record:
             self.recorder.sample(info, unsqueezed_data)
