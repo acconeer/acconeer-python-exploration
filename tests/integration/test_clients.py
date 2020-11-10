@@ -144,6 +144,9 @@ def test_sanity_check_output(setup, mode):
     assert type(data_info["data_saturated"]) == bool
     assert type(data_info["missed_data"]) == bool
 
+    if mode != modes.Mode.SPARSE:
+        assert type(data_info["data_quality_warning"]) == bool
+
     assert isinstance(data, np.ndarray)
 
     if mode == modes.Mode.POWER_BINS:

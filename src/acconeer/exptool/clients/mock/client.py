@@ -17,6 +17,7 @@ LENGTH_KEY = "range_length_m"
 STEP_LENGTH_KEY = "step_length_m"
 MISSED_GET_NEXT_KEY = "missed_data"
 DATA_SATURATED_KEY = "data_saturated"
+DATA_QUALITY_WARNING_KEY = "data_quality_warning"
 DATA_LENGTH_KEY = "data_length"
 
 
@@ -121,6 +122,7 @@ class EnvelopeMocker(DenseMocker):
     def get_next(self, t, i, offset):
         info = {
             DATA_SATURATED_KEY: False,
+            DATA_QUALITY_WARNING_KEY: False,
         }
 
         noise = 100 + 20 * np.random.randn(self.num_depths)
@@ -145,6 +147,7 @@ class IQMocker(DenseMocker):
     def get_next(self, t, i, offset):
         info = {
             DATA_SATURATED_KEY: False,
+            DATA_QUALITY_WARNING_KEY: False,
         }
 
         noise = np.random.randn(self.num_depths) + 1j * np.random.randn(self.num_depths)

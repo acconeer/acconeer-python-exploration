@@ -209,7 +209,7 @@ class GUI(QMainWindow):
             "stored_frames": ("",),
             "interface": ("Interface",),
             "sweep_info": ("",),
-            "saturated": ("Warning: Data saturated, reduce gain!",),
+            "data_warnings": ("",),
             "rssver": ("",),
             "libver": ("",),
             "unsupported_mode": ("Mode not supported by server",),
@@ -221,7 +221,7 @@ class GUI(QMainWindow):
             lbl.setText(text)
             self.labels[key] = lbl
 
-        for k in ["saturated", "unsupported_mode"]:
+        for k in ["data_warnings", "unsupported_mode"]:
             lbl = self.labels[k]
             lbl.setStyleSheet("color: #ff0000")
             lbl.setVisible(False)
@@ -752,7 +752,7 @@ class GUI(QMainWindow):
     def init_statusbar(self):
         self.statusBar().showMessage("Not connected")
         self.labels["sweep_info"].setFixedWidth(220)
-        self.statusBar().addPermanentWidget(self.labels["saturated"])
+        self.statusBar().addPermanentWidget(self.labels["data_warnings"])
         self.statusBar().addPermanentWidget(self.labels["sweep_info"])
         self.statusBar().addPermanentWidget(self.labels["libver"])
         self.statusBar().addPermanentWidget(self.checkboxes["verbose"])
@@ -1929,6 +1929,7 @@ class GUI(QMainWindow):
 
         missed = any([e.get("missed_data", False) for e in infos])
         saturated = any([e.get("data_saturated", False) for e in infos])
+        data_quality_warning = any([e.get("data_quality_warning", False) for e in infos])
 
         if missed:
             self.num_missed_frames += 1
@@ -1949,7 +1950,12 @@ class GUI(QMainWindow):
         )
         self.labels["sweep_info"].setText(text)
 
-        self.labels["saturated"].setVisible(saturated)
+        if data_quality_warning:
+            self.labels["data_warnings"].setText("Warning: Bad data quality, restart service!")
+        elif saturated:
+            self.labels["data_warnings"].setText("Warning: Data saturated, reduce gain!")
+
+        self.labels["data_warnings"].setVisible(saturated or data_quality_warning)
 
         if self.get_gui_state("load_state") != LoadState.LOADED:
             try:

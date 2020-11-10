@@ -500,6 +500,15 @@ proximity_power:
   access: r
   type: uint16
   category: result_info
+data_quality_warning:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  address: 163
+  access: r
+  type: boolean
+  category: result_info
 output_buffer_length:
   address: 233
   access: r
