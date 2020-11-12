@@ -3619,8 +3619,12 @@ class ModelOperations(QFrame):
         title = "Load model data"
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, title, "", "NumPy data files (*.npy)", options=options)
+        if self.keras_handle.model_data.tf_version.split('.')[0] == "1":
+            filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self, title, "", "NumPy data files (*.npy)", options=options)
+        else:
+            filename = QtWidgets.QFileDialog.getExistingDirectory(
+                    self, title, options=options)
 
         self.gui_handle.model_select.allow_update(False)
 

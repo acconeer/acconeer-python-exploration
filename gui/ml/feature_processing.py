@@ -10,6 +10,7 @@ from acconeer.exptool import imock, utils
 from acconeer.exptool.modes import Mode
 
 import gui.ml.feature_definitions as feature_def
+import gui.ml.ml_helper as ml_helper
 import gui.ml.trigger_functions as trigger_func
 
 
@@ -620,7 +621,7 @@ class DataProcessor:
         complete = plot_data["ml_frame_data"]["current_frame"]["frame_complete"]
         if complete and self.evaluate and feature_map is not None:
             if plot_data["ml_frame_data"]["frame_info"].get("time_series", 1) > 1:
-                feature_map = convert_time_series(
+                feature_map = ml_helper.convert_time_series(
                     plot_data["ml_frame_data"]["current_frame"]["feature_map"],
                     plot_data["ml_frame_data"]["frame_info"]
                 )
@@ -647,36 +648,6 @@ class DataProcessor:
         self.sweep += 1
 
         return plot_data
-
-
-def convert_time_series(feature_map, frame_info):
-    frame_size = frame_info.get('frame_size')
-
-    if feature_map is None:
-        return None
-
-    time_series = frame_info.get('time_series', 1)
-    if time_series < 2:
-        print("Cannot convert time series. Time series < 2!")
-        return feature_map
-
-    if len(feature_map.shape) == 1:
-        print("Cannot convert time series. Feature map x dimension < 2!")
-        return feature_map
-
-    y, x = feature_map.shape
-
-    if x != frame_size + time_series - 1:
-        print("Cannot convert time series. Frame length {}, but should be {}".format(
-            x, frame_size + time_series - 1)
-        )
-        return feature_map
-
-    out_data = np.zeros((time_series, y, frame_size))
-    for i in range(time_series):
-        out_data[i, :, :] = feature_map[:, i:i+frame_size]
-
-    return out_data
 
 
 class PGUpdater:
