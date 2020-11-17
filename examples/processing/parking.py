@@ -400,6 +400,20 @@ class PGUpdater:
         self.weight_plot.setYRange(0, 500)
         self.weight_plot.setXRange(100.0 * self.depths[0], 100.0 * self.depths[-1])
 
+        self.detection_html_format = '<div style="text-align: center">' \
+                                     '<span style="color: #FFFFFF;font-size:16pt;">' \
+                                     '{}</span></div>'
+        detection_html = self.detection_html_format.format("Parked car detected!")
+
+        self.detection_text_item = pg.TextItem(
+            html=detection_html,
+            fill=pg.mkColor(255, 140, 0),
+            anchor=(0.5, 0),
+        )
+
+        self.weight_plot.addItem(self.detection_text_item)
+        self.detection_text_item.hide()
+
         self.weight_curve = self.weight_plot.plot(
             pen=utils.pg_pen_cycler(0),
             name="Reflector weight",
@@ -525,6 +539,9 @@ class PGUpdater:
             data["queued_weights"]
         )))
         self.weight_plot.setYRange(0, ymax)
+        xmid = (self.depths[0] + self.depths[-1]) / 2
+        self.detection_text_item.setPos(100.0 * xmid, 0.95 * ymax)
+        self.detection_text_item.setVisible(data["detection_history"][-1])
 
 
 if __name__ == "__main__":
