@@ -154,6 +154,8 @@ class PGUpdater:
         for i in range(len(self.sensor_config.sensor)):
             data_plot = win.addPlot(title="Sparse data", row=0, col=i)
             data_plot.setMenuEnabled(False)
+            data_plot.setMouseEnabled(x=False, y=False)
+            data_plot.hideButtons()
             data_plot.showGrid(x=True, y=True)
             data_plot.setLabel("bottom", "Depth (m)")
             data_plot.setLabel("left", "Amplitude")
@@ -167,6 +169,8 @@ class PGUpdater:
 
             data_history_plot = win.addPlot(title="Data history", row=1, col=i)
             data_history_plot.setMenuEnabled(False)
+            data_history_plot.setMouseEnabled(x=False, y=False)
+            data_history_plot.hideButtons()
             data_history_im = pg.ImageItem(autoDownsample=True)
             data_history_im.setLookupTable(lut)
             data_history_plot.addItem(data_history_im)
@@ -175,6 +179,8 @@ class PGUpdater:
 
             presence_history_plot = win.addPlot(title="Movement history", row=2, col=i)
             presence_history_plot.setMenuEnabled(False)
+            presence_history_plot.setMouseEnabled(x=False, y=False)
+            presence_history_plot.hideButtons()
             presence_history_im = pg.ImageItem(autoDownsample=True)
             presence_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
             presence_history_plot.addItem(presence_history_im)

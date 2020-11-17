@@ -188,6 +188,8 @@ You must not change any function or class names; the only class name you can cha
 
             self.my_plot = win.addPlot(title="My Plot")
             self.my_plot.setMenuEnabled(False)
+            self.my_plot.setMouseEnabled(x=False, y=False)
+            self.my_plot.hideButtons()
             self.my_plot.addLegend()
             self.my_plot.showGrid(x=True, y=True)
             self.my_plot.setLabel("bottom", "Time (s)")

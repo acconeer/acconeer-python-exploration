@@ -69,6 +69,8 @@ class PGUpdater:
             else:
                 plot = win.addPlot()
             plot.setMenuEnabled(False)
+            plot.setMouseEnabled(x=False, y=False)
+            plot.hideButtons()
             plot.showGrid(x=True, y=True)
             plot.setLabel("bottom", "Depth (m)")
             plot.setLabel("left", "Amplitude")

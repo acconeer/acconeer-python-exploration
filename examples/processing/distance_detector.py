@@ -663,6 +663,9 @@ class PGUpdater:
 
         # Sweep Plot
         self.sweep_plot = win.addPlot(title="Sweep and threshold")
+        self.sweep_plot.setMenuEnabled(False)
+        self.sweep_plot.setMouseEnabled(x=False, y=False)
+        self.sweep_plot.hideButtons()
         self.sweep_plot.showGrid(x=True, y=True)
         self.sweep_plot.addLegend()
         self.sweep_plot.setLabel("bottom", "Distance (cm)")
@@ -712,6 +715,9 @@ class PGUpdater:
 
         # Detection history Plot
         self.hist_plot = win.addPlot(title="Detected peaks")
+        self.hist_plot.setMenuEnabled(False)
+        self.hist_plot.setMouseEnabled(x=False, y=False)
+        self.hist_plot.hideButtons()
         self.hist_plot.showGrid(x=True, y=True)
         self.hist_plot.addLegend()
         self.hist_plot.setLabel("bottom", "Time history (s)")

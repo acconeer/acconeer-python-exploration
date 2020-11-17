@@ -131,6 +131,8 @@ class PGUpdater:
 
         self.ampl_plot = win.addPlot(row=0, col=0, colspan=num_sensors)
         self.ampl_plot.setMenuEnabled(False)
+        self.ampl_plot.setMouseEnabled(x=False, y=False)
+        self.ampl_plot.hideButtons()
         self.ampl_plot.showGrid(x=True, y=True)
         self.ampl_plot.setLabel("bottom", "Depth (m)")
         self.ampl_plot.setLabel("left", "Amplitude")
@@ -139,6 +141,8 @@ class PGUpdater:
 
         self.phase_plot = win.addPlot(row=1, col=0, colspan=num_sensors)
         self.phase_plot.setMenuEnabled(False)
+        self.phase_plot.setMouseEnabled(x=False, y=False)
+        self.phase_plot.hideButtons()
         self.phase_plot.showGrid(x=True, y=True)
         self.phase_plot.setLabel("bottom", "Depth (m)")
         self.phase_plot.setLabel("left", "Phase")
@@ -170,6 +174,8 @@ class PGUpdater:
             title = None if is_single_sensor else "Sensor {}".format(sensor_id)
             plot = win.addPlot(row=2, col=i, title=title)
             plot.setMenuEnabled(False)
+            plot.setMouseEnabled(x=False, y=False)
+            plot.hideButtons()
             plot.setLabel("bottom", xlabel)
             plot.setLabel("left", "Depth (m)")
             im = pg.ImageItem(autoDownsample=True)

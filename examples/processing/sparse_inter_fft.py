@@ -238,6 +238,8 @@ class PGUpdater:
     def setup(self, win):
         self.td_plot = win.addPlot(row=0, col=0, title="PSD input data")
         self.td_plot.setMenuEnabled(False)
+        self.td_plot.setMouseEnabled(x=False, y=False)
+        self.td_plot.hideButtons()
         self.td_plot.addLegend()
         self.td_curves = []
         for i, depth in enumerate(self.depths):
@@ -248,6 +250,8 @@ class PGUpdater:
         self.collapsed_plot = win.addPlot(
             row=1, col=0, title="Collapsed sqrt(PSD)")
         self.collapsed_plot.setMenuEnabled(False)
+        self.collapsed_plot.setMouseEnabled(x=False, y=False)
+        self.collapsed_plot.hideButtons()
         self.collapsed_plot.setXRange(0, 1)
         self.collapsed_curve = self.collapsed_plot.plot(pen=utils.pg_pen_cycler())
         self.collapsed_vline = pg.InfiniteLine(pen=utils.pg_pen_cycler())
@@ -263,12 +267,16 @@ class PGUpdater:
         self.collapsed_history_plot = win.addPlot(
             row=2, col=0, title="Collapsed sqrt(PSD) history")
         self.collapsed_history_plot.setMenuEnabled(False)
+        self.collapsed_history_plot.setMouseEnabled(x=False, y=False)
+        self.collapsed_history_plot.hideButtons()
         self.collapsed_history_im = pg.ImageItem()
         self.collapsed_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
         self.collapsed_history_plot.addItem(self.collapsed_history_im)
 
         self.dw_plot = win.addPlot(row=3, col=0, title="Depthwise PSD")
         self.dw_plot.setMenuEnabled(False)
+        self.dw_plot.setMouseEnabled(x=False, y=False)
+        self.dw_plot.hideButtons()
         self.dw_im = pg.ImageItem()
         self.dw_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
         self.dw_plot.addItem(self.dw_im)

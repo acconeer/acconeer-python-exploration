@@ -232,6 +232,8 @@ class PGUpdater:
 
         self.sign_hist_plot = win.addPlot(title="Signal history")
         self.sign_hist_plot.setMenuEnabled(False)
+        self.sign_hist_plot.setMouseEnabled(x=False, y=False)
+        self.sign_hist_plot.hideButtons()
         self.sign_hist_plot.addLegend()
         self.sign_hist_plot.showGrid(x=True, y=True)
         self.sign_hist_plot.setLabel("bottom", "Time (s)")
@@ -250,6 +252,8 @@ class PGUpdater:
 
         self.rel_dev_hist_plot = win.addPlot(title="Relative deviation history")
         self.rel_dev_hist_plot.setMenuEnabled(False)
+        self.rel_dev_hist_plot.setMouseEnabled(x=False, y=False)
+        self.rel_dev_hist_plot.hideButtons()
         self.rel_dev_hist_plot.showGrid(x=True, y=True)
         self.rel_dev_hist_plot.setLabel("bottom", "Time (s)")
         self.rel_dev_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)

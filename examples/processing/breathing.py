@@ -261,6 +261,8 @@ class PGUpdater:
 
         self.env_plot = win.addPlot(title="Amplitude of IQ data and change")
         self.env_plot.setMenuEnabled(False)
+        self.env_plot.setMouseEnabled(x=False, y=False)
+        self.env_plot.hideButtons()
         self.env_plot.addLegend()
         self.env_plot.showGrid(x=True, y=True)
         self.env_curve = self.env_plot.plot(
@@ -276,6 +278,8 @@ class PGUpdater:
 
         self.peak_plot = win.addPlot(title="Phase of IQ at peak")
         self.peak_plot.setMenuEnabled(False)
+        self.peak_plot.setMouseEnabled(x=False, y=False)
+        self.peak_plot.hideButtons()
         utils.pg_setup_polar_plot(self.peak_plot, 1)
         self.peak_curve = self.peak_plot.plot(pen=utils.pg_pen_cycler(0))
         self.peak_scatter = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=15)
@@ -288,6 +292,8 @@ class PGUpdater:
 
         self.zoom_plot = win.addPlot(title="Relative movement")
         self.zoom_plot.setMenuEnabled(False)
+        self.zoom_plot.setMouseEnabled(x=False, y=False)
+        self.zoom_plot.hideButtons()
         self.zoom_plot.showGrid(x=True, y=True)
         self.zoom_plot.setLabel("bottom", "Time (s)")
         self.zoom_plot.setLabel("left", "Movement (mm)")
@@ -295,6 +301,8 @@ class PGUpdater:
 
         self.move_plot = win.addPlot(title="Breathing movement")
         self.move_plot.setMenuEnabled(False)
+        self.move_plot.setMouseEnabled(x=False, y=False)
+        self.move_plot.hideButtons()
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Time (s)")
         self.move_plot.setLabel("left", "Movement (mm)")
