@@ -2,6 +2,7 @@ import os
 import sys
 
 import pytest
+import requests
 
 from PyQt5 import QtCore
 
@@ -17,13 +18,43 @@ MOCK_INTERFACE = "Simulated"
 LB = QtCore.Qt.LeftButton
 
 
-@pytest.fixture
-def gui(qtbot):
+def _have_internet_connection():
+    try:
+        requests.get("https://www.google.com")
+        return True
+    except requests.exceptions.ConnectionError:
+        return False
+
+
+def _get_gui(qtbot):
     w = GUI(under_test=True)
     qtbot.addWidget(w)
     with qtbot.waitExposed(w):
         w.show()
     return w
+
+
+@pytest.fixture
+def gui(qtbot):
+    return _get_gui(qtbot)
+
+
+@pytest.fixture
+def mock_handler_gui(qtbot, mocker):
+    """
+    Not really interested if the webpage opens in a tab that is the module `webbrowser`'s
+    responsibility. We are, however, interested whether the url will resolve (response.ok == True)
+    """
+    def mock_help_button_handler(self):
+        # self == GUI
+        url = self.current_module_info.docs_url
+        if url:
+            response = requests.get(url)
+            self.under_test_help_button_response = response
+        else:
+            self.under_test_help_button_response = None
+    mocker.patch("gui.main.GUI.service_help_button_handler", mock_help_button_handler)
+    return _get_gui(qtbot)
 
 
 def test_select_interface(qtbot, gui):
@@ -86,6 +117,29 @@ def test_start_and_stop_all_modules(qtbot, gui):
         qtbot.wait(600)
         qtbot.mouseClick(gui.buttons["stop"], LB)
         qtbot.wait(200)
+
+
+@pytest.mark.skipif(not _have_internet_connection(), reason="No internet connection")
+def test_help_button_with_urls(qtbot, mock_handler_gui):
+    for module_info in MODULE_INFOS:
+        if not module_info.docs_url:
+            continue
+        set_and_check_cb(qtbot, mock_handler_gui.interface_dd, MOCK_INTERFACE)
+        set_and_check_cb(qtbot, mock_handler_gui.module_dd, module_info.label)
+        qtbot.mouseClick(mock_handler_gui.buttons["service_help"], LB)
+        resp = mock_handler_gui.under_test_help_button_response
+        assert resp and resp.ok
+        qtbot.wait(100)
+
+
+def test_help_button_not_clickable(qtbot, gui):
+    for module_info in MODULE_INFOS:
+        if module_info.docs_url:
+            continue
+        set_and_check_cb(qtbot, gui.interface_dd, MOCK_INTERFACE)
+        set_and_check_cb(qtbot, gui.module_dd, module_info.label)
+        assert not gui.buttons["service_help"].isEnabled()
+        qtbot.wait(100)
 
 
 def connect_and_disconnect(qtbot, gui):

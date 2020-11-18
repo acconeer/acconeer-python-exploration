@@ -6,7 +6,7 @@ RUN apt-get install -y python3.6 python3.6-distutils libgl1-mesa-glx libfontconf
 RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python3.6 get-pip.py
 
-RUN python3.6 -m pip install pytest pytest-qt pytest-timeout tox sphinx sphinx_rtd_theme
+RUN python3.6 -m pip install pytest pytest-mock pytest-qt pytest-timeout requests sphinx sphinx_rtd_theme tox
 
 COPY requirements.txt /tmp/
 RUN python3.6 -m pip install -r /tmp/requirements.txt

@@ -7,6 +7,7 @@ import signal
 import sys
 import threading
 import traceback
+import webbrowser
 from distutils.version import StrictVersion
 
 import numpy as np
@@ -620,6 +621,13 @@ class GUI(QMainWindow):
                 False,
                 "service",
             ),
+            "service_help": (
+                "?",
+                self.service_help_button_handler,
+                True,
+                False,
+                "service",
+            ),
             "advanced_defaults": (
                 "Defaults",
                 self.service_defaults_handler,
@@ -678,7 +686,14 @@ class GUI(QMainWindow):
         self.control_section = CollapsibleSection("Scan controls")
         self.main_sublayout.addWidget(self.control_section, 1, 0)
         c = self.control_grid_count
-        self.control_section.grid.addWidget(self.module_dd, c.pre_incr(), 0, 1, 2)
+
+        # Sublayout for service dropdown and a small help button.
+        service_and_help_layout = QtWidgets.QHBoxLayout()
+        service_and_help_layout.addWidget(self.module_dd)
+        service_and_help_layout.addWidget(self.buttons["service_help"])
+        self.buttons["service_help"].setFixedWidth(30)
+        self.control_section.grid.addLayout(service_and_help_layout, c.pre_incr(), 0, 2, 0)
+
         self.control_section.grid.addWidget(self.labels["unsupported_mode"], c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.buttons["start"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.buttons["stop"], c.val, 1)
@@ -991,6 +1006,10 @@ class GUI(QMainWindow):
                 if "checkbox" in self.service_labels[mode][key]:
                     self.service_labels[mode][key]["checkbox"].setChecked(
                         bool(self.service_defaults[key]["value"]))
+
+    def service_help_button_handler(self):
+        url = self.current_module_info.docs_url
+        _ = webbrowser.open_new_tab(url)
 
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
@@ -1429,6 +1448,14 @@ class GUI(QMainWindow):
                 config_is_valid,
             ]))
             self.feature_select.check_limits()
+
+        # Disable service help button if current_module_info does not have a docs_link.
+        self.buttons["service_help"].setEnabled(self.current_module_info.docs_url is not None)
+        if self.current_module_info.docs_url is not None:
+            tooltip_text = f"Get help with \"{self.current_module_info.label}\" on ReadTheDocs"
+        else:
+            tooltip_text = None
+        self.buttons["service_help"].setToolTip(tooltip_text)
 
     def get_gui_state(self, state):
         if state in self.gui_states:
