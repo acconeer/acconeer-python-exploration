@@ -17,14 +17,34 @@ At large, these are the steps you'll need to take:
 
 For a single sensor setup, we recommend plugging the sensor into port 1 for simplicity's sake.
 
+Setup
+-----
+
+In a terminal, run::
+
+   sudo raspi-config
+
+Then, under *Interfacing Options*, enable SPI and I2C.
+
+If you use the XC112 board with kernel v5.4 or newer, then the following line must
+be added to ``/boot/config.txt``::
+
+   dtoverlay=spi0-cs,cs0_pin=8,cs1_pin=28
+
+This can be done by e.g.::
+
+   sudo sh -c 'echo "dtoverlay=spi0-cs,cs0_pin=8,cs1_pin=28" >> /boot/config.txt'
+
+Reboot to the let the changes take effect.
+
 Running the streaming server application
 ----------------------------------------
 
-For the XC112+XR112 kit, start the streaming server application on your Raspberry Pi located under ``utils`` in ``AcconeerEvk``::
+For the XC112+XR112 kit, start the streaming server application on your Raspberry Pi located under ``utils`` in the SDK archive::
 
-   $ cd AcconeerEvk
+   $ cd path/to/the/sdk
    $ ./utils/acc_streaming_server_rpi_xc112_r2b_xr112_r2b_a111_r2c
 
 If you have an XC111+XR111 kit, the streaming server will instead be named ``acc_streaming_server_rpi_xc111_r4a_xr111-3_r1c_a111_r2c``.
 
-Find the IP address of your Raspberry Pi by running ``ifconfig`` in its terminal.
+Find the IP address of your Raspberry Pi by running ``ip a`` in its terminal.
