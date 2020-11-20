@@ -1,6 +1,6 @@
 setuptools
 wheel
-numpy
+numpy==1.19.3
 scipy
 pyserial
 matplotlib==3.2.1
