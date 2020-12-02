@@ -21,6 +21,12 @@ The algorithm is designed to work with only one radar sweep every 10 seconds to 
 power consumption low enough for a battery supply to last for several years. Designs
 that do not have this limitation can use a higher sweep rate.
 
+The exclusion of moving objects leads to delayed detection of a car that just has parked.
+For default settings, the first two scans after a car stopped over the sensor will report
+false detection status. Hence, it takes up to 30 seconds before a parked car is detected
+with one scan every 10 seconds. There is no extra delay when a car leaves, as the first
+scan with no car above the sensor gives a false detection status.
+
 The quality of the radar data depends strongly on the design of the sensor casing. It's
 important that the amount of radar waves that bounce back within the casing is minimized
 to enable detection of weak reflections from a parked car. If the default settings of
@@ -56,7 +62,11 @@ marked with a dashed red line.
 
 **Bottom plot:**
 Detection status (True or False) for sweeps in the last measurement sequence. This plot is
-cleared when a setting is changed or when data collection is restarted.
+cleared when a setting is changed or when data collection is restarted. Note that the first
+two results are false although there is a car above the sensor. Due to the exclusion of
+moving objects, the first :math:`K - 1` scans always get false detection results. Similarly,
+a newly parked car will not be detected during the first :math:`K - 1` scans immediately
+after it parked.
 
 
 Detailed description
