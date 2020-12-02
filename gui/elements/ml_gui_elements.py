@@ -2506,6 +2506,12 @@ class TrainingSidePanel(QFrame):
         model_exists = self.ml_state.get_model_status()
         layer_list = self.gui_handle.model_select.get_layer_list()
 
+        if len(layer_list) == 0:
+            t = "You need to add layers to your model first! "
+            t += "An example model can be found at gui/ml/default_layers_2d.yaml"
+            self.gui_handle.error_message(t)
+            return
+
         if filenames:
             self.gui_handle.model_select.dump_to_yaml(filenames, "last_train_files.yaml")
             try:
@@ -2674,6 +2680,18 @@ class TrainingSidePanel(QFrame):
         if self.ml_state.get_training_data_status() is False:
             self.gui_handle.error_message("No training data loaded")
             return
+        try:
+            if len(model_data["label_list"]) == 0:
+                self.gui_handle.error_message("You need at least 2 different labels!")
+                return
+            if len(model_data["keras_layer_info"]) == 0:
+                t = "You need to add layers to your model first! "
+                t += "An example model can be found at gui/ml/default_layers_2d.yaml"
+                self.gui_handle.error_message(t)
+                return
+        except Exception:
+            traceback.print_exc()
+            print("Something may not be right...")
 
         # Make sure correct layer list is displayed
         self.gui_handle.model_select.update_layer_list(model_data["layer_list"])

@@ -198,7 +198,16 @@ class MachineLearning(kp_tf.ACC_ML):
                 data_labels, self.label_num, self.labels_dict = self.label_conversion(raw_labels)
                 self.model_data.output = self.label_num
             else:
-                data_labels = self.label_assignment(raw_labels, self.labels_dict)
+                try:
+                    data_labels = self.label_assignment(raw_labels, self.labels_dict)
+                except Exception:
+                    traceback.print_exc()
+                    print("New labels found, clearing weights!")
+                    model_exists = False
+                    data_labels, self.label_num, self.labels_dict = self.label_conversion(
+                        raw_labels
+                    )
+                    self.model_data.output = self.label_num
                 output = self.model_data.output
                 if self.label_num != output:
                     message = "Output dimensions not matching:\nModel {} - Data {}".format(

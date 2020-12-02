@@ -472,6 +472,7 @@ class ACC_ML(ml_helper.KerasBase):
                     self.model_data[data] = None
             self.model_data.loaded = False
             self.label_num = 0
+            self.time_distributed = 1
             self.labels_dict = None
 
         if reinit:
