@@ -1451,7 +1451,9 @@ class GUI(QMainWindow):
 
         # Disable service help button if current_module_info does not have a docs_link.
         self.buttons["service_help"].setEnabled(self.current_module_info.docs_url is not None)
-        if self.current_module_info.docs_url is not None:
+        if self.current_module_info.module is None:
+            tooltip_text = f"Get help with services on ReadTheDocs"
+        elif self.current_module_info.docs_url is not None:
             tooltip_text = f"Get help with \"{self.current_module_info.label}\" on ReadTheDocs"
         else:
             tooltip_text = None
