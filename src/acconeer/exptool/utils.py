@@ -9,11 +9,10 @@ from datetime import datetime
 
 import numpy as np
 import serial.tools.list_ports
+from packaging import version
 
 import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool.modes import Mode
-
-from packaging import version
 
 
 try:
