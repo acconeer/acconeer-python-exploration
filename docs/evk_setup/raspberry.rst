@@ -29,11 +29,11 @@ Then, under *Interfacing Options*, enable SPI and I2C.
 If you use the XC112 board with kernel v5.4 or newer, then the following line must
 be added to ``/boot/config.txt``::
 
-   dtoverlay=spi0-cs,cs0_pin=8,cs1_pin=28
+   dtoverlay=spi0-1cs,cs0_pin=8
 
 This can be done by e.g.::
 
-   sudo sh -c 'echo "dtoverlay=spi0-cs,cs0_pin=8,cs1_pin=28" >> /boot/config.txt'
+   sudo sh -c 'echo "dtoverlay=spi0-1cs,cs0_pin=8" >> /boot/config.txt'
 
 Reboot to the let the changes take effect.
 
