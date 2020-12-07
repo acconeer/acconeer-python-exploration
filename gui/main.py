@@ -1716,10 +1716,7 @@ class GUI(QMainWindow):
             has_loaded_module = False
             print("Can't find the module for the loaded data")
         else:
-            has_loaded_module = True
-
-        if index == -1:
-            has_loaded_module = False
+            has_loaded_module = index != -1
 
         if not has_loaded_module:  # Just try loading the data in the service-only module
             try:
