@@ -189,8 +189,17 @@ def _load_dll():
     system = platform.system().lower()
     bin_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "data/libft4222")
     if system == "linux":
-        lib_path = glob(os.path.join(bin_dir, "libft4222.so*"))[0]
-        dll = ctypes.CDLL(lib_path)
+        machine_type = platform.machine()
+        sub_dir = machine_type.lower()
+
+        if sub_dir.startswith("arm"):
+            sub_dir = sub_dir[:5]  # get 5 first letters: "armv?"
+        try:
+            lib_path = glob(os.path.join(bin_dir, sub_dir, "libft4222.so*"))[0]
+            dll = ctypes.CDLL(lib_path)
+        except (IndexError, OSError):
+            raise OSError(f"Unsupported machine type: '{machine_type}'") from None
+
         funs = {name: getattr(dll, name) for name in FUN_ARGTYPES.keys()}
     elif system == "windows":
         try:
