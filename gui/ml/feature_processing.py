@@ -167,33 +167,33 @@ class FeatureProcessing:
             num_sensors, data_len = data["sweep_data"].shape
 
         self.win_data = {
-            'env_data': np.zeros((num_sensors, data_len, n_sweeps))
+            "env_data": np.zeros((num_sensors, data_len, n_sweeps))
         }
 
         if mode == Mode.SPARSE:
-            self.win_data['sparse_data'] = np.zeros(
+            self.win_data["sparse_data"] = np.zeros(
                 (num_sensors, point_repeats, data_len, n_sweeps)
             )
         else:
-            self.win_data['iq_data'] = np.zeros((num_sensors, data_len, n_sweeps), dtype="complex")
+            self.win_data["iq_data"] = np.zeros((num_sensors, data_len, n_sweeps), dtype="complex")
 
     def add_sweep(self, data, win_idx=0):
         mode = data["sensor_config"].mode
         if mode == Mode.SPARSE:
-            self.win_data['sparse_data'][:, :, :, win_idx] = data['sweep_data'][:, :, :]
+            self.win_data["sparse_data"][:, :, :, win_idx] = data["sweep_data"][:, :, :]
         else:
-            self.win_data['iq_data'][:, :, win_idx] = data['sweep_data'][:, :]
+            self.win_data["iq_data"][:, :, win_idx] = data["sweep_data"][:, :]
 
-        self.win_data['env_data'][:, :, win_idx] = data['env_ampl'][:, :]
+        self.win_data["env_data"][:, :, win_idx] = data["env_ampl"][:, :]
 
     def roll_data(self, data):
         mode = data["sensor_config"].mode
         if mode == Mode.SPARSE:
-            self.win_data['sparse_data'] = np.roll(self.win_data['sparse_data'], 1, axis=3)
+            self.win_data["sparse_data"] = np.roll(self.win_data["sparse_data"], 1, axis=3)
         else:
-            self.win_data['iq_data'] = np.roll(self.win_data['iq_data'], 1, axis=2)
+            self.win_data["iq_data"] = np.roll(self.win_data["iq_data"], 1, axis=2)
 
-        self.win_data['env_data'] = np.roll(self.win_data['env_data'], 1, axis=2)
+        self.win_data["env_data"] = np.roll(self.win_data["env_data"], 1, axis=2)
 
     def reset_data(self, data, win_idx=None):
         for data in self.win_data:
@@ -503,9 +503,9 @@ class FeatureProcessing:
         if data.get("env_ampl") is None:
             sweep = data["sweep_data"]
             if data["sensor_config"].mode == Mode.SPARSE:
-                data['env_ampl'] = sweep.mean(axis=1)
+                data["env_ampl"] = sweep.mean(axis=1)
             else:
-                data['env_ampl'] = np.abs(sweep)
+                data["env_ampl"] = np.abs(sweep)
 
     def indexer(self, i):
         self.m += 1

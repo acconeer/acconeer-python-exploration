@@ -196,9 +196,9 @@ def autodetect_serial_port():
     # Check for mutliple Acconeer devices;
     if len(acconeer_port_infos) > 1:
         print("Found multiple Acconeer products:", end="\n\n")
-        for port, tag in [('Serial port:', 'Model:')] + acconeer_port_infos:
+        for port, tag in [("Serial port:", "Model:")] + acconeer_port_infos:
             print(f"\t{port:<15} {tag:}")
-        print("\nRun the script again and specify port using the \"-u\"/\"--uart\" flag.")
+        print('\nRun the script again and specify port using the "-u"/"--uart" flag.')
         sys.exit()
 
     if len(acconeer_port_infos) == 1:
@@ -383,7 +383,7 @@ def pg_setup_polar_plot(plot, max_r=1):
         rad = np.radians(deg)
         x = np.cos(rad)
         y = np.sin(rad)
-        text = str(int(deg)) + '\u00b0'
+        text = str(int(deg)) + "\u00b0"
         ax = (-x + 1) / 2
         ay = (y + 1) / 2
         text_item = pg.TextItem(text, color="k", anchor=(ax, ay))

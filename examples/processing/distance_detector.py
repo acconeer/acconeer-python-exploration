@@ -729,25 +729,25 @@ class PGUpdater:
             pen=None,
             symbol="o",
             symbolSize=8,
-            symbolPen='k',
+            symbolPen="k",
             symbolBrush=utils.color_cycler(0),
             name="Main peak",
         )
 
         self.minor_peaks = self.hist_plot.plot(
             pen=None,
-            symbol='o',
+            symbol="o",
             symbolSize=5,
-            symbolPen='k',
+            symbolPen="k",
             symbolBrush=utils.color_cycler(1),
             name="Minor peaks",
         )
 
         self.first_distance_above_threshold = self.hist_plot.plot(
             pen=None,
-            symbol='o',
+            symbol="o",
             symbolSize=3,
-            symbolPen='k',
+            symbolPen="k",
             symbolBrush=utils.color_cycler(2),
             name="First distance above threshold",
             visible=False,

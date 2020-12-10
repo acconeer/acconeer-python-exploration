@@ -287,7 +287,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         updateable=True,
         order=100,
         help=(
-            "The time interval that is shown in the \"Detection history\" plot"
+            'The time interval that is shown in the "Detection history" plot'
         ),
     )
 
@@ -402,7 +402,7 @@ class PGUpdater:
 
         self.detection_html_format = '<div style="text-align: center">' \
                                      '<span style="color: #FFFFFF;font-size:16pt;">' \
-                                     '{}</span></div>'
+                                     "{}</span></div>"
         detection_html = self.detection_html_format.format("Parked car detected!")
 
         self.detection_text_item = pg.TextItem(

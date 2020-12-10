@@ -78,7 +78,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         limits=(0, OUTPUT_MAX / 2),
         updateable=True,
         order=0,
-        help="Level at which the detector output is considered as \"present\".",
+        help='Level at which the detector output is considered as "present".',
     )
 
     inter_frame_fast_cutoff = configbase.FloatParameter(
@@ -527,10 +527,10 @@ class PGUpdater:
 
         self.present_html_format = '<div style="text-align: center">' \
                                    '<span style="color: #FFFFFF;font-size:15pt;">' \
-                                   '{}</span></div>'
+                                   "{}</span></div>"
         not_present_html = '<div style="text-align: center">' \
                            '<span style="color: #FFFFFF;font-size:15pt;">' \
-                           '{}</span></div>'.format("No presence detected")
+                           "{}</span></div>".format("No presence detected")
         self.present_text_item = pg.TextItem(
             fill=pg.mkColor(0xff, 0x7f, 0x0e, 200),
             anchor=(0.5, 0),

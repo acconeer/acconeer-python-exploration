@@ -100,7 +100,7 @@ def get_files(directory, match=None, exclude=None):
 
 def load_from_yaml(filename):
     try:
-        with open(filename, 'r') as f_handle:
+        with open(filename, "r") as f_handle:
             data = yaml.load(f_handle, Loader=yaml.FullLoader)
     except Exception as e:
         print("Failed to load data\n", e)
@@ -188,12 +188,12 @@ def generate_calibration(filename=None):
 
 
 def convert_time_series(feature_map, frame_info):
-    frame_size = frame_info.get('frame_size')
+    frame_size = frame_info.get("frame_size")
 
     if feature_map is None:
         return None
 
-    time_series = frame_info.get('time_series', 1)
+    time_series = frame_info.get("time_series", 1)
     if time_series < 2:
         print("Cannot convert time series. Time series < 2!")
         return feature_map

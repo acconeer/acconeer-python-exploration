@@ -46,7 +46,7 @@ from modules import MODULE_KEY_TO_MODULE_INFO_MAP
 
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-HERE = os.path.abspath(os.path.join(HERE, '..'))
+HERE = os.path.abspath(os.path.join(HERE, ".."))
 DEFAULT_MODEL_FILENAME_2D = os.path.join(HERE, "ml", "default_layers_2D.yaml")
 TRAIN_TAB = 5
 FEATURE_EXTRACT_TAB = 2
@@ -1587,10 +1587,10 @@ class FeatureSidePanel(QFrame):
 
         if action == "settings":
             title = "Save feature settings"
-            fname = 'ml_feature_settings_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+            fname = "ml_feature_settings_{date:%Y_%m_%d_%H%M}".format(date=datetime.datetime.now())
         elif action == "session":
             title = "Save session data"
-            fname = 'ml_session_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+            fname = "ml_session_data_{date:%Y_%m_%d_%H%M}".format(date=datetime.datetime.now())
             if self.gui_handle.get_gui_state("ml_tab") == "feature_inspect":
                 label = self.gui_handle.feature_inspect.textboxes["label"].text()
             else:
@@ -2992,14 +2992,14 @@ class ModelSelectFrame(QFrame):
 
     def dump_to_yaml(self, layers, filename):
         try:
-            with open(filename, 'w') as f_handle:
+            with open(filename, "w") as f_handle:
                 yaml.dump(layers, f_handle, default_flow_style=False)
         except Exception as e:
             print("Failed to dump data to file {}!\n".format(filename), e)
 
     def load_layers(self, filename):
         try:
-            with open(filename, 'r') as f_handle:
+            with open(filename, "r") as f_handle:
                 layers = yaml.full_load(f_handle)
             self.update_layer_list(layers)
         except Exception as e:
@@ -3380,7 +3380,7 @@ class ModelSelectFrame(QFrame):
                         elif isinstance(p, QtWidgets.QComboBox):
                             param_list.append(p.currentText())
                         elif isinstance(p, QLineEdit):
-                            convert_cb = self.layers[key]['params'][opt][1]
+                            convert_cb = self.layers[key]["params"][opt][1]
                             param_list.append(convert_cb(p.text()))
                     if len(param_list) > 1:
                         list_entry["params"][opt] = param_list
@@ -3554,7 +3554,7 @@ class ModelOperations(QFrame):
             options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
             file_types = "NumPy data files (*.npy)"
-            fname = 'model_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+            fname = "model_data_{date:%Y_%m_%d_%H%M}".format(date=datetime.datetime.now())
             filename, info = QtWidgets.QFileDialog.getSaveFileName(
                 self, title, fname, file_types, options=options)
 
@@ -3637,7 +3637,7 @@ class ModelOperations(QFrame):
         title = "Load model data"
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
-        if self.keras_handle.model_data.tf_version.split('.')[0] == "1":
+        if self.keras_handle.model_data.tf_version.split(".")[0] == "1":
             filename, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self, title, "", "NumPy data files (*.npy)", options=options)
         else:
@@ -3690,7 +3690,7 @@ class ModelOperations(QFrame):
         model_data = self.ml_state.get_model_data()
 
         model_mode = None
-        if model_data.get('sensor_config', None) is not None:
+        if model_data.get("sensor_config", None) is not None:
             config_mode = model_data["sensor_config"].mode
             if config_mode == Mode.IQ:
                 model_mode = "IQ"
@@ -3701,7 +3701,7 @@ class ModelOperations(QFrame):
 
         # Make sure the GUI has a valid sensor config
         gui_sensor_conf = self.gui_handle.get_sensor_config()
-        if gui_sensor_conf is None and model_data.get('sensor_config', None) is not None:
+        if gui_sensor_conf is None and model_data.get("sensor_config", None) is not None:
             index = self.gui_handle.module_dd.findText(model_mode, QtCore.Qt.MatchFixedString)
             if index >= 0:
                 self.gui_handle.module_dd.setCurrentIndex(index)
@@ -4357,10 +4357,10 @@ class ProgressBar(QDialog):
         self.total_progress = QProgressBar(self)
         self.file_progress = QProgressBar(self)
 
-        self.btn_skip_file = QPushButton('Skip file', self)
+        self.btn_skip_file = QPushButton("Skip file", self)
         self.btn_skip_file.clicked.connect(self.skip_file)
 
-        self.btn_cancel = QPushButton('Cancel', self)
+        self.btn_cancel = QPushButton("Cancel", self)
         self.btn_cancel.clicked.connect(self.cancel)
 
         self.file_name = QLabel("")

@@ -75,17 +75,17 @@ class ACC_ML(ml_helper.KerasBase):
             if not layer.get("is_active", True):
                 continue
             try:
-                cb = layer_callbacks[layer['name']]['class']
+                cb = layer_callbacks[layer["name"]]["class"]
             except KeyError:
-                print("Layer {} not found in layer_definitions.py!".format(layer['name']))
+                print("Layer {} not found in layer_definitions.py!".format(layer["name"]))
 
             # Wrap layers in TimeDistributed until first LSTM layer
-            if layer['name'] == "lstm":
+            if layer["name"] == "lstm":
                 lstm_mode = False
                 time_series = False
                 layer["params"].pop("steps")
             if lstm_mode:
-                if layer['class'] not in not_time_distributed:
+                if layer["class"] not in not_time_distributed:
                     time_series = True
                 else:
                     time_series = False
@@ -99,7 +99,7 @@ class ACC_ML(ml_helper.KerasBase):
                             options[entry] = tuple(opt)
                         else:
                             options[entry] = opt
-                print("{}: Adding {} with\n{}".format(idx + 1, layer['name'], options))
+                print("{}: Adding {} with\n{}".format(idx + 1, layer["name"], options))
                 if idx == 0 and nr_layers > 1:
                     if time_series:
                         x = TimeDistributed(cb(**options))(inputs)
@@ -118,7 +118,7 @@ class ACC_ML(ml_helper.KerasBase):
                 return {
                     "loaded": False,
                     "model_message": "\nLayer nr. {} failed."
-                                     " Error adding {}\n{}".format(idx + 1, layer['name'], e)
+                                     " Error adding {}\n{}".format(idx + 1, layer["name"], e)
                 }
 
             if layer["name"] == "lstm":
@@ -184,7 +184,7 @@ class ACC_ML(ml_helper.KerasBase):
             eval_data = None
 
         y_ints = [d.argmax() for d in y]
-        class_weights = class_weight.compute_class_weight('balanced', np.unique(y_ints), y_ints)
+        class_weights = class_weight.compute_class_weight("balanced", np.unique(y_ints), y_ints)
         class_weights = dict(enumerate(class_weights))
 
         cb = []
@@ -319,7 +319,7 @@ class ACC_ML(ml_helper.KerasBase):
                 self.model, filename,
                 overwrite=True,
                 include_optimizer=True,
-                save_format='tf',
+                save_format="tf",
                 signatures=None,
                 options=None
             )

@@ -81,7 +81,7 @@ def main():
     if args.save_model is not None:
         fname = args.save_model
     else:
-        fname = fname = 'model_data_{date:%Y_%m_%d_%H%M}'.format(date=datetime.datetime.now())
+        fname = fname = "model_data_{date:%Y_%m_%d_%H%M}".format(date=datetime.datetime.now())
     ml.save_model(fname)
 
     if args.confmatrix:

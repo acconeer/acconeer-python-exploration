@@ -179,7 +179,7 @@ class SocketClient(BaseClient):
         self._link.send(packed)
 
     def _recv_frame(self):
-        packed = self._link.recv_until(b'\n')
+        packed = self._link.recv_until(b"\n")
         header = json.loads(str(packed, "ascii"))
         payload_len = header["payload_size"]
 

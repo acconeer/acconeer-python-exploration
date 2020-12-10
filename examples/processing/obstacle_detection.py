@@ -530,7 +530,7 @@ class ObstacleDetectionProcessor:
         if bg_params is None:
             bg_params = self.bg_params[0]
 
-        with open(filename, 'w') as f_handle:
+        with open(filename, "w") as f_handle:
             yaml.dump(bg_params, f_handle, default_flow_style=False)
 
     def remap(self, val, x1, x2, y1, y2):

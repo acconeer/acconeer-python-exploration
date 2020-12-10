@@ -287,7 +287,7 @@ class Trigger():
         threshold = trigger_options["auto_threshold"]
 
         if not self.trigger_variables.get("initialized", False):
-            if not hasattr(self, 'keras_process'):
+            if not hasattr(self, "keras_process"):
                 self.kp = keras_p.MachineLearning()
             else:
                 self.kp.clear_model()

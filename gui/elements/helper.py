@@ -204,7 +204,7 @@ class HandleAdvancedProcessData(QDialog):
                 parameter_wiget._grid.addWidget(i[1], idx, 1)
 
             try:
-                with open(param_file, 'r') as f_handle:
+                with open(param_file, "r") as f_handle:
                     params = yaml.full_load(f_handle)
                 self.set_params(params)
             except Exception:

@@ -39,7 +39,7 @@ def test_unpack_stream_data_segment():
     rv_addr = reg.addr
     rv_enc_val = reg.encode(123)
     rvs = [ptcl.RegVal(rv_addr, rv_enc_val)]
-    buffer = bytearray(b'\x12\x34\x56')
+    buffer = bytearray(b"\x12\x34\x56")
     unp_stream_data = ptcl.StreamData(rvs, buffer)
 
     pkd_stream_data_segment = bytearray()

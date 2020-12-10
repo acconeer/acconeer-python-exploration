@@ -104,7 +104,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         updateable=True,
         logscale=True,
         order=30,
-        help="Level at which the detector output is considered as a \"button press\".",
+        help='Level at which the detector output is considered as a "button press".',
     )
 
     buttonpress_length_s = configbase.FloatParameter(
@@ -265,7 +265,7 @@ class PGUpdater:
 
         self.detection_dots = self.rel_dev_hist_plot.plot(
             pen=None,
-            symbol='o',
+            symbol="o",
             symbolSize=20,
             symbolBrush=utils.color_cycler(1),
             name="Detections",
@@ -279,7 +279,7 @@ class PGUpdater:
 
         self.detection_html_format = '<div style="text-align: center">' \
                                      '<span style="color: #FFFFFF;font-size:16pt;">' \
-                                     '{}</span></div>'
+                                     "{}</span></div>"
         detection_html = self.detection_html_format.format("Button press detected!")
 
         self.detection_text_item = pg.TextItem(
