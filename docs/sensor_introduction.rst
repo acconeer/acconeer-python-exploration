@@ -367,7 +367,7 @@ The range can be further increased based on the configuration of the sensor, as 
     :widths: auto
 
     =============================================== ===== ===== ===== ===== =====
-    Object                                          0.5 m 1 m   2 m   5 m   10 m
+    Object                                          0.5 m 1 m   2 m   5 m   7 m
     =============================================== ===== ===== ===== ===== =====
     Corner reflector (*a* = 4 cm)                   Y     Y     Y     Y     N
     Planar water surface                            Y     Y     Y     Y     Y
@@ -394,7 +394,7 @@ The range can be further increased based on the configuration of the sensor, as 
     :widths: auto
 
     ============================================== ===== ===== ===== ===== =====
-    Object                                         0.5 m 1 m   2 m   5 m   10 m
+    Object                                         0.5 m 1 m   2 m   5 m   7 m
     ============================================== ===== ===== ===== ===== =====
     Corner reflector (*a* = 4 cm)                  Y     Y     Y     Y     Y
     Planar water surface                           Y     Y     Y     Y     Y
@@ -705,6 +705,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Updated max range in tables.           2.8     2020-12-14
     Acconeer AB Product sw offer figure updated.       2.7     2020-09-29
     Acconeer AB Product offer figure updated.          2.6     2020-09-28
     Acconeer AB Updated with new distance detector.    2.5     2020-08-14
