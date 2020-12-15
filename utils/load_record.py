@@ -19,17 +19,29 @@ def main():
 
     print_record(record)
 
+    fig, ax = plt.subplots()
+
+    depths = utils.get_range_depths(record.sensor_config, record.session_info)
+
     if len(record.data.shape) == 3:  # Envelope, IQ, Power bins
         x = np.arange(len(record.data))
-        y = utils.get_range_depths(record.sensor_config, record.session_info)
+        y = depths
         z = np.abs(record.data[:, 0, :]).T
 
-        fig, ax = plt.subplots()
         ax.pcolormesh(x, y, z)
         ax.set_xlabel("Sweep index")
         ax.set_ylabel("Depth (m)")
-        fig.tight_layout()
-        plt.show()
+    else:
+        y = np.abs(record.data[:, 0, :, :].mean(axis=1))
+
+        ax.plot(y)
+        ax.set_xlabel("Frame index")
+        ax.set_ylabel("Mean sweep amplitude")
+
+        ax.legend([f"{d:.2f}" for d in depths], title="Depth")
+
+    fig.tight_layout()
+    plt.show()
 
 
 def print_record(record):
@@ -46,9 +58,9 @@ def print_record(record):
     print("Data shape:", record.data.shape)
     print("Data dtype:", record.data.dtype)
     print()
-    print("First data info (first sensor):")
+    print("Last data info (first sensor):")
 
-    for k, v in record.data_info[0][0].items():
+    for k, v in record.data_info[-1][0].items():
         print("  {:.<35} {}".format(k + " ", v))
 
     ts = record.sample_times
