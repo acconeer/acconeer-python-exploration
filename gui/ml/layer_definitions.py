@@ -1,16 +1,36 @@
 import numpy as np
-from keras.layers import (
-    LSTM,
-    BatchNormalization,
-    Conv1D,
-    Conv2D,
-    ConvLSTM2D,
-    Dense,
-    Dropout,
-    Flatten,
-    GaussianNoise,
-    MaxPool2D,
-)
+import tensorflow as tf
+
+
+tf_version = tf.__version__.split(".")[0]
+if tf.__version__.split(".")[0] == "1":
+    from keras.layers import (
+        LSTM,
+        BatchNormalization,
+        Conv1D,
+        Conv2D,
+        ConvLSTM2D,
+        Dense,
+        Dropout,
+        Flatten,
+        GaussianNoise,
+        MaxPool2D,
+    )
+elif tf.__version__.split(".")[0] == "2":
+    from tensorflow.keras.layers import (
+        LSTM,
+        BatchNormalization,
+        Conv1D,
+        Conv2D,
+        ConvLSTM2D,
+        Dense,
+        Dropout,
+        Flatten,
+        GaussianNoise,
+        MaxPool2D,
+    )
+else:
+    raise ImportError("Unsupported TensorFlow version...")
 
 
 activations = [

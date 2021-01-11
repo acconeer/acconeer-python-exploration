@@ -6,7 +6,7 @@ import numpy as np
 
 from acconeer.exptool import configs
 
-import ml_helper
+import gui.ml.ml_helper as ml_helper
 
 
 try:
