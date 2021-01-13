@@ -11,9 +11,6 @@ from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 from acconeer.exptool.structs import configbase
 
 
-OUTPUT_MAX = 10
-
-
 def main():
     args = utils.ExampleArgumentParser(num_sens=1).parse_args()
     utils.config_logging(args)
@@ -70,12 +67,12 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(configbase.ProcessingConfig):
-    VERSION = 4
+    VERSION = 5
 
     detection_threshold = configbase.FloatParameter(
         label="Detection threshold",
         default_value=1.5,
-        limits=(0, OUTPUT_MAX / 2),
+        limits=(0, 5),
         updateable=True,
         order=0,
         help='Level at which the detector output is considered as "present".',
@@ -188,6 +185,20 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         default_value=False,
         updateable=True,
         order=130,
+    )
+
+    history_plot_ceiling = configbase.FloatParameter(
+        label="Presence score plot ceiling",
+        default_value=10.0,
+        decimals=1,
+        limits=(1, 100),
+        logscale=True,
+        updateable=True,
+        optional=True,
+        optional_label="Fixed",
+        order=190,
+        help="The highest presence score that will be plotted.",
+        category=configbase.Category.ADVANCED,
     )
 
     history_length_s = configbase.FloatParameter(
@@ -517,9 +528,11 @@ class PGUpdater:
         self.move_hist_plot.hideButtons()
         self.move_hist_plot.showGrid(x=True, y=True)
         self.move_hist_plot.setLabel("bottom", "Time (s)")
-        self.move_hist_plot.setLabel("left", "Score (limited to {})".format(OUTPUT_MAX))
+        self.move_hist_plot.setLabel("left", "Score")
         self.move_hist_plot.setXRange(-self.history_length_s, 0)
-        self.move_hist_plot.setYRange(0, OUTPUT_MAX)
+        self.history_smooth_max = utils.SmoothMax(self.sensor_config.update_rate)
+        self.move_hist_plot.setYRange(0, 10)
+
         self.move_hist_curve = self.move_hist_plot.plot(pen=utils.pg_pen_cycler())
         limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
         self.move_hist_plot.addItem(limit_line)
@@ -541,12 +554,10 @@ class PGUpdater:
             anchor=(0.5, 0),
         )
 
-        pos = (-self.history_length_s / 2, 0.95 * OUTPUT_MAX)
-        self.present_text_item.setPos(*pos)
-        self.not_present_text_item.setPos(*pos)
         self.move_hist_plot.addItem(self.present_text_item)
         self.move_hist_plot.addItem(self.not_present_text_item)
         self.present_text_item.hide()
+        self.not_present_text_item.hide()
 
         # Sector plot
 
@@ -620,7 +631,21 @@ class PGUpdater:
 
         move_hist_ys = data["presence_history"]
         move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
-        self.move_hist_curve.setData(move_hist_xs, np.minimum(move_hist_ys, OUTPUT_MAX))
+
+        m_hist = max(np.max(move_hist_ys), self.processing_config.detection_threshold * 1.05)
+        m_hist = self.history_smooth_max.update(m_hist)
+
+        if self.processing_config.history_plot_ceiling is not None:
+            self.move_hist_plot.setYRange(0, self.processing_config.history_plot_ceiling)
+            self.move_hist_curve.setData(
+                move_hist_xs,
+                np.minimum(move_hist_ys, self.processing_config.history_plot_ceiling),
+            )
+            self.set_present_text_y_pos(self.processing_config.history_plot_ceiling)
+        else:
+            self.move_hist_plot.setYRange(0, m_hist)
+            self.move_hist_curve.setData(move_hist_xs, move_hist_ys)
+            self.set_present_text_y_pos(m_hist)
 
         if data["presence_detected"]:
             present_text = "Presence detected at {:.0f} cm".format(movement_x * 100)
@@ -640,6 +665,10 @@ class PGUpdater:
         if data["presence_detected"]:
             index = (data["presence_distance_index"] + self.sector_offset) // self.sector_size
             self.sectors[index].setBrush(utils.pg_brush_cycler(1))
+
+    def set_present_text_y_pos(self, y):
+        self.present_text_item.setPos(-self.history_length_s / 2, 0.95 * y)
+        self.not_present_text_item.setPos(-self.history_length_s / 2, 0.95 * y)
 
 
 if __name__ == "__main__":
