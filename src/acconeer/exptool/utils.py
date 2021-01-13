@@ -400,31 +400,87 @@ def pg_mpl_cmap(name):
 
 
 class FreqCounter:
-    def __init__(self, a=0.95, num_bits=None):
+    """
+    Helper class for measuring & calculating temporal information:
+        * time between ticks (lp-filtered), `FreqCounter.lp_dt`
+        * frequency
+        * data throughput (if num_bits is not None)
+    """
+    def __init__(self, a=None, tc=None, num_bits=None):
+        assert (a is None) or (tc is None)
+
+        if (a is None) and (tc is None):
+            tc = 1.0
+
         self.a = a
+        self.tc = tc
         self.num_bits = num_bits
+
+        self.reset()
+
+    def reset(self):
         self.last_t = None
         self.lp_dt = None
+        self.num_ticks = 0
 
-    def tick(self):
+    def tick_values(self):
+        """
+        Ticks this FreqCounter instance.
+        OBS! The first call to this method will return None.
+
+        :returns:
+            3-tuple of (delta time (lp-filtered), frequency, [throughput])
+            -- OR --
+            None
+        """
         now = time.time()
 
-        if self.last_t:
-            dt = now - self.last_t
-            if self.lp_dt:
-                self.lp_dt = self.a * self.lp_dt + (1 - self.a) * dt
-                f = 1 / self.lp_dt
-                dt_ms = self.lp_dt * 1e3
-                if self.num_bits:
-                    data_rate = self.num_bits * f * 1e-6
-                    s = " {:5.1f} ms, {:5.1f} Hz, {:5.2f} Mbit/s".format(dt_ms, f, data_rate)
-                    print(s, end="\r")
-                else:
-                    print(" {:5.1f} ms, {:5.1f} Hz".format(dt_ms, f), end="\r")
-            else:
-                self.lp_dt = dt
+        if self.last_t is None:
+            self.last_t = now
+            return None
+
+        dt = now - self.last_t
+
+        if self.a is not None:
+            a = self.a
+        else:
+            a = np.exp(-dt / self.tc)
+
+        a = min(a, 1.0 - 1.0 / (1.0 + self.num_ticks))  # dynamic sf
+
+        if self.lp_dt is None:
+            self.lp_dt = dt
+        else:
+            self.lp_dt = a * self.lp_dt + (1 - a) * dt
+
+        f = 1 / self.lp_dt
+
+        if self.num_bits is None:
+            data_rate = None
+        else:
+            data_rate = self.num_bits * f
 
         self.last_t = now
+        self.num_ticks += 1
+        return self.lp_dt, f, data_rate
+
+    def tick(self):
+        """
+        Prints the values returned by `tick_values()`.
+        """
+        tick_info = self.tick_values()
+        if tick_info is None:
+            return
+
+        dt, f, data_rate = tick_info
+        dt_ms = dt * 1e3
+        data_rate_mbps = data_rate * 1e-6
+
+        if data_rate is None:
+            print(" {:5.1f} ms, {:5.1f} Hz".format(dt_ms, f), end="\r")
+        else:
+            s = " {:5.1f} ms, {:5.1f} Hz, {:5.2f} Mbit/s".format(dt_ms, f, data_rate_mbps)
+            print(s, end="\r")
 
 
 def get_range_depths(sensor_config: cb.SensorConfig, session_info: dict) -> np.ndarray:

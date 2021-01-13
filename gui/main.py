@@ -6,6 +6,7 @@ import re
 import signal
 import sys
 import threading
+import time
 import traceback
 import webbrowser
 from distutils.version import StrictVersion
@@ -99,6 +100,8 @@ class GUI(QMainWindow):
         self.client = None
         self.num_recv_frames = 0
         self.num_missed_frames = 0
+        self.measured_update_rate_fc = utils.FreqCounter()
+        self.reset_missed_frame_text_time = None
         self.service_labels = {}
         self.service_params = None
         self.service_defaults = None
@@ -209,6 +212,7 @@ class GUI(QMainWindow):
             "stored_frames": ("",),
             "interface": ("Interface",),
             "sweep_info": ("",),
+            "measured_update_rate": ("",),
             "data_warnings": ("",),
             "rssver": ("",),
             "libver": ("",),
@@ -765,8 +769,14 @@ class GUI(QMainWindow):
     def init_statusbar(self):
         self.statusBar().showMessage("Not connected")
         self.labels["sweep_info"].setFixedWidth(220)
+        self.labels["sweep_info"].setAlignment(
+            QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+        )
+        self.labels["measured_update_rate"].setToolTip("Measured update rate")
+        self.labels["measured_update_rate"].setFixedWidth(120)
         self.statusBar().addPermanentWidget(self.labels["data_warnings"])
         self.statusBar().addPermanentWidget(self.labels["sweep_info"])
+        self.statusBar().addPermanentWidget(self.labels["measured_update_rate"])
         self.statusBar().addPermanentWidget(self.labels["libver"])
         self.statusBar().addPermanentWidget(self.checkboxes["verbose"])
         self.statusBar().addPermanentWidget(self.checkboxes["opengl"])
@@ -1176,6 +1186,8 @@ class GUI(QMainWindow):
 
         self.num_recv_frames = 0
         self.num_missed_frames = 0
+        self.measured_update_rate_fc.reset()
+        self.reset_missed_frame_text_time = None
         self.threaded_scan.start()
 
         if isinstance(processing_config, configbase.Config):
@@ -1973,6 +1985,23 @@ class GUI(QMainWindow):
             num_missed_show,
         )
         self.labels["sweep_info"].setText(text)
+
+        tick_info = self.measured_update_rate_fc.tick_values()
+        if tick_info is not None:
+            _, f, _ = tick_info
+
+            self.labels["measured_update_rate"].setText(
+                f"{f:>10.1f} Hz"
+            )
+
+        RED_TEXT_TIMEOUT = 2
+        now = time.time()
+
+        if missed:
+            self.labels["sweep_info"].setStyleSheet("QLabel {color: red}")
+            self.reset_missed_frame_text_time = now + RED_TEXT_TIMEOUT
+        if self.reset_missed_frame_text_time is None or self.reset_missed_frame_text_time < now:
+            self.labels["sweep_info"].setStyleSheet("")
 
         if data_quality_warning:
             self.labels["data_warnings"].setText("Warning: Bad data quality, restart service!")
