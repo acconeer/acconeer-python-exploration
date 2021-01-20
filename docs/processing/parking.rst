@@ -35,6 +35,12 @@ sensor, it's likely that the reflections within the casing are too strong for re
 detection. If that is the case, then consider a revisit of the sensor integration or
 tuning of the detector parameters (described below).
 
+The default values of the parameters are selected based on laboratory tests in the full
+sensor design temperature range of -40°C to 85°C. These tests have progressed since our
+first release of this parking detector, and we have changed the ``leak_max_amplitude``
+parameter default value from 1000 to 2000. This change is intended to avoid false car
+detections at temperatures near -40°C.
+
 Plots
 -----
 

@@ -179,7 +179,7 @@ class Processor:
 
 class ProcessingConfiguration(configbase.ProcessingConfig):
 
-    VERSION = 1
+    VERSION = 2
 
     depth_leak_sample = configbase.FloatParameter(
         label="Leak sample position",
@@ -211,7 +211,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
 
     leak_max_amplitude = configbase.FloatParameter(
         label="Max leak amplitude",
-        default_value=1000,
+        default_value=2000,
         limits=(100, 10000),
         logscale=True,
         decimals=0,
