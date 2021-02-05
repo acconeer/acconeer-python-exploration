@@ -514,7 +514,7 @@ class FeatureSparseFFT:
         data["fft_yprofile"] = np.sum(data["fft"], axis=1) / 6000 * 256
 
         # Apply normalized gamma stretch and subtract mean.
-        if options["Stretch"]:
+        if options.get("Stretch", None):
             map_max = 1.2 * np.max(data["fft"])
             g = 1 / 2.2
             data["fft"] = 254/(map_max + 1.0e-9)**g * data["fft"]**g

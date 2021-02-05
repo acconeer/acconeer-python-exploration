@@ -73,6 +73,7 @@ class Trigger():
             self.mode = mode
         else:
             self.mode = None
+            self.trigger_detector = None
 
         if self.trigger_detector is not None:
             self.trigger_dead_time = trigger_options.get("dead_time", 0)
