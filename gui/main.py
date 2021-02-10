@@ -216,7 +216,7 @@ class GUI(QMainWindow):
             "data_warnings": ("",),
             "rssver": ("",),
             "libver": ("",),
-            "unsupported_mode": ("Mode not supported by server",),
+            "unsupported_mode": ("Mode not supported by this module",),
         }
 
         self.labels = {}
@@ -696,7 +696,7 @@ class GUI(QMainWindow):
         service_and_help_layout.addWidget(self.module_dd)
         service_and_help_layout.addWidget(self.buttons["service_help"])
         self.buttons["service_help"].setFixedWidth(30)
-        self.control_section.grid.addLayout(service_and_help_layout, c.pre_incr(), 0, 2, 0)
+        self.control_section.grid.addLayout(service_and_help_layout, c.pre_incr(), 0, 1, 2)
 
         self.control_section.grid.addWidget(self.labels["unsupported_mode"], c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.buttons["start"], c.pre_incr(), 0)
