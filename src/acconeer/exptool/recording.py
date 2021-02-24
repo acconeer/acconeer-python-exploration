@@ -11,22 +11,22 @@ import h5py
 import numpy as np
 
 import acconeer.exptool
-import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool import configs, modes
+from acconeer.exptool.structs import configbase
 
 
 @attr.s
 class Record:
     # Sensor session related (required):
     mode = attr.ib(type=modes.Mode)               # save as str (Mode.name), restore with get_mode
-    sensor_config_dump = attr.ib(type=str)        # cb._dumps
+    sensor_config_dump = attr.ib(type=str)        # SensorConfig._dumps
     session_info = attr.ib(type=dict)             # save/restore with json.dumps/loads
     data = attr.ib(default=None)                  # [np.array], saved as np.array, restore as is
     data_info = attr.ib(type=list, factory=list)  # [[{...}]], save/restore with json.dumps/loads
 
     # Processing related (optional):
     module_key = attr.ib(type=Optional[str], default=None)
-    processing_config_dump = attr.ib(type=Optional[str], default=None)  # cb._dumps
+    processing_config_dump = attr.ib(type=Optional[str], default=None)  # ProcessingConfig._dumps
 
     # Other (optional):
     rss_version = attr.ib(type=Optional[str], default=None)
@@ -77,10 +77,10 @@ class Recorder:
             msg = "Recorder got an unexpected keyword argument '{}'".format(key)
             raise TypeError(msg)
 
-        if not isinstance(sensor_config, cb.SensorConfig):
+        if not isinstance(sensor_config, configbase.SensorConfig):
             raise TypeError("Unexpected sensor config type")
 
-        if isinstance(processing_config, cb.ProcessingConfig):
+        if isinstance(processing_config, configbase.ProcessingConfig):
             processing_config_dump = processing_config._dumps()
         elif processing_config is None:
             processing_config_dump = None

@@ -11,8 +11,8 @@ import numpy as np
 import serial.tools.list_ports
 from packaging import version
 
-import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool.modes import Mode
+from acconeer.exptool.structs import configbase
 
 
 try:
@@ -483,7 +483,7 @@ class FreqCounter:
             print(s, end="\r")
 
 
-def get_range_depths(sensor_config: cb.SensorConfig, session_info: dict) -> np.ndarray:
+def get_range_depths(sensor_config: configbase.SensorConfig, session_info: dict) -> np.ndarray:
     """Get range depths in meters."""
 
     range_start = session_info["range_start_m"]

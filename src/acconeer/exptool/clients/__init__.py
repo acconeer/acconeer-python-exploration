@@ -4,9 +4,9 @@ from .reg.client import PollingUARTClient, SPIClient, UARTClient
 
 
 __all__ = [
-    UARTClient,
-    SPIClient,
-    PollingUARTClient,
-    SocketClient,
-    MockClient,
+    "UARTClient",
+    "SPIClient",
+    "PollingUARTClient",
+    "SocketClient",
+    "MockClient",
 ]

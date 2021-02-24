@@ -1,9 +1,12 @@
 import enum
 import json
 
-import acconeer.exptool.structs.configbase as cb
 from acconeer.exptool import utils
 from acconeer.exptool.modes import Mode, get_mode
+from acconeer.exptool.structs import configbase
+
+
+cb = configbase  # Workaround for Python 3.6 issue 30024
 
 
 class ConfigEnum(enum.Enum):

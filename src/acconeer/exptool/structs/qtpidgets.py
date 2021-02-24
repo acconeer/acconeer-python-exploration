@@ -17,7 +17,10 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-import acconeer.exptool.structs.configbase as cb
+from acconeer.exptool.structs import configbase
+
+
+cb = configbase  # Workaround for Python 3.6 issue 30024
 
 
 def _limits_for_qt(set_limits):
