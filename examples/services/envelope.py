@@ -1,22 +1,21 @@
-from acconeer.exptool import clients, configs, utils
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser().parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser().parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = clients.SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = clients.SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = clients.UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     client.squeeze = False
 
-    sensor_config = configs.EnvelopeServiceConfig()
+    sensor_config = et.EnvelopeServiceConfig()
     sensor_config.sensor = args.sensors
     sensor_config.range_interval = [0.2, 1.0]
     sensor_config.profile = sensor_config.Profile.PROFILE_2
@@ -26,12 +25,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, None, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
@@ -39,7 +38,7 @@ def main():
 
         try:
             pg_process.put_data(data)
-        except PGProccessDiedException:
+        except et.PGProccessDiedException:
             break
 
     print("Disconnecting...")
@@ -50,7 +49,7 @@ def main():
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer envelope example")
@@ -65,10 +64,10 @@ class PGUpdater:
 
         self.curves = []
         for i, _ in enumerate(self.sensor_config.sensor):
-            curve = self.plot.plot(pen=utils.pg_pen_cycler(i))
+            curve = self.plot.plot(pen=et.utils.pg_pen_cycler(i))
             self.curves.append(curve)
 
-        self.smooth_max = utils.SmoothMax(self.sensor_config.update_rate)
+        self.smooth_max = et.utils.SmoothMax(self.sensor_config.update_rate)
 
     def update(self, data):
         for curve, ys in zip(self.curves, data):

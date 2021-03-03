@@ -1,12 +1,11 @@
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+import acconeer.exptool as et
 
 
 def main():
     # To simplify the examples, we use a generic argument parser. It
     # lets you choose between UART/SPI/socket, set which sensor(s) to
     # use, and the verbosity level of the logging.
-    args = utils.ExampleArgumentParser().parse_args()
+    args = et.utils.ExampleArgumentParser().parse_args()
 
     # The client logs using the logging module with a logger named
     # acconeer.exptool.*. We call another helper function which sets up
@@ -15,20 +14,20 @@ def main():
     # default:          WARNING
     # -v  or --verbose: INFO
     # -vv or --debug:   DEBUG
-    utils.config_logging(args)
+    et.utils.config_logging(args)
 
     # Pick client depending on whether socket, SPI, or UART is used
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     # Create a configuration to run on the sensor. A good first choice
     # is the envelope service, so let's pick that one.
-    config = configs.EnvelopeServiceConfig()
+    config = et.EnvelopeServiceConfig()
 
     # In all examples, we let you set the sensor(s) via the command line
     config.sensor = args.sensors

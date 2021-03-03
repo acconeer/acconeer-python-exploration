@@ -3,10 +3,6 @@ import queue
 import signal
 from time import sleep, time
 
-import pyqtgraph as pg
-
-from PyQt5 import QtWidgets
-
 
 class PGProcess:
     def __init__(self, updater, max_freq=60):
@@ -50,6 +46,10 @@ class PGProcess:
 
 
 def pg_process_program(q, exit_event, updater, max_freq):
+    import pyqtgraph as pg
+
+    from PyQt5 import QtWidgets
+
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     app = QtWidgets.QApplication([])
@@ -100,6 +100,8 @@ class ExamplePGUpdater:
         pass
 
     def setup(self, win):
+        import pyqtgraph as pg
+
         win.setWindowTitle("PG updater example")
         self.plot = win.addPlot()
         self.curve = self.plot.plot(pen=pg.mkPen("k", width=3))
