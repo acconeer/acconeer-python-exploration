@@ -1,6 +1,6 @@
-__version__ = "3.10.0"
+__version__ = "3.10.1"
 
-SDK_VERSION = "2.7.2"
+SDK_VERSION = "2.8.0"
 
 
 from . import clients, configs, recording, utils
