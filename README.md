@@ -74,6 +74,13 @@ python -m pip install -U --user .
 ```
 **Note: The library has to be reinstalled after any change under `src/`, and it is therefore recommended to reinstall after every update.**
 
+#### Windows COM port drivers
+
+If no COM port is recognized when plugging in a module, you might need to install a driver:
+
+* XM112, XM122: [FTDI](https://ftdichip.com/drivers/vcp-drivers/)
+* XM132: [Silicon Labs](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)
+
 #### Connecting to a module through UART on Linux
 
 If you are running Linux together with an XM112, XM122, or XM132 module through UART, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
