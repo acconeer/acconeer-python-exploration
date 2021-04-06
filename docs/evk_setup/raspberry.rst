@@ -26,6 +26,11 @@ In a terminal, run::
 
 Then, under *Interfacing Options*, enable SPI and I2C.
 
+SDK v2.8.0 or newer requires ``libgpio2``. To install::
+
+   sudo apt update
+   sudo apt install libgpiod2
+
 If you use the XC112 board with kernel v5.4 or newer, then the following line must
 be added to ``/boot/config.txt``::
 
