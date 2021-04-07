@@ -53,7 +53,7 @@ Installing the Exploration Tool GUI on a Raspberry Pi is not supported!
 First, you should clone the Exploration Tool repository from `GitHub <https://github.com/acconeer/acconeer-python-exploration>`_.
 There, you can find detailed instructions for installing our libraries; in a nut-shell:
 
-#. Make sure you have Python 3.6 or newer installed.
+#. Make sure you have Python 3.7 or newer installed.
 #. Install the required packages (you might have to replace python with python3 or py)::
 
     python -m pip install -U --user setuptools wheel

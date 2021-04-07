@@ -1,17 +1,15 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update
-RUN apt-get install -y python3.6 python3.6-distutils libgl1-mesa-glx libfontconfig1 graphviz git wget
+RUN apt-get upgrade -y
+RUN apt-get install -y python3-dev python3-pip libgl1-mesa-glx libfontconfig1 graphviz git wget
 
-RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python3.6 get-pip.py
-
-RUN python3.6 -m pip install pytest pytest-mock pytest-qt pytest-timeout requests sphinx sphinx_rtd_theme tox
+RUN python3 -m pip install pytest pytest-mock pytest-qt pytest-timeout requests sphinx sphinx_rtd_theme tox
 
 COPY requirements.txt /tmp/
-RUN python3.6 -m pip install -r /tmp/requirements.txt
-
-RUN ln -s /usr/bin/python3.6 /usr/local/bin/python3
+RUN python3 -m pip install -r /tmp/requirements.txt
 
 ENV QT_QPA_PLATFORM offscreen
 

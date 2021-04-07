@@ -38,11 +38,11 @@ For general help on getting started head over to the [Acconeer developer page](h
 
 ### Requirements
 
-Python 3.6 or newer. Older versions have limited or no support.
+Python 3.7 or newer. Older versions have limited or no support.
 
 Tested on:
 
-* Python 3 (developed and tested on 3.6, 3.7 and 3.8)
+* Python 3 (developed and tested on 3.7, 3.8 and 3.9)
 * Windows 10
 * Ubuntu 18.04 and 20.04
 * WSL (Windows Subsystem for Linux)
