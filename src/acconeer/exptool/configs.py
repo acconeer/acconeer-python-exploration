@@ -386,7 +386,84 @@ class BaseDenseServiceConfig(BaseServiceConfig):
         return alerts
 
 
-class PowerBinServiceConfig(BaseDenseServiceConfig):
+class _MURCapable(BaseDenseServiceConfig):
+    class MUR(ConfigEnum):
+        MUR_6 = ("6", 6, 7.0)
+        MUR_9 = ("9", 9, 12.7)
+
+        @property
+        def mmd(self):
+            return self.value[2]
+
+    mur = cb.EnumParameter(
+        label="Maximum unambiguous range",
+        enum=MUR,
+        default_value=MUR.MUR_6,
+        order=1031,
+        category=cb.Category.ADVANCED,
+        help=r"""
+            Sets the maximum unambiguous range (*MUR*), which in turn sets the maximum measurable
+            distance (*MMD*). A higher setting gives a larger *MUR*/*MMD*, but comes at a cost of
+            increasing the measurement time for a sweep. The measurement time is approximately
+            proportional to the *MUR*.
+
+            The *MMD* is the maximum value for the range end, i.e., the range start + length.
+
+            The *MUR* is the maximum distance at which an object can be located to guarantee
+            that its reflection corresponds to the most recent transmitted pulse. Objects
+            farther away than the *MUR* may fold into the measured range. For example,
+            with a *MUR* of 10 m, an object at 12 m could become visible at 2 m.
+
+            This setting changes the pulse repetition frequency (*PRF*) of the radar system.
+            The relation between *PRF* and *MUR* is
+
+            .. math::
+
+               MUR = c / (2 * PRF)
+
+            where *c* is the speed of light.
+
+            ========  =======  =======  ========
+            Setting   MUR      *MMD*      PRF
+            ========  =======  =======  ========
+            6         11.5 m    7.0 m   13.0 MHz
+            9         17.3 m   12.7 m    8.7 MHz
+            ========  =======  =======  ========
+
+            This is an experimental feature.
+        """
+    )
+
+    range_interval = cb.FloatRangeParameter(
+        label="Range interval",
+        unit="m",
+        default_value=[0.18, 0.78],
+        limits=(-0.7, 12.7),
+        order=10,
+        help=r"""
+            The measured depth range. The start and end values will be rounded to the closest
+            measurement point available.
+
+            The the sweep range is limited to 7.0 m for the default "maximum unambiguous range"
+            setting. To change this limitation, increase "maximum unambiguous range".
+        """,
+    )
+
+    def check(self):
+        alerts = super().check()
+        if self.mur.mmd < self.range_end:
+            alerts.append(cb.Error(
+                "mur",
+                "Too low for the given range"
+            ))
+            alerts.append(cb.Error(
+                "range_interval",
+                f"MUR limits the range to {self.mur.mmd:.1f} m"
+            ))
+        return alerts
+
+
+class PowerBinServiceConfig(_MURCapable):
     _MIN_BIN_SIZE = 0.016
 
     mode = ModeParameter(
@@ -415,7 +492,7 @@ class PowerBinServiceConfig(BaseDenseServiceConfig):
         return alerts
 
 
-class EnvelopeServiceConfig(BaseDenseServiceConfig):
+class EnvelopeServiceConfig(_MURCapable):
     mode = ModeParameter(
         label="Mode",
         value=Mode.ENVELOPE,

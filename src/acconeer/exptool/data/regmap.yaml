@@ -83,6 +83,40 @@ uart_baudrate:
   values:
     default:
       value: 115200
+interrupt_mask:
+  address: 8
+  type: bitmask
+  category: general
+  bits:
+    none:
+      value: 0
+    created:
+      value: 1
+    activated:
+      value: 2
+    data_ready:
+      value: 256
+    error:
+      value: 65536
+    error_invalid_command:
+      value: 131072
+    error_set_mode:
+      value: 262144
+    error_creation:
+      value: 524288
+    error_activation:
+      value: 1048576
+    error_state:
+      value: 2097152
+interrupt_mode:
+  address: 9
+  type: enum
+  category: general
+  values:
+    none:
+      value: 0
+    rising_interrupt:
+      value: 1
 module_power_mode:
   address: 10
   type: uint32
@@ -256,6 +290,18 @@ asynchronous_measurement:
   address: 51
   category: config
   type: boolean
+mur:
+  modes:
+  - envelope
+  - power_bins
+  address: 52
+  type: enum
+  category: config
+  values:
+    mur_6:
+      value: 6
+    mur_9:
+      value: 9
 pb_req_bin_count:
   modes:
   - power_bins
@@ -506,6 +552,16 @@ data_quality_warning:
   - iq
   - power_bins
   address: 163
+  access: r
+  type: boolean
+  category: result_info
+sensor_comm_error:
+  modes:
+  - envelope
+  - iq
+  - power_bins
+  - sparse
+  address: 164
   access: r
   type: boolean
   category: result_info

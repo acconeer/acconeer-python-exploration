@@ -141,6 +141,7 @@ CONFIG_TO_STRIPPED_REG_NAME_MAP = {
     "tx_disable": "tx_disable",
     "asynchronous_measurement": "asynchronous_measurement",
     "power_save_mode": "sensor_power_mode",
+    "mur": "mur",
     "_depth_lowpass_cutoff_ratio_override": "depth_lpf_ratio_override",
     "_depth_lowpass_cutoff_ratio_value": "depth_lpf_ratio_value",
     "depth_lowpass_cutoff_ratio": None,
