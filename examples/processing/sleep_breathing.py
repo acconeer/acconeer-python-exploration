@@ -213,7 +213,7 @@ class PresenceDetectionProcessor:
             # Lowpass filter IQ data downsampled in distance points
             self.data_s_d_mat = np.roll(self.data_s_d_mat, -1, axis=0)
             self.data_s_d_mat[-1, :] = self.iq_lp_filter_time(
-                self.data_s_d_mat[-1, :],
+                self.data_s_d_mat[-2, :],
                 self.downsample(sweep, self.D)
             )
 
