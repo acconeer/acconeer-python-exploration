@@ -4,7 +4,7 @@ wheel
 numpy==1.19.3
 scipy
 pyserial==3.5
-matplotlib==3.2.1
+matplotlib==3.4.1
 pyqtgraph==0.12.*
 PyQt5==5.15.2
 h5py
