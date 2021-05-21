@@ -174,7 +174,7 @@ class UARTClient(RegBaseClient):
 
         self._streaming_control_val = "uart_streaming"
 
-        if platform.system().lower() == "windows":
+        if platform.system().lower() in ["windows", "darwin"]:
             self._link = links.SerialLink(port)
         else:
             self._link = links.SerialProcessLink(port)
