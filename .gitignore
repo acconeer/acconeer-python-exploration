@@ -34,3 +34,6 @@ docs/_build
 *.log
 *.pdf
 *.gz
+
+# Jupyter
+*.ipynb
