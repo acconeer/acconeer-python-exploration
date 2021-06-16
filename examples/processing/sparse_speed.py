@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 import pyqtgraph as pg
-from scipy.signal import welch
+from scipy.signal.windows import hann
 
 from PyQt5 import QtCore
 
@@ -16,6 +16,7 @@ SD_HISTORY_LENGTH = HISTORY_LENGTH  # s
 NUM_SAVED_SEQUENCES = 100
 SEQUENCE_TIMEOUT_LENGTH = 0.5  # s
 FFT_OVERSAMPLING_FACTOR = 4
+OVERLAP = True
 
 
 def main():
@@ -155,6 +156,7 @@ class Processor:
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         sweep_rate = session_info["sweep_rate"]
         est_frame_rate = sweep_rate / self.sweeps_per_frame
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
         self.fft_length = (self.sweeps_per_frame // 2) * FFT_OVERSAMPLING_FACTOR
         self.num_noise_est_bins = 3
@@ -192,18 +194,45 @@ class Processor:
         return min(static_sf, 1.0 - 1.0 / (1.0 + self.update_idx))
 
     def process(self, frame):
-        # Basic speed estimate
+        # Basic speed estimate using Welch's method
 
         zero_mean_frame = frame - frame.mean(axis=0, keepdims=True)
+        segment_size = self.sweeps_per_frame // 2  # Segment size = 50 % of data length
+        psd_length = self.fft_length // 2 + 1
 
-        _, psds = welch(
-            zero_mean_frame,
-            nperseg=self.sweeps_per_frame // 2,
-            window="hann",
-            detrend=False,
-            axis=0,
-            nfft=self.fft_length,
-        )
+        num_base_segments = self.sweeps_per_frame // segment_size
+
+        if OVERLAP:  # Overlap is 50% of the segment size
+            num_segments = 2 * num_base_segments - 1
+        else:
+            num_segments = num_base_segments
+
+        window = hann(segment_size, sym=False)
+        window_norm = np.sum(window**2)
+
+        fft_segments = np.empty((num_segments, psd_length, len(self.depths)))
+
+        for i in range(num_segments):
+            if OVERLAP:
+                offset_segment = i * segment_size // 2
+            else:
+                offset_segment = i * segment_size
+
+            current_segment = zero_mean_frame[offset_segment:offset_segment + segment_size]
+
+            windowed_segment = current_segment * window[:, None]
+
+            fft_segments[i] = np.square(np.abs(np.fft.rfft(
+                windowed_segment,
+                self.fft_length,
+                axis=0,
+            ))) / window_norm  # rfft automatically pads if n<nfft
+
+        # Add FFTs of different segments and average to decrease FFT variance
+
+        psds = np.mean(fft_segments, axis=0)
+
+        psds[2:psd_length - 1] *= 2  # Double frequencies except DC and Nyquist
 
         psd = np.max(psds, axis=1)  # Power Spectral Density
         asd = np.sqrt(psd)  # Amplitude Spectral Density
