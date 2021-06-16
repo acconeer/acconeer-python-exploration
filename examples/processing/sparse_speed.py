@@ -15,7 +15,7 @@ EST_VEL_HISTORY_LENGTH = HISTORY_LENGTH  # s
 SD_HISTORY_LENGTH = HISTORY_LENGTH  # s
 NUM_SAVED_SEQUENCES = 100
 SEQUENCE_TIMEOUT_LENGTH = 0.5  # s
-OVERLAP = True
+OVERLAP = True  # If True, Welch's method is used
 
 
 def main():
@@ -74,7 +74,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-    VERSION = 4
+    VERSION = 5
 
     class SpeedUnit(Enum):
         METER_PER_SECOND = ("m/s", 1)
@@ -117,6 +117,19 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         order=11,
     )
 
+    num_segments = et.configbase.IntParameter(
+        label="Number of segments",
+        default_value=3,
+        limits=(1, None),
+        step=2,
+        updateable=False,
+        help=(
+            "Number of segments determines how many overlapping segments "
+            "the signal will be divided into when using Welch's method."
+        ),
+        order=12,
+    )
+
     shown_speed_unit = et.configbase.EnumParameter(
         label="Speed unit",
         default_value=SpeedUnit.METER_PER_SECOND,
@@ -154,6 +167,46 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         order=150,
     )
 
+    def check(self):
+        alerts = []
+
+        if self.num_segments % 2 != 1:
+            alerts.append(et.configbase.Error(
+                "num_segments", "Number of segments must be odd"))
+
+        return alerts
+
+    def check_sensor_config(self, sensor_config):
+        alerts = []
+
+        if OVERLAP:  # Overlap is 50% of the segment size
+            segment_length = 2 * sensor_config.sweeps_per_frame // (self.num_segments + 1)
+        else:
+            segment_length = sensor_config.sweeps_per_frame // self.num_segments
+
+        if 0 <= segment_length < 8:
+            alerts.append(et.configbase.Error(
+                "sweeps_per_frame",
+                (
+                    "Number of points in segment is too small."
+                    "\nIncrease sweeps per frame"
+                    "\nor decrease number of segments"
+                )
+            ))
+
+        if (sensor_config.sweeps_per_frame & (sensor_config.sweeps_per_frame - 1)) != 0:
+            lower = 2**int(np.floor(np.log2(sensor_config.sweeps_per_frame)))
+            upper = 2**int(np.ceil(np.log2(sensor_config.sweeps_per_frame)))
+            alerts.append(et.configbase.Error(
+                "sweeps_per_frame",
+                (
+                    "Must have a value that is a power of 2."
+                    "\nClosest values are {} and {}".format(lower, upper)
+                )
+            ))
+
+        return alerts
+
 
 get_processing_config = ProcessingConfiguration
 
@@ -185,6 +238,8 @@ class Processor:
         self.sequence_vels = np.zeros(NUM_SAVED_SEQUENCES)
         self.update_idx = 0
 
+        self.num_segments = processing_config.num_segments
+
         self.update_processing_config(processing_config)
 
     def update_processing_config(self, processing_config):
@@ -204,28 +259,25 @@ class Processor:
         # Basic speed estimate using Welch's method
 
         zero_mean_frame = frame - frame.mean(axis=0, keepdims=True)
-        segment_size = self.sweeps_per_frame // 2  # Segment size = 50 % of data length
         psd_length = self.fft_length // 2 + 1
 
-        num_base_segments = self.sweeps_per_frame // segment_size
-
         if OVERLAP:  # Overlap is 50% of the segment size
-            num_segments = 2 * num_base_segments - 1
+            segment_length = 2 * self.sweeps_per_frame // (self.num_segments + 1)
         else:
-            num_segments = num_base_segments
+            segment_length = self.sweeps_per_frame // self.num_segments
 
-        window = hann(segment_size, sym=False)
-        window_norm = np.sum(window**2)
+        window = hann(segment_length, sym=False)
+        window_norm = np.sum(window ** 2)
 
-        fft_segments = np.empty((num_segments, psd_length, len(self.depths)))
+        fft_segments = np.empty((self.num_segments, psd_length, len(self.depths)))
 
-        for i in range(num_segments):
+        for i in range(self.num_segments):
             if OVERLAP:
-                offset_segment = i * segment_size // 2
+                offset_segment = i * segment_length // 2
             else:
-                offset_segment = i * segment_size
+                offset_segment = i * segment_length
 
-            current_segment = zero_mean_frame[offset_segment:offset_segment + segment_size]
+            current_segment = zero_mean_frame[offset_segment:offset_segment + segment_length]
 
             windowed_segment = current_segment * window[:, None]
 
