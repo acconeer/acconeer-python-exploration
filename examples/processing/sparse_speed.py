@@ -15,7 +15,6 @@ EST_VEL_HISTORY_LENGTH = HISTORY_LENGTH  # s
 SD_HISTORY_LENGTH = HISTORY_LENGTH  # s
 NUM_SAVED_SEQUENCES = 100
 SEQUENCE_TIMEOUT_LENGTH = 0.5  # s
-FFT_OVERSAMPLING_FACTOR = 4
 OVERLAP = True
 
 
@@ -75,7 +74,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-    VERSION = 3
+    VERSION = 4
 
     class SpeedUnit(Enum):
         METER_PER_SECOND = ("m/s", 1)
@@ -108,6 +107,14 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         decimals=1,
         updateable=True,
         order=10,
+    )
+
+    fft_oversampling_factor = et.configbase.IntParameter(
+        label="FFT oversampling factor",
+        default_value=1,
+        valid_values=[1, 2, 4, 8],
+        updateable=False,
+        order=11,
     )
 
     shown_speed_unit = et.configbase.EnumParameter(
@@ -158,7 +165,7 @@ class Processor:
         est_frame_rate = sweep_rate / self.sweeps_per_frame
         self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
-        self.fft_length = (self.sweeps_per_frame // 2) * FFT_OVERSAMPLING_FACTOR
+        self.fft_length = (self.sweeps_per_frame // 2) * processing_config.fft_oversampling_factor
         self.num_noise_est_bins = 3
         noise_est_tc = 1.0
 
@@ -314,8 +321,7 @@ class PGUpdater:
         self.est_update_rate = self.sweep_rate / self.sweeps_per_frame
 
         self.num_shown_sequences = processing_config.num_shown_sequences
-
-        fft_length = (self.sweeps_per_frame // 2) * FFT_OVERSAMPLING_FACTOR
+        fft_length = (self.sweeps_per_frame // 2) * processing_config.fft_oversampling_factor
         self.bin_vs = np.fft.rfftfreq(fft_length) * self.sweep_rate * HALF_WAVELENGTH
         self.dt = 1.0 / self.est_update_rate
 
