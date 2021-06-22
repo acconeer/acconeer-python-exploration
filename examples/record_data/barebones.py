@@ -1,13 +1,12 @@
 import os
 import sys
 
-from acconeer.exptool import configs, recording, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser().parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser().parse_args()
+    et.utils.config_logging(args)
 
     filename = "data.h5"
     if os.path.exists(filename):
@@ -15,20 +14,20 @@ def main():
         sys.exit(1)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
     config.update_rate = 30
 
     session_info = client.setup_session(config)
 
-    recorder = recording.Recorder(sensor_config=config, session_info=session_info)
+    recorder = et.recording.Recorder(sensor_config=config, session_info=session_info)
 
     client.start_session()
 
@@ -44,7 +43,7 @@ def main():
 
     record = recorder.close()
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    recording.save(filename, record)
+    et.recording.save(filename, record)
     print("Saved to '{}'".format(filename))
 
 

@@ -4,25 +4,23 @@ from enum import Enum
 import numpy as np
 import pyqtgraph as pg
 
-from acconeer.exptool import clients, configs, utils
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 PEAK_MERGE_LIMIT_M = 0.005
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = clients.SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = clients.SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = clients.UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -31,12 +29,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -48,7 +46,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -57,7 +55,7 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.EnvelopeServiceConfig()
+    config = et.configs.EnvelopeServiceConfig()
     config.range_interval = [0.2, 0.6]
     config.update_rate = 40
     config.gain = 0.5
@@ -97,7 +95,7 @@ class Processor:
         self.above_thres_hist_sweep_idx = []
         self.above_thres_hist_dist = []
 
-        self.r = utils.get_range_depths(sensor_config, session_info)
+        self.r = et.utils.get_range_depths(sensor_config, session_info)
         self.dr = self.r[1] - self.r[0]
         self.sweep_index = 0
 
@@ -423,7 +421,7 @@ class Processor:
         return out_data
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     class ThresholdType(Enum):
         FIXED = "Fixed"
         RECORDED = "Recorded"
@@ -437,7 +435,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
 
     VERSION = 1
 
-    nbr_average = configbase.FloatParameter(
+    nbr_average = et.configbase.FloatParameter(
         label="Sweep averaging",
         default_value=5,
         limits=(1, 100),
@@ -452,7 +450,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    threshold_type = configbase.EnumParameter(
+    threshold_type = et.configbase.EnumParameter(
         label="Threshold type",
         default_value=ThresholdType.FIXED,
         enum=ThresholdType,
@@ -461,7 +459,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Setting the type of threshold",
     )
 
-    fixed_threshold = configbase.FloatParameter(
+    fixed_threshold = et.configbase.FloatParameter(
         label="Fixed threshold level",
         default_value=800,
         limits=(1, 20000),
@@ -475,7 +473,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    sc_nbr_sweep_for_bg = configbase.FloatParameter(
+    sc_nbr_sweep_for_bg = et.configbase.FloatParameter(
         label="Number of sweeps for background estimation",
         default_value=20,
         limits=(2, 200),
@@ -489,7 +487,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    sc_load_save_bg = configbase.ReferenceDataParameter(
+    sc_load_save_bg = et.configbase.ReferenceDataParameter(
         label="Recorded threshold",
         visible=lambda conf: conf.threshold_type == conf.ThresholdType.RECORDED,
         order=23,
@@ -498,7 +496,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    sc_sensitivity = configbase.FloatParameter(
+    sc_sensitivity = et.configbase.FloatParameter(
         label="Stationary clutter sensitivity",
         default_value=0.3,
         limits=(0.01, 1),
@@ -514,7 +512,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    cfar_sensitivity = configbase.FloatParameter(
+    cfar_sensitivity = et.configbase.FloatParameter(
         label="CFAR sensitivity",
         default_value=0.5,
         limits=(0.01, 1),
@@ -530,7 +528,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    cfar_guard_cm = configbase.FloatParameter(
+    cfar_guard_cm = et.configbase.FloatParameter(
         label="CFAR guard",
         default_value=12,
         limits=(1, 20),
@@ -546,7 +544,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    cfar_window_cm = configbase.FloatParameter(
+    cfar_window_cm = et.configbase.FloatParameter(
         label="CFAR window",
         default_value=3,
         limits=(0.1, 20),
@@ -560,7 +558,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    cfar_one_sided = configbase.BoolParameter(
+    cfar_one_sided = et.configbase.BoolParameter(
         label="Use only lower distance to set threshold",
         default_value=False,
         visible=lambda conf: conf.threshold_type == conf.ThresholdType.CFAR,
@@ -574,7 +572,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    peak_sorting_type = configbase.EnumParameter(
+    peak_sorting_type = et.configbase.EnumParameter(
         label="Peak sorting",
         default_value=PeakSorting.STRONGEST,
         enum=PeakSorting,
@@ -583,7 +581,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Setting the type of peak sorting method.",
     )
 
-    history_length_s = configbase.FloatParameter(
+    history_length_s = et.configbase.FloatParameter(
         default_value=10,
         limits=(3, 1000),
         updateable=True,
@@ -594,7 +592,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Length of time history for plotting."
     )
 
-    show_first_above_threshold = configbase.BoolParameter(
+    show_first_above_threshold = et.configbase.BoolParameter(
         label="Show first distance above threshold",
         default_value=False,
         updateable=True,
@@ -612,11 +610,11 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         alerts = []
 
         if sensor_config.update_rate is None:
-            alerts.append(configbase.Error("update_rate", "Must be set"))
+            alerts.append(et.configbase.Error("update_rate", "Must be set"))
 
         if not sensor_config.noise_level_normalization:
             if self.threshold_type == self.ThresholdType.FIXED:
-                alerts.append(configbase.Warning(
+                alerts.append(et.configbase.Warning(
                     "noise_level_normalization",
                     (
                         "Enabling noise level normalization is "
@@ -635,7 +633,7 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
-        self.r = utils.get_range_depths(sensor_config, session_info)
+        self.r = et.utils.get_range_depths(sensor_config, session_info)
 
         self.setup_is_done = False
 
@@ -673,21 +671,21 @@ class PGUpdater:
         self.sweep_plot.setXRange(100.0 * self.r[0], 100.0 * self.r[-1])
 
         self.sweep_curve = self.sweep_plot.plot(
-            pen=utils.pg_pen_cycler(5),
+            pen=et.utils.pg_pen_cycler(5),
             name="Envelope sweep",
         )
 
         self.mean_sweep_curve = self.sweep_plot.plot(
-            pen=utils.pg_pen_cycler(0, width=3),
+            pen=et.utils.pg_pen_cycler(0, width=3),
             name="Mean Envelope sweep",
         )
 
         self.threshold_curve = self.sweep_plot.plot(
-            pen=utils.pg_pen_cycler(1),
+            pen=et.utils.pg_pen_cycler(1),
             name="Threshold",
         )
 
-        self.smooth_max_sweep = utils.SmoothMax(
+        self.smooth_max_sweep = et.utils.SmoothMax(
             self.sensor_config.update_rate,
             hysteresis=0.6,
             tau_decay=3,
@@ -697,14 +695,14 @@ class PGUpdater:
         for i in range(3):
             color_idx = 1 if i > 0 else 0
             width = 2 if i == 0 else 1
-            color_tuple = utils.hex_to_rgb_tuple(utils.color_cycler(color_idx))
+            color_tuple = et.utils.hex_to_rgb_tuple(et.utils.color_cycler(color_idx))
             line = pg.InfiniteLine(pen=pg.mkPen(pg.mkColor(*color_tuple, 150), width=width))
             self.sweep_plot.addItem(line)
             self.peak_lines.append(line)
 
         self.peak_text = pg.TextItem(
             anchor=(0, 1),
-            color=utils.color_cycler(0),
+            color=et.utils.color_cycler(0),
             fill=pg.mkColor(0xFF, 0xFF, 0xFF, 150),
         )
         self.peak_text.setPos(self.r[0] * 100, 0)
@@ -730,7 +728,7 @@ class PGUpdater:
             symbol="o",
             symbolSize=8,
             symbolPen="k",
-            symbolBrush=utils.color_cycler(0),
+            symbolBrush=et.utils.color_cycler(0),
             name="Main peak",
         )
 
@@ -739,7 +737,7 @@ class PGUpdater:
             symbol="o",
             symbolSize=5,
             symbolPen="k",
-            symbolBrush=utils.color_cycler(1),
+            symbolBrush=et.utils.color_cycler(1),
             name="Minor peaks",
         )
 
@@ -748,7 +746,7 @@ class PGUpdater:
             symbol="o",
             symbolSize=3,
             symbolPen="k",
-            symbolBrush=utils.color_cycler(2),
+            symbolBrush=et.utils.color_cycler(2),
             name="First distance above threshold",
             visible=False,
         )
@@ -758,7 +756,7 @@ class PGUpdater:
     def update(self, data):
         self.sweep_curve.setData(100.0 * self.r, data["sweep"])
         self.mean_sweep_curve.setData(100.0 * self.r, data["last_mean_sweep"])
-        utils.pg_curve_set_data_with_nan(  # Workaround for bug in PyQt5/PyQtGraph
+        et.utils.pg_curve_set_data_with_nan(  # Workaround for bug in PyQt5/PyQtGraph
             self.threshold_curve, 100.0 * self.r, data["threshold"])
 
         m = np.nanmax(np.concatenate([

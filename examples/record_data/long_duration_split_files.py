@@ -1,17 +1,16 @@
 import os
 import sys
 
-from acconeer.exptool import configs, recording, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+import acconeer.exptool as et
 
 
 def main():
-    parser = utils.ExampleArgumentParser()
+    parser = et.utils.ExampleArgumentParser()
     parser.add_argument("-o", "--output-dir", type=str, required=True)
     parser.add_argument("--file-format", type=str, default="h5")
     parser.add_argument("--frames-per-file", type=int, default=10000)
     args = parser.parse_args()
-    utils.config_logging(args)
+    et.utils.config_logging(args)
 
     if os.path.exists(args.output_dir):
         print("Directory '{}' already exists, won't overwrite".format(args.output_dir))
@@ -30,14 +29,14 @@ def main():
         sys.exit(1)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
     config.update_rate = 30
 
@@ -45,7 +44,7 @@ def main():
 
     os.makedirs(args.output_dir)
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     total_num_frames = 0
@@ -53,7 +52,7 @@ def main():
         record_count, num_frames_in_record = divmod(total_num_frames, args.frames_per_file)
 
         if num_frames_in_record == 0:
-            recorder = recording.Recorder(sensor_config=config, session_info=session_info)
+            recorder = et.recording.Recorder(sensor_config=config, session_info=session_info)
 
         data_info, data = client.get_next()
         recorder.sample(data_info, data)
@@ -63,7 +62,7 @@ def main():
             filename = os.path.join(
                 args.output_dir, "{:04}.{}".format(record_count + 1, file_format))
             print("Saved", filename)
-            recording.save(filename, record)
+            et.recording.save(filename, record)
 
         total_num_frames += 1
         print("Sampled {:>5}".format(total_num_frames), end="\r", flush=True)
@@ -79,7 +78,7 @@ def main():
         filename = os.path.join(
             args.output_dir, "{:04}.{}".format(record_count + 1, file_format))
         print("Saved", filename)
-        recording.save(filename, record)
+        et.recording.save(filename, record)
 
 
 if __name__ == "__main__":

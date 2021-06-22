@@ -1,28 +1,27 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
-    config = configs.IQServiceConfig()
+    config = et.configs.IQServiceConfig()
     config.sensor = args.sensors
     config.update_rate = 10
 
     session_info = client.setup_session(config)
-    depths = utils.get_range_depths(config, session_info)
+    depths = et.utils.get_range_depths(config, session_info)
 
     amplitude_y_max = 1000
 
@@ -38,7 +37,7 @@ def main():
     amplitude_ax.set_ylabel("Amplitude")
     amplitude_ax.set_ylim(0, 1.1 * amplitude_y_max)
     phase_ax.set_ylabel("Phase")
-    utils.mpl_setup_yaxis_for_phase(phase_ax)
+    et.utils.mpl_setup_yaxis_for_phase(phase_ax)
 
     amplitude_line = amplitude_ax.plot(depths, np.zeros_like(depths))[0]
     phase_line = phase_ax.plot(depths, np.zeros_like(depths))[0]
@@ -47,7 +46,7 @@ def main():
     plt.ion()
     plt.show()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     client.start_session()

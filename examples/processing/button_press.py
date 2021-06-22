@@ -3,10 +3,7 @@ import pyqtgraph as pg
 
 from PyQt5 import QtCore
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 OUTPUT_MAX_SIGNAL = 20000
@@ -16,16 +13,16 @@ DETECTION_SHOW_S = 2
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -34,12 +31,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = ButtonPressProcessor(sensor_config, processing_config, session_info)
@@ -51,7 +48,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -60,21 +57,21 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.EnvelopeServiceConfig()
-    config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_1
+    config = et.configs.EnvelopeServiceConfig()
+    config.profile = et.configs.EnvelopeServiceConfig.Profile.PROFILE_1
     config.range_interval = [0.04, 0.05]
     config.running_average_factor = 0.01
     config.maximize_signal_attenuation = True
     config.update_rate = 60
     config.gain = 0.2
-    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 2
 
-    signal_tc_s = configbase.FloatParameter(
+    signal_tc_s = et.configbase.FloatParameter(
         label="Signal time constant",
         unit="s",
         default_value=5.0,
@@ -85,7 +82,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Time constant of the low pass filter for the signal.",
     )
 
-    rel_dev_tc_s = configbase.FloatParameter(
+    rel_dev_tc_s = et.configbase.FloatParameter(
         label="Relative deviation time constant",
         unit="s",
         default_value=0.2,
@@ -96,7 +93,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help=" Time constant of the low pass filter for the relative deviation.",
     )
 
-    threshold = configbase.FloatParameter(
+    threshold = et.configbase.FloatParameter(
         label="Detection threshold",
         default_value=0.04,
         decimals=3,
@@ -107,7 +104,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help='Level at which the detector output is considered as a "button press".',
     )
 
-    buttonpress_length_s = configbase.FloatParameter(
+    buttonpress_length_s = et.configbase.FloatParameter(
         label="Button press length",
         unit="s",
         default_value=2.0,
@@ -240,11 +237,11 @@ class PGUpdater:
         self.sign_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
         self.sign_hist_plot.setYRange(0, OUTPUT_MAX_SIGNAL)
         self.sign_hist_curve = self.sign_hist_plot.plot(
-            pen=utils.pg_pen_cycler(0),
+            pen=et.utils.pg_pen_cycler(0),
             name="Envelope signal",
         )
         self.sign_lp_hist_curve = self.sign_hist_plot.plot(
-            pen=utils.pg_pen_cycler(1),
+            pen=et.utils.pg_pen_cycler(1),
             name="Filtered envelope signal",
         )
 
@@ -259,7 +256,7 @@ class PGUpdater:
         self.rel_dev_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
         self.rel_dev_hist_plot.setYRange(0, OUTPUT_MAX_REL_DEV)
         self.rel_dev_lp_hist_curve = self.rel_dev_hist_plot.plot(
-            pen=utils.pg_pen_cycler(0),
+            pen=et.utils.pg_pen_cycler(0),
             name="Relative deviation",
         )
 
@@ -267,7 +264,7 @@ class PGUpdater:
             pen=None,
             symbol="o",
             symbolSize=20,
-            symbolBrush=utils.color_cycler(1),
+            symbolBrush=et.utils.color_cycler(1),
             name="Detections",
         )
         self.rel_dev_hist_plot.addItem(self.detection_dots)
@@ -292,13 +289,13 @@ class PGUpdater:
         self.rel_dev_hist_plot.addItem(self.detection_text_item)
         self.detection_text_item.hide()
 
-        self.smooth_max_signal = utils.SmoothMax(
+        self.smooth_max_signal = et.utils.SmoothMax(
             self.sensor_config.update_rate,
             hysteresis=0.6,
             tau_decay=3,
         )
 
-        self.smooth_max_rel_dev = utils.SmoothMax(
+        self.smooth_max_rel_dev = et.utils.SmoothMax(
             self.sensor_config.update_rate,
             hysteresis=0.6,
             tau_decay=3,

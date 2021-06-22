@@ -1,25 +1,24 @@
 import numpy as np
 import pyqtgraph as pg
 
-from acconeer.exptool import clients, configs, utils
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser().parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser().parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = clients.SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = clients.SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = clients.UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     client.squeeze = False
 
-    sensor_config = configs.SparseServiceConfig()
+    sensor_config = et.configs.SparseServiceConfig()
     sensor_config.sensor = args.sensors
     sensor_config.range_interval = [0.24, 1.20]
     sensor_config.sweeps_per_frame = 16
@@ -31,12 +30,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, None, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
@@ -44,7 +43,7 @@ def main():
 
         try:
             pg_process.put_data(data)
-        except PGProccessDiedException:
+        except et.PGProccessDiedException:
             break
 
     print("Disconnecting...")
@@ -55,7 +54,7 @@ def main():
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer sparse example")
@@ -81,7 +80,7 @@ class PGUpdater:
 
             self.plots.append(plot)
             self.scatters.append(scatter)
-            self.smooth_lims.append(utils.SmoothLimits(self.sensor_config.update_rate))
+            self.smooth_lims.append(et.utils.SmoothLimits(self.sensor_config.update_rate))
 
     def update(self, data):
         xs = np.tile(self.depths, self.sensor_config.sweeps_per_frame)

@@ -1,22 +1,21 @@
 import numpy as np
 import pyqtgraph as pg
 
-from acconeer.exptool import clients, configs, utils
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase as cb
+import acconeer.exptool as et
+from acconeer.exptool import configbase as cb
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = clients.SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = clients.SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = clients.UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -25,12 +24,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -42,7 +41,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -51,8 +50,8 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.SparseServiceConfig()
-    config.profile = configs.SparseServiceConfig.Profile.PROFILE_3
+    config = et.configs.SparseServiceConfig()
+    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_3
     config.range_interval = [0.48, 0.72]
     config.sweeps_per_frame = 16
     config.hw_accelerated_average_samples = 60
@@ -134,7 +133,7 @@ get_processing_config = ProcessingConfiguration
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
         self.f = sensor_config.update_rate
-        depths = utils.get_range_depths(sensor_config, session_info)
+        depths = et.utils.get_range_depths(sensor_config, session_info)
         self.num_depths = depths.size
 
         max_window_size = 2 ** ProcessingConfiguration.WINDOW_SIZE_POW_OF_2_MAX
@@ -224,12 +223,12 @@ class PGUpdater:
         self.processing_config = processing_config
 
         self.f = sensor_config.update_rate
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
         self.downsampling_factor = sensor_config.downsampling_factor
         self.step_length = session_info["step_length_m"]
 
-        self.td_smooth_lims = utils.SmoothLimits()
-        self.collapsed_smooth_max = utils.SmoothMax(
+        self.td_smooth_lims = et.utils.SmoothLimits()
+        self.collapsed_smooth_max = et.utils.SmoothMax(
             tau_grow=0.1,
         )
 
@@ -244,7 +243,7 @@ class PGUpdater:
         self.td_curves = []
         for i, depth in enumerate(self.depths):
             name = "{:.0f} cm".format(depth * 100)
-            curve = self.td_plot.plot(pen=utils.pg_pen_cycler(i), name=name)
+            curve = self.td_plot.plot(pen=et.utils.pg_pen_cycler(i), name=name)
             self.td_curves.append(curve)
 
         self.collapsed_plot = win.addPlot(
@@ -253,8 +252,8 @@ class PGUpdater:
         self.collapsed_plot.setMouseEnabled(x=False, y=False)
         self.collapsed_plot.hideButtons()
         self.collapsed_plot.setXRange(0, 1)
-        self.collapsed_curve = self.collapsed_plot.plot(pen=utils.pg_pen_cycler())
-        self.collapsed_vline = pg.InfiniteLine(pen=utils.pg_pen_cycler())
+        self.collapsed_curve = self.collapsed_plot.plot(pen=et.utils.pg_pen_cycler())
+        self.collapsed_vline = pg.InfiniteLine(pen=et.utils.pg_pen_cycler())
         self.collapsed_vline.hide()
         self.collapsed_plot.addItem(self.collapsed_vline)
 
@@ -270,7 +269,7 @@ class PGUpdater:
         self.collapsed_history_plot.setMouseEnabled(x=False, y=False)
         self.collapsed_history_plot.hideButtons()
         self.collapsed_history_im = pg.ImageItem()
-        self.collapsed_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+        self.collapsed_history_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
         self.collapsed_history_plot.addItem(self.collapsed_history_im)
 
         self.dw_plot = win.addPlot(row=3, col=0, title="Depthwise PSD")
@@ -278,7 +277,7 @@ class PGUpdater:
         self.dw_plot.setMouseEnabled(x=False, y=False)
         self.dw_plot.hideButtons()
         self.dw_im = pg.ImageItem()
-        self.dw_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+        self.dw_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
         self.dw_plot.addItem(self.dw_im)
         self.dw_plot.setLabel("bottom", "Depth (cm)")
         self.dw_plot.getAxis("bottom").setTickSpacing(6 * self.downsampling_factor, 6)
@@ -325,7 +324,7 @@ class PGUpdater:
         x = d["ts"]
         for i, curve in enumerate(self.td_curves):
             y = d["sweep_history"][:, i]
-            utils.pg_curve_set_data_with_nan(curve, x, y)
+            et.utils.pg_curve_set_data_with_nan(curve, x, y)
 
         r = self.td_smooth_lims.update(d["sweep_history"])
         self.td_plot.setYRange(*r)

@@ -5,23 +5,20 @@ from scipy.signal import butter, sosfilt
 
 from PyQt5 import QtCore
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -30,12 +27,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = BreathingProcessor(sensor_config, processing_config, session_info)
@@ -47,7 +44,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -56,18 +53,18 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.IQServiceConfig()
+    config = et.configs.IQServiceConfig()
     config.range_interval = [0.3, 0.8]
     config.update_rate = 80
     config.gain = 0.5
-    config.repetition_mode = configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 1
 
-    hist_plot_len = configbase.FloatParameter(
+    hist_plot_len = et.configbase.FloatParameter(
         label="Plot length",
         unit="s",
         default_value=10,
@@ -249,11 +246,11 @@ class PGUpdater:
         assert sensor_config.update_rate is not None
 
         f = sensor_config.update_rate
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
         self.hist_plot_len_s = processing_config.hist_plot_len
         self.hist_plot_len = int(round(self.hist_plot_len_s * f))
         self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / f
-        self.smooth_max = utils.SmoothMax(f, hysteresis=0.4, tau_decay=1.5)
+        self.smooth_max = et.utils.SmoothMax(f, hysteresis=0.4, tau_decay=1.5)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer breathing example")
@@ -266,11 +263,11 @@ class PGUpdater:
         self.env_plot.addLegend()
         self.env_plot.showGrid(x=True, y=True)
         self.env_curve = self.env_plot.plot(
-            pen=utils.pg_pen_cycler(0),
+            pen=et.utils.pg_pen_cycler(0),
             name="Amplitude of IQ data",
         )
         self.delta_curve = self.env_plot.plot(
-            pen=utils.pg_pen_cycler(1),
+            pen=et.utils.pg_pen_cycler(1),
             name="Phase change between sweeps",
         )
         self.peak_vline = pg.InfiniteLine(pen=pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine))
@@ -280,8 +277,8 @@ class PGUpdater:
         self.peak_plot.setMenuEnabled(False)
         self.peak_plot.setMouseEnabled(x=False, y=False)
         self.peak_plot.hideButtons()
-        utils.pg_setup_polar_plot(self.peak_plot, 1)
-        self.peak_curve = self.peak_plot.plot(pen=utils.pg_pen_cycler(0))
+        et.utils.pg_setup_polar_plot(self.peak_plot, 1)
+        self.peak_curve = self.peak_plot.plot(pen=et.utils.pg_pen_cycler(0))
         self.peak_scatter = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=15)
         self.peak_plot.addItem(self.peak_scatter)
         self.peak_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
@@ -297,7 +294,7 @@ class PGUpdater:
         self.zoom_plot.showGrid(x=True, y=True)
         self.zoom_plot.setLabel("bottom", "Time (s)")
         self.zoom_plot.setLabel("left", "Movement (mm)")
-        self.zoom_curve = self.zoom_plot.plot(pen=utils.pg_pen_cycler(0))
+        self.zoom_curve = self.zoom_plot.plot(pen=et.utils.pg_pen_cycler(0))
 
         self.move_plot = win.addPlot(title="Breathing movement")
         self.move_plot.setMenuEnabled(False)
@@ -308,7 +305,7 @@ class PGUpdater:
         self.move_plot.setLabel("left", "Movement (mm)")
         self.move_plot.setYRange(-2, 2)
         self.move_plot.setXRange(-self.hist_plot_len_s, 0)
-        self.move_curve = self.move_plot.plot(pen=utils.pg_pen_cycler(0))
+        self.move_curve = self.move_plot.plot(pen=et.utils.pg_pen_cycler(0))
         self.move_text_item = pg.TextItem(color=pg.mkColor("k"), anchor=(0, 1))
         self.move_text_item.setPos(self.move_xs[0], -2)
         self.move_plot.addItem(self.move_text_item)

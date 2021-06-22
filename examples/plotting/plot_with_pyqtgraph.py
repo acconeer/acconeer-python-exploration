@@ -2,23 +2,22 @@ import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtWidgets
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
     config.update_rate = 30
 
@@ -31,7 +30,7 @@ def main():
     depths = np.linspace(start, start + length, num_depths)
     num_hist = 2 * int(round(config.update_rate))
     hist_data = np.zeros([num_hist, depths.size])
-    smooth_max = utils.SmoothMax(config.update_rate)
+    smooth_max = et.utils.SmoothMax(config.update_rate)
 
     app = QtWidgets.QApplication([])
     pg.setConfigOption("background", "w")
@@ -56,11 +55,11 @@ def main():
     hist_plot.addItem(hist_image_item)
 
     # Get a nice colormap from matplotlib
-    hist_image_item.setLookupTable(utils.pg_mpl_cmap("viridis"))
+    hist_image_item.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
 
     win.show()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
     print("Press Ctrl-C to end session")
 

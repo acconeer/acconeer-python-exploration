@@ -1,16 +1,15 @@
 import os
 import sys
 
-from acconeer.exptool import configs, recording, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+import acconeer.exptool as et
 
 
 def main():
-    parser = utils.ExampleArgumentParser()
+    parser = et.utils.ExampleArgumentParser()
     parser.add_argument("-o", "--output-file", type=str, required=True)
     parser.add_argument("-l", "--limit-frames", type=int)
     args = parser.parse_args()
-    utils.config_logging(args)
+    et.utils.config_logging(args)
 
     if os.path.exists(args.output_file):
         print("File '{}' already exists, won't overwrite".format(args.output_file))
@@ -26,24 +25,24 @@ def main():
         sys.exit(1)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
     config.update_rate = 30
 
     session_info = client.setup_session(config)
 
-    recorder = recording.Recorder(sensor_config=config, session_info=session_info)
+    recorder = et.recording.Recorder(sensor_config=config, session_info=session_info)
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     i = 0
@@ -67,7 +66,7 @@ def main():
 
     record = recorder.close()
     os.makedirs(os.path.dirname(os.path.abspath(args.output_file)), exist_ok=True)
-    recording.save(args.output_file, record)
+    et.recording.save(args.output_file, record)
     print("Saved to '{}'".format(args.output_file))
 
 

@@ -1,25 +1,23 @@
 import numpy as np
 import pyqtgraph as pg
 
-from acconeer.exptool import clients, configs, utils
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 ENVELOPE_BACKGROUND_LEVEL = 100
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = clients.SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = clients.SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = clients.UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -28,12 +26,13 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
+
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -45,7 +44,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -54,13 +53,13 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.EnvelopeServiceConfig()
+    config = et.EnvelopeServiceConfig()
     config.downsampling_factor = 2
     config.range_interval = [0.12, 0.62]
     config.running_average_factor = 0
     config.update_rate = 0.5
     config.hw_accelerated_average_samples = 20
-    config.power_save_mode = configs.BaseServiceConfig.PowerSaveMode.OFF
+    config.power_save_mode = et.configs.BaseServiceConfig.PowerSaveMode.OFF
     config.asynchronous_measurement = False
 
     return config
@@ -71,7 +70,7 @@ class Processor:
         self.session_info = session_info
 
         self.f = sensor_config.update_rate
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
         self.update_processing_config(processing_config)
 
@@ -177,11 +176,11 @@ class Processor:
         return out_data
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
     VERSION = 2
 
-    depth_leak_sample = configbase.FloatParameter(
+    depth_leak_sample = et.configbase.FloatParameter(
         label="Leak sample position",
         default_value=0.15,
         limits=(0.05, 0.25),
@@ -195,7 +194,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    depth_leak_end = configbase.FloatParameter(
+    depth_leak_end = et.configbase.FloatParameter(
         label="Leak end position",
         default_value=0.30,
         limits=(0.10, 0.50),
@@ -209,7 +208,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    leak_max_amplitude = configbase.FloatParameter(
+    leak_max_amplitude = et.configbase.FloatParameter(
         label="Max leak amplitude",
         default_value=2000,
         limits=(100, 10000),
@@ -223,7 +222,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    detector_queue_target_length = configbase.IntParameter(
+    detector_queue_target_length = et.configbase.IntParameter(
         label="Detector queue length",
         default_value=3,
         limits=(1, 10),
@@ -235,7 +234,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         )
     )
 
-    weight_threshold = configbase.FloatParameter(
+    weight_threshold = et.configbase.FloatParameter(
         label="Weight threshold",
         default_value=5,
         limits=(0.5, 500),
@@ -249,7 +248,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    weight_ratio_limit = configbase.FloatParameter(
+    weight_ratio_limit = et.configbase.FloatParameter(
         label="Weight ratio limit",
         default_value=3,
         limits=(1, 10),
@@ -263,7 +262,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    distance_difference_limit = configbase.FloatParameter(
+    distance_difference_limit = et.configbase.FloatParameter(
         label="Distance limit",
         default_value=0.1,
         limits=(0.01, 0.5),
@@ -277,7 +276,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    history_length_s = configbase.FloatParameter(
+    history_length_s = et.configbase.FloatParameter(
         label="History length",
         unit="s",
         default_value=300,
@@ -295,7 +294,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         alerts = []
 
         if self.depth_leak_sample >= self.depth_leak_end:
-            alerts.append(configbase.Error(
+            alerts.append(et.configbase.Error(
                 "depth_leak_sample",
                 "Must be less than the leak end position"
             ))
@@ -306,14 +305,14 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         alerts = []
 
         if sensor_config.update_rate is None:
-            alerts.append(configbase.Error("update_rate", "Must be set"))
+            alerts.append(et.configbase.Error("update_rate", "Must be set"))
 
         if not sensor_config.noise_level_normalization:
-            alerts.append(configbase.Error("noise_level_normalization", "Must be set"))
+            alerts.append(et.configbase.Error("noise_level_normalization", "Must be set"))
 
         if self.depth_leak_sample < sensor_config.range_start \
            or self.depth_leak_sample > sensor_config.range_end:
-            alerts.append(configbase.Error(
+            alerts.append(et.configbase.Error(
                 "range_interval",
                 "Leak sample position outside the range interval"
             ))
@@ -329,7 +328,7 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
     def update_processing_config(self, processing_config=None):
         if processing_config is None:
@@ -359,12 +358,12 @@ class PGUpdater:
         self.sweep_plot.setXRange(100.0 * self.depths[0], 100.0 * self.depths[-1])
 
         self.sweep_curve = self.sweep_plot.plot(
-            pen=utils.pg_pen_cycler(0),
+            pen=et.utils.pg_pen_cycler(0),
             name="Envelope sweep",
         )
 
         self.sweep_background = self.sweep_plot.plot(
-            pen=utils.pg_pen_cycler(2),
+            pen=et.utils.pg_pen_cycler(2),
             name="Background estimate",
         )
 
@@ -373,14 +372,14 @@ class PGUpdater:
             symbol="o",
             symbolSize=8,
             symbolPen="k",
-            symbolBrush=utils.color_cycler(1),
+            symbolBrush=et.utils.color_cycler(1),
             name="Leak estimate",
         )
 
         # To show the legend correctly before the first update
         self.leak_estimate.setData([], [])
 
-        self.smooth_max_sweep = utils.SmoothMax(
+        self.smooth_max_sweep = et.utils.SmoothMax(
             self.sensor_config.update_rate,
             hysteresis=0.6,
             tau_decay=5,
@@ -415,16 +414,16 @@ class PGUpdater:
         self.detection_text_item.hide()
 
         self.weight_curve = self.weight_plot.plot(
-            pen=utils.pg_pen_cycler(0),
+            pen=et.utils.pg_pen_cycler(0),
             name="Reflector weight",
         )
 
         self.limits_center = None
         self.detection_limits = self.weight_plot.plot(
-            pen=utils.pg_pen_cycler(3),
+            pen=et.utils.pg_pen_cycler(3),
             name="Detection limits",
         )
-        self.limit_line = pg.InfiniteLine(angle=0, pen=utils.pg_pen_cycler(3, "--"))
+        self.limit_line = pg.InfiniteLine(angle=0, pen=et.utils.pg_pen_cycler(3, "--"))
         self.weight_plot.addItem(self.limit_line)
 
         self.trailing_sweeps = self.weight_plot.plot(
@@ -432,7 +431,7 @@ class PGUpdater:
             symbol="o",
             symbolSize=8,
             symbolPen="k",
-            symbolBrush=utils.color_cycler(2),
+            symbolBrush=et.utils.color_cycler(2),
             name="Queued sweep",
         )
 
@@ -441,7 +440,7 @@ class PGUpdater:
             symbol="o",
             symbolSize=8,
             symbolPen="k",
-            symbolBrush=utils.color_cycler(1),
+            symbolBrush=et.utils.color_cycler(1),
             name="Last sweep",
         )
 
@@ -449,7 +448,7 @@ class PGUpdater:
         self.trailing_sweeps.setData([], [])
         self.current_sweep.setData([], [])
 
-        self.smooth_max_weight = utils.SmoothMax(
+        self.smooth_max_weight = et.utils.SmoothMax(
             self.sensor_config.update_rate,
             hysteresis=0.6,
             tau_decay=5,
@@ -478,7 +477,7 @@ class PGUpdater:
             symbol="o",
             symbolSize=5,
             symbolPen="k",
-            symbolBrush=utils.color_cycler(0),
+            symbolBrush=et.utils.color_cycler(0),
         )
 
         win.layout.setRowStretchFactor(0, 8)

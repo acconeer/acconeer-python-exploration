@@ -1,18 +1,17 @@
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser().parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser().parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     # Normally when using a single sensor, get_next will return
     # (info, data). When using mulitple sensors, get_next will return
@@ -21,7 +20,7 @@ def main():
     # get_next _always_ return lists, set:
     # client.squeeze = False
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
     config.range_interval = [0.2, 0.3]
     config.update_rate = 5
@@ -41,7 +40,7 @@ def main():
     # and we can take care of the signal ourselves. In case you get
     # impatient, hitting Ctrl-C a couple of more times will raise a
     # KeyboardInterrupt which hopefully terminates the script.
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session\n")
 
     while not interrupt_handler.got_signal:

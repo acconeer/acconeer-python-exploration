@@ -2,22 +2,20 @@ import numpy as np
 import pyqtgraph as pg
 from scipy import signal
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     sensor_config.sensor = args.sensors
@@ -26,12 +24,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = PresenceDetectionProcessor(sensor_config, processing_config, session_info)
@@ -43,7 +41,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -52,7 +50,7 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.IQServiceConfig()
+    config = et.configs.IQServiceConfig()
     config.range_interval = [0.4, 0.8]
     config.update_rate = 60
     config.gain = 0.6
@@ -355,11 +353,11 @@ class PGUpdater:
         self.phi_plot.setLabel("bottom", "Samples")
         self.phi_plot.addLegend()
         self.filt_phi_curve = self.phi_plot.plot(
-            pen=utils.pg_pen_cycler(0),
+            pen=et.utils.pg_pen_cycler(0),
             name="Filtered",
         )
         self.raw_phi_curve = self.phi_plot.plot(
-            pen=utils.pg_pen_cycler(1),
+            pen=et.utils.pg_pen_cycler(1),
             name="Raw",
         )
 
@@ -372,11 +370,11 @@ class PGUpdater:
         self.spect_plot.showGrid(x=True, y=True)
         self.spect_plot.setLabel("left", "Power")
         self.spect_plot.setLabel("bottom", "Frequency (Hz)")
-        self.spect_curve = self.spect_plot.plot(pen=utils.pg_pen_cycler(1))
-        self.spect_smax = utils.SmoothMax(self.config.update_rate / 15)
-        self.spect_dft_inf_line = pg.InfiniteLine(pen=utils.pg_pen_cycler(1, "--"))
+        self.spect_curve = self.spect_plot.plot(pen=et.utils.pg_pen_cycler(1))
+        self.spect_smax = et.utils.SmoothMax(self.config.update_rate / 15)
+        self.spect_dft_inf_line = pg.InfiniteLine(pen=et.utils.pg_pen_cycler(1, "--"))
         self.spect_plot.addItem(self.spect_dft_inf_line)
-        self.spect_est_inf_line = pg.InfiniteLine(pen=utils.pg_pen_cycler(0, "--"))
+        self.spect_est_inf_line = pg.InfiniteLine(pen=et.utils.pg_pen_cycler(0, "--"))
         self.spect_plot.addItem(self.spect_est_inf_line)
         self.spect_plot.setXRange(0, 1)
         self.spect_plot.setYRange(0, 1)
@@ -394,11 +392,11 @@ class PGUpdater:
         self.fest_plot.setLabel("bottom", "Samples")
         self.fest_plot.addLegend()
         self.fest_curve = self.fest_plot.plot(
-            pen=utils.pg_pen_cycler(0),
+            pen=et.utils.pg_pen_cycler(0),
             name="Breathing est.",
         )
         self.fest_dft_curve = self.fest_plot.plot(
-            pen=utils.pg_pen_cycler(1),
+            pen=et.utils.pg_pen_cycler(1),
             name="DFT est.",
         )
         self.fest_plot.setXRange(0, 1)

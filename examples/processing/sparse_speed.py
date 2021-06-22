@@ -6,10 +6,7 @@ from scipy.signal import welch
 
 from PyQt5 import QtCore
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 HALF_WAVELENGTH = 2.445e-3  # m
@@ -22,16 +19,16 @@ FFT_OVERSAMPLING_FACTOR = 4
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -40,12 +37,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -57,7 +54,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -66,9 +63,9 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.SparseServiceConfig()
-    config.profile = configs.SparseServiceConfig.Profile.PROFILE_4
-    config.sampling_mode = configs.SparseServiceConfig.SamplingMode.A
+    config = et.configs.SparseServiceConfig()
+    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_4
+    config.sampling_mode = et.configs.SparseServiceConfig.SamplingMode.A
     config.range_interval = [0.36, 0.54]
     config.downsampling_factor = 3
     config.sweeps_per_frame = 512
@@ -76,7 +73,7 @@ def get_sensor_config():
     return config
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 2
 
     class SpeedUnit(Enum):
@@ -92,7 +89,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         def scale(self):
             return self.value[1]
 
-    threshold = configbase.FloatParameter(
+    threshold = et.configbase.FloatParameter(
         label="Threshold",
         default_value=4.0,
         limits=(1, 100),
@@ -102,7 +99,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         order=0,
     )
 
-    min_speed = configbase.FloatParameter(
+    min_speed = et.configbase.FloatParameter(
         label="Minimum speed",
         unit="m/s",
         default_value=0.5,
@@ -112,7 +109,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         order=10,
     )
 
-    shown_speed_unit = configbase.EnumParameter(
+    shown_speed_unit = et.configbase.EnumParameter(
         label="Speed unit",
         default_value=SpeedUnit.METER_PER_SECOND,
         enum=SpeedUnit,
@@ -120,21 +117,21 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         order=100,
     )
 
-    show_data_plot = configbase.BoolParameter(
+    show_data_plot = et.configbase.BoolParameter(
         label="Show data",
         default_value=False,
         updateable=True,
         order=110,
     )
 
-    show_sd_plot = configbase.BoolParameter(
+    show_sd_plot = et.configbase.BoolParameter(
         label="Show spectral density",
         default_value=True,
         updateable=True,
         order=120,
     )
 
-    show_vel_history_plot = configbase.BoolParameter(
+    show_vel_history_plot = et.configbase.BoolParameter(
         label="Show speed history",
         default_value=True,
         updateable=True,
@@ -275,7 +272,7 @@ class PGUpdater:
 
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         self.sweep_rate = session_info["sweep_rate"]
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.est_update_rate = self.sweep_rate / self.sweeps_per_frame
 
@@ -301,7 +298,7 @@ class PGUpdater:
             plot.hideAxis("left")
             plot.hideAxis("bottom")
             plot.plot(np.arange(self.sweeps_per_frame), 2**15 * np.ones(self.sweeps_per_frame))
-            curve = plot.plot(pen=utils.pg_pen_cycler())
+            curve = plot.plot(pen=et.utils.pg_pen_cycler())
             self.data_plots.append(plot)
             self.data_curves.append(curve)
 
@@ -313,12 +310,12 @@ class PGUpdater:
         self.sd_plot.hideButtons()
         self.sd_plot.setLabel("left", "Normalized PSD (dB)")
         self.sd_plot.showGrid(x=True, y=True)
-        self.sd_curve = self.sd_plot.plot(pen=utils.pg_pen_cycler())
+        self.sd_curve = self.sd_plot.plot(pen=et.utils.pg_pen_cycler())
         dashed_pen = pg.mkPen("k", width=2, style=QtCore.Qt.DashLine)
         self.sd_threshold_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
         self.sd_plot.addItem(self.sd_threshold_line)
 
-        self.smooth_max = utils.SmoothMax(
+        self.smooth_max = et.utils.SmoothMax(
             self.est_update_rate,
             tau_decay=0.5,
             tau_grow=0,
@@ -353,7 +350,7 @@ class PGUpdater:
         self.sequences_plot.showGrid(y=True)
         self.sequences_plot.setXRange(-NUM_SAVED_SEQUENCES + 0.5, 0.5)
         tmp = np.flip(np.arange(NUM_SAVED_SEQUENCES) == 0)
-        brushes = [pg.mkBrush(utils.color_cycler(n)) for n in tmp]
+        brushes = [pg.mkBrush(et.utils.color_cycler(n)) for n in tmp]
         self.bar_graph = pg.BarGraphItem(
             x=np.arange(-NUM_SAVED_SEQUENCES, 0) + 1,
             height=np.zeros(NUM_SAVED_SEQUENCES),
@@ -422,7 +419,7 @@ class PGUpdater:
         mask = ~np.isnan(vs)
         ts = -np.flip(np.arange(vs.size)) * self.dt
         bs = data["belongs_to_last_sequence"]
-        brushes = [utils.pg_brush_cycler(int(b)) for b in bs[mask]]
+        brushes = [et.utils.pg_brush_cycler(int(b)) for b in bs[mask]]
 
         self.vel_scatter.setData(ts[mask], vs[mask], brush=brushes)
 

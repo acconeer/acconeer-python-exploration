@@ -5,23 +5,20 @@ from scipy.special import binom
 
 from PyQt5 import QtCore
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -30,12 +27,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -47,7 +44,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -56,9 +53,9 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.SparseServiceConfig()
-    config.profile = configs.SparseServiceConfig.Profile.PROFILE_3
-    config.sampling_mode = configs.SparseServiceConfig.SamplingMode.B
+    config = et.configs.SparseServiceConfig()
+    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_3
+    config.sampling_mode = et.configs.SparseServiceConfig.SamplingMode.B
     config.range_interval = [0.3, 1.3]
     config.update_rate = 80
     config.sweeps_per_frame = 32
@@ -66,10 +63,10 @@ def get_sensor_config():
     return config
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 5
 
-    detection_threshold = configbase.FloatParameter(
+    detection_threshold = et.configbase.FloatParameter(
         label="Detection threshold",
         default_value=1.5,
         limits=(0, 5),
@@ -78,7 +75,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help='Level at which the detector output is considered as "present".',
     )
 
-    inter_frame_fast_cutoff = configbase.FloatParameter(
+    inter_frame_fast_cutoff = et.configbase.FloatParameter(
         label="Inter fast cutoff freq.",
         unit="Hz",
         default_value=20.0,
@@ -93,7 +90,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    inter_frame_slow_cutoff = configbase.FloatParameter(
+    inter_frame_slow_cutoff = et.configbase.FloatParameter(
         label="Inter slow cutoff freq.",
         unit="Hz",
         default_value=0.2,
@@ -104,7 +101,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Cutoff frequency of the low pass filter for the slow filtered sweep mean.",
     )
 
-    inter_frame_deviation_time_const = configbase.FloatParameter(
+    inter_frame_deviation_time_const = et.configbase.FloatParameter(
         label="Inter deviation time const.",
         unit="s",
         default_value=0.5,
@@ -118,7 +115,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    intra_frame_time_const = configbase.FloatParameter(
+    intra_frame_time_const = et.configbase.FloatParameter(
         label="Intra time const.",
         unit="s",
         default_value=0.15,
@@ -128,7 +125,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Time constant for the intra frame part.",
     )
 
-    intra_frame_weight = configbase.FloatParameter(
+    intra_frame_weight = et.configbase.FloatParameter(
         label="Intra weight",
         default_value=0.6,
         limits=(0, 1),
@@ -141,7 +138,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    output_time_const = configbase.FloatParameter(
+    output_time_const = et.configbase.FloatParameter(
         label="Output time const.",
         unit="s",
         default_value=0.5,
@@ -152,7 +149,7 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Time constant of the low pass filter for the detector output."
     )
 
-    show_data = configbase.BoolParameter(
+    show_data = et.configbase.BoolParameter(
         label="Show data scatter plot",
         default_value=True,
         updateable=True,
@@ -163,16 +160,16 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         ),
     )
 
-    show_noise = configbase.BoolParameter(
+    show_noise = et.configbase.BoolParameter(
         label="Show noise",
         default_value=False,
         updateable=True,
         order=110,
         help="Show the noise estimation plot.",
-        category=configbase.Category.ADVANCED,
+        category=et.configbase.Category.ADVANCED,
     )
 
-    show_depthwise_output = configbase.BoolParameter(
+    show_depthwise_output = et.configbase.BoolParameter(
         label="Show depthwise presence",
         default_value=True,
         updateable=True,
@@ -180,14 +177,14 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         help="Show the depthwise presence output plot.",
     )
 
-    show_sectors = configbase.BoolParameter(
+    show_sectors = et.configbase.BoolParameter(
         label="Show distance sectors",
         default_value=False,
         updateable=True,
         order=130,
     )
 
-    history_plot_ceiling = configbase.FloatParameter(
+    history_plot_ceiling = et.configbase.FloatParameter(
         label="Presence score plot ceiling",
         default_value=10.0,
         decimals=1,
@@ -198,27 +195,27 @@ class ProcessingConfiguration(configbase.ProcessingConfig):
         optional_label="Fixed",
         order=190,
         help="The highest presence score that will be plotted.",
-        category=configbase.Category.ADVANCED,
+        category=et.configbase.Category.ADVANCED,
     )
 
-    history_length_s = configbase.FloatParameter(
+    history_length_s = et.configbase.FloatParameter(
         label="History length",
         unit="s",
         default_value=5,
         limits=(1, 20),
         decimals=0,
         order=200,
-        category=configbase.Category.ADVANCED,
+        category=et.configbase.Category.ADVANCED,
     )
 
     def check_sensor_config(self, conf):
         alerts = []
 
         if conf.update_rate is None:
-            alerts.append(configbase.Error("update_rate", "Must be set"))
+            alerts.append(et.configbase.Error("update_rate", "Must be set"))
 
         if not conf.sweeps_per_frame > 3:
-            alerts.append(configbase.Error("sweeps_per_frame", "Must be > 3"))
+            alerts.append(et.configbase.Error("sweeps_per_frame", "Must be > 3"))
 
         return alerts
 
@@ -234,7 +231,7 @@ class Processor:
 
     def __init__(self, sensor_config, processing_config, session_info):
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.f = sensor_config.update_rate
 
@@ -415,7 +412,7 @@ class PGUpdater:
         self.processing_config = processing_config
 
         self.history_length_s = processing_config.history_length_s
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
         max_num_of_sectors = max(6, self.depths.size // 3)
         self.sector_size = max(1, -(-self.depths.size // max_num_of_sectors))
@@ -446,20 +443,20 @@ class PGUpdater:
         self.data_plot.setYRange(0, 2**16)
         self.frame_scatter = pg.ScatterPlotItem(
             size=10,
-            brush=utils.pg_brush_cycler(0),
+            brush=et.utils.pg_brush_cycler(0),
         )
         self.fast_scatter = pg.ScatterPlotItem(
             size=10,
-            brush=utils.pg_brush_cycler(1),
+            brush=et.utils.pg_brush_cycler(1),
         )
         self.slow_scatter = pg.ScatterPlotItem(
             size=10,
-            brush=utils.pg_brush_cycler(2),
+            brush=et.utils.pg_brush_cycler(2),
         )
         self.data_plot.addItem(self.frame_scatter)
         self.data_plot.addItem(self.fast_scatter)
         self.data_plot.addItem(self.slow_scatter)
-        self.frame_smooth_limits = utils.SmoothLimits(self.sensor_config.update_rate)
+        self.frame_smooth_limits = et.utils.SmoothLimits(self.sensor_config.update_rate)
 
         # Noise estimation plot
 
@@ -474,8 +471,8 @@ class PGUpdater:
         self.noise_plot.showGrid(x=True, y=True)
         self.noise_plot.setLabel("bottom", "Depth (m)")
         self.noise_plot.setLabel("left", "Amplitude")
-        self.noise_curve = self.noise_plot.plot(pen=utils.pg_pen_cycler())
-        self.noise_smooth_max = utils.SmoothMax(self.sensor_config.update_rate)
+        self.noise_curve = self.noise_plot.plot(pen=et.utils.pg_pen_cycler())
+        self.noise_smooth_max = et.utils.SmoothMax(self.sensor_config.update_rate)
 
         # Depthwise presence plot
 
@@ -493,7 +490,7 @@ class PGUpdater:
         zero_curve = self.move_plot.plot(self.depths, np.zeros_like(self.depths))
         self.inter_curve = self.move_plot.plot()
         self.total_curve = self.move_plot.plot()
-        self.move_smooth_max = utils.SmoothMax(
+        self.move_smooth_max = et.utils.SmoothMax(
             self.sensor_config.update_rate,
             tau_decay=1.0,
             tau_grow=0.25,
@@ -509,14 +506,14 @@ class PGUpdater:
         fbi = pg.FillBetweenItem(
             zero_curve,
             self.inter_curve,
-            brush=utils.pg_brush_cycler(0),
+            brush=et.utils.pg_brush_cycler(0),
         )
         self.move_plot.addItem(fbi)
 
         fbi = pg.FillBetweenItem(
             self.inter_curve,
             self.total_curve,
-            brush=utils.pg_brush_cycler(1),
+            brush=et.utils.pg_brush_cycler(1),
         )
         self.move_plot.addItem(fbi)
 
@@ -530,10 +527,10 @@ class PGUpdater:
         self.move_hist_plot.setLabel("bottom", "Time (s)")
         self.move_hist_plot.setLabel("left", "Score")
         self.move_hist_plot.setXRange(-self.history_length_s, 0)
-        self.history_smooth_max = utils.SmoothMax(self.sensor_config.update_rate)
+        self.history_smooth_max = et.utils.SmoothMax(self.sensor_config.update_rate)
         self.move_hist_plot.setYRange(0, 10)
 
-        self.move_hist_curve = self.move_hist_plot.plot(pen=utils.pg_pen_cycler())
+        self.move_hist_curve = self.move_hist_plot.plot(pen=et.utils.pg_pen_cycler())
         limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
         self.move_hist_plot.addItem(limit_line)
         self.limit_lines.append(limit_line)
@@ -658,13 +655,13 @@ class PGUpdater:
             self.present_text_item.hide()
             self.not_present_text_item.show()
 
-        brush = utils.pg_brush_cycler(0)
+        brush = et.utils.pg_brush_cycler(0)
         for sector in self.sectors:
             sector.setBrush(brush)
 
         if data["presence_detected"]:
             index = (data["presence_distance_index"] + self.sector_offset) // self.sector_size
-            self.sectors[index].setBrush(utils.pg_brush_cycler(1))
+            self.sectors[index].setBrush(et.utils.pg_brush_cycler(1))
 
     def set_present_text_y_pos(self, y):
         self.present_text_item.setPos(-self.history_length_s / 2, 0.95 * y)

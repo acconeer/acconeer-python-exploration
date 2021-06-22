@@ -1,19 +1,19 @@
-from acconeer.exptool import clients, configs, utils
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser().parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser().parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = clients.SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = clients.SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = clients.UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.configs.EnvelopeServiceConfig()
     config.sensor = args.sensors
 
     print(config)

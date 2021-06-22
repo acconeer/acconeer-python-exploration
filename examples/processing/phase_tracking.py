@@ -3,22 +3,20 @@ import pyqtgraph as pg
 
 from PyQt5 import QtCore
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     sensor_config.sensor = args.sensors
@@ -28,12 +26,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = PhaseTrackingProcessor(sensor_config, processing_config, session_info)
@@ -45,7 +43,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -54,10 +52,10 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.IQServiceConfig()
+    config = et.configs.IQServiceConfig()
     config.range_interval = [0.3, 0.6]
     config.update_rate = 80
-    config.repetition_mode = configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
 
 
@@ -132,8 +130,8 @@ class PhaseTrackingProcessor:
 
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.depths = utils.get_range_depths(sensor_config, session_info)
-        self.smooth_max = utils.SmoothMax(sensor_config.update_rate)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.smooth_max = et.utils.SmoothMax(sensor_config.update_rate)
 
     def setup(self, win):
         win.resize(800, 600)
@@ -146,8 +144,8 @@ class PGUpdater:
         self.abs_plot.showGrid(x=True, y=True)
         self.abs_plot.setLabel("left", "Amplitude")
         self.abs_plot.setLabel("bottom", "Depth (m)")
-        self.abs_curve = self.abs_plot.plot(pen=utils.pg_pen_cycler(0))
-        pen = utils.pg_pen_cycler(1)
+        self.abs_curve = self.abs_plot.plot(pen=et.utils.pg_pen_cycler(0))
+        pen = et.utils.pg_pen_cycler(1)
         pen.setStyle(QtCore.Qt.DashLine)
         self.abs_inf_line = pg.InfiniteLine(pen=pen)
         self.abs_plot.addItem(self.abs_inf_line)
@@ -160,8 +158,8 @@ class PGUpdater:
         self.arg_plot.setLabel("bottom", "Depth (m)")
         self.arg_plot.setLabel("left", "Phase")
         self.arg_plot.setYRange(-np.pi, np.pi)
-        self.arg_plot.getAxis("left").setTicks(utils.pg_phase_ticks)
-        self.arg_curve = self.arg_plot.plot(pen=utils.pg_pen_cycler())
+        self.arg_plot.getAxis("left").setTicks(et.utils.pg_phase_ticks)
+        self.arg_curve = self.arg_plot.plot(pen=et.utils.pg_pen_cycler())
         self.arg_inf_line = pg.InfiniteLine(pen=pen)
         self.arg_plot.addItem(self.arg_inf_line)
 
@@ -169,9 +167,9 @@ class PGUpdater:
         self.iq_plot.setMenuEnabled(False)
         self.iq_plot.setMouseEnabled(x=False, y=False)
         self.iq_plot.hideButtons()
-        utils.pg_setup_polar_plot(self.iq_plot, 1)
-        self.iq_curve = self.iq_plot.plot(pen=utils.pg_pen_cycler())
-        self.iq_scatter = pg.ScatterPlotItem(brush=pg.mkBrush(utils.color_cycler()), size=15)
+        et.utils.pg_setup_polar_plot(self.iq_plot, 1)
+        self.iq_curve = self.iq_plot.plot(pen=et.utils.pg_pen_cycler())
+        self.iq_scatter = pg.ScatterPlotItem(brush=pg.mkBrush(et.utils.color_cycler()), size=15)
         self.iq_plot.addItem(self.iq_scatter)
 
         self.hist_plot = win.addPlot(row=0, col=1, colspan=2)
@@ -181,7 +179,7 @@ class PGUpdater:
         self.hist_plot.showGrid(x=True, y=True)
         self.hist_plot.setLabel("bottom", "Time (s)")
         self.hist_plot.setLabel("left", "Tracking (mm)")
-        self.hist_curve = self.hist_plot.plot(pen=utils.pg_pen_cycler())
+        self.hist_curve = self.hist_plot.plot(pen=et.utils.pg_pen_cycler())
         self.hist_plot.setYRange(-5, 5)
 
         self.hist_zoom_plot = win.addPlot(row=1, col=2)
@@ -191,7 +189,7 @@ class PGUpdater:
         self.hist_zoom_plot.showGrid(x=True, y=True)
         self.hist_zoom_plot.setLabel("bottom", "Time (s)")
         self.hist_zoom_plot.setLabel("left", "Tracking (mm)")
-        self.hist_zoom_curve = self.hist_zoom_plot.plot(pen=utils.pg_pen_cycler())
+        self.hist_zoom_curve = self.hist_zoom_plot.plot(pen=et.utils.pg_pen_cycler())
         self.hist_zoom_plot.setYRange(-0.5, 0.5)
 
         self.first = True

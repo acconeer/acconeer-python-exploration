@@ -1,23 +1,20 @@
 import numpy as np
 import pyqtgraph as pg
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -26,12 +23,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = Processor(sensor_config, processing_config, session_info)
@@ -43,7 +40,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -52,9 +49,9 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.SparseServiceConfig()
-    config.profile = configs.SparseServiceConfig.Profile.PROFILE_3
-    config.sampling_mode = configs.SparseServiceConfig.SamplingMode.A
+    config = et.configs.SparseServiceConfig()
+    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_3
+    config.sampling_mode = et.configs.SparseServiceConfig.SamplingMode.A
     config.range_interval = [0.24, 0.48]
     config.sweeps_per_frame = 64
     config.sweep_rate = 3e3
@@ -62,17 +59,17 @@ def get_sensor_config():
     return config
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 1
 
-    show_data_plot = configbase.BoolParameter(
+    show_data_plot = et.configbase.BoolParameter(
         label="Show data",
         default_value=True,
         updateable=True,
         order=0,
     )
 
-    show_speed_plot = configbase.BoolParameter(
+    show_speed_plot = et.configbase.BoolParameter(
         label="Show speed on FFT y-axis",
         default_value=False,
         updateable=True,
@@ -105,12 +102,12 @@ class PGUpdater:
         self.downsampling_factor = sensor_config.downsampling_factor
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         sweep_rate = session_info["sweep_rate"]
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.utils.get_range_depths(sensor_config, session_info)
         self.step_length = session_info["step_length_m"]
         self.f_res = sweep_rate / self.sweeps_per_frame
         self.fft_x_scale = 100 * self.step_length
 
-        self.smooth_max = utils.SmoothMax(
+        self.smooth_max = et.utils.SmoothMax(
             sweep_rate / self.sweeps_per_frame,
             tau_grow=0,
             tau_decay=0.5,
@@ -133,7 +130,7 @@ class PGUpdater:
             plot.hideAxis("left")
             plot.hideAxis("bottom")
             plot.plot(np.arange(self.sweeps_per_frame), 2**15 * np.ones(self.sweeps_per_frame))
-            curve = plot.plot(pen=utils.pg_pen_cycler())
+            curve = plot.plot(pen=et.utils.pg_pen_cycler())
             self.plots.append(plot)
             self.curves.append(curve)
 
@@ -142,7 +139,7 @@ class PGUpdater:
         self.ft_plot.setMouseEnabled(x=False, y=False)
         self.ft_plot.hideButtons()
         self.ft_im = pg.ImageItem(autoDownsample=True)
-        self.ft_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+        self.ft_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
         self.ft_plot.addItem(self.ft_im)
         self.ft_plot.setLabel("bottom", "Depth (cm)")
         self.ft_plot.getAxis("bottom").setTickSpacing(6 * self.downsampling_factor, 6)

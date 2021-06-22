@@ -9,9 +9,7 @@ from scipy.fftpack import fft, fftshift
 
 from PyQt5 import QtCore
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
-from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
+import acconeer.exptool as et
 
 
 log = logging.getLogger("acconeer.exptool.examples.obstacle_detection")
@@ -27,16 +25,16 @@ DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 def main():
-    args = utils.ExampleArgumentParser(num_sens=1).parse_args()
-    utils.config_logging(args)
+    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = SocketClient(args.socket_addr)
+        client = et.SocketClient(args.socket_addr)
     elif args.spi:
-        client = SPIClient()
+        client = et.SPIClient()
     else:
-        port = args.serial_port or utils.autodetect_serial_port()
-        client = UARTClient(port)
+        port = args.serial_port or et.utils.autodetect_serial_port()
+        client = et.UARTClient(port)
 
     sensor_config = get_sensor_config()
     processing_config = get_processing_config()
@@ -45,12 +43,12 @@ def main():
     session_info = client.setup_session(sensor_config)
 
     pg_updater = PGUpdater(sensor_config, processing_config, session_info)
-    pg_process = PGProcess(pg_updater)
+    pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
     client.start_session()
 
-    interrupt_handler = utils.ExampleInterruptHandler()
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     processor = ObstacleDetectionProcessor(sensor_config, processing_config, session_info)
@@ -62,7 +60,7 @@ def main():
         if plot_data is not None:
             try:
                 pg_process.put_data(plot_data)
-            except PGProccessDiedException:
+            except et.PGProccessDiedException:
                 break
 
     print("Disconnecting...")
@@ -71,9 +69,9 @@ def main():
 
 
 def get_sensor_config():
-    config = configs.IQServiceConfig()
+    config = et.configs.IQServiceConfig()
     config.range_interval = [0.1, 0.5]
-    config.repetition_mode = configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
     config.update_rate = int(np.ceil(MAX_SPEED * 4 / WAVELENGTH))
     config.gain = 0.7
     return config
@@ -946,13 +944,13 @@ class PGUpdater:
         self.env_ax.addLegend(offset=(-10, 10))
         self.env_ax.setYRange(0, 0.1)
 
-        self.env_ampl = self.env_ax.plot(pen=utils.pg_pen_cycler(0), name="Envelope")
-        self.fft_max = self.env_ax.plot(pen=utils.pg_pen_cycler(1, "--"), name="FFT @ max")
+        self.env_ampl = self.env_ax.plot(pen=et.utils.pg_pen_cycler(0), name="Envelope")
+        self.fft_max = self.env_ax.plot(pen=et.utils.pg_pen_cycler(1, "--"), name="FFT @ max")
 
         if self.advanced_plots["show_line_outs"]:
-            self.fft_bg = self.env_ax.plot(pen=utils.pg_pen_cycler(2, "--"), name="BG @ max")
+            self.fft_bg = self.env_ax.plot(pen=et.utils.pg_pen_cycler(2, "--"), name="BG @ max")
             self.fft_thresh = self.env_ax.plot(
-                pen=utils.pg_pen_cycler(3, "--"),
+                pen=et.utils.pg_pen_cycler(3, "--"),
                 name="Threshold @ max"
             )
 
@@ -974,7 +972,7 @@ class PGUpdater:
         self.obstacle_im = pg.ImageItem()
         self.obstacle_ax.setLabel("bottom", "Velocity (cm/s)")
         self.obstacle_ax.setLabel("left", "Distance (cm)")
-        self.obstacle_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+        self.obstacle_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
         self.obstacle_ax.addItem(self.obstacle_im)
 
         self.obstacle_ax.setXRange(-self.max_velocity, self.max_velocity)
@@ -1008,7 +1006,7 @@ class PGUpdater:
             self.obstacle_bg_im = pg.ImageItem()
             self.obstacle_bg_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_bg_ax.setLabel("left", "Distance (cm)")
-            self.obstacle_bg_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+            self.obstacle_bg_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
             self.obstacle_bg_ax.addItem(self.obstacle_bg_im)
             row_idx += 1
 
@@ -1021,14 +1019,14 @@ class PGUpdater:
             self.obstacle_thresh_im = pg.ImageItem()
             self.obstacle_thresh_ax.setLabel("bottom", "Velocity (cm/s)")
             self.obstacle_thresh_ax.setLabel("left", "Distance (cm)")
-            self.obstacle_thresh_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+            self.obstacle_thresh_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
             self.obstacle_thresh_ax.addItem(self.obstacle_thresh_im)
             row_idx += 1
 
         if self.advanced_plots["fusion_map"]:
-            b = utils.color_cycler(0)
-            r = utils.color_cycler(1)
-            p = utils.color_cycler(4)
+            b = et.utils.color_cycler(0)
+            r = et.utils.color_cycler(1)
+            p = et.utils.color_cycler(4)
             spos = self.sensor_separation / 2
             pos0 = self.sensor_config.range_start * 100
             pos1 = self.sensor_config.range_end * 100
@@ -1055,7 +1053,7 @@ class PGUpdater:
             self.fusion_scatter.setZValue(10)
             self.fusion_hist = []
             for i in range(self.fusion_max_obstacles):
-                self.fusion_hist.append(self.fusion_ax.plot(pen=utils.pg_pen_cycler(2, "--")))
+                self.fusion_hist.append(self.fusion_ax.plot(pen=et.utils.pg_pen_cycler(2, "--")))
                 self.fusion_ax.addItem(self.fusion_hist[i])
                 self.fusion_hist[i].setZValue(10)
 
@@ -1069,9 +1067,9 @@ class PGUpdater:
                 self.fusion_right_shadow_hist = []
                 for i in range(self.fusion_max_shadows):
                     self.fusion_left_shadow_hist.append(
-                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(0, "--")))
+                        self.fusion_ax.plot(pen=et.utils.pg_pen_cycler(0, "--")))
                     self.fusion_right_shadow_hist.append(
-                        self.fusion_ax.plot(pen=utils.pg_pen_cycler(1, "--")))
+                        self.fusion_ax.plot(pen=et.utils.pg_pen_cycler(1, "--")))
                     self.fusion_ax.addItem(self.fusion_left_shadow_hist[i])
                     self.fusion_ax.addItem(self.fusion_right_shadow_hist[i])
 
@@ -1178,22 +1176,22 @@ class PGUpdater:
         for i in range(self.nr_locals):
             if self.hist_plots["velocity"][1]:
                 self.hist_plots["velocity"][0].append(
-                    self.peak_hist_ax_c.plot(pen=utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_c.plot(pen=et.utils.pg_pen_cycler(i),
                                              name="Veloctiy {:d}".format(i)))
             if self.hist_plots["angle"][1]:
                 self.hist_plots["angle"][0].append(
-                    self.peak_hist_ax_r.plot(pen=utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_r.plot(pen=et.utils.pg_pen_cycler(i),
                                              name="Angle {:d}".format(i)))
             if self.hist_plots["distance"][1]:
                 self.hist_plots["distance"][0].append(
-                    self.peak_hist_ax_l.plot(pen=utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_l.plot(pen=et.utils.pg_pen_cycler(i),
                                              name="Distance {:d}".format(i)))
             if self.hist_plots["amplitude"][1]:
                 self.hist_plots["amplitude"][0].append(
-                    self.peak_hist_ax_r1.plot(pen=utils.pg_pen_cycler(i),
+                    self.peak_hist_ax_r1.plot(pen=et.utils.pg_pen_cycler(i),
                                               name="Amplitude {:d}".format(i)))
 
-        self.smooth_max = utils.SmoothMax(
+        self.smooth_max = et.utils.SmoothMax(
             self.sensor_config.update_rate,
             tau_decay=0.2,
             tau_grow=0.2,
@@ -1284,25 +1282,25 @@ class PGUpdater:
 
         for i in range(self.nr_locals):
             if self.hist_plots["distance"][1]:
-                utils.pg_curve_set_data_with_nan(
+                et.utils.pg_curve_set_data_with_nan(
                     self.hist_plots["distance"][0][i],
                     np.arange(len(data["peak_hist"][i, 0, :])),
                     data["peak_hist"][i, 0, :]
                 )
             if self.hist_plots["velocity"][1]:
-                utils.pg_curve_set_data_with_nan(
+                et.utils.pg_curve_set_data_with_nan(
                     self.hist_plots["velocity"][0][i],
                     np.arange(len(data["peak_hist"][i, 1, :])),
                     data["peak_hist"][i, 1, :]
                 )
             if self.hist_plots["angle"][1]:
-                utils.pg_curve_set_data_with_nan(
+                et.utils.pg_curve_set_data_with_nan(
                     self.hist_plots["angle"][0][i],
                     np.arange(len(data["peak_hist"][i, 2, :])),
                     data["peak_hist"][i, 2, :]
                 )
             if self.hist_plots["amplitude"][1]:
-                utils.pg_curve_set_data_with_nan(
+                et.utils.pg_curve_set_data_with_nan(
                     self.hist_plots["amplitude"][0][i],
                     np.arange(len(data["peak_hist"][i, 3, :])),
                     data["peak_hist"][i, 3, :]
