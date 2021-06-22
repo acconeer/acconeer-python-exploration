@@ -209,13 +209,15 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
     )
 
     def check_sensor_config(self, conf):
-        alerts = []
-
+        alerts = {
+            "processing": [],
+            "sensor": [],
+        }
         if conf.update_rate is None:
-            alerts.append(et.configbase.Error("update_rate", "Must be set"))
+            alerts["sensor"].append(et.configbase.Error("update_rate", "Must be set"))
 
         if not conf.sweeps_per_frame > 3:
-            alerts.append(et.configbase.Error("sweeps_per_frame", "Must be > 3"))
+            alerts["sensor"].append(et.configbase.Error("sweeps_per_frame", "Must be > 3"))
 
         return alerts
 

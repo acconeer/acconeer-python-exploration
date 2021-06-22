@@ -302,17 +302,20 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         return alerts
 
     def check_sensor_config(self, sensor_config):
-        alerts = []
-
+        alerts = {
+            "processing": [],
+            "sensor": [],
+        }
         if sensor_config.update_rate is None:
-            alerts.append(et.configbase.Error("update_rate", "Must be set"))
+            alerts["sensor"].append(et.configbase.Error("update_rate", "Must be set"))
 
         if not sensor_config.noise_level_normalization:
-            alerts.append(et.configbase.Error("noise_level_normalization", "Must be set"))
+            alerts["sensor"].append(et.configbase.Error(
+                "noise_level_normalization", "Must be set"))
 
         if self.depth_leak_sample < sensor_config.range_start \
            or self.depth_leak_sample > sensor_config.range_end:
-            alerts.append(et.configbase.Error(
+            alerts["sensor"].append(et.configbase.Error(
                 "range_interval",
                 "Leak sample position outside the range interval"
             ))

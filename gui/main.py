@@ -459,19 +459,22 @@ class GUI(QMainWindow):
         if processing_config is None:
             processing_config = self.get_processing_config()
 
-        all_alerts = []
-
-        if isinstance(processing_config, configbase.Config):
-            alerts = processing_config._update_pidgets()
-            all_alerts.extend(alerts)
-
         if hasattr(processing_config, "check_sensor_config"):
             pass_on_alerts = processing_config.check_sensor_config(sensor_config)
         else:
-            pass_on_alerts = []
+            pass_on_alerts = {
+                "processing": [],
+                "sensor": [],
+            }
 
-        alerts = sensor_config._update_pidgets(pass_on_alerts)
+        all_alerts = []
+        alerts = sensor_config._update_pidgets(additional_alerts=pass_on_alerts["sensor"])
         all_alerts.extend(alerts)
+
+        if isinstance(processing_config, configbase.Config):
+            alerts = processing_config._update_pidgets(
+                additional_alerts=pass_on_alerts["processing"])
+            all_alerts.extend(alerts)
 
         has_error = any([a.severity == configbase.Severity.ERROR for a in all_alerts])
         self.set_gui_state("has_config_error", has_error)

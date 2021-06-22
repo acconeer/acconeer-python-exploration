@@ -607,17 +607,19 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
     )
 
     def check_sensor_config(self, sensor_config):
-        alerts = []
-
+        alerts = {
+            "processing": [],
+            "sensor": [],
+        }
         if sensor_config.update_rate is None:
-            alerts.append(et.configbase.Error("update_rate", "Must be set"))
+            alerts["sensor"].append(et.configbase.Error("update_rate", "Must be set"))
 
         if not sensor_config.noise_level_normalization:
             if self.threshold_type == self.ThresholdType.FIXED:
-                alerts.append(et.configbase.Warning(
+                alerts["sensor"].append(et.configbase.Warning(
                     "noise_level_normalization",
                     (
-                        "Enabling noise level normalization is "
+                        "Enabling noise level normalization is\n"
                         "recommended with Fixed threshold"
                     )
                 ))

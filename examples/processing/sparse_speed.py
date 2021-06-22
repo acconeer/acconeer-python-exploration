@@ -177,7 +177,10 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         return alerts
 
     def check_sensor_config(self, sensor_config):
-        alerts = []
+        alerts = {
+            "processing": [],
+            "sensor": [],
+        }
 
         if OVERLAP:  # Overlap is 50% of the segment size
             segment_length = 2 * sensor_config.sweeps_per_frame // (self.num_segments + 1)
@@ -185,19 +188,19 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             segment_length = sensor_config.sweeps_per_frame // self.num_segments
 
         if 0 <= segment_length < 8:
-            alerts.append(et.configbase.Error(
-                "sweeps_per_frame",
+            alerts["processing"].append(et.configbase.Error(
+                "num_segments",
                 (
                     "Number of points in segment is too small."
-                    "\nIncrease sweeps per frame"
-                    "\nor decrease number of segments"
+                    "\nDecrease number of segments"
+                    "\nor increase number of sweeps per frame"
                 )
             ))
 
         if (sensor_config.sweeps_per_frame & (sensor_config.sweeps_per_frame - 1)) != 0:
-            lower = 2**int(np.floor(np.log2(sensor_config.sweeps_per_frame)))
-            upper = 2**int(np.ceil(np.log2(sensor_config.sweeps_per_frame)))
-            alerts.append(et.configbase.Error(
+            lower = 2 ** int(np.floor(np.log2(sensor_config.sweeps_per_frame)))
+            upper = 2 ** int(np.ceil(np.log2(sensor_config.sweeps_per_frame)))
+            alerts["sensor"].append(et.configbase.Error(
                 "sweeps_per_frame",
                 (
                     "Must have a value that is a power of 2."
