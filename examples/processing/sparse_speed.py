@@ -13,7 +13,7 @@ HALF_WAVELENGTH = 2.445e-3  # m
 HISTORY_LENGTH = 2.0  # s
 EST_VEL_HISTORY_LENGTH = HISTORY_LENGTH  # s
 SD_HISTORY_LENGTH = HISTORY_LENGTH  # s
-NUM_SAVED_SEQUENCES = 10
+NUM_SAVED_SEQUENCES = 100
 SEQUENCE_TIMEOUT_LENGTH = 0.5  # s
 FFT_OVERSAMPLING_FACTOR = 4
 
@@ -74,7 +74,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-    VERSION = 2
+    VERSION = 3
 
     class SpeedUnit(Enum):
         METER_PER_SECOND = ("m/s", 1)
@@ -136,6 +136,14 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         default_value=True,
         updateable=True,
         order=130,
+    )
+
+    num_shown_sequences = et.configbase.IntParameter(
+        label="Number of history bars",
+        default_value=10,
+        limits=(1, NUM_SAVED_SEQUENCES),
+        updateable=True,
+        order=150,
     )
 
 
@@ -276,6 +284,8 @@ class PGUpdater:
         self.num_depths = self.depths.size
         self.est_update_rate = self.sweep_rate / self.sweeps_per_frame
 
+        self.num_shown_sequences = processing_config.num_shown_sequences
+
         fft_length = (self.sweeps_per_frame // 2) * FFT_OVERSAMPLING_FACTOR
         self.bin_vs = np.fft.rfftfreq(fft_length) * self.sweep_rate * HALF_WAVELENGTH
         self.dt = 1.0 / self.est_update_rate
@@ -348,7 +358,7 @@ class PGUpdater:
         self.sequences_plot.hideButtons()
         self.sequences_plot.setLabel("bottom", "History")
         self.sequences_plot.showGrid(y=True)
-        self.sequences_plot.setXRange(-NUM_SAVED_SEQUENCES + 0.5, 0.5)
+        self.sequences_plot.setXRange(-self.num_shown_sequences + 0.5, 0.5)
         tmp = np.flip(np.arange(NUM_SAVED_SEQUENCES) == 0)
         brushes = [pg.mkBrush(et.utils.color_cycler(n)) for n in tmp]
         self.bar_graph = pg.BarGraphItem(
@@ -392,11 +402,14 @@ class PGUpdater:
         max_vel = self.bin_vs[-1] * self.unit.scale
         self.sd_plot.setXRange(0, max_vel)
 
+        self.num_shown_sequences = processing_config.num_shown_sequences
+        self.sequences_plot.setXRange(-self.num_shown_sequences + 0.5, 0.5)
+
         y_max = max_vel * 1.2
         self.vel_plot.setYRange(0, y_max)
         self.sequences_plot.setYRange(0, y_max)
         self.vel_text_item.setPos(-EST_VEL_HISTORY_LENGTH / 2, y_max)
-        self.sequences_text_item.setPos(-NUM_SAVED_SEQUENCES / 2 + 0.5, y_max)
+        self.sequences_text_item.setPos(-self.num_shown_sequences / 2 + 0.5, y_max)
 
     def update(self, data):
         # Data plots
