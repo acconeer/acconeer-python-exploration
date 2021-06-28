@@ -212,6 +212,34 @@ class ComboBoxPidget(PidgetStub):
         self._subwidget_event_handler(value)
 
 
+class IntComboBoxPidget(PidgetStub):
+    def __init__(self, param, parent_instance):
+        assert isinstance(param, cb.IntParameter)
+
+        super().__init__(param, parent_instance)
+
+        label = QLabel(param.label, self)
+        self.grid.addWidget(label, 0, 0, 1, 1)
+
+        self.cb = wrap_qwidget(QComboBox)()
+        members = param.valid_values
+        self.cb.addItems([str(e) for e in members])
+        self.cb.currentIndexChanged.connect(self.__cb_event_handler)
+        self.grid.addWidget(self.cb, 0, 1, 1, 1)
+
+        self.update()
+
+    def _update(self, *args, **kwargs):
+        super()._update(*args, **kwargs)
+        value = self._get_param_value()
+        index = self.param.valid_values.index(value)
+        self.cb.setCurrentIndex(index)
+
+    def __cb_event_handler(self, index):
+        value = self.param.valid_values[index]
+        self._subwidget_event_handler(value)
+
+
 class BoolCheckboxPidget(PidgetStub):
     def __init__(self, param, parent_instance):
         super().__init__(param, parent_instance)

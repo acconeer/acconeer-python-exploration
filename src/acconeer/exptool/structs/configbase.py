@@ -269,8 +269,16 @@ class IntParameter(NumberParameter):
 
     def __init__(self, **kwargs):
         self.step = kwargs.pop("step", 1)
+        self.valid_values = kwargs.pop("valid_values", None)
 
-        kwargs.setdefault("_pidget_class", "IntSpinBoxPidget")
+        limits = kwargs.get("limits", None)
+        if self.valid_values is not None and limits is not None:
+            raise ValueError("valid_values and limits can not both be set on the same parameter")
+
+        if self.valid_values is not None:
+            kwargs.setdefault("_pidget_class", "IntComboBoxPidget")
+        else:
+            kwargs.setdefault("_pidget_class", "IntSpinBoxPidget")
 
         super().__init__(**kwargs)
 
@@ -290,6 +298,10 @@ class IntParameter(NumberParameter):
                 raise ValueError("Given value is too low ({} < {})".format(value, lower))
             if upper is not None and value > upper:
                 raise ValueError("Given value is too high ({} > {})".format(value, upper))
+
+        if self.valid_values is not None:
+            if value not in self.valid_values:
+                raise ValueError("Given value ({}) is not a valid value".format(value))
 
         return value
 
