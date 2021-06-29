@@ -11,7 +11,7 @@ At this point, we assume that you have
 
 - :ref:`connected to a sensor <connect-sensor>`
 - selected a :ref:`service or detector <gui-select-service>`
-- and configured the sensor (:ref: `pb-service`, :ref:`envelope-service`, :ref:`iq-service`, :ref:`sparse-service`).
+- and configured the sensor (:ref:`pb-service`, :ref:`envelope-service`, :ref:`iq-service`, :ref:`sparse-service`).
 
 .. _start-stop:
 
