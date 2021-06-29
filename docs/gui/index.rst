@@ -14,7 +14,6 @@ The general work-flow with the Python Exploration Tool GUI is described in the f
 
 #. :ref:`Connect to a sensor <connect-sensor>`
 #. :ref:`Select a service or detector <gui-select-service>`
-#. :ref:`configure-sensor`
 #. :ref:`collect-data`
 
     - :ref:`start-stop`
@@ -31,7 +30,6 @@ The general work-flow with the Python Exploration Tool GUI is described in the f
 
    working_with_the_gui/connect_sensor
    working_with_the_gui/select_service
-   working_with_the_gui/sensor_configuration
    working_with_the_gui/collect_data
    working_with_the_gui/optimizing_detectors
 
