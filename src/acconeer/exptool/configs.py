@@ -388,19 +388,18 @@ class BaseDenseServiceConfig(BaseServiceConfig):
 
 class _MURCapable(BaseDenseServiceConfig):
     class MUR(ConfigEnum):
-        MUR_6 = ("6", 6, 7.0)
-        MUR_9 = ("9", 9, 12.7)
+        MUR_6 = ("6 (MMD: 7.0m)", 6, 7.0)
+        MUR_9 = ("9 (MMD: 12.7m)", 9, 12.7)
 
         @property
         def mmd(self):
             return self.value[2]
 
     mur = cb.EnumParameter(
-        label="Maximum unambiguous range",
+        label="Max. unambiguous range",
         enum=MUR,
         default_value=MUR.MUR_6,
-        order=1031,
-        category=cb.Category.ADVANCED,
+        order=15,
         help=r"""
             Sets the maximum unambiguous range (*MUR*), which in turn sets the maximum measurable
             distance (*MMD*). A higher setting gives a larger *MUR*/*MMD*, but comes at a cost of
