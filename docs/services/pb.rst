@@ -26,6 +26,7 @@ Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.configs.PowerBinServiceConfig
+   :noindex:
    :members:
    :inherited-members:
    :exclude-members: State, Profile, RepetitionMode

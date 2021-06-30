@@ -56,6 +56,7 @@ Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.configs.SparseServiceConfig
+   :noindex:
    :members:
    :inherited-members:
    :exclude-members: State, SamplingMode, Profile, RepetitionMode

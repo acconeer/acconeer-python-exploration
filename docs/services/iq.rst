@@ -28,6 +28,7 @@ Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.configs.IQServiceConfig
+   :noindex:
    :members:
    :inherited-members:
    :exclude-members: State, Profile, RepetitionMode

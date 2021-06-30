@@ -6,7 +6,7 @@ RUN apt-get update
 RUN apt-get upgrade -y
 RUN apt-get install -y python3-dev python3-pip libgl1-mesa-glx libfontconfig1 graphviz git wget
 
-RUN python3 -m pip install pytest pytest-mock pytest-qt pytest-timeout requests "sphinx==3.*" sphinx_rtd_theme tox
+RUN python3 -m pip install pytest pytest-mock pytest-qt pytest-timeout requests sphinx sphinx_rtd_theme tox
 
 COPY requirements.txt /tmp/
 RUN python3 -m pip install -r /tmp/requirements.txt
