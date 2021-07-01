@@ -221,7 +221,12 @@ class Processor:
         est_frame_rate = sweep_rate / self.sweeps_per_frame
         self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
-        self.fft_length = (self.sweeps_per_frame // 2) * processing_config.fft_oversampling_factor
+        if OVERLAP:
+            segment_length = 2 * self.sweeps_per_frame // (processing_config.num_segments + 1)
+        else:
+            segment_length = self.sweeps_per_frame // processing_config.num_segments
+
+        self.fft_length = segment_length * processing_config.fft_oversampling_factor
         self.num_noise_est_bins = 3
         noise_est_tc = 1.0
 
@@ -376,7 +381,13 @@ class PGUpdater:
         self.est_update_rate = self.sweep_rate / self.sweeps_per_frame
 
         self.num_shown_sequences = processing_config.num_shown_sequences
-        fft_length = (self.sweeps_per_frame // 2) * processing_config.fft_oversampling_factor
+
+        if OVERLAP:
+            segment_length = 2 * self.sweeps_per_frame // (processing_config.num_segments + 1)
+        else:
+            segment_length = self.sweeps_per_frame // processing_config.num_segments
+
+        fft_length = segment_length * processing_config.fft_oversampling_factor
         self.bin_vs = np.fft.rfftfreq(fft_length) * self.sweep_rate * HALF_WAVELENGTH
         self.dt = 1.0 / self.est_update_rate
 
