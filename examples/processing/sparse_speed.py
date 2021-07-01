@@ -16,7 +16,6 @@ EST_VEL_HISTORY_LENGTH = HISTORY_LENGTH  # s
 SD_HISTORY_LENGTH = HISTORY_LENGTH  # s
 NUM_SAVED_SEQUENCES = 100
 SEQUENCE_TIMEOUT_LENGTH = 0.5  # s
-OVERLAP = True  # If True, Welch's method is used
 
 
 def main():
@@ -75,7 +74,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-    VERSION = 5
+    VERSION = 6
 
     class SpeedUnit(Enum):
         METER_PER_SECOND = ("m/s", 1)
@@ -89,6 +88,10 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         @property
         def scale(self):
             return self.value[1]
+
+    class ProcessingMethod(Enum):
+        WELCH = "Welch"
+        BARTLETT = "Bartlett"
 
     threshold = et.configbase.FloatParameter(
         label="Threshold",
@@ -118,17 +121,32 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         order=11,
     )
 
+    processing_method = et.configbase.EnumParameter(
+        label="Processing method",
+        default_value=ProcessingMethod.WELCH,
+        enum=ProcessingMethod,
+        updateable=False,
+        help=(
+            "In Welch's method the segments overlap 50% and the periodograms are "
+            "windowed using a Hann window."
+            "\nIn Bartlett's method there is no overlap between segments "
+            "and the periodograms are not modified."
+            "\nWelch's method will result in lower variance and added complexity"
+            "compared to Bartlett's method."
+        ),
+        order=12,
+    )
+
     num_segments = et.configbase.IntParameter(
         label="Number of segments",
         default_value=3,
         limits=(1, None),
-        step=2,
         updateable=False,
         help=(
-            "Number of segments determines how many overlapping segments "
-            "the signal will be divided into when using Welch's method."
+            "Number of segments determines how many segments "
+            "the signal will be divided into when using Welch's/Bartlett's method."
         ),
-        order=12,
+        order=13,
     )
 
     shown_speed_unit = et.configbase.EnumParameter(
@@ -171,8 +189,11 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
     def check(self):
         alerts = []
 
-        if self.num_segments % 2 != 1:
+        if self.processing_method == self.ProcessingMethod.WELCH and self.num_segments % 2 != 1:
             alerts.append(et.configbase.Error("num_segments", "Number of segments must be odd"))
+
+        if self.processing_method == self.ProcessingMethod.BARTLETT and self.num_segments % 2 != 0:
+            alerts.append(et.configbase.Error("num_segments", "Number of segments must be even"))
 
         return alerts
 
@@ -182,7 +203,8 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             "sensor": [],
         }
 
-        if OVERLAP:  # Overlap is 50% of the segment size
+        if self.processing_method == ProcessingConfiguration.ProcessingMethod.WELCH:
+            # Overlap is 50% of the segment size
             segment_length = 2 * sensor_config.sweeps_per_frame // (self.num_segments + 1)
         else:
             segment_length = sensor_config.sweeps_per_frame // self.num_segments
@@ -225,7 +247,7 @@ class Processor:
         est_frame_rate = sweep_rate / self.sweeps_per_frame
         self.depths = et.utils.get_range_depths(sensor_config, session_info)
 
-        if OVERLAP:
+        if processing_config.processing_method == ProcessingConfiguration.ProcessingMethod.WELCH:
             segment_length = 2 * self.sweeps_per_frame // (processing_config.num_segments + 1)
         else:
             segment_length = self.sweeps_per_frame // processing_config.num_segments
@@ -251,6 +273,7 @@ class Processor:
         self.update_idx = 0
 
         self.num_segments = processing_config.num_segments
+        self.processing_method = processing_config.processing_method
 
         self.update_processing_config(processing_config)
 
@@ -282,7 +305,8 @@ class Processor:
         zero_mean_frame = frame - frame.mean(axis=0, keepdims=True)
         psd_length = self.fft_length // 2 + 1
 
-        if OVERLAP:  # Overlap is 50% of the segment size
+        if self.processing_method == ProcessingConfiguration.ProcessingMethod.WELCH:
+            # Overlap is 50% of the segment size
             segment_length = 2 * self.sweeps_per_frame // (self.num_segments + 1)
         else:
             segment_length = self.sweeps_per_frame // self.num_segments
@@ -293,20 +317,21 @@ class Processor:
         fft_segments = np.empty((self.num_segments, psd_length, len(self.depths)))
 
         for i in range(self.num_segments):
-            if OVERLAP:
+            if self.processing_method == ProcessingConfiguration.ProcessingMethod.WELCH:
                 offset_segment = i * segment_length // 2
             else:
                 offset_segment = i * segment_length
 
             current_segment = zero_mean_frame[offset_segment : offset_segment + segment_length]
 
-            windowed_segment = current_segment * window[:, None]
+            if self.processing_method == ProcessingConfiguration.ProcessingMethod.WELCH:
+                current_segment = current_segment * window[:, None]
 
             fft_segments[i] = (
                 np.square(
                     np.abs(
                         np.fft.rfft(
-                            windowed_segment,
+                            current_segment,
                             self.fft_length,
                             axis=0,
                         )
@@ -402,7 +427,10 @@ class PGUpdater:
 
         self.num_shown_sequences = processing_config.num_shown_sequences
 
-        if OVERLAP:
+        if (
+            self.processing_config.processing_method
+            == ProcessingConfiguration.ProcessingMethod.WELCH
+        ):
             segment_length = 2 * self.sweeps_per_frame // (processing_config.num_segments + 1)
         else:
             segment_length = self.sweeps_per_frame // processing_config.num_segments
