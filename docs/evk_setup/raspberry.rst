@@ -45,11 +45,9 @@ Reboot to the let the changes take effect.
 Running the streaming server application
 ----------------------------------------
 
-For the XC112+XR112 kit, start the streaming server application on your Raspberry Pi located under ``utils`` in the SDK archive::
+Start the streaming server application on your Raspberry Pi located under ``utils`` in the SDK archive::
 
    $ cd path/to/the/sdk
-   $ ./utils/acc_streaming_server_rpi_xc112_r2b_xr112_r2b_a111_r2c
-
-If you have an XC111+XR111 kit, the streaming server will instead be named ``acc_streaming_server_rpi_xc111_r4a_xr111-3_r1c_a111_r2c``.
+   $ ./utils/acc_streaming_server
 
 Find the IP address of your Raspberry Pi by running ``ip a`` in its terminal.
