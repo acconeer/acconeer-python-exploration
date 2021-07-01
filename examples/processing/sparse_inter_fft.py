@@ -2,7 +2,6 @@ import numpy as np
 import pyqtgraph as pg
 
 import acconeer.exptool as et
-from acconeer.exptool import configbase as cb
 
 
 def main():
@@ -59,33 +58,33 @@ def get_sensor_config():
     return config
 
 
-class ProcessingConfiguration(cb.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 1
     WINDOW_SIZE_POW_OF_2_MAX = 12
     ROLLING_HISTORY_SIZE_MAX = 1000
 
-    show_time_domain = cb.BoolParameter(
+    show_time_domain = et.configbase.BoolParameter(
         label="Show data in time domain",
         default_value=True,
         updateable=True,
         order=0,
     )
 
-    show_spect_history = cb.BoolParameter(
+    show_spect_history = et.configbase.BoolParameter(
         label="Show spectrum history",
         default_value=False,
         updateable=True,
         order=10,
     )
 
-    show_depthwise_spect = cb.BoolParameter(
+    show_depthwise_spect = et.configbase.BoolParameter(
         label="Show depthwise spectrum",
         default_value=False,
         updateable=True,
         order=20,
     )
 
-    window_size_pow_of_2 = cb.FloatParameter(
+    window_size_pow_of_2 = et.configbase.FloatParameter(
         label="Window size, power of 2",
         default_value=8,
         limits=(3, WINDOW_SIZE_POW_OF_2_MAX),
@@ -94,13 +93,13 @@ class ProcessingConfiguration(cb.ProcessingConfig):
         order=100,
     )
 
-    _window_size = cb.get_virtual_parameter_class(cb.IntParameter)(
+    _window_size = et.configbase.get_virtual_parameter_class(et.configbase.IntParameter)(
         label="Window size",
         get_fun=lambda conf: 2 ** int(conf.window_size_pow_of_2),
         visible=False,
     )
 
-    overlap = cb.FloatParameter(
+    overlap = et.configbase.FloatParameter(
         label="Overlap",
         default_value=0.95,
         limits=(0, 1),
@@ -108,7 +107,7 @@ class ProcessingConfiguration(cb.ProcessingConfig):
         order=200,
     )
 
-    rolling_history_size = cb.FloatParameter(
+    rolling_history_size = et.configbase.FloatParameter(
         label="Rolling history size",
         default_value=100,
         decimals=0,
@@ -122,7 +121,7 @@ class ProcessingConfiguration(cb.ProcessingConfig):
         alerts = super().check()
 
         msg = "{}".format(self._window_size)
-        alerts.append(cb.Info("window_size_pow_of_2", msg))
+        alerts.append(et.configbase.Info("window_size_pow_of_2", msg))
 
         return alerts
 
