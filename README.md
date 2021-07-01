@@ -224,8 +224,6 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 - `plot_with_matplotlib.py` \
   Example of how to use matplotlib for plotting.
-- `plot_with_mpl_process.py` \
-  Example of how to use the mpl_process (matplotlib process) module for plotting.
 - `plot_with_pyqtgraph.py` \
   Example of how to use PyQtGraph for plotting.
 
