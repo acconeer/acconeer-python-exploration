@@ -299,7 +299,7 @@ class Processor:
 
         psds = np.mean(fft_segments, axis=0)
 
-        psds[2:psd_length - 1] *= 2  # Double frequencies except DC and Nyquist
+        psds[1:psd_length - 1] *= 2  # Double frequencies except DC and Nyquist
 
         psd = np.max(psds, axis=1)  # Power Spectral Density
         asd = np.sqrt(psd)  # Amplitude Spectral Density
