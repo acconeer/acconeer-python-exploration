@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pyqtgraph as pg
 
@@ -35,7 +37,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
-        plot_data = processor.process(data)
+        plot_data = processor.process(data, info)
 
         if plot_data is not None:
             try:
@@ -171,7 +173,16 @@ class Processor:
         if invalid and self.tick_idx > 0:
             self.update_spect()
 
-    def process(self, frame):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        frame = data
+
         mean_sweep = frame.mean(axis=0)
 
         self.sweep_history = np.roll(self.sweep_history, -1, axis=0)

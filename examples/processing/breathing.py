@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pyqtgraph as pg
 from numpy import pi
@@ -39,7 +41,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
-        plot_data = processor.process(data)
+        plot_data = processor.process(data, info)
 
         if plot_data is not None:
             try:
@@ -110,7 +112,16 @@ class BreathingProcessor:
 
         self.sweep_index = 0
 
-    def process(self, sweep):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        sweep = data
+
         if self.sweep_index == 0:
             self.lp_sweep = np.array(sweep)
             self.lp_env = np.abs(sweep)

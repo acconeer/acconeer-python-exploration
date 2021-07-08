@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 
 import numpy as np
 import pyqtgraph as pg
@@ -50,7 +51,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
-        plot_data = processor.process(data)
+        plot_data = processor.process(data, info)
 
         if plot_data is not None:
             try:
@@ -105,9 +106,22 @@ class Processor:
         self.data_history = np.ones([history_len, num_sensors, num_depths]) * 2 ** 15
         self.presence_history = np.zeros([history_len, num_sensors, num_depths])
 
-    def process(self, data):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         if self.pd_processors:
-            processed_datas = [p.process(s) for s, p in zip(data, self.pd_processors)]
+            if data_info is None:
+                processed_datas = [p.process(s, None) for s, p in zip(data, self.pd_processors)]
+            else:
+                processed_datas = [
+                    p.process(s, i) for s, i, p in zip(data, data_info, self.pd_processors)
+                ]
+
             presences = [d["depthwise_presence"] for d in processed_datas]
 
             self.presence_history = np.roll(self.presence_history, -1, axis=0)

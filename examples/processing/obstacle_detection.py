@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 
 import numpy as np
 import pyqtgraph as pg
@@ -55,7 +56,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        plot_data = processor.process(sweep, info)
 
         if plot_data is not None:
             try:
@@ -292,7 +293,16 @@ class ObstacleDetectionProcessor:
         self.use_bg_parameterization = processing_config["use_parameterization"]["value"]
         self.bg_params = []
 
-    def process(self, sweep):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        sweep = data
+
         if len(sweep.shape) == 1:
             sweep = np.expand_dims(sweep, 0)
 

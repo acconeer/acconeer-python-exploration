@@ -36,8 +36,8 @@ def multi_sensor_wrap(module):
                 for p in self.processors:
                     p.update_processing_config(processing_config)
 
-        def process(self, data):
-            return [p.process(d) for p, d in zip(self.processors, data)]
+        def process(self, data, data_info):
+            return [p.process(d, i) for p, d, i in zip(self.processors, data, data_info)]
 
     updater_cls = module.__dict__["PGUpdater"]
 

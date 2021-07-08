@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pyqtgraph as pg
 
@@ -43,7 +45,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        plot_data = processor.process(sweep, info)
 
         if plot_data is not None:
             try:
@@ -149,7 +151,16 @@ class ButtonPressProcessor:
         self.sf_rel_dev = np.exp(-1.0 / (processing_config.rel_dev_tc_s * self.f))
         self.buttonpress_length_sweeps = processing_config.buttonpress_length_s * self.f
 
-    def process(self, sweep):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        sweep = data
+
         # Sum the full sweep to a single number
         signal = np.mean(sweep)
 

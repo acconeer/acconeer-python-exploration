@@ -79,9 +79,11 @@ class DataProcessing:
     def process(self, unsqueezed_data, info, do_record=True):
         if self.multi_sensor:
             in_data = unsqueezed_data
+            in_info = info
         else:
             assert unsqueezed_data.shape[0] == 1
             in_data = unsqueezed_data[0]
+            in_info = info[0]
 
         if self.first_run:
             ext = self.gui_handle.external
@@ -92,7 +94,7 @@ class DataProcessing:
             self.external = ext(self.sensor_config, processing_config, self.session_info)
             self.first_run = False
 
-        out_data = self.external.process(in_data)
+        out_data = self.external.process(in_data, in_info)
         if out_data is not None:
             self.draw_canvas(out_data)
             if isinstance(out_data, dict) and out_data.get("send_process_data") is not None:

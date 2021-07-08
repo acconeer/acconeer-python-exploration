@@ -1,3 +1,4 @@
+import warnings
 from copy import copy
 from enum import Enum
 
@@ -41,7 +42,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        plot_data = processor.process(sweep, info)
 
         if plot_data is not None:
             try:
@@ -327,7 +328,16 @@ class Processor:
 
         return [peak_indexes[i] for i in quantity_to_sort.argsort()]
 
-    def process(self, sweep):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        sweep = data
+
         # Accumulate sweeps for stationary clutter threshold and check if user has
         # loaded one from disk
         self.get_sc_threshold(sweep)

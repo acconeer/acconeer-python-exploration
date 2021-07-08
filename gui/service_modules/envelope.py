@@ -1,3 +1,4 @@
+import warnings
 from enum import Enum
 
 import numpy as np
@@ -41,7 +42,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
-        plot_data = processor.process(data)
+        plot_data = processor.process(data, info)
 
         if plot_data is not None:
             try:
@@ -126,7 +127,14 @@ class Processor:
 
         self.data_index = 0
 
-    def process(self, data):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         if self.data_index < self.bg_buffer.shape[0]:
             self.bg_buffer[self.data_index] = data
         if self.data_index == self.bg_buffer.shape[0] - 1:

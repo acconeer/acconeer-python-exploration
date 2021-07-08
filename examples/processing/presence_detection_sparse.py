@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pyqtgraph as pg
 from numpy import cos, pi, sqrt, square
@@ -39,7 +41,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
-        plot_data = processor.process(data)
+        plot_data = processor.process(data, info)
 
         if plot_data is not None:
             try:
@@ -318,7 +320,16 @@ class Processor:
             a = np.pad(a, pad_width, "constant")
             return np.correlate(a, b, mode="same")[pad_width:-pad_width]
 
-    def process(self, frame):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        frame = data
+
         # Noise estimation
 
         nd = self.noise_est_diff_order

@@ -629,7 +629,7 @@ class PassthroughProcessor:
     def __init__(self, sensor_config, processing_config, session_info):
         pass
 
-    def process(self, data):
+    def process(self, data, data_info):
         return data
 
 

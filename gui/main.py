@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 import traceback
+import warnings
 import webbrowser
 from distutils.version import StrictVersion
 
@@ -2360,6 +2361,9 @@ def watchdog(event):
 if __name__ == "__main__":
     if lib_version_up_to_date():
         utils.config_logging(level=logging.INFO)
+
+        # Enable warnings to be printed to the log, e.g. DeprecationWarning
+        warnings.simplefilter("module")
 
         app = QApplication(sys.argv)
         ex = GUI()

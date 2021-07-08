@@ -1,3 +1,4 @@
+import warnings
 from enum import Enum
 
 import numpy as np
@@ -49,7 +50,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
-        plot_data = processor.process(data)
+        plot_data = processor.process(data, info)
 
         if plot_data is not None:
             try:
@@ -266,7 +267,16 @@ class Processor:
     def dynamic_sf(self, static_sf):
         return min(static_sf, 1.0 - 1.0 / (1.0 + self.update_idx))
 
-    def process(self, frame):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        frame = data
+
         # Basic speed estimate using Welch's method
 
         zero_mean_frame = frame - frame.mean(axis=0, keepdims=True)

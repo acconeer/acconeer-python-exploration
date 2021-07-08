@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pyqtgraph as pg
 from scipy import signal
@@ -36,7 +38,7 @@ def main():
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
-        plot_data = processor.process(sweep)
+        plot_data = processor.process(sweep, info)
 
         if plot_data is not None:
             try:
@@ -163,7 +165,16 @@ class PresenceDetectionProcessor:
 
         self.sweep_index = 0
 
-    def process(self, sweep):
+    def process(self, data, data_info=None):
+        if data_info is None:
+            warnings.warn(
+                "To leave out data_info or set to None is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        sweep = data
+
         if self.sweep_index == 0:
             delay_points = int(np.ceil(np.size(sweep) / self.D))
             self.data_s_d_mat = np.zeros((self.sweeps_in_block, delay_points), dtype="complex")
