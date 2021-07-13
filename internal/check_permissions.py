@@ -44,7 +44,8 @@ def main():
         if not expected_mode:
             continue
 
-        if mode != expected_mode:
+        mask = 0o111  # only check execute bit
+        if (int(mode, 8) & mask) != (int(expected_mode, 8) & mask):
             print("{}: has mode {}, expected {}".format(filename, mode, expected_mode))
             failed = True
 
