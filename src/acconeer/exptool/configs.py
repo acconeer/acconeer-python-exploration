@@ -430,7 +430,7 @@ class _MURCapable(BaseDenseServiceConfig):
             ========  =======  =======  ========
 
             This is an experimental feature.
-        """
+        """,
     )
 
     range_interval = cb.FloatRangeParameter(
@@ -451,14 +451,18 @@ class _MURCapable(BaseDenseServiceConfig):
     def check(self):
         alerts = super().check()
         if self.mur.mmd < self.range_end:
-            alerts.append(cb.Error(
-                "mur",
-                "Too low for the given range"
-            ))
-            alerts.append(cb.Error(
-                "range_interval",
-                f"MUR limits the range to {self.mur.mmd:.1f} m"
-            ))
+            alerts.append(
+                cb.Error(
+                    "mur",
+                    "Too low for the given range",
+                )
+            )
+            alerts.append(
+                cb.Error(
+                    "range_interval",
+                    f"MUR limits the range to {self.mur.mmd:.1f} m",
+                )
+            )
         return alerts
 
 

@@ -74,8 +74,7 @@ def lib_version_up_to_date(gui_handle=None):
                 elif choice == "" or choice.lower() == "n":
                     return False
                 else:
-                    sys.stdout.write("Please respond with 'y' or 'n' "
-                                     "(or 'Y' or 'N').\n")
+                    sys.stdout.write("Please respond with 'y' or 'n' (or 'Y' or 'N').\n")
         return True
 
 
@@ -192,8 +191,7 @@ class HandleAdvancedProcessData(QDialog):
             ]
             helper_path = os.path.dirname(os.path.realpath(__file__))
             param_file = os.path.join(
-                helper_path,
-                "../../examples/processing/obstacle_bg_params_dump.yaml"
+                helper_path, "../../examples/processing/obstacle_bg_params_dump.yaml"
             )
 
         if self.inputs is not None:
@@ -332,17 +330,21 @@ class GUIArgumentParser(ArgumentParser):
     def __init__(self):
         super().__init__()
 
-        self.add_argument("-ml",
-                          "--machine-learning",
-                          dest="machine_learning",
-                          help="Enable machine learning",
-                          action="store_true")
+        self.add_argument(
+            "-ml",
+            "--machine-learning",
+            dest="machine_learning",
+            help="Enable machine learning",
+            action="store_true",
+        )
 
-        self.add_argument("-b",
-                          "--beta-features",
-                          dest="beta_features",
-                          help="Enable beta features",
-                          action="store_true")
+        self.add_argument(
+            "-b",
+            "--beta-features",
+            dest="beta_features",
+            help="Enable beta features",
+            action="store_true",
+        )
 
 
 class BiggerMessageBox(QtWidgets.QMessageBox):
@@ -520,7 +522,7 @@ class SensorSelection(QFrame):
         if self.module_multi_sensor_support:
             if isinstance(self.module_multi_sensor_support, list):
                 lim = self.module_multi_sensor_support[1]
-                self.selected = self.selected[: lim]
+                self.selected = self.selected[:lim]
         else:
             if self.selected:
                 self.selected = [self.selected[0]]

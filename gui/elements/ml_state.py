@@ -68,7 +68,7 @@ class MLState:
                 return None
 
     def get_ml_settings_for_scan(self, mode, params):
-        is_eval_mode = (mode == "eval")
+        is_eval_mode = mode == "eval"
         load_from_gui = not is_eval_mode
         gui = self.gui_handle
         if is_eval_mode:
@@ -113,14 +113,14 @@ class MLState:
             ml_settings["evaluate_func"] = gui.ml_model_ops.predict
             gui.ml_eval_model_plot_widget.reset_data(
                 params["sensor_config"],
-                params["service_params"]
+                params["service_params"],
             )
         elif mode == "feature_extract":
             e_handle = gui.error_message
             settings_ok = gui.feature_select.check_limits(
                 params["sensor_config"],
                 error_handle=e_handle,
-                allow_change=True
+                allow_change=True,
             )
             if not settings_ok:
                 return False
@@ -129,7 +129,7 @@ class MLState:
                 params["sensor_config"] = self.gui_handle.save_gui_settings_to_sensor_config()
             gui.ml_feature_plot_widget.reset_data(
                 params["sensor_config"],
-                params["service_params"]
+                params["service_params"],
             )
 
         params["ml_settings"] = ml_settings

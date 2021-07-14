@@ -280,17 +280,13 @@ class FeatureSelectFrame(QFrame):
                 if text == "Stop" and gui_conf is not None:
                     textboxes[text].setText(str(gui_conf.range_end))
                 edit = textboxes[text].editingFinished
-            edit.connect(
-                partial(self.update_feature_params, limits, data_type, value)
-            )
+            edit.connect(partial(self.update_feature_params, limits, data_type, value))
             options[text] = textboxes[text]
             options_box.addWidget(labels[text])
             options_box.addWidget(textboxes[text])
 
         sensors = SensorSelection(
-            multi_sensors=True,
-            error_handler=None,
-            callback=self.update_feature_plot
+            multi_sensors=True, error_handler=None, callback=self.update_feature_plot
         )
         available_sensors = [1]
         try:
@@ -508,8 +504,7 @@ class FeatureSelectFrame(QFrame):
             module_key = self.limits["sensor_data_types"][0].value
             module_info = MODULE_KEY_TO_MODULE_INFO_MAP[module_key]
             index = self.gui_handle.module_dd.findText(
-                module_info.label,
-                QtCore.Qt.MatchFixedString
+                module_info.label, QtCore.Qt.MatchFixedString
             )
             if index != self.gui_handle.module_dd.currentIndex():
                 message = "Do you want to change the service to {}?".format(module_key)
@@ -548,7 +543,7 @@ class FeatureSelectFrame(QFrame):
                 feature_key = feature["key"]
                 self.add_features_details(None, key=feature_key)
             except Exception:
-                error_message += ("Feature Name:\n{}\n".format(feature["name"]))
+                error_message += "Feature Name:\n{}\n".format(feature["name"])
                 all_found = False
             else:
                 if feature_key in self.feature_list:
@@ -863,7 +858,7 @@ class FeatureSelectFrame(QFrame):
                     if x_size == 2:
                         x_size = frame_size
                     else:
-                        x_size += (ts - 1)
+                        x_size += ts - 1
 
                     rect = pg.QtGui.QGraphicsRectItem(0, y_max_size, x_size, feature_size)
                     rect.setPen(utils.pg_pen_cycler(feature["count"]))
@@ -907,8 +902,8 @@ class FeatureSelectFrame(QFrame):
 
         ymax_level = 1.2 * np.max(feat_map)
 
-        g = 1/2.2
-        feat_map = 254/(ymax_level + 1.0e-9)**g * feat_map**g
+        g = 1 / 2.2
+        feat_map = 254 / (ymax_level + 1.0e-9) ** g * feat_map ** g
 
         feat_map[feat_map > 254] = 254
 
@@ -973,7 +968,7 @@ class FeatureExtractFrame(QFrame):
         feature_canvas = pg.GraphicsLayoutWidget()
         self.plot_widget = feature_proc.PGUpdater(
             self.gui_handle.save_gui_settings_to_sensor_config(),
-            self.gui_handle.update_service_params()
+            self.gui_handle.update_service_params(),
         )
         self.plot_widget.setup(feature_canvas)
 
@@ -1060,7 +1055,7 @@ class FeatureSidePanel(QFrame):
             lambda: self.gui_handle.sig_scan.emit(
                 "update_feature_extraction",
                 "triggered",
-                True
+                True,
             )
         )
         self.buttons["show_calib"].setEnabled(False)
@@ -1075,9 +1070,7 @@ class FeatureSidePanel(QFrame):
         self.checkboxes["time_series"].setChecked(False)
         self.toggle_time_series()
 
-        self.checkboxes["rolling"].clicked.connect(
-            partial(self.frame_settings_storage, "rolling")
-        )
+        self.checkboxes["rolling"].clicked.connect(partial(self.frame_settings_storage, "rolling"))
 
         self.radiobuttons = {
             "auto": QRadioButton("auto"),
@@ -1479,7 +1472,8 @@ class FeatureSidePanel(QFrame):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, title, fname, "NumPy data files (*.npy)", options=options)
+            self, title, fname, "NumPy data files (*.npy)", options=options
+        )
 
         self.labels["loaded_file"].setText("")
         self.last_filename = None
@@ -1508,7 +1502,7 @@ class FeatureSidePanel(QFrame):
                 nr_frames = len(frame_list)
                 calibration = np.zeros_like(frame_list[0]["feature_map"])
                 for frame in frame_list:
-                    calibration += (frame["feature_map"] / nr_frames)
+                    calibration += frame["feature_map"] / nr_frames
             except Exception as e:
                 print("Failed to generate calibration array!<br>{}".format(e))
                 return None
@@ -1534,7 +1528,7 @@ class FeatureSidePanel(QFrame):
                 module_info = MODULE_KEY_TO_MODULE_INFO_MAP[sweep_data.module_key]
                 index = self.gui_handle.module_dd.findText(
                     module_info.label,
-                    QtCore.Qt.MatchFixedString
+                    QtCore.Qt.MatchFixedString,
                 )
                 if index >= 0:
                     self.gui_handle.module_dd.setCurrentIndex(index)
@@ -1555,9 +1549,10 @@ class FeatureSidePanel(QFrame):
                 self.gui_handle.set_gui_state("load_state", LoadState.LOADED)
                 self.gui_handle.feature_inspect.update_frame("frames", 1, init=True)
                 self.gui_handle.feature_inspect.update_sliders()
-                print("Found data with {} sweeps and {} feature frames.".format(
-                    data_len,
-                    len(frame_data["ml_frame_data"]["frame_list"]))
+                print(
+                    "Found data with {} sweeps and {} feature frames.".format(
+                        data_len, len(frame_data["ml_frame_data"]["frame_list"])
+                    )
                 )
             except Exception as e:
                 error_text = self.format_error.error_to_text(e)
@@ -1570,7 +1565,7 @@ class FeatureSidePanel(QFrame):
         line_length = 40
         for l in range(int(np.ceil(lenf / line_length))):
             end = min((l + 1) * line_length, lenf)
-            wrapped += self.last_filename[l*line_length:end]
+            wrapped += self.last_filename[l * line_length : end]
             if end < lenf:
                 wrapped += " "
         self.labels["loaded_file"].setText(wrapped)
@@ -1606,7 +1601,8 @@ class FeatureSidePanel(QFrame):
 
         if not filename:
             filename, info = QtWidgets.QFileDialog.getSaveFileName(
-                self, title, fname, file_types, options=options)
+                self, title, fname, file_types, options=options
+            )
 
         if not filename:
             return
@@ -1699,7 +1695,8 @@ class FeatureSidePanel(QFrame):
             options = QtWidgets.QFileDialog.Options()
             options |= QtWidgets.QFileDialog.DontUseNativeDialog
             filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
-                self, title, "", "NumPy data files (*.npy)", options=options)
+                self, title, "", "NumPy data files (*.npy)", options=options
+            )
             if filenames:
                 self.file_list = filenames
                 self.buttons["process_batch"].setEnabled(True)
@@ -1731,7 +1728,7 @@ class FeatureSidePanel(QFrame):
             self.threaded_batch_process = Threaded_BatchProcess(
                 batch_params,
                 self.gui_handle,
-                parent=self
+                parent=self,
             )
             self.threaded_batch_process.sig_scan.connect(self.thread_receive)
             self.sig_scan.connect(self.threaded_batch_process.receive)
@@ -1812,7 +1809,7 @@ class FeatureInspectFrame(QFrame):
             "update": QLabel("Update frame data: "),
             "current_frame": QLabel("Frame: NA"),
             "current_sweep": QLabel("Sweep: NA"),
-            "label": QLabel("Label: ")
+            "label": QLabel("Label: "),
         }
         self.textboxes = {
             "label": QLineEdit("", self),
@@ -1820,8 +1817,7 @@ class FeatureInspectFrame(QFrame):
         for t in self.textboxes:
             self.textboxes[t].setStyleSheet("background-color: white")
 
-        self.checkboxes = {
-        }
+        self.checkboxes = {}
 
         self.sliders = {
             "sweep_slider": SpinBoxAndSliderWidget("Sweeps", callback=self.update_frame),
@@ -1963,7 +1959,7 @@ class FeatureInspectFrame(QFrame):
                 fdata,
                 record,
                 frame_start,
-                label
+                label,
             )
         except Exception as e:
             self.gui_handle.error_message("Failed to calculate new feature frame<br>{}".format(e))
@@ -2136,7 +2132,7 @@ class FeatureInspectFrame(QFrame):
                             fdata,
                             record,
                             frame_start,
-                            label
+                            label,
                         )
                     except Exception as e:
                         errors.append(e)
@@ -2188,7 +2184,7 @@ class LabelingGraph(QFrame):
     def reset_data(self, sensor_config=None, processing_config=None):
         self.label_graph_widget.reset_data(
             sensor_config=sensor_config,
-            processing_config=processing_config
+            processing_config=processing_config,
         )
 
 
@@ -2204,13 +2200,13 @@ class TrainingFrame(QFrame):
 
         self.color_table = []
         for i in range(101):
-            rgb = colorsys.hsv_to_rgb(i / 300., 1.0, 1.0)
-            self.color_table.append([round(255*x) for x in rgb])
+            rgb = colorsys.hsv_to_rgb(i / 300.0, 1.0, 1.0)
+            self.color_table.append([round(255 * x) for x in rgb])
 
         self.color_table_off = []
         for i in range(101):
-            rgb = colorsys.hsv_to_rgb(1.0, i**1.2/100.0**1.2, 1.0)
-            self.color_table_off.append([round(255*x) for x in rgb])
+            rgb = colorsys.hsv_to_rgb(1.0, i ** 1.2 / 100.0 ** 1.2, 1.0)
+            self.color_table_off.append([round(255 * x) for x in rgb])
 
         self.labels = {
             "confusion_matrix": QLabel("Confusion Matrix"),
@@ -2284,7 +2280,7 @@ class TrainingFrame(QFrame):
                 self.cm_widget.item(r, c).setBackground(QColor(*color))
                 self.cm_widget.item(r, c).setFlags(QtCore.Qt.ItemIsEnabled)
 
-        print("Overall accuracy: {:.2f}".format(100 * sum_correct/(sum_wrong + sum_correct)))
+        print("Overall accuracy: {:.2f}".format(100 * sum_correct / (sum_wrong + sum_correct)))
         self.cm_widget.setHorizontalHeaderLabels(labels)
         self.cm_widget.setVerticalHeaderLabels(labels)
 
@@ -2307,8 +2303,10 @@ class TrainingFrame(QFrame):
             else:
                 label_nums = [int(np.sum(label_cat[:, i])) for i in range(label_cat.shape[1])]
                 if len(label_cat[0]) != len(label_list):
-                    print("Error: Found {} categories, but {} labels!".format(
-                        len(label_cat[0]), len(label_list))
+                    print(
+                        "Error: Found {} categories, but {} labels!".format(
+                            len(label_cat[0]), len(label_list)
+                        )
                     )
                     return
             row = len(label_list)
@@ -2501,7 +2499,8 @@ class TrainingSidePanel(QFrame):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(
-            self, title, "", "NumPy data files (*.npy)", options=options)
+            self, title, "", "NumPy data files (*.npy)", options=options
+        )
 
         model_exists = self.ml_state.get_model_status()
         layer_list = self.gui_handle.model_select.get_layer_list()
@@ -2546,7 +2545,7 @@ class TrainingSidePanel(QFrame):
                     self.ml_state.set_training_data_status(True, filenames)
                     self.gui_handle.training.update_data_table(
                         data["model_data"]["y_labels"],
-                        data["model_data"]["label_list"]
+                        data["model_data"]["label_list"],
                     )
                 else:
                     self.ml_state.set_test_data_status(True, filenames)
@@ -2559,8 +2558,7 @@ class TrainingSidePanel(QFrame):
                         data["model_data"]["keras_layer_info"]
                     )
                     self.gui_handle.model_select.dump_to_yaml(
-                        data["model_data"]["layer_list"],
-                        "last_model.yaml"
+                        data["model_data"]["layer_list"], "last_model.yaml"
                     )
                     self.buttons["validate"].setEnabled(True)
                     if not model_exists:
@@ -2651,8 +2649,7 @@ class TrainingSidePanel(QFrame):
             options = QtWidgets.QFileDialog.Options()
             options |= QtWidgets.QFileDialog.DontUseNativeDialog
 
-            folder = QtWidgets.QFileDialog.getExistingDirectory(
-                self, title, options=options)
+            folder = QtWidgets.QFileDialog.getExistingDirectory(self, title, options=options)
 
             if folder:
                 self.save_best_folder = folder
@@ -2975,10 +2972,12 @@ class ModelSelectFrame(QFrame):
 
             if action == "Save layers":
                 filename, info = QtWidgets.QFileDialog.getSaveFileName(
-                    self, title, "", file_types, options=options)
+                    self, title, "", file_types, options=options
+                )
             elif action == "Load layers":
                 filename, info = QtWidgets.QFileDialog.getOpenFileName(
-                    self, title, "", file_types, options=options)
+                    self, title, "", file_types, options=options
+                )
 
             if not filename:
                 return
@@ -3157,9 +3156,7 @@ class ModelSelectFrame(QFrame):
                     params[text] = [params[text]]
 
                 for entry in edit:
-                    entry.connect(
-                        partial(self.update_layer_params, limits, data_type, value)
-                    )
+                    entry.connect(partial(self.update_layer_params, limits, data_type, value))
 
                 for entry in params[text]:
                     entry.setFixedHeight(25)
@@ -3211,7 +3208,7 @@ class ModelSelectFrame(QFrame):
         if action == "remove_layer":
             self.remove_layer(pos=layer_position)
         if action == "is_active":
-            layer = self.enabled_layers[layer_position-1]
+            layer = self.enabled_layers[layer_position - 1]
             layer["is_active"] = value
             layer["params_widget"].setEnabled(value)
             for w in layer["other_items"]:
@@ -3311,7 +3308,7 @@ class ModelSelectFrame(QFrame):
                 pos = self._layout.getItemPosition(button_idx)
                 list_pos = [int((pos[0] - 2) / 3)]
             else:
-                list_pos = [pos-1]
+                list_pos = [pos - 1]
         else:
             list_pos = list(range(len(self.enabled_layers)))
 
@@ -3415,13 +3412,13 @@ class ModelSelectFrame(QFrame):
                 layer_key = s_layer["name"]
                 self.add_layer_details(None, key=layer_key)
             except Exception:
-                error_message += ("Feature Name: {}\n".format(s_layer["name"]))
+                error_message += "Feature Name: {}\n".format(s_layer["name"])
                 all_found = False
             else:
                 if layer_key in self.layer_list:
                     e_layer = self.enabled_layers[-1]
                 else:
-                    print("Unknown layer key {}". format(layer_key))
+                    print("Unknown layer key {}".format(layer_key))
                     continue
 
                 is_active = s_layer.get("is_active", True)
@@ -3474,7 +3471,7 @@ class ModelSelectFrame(QFrame):
                     continue
                 out = "Output: {}".format(layer.output_shape)
                 try:
-                    self.enabled_layers[active_layers[idx-1]]["layer_output_shape"].setText(out)
+                    self.enabled_layers[active_layers[idx - 1]]["layer_output_shape"].setText(out)
                 except Exception:
                     pass
             try:
@@ -3526,7 +3523,7 @@ class EvalFrame(QFrame):
         self.plot_widget = feature_proc.PGUpdater(
             self.gui_handle.save_gui_settings_to_sensor_config(),
             self.gui_handle.update_service_params(),
-            predictions=True
+            predictions=True,
         )
         self.plot_widget.setup(feature_canvas)
 
@@ -3556,7 +3553,8 @@ class ModelOperations(QFrame):
             file_types = "NumPy data files (*.npy)"
             fname = "model_data_{date:%Y_%m_%d_%H%M}".format(date=datetime.datetime.now())
             filename, info = QtWidgets.QFileDialog.getSaveFileName(
-                self, title, fname, file_types, options=options)
+                self, title, fname, file_types, options=options
+            )
 
             if filename:
                 if not model_ready:
@@ -3616,13 +3614,13 @@ class ModelOperations(QFrame):
 
         message_handle = self.gui_handle.info_handle(
             "Computing confusion matrix, please wait...",
-            blocking=False
+            blocking=False,
         )
         QApplication.processEvents()
         try:
             confusion_matrix = self.keras_handle.confusion_matrix(
                 y_data,
-                self.keras_handle.predict()
+                self.keras_handle.predict(),
             )
             self.gui_handle.training.update_confusion_matrix(confusion_matrix)
         except Exception as e:
@@ -3639,10 +3637,10 @@ class ModelOperations(QFrame):
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         if self.keras_handle.model_data.tf_version.split(".")[0] == "1":
             filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-                self, title, "", "NumPy data files (*.npy)", options=options)
+                self, title, "", "NumPy data files (*.npy)", options=options
+            )
         else:
-            filename = QtWidgets.QFileDialog.getExistingDirectory(
-                    self, title, options=options)
+            filename = QtWidgets.QFileDialog.getExistingDirectory(self, title, options=options)
 
         self.gui_handle.model_select.allow_update(False)
 
@@ -3771,8 +3769,8 @@ class CalibrationDialog(QDialog):
 
         max_level = 1.2 * np.nanmax(calibration_data)
 
-        g = 1/2.2
-        calibration_data = 254/(max_level + 1.0e-9)**g * calibration_data**g
+        g = 1 / 2.2
+        calibration_data = 254 / (max_level + 1.0e-9) ** g * calibration_data ** g
 
         calibration_data[calibration_data > 254] = 254
 
@@ -4160,7 +4158,7 @@ class Threaded_BatchProcess(QtCore.QThread):
         self.progress_steps = 0
 
     def stop_thread(self):
-        self.emit("batch_process_stopped", "" , "")
+        self.emit("batch_process_stopped", "", "")
         self.emit("skipped_files", "", self.skipped_files)
         self.quit()
 
@@ -4199,7 +4197,7 @@ class Threaded_BatchProcess(QtCore.QThread):
             module_info = MODULE_KEY_TO_MODULE_INFO_MAP[sweep_data.module_key]
             index = self.gui_handle.module_dd.findText(
                 module_info.label,
-                QtCore.Qt.MatchFixedString
+                QtCore.Qt.MatchFixedString,
             )
 
             if self.gui_handle.module_dd.currentIndex() == 0:
@@ -4299,7 +4297,7 @@ class Threaded_BatchProcess(QtCore.QThread):
                     fdata,
                     sweep_data,
                     frame_start,
-                    label
+                    label,
                 )
                 # Replace old feature frame with updated frame
                 f_modified = fdata["ml_frame_data"]["current_frame"]

@@ -394,6 +394,7 @@ def pg_setup_polar_plot(plot, max_r=1):
 
 def pg_mpl_cmap(name):
     import matplotlib.pyplot as plt
+
     cmap = plt.get_cmap(name)
     cmap._init()
     return np.array(cmap._lut) * 255
@@ -406,6 +407,7 @@ class FreqCounter:
         * frequency
         * data throughput (if num_bits is not None)
     """
+
     def __init__(self, a=None, tc=None, num_bits=None):
         assert (a is None) or (tc is None)
 

@@ -18,10 +18,10 @@ from acconeer.exptool.structs import configbase
 @attr.s
 class Record:
     # Sensor session related (required):
-    mode = attr.ib(type=modes.Mode)               # save as str (Mode.name), restore with get_mode
-    sensor_config_dump = attr.ib(type=str)        # SensorConfig._dumps
-    session_info = attr.ib(type=dict)             # save/restore with json.dumps/loads
-    data = attr.ib(default=None)                  # [np.array], saved as np.array, restore as is
+    mode = attr.ib(type=modes.Mode)  # save as str (Mode.name), restore with get_mode
+    sensor_config_dump = attr.ib(type=str)  # SensorConfig._dumps
+    session_info = attr.ib(type=dict)  # save/restore with json.dumps/loads
+    data = attr.ib(default=None)  # [np.array], saved as np.array, restore as is
     data_info = attr.ib(type=list, factory=list)  # [[{...}]], save/restore with json.dumps/loads
 
     # Processing related (optional):

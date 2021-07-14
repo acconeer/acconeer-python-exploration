@@ -373,13 +373,13 @@ class UARTClient(RegBaseClient):
         buf_1 = self._link.recv(1 + protocol.LEN_FIELD_SIZE)
 
         start_marker = buf_1[0]
-        packet_len = int.from_bytes(buf_1[1 :], protocol.BO)
+        packet_len = int.from_bytes(buf_1[1:], protocol.BO)
 
         if start_marker != protocol.START_MARKER:
             raise ClientError("got invalid frame (incorrect start marker)")
 
         buf_2 = self._link.recv(packet_len + 2)
-        packet = buf_2[: -1]
+        packet = buf_2[:-1]
         end_marker = buf_2[-1]
 
         if end_marker != protocol.END_MARKER:

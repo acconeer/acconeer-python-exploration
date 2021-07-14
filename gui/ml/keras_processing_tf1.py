@@ -37,8 +37,10 @@ class ACC_ML(ml_helper.KerasBase):
         if not isinstance(input_dim, list):
             input_dim = list(input_dim)
 
-        print("\nInitiating model with {:d}x{:d} inputs"
-              " and {:d} outputs".format(*input_dim, output_dim))
+        print(
+            "\nInitiating model with {:d}x{:d} inputs"
+            " and {:d} outputs".format(*input_dim, output_dim)
+        )
 
         layer_list = self.model_data.layer_list
         if layer_list is None:
@@ -116,7 +118,7 @@ class ACC_ML(ml_helper.KerasBase):
                 return {
                     "loaded": False,
                     "model_message": "\nLayer nr. {} failed."
-                                     " Error adding {}\n{}".format(idx + 1, layer["name"], e)
+                    " Error adding {}\n{}".format(idx + 1, layer["name"], e),
                 }
 
             if layer["name"] == "lstm":
@@ -187,11 +189,13 @@ class ACC_ML(ml_helper.KerasBase):
         stop_cb = train_params.get("stop_cb", None)
         save_best = train_params.get("save_best", None)
         steps = int(np.ceil(x.shape[0] / batch_size))
-        func = TrainCallback(plot_cb=plot_cb,
-                             steps_per_epoch=steps,
-                             stop_cb=stop_cb,
-                             save_best=save_best,
-                             parent=self)
+        func = TrainCallback(
+            plot_cb=plot_cb,
+            steps_per_epoch=steps,
+            stop_cb=stop_cb,
+            save_best=save_best,
+            parent=self,
+        )
         cb.append(func)
 
         if plot_cb is not None:
@@ -203,12 +207,13 @@ class ACC_ML(ml_helper.KerasBase):
             dropout = train_params["dropout"]
             if isinstance(dropout, dict):
                 if dropout["monitor"] in ["acc", "val_acc", "loss", "val_loss"]:
-                    cb_early_stop = EarlyStopping(monitor=dropout["monitor"],
-                                                  min_delta=dropout["min_delta"],
-                                                  patience=dropout["patience"],
-                                                  verbose=verbose,
-                                                  mode="auto"
-                                                  )
+                    cb_early_stop = EarlyStopping(
+                        monitor=dropout["monitor"],
+                        min_delta=dropout["min_delta"],
+                        patience=dropout["patience"],
+                        verbose=verbose,
+                        mode="auto",
+                    )
                 cb.append(cb_early_stop)
 
         if run_threaded:
@@ -228,15 +233,16 @@ class ACC_ML(ml_helper.KerasBase):
                     self.set_optimizer(optimizer)
                 if "learning_rate" in train_params:
                     K.set_value(model.optimizer.lr, train_params["learning_rate"])
-                history = model.fit(x,
-                                    y,
-                                    epochs=epochs,
-                                    batch_size=batch_size,
-                                    callbacks=cb,
-                                    validation_data=eval_data,
-                                    verbose=verbose,
-                                    class_weight=class_weights,
-                                    )
+                history = model.fit(
+                    x,
+                    y,
+                    epochs=epochs,
+                    batch_size=batch_size,
+                    callbacks=cb,
+                    validation_data=eval_data,
+                    verbose=verbose,
+                    class_weight=class_weights,
+                )
 
         if run_threaded:
             return model, self.get_current_graph(), self.get_current_session()
@@ -272,8 +278,12 @@ class ACC_ML(ml_helper.KerasBase):
             x = np.expand_dims(x, -1)
 
         if len(x.shape) != len(self.model.input_shape):
-            print("Wrong data shapes:\n Model: {}\n Test: {}\n".format(self.model.input_shape,
-                                                                       x.shape,))
+            print(
+                "Wrong data shapes:\n Model: {}\n Test: {}\n".format(
+                    self.model.input_shape,
+                    x.shape,
+                )
+            )
             return None
 
         with self.tf_graph.as_default():
@@ -350,7 +360,7 @@ class ACC_ML(ml_helper.KerasBase):
             time_distributed = model_dimensions.get("time_distributed", 1)
             feature_dimension = model_dimensions.get(
                 "feature_dimension",
-                model_dimensions["input"][:-1]
+                model_dimensions["input"][:-1],
             )
             self.tf_session = K.get_session()
             self.tf_graph = tf.compat.v1.get_default_graph()
@@ -401,7 +411,7 @@ class ACC_ML(ml_helper.KerasBase):
             try:
                 data_labels = self.label_assignment(
                     self.training_data["raw_labels"],
-                    self.labels_dict
+                    self.labels_dict,
                 )
                 label_categories = to_categorical(data_labels, self.label_num)
             except Exception as e:
@@ -416,7 +426,7 @@ class ACC_ML(ml_helper.KerasBase):
             "feature_list": feature_list,
             "sensor_config": sensor_config,
             "frame_settings": frame_settings,
-            "layer_list": layer_list,               # GUI format layer list
+            "layer_list": layer_list,  # GUI format layer list
             "keras_layer_info": self.model.layers,  # Keras format layer list
             "input": model_dimensions["input"],
             "output": model_dimensions["output"],
@@ -435,8 +445,8 @@ class ACC_ML(ml_helper.KerasBase):
         message += "nr of features :{}\n".format(len(feature_list))
         message += "labels         :{}\n".format(labels)
         message += "Trained with {} features".format(
-                      self.model_data.get("nr_of_training_maps", "N/A")
-                  )
+            self.model_data.get("nr_of_training_maps", "N/A")
+        )
 
         return self.model_data, message
 
@@ -492,14 +502,14 @@ class ACC_ML(ml_helper.KerasBase):
 
     def count_variables(self):
         if self.model is not None:
-            trainable = int(
-                np.sum([K.count_params(p) for p in set(self.model.trainable_weights)]))
+            trainable = int(np.sum([K.count_params(p) for p in set(self.model.trainable_weights)]))
             non_trainable = int(
-                np.sum([K.count_params(p) for p in set(self.model.non_trainable_weights)]))
+                np.sum([K.count_params(p) for p in set(self.model.non_trainable_weights)])
+            )
         else:
             return None
 
-        return ({"trainable": trainable, "non_trainable": non_trainable})
+        return {"trainable": trainable, "non_trainable": non_trainable}
 
     def clear_training_data(self):
         self.model_data.y_labels = None
@@ -514,8 +524,9 @@ class ACC_ML(ml_helper.KerasBase):
 
 
 class TrainCallback(Callback):
-    def __init__(self, plot_cb=None, steps_per_epoch=None, stop_cb=None, save_best=None,
-                 parent=None):
+    def __init__(
+        self, plot_cb=None, steps_per_epoch=None, stop_cb=None, save_best=None, parent=None
+    ):
         self.parent = parent
         self.plot = plot_cb
         self.stop_cb = stop_cb
@@ -539,11 +550,12 @@ class TrainCallback(Callback):
                     self.val_loss = logs["val_loss"]
                     fname = "model_epoch_{}_val_loss_{:.04f}".format(self.epoch, self.val_loss)
                     fname = os.path.join(self.save_best["folder"], fname)
-                    self.parent.save_model(fname,
-                                           self.save_best["feature_list"],
-                                           self.save_best["sensor_config"],
-                                           self.save_best["frame_settings"],
-                                           )
+                    self.parent.save_model(
+                        fname,
+                        self.save_best["feature_list"],
+                        self.save_best["sensor_config"],
+                        self.save_best["frame_settings"],
+                    )
             except Exception as e:
                 print(e)
 

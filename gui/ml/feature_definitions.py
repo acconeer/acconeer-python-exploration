@@ -74,7 +74,7 @@ def get_features():
 
 
 def distance2idx(value, dist_vec):
-    idx = np.argmin((dist_vec - value)**2)
+    idx = np.argmin((dist_vec - value) ** 2)
     return int(idx)
 
 
@@ -130,7 +130,7 @@ class FeaturePeak:
         return 1
 
 
-class FeatureAverages1D():
+class FeatureAverages1D:
     def __init__(self):
         # output data
         self.data = {
@@ -186,7 +186,7 @@ class FeatureAverages1D():
         return 1
 
 
-class FeatureAverages2D():
+class FeatureAverages2D:
     def __init__(self):
         # output data
         self.data = {
@@ -242,7 +242,7 @@ class FeatureAverages2D():
         return 1
 
 
-class FeatureAmplitudeRatios1D():
+class FeatureAmplitudeRatios1D:
     def __init__(self):
         # output data
         self.data = {
@@ -301,7 +301,7 @@ class FeatureSweep:
         # output data
         self.data = {
             "segment": "Segment",
-            "integrated": "Integrated"
+            "integrated": "Integrated",
         }
         # text, value, limits
         self.options = [
@@ -316,8 +316,8 @@ class FeatureSweep:
         self.idx = 0
         self.bg = None
         self.downsampling = None
-        self.calib = 100           # Number of frames to use for calibration
-        self.dead_time = 200       # Number of frames to wait after calibration
+        self.calib = 100  # Number of frames to use for calibration
+        self.dead_time = 200  # Number of frames to wait after calibration
 
     def extract_feature(self, win_data, win_params):
         try:
@@ -357,8 +357,8 @@ class FeatureSweep:
                 if not self.idx:
                     self.bg = np.zeros((num_sensors, self.down_arr.shape[1]))
                 self.bg[sensor_idx, :] = np.maximum(
-                        self.bg[sensor_idx, :],
-                        1.05 * self.down_arr[sensor_idx, :, 0]
+                    self.bg[sensor_idx, :],
+                    1.05 * self.down_arr[sensor_idx, :, 0],
                 )
 
             if self.idx < self.calib + self.dead_time:
@@ -382,7 +382,7 @@ class FeatureSweep:
             map_max = 1.2 * np.max(full_arr)
             new_arr = full_arr[sensor_idx, :, :]
             g = 1 / 2.2
-            new_arr = 254/(map_max - 1 + 1.0e-9)**g * (new_arr - 1)**g
+            new_arr = 254 / (map_max - 1 + 1.0e-9) ** g * (new_arr - 1) ** g
             new_arr[new_arr < 1] = 1
         else:
             new_arr = full_arr[sensor_idx, :, :]
@@ -438,7 +438,7 @@ class FeatureSparseFFT:
             ("Stop", 0.4, [0.06, 7], float),
             ("High pass", 1, [0, 1], float),
             ("Flip", True, None, bool),
-            ("Stretch", False, None, bool)
+            ("Stretch", False, None, bool),
         ]
         self.fft = None
         self.noise_floor = None
@@ -466,8 +466,8 @@ class FeatureSparseFFT:
         if start >= data_stop:
             return None
 
-        start_idx = np.argmin((dist_vec - start)**2)
-        stop_idx = np.argmin((dist_vec - stop)**2) + 1
+        start_idx = np.argmin((dist_vec - start) ** 2)
+        stop_idx = np.argmin((dist_vec - stop) ** 2) + 1
 
         stop_idx = max(start_idx + 1, stop_idx)
 
@@ -489,7 +489,7 @@ class FeatureSparseFFT:
 
         threshold = 1.0
         m = np.mean(fft_psd) * threshold
-        if m < self.noise_floor[sensor_idx] and m > 1E-8:
+        if m < self.noise_floor[sensor_idx] and m > 1e-8:
             self.noise_floor[sensor_idx] = m
 
         fft_psd /= self.noise_floor[sensor_idx]
@@ -503,7 +503,7 @@ class FeatureSparseFFT:
         else:
             self.fft[sensor_idx, :, 0] = fft_psd
             data = {
-                "fft": self.fft[sensor_idx, 0:freq_cutoff+1, :].copy(),
+                "fft": self.fft[sensor_idx, 0 : freq_cutoff + 1, :].copy(),
             }
 
         data["fft_profile"] = np.sum(data["fft"], axis=0)
@@ -517,7 +517,7 @@ class FeatureSparseFFT:
         if options.get("Stretch", None):
             map_max = 1.2 * np.max(data["fft"])
             g = 1 / 2.2
-            data["fft"] = 254/(map_max + 1.0e-9)**g * data["fft"]**g
+            data["fft"] = 254 / (map_max + 1.0e-9) ** g * data["fft"] ** g
             avgs = np.mean(data["fft"], axis=0)
             data["fft"] -= np.min(avgs)
             data["fft"][data["fft"] < 0] = 0
@@ -543,13 +543,13 @@ class FeatureSparsePresence:
         # output data
         self.data = {
             "presence": "Presence",
-            "presence_avg": "Time Average"
+            "presence_avg": "Time Average",
         }
         # text, value, limits
         self.options = [
             ("Start", 0.2, [0.06, 7], float),
             ("Stop", 0.4, [0.06, 7], float),
-            ("Calibrate Avg.", False, None, bool)
+            ("Calibrate Avg.", False, None, bool),
         ]
 
         self.detector_processor = None
@@ -557,8 +557,8 @@ class FeatureSparsePresence:
         self.idx = 0
         self.last_cal = False
         self.avg_presence = None
-        self.calib = 100                # Number of frames to use for calibration
-        self.dead_time = 200            # Number of frames to wait after calibration
+        self.calib = 100  # Number of frames to use for calibration
+        self.dead_time = 200  # Number of frames to wait after calibration
 
     def extract_feature(self, win_data, win_params):
         try:
@@ -587,8 +587,8 @@ class FeatureSparsePresence:
         if start >= data_stop:
             return None
 
-        start_idx = np.argmin((dist_vec - start)**2)
-        stop_idx = np.argmin((dist_vec - stop)**2) + 1
+        start_idx = np.argmin((dist_vec - start) ** 2)
+        stop_idx = np.argmin((dist_vec - stop) ** 2) + 1
 
         stop_idx = max(start_idx + 1, stop_idx)
 
@@ -605,7 +605,7 @@ class FeatureSparsePresence:
             self.detector_processor[sensor_idx] = detector_handle(
                 sensor_config,
                 detector_config,
-                session_info
+                session_info,
             )
             self.detector_processor[sensor_idx].depth_filter_length = 1
 
@@ -714,8 +714,8 @@ class FeatureDistanceEnvelope:
         if start >= data_stop:
             return None
 
-        start_idx = np.argmin((dist_vec - start)**2)
-        stop_idx = np.argmin((dist_vec - stop)**2) + 1
+        start_idx = np.argmin((dist_vec - start) ** 2)
+        stop_idx = np.argmin((dist_vec - stop) ** 2) + 1
 
         stop_idx = max(start_idx + 1, stop_idx)
 
@@ -731,9 +731,7 @@ class FeatureDistanceEnvelope:
 
             detector_handle = distance_detector.Processor
             self.detector_processor[sensor_idx] = detector_handle(
-                sensor_config,
-                detector_config,
-                session_info
+                sensor_config, detector_config, session_info
             )
 
         detector_output = self.detector_processor[sensor_idx].process(arr[:, 0])

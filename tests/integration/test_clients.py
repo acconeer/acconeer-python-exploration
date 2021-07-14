@@ -152,17 +152,17 @@ def test_sanity_check_output(setup, mode):
     if mode == modes.Mode.POWER_BINS:
         assert data.dtype == np.float
         size = session_info["bin_count"]
-        assert data.shape == (size, )
+        assert data.shape == (size,)
         assert 1 < size < 10
     elif mode == modes.Mode.ENVELOPE:
         assert data.dtype == np.float
         size = session_info["data_length"]
-        assert data.shape == (size, )
+        assert data.shape == (size,)
         assert size == pytest.approx(config.range_length / 0.06 * 124, abs=10)
     elif mode == modes.Mode.IQ:
         assert data.dtype == np.complex
         size = session_info["data_length"]
-        assert data.shape == (size, )
+        assert data.shape == (size,)
         assert size == pytest.approx(config.range_length / 0.06 * 124, abs=10)
     elif mode == modes.Mode.SPARSE:
         assert data.dtype == np.float

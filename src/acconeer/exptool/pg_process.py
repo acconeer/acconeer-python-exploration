@@ -13,7 +13,7 @@ class PGProcess:
             self._queue,
             self._exit_event,
             updater,
-            max_freq
+            max_freq,
         )
 
         self._process = mp.Process(target=pg_process_program, args=args, daemon=True)

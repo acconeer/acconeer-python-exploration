@@ -70,6 +70,7 @@ except Exception:
 
 if "win32" in sys.platform.lower():
     import ctypes
+
     myappid = "acconeer.exploration.tool"
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
@@ -138,10 +139,10 @@ class GUI(QMainWindow):
         self.ml_eval_model_plot_widget = None
         self.ml_data = None
 
-        self.sig_sensor_config_pidget_event.connect(
-            self.pidget_sensor_config_event_handler)
+        self.sig_sensor_config_pidget_event.connect(self.pidget_sensor_config_event_handler)
         self.sig_processing_config_pidget_event.connect(
-            self.pidget_processing_config_event_handler)
+            self.pidget_processing_config_event_handler
+        )
 
         self.module_label_to_sensor_config_map = {}
         self.module_label_to_processing_config_map = {}
@@ -302,7 +303,8 @@ class GUI(QMainWindow):
             session_info = clients.MockClient().setup_session(sensor_config, check_config=False)
 
         self.service_widget = self.current_module_info.module.PGUpdater(
-            sensor_config, processing_config, session_info)
+            sensor_config, processing_config, session_info
+        )
 
         self.service_widget.setup(canvas)
 
@@ -473,7 +475,8 @@ class GUI(QMainWindow):
 
         if isinstance(processing_config, configbase.Config):
             alerts = processing_config._update_pidgets(
-                additional_alerts=pass_on_alerts["processing"])
+                additional_alerts=pass_on_alerts["processing"]
+            )
             all_alerts.extend(alerts)
 
         has_error = any([a.severity == configbase.Severity.ERROR for a in all_alerts])
@@ -525,7 +528,8 @@ class GUI(QMainWindow):
 
         for name in self.sensor_widgets:
             self.sensor_widgets[name].set_multi_sensor_support(
-                source_sensors, module_multi_sensor_support)
+                source_sensors, module_multi_sensor_support
+            )
 
     def set_sensors(self, sensors):
         for name in self.sensor_widgets:
@@ -718,7 +722,8 @@ class GUI(QMainWindow):
         self.main_sublayout.addWidget(self.basic_sensor_config_section, 4, 0)
         c = self.basic_sensor_param_count
         self.basic_sensor_config_section.grid.addWidget(
-            self.buttons["sensor_defaults"], c.post_incr(), 0, 1, 2)
+            self.buttons["sensor_defaults"], c.post_incr(), 0, 1, 2
+        )
         self.basic_sensor_config_section.grid.addWidget(self.labels["sensor"], c.val, 0)
 
         sensor_selection = SensorSelection(error_handler=self.error_message)
@@ -726,11 +731,13 @@ class GUI(QMainWindow):
         self.sensor_widgets["main"] = sensor_selection
 
         self.advanced_sensor_config_section = CollapsibleSection(
-            "Advanced sensor settings", init_collapsed=True)
+            "Advanced sensor settings", init_collapsed=True
+        )
         self.main_sublayout.addWidget(self.advanced_sensor_config_section, 5, 0)
 
         self.session_info_section = CollapsibleSection(
-            "Session information (sensor metadata)", init_collapsed=True)
+            "Session information (sensor metadata)", init_collapsed=True
+        )
         self.main_sublayout.addWidget(self.session_info_section, 6, 0)
         self.session_info_view = SessionInfoView(self.session_info_section)
         self.session_info_section.grid.addWidget(self.session_info_view, 0, 0, 1, 2)
@@ -738,17 +745,22 @@ class GUI(QMainWindow):
         self.basic_processing_config_section = CollapsibleSection("Processing settings")
         self.main_sublayout.addWidget(self.basic_processing_config_section, 7, 0)
         self.basic_processing_config_section.grid.addWidget(
-            self.buttons["service_defaults"], 0, 0, 1, 2)
+            self.buttons["service_defaults"], 0, 0, 1, 2
+        )
 
         self.advanced_processing_config_section = CollapsibleSection(
-            "Advanced processing settings", init_collapsed=True)
+            "Advanced processing settings", init_collapsed=True
+        )
         self.main_sublayout.addWidget(self.advanced_processing_config_section, 8, 0)
         self.advanced_processing_config_section.grid.addWidget(
-            self.buttons["advanced_defaults"], 0, 0, 1, 2)
+            self.buttons["advanced_defaults"], 0, 0, 1, 2
+        )
         self.advanced_processing_config_section.grid.addWidget(
-            self.buttons["load_process_data"], 1, 0)
+            self.buttons["load_process_data"], 1, 0
+        )
         self.advanced_processing_config_section.grid.addWidget(
-            self.buttons["save_process_data"], 1, 1)
+            self.buttons["save_process_data"], 1, 1
+        )
 
         self.main_sublayout.setRowStretch(9, 1)
 
@@ -772,9 +784,7 @@ class GUI(QMainWindow):
     def init_statusbar(self):
         self.statusBar().showMessage("Not connected")
         self.labels["sweep_info"].setFixedWidth(220)
-        self.labels["sweep_info"].setAlignment(
-            QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
-        )
+        self.labels["sweep_info"].setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight)
         self.labels["measured_update_rate"].setToolTip("Measured update rate")
         self.labels["measured_update_rate"].setFixedWidth(120)
         self.statusBar().addPermanentWidget(self.labels["data_warnings"])
@@ -791,6 +801,7 @@ class GUI(QMainWindow):
             import feature_processing
             import ml_gui_elements as ml_gui
             import ml_state
+
             self.ml_elements = ml_gui
             self.ml_external = feature_processing.DataProcessor
             self.ml_module = feature_processing
@@ -877,14 +888,16 @@ class GUI(QMainWindow):
         self.feature_section = CollapsibleSection("Feature settings", init_collapsed=False)
         self.main_sublayout.addWidget(self.feature_section, 3, 0)
         self.feature_sidepanel = self.ml_elements.FeatureSidePanel(
-            self.panel_scroll_area_widget, self)
+            self.panel_scroll_area_widget, self
+        )
         self.feature_section.grid.addWidget(self.feature_sidepanel, 0, 0, 1, 2)
         self.feature_section.hide()
         self.feature_section.button_event(override=False)
 
         # training panel
         self.training_sidepanel = self.ml_elements.TrainingSidePanel(
-            self.panel_scroll_area_widget, self)
+            self.panel_scroll_area_widget, self
+        )
         self.panel_scroll_area_widget.addWidget(self.training_sidepanel)
 
     def tab_changed(self, index):
@@ -1015,10 +1028,12 @@ class GUI(QMainWindow):
             if key in self.service_labels[mode]:
                 if "box" in self.service_labels[mode][key]:
                     self.service_labels[mode][key]["box"].setText(
-                        str(self.service_defaults[key]["value"]))
+                        str(self.service_defaults[key]["value"])
+                    )
                 if "checkbox" in self.service_labels[mode][key]:
                     self.service_labels[mode][key]["checkbox"].setChecked(
-                        bool(self.service_defaults[key]["value"]))
+                        bool(self.service_defaults[key]["value"])
+                    )
 
     def service_help_button_handler(self):
         url = self.current_module_info.docs_url
@@ -1220,12 +1235,16 @@ class GUI(QMainWindow):
         # Visible, enabled, text
 
         # Start button
-        self.buttons["start"].setEnabled(all([
-            self.in_supported_mode or states["load_state"] == LoadState.LOADED,
-            not states["scan_is_running"],
-            not states["has_config_error"],
-            states["server_connected"] or states["load_state"] == LoadState.LOADED,
-        ]))
+        self.buttons["start"].setEnabled(
+            all(
+                [
+                    self.in_supported_mode or states["load_state"] == LoadState.LOADED,
+                    not states["scan_is_running"],
+                    not states["has_config_error"],
+                    states["server_connected"] or states["load_state"] == LoadState.LOADED,
+                ]
+            )
+        )
         if states["load_state"] == LoadState.LOADED:
             self.buttons["start"].setText("New measurement")
         else:
@@ -1235,29 +1254,38 @@ class GUI(QMainWindow):
         self.buttons["stop"].setEnabled(states["scan_is_running"])
 
         # Save to file button
-        self.buttons["save_scan"].setEnabled(all([
-            states["load_state"] != LoadState.UNLOADED,
-            not states["scan_is_running"],
-        ]))
+        self.buttons["save_scan"].setEnabled(
+            all(
+                [
+                    states["load_state"] != LoadState.UNLOADED,
+                    not states["scan_is_running"],
+                ]
+            )
+        )
 
         # Load from file button
         self.buttons["load_scan"].setEnabled(not states["scan_is_running"])
 
         # Replay button
-        self.buttons["replay_buffered"].setEnabled(all([
-            states["load_state"] != LoadState.UNLOADED,
-            not states["scan_is_running"],
-        ]))
+        self.buttons["replay_buffered"].setEnabled(
+            all(
+                [
+                    states["load_state"] != LoadState.UNLOADED,
+                    not states["scan_is_running"],
+                ]
+            )
+        )
 
         # Data source
         self.labels["data_source"].setVisible(
-            bool(states["load_state"] == LoadState.LOADED and self.data_source))
+            bool(states["load_state"] == LoadState.LOADED and self.data_source)
+        )
         try:
             text = "Loaded " + os.path.basename(self.data_source)
         except Exception:
             text = ""
         if len(text) > 50:
-            text = text[: 47] + "..."
+            text = text[:47] + "..."
         self.labels["data_source"].setText(text)
 
         # Sweep buffer
@@ -1449,19 +1477,27 @@ class GUI(QMainWindow):
 
         if states["ml_mode"] and hasattr(self, "feature_select"):
             config_is_valid = self.feature_select.is_config_valid()
-            self.feature_select.buttons["start"].setEnabled(all([
-                states["server_connected"] or states["load_state"] == LoadState.LOADED,
-                not states["scan_is_running"],
-                not states["has_config_error"],
-                config_is_valid,
-            ]))
+            self.feature_select.buttons["start"].setEnabled(
+                all(
+                    [
+                        states["server_connected"] or states["load_state"] == LoadState.LOADED,
+                        not states["scan_is_running"],
+                        not states["has_config_error"],
+                        config_is_valid,
+                    ]
+                )
+            )
             self.feature_select.buttons["stop"].setEnabled(states["scan_is_running"])
 
-            self.feature_select.buttons["replay_buffered"].setEnabled(all([
-                states["load_state"] != LoadState.UNLOADED,
-                not states["scan_is_running"],
-                config_is_valid,
-            ]))
+            self.feature_select.buttons["replay_buffered"].setEnabled(
+                all(
+                    [
+                        states["load_state"] != LoadState.UNLOADED,
+                        not states["scan_is_running"],
+                        config_is_valid,
+                    ]
+                )
+            )
             self.feature_select.check_limits()
 
         # Disable service help button if current_module_info does not have a docs_link.
@@ -1628,20 +1664,23 @@ class GUI(QMainWindow):
             entry = self.service_labels[mode][key]
             if "box" in entry:
                 er = False
-                val = self.is_float(entry["box"].text(),
-                                    is_positive=False)
+                val = self.is_float(entry["box"].text(), is_positive=False)
                 limits = entry["limits"]
                 default = entry["default"]
                 if val is not False:
-                    val, er = self.check_limit(val, entry["box"],
-                                               limits[0], limits[1], set_to=default)
+                    val, er = self.check_limit(
+                        val, entry["box"], limits[0], limits[1], set_to=default
+                    )
                 else:
                     er = True
                     val = default
                     entry["box"].setText(str(default))
                 if er:
-                    errors.append("{:s} must be between {:s} and {:s}!\n".format(
-                        key, str(limits[0]), str(limits[1])))
+                    errors.append(
+                        "{:s} must be between {:s} and {:s}!\n".format(
+                            key, str(limits[0]), str(limits[1])
+                        )
+                    )
                 self.service_params[key]["value"] = self.service_params[key]["type"](val)
             elif "checkbox" in entry:
                 self.service_params[key]["value"] = entry["checkbox"].isChecked()
@@ -1703,7 +1742,7 @@ class GUI(QMainWindow):
             "Load scan",
             "",
             "HDF5 data files (*.h5);; NumPy data files (*.npz)",
-            options=options
+            options=options,
         )
 
         if not filename:
@@ -1713,12 +1752,14 @@ class GUI(QMainWindow):
             record = recording.load(filename)
         except Exception:
             traceback.print_exc()
-            self.error_message((
-                "Failed to load file"
-                "\n\n"
-                "Note: loading data fetched with RSS v1 is not supported. To load old data, please"
-                " use an older version of the Exploration Tool."
-            ))
+            self.error_message(
+                (
+                    "Failed to load file"
+                    "\n\n"
+                    "Note: loading data fetched with RSS v1 is not supported."
+                    "To load old data, please use an older version of the Exploration Tool."
+                )
+            )
             return
 
         try:
@@ -1781,7 +1822,8 @@ class GUI(QMainWindow):
         title = "Save scan"
         file_types = "HDF5 data files (*.h5);; NumPy data files (*.npz)"
         filename, info = QtWidgets.QFileDialog.getSaveFileName(
-            self, title, "", file_types, options=options)
+            self, title, "", file_types, options=options
+        )
 
         if not filename:
             return
@@ -1867,7 +1909,8 @@ class GUI(QMainWindow):
                 title = "Save " + load_text
                 file_types = "NumPy data files (*.npy)"
                 fname, info = QtWidgets.QFileDialog.getSaveFileName(
-                    self, title, "", file_types, options=options)
+                    self, title, "", file_types, options=options
+                )
                 if fname:
                     try:
                         np.save(fname, self.advanced_process_data["process_data"])
@@ -1993,9 +2036,7 @@ class GUI(QMainWindow):
         if tick_info is not None:
             _, f, _ = tick_info
 
-            self.labels["measured_update_rate"].setText(
-                f"{f:>10.1f} Hz"
-            )
+            self.labels["measured_update_rate"].setText(f"{f:>10.1f} Hz")
 
         RED_TEXT_TIMEOUT = 2
         now = time.time()
@@ -2047,7 +2088,7 @@ class GUI(QMainWindow):
                 try:
                     conf._loads(dump)
                 except Exception:
-                    print("Could not load sensor config for \'{}\'".format(key))
+                    print("Could not load sensor config for '{}'".format(key))
                     conf._reset()  # TODO: load module defaults
 
         # Restore processing configs (configbase)
@@ -2058,7 +2099,7 @@ class GUI(QMainWindow):
                 try:
                     conf._loads(dump)
                 except Exception:
-                    print("Could not load processing config for \'{}\'".format(key))
+                    print("Could not load processing config for '{}'".format(key))
                     conf._reset()
 
         # Restore misc. settings
@@ -2241,8 +2282,10 @@ class Threaded_Scan(QtCore.QThread):
                 self.emit("session_setup_error", "")
             except Exception as e:
                 traceback.print_exc()
-                self.emit("client_error", "Failed to setup streaming!\n"
-                          "{}".format(self.format_error(e)))
+                self.emit(
+                    "client_error",
+                    "Failed to setup streaming!\n" "{}".format(self.format_error(e)),
+                )
                 self.running = False
 
             try:

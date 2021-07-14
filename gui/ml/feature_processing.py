@@ -166,9 +166,7 @@ class FeatureProcessing:
         else:
             num_sensors, data_len = data["sweep_data"].shape
 
-        self.win_data = {
-            "env_data": np.zeros((num_sensors, data_len, n_sweeps))
-        }
+        self.win_data = {"env_data": np.zeros((num_sensors, data_len, n_sweeps))}
 
         if mode == Mode.SPARSE:
             self.win_data["sparse_data"] = np.zeros(
@@ -268,7 +266,7 @@ class FeatureProcessing:
             triggered, motion_score, message = self.trigger_cb.get_trigger(
                 data,
                 fmap,
-                self.trigger_options
+                self.trigger_options,
             )
             if triggered:
                 self.motion_detected = True
@@ -284,8 +282,10 @@ class FeatureProcessing:
             "label": self.label,
             "frame_nr": len(self.markers),
             "feature_map": fmap,
-            "frame_marker":
-                self.sweep_number - self.frame_size - self.frame_pad - (self.time_series - 1),
+            "frame_marker": self.sweep_number
+            - self.frame_size
+            - self.frame_pad
+            - (self.time_series - 1),
             "frame_complete": False,
             "sweep_counter": self.sweep_counter,
             "sweep_number": self.sweep_number,
@@ -325,8 +325,7 @@ class FeatureProcessing:
 
         if not self.store_features:
             self.sweep_number = max(
-                self.sweep_number,
-                2 * (self.frame_size + self.time_series - 1)
+                self.sweep_number, 2 * (self.frame_size + self.time_series - 1)
             )
 
         frame_data = {
@@ -557,8 +556,9 @@ class DataProcessor:
         self.feature_process.set_feature_list(ml_settings["feature_list"])
         self.feature_process.set_frame_settings(self.frame_settings)
 
-    def update_ml_settings(self, ml_settings=None, frame_settings=None, trigger=None,
-                           feature_list=None):
+    def update_ml_settings(
+        self, ml_settings=None, frame_settings=None, trigger=None, feature_list=None
+    ):
         if frame_settings is not None:
             self.feature_process.set_frame_settings(frame_settings)
 
@@ -584,9 +584,7 @@ class DataProcessor:
                 self.num_sensors = 1
                 if len(sweep.shape) > 1:
                     self.num_sensors, self.data_len = sweep.shape
-                self.hist_env = np.zeros(
-                    (self.num_sensors, self.data_len, self.image_buffer)
-                )
+                self.hist_env = np.zeros((self.num_sensors, self.data_len, self.image_buffer))
 
         sweep_data = sweep.copy()
 
@@ -623,7 +621,7 @@ class DataProcessor:
             if plot_data["ml_frame_data"]["frame_info"].get("time_series", 1) > 1:
                 feature_map = ml_helper.convert_time_series(
                     plot_data["ml_frame_data"]["current_frame"]["feature_map"],
-                    plot_data["ml_frame_data"]["frame_info"]
+                    plot_data["ml_frame_data"]["frame_info"],
                 )
             try:
                 plot_data["prediction"] = self.evaluate(feature_map)
@@ -636,8 +634,9 @@ class DataProcessor:
             plot_data["ml_frame_data"]["frame_list"][-1]["label"] = prediction_label
 
             if self.prediction_hist is None:
-                self.prediction_hist = np.zeros((plot_data["prediction"]["number_labels"],
-                                                 self.hist_len))
+                self.prediction_hist = np.zeros(
+                    (plot_data["prediction"]["number_labels"], self.hist_len)
+                )
             predictions = plot_data["prediction"]["label_predictions"]
             self.prediction_hist = np.roll(self.prediction_hist, 1, axis=1)
             for key in predictions:
@@ -651,8 +650,9 @@ class DataProcessor:
 
 
 class PGUpdater:
-    def __init__(self, sensor_config=None, processing_config=None, predictions=False,
-                 info_text=True):
+    def __init__(
+        self, sensor_config=None, processing_config=None, predictions=False, info_text=True
+    ):
 
         self.env_plot_max_y = 0
         self.hist_plot_max_y = 0
@@ -680,12 +680,12 @@ class PGUpdater:
         self.border_right = pg.InfiniteLine(
             pos=0,
             angle=90,
-            pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
+            pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine),
         )
         self.border_left = pg.InfiniteLine(
             pos=0,
             angle=90,
-            pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine)
+            pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine),
         )
         self.border_rolling = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(width=2))
 
@@ -717,7 +717,7 @@ class PGUpdater:
         lut = utils.pg_mpl_cmap("viridis")
 
         for s in range(4):
-            legend_text = "Sensor {}".format(s+1)
+            legend_text = "Sensor {}".format(s + 1)
             hist_title = "History {}".format(legend_text)
             self.hist_plot_images.append(
                 self.history_plot_window.addPlot(row=0, col=s, title=hist_title)
@@ -817,25 +817,25 @@ class PGUpdater:
         for idx, sensor in enumerate(sensors):
 
             if mode == Mode.SPARSE:
-                data_history_adj = data["hist_env"][idx, :, :].T - 2**15
+                data_history_adj = data["hist_env"][idx, :, :].T - 2 ** 15
                 sign = np.sign(data_history_adj)
                 data_history_adj = np.abs(data_history_adj)
                 data_history_adj /= data_history_adj.max()
-                data_history_adj = np.power(data_history_adj, 1/2.2)  # gamma correction
+                data_history_adj = np.power(data_history_adj, 1 / 2.2)  # gamma correction
                 data_history_adj *= sign
-                self.hist_plots[sensor-1].updateImage(data_history_adj, levels=(-1.05, 1.05))
+                self.hist_plots[sensor - 1].updateImage(data_history_adj, levels=(-1.05, 1.05))
             else:
                 max_val = np.max(data["env_ampl"][idx])
 
-                ymax_level = min(1.5 * np.max(np.max(data["hist_env"][idx, :, :])),
-                                 self.hist_plot_max_y[idx])
+                ymax_level = min(
+                    1.5 * np.max(np.max(data["hist_env"][idx, :, :])), self.hist_plot_max_y[idx]
+                )
 
                 if max_val > self.hist_plot_max_y[idx]:
                     self.hist_plot_max_y[idx] = 1.2 * max_val
 
-                self.hist_plots[sensor-1].updateImage(
-                    data["hist_env"][idx, :, :].T,
-                    levels=(0, ymax_level)
+                self.hist_plots[sensor - 1].updateImage(
+                    data["hist_env"][idx, :, :].T, levels=(0, ymax_level)
                 )
 
         if self.show_predictions and data.get("prediction") is not None:
@@ -879,9 +879,7 @@ class PGUpdater:
 
         if not frame_complete:
             self.border_rolling.show()
-            self.border_rolling.setValue(
-                frame_data["current_frame"]["sweep_counter"] - frame_pad
-            )
+            self.border_rolling.setValue(frame_data["current_frame"]["sweep_counter"] - frame_pad)
         else:
             self.border_rolling.hide()
 
@@ -896,8 +894,8 @@ class PGUpdater:
 
         # Disable post gamma stretch for the time being
         # TODO: Add option in GUI to enable.
-        g = 1/1
-        feat_map = 254/(ymax_level + 1.0e-9)**g * feat_map**g
+        g = 1 / 1
+        feat_map = 254 / (ymax_level + 1.0e-9) ** g * feat_map ** g
 
         feat_map[feat_map > 254] = 254
 
@@ -912,9 +910,8 @@ class PGUpdater:
         num_sensors, xdim, s_buff = data["hist_env"].shape
 
         yax = plot.getAxis("left")
-        y = np.round(np.arange(0, xdim+xdim/9, xdim/9))
-        labels = np.round(np.arange(xstart, xend+(xend-xstart)/9,
-                          (xend-xstart)/9))
+        y = np.round(np.arange(0, xdim + xdim / 9, xdim / 9))
+        labels = np.round(np.arange(xstart, xend + (xend - xstart) / 9, (xend - xstart) / 9))
         ticks = [list(zip(y, labels))]
         yax.setTicks(ticks)
         plot.setYRange(0, xdim)

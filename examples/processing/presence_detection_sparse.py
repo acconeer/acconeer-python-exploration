@@ -146,7 +146,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         logscale=True,
         updateable=True,
         order=60,
-        help="Time constant of the low pass filter for the detector output."
+        help="Time constant of the low pass filter for the detector output.",
     )
 
     show_data = et.configbase.BoolParameter(
@@ -270,16 +270,13 @@ class Processor:
         self.intra_weight = processing_config.intra_frame_weight
         self.inter_weight = 1.0 - self.intra_weight
 
-        self.fast_sf = self.cutoff_to_sf(
-            processing_config.inter_frame_fast_cutoff, self.f)
-        self.slow_sf = self.cutoff_to_sf(
-            processing_config.inter_frame_slow_cutoff, self.f)
+        self.fast_sf = self.cutoff_to_sf(processing_config.inter_frame_fast_cutoff, self.f)
+        self.slow_sf = self.cutoff_to_sf(processing_config.inter_frame_slow_cutoff, self.f)
         self.inter_dev_sf = self.tc_to_sf(
-            processing_config.inter_frame_deviation_time_const, self.f)
-        self.intra_sf = self.tc_to_sf(
-            processing_config.intra_frame_time_const, self.f)
-        self.output_sf = self.tc_to_sf(
-            processing_config.output_time_const, self.f)
+            processing_config.inter_frame_deviation_time_const, self.f
+        )
+        self.intra_sf = self.tc_to_sf(processing_config.intra_frame_time_const, self.f)
+        self.output_sf = self.tc_to_sf(processing_config.output_time_const, self.f)
 
     def cutoff_to_sf(self, fc, fs):  # cutoff frequency to smoothing factor conversion
         if fc > 0.5 * fs:
@@ -319,7 +316,7 @@ class Processor:
         else:
             pad_width = int(np.ceil((b.size - a.size) / 2))
             a = np.pad(a, pad_width, "constant")
-            return np.correlate(a, b, mode="same")[pad_width: -pad_width]
+            return np.correlate(a, b, mode="same")[pad_width:-pad_width]
 
     def process(self, frame):
         # Noise estimation
@@ -442,7 +439,7 @@ class PGUpdater:
         self.data_plot.showGrid(x=True, y=True)
         self.data_plot.setLabel("bottom", "Depth (m)")
         self.data_plot.setLabel("left", "Amplitude")
-        self.data_plot.setYRange(0, 2**16)
+        self.data_plot.setYRange(0, 2 ** 16)
         self.frame_scatter = pg.ScatterPlotItem(
             size=10,
             brush=et.utils.pg_brush_cycler(0),
@@ -537,19 +534,23 @@ class PGUpdater:
         self.move_hist_plot.addItem(limit_line)
         self.limit_lines.append(limit_line)
 
-        self.present_html_format = '<div style="text-align: center">' \
-                                   '<span style="color: #FFFFFF;font-size:15pt;">' \
-                                   "{}</span></div>"
-        not_present_html = '<div style="text-align: center">' \
-                           '<span style="color: #FFFFFF;font-size:15pt;">' \
-                           "{}</span></div>".format("No presence detected")
+        self.present_html_format = (
+            '<div style="text-align: center">'
+            '<span style="color: #FFFFFF;font-size:15pt;">'
+            "{}</span></div>"
+        )
+        not_present_html = (
+            '<div style="text-align: center">'
+            '<span style="color: #FFFFFF;font-size:15pt;">'
+            "{}</span></div>".format("No presence detected")
+        )
         self.present_text_item = pg.TextItem(
-            fill=pg.mkColor(0xff, 0x7f, 0x0e, 200),
+            fill=pg.mkColor(0xFF, 0x7F, 0x0E, 200),
             anchor=(0.5, 0),
         )
         self.not_present_text_item = pg.TextItem(
             html=not_present_html,
-            fill=pg.mkColor(0x1f, 0x77, 0xb4, 180),
+            fill=pg.mkColor(0x1F, 0x77, 0xB4, 180),
             anchor=(0.5, 0),
         )
 

@@ -45,6 +45,7 @@ def mock_handler_gui(qtbot, mocker):
     Not really interested if the webpage opens in a tab that is the module `webbrowser`'s
     responsibility. We are, however, interested whether the url will resolve (response.ok == True)
     """
+
     def mock_help_button_handler(self):
         # self == GUI
         url = self.current_module_info.docs_url
@@ -53,6 +54,7 @@ def mock_handler_gui(qtbot, mocker):
             self.under_test_help_button_response = response
         else:
             self.under_test_help_button_response = None
+
     mocker.patch("gui.main.GUI.service_help_button_handler", mock_help_button_handler)
     return _get_gui(qtbot)
 

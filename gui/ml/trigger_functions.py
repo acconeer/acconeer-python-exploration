@@ -12,13 +12,14 @@ import keras_processing as keras_p
 try:
     sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "../../")))
     from examples.processing import presence_detection_sparse
+
     SPARSE_AUTO_DETECTION = True
 except ImportError:
     print("Could not import presence detector!\n")
     SPARSE_AUTO_DETECTION = False
 
 
-class Trigger():
+class Trigger:
     def __init__(self):
         self.motion_detector = None
         self.mode = None
@@ -107,7 +108,7 @@ class Trigger():
         threshold = trigger_options["auto_threshold"]
         score = 0
         message = ""
-        margin = .1
+        margin = 0.1
 
         wing = trigger_options["auto_offset"]
         if len(feature_map.shape) == 2:
@@ -119,7 +120,7 @@ class Trigger():
             else:
                 center = np.sum(feature_map[:, wing:-wing]) / (frame_size - 2 * wing)
                 left = np.sum(feature_map[:, 0:wing]) / wing
-                right = np.sum(feature_map[:, -(wing + 1):-1]) / wing
+                right = np.sum(feature_map[:, -(wing + 1) : -1]) / wing
 
                 if right == 0 or left == 0:
                     pass
@@ -146,7 +147,7 @@ class Trigger():
         threshold = trigger_options["auto_threshold"]
         score = 0
         message = ""
-        margin = .1
+        margin = 0.1
 
         wing = trigger_options["auto_offset"]
 
@@ -160,7 +161,7 @@ class Trigger():
             else:
                 center = np.sum(feature_map[:, wing:-wing]) / (frame_size - 2 * wing)
                 left = np.sum(feature_map[:, 0:wing]) / wing
-                right = np.sum(feature_map[:, -(wing + 1):-1]) / wing
+                right = np.sum(feature_map[:, -(wing + 1) : -1]) / wing
                 side = right
                 off1 = center
                 off2 = left
@@ -214,11 +215,7 @@ class Trigger():
                 motion_processors_list = []
                 for i in range(num_sensors):
                     motion_processors_list.append(
-                        self.motion_class(
-                            sensor_config,
-                            self.motion_config,
-                            data["session_info"]
-                        )
+                        self.motion_class(sensor_config, self.motion_config, data["session_info"])
                     )
                 self.motion_processors = motion_processors_list
                 self.trigger_variables["motion_processors_initialized"] = True
@@ -237,9 +234,7 @@ class Trigger():
                     for i in range(num_sensors):
                         motion_processors_list.append(
                             self.motion_class(
-                                sensor_config,
-                                self.motion_config,
-                                data["session_info"]
+                                sensor_config, self.motion_config, data["session_info"]
                             )
                         )
                     self.motion_processors = motion_processors_list
@@ -267,8 +262,7 @@ class Trigger():
                     self.motion_score[i] = motion_score
 
             self.motion_score_normalized = max(
-                self.motion_score_normalized,
-                motion_score / self.motion_score[i]
+                self.motion_score_normalized, motion_score / self.motion_score[i]
             )
 
             if self.motion_score_normalized > threshold:

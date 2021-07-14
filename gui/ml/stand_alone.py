@@ -97,8 +97,7 @@ def main():
 
 
 def add_args(parser):
-    parser.add_argument("--load-model", dest="model_file_name",
-                        help="Load model", default=None)
+    parser.add_argument("--load-model", dest="model_file_name", help="Load model", default=None)
 
 
 if __name__ == "__main__":

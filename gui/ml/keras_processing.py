@@ -156,7 +156,8 @@ class MachineLearning(kp_tf.ACC_ML):
             if map_dims != current_dim:
                 message = "Input dimenions not matching:\nModel {} - Data {}".format(
                     map_dims,
-                    feature_map_dims[i])
+                    feature_map_dims[i],
+                )
                 message += err_tip
                 info["message"] = message
                 print(files_loaded[i])
@@ -211,8 +212,8 @@ class MachineLearning(kp_tf.ACC_ML):
                 output = self.model_data.output
                 if self.label_num != output:
                     message = "Output dimensions not matching:\nModel {} - Data {}".format(
-                        output,
-                        self.label_num)
+                        output, self.label_num
+                    )
                     info["message"] = message + err_tip
                     return {"info": info}
         else:
@@ -355,10 +356,8 @@ class MachineLearning(kp_tf.ACC_ML):
         if print_to_cmd:
             print("")
             for row_label, row in zip(row_labels, matrix):
-                print("%s [%s]" % (row_label.ljust(max_len),
-                                   " ".join("%09s" % i for i in row)))
-            print("%s %s" % ("".ljust(max_len),
-                             " ".join("%s" % i.ljust(11) for i in row_labels)))
+                print("%s [%s]" % (row_label.ljust(max_len), " ".join("%09s" % i for i in row)))
+            print("%s %s" % ("".ljust(max_len), " ".join("%s" % i.ljust(11) for i in row_labels)))
 
         return {"matrix": matrix, "labels": row_labels}
 
@@ -434,7 +433,7 @@ class KerasPlotting:
         self.loss_plot_window.setLabel("bottom", "Epoch")
 
         self.progress_loss = pg.TextItem(color="k", anchor=(0, 1), fill="#f0f0f0")
-        self.progress_loss.setPos(.5, 0.5)
+        self.progress_loss.setPos(0.5, 0.5)
         self.progress_loss.setZValue(2)
         self.loss_plot_window.addItem(self.progress_loss, ignoreBounds=True)
 

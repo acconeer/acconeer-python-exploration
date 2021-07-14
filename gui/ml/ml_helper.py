@@ -7,7 +7,7 @@ import yaml
 from acconeer.exptool import recording
 
 
-class KerasBase():
+class KerasBase:
     def __init__(self):
         pass
 
@@ -157,8 +157,10 @@ def load_session_data(fname):
         sweep_data_len = len(data["sweep_data"].data.data)
         number_of_feature_frames = len(data["frame_data"]["ml_frame_data"]["frame_list"])
         print("\n", fname)
-        print("Found data with {} sweeps and {} feature frames.".format(
-            sweep_data_len, number_of_feature_frames)
+        print(
+            "Found data with {} sweeps and {} feature frames.".format(
+                sweep_data_len, number_of_feature_frames
+            )
         )
     except Exception:
         print("Failed to parse data from file:\n", fname)
@@ -176,7 +178,7 @@ def generate_calibration(filename=None):
             nr_frames = len(frame_list)
             calibration = np.zeros_like(frame_list[0]["feature_map"])
             for frame in frame_list:
-                calibration += (frame["feature_map"] / nr_frames)
+                calibration += frame["feature_map"] / nr_frames
             return calibration
         except Exception:
             traceback.print_exc()
@@ -205,14 +207,16 @@ def convert_time_series(feature_map, frame_info):
     y, x = feature_map.shape
 
     if x != frame_size + time_series - 1:
-        print("Cannot convert time series. Frame length {}, but should be {}".format(
-            x, frame_size + time_series - 1)
+        print(
+            "Cannot convert time series. Frame length {}, but should be {}".format(
+                x, frame_size + time_series - 1
+            )
         )
         return feature_map
 
     out_data = np.zeros((time_series, y, frame_size))
     for i in range(time_series):
-        out_data[i, :, :] = feature_map[:, i:i+frame_size]
+        out_data[i, :, :] = feature_map[:, i : i + frame_size]
 
     return out_data
 

@@ -226,7 +226,7 @@ class SparseMocker:
         xs = self.depths - self.range_center + 0.1 * np.sin(t)
         signal = 5000 * np.exp(-np.square(xs / 0.1)) * np.sin(xs / 2.5e-3)
 
-        data = 2**15 + noise + np.tile(signal[None, :], [num_sweeps, 1])
+        data = 2 ** 15 + noise + np.tile(signal[None, :], [num_sweeps, 1])
 
         data = np.rint(data)
 

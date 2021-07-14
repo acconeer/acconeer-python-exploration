@@ -23,8 +23,10 @@ class DemoControl:
     def start_detector(self, name, params):
         if self.detector_thread is not None:
             if self.detector_thread.detector_name != name:
-                return {"error": "other detector active",
-                        "active_detector": self.detector_thread.detector_name}
+                return {
+                    "error": "other detector active",
+                    "active_detector": self.detector_thread.detector_name,
+                }
             else:
                 return {"ok": "already started"}
         if not (name in self.detectors):

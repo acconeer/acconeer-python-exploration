@@ -172,20 +172,19 @@ class PresenceDetectionProcessor:
             out_data = None
         elif self.sweep_index < self.sweeps_in_block:
             self.data_s_d_mat[self.sweep_index, :] = self.iq_lp_filter_time(
-                self.data_s_d_mat[self.sweep_index - 1, :],
-                self.downsample(sweep, self.D)
+                self.data_s_d_mat[self.sweep_index - 1, :], self.downsample(sweep, self.D)
             )
 
             temp_phi = self.unwrap_phase(
                 self.phi_vec[self.sweep_index - 1],
                 self.data_s_d_mat[self.sweep_index, :],
-                self.data_s_d_mat[self.sweep_index - 1, :]
+                self.data_s_d_mat[self.sweep_index - 1, :],
             )
 
             self.phi_vec[self.sweep_index] = self.unwrap_phase(
                 self.phi_vec[self.sweep_index - 1],
                 self.data_s_d_mat[self.sweep_index, :],
-                self.data_s_d_mat[self.sweep_index - 1, :]
+                self.data_s_d_mat[self.sweep_index - 1, :],
             )
 
             phi_filt = signal.lfilter(self.b, self.a, self.phi_vec, axis=0)
@@ -211,15 +210,12 @@ class PresenceDetectionProcessor:
             # Lowpass filter IQ data downsampled in distance points
             self.data_s_d_mat = np.roll(self.data_s_d_mat, -1, axis=0)
             self.data_s_d_mat[-1, :] = self.iq_lp_filter_time(
-                self.data_s_d_mat[-2, :],
-                self.downsample(sweep, self.D)
+                self.data_s_d_mat[-2, :], self.downsample(sweep, self.D)
             )
 
             # Phase unwrapping of IQ data
             temp_phi = self.unwrap_phase(
-                self.phi_vec[-1],
-                self.data_s_d_mat[-1, :],
-                self.data_s_d_mat[-2, :]
+                self.phi_vec[-1], self.data_s_d_mat[-1, :], self.data_s_d_mat[-2, :]
             )
             self.phi_vec = np.roll(self.phi_vec, -1, axis=0)
             self.phi_vec[-1] = temp_phi
@@ -258,7 +254,7 @@ class PresenceDetectionProcessor:
         return out_data
 
     def downsample(self, data, n):
-        return data[:: n]
+        return data[::n]
 
     def iq_lp_filter_time(self, state, new_data):
         return self.alpha_iq * state + (1 - self.alpha_iq) * new_data
@@ -299,7 +295,7 @@ class PresenceDetectionProcessor:
 
         P_half = self.half_peak_frequency(P, f_est)
 
-        if (P_peak < self.lambda_05 * P_half):
+        if P_peak < self.lambda_05 * P_half:
             f_est = f_est / 2
             P_peak = P_half
 
@@ -321,7 +317,8 @@ class PresenceDetectionProcessor:
                 / (2 * np.log(P[f_idx]) - np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
             )
             P_peak = P[f_idx] + np.exp(
-                1 / 8 * np.square(np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
+                (1 / 8)
+                * np.square(np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
                 / (2 * np.log(P[f_idx]) - np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
             )
 
@@ -342,8 +339,9 @@ class PGUpdater:
         win.resize(800, 600)
         win.setWindowTitle("Acconeer sleep breathing estimation example")
 
-        phi_title = "Breathing motion (detection range: {} m to {} m)" \
-                    .format(*self.config.range_interval)
+        phi_title = "Breathing motion (detection range: {} m to {} m)".format(
+            *self.config.range_interval
+        )
         self.phi_plot = win.addPlot(title=phi_title)
         self.phi_plot.setMenuEnabled(False)
         self.phi_plot.setMouseEnabled(x=False, y=False)

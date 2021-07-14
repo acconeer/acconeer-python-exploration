@@ -171,8 +171,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         alerts = []
 
         if self.num_segments % 2 != 1:
-            alerts.append(et.configbase.Error(
-                "num_segments", "Number of segments must be odd"))
+            alerts.append(et.configbase.Error("num_segments", "Number of segments must be odd"))
 
         return alerts
 
@@ -188,25 +187,29 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             segment_length = sensor_config.sweeps_per_frame // self.num_segments
 
         if 0 <= segment_length < 8:
-            alerts["processing"].append(et.configbase.Error(
-                "num_segments",
-                (
-                    "Number of points in segment is too small."
-                    "\nDecrease number of segments"
-                    "\nor increase number of sweeps per frame"
+            alerts["processing"].append(
+                et.configbase.Error(
+                    "num_segments",
+                    (
+                        "Number of points in segment is too small."
+                        "\nDecrease number of segments"
+                        "\nor increase number of sweeps per frame"
+                    ),
                 )
-            ))
+            )
 
         if (sensor_config.sweeps_per_frame & (sensor_config.sweeps_per_frame - 1)) != 0:
             lower = 2 ** int(np.floor(np.log2(sensor_config.sweeps_per_frame)))
             upper = 2 ** int(np.ceil(np.log2(sensor_config.sweeps_per_frame)))
-            alerts["sensor"].append(et.configbase.Error(
-                "sweeps_per_frame",
-                (
-                    "Must have a value that is a power of 2."
-                    "\nClosest values are {} and {}".format(lower, upper)
+            alerts["sensor"].append(
+                et.configbase.Error(
+                    "sweeps_per_frame",
+                    (
+                        "Must have a value that is a power of 2."
+                        "\nClosest values are {} and {}".format(lower, upper)
+                    ),
                 )
-            ))
+            )
 
         return alerts
 
@@ -285,26 +288,33 @@ class Processor:
             else:
                 offset_segment = i * segment_length
 
-            current_segment = zero_mean_frame[offset_segment:offset_segment + segment_length]
+            current_segment = zero_mean_frame[offset_segment : offset_segment + segment_length]
 
             windowed_segment = current_segment * window[:, None]
 
-            fft_segments[i] = np.square(np.abs(np.fft.rfft(
-                windowed_segment,
-                self.fft_length,
-                axis=0,
-            ))) / window_norm  # rfft automatically pads if n<nfft
+            fft_segments[i] = (
+                np.square(
+                    np.abs(
+                        np.fft.rfft(
+                            windowed_segment,
+                            self.fft_length,
+                            axis=0,
+                        )
+                    )
+                )
+                / window_norm
+            )  # rfft automatically pads if n<nfft
 
         # Add FFTs of different segments and average to decrease FFT variance
 
         psds = np.mean(fft_segments, axis=0)
 
-        psds[1:psd_length - 1] *= 2  # Double frequencies except DC and Nyquist
+        psds[1 : psd_length - 1] *= 2  # Double frequencies except DC and Nyquist
 
         psd = np.max(psds, axis=1)  # Power Spectral Density
         asd = np.sqrt(psd)  # Amplitude Spectral Density
 
-        inst_noise_est = np.mean(asd[(-self.num_noise_est_bins - 1):-1])
+        inst_noise_est = np.mean(asd[(-self.num_noise_est_bins - 1) : -1])
         sf = self.dynamic_sf(self.noise_est_sf)  # Smoothing factor
         self.noise_est = sf * self.noise_est + (1.0 - sf) * inst_noise_est
 
@@ -405,10 +415,10 @@ class PGUpdater:
             plot.setMouseEnabled(x=False, y=False)
             plot.hideButtons()
             plot.showGrid(x=True, y=True)
-            plot.setYRange(0, 2**16)
+            plot.setYRange(0, 2 ** 16)
             plot.hideAxis("left")
             plot.hideAxis("bottom")
-            plot.plot(np.arange(self.sweeps_per_frame), 2**15 * np.ones(self.sweeps_per_frame))
+            plot.plot(np.arange(self.sweeps_per_frame), 2 ** 15 * np.ones(self.sweeps_per_frame))
             curve = plot.plot(pen=et.utils.pg_pen_cycler())
             self.data_plots.append(plot)
             self.data_curves.append(curve)

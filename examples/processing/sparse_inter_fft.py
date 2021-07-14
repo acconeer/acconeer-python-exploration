@@ -154,16 +154,19 @@ class Processor:
         invalid = self.window_size != processing_config._window_size
 
         self.window_size = processing_config._window_size
-        self.frames_between_updates = int(round(
-            self.window_size * (1 - processing_config.overlap)))
+        self.frames_between_updates = int(
+            round(self.window_size * (1 - processing_config.overlap))
+        )
 
         self.rolling_history_size = int(processing_config.rolling_history_size)
 
         if invalid:
-            self.collapsed_asd_history = np.zeros([
-                ProcessingConfiguration.ROLLING_HISTORY_SIZE_MAX,
-                self.window_size // 2,
-            ])
+            self.collapsed_asd_history = np.zeros(
+                [
+                    ProcessingConfiguration.ROLLING_HISTORY_SIZE_MAX,
+                    self.window_size // 2,
+                ]
+            )
 
         if invalid and self.tick_idx > 0:
             self.update_spect()
@@ -187,7 +190,7 @@ class Processor:
         x = x - np.nanmean(x, axis=0, keepdims=True)
         x = np.nan_to_num(x)
         fft = np.fft.rfft(x.T * np.hanning(x.shape[0]), axis=1)
-        asd = np.abs(fft)[:, 1 :]
+        asd = np.abs(fft)[:, 1:]
 
         self.collapsed_asd = asd.sum(axis=0)
         self.dw_asd = asd
@@ -245,8 +248,7 @@ class PGUpdater:
             curve = self.td_plot.plot(pen=et.utils.pg_pen_cycler(i), name=name)
             self.td_curves.append(curve)
 
-        self.collapsed_plot = win.addPlot(
-            row=1, col=0, title="Collapsed sqrt(PSD)")
+        self.collapsed_plot = win.addPlot(row=1, col=0, title="Collapsed sqrt(PSD)")
         self.collapsed_plot.setMenuEnabled(False)
         self.collapsed_plot.setMouseEnabled(x=False, y=False)
         self.collapsed_plot.hideButtons()
@@ -263,7 +265,8 @@ class PGUpdater:
         self.collapsed_plot.addItem(self.collapsed_text)
 
         self.collapsed_history_plot = win.addPlot(
-            row=2, col=0, title="Collapsed sqrt(PSD) history")
+            row=2, col=0, title="Collapsed sqrt(PSD) history"
+        )
         self.collapsed_history_plot.setMenuEnabled(False)
         self.collapsed_history_plot.setMouseEnabled(x=False, y=False)
         self.collapsed_history_plot.hideButtons()
@@ -347,7 +350,7 @@ class PGUpdater:
 
         im = self.collapsed_history_im
         y = d["collapsed_asd_history"]
-        im.updateImage(y[:: -1], levels=(0, 1.05 * y.max()))
+        im.updateImage(y[::-1], levels=(0, 1.05 * y.max()))
 
         y = d["dw_asd"]
         m = max(1, np.max(y)) * 1.05

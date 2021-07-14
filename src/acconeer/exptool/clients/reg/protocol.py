@@ -46,7 +46,7 @@ def unpack_packet(packet):
         raise ProtocolError("package is too short")
 
     packet_type = packet[0]
-    segment = packet[1 :]
+    segment = packet[1:]
 
     if packet_type == REG_READ_RESPONSE:
         return unpack_reg_read_res_segment(segment)
@@ -65,7 +65,7 @@ def unpack_reg_val(packed):
         raise ProtocolError("unexpected package length")
 
     reg_addr = packed[0]
-    enc_val = packed[1 :]
+    enc_val = packed[1:]
 
     return RegVal(reg_addr, enc_val)
 
@@ -82,7 +82,7 @@ def unpack_reg_write_res_segment(segment):
 
 def unpack_buf_read_res_segment(segment):
     buf_addr = segment[0]
-    buffer = segment[1 :]
+    buffer = segment[1:]
     return BufferReadResponse(buf_addr, buffer)
 
 
@@ -96,10 +96,10 @@ def unpack_stream_data_segment(segment):
 
         part_type = rest[0]
         data_start_index = 1 + LEN_FIELD_SIZE
-        part_len = int.from_bytes(rest[1 : data_start_index], BO)
+        part_len = int.from_bytes(rest[1:data_start_index], BO)
         data_end_index = data_start_index + part_len
-        part_data = rest[data_start_index : data_end_index]
-        rest = rest[data_end_index :]
+        part_data = rest[data_start_index:data_end_index]
+        rest = rest[data_end_index:]
 
         if part_type == STREAM_RESULT_INFO:
             s = ADDR_SIZE + REG_SIZE

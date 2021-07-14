@@ -16,21 +16,21 @@ def mock_comports():
         {
             "device": "/dev/ttyS4",
         },
-        {   # XB112 ~ as given from serial.tools.list_ports.comports
+        {  # XB112 ~ as given from serial.tools.list_ports.comports
             "device": "/dev/ttyUSB0",
             "description": "XB112",
             "manufacturer": "Acconeer AB",
             "product": "XB112",
             "interface": None,
         },
-        {   # XE132 ~ as given ...
+        {  # XE132 ~ as given ...
             "device": "/dev/ttyUSB1",
             "description": "Acconeer XE132 - Enhanced Com Port",
             "manufacturer": "Silicon Labs",
             "product": "Acconeer XE132",
             "interface": "Enhanced Com Port",
         },
-        {   # XE132 ~ as given ...
+        {  # XE132 ~ as given ...
             "device": "/dev/ttyUSB2",
             "description": "Acconeer XE132 - Standard Com Port",
             "manufacturer": "Silicon Labs",
@@ -45,8 +45,7 @@ def mock_comports():
         },
         {
             "device": "/dev/ttyUSB3",
-            "description": "Linux Foundation 1.1 root hub "
-
+            "description": "Linux Foundation 1.1 root hub ",
         },
     ]
     mock_ports = []

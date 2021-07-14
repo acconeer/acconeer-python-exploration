@@ -150,21 +150,21 @@ FUN_ARGTYPES = {
         C_INT_ENUM,
         C_INT_ENUM,
         C_INT_ENUM,
-        ctypes.c_uint8
+        ctypes.c_uint8,
     ],
     "FT4222_SPIMaster_SingleRead": [
         C_HANDLE,
         POINTER(ctypes.c_uint8),
         ctypes.c_uint16,
         POINTER(ctypes.c_uint16),
-        C_BOOL
+        C_BOOL,
     ],
     "FT4222_SPIMaster_SingleWrite": [
         C_HANDLE,
         POINTER(ctypes.c_uint8),
         ctypes.c_uint16,
         POINTER(ctypes.c_uint16),
-        C_BOOL
+        C_BOOL,
     ],
     "FT4222_SPIMaster_SingleReadWrite": [
         C_HANDLE,
@@ -172,7 +172,7 @@ FUN_ARGTYPES = {
         POINTER(ctypes.c_uint8),
         ctypes.c_uint16,
         POINTER(ctypes.c_uint16),
-        C_BOOL
+        C_BOOL,
     ],
 }
 
@@ -280,25 +280,32 @@ class Device:
     def set_wake_up_interrupt(self, enable):
         check_status(funs["FT4222_SetWakeUpInterrupt"](self.handle, enable))
 
-    def spi_master_init(self, io_line=SPIMode.SPI_IO_SINGLE, clock=SPIClock.CLK_NONE,
-                        cpol=SPICPOL.CLK_IDLE_LOW, cpha=SPICPHA.CLK_LEADING, sso_map=1):
+    def spi_master_init(
+        self,
+        io_line=SPIMode.SPI_IO_SINGLE,
+        clock=SPIClock.CLK_NONE,
+        cpol=SPICPOL.CLK_IDLE_LOW,
+        cpha=SPICPHA.CLK_LEADING,
+        sso_map=1,
+    ):
         status = funs["FT4222_SPIMaster_Init"](
             self.handle,
             get_enum_val(io_line),
             get_enum_val(clock),
             get_enum_val(cpol),
             get_enum_val(cpha),
-            sso_map
+            sso_map,
         )
         check_status(status)
 
-    def spi_set_driving_strength(self, clock=DrivingStrength.DS_8MA, io=DrivingStrength.DS_8MA,
-                                 sso=DrivingStrength.DS_8MA):
+    def spi_set_driving_strength(
+        self, clock=DrivingStrength.DS_8MA, io=DrivingStrength.DS_8MA, sso=DrivingStrength.DS_8MA
+    ):
         status = funs["FT4222_SPI_SetDrivingStrength"](
             self.handle,
             get_enum_val(clock),
             get_enum_val(io),
-            get_enum_val(sso)
+            get_enum_val(sso),
         )
         check_status(status)
 
@@ -310,7 +317,7 @@ class Device:
             read_buffer,
             num_bytes,
             byref(size_transferred),
-            is_end_transaction
+            is_end_transaction,
         )
 
         assert size_transferred.value == num_bytes
@@ -327,7 +334,7 @@ class Device:
             write_buffer,
             num_bytes,
             byref(size_transferred),
-            is_end_transaction
+            is_end_transaction,
         )
 
         assert size_transferred.value == num_bytes
@@ -344,7 +351,7 @@ class Device:
             write_buffer,
             num_bytes,
             byref(size_transferred),
-            is_end_transaction
+            is_end_transaction,
         )
 
         assert size_transferred.value == num_bytes

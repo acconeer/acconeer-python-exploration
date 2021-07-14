@@ -77,16 +77,19 @@ multi_sensor_parking_module = multi_sensor_wrap(parking_module)
 multi_sensor_sparse_speed_module = multi_sensor_wrap(sparse_speed_module)
 multi_sensor_presence_detection_sparse_module = multi_sensor_wrap(presence_detection_sparse_module)
 
-ModuleInfo = namedtuple("ModuleInfo", [
-    "key",
-    "label",
-    "module",
-    "sensor_config_class",
-    "processor",
-    "multi_sensor",
-    "allow_ml",
-    "docs_url",
-])
+ModuleInfo = namedtuple(
+    "ModuleInfo",
+    [
+        "key",
+        "label",
+        "module",
+        "sensor_config_class",
+        "processor",
+        "multi_sensor",
+        "allow_ml",
+        "docs_url",
+    ],
+)
 
 MODULE_INFOS = [
     ModuleInfo(
@@ -107,8 +110,7 @@ MODULE_INFOS = [
         envelope_module.Processor,
         True,
         True,
-        "https://acconeer-python-exploration.readthedocs.io/"
-        "en/latest/services/envelope.html",
+        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/envelope.html",
     ),
     ModuleInfo(
         Mode.IQ.name.lower(),
@@ -118,8 +120,7 @@ MODULE_INFOS = [
         iq_module.Processor,
         True,
         True,
-        "https://acconeer-python-exploration.readthedocs.io/"
-        "en/latest/services/iq.html",
+        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html",
     ),
     ModuleInfo(
         Mode.POWER_BINS.name.lower(),
@@ -129,8 +130,7 @@ MODULE_INFOS = [
         PassthroughProcessor,
         False,
         False,
-        "https://acconeer-python-exploration.readthedocs.io/"
-        "en/latest/services/pb.html",
+        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html",
     ),
     ModuleInfo(
         Mode.SPARSE.name.lower(),
@@ -140,8 +140,7 @@ MODULE_INFOS = [
         sparse_module.Processor,
         True,
         True,
-        "https://acconeer-python-exploration.readthedocs.io"
-        "/en/latest/services/sparse.html",
+        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html",
     ),
     ModuleInfo(
         "sparse_presence",
@@ -224,8 +223,7 @@ MODULE_INFOS = [
         obstacle_detection_module.ObstacleDetectionProcessor,
         [1, 2],
         False,
-        "https://acconeer-python-exploration.readthedocs.io"
-        "/en/latest/processing/obstacle.html",
+        "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html",
     ),
     ModuleInfo(
         "envelope_button_press",
@@ -257,8 +255,7 @@ MODULE_INFOS = [
         multi_sensor_parking_module.Processor,
         True,
         False,
-        "https://acconeer-python-exploration.readthedocs.io/"
-        "en/latest/processing/parking.html",
+        "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/parking.html",
     ),
 ]
 

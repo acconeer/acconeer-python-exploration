@@ -60,7 +60,8 @@ def main():
         if num_frames_in_record + 1 == args.frames_per_file:
             record = recorder.close()
             filename = os.path.join(
-                args.output_dir, "{:04}.{}".format(record_count + 1, file_format))
+                args.output_dir, "{:04}.{}".format(record_count + 1, file_format)
+            )
             print("Saved", filename)
             et.recording.save(filename, record)
 
@@ -75,8 +76,7 @@ def main():
     record_count, num_frames_in_record = divmod(total_num_frames, args.frames_per_file)
     if num_frames_in_record > 0:
         record = recorder.close()
-        filename = os.path.join(
-            args.output_dir, "{:04}.{}".format(record_count + 1, file_format))
+        filename = os.path.join(args.output_dir, "{:04}.{}".format(record_count + 1, file_format))
         print("Saved", filename)
         et.recording.save(filename, record)
 

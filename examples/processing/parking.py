@@ -87,10 +87,12 @@ class Processor:
         step = self.session_info["step_length_m"]
         self.leak_sample_index = int(round((self.depth_leak_sample - start) / step))
         self.leak_end_index = int(round((self.depth_leak_end - start) / step))
-        self.leak_estimate_depths = np.array([
-            self.depths[0] + step * self.leak_sample_index,
-            self.depths[0] + step * self.leak_end_index,
-        ])
+        self.leak_estimate_depths = np.array(
+            [
+                self.depths[0] + step * self.leak_sample_index,
+                self.depths[0] + step * self.leak_end_index,
+            ]
+        )
         self.queued_weights = []
         self.queued_distances = []
 
@@ -116,7 +118,7 @@ class Processor:
                 bg_far = np.ones(bg_far_len) * ENVELOPE_BACKGROUND_LEVEL
                 background = np.append(bg_near, bg_far)
             else:
-                background = bg_near[:len(sweep)]
+                background = bg_near[: len(sweep)]
         else:
             leak_amplitude = float("nan")
             background = np.ones(len(sweep)) * ENVELOPE_BACKGROUND_LEVEL
@@ -125,7 +127,8 @@ class Processor:
         samples_above_bg = np.fmax(sweep - background, 0)
         weight = (
             np.fmin(samples_above_bg / ENVELOPE_BACKGROUND_LEVEL, 1)
-            * samples_above_bg * self.depths
+            * samples_above_bg
+            * self.depths
         )
 
         weight_sum = np.sum(weight)
@@ -189,9 +192,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         decimals=3,
         updateable=True,
         order=0,
-        help=(
-            "Distance from the sensor for the leak sample position"
-        ),
+        help="Distance from the sensor for the leak sample position",
     )
 
     depth_leak_end = et.configbase.FloatParameter(
@@ -203,9 +204,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         decimals=3,
         updateable=True,
         order=1,
-        help=(
-            "Worst case distance from the sensor for the end of leak reflections"
-        ),
+        help="Worst case distance from the sensor for the end of leak reflections",
     )
 
     leak_max_amplitude = et.configbase.FloatParameter(
@@ -231,7 +230,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         help=(
             "Car detection criterion parameter: "
             "The number of sweep value pairs (weight, distance) in the detector queue"
-        )
+        ),
     )
 
     weight_threshold = et.configbase.FloatParameter(
@@ -285,19 +284,16 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         decimals=0,
         updateable=True,
         order=100,
-        help=(
-            'The time interval that is shown in the "Detection history" plot'
-        ),
+        help='The time interval that is shown in the "Detection history" plot',
     )
 
     def check(self):
         alerts = []
 
         if self.depth_leak_sample >= self.depth_leak_end:
-            alerts.append(et.configbase.Error(
-                "depth_leak_sample",
-                "Must be less than the leak end position"
-            ))
+            alerts.append(
+                et.configbase.Error("depth_leak_sample", "Must be less than the leak end position")
+            )
 
         return alerts
 
@@ -310,15 +306,19 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             alerts["sensor"].append(et.configbase.Error("update_rate", "Must be set"))
 
         if not sensor_config.noise_level_normalization:
-            alerts["sensor"].append(et.configbase.Error(
-                "noise_level_normalization", "Must be set"))
+            alerts["sensor"].append(
+                et.configbase.Error("noise_level_normalization", "Must be set")
+            )
 
-        if self.depth_leak_sample < sensor_config.range_start \
-           or self.depth_leak_sample > sensor_config.range_end:
-            alerts["sensor"].append(et.configbase.Error(
-                "range_interval",
-                "Leak sample position outside the range interval"
-            ))
+        if (
+            self.depth_leak_sample < sensor_config.range_start
+            or self.depth_leak_sample > sensor_config.range_end
+        ):
+            alerts["sensor"].append(
+                et.configbase.Error(
+                    "range_interval", "Leak sample position outside the range interval"
+                )
+            )
 
         return alerts
 
@@ -402,9 +402,11 @@ class PGUpdater:
         self.weight_plot.setYRange(0, 500)
         self.weight_plot.setXRange(100.0 * self.depths[0], 100.0 * self.depths[-1])
 
-        self.detection_html_format = '<div style="text-align: center">' \
-                                     '<span style="color: #FFFFFF;font-size:16pt;">' \
-                                     "{}</span></div>"
+        self.detection_html_format = (
+            '<div style="text-align: center">'
+            '<span style="color: #FFFFFF;font-size:16pt;">'
+            "{}</span></div>"
+        )
         detection_html = self.detection_html_format.format("Parked car detected!")
 
         self.detection_text_item = pg.TextItem(
@@ -500,12 +502,16 @@ class PGUpdater:
             criterion_distance_max = criterion_distance_min + pc.distance_difference_limit
 
             weight_limits = [
-                criterion_weight_max, criterion_weight_max,
-                criterion_weight_min, criterion_weight_min,
+                criterion_weight_max,
+                criterion_weight_max,
+                criterion_weight_min,
+                criterion_weight_min,
             ]
             distance_limits = [
-                criterion_distance_max, criterion_distance_min,
-                criterion_distance_min, criterion_distance_max,
+                criterion_distance_max,
+                criterion_distance_min,
+                criterion_distance_min,
+                criterion_distance_max,
             ]
 
             weight_limits.append(weight_limits[0])
@@ -524,22 +530,19 @@ class PGUpdater:
         self.limits_center = data["limits_center"]
         self.update_detection_limits()
         self.trailing_sweeps.setData(
-            100.0 * data["queued_distances"][:-1],
-            data["queued_weights"][:-1]
+            100.0 * data["queued_distances"][:-1], data["queued_weights"][:-1]
         )
         self.current_sweep.setData(
-            100.0 * data["queued_distances"][-1:],
-            data["queued_weights"][-1:]
+            100.0 * data["queued_distances"][-1:], data["queued_weights"][-1:]
         )
         self.hist_dots.setData(data["detection_history_t"], data["detection_history"])
 
         ymax = self.smooth_max_sweep.update(np.nanmax(data["sweep"]))
         self.sweep_plot.setYRange(0, ymax)
 
-        ymax = self.smooth_max_weight.update(np.nanmax(np.append(
-            data["weight"],
-            data["queued_weights"]
-        )))
+        ymax = self.smooth_max_weight.update(
+            np.nanmax(np.append(data["weight"], data["queued_weights"]))
+        )
         self.weight_plot.setYRange(0, ymax)
         xmid = (self.depths[0] + self.depths[-1]) / 2
         self.detection_text_item.setPos(100.0 * xmid, 0.95 * ymax)

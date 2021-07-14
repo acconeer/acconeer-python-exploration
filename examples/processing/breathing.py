@@ -135,7 +135,10 @@ class BreathingProcessor:
                 self.lp_phase_weights = phase_weights
             else:
                 self.lp_phase_weights = self.lp(
-                    phase_weights, self.lp_phase_weights, self.phase_weights_alpha)
+                    phase_weights,
+                    self.lp_phase_weights,
+                    self.phase_weights_alpha,
+                )
 
             weights = np.abs(self.lp_phase_weights) * env
 
@@ -167,7 +170,7 @@ class BreathingProcessor:
 
                 if maxs[max_idx, 0] < mins[min_idx, 0]:
                     exhale_dist = mins[min_idx, 1] + maxs[max_idx, 1]
-                    if (exhale_dist > 1 and exhale_dist < 20):
+                    if exhale_dist > 1 and exhale_dist < 20:
                         exhale_time = mins[min_idx, 0] - maxs[max_idx, 0]
                         if first_peak is None:
                             first_peak = maxs[max_idx, 0]
@@ -175,7 +178,7 @@ class BreathingProcessor:
                     max_idx += 1
                 else:
                     inhale_dist = mins[min_idx, 1] + maxs[max_idx, 1]
-                    if (inhale_dist > 1 and inhale_dist < 20):
+                    if inhale_dist > 1 and inhale_dist < 20:
                         inhale_time = maxs[max_idx, 0] - mins[min_idx, 0]
                         exhale = False
                         if first_peak is None:
@@ -206,7 +209,7 @@ class BreathingProcessor:
             zoom_hist_plot -= (max(zoom_hist_plot) + min(zoom_hist_plot)) * 0.5
 
             out_data = {
-                "peak_hist": self.peak_history[: 100],
+                "peak_hist": self.peak_history[:100],
                 "peak_std_mm": 2.5 * np.std(np.unwrap(np.angle(self.peak_history))) / (2.0 * pi),
                 "env_ampl": abs(self.lp_sweep),
                 "env_delta": self.lp_phase_weights,
@@ -226,7 +229,7 @@ class BreathingProcessor:
     def push(self, val, arr):
         res = np.empty_like(arr)
         res[0] = val
-        res[1 :] = arr[: -1]
+        res[1:] = arr[:-1]
         arr[...] = res
 
     def find_peaks(self, env, width):

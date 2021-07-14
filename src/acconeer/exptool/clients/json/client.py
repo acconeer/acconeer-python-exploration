@@ -57,7 +57,7 @@ class SocketClient(BaseClient):
             log.warning("server version unknown")
             return info
 
-        server_version_str = msg[len(startstr):].strip()
+        server_version_str = msg[len(startstr) :].strip()
         info.update(decode_version_str(server_version_str))
 
         self._send_cmd({"cmd": "get_board_sensor_count"})
@@ -308,5 +308,4 @@ SESSION_HEADER_TO_INFO_KEY_REMAP = {
     "length_m": "range_length_m",
 }
 
-DATA_HEADER_TO_INFO_KEY_REMAP = {
-}
+DATA_HEADER_TO_INFO_KEY_REMAP = {}

@@ -7,10 +7,12 @@ unp_reg_val = ptcl.RegVal(2, b"\x03\x00\x00\x00")
 unp_reg_read_res = ptcl.RegReadResponse(unp_reg_val)
 pkd_reg_read_res_segment = b"\x02\x03\x00\x00\x00"
 pkd_reg_read_res_packet = bytearray([ptcl.REG_READ_RESPONSE]) + pkd_reg_read_res_segment
-pkd_reg_read_res_frame = (bytearray([ptcl.START_MARKER])
-                          + b"\x05\x00"
-                          + pkd_reg_read_res_packet
-                          + bytearray([ptcl.END_MARKER]))
+pkd_reg_read_res_frame = (
+    bytearray([ptcl.START_MARKER])
+    + b"\x05\x00"
+    + pkd_reg_read_res_packet
+    + bytearray([ptcl.END_MARKER])
+)
 
 unp_reg_write_req = ptcl.RegWriteRequest(unp_reg_val)
 pkd_reg_write_req_packet = bytearray()

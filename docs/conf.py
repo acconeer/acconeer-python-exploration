@@ -54,9 +54,11 @@ latex_elements = {
         \renewcommand{\familydefault}{\sfdefault}
     """,
     "tableofcontents": "",
-    "sphinxsetup": ",".join([
-        r"hmargin={1.2in, 1.2in}",
-    ]),
+    "sphinxsetup": ",".join(
+        [
+            r"hmargin={1.2in, 1.2in}",
+        ]
+    ),
     "preamble": r"""
         \usepackage{titling}
         \usepackage{graphicx}

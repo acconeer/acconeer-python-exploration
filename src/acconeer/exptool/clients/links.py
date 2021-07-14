@@ -158,7 +158,7 @@ class SerialLink(BaseSerialLink):
         self._ser.open()
 
         if platform.system().lower() == "windows":
-            self._ser.set_buffer_size(rx_size=10**6, tx_size=10**6)
+            self._ser.set_buffer_size(rx_size=10 ** 6, tx_size=10 ** 6)
 
     def recv(self, num_bytes):
         data = bytearray(self._ser.read(num_bytes))

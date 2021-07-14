@@ -7,10 +7,10 @@ from acconeer.exptool import clients, configs, modes, structs
 
 
 def is_test(member_name, modules):
-    """ the `is` operator is reference equality, while `==` is for "member equality"
-        i.e. 2 different objects have the same contents.
+    """the `is` operator is reference equality, while `==` is for "member equality"
+    i.e. 2 different objects have the same contents.
 
-        We want to verify that one member `is` the same across namespaces.
+    We want to verify that one member `is` the same across namespaces.
     """
     # Gets the same member from different modules
     members = [getattr(module, member_name) for module in modules]
@@ -40,7 +40,7 @@ def test_top_module_clients(client_type):
         "IQServiceConfig",
         "PowerBinServiceConfig",
         "SparseServiceConfig",
-    ]
+    ],
 )
 def test_top_module_configs(config_type):
     assert pet.configs == configs

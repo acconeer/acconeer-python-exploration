@@ -140,7 +140,8 @@ class PidgetStub(Pidget):
 
         enabled = (
             state == cb.Config.State.LOADED
-            or state == cb.Config.State.LIVE and self.param.is_live_updateable
+            or state == cb.Config.State.LIVE
+            and self.param.is_live_updateable
         )
         enabled = enabled and self.param.enabled
         self.setEnabled(enabled)
@@ -166,13 +167,15 @@ class PidgetStub(Pidget):
         else:
             bg = "FFFFEE"
 
-        self.setStyleSheet((
-            "#frame {{"
-            "background-color: #{};"
-            "border: 1px solid lightgrey;"
-            "border-radius: 3px;"
-            "}}"
-        ).format(bg))
+        self.setStyleSheet(
+            (
+                "#frame {{"
+                "background-color: #{};"
+                "border: 1px solid lightgrey;"
+                "border-radius: 3px;"
+                "}}"
+            ).format(bg)
+        )
         self.alert_label.setText(alert.msg)
         self.alert_frame.show()
 
@@ -343,7 +346,7 @@ class FloatRangeSpinBoxesPidget(PidgetStub):
         for i in range(2):
             spin_box = wrap_qwidget(QDoubleSpinBox)(self)
             spin_box.setDecimals(param.decimals)
-            spin_box.setSingleStep(10**(-param.decimals))
+            spin_box.setSingleStep(10 ** (-param.decimals))
             spin_box.valueChanged.connect(lambda v, i=i: self.__spin_box_event_handler(v, i))
             spin_box.setKeyboardTracking(False)
             spin_box.setRange(*_limits_for_qt(param.limits))
@@ -381,7 +384,7 @@ class FloatSpinBoxPidget(PidgetStub):
 
         self.spin_box = wrap_qwidget(QDoubleSpinBox)(self)
         self.spin_box.setDecimals(param.decimals)
-        self.spin_box.setSingleStep(10**(-param.decimals))
+        self.spin_box.setSingleStep(10 ** (-param.decimals))
         self.spin_box.setKeyboardTracking(False)
         self.spin_box.setRange(*_limits_for_qt(param.limits))
 
@@ -452,7 +455,7 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
 
         self.spin_box = wrap_qwidget(QDoubleSpinBox)(self)
         self.spin_box.setDecimals(param.decimals)
-        self.spin_box.setSingleStep(10**(-param.decimals))
+        self.spin_box.setSingleStep(10 ** (-param.decimals))
         self.spin_box.valueChanged.connect(self._subwidget_event_handler)
         self.spin_box.setKeyboardTracking(False)
         self.spin_box.setRange(*_limits_for_qt(param.limits))

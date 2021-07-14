@@ -28,7 +28,7 @@ def main():
         assert os.path.isfile(path)
         assert os.path.dirname(path).startswith(src_dir)
 
-        subpath = path[len(src_dir) + 1:]
+        subpath = path[len(src_dir) + 1 :]
         tmp_path = os.path.join(tmp_dir, subpath)
 
         os.makedirs(os.path.dirname(tmp_path), exist_ok=True)

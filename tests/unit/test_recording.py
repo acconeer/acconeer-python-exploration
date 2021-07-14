@@ -73,7 +73,7 @@ def test_unknown_mode():
         packed["mode"] = "some_unknown_mode"
         unpacked = recording.unpack(packed)
 
-    assert(unpacked.mode is None)
+    assert unpacked.mode is None
 
 
 @pytest.mark.parametrize("mode", modes.Mode)

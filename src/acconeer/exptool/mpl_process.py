@@ -17,7 +17,7 @@ class PlotProcess:
             self._queue,
             self._exit_event,
             fig_updater,
-            interval / 1000.0
+            interval / 1000.0,
         )
 
         self._process = mp.Process(target=plot_process_program, args=args, daemon=True)

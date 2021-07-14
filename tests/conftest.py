@@ -46,7 +46,7 @@ def pytest_generate_tests(metafunc):
 
         spi = metafunc.config.getoption("spi")
         if spi:
-            params.append(("spi", ))
+            params.append(("spi",))
 
         socket = metafunc.config.getoption("socket")
         if socket is not None:
@@ -54,6 +54,6 @@ def pytest_generate_tests(metafunc):
 
         mock = metafunc.config.getoption("mock")
         if mock:
-            params.append(("mock", ))
+            params.append(("mock",))
 
         metafunc.parametrize(FIXTURE_NAME, params, indirect=True, ids=ids_fun)

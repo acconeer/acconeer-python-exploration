@@ -90,7 +90,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         logscale=True,
         updateable=True,
         order=20,
-        help=" Time constant of the low pass filter for the relative deviation.",
+        help="Time constant of the low pass filter for the relative deviation.",
     )
 
     threshold = et.configbase.FloatParameter(
@@ -112,10 +112,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         logscale=False,
         updateable=True,
         order=40,
-        help=(
-            "The time after a detected button press when no further detection"
-            " should occur."
-        ),
+        help="The time after a detected button press when no further detection should occur.",
     )
 
 
@@ -169,7 +166,7 @@ class ButtonPressProcessor:
 
         # Check detection
         detection = False
-        sweeps_since_last_detect = (self.sweep_index - self.last_detection_sweep)
+        sweeps_since_last_detect = self.sweep_index - self.last_detection_sweep
         detection_long_enough_ago = sweeps_since_last_detect > self.buttonpress_length_sweeps
         over_threshold = self.rel_dev_lp > self.threshold
         if over_threshold and detection_long_enough_ago:
@@ -192,8 +189,10 @@ class ButtonPressProcessor:
         if detection:
             self.detection_history.append(self.sweep_index)
 
-        while len(self.detection_history) > 0 and \
-                (self.sweep_index - self.detection_history[0]) > HISTORY_LENGTH_S * self.f:
+        while (
+            len(self.detection_history) > 0
+            and self.sweep_index - self.detection_history[0] > HISTORY_LENGTH_S * self.f
+        ):
             self.detection_history.remove(self.detection_history[0])
 
         out_data = {
@@ -274,9 +273,11 @@ class PGUpdater:
 
         self.limit_lines.append(limit_line)
 
-        self.detection_html_format = '<div style="text-align: center">' \
-                                     '<span style="color: #FFFFFF;font-size:16pt;">' \
-                                     "{}</span></div>"
+        self.detection_html_format = (
+            '<div style="text-align: center">'
+            '<span style="color: #FFFFFF;font-size:16pt;">'
+            "{}</span></div>"
+        )
         detection_html = self.detection_html_format.format("Button press detected!")
 
         self.detection_text_item = pg.TextItem(
