@@ -64,7 +64,6 @@ class ExampleArgumentParser(ArgumentParser):
             nargs=num_sens,
             help="the sensor(s) to use (default: 1)",
         )
-
         verbosity_group = self.add_mutually_exclusive_group(required=False)
         verbosity_group.add_argument(
             "-v",
@@ -409,6 +408,7 @@ class FreqCounter:
     """
 
     def __init__(self, a=None, tc=None, num_bits=None):
+
         assert (a is None) or (tc is None)
 
         if (a is None) and (tc is None):
@@ -417,24 +417,29 @@ class FreqCounter:
         self.a = a
         self.tc = tc
         self.num_bits = num_bits
-
+        self.avg_dt_buf_len = 150  # Chosen after empirical testing
         self.reset()
 
     def reset(self):
         self.last_t = None
-        self.lp_dt = None
+        self.lp_avg_dt = None
         self.num_ticks = 0
+        self.avg_dt_buf = np.full(self.avg_dt_buf_len, np.nan)
 
     def tick_values(self):
         """
-        Ticks this FreqCounter instance.
+        Ticks the FreqCounter by taking the time delta from last time this was called.
+        The update is done by a running average over the last 5 sweeps.
+        The averaged value is passed through a lp_filter to avoid displaying blinking numbers.
+
         OBS! The first call to this method will return None.
 
         :returns:
-            3-tuple of (delta time (lp-filtered), frequency, [throughput])
+            3-tuple of (delta time (averaged and lp-filtered), frequency, [throughput])
             -- OR --
             None
         """
+
         now = time.time()
 
         if self.last_t is None:
@@ -443,28 +448,34 @@ class FreqCounter:
 
         dt = now - self.last_t
 
+        self.avg_dt_buf = np.roll(self.avg_dt_buf, -1)
+        self.avg_dt_buf[-1] = dt
+
+        avg_dt = np.nanmean(self.avg_dt_buf)
+
         if self.a is not None:
             a = self.a
         else:
-            a = np.exp(-dt / self.tc)
+            a = np.exp(-avg_dt / self.tc)
 
-        a = min(a, 1.0 - 1.0 / (1.0 + self.num_ticks))  # dynamic sf
+        a = min(a, 1.0 - 1.0 / (1.0 + self.num_ticks))
 
-        if self.lp_dt is None:
-            self.lp_dt = dt
+        if self.lp_avg_dt is None:
+            self.lp_avg_dt = avg_dt
         else:
-            self.lp_dt = a * self.lp_dt + (1 - a) * dt
+            self.lp_avg_dt = a * self.lp_avg_dt + (1 - a) * avg_dt
 
-        f = 1 / self.lp_dt
+        self.last_t = now
+        self.num_ticks += 1
+
+        f = 1 / self.lp_avg_dt
 
         if self.num_bits is None:
             data_rate = None
         else:
             data_rate = self.num_bits * f
 
-        self.last_t = now
-        self.num_ticks += 1
-        return self.lp_dt, f, data_rate
+        return self.lp_avg_dt, f, data_rate
 
     def tick(self):
         """
