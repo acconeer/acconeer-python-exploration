@@ -253,7 +253,6 @@ class GUI(QMainWindow):
         # text, status, visible, enabled, function
         checkbox_info = {
             "verbose": ("Verbose logging", False, True, True, self.set_log_level),
-            "opengl": ("OpenGL", False, True, True, self.enable_opengl),
         }
 
         self.checkboxes = {}
@@ -505,19 +504,6 @@ class GUI(QMainWindow):
         self.ports_dd = QComboBox(self)
         self.ports_dd.hide()
         self.update_ports()
-
-    def enable_opengl(self):
-        if self.checkboxes["opengl"].isChecked():
-            warning = "Do you really want to enable OpenGL?"
-            detailed = "Enabling OpenGL might crash the GUI or introduce graphic glitches!"
-            if self.warning_message(warning, detailed_warning=detailed):
-                pg.setConfigOptions(useOpenGL=True)
-                self.update_canvas(force_update=True)
-            else:
-                self.checkboxes["opengl"].setChecked(False)
-        else:
-            pg.setConfigOptions(useOpenGL=False)
-            self.update_canvas(force_update=True)
 
     def set_multi_sensors(self):
         module_multi_sensor_support = self.current_module_info.multi_sensor
@@ -793,7 +779,6 @@ class GUI(QMainWindow):
         self.statusBar().addPermanentWidget(self.labels["measured_update_rate"])
         self.statusBar().addPermanentWidget(self.labels["libver"])
         self.statusBar().addPermanentWidget(self.checkboxes["verbose"])
-        self.statusBar().addPermanentWidget(self.checkboxes["opengl"])
         self.statusBar().setStyleSheet("QStatusBar{border-top: 1px solid lightgrey;}")
         self.statusBar().show()
 
@@ -1201,7 +1186,6 @@ class GUI(QMainWindow):
         self.sig_scan.connect(self.threaded_scan.receive)
 
         self.module_dd.setEnabled(False)
-        self.checkboxes["opengl"].setEnabled(False)
 
         self.num_recv_frames = 0
         self.num_missed_frames = 0
@@ -1531,7 +1515,6 @@ class GUI(QMainWindow):
             self.buttons["advanced_defaults"].setEnabled(True)
             processing_config._state = configbase.Config.State.LOADED
 
-        self.checkboxes["opengl"].setEnabled(True)
         self.set_gui_state("replaying_data", False)
         self.enable_tabs(True)
 
