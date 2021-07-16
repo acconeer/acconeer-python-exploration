@@ -42,6 +42,8 @@ pygments_style = None
 
 html_theme = "sphinx_rtd_theme"
 
+html_style = "css/custom.css"
+
 html_static_path = ["_static"]
 
 htmlhelp_basename = "acconeer-python-exploration-docs"

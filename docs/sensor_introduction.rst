@@ -22,7 +22,6 @@ When starting to use the Acconeer sensor there are different alternatives for bo
 To further support and guide you through the development process we also provide several user guides, data sheets, reference schematics, and reference layouts, which you can find at `acconeer.com <https://acconeer.com>`__. Also check out our `demo videos <https://www.youtube.com/channel/UC56HMJfKPSpamS-kMHXOcAw>`__ and `application page <https://www.acconeer.com/applications>`__ to get inspiration on how you can solve different use cases and how the Acconeer sensor can be used in your application.
 
 .. figure:: /_static/introduction/fig_selected_use_cases.png
-    :scale: 30
     :align: center
 
 
@@ -34,7 +33,6 @@ Radar is an acronym for Radio Detection and Ranging and is a way of determining 
 
 .. _fig_sensor_wave_object:
 .. figure:: /_static/introduction/fig_sensor_wave_object.png
-    :scale: 100
     :align: center
 
     Illustration of the pulsed coherent radar system where the time of flight is measured to determine distance to object
@@ -45,7 +43,6 @@ There are different approaches to building radar systems, each with its own pros
 
 .. _fig_pulsed_coherent_radar:
 .. figure:: /_static/introduction/fig_pulsed_coherent_radar.png
-    :scale: 60
     :align: center
 
     Pulsed coherent radar.
@@ -55,7 +52,6 @@ The unique selling points of the PCR sensor are summarized in :numref:`fig_uniqu
 
 .. _fig_unique_selling_points:
 .. figure:: /_static/introduction/fig_unique_selling_points.png
-    :scale: 60
     :align: center
 
     Unique selling points of the Acconeer pulsed coherent radar.
@@ -70,7 +66,6 @@ The Acconeer offer consists of two parts, hardware and software, as illustrated 
 
 .. _fig_acconeer_offer:
 .. figure:: /_static/introduction/fig_acconeer_offer.png
-    :scale: 65
     :align: center
 
     The Acconeer offer.
@@ -85,7 +80,6 @@ The A111 sensor is the core of the hardware offer and is available in modules an
 
 .. _fig_system_structure:
 .. figure:: /_static/introduction/fig_system_structure.png
-    :scale: 80
     :align: center
 
     System structure, the RSS software runs on a host that controls the sensor.
@@ -120,7 +114,6 @@ Based on these deliveries it is possible for the customer to create their own in
 
 .. _fig_product_sw_offer:
 .. figure:: /_static/introduction/fig_product_sw_offer.png
-    :scale: 65
     :align: center
 
     Products and software deliverables.
@@ -136,7 +129,6 @@ The two setups listed above are also illustrated in :numref:`fig_setups`.
 
 .. _fig_setups:
 .. figure:: /_static/introduction/fig_setups.png
-    :scale: 80
     :align: center
 
     Setup.
@@ -153,7 +145,6 @@ To help you to get to know the Acconeer products and get started quickly with ap
 
 .. _fig_sw_hw_if:
 .. figure:: /_static/introduction/fig_sw_hw_if.png
-    :scale: 80
     :align: center
 
     Overview of software and hardware interfaces to Acconeer tools.
@@ -166,7 +157,6 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 
 .. _fig_detectors_services:
 .. figure:: /_static/introduction/fig_detectors_services.png
-    :scale: 60
     :align: center
 
     Available Detectors and Services.
@@ -186,14 +176,12 @@ Envelope and Power Bins services
 
 .. _fig_power_bins_demo:
 .. figure:: /_static/introduction/fig_power_bins_demo.png
-    :scale: 60
     :align: center
 
     Output from the Power Bins service in Exploration Tool. Each bin correspond to a region of the scanned range, where Bin 1 is closest to the sensor.
 
 .. _fig_env_demo:
 .. figure:: /_static/introduction/fig_env_demo.png
-    :scale: 60
     :align: center
 
     Output from the Envelope service in Exploration Tool.
@@ -206,7 +194,6 @@ The IQ Service provides complex data in cartesian form, which is shown in :numre
 
 .. _fig_iq_demo:
 .. figure:: /_static/introduction/fig_iq_demo.png
-    :scale: 60
     :align: center
 
     Output from the IQ Service in Exploration Tool.
@@ -215,7 +202,6 @@ The cartesian data can be transformed to polar data providing phase and amplitud
 
 .. _fig_wavelet:
 .. figure:: /_static/introduction/fig_wavelet.png
-    :scale: 70
     :align: center
 
     Illustration of envelope and phase change of a received pulse for a reflection from a moving object, what is returned from the IQ Service is in cartesian form.
@@ -266,7 +252,6 @@ The Acconeer sensor is a mm wavelength pulsed coherent radar, which means that i
 
 .. _fig_transmit_signal_length:
 .. figure:: /_static/introduction/fig_transmit_signal_length.png
-    :scale: 60
     :align: center
 
     Illustration of the time domain transmitted signal from the Acconeer A111 sensor, a radar sweep typically consists of thousands of pulses. The length of the pulses can be controlled by setting Profile.
@@ -289,7 +274,6 @@ where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' 
 
 .. _fig_block_diagram:
 .. figure:: /_static/introduction/fig_block_diagram.png
-    :scale: 100
     :align: center
 
     Block diagram of the A111 sensor package, further details about interfaces can be found in the A111 data sheet.
@@ -298,7 +282,6 @@ where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' 
 
 .. _fig_envelope_2d:
 .. figure:: /_static/introduction/fig_envelope_2d.png
-    :scale: 60
     :align: center
 
     Output from Envelope service for a typical radar sweep with one object present.
@@ -347,7 +330,6 @@ The radar cross section is the effective area of the object that the signal is r
 
 .. _fig_rcs:
 .. figure:: /_static/introduction/fig_rcs.png
-    :scale: 40
     :align: center
 
     Radiation pattern and analytical expressions for simple geometrical shapes.
@@ -435,7 +417,6 @@ The SNR can be modelled as a function of a limited number of parameters: the RCS
 
 .. _fig_rx_power_vs_dist:
 .. figure:: /_static/introduction/fig_rx_power_vs_dist.png
-    :scale: 60
     :align: center
 
     Received signal power versus distance. Note: signal, S, is plotted in dB.
@@ -518,14 +499,12 @@ Depth resolution, :math:`d_{res}`, is the ability to resolve reflections which a
 
 .. _fig_distance_resolution:
 .. figure:: /_static/introduction/fig_distance_resolution.png
-    :scale: 60
     :align: center
 
     Illustration of received signal containing 2 echoes. A longer pulse increases the radar loop gain, but also limits the depth resolution. The displayed data corresponds to the two setups in :numref:`fig_scenario`.
 
 .. _fig_scenario:
 .. figure:: /_static/introduction/fig_scenario.png
-    :scale: 60
     :align: center
 
     Illustration of scenarios that can produce the data in :numref:`fig_distance_resolution`. A strong reflector, such as a flat metallic surface, can give a moderate radar signal if the angle to the radar is high. :math:`R_1` is identical in the two illustrations as well as :math:`R_2`.
@@ -536,7 +515,6 @@ If angular information is needed one possibility is to mechanically move the sen
 
 .. _fig_close_in_distance:
 .. figure:: /_static/introduction/fig_close_in_distance.png
-    :scale: 60
     :align: center
 
     Illustration of how the leakage between the Tx and Rx antenna will appear in the Envelope Service data for Profile 1 and Profile 2 pulse lengths.
@@ -649,7 +627,6 @@ The A111 sensor contains the mmWave front-end, digital control logic, digitizati
 
 .. _fig_host_platform:
 .. figure:: /_static/introduction/fig_host_platform.png
-    :scale: 60
     :align: center
 
     Illustration of integration into host platform, the A111 is marked with the Acconeer logo.
@@ -658,7 +635,6 @@ In addition to the above it is also important for optimized integration to consi
 
 .. _fig_radar_loop_pattern:
 .. figure:: /_static/introduction/fig_radar_loop_pattern.png
-    :scale: 60
     :align: center
 
     Setup configuration for radar loop pattern measurements.
@@ -667,7 +643,6 @@ The radiation pattern of the integrated antennas will be affected by anything th
 
 .. _fig_h_plan_pattern:
 .. figure:: /_static/introduction/fig_h_plan_pattern.png
-    :scale: 60
     :align: center
 
     Integration of sensor cover and how different materials impact the radiation pattern on the H-plane. The object used is a trihedral corner of radius 5 cm.

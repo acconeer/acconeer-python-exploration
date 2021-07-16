@@ -1,3 +1,57 @@
+
+@import url("theme.css");       /* for the Read the Docs theme */
+
+@media only screen and (min-width: 768px) {
+    .rst-content img[src="../_images/over_time.png"] {
+        width: 65%;
+    }
+    .rst-content img[src="../_images/sweeps_and_frames.png"] {
+        width: 70%;
+    }
+    .rst-content img[src="_images/fig_selected_use_cases.png"] {
+        width: 38%;
+    }
+    .rst-content img[src="_images/fig_pulsed_coherent_radar.png"] {
+        width: 60%;
+    }
+    .rst-content img[src="_images/fig_unique_selling_points.png"] {
+        width: 85%;
+    }
+    .rst-content img[src="_images/fig_system_structure.png"] {
+        width: 65%;
+    }
+    .rst-content img[src="_images/fig_product_sw_offer.png"] {
+        width: 92%;
+    }
+    .rst-content img[src="_images/fig_setups.png"] {
+        width: 97%;
+    }
+    .rst-content img[src="_images/fig_sw_hw_if.png"] {
+        width: 97%;
+    }
+    .rst-content img[src="_images/fig_detectors_services.png"] {
+        width: 70%;
+    }
+    .rst-content img[src="_images/fig_env_demo.png"] {
+        width: 80%;
+    }
+    .rst-content img[src="_images/fig_wavelet.png"] {
+        width: 95%;
+    }
+    .rst-content img[src="_images/fig_rcs.png"] {
+        width: 95%;
+    }
+    .rst-content img[src="_images/fig_host_platform.png"] {
+        width: 80%;
+    }
+    .rst-content img[src="_images/fig_radar_loop_pattern.png"] {
+        width: 85%;
+    }
+    .rst-content img[src="_images/fig_h_plan_pattern.png"] {
+        width: 85%;
+    }
+}
+
 .math {
     text-align: left;
 }
