@@ -17,7 +17,7 @@ import pyqtgraph as pg
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -484,13 +484,16 @@ class GUI(QMainWindow):
 
     def init_dropdowns(self):
         self.module_dd = QComboBox(self)
+        modules = {}
 
         for module_info in MODULE_INFOS:
-            if self.get_gui_state("ml_mode"):
-                if module_info.allow_ml:
-                    self.module_dd.addItem(module_info.label)
-            else:
-                self.module_dd.addItem(module_info.label)
+            if not self.get_gui_state("ml_mode") or module_info.allow_ml:
+                if module_info.module_family.value not in modules:
+                    modules[module_info.module_family.value] = [module_info.label]
+                else:
+                    modules[module_info.module_family.value].append(module_info.label)
+
+        self.init_dropdown_sections(modules)
 
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
@@ -504,6 +507,24 @@ class GUI(QMainWindow):
         self.ports_dd = QComboBox(self)
         self.ports_dd.hide()
         self.update_ports()
+
+    def init_dropdown_sections(self, modules: dict):
+
+        if None in modules:
+            self.module_dd.addItems(modules[None])
+
+        for k, v in modules.items():
+            if k is not None:
+                if self.module_dd.count() != 0:
+                    self.module_dd.insertSeparator(self.module_dd.count())
+                    self.module_dd.addItem(k)
+                    item = self.module_dd.model().item(self.module_dd.count() - 1, 0)
+                    font = QFont()
+                    font.setBold(True)
+                    item.setFont(font)
+                    item.setFlags(item.flags() & ~QtCore.Qt.ItemIsSelectable)
+
+                self.module_dd.addItems(v)
 
     def set_multi_sensors(self):
         module_multi_sensor_support = self.current_module_info.multi_sensor
@@ -1027,6 +1048,26 @@ class GUI(QMainWindow):
 
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
+
+        while (
+            module_label not in MODULE_LABEL_TO_MODULE_INFO_MAP
+        ):  # Fixes bug when using arrow keys to go trough dropdown
+            direction = self.module_dd.findText(module_label) - self.module_dd.findText(
+                self.current_module_label
+            )
+
+            if direction < 0:
+                index = self.module_dd.findText(module_label) - 2
+                # Seperator has an index
+            else:
+                index = self.module_dd.findText(module_label) + 1
+
+            self.module_dd.blockSignals(True)
+            self.module_dd.setCurrentIndex(index)
+            self.module_dd.blockSignals(False)
+
+            module_label = self.module_dd.currentText()
+
         switching_module = self.current_module_label != module_label
         self.current_module_label = module_label
 

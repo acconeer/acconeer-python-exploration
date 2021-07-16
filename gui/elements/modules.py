@@ -1,4 +1,5 @@
 from collections import namedtuple
+from enum import Enum
 from types import ModuleType
 
 from acconeer.exptool.modes import Mode
@@ -83,6 +84,7 @@ ModuleInfo = namedtuple(
         "key",
         "label",
         "module",
+        "module_family",
         "sensor_config_class",
         "processor",
         "multi_sensor",
@@ -91,11 +93,20 @@ ModuleInfo = namedtuple(
     ],
 )
 
+
+class ModuleFamily(Enum):
+    EXAMPLE = "Example processing"
+    SERVICE = "Services"
+    DETECTOR = "Detectors"
+    OTHER = None
+
+
 MODULE_INFOS = [
     ModuleInfo(
         None,
         "Select service or detector",
         None,
+        ModuleFamily.OTHER,
         None,
         None,
         True,
@@ -106,6 +117,7 @@ MODULE_INFOS = [
         Mode.ENVELOPE.name.lower(),
         "Envelope",
         envelope_module,
+        ModuleFamily.SERVICE,
         envelope_module.get_sensor_config,
         envelope_module.Processor,
         True,
@@ -116,6 +128,7 @@ MODULE_INFOS = [
         Mode.IQ.name.lower(),
         "IQ",
         iq_module,
+        ModuleFamily.SERVICE,
         iq_module.get_sensor_config,
         iq_module.Processor,
         True,
@@ -126,6 +139,7 @@ MODULE_INFOS = [
         Mode.POWER_BINS.name.lower(),
         "Power bins",
         power_bins_module,
+        ModuleFamily.SERVICE,
         power_bins_module.get_sensor_config,
         PassthroughProcessor,
         False,
@@ -136,6 +150,7 @@ MODULE_INFOS = [
         Mode.SPARSE.name.lower(),
         "Sparse",
         sparse_module,
+        ModuleFamily.SERVICE,
         sparse_module.get_sensor_config,
         sparse_module.Processor,
         True,
@@ -146,6 +161,7 @@ MODULE_INFOS = [
         "sparse_presence",
         "Presence detection (sparse)",
         multi_sensor_presence_detection_sparse_module,
+        ModuleFamily.DETECTOR,
         multi_sensor_presence_detection_sparse_module.get_sensor_config,
         multi_sensor_presence_detection_sparse_module.Processor,
         True,
@@ -157,6 +173,7 @@ MODULE_INFOS = [
         "sparse_fft",
         "Sparse short-time FFT (sparse)",
         sparse_fft_module,
+        ModuleFamily.EXAMPLE,
         sparse_fft_module.get_sensor_config,
         sparse_fft_module.Processor,
         False,
@@ -167,6 +184,7 @@ MODULE_INFOS = [
         "sparse_inter_fft",
         "Sparse long-time FFT (sparse)",
         sparse_inter_fft_module,
+        ModuleFamily.EXAMPLE,
         sparse_inter_fft_module.get_sensor_config,
         sparse_inter_fft_module.Processor,
         False,
@@ -177,6 +195,7 @@ MODULE_INFOS = [
         "sparse_speed",
         "Speed (sparse)",
         multi_sensor_sparse_speed_module,
+        ModuleFamily.EXAMPLE,
         multi_sensor_sparse_speed_module.get_sensor_config,
         multi_sensor_sparse_speed_module.Processor,
         True,
@@ -187,6 +206,7 @@ MODULE_INFOS = [
         "iq_breathing",
         "Breathing (IQ)",
         breathing_module,
+        ModuleFamily.EXAMPLE,
         breathing_module.get_sensor_config,
         breathing_module.BreathingProcessor,
         False,
@@ -197,6 +217,7 @@ MODULE_INFOS = [
         "iq_phase_tracking",
         "Phase tracking (IQ)",
         phase_tracking_module,
+        ModuleFamily.EXAMPLE,
         phase_tracking_module.get_sensor_config,
         phase_tracking_module.PhaseTrackingProcessor,
         False,
@@ -208,6 +229,7 @@ MODULE_INFOS = [
         "iq_sleep_breathing",
         "Sleep breathing (IQ)",
         sleep_breathing_module,
+        ModuleFamily.EXAMPLE,
         sleep_breathing_module.get_sensor_config,
         sleep_breathing_module.PresenceDetectionProcessor,
         False,
@@ -219,6 +241,7 @@ MODULE_INFOS = [
         "iq_obstacle",
         "Obstacle detection (IQ)",
         obstacle_detection_module,
+        ModuleFamily.DETECTOR,
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
         [1, 2],
@@ -229,6 +252,7 @@ MODULE_INFOS = [
         "envelope_button_press",
         "Button Press (envelope)",
         button_press_module,
+        ModuleFamily.EXAMPLE,
         button_press_module.get_sensor_config,
         button_press_module.ButtonPressProcessor,
         False,
@@ -240,6 +264,7 @@ MODULE_INFOS = [
         "envelope_distance",
         "Distance Detector (envelope)",
         multi_sensor_distance_detector_module,
+        ModuleFamily.DETECTOR,
         multi_sensor_distance_detector_module.get_sensor_config,
         multi_sensor_distance_detector_module.Processor,
         True,
@@ -251,6 +276,7 @@ MODULE_INFOS = [
         "envelope_parking",
         "Parking (envelope)",
         multi_sensor_parking_module,
+        ModuleFamily.DETECTOR,
         multi_sensor_parking_module.get_sensor_config,
         multi_sensor_parking_module.Processor,
         True,
