@@ -76,11 +76,25 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(configbase.ProcessingConfig):
-    VERSION = 1
+    VERSION = 2
 
     history_length = configbase.IntParameter(
         label="History length",
         default_value=100,
+    )
+
+    show_data_history_plot = configbase.BoolParameter(
+        label="Show data history",
+        default_value=True,
+        updateable=True,
+        order=110,
+    )
+
+    show_move_history_plot = configbase.BoolParameter(
+        label="Show movement history",
+        default_value=True,
+        updateable=True,
+        order=120,
     )
 
 
@@ -182,25 +196,25 @@ class PGUpdater:
             cmap._init()
             lut = (cmap._lut * 255).view(np.ndarray)
 
-            data_history_plot = win.addPlot(title="Data history", row=1, col=i)
-            data_history_plot.setMenuEnabled(False)
-            data_history_plot.setMouseEnabled(x=False, y=False)
-            data_history_plot.hideButtons()
+            self.data_history_plot = win.addPlot(title="Data history", row=1, col=i)
+            self.data_history_plot.setMenuEnabled(False)
+            self.data_history_plot.setMouseEnabled(x=False, y=False)
+            self.data_history_plot.hideButtons()
             data_history_im = pg.ImageItem(autoDownsample=True)
             data_history_im.setLookupTable(lut)
-            data_history_plot.addItem(data_history_im)
-            data_history_plot.setLabel("bottom", xlabel)
-            data_history_plot.setLabel("left", "Depth (m)")
+            self.data_history_plot.addItem(data_history_im)
+            self.data_history_plot.setLabel("bottom", xlabel)
+            self.data_history_plot.setLabel("left", "Depth (m)")
 
-            presence_history_plot = win.addPlot(title="Movement history", row=2, col=i)
-            presence_history_plot.setMenuEnabled(False)
-            presence_history_plot.setMouseEnabled(x=False, y=False)
-            presence_history_plot.hideButtons()
+            self.presence_history_plot = win.addPlot(title="Movement history", row=2, col=i)
+            self.presence_history_plot.setMenuEnabled(False)
+            self.presence_history_plot.setMouseEnabled(x=False, y=False)
+            self.presence_history_plot.hideButtons()
             presence_history_im = pg.ImageItem(autoDownsample=True)
             presence_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
-            presence_history_plot.addItem(presence_history_im)
-            presence_history_plot.setLabel("bottom", xlabel)
-            presence_history_plot.setLabel("left", "Depth (m)")
+            self.presence_history_plot.addItem(presence_history_im)
+            self.presence_history_plot.setLabel("bottom", xlabel)
+            self.presence_history_plot.setLabel("left", "Depth (m)")
 
             for im in [presence_history_im, data_history_im]:
                 im.resetTransform()
@@ -213,6 +227,21 @@ class PGUpdater:
             self.scatters.append(scatter)
             self.data_history_ims.append(data_history_im)
             self.presence_history_ims.append(presence_history_im)
+
+        self.setup_is_done = True
+        self.update_processing_config()
+
+    def update_processing_config(self, processing_config=None):
+        if processing_config is None:
+            processing_config = self.processing_config
+        else:
+            self.processing_config = processing_config
+
+        if not self.setup_is_done:
+            return
+
+        self.presence_history_plot.setVisible(processing_config.show_move_history_plot)
+        self.data_history_plot.setVisible(processing_config.show_data_history_plot)
 
     def update(self, d):
         data_limits = self.smooth_limits.update(d["data"])
