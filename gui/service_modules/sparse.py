@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import pyqtgraph as pg
 from matplotlib.colors import LinearSegmentedColormap
+from pyqtgraph.Qt import QtGui
 
 from acconeer.exptool import configs, utils
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
@@ -203,8 +204,10 @@ class PGUpdater:
 
             for im in [presence_history_im, data_history_im]:
                 im.resetTransform()
-                im.translate(x_offset, y_offset)
-                im.scale(x_scale, y_scale)
+                tr = QtGui.QTransform()
+                tr.translate(x_offset, y_offset)
+                tr.scale(x_scale, y_scale)
+                im.setTransform(tr)
 
             self.data_plots.append(data_plot)
             self.scatters.append(scatter)

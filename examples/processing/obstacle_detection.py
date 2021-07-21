@@ -6,6 +6,7 @@ import numpy as np
 import pyqtgraph as pg
 import yaml
 from numpy import pi, unravel_index
+from pyqtgraph.Qt import QtGui
 from scipy.fftpack import fft, fftshift
 
 from PyQt5 import QtCore
@@ -1245,23 +1246,29 @@ class PGUpdater:
             self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, num_points)
             self.peak_x = self.env_xs[data["peak_idx"]]
 
-            self.obstacle_im.translate(-self.max_velocity, pos0)
-            self.obstacle_im.scale(
+            tr = QtGui.QTransform()
+            tr.translate(-self.max_velocity, pos0)
+            tr.scale(
                 2 * self.max_velocity / nfft,
                 self.sensor_config.range_length * 100 / num_points,
             )
+            self.obstacle_im.setTransform(tr)
             if self.advanced_plots["background_map"]:
-                self.obstacle_bg_im.translate(-self.max_velocity, pos0)
-                self.obstacle_bg_im.scale(
+                tr.translate(-self.max_velocity, pos0)
+                tr.scale(
                     2 * self.max_velocity / nfft,
                     self.sensor_config.range_length * 100 / num_points,
                 )
+                self.obstacle_bg_im.setTransform(tr)
+
             if self.advanced_plots["threshold_map"]:
-                self.obstacle_thresh_im.translate(-self.max_velocity, pos0)
-                self.obstacle_thresh_im.scale(
+                tr.translate(-self.max_velocity, pos0)
+                tr.scale(
                     2 * self.max_velocity / nfft,
                     self.sensor_config.range_length * 100 / num_points,
                 )
+                self.obstacle_thresh_im.setTransform(tr)
+
             show_fusion = self.advanced_plots["fusion_map"]
             show_shadows = self.advanced_plots["show_shadows"]
             if show_fusion:

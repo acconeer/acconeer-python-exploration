@@ -5,7 +5,7 @@ import numpy as np
 import pyqtgraph as pg
 from matplotlib.colors import LinearSegmentedColormap
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 
 from acconeer.exptool import imock, utils
 from acconeer.exptool.modes import Mode
@@ -795,7 +795,9 @@ class PGUpdater:
             s_buff = frame_size + 2 * frame_pad + time_series - 1
             self.feat_plot.resetTransform()
             if model_dimension > 1:
-                self.feat_plot.translate(-frame_pad, 0)
+                tr = QtGui.QTransform()
+                tr.translate(-frame_pad, 0)
+                self.feat_plot.setTransform(tr)
             self.feat_plot_image.setXRange(-frame_pad, s_buff - frame_pad)
 
             self.border_left.setValue(0)

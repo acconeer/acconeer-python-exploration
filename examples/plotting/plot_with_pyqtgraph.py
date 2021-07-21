@@ -1,6 +1,6 @@
 import numpy as np
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtWidgets
+from pyqtgraph.Qt import QtGui, QtWidgets
 
 import acconeer.exptool as et
 
@@ -50,8 +50,10 @@ def main():
     hist_plot.setLabel("bottom", "Time (s)")
     hist_plot.setLabel("left", "Depth (m)")
     hist_image_item = pg.ImageItem()
-    hist_image_item.translate(-2, start)
-    hist_image_item.scale(2 / num_hist, step_length)
+    tr = QtGui.QTransform()
+    tr.translate(-2, start)
+    tr.scale(2 / num_hist, step_length)
+    hist_image_item.setTransform(tr)
     hist_plot.addItem(hist_image_item)
 
     # Get a nice colormap from matplotlib

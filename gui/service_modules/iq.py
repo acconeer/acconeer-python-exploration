@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 import pyqtgraph as pg
+from pyqtgraph.Qt import QtGui
 
 from acconeer.exptool import clients, configs, utils
 from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
@@ -190,8 +191,10 @@ class PGUpdater:
             im = pg.ImageItem(autoDownsample=True)
             im.setLookupTable(utils.pg_mpl_cmap("viridis"))
             im.resetTransform()
-            im.translate(x_offset, y_offset)
-            im.scale(x_scale, y_scale)
+            tr = QtGui.QTransform()
+            tr.translate(x_offset, y_offset)
+            tr.scale(x_scale, y_scale)
+            im.setTransform(tr)
             plot.addItem(im)
             self.history_plots.append(plot)
             self.history_ims.append(im)

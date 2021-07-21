@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 import pyqtgraph as pg
+from pyqtgraph.Qt import QtGui
 
 import acconeer.exptool as et
 
@@ -325,13 +326,15 @@ class PGUpdater:
         else:
             f_res = 1
 
-        self.dw_im.resetTransform()
-        self.dw_im.translate(100 * (self.depths[0] - self.step_length / 2), 0)
-        self.dw_im.scale(100 * self.step_length, f_res)
+        tr = QtGui.QTransform()
+        tr.translate(100 * (self.depths[0] - self.step_length / 2), 0)
+        tr.scale(100 * self.step_length, f_res)
+        self.dw_im.setTransform(tr)
 
         self.collapsed_history_im.resetTransform()
-        self.collapsed_history_im.translate(0, f_res / 2)
-        self.collapsed_history_im.scale(-1, f_res)
+        tr.translate(0, f_res / 2)
+        tr.scale(-1, f_res)
+        self.collapsed_history_im.setTransform(tr)
 
     def update(self, d):
         x = d["ts"]
