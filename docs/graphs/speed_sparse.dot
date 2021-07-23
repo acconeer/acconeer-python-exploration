@@ -1,0 +1,39 @@
+digraph {
+  pad=0.1
+  ranksep=0.3
+  nodesep=0.3
+  cellpad=0.5
+  bgcolor="#ffffff00"
+  fontname=sans
+  fontsize=12
+  style=rounded
+  node [fontname=sans, fontsize=12, shape=record, style=rounded]
+
+  subgraph cluster {
+    style=invis
+
+    subgraph cluster_inter {
+        label="PSD estimation"
+        style=rounded
+
+        divide_frame -> window_frame -> fft -> periodogram -> periodogram_mean
+    }
+  }
+
+  in -> {sweep_mean} -> divide_frame
+
+  periodogram_mean -> norm -> out
+
+  in [shape=Mdiamond, label="Input frame"]
+
+  sweep_mean [label="Mean over\nsweeps"]
+  divide_frame [label="Divide into \n segments"]
+  window_frame [label="Multiply each \nsegment with \na window"]
+  fft [label="FFT"]
+  periodogram [label="Calculate periodogram \nof each segment\n by abs(.)^2"]
+  periodogram_mean [label="Mean over \nperiodograms"]
+
+  norm [label="Normalize with noise"]
+
+  out [shape=Msquare, label="Output"]
+}

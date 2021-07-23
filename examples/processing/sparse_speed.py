@@ -100,6 +100,11 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         updateable=True,
         logscale=True,
         order=0,
+        help=(
+            "The threshold parameter determines how great PSD "
+            "a point needs to have to be included in the speed estimation. "
+            "The threshold value is converted to dB when displayed in the *Normalized PSD-graph*"
+        ),
     )
 
     min_speed = et.configbase.FloatParameter(
@@ -110,6 +115,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         decimals=1,
         updateable=True,
         order=10,
+        help=("The minimum speed to be displayed."),
     )
 
     fft_oversampling_factor = et.configbase.IntParameter(
@@ -141,10 +147,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         default_value=3,
         limits=(1, None),
         updateable=False,
-        help=(
-            "Number of segments determines how many segments "
-            "the signal will be divided into when using Welch's/Bartlett's method."
-        ),
+        help=("Number of segments used in Welch's/Bartlett's method."),
         order=13,
     )
 
@@ -183,6 +186,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         limits=(1, NUM_SAVED_SEQUENCES),
         updateable=True,
         order=150,
+        help=("Number of bars to be displayed in the bar graph"),
     )
 
     def check(self):
