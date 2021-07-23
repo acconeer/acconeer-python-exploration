@@ -283,6 +283,29 @@ class BaseServiceConfig(BaseSessionConfig):
         order=3100,
         category=cb.Category.ADVANCED,
         help=r"""
+            The power save mode configuration sets what state the sensor waits in between
+            measurements in an active service. There are five power save modes. The modes
+            differentiate in current dissipation and response latency, where the most current
+            consuming mode *Active* gives fastest response and the least current consuming mode
+            *Off* gives the slowest response. The absolute response time and also maximum update
+            rate is determined by several factors besides the power save mode configuration.
+
+            In addition, the host capabilities in terms of SPI communication speed and
+            processing speed also impact on the absolute response time. The power consumption of
+            the system depends on the actual configuration of the application and it is recommended
+            to test both maximum update rate and power consumption when the configuration
+            is decided.
+
+            ================== ==================== ==============
+            Power save mode    Current consumption  Response time
+            ================== ==================== ==============
+            Off                Lowest               Longest
+            Hibernate          ...                  ...
+            Sleep              ...                  ...
+            Ready              ...                  ...
+            Active             Highest              Shortest
+            ================== ==================== ==============
+
             .. note::
                Hibernation has limited hardware support. It is not supported by the Raspberry Pi
                EVK:s and XM112.
