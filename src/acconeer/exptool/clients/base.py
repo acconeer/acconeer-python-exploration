@@ -24,6 +24,11 @@ class BaseClient(abc.ABC):
         self.supported_modes = None
 
     def connect(self):
+        """Initiates a connection with the device.
+
+        :return: A dict containing information about the device, including SDK version
+        :rtype: dict
+        """
         if self._connected:
             raise ClientError("already connected")
 
@@ -49,6 +54,19 @@ class BaseClient(abc.ABC):
         return info
 
     def setup_session(self, config, check_config=True):
+        """
+        Sets up a session with the given config.
+        Will call ``connect()`` if not already connected.
+
+        :param config: The configuration to use when setting up the session
+        :type config: class:`acconeer.exptool.configs`
+        :param check_config: If `True` the configuration is checked for errors,
+                            defaults to `True`
+        :type check_config: bool
+
+        :return: A dict with metadata for the configured session
+        :rtype: dict
+        """
         if check_config:
             self._check_config(config)
 
@@ -66,6 +84,20 @@ class BaseClient(abc.ABC):
         return session_info
 
     def start_session(self, config=None, check_config=True):
+        """
+        Starts the session if previously set up with ``setup_session()``.
+        If `config` is provided, ``setup_session()`` will be called.
+
+        :param config: The configuration to use when setting up the session, defaults to `None`
+        :type config: class:`acconeer.exptool.configs`, optional
+        :param check_config: If `True` the configuration is checked for errors,
+                            defaults to `True`
+        :type check_config: bool
+
+        :return: If `config` is provided, returns a dict with metadata for the configured session.
+                Otherwise, returns `None`
+        :rtype: dict or None
+        """
         if self._streaming_started:
             raise ClientError("already streaming")
 
@@ -82,12 +114,47 @@ class BaseClient(abc.ABC):
         return ret
 
     def get_next(self):
+        """
+        Retrieves the next result. Will block until the result is received.
+
+        :return: A tuple with the result info and data.
+                The data shape and type differs between services.
+
+                | **Power Bins:**
+                | Shape: (number of sensors, bin count)
+                | Type: float64
+
+                | **Envelope:**
+                | Shape: (number of sensors, data length)
+                | Type: float64
+
+                | **IQ:**
+                | Shape: (number of sensors, data length)
+                | Type: complex128
+
+                | **Sparse:**
+                | Shape: (number of sensors, number of sweeps, number of dephts)
+                | Type: float64
+
+                `Number of sensors`, `bin count` and `number of sweeps` can be explicitly set.
+                `Data length` and `number of dephts` depend on multiple configuration settings.
+
+                The client takes a parameter ``squeeze``, if set to `True` the first
+                dimension (`number of sensors`) is removed when using a single sensor.
+                As default ``squeeze`` is  `True`.
+
+        :rtype: tuple[union[list, dict], np.ndarray]
+        """
         if not self._streaming_started:
             raise ClientError("must be streaming to get next")
 
         return self._get_next()
 
     def stop_session(self):
+        """
+        Stops the session. All buffered/waiting data is thrown away.
+        This function will block until the server has confirmed that the session has ended.
+        """
         if not self._streaming_started:
             raise ClientError("not streaming")
 
@@ -95,6 +162,10 @@ class BaseClient(abc.ABC):
         self._streaming_started = False
 
     def disconnect(self):
+        """
+        Disconnects the client. ``disconnect()`` will call ``stop_session()``
+        if a session is started.
+        """
         if not self._connected:
             raise ClientError("not connected")
 

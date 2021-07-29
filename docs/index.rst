@@ -14,6 +14,7 @@ Table of contents
    sensor_introduction
    file_format_ref
    faq
+   api_ref
    disclaimer
 
 .. toctree::
