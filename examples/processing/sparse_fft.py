@@ -131,16 +131,35 @@ class PGUpdater:
     def setup(self, win):
         self.plots = []
         self.curves = []
+
+        self.layout = win.ci.layout
+        self.layout.setRowStretchFactor(0, 2)
+        self.layout.setRowStretchFactor(1, 3)
+        self.layout.setVerticalSpacing(50)
+
         for i in range(self.depths.size):
             title = "{:.0f} cm".format(100 * self.depths[i])
             plot = win.addPlot(row=0, col=i, title=title)
             plot.setMenuEnabled(False)
             plot.setMouseEnabled(x=False, y=False)
             plot.hideButtons()
-            plot.showGrid(x=True, y=True)
             plot.setYRange(0, 2 ** 16)
             plot.hideAxis("left")
-            plot.hideAxis("bottom")
+
+            if self.depths.size < 8:
+                plot.getAxis("bottom").setStyle(stopAxisAtTick=(True, True))
+                plot.getAxis("bottom").setTicks(
+                    [
+                        [
+                            (0, 1),
+                            (self.sweeps_per_frame - 1, self.sweeps_per_frame),
+                        ],
+                    ]
+                )
+                plot.setLabel("bottom", "Sweep Index")
+            else:
+                plot.hideAxis("bottom")
+
             plot.plot(np.arange(self.sweeps_per_frame), 2 ** 15 * np.ones(self.sweeps_per_frame))
             curve = plot.plot(pen=et.utils.pg_pen_cycler())
             self.plots.append(plot)
@@ -170,6 +189,16 @@ class PGUpdater:
 
         for plot in self.plots:
             plot.setVisible(self.processing_config.show_data_plot)
+
+        if self.processing_config.show_data_plot is False:
+            self.layout.setRowStretchFactor(0, 0)
+            self.layout.setRowStretchFactor(1, 1)
+            self.layout.setVerticalSpacing(0)
+
+        else:
+            self.layout.setRowStretchFactor(0, 2)
+            self.layout.setRowStretchFactor(1, 3)
+            self.layout.setVerticalSpacing(50)
 
         half_wavelength = 2.445e-3
         self.ft_im.resetTransform()
