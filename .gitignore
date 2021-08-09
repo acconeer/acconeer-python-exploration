@@ -37,3 +37,6 @@ docs/_build
 
 # Jupyter
 *.ipynb
+
+# Jenkins
+stash/
