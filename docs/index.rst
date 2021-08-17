@@ -1,9 +1,7 @@
-Acconeer Python Exploration docs
-================================
+Acconeer Exploration Tool docs
+==============================
 
-Welcome to the Acconeer Python Exploration documentation!
-
-These pages are a work in progress.
+Welcome to the Acconeer Exploration Tool documentation!
 
 Table of contents
 =================
@@ -36,7 +34,7 @@ Table of contents
 
 .. toctree::
    :maxdepth: 2
-   :caption: Python Exploration Tool GUI
+   :caption: Acconeer Exploration Tool GUI
 
    Introduction <gui/index>
 

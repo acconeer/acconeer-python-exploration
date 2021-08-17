@@ -2,7 +2,7 @@
 
 Collect data
 ============
-The Python Exploration Tool GUI makes it very easy to collect data, be it for evaluation, testing or in-depth detector tuning or development.
+The Acconeer Exploration Tool GUI makes it very easy to collect data, be it for evaluation, testing or in-depth detector tuning or development.
 At the heart of the data collection are the functions for starting and stopping a scan and saving and loading the data that has been collected in this way.
 As mentioned in the introduction to *Working with the GUI*, the GUI never stores processed data, only the un-processed service data received from the sensor.
 Thus, you can always go back and refine processing on the original, unmodified service data.

@@ -2,10 +2,10 @@
 
 Working with the GUI
 ====================
-Acconeer offers a comprehensive GUI for the Python Exploration Tool to work with our sensors.
+Acconeer offers a comprehensive GUI for the Acconeer Exploration Tool to work with our sensors.
 The tool is meant as a companion throughout your project; it should help you getting started quickly with testing and evaluating our sensor for your use-case, but also support you in finding the optimal sensor settings and fine-tuning the data processing for your final product implementation.
 
-The general work-flow with the Python Exploration Tool GUI is described in the following:
+The general work-flow with the Exploration Tool GUI is described in the following:
 
 .. figure:: /_static/gui/work_flow.png
 
@@ -68,13 +68,13 @@ There, you can find detailed instructions for installing our libraries; in a nut
 
 GUI Framework
 =============
-The GUI acts as a front-end to the Python Exploration Tool.
+The GUI acts as a front-end to the Acconeer Exploration Tool.
 It handles sensor connections, sensor settings and allows you to test examples, tune detectors and save and load data for in-depth analysis or easy sharing.
 In below figure, you can find a top-level depiction of the data-flow and control connections between the GUI and the Exploration Tool.
 
 .. figure:: /_static/gui/gui_flow.png
 
-   Framework of the Python Exploration Tool GUI
+   Framework of the Exploration Tool GUI
 
 .. attention::
     The GUI never stores processed data, only the original service data, including all sensor and detector settings. Whenever you replay data (saved or buffered), the processing is always redone on the original sensor data.

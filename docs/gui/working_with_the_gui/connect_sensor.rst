@@ -46,7 +46,7 @@ When the streaming server is started, select **Socket** in the *Connections* dro
 Now click on the **Connect** button to connect to the streaming server.
 The GUI will automatically determine, which sensors are available and select those for you in the **Sensor settings** panel.
 On successful connection, the **Connect** button will show in red **Disconnect**.
-The GUI may warn you to either update the Python Exploration Tool or the streaming server with a red message under the **Connect** button.
+The GUI may warn you to either update the Acconeer Exploration Tool or the streaming server with a red message under the **Connect** button.
 
 If any error occurs while connecting, the GUI will display an error message; you should
 

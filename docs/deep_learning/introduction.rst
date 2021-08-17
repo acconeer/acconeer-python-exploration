@@ -39,7 +39,7 @@ Once started, you can see that the GUI has a tab for each of these work-flow ste
 .. figure:: /_static/deep_learning/ml_front.png
     :align: center
 
-    A screenshot of the tabs in Acconeers Python Exploration Deep Learning Interface
+    A screenshot of the tabs in Acconeer Exploration Deep Learning Interface
 
 
 Data-flow and Python framework
