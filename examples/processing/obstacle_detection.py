@@ -1469,7 +1469,7 @@ class SensorFusion:
             "decay_time": 5,  # cycles
             "step_time": 0,  # s
             "min_distance": 6,  # cm
-            "use_as_noise_filter:": False,  # increases decaytime if known obstacle
+            "use_as_noise_filter": False,  # increases decaytime if known obstacle
         }
         self.fused_obstacles = []
 
