@@ -20,6 +20,9 @@ Python related
 
    If the above does not work, please open an issue on GitHub.
 
+#) The GUI does not start and shows an error: ``qt.qpa.plugin: Could not find the Qt platform plugin "windows" in ""``.
+
+   This error may occur when there are non-ASCII characters in the path.
 
 Sensor related
 --------------
