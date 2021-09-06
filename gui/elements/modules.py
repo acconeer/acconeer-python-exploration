@@ -6,6 +6,7 @@ from acconeer.exptool.modes import Mode
 
 import examples.processing.breathing as breathing_module
 import examples.processing.button_press as button_press_module
+import examples.processing.button_press_sparse as button_press_sparse_module
 import examples.processing.distance_detector as distance_detector_module
 import examples.processing.obstacle_detection as obstacle_detection_module
 import examples.processing.parking as parking_module
@@ -259,6 +260,17 @@ MODULE_INFOS = [
         False,
         "https://acconeer-python-exploration.readthedocs.io/"
         "en/latest/processing/button_press.html",
+    ),
+    ModuleInfo(
+        "button_press_sparse",
+        "Button Press (sparse)",
+        button_press_sparse_module,
+        ModuleFamily.EXAMPLE,
+        button_press_sparse_module.get_sensor_config,
+        button_press_sparse_module.ButtonPressProcessor,
+        False,
+        False,
+        None,
     ),
     ModuleInfo(
         "envelope_distance",
