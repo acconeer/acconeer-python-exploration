@@ -12,6 +12,7 @@ Table of contents
    :maxdepth: 1
 
    sensor_introduction
+   file_format_ref
    faq
    disclaimer
 
