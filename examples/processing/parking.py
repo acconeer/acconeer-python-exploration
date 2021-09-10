@@ -556,7 +556,7 @@ class PGUpdater:
         self.weight_plot.setYRange(0, ymax)
         xmid = (self.depths[0] + self.depths[-1]) / 2
         self.detection_text_item.setPos(100.0 * xmid, 0.95 * ymax)
-        self.detection_text_item.setVisible(data["detection_history"][-1])
+        self.detection_text_item.setVisible(bool(data["detection_history"][-1]))
 
 
 if __name__ == "__main__":
