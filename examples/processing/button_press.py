@@ -80,7 +80,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         limits=(0.01, 10),
         logscale=True,
         updateable=True,
-        order=10,
+        order=20,
         help="Time constant of the low pass filter for the signal.",
     )
 
@@ -91,19 +91,21 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         limits=(0.01, 2),
         logscale=True,
         updateable=True,
-        order=20,
+        order=30,
         help="Time constant of the low pass filter for the relative deviation.",
     )
 
     threshold = et.configbase.FloatParameter(
         label="Detection threshold",
-        default_value=0.04,
+        default_value=0.2,
         decimals=3,
         limits=(0.001, 0.5),
         updateable=True,
         logscale=True,
-        order=30,
-        help='Level at which the detector output is considered as a "button press".',
+        order=10,
+        help='Level at which the detector output is considered as a "button press". '
+        "Note that this might need adjustment depending "
+        "on different board models in order to detect movement.",
     )
 
     buttonpress_length_s = et.configbase.FloatParameter(
@@ -116,6 +118,20 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         order=40,
         help="The time after a detected button press when no further detection should occur.",
     )
+
+    def check_sensor_config(self, sensor_config):
+        alerts = {
+            "processing": [],
+            "sensor": [],
+        }
+
+        alerts["processing"].append(
+            et.configbase.Info(
+                "threshold", "Threshold level should be adjusted depending on board model."
+            )
+        )
+
+        return alerts
 
 
 get_processing_config = ProcessingConfiguration
