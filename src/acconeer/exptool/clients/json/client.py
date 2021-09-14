@@ -19,23 +19,34 @@ from acconeer.exptool.modes import Mode, get_mode
 log = logging.getLogger(__name__)
 
 
-class SocketClient(BaseClient):
-    def __init__(self, host, **kwargs):
-        super().__init__(**kwargs)
-
-        self._link = links.SocketLink(host)
-
-        self._session_cmd = None
-        self._session_ready = False
-        self._mode = None
-        self._sweeps_per_frame = None
+class JsonProtocolBase:
+    def __init__(self, link):
+        self._link = link
         self._num_sensors = None
+        self._sweeps_per_frame = None
+        self._session_cmd = None
+        self._mode = None
 
-    def _connect(self):
-        info = {}
+    def _send_cmd(self, cmd_dict):
+        cmd_dict["api_version"] = 3
+        s = json.dumps(cmd_dict, separators=(",", ":"))
+        packed = bytearray(s + "\n", "ascii")
 
-        self._link.connect()
+        self._link.send(packed)
 
+    def _recv_frame(self):
+        packed = self._link.recv_until(b"\n")
+        header = json.loads(str(packed, "ascii"))
+        payload_len = header["payload_size"]
+
+        if payload_len > 0:
+            payload = self._link.recv(payload_len)
+        else:
+            payload = None
+
+        return header, payload
+
+    def get_version(self):
         cmd = {"cmd": "get_version"}
         self._send_cmd(cmd)
 
@@ -46,32 +57,72 @@ class SocketClient(BaseClient):
 
         log.debug("connected and got a response")
 
-        if header["status"] != "ok":
-            raise ClientError("server error while connecting")
+        msg = None
+        if header["status"] == "ok":
+            msg = header["message"].lower()
+            log.info("version msg: {}".format(msg))
+        else:
+            log.info("No get_version cmd, try get_system_info")
 
-        msg = header["message"].lower()
-        log.info("version msg: {}".format(msg))
+        return msg
 
-        startstr = "server version v"
-        if not msg.startswith(startstr):
-            log.warning("server version unknown")
-            return info
-
-        server_version_str = msg[len(startstr) :].strip()
-        info.update(decode_version_str(server_version_str))
-
+    def get_sensor_count(self):
         self._send_cmd({"cmd": "get_board_sensor_count"})
         header, _ = self._recv_frame()
-        info["board_sensor_count"] = int(header["message"])
+        return int(header["message"])
 
-        return info
+    def setup_session(self, config):
+        pass
 
-    def _setup_session(self, config):
+    def init_session(self, retry=True):
+        pass
+
+    def start_session(self):
+        if not self._session_ready:
+            self.init_session()
+
+        cmd = {"cmd": "start_streaming"}
+        self._send_cmd(cmd)
+        header, _ = self._recv_frame()
+        if header["status"] != "start":
+            raise ClientError
+
+        log.debug("started streaming")
+
+    def get_next(self):
+        header, payload = self._recv_frame()
+
+        status = header["status"]
+        if status == "end":
+            raise ClientError("session ended")
+        elif status != "ok":
+            raise ClientError("server error")
+
+        info = self.decode_stream_header(header)
+        data = self.decode_stream_payload(payload)
+        return info, data
+
+    def stop_session(self):
+        pass
+
+    def decode_stream_header(self, header):
+        pass
+
+    def decode_stream_payload(self, payload):
+        pass
+
+
+class JsonProtocolStreamingServer(JsonProtocolBase):
+    def __init__(self, link, squeeze):
+        super().__init__(link)
+        self.squeeze = squeeze
+
+    def setup_session(self, config):
         if isinstance(config, dict):
             cmd = deepcopy(config)
             log.warning("setup with raw dict config - you're on your own")
         else:
-            cmd = get_dict_for_config(config)
+            cmd = self._get_dict_for_config(config)
 
         try:
             self._mode = get_mode(cmd["cmd"].lower().replace("_data", ""))
@@ -82,45 +133,33 @@ class SocketClient(BaseClient):
         self._num_sensors = len(cmd["sensors"])
 
         cmd["output_format"] = "json+binary"
-
         self._session_cmd = cmd
-        info = self._init_session()
 
-        if "update_rate" in cmd:
-            self._link.timeout = 1 / cmd["update_rate"] + self._link.DEFAULT_TIMEOUT
-        else:
-            self._link.timeout = self._link.DEFAULT_TIMEOUT
+        return cmd
 
-        log.debug("setup session")
+    def init_session(self, retry=True):
+        if self._session_cmd is None:
+            raise ClientError
+
+        self._send_cmd(self._session_cmd)
+        header, _ = self._recv_frame()
+
+        if header["status"] == "error":
+            if retry:
+                return self.init_session(retry=False)
+            else:
+                raise SessionSetupError
+        elif header["status"] != "ok":
+            raise ClientError("got unexpected header")
+
+        log.debug("session initialized")
+
+        self._session_ready = True
+        info = self._get_session_info_for_header(header)
 
         return info
 
-    def _start_session(self):
-        if not self._session_ready:
-            self._init_session()
-
-        cmd = {"cmd": "start_streaming"}
-        self._send_cmd(cmd)
-        header, _ = self._recv_frame()
-        if header["status"] != "start":
-            raise ClientError
-
-        log.debug("started streaming")
-
-    def _get_next(self):
-        header, payload = self._recv_frame()
-
-        status = header["status"]
-        if status == "end":
-            raise ClientError("session ended")
-        elif status != "ok":
-            raise ClientError("server error")
-
-        info = self._decode_stream_header(header)
-        data = self._decode_stream_payload(payload)
-        return info, data
-
-    def _stop_session(self):
+    def stop_session(self):
         cmd = {"cmd": "stop_streaming"}
         self._send_cmd(cmd)
 
@@ -143,54 +182,7 @@ class SocketClient(BaseClient):
 
         log.debug("stopped streaming")
 
-    def _disconnect(self):
-        self._link.disconnect()
-        self._session_cmd = None
-        self._session_ready = False
-
-        log.debug("disconnected")
-
-    def _init_session(self, retry=True):
-        if self._session_cmd is None:
-            raise ClientError
-
-        self._send_cmd(self._session_cmd)
-        header, _ = self._recv_frame()
-
-        if header["status"] == "error":
-            if retry:
-                return self._init_session(retry=False)
-            else:
-                raise SessionSetupError
-        elif header["status"] != "ok":
-            raise ClientError("got unexpected header")
-
-        log.debug("session initialized")
-
-        self._session_ready = True
-        info = get_session_info_for_header(header)
-        return info
-
-    def _send_cmd(self, cmd_dict):
-        cmd_dict["api_version"] = 3
-        s = json.dumps(cmd_dict, separators=(",", ":"))
-        packed = bytearray(s + "\n", "ascii")
-
-        self._link.send(packed)
-
-    def _recv_frame(self):
-        packed = self._link.recv_until(b"\n")
-        header = json.loads(str(packed, "ascii"))
-        payload_len = header["payload_size"]
-
-        if payload_len > 0:
-            payload = self._link.recv(payload_len)
-        else:
-            payload = None
-
-        return header, payload
-
-    def _decode_stream_header(self, header):
+    def decode_stream_header(self, header):
         raw_infos = header["result_info"]
         mapped_infos = [{} for _ in raw_infos]
 
@@ -208,7 +200,7 @@ class SocketClient(BaseClient):
         else:
             return mapped_infos
 
-    def _decode_stream_payload(self, payload):
+    def decode_stream_payload(self, payload):
         if not payload:
             return None
 
@@ -237,44 +229,270 @@ class SocketClient(BaseClient):
 
         return data
 
+    def _get_dict_for_config(self, config):
+        d = {}
+        d["cmd"] = get_mode(config.mode).value.lower() + "_data"
 
-def get_dict_for_config(config):
-    d = {}
-    d["cmd"] = get_mode(config.mode).value.lower() + "_data"
+        for config_key, cmd_key in CONFIG_TO_CMD_KEY_MAP.items():
+            config_val = getattr(config, config_key, None)
 
-    for config_key, cmd_key in CONFIG_TO_CMD_KEY_MAP.items():
-        config_val = getattr(config, config_key, None)
+            if config_val is None:
+                continue
 
-        if config_val is None:
-            continue
-
-        if isinstance(config_val, bool):
-            cmd_val = int(config_val)
-        elif isinstance(config_val, enum.Enum):
-            if hasattr(config_val, "json_value"):
-                cmd_val = config_val.json_value
+            if isinstance(config_val, bool):
+                cmd_val = int(config_val)
+            elif isinstance(config_val, enum.Enum):
+                if hasattr(config_val, "json_value"):
+                    cmd_val = config_val.json_value
+                else:
+                    cmd_val = config_val.value
             else:
-                cmd_val = config_val.value
+                cmd_val = config_val
+
+            d[cmd_key] = cmd_val
+
+        return d
+
+    def _get_session_info_for_header(self, header):
+        info = {}
+
+        for header_key, val in header.items():
+            info_key = SESSION_HEADER_TO_INFO_KEY_REMAP.get(header_key, header_key)
+
+            if info_key is None:
+                continue
+
+            info[info_key] = val
+
+        return info
+
+
+class JsonProtocolExplorationServer(JsonProtocolBase):
+    def __init__(self, link, squeeze):
+        super().__init__(link)
+        self.squeeze = squeeze
+
+    def get_system_info(self):
+        self._send_cmd({"cmd": "get_system_info"})
+        try:
+            header, _ = self._recv_frame()
+        except links.LinkError as e:
+            raise ClientError("no response from server") from e
+
+        if header["status"] != "ok":
+            raise ClientError(f"system_info error {header}")
+
+        system_info = header["system_info"]
+        return system_info
+
+    def setup_session(self, config):
+        if isinstance(config, dict):
+            cmd = deepcopy(config)
+            log.warning("setup with raw dict config - you're on your own")
+            return cmd
+
+        cmd = {}
+        cmd["cmd"] = "setup"
+        service = get_mode(config.mode).value.lower()
+        self._mode = get_mode(config.mode)
+
+        update_rate = getattr(config, "update_rate", None)
+        if update_rate:
+            cmd["update_rate"] = update_rate
+
+        cmd["groups"] = []
+        cmd["groups"].append([])
+
+        sensors = getattr(config, "sensor", None)
+        sensor_config = {}
+
+        for config_key, cmd_key in CONFIG_TO_CMD_KEY_MAP.items():
+            config_val = getattr(config, config_key, None)
+
+            if config_key in ["sensor", "update_rate"]:
+                continue
+
+            if config_val is None:
+                continue
+
+            if isinstance(config_val, bool):
+                cmd_val = int(config_val)
+            elif isinstance(config_val, enum.Enum):
+                if hasattr(config_val, "json_value"):
+                    cmd_val = config_val.json_value
+                else:
+                    cmd_val = config_val.value
+            else:
+                cmd_val = config_val
+
+            sensor_config[cmd_key] = cmd_val
+
+        for sensor in sensors:
+            sensor_setup = {}
+            sensor_setup["sensor_id"] = sensor
+            sensor_setup["service"] = service
+            sensor_setup["config"] = sensor_config
+            cmd["groups"][0].append(sensor_setup)
+
+        self._sweeps_per_frame = cmd.get("sweeps_per_frame", 16)
+        self._num_sensors = len(sensors)
+
+        self._session_cmd = cmd
+
+        return cmd
+
+    def init_session(self, retry=True):
+        if self._session_cmd is None:
+            raise ClientError
+
+        self._send_cmd(self._session_cmd)
+        header, _ = self._recv_frame()
+
+        if header["status"] == "error":
+            if retry:
+                return self.init_session(retry=False)
+            else:
+                raise SessionSetupError
+        elif header["status"] != "ok":
+            raise ClientError("got unexpected header")
+
+        log.debug("session initialized")
+
+        self._session_ready = True
+
+        info = {}
+
+        for header_key, val in header["metadata"][0][0].items():
+            info_key = SESSION_HEADER_TO_INFO_KEY_REMAP.get(header_key, header_key)
+
+            if info_key is None:
+                continue
+
+            info[info_key] = val
+
+        return info
+
+    def stop_session(self):
+        cmd = {"cmd": "stop_streaming"}
+        self._send_cmd(cmd)
+
+        self._session_ready = False
+
+        log.debug("stopped streaming")
+
+    def decode_stream_header(self, header):
+        raw_infos = header["result_info"][0]
+        mapped_infos = [{} for _ in raw_infos]
+
+        for (raw_info, mapped_info) in zip(raw_infos, mapped_infos):
+            for raw_key, val in raw_info.items():
+                mapped_key = DATA_HEADER_TO_INFO_KEY_REMAP.get(raw_key, raw_key)
+
+                if mapped_key is None:
+                    continue
+
+                mapped_info[mapped_key] = val
+
+        if self.squeeze and len(mapped_infos) == 1:
+            return mapped_infos[0]
         else:
-            cmd_val = config_val
+            return mapped_infos
 
-        d[cmd_key] = cmd_val
+    def decode_stream_payload(self, payload):
+        if not payload:
+            return None
 
-    return d
+        squeeze = self.squeeze and self._num_sensors == 1
+
+        if self._mode == Mode.SPARSE:
+            data = np.frombuffer(payload, dtype="<u2").astype("float")
+
+            if squeeze:
+                shape = (self._sweeps_per_frame, -1)
+            else:
+                shape = (self._num_sensors, self._sweeps_per_frame, -1)
+
+            return data.reshape(shape)
+
+        if self._mode == Mode.IQ:
+            data = np.frombuffer(payload, dtype="<i2").astype("float")
+            data = data.reshape((-1, 2)).view(dtype="complex").flatten()
+        elif self._mode in (Mode.ENVELOPE, Mode.POWER_BINS):
+            data = np.frombuffer(payload, dtype="<u2").astype("float")
+        else:  # Fallback
+            data = np.frombuffer(payload, dtype="<u2")
+
+        if not squeeze:
+            data = data.reshape((self._num_sensors, -1))
+
+        return data
 
 
-def get_session_info_for_header(header):
-    info = {}
+class SocketClient(BaseClient):
+    def __init__(self, host, **kwargs):
+        super().__init__(**kwargs)
 
-    for header_key, val in header.items():
-        info_key = SESSION_HEADER_TO_INFO_KEY_REMAP.get(header_key, header_key)
+        self._link = links.SocketLink(host)
+        self._protocol = None
 
-        if info_key is None:
-            continue
+    def _connect(self):
+        info = {}
 
-        info[info_key] = val
+        self._link.connect()
 
-    return info
+        self._protocol = JsonProtocolBase(self._link)
+
+        msg = self._protocol.get_version()
+        if msg:
+            startstr = "server version v"
+            if not msg.startswith(startstr):
+                log.warning("server version unknown")
+                return info
+
+            server_version_str = msg[len(startstr) :].strip()
+            info.update(decode_version_str(server_version_str))
+
+            self._protocol = JsonProtocolStreamingServer(self._link, self.squeeze)
+            info["board_sensor_count"] = self._protocol.get_sensor_count()
+        else:
+            self._protocol = JsonProtocolExplorationServer(self._link, self.squeeze)
+            system_info = self._protocol.get_system_info()
+            info.update(decode_version_str(system_info["rss_version"][1:]))
+            info["sensor"] = system_info["sensor"]
+            info["board_sensor_count"] = system_info["sensor_count"]
+            info["hw"] = system_info["hw"]
+
+        return info
+
+    def _setup_session(self, config):
+        cmd = self._protocol.setup_session(config)
+        info = self._init_session()
+
+        if "update_rate" in cmd:
+            self._link.timeout = 1 / cmd["update_rate"] + self._link.DEFAULT_TIMEOUT
+        else:
+            self._link.timeout = self._link.DEFAULT_TIMEOUT
+
+        log.debug("setup session")
+
+        return info
+
+    def _start_session(self):
+        self._protocol.start_session()
+
+    def _get_next(self):
+        return self._protocol.get_next()
+
+    def _stop_session(self):
+        self._protocol.stop_session()
+
+    def _disconnect(self):
+        self._link.disconnect()
+
+        log.debug("disconnected")
+
+    def _init_session(self, retry=True):
+        return self._protocol.init_session()
 
 
 CONFIG_TO_CMD_KEY_MAP = {
