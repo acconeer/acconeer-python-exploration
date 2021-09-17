@@ -274,7 +274,7 @@ class PGUpdater:
         self.collapsed_text = pg.TextItem(anchor=(0, 1), color="k", fill=bg)
         self.collapsed_text.setPos(0, 0)
         self.collapsed_text.setZValue(100)
-        self.collapsed_plot.addItem(self.collapsed_text)
+        self.collapsed_plot.addItem(self.collapsed_text, ignoreBounds=True)
 
         self.collapsed_history_plot = win.addPlot(
             row=2, col=0, title="Collapsed sqrt(PSD) history"
