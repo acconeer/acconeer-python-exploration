@@ -29,7 +29,7 @@ The bottom plot lays out the sampled points over a time scale. In this simple ex
 
    An illustration of the sparse data frames consisting of a number of sweeps.
 
-From sparse, every received data frame consists of a number of sweeps :math:`N_s` which are sampled after each other. Every sweep consists of one or several (sparse) sampling points in distance as configured. Depending on the configuration, the time between sweeps :math:`\Delta t_s` may vary. It can also, within certain limits, be set to a fixed value. Often, we refer to this as the *sweep rate* :math:`f_s=1/\Delta t_s` instead of referring to the time between sweeps :math:`\Delta t_s`.
+From sparse, every received data frame consists of a number of sweeps :math:`N_s` which are sampled after each other. Every sweep consists of one or several (sparse) sampling points in distance as configured. Depending on the configuration, the time between sweeps :math:`T_s` may vary. It can also, within certain limits, be set to a fixed value. Often, we refer to this as the *sweep rate* :math:`f_s=1/T_s` instead of referring to the time between sweeps :math:`T_s`.
 
 Typical sweep rates range between 1 and 50 kHz. On the other hand, typical frame (update) rates :math:`f_f` range between 1 and 200 Hz. Therefore, there often is a large gap between the end of a frame to the beginning of the next one. From a power consumption perspective, this is desirable since it allows the sensor to have a smaller duty cycle. However, if needed, the sparse service can be configured for a near 100% duty cycle.
 

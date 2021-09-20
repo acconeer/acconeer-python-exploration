@@ -550,7 +550,7 @@ Sweep and update rate
 
 A sweep is defined as a distance measurement range, starting at the distance *start range* and continues for *sweep length*. Hence, every sweep consists of one or several distance sampling points.
 
-A number of sweeps :math:`N_s` are sampled after each other and the time between each sweep is :math:`\Delta t_s`, which is configurable. We usually refer to this as the *update rate* :math:`f_s=1/\Delta t_s`.
+A number of sweeps :math:`N_s` are sampled after each other and the time between each sweep is :math:`T_s`, which is configurable. We usually refer to this as the *update rate* :math:`f_s=1/T_s`.
 
 In addition, the sparse service introduces a concept of frames defined `here <https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html>`__.
 
