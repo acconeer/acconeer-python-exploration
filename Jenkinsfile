@@ -1,5 +1,5 @@
 gerritReview labels: [Verified: 0], message: "Test started: ${env.BUILD_URL}"
-@Library('sw-jenkins-library@4cab7c41c21e8a30612b3bf50a8db50fa7f56a4d') _
+@Library('sw-jenkins-library@0cbbb64eb8fa5a341c84b503b0b455697cb4f38e') _
 
 pipeline {
     agent none
@@ -25,11 +25,11 @@ pipeline {
                         label 'exploration_tool'
                     }
                     steps {
-                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master", artifactName: "internal_stash_scripts_embedded.zip")
-                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master", artifactName: "internal_stash_xm112.zip")
-                        sh 'rm -rf stash'
-                        sh 'unzip -q internal_stash_scripts_embedded.zip -d stash'
-                        sh 'unzip -q internal_stash_xm112.zip -d stash'
+                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
+                                                  artifactNames: ["internal_stash_scripts_embedded.tgz", "internal_stash_xm112.tgz"])
+                        sh 'rm -rf stash && mkdir stash'
+                        sh 'tar -xzf internal_stash_scripts_embedded.tgz -C stash'
+                        sh 'tar -xzf internal_stash_xm112.tgz -C stash'
                         sh '(cd stash && PYTHONPATH=$PYTHONPATH:./scripts/integrator/embedded/ python3 scripts/integrator/module_server/flash.py)'
                     }
                 }
