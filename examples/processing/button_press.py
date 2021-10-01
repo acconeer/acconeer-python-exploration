@@ -369,7 +369,7 @@ class PGUpdater:
         self.detection_text_item.setPos(-HISTORY_LENGTH_S / 2, 0.95 * ymax)
 
         show_detection_text = t_detections.size > 0 and (-t_detections[-1]) < DETECTION_SHOW_S
-        self.detection_text_item.setVisible(show_detection_text)
+        self.detection_text_item.setVisible(bool(show_detection_text))
 
 
 if __name__ == "__main__":
