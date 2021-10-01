@@ -293,7 +293,6 @@ class PGUpdater:
             symbolBrush=et.utils.color_cycler(1),
             name="Detections",
         )
-        self.rel_dev_hist_plot.addItem(self.detection_dots)
 
         limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
         self.rel_dev_hist_plot.addItem(limit_line)
