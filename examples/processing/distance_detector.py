@@ -115,8 +115,8 @@ class Processor:
 
         self.idx_cfar_pts = np.round(
             (
-                processing_config.cfar_guard_cm / 100.0 / 2.0 / self.dr
-                + np.arange(processing_config.cfar_window_cm / 100.0 / self.dr)
+                processing_config.cfar_guard_m / 2.0 / self.dr
+                + np.arange(processing_config.cfar_window_m / self.dr)
             )
         )
 
@@ -461,7 +461,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         STRONGEST_REFLECTOR = "Strongest reflector"
         STRONGEST_FLAT_REFLECTOR = "Strongest flat reflector"
 
-    VERSION = 1
+    VERSION = 2
 
     nbr_average = et.configbase.FloatParameter(
         label="Sweep averaging",
@@ -554,28 +554,28 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         ),
     )
 
-    cfar_guard_cm = et.configbase.FloatParameter(
+    cfar_guard_m = et.configbase.FloatParameter(
         label="CFAR guard",
-        default_value=12,
-        limits=(1, 20),
-        unit="cm",
-        decimals=1,
+        default_value=0.12,
+        limits=(0.01, 0.2),
+        unit="m",
+        decimals=3,
         visible=lambda conf: conf.threshold_type == conf.ThresholdType.CFAR,
         updateable=True,
         order=41,
         help=(
             "Range around the distance of interest that is omitted when calculating "
-            "CFAR threshold. Can be low, ~4 cm, for Profile 1, and should be "
+            "CFAR threshold. Can be low, ~40 mm, for Profile 1, and should be "
             "increased for higher Profiles."
         ),
     )
 
-    cfar_window_cm = et.configbase.FloatParameter(
+    cfar_window_m = et.configbase.FloatParameter(
         label="CFAR window",
-        default_value=3,
-        limits=(0.1, 20),
-        unit="cm",
-        decimals=1,
+        default_value=0.03,
+        limits=(0.001, 0.2),
+        unit="m",
+        decimals=3,
         visible=lambda conf: conf.threshold_type == conf.ThresholdType.CFAR,
         updateable=True,
         order=42,
@@ -695,9 +695,9 @@ class PGUpdater:
         self.sweep_plot.hideButtons()
         self.sweep_plot.showGrid(x=True, y=True)
         self.sweep_plot.addLegend()
-        self.sweep_plot.setLabel("bottom", "Distance (cm)")
+        self.sweep_plot.setLabel("bottom", "Distance (mm)")
         self.sweep_plot.setYRange(0, 20000)
-        self.sweep_plot.setXRange(100.0 * self.r[0], 100.0 * self.r[-1])
+        self.sweep_plot.setXRange(1000.0 * self.r[0], 1000.0 * self.r[-1])
 
         self.sweep_curve = self.sweep_plot.plot(
             pen=et.utils.pg_pen_cycler(5),
@@ -734,7 +734,7 @@ class PGUpdater:
             color=et.utils.color_cycler(0),
             fill=pg.mkColor(0xFF, 0xFF, 0xFF, 150),
         )
-        self.peak_text.setPos(self.r[0] * 100, 0)
+        self.peak_text.setPos(self.r[0] * 1000, 0)
         self.peak_text.setZValue(100)
         self.sweep_plot.addItem(self.peak_text)
 
@@ -748,9 +748,9 @@ class PGUpdater:
         self.hist_plot.showGrid(x=True, y=True)
         self.hist_plot.addLegend()
         self.hist_plot.setLabel("bottom", "Time history (s)")
-        self.hist_plot.setLabel("left", "Distance (cm)")
+        self.hist_plot.setLabel("left", "Distance (mm)")
         self.hist_plot.setXRange(-10, 0)
-        self.hist_plot.setYRange(100.0 * self.r[0], 100.0 * self.r[-1])
+        self.hist_plot.setYRange(1000.0 * self.r[0], 1000.0 * self.r[-1])
 
         self.main_peak = self.hist_plot.plot(
             pen=None,
@@ -783,10 +783,10 @@ class PGUpdater:
         self.setup_is_done = True
 
     def update(self, data):
-        self.sweep_curve.setData(100.0 * self.r, data["sweep"])
-        self.mean_sweep_curve.setData(100.0 * self.r, data["last_mean_sweep"])
+        self.sweep_curve.setData(1000.0 * self.r, data["sweep"])
+        self.mean_sweep_curve.setData(1000.0 * self.r, data["last_mean_sweep"])
         et.utils.pg_curve_set_data_with_nan(  # Workaround for bug in PyQt5/PyQtGraph
-            self.threshold_curve, 100.0 * self.r, data["threshold"]
+            self.threshold_curve, 1000.0 * self.r, data["threshold"]
         )
 
         m = np.nanmax(
@@ -801,16 +801,16 @@ class PGUpdater:
         ymax = self.smooth_max_sweep.update(m)
         self.sweep_plot.setYRange(0, ymax)
 
-        self.main_peak.setData(data["main_peak_hist_sweep_s"], 100 * data["main_peak_hist_dist"])
+        self.main_peak.setData(data["main_peak_hist_sweep_s"], 1000 * data["main_peak_hist_dist"])
         self.minor_peaks.setData(
-            data["minor_peaks_hist_sweep_s"], 100 * data["minor_peaks_hist_dist"]
+            data["minor_peaks_hist_sweep_s"], 1000 * data["minor_peaks_hist_dist"]
         )
         self.first_distance_above_threshold.setData(
-            data["above_thres_hist_sweep_s"], 100 * data["above_thres_hist_dist"]
+            data["above_thres_hist_sweep_s"], 1000 * data["above_thres_hist_dist"]
         )
 
         if data["found_peaks"] is not None:
-            peaks = np.take(self.r, data["found_peaks"]) * 100.0
+            peaks = np.take(self.r, data["found_peaks"]) * 1000.0
             for i, line in enumerate(self.peak_lines):
                 try:
                     peak = peaks[i]
@@ -821,7 +821,8 @@ class PGUpdater:
                     line.show()
 
             if data["found_peaks"]:
-                text = "{:.2f} cm".format(peaks[0])
+                amplitude = data["sweep"][data["found_peaks"][0]]
+                text = "{:.2f} mm, {:.1f}".format(peaks[0], amplitude)
             else:
                 text = "-"
 
