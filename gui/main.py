@@ -1545,6 +1545,8 @@ class GUI(QMainWindow):
 
     def stop_scan(self):
         self.sig_scan.emit("stop", "", None)
+
+    def unlock_gui(self):
         if not self.get_gui_state("ml_sensor_settings_locked"):
             self.module_dd.setEnabled(True)
         self.buttons["connect"].setEnabled(True)
@@ -1993,7 +1995,7 @@ class GUI(QMainWindow):
                 self.data_source = None
                 self.set_gui_state("load_state", LoadState.BUFFERED)
         elif message_type == "scan_done":
-            self.stop_scan()
+            self.unlock_gui()
         elif "update_external_plots" in message_type:
             if data is not None:
                 self.update_external_plots(data)
