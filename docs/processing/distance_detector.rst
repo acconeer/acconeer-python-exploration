@@ -27,7 +27,7 @@ In this detector, sweep averaging is performed in the detector. Therefore, the :
 Setting threshold
 -----------------
 
-To be able to determine if no objects are present, the measurement needs to be compared to a threshold. Here, three different thresholds can be employed, each suitable for different use-cases.
+To be able to determine if any objects are present, the measurement needs to be compared to a threshold. Here, three different thresholds can be employed, each suitable for different use-cases.
 
 Fixed threshold
    The most simple approach to setting the threshold is choosing a fixed threshold over the full range. This approach requires that no background objects are present that can trigger detection.
