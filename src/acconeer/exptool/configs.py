@@ -409,7 +409,7 @@ class BaseDenseServiceConfig(BaseServiceConfig):
         return alerts
 
 
-class _MURCapable(BaseDenseServiceConfig):
+class _MURCapable(cb.SensorConfig):
     class MUR(ConfigEnum):
         MUR_6 = ("6 (MMD: 7.0m)", 6, 7.0)
         MUR_9 = ("9 (MMD: 12.7m)", 9, 12.7)
@@ -489,7 +489,7 @@ class _MURCapable(BaseDenseServiceConfig):
         return alerts
 
 
-class PowerBinServiceConfig(_MURCapable):
+class PowerBinServiceConfig(_MURCapable, BaseDenseServiceConfig):
     _MIN_BIN_SIZE = 0.016
 
     mode = ModeParameter(
@@ -518,7 +518,7 @@ class PowerBinServiceConfig(_MURCapable):
         return alerts
 
 
-class EnvelopeServiceConfig(_MURCapable):
+class EnvelopeServiceConfig(_MURCapable, BaseDenseServiceConfig):
     mode = ModeParameter(
         label="Mode",
         value=Mode.ENVELOPE,
@@ -602,7 +602,7 @@ class IQServiceConfig(BaseDenseServiceConfig):
         return alerts
 
 
-class SparseServiceConfig(BaseServiceConfig):
+class SparseServiceConfig(_MURCapable, BaseServiceConfig):
     class SamplingMode(ConfigEnum):
         A = ("A (less correlation)", 0)
         B = ("B (more SNR)", 1)

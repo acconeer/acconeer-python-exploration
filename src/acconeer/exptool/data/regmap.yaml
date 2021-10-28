@@ -294,6 +294,7 @@ mur:
   modes:
   - envelope
   - power_bins
+  - sparse
   address: 52
   type: enum
   category: config
