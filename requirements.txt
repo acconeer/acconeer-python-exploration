@@ -11,4 +11,4 @@ h5py
 Flask
 pyyaml
 attrs
-docutils
+docutils>=0.14,<0.18
