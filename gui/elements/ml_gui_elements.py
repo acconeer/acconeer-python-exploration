@@ -2678,7 +2678,7 @@ class TrainingSidePanel(QFrame):
             self.gui_handle.error_message("No training data loaded")
             return
         try:
-            if len(model_data["label_list"]) == 0:
+            if len(model_data["label_list"]) < 2:
                 self.gui_handle.error_message("You need at least 2 different labels!")
                 return
             if len(model_data["keras_layer_info"]) == 0:
