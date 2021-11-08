@@ -696,6 +696,9 @@ class SparseServiceConfig(_MURCapable, BaseServiceConfig):
             if self.update_rate > max_frame_rate:
                 alerts.append(cb.Error("sweep_rate", "Too low for current update rate"))
 
+        if self.downsampling_factor not in [1, 2, 4, 8]:
+            alerts.append(cb.Warning("downsampling_factor", "Must be 1, 2, 4, or 8"))
+
         # Pessimistic buffer size check
         start_p = int(round(self.range_start / 0.06 - 0.01))
         end_p = int(round(self.range_end / 0.06 + 0.01))
