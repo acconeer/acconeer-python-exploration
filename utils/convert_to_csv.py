@@ -63,7 +63,14 @@ def main():
     index = args.index
     force = args.force
     verbose = args.verbose
+    delimiter = args.delimiter
     sweep_as_column = args.sweep_as_column
+
+    # Convert to real delimiter given to csv module
+    if delimiter == "c":
+        delimiter = ","
+    elif delimiter == "t":
+        delimiter = "\t"
 
     _check_files(input_file, output_file, force)
 
@@ -81,7 +88,7 @@ def main():
         print(f"Writing data with dimensions {csv_table.shape} to {output_file} ...")
 
         with open(output_file, "w") as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, delimiter=delimiter)
             for row in csv_table:
                 writer.writerow(row)
 
@@ -103,6 +110,14 @@ def _check_files(input_file, output_file, force):
 
 
 def _add_arguments(parser):
+    parser.add_argument(
+        "-d",
+        "--delimiter",
+        choices=["c", "t"],
+        dest="delimiter",
+        default="c",
+        help="Delimiter for the output data. Default is comma. 't' is for tab, 'c' for comma",
+    )
     parser.add_argument(
         "input_file",
         help='The input file with file endings ".h5" or ".npz".',
