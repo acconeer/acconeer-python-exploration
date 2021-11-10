@@ -334,7 +334,7 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
             sensor_setup["config"] = sensor_config
             cmd["groups"][0].append(sensor_setup)
 
-        self._sweeps_per_frame = cmd.get("sweeps_per_frame", 16)
+        self._sweeps_per_frame = cmd["groups"][0][0]["config"]["sweeps_per_frame"]
         self._num_sensors = len(sensors)
 
         self._session_cmd = cmd
@@ -375,6 +375,21 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
     def stop_session(self):
         cmd = {"cmd": "stop_streaming"}
         self._send_cmd(cmd)
+
+        t0 = time()
+        while time() - t0 < self._link.timeout:
+            header, _ = self._recv_frame()
+            status = header["status"]
+            if status == "stop":
+                break
+            elif status == "ok":  # got streaming data
+                continue
+            else:
+                raise ClientError
+        else:
+            raise ClientError
+
+        self._link.timeout = self._link.DEFAULT_TIMEOUT
 
         self._session_ready = False
 
