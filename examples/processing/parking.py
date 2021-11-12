@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 
@@ -102,15 +100,9 @@ class Processor:
         self.detection_history = np.zeros(history_length) * float("nan")
         self.detection_history_t = np.linspace(-(history_length - 1) / self.f, 0, history_length)
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         sweep = data
+
         valid_leak_setup = (
             0 <= self.leak_sample_index
             and self.leak_sample_index < self.leak_end_index

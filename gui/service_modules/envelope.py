@@ -1,4 +1,3 @@
-import warnings
 from enum import Enum
 
 import numpy as np
@@ -128,14 +127,7 @@ class Processor:
 
         self.data_index = 0
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         if self.data_index < self.bg_buffer.shape[0]:
             self.bg_buffer[self.data_index] = data
         if self.data_index == self.bg_buffer.shape[0] - 1:

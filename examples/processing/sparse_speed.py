@@ -1,4 +1,3 @@
-import warnings
 from enum import Enum
 
 import numpy as np
@@ -290,14 +289,7 @@ class Processor:
     def dynamic_sf(self, static_sf):
         return min(static_sf, 1.0 - 1.0 / (1.0 + self.update_idx))
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         frame = data
 
         # Basic speed estimate using Welch's method

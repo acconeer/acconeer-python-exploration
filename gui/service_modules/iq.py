@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui
@@ -105,14 +103,7 @@ class Processor:
     def dynamic_sf(self, static_sf):
         return min(static_sf, 1.0 - 1.0 / (1.0 + self.update_index))
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         self.history = np.roll(self.history, -1, axis=0)
         self.history[-1] = data
 

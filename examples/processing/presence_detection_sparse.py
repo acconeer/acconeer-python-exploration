@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 from numpy import cos, pi, sqrt, square
@@ -320,14 +318,7 @@ class Processor:
             a = np.pad(a, pad_width, "constant")
             return np.correlate(a, b, mode="same")[pad_width:-pad_width]
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         frame = data
 
         # Noise estimation

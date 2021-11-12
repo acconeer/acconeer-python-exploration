@@ -1,6 +1,5 @@
 import os
 import sys
-import warnings
 
 import numpy as np
 import pyqtgraph as pg
@@ -121,14 +120,7 @@ class Processor:
         self.data_history = np.ones([history_len, num_sensors, num_depths]) * 2 ** 15
         self.presence_history = np.zeros([history_len, num_sensors, num_depths])
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         if self.pd_processors:
             if data_info is None:
                 processed_datas = [p.process(s, None) for s, p in zip(data, self.pd_processors)]

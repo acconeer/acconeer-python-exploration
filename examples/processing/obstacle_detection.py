@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 
 import numpy as np
 import pyqtgraph as pg
@@ -294,14 +293,7 @@ class ObstacleDetectionProcessor:
         self.use_bg_parameterization = processing_config["use_parameterization"]["value"]
         self.bg_params = []
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         sweep = data
 
         if len(sweep.shape) == 1:

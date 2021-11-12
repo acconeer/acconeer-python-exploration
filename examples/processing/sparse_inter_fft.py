@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui
@@ -174,14 +172,7 @@ class Processor:
         if invalid and self.tick_idx > 0:
             self.update_spect()
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         frame = data
 
         mean_sweep = frame.mean(axis=0)

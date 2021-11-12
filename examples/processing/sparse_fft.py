@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui
@@ -87,14 +85,7 @@ class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
         pass
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         frame = data
 
         zero_mean_frame = frame - frame.mean(axis=0, keepdims=True)

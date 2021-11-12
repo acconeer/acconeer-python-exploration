@@ -1,4 +1,3 @@
-import warnings
 from copy import copy
 from enum import Enum
 
@@ -328,14 +327,7 @@ class Processor:
 
         return [peak_indexes[i] for i in quantity_to_sort.argsort()]
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         sweep = data
 
         # Accumulate sweeps for stationary clutter threshold and check if user has

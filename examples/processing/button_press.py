@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 
@@ -167,14 +165,7 @@ class ButtonPressProcessor:
         self.sf_rel_dev = np.exp(-1.0 / (processing_config.rel_dev_tc_s * self.f))
         self.buttonpress_length_sweeps = processing_config.buttonpress_length_s * self.f
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         sweep = data
 
         # Sum the full sweep to a single number

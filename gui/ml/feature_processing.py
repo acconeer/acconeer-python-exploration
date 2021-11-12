@@ -1,5 +1,4 @@
 import copy
-import warnings
 
 import numpy as np
 import pyqtgraph as pg
@@ -572,14 +571,7 @@ class DataProcessor:
             except Exception as e:
                 print("Failed to update feature list ", e)
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         sweep = data
 
         mode = self.sensor_config.mode

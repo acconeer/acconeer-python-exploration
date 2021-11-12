@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pyqtgraph as pg
 
@@ -75,14 +73,7 @@ class PhaseTrackingProcessor:
         self.hist_pos = np.zeros(num_hist_points)
         self.sweep_index = 0
 
-    def process(self, data, data_info=None):
-        if data_info is None:
-            warnings.warn(
-                "To leave out data_info or set to None is deprecated",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def process(self, data, data_info):
         sweep = data
 
         n = len(sweep)
