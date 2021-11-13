@@ -18,35 +18,62 @@ example usage:
 """
 
 
+def format_cell_value(v):
+    if np.imag(v):
+        return f"{np.real(v):0}{np.imag(v):+}j"
+    else:
+        return str(v)
+
+
+def parse_config_dump(cfg_str):
+    context = {"null": None, "true": True, "false": False}
+    return eval(cfg_str, context)
+
+
 def record_to_csv(
-    record: et.recording.Record, *, index: int = 0, sweep_as_column: bool = False
+    record: et.recording.Record,
+    sensor_index: int = 0,
+    sweep_as_column: bool = False,
+    add_sweep_metadata: bool = False,
 ) -> np.ndarray:
-    # early quits
-    if record.mode == et.Mode.SPARSE:
-        raise ValueError("Sparse data cannot be converted to CSV.")
+    print(record.sensor_config_dump)
+    config_dump = parse_config_dump(record.sensor_config_dump)
+    print(config_dump)
+
+    print("\nConfiguration")
+    for k, v in config_dump.items():
+        print(f"{k:30} {v} ")
 
     num_sensors = record.data.shape[1]
-    if index >= num_sensors:
+    if sensor_index >= num_sensors:
         raise ValueError(
-            f"Invalid sensor index specified (index={index}). "
+            f"Invalid sensor index specified (index={sensor_index}). "
             f"Valid indices for this input file is one of {list(range(num_sensors))}"
         )
 
     # actual translation
-    data = record.data[:, index, :]
-    if sweep_as_column:
-        data = data.T
-    dest = np.empty(data.shape, dtype=object)
+    data = record.data[:, sensor_index, :]
+    dest_rows = []
 
-    for row in range(data.shape[0]):
-        for col in range(data.shape[1]):
-            real = data[row, col].real
-            imag = data[row, col].imag
-            if imag == 0:
-                cell_str = str(real)
-            else:
-                cell_str = f"{real:+}{imag:+}j"
-            dest[row, col] = cell_str
+    depths = et.utils.get_range_depths(record.sensor_config, record.session_info)
+
+    if record.mode == et.Mode.SPARSE and add_sweep_metadata:
+        depths = np.tile(depths, record.sensor_config.sweeps_per_frame)
+        sweep_number = np.floor(
+            np.linspace(0, record.sensor_config.sweeps_per_frame, num=len(depths), endpoint=False)
+        )
+        dest_rows.append(sweep_number.astype(int))
+
+    if add_sweep_metadata:
+        dest_rows.append(np.round(depths, decimals=6))
+
+    for x in data:
+        row = np.ndarray.flatten(x)
+        dest_rows.append([format_cell_value(v) for v in row])
+
+    dest = np.array(dest_rows)
+    if sweep_as_column:
+        dest = dest.T
     return dest
 
 
@@ -60,11 +87,12 @@ def main():
 
     input_file = args.input_file
     output_file = args.output_file
-    index = args.index
+    sensor_index = args.index
     force = args.force
     verbose = args.verbose
     delimiter = args.delimiter
     sweep_as_column = args.sweep_as_column
+    add_sweep_metadata = args.add_sweep_metadata
 
     # Convert to real delimiter given to csv module
     if delimiter == "c":
@@ -84,7 +112,12 @@ def main():
         print()
 
     try:
-        csv_table = record_to_csv(record, index=index, sweep_as_column=sweep_as_column)
+        csv_table = record_to_csv(
+            record,
+            sensor_index=sensor_index,
+            sweep_as_column=sweep_as_column,
+            add_sweep_metadata=add_sweep_metadata,
+        )
         print(f"Writing data with dimensions {csv_table.shape} to {output_file} ...")
 
         with open(output_file, "w") as f:
@@ -155,6 +188,13 @@ def _add_arguments(parser):
         default=False,
         help="Stores sweeps as columns instead of rows.\n"
         "The default is to store sweeps as rows.",
+    )
+    parser.add_argument(
+        "-m",
+        "--add_sweep_metadata",
+        action="store_true",
+        default=False,
+        help="Adds depth and sweep number info to the csv file",
     )
 
 
