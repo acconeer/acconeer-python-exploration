@@ -334,7 +334,7 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
             sensor_setup["config"] = sensor_config
             cmd["groups"][0].append(sensor_setup)
 
-        self._sweeps_per_frame = cmd["groups"][0][0]["config"]["sweeps_per_frame"]
+        self._sweeps_per_frame = cmd["groups"][0][0]["config"].get("sweeps_per_frame", 16)
         self._num_sensors = len(sensors)
 
         self._session_cmd = cmd
