@@ -32,7 +32,7 @@ def main():
     interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
-    processor = PresenceDetectionProcessor(sensor_config, processing_config, session_info)
+    processor = Processor(sensor_config, processing_config, session_info)
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
@@ -57,85 +57,98 @@ def get_sensor_config():
     return config
 
 
-def get_processing_config():
-    return {
-        "n_dft": {
-            "name": "Estimation window [s]",
-            "value": 15,
-            "limits": [2, 20],
-            "type": float,
-            "text": "s",
-        },
-        "t_freq_est": {
-            "name": "Time between estimation [s]",
-            "value": 0.2,
-            "limits": [0.1, 10],
-            "type": float,
-            "text": "s",
-        },
-        "D": {
-            "name": "Distance down sampling",
-            "value": 124,
-            "limits": [0, 248],
-            "type": int,
-            "text": None,
-        },
-        "f_high": {
-            "name": "Bandpass high freq [Hz]",
-            "value": 0.8,
-            "limits": [0, 10],
-            "type": float,
-            "text": None,
-        },
-        "f_low": {
-            "name": "Bandpass low freq [Hz]",
-            "value": 0.2,
-            "limits": [0, 10],
-            "type": float,
-            "text": None,
-        },
-        "lambda_p": {
-            "name": "Threshold: Peak to noise ratio",
-            "value": 40,
-            "limits": [1, 1000],
-            "type": float,
-            "text": None,
-        },
-        "lambda_05": {
-            "name": "Threshold: Peak to half harmonic ratio",
-            "value": 1.0,
-            "limits": [0, 10],
-            "type": float,
-            "text": None,
-        },
-    }
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
+    VERSION = 1
+
+    n_dft = et.configbase.FloatParameter(
+        label="Estimation window",
+        unit="s",
+        default_value=15,
+        limits=(2, 20),
+        updateable=False,
+        order=0,
+    )
+
+    t_freq_est = et.configbase.FloatParameter(
+        label="Time between estimation",
+        unit="s",
+        default_value=0.2,
+        limits=(0.1, 10),
+        updateable=False,
+        order=10,
+    )
+
+    D = et.configbase.IntParameter(
+        label="Distance downsampling",
+        default_value=124,
+        limits=(0, 248),
+        updateable=False,
+        order=20,
+    )
+
+    f_high = et.configbase.FloatParameter(
+        label="Bandpass high freq",
+        unit="Hz",
+        default_value=0.8,
+        limits=(0, 10),
+        updateable=False,
+        order=30,
+    )
+
+    f_low = et.configbase.FloatParameter(
+        label="Bandpass low freq",
+        unit="Hz",
+        default_value=0.2,
+        limits=(0, 10),
+        updateable=False,
+        order=40,
+    )
+
+    lambda_p = et.configbase.FloatParameter(
+        label="Threshold: Peak to noise ratio",
+        default_value=40,
+        limits=(1, 1000),
+        updateable=False,
+        order=50,
+    )
+
+    lambda_05 = et.configbase.FloatParameter(
+        label="Threshold: Peak to half harmonic ratio",
+        default_value=1,
+        limits=(0, 10),
+        updateable=False,
+        order=60,
+    )
 
 
-class PresenceDetectionProcessor:
+get_processing_config = ProcessingConfiguration
+
+
+class Processor:
     def __init__(self, sensor_config, processing_config, session_info):
         self.config = sensor_config
 
         # Settings
         # Data length for frequency estimation [s] | 20
-        n_dft = processing_config["n_dft"]["value"]
+        n_dft = processing_config.n_dft
         # Time between frequency estimations [s] | 2
-        t_freq_est = processing_config["t_freq_est"]["value"]
+        t_freq_est = processing_config.t_freq_est
         # Time constant low-pass filter on IQ-data [s] | 0.04
         tau_iq = 0.04
         # Time constant low-pass filter on IQ-data [s] | 150
         self.f_s = self.config.update_rate
         # Spatial or Range down sampling factor | 124
-        self.D = int(processing_config["D"]["value"])
+        self.D = processing_config.D
         # Lowest frequency of interest [Hz] | 0.1
-        self.f_low = processing_config["f_low"]["value"]
+        self.f_low = processing_config.f_low
         # Highest frequency of interest [Hz] | 1
-        self.f_high = processing_config["f_high"]["value"]
+        self.f_high = processing_config.f_high
         # Time down sampling for DFT | 40 f_s/M ~ 10 Hz
         self.M = int(self.f_s / 10)
         # Threshold: spectral peak to noise ratio [1] | 50
-        self.lambda_p = processing_config["lambda_p"]["value"]
+        self.lambda_p = processing_config.lambda_p
         # Threshold: ratio fundamental and half harmonic
-        self.lambda_05 = processing_config["lambda_05"]["value"]
+        self.lambda_05 = processing_config.lambda_05
         # Interpolation between DFT points
         self.interpolate = True
 

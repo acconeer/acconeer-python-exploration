@@ -232,7 +232,7 @@ MODULE_INFOS = [
         sleep_breathing_module,
         ModuleFamily.EXAMPLE,
         sleep_breathing_module.get_sensor_config,
-        sleep_breathing_module.PresenceDetectionProcessor,
+        sleep_breathing_module.Processor,
         False,
         False,
         "https://acconeer-python-exploration.readthedocs.io"

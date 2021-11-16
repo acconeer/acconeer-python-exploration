@@ -12,7 +12,7 @@ processing_dir = Path(__file__).parents[3] / "examples" / "processing"  # noqa: 
 site.addsitedir(processing_dir)  # noqa: E402
 
 
-import sleep_breathing as sb
+from sleep_breathing import ProcessingConfiguration, Processor
 
 
 HERE = Path(__file__).parent
@@ -26,13 +26,13 @@ PARAMETER_SETS = [
 def get_output(parameter_set=None):
     input_record = et.recording.load(HERE / "input.h5")
 
-    processing_config = sb.get_processing_config()
+    processing_config = ProcessingConfiguration()
 
     if parameter_set is not None:
         for k, v in parameter_set.items():
             setattr(processing_config, k, v)
 
-    processor = sb.PresenceDetectionProcessor(
+    processor = Processor(
         input_record.sensor_config,
         processing_config,
         input_record.session_info,
