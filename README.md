@@ -227,16 +227,6 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 - `plot_with_pyqtgraph.py` \
   Example of how to use PyQtGraph for plotting.
 
-## Radar viewer
-
-The radar viewer visualizes the output from Acconeer's service API:s in your default browser.
-
-Run the radar viewer using:
-```
-python radar_viewer/radar_viewer.py -u
-```
-The usage of arguments is the same as for the examples.
-
 ## Disclaimer
 
 Here you find the [disclaimer](https://acconeer-python-exploration.readthedocs.io/en/latest/disclaimer.html).
