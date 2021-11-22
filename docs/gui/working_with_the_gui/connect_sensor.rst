@@ -16,44 +16,44 @@ Regardless of the hardware, you will be able to select all services and detector
 Raspberry Pi (XR/XC112)
 ^^^^^^^^^^^^^^^^^^^^^^^
 Using the XC112 connector board with the Raspberry Pi, you can connect to up to 4 XR112 sensors simultaneously.
-Before you try to connect to the senors, make sure they are correctly attached to the connector board with the flat-cable and the streaming server is started.
+Before you try to connect to the senors, make sure they are correctly attached to the connector board with the flat-cable and the exploration server is started.
 It does not matter, which ports are used.
 
 .. attention::
     Improperly connecting the sensor with the flat-cables to the connector board can damage your hardware!
 
-The streaming server can be downloaded from our `developer website <https://developer.acconeer.com>`_.
+The exploration server can be downloaded from our `developer website <https://developer.acconeer.com>`_.
 Navigate to the login page, create an account and log in.
 Next, find the **Software Downloads** tab and click on **XC112** (or **XC111** for the older sensor version).
 This will bring up the download link for the Raspberry Pi.
 Download and unzip the software kit and upload it to your Raspberry Pi.
 If you are on Windows you may need to install an SCP client such as `WinSCP <https://winscp.net/eng/index.php>`_ or `Bitvise <https://www.bitvise.com/ssh-client>`_ to upload files to your Raspberry Pi.
 
-The streaming server is located in the *utils* folder and is called
-*acc_streaming_server_rpi_xc112_r2b_xr112_r2b_a111_r2c*
+The exploration server is located in the *out* folder and is called
+*acc_exploration_server_a111*
 
 You may need to enable execution first and then start it::
 
-    chmod +x acc_streaming_server_rpi_xc112_r2b_xr112_r2b_a111_r2c
-    ./acc_streaming_server_rpi_xc112_r2b_xr112_r2b_a111_r2c
+    chmod +x acc_exploration_server_a111
+    ./acc_exploration_server_a111
 
-When the streaming server is started, select **Socket** in the *Connections* drop-down list and type in the IP-address of your Raspberry Pi.
+When the exploration server is started, select **Socket** in the *Connections* drop-down list and type in the IP-address of your Raspberry Pi.
 
 .. tip::
     If you have a fast and stable WiFi connection, no cable is required.
     When using all 4 sensors or very high update rates (~200Hz), a wired network connection might be better, to avoid dropped sensor frames.
 
-Now click on the **Connect** button to connect to the streaming server.
+Now click on the **Connect** button to connect to the exploration server.
 The GUI will automatically determine, which sensors are available and select those for you in the **Sensor settings** panel.
 On successful connection, the **Connect** button will show in red **Disconnect**.
-The GUI may warn you to either update the Acconeer Exploration Tool or the streaming server with a red message under the **Connect** button.
+The GUI may warn you to either update the Acconeer Exploration Tool or the exploration server with a red message under the **Connect** button.
 
 If any error occurs while connecting, the GUI will display an error message; you should
 
 - make sure the IP address is correct
 - check the cables
-- check that the streaming server is still running
-- check the log of the streaming server for error messages (the GUI does not receive those errors and you need to check them manually)
+- check that the exploration server is still running
+- check the log of the exploration server for error messages (the GUI does not receive those errors and you need to check them manually)
 
 .. attention::
     The GUI will NOT know, if you add or remove sensors after you have connected. You need to either disconnect and connect again to update or change the sensor selection yourself. If the selected sensor is not available, the GUI will bring up an error message!

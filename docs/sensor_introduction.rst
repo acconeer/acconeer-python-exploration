@@ -92,7 +92,7 @@ Acconeer provides four types of applications:
 
 * Reference applications: Use case specific reference application available in SDK at Acconeer developer site
 
-* Streaming server: Application streaming data from sensor evaluation kit to PC, available in SDK for Raspberry Pi at Acconeer developer site
+* Exploration server: Application streaming data from sensor evaluation kit to PC, available in SDK for Raspberry Pi at Acconeer developer site
 
 * Module server: Application providing a register write based interface to Acconeer modules, available in Module software image at Acconeer developer site.
 
@@ -141,7 +141,7 @@ For the Stand-alone module setup the customer should use the RSS library and Sof
 The Acconeer tools
 ^^^^^^^^^^^^^^^^^^
 
-To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration Tool requires that the Streaming server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The Streaming Server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration Tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`__. An overview of how Exploration Tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
+To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration Tool requires that the exploration server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The exploration server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration Tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`__. An overview of how Exploration Tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
 
 .. _fig_sw_hw_if:
 .. figure:: /_static/introduction/fig_sw_hw_if.png

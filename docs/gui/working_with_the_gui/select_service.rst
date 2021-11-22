@@ -38,7 +38,7 @@ In order to better understand the type of information you can get with each serv
 Just select any of those services from the **Select service and detectors** drop-down menu and click **Start measurement**.
 
 .. attention::
-    Using the Acconeer Exploration Tool interface, you can only use one service/detector at a time. Even when using several sensors, you cannot use different service types or detectors on different sensors with the GUI. In more general, the Raspberry Pi streaming server does not support using different sensors in different services at the same time!
+    Using the Acconeer Exploration Tool interface, you can only use one service/detector at a time. Even when using several sensors, you cannot use different service types or detectors on different sensors with the GUI.
 
 Detectors
 ---------

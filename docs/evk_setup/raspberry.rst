@@ -13,7 +13,7 @@ At large, these are the steps you'll need to take:
 * Assemble your evaluation kit
 * Set up your Raspberry Pi
 * Load the Acconeer Raspberry Pi SDK onto your Raspberry Pi
-* Run the streaming server application on your Raspberry Pi
+* Run the exploration server application on your Raspberry Pi
 
 For a single sensor setup, we recommend plugging the sensor into port 1 for simplicity's sake.
 
@@ -42,12 +42,12 @@ This can be done by e.g.::
 
 Reboot to the let the changes take effect.
 
-Running the streaming server application
-----------------------------------------
+Running the exploration server application
+------------------------------------------
 
-Start the streaming server application on your Raspberry Pi located under ``utils`` in the SDK archive::
+Start the exploration server application on your Raspberry Pi located under ``out`` in the SDK archive::
 
    $ cd path/to/the/sdk
-   $ ./utils/acc_streaming_server
+   $ ./out/acc_exploration_server_a111
 
 Find the IP address of your Raspberry Pi by running ``ip a`` in its terminal.
