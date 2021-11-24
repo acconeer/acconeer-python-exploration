@@ -376,7 +376,7 @@ class Processor:
 
         max_depthwise_presence = np.max(depthwise_presence)
 
-        sf = self.output_sf  # no dynamic filter for the output
+        sf = self.dynamic_sf(self.output_sf)
         self.presence_score = sf * self.presence_score + (1.0 - sf) * max_depthwise_presence
 
         presence_detected = self.presence_score > self.threshold
