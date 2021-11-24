@@ -30,7 +30,7 @@ pipeline {
                         sh 'rm -rf stash && mkdir stash'
                         sh 'tar -xzf internal_stash_scripts_embedded.tgz -C stash'
                         sh 'tar -xzf internal_stash_xm112.tgz -C stash'
-                        sh '(cd stash && PYTHONPATH=$PYTHONPATH:./scripts/integrator/embedded/ python3 scripts/integrator/module_server/flash.py)'
+                        sh '(cd stash && python3 python_libs/test_utils/flash.py)'
                     }
                 }
                 stage('Integration tests') {
