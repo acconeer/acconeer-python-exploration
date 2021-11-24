@@ -300,6 +300,10 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         if update_rate:
             cmd["update_rate"] = update_rate
 
+        repetition_mode = getattr(config, "repetition_mode", None)
+        if repetition_mode:
+            cmd["repetition_mode"] = repetition_mode.json_value
+
         cmd["groups"] = []
         cmd["groups"].append([])
 
@@ -309,7 +313,7 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         for config_key, cmd_key in CONFIG_TO_CMD_KEY_MAP.items():
             config_val = getattr(config, config_key, None)
 
-            if config_key in ["sensor", "update_rate"]:
+            if config_key in ["sensor", "update_rate", "repetition_mode"]:
                 continue
 
             if config_val is None:
