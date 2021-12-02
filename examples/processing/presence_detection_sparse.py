@@ -396,6 +396,7 @@ class Processor:
             "inter": inter * self.inter_weight,
             "intra": intra * self.intra_weight,
             "depthwise_presence": depthwise_presence,
+            "presence_score": self.presence_score,
             "presence_distance_index": self.presence_distance_index,
             "presence_distance": self.presence_distance,
             "presence_history": self.presence_history,
