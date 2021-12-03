@@ -59,7 +59,7 @@ def pg_process_program(q, exit_event, updater, max_freq):
     win = pg.GraphicsLayoutWidget()
     win.closeEvent = lambda _: exit_event.set()
 
-    updater.setup(win.ci)
+    updater.setup(win)
 
     win.show()
     app.processEvents()
