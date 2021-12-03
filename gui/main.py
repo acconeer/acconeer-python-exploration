@@ -306,7 +306,7 @@ class GUI(QMainWindow):
             sensor_config, processing_config, session_info
         )
 
-        self.service_widget.setup(canvas)
+        self.service_widget.setup(canvas.ci)
 
     def init_pidgets(self):
         self.last_sensor_config = None

@@ -123,7 +123,7 @@ class PGUpdater:
         self.plots = []
         self.curves = []
 
-        self.layout = win.ci.layout
+        self.layout = win.layout
         self.layout.setRowStretchFactor(0, 2)
         self.layout.setRowStretchFactor(1, 3)
         self.layout.setVerticalSpacing(50)
