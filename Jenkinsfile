@@ -26,10 +26,10 @@ pipeline {
                     }
                     steps {
                         findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
-                                                  artifactNames: ["internal_stash_scripts_embedded.tgz", "internal_stash_xm112.tgz"])
+                                                  artifactNames: ["internal_stash_python_libs.tgz", "internal_stash_binaries_xm112.tgz"])
                         sh 'rm -rf stash && mkdir stash'
-                        sh 'tar -xzf internal_stash_scripts_embedded.tgz -C stash'
-                        sh 'tar -xzf internal_stash_xm112.tgz -C stash'
+                        sh 'tar -xzf internal_stash_python_libs.tgz -C stash'
+                        sh 'tar -xzf internal_stash_binaries_xm112.tgz -C stash'
                         sh '(cd stash && python3 python_libs/test_utils/flash.py)'
                     }
                 }
