@@ -42,7 +42,7 @@ pipeline {
                     }
                     steps {
                         sh 'python3 -m pip install -q -U --user .'
-                        sh 'pytest -v tests/integration --mock --uart --spi'
+                        sh 'pytest -v tests/integration --uart --spi'
                     }
                 }
             }
