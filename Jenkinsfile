@@ -48,6 +48,38 @@ pipeline {
                 }
             }
         }
+        stage('Exploration server integration tests')
+        {
+            options {
+                lock resource: '${env.NODE_NAME}-localhost'
+            }
+            stages {
+                stage('Retrieve stash') {
+                    agent {
+                        label 'exploration_tool'
+                    }
+                    steps {
+                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
+                                                artifactNames: ["internal_stash_binaries_sanitizer.tgz"])
+                        sh 'rm -rf stash && mkdir stash'
+                        sh 'tar -xzf internal_stash_binaries_sanitizer.tgz -C stash'
+                    }
+                }
+                stage('Integration test') {
+                    agent {
+                        dockerfile {
+                            label 'exploration_tool'
+                        }
+                    }
+                    steps {
+                        sh 'python3 -m pip install -q -U --user .'
+                        sh 'ACC_BOARD=emulation timeout --preserve-status -s SIGINT 1m stash/out/customer/internal_sanitizer_x86_64/out/acc_exploration_server_a111 > log.txt &'
+                        sh 'pytest -v tests/integration --socket localhost 1'
+                        sh 'cat log.txt'
+                    }
+                }
+            }
+        }
         stage('GUI tests') {
             agent {
                 dockerfile {

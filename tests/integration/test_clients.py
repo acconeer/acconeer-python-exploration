@@ -84,6 +84,10 @@ def test_run_illegal_config(setup):
 def test_squeeze(setup, mode):
     client, sensor = setup
 
+    # TODO Test not stable for exploration server
+    if isinstance(client, clients.SocketClient):
+        pytest.skip("Skip socket client")
+
     restore_squeeze = client.squeeze
 
     config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
@@ -115,6 +119,10 @@ def test_squeeze(setup, mode):
 @pytest.mark.parametrize("mode", modes.Mode)
 def test_sanity_check_output(setup, mode):
     client, sensor = setup
+
+    # TODO Test not stable for exploration server
+    if isinstance(client, clients.SocketClient) and mode != modes.Mode.SPARSE:
+        pytest.skip("Skip socket client")
 
     config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.sensor = sensor
@@ -213,6 +221,10 @@ def test_downsampling_factor(setup, mode):
 
 def test_repetition_mode(setup):
     client, sensor = setup
+
+    # TODO Test not stable for exploration server
+    if isinstance(client, clients.SocketClient):
+        pytest.skip("Skip socket client")
 
     def measure(config):
         client.start_session(config, check_config=False)
