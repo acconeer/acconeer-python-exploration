@@ -12,6 +12,7 @@ pipeline {
                 }
             }
             steps {
+                sh 'git clean -xdf'
                 sh 'tox'
             }
         }
