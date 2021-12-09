@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 class BaseClient(abc.ABC):
     @abc.abstractmethod
     def __init__(self, **kwargs):
-        self.squeeze = kwargs.pop("squeeze", True)
+        self._squeeze = kwargs.pop("squeeze", True)
 
         if kwargs:
             a_key = next(iter(kwargs.keys()))
@@ -216,6 +216,14 @@ class BaseClient(abc.ABC):
     @abc.abstractmethod
     def _disconnect(self):
         pass
+
+    @property
+    def squeeze(self):
+        return self._squeeze
+
+    @squeeze.setter
+    def squeeze(self, squeeze):
+        self._squeeze = squeeze
 
 
 class ClientError(Exception):

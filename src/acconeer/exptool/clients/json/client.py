@@ -115,7 +115,7 @@ class JsonProtocolBase:
 class JsonProtocolStreamingServer(JsonProtocolBase):
     def __init__(self, link, squeeze):
         super().__init__(link)
-        self.squeeze = squeeze
+        self._squeeze = squeeze
 
     def setup_session(self, config):
         if isinstance(config, dict):
@@ -266,11 +266,19 @@ class JsonProtocolStreamingServer(JsonProtocolBase):
 
         return info
 
+    @property
+    def squeeze(self):
+        return self._squeeze
+
+    @squeeze.setter
+    def squeeze(self, squeeze):
+        self._squeeze = squeeze
+
 
 class JsonProtocolExplorationServer(JsonProtocolBase):
     def __init__(self, link, squeeze):
         super().__init__(link)
-        self.squeeze = squeeze
+        self._squeeze = squeeze
 
     def get_system_info(self):
         self._send_cmd({"cmd": "get_system_info"})
@@ -446,6 +454,14 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
 
         return data
 
+    @property
+    def squeeze(self):
+        return self._squeeze
+
+    @squeeze.setter
+    def squeeze(self, squeeze):
+        self._squeeze = squeeze
+
 
 class SocketClient(BaseClient):
     def __init__(self, host, **kwargs):
@@ -512,6 +528,16 @@ class SocketClient(BaseClient):
 
     def _init_session(self, retry=True):
         return self._protocol.init_session()
+
+    @property
+    def squeeze(self):
+        return self._squeeze
+
+    @squeeze.setter
+    def squeeze(self, squeeze):
+        if self._protocol:
+            self._protocol.squeeze = squeeze
+        self._squeeze = squeeze
 
 
 CONFIG_TO_CMD_KEY_MAP = {

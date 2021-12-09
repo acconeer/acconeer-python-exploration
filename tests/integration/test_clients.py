@@ -84,10 +84,6 @@ def test_run_illegal_config(setup):
 def test_squeeze(setup, mode):
     client, sensor = setup
 
-    # TODO Test not stable for exploration server
-    if isinstance(client, clients.SocketClient):
-        pytest.skip("Skip socket client")
-
     restore_squeeze = client.squeeze
 
     config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
