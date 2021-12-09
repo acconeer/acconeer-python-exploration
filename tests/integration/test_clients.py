@@ -116,10 +116,6 @@ def test_squeeze(setup, mode):
 def test_sanity_check_output(setup, mode):
     client, sensor = setup
 
-    # TODO Test not stable for exploration server
-    if isinstance(client, clients.SocketClient) and mode != modes.Mode.SPARSE:
-        pytest.skip("Skip socket client")
-
     config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.sensor = sensor
     config.range_interval = [0.30, 0.60]  # Important with multiple of 0.06m for sparse
