@@ -15,21 +15,22 @@ digraph {
         label="Inter-frame base\nDepthwise"
         style=rounded
 
-        sweep_mean -> {fast_lpf, slow_lpf} -> fast_slow_dev -> inter_lpf
+        sweep_mean -> {fast_lpf, slow_lpf} -> fast_slow_dev -> pc_rem_inter -> abs_dev -> inter_lpf
     }
 
     subgraph cluster_intra {
         label="Intra-frame base\nDepthwise"
         style=rounded
 
-        sweep_dev -> intra_lpf
+        sweep_dev -> pc_rem_intra -> abs_dev_intra -> intra_lpf
     }
 
     subgraph cluster_noise {
         label="Noise estimation\nDepthwise"
         style=rounded
 
-        noise_diff -> noise_dev -> noise_comp -> noise_lpf
+        noise_diff -> {pc_update, noise_dev}
+        noise_dev -> noise_comp -> noise_lpf
     }
   }
 
@@ -45,14 +46,19 @@ digraph {
   sweep_mean [label="Mean over\nsweeps"]
   fast_lpf [label="Fast LPF"]
   slow_lpf [label="Slow LPF"]
-  fast_slow_dev [label="Absolute\ndifference"]
+  fast_slow_dev [label="Difference"]
+  pc_rem_inter [label="PC contribution\nsubtraction"]
+  abs_dev [label="Absolute\nvalue"]
   inter_lpf [label="LPF"]
 
   sweep_dev [label="Deviation\nover sweeps"]
+  pc_rem_intra [label="PC contribution\nsubtraction"]
+  abs_dev_intra [label="Absolute\nvalue"]
   intra_lpf [label="LPF"]
 
   noise_diff [label="Differentiate\nover sweeps\n3 times"]
   noise_dev [label="Absolute\ndeviation"]
+  pc_update [label="PC update"]
   noise_comp [label="Compensate for\ndifferentiation"]
   noise_lpf [label="LPF"]
 

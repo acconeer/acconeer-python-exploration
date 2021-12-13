@@ -101,6 +101,17 @@ Slow motions - looking for a person resting in a sofa
    :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`
    has no effect.
 
+PCA based noise reduction
+   Strong static reflectors, such as concrete floor and metal objects, in the FoV of the radar can give higher detection level than the standard noise floor. This can cause false presence detection.
+   Principal component analysis(PCA) based noise reduction suppress detection from static objects while signals from real movements are preserved.
+
+   For maximum noise reduction the
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.num_removed_pc`
+   is set to 2. If the parameter is set to 0, no PCA based noise reduction is performed.
+   With no strong reflective static objects in the FoV of the radar, PCA based noise reduction can give a minor degradation in performance. In these situations we recommend setting
+   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.num_removed_pc`
+   to 0.
+
 Tuning the service parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -235,6 +246,13 @@ Finally, apply an exponential smoothing filter with a smoothing factor :math:`\a
    \bar{n}(f, d) = \alpha_\text{noise} \cdot \bar{n}(f-1, d) + (1 - \alpha_\text{noise}) \cdot n(f, d)
 
 This smoothing factor is set from a fixed time constant of 1 s.
+
+PCA based noise reduction
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Approximate leading principal components are tracked from the noise differentiation.
+Contributions within the vector space spanned by the tracked vectors are subtracted from the inter-frame and intra-frame deviations used
+to calculate the inter-frame and intra-frame low pass filtered absolute deviations.
+With every new frame the principal components are updated by an incremental PCA algorithm, based on the extended approach of Oja's algorithm in `The Fast Convergence of Incremental PCA <https://cseweb.ucsd.edu/~dasgupta/papers/incremental-pca.pdf>`_ by Balsubramani et al., 2013.
 
 Generating the detector output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
