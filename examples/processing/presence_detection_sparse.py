@@ -64,7 +64,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-    VERSION = 5
+    VERSION = 6
 
     detection_threshold = et.configbase.FloatParameter(
         label="Detection threshold",
@@ -147,6 +147,19 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         updateable=True,
         order=60,
         help="Time constant of the low pass filter for the detector output.",
+    )
+
+    num_removed_pc = et.configbase.IntParameter(
+        label="PCA based noise reduction",
+        default_value=0,
+        limits=(0, 2),
+        updateable=False,
+        order=70,
+        help=(
+            "Sets the number of principal components removed in the PCA based noise reduction."
+            " Filters out static reflections."
+            " Setting to 0 (default) disables the PCA based noise reduction completely."
+        ),
     )
 
     show_data = et.configbase.BoolParameter(
@@ -236,6 +249,7 @@ class Processor:
         self.depths = et.utils.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.f = sensor_config.update_rate
+        self.num_removed_pc = processing_config.num_removed_pc
 
         # Fixed parameters
         self.noise_est_diff_order = 3
@@ -255,6 +269,15 @@ class Processor:
         self.lp_inter_dev = np.zeros(self.num_depths)
         self.lp_intra_dev = np.zeros(self.num_depths)
         self.lp_noise = np.zeros(self.num_depths)
+
+        if self.num_removed_pc == 0:
+            self.noise_base = None
+        else:
+            self.noise_base = np.ones([self.num_removed_pc, self.num_depths])
+            if self.num_removed_pc == 2:
+                self.noise_base[1, ::2] = -1
+
+            self.noise_base = self.normalize_noise_base(self.noise_base)
 
         self.presence_score = 0
         self.presence_distance_index = 0
@@ -318,20 +341,34 @@ class Processor:
             a = np.pad(a, pad_width, "constant")
             return np.correlate(a, b, mode="same")[pad_width:-pad_width]
 
+    @staticmethod
+    def normalize_noise_base(noise_base):
+        norm = np.sqrt(np.sum(np.square(noise_base), axis=1, keepdims=True))
+        return noise_base / norm
+
     def process(self, data, data_info):
         frame = data
 
         # Noise estimation
 
         nd = self.noise_est_diff_order
-        noise = self.abs_dev(np.diff(frame, n=nd, axis=0), axis=0, subtract_mean=False)
+
+        noise_diff = np.diff(frame, n=nd, axis=0)
+        noise = self.abs_dev(noise_diff, axis=0, subtract_mean=False)
         noise /= self.noise_norm_factor
         sf = self.dynamic_sf(self.noise_sf)
         self.lp_noise = sf * self.lp_noise + (1.0 - sf) * noise
 
         # Intra-frame part
 
-        sweep_dev = self.abs_dev(frame, axis=0, ddof=1)
+        mean_sweep = frame.mean(axis=0)
+        frame_diff = frame - mean_sweep
+
+        if self.num_removed_pc > 0:
+            noise_coeffs = frame_diff @ self.noise_base.transpose()
+            frame_diff -= noise_coeffs @ self.noise_base
+
+        sweep_dev = self.abs_dev(frame_diff, axis=0, ddof=1, subtract_mean=False)
 
         sf = self.dynamic_sf(self.intra_sf)
         self.lp_intra_dev = sf * self.lp_intra_dev + (1.0 - sf) * sweep_dev
@@ -347,15 +384,20 @@ class Processor:
 
         # Inter-frame part
 
-        mean_sweep = frame.mean(axis=0)
-
         sf = self.dynamic_sf(self.fast_sf)
         self.fast_lp_mean_sweep = sf * self.fast_lp_mean_sweep + (1.0 - sf) * mean_sweep
 
         sf = self.dynamic_sf(self.slow_sf)
         self.slow_lp_mean_sweep = sf * self.slow_lp_mean_sweep + (1.0 - sf) * mean_sweep
 
-        inter_dev = np.abs(self.fast_lp_mean_sweep - self.slow_lp_mean_sweep)
+        inter_diff = self.fast_lp_mean_sweep - self.slow_lp_mean_sweep
+
+        if self.num_removed_pc > 0:
+            noise_coeffs = inter_diff @ self.noise_base.transpose()
+            inter_diff -= noise_coeffs @ self.noise_base
+
+        inter_dev = np.abs(inter_diff)
+
         sf = self.dynamic_sf(self.inter_dev_sf)
         self.lp_inter_dev = sf * self.lp_inter_dev + (1.0 - sf) * inter_dev
 
@@ -369,6 +411,22 @@ class Processor:
         norm_lp_dev *= np.sqrt(self.sweeps_per_frame)
 
         inter = self.depth_filter(norm_lp_dev)
+
+        # Update the noise base
+
+        if self.num_removed_pc > 0:
+            noise_coeffs = self.noise_base @ noise_diff.transpose()
+            noise_base_update = noise_coeffs @ noise_diff
+            noise_base_update = self.normalize_noise_base(noise_base_update)
+
+            sf = self.dynamic_sf(self.noise_sf)
+            self.noise_base = sf * self.noise_base + (1.0 - sf) * noise_base_update
+            for i in range(len(self.noise_base)):
+                for j in range(i):
+                    self.noise_base[i] -= self.noise_base[j] * np.dot(
+                        self.noise_base[j], self.noise_base[i]
+                    )
+                self.noise_base[i] /= np.sqrt(np.sum(np.square(self.noise_base[i])))
 
         # Detector output
 

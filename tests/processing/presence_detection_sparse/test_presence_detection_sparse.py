@@ -20,6 +20,8 @@ HERE = Path(__file__).parent
 TEST_KEYS = ["presence_score", "depthwise_presence"]
 PARAMETER_SETS = [
     {},
+    {"num_removed_pc": 1},
+    {"num_removed_pc": 2},
 ]
 
 
