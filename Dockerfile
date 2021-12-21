@@ -2,9 +2,15 @@ FROM ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update
-RUN apt-get upgrade -y
-RUN apt-get install -y python3-dev python3-pip libgl1-mesa-glx libfontconfig1 graphviz git wget
+RUN apt-get update && apt-get install -y \
+    git \
+    graphviz \
+    libfontconfig1 \
+    libgl1-mesa-glx \
+    python3-dev \
+    python3-pip \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install pytest pytest-mock pytest-qt pytest-timeout requests sphinx sphinx_rtd_theme tox
 
