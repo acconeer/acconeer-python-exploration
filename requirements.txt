@@ -1,6 +1,6 @@
-setuptools
+setuptools==60.0.3
 packaging
-wheel
+wheel==0.37.0
 numpy==1.19.3
 scipy
 pyserial==3.5
