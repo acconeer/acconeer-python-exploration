@@ -343,6 +343,7 @@ class ButtonPressProcessor:
             "threshold": self.threshold_trig,
             "detection_history": (np.array(self.detection_history) - self.frame_count) / self.f,
             "detection": detection,
+            "signal": signal,
             "calibrated": calibrated,
         }
 
