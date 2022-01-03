@@ -424,33 +424,36 @@ class _MURCapable(cb.SensorConfig):
         default_value=MUR.MUR_6,
         order=15,
         help=r"""
-            Sets the maximum unambiguous range (*MUR*), which in turn sets the maximum measurable
-            distance (*MMD*). A higher setting gives a larger *MUR*/*MMD*, but comes at a cost of
-            increasing the measurement time for a sweep. The measurement time is approximately
-            proportional to the *MUR*.
+            Sets the *maximum unambiguous range* (MUR), which in turn sets the *maximum measurable
+            distance* (MMD).
 
-            The *MMD* is the maximum value for the range end, i.e., the range start + length.
+            The MMD is the maximum value for the range end, i.e., the range start + length. The MMD
+            is smaller than the MUR due to hardware limitations.
 
-            The *MUR* is the maximum distance at which an object can be located to guarantee
-            that its reflection corresponds to the most recent transmitted pulse. Objects
-            farther away than the *MUR* may fold into the measured range. For example,
-            with a *MUR* of 10 m, an object at 12 m could become visible at 2 m.
+            The MUR is the maximum distance at which an object can be located to guarantee that its
+            reflection corresponds to the most recent transmitted pulse. Objects farther away than
+            the MUR may fold into the measured range. For example, with a MUR of 10 m, an object at
+            12 m could become visible at 2 m.
 
-            This setting changes the pulse repetition frequency (*PRF*) of the radar system.
-            The relation between *PRF* and *MUR* is
+            A higher setting gives a larger MUR/MMD, but comes at a cost of increasing the
+            measurement time for a sweep. The measurement time is approximately proportional to the
+            MUR.
+
+            This setting changes the *pulse repetition frequency* (PRF) of the radar system. The
+            relation between PRF and MUR is
 
             .. math::
 
-               MUR = c / (2 * PRF)
+               \text{MUR} = c / (2 * \text{PRF})
 
             where *c* is the speed of light.
 
-            ========  =======  =======  ========
-            Setting   MUR      *MMD*      PRF
-            ========  =======  =======  ========
-            6         11.5 m    7.0 m   13.0 MHz
-            9         17.3 m   12.7 m    8.7 MHz
-            ========  =======  =======  ========
+            =======  ======  ======  ========
+            Setting     MUR     MMD       PRF
+            =======  ======  ======  ========
+                  6  11.5 m   7.0 m  13.0 MHz
+                  9  17.3 m  12.7 m   8.7 MHz
+            =======  ======  ======  ========
 
             This is an experimental feature.
         """,
