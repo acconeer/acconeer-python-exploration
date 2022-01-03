@@ -1,6 +1,6 @@
 The Clear BSD License
 
-Copyright (c) 2018 - 2020, Acconeer AB
+Copyright (c) 2018 - 2022, Acconeer AB
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
