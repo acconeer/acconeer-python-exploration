@@ -10,10 +10,10 @@ import time
 import traceback
 import warnings
 import webbrowser
-from distutils.version import StrictVersion
 
 import numpy as np
 import pyqtgraph as pg
+from packaging import version
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import pyqtSignal
@@ -1340,9 +1340,9 @@ class GUI(QMainWindow):
             strict_ver = None
 
         if strict_ver is not None:
-            if strict_ver < StrictVersion(SDK_VERSION):
+            if strict_ver < version.parse(SDK_VERSION):
                 ver_mismatch = "RSS server"
-            elif strict_ver > StrictVersion(SDK_VERSION):
+            elif strict_ver > version.parse(SDK_VERSION):
                 ver_mismatch = "Exploration Tool"
             else:
                 ver_mismatch = None

@@ -1,6 +1,7 @@
 import abc
 import logging
-from distutils.version import StrictVersion
+
+from packaging import version
 
 from acconeer.exptool import SDK_VERSION, modes
 from acconeer.exptool.structs import configbase
@@ -42,9 +43,9 @@ class BaseClient(abc.ABC):
             try:
                 log.info("reported version: {}".format(info["version_str"]))
 
-                if info["strict_version"] < StrictVersion(SDK_VERSION):
+                if info["strict_version"] < version.parse(SDK_VERSION):
                     log.warning("old server version - please upgrade server")
-                elif info["strict_version"] > StrictVersion(SDK_VERSION):
+                elif info["strict_version"] > version.parse(SDK_VERSION):
                     log.warning("new server version - please upgrade client")
             except KeyError:
                 log.warning("could not read software version (might be too old)")
@@ -238,13 +239,13 @@ class SessionSetupError(ClientError):
     pass
 
 
-def decode_version_str(version: str) -> dict:
-    if "-" in version:
-        strict_version = StrictVersion(version.split("-")[0])
+def decode_version_str(version_str: str) -> dict:
+    if "-" in version_str:
+        strict_version = version.parse(version_str.split("-")[0])
     else:
-        strict_version = StrictVersion(version)
+        strict_version = version.parse(version_str)
 
     return {
-        "version_str": version,
+        "version_str": version_str,
         "strict_version": strict_version,
     }
