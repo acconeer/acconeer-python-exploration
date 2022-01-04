@@ -396,7 +396,7 @@ def pg_mpl_cmap(name):
 
     cmap = plt.get_cmap(name)
     cmap._init()
-    return np.array(cmap._lut) * 255
+    return (np.array(cmap._lut) * 255).astype(np.uint8)
 
 
 class FreqCounter:

@@ -806,7 +806,7 @@ class PGUpdater:
                 cmap_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
                 cmap = LinearSegmentedColormap.from_list("mycmap", cmap_cols)
                 cmap._init()
-                lut = (cmap._lut * 255).view(np.ndarray)
+                lut = (cmap._lut * 255).view(np.ndarray).astype(np.uint8)
 
             for i in range(4):
                 if (i + 1) in sensors:

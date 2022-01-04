@@ -186,7 +186,7 @@ class PGUpdater:
             cmap_cols = ["steelblue", "lightblue", "#f0f0f0", "moccasin", "darkorange"]
             cmap = LinearSegmentedColormap.from_list("mycmap", cmap_cols)
             cmap._init()
-            lut = (cmap._lut * 255).view(np.ndarray)
+            lut = (cmap._lut * 255).view(np.ndarray).astype(np.uint8)
 
             self.data_history_plot = win.addPlot(title="Data history", row=1, col=i)
             self.data_history_plot.setMenuEnabled(False)
