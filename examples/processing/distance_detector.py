@@ -777,9 +777,7 @@ class PGUpdater:
     def update(self, data):
         self.sweep_curve.setData(1000.0 * self.r, data["sweep"])
         self.mean_sweep_curve.setData(1000.0 * self.r, data["last_mean_sweep"])
-        et.utils.pg_curve_set_data_with_nan(  # Workaround for bug in PyQt5/PyQtGraph
-            self.threshold_curve, 1000.0 * self.r, data["threshold"]
-        )
+        self.threshold_curve.setData(1000.0 * self.r, data["threshold"])
 
         m = np.nanmax(
             np.concatenate(

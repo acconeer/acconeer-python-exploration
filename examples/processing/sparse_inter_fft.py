@@ -331,7 +331,7 @@ class PGUpdater:
         x = d["ts"]
         for i, curve in enumerate(self.td_curves):
             y = d["sweep_history"][:, i]
-            et.utils.pg_curve_set_data_with_nan(curve, x, y)
+            curve.setData(x, y)
 
         r = self.td_smooth_lims.update(d["sweep_history"])
         self.td_plot.setYRange(*r)

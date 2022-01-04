@@ -1318,28 +1318,20 @@ class PGUpdater:
 
         for i in range(self.nr_locals):
             if self.hist_plots["distance"][1]:
-                et.utils.pg_curve_set_data_with_nan(
-                    self.hist_plots["distance"][0][i],
-                    np.arange(len(data["peak_hist"][i, 0, :])),
-                    data["peak_hist"][i, 0, :],
+                self.hist_plots["distance"][0][i].setData(
+                    np.arange(len(data["peak_hist"][i, 0, :])), data["peak_hist"][i, 0, :]
                 )
             if self.hist_plots["velocity"][1]:
-                et.utils.pg_curve_set_data_with_nan(
-                    self.hist_plots["velocity"][0][i],
-                    np.arange(len(data["peak_hist"][i, 1, :])),
-                    data["peak_hist"][i, 1, :],
+                self.hist_plots["velocity"][0][i].setData(
+                    np.arange(len(data["peak_hist"][i, 1, :])), data["peak_hist"][i, 1, :]
                 )
             if self.hist_plots["angle"][1]:
-                et.utils.pg_curve_set_data_with_nan(
-                    self.hist_plots["angle"][0][i],
-                    np.arange(len(data["peak_hist"][i, 2, :])),
-                    data["peak_hist"][i, 2, :],
+                self.hist_plots["angle"][0][i].setData(
+                    np.arange(len(data["peak_hist"][i, 2, :])), data["peak_hist"][i, 2, :]
                 )
             if self.hist_plots["amplitude"][1]:
-                et.utils.pg_curve_set_data_with_nan(
-                    self.hist_plots["amplitude"][0][i],
-                    np.arange(len(data["peak_hist"][i, 3, :])),
-                    data["peak_hist"][i, 3, :],
+                self.hist_plots["amplitude"][0][i].setData(
+                    np.arange(len(data["peak_hist"][i, 3, :])), data["peak_hist"][i, 3, :]
                 )
 
         map_max = np.max(np.max(data["fft_map"][0]))

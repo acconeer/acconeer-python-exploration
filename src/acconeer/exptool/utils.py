@@ -4,6 +4,7 @@ import signal
 import struct
 import sys
 import time
+import warnings
 from argparse import ArgumentParser
 from datetime import datetime
 
@@ -525,6 +526,12 @@ def pg_curve_set_data_with_nan(curve, x, y):
     # https://github.com/SainsburyWellcomeCentre/lasagna/issues/247
     # https://github.com/pyqtgraph/pyqtgraph/issues/1057
     # https://github.com/pyqtgraph/pyqtgraph/issues/1057#issuecomment-543190337
+
+    warnings.warn(
+        "pg_curve_set_data_with_nan(curve, x, y) is deprecated, \
+            use curve.setData(x, y) directly instead",
+        DeprecationWarning,
+    )
 
     z = np.array(y)
     finite = np.isfinite(z)
