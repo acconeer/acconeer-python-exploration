@@ -142,8 +142,8 @@ class PGUpdater:
                 plot.getAxis("bottom").setTicks(
                     [
                         [
-                            (0, 1),
-                            (self.sweeps_per_frame - 1, self.sweeps_per_frame),
+                            (0, "1"),
+                            (self.sweeps_per_frame - 1, str(self.sweeps_per_frame)),
                         ],
                     ]
                 )
