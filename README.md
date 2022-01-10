@@ -126,18 +126,6 @@ After pressing _Stop_, you can save (and later load data) or just replay the dat
 Except for Envelope, IQ, Power bins, and Sparse, the GUI is loading modules from the examples directory.
 If you modify code in those files, the changes will appear in the GUI once you reload it.
 
-EXPERIMENTAL deep learning:
-
-If you want to test our new deep learning interface please install additional requirements
-```
-python -m pip install -U --user -r requirements_ml.txt
-```
-This will install Keras, TensorFlow and Scikit-learn.
-You can then start the machine learning GUI with
-```
-python gui/main.py -ml
-```
-Please keep in mind that the deep learning interface is "work in progress"; initial documentation is available here ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/deep_learning/introduction.html)).
 
 ## Running an example script on your local machine
 

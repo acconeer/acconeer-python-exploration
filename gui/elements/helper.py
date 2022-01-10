@@ -1,7 +1,6 @@
 import enum
 import os
 import sys
-from argparse import ArgumentParser
 
 import acconeer.exptool
 
@@ -61,27 +60,6 @@ class LoadState(enum.Enum):
     UNLOADED = enum.auto()
     BUFFERED = enum.auto()
     LOADED = enum.auto()
-
-
-class GUIArgumentParser(ArgumentParser):
-    def __init__(self):
-        super().__init__()
-
-        self.add_argument(
-            "-ml",
-            "--machine-learning",
-            dest="machine_learning",
-            help="Enable machine learning",
-            action="store_true",
-        )
-
-        self.add_argument(
-            "-b",
-            "--beta-features",
-            dest="beta_features",
-            help="Enable beta features",
-            action="store_true",
-        )
 
 
 class ErrorFormater:

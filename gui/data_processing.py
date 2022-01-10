@@ -1,6 +1,4 @@
 import json
-import time
-import traceback
 import warnings
 
 from PyQt5.QtCore import QThread
@@ -25,8 +23,6 @@ class DataProcessing:
         hist_len = params["sweep_buffer"]
         if hist_len is not None and hist_len < 1:
             hist_len = None
-
-        self.ml_settings = params["ml_settings"]
 
         if isinstance(self.processing_config, dict):  # Legacy
             self.processing_config["processing_handle"] = self
@@ -54,28 +50,6 @@ class DataProcessing:
         self.abort = False
         self.first_run = True
 
-    def update_feature_extraction(self, param, value=None):
-        if isinstance(value, dict):
-            settings = value
-        else:
-            settings = {param: value}
-        try:
-            self.external.update_ml_settings(frame_settings=settings)
-        except Exception:
-            traceback.print_exc()
-
-    def send_feature_trigger(self):
-        try:
-            self.external.update_ml_settings(trigger=True)
-        except Exception:
-            traceback.print_exc()
-
-    def update_feature_list(self, feature_list):
-        try:
-            self.external.update_ml_settings(feature_list=feature_list)
-        except Exception:
-            traceback.print_exc()
-
     def process(self, unsqueezed_data, info, do_record=True):
         if self.multi_sensor:
             in_data = unsqueezed_data
@@ -88,9 +62,6 @@ class DataProcessing:
         if self.first_run:
             ext = self.gui_handle.external
             processing_config = self.processing_config
-            if self.ml_settings is not None:
-                ext = self.gui_handle.ml_external
-                processing_config = self.ml_settings
             self.external = ext(self.sensor_config, processing_config, self.session_info)
             self.first_run = False
 
@@ -141,11 +112,7 @@ class DataProcessing:
             if self.abort:
                 break
 
-            if parent.parent.get_gui_state("ml_tab") != "feature_extract":
-                if rate is not None:
-                    time.sleep(1.0 / rate)
-            else:
-                QThread.msleep(3)
+            QThread.msleep(3)
 
             subdata = subdata[sensor_list]
             self.process(subdata, subinfo, do_record=False)

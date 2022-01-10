@@ -22,7 +22,6 @@ Our sensor can be run in one of these four basic services:
 | :ref:`sparse-service`     | | Instantaneous amplitude    | | Speed (up to m/s)                                                   |
 |                           | | at high rep-rate           | | Presence detection (moving objects)                                 |
 |                           |                              | | People counting                                                     |
-|                           |                              | | Gesture detection (:ref:`DeepLearning <deep-learning-introdution>`) |
 +---------------------------+------------------------------+-----------------------------------------------------------------------+
 
 .. _select-service-figure:

@@ -28,7 +28,6 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QPushButton,
     QStackedWidget,
-    QTabWidget,
     QWidget,
 )
 
@@ -36,7 +35,6 @@ from PyQt5.QtWidgets import (
 HERE = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(HERE)
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
-sys.path.append(os.path.abspath(os.path.join(HERE, "ml")))
 
 
 try:
@@ -44,7 +42,7 @@ try:
     from acconeer.exptool.structs import configbase
 
     import data_processing
-    from elements.helper import Count, GUIArgumentParser, LoadState, lib_version_up_to_date
+    from elements.helper import Count, LoadState, lib_version_up_to_date
     from elements.modules import (
         MODULE_INFOS,
         MODULE_KEY_TO_MODULE_INFO_MAP,
@@ -76,7 +74,6 @@ class GUI(QMainWindow):
     DEFAULT_BAUDRATE = 3000000
     ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
     LAST_CONF_FILENAME = os.path.join(HERE, "last_config.npy")
-    LAST_ML_CONF_FILENAME = os.path.join(HERE, "last_ml_config.npy")
 
     sig_scan = pyqtSignal(str, str, object)
     sig_sensor_config_pidget_event = pyqtSignal(object)
@@ -86,12 +83,6 @@ class GUI(QMainWindow):
         super().__init__()
 
         self.under_test = under_test
-
-        gui_inarg = GUIArgumentParser()
-        if under_test:
-            self.args = gui_inarg.parse_args([])
-        else:
-            self.args = gui_inarg.parse_args()
 
         self.data = None
         self.data_source = None
@@ -115,11 +106,6 @@ class GUI(QMainWindow):
             "scan_is_running": False,
             "has_config_error": False,
             "connection_info": None,
-            "ml_mode": bool(self.args.machine_learning),
-            "ml_tab": "main",
-            "ml_model_loaded": False,
-            "ml_sensor_settings_locked": False,
-            "ml_overwrite_settings": False,
         }
 
         self.current_data_type = None
@@ -131,10 +117,6 @@ class GUI(QMainWindow):
         self.control_grid_count = Count()
         self.param_grid_count = Count(2)
         self.sensor_widgets = {}
-
-        self.ml_feature_plot_widget = None
-        self.ml_eval_model_plot_widget = None
-        self.ml_data = None
 
         self.sig_sensor_config_pidget_event.connect(self.pidget_sensor_config_event_handler)
         self.sig_processing_config_pidget_event.connect(
@@ -169,13 +151,8 @@ class GUI(QMainWindow):
         self.init_statusbar()
         self.init_pidgets()
 
-        if self.get_gui_state("ml_mode"):
-            self.init_machine_learning()
-            self.main_widget.addWidget(self.ml_parent_widget)
-            self.canvas_layout = self.tabs["collect"].layout
-        else:
-            self.canvas_widget = QFrame(self.main_widget)
-            self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
+        self.canvas_widget = QFrame(self.main_widget)
+        self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
 
         self.main_widget.addWidget(self.panel_scroll_area)
 
@@ -234,7 +211,6 @@ class GUI(QMainWindow):
             "host": ("192.168.1.100", True),
             "sweep_buffer": ("1000", True),
             "stored_frames": ("0", False),
-            "sweep_buffer_ml": ("unlimited", False),
         }
 
         self.textboxes = {}
@@ -242,8 +218,6 @@ class GUI(QMainWindow):
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
             self.textboxes[key].setEnabled(enabled)
-
-        self.textboxes["sweep_buffer_ml"].setVisible(False)
 
     def init_checkboxes(self):
         # text, status, visible, enabled, function
@@ -381,9 +355,8 @@ class GUI(QMainWindow):
                 else:
                     has_basic_params = True
 
-        if self.get_gui_state("ml_tab") in ["main", "feature_select", "eval"]:
-            self.basic_sensor_config_section.setVisible(has_basic_params)
-            self.advanced_sensor_config_section.setVisible(has_advanced_params)
+        self.basic_sensor_config_section.setVisible(has_basic_params)
+        self.advanced_sensor_config_section.setVisible(has_advanced_params)
 
     def refresh_processing_pidgets(self):
         processing_config = self.get_processing_config()
@@ -413,9 +386,8 @@ class GUI(QMainWindow):
                 else:
                     has_basic_params = True
 
-        if self.get_gui_state("ml_tab") == "main":
-            self.basic_processing_config_section.setVisible(has_basic_params)
-            self.advanced_processing_config_section.setVisible(has_advanced_params)
+        self.basic_processing_config_section.setVisible(has_basic_params)
+        self.advanced_processing_config_section.setVisible(has_advanced_params)
 
     def pidget_sensor_config_event_handler(self, sensor_config):
         if threading.current_thread().name != "MainThread":
@@ -423,9 +395,6 @@ class GUI(QMainWindow):
             return
 
         self.update_pidgets_on_event(sensor_config=sensor_config)
-        if self.get_gui_state("ml_mode"):
-            self.feature_sidepanel.textboxes["update_rate"].setText(str(sensor_config.update_rate))
-            self.feature_select.check_limits()
 
     def pidget_processing_config_event_handler(self, processing_config):
         if threading.current_thread().name != "MainThread":
@@ -483,11 +452,10 @@ class GUI(QMainWindow):
         modules = {}
 
         for module_info in MODULE_INFOS:
-            if not self.get_gui_state("ml_mode") or module_info.allow_ml:
-                if module_info.module_family.value not in modules:
-                    modules[module_info.module_family.value] = [module_info.label]
-                else:
-                    modules[module_info.module_family.value].append(module_info.label)
+            if module_info.module_family.value not in modules:
+                modules[module_info.module_family.value] = [module_info.label]
+            else:
+                modules[module_info.module_family.value].append(module_info.label)
 
         self.init_dropdown_sections(modules)
 
@@ -718,7 +686,6 @@ class GUI(QMainWindow):
         self.control_section.grid.addWidget(self.labels["data_source"], c.pre_incr(), 0, 1, 2)
         self.control_section.grid.addWidget(self.labels["sweep_buffer"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.textboxes["sweep_buffer"], c.val, 1)
-        self.control_section.grid.addWidget(self.textboxes["sweep_buffer_ml"], c.val, 1)
         self.control_section.grid.addWidget(self.labels["stored_frames"], c.pre_incr(), 0)
         self.control_section.grid.addWidget(self.textboxes["stored_frames"], c.val, 1)
 
@@ -798,123 +765,6 @@ class GUI(QMainWindow):
         self.statusBar().addPermanentWidget(self.checkboxes["verbose"])
         self.statusBar().setStyleSheet("QStatusBar{border-top: 1px solid lightgrey;}")
         self.statusBar().show()
-
-    def init_machine_learning(self):
-        if self.get_gui_state("ml_mode"):
-            import feature_processing
-            import ml_gui_elements as ml_gui
-            import ml_state
-
-            self.ml_elements = ml_gui
-            self.ml_external = feature_processing.DataProcessor
-            self.ml_module = feature_processing
-            self.ml_state = ml_state.MLState(self)
-            self.ml_info_widget = ml_state.MLStateWidget(self)
-            self.ml_state.add_status_widget(self.ml_info_widget)
-            self.ml_model_ops = ml_gui.ModelOperations(self)
-            self.init_tabs()
-            self.init_ml_panels()
-
-    def init_tabs(self):
-        self.ml_parent_widget = QtWidgets.QSplitter(self.main_widget)
-        self.ml_parent_widget.resize(300, 200)
-        self.ml_parent_widget.setOrientation(QtCore.Qt.Vertical)
-        self.ml_parent_widget.setStyleSheet("QSplitter::handle{background: lightgrey}")
-        self.ml_parent_widget.setFrameStyle(QFrame.Panel | QFrame.Sunken)
-        self.tab_parent = QTabWidget(self.ml_parent_widget)
-        self.tab_parent.setTabPosition(QTabWidget.South)
-        self.ml_parent_widget.addWidget(self.tab_parent)
-        self.ml_parent_widget.addWidget(self.ml_info_widget)
-
-        self.tabs = {
-            "collect": (QWidget(self.tab_parent), "Select service"),
-            "feature_select": (QWidget(self.tab_parent), "Feature configuration"),
-            "feature_extract": (QWidget(self.tab_parent), "Feature extraction"),
-            "feature_inspect": (QWidget(self.tab_parent), "Feature inspection"),
-            "model_select": (QWidget(self.tab_parent), "Model parameters"),
-            "train": (QWidget(self.tab_parent), "Train Model"),
-            "eval": (QWidget(self.tab_parent), "Use Model"),
-        }
-
-        self.tabs_text_to_key = {
-            "Select service": "main",
-            "Feature configuration": "feature_select",
-            "Feature extraction": "feature_extract",
-            "Feature inspection": "feature_inspect",
-            "Model parameters": "model_select",
-            "Train Model": "train",
-            "Use Model": "eval",
-        }
-
-        for key, (tab, label) in self.tabs.items():
-            self.tab_parent.addTab(tab, label)
-            tab.layout = QtWidgets.QVBoxLayout()
-            tab.setLayout(tab.layout)
-            tab.setObjectName("child")
-            tab.setStyleSheet("QWidget#child{background: #f0f0f0}")
-            self.tabs[key] = tab
-
-        self.tab_parent.currentChanged.connect(self.tab_changed)
-
-        self.feature_select = self.ml_elements.FeatureSelectFrame(
-            self.main_widget,
-            gui_handle=self,
-        )
-        self.tabs["feature_select"].layout.addWidget(self.feature_select)
-
-        self.feature_extract = self.ml_elements.FeatureExtractFrame(
-            self.main_widget,
-            gui_handle=self,
-        )
-        self.tabs["feature_extract"].layout.addWidget(self.feature_extract)
-
-        self.feature_inspect = self.ml_elements.FeatureInspectFrame(
-            self.main_widget,
-            gui_handle=self,
-        )
-        self.tabs["feature_inspect"].layout.addWidget(self.feature_inspect)
-
-        self.model_select = self.ml_elements.ModelSelectFrame(
-            self.main_widget,
-            gui_handle=self,
-        )
-        self.tabs["model_select"].layout.addWidget(self.model_select)
-
-        self.training = self.ml_elements.TrainingFrame(self.main_widget, gui_handle=self)
-        self.tabs["train"].layout.addWidget(self.training)
-
-        self.eval_model = self.ml_elements.EvalFrame(self.main_widget, gui_handle=self)
-        self.tabs["eval"].layout.addWidget(self.eval_model)
-
-    def init_ml_panels(self):
-        # feature select/extract/inspect side panel
-        self.feature_section = CollapsibleSection("Feature settings", init_collapsed=False)
-        self.main_sublayout.addWidget(self.feature_section, 3, 0)
-        self.feature_sidepanel = self.ml_elements.FeatureSidePanel(
-            self.panel_scroll_area_widget, self
-        )
-        self.feature_section.grid.addWidget(self.feature_sidepanel, 0, 0, 1, 2)
-        self.feature_section.hide()
-        self.feature_section.button_event(override=False)
-
-        # training panel
-        self.training_sidepanel = self.ml_elements.TrainingSidePanel(
-            self.panel_scroll_area_widget, self
-        )
-        self.panel_scroll_area_widget.addWidget(self.training_sidepanel)
-
-    def tab_changed(self, index):
-        tab = self.tab_parent.tabText(index)
-        self.set_gui_state("ml_tab", self.tabs_text_to_key[tab])
-
-    def enable_tabs(self, enable):
-        if not self.get_gui_state("ml_mode"):
-            return
-
-        current_tab = self.tab_parent.currentIndex()
-        for i in range(len(self.tabs)):
-            if i != current_tab:
-                self.tab_parent.setTabEnabled(i, enable)
 
     def add_params(self, params, start_up_mode=None):
         if params is None:
@@ -999,9 +849,6 @@ class GUI(QMainWindow):
                         advanced_available = True
 
         if start_up_mode is None:
-            if self.get_gui_state("ml_tab") == "main":
-                self.basic_processing_config_section.setVisible(bool(params))
-
             if advanced_available:
                 self.advanced_processing_config_section.show()
                 self.advanced_processing_config_section.button_event(override=True)
@@ -1208,15 +1055,9 @@ class GUI(QMainWindow):
             "module_info": self.current_module_info,
             "sweep_buffer": sweep_buffer,
             "service_params": processing_config,
-            "ml_settings": None,
             "multi_sensor": self.current_module_info.multi_sensor,
             "rss_version": getattr(self, "rss_version", None),
         }
-
-        ml_tab = self.get_gui_state("ml_tab")
-        if ml_tab != "main":
-            if not (self.ml_state.get_ml_settings_for_scan(ml_tab, params)):
-                return
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
         self.threaded_scan.sig_scan.connect(self.thread_receive)
@@ -1239,7 +1080,6 @@ class GUI(QMainWindow):
             self.basic_processing_config_section.body_widget.setEnabled(False)
 
         self.buttons["connect"].setEnabled(False)
-        self.enable_tabs(False)
 
         self.set_gui_state("scan_is_running", True)
 
@@ -1391,137 +1231,6 @@ class GUI(QMainWindow):
                 self.buttons["advanced_port"].setEnabled(True)
                 self.statusBar().showMessage("Not connected")
 
-        if state == "ml_tab":
-            tab = val
-            self.feature_sidepanel.select_mode(val)
-            self.server_section.hide()
-            self.basic_processing_config_section.hide()
-            self.basic_sensor_config_section.hide()
-            self.advanced_sensor_config_section.hide()
-            self.session_info_section.hide()
-            self.control_section.hide()
-            self.feature_section.hide()
-            self.textboxes["sweep_buffer_ml"].hide()
-            self.textboxes["sweep_buffer"].hide()
-            self.module_dd.show()
-
-            if tab == "main":
-                if states["server_connected"]:
-                    self.basic_sensor_config_section.show()
-                    self.advanced_sensor_config_section.show()
-                self.server_section.show()
-                self.control_section.show()
-                self.textboxes["sweep_buffer"].show()
-                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
-                self.session_info_section.show()
-
-            elif tab == "feature_select":
-                self.feature_section.button_event(override=False)
-                if states["server_connected"]:
-                    self.basic_sensor_config_section.show()
-                    self.advanced_sensor_config_section.show()
-                self.server_section.show()
-                self.feature_section.show()
-                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
-                self.set_sensors(self.get_sensors(widget_name="main"))
-
-                self.feature_select.check_limits()
-
-            elif tab == "feature_extract":
-                self.server_section.show()
-                self.control_section.show()
-                self.feature_section.button_event(override=False)
-                self.feature_section.show()
-                self.module_dd.hide()
-                self.buttons["start"].setText("Start extraction")
-                self.textboxes["sweep_buffer_ml"].show()
-                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
-                self.set_sensors(self.get_sensors(widget_name="main"))
-
-                if self.ml_feature_plot_widget is None:
-                    self.feature_extract.init_graph()
-                    self.ml_feature_plot_widget = self.feature_extract.plot_widget
-
-            elif tab == "feature_inspect":
-                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
-                self.feature_section.show()
-                self.feature_inspect.update_frame("frames", 1, init=True)
-                self.feature_inspect.update_sliders()
-
-            elif tab == "model_select":
-                self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
-
-            elif tab == "train":
-                self.panel_scroll_area_widget.setCurrentWidget(self.training_sidepanel)
-
-            elif tab == "eval":
-                if states["server_connected"]:
-                    self.basic_sensor_config_section.show()
-                    self.advanced_sensor_config_section.show()
-                self.server_section.show()
-                self.control_section.show()
-                self.feature_section.show()
-                self.textboxes["sweep_buffer"].show()
-                self.panel_scroll_area_widget.setCurrentWidget(self.main_sublayout_widget)
-
-                if self.ml_eval_model_plot_widget is None:
-                    self.eval_model.init_graph()
-                    self.ml_eval_model_plot_widget = self.eval_model.plot_widget
-
-        if state == "ml_model_loaded":
-            allow_edit = not val
-            if self.ml_state.get_state("model_source") == "internal":
-                allow_edit = True
-            elif self.ml_state.get_state("model_source") is None:
-                allow_edit = True
-
-            self.set_gui_state("ml_sensor_settings_locked", val)
-            self.gui_states["ml_overwrite_settings"] = False
-
-            self.model_select.allow_layer_edit(allow_edit)
-            self.feature_select.allow_feature_edit(not val)
-            self.module_dd.setEnabled(not val)
-
-        if state == "ml_overwrite_settings":
-            if self.ml_state.get_state("settings_locked"):
-                warning = "Do you really want to unlock model settings?"
-                warning += "\nThis will use GUI values when saving or evaluationg the model!"
-                detailed = "The model might stop working, if you change sensor/feature settings!"
-                detailed += "\n When saving, GUI settings will be used to overwrite the settings!"
-                if self.warning_message(warning, detailed_warning=detailed):
-                    self.feature_select.allow_feature_edit(True)
-                    self.set_gui_state("ml_sensor_settings_locked", False)
-
-        if state == "ml_sensor_settings_locked":
-            self.basic_sensor_config_section.body_widget.setEnabled(not val)
-            self.advanced_sensor_config_section.body_widget.setEnabled(not val)
-            self.ml_state.set_state("settings_locked", val)
-
-        if states["ml_mode"] and hasattr(self, "feature_select"):
-            config_is_valid = self.feature_select.is_config_valid()
-            self.feature_select.buttons["start"].setEnabled(
-                all(
-                    [
-                        states["server_connected"] or states["load_state"] == LoadState.LOADED,
-                        not states["scan_is_running"],
-                        not states["has_config_error"],
-                        config_is_valid,
-                    ]
-                )
-            )
-            self.feature_select.buttons["stop"].setEnabled(states["scan_is_running"])
-
-            self.feature_select.buttons["replay_buffered"].setEnabled(
-                all(
-                    [
-                        states["load_state"] != LoadState.UNLOADED,
-                        not states["scan_is_running"],
-                        config_is_valid,
-                    ]
-                )
-            )
-            self.feature_select.check_limits()
-
         # Disable service help button if current_module_info does not have a docs_link.
         self.buttons["service_help"].setEnabled(self.current_module_info.docs_url is not None)
         if self.current_module_info.module is None:
@@ -1543,8 +1252,7 @@ class GUI(QMainWindow):
         self.sig_scan.emit("stop", "", None)
 
     def unlock_gui(self):
-        if not self.get_gui_state("ml_sensor_settings_locked"):
-            self.module_dd.setEnabled(True)
+        self.module_dd.setEnabled(True)
         self.buttons["connect"].setEnabled(True)
         self.basic_processing_config_section.body_widget.setEnabled(True)
 
@@ -1555,7 +1263,6 @@ class GUI(QMainWindow):
             processing_config._state = configbase.Config.State.LOADED
 
         self.set_gui_state("replaying_data", False)
-        self.enable_tabs(True)
 
         self.set_gui_state("scan_is_running", False)
 
@@ -1644,8 +1351,7 @@ class GUI(QMainWindow):
                     pass
                 return
 
-            if not self.get_gui_state("ml_sensor_settings_locked"):
-                self.set_sensors(connected_sensors)
+            self.set_sensors(connected_sensors)
             self.set_gui_state("server_connected", True)
             self.set_gui_state("load_state", LoadState.UNLOADED)
             self.set_gui_state("connection_info", info)
@@ -2010,16 +1716,7 @@ class GUI(QMainWindow):
             print(message_type, message, data)
 
     def update_external_plots(self, data):
-        if isinstance(data, dict) and data.get("ml_plotting") is True:
-            if self.get_gui_state("ml_tab") == "feature_extract":
-                self.ml_feature_plot_widget.update(data)
-            elif self.get_gui_state("ml_tab") == "feature_select":
-                self.feature_select.plot_feature(data)
-            elif self.get_gui_state("ml_tab") == "eval":
-                self.ml_eval_model_plot_widget.update(data)
-            self.ml_data = data
-        else:
-            self.plot_queue.append(data)
+        self.plot_queue.append(data)
 
     def plot_timer_fun(self):
         if not self.plot_queue:
@@ -2092,15 +1789,6 @@ class GUI(QMainWindow):
                     self.load_last_config(last.item())
                 except Exception as e:
                     print("Could not load settings from last session\n{}".format(e))
-            if os.path.isfile(self.LAST_ML_CONF_FILENAME) and self.get_gui_state("ml_mode"):
-                try:
-                    last = np.load(self.LAST_ML_CONF_FILENAME, allow_pickle=True)
-                    self.feature_select.update_feature_list(last.item()["feature_list"])
-                    self.feature_sidepanel.set_frame_settings(last.item()["frame_settings"])
-                    self.model_select.update_layer_list(last.item()["model_layers"])
-                    self.feature_sidepanel.last_folder = last.item().get("last_folder", None)
-                except Exception as e:
-                    print("Could not load ml settings from last session\n{}".format(e))
 
     def load_last_config(self, last_config):
         # Restore sensor configs (configbase)
@@ -2199,21 +1887,6 @@ class GUI(QMainWindow):
 
         if not self.under_test:
             np.save(self.LAST_CONF_FILENAME, last_config, allow_pickle=True)
-
-            if self.get_gui_state("ml_mode"):
-                try:
-                    last_ml_config = {
-                        "feature_list": self.feature_select.get_feature_list(),
-                        "frame_settings": self.feature_sidepanel.get_frame_settings(),
-                        "model_layers": self.model_select.get_layer_list(
-                            include_inactive_layers=True
-                        ),
-                        "last_folder": self.feature_sidepanel.last_folder,
-                    }
-                except Exception:
-                    pass
-                else:
-                    np.save(self.LAST_ML_CONF_FILENAME, last_ml_config, allow_pickle=True)
 
         try:
             self.client.disconnect()

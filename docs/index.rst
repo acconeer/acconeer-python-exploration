@@ -37,11 +37,3 @@ Table of contents
    :caption: Acconeer Exploration Tool GUI
 
    Introduction <gui/index>
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Deep learning interface
-
-   Introduction <deep_learning/introduction>
-
-   deep_learning/work_steps/index
