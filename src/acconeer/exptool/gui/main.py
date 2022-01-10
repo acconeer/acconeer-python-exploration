@@ -31,36 +31,24 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-
-HERE = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(HERE)
-sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
-
-
-try:
-    from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
-    from acconeer.exptool.structs import configbase
-
-    import data_processing
-    from elements.helper import Count, LoadState, lib_version_up_to_date
-    from elements.modules import (
-        MODULE_INFOS,
-        MODULE_KEY_TO_MODULE_INFO_MAP,
-        MODULE_LABEL_TO_MODULE_INFO_MAP,
-    )
-    from elements.qt_subclasses import (
-        AdvancedSerialDialog,
-        BiggerMessageBox,
-        CollapsibleSection,
-        HandleAdvancedProcessData,
-        Label,
-        SensorSelection,
-        SessionInfoView,
-    )
-except Exception:
-    traceback.print_exc()
-    print("\nPlease update your library with 'python -m pip install -U --user .'")
-    sys.exit(1)
+from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
+from acconeer.exptool.gui import data_processing
+from acconeer.exptool.gui.elements.helper import Count, LoadState, lib_version_up_to_date
+from acconeer.exptool.gui.elements.modules import (
+    MODULE_INFOS,
+    MODULE_KEY_TO_MODULE_INFO_MAP,
+    MODULE_LABEL_TO_MODULE_INFO_MAP,
+)
+from acconeer.exptool.gui.elements.qt_subclasses import (
+    AdvancedSerialDialog,
+    BiggerMessageBox,
+    CollapsibleSection,
+    HandleAdvancedProcessData,
+    Label,
+    SensorSelection,
+    SessionInfoView,
+)
+from acconeer.exptool.structs import configbase
 
 
 if "win32" in sys.platform.lower():
@@ -68,6 +56,8 @@ if "win32" in sys.platform.lower():
 
     myappid = "acconeer.exploration.tool"
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
+HERE = os.path.dirname(os.path.realpath(__file__))
 
 
 class GUI(QMainWindow):

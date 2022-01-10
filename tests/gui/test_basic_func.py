@@ -1,17 +1,10 @@
-import os
-import sys
-
 import pytest
 import requests
 
 from PyQt5 import QtCore
 
-
-here = os.path.dirname(os.path.realpath(__file__))  # noqa: E402
-sys.path.append(os.path.abspath(os.path.join(here, "../..")))  # noqa: E402
-
-from gui.main import GUI  # isort:skip
-from gui.elements.modules import MODULE_INFOS  # isort:skip
+from acconeer.exptool.gui import GUI
+from acconeer.exptool.gui.elements.modules import MODULE_INFOS
 
 
 MOCK_INTERFACE = "Simulated"
@@ -55,7 +48,7 @@ def mock_handler_gui(qtbot, mocker):
         else:
             self.under_test_help_button_response = None
 
-    mocker.patch("gui.main.GUI.service_help_button_handler", mock_help_button_handler)
+    mocker.patch("acconeer.exptool.gui.GUI.service_help_button_handler", mock_help_button_handler)
     return _get_gui(qtbot)
 
 

@@ -1,1 +1,2 @@
 graft src/acconeer/exptool/data
+include src/acconeer/exptool/gui/elements/acc.png

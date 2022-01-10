@@ -63,7 +63,7 @@ There, you can find detailed instructions for installing our libraries; in a nut
 
 #. Once, you have installed everything, you can start the GUI from the root of the repository via::
 
-    python gui/main.py
+    python src/acconeer/exptool/gui/main.py
 
 
 GUI Framework
