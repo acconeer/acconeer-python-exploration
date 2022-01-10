@@ -358,7 +358,7 @@ Read more:
 Configuration parameters
 ------------------------
 
-.. autoclass:: examples.processing.presence_detection_sparse.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration
    :members:
 
 .. _`exponential smoothing`: https://en.wikipedia.org/wiki/Exponential_smoothing

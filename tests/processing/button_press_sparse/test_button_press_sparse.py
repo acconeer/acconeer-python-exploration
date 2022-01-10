@@ -1,4 +1,3 @@
-import site
 import tempfile
 from pathlib import Path
 
@@ -6,13 +5,10 @@ import h5py
 import numpy as np
 
 import acconeer.exptool as et
-
-
-processing_dir = Path(__file__).parents[3] / "examples" / "processing"  # noqa: E402
-site.addsitedir(processing_dir)  # noqa: E402
-
-
-from button_press_sparse import ButtonPressProcessor, ProcessingConfiguration
+from acconeer.exptool.a111.algo.button_press_sparse import (
+    ButtonPressProcessor,
+    ProcessingConfiguration,
+)
 
 
 HERE = Path(__file__).parent

@@ -90,5 +90,5 @@ Measuring the distance to objects very close to the sensor is difficult due to t
 Configuration parameters
 ------------------------
 
-.. autoclass:: examples.processing.distance_detector.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.distance_detector.ProcessingConfiguration
    :members:

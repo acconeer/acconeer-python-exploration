@@ -66,5 +66,5 @@ and
 :attr:`~examples.processing.button_press.ProcessingConfiguration.buttonpress_length_s`.
 
 
-.. autoclass:: examples.processing.button_press.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.button_press.ProcessingConfiguration
    :members:

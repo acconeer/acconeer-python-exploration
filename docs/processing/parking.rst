@@ -180,5 +180,5 @@ where :math:`W_{\textrm{threshold}}`, :math:`Q`, and :math:`S` are configurable 
 Configuration parameters
 ------------------------
 
-.. autoclass:: examples.processing.parking.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.parking.ProcessingConfiguration
    :members:

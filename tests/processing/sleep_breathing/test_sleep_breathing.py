@@ -1,4 +1,3 @@
-import site
 import tempfile
 from pathlib import Path
 
@@ -6,13 +5,7 @@ import h5py
 import numpy as np
 
 import acconeer.exptool as et
-
-
-processing_dir = Path(__file__).parents[3] / "examples" / "processing"  # noqa: E402
-site.addsitedir(processing_dir)  # noqa: E402
-
-
-from sleep_breathing import ProcessingConfiguration, Processor
+from acconeer.exptool.a111.algo.sleep_breathing import ProcessingConfiguration, Processor
 
 
 HERE = Path(__file__).parent

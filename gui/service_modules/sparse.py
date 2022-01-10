@@ -1,20 +1,13 @@
-import os
-import sys
-
 import numpy as np
 import pyqtgraph as pg
 from matplotlib.colors import LinearSegmentedColormap
 from pyqtgraph.Qt import QtGui
 
 from acconeer.exptool import configs, utils
+from acconeer.exptool.a111.algo import presence_detection_sparse
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 from acconeer.exptool.structs import configbase
-
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "../.."))  # noqa: E402
-
-from examples.processing import presence_detection_sparse  # isort:skip
 
 
 def main():
