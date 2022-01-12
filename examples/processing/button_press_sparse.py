@@ -68,12 +68,12 @@ def main():
 
 def get_sensor_config():
     sensor_config = et.configs.SparseServiceConfig()
-    sensor_config.range_interval = [0.04, 0.08]
-    sensor_config.sweeps_per_frame = 64
+    sensor_config.range_interval = [0.06, 0.3]
+    sensor_config.sweeps_per_frame = 32
     sensor_config.update_rate = 80
     sensor_config.hw_accelerated_average_samples = 32
     sensor_config.sampling_mode = sensor_config.SamplingMode.A
-    sensor_config.profile = sensor_config.Profile.PROFILE_1
+    sensor_config.profile = sensor_config.Profile.PROFILE_2
     sensor_config.gain = 0.0
     sensor_config.maximize_signal_attenuation = False
     sensor_config.downsampling_factor = 1
@@ -87,7 +87,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
     recalibration_period = et.configbase.FloatParameter(
         label="Time between recalibrations (minutes)",
-        default_value=10.0,
+        default_value=10000.0,
         limits=(0.1, A_WEEK_MINUTES),
         logscale=True,
         updateable=True,
@@ -108,12 +108,13 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
     double_press_speed = et.configbase.FloatParameter(
         label="Double press sensitivity",
-        default_value=0.7,
+        default_value=0.9,
         limits=(0.4, 0.99),
         logscale=False,
         updateable=True,
         order=30,
-        help="Sensitivity for double presses. Lower values means more likely to double press.",
+        help="Sensitivity for double presses. Lower value means more likely to double press."
+        "High value in combination with low sensitivity can also cause 'double press' behaviour.",
     )
 
     def sparse_round_down(self, num):
@@ -135,32 +136,11 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             "sensor": [],
         }
 
-        (rounded_bottom, rounded_top) = (
-            self.sparse_round_down(sensor_config.range_interval[0]),
-            self.sparse_round_up(sensor_config.range_interval[1]),
-        )
-
-        interval_length = int(round((rounded_top - rounded_bottom) / SPARSE_RESOLUTION)) + 1
-
-        if rounded_bottom == 0.0:
+        if self.sparse_round_down(sensor_config.range_interval[0]) == 0.0:
             alerts["sensor"].append(
                 et.configbase.Warning(
                     "range_interval",
                     "0.0 m point in range, increase range start for better performance",
-                )
-            )
-
-        if interval_length == 2:
-            alerts["sensor"].append(
-                et.configbase.Warning(
-                    "range_interval",
-                    "The range may contain two points, a single point is recommended",
-                )
-            )
-        elif interval_length > 2:
-            alerts["sensor"].append(
-                et.configbase.Error(
-                    "range_interval", "The range contains too many points. Decrease range."
                 )
             )
 
@@ -178,11 +158,19 @@ get_processing_config = ProcessingConfiguration
 class ButtonPressProcessor:
     def __init__(self, sensor_config, processing_config, session_info):
 
+        pc = ProcessingConfiguration()
+        (rounded_bottom, rounded_top) = (
+            pc.sparse_round_down(sensor_config.range_interval[0]),
+            pc.sparse_round_up(sensor_config.range_interval[1]),
+        )
+        num_depths = int(round((rounded_top - rounded_bottom) / SPARSE_RESOLUTION)) + 1
+
+        self.num_depths = num_depths
         self.f = sensor_config.update_rate
-        self.signal_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
-        self.average_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
-        self.trig_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
-        self.cool_down_history = np.zeros(int(round(self.f * HISTORY_LENGTH_S)))
+        self.signal_history = np.zeros((int(round(self.f * HISTORY_LENGTH_S)), num_depths + 1))
+        self.average_history = np.zeros((int(round(self.f * HISTORY_LENGTH_S)), num_depths + 1))
+        self.trig_history = np.zeros((int(round(self.f * HISTORY_LENGTH_S)), num_depths + 1))
+        self.cool_down_history = np.zeros((int(round(self.f * HISTORY_LENGTH_S)), num_depths + 1))
 
         self.detection_history = []
         self.frame_count = 0
@@ -195,18 +183,21 @@ class ButtonPressProcessor:
 
         self.calibrated = 0  # Repeated sending of calibrated signal to exptool plot thread
 
-        self.chilled = True
-        self.initialized = False
+        self.chilled = [True] * num_depths
+        self.initialized = [False] * num_depths
 
         # Low pass trig
-        self.lp_trig = 0.0
+        self.lp_trig = [0.0] * num_depths
+        self.lp_trig_const = [0.0] * num_depths
 
         # Low pass cool down
-        self.lp_cool_down = 0.0
+        self.lp_cool_down = [0.0] * num_depths
+        self.lp_cool_down_const = [0.0] * num_depths
 
         # Low pass average
-        self.lp_average_const = LP_AVERAGE_CONST_INIT
-        self.lp_average = 0.0
+        self.lp_average_const = [LP_AVERAGE_CONST_INIT] * num_depths
+
+        self.lp_average = [0.0] * num_depths
 
         self.update_processing_config(processing_config)
 
@@ -224,8 +215,9 @@ class ButtonPressProcessor:
         self.set_double_press_speed()
 
     def set_double_press_speed(self):
-        self.lp_trig_const = self.double_press_speed / DOUBLE_PRESS_RATIO
-        self.lp_cool_down_const = self.double_press_speed
+        for i in range(self.num_depths):
+            self.lp_trig_const[i] = self.double_press_speed / DOUBLE_PRESS_RATIO
+            self.lp_cool_down_const[i] = self.double_press_speed
 
     def set_sensitivity(self):
         """
@@ -238,93 +230,115 @@ class ButtonPressProcessor:
         self.threshold_trig = int(sens)
         self.threshold_cool_down = int(self.threshold_trig / THRESHOLD_RATIO)
 
-    def lp_cool_down_filter(self, data):
+    def lp_cool_down_filter(self, data, index):
         ret = int(
-            self.lp_cool_down_const * self.lp_cool_down + (1.0 - self.lp_cool_down_const) * data
+            self.lp_cool_down_const[index] * self.lp_cool_down[index]
+            + (1.0 - self.lp_cool_down_const[index]) * data
         )
-        self.lp_cool_down = ret
+        self.lp_cool_down[index] = ret
         return ret
 
-    def lp_trig_filter(self, data):
-        ret = int(self.lp_trig_const * self.lp_trig + (1.0 - self.lp_trig_const) * data)
-        self.lp_trig = ret
+    def lp_trig_filter(self, data, index):
+        ret = int(
+            self.lp_trig_const[index] * self.lp_trig[index]
+            + (1.0 - self.lp_trig_const[index]) * data
+        )
+        self.lp_trig[index] = ret
         return ret
 
-    def lp_average_filter(self, data):
-        ret = int(self.lp_average_const * self.lp_average + (1.0 - self.lp_average_const) * data)
-        self.lp_average = ret
+    def lp_average_filter(self, data, index):
+        ret = int(
+            self.lp_average_const[index] * self.lp_average[index]
+            + (1.0 - self.lp_average_const[index]) * data
+        )
+        self.lp_average[index] = ret
         return ret
 
-    def calibrate(self):
+    def calibrate(self, index):
         # Update the lp_average constant based on the noise levels.
         max_diff = max(
             abs(
-                self.average_history[-self.calibration_limit :]
-                - self.signal_history[-self.calibration_limit :]
+                self.average_history[-self.calibration_limit :, index]
+                - self.signal_history[-self.calibration_limit :, index]
             )
         )
 
-        lp_new = (self.lp_average_const * self.noise_level_target) / max_diff
+        lp_new = (self.lp_average_const[index] * self.noise_level_target) / max_diff
         if lp_new < LP_AVERAGE_CONST_MAX:
-            self.lp_average_const = lp_new
+            self.lp_average_const[index] = lp_new
 
-    def detect(self, trig_val, cool_down_val):
+    def detect(self, trig_val, cool_down_val, index):
 
         trig = False
 
-        if self.chilled:
+        if all(self.chilled):
             if trig_val > self.threshold_trig:
                 trig = True
-                self.chilled = False
+                self.chilled[index] = False
         else:
             if cool_down_val < self.threshold_cool_down:
-                self.chilled = True
+                self.chilled[index] = True
         return trig
 
     def process(self, frame, data_info):
 
-        if not self.initialized:
-            self.lp_average = int(np.mean(frame))
-            self.initialized = True
+        detections = [False] * self.num_depths
+        signal = [0.0] * self.num_depths
 
-        if self.frame_count % self.recalibration_frame_period == self.calibration_limit:
-            self.calibrate()
-            self.calibrated = 5
+        for i in range(frame.shape[1]):
 
-        signal = np.mean(frame, axis=(0, 1))
+            if not self.initialized[i]:
+                self.lp_average[i] = int(np.mean(frame[:, i], axis=0))
+                self.initialized[i] = True
 
-        lp_average = self.lp_average_filter(signal)  # Low pass to smooth the signal
+            if self.frame_count % self.recalibration_frame_period == self.calibration_limit:
+                self.calibrate(i)
+                self.calibrated = 5
 
-        diff = int(abs(lp_average - signal))
+            signal[i] = np.mean(frame[:, i], axis=0)
 
-        if diff < self.noise_level_target:
-            diff = 0  # Get back to "detect" state asap
+            lp_average = self.lp_average_filter(signal[i], i)  # Low pass to smooth the signal
 
-        diff_sq = (
-            diff * diff
-        )  # Squaring yields a bit simpler behaviour with regards to thresholds.
+            diff = int(abs(lp_average - signal[i]))
 
-        trig_val = self.lp_trig_filter(diff_sq)
-        cool_down_val = self.lp_cool_down_filter(diff_sq)
+            if diff < self.noise_level_target:
+                diff = 0  # Get back to "detect" state asap
 
-        # Triggering checks if it is considered a button press.
-        # Cool down checks if we can trigger again.
-        detection = self.detect(trig_val, cool_down_val)
+            diff_sq = (
+                diff * diff
+            )  # Squaring yields a bit simpler behaviour with regards to thresholds.
 
-        if self.frame_count <= self.calibration_limit:
-            detection = False
+            trig_val = self.lp_trig_filter(diff_sq, i)
+            cool_down_val = self.lp_cool_down_filter(diff_sq, i)
 
-        self.signal_history = np.roll(self.signal_history, -1)
-        self.signal_history[-1] = signal
+            # Triggering checks if it is considered a button press.
+            # Cool down checks if we can trigger again.
+            detection = self.detect(trig_val, cool_down_val, i)
 
-        self.average_history = np.roll(self.average_history, -1)
-        self.average_history[-1] = lp_average
+            if self.frame_count <= self.calibration_limit:
+                detection = False
 
-        self.trig_history = np.roll(self.trig_history, -1)
-        self.trig_history[-1] = trig_val
+            self.signal_history[-1, i] = signal[i]
 
-        self.cool_down_history = np.roll(self.cool_down_history, -1)
-        self.cool_down_history[-1] = cool_down_val
+            self.average_history[-1, i] = lp_average
+
+            self.trig_history[-1, i] = trig_val
+
+            self.cool_down_history[-1, i] = cool_down_val
+
+            detections[i] = detection
+
+        detection = any(detections)
+        self.cool_down_history[-1, -1] = max(self.cool_down_history[-1, :-1])
+
+        self.trig_history[-1, -1] = max(self.trig_history[-1, :-1])
+        self.average_history[-1, -1] = max(self.average_history[-1, :-1])
+        self.signal_history[-1, -1] = max(self.signal_history[-1, :-1])
+
+        self.cool_down_history = np.roll(self.cool_down_history, -1, axis=0)
+        self.trig_history = np.roll(self.trig_history, -1, axis=0)
+        self.average_history = np.roll(self.average_history, -1, axis=0)
+        self.signal_history = np.roll(self.signal_history, -1, axis=0)
 
         if detection:
             self.detection_history.append(self.frame_count)
@@ -336,10 +350,10 @@ class ButtonPressProcessor:
             calibrated = False
 
         out_data = {
-            "signal_history": self.signal_history,
-            "average_history": self.average_history,
-            "trig_history": self.trig_history,
-            "cool_down_history": self.cool_down_history,
+            "signal_history": self.signal_history[:, -1],
+            "average_history": self.average_history[:, -1],
+            "trig_history": self.trig_history[:, -1],
+            "cool_down_history": self.cool_down_history[:, -1],
             "threshold": self.threshold_trig,
             "detection_history": (np.array(self.detection_history) - self.frame_count) / self.f,
             "detection": detection,
