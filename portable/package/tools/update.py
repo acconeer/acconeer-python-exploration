@@ -19,7 +19,7 @@ def main():
     # Install and import dulwich
     if importlib.util.find_spec("dulwich") is None:
         check_call(pip_install + ["urllib3", "certifi"])
-        check_call(pip_install + ["dulwich", "--global-option=--pure"])
+        check_call(pip_install + ["dulwich==0.20.28", "--global-option=--pure"])
 
     from dulwich import porcelain
 
