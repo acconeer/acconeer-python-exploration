@@ -1,0 +1,2 @@
+# Enforce line ending LF for files detected as text
+* text=auto eol=lf
