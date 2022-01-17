@@ -20,7 +20,8 @@ import service_modules.envelope as envelope_module
 import service_modules.iq as iq_module
 import service_modules.power_bins as power_bins_module
 import service_modules.sparse as sparse_module
-from helper import PassthroughProcessor
+
+from .helper import PassthroughProcessor
 
 
 def multi_sensor_wrap(module):

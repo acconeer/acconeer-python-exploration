@@ -37,7 +37,6 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(HERE)
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
 sys.path.append(os.path.abspath(os.path.join(HERE, "ml")))
-sys.path.append(os.path.abspath(os.path.join(HERE, "elements")))
 
 
 try:
@@ -45,13 +44,13 @@ try:
     from acconeer.exptool.structs import configbase
 
     import data_processing
-    from helper import Count, GUIArgumentParser, LoadState, lib_version_up_to_date
-    from modules import (
+    from elements.helper import Count, GUIArgumentParser, LoadState, lib_version_up_to_date
+    from elements.modules import (
         MODULE_INFOS,
         MODULE_KEY_TO_MODULE_INFO_MAP,
         MODULE_LABEL_TO_MODULE_INFO_MAP,
     )
-    from qt_subclasses import (
+    from elements.qt_subclasses import (
         AdvancedSerialDialog,
         BiggerMessageBox,
         CollapsibleSection,
