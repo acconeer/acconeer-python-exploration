@@ -255,7 +255,7 @@ There are three options for handling multi-sensor support:
         "sensor_config_class",
         "processor",
         "multi_sensor",
-        "allow_ml"
+        "docs_url"
     ])
     # Module info tuple
 
@@ -264,19 +264,21 @@ There are three options for handling multi-sensor support:
             None,
             "Select service or detector",
             None,
+            ModuleFamily.OTHER,
             None,
             None,
             True,
-            True,
+            "https://acconeer-python-exploration.readthedocs.io/en/latest/services/index.html",
         ),
         ModuleInfo(
             Mode.ENVELOPE.name.lower(),
             "Envelope",
             envelope_module,
+            ModuleFamily.SERVICE,
             envelope_module.get_sensor_config,
             envelope_module.Processor,
             True,
-            True,
+            "https://acconeer-python-exploration.readthedocs.io/en/latest/services/envelope.html",
         ),
 
         ...

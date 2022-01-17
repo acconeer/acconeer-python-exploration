@@ -90,7 +90,6 @@ ModuleInfo = namedtuple(
         "sensor_config_class",
         "processor",
         "multi_sensor",
-        "allow_ml",
         "docs_url",
     ],
 )
@@ -112,7 +111,6 @@ MODULE_INFOS = [
         None,
         None,
         True,
-        True,
         "https://acconeer-python-exploration.readthedocs.io/en/latest/services/index.html",
     ),
     ModuleInfo(
@@ -122,7 +120,6 @@ MODULE_INFOS = [
         ModuleFamily.SERVICE,
         envelope_module.get_sensor_config,
         envelope_module.Processor,
-        True,
         True,
         "https://acconeer-python-exploration.readthedocs.io/en/latest/services/envelope.html",
     ),
@@ -134,7 +131,6 @@ MODULE_INFOS = [
         iq_module.get_sensor_config,
         iq_module.Processor,
         True,
-        True,
         "https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html",
     ),
     ModuleInfo(
@@ -144,7 +140,6 @@ MODULE_INFOS = [
         ModuleFamily.SERVICE,
         power_bins_module.get_sensor_config,
         PassthroughProcessor,
-        False,
         False,
         "https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html",
     ),
@@ -156,7 +151,6 @@ MODULE_INFOS = [
         sparse_module.get_sensor_config,
         sparse_module.Processor,
         True,
-        True,
         "https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html",
     ),
     ModuleInfo(
@@ -167,7 +161,6 @@ MODULE_INFOS = [
         multi_sensor_presence_detection_sparse_module.get_sensor_config,
         multi_sensor_presence_detection_sparse_module.Processor,
         True,
-        False,
         "https://acconeer-python-exploration.readthedocs.io"
         "/en/latest/processing/presence_detection_sparse.html",
     ),
@@ -179,7 +172,6 @@ MODULE_INFOS = [
         sparse_fft_module.get_sensor_config,
         sparse_fft_module.Processor,
         False,
-        False,
         None,
     ),
     ModuleInfo(
@@ -189,7 +181,6 @@ MODULE_INFOS = [
         ModuleFamily.EXAMPLE,
         sparse_inter_fft_module.get_sensor_config,
         sparse_inter_fft_module.Processor,
-        False,
         False,
         None,
     ),
@@ -201,7 +192,6 @@ MODULE_INFOS = [
         multi_sensor_sparse_speed_module.get_sensor_config,
         multi_sensor_sparse_speed_module.Processor,
         True,
-        False,
         None,
     ),
     ModuleInfo(
@@ -212,7 +202,6 @@ MODULE_INFOS = [
         breathing_module.get_sensor_config,
         breathing_module.BreathingProcessor,
         False,
-        False,
         None,
     ),
     ModuleInfo(
@@ -222,7 +211,6 @@ MODULE_INFOS = [
         ModuleFamily.EXAMPLE,
         phase_tracking_module.get_sensor_config,
         phase_tracking_module.PhaseTrackingProcessor,
-        False,
         False,
         "https://acconeer-python-exploration.readthedocs.io"
         "/en/latest/processing/phase_tracking.html",
@@ -235,7 +223,6 @@ MODULE_INFOS = [
         sleep_breathing_module.get_sensor_config,
         sleep_breathing_module.Processor,
         False,
-        False,
         "https://acconeer-python-exploration.readthedocs.io"
         "/en/latest/processing/sleep_breathing.html",
     ),
@@ -247,7 +234,6 @@ MODULE_INFOS = [
         obstacle_detection_module.get_sensor_config,
         obstacle_detection_module.ObstacleDetectionProcessor,
         [1, 2],
-        False,
         "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html",
     ),
     ModuleInfo(
@@ -257,7 +243,6 @@ MODULE_INFOS = [
         ModuleFamily.EXAMPLE,
         button_press_module.get_sensor_config,
         button_press_module.ButtonPressProcessor,
-        False,
         False,
         "https://acconeer-python-exploration.readthedocs.io/"
         "en/latest/processing/button_press.html",
@@ -270,7 +255,6 @@ MODULE_INFOS = [
         button_press_sparse_module.get_sensor_config,
         button_press_sparse_module.ButtonPressProcessor,
         False,
-        False,
         None,
     ),
     ModuleInfo(
@@ -281,7 +265,6 @@ MODULE_INFOS = [
         multi_sensor_distance_detector_module.get_sensor_config,
         multi_sensor_distance_detector_module.Processor,
         True,
-        False,
         "https://acconeer-python-exploration.readthedocs.io/"
         "en/latest/processing/distance_detector.html",
     ),
@@ -293,7 +276,6 @@ MODULE_INFOS = [
         multi_sensor_parking_module.get_sensor_config,
         multi_sensor_parking_module.Processor,
         True,
-        False,
         "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/parking.html",
     ),
 ]
