@@ -60,9 +60,9 @@ pipeline {
                     }
                     steps {
                         findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
-                                                artifactNames: ["internal_stash_binaries_sanitizer.tgz"])
+                                                artifactNames: ["internal_stash_binaries_sanitizer_a111.tgz"])
                         sh 'rm -rf stash && mkdir stash'
-                        sh 'tar -xzf internal_stash_binaries_sanitizer.tgz -C stash'
+                        sh 'tar -xzf internal_stash_binaries_sanitizer_a111.tgz -C stash'
                     }
                 }
                 stage('Integration test') {
