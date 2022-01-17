@@ -45,23 +45,20 @@ try:
     from acconeer.exptool.structs import configbase
 
     import data_processing
-    from helper import (
-        AdvancedSerialDialog,
-        BiggerMessageBox,
-        CollapsibleSection,
-        Count,
-        GUIArgumentParser,
-        HandleAdvancedProcessData,
-        Label,
-        LoadState,
-        SensorSelection,
-        SessionInfoView,
-        lib_version_up_to_date,
-    )
+    from helper import Count, GUIArgumentParser, LoadState, lib_version_up_to_date
     from modules import (
         MODULE_INFOS,
         MODULE_KEY_TO_MODULE_INFO_MAP,
         MODULE_LABEL_TO_MODULE_INFO_MAP,
+    )
+    from qt_subclasses import (
+        AdvancedSerialDialog,
+        BiggerMessageBox,
+        CollapsibleSection,
+        HandleAdvancedProcessData,
+        Label,
+        SensorSelection,
+        SessionInfoView,
     )
 except Exception:
     traceback.print_exc()
