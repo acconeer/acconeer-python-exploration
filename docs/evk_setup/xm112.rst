@@ -19,7 +19,7 @@ To get into the bootloader:
 - Release the NRST button
 - Let go of the ERASE button
 
-Now you should be able to flash the Module software (``acc_module_server_xm112.bin``). After flashing, press the NRST button to reboot into the flashed software.
+Now you should be able to flash the Module software (``acc_module_server.bin``). After flashing, press the NRST button to reboot into the flashed software.
 
 BOSSA on Linux
 ^^^^^^^^^^^^^^
@@ -46,7 +46,7 @@ Build ``bossac`` (the CLI tool)::
 
 To flash::
 
-   sudo ./bin/bossac -e -w -v -p /dev/ttyUSB0 -b /path/to/acc_module_server_xm112.bin
+   sudo ./bin/bossac -e -w -v -p /dev/ttyUSB0 -b /path/to/acc_module_server.bin
 
 Note:
 If you want the full BOSSA GUI, you will also need to install ``libreadline-dev`` and ``libwxgtk3.0-dev`` before compiling with ``make``.

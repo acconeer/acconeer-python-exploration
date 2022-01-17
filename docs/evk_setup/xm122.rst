@@ -10,7 +10,7 @@ For detailed instructions, visit our `developer page <https://developer.acconeer
 Flashing
 --------
 
-Download the module software from our `developer page <https://developer.acconeer.com/>`_. In the archive, ``acconeer_xm122_module_software_v*.zip``, you'll find ``acc_module_server_dfu_package_xm122.zip``, which is the package to flash.
+Download the module software from our `developer page <https://developer.acconeer.com/>`_. In the archive, ``acconeer_xm122_module_software_v*.zip``, you'll find ``acc_module_server_dfu_package.zip``, which is the package to flash.
 
 We recommend flashing using the Python library `nrfutil <https://github.com/NordicSemiconductor/pc-nrfutil>`_. Install it with::
 
@@ -25,6 +25,6 @@ Enter the XM122 bootloader by doing the following:
 
 Now you should be able to flash::
 
-   nrfutil dfu serial -pkg acc_module_server_dfu_package_xm122.zip -p /dev/ttyUSB0
+   nrfutil dfu serial -pkg acc_module_server_dfu_package.zip -p /dev/ttyUSB0
 
 After flashing, press the RESET button to reboot into the flashed software.
