@@ -6,20 +6,19 @@ import acconeer.exptool.a111.algo.breathing as breathing_module
 import acconeer.exptool.a111.algo.button_press as button_press_module
 import acconeer.exptool.a111.algo.button_press_sparse as button_press_sparse_module
 import acconeer.exptool.a111.algo.distance_detector as distance_detector_module
+import acconeer.exptool.a111.algo.envelope as envelope_module
+import acconeer.exptool.a111.algo.iq as iq_module
 import acconeer.exptool.a111.algo.obstacle_detection as obstacle_detection_module
 import acconeer.exptool.a111.algo.parking as parking_module
 import acconeer.exptool.a111.algo.phase_tracking as phase_tracking_module
+import acconeer.exptool.a111.algo.power_bins as power_bins_module
 import acconeer.exptool.a111.algo.presence_detection_sparse as presence_detection_sparse_module  # noqa
 import acconeer.exptool.a111.algo.sleep_breathing as sleep_breathing_module
+import acconeer.exptool.a111.algo.sparse as sparse_module
 import acconeer.exptool.a111.algo.sparse_fft as sparse_fft_module
 import acconeer.exptool.a111.algo.sparse_inter_fft as sparse_inter_fft_module
 import acconeer.exptool.a111.algo.sparse_speed as sparse_speed_module
 from acconeer.exptool.modes import Mode
-
-import service_modules.envelope as envelope_module
-import service_modules.iq as iq_module
-import service_modules.power_bins as power_bins_module
-import service_modules.sparse as sparse_module
 
 from .helper import PassthroughProcessor
 
