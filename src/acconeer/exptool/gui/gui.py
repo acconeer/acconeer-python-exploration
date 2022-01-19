@@ -2043,7 +2043,7 @@ def watchdog(event):
         os._exit(1)
 
 
-if __name__ == "__main__":
+def main():
     if lib_version_up_to_date():
         utils.config_logging(level=logging.INFO)
 

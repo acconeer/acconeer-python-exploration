@@ -109,7 +109,7 @@ Note: SPI is not supported under WSL.
 
 Using the GUI is the easiest way to start exploring Acconeer's radar sensor and our application examples:
 ```
-python src/acconeer/exptool/gui/main.py
+python -m acconeer.exptool.gui
 ```
 
 In the top right box of the GUI, named _Connection_, select the interface you wish to use
