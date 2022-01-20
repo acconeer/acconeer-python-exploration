@@ -5,7 +5,10 @@ import h5py
 import numpy as np
 
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.presence_detection_sparse import ProcessingConfiguration, Processor
+from acconeer.exptool.a111.algo.presence_detection_sparse.processing import (
+    ProcessingConfiguration,
+    Processor,
+)
 
 
 HERE = Path(__file__).parent
