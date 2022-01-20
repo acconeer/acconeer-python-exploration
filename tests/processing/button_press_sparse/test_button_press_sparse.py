@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.button_press_sparse import (
+from acconeer.exptool.a111.algo.button_press_sparse.processing import (
     ButtonPressProcessor,
     ProcessingConfiguration,
 )
