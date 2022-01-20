@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (
 
 from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
 from acconeer.exptool.gui import data_processing
-from acconeer.exptool.gui.elements.helper import Count, LoadState, lib_version_up_to_date
+from acconeer.exptool.gui.elements.helper import Count, LoadState
 from acconeer.exptool.gui.elements.modules import (
     MODULE_INFOS,
     MODULE_KEY_TO_MODULE_INFO_MAP,
@@ -152,7 +152,6 @@ class GUI(QMainWindow):
         self.setWindowTitle("Acconeer Exploration GUI")
         self.show()
         self.start_up()
-        lib_version_up_to_date(gui_handle=self)
         self.set_gui_state(None, None)
 
         self.radar = data_processing.DataProcessing()
@@ -2044,20 +2043,19 @@ def watchdog(event):
 
 
 def main():
-    if lib_version_up_to_date():
-        utils.config_logging(level=logging.INFO)
+    utils.config_logging(level=logging.INFO)
 
-        # Enable warnings to be printed to the log, e.g. DeprecationWarning
-        warnings.simplefilter("module")
+    # Enable warnings to be printed to the log, e.g. DeprecationWarning
+    warnings.simplefilter("module")
 
-        app = QApplication(sys.argv)
-        ex = GUI()
+    app = QApplication(sys.argv)
+    ex = GUI()
 
-        signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
+    signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
 
-        # Makes sure the signal is caught
-        timer = QtCore.QTimer()
-        timer.timeout.connect(lambda: None)
-        timer.start(200)
+    # Makes sure the signal is caught
+    timer = QtCore.QTimer()
+    timer.timeout.connect(lambda: None)
+    timer.start(200)
 
-        sys.exit(app.exec_())
+    sys.exit(app.exec_())
