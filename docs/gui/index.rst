@@ -63,7 +63,7 @@ There, you can find detailed instructions for installing our libraries; in a nut
 
 #. Once, you have installed everything, you can start the GUI from anywhere via::
 
-    python -m acconeer.exptool.gui
+    python -m acconeer.exptool.app
 
 
 GUI Framework

@@ -3,8 +3,8 @@ import requests
 
 from PyQt5 import QtCore
 
-from acconeer.exptool.gui import GUI
-from acconeer.exptool.gui.elements.modules import MODULE_INFOS
+from acconeer.exptool.app import GUI
+from acconeer.exptool.app.elements.modules import MODULE_INFOS
 
 
 MOCK_INTERFACE = "Simulated"
@@ -48,7 +48,7 @@ def mock_handler_gui(qtbot, mocker):
         else:
             self.under_test_help_button_response = None
 
-    mocker.patch("acconeer.exptool.gui.GUI.service_help_button_handler", mock_help_button_handler)
+    mocker.patch("acconeer.exptool.app.GUI.service_help_button_handler", mock_help_button_handler)
     return _get_gui(qtbot)
 
 

@@ -32,14 +32,16 @@ from PyQt5.QtWidgets import (
 )
 
 from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
-from acconeer.exptool.gui import data_processing
-from acconeer.exptool.gui.elements.helper import Count, LoadState
-from acconeer.exptool.gui.elements.modules import (
+from acconeer.exptool.structs import configbase
+
+from . import data_processing
+from .elements.helper import Count, LoadState
+from .elements.modules import (
     MODULE_INFOS,
     MODULE_KEY_TO_MODULE_INFO_MAP,
     MODULE_LABEL_TO_MODULE_INFO_MAP,
 )
-from acconeer.exptool.gui.elements.qt_subclasses import (
+from .elements.qt_subclasses import (
     AdvancedSerialDialog,
     BiggerMessageBox,
     CollapsibleSection,
@@ -48,7 +50,6 @@ from acconeer.exptool.gui.elements.qt_subclasses import (
     SensorSelection,
     SessionInfoView,
 )
-from acconeer.exptool.structs import configbase
 
 
 if "win32" in sys.platform.lower():
