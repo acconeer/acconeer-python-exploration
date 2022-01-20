@@ -326,7 +326,7 @@ class Processor:
     def freq_quad_interpolation(self, P):
         f_idx = np.argmax(P)
 
-        if 0 < f_idx < P.size and P.size > 3:
+        if 0 < f_idx < (P.size - 1) and P.size > 3:
             f_est = self.dft_f_vec[f_idx] + self.delta_f / 2 * (
                 (np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
                 / (2 * np.log(P[f_idx]) - np.log(P[f_idx + 1]) - np.log(P[f_idx - 1]))
