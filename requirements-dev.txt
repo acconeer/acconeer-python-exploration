@@ -1,0 +1,8 @@
+pytest
+pytest-mock
+pytest-qt
+pytest-timeout
+requests
+sphinx
+sphinx_rtd_theme
+tox

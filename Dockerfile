@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install pytest pytest-mock pytest-qt pytest-timeout requests sphinx sphinx_rtd_theme tox
+COPY requirements-dev.txt /tmp/
+RUN python3 -m pip install -r /tmp/requirements-dev.txt
 
 COPY requirements.txt /tmp/
 RUN python3 -m pip install -r /tmp/requirements.txt
