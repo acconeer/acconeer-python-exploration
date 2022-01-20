@@ -1,5 +1,3 @@
-__version__ = "4.0.0"
-
 SDK_VERSION = "2.10.0"
 
 
@@ -14,3 +12,9 @@ from .configs import (
 from .modes import Mode
 from .pg_process import PGProccessDiedException, PGProcess
 from .structs import configbase
+
+
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = "0.0.0"

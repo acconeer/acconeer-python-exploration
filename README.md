@@ -53,7 +53,6 @@ Tested on:
 
 All Python package dependencies are listed in `requirements.txt`. Install them using pip:
 ```
-python -m pip install -U --user setuptools wheel
 python -m pip install -U --user -r requirements.txt
 ```
 Depending on your environment, you might have to replace `python` with `python3` or `py`.

@@ -1,2 +1,15 @@
+[build-system]
+requires = [
+    "setuptools>=60.0.3",
+    "setuptools_scm>=6.4",
+    "wheel>=0.37.0",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+write_to = "src/acconeer/exptool/_version.py"
+write_to_template = "__version__ = \"{version}\"\n"
+
 [tool.black]
 line-length = 99

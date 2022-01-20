@@ -5,10 +5,11 @@ venv/
 env/
 .tox/
 
-# setup.py
+# build
 dist/
 build/
 *.egg-info/
+src/acconeer/exptool/_version.py
 
 # pytest
 .pytest_cache/

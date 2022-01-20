@@ -54,7 +54,6 @@ There, you can find detailed instructions for installing our libraries; in a nut
 #. Make sure you have Python 3.7 or newer installed.
 #. Install the required packages (you might have to replace python with python3 or py)::
 
-    python -m pip install -U --user setuptools wheel
     python -m pip install -U --user -r requirements.txt
 
 #. Install the acconeer.exptool library::
