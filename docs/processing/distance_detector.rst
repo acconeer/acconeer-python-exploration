@@ -85,10 +85,10 @@ In the lower plot in the Distance detector GUI, the first peak after sorting is 
 Measuring close to the sensor
 -----------------------------
 
-Measuring the distance to objects very close to the sensor is difficult due to the presence of the strong direct leakage closer than approximately 6 cm to the radar. However, often the presence of strongly reflecting objects, such as fluid surfaces, can be detected. Optimal performance is obtained by using :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.profile` 1, setting :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.gain` to zero and enabling :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.maximize_signal_attenuation` to not saturate the sensor and using Recorded threshold. Often, the presence of an object only slightly alters the shape of the direct leakage, so that a well shaped peak is not found. Instead, it is recommended to see if the envelope signal is above threshold by enabling :attr:`~examples.processing.distance_detector.ProcessingConfiguration.show_first_above_threshold`.
+Measuring the distance to objects very close to the sensor is difficult due to the presence of the strong direct leakage closer than approximately 6 cm to the radar. However, often the presence of strongly reflecting objects, such as fluid surfaces, can be detected. Optimal performance is obtained by using :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.profile` 1, setting :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.gain` to zero and enabling :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.maximize_signal_attenuation` to not saturate the sensor and using Recorded threshold. Often, the presence of an object only slightly alters the shape of the direct leakage, so that a well shaped peak is not found. Instead, it is recommended to see if the envelope signal is above threshold by enabling :attr:`~examples.processing.distance_detector.processing.ProcessingConfiguration.show_first_above_threshold`.
 
 Configuration parameters
 ------------------------
 
-.. autoclass:: acconeer.exptool.a111.algo.distance_detector.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.distance_detector.processing.ProcessingConfiguration
    :members:
