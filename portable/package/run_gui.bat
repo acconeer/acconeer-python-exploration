@@ -1,9 +1,10 @@
 @echo off
-if exist "acconeer-python-exploration\gui\main.py" (
-    cd acconeer-python-exploration\gui
-    ..\..\tools\python-3.7.4-embed-amd64\python.exe main.py
+
+if exist "acconeer-python-exploration" (
+    tools\python-3.7.4-embed-amd64\python.exe -m acconeer.exptool.app
+    pause
 ) else (
-    echo Could not find acconeer-python-exploration\gui\main.py
+    echo Could not find acconeer-python-exploration
     echo Did you forget to run update.bat?
     echo.
     pause
