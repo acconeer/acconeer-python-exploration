@@ -1,4 +1,4 @@
-from acconeer.exptool.app.gui import main
+from acconeer.exptool.app.app import main
 
 
 if __name__ == "__main__":
