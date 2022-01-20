@@ -62,7 +62,6 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 
 
 class GUI(QMainWindow):
-    DEFAULT_BAUDRATE = 3000000
     ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
     LAST_CONF_FILENAME = os.path.join(HERE, "last_config.npy")
 
