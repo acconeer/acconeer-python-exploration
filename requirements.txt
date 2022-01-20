@@ -10,5 +10,3 @@ pyqtgraph
 pyserial>=3.5
 pyyaml
 scipy
-setuptools>=60.0.3
-wheel>=0.37.0

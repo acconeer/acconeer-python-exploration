@@ -3,6 +3,8 @@ pytest-mock
 pytest-qt
 pytest-timeout
 requests
+setuptools>=60.0.3
 sphinx
 sphinx_rtd_theme
 tox
+wheel>=0.37.0
