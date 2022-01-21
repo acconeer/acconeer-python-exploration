@@ -8,7 +8,7 @@ import acconeer.exptool as et
 
 A_WEEK_MINUTES = 10080.0
 HISTORY_LENGTH_S = 10
-SENSITIVITY_MAX = 10.0
+SENSITIVITY_MAX = 1.0
 MAX_ALLOWED_NOISE = 20
 LP_AVERAGE_CONST_MAX = 0.9
 LP_AVERAGE_CONST_INIT = 0.7
@@ -97,7 +97,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
     sensitivity = et.configbase.FloatParameter(
         label="Detection sensitivity",
-        default_value=9.0,
+        default_value=0.9,
         limits=(0.0, SENSITIVITY_MAX),
         logscale=False,
         updateable=True,
@@ -221,11 +221,11 @@ class ButtonPressProcessor:
 
     def set_sensitivity(self):
         """
-        Function to map the idea of "sensitivity between 0-10" to an actual threshold.
+        Function to map the idea of "sensitivity between 0-1" to an actual threshold.
         """
         inv_sensitivity = (
-            SENSITIVITY_MAX - self.sensitivity
-        )  # since intuitively high sensitivity -> more likely to detect
+            (SENSITIVITY_MAX - self.sensitivity)
+        ) * 10.0  # since intuitively high sensitivity -> more likely to detect
         sens = 2 ** (1.1 * inv_sensitivity) * 600  # Yielding a nice exponential curve between 0-10
         self.threshold_trig = int(sens)
         self.threshold_cool_down = int(self.threshold_trig / THRESHOLD_RATIO)
@@ -291,13 +291,11 @@ class ButtonPressProcessor:
                 self.lp_average[i] = int(np.mean(frame[:, i], axis=0))
                 self.initialized[i] = True
 
-            if self.frame_count % self.recalibration_frame_period == self.calibration_limit:
-                self.calibrate(i)
-                self.calibrated = 5
-
             signal[i] = np.mean(frame[:, i], axis=0)
+            self.signal_history[-1, -1] = max(self.signal_history[-1, :-1])
 
             lp_average = self.lp_average_filter(signal[i], i)  # Low pass to smooth the signal
+            self.average_history[-1, -1] = max(self.average_history[-1, :-1])
 
             diff = int(abs(lp_average - signal[i]))
 
@@ -314,6 +312,10 @@ class ButtonPressProcessor:
             # Triggering checks if it is considered a button press.
             # Cool down checks if we can trigger again.
             detection = self.detect(trig_val, cool_down_val, i)
+
+            if self.frame_count % self.recalibration_frame_period == self.calibration_limit:
+                self.calibrate(i)
+                self.calibrated = 5
 
             if self.frame_count <= self.calibration_limit:
                 detection = False
@@ -332,8 +334,6 @@ class ButtonPressProcessor:
         self.cool_down_history[-1, -1] = max(self.cool_down_history[-1, :-1])
 
         self.trig_history[-1, -1] = max(self.trig_history[-1, :-1])
-        self.average_history[-1, -1] = max(self.average_history[-1, :-1])
-        self.signal_history[-1, -1] = max(self.signal_history[-1, :-1])
 
         self.cool_down_history = np.roll(self.cool_down_history, -1, axis=0)
         self.trig_history = np.roll(self.trig_history, -1, axis=0)
