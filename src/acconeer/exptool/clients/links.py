@@ -141,19 +141,26 @@ class BaseSerialLink(BaseLink):
 
 
 class SerialLink(BaseSerialLink):
-    def __init__(self, port=None):
+    def __init__(self, port=None, flowcontrol=False):
         super().__init__()
         self._port = port
         self._ser = None
+        self._flowcontrol = flowcontrol
 
     def _update_timeout(self):
         if self._ser is not None:
             self._ser.timeout = self._timeout
 
+    def send_break(self):
+        self._ser.send_break()
+        sleep(0.5)
+        self._ser.flushInput()
+
     def connect(self):
         self._ser = serial.Serial()
-        self._ser.port = self._port
         self._ser.baudrate = self._baudrate
+        self._ser.port = self._port
+        self._ser.rtscts = self._flowcontrol
         self._update_timeout()
         self._ser.open()
 
@@ -193,6 +200,15 @@ class SerialLink(BaseSerialLink):
 
         if self._ser is not None and self._ser.is_open:
             self._ser.baudrate = new_baudrate
+
+
+class ExploreSerialLink(SerialLink):
+    def __init__(self, port, flowcontrol=True):
+        super().__init__(port, flowcontrol)
+
+    def connect(self):
+        super().connect()
+        self.send_break()
 
 
 class SerialProcessLink(BaseSerialLink):

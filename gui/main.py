@@ -494,9 +494,10 @@ class GUI(QMainWindow):
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
         self.interface_dd = QComboBox(self)
-        self.interface_dd.addItem("Socket")
-        self.interface_dd.addItem("Serial")
-        self.interface_dd.addItem("SPI")
+        self.interface_dd.addItem("Socket (Exploration server)")
+        self.interface_dd.addItem("Serial (Exploration server)")
+        self.interface_dd.addItem("Serial (Module server)")
+        self.interface_dd.addItem("SPI (Module server)")
         self.interface_dd.addItem("Simulated")
         self.interface_dd.currentIndexChanged.connect(self.update_interface)
 
@@ -1104,18 +1105,24 @@ class GUI(QMainWindow):
         if self.gui_states["server_connected"]:
             self.connect_to_server()
 
-        if "serial" in self.interface_dd.currentText().lower():
+        if "serial (module server)" in self.interface_dd.currentText().lower():
             self.ports_dd.show()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
             self.update_ports()
-        elif "spi" in self.interface_dd.currentText().lower():
+        elif "serial (exploration server)" in self.interface_dd.currentText().lower():
+            self.ports_dd.show()
+            self.textboxes["host"].hide()
+            self.buttons["advanced_port"].hide()
+            self.buttons["scan_ports"].hide()
+            self.update_ports()
+        elif "spi (module server)" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].hide()
             self.buttons["advanced_port"].hide()
             self.buttons["scan_ports"].hide()
-        elif "socket" in self.interface_dd.currentText().lower():
+        elif "socket (exploration server)" in self.interface_dd.currentText().lower():
             self.ports_dd.hide()
             self.textboxes["host"].show()
             self.buttons["advanced_port"].hide()
@@ -1567,11 +1574,11 @@ class GUI(QMainWindow):
 
     def connect_to_server(self):
         if not self.get_gui_state("server_connected"):
-            if self.interface_dd.currentText().lower() == "socket":
+            if self.interface_dd.currentText().lower() == "socket (exploration server)":
                 host = self.textboxes["host"].text()
                 self.client = clients.SocketClient(host)
                 statusbar_connection_info = "socket ({})".format(host)
-            elif self.interface_dd.currentText().lower() == "spi":
+            elif self.interface_dd.currentText().lower() == "spi (module server)":
                 self.client = clients.SPIClient()
                 statusbar_connection_info = "SPI"
             elif self.interface_dd.currentText().lower() == "simulated":
@@ -1588,7 +1595,12 @@ class GUI(QMainWindow):
                 if self.override_baudrate:
                     print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
 
-                self.client = clients.UARTClient(port, override_baudrate=self.override_baudrate)
+                if self.interface_dd.currentText().lower() == "serial (exploration server)":
+                    self.client = clients.SocketClient(port, serial_link=True)
+                else:
+                    self.client = clients.UARTClient(
+                        port, override_baudrate=self.override_baudrate
+                    )
                 statusbar_connection_info = "UART ({})".format(port)
 
             self.client.squeeze = False
