@@ -103,16 +103,6 @@ class ModuleFamily(Enum):
 
 MODULE_INFOS = [
     ModuleInfo(
-        None,
-        "Select service or detector",
-        None,
-        ModuleFamily.OTHER,
-        None,
-        None,
-        True,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/index.html",
-    ),
-    ModuleInfo(
         Mode.ENVELOPE.name.lower(),
         "Envelope",
         envelope_module,

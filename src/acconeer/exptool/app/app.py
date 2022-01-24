@@ -10,6 +10,7 @@ import time
 import traceback
 import warnings
 import webbrowser
+from typing import Optional
 
 import numpy as np
 import pyqtgraph as pg
@@ -40,6 +41,7 @@ from .elements.modules import (
     MODULE_INFOS,
     MODULE_KEY_TO_MODULE_INFO_MAP,
     MODULE_LABEL_TO_MODULE_INFO_MAP,
+    ModuleInfo,
 )
 from .elements.qt_subclasses import (
     AdvancedSerialDialog,
@@ -59,6 +61,7 @@ if "win32" in sys.platform.lower():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 HERE = os.path.dirname(os.path.realpath(__file__))
+SELECT_A_SERVICE_TEXT = "Select service or detector"
 
 
 class GUI(QMainWindow):
@@ -115,7 +118,7 @@ class GUI(QMainWindow):
 
         self.module_label_to_sensor_config_map = {}
         self.module_label_to_processing_config_map = {}
-        self.current_module_info = MODULE_INFOS[0]
+        self.current_module_info: Optional[ModuleInfo] = None
         for mi in MODULE_INFOS:
             if mi.sensor_config_class is not None:
                 self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
@@ -227,7 +230,7 @@ class GUI(QMainWindow):
     def init_graphs(self, refresh=False):
         processing_config = self.get_default_processing_config()
 
-        if self.current_module_info.module is None:
+        if self.current_module_info is None:
             canvas = Label(self.ACC_IMG_FILENAME)
             self.refresh_pidgets()
             return canvas
@@ -463,8 +466,7 @@ class GUI(QMainWindow):
 
     def init_dropdown_sections(self, modules: dict):
 
-        if None in modules:
-            self.module_dd.addItems(modules[None])
+        self.module_dd.addItem(SELECT_A_SERVICE_TEXT)
 
         for k, v in modules.items():
             if k is not None:
@@ -480,7 +482,10 @@ class GUI(QMainWindow):
                 self.module_dd.addItems(v)
 
     def set_multi_sensors(self):
-        module_multi_sensor_support = self.current_module_info.multi_sensor
+        if self.current_module_info is not None:
+            module_multi_sensor_support = self.current_module_info.multi_sensor
+        else:
+            module_multi_sensor_support = False
 
         if self.get_gui_state("load_state") == LoadState.LOADED:
             source_sensors = json.loads(self.data.sensor_config_dump)["sensor"]
@@ -875,17 +880,28 @@ class GUI(QMainWindow):
                     )
 
     def service_help_button_handler(self):
-        url = self.current_module_info.docs_url
+        if self.current_module_info and self.current_module_info.docs_url is None:
+            return
+
+        if self.current_module_info is None:
+            url = (
+                "https://acconeer-python-exploration.readthedocs.io/en/latest/services/index.html"
+            )
+        else:
+            url = self.current_module_info.docs_url
+
         _ = webbrowser.open_new_tab(url)
 
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
 
+        selectable_dd_labels = [SELECT_A_SERVICE_TEXT]
+        selectable_dd_labels.extend(MODULE_LABEL_TO_MODULE_INFO_MAP.keys())
         while (
-            module_label not in MODULE_LABEL_TO_MODULE_INFO_MAP
+            module_label not in selectable_dd_labels
         ):  # Fixes bug when using arrow keys to go trough dropdown
             direction = self.module_dd.findText(module_label) - self.module_dd.findText(
-                self.current_module_label
+                self.current_module_label or SELECT_A_SERVICE_TEXT
             )
 
             if direction < 0:
@@ -903,9 +919,9 @@ class GUI(QMainWindow):
         switching_module = self.current_module_label != module_label
         self.current_module_label = module_label
 
-        self.current_module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
+        self.current_module_info = MODULE_LABEL_TO_MODULE_INFO_MAP.get(module_label, None)
 
-        if self.current_module_info.module is None:
+        if self.current_module_info is None:
             data_type = None
             self.external = None
         else:
@@ -1220,14 +1236,17 @@ class GUI(QMainWindow):
                 self.buttons["advanced_port"].setEnabled(True)
                 self.statusBar().showMessage("Not connected")
 
-        # Disable service help button if current_module_info does not have a docs_link.
-        self.buttons["service_help"].setEnabled(self.current_module_info.docs_url is not None)
-        if self.current_module_info.module is None:
+        if self.current_module_info is None:
             tooltip_text = f"Get help with services on ReadTheDocs"
         elif self.current_module_info.docs_url is not None:
             tooltip_text = f'Get help with "{self.current_module_info.label}" on ReadTheDocs'
         else:
             tooltip_text = None
+
+        help_button_disabled = (
+            self.current_module_info and self.current_module_info.docs_url is None
+        )
+        self.buttons["service_help"].setEnabled(not help_button_disabled)
         self.buttons["service_help"].setToolTip(tooltip_text)
 
     def get_gui_state(self, state):
@@ -1345,7 +1364,7 @@ class GUI(QMainWindow):
             self.set_gui_state("load_state", LoadState.UNLOADED)
             self.set_gui_state("connection_info", info)
             self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
-            if self.current_module_info.module is None:
+            if self.current_module_info is None:
                 self.module_dd.setCurrentIndex(1)
         else:
             self.sensors_available = None
@@ -1887,7 +1906,7 @@ class GUI(QMainWindow):
     def get_sensor_config(self):
         module_info = self.current_module_info
 
-        if module_info.module is None:
+        if module_info is None:
             return None
 
         module_label = module_info.label
@@ -1907,7 +1926,7 @@ class GUI(QMainWindow):
         else:
             module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
 
-        if module_info.module is None:
+        if module_info is None:
             return None
 
         module_label = module_info.label
@@ -1918,6 +1937,9 @@ class GUI(QMainWindow):
             module_info = MODULE_LABEL_TO_MODULE_INFO_MAP[module_label]
         else:
             module_info = self.current_module_info
+
+        if module_info is None:
+            return {}
 
         module = module_info.module
 
