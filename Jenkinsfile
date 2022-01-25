@@ -43,7 +43,7 @@ pipeline {
                     }
                     steps {
                         sh 'python3 -m pip install -q -U --user .'
-                        sh 'pytest -v tests/integration --uart --spi'
+                        sh 'python3 -m pytest -v tests/integration --uart --spi'
                     }
                 }
             }
@@ -86,7 +86,7 @@ pipeline {
             }
             steps {
                 sh 'python3 -m pip install -U --user .'
-                sh 'pytest -v --timeout=60 --timeout_method=thread tests/gui'
+                sh 'python3 -m pytest -v --timeout=60 --timeout_method=thread tests/gui'
             }
         }
     }
