@@ -51,12 +51,6 @@ Tested on:
 
 #### Dependencies
 
-All Python package dependencies are listed in `requirements.txt`. Install them using pip:
-```
-python -m pip install -U --user -r requirements.txt
-```
-Depending on your environment, you might have to replace `python` with `python3` or `py`.
-
 If you have PyQt4 installed, it might conflict with PyQt5. If this is the case for you, we recommend using virtual environments to separate the two installations.
 
 To run the GUI on Ubuntu 20.04, `libxcb-xinerama0-dev` needs to be installed:
@@ -69,7 +63,7 @@ sudo apt install -y libxcb-xinerama0-dev
 
 Install the supplied library `acconeer.exptool`:
 ```
-python -m pip install -U --user .
+python -m pip install -U --user ".[app]"
 ```
 **Note: The library has to be reinstalled after any change under `src/`, and it is therefore recommended to reinstall after every update.**
 

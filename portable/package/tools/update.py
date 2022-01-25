@@ -31,10 +31,9 @@ def main():
         os.chdir(root_dir)
         porcelain.clone(repo_addr, target=repo_dir)
 
-    # Install requirements and acconeer_utils
+    # Install package
     os.chdir(repo_dir)
-    check_call(pip_install + ["-r", "requirements.txt"])
-    check_call(pip_install + ["."])
+    check_call(pip_install + [".[app]"])
 
 
 if __name__ == "__main__":

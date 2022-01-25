@@ -15,9 +15,6 @@ RUN apt-get update && apt-get install -y \
 COPY requirements-dev.txt /tmp/
 RUN python3 -m pip install -r /tmp/requirements-dev.txt
 
-COPY requirements.txt /tmp/
-RUN python3 -m pip install -r /tmp/requirements.txt
-
 ENV QT_QPA_PLATFORM offscreen
 
 RUN mkdir /home/jenkins

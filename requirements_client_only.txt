@@ -1,8 +1,0 @@
-attrs
-docutils
-h5py
-numpy
-pyserial
-pyyaml
-setuptools>=60.0.3
-wheel>=0.37.0

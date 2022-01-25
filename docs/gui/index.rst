@@ -52,13 +52,9 @@ First, you should clone the Exploration Tool repository from `GitHub <https://gi
 There, you can find detailed instructions for installing our libraries; in a nut-shell:
 
 #. Make sure you have Python 3.7 or newer installed.
-#. Install the required packages (you might have to replace python with python3 or py)::
-
-    python -m pip install -U --user -r requirements.txt
-
 #. Install the acconeer.exptool library::
 
-    python -m pip install -U --user .
+    python -m pip install -U --user ".[app]"
 
 #. Once, you have installed everything, you can start the GUI from anywhere via::
 

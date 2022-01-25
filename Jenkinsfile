@@ -85,7 +85,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'python3 -m pip install -U --user ".[test]"'
+                sh 'python3 -m pip install -U --user ".[test,app]"'
                 sh 'python3 -m pytest -v --timeout=60 --timeout_method=thread tests/gui'
             }
         }
