@@ -1,9 +1,5 @@
 build>=0.7
 pip>=21.3
-pytest
-pytest-mock
-pytest-qt
-pytest-timeout
 requests
 tox
 twine>=3.7
