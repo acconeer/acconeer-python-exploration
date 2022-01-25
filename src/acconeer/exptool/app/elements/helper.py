@@ -21,14 +21,6 @@ class ErrorFormater:
         return err_text
 
 
-class PassthroughProcessor:
-    def __init__(self, sensor_config, processing_config, session_info):
-        pass
-
-    def process(self, data, data_info):
-        return data
-
-
 class Count:
     def __init__(self, val=0):
         self.val = val

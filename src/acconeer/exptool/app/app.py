@@ -35,13 +35,13 @@ from PyQt5.QtWidgets import (
 from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
 from acconeer.exptool.structs import configbase
 
+from ..a111.algo.module_info import ModuleInfo
 from . import data_processing
 from .elements.helper import Count, LoadState
 from .elements.modules import (
     MODULE_INFOS,
     MODULE_KEY_TO_MODULE_INFO_MAP,
     MODULE_LABEL_TO_MODULE_INFO_MAP,
-    ModuleInfo,
 )
 from .elements.qt_subclasses import (
     AdvancedSerialDialog,
