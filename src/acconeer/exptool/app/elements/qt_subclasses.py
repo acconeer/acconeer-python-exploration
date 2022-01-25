@@ -4,9 +4,9 @@ from collections import namedtuple
 import numpy as np
 import yaml
 
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import (
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QFrame,

@@ -1,7 +1,7 @@
 import numpy as np
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import (
+from PySide6 import QtCore
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,

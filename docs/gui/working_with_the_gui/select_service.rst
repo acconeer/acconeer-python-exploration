@@ -89,7 +89,7 @@ You must not change any function or class names; the only class name you can cha
     import numpy as np
     import pyqtgraph as pg
 
-    from PyQt5 import QtCore
+    from PySide6 import QtCore
 
     from acconeer.exptool import configs, utils
     from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient

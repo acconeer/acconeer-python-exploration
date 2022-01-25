@@ -1,7 +1,7 @@
 import json
 import warnings
 
-from PyQt5.QtCore import QThread
+from PySide6.QtCore import QThread
 
 from acconeer.exptool import modes
 from acconeer.exptool.recording import Recorder

@@ -5,7 +5,7 @@ import pyqtgraph as pg
 from numpy import unravel_index
 from pyqtgraph.Qt import QtGui
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 import acconeer.exptool as et
 

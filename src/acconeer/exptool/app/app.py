@@ -16,10 +16,10 @@ import numpy as np
 import pyqtgraph as pg
 from packaging import version
 
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtWidgets import (
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QFont, QIcon
+from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
@@ -74,9 +74,9 @@ log = logging.getLogger(__name__)
 class GUI(QMainWindow):
     ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
 
-    sig_scan = pyqtSignal(str, str, object)
-    sig_sensor_config_pidget_event = pyqtSignal(object)
-    sig_processing_config_pidget_event = pyqtSignal(object)
+    sig_scan = Signal(str, str, object)
+    sig_sensor_config_pidget_event = Signal(object)
+    sig_processing_config_pidget_event = Signal(object)
 
     def __init__(self, under_test=False):
         super().__init__()
@@ -1980,7 +1980,7 @@ class GUI(QMainWindow):
 
 
 class Threaded_Scan(QtCore.QThread):
-    sig_scan = pyqtSignal(str, str, object)
+    sig_scan = Signal(str, str, object)
 
     def __init__(self, params, parent=None):
         QtCore.QThread.__init__(self, parent)
@@ -2108,4 +2108,4 @@ def main():
     timer.timeout.connect(lambda: None)
     timer.start(200)
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

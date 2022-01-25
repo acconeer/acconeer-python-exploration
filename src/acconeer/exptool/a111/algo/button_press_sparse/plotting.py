@@ -1,7 +1,7 @@
 import numpy as np
 import pyqtgraph as pg
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
 import acconeer.exptool as et
 

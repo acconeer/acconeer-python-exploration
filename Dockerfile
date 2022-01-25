@@ -5,8 +5,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     git \
     graphviz \
+    libdbus-1-3 \
+    libegl1 \
     libfontconfig1 \
     libgl1-mesa-glx \
+    libxkbcommon0 \
     python3-dev \
     python3-pip \
     wget \
