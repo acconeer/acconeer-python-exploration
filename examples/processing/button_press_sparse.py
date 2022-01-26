@@ -268,16 +268,15 @@ class ButtonPressProcessor:
             self.lp_average_const[index] = lp_new
 
     def detect(self, trig_val, cool_down_val, index):
-
         trig = False
 
-        if all(self.chilled):
-            if trig_val > self.threshold_trig:
+        if trig_val > self.threshold_trig:
+            if all(self.chilled):
                 trig = True
-                self.chilled[index] = False
-        else:
-            if cool_down_val < self.threshold_cool_down:
-                self.chilled[index] = True
+            self.chilled[index] = False
+        if cool_down_val < self.threshold_cool_down:
+            self.chilled[index] = True
+
         return trig
 
     def process(self, frame, data_info):
