@@ -10,13 +10,16 @@ _multi_sensor_wrap = multi_sensor_wrap(sys.modules[__name__])
 
 
 module_info = ModuleInfo(
-    "sparse_presence",
-    "Presence detection (sparse)",
-    _multi_sensor_wrap,
-    ModuleFamily.DETECTOR,
-    _multi_sensor_wrap.get_sensor_config,
-    _multi_sensor_wrap.Processor,
-    True,
-    "https://acconeer-python-exploration.readthedocs.io"
-    "/en/latest/processing/presence_detection_sparse.html",
+    key="sparse_presence",
+    label="Presence detection (sparse)",
+    pg_updater=_multi_sensor_wrap.PGUpdater,
+    processing_config_class=_multi_sensor_wrap.get_processing_config,
+    module_family=ModuleFamily.DETECTOR,
+    sensor_config_class=_multi_sensor_wrap.get_sensor_config,
+    processor=_multi_sensor_wrap.Processor,
+    multi_sensor=True,
+    docs_url=(
+        "https://acconeer-python-exploration.readthedocs.io/"
+        + "en/latest/processing/presence_detection_sparse.html"
+    ),
 )

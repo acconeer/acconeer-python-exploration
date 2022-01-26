@@ -102,9 +102,6 @@ def test_start_and_stop_all_modules(qtbot, gui):
     qtbot.mouseClick(gui.buttons["connect"], LB)
 
     for module_info in MODULE_INFOS:
-        if module_info.module is None:
-            continue
-
         set_and_check_cb(qtbot, gui.module_dd, module_info.label)
         qtbot.wait(200)
 

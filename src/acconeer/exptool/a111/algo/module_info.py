@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import Enum
-from types import ModuleType
 from typing import Any, Optional
 
 
@@ -15,7 +14,8 @@ class ModuleFamily(Enum):
 class ModuleInfo:
     key: str
     label: str
-    module: ModuleType
+    pg_updater: Any
+    processing_config_class: Any
     module_family: ModuleFamily
     sensor_config_class: Any
     processor: Any

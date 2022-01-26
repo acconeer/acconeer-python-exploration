@@ -264,7 +264,10 @@ class GUI(QMainWindow):
         if session_info is None:
             session_info = clients.MockClient().setup_session(sensor_config, check_config=False)
 
-        self.service_widget = self.current_module_info.module.PGUpdater(
+        if self.current_module_info is None:
+            return
+
+        self.service_widget = self.current_module_info.pg_updater(
             sensor_config, processing_config, session_info
         )
 
@@ -1953,12 +1956,10 @@ class GUI(QMainWindow):
         if module_info is None:
             return {}
 
-        module = module_info.module
-
-        if module is None or not hasattr(module, "get_processing_config"):
+        if module_info.processing_config_class is None:
             return {}
 
-        return module.get_processing_config()
+        return module_info.processing_config_class()
 
     @property
     def in_supported_mode(self):

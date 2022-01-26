@@ -9,12 +9,13 @@ from .processing import Processor, get_processing_config, get_sensor_config
 _multi_sensor_wrap = multi_sensor_wrap(sys.modules[__name__])
 
 module_info = ModuleInfo(
-    "sparse_speed",
-    "Speed (sparse)",
-    _multi_sensor_wrap,
-    ModuleFamily.EXAMPLE,
-    _multi_sensor_wrap.get_sensor_config,
-    _multi_sensor_wrap.Processor,
-    True,
-    None,
+    key="sparse_speed",
+    label="Speed (sparse)",
+    pg_updater=_multi_sensor_wrap.PGUpdater,
+    processing_config_class=_multi_sensor_wrap.get_processing_config,
+    module_family=ModuleFamily.EXAMPLE,
+    sensor_config_class=_multi_sensor_wrap.get_sensor_config,
+    processor=_multi_sensor_wrap.Processor,
+    multi_sensor=True,
+    docs_url=None,
 )

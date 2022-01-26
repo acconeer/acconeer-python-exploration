@@ -1,17 +1,18 @@
-import sys
-
 from ..module_info import ModuleFamily, ModuleInfo
 from .plotting import PGUpdater
 from .processing import ButtonPressProcessor, get_processing_config, get_sensor_config
 
 
 module_info = ModuleInfo(
-    "envelope_button_press",
-    "Button Press (envelope)",
-    sys.modules[__name__],
-    ModuleFamily.EXAMPLE,
-    get_sensor_config,
-    ButtonPressProcessor,
-    False,
-    "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/button_press.html",
+    key="envelope_button_press",
+    label="Button Press (envelope)",
+    pg_updater=PGUpdater,
+    processing_config_class=get_processing_config,
+    module_family=ModuleFamily.EXAMPLE,
+    sensor_config_class=get_sensor_config,
+    processor=ButtonPressProcessor,
+    multi_sensor=False,
+    docs_url=(
+        "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/button_press.html"
+    ),
 )
