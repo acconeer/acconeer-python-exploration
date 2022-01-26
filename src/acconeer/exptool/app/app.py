@@ -1031,7 +1031,7 @@ class GUI(QMainWindow):
             self.error_message("Please select at least one sensor")
             return
 
-        if self.current_module_info.module is None:
+        if self.current_module_info is None:
             self.error_message("Please select a service or detector")
             return
 
