@@ -3,7 +3,6 @@
 import argparse
 import json
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from acconeer.exptool import recording, utils
@@ -12,12 +11,18 @@ from acconeer.exptool import recording, utils
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("filename")
+    parser.add_argument("--plot", action="store_true")
     args = parser.parse_args()
     filename = args.filename
 
     record = recording.load(filename)
 
     print_record(record)
+
+    if not args.plot:
+        return
+
+    import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots()
 
