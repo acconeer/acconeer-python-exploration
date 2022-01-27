@@ -35,6 +35,8 @@ from PyQt5.QtWidgets import (
 from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
 from acconeer.exptool.structs import configbase
 
+import platformdirs
+
 from ..a111.algo.module_info import ModuleInfo
 from . import data_processing
 from .elements.helper import Count, LoadState
@@ -61,12 +63,14 @@ if "win32" in sys.platform.lower():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 HERE = os.path.dirname(os.path.realpath(__file__))
+USER_DATA_DIR = platformdirs.user_data_dir(appname="acconeer_exptool", appauthor="Acconeer AB")
+LAST_CONF_FILENAME = os.path.join(USER_DATA_DIR, "last_config.npy")
+
 SELECT_A_SERVICE_TEXT = "Select service or detector"
 
 
 class GUI(QMainWindow):
     ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
-    LAST_CONF_FILENAME = os.path.join(HERE, "last_config.npy")
 
     sig_scan = pyqtSignal(str, str, object)
     sig_sensor_config_pidget_event = pyqtSignal(object)
@@ -1806,9 +1810,9 @@ class GUI(QMainWindow):
 
     def start_up(self):
         if not self.under_test:
-            if os.path.isfile(self.LAST_CONF_FILENAME):
+            if os.path.isfile(LAST_CONF_FILENAME):
                 try:
-                    last = np.load(self.LAST_CONF_FILENAME, allow_pickle=True)
+                    last = np.load(LAST_CONF_FILENAME, allow_pickle=True)
                     self.load_last_config(last.item())
                 except Exception as e:
                     print("Could not load settings from last session\n{}".format(e))
@@ -1909,7 +1913,7 @@ class GUI(QMainWindow):
         }
 
         if not self.under_test:
-            np.save(self.LAST_CONF_FILENAME, last_config, allow_pickle=True)
+            np.save(LAST_CONF_FILENAME, last_config, allow_pickle=True)
 
         try:
             self.client.disconnect()
@@ -2082,6 +2086,8 @@ def main():
 
     # Enable warnings to be printed to the log, e.g. DeprecationWarning
     warnings.simplefilter("module")
+
+    os.makedirs(USER_DATA_DIR, exist_ok=True)
 
     app = QApplication(sys.argv)
     ex = GUI()

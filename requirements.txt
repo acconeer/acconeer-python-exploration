@@ -10,3 +10,4 @@ pyqtgraph
 pyserial>=3.5
 pyyaml
 scipy
+platformdirs
