@@ -1,5 +1,5 @@
 from acconeer.exptool import clients, utils
-from acconeer.exptool.a111.algo.iq import (
+from acconeer.exptool.a111.algo.iq.meta import (
     PGUpdater,
     Processor,
     get_processing_config,

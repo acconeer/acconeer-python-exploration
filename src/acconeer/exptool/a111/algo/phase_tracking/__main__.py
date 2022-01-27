@@ -1,5 +1,5 @@
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.phase_tracking import (
+from acconeer.exptool.a111.algo.phase_tracking.meta import (
     PGUpdater,
     PhaseTrackingProcessor,
     get_sensor_config,

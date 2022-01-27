@@ -1,5 +1,5 @@
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.breathing import (
+from acconeer.exptool.a111.algo.breathing.meta import (
     BreathingProcessor,
     PGUpdater,
     get_processing_config,

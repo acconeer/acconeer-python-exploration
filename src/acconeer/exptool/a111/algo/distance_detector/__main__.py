@@ -1,5 +1,5 @@
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.distance_detector import (
+from acconeer.exptool.a111.algo.distance_detector.meta import (
     PGUpdater,
     Processor,
     get_processing_config,

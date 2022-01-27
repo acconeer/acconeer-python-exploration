@@ -1,5 +1,5 @@
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.button_press import (
+from acconeer.exptool.a111.algo.button_press.meta import (
     ButtonPressProcessor,
     PGUpdater,
     get_processing_config,

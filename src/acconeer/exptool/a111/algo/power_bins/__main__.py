@@ -1,5 +1,5 @@
 from acconeer.exptool import utils
-from acconeer.exptool.a111.algo.power_bins import PGUpdater, get_sensor_config
+from acconeer.exptool.a111.algo.power_bins.meta import PGUpdater, get_sensor_config
 from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient
 from acconeer.exptool.pg_process import PGProccessDiedException, PGProcess
 

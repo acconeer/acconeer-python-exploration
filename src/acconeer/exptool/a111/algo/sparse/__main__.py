@@ -1,5 +1,5 @@
 from acconeer.exptool import utils
-from acconeer.exptool.a111.algo.sparse import (
+from acconeer.exptool.a111.algo.sparse.meta import (
     PGUpdater,
     Processor,
     get_processing_config,

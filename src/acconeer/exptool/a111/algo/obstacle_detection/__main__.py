@@ -1,5 +1,5 @@
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.obstacle_detection import (
+from acconeer.exptool.a111.algo.obstacle_detection.meta import (
     ObstacleDetectionProcessor,
     PGUpdater,
     get_processing_config,

@@ -1,5 +1,5 @@
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.presence_detection_sparse import (
+from acconeer.exptool.a111.algo.presence_detection_sparse.meta import (
     PGUpdater,
     Processor,
     get_processing_config,

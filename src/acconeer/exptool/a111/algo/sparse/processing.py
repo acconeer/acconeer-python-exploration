@@ -1,7 +1,7 @@
 import numpy as np
 
 from acconeer.exptool import configs, utils
-from acconeer.exptool.a111.algo import presence_detection_sparse
+from acconeer.exptool.a111.algo.presence_detection_sparse import processing as presence_processing
 from acconeer.exptool.structs import configbase
 
 
@@ -47,8 +47,8 @@ class Processor:
         num_depths = utils.get_range_depths(sensor_config, session_info).size
         history_len = processing_config.history_length
 
-        pd_config = presence_detection_sparse.get_processing_config()
-        processor_class = presence_detection_sparse.Processor
+        pd_config = presence_processing.get_processing_config()
+        processor_class = presence_processing.Processor
 
         try:
             self.pd_processors = []
