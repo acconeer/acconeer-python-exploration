@@ -68,6 +68,8 @@ LAST_CONF_FILENAME = os.path.join(USER_DATA_DIR, "last_config.npy")
 
 SELECT_A_SERVICE_TEXT = "Select service or detector"
 
+log = logging.getLogger(__name__)
+
 
 class GUI(QMainWindow):
     ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
@@ -1814,6 +1816,7 @@ class GUI(QMainWindow):
                 try:
                     last = np.load(LAST_CONF_FILENAME, allow_pickle=True)
                     self.load_last_config(last.item())
+                    log.info(f"Loaded configuration from last session: {LAST_CONF_FILENAME}")
                 except Exception as e:
                     print("Could not load settings from last session\n{}".format(e))
 
@@ -1914,6 +1917,7 @@ class GUI(QMainWindow):
 
         if not self.under_test:
             np.save(LAST_CONF_FILENAME, last_config, allow_pickle=True)
+            log.info(f"Saved configuration from this session to {LAST_CONF_FILENAME}")
 
         try:
             self.client.disconnect()
@@ -2086,6 +2090,9 @@ def main():
 
     # Enable warnings to be printed to the log, e.g. DeprecationWarning
     warnings.simplefilter("module")
+
+    if not os.path.exists(USER_DATA_DIR):
+        log.info(f"Creating folder {USER_DATA_DIR}")
 
     os.makedirs(USER_DATA_DIR, exist_ok=True)
 
