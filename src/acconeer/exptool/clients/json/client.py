@@ -293,6 +293,17 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         system_info = header["system_info"]
         return system_info
 
+    def _set_baudrate(self, baudrate):
+        set_baudrate_cmd = {"cmd": "set_uart_baudrate", "baudrate": baudrate}
+        self._send_cmd(set_baudrate_cmd)
+        try:
+            header, _ = self._recv_frame()
+        except links.LinkError as e:
+            raise ClientError("no response from server") from e
+
+        if header["status"] == "ok":
+            self._link.baudrate = baudrate
+
     def setup_session(self, config):
         if isinstance(config, dict):
             cmd = deepcopy(config)
@@ -464,10 +475,13 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
 
 
 class SocketClient(BaseClient):
-    def __init__(self, host, **kwargs):
+    def __init__(self, host, serial_link=False, **kwargs):
         super().__init__(**kwargs)
 
-        self._link = links.SocketLink(host)
+        if serial_link:
+            self._link = links.ExploreSerialLink(host)
+        else:
+            self._link = links.SocketLink(host)
         self._protocol = None
 
     def _connect(self):

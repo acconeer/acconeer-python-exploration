@@ -86,7 +86,7 @@ If you are running Linux together with an XM112, XM122, or XM132 module through 
 ```
 sudo usermod -a -G dialout $USER
 ```
-For the changes to take effect, you will need to log out and in again.
+Reboot for the changes to take effect.
 
 Note: If you have ModemManager installed and running it might try to connect to the module, which has proven to cause problems. If you are having issues, try disabling the ModemManager service.
 
