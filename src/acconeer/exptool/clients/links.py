@@ -203,12 +203,69 @@ class SerialLink(BaseSerialLink):
 
 
 class ExploreSerialLink(SerialLink):
+    _SERIAL_READ_PACKET_SIZE = 65536
+    _SERIAL_PACKET_TIMEOUT = 0.01
+
     def __init__(self, port, flowcontrol=True):
         super().__init__(port, flowcontrol)
+        self._buf = None
+
+    def _update_timeout(self):
+        pass
 
     def connect(self):
-        super().connect()
+        self._ser = serial.Serial(timeout=self._SERIAL_PACKET_TIMEOUT)
+        self._ser.baudrate = self._baudrate
+        self._ser.port = self._port
+        self._ser.rtscts = self._flowcontrol
+        self._ser.open()
+        self._buf = bytearray()
+
+        if platform.system().lower() == "windows":
+            self._ser.set_buffer_size(rx_size=10 ** 6, tx_size=10 ** 6)
+
         self.send_break()
+
+    def recv(self, num_bytes):
+        t0 = time()
+        while len(self._buf) < num_bytes:
+            if time() - t0 > self._timeout:
+                raise LinkError("recv timeout")
+
+            try:
+                r = bytearray(self._ser.read(self._SERIAL_READ_PACKET_SIZE))
+            except OSError as e:
+                raise LinkError from e
+            self._buf.extend(r)
+
+        data = self._buf[:num_bytes]
+        self._buf = self._buf[num_bytes:]
+        return data
+
+    def recv_until(self, bs):
+        t0 = time()
+        while True:
+            try:
+                i = self._buf.index(bs)
+            except ValueError:
+                pass
+            else:
+                break
+
+            if time() - t0 > self._timeout:
+                raise LinkError("recv timeout")
+
+            try:
+                r = bytearray(self._ser.read(self._SERIAL_READ_PACKET_SIZE))
+            except OSError as e:
+                raise LinkError from e
+            self._buf.extend(r)
+
+        i += 1
+        data = self._buf[:i]
+        self._buf = self._buf[i:]
+
+        return data
 
 
 class SerialProcessLink(BaseSerialLink):
