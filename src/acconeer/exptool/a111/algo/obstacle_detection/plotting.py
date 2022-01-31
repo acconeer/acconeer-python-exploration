@@ -21,29 +21,29 @@ class PGUpdater:
         self.map_max = 0
         self.width = 3
         self.max_velocity = WAVELENGTH / 4 * self.sensor_config.update_rate  # cm/s
-        self.peak_hist_len = processing_config["peak_hist"]["value"]
-        self.dist_index = processing_config["downsampling"]["value"]
-        self.nr_locals = processing_config["nr_peaks"]["value"]
-        self.downsampling = processing_config["downsampling"]["value"]
-        self.threshold = processing_config["static_threshold"]["value"]
-        self.sensor_separation = processing_config["sensor_separation"]["value"]
+        self.peak_hist_len = processing_config.peak_hist
+        self.dist_index = processing_config.downsampling
+        self.nr_locals = processing_config.nr_peaks
+        self.downsampling = processing_config.downsampling
+        self.threshold = processing_config.static_threshold
+        self.sensor_separation = processing_config.sensor_separation
         self.fft_bg_data = None
         self.threshold_data = None
 
         self.hist_plots = {
-            "velocity": [[], processing_config["velocity_history"]["value"]],
-            "angle": [[], processing_config["angle_history"]["value"]],
-            "distance": [[], processing_config["distance_history"]["value"]],
-            "amplitude": [[], processing_config["amplitude_history"]["value"]],
+            "velocity": [[], processing_config.velocity_history],
+            "angle": [[], processing_config.angle_history],
+            "distance": [[], processing_config.distance_history],
+            "amplitude": [[], processing_config.amplitude_history],
         }
         self.num_hist_plots = 0
         for hist in self.hist_plots:
             if hist[1]:
                 self.num_hist_plots += 1
         self.advanced_plots = {
-            "background_map": processing_config["background_map"]["value"],
-            "threshold_map": processing_config["threshold_map"]["value"],
-            "show_line_outs": processing_config["show_line_outs"]["value"],
+            "background_map": processing_config.background_map,
+            "threshold_map": processing_config.threshold_map,
+            "show_line_outs": processing_config.show_line_outs,
         }
 
     def setup(self, win):

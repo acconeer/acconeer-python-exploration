@@ -32,161 +32,208 @@ def get_sensor_config():
     return config
 
 
-def get_processing_config():
-    return {
-        "fft_length": {
-            "name": "FFT length",
-            "value": 16,
-            "limits": [2, 512],
-            "type": int,
-        },
-        "threshold": {  # Ignore data below threshold in FFT window for moving objects
-            "name": "Moving Threshold",
-            "value": 0.05,
-            "limits": [0.0, 100],
-            "type": float,
-        },
-        "v_max": {
-            "name": None,
-            "value": None,
-            "limits": None,
-            "type": None,
-            "text": "Max velocity = 4.9mm * freq / 4",
-        },
-        "downsampling": {
-            "name": "Downsample scale",
-            "value": 1,
-            "limits": [0, 124],
-            "type": int,
-            "advanced": True,
-        },
-        "calib": {
-            "name": "Background iterations",
-            "value": 10,
-            "limits": [0, 1000],
-            "type": int,
-            "advanced": True,
-        },
-        "bg_offset": {
-            "name": "Background Scale",
-            "value": 1.6,
-            "limits": [0, 1000],
-            "type": float,
-            "advanced": True,
-        },
-        "static_threshold": {  # Ignore data below threshold in FFT window for static objects
-            "name": "Stationary Threshold",
-            "value": 0.1,
-            "limits": [0.0, 100],
-            "type": float,
-            "advanced": True,
-        },
-        "close_threshold_addition": {  # Ignore data below threshold for very close range
-            "name": "Close Threshold Addition",
-            "value": 0.1,
-            "limits": [0.0, 100],
-            "type": float,
-            "advanced": True,
-        },
-        "static_distance": {
-            "name": "Distance limit far",
-            "value": 45,
-            "limits": [0.0, 1000],
-            "type": float,
-            "advanced": True,
-        },
-        "static_grad": {
-            "name": "Static distance gradient",
-            "value": 6,
-            "limits": [0.0, 100],
-            "type": float,
-            "advanced": True,
-        },
-        "close_dist": {
-            "name": "Distance limit near",
-            "value": 16,
-            "limits": [0.0, 100],
-            "type": float,
-            "advanced": True,
-        },
-        "static_freq": {
-            "name": "Static frequency gradient",
-            "value": 2,
-            "limits": [0.0, 100],
-            "type": float,
-            "advanced": True,
-        },
-        "nr_peaks": {
-            "name": "Number of peaks",
-            "value": 1,
-            "limits": [0, 100],
-            "type": int,
-            "advanced": True,
-        },
-        "edge_to_peak": {
-            "name": "Edge to peak ratio",
-            "value": 1,
-            "limits": [0, 1],
-            "type": float,
-            "advanced": True,
-        },
-        "peak_hist": {
-            "name": "Peak history",
-            "value": 500,
-            "limits": [50, 2000],
-            "type": int,
-            "advanced": True,
-        },
-        "robot_velocity": {
-            "name": "Robot Velocity [cm/s]",
-            "value": 6,
-            "limits": [-1000, 1000],
-            "type": float,
-            "advanced": True,
-        },
-        "background_map": {
-            "name": "Show background",
-            "value": True,
-            "advanced": True,
-        },
-        "threshold_map": {
-            "name": "Show threshold map",
-            "value": False,
-            "advanced": True,
-        },
-        "show_line_outs": {
-            "name": "Show extra line outs",
-            "value": False,
-            "advanced": True,
-        },
-        "distance_history": {
-            "name": "Show distance history",
-            "value": True,
-            "advanced": True,
-        },
-        "velocity_history": {
-            "name": "Show velocity history",
-            "value": True,
-            "advanced": True,
-        },
-        "angle_history": {
-            "name": "Show angle history",
-            "value": True,
-            "advanced": True,
-        },
-        "amplitude_history": {
-            "name": "Show amplitude history",
-            "value": False,
-            "advanced": True,
-        },
-        "sensor_separation": {
-            "name": "Sensor separation [cm]",
-            "value": 15,
-            "limits": [1, 100],
-            "type": float,
-            "advanced": True,
-        },
-    }
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
+    VERSION = 1
+
+    fft_length = et.configbase.IntParameter(label="FFT length", default_value=16, limits=(2, 512))
+
+    threshold = et.configbase.FloatParameter(
+        # Ignore data below threshold in FFT window for moving objects
+        label="Moving Threshold",
+        default_value=0.05,
+        limits=(0, 100),
+        decimals=2,
+        order=0,
+    )
+
+    downsampling = et.configbase.IntParameter(
+        label="Downsample scale",
+        default_value=1,
+        limits=(0, 124),
+        category=et.configbase.Category.ADVANCED,
+        order=10,
+    )
+
+    calib = et.configbase.IntParameter(
+        label="Background iterations",
+        default_value=10,
+        limits=(1, 1000),
+        category=et.configbase.Category.ADVANCED,
+        order=20,
+    )
+
+    bg_offset = et.configbase.FloatParameter(
+        label="Background Scale",
+        default_value=1.6,
+        limits=(0, 1000),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=30,
+    )
+
+    static_threshold = et.configbase.FloatParameter(
+        label="Stationary Threshold",
+        default_value=0.1,
+        limits=(0.0, 100),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=40,
+    )
+
+    close_threshold_addition = et.configbase.FloatParameter(
+        # Ignore data below threshold for very close range
+        label="Close Threshold Addition",
+        default_value=0.1,
+        limits=(0.0, 100),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=50,
+    )
+
+    static_distance = et.configbase.FloatParameter(
+        label="Distance limit far",
+        default_value=45,
+        limits=(0.0, 1000),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=60,
+    )
+
+    static_grad = et.configbase.FloatParameter(
+        label="Static distance gradient",
+        default_value=6,
+        limits=(0.0, 100),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=70,
+    )
+
+    close_dist = et.configbase.FloatParameter(
+        label="Distance limit near",
+        default_value=16,
+        limits=(0.0, 100),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=80,
+    )
+
+    static_freq = et.configbase.FloatParameter(
+        label="Static frequency gradient",
+        default_value=2,
+        limits=(0.0, 100),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=90,
+    )
+
+    nr_peaks = et.configbase.IntParameter(
+        label="Number of peaks",
+        default_value=1,
+        limits=(0, 100),
+        category=et.configbase.Category.ADVANCED,
+        order=100,
+    )
+
+    edge_to_peak = et.configbase.FloatParameter(
+        label="Edge to peak ratio",
+        default_value=1,
+        limits=(0.0, 1),
+        decimals=1,
+        category=et.configbase.Category.ADVANCED,
+        order=110,
+    )
+
+    peak_hist = et.configbase.IntParameter(
+        label="Peak history",
+        default_value=500,
+        limits=(50, 2000),
+        category=et.configbase.Category.ADVANCED,
+        order=120,
+    )
+
+    robot_velocity = et.configbase.FloatParameter(
+        label="Robot Velocity",
+        unit="cm/s",
+        default_value=6,
+        limits=(-1000, 1000),
+        category=et.configbase.Category.ADVANCED,
+        order=130,
+    )
+
+    use_parameterization = et.configbase.BoolParameter(
+        label="Use bg parameterization",
+        default_value=False,
+        category=et.configbase.Category.ADVANCED,
+        order=140,
+    )
+
+    background_map = et.configbase.BoolParameter(
+        label="Show background",
+        default_value=True,
+        category=et.configbase.Category.ADVANCED,
+        order=150,
+    )
+
+    threshold_map = et.configbase.BoolParameter(
+        label="Show threshold map",
+        default_value=False,
+        category=et.configbase.Category.ADVANCED,
+        order=160,
+    )
+
+    show_line_outs = et.configbase.BoolParameter(
+        label="Show extra line outs",
+        default_value=False,
+        category=et.configbase.Category.ADVANCED,
+        order=170,
+    )
+
+    distance_history = et.configbase.BoolParameter(
+        label="Show distance history",
+        default_value=True,
+        category=et.configbase.Category.ADVANCED,
+        order=180,
+    )
+
+    velocity_history = et.configbase.BoolParameter(
+        label="Show velocity history",
+        default_value=True,
+        category=et.configbase.Category.ADVANCED,
+        order=190,
+    )
+
+    angle_history = et.configbase.BoolParameter(
+        label="Show angle history",
+        default_value=True,
+        category=et.configbase.Category.ADVANCED,
+        order=200,
+    )
+
+    distance_history = et.configbase.BoolParameter(
+        label="Show distance history",
+        default_value=True,
+        category=et.configbase.Category.ADVANCED,
+        order=210,
+    )
+
+    amplitude_history = et.configbase.BoolParameter(
+        label="Show amplitude history",
+        default_value=True,
+        category=et.configbase.Category.ADVANCED,
+        order=220,
+    )
+
+    sensor_separation = et.configbase.FloatParameter(
+        label="Sensor separation",
+        unit="cm",
+        default_value=15,
+        limits=(1, 100),
+        category=et.configbase.Category.ADVANCED,
+        order=230,
+    )
+
+
+get_processing_config = ProcessingConfiguration
 
 
 class ObstacleDetectionProcessor:
@@ -194,24 +241,24 @@ class ObstacleDetectionProcessor:
         self.sweep_index = 0
 
         self.sensor_config = sensor_config
-        self.sensor_separation = processing_config["sensor_separation"]["value"]
-        self.fft_len = processing_config["fft_length"]["value"]
-        self.threshold = processing_config["threshold"]["value"]
-        self.static_threshold = processing_config["static_threshold"]["value"]
-        self.static_distance = processing_config["static_distance"]["value"]
-        self.close_threshold_addition = processing_config["close_threshold_addition"]["value"]
-        self.calibration_iterations_left = max(processing_config["calib"]["value"], 0)
+
+        self.sensor_separation = processing_config.sensor_separation
+        self.fft_len = processing_config.fft_length
+        self.threshold = processing_config.threshold
+        self.static_threshold = processing_config.static_threshold
+        self.static_distance = processing_config.static_distance
+        self.close_threshold_addition = processing_config.close_threshold_addition
+        self.calibration_iterations_left = max(processing_config.calib, 0)
         self.calibration_iterations = self.calibration_iterations_left
-        self.bg_off = processing_config["bg_offset"]["value"]
-        self.peak_hist_len = processing_config["peak_hist"]["value"]
-        self.nr_locals = processing_config["nr_peaks"]["value"]
-        self.static_freq_limit = processing_config["static_freq"]["value"]
-        self.static_dist_gradient = processing_config["static_grad"]["value"]
-        self.close_dist_limit = processing_config["close_dist"]["value"]
-        self.robot_velocity = processing_config["robot_velocity"]["value"]
-        self.edge_ratio = processing_config["edge_to_peak"]["value"]
-        self.downsampling = processing_config["downsampling"]["value"]
-        self.is_calibrated = False
+        self.peak_hist_len = processing_config.peak_hist
+        self.bg_off = processing_config.bg_offset
+        self.nr_locals = processing_config.nr_peaks
+        self.static_freq_limit = processing_config.static_freq
+        self.static_dist_gradient = processing_config.static_grad
+        self.close_dist_limit = processing_config.close_dist
+        self.robot_velocity = processing_config.robot_velocity
+        self.edge_ratio = processing_config.edge_to_peak
+        self.downsampling = processing_config.downsampling
 
         self.len_range = session_info["data_length"]
         self._reset_calculation_arrays(self.len_range)
