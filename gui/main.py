@@ -1114,7 +1114,7 @@ class GUI(QMainWindow):
         elif "serial (exploration server)" in self.interface_dd.currentText().lower():
             self.ports_dd.show()
             self.textboxes["host"].hide()
-            self.buttons["advanced_port"].hide()
+            self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].hide()
             self.update_ports()
         elif "spi (module server)" in self.interface_dd.currentText().lower():
@@ -1596,7 +1596,9 @@ class GUI(QMainWindow):
                     print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
 
                 if self.interface_dd.currentText().lower() == "serial (exploration server)":
-                    self.client = clients.SocketClient(port, serial_link=True)
+                    self.client = clients.SocketClient(
+                        port, serial_link=True, override_baudrate=self.override_baudrate
+                    )
                 else:
                     self.client = clients.UARTClient(
                         port, override_baudrate=self.override_baudrate

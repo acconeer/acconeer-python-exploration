@@ -475,7 +475,7 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
 
 
 class SocketClient(BaseClient):
-    def __init__(self, host, serial_link=False, **kwargs):
+    def __init__(self, host, serial_link=False, override_baudrate=None, **kwargs):
         super().__init__(**kwargs)
 
         if serial_link:
@@ -483,6 +483,7 @@ class SocketClient(BaseClient):
         else:
             self._link = links.SocketLink(host)
         self._protocol = None
+        self._override_baudrate = override_baudrate
 
     def _connect(self):
         info = {}
@@ -510,6 +511,13 @@ class SocketClient(BaseClient):
             info["sensor"] = system_info["sensor"]
             info["board_sensor_count"] = system_info["sensor_count"]
             info["hw"] = system_info["hw"]
+
+            # Set new baudrate if the link is of ExploreSerialLink type and
+            # the baudrate is overriden with a value > 0
+            # if the server reports max_baudrate > 0
+            baudrate = self._override_baudrate or system_info.get("max_baudrate")
+            if isinstance(self._link, links.ExploreSerialLink) and baudrate:
+                self._protocol._set_baudrate(baudrate)
 
         return info
 
