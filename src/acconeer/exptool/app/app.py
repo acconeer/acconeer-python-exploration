@@ -2002,15 +2002,15 @@ class Threaded_Scan(QtCore.QThread):
 
             try:
                 session_info = self.client.setup_session(self.sensor_config)
-                self.emit("session_info", "", session_info)
+                self._emit("session_info", "", session_info)
                 self.radar.prepare_processing(self, self.params, session_info)
                 self.client.start_session()
             except clients.base.SessionSetupError:
                 self.running = False
-                self.emit("session_setup_error", "")
+                self._emit("session_setup_error", "")
             except Exception as e:
                 traceback.print_exc()
-                self.emit(
+                self._emit(
                     "client_error",
                     "Failed to setup streaming!\n" "{}".format(self.format_error(e)),
                 )
@@ -2019,12 +2019,12 @@ class Threaded_Scan(QtCore.QThread):
             try:
                 while self.running:
                     info, sweep = self.client.get_next()
-                    self.emit("sweep_info", "", info)
+                    self._emit("sweep_info", "", info)
                     _, record = self.radar.process(sweep, info)
             except Exception as e:
                 traceback.print_exc()
                 msg = "Failed to communicate with server!\n{}".format(self.format_error(e))
-                self.emit("client_error", msg)
+                self._emit("client_error", msg)
 
             try:
                 self.client.stop_session()
@@ -2032,9 +2032,9 @@ class Threaded_Scan(QtCore.QThread):
                 pass
 
             if record is not None and len(record.data) > 0:
-                self.emit("scan_data", "", record)
+                self._emit("scan_data", "", record)
         elif self.params["data_source"] == "file":
-            self.emit("session_info", "ok", self.data.session_info)
+            self._emit("session_info", "ok", self.data.session_info)
 
             try:
                 self.radar.prepare_processing(self, self.params, self.data.session_info)
@@ -2042,10 +2042,10 @@ class Threaded_Scan(QtCore.QThread):
             except Exception as e:
                 traceback.print_exc()
                 error = self.format_error(e)
-                self.emit("processing_error", "Error while replaying data:<br>" + error)
+                self._emit("processing_error", "Error while replaying data:<br>" + error)
         else:
-            self.emit("error", "Unknown mode %s!" % self.mode)
-        self.emit("scan_done", "", "")
+            self._emit("error", "Unknown mode %s!" % self.mode)
+        self._emit("scan_done", "", "")
 
     def receive(self, message_type, message, data=None):
         if message_type == "stop":
@@ -2059,7 +2059,7 @@ class Threaded_Scan(QtCore.QThread):
         else:
             print("Scan thread received unknown signal: {}".format(message_type))
 
-    def emit(self, message_type, message, data=None):
+    def _emit(self, message_type, message, data=None):
         self.sig_scan.emit(message_type, message, data)
 
     def format_error(self, e):

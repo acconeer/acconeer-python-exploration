@@ -69,7 +69,7 @@ class DataProcessing:
         if out_data is not None:
             self.draw_canvas(out_data)
             if isinstance(out_data, dict) and out_data.get("send_process_data") is not None:
-                self.parent.emit("process_data", "", out_data["send_process_data"])
+                self.parent._emit("process_data", "", out_data["send_process_data"])
 
         if do_record:
             self.recorder.sample(info, unsqueezed_data)
@@ -102,8 +102,8 @@ class DataProcessing:
         if not len(sensor_list) or len(matching_sensors) != len(selected_sensors):
             error = "Data is not available for all selected sensors {}.\n".format(selected_sensors)
             error += "I have data for sensors {} ".format(stored_sensors)
-            self.parent.emit("set_sensors", "", stored_sensors)
-            self.parent.emit("sensor_selection_error", error)
+            self.parent._emit("set_sensors", "", stored_sensors)
+            self.parent._emit("sensor_selection_error", error)
             return
 
         self.sensor_config.sensor = matching_sensors
@@ -116,7 +116,7 @@ class DataProcessing:
 
             subdata = subdata[sensor_list]
             self.process(subdata, subinfo, do_record=False)
-            self.parent.emit("sweep_info", "", subinfo)
+            self.parent._emit("sweep_info", "", subinfo)
 
     def draw_canvas(self, plot_data):
-        self.parent.emit("update_external_plots", "", plot_data)
+        self.parent._emit("update_external_plots", "", plot_data)
