@@ -141,11 +141,6 @@ def get_processing_config():
             "type": float,
             "advanced": True,
         },
-        "use_parameterization": {
-            "name": "Use bg parameterization",
-            "value": False,
-            "advanced": True,
-        },
         "background_map": {
             "name": "Show background",
             "value": True,
@@ -241,7 +236,6 @@ class ObstacleDetectionProcessor:
         self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
         self.fusion_history = FUSION_HISTORY
         self.fusion_max_shadows = FUSION_MAX_SHADOWS
-        self.use_bg_parameterization = processing_config["use_parameterization"]["value"]
         self.bg_params = []
 
     def process(self, data, data_info):
@@ -310,20 +304,9 @@ class ObstacleDetectionProcessor:
                             if s == 0:
                                 self.dump_bg_params_to_yaml()
                             self.use_bg = False
-                            self.use_bg_parameterization = False
                         log.info("Using saved parameterized FFT background data!")
                     except Exception:
                         log.warning("Could not reconstruct background!")
-                elif hasattr(self.saved_bg, "shape"):
-                    if self.saved_bg.shape == self.fft_bg.shape:
-                        self.fft_bg = self.saved_bg
-                        self.use_bg = False
-                        log.info("Using saved FFT background data!")
-                    else:
-                        log.warning("Saved background has wrong shape/type!")
-                        log.warning("Required shape {}".format(self.fft_bg.shape))
-                        if hasattr(self.saved_bg, "shape"):
-                            log.warning("Supplied shape {}".format(self.saved_bg.shape))
                 else:
                     log.warning("Received unsupported background data!")
 
@@ -346,16 +329,15 @@ class ObstacleDetectionProcessor:
                 self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
                 if s == nr_sensors - 1:
                     self.bg_avg += 1
-                    if self.bg_avg == self.use_bg and self.use_bg_parameterization:
+                    if self.bg_avg == self.use_bg:
                         for i in range(nr_sensors):
                             self.bg_params.append(self.parameterize_bg(self.fft_bg[i, :, :]))
                             # only dump first sensor params
                             if i == 0:
                                 self.dump_bg_params_to_yaml()
-                            if self.use_bg_parameterization:
-                                self.generate_background_from_pwl_params(
-                                    self.fft_bg[i, :, :], self.bg_params[i]
-                                )
+                            self.generate_background_from_pwl_params(
+                                self.fft_bg[i, :, :], self.bg_params[i]
+                            )
 
             signalPSD_sub = signalPSD - self.fft_bg[s, :, :]
             signalPSD_sub[signalPSD_sub < 0] = 0

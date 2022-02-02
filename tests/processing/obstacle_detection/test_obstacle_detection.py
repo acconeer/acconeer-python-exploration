@@ -23,7 +23,7 @@ TEST_KEYS = [
     "peaks_found",
 ]
 PARAMETER_SETS = [
-    {"fusion_map": True, "use_parameterization": True},
+    {"fusion_map": True},
 ]
 
 
