@@ -210,6 +210,12 @@ def get_processing_config():
 
 class ObstacleDetectionProcessor:
     def __init__(self, sensor_config, processing_config, session_info):
+        self.sweep_index = 0
+        self.bg_avg = 0
+        self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
+        self.fusion_history = FUSION_HISTORY
+        self.fusion_max_shadows = FUSION_MAX_SHADOWS
+
         self.sensor_config = sensor_config
         self.sensor_separation = processing_config["sensor_separation"]["value"]
         self.fusion_spread = processing_config["fusion_spread"]["value"]
@@ -218,11 +224,9 @@ class ObstacleDetectionProcessor:
         self.static_threshold = processing_config["static_threshold"]["value"]
         self.static_distance = processing_config["static_distance"]["value"]
         self.close_threshold_addition = processing_config["close_threshold_addition"]["value"]
-        self.sweep_index = 0
         self.use_bg = max(processing_config["calib"]["value"], 0)
         self.bg_off = processing_config["bg_offset"]["value"]
         self.saved_bg = processing_config["send_process_data"]["value"]
-        self.bg_avg = 0
         self.peak_hist_len = processing_config["peak_hist"]["value"]
         self.nr_locals = processing_config["nr_peaks"]["value"]
         self.static_freq_limit = processing_config["static_freq"]["value"]
@@ -233,10 +237,159 @@ class ObstacleDetectionProcessor:
         self.downsampling = processing_config["downsampling"]["value"]
         self.fusion_enabled = processing_config["fusion_map"]["value"]
         self.fusion_handle = None
-        self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
-        self.fusion_history = FUSION_HISTORY
-        self.fusion_max_shadows = FUSION_MAX_SHADOWS
         self.bg_params = []
+
+    def first_sweep_setup(self, nr_sensors, len_range):
+        if self.fusion_enabled and nr_sensors <= 2:
+            self.fusion_handle = SensorFusion()
+            fusion_params = {
+                "separation": self.sensor_separation,
+                "obstacle_spread": self.fusion_spread,
+                "min_y_spread": 4,  # cm
+                "min_x_spread": 4,  # cm
+                "decay_time": 5,  # cycles
+                "step_time": 1 / self.sensor_config.update_rate,  # s
+                "min_distance": self.sensor_config.range_start * 100,  # cm
+            }
+            self.fusion_handle.setup(fusion_params)
+
+        self.sweep_map = np.zeros((nr_sensors, len_range, self.fft_len), dtype="complex")
+        self.fft_bg = np.zeros((nr_sensors, len_range, self.fft_len))
+        self.hamming_map = np.zeros((len_range, self.fft_len))
+
+        self.fusion_data = {
+            "fused_y": np.full((self.fusion_history, self.fusion_max_obstacles), np.nan),
+            "fused_x": np.full((self.fusion_history, self.fusion_max_obstacles), np.nan),
+            "left_shadow_y": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+            "left_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+            "right_shadow_y": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+            "right_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
+        }
+
+        for i in range(len_range):
+            self.hamming_map[i, :] = np.hamming(self.fft_len)
+
+        self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, len_range)
+        self.peak_prop_num = 4
+        self.peak_hist = np.zeros(
+            (nr_sensors, self.nr_locals, self.peak_prop_num, self.peak_hist_len)
+        )
+        self.peak_hist *= float(np.nan)
+        self.mask = np.zeros((len_range, self.fft_len))
+        self.threshold_map = np.zeros((len_range, self.fft_len))
+
+        if self.saved_bg is not None:
+            if isinstance(self.saved_bg, dict):
+                try:
+                    for s in range(nr_sensors):
+                        # Generate background from piece-wise-linear (pwl) interpolation
+                        self.bg_params.append(self.saved_bg)
+                        self.generate_background_from_pwl_params(
+                            self.fft_bg[s, :, :], self.saved_bg
+                        )
+                        if s == 0:
+                            self.dump_bg_params_to_yaml()
+                        self.use_bg = False
+                    log.info("Using saved parameterized FFT background data!")
+                except Exception:
+                    log.warning("Could not reconstruct background!")
+            else:
+                log.warning("Received unsupported background data!")
+
+        for dist in range(len_range):
+            for freq in range(self.fft_len):
+                self.threshold_map[dist, freq] = self.variable_thresholding(
+                    freq, dist, self.threshold, self.static_threshold
+                )
+
+    def process_single_sensor(self, sweep, s, fft_psd, nr_sensors, fused_obstacles):
+        self.push(sweep[s, :], self.sweep_map[s, :, :])
+
+        signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
+        fft_psd[s, :, :] = np.square(np.abs(signalFFT))
+        signalPSD = fft_psd[s, :, :]
+
+        if self.use_bg and self.sweep_index == self.fft_len - 1:
+            self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
+            if s == nr_sensors - 1:
+                self.bg_avg += 1
+                if self.bg_avg == self.use_bg:
+                    for i in range(nr_sensors):
+                        self.bg_params.append(self.parameterize_bg(self.fft_bg[i, :, :]))
+                        # only dump first sensor params
+                        if i == 0:
+                            self.dump_bg_params_to_yaml()
+                        self.generate_background_from_pwl_params(
+                            self.fft_bg[i, :, :], self.bg_params[i]
+                        )
+
+        signalPSD_sub = signalPSD - self.fft_bg[s, :, :]
+        signalPSD_sub[signalPSD_sub < 0] = 0
+        env = np.abs(sweep[s, :])
+
+        fft_peaks, peaks_found = self.find_peaks(signalPSD_sub)
+        fft_max_env = signalPSD[:, 8]
+        angle = None
+        velocity = None
+        peak_idx = np.argmax(env)
+        obstacles = []
+
+        if self.sweep_index < self.fft_len:
+            fft_peaks = None
+
+        if fft_peaks is not None:
+            fft_max_env = signalPSD[:, int(fft_peaks[0, 1])]
+            zero = np.floor(self.fft_len / 2)
+
+            for i in range(self.nr_locals):
+                bin_index = fft_peaks[i, 2] - zero
+                velocity = (bin_index / zero) * WAVELENGTH * self.sensor_config.update_rate / 4
+                angle = np.arccos(self.clamp(abs(velocity) / self.robot_velocity, -1.0, 1.0))
+                angle = np.sign(velocity) * angle / pi * 180
+                peak_idx = int(fft_peaks[i, 0])
+                distance = self.env_xs[int(fft_peaks[i, 0])]
+                amp = fft_peaks[i, 3]
+
+                if not amp:
+                    distance = float(np.nan)
+                    velocity = float(np.nan)
+                    angle = float(np.nan)
+                    amp = float(np.nan)
+                elif self.fusion_handle:
+                    obstacles.append(
+                        {
+                            "angle": abs(angle),
+                            "velocity": velocity,
+                            "distance": distance,
+                            "amplitude": amp,
+                            "sensor": s,
+                        }
+                    )
+                self.push_vec(distance, self.peak_hist[s, i, 0, :])
+                self.push_vec(velocity, self.peak_hist[s, i, 1, :])
+                self.push_vec(angle, self.peak_hist[s, i, 2, :])
+                self.push_vec(amp, self.peak_hist[s, i, 3, :])
+
+            fft_peaks = fft_peaks[:peaks_found, :]
+        else:
+            for i in range(self.nr_locals):
+                for j in range(self.peak_prop_num):
+                    self.push_vec(float(np.nan), self.peak_hist[s, i, j, :])
+        fused_obstacles["{}".format(s)] = obstacles
+
+        out_data_contrib = {
+            "env_ampl": env,
+            "fft_max_env": fft_max_env,
+            "fft_map": fft_psd,
+            "peak_idx": peak_idx,
+            "angle": angle,
+            "velocity": velocity,
+            "fft_peaks": fft_peaks,
+            "peak_hist": self.peak_hist[0, :, :, :],
+            "sweep_index": self.sweep_index,
+            "peaks_found": peaks_found,
+        }
+        return out_data_contrib
 
     def process(self, data, data_info):
         sweep = data
@@ -254,144 +407,16 @@ class ObstacleDetectionProcessor:
         nr_sensors = min(len(self.sensor_config.sensor), nr_sensors)
 
         if self.sweep_index == 0 and self.bg_avg == 0:
-            if self.fusion_enabled and nr_sensors <= 2:
-                self.fusion_handle = SensorFusion()
-                fusion_params = {
-                    "separation": self.sensor_separation,
-                    "obstacle_spread": self.fusion_spread,
-                    "min_y_spread": 4,  # cm
-                    "min_x_spread": 4,  # cm
-                    "decay_time": 5,  # cycles
-                    "step_time": 1 / self.sensor_config.update_rate,  # s
-                    "min_distance": self.sensor_config.range_start * 100,  # cm
-                }
-                self.fusion_handle.setup(fusion_params)
-
-            self.sweep_map = np.zeros((nr_sensors, len_range, self.fft_len), dtype="complex")
-            self.fft_bg = np.zeros((nr_sensors, len_range, self.fft_len))
-            self.hamming_map = np.zeros((len_range, self.fft_len))
-
-            self.fusion_data = {
-                "fused_y": np.full((self.fusion_history, self.fusion_max_obstacles), np.nan),
-                "fused_x": np.full((self.fusion_history, self.fusion_max_obstacles), np.nan),
-                "left_shadow_y": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
-                "left_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
-                "right_shadow_y": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
-                "right_shadow_x": np.full((self.fusion_history, self.fusion_max_shadows), np.nan),
-            }
-
-            for i in range(len_range):
-                self.hamming_map[i, :] = np.hamming(self.fft_len)
-
-            self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, len_range)
-            self.peak_prop_num = 4
-            self.peak_hist = np.zeros(
-                (nr_sensors, self.nr_locals, self.peak_prop_num, self.peak_hist_len)
-            )
-            self.peak_hist *= float(np.nan)
-            self.mask = np.zeros((len_range, self.fft_len))
-            self.threshold_map = np.zeros((len_range, self.fft_len))
-
-            if self.saved_bg is not None:
-                if isinstance(self.saved_bg, dict):
-                    try:
-                        for s in range(nr_sensors):
-                            # Generate background from piece-wise-linear (pwl) interpolation
-                            self.bg_params.append(self.saved_bg)
-                            self.generate_background_from_pwl_params(
-                                self.fft_bg[s, :, :], self.saved_bg
-                            )
-                            if s == 0:
-                                self.dump_bg_params_to_yaml()
-                            self.use_bg = False
-                        log.info("Using saved parameterized FFT background data!")
-                    except Exception:
-                        log.warning("Could not reconstruct background!")
-                else:
-                    log.warning("Received unsupported background data!")
-
-            for dist in range(len_range):
-                for freq in range(self.fft_len):
-                    self.threshold_map[dist, freq] = self.variable_thresholding(
-                        freq, dist, self.threshold, self.static_threshold
-                    )
+            self.first_sweep_setup(nr_sensors, len_range)
 
         fft_psd = np.empty((nr_sensors, len_range, self.fft_len))
         fused_obstacles = {}
+        out_datas = []
+
         for s in range(nr_sensors):
-            self.push(sweep[s, :], self.sweep_map[s, :, :])
-
-            signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
-            fft_psd[s, :, :] = np.square(np.abs(signalFFT))
-            signalPSD = fft_psd[s, :, :]
-
-            if self.use_bg and self.sweep_index == self.fft_len - 1:
-                self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
-                if s == nr_sensors - 1:
-                    self.bg_avg += 1
-                    if self.bg_avg == self.use_bg:
-                        for i in range(nr_sensors):
-                            self.bg_params.append(self.parameterize_bg(self.fft_bg[i, :, :]))
-                            # only dump first sensor params
-                            if i == 0:
-                                self.dump_bg_params_to_yaml()
-                            self.generate_background_from_pwl_params(
-                                self.fft_bg[i, :, :], self.bg_params[i]
-                            )
-
-            signalPSD_sub = signalPSD - self.fft_bg[s, :, :]
-            signalPSD_sub[signalPSD_sub < 0] = 0
-            env = np.abs(sweep[s, :])
-
-            fft_peaks, peaks_found = self.find_peaks(signalPSD_sub)
-            fft_max_env = signalPSD[:, 8]
-            angle = None
-            velocity = None
-            peak_idx = np.argmax(env)
-            obstacles = []
-
-            if self.sweep_index < self.fft_len:
-                fft_peaks = None
-
-            if fft_peaks is not None:
-                fft_max_env = signalPSD[:, int(fft_peaks[0, 1])]
-                zero = np.floor(self.fft_len / 2)
-
-                for i in range(self.nr_locals):
-                    bin_index = fft_peaks[i, 2] - zero
-                    velocity = (bin_index / zero) * WAVELENGTH * self.sensor_config.update_rate / 4
-                    angle = np.arccos(self.clamp(abs(velocity) / self.robot_velocity, -1.0, 1.0))
-                    angle = np.sign(velocity) * angle / pi * 180
-                    peak_idx = int(fft_peaks[i, 0])
-                    distance = self.env_xs[int(fft_peaks[i, 0])]
-                    amp = fft_peaks[i, 3]
-
-                    if not amp:
-                        distance = float(np.nan)
-                        velocity = float(np.nan)
-                        angle = float(np.nan)
-                        amp = float(np.nan)
-                    elif self.fusion_handle:
-                        obstacles.append(
-                            {
-                                "angle": abs(angle),
-                                "velocity": velocity,
-                                "distance": distance,
-                                "amplitude": amp,
-                                "sensor": s,
-                            }
-                        )
-                    self.push_vec(distance, self.peak_hist[s, i, 0, :])
-                    self.push_vec(velocity, self.peak_hist[s, i, 1, :])
-                    self.push_vec(angle, self.peak_hist[s, i, 2, :])
-                    self.push_vec(amp, self.peak_hist[s, i, 3, :])
-
-                fft_peaks = fft_peaks[:peaks_found, :]
-            else:
-                for i in range(self.nr_locals):
-                    for j in range(self.peak_prop_num):
-                        self.push_vec(float(np.nan), self.peak_hist[s, i, j, :])
-            fused_obstacles["{}".format(s)] = obstacles
+            out_datas.append(
+                self.process_single_sensor(sweep, s, fft_psd, nr_sensors, fused_obstacles)
+            )
 
         if self.fusion_handle:
             fused_obstacles, shadow_obstacles = self.fusion_handle.update(fused_obstacles)
@@ -432,25 +457,20 @@ class ObstacleDetectionProcessor:
             threshold_map = self.threshold_map
 
         f_data = self.fusion_data
-        out_data = {
-            "env_ampl": env,
-            "fft_max_env": fft_max_env,
-            "fft_map": fft_psd,
-            "peak_idx": peak_idx,
-            "angle": angle,
-            "velocity": velocity,
-            "fft_peaks": fft_peaks,
-            "peak_hist": self.peak_hist[0, :, :, :],
-            "fft_bg": fft_bg,
-            "fft_bg_iterations_left": iterations_left,
-            "threshold_map": threshold_map,
-            "send_process_data": fft_bg_send,
-            "fused_obstacles": [f_data["fused_x"], f_data["fused_y"]],
-            "left_shadows": [f_data["left_shadow_x"], f_data["left_shadow_y"]],
-            "right_shadows": [f_data["right_shadow_x"], f_data["right_shadow_y"]],
-            "sweep_index": self.sweep_index,
-            "peaks_found": peaks_found,
-        }
+
+        # Only second sensor for dual setup.
+        out_data = out_datas[-1]
+        out_data.update(
+            {
+                "fft_bg": fft_bg,
+                "fft_bg_iterations_left": iterations_left,
+                "threshold_map": threshold_map,
+                "send_process_data": fft_bg_send,
+                "fused_obstacles": [f_data["fused_x"], f_data["fused_y"]],
+                "left_shadows": [f_data["left_shadow_x"], f_data["left_shadow_y"]],
+                "right_shadows": [f_data["right_shadow_x"], f_data["right_shadow_y"]],
+            }
+        )
 
         if (self.bg_avg < self.use_bg) and (self.sweep_index == self.fft_len - 1):
             self.sweep_index = 0
