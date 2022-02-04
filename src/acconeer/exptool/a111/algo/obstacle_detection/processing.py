@@ -239,7 +239,24 @@ class ObstacleDetectionProcessor:
         self.fusion_handle = None
         self.bg_params = []
 
-    def first_sweep_setup(self, nr_sensors, len_range):
+    def _load_calibration(self, nr_sensors):
+        if not isinstance(self.saved_bg, dict):
+            log.warning("Received unsupported background data!")
+            return
+
+        try:
+            for s in range(nr_sensors):
+                # Generate background from piece-wise-linear (pwl) interpolation
+                self.bg_params.append(self.saved_bg)
+                self.generate_background_from_pwl_params(self.fft_bg[s, :, :], self.saved_bg)
+                if s == 0:
+                    self.dump_bg_params_to_yaml()
+                self.use_bg = False
+            log.info("Using saved parameterized FFT background data!")
+        except Exception:
+            log.warning("Could not reconstruct background!")
+
+    def _first_sweep_setup(self, nr_sensors, len_range):
         if self.fusion_enabled and nr_sensors <= 2:
             self.fusion_handle = SensorFusion()
             fusion_params = {
@@ -279,22 +296,7 @@ class ObstacleDetectionProcessor:
         self.threshold_map = np.zeros((len_range, self.fft_len))
 
         if self.saved_bg is not None:
-            if isinstance(self.saved_bg, dict):
-                try:
-                    for s in range(nr_sensors):
-                        # Generate background from piece-wise-linear (pwl) interpolation
-                        self.bg_params.append(self.saved_bg)
-                        self.generate_background_from_pwl_params(
-                            self.fft_bg[s, :, :], self.saved_bg
-                        )
-                        if s == 0:
-                            self.dump_bg_params_to_yaml()
-                        self.use_bg = False
-                    log.info("Using saved parameterized FFT background data!")
-                except Exception:
-                    log.warning("Could not reconstruct background!")
-            else:
-                log.warning("Received unsupported background data!")
+            self._load_calibration(nr_sensors)
 
         for dist in range(len_range):
             for freq in range(self.fft_len):
@@ -302,7 +304,15 @@ class ObstacleDetectionProcessor:
                     freq, dist, self.threshold, self.static_threshold
                 )
 
-    def process_single_sensor(self, sweep, s, fft_psd, nr_sensors, fused_obstacles):
+    def _save_calibration(self, nr_sensors):
+        for i in range(nr_sensors):
+            self.bg_params.append(self.parameterize_bg(self.fft_bg[i, :, :]))
+            # only dump first sensor params
+            if i == 0:
+                self.dump_bg_params_to_yaml()
+            self.generate_background_from_pwl_params(self.fft_bg[i, :, :], self.bg_params[i])
+
+    def _process_single_sensor(self, sweep, s, fft_psd, nr_sensors, fused_obstacles):
         self.push(sweep[s, :], self.sweep_map[s, :, :])
 
         signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
@@ -314,14 +324,7 @@ class ObstacleDetectionProcessor:
             if s == nr_sensors - 1:
                 self.bg_avg += 1
                 if self.bg_avg == self.use_bg:
-                    for i in range(nr_sensors):
-                        self.bg_params.append(self.parameterize_bg(self.fft_bg[i, :, :]))
-                        # only dump first sensor params
-                        if i == 0:
-                            self.dump_bg_params_to_yaml()
-                        self.generate_background_from_pwl_params(
-                            self.fft_bg[i, :, :], self.bg_params[i]
-                        )
+                    self._save_calibration(nr_sensors)
 
         signalPSD_sub = signalPSD - self.fft_bg[s, :, :]
         signalPSD_sub[signalPSD_sub < 0] = 0
@@ -407,7 +410,7 @@ class ObstacleDetectionProcessor:
         nr_sensors = min(len(self.sensor_config.sensor), nr_sensors)
 
         if self.sweep_index == 0 and self.bg_avg == 0:
-            self.first_sweep_setup(nr_sensors, len_range)
+            self._first_sweep_setup(nr_sensors, len_range)
 
         fft_psd = np.empty((nr_sensors, len_range, self.fft_len))
         fused_obstacles = {}
@@ -415,7 +418,7 @@ class ObstacleDetectionProcessor:
 
         for s in range(nr_sensors):
             out_datas.append(
-                self.process_single_sensor(sweep, s, fft_psd, nr_sensors, fused_obstacles)
+                self._process_single_sensor(sweep, s, fft_psd, nr_sensors, fused_obstacles)
             )
 
         if self.fusion_handle:
