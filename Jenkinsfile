@@ -10,6 +10,19 @@ pipeline {
         stage('Setup') {
             steps {
                 sh 'git clean -xdf'
+                findBuildAndCopyArtifacts(
+                    projectName: 'sw-main',
+                    revision: "master",
+                    artifactNames: [
+                        "internal_stash_python_libs.tgz",
+                        "internal_stash_binaries_xm112.tgz",
+                        "internal_stash_binaries_sanitizer_a111.tgz"
+                    ]
+                )
+                sh 'mkdir stash'
+                sh 'tar -xzf internal_stash_python_libs.tgz -C stash'
+                sh 'tar -xzf internal_stash_binaries_xm112.tgz -C stash'
+                sh 'tar -xzf internal_stash_binaries_sanitizer_a111.tgz -C stash'
             }
         }
         stage('Offline tests') {
@@ -29,11 +42,6 @@ pipeline {
             stages {
                 stage('Flash') {
                     steps {
-                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
-                                                  artifactNames: ["internal_stash_python_libs.tgz", "internal_stash_binaries_xm112.tgz"])
-                        sh 'rm -rf stash && mkdir stash'
-                        sh 'tar -xzf internal_stash_python_libs.tgz -C stash'
-                        sh 'tar -xzf internal_stash_binaries_xm112.tgz -C stash'
                         sh '(cd stash && python3 python_libs/test_utils/flash.py)'
                     }
                 }
@@ -57,14 +65,6 @@ pipeline {
                 lock resource: '${env.NODE_NAME}-localhost'
             }
             stages {
-                stage('Retrieve stash') {
-                    steps {
-                        findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
-                                                artifactNames: ["internal_stash_binaries_sanitizer_a111.tgz"])
-                        sh 'rm -rf stash && mkdir stash'
-                        sh 'tar -xzf internal_stash_binaries_sanitizer_a111.tgz -C stash'
-                    }
-                }
                 stage('Integration test') {
                     agent {
                         dockerfile {
