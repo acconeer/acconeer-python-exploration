@@ -35,41 +35,25 @@ pipeline {
                 sh 'tox'
             }
         }
-        stage('XM112 integration tests') {
+        stage('Integration tests') {
             options {
                 lock resource: '${env.NODE_NAME}-xm112'
             }
             stages {
-                stage('Flash') {
+                stage('Flash XM112') {
                     steps {
                         sh '(cd stash && python3 python_libs/test_utils/flash.py)'
                     }
                 }
-                stage('Integration tests') {
+                stage('Run integration tests') {
                     agent {
                         dockerfile {
                             reuseNode true
                             args '--net=host --privileged'
                         }
                     }
-                    steps {
-                        sh 'python3 -m pip install -q -U --user ".[test]"'
-                        sh 'python3 -m pytest -p no:pytest-qt -v tests/integration --uart --spi'
-                    }
-                }
-            }
-        }
-        stage('Exploration server integration tests')
-        {
-            options {
-                lock resource: '${env.NODE_NAME}-localhost'
-            }
-            stages {
-                stage('Integration test') {
-                    agent {
-                        dockerfile {
-                            reuseNode true
-                        }
+                    options {
+                        lock resource: '${env.NODE_NAME}-localhost'
                     }
                     steps {
                         sh 'python3 -m pip install -q -U --user ".[test]"'
