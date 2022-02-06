@@ -1,5 +1,5 @@
 build>=0.7
+nox>=2022.1.7
 pip>=21.3
 requests
-tox
 twine>=3.7

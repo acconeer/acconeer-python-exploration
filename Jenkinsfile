@@ -33,7 +33,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'tox'
+                sh 'nox -s lint docs test'
             }
         }
         stage('Integration tests') {
@@ -57,7 +57,6 @@ pipeline {
                         lock resource: '${env.NODE_NAME}-localhost'
                     }
                     steps {
-                        sh 'python3 -m pip install -q -U --user ".[test]"'
                         sh 'tests/run-integration-tests.sh'
                     }
                 }
@@ -71,8 +70,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'python3 -m pip install -U --user ".[test,app]"'
-                sh 'python3 -m pytest -v --timeout=60 --timeout_method=thread tests/gui'
+                sh 'nox -s test -- --test-groups app'
             }
         }
     }
