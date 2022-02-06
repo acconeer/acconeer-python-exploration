@@ -2,17 +2,23 @@ gerritReview labels: [Verified: 0], message: "Test started: ${env.BUILD_URL}"
 @Library('sw-jenkins-library@b303b82fe823acd2ef8d0f77498e87a4773aa8ea') _
 
 pipeline {
-    agent none
+    agent {
+        label 'exploration_tool'
+    }
 
     stages {
+        stage('Setup') {
+            steps {
+                sh 'git clean -xdf'
+            }
+        }
         stage('Offline tests') {
             agent {
                 dockerfile {
-                    label 'exploration_tool'
+                    reuseNode true
                 }
             }
             steps {
-                sh 'git clean -xdf'
                 sh 'tox'
             }
         }
@@ -22,9 +28,6 @@ pipeline {
             }
             stages {
                 stage('Flash') {
-                    agent {
-                        label 'exploration_tool'
-                    }
                     steps {
                         findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
                                                   artifactNames: ["internal_stash_python_libs.tgz", "internal_stash_binaries_xm112.tgz"])
@@ -37,7 +40,7 @@ pipeline {
                 stage('Integration tests') {
                     agent {
                         dockerfile {
-                            label 'exploration_tool'
+                            reuseNode true
                             args '--net=host --privileged'
                         }
                     }
@@ -55,9 +58,6 @@ pipeline {
             }
             stages {
                 stage('Retrieve stash') {
-                    agent {
-                        label 'exploration_tool'
-                    }
                     steps {
                         findBuildAndCopyArtifacts(projectName: 'sw-main', revision: "master",
                                                 artifactNames: ["internal_stash_binaries_sanitizer_a111.tgz"])
@@ -68,7 +68,7 @@ pipeline {
                 stage('Integration test') {
                     agent {
                         dockerfile {
-                            label 'exploration_tool'
+                            reuseNode true
                         }
                     }
                     steps {
@@ -81,7 +81,7 @@ pipeline {
         stage('GUI tests') {
             agent {
                 dockerfile {
-                    label 'exploration_tool'
+                    reuseNode true
                 }
             }
             steps {
