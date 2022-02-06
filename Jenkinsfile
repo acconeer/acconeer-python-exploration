@@ -25,7 +25,7 @@ pipeline {
                 sh 'tar -xzf internal_stash_binaries_sanitizer_a111.tgz -C stash'
             }
         }
-        stage('Offline tests') {
+        stage('Standalone tests') {
             agent {
                 dockerfile {
                     reuseNode true
@@ -33,7 +33,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'nox -s lint docs test'
+                sh 'nox -s lint docs test -- --test-groups unit integration app'
             }
         }
         stage('Integration tests') {
@@ -60,17 +60,6 @@ pipeline {
                         sh 'tests/run-integration-tests.sh'
                     }
                 }
-            }
-        }
-        stage('GUI tests') {
-            agent {
-                dockerfile {
-                    reuseNode true
-                    args '--mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip'
-                }
-            }
-            steps {
-                sh 'nox -s test -- --test-groups app'
             }
         }
     }
