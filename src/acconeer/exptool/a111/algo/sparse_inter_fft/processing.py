@@ -85,7 +85,7 @@ get_processing_config = ProcessingConfiguration
 
 
 class Processor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.f = sensor_config.update_rate
         depths = et.utils.get_range_depths(sensor_config, session_info)
         self.num_depths = depths.size

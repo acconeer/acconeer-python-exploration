@@ -19,6 +19,7 @@ class DataProcessing:
         self.sensor_config = params["sensor_config"]
         self.processing_config = params["service_params"]
         self.multi_sensor = params["multi_sensor"]
+        self.calibration = params.get("calibration")
 
         hist_len = params["sweep_buffer"]
         if hist_len is not None and hist_len < 1:
@@ -62,7 +63,15 @@ class DataProcessing:
         if self.first_run:
             ext = self.gui_handle.external
             processing_config = self.processing_config
-            self.external = ext(self.sensor_config, processing_config, self.session_info)
+            try:
+                self.external = ext(
+                    self.sensor_config,
+                    processing_config,
+                    self.session_info,
+                    calibration=self.calibration,
+                )
+            except TypeError as te:
+                raise TypeError(f"Could not instantiate {ext.__name__}") from te
             self.first_run = False
 
         out_data = self.external.process(in_data, in_info)

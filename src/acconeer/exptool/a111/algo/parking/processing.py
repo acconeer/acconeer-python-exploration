@@ -20,7 +20,7 @@ def get_sensor_config():
 
 
 class Processor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.session_info = session_info
 
         self.f = sensor_config.update_rate

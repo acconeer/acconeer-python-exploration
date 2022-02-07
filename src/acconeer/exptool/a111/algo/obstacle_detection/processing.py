@@ -209,7 +209,7 @@ def get_processing_config():
 
 
 class ObstacleDetectionProcessor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.sweep_index = 0
         self.bg_avg = 0
         self.fusion_max_obstacles = FUSION_MAX_OBSTACLES

@@ -110,7 +110,7 @@ get_processing_config = ProcessingConfiguration
 
 
 class ButtonPressProcessor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
 
         pc = ProcessingConfiguration()
         (rounded_bottom, rounded_top) = (

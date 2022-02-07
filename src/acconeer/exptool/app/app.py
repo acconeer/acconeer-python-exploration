@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFrame,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -34,13 +35,13 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
-from acconeer.exptool.a111.algo import ModuleInfo
+from acconeer.exptool.a111.algo import Calibration, ModuleInfo
 from acconeer.exptool.structs import configbase
 
 import platformdirs
 
 from . import data_processing
-from .elements.helper import Count, ExptoolArgumentParser, LoadState
+from .elements.helper import CalibrationUiState, Count, ExptoolArgumentParser, LoadState
 from .elements.modules import (
     MODULE_INFOS,
     MODULE_KEY_TO_MODULE_INFO_MAP,
@@ -78,6 +79,7 @@ class GUI(QMainWindow):
     sig_scan = Signal(str, str, object)
     sig_sensor_config_pidget_event = Signal(object)
     sig_processing_config_pidget_event = Signal(object)
+    sig_calibration_config_pidget_event = Signal(object)
 
     def __init__(self, under_test=False, use_last_config=True):
         super().__init__()
@@ -113,6 +115,7 @@ class GUI(QMainWindow):
         self.current_module_label = None
         self.canvas = None
         self.sensors_available = None
+        self.calibration: Optional[Calibration] = None
         self.basic_sensor_param_count = Count()
         self.advanced_sensor_param_count = Count()
         self.control_grid_count = Count()
@@ -123,9 +126,13 @@ class GUI(QMainWindow):
         self.sig_processing_config_pidget_event.connect(
             self.pidget_processing_config_event_handler
         )
+        self.sig_calibration_config_pidget_event.connect(
+            self.pidget_calibration_config_event_handler
+        )
 
         self.module_label_to_sensor_config_map = {}
         self.module_label_to_processing_config_map = {}
+        self.module_label_to_calibration_config_map = {}
         self.current_module_info: Optional[ModuleInfo] = None
         for mi in MODULE_INFOS:
             if mi.sensor_config_class is not None:
@@ -133,6 +140,10 @@ class GUI(QMainWindow):
 
                 processing_config = self.get_default_processing_config(mi.label)
                 self.module_label_to_processing_config_map[mi.label] = processing_config
+
+                if mi.calibration_config_class is not None:
+                    calibration_config = mi.calibration_config_class()
+                    self.module_label_to_calibration_config_map[mi.label] = calibration_config
 
         self.setWindowIcon(QIcon(self.ACC_IMG_FILENAME))
 
@@ -151,6 +162,13 @@ class GUI(QMainWindow):
         self.init_panel_scroll_area()
         self.init_statusbar()
         self.init_pidgets()
+
+        self.calibration_ui_state = CalibrationUiState(
+            load_btn=self.buttons["load_calibration"],
+            save_btn=self.buttons["save_calibration"],
+            clear_btn=self.buttons["clear_calibration"],
+            status_text=self.textboxes["calibration_status"],
+        )
 
         self.canvas_widget = QFrame(self.main_widget)
         self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
@@ -211,6 +229,7 @@ class GUI(QMainWindow):
             "host": ("192.168.1.100", True),
             "sweep_buffer": ("1000", True),
             "stored_frames": ("0", False),
+            "calibration_status": ("", True),
         }
 
         self.textboxes = {}
@@ -218,6 +237,10 @@ class GUI(QMainWindow):
             self.textboxes[key] = QLineEdit(self)
             self.textboxes[key].setText(text)
             self.textboxes[key].setEnabled(enabled)
+
+        calibration_textbox = self.textboxes["calibration_status"]
+        calibration_textbox.setReadOnly(True)
+        calibration_textbox.setPlaceholderText("No calibration")
 
     def init_checkboxes(self):
         # text, status, visible, enabled, function
@@ -326,12 +349,32 @@ class GUI(QMainWindow):
                 grid.addWidget(pidget, count.val, 0, 1, 2)
                 count.post_incr()
 
+        self.last_calibration_config = None
+
+        for calibration_config in self.module_label_to_calibration_config_map.values():
+            if not isinstance(calibration_config, configbase.Config):
+                continue
+
+            calibration_config._event_handlers.add(self.pidget_calibration_config_event_handler)
+            pidgets = calibration_config._create_pidgets()
+
+            for pidget in pidgets:
+                if pidget is None:
+                    continue
+
+                grid = self.calibration_config_section.grid
+                count = self.param_grid_count
+
+                grid.addWidget(pidget, count.val, 0, 1, 2)
+                count.post_incr()
+
         self.refresh_pidgets()
         self.set_gui_state(None, None)
 
     def refresh_pidgets(self):
         self.refresh_sensor_pidgets()
         self.refresh_processing_pidgets()
+        self.refresh_calibration_pidgets()
         self.update_pidgets_on_event()
 
     def refresh_sensor_pidgets(self):
@@ -392,6 +435,23 @@ class GUI(QMainWindow):
         self.basic_processing_config_section.setVisible(has_basic_params)
         self.advanced_processing_config_section.setVisible(has_advanced_params)
 
+    def refresh_calibration_pidgets(self):
+        calibration_config = self.get_calibration_config()
+
+        if self.last_calibration_config != calibration_config:
+            if isinstance(self.last_calibration_config, configbase.Config):
+                self.last_calibration_config._state = configbase.Config.State.UNLOADED
+
+            self.last_calibration_config = calibration_config
+
+        if calibration_config is None:
+            self.calibration_config_section.hide()
+            return
+
+        calibration_config._state = configbase.Config.State.LOADED_READONLY
+
+        self.calibration_config_section.setVisible(True)
+
     def pidget_sensor_config_event_handler(self, sensor_config):
         if threading.current_thread().name != "MainThread":
             self.sig_sensor_config_pidget_event.emit(sensor_config)
@@ -419,7 +479,37 @@ class GUI(QMainWindow):
 
         self.update_pidgets_on_event(processing_config=processing_config)
 
-    def update_pidgets_on_event(self, sensor_config=None, processing_config=None):
+    def pidget_calibration_config_event_handler(self, calibration_config):
+        if threading.current_thread().name != "MainThread":
+            self.sig_calibration_config_pidget_event.emit(calibration_config)
+            return
+
+        if self.current_module_info is None or self.current_module_info.calibration_mapper is None:
+            return
+
+        # Sync self.calibration
+        calib_mapper = self.current_module_info.calibration_mapper
+        updated_calibration = calib_mapper.get_updated_calibration_from_configuration(
+            configuration=calibration_config,
+            calibration=self.calibration,
+        )
+        self.calibration = updated_calibration
+
+        # Assumes that an update means that the calibration is modified.
+        self.calibration_ui_state.modified = True
+
+        # Processor
+        try:
+            if isinstance(self.radar.external, self.current_module_info.processor):
+                self.radar.external.update_calibration(self.calibration)
+        except AttributeError:
+            pass
+
+        self.update_pidgets_on_event(calibration_config=calibration_config)
+
+    def update_pidgets_on_event(
+        self, sensor_config=None, processing_config=None, calibration_config=None
+    ):
         if sensor_config is None:
             sensor_config = self.get_sensor_config()
 
@@ -445,6 +535,13 @@ class GUI(QMainWindow):
             alerts = processing_config._update_pidgets(
                 additional_alerts=pass_on_alerts["processing"]
             )
+            all_alerts.extend(alerts)
+
+        if calibration_config is None:
+            calibration_config = self.get_calibration_config()
+
+        if isinstance(calibration_config, configbase.Config):
+            alerts = calibration_config._update_pidgets()
             all_alerts.extend(alerts)
 
         has_error = any([a.severity == configbase.Severity.ERROR for a in all_alerts])
@@ -645,6 +742,27 @@ class GUI(QMainWindow):
                 True,
                 "connection",
             ),
+            "load_calibration": (
+                "Load calibration",
+                self.calibration_load_button_handler,
+                True,
+                False,
+                "calibration",
+            ),
+            "save_calibration": (
+                "Save calibration",
+                self.calibration_save_button_handler,
+                True,
+                False,
+                "calibration",
+            ),
+            "clear_calibration": (
+                "Clear calibration",
+                self.calibration_clear_button_handler,
+                True,
+                False,
+                "calibration",
+            ),
         }
 
         self.buttons = {}
@@ -739,7 +857,23 @@ class GUI(QMainWindow):
             self.buttons["save_process_data"], 1, 1
         )
 
-        self.main_sublayout.setRowStretch(9, 1)
+        self.calibration_config_section = CollapsibleSection(
+            "Calibration settings", init_collapsed=True
+        )
+        self.main_sublayout.addWidget(self.calibration_config_section, 9, 0)
+
+        calibration_status_sublayout = QHBoxLayout()
+        calibration_status_sublayout.addWidget(QLabel("Calibration status:"))
+        calibration_status_sublayout.addWidget(self.textboxes["calibration_status"])
+        self.calibration_config_section.grid.addLayout(calibration_status_sublayout, 1, 0, 1, 2)
+
+        self.calibration_config_section.grid.addWidget(self.buttons["load_calibration"], 2, 0)
+        self.calibration_config_section.grid.addWidget(self.buttons["save_calibration"], 2, 1)
+        self.calibration_config_section.grid.addWidget(
+            self.buttons["clear_calibration"], 3, 0, 1, 2
+        )
+
+        self.main_sublayout.setRowStretch(10, 1)
 
     def init_panel_scroll_area(self):
         self.panel_scroll_area = QtWidgets.QScrollArea()
@@ -903,6 +1037,124 @@ class GUI(QMainWindow):
             url = self.current_module_info.docs_url
 
         _ = webbrowser.open_new_tab(url)
+
+    def _current_module_supports_calibration(self) -> bool:
+        module_info = self.current_module_info
+        return module_info is not None and (
+            module_info.calibration_class is not None
+            and module_info.calibration_mapper is not None
+            and module_info.calibration_config_class is not None
+        )
+
+    def calibration_load_button_handler(self):
+        """
+        Loads a Calibration that was selected in a dialog window.
+        The loaded Calibration is then assigned to applied to the current CalibrationConfiguration.
+        """
+        module_info = self.current_module_info
+
+        if module_info is None:
+            self.error_message("Load error", "Please select a module")
+            return
+
+        if not self._current_module_supports_calibration():
+            self.error_message("Load error", "The selected module does not support calibration")
+            return
+
+        file_filter = ";;".join(
+            desc for ext, desc in module_info.calibration_class.file_extensions()
+        )
+
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(
+            parent=self,
+            caption="Load calibration",
+            filter=file_filter,
+            options=QtWidgets.QFileDialog.Options() | QtWidgets.QFileDialog.DontUseNativeDialog,
+        )
+
+        if not filename:
+            self.error_message("No filename specified.")
+            return
+
+        loaded_calibration = module_info.calibration_class.load(path=filename)
+        current_calibration_config = self.module_label_to_calibration_config_map[module_info.label]
+
+        module_info.calibration_mapper.update_config_from_calibration(
+            configuration=current_calibration_config,
+            calibration=loaded_calibration,
+        )
+
+        self.calibration = loaded_calibration
+        self.calibration_ui_state.load(filename)
+        log.info(f"Loaded calibration from {filename}")
+        self.refresh_pidgets()
+
+    def calibration_save_button_handler(self):
+        module_info = self.current_module_info
+        if module_info is None:
+            self.error_message("Save Error", "Please select a module")
+            return
+
+        if not self._current_module_supports_calibration():
+            self.error_message("Save Error", "Selected module does not support calibration")
+            return
+
+        if self.calibration is None:
+            self.error_message("Save Error", "No calibration is loaded.")
+            return
+
+        file_filter = ";;".join(
+            desc for ext, desc in module_info.calibration_class.file_extensions()
+        )
+        exts = [ext for ext, desc in module_info.calibration_class.file_extensions()]
+
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            parent=self,
+            caption="Save calibration",
+            filter=file_filter,
+            options=QtWidgets.QFileDialog.Options() | QtWidgets.QFileDialog.DontUseNativeDialog,
+        )
+
+        if not filename:
+            self.error_message("No filename specified.")
+            return
+
+        # if e.g. ".yaml" is not supplied in the save dialog, it won't save as ".yaml" either
+        # This adds the first extension that is accepted by the `Calibration`.
+        if not filename.endswith("." + exts[0]):
+            filename += "." + exts[0]
+
+        self.calibration.save(filename)
+        self.calibration_ui_state.save(filename)
+
+        log.info(f"Saved calibration as '{filename}'")
+
+    def calibration_clear_button_handler(self):
+        should_clear = not self.calibration_ui_state.modified or self.warning_message(
+            "Are you sure you want to clear the calibration?", "Unsaved changes will be lost."
+        )
+        if not should_clear:
+            return
+
+        module_label = self.current_module_label
+        calibration_config = self.module_label_to_calibration_config_map.get(module_label)
+
+        if calibration_config:
+            calibration_config._reset()
+
+        self.calibration_ui_state.clear()
+        self.calibration = None
+
+        processor = self.radar.external
+        can_update_processors_calibration = (
+            self.current_module_info is not None
+            and isinstance(processor, self.current_module_info.processor)
+            and hasattr(processor, "update_calibration")
+        )
+        if can_update_processors_calibration:
+            processor.update_calibration(None)
+
+        self.refresh_pidgets()
 
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
@@ -1071,6 +1323,7 @@ class GUI(QMainWindow):
 
         processing_config = self.update_service_params()
         sensor_config = self.save_gui_settings_to_sensor_config()
+        calibration_config = self.get_calibration_config()
 
         params = {
             "sensor_config": sensor_config,
@@ -1080,6 +1333,7 @@ class GUI(QMainWindow):
             "service_params": processing_config,
             "multi_sensor": self.current_module_info.multi_sensor,
             "rss_version": getattr(self, "rss_version", None),
+            "calibration": self.calibration,
         }
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
@@ -1101,6 +1355,9 @@ class GUI(QMainWindow):
             processing_config._state = configbase.Config.State.LIVE
         else:
             self.basic_processing_config_section.body_widget.setEnabled(False)
+
+        if calibration_config:
+            calibration_config._state = configbase.Config.State.LOADED_READONLY
 
         self.buttons["connect"].setEnabled(False)
 
@@ -1233,6 +1490,21 @@ class GUI(QMainWindow):
                 sensor_config._state = configbase.Config.State.LOADED
             else:
                 sensor_config._state = configbase.Config.State.LIVE
+
+        calibration_config = self.get_calibration_config()
+        if calibration_config:
+            if self.calibration is None:
+                # Covers case where scan is stopped before a calibration
+                # is returned from the processor, which would leave the config
+                # in an editable state.
+                calibration_config._state = configbase.Config.State.LOADED_READONLY
+            else:
+                if states["load_state"] == LoadState.LOADED:
+                    calibration_config._state = configbase.Config.State.LOADED_READONLY
+                elif not states["scan_is_running"]:
+                    calibration_config._state = configbase.Config.State.LOADED
+                else:
+                    calibration_config._state = configbase.Config.State.LIVE
 
         for sensor_widget in self.sensor_widgets.values():
             sensor_widget.setEnabled(not states["scan_is_running"])
@@ -1744,6 +2016,24 @@ class GUI(QMainWindow):
             self.advanced_process_data["process_data"] = data
         elif "set_sensors" in message_type:
             self.set_sensors(data)
+        elif "new_calibration" in message_type:
+            should_update_calibration = (
+                self.current_module_info
+                and self.current_module_info.calibration_mapper is not None
+            )
+            if should_update_calibration:
+                self.calibration = data
+                calibration_config = self.module_label_to_calibration_config_map[
+                    self.current_module_label
+                ]
+                self.current_module_info.calibration_mapper.update_config_from_calibration(
+                    configuration=calibration_config,
+                    calibration=self.calibration,
+                )
+                self.calibration_ui_state.source = "Session"
+                self.calibration_ui_state.modified = True
+
+                self.refresh_pidgets()
         else:
             print("Thread data not implemented!")
             print(message_type, message, data)
@@ -1975,6 +2265,14 @@ class GUI(QMainWindow):
 
         return module_info.processing_config_class()
 
+    def get_calibration_config(self):
+        module_info = self.current_module_info
+
+        if module_info is None:
+            return None
+
+        return self.module_label_to_calibration_config_map.get(module_info.label)
+
     @property
     def in_supported_mode(self):
         try:
@@ -2026,7 +2324,10 @@ class Threaded_Scan(QtCore.QThread):
                 while self.running:
                     info, sweep = self.client.get_next()
                     self._emit("sweep_info", "", info)
-                    _, record = self.radar.process(sweep, info)
+                    process_results, record = self.radar.process(sweep, info)
+
+                    if isinstance(process_results, dict) and "new_calibration" in process_results:
+                        self._emit("new_calibration", "", process_results["new_calibration"])
             except Exception as e:
                 traceback.print_exc()
                 msg = "Failed to communicate with server!\n{}".format(self.format_error(e))

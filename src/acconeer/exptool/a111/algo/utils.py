@@ -1,5 +1,5 @@
 class PassthroughProcessor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         pass
 
     def process(self, data, data_info):
@@ -8,7 +8,7 @@ class PassthroughProcessor:
 
 def multi_sensor_processor(processor_class):
     class CompositeProcessor:
-        def __init__(self, sensor_config, processing_config, session_info):
+        def __init__(self, sensor_config, processing_config, session_info, calibration=None):
             self.child_processors = []
             for _ in sensor_config.sensor:
                 p = processor_class(sensor_config, processing_config, session_info)

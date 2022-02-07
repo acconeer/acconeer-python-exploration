@@ -36,7 +36,7 @@ get_processing_config = ProcessingConfiguration
 
 
 class Processor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         pass
 
     def process(self, data, data_info):

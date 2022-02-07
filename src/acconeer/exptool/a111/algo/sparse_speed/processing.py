@@ -195,7 +195,7 @@ get_processing_config = ProcessingConfiguration
 
 
 class Processor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         sweep_rate = session_info["sweep_rate"]
         est_frame_rate = sweep_rate / self.sweeps_per_frame

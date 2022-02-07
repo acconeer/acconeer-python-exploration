@@ -12,7 +12,7 @@ def get_sensor_config():
 
 
 class PhaseTrackingProcessor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         assert sensor_config.update_rate is not None
 
         self.f = sensor_config.update_rate

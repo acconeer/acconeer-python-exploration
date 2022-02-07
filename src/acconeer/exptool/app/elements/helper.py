@@ -2,6 +2,10 @@ import enum
 import os
 import sys
 from argparse import ArgumentParser
+from pathlib import Path
+from typing import Optional
+
+from PySide6.QtWidgets import QLineEdit, QPushButton
 
 
 class LoadState(enum.Enum):
@@ -56,3 +60,132 @@ class ExptoolArgumentParser(ArgumentParser):
             dest="use_last_config",
             help="Runs Exptool without loading or saving gui configuration.",
         )
+
+
+class CalibrationUiState:
+    """
+    Presenter object that modifies the semi-passive view that is
+    the calibration-related ui-elements
+    """
+
+    def __init__(
+        self,
+        load_btn: Optional[QPushButton] = None,
+        save_btn: Optional[QPushButton] = None,
+        clear_btn: Optional[QPushButton] = None,
+        status_text: Optional[QLineEdit] = None,
+    ):
+        self._source: Optional[str] = None
+        self._modified: bool = False
+        self._load_btn = load_btn
+        self._save_btn = save_btn
+        self._clear_btn = clear_btn
+        self._status_text = status_text
+        self._update_ui_elements()
+
+    def get_display_tooltip_text(self):
+        """Produces a nice tooltip from the `self.source` field"""
+        if self.source is None:
+            return "No calibration loaded. Load from file or start a measurement to get one."
+
+        if self.source == "Session":
+            return "Calibration was created in this session and is not saved to a file."
+        else:
+            filename = self.source
+            return f"Calibration is loaded from {filename}"
+
+    def get_display_text(self):
+        """
+        What should be displayed in the "Calibration status" field. Should be one of
+            1. <file_name>[*]
+            2. Session[*]
+            3. <empty string>, which makes the placeholder text show in case of a QLineEdit.
+        Where the asterisk denotes if there are unsaved changes.
+        """
+        if self.source is None:
+            return ""
+
+        source_str = self.source
+
+        if source_str != "Session":
+            path = Path(source_str)
+
+            file_str = path.name
+            if path.parent != Path("."):
+                # Truncated dir path. Whole path will be shown in tooltip.
+                file_str = ".../" + file_str
+            source_str = file_str
+
+        mby_asterisk = "*" if self.modified else ""
+        return f"{source_str}{mby_asterisk}"
+
+    def clear(self):
+        self.source = None
+        self.modified = False
+
+    def save(self, save_destination):
+        self.source = save_destination
+        self.modified = False
+
+    def load(self, source):
+        self.source = source
+        self.modified = False
+
+    def _update_ui_elements(self):
+        if self._load_btn:
+            self._load_btn.setEnabled(self.load_button_enabled)
+
+        if self._save_btn:
+            self._save_btn.setEnabled(self.save_button_enabled)
+
+        if self._clear_btn:
+            self._clear_btn.setEnabled(self.clear_button_enabled)
+
+        if self._status_text:
+            self._status_text.setText(self.get_display_text())
+            self._status_text.setToolTip(self.get_display_tooltip_text())
+            if self.is_display_text_italic:
+                self._status_text.setStyleSheet("QLineEdit { font: italic }")
+            else:
+                self._status_text.setStyleSheet("")
+
+    @property
+    def source(self):
+        return self._source
+
+    @source.setter
+    def source(self, value):
+        self._source = value
+        self._update_ui_elements()
+
+    @property
+    def modified(self):
+        return self._modified
+
+    @modified.setter
+    def modified(self, value):
+        self._modified = value
+        self._update_ui_elements()
+
+    @property
+    def is_display_text_italic(self):
+        """It's pretty nice if the text is in italics if there are unsaved changes."""
+        return self.modified
+
+    @property
+    def load_button_enabled(self):
+        """
+        The load button should be enabled if the current calibration is cleared or saved
+        I.e. calibration has no unsaved changes state.
+        """
+        return not self.modified
+
+    @property
+    def save_button_enabled(self):
+        """The save button should be enabled if there are unsaved changes."""
+        return self.modified
+
+    @property
+    def clear_button_enabled(self):
+        """If the calibration has a source (filename or session) it is clearable"""
+        return self.source is not None

@@ -60,7 +60,7 @@ get_processing_config = ProcessingConfig
 
 
 class Processor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.processing_config = processing_config
 
         self.processing_config.bg.buffered_data = None

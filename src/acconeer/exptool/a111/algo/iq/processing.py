@@ -38,7 +38,7 @@ get_processing_config = ProcessingConfig
 
 
 class Processor:
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         depths = utils.get_range_depths(sensor_config, session_info)
         num_depths = depths.size
         num_sensors = len(sensor_config.sensor)

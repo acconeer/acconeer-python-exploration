@@ -37,7 +37,7 @@ class BreathingProcessor:
     sweep_alpha = 0.7
     env_alpha = 0.95
 
-    def __init__(self, sensor_config, processing_config, session_info):
+    def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.config = sensor_config
 
         assert sensor_config.update_rate is not None
