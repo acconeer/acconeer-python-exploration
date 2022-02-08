@@ -25,7 +25,7 @@ pipeline {
                 sh 'tar -xzf internal_stash_binaries_sanitizer_a111.tgz -C stash'
             }
         }
-        stage('Standalone tests') {
+        stage('Build and run standalone tests') {
             agent {
                 dockerfile {
                     reuseNode true
@@ -33,6 +33,7 @@ pipeline {
                 }
             }
             steps {
+                sh 'python3 -m build'
                 sh 'nox -s lint docs test -- --test-groups unit integration app'
             }
         }
@@ -68,5 +69,8 @@ pipeline {
         success { gerritReview labels: [Verified: 1], message: "Success: ${env.BUILD_URL}" }
         failure { gerritReview labels: [Verified: -1], message: "Failed: ${env.BUILD_URL}" }
         aborted { gerritReview labels: [Verified: -1], message: "Aborted: ${env.BUILD_URL}" }
+        always {
+            archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
+        }
     }
 }
