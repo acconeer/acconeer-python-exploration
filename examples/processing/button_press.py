@@ -125,7 +125,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
         alerts["processing"].append(
             et.configbase.Info(
-                "threshold", "Threshold level should be adjusted depending on board model."
+                "threshold", "Threshold level should be adjusted \ndepending on board model."
             )
         )
 
