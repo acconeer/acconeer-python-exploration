@@ -39,9 +39,10 @@ def get_sensor_config():
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
     recalibration_period = et.configbase.FloatParameter(
-        label="Time between recalibrations (minutes)",
+        label="Time between recalibrations",
         default_value=10000.0,
         limits=(0.1, A_WEEK_MINUTES),
+        unit="min",
         logscale=True,
         updateable=True,
         order=10,
