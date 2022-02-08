@@ -37,7 +37,7 @@ from acconeer.exptool.structs import configbase
 
 import platformdirs
 
-from ..a111.algo.module_info import ModuleInfo
+from ..a111.algo import ModuleInfo
 from . import data_processing
 from .elements.helper import Count, LoadState
 from .elements.modules import (

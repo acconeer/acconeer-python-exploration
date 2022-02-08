@@ -1,4 +1,5 @@
-from ..module_info import ModuleFamily, ModuleInfo
+from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
+
 from ..utils import PassthroughProcessor
 from .plotting import PGUpdater
 from .processing import get_sensor_config
