@@ -1,6 +1,7 @@
 import enum
 import os
 import sys
+from argparse import ArgumentParser
 
 
 class LoadState(enum.Enum):
@@ -39,3 +40,19 @@ class Count:
 
     def set_val(self, val):
         self.val = val
+
+
+class ExptoolArgumentParser(ArgumentParser):
+    def __init__(self):
+        super().__init__()
+        self.add_argument(
+            "--purge-config",
+            action="store_true",
+            help="Remove Exptool-related files interactively.",
+        )
+        self.add_argument(
+            "--no-config",
+            action="store_false",
+            dest="use_last_config",
+            help="Runs Exptool without loading or saving gui configuration.",
+        )

@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import os
+import pathlib
 import re
 import signal
 import sys
@@ -39,7 +40,7 @@ import platformdirs
 
 from ..a111.algo import ModuleInfo
 from . import data_processing
-from .elements.helper import Count, LoadState
+from .elements.helper import Count, ExptoolArgumentParser, LoadState
 from .elements.modules import (
     MODULE_INFOS,
     MODULE_KEY_TO_MODULE_INFO_MAP,
@@ -78,10 +79,11 @@ class GUI(QMainWindow):
     sig_sensor_config_pidget_event = Signal(object)
     sig_processing_config_pidget_event = Signal(object)
 
-    def __init__(self, under_test=False):
+    def __init__(self, under_test=False, use_last_config=True):
         super().__init__()
 
         self.under_test = under_test
+        self.use_last_config = use_last_config
 
         self.data = None
         self.data_source = None
@@ -1813,14 +1815,16 @@ class GUI(QMainWindow):
             self.textboxes["stored_frames"].setText(text)
 
     def start_up(self):
-        if not self.under_test:
-            if os.path.isfile(LAST_CONF_FILENAME):
-                try:
-                    last = np.load(LAST_CONF_FILENAME, allow_pickle=True)
-                    self.load_last_config(last.item())
-                    log.info(f"Loaded configuration from last session: {LAST_CONF_FILENAME}")
-                except Exception as e:
-                    print("Could not load settings from last session\n{}".format(e))
+        if self.under_test:
+            return
+
+        if self.use_last_config and os.path.isfile(LAST_CONF_FILENAME):
+            try:
+                last = np.load(LAST_CONF_FILENAME, allow_pickle=True)
+                self.load_last_config(last.item())
+                log.info(f"Loaded configuration from last session: {LAST_CONF_FILENAME}")
+            except Exception as e:
+                print("Could not load settings from last session\n{}".format(e))
 
     def load_last_config(self, last_config):
         # Restore sensor configs (configbase)
@@ -1917,7 +1921,7 @@ class GUI(QMainWindow):
             "override_baudrate": self.override_baudrate,
         }
 
-        if not self.under_test:
+        if self.use_last_config and not self.under_test:
             np.save(LAST_CONF_FILENAME, last_config, allow_pickle=True)
             log.info(f"Saved configuration from this session to {LAST_CONF_FILENAME}")
 
@@ -2087,19 +2091,54 @@ def watchdog(event):
         os._exit(1)
 
 
+def remove_user_data_files():
+    """Removes all files under USER_DATA_DIR interactively"""
+    user_data_dir = pathlib.Path(USER_DATA_DIR)
+    if not user_data_dir.exists():
+        print(f'Config folder ("{user_data_dir}") does not exists.')
+        print("Nothing will be done.")
+        return
+
+    if not any(user_data_dir.iterdir()):
+        print(f'There exists no files under "{user_data_dir}".')
+        print("Nothing will be done.")
+        return
+
+    print("Proceeding will remove the following files:\n")
+    for file in user_data_dir.iterdir():
+        print(f"    * {file}")
+    print()
+
+    choice = input("Continue? [y/N] ")
+    should_remove = choice.lower().startswith("y")
+    if should_remove:
+        for file in user_data_dir.iterdir():
+            file.unlink()  # unlink <=> rm
+            print(f'Removed "{file}"')
+    else:
+        print("Nothing was removed.")
+
+
 def main():
     utils.config_logging(level=logging.INFO)
 
     # Enable warnings to be printed to the log, e.g. DeprecationWarning
     warnings.simplefilter("module")
 
-    if not os.path.exists(USER_DATA_DIR):
-        log.info(f"Creating folder {USER_DATA_DIR}")
+    args = ExptoolArgumentParser().parse_args()
 
-    os.makedirs(USER_DATA_DIR, exist_ok=True)
+    if args.purge_config:
+        remove_user_data_files()
+        sys.exit(0)
+
+    if args.use_last_config:
+        if not os.path.exists(USER_DATA_DIR):
+            log.info(f"Creating folder {USER_DATA_DIR}")
+
+        os.makedirs(USER_DATA_DIR, exist_ok=True)
 
     app = QApplication(sys.argv)
-    ex = GUI()
+    ex = GUI(use_last_config=args.use_last_config)
 
     signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
 
