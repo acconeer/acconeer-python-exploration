@@ -63,6 +63,28 @@ pipeline {
                 }
             }
         }
+        stage('Deploy') {
+            when { tag "v*" }
+            agent {
+                dockerfile {
+                    reuseNode true
+                    args '--mount type=volume,src=cachepip,dst=/home/jenkins/.cache/pip'
+                }
+            }
+            environment {
+                TWINE_NON_INTERACTIVE = '1'
+            }
+            stages {
+                stage('Publish to Test PyPI') {
+                    environment {
+                        CREDS = credentials('testpypi')
+                    }
+                    steps {
+                        sh 'python3 -m twine upload -u $CREDS_USR -p $CREDS_PSW -r testpypi dist/*'
+                    }
+                }
+            }
+        }
     }
 
     post {
