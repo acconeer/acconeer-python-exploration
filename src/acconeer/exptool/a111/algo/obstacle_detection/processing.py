@@ -1386,7 +1386,7 @@ class SensorFusion:
         if len(self.fused_obstacles):
             print("Fused obstalces (L:{}/R:{} ):".format(len(left), len(right)))
         else:
-            print("No fused obstalces!".format(len(left), len(right)))
+            print("No fused obstalces!")
         for i, o in enumerate(self.fused_obstacles):
             print(
                 "{}: X {:.1f}({:.1f}/{:.2}) Y {:.1f}({:.1f}/{:.1f}) t {} matched {} {}".format(
