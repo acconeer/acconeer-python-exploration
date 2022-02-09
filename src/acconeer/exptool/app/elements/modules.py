@@ -1,19 +1,19 @@
-import acconeer.exptool.a111.algo.breathing.meta as breathing_meta
-import acconeer.exptool.a111.algo.button_press.meta as button_press_meta
-import acconeer.exptool.a111.algo.button_press_sparse.meta as button_press_sparse_meta
-import acconeer.exptool.a111.algo.distance_detector.meta as distance_detector_meta
-import acconeer.exptool.a111.algo.envelope.meta as envelope_meta
-import acconeer.exptool.a111.algo.iq.meta as iq_meta
-import acconeer.exptool.a111.algo.obstacle_detection.meta as obstacle_detection_meta
-import acconeer.exptool.a111.algo.parking.meta as parking_meta
-import acconeer.exptool.a111.algo.phase_tracking.meta as phase_tracking_meta
-import acconeer.exptool.a111.algo.power_bins.meta as power_bins_meta
-import acconeer.exptool.a111.algo.presence_detection_sparse.meta as presence_detection_sparse_meta
-import acconeer.exptool.a111.algo.sleep_breathing.meta as sleep_breathing_meta
-import acconeer.exptool.a111.algo.sparse.meta as sparse_meta
-import acconeer.exptool.a111.algo.sparse_fft.meta as sparse_fft_meta
-import acconeer.exptool.a111.algo.sparse_inter_fft.meta as sparse_inter_fft_meta
-import acconeer.exptool.a111.algo.sparse_speed.meta as sparse_speed_meta
+import acconeer.exptool.a111.algo.breathing._meta as breathing_meta
+import acconeer.exptool.a111.algo.button_press._meta as button_press_meta
+import acconeer.exptool.a111.algo.button_press_sparse._meta as button_press_sparse_meta
+import acconeer.exptool.a111.algo.distance_detector._meta as distance_detector_meta
+import acconeer.exptool.a111.algo.envelope._meta as envelope_meta
+import acconeer.exptool.a111.algo.iq._meta as iq_meta
+import acconeer.exptool.a111.algo.obstacle_detection._meta as obstacle_detection_meta
+import acconeer.exptool.a111.algo.parking._meta as parking_meta
+import acconeer.exptool.a111.algo.phase_tracking._meta as phase_tracking_meta
+import acconeer.exptool.a111.algo.power_bins._meta as power_bins_meta
+import acconeer.exptool.a111.algo.presence_detection_sparse._meta as presence_detection_sparse_meta
+import acconeer.exptool.a111.algo.sleep_breathing._meta as sleep_breathing_meta
+import acconeer.exptool.a111.algo.sparse._meta as sparse_meta
+import acconeer.exptool.a111.algo.sparse_fft._meta as sparse_fft_meta
+import acconeer.exptool.a111.algo.sparse_inter_fft._meta as sparse_inter_fft_meta
+import acconeer.exptool.a111.algo.sparse_speed._meta as sparse_speed_meta
 
 
 MODULE_INFOS = [
