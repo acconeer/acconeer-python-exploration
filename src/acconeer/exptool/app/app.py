@@ -34,11 +34,11 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
+from acconeer.exptool.a111.algo import ModuleInfo
 from acconeer.exptool.structs import configbase
 
 import platformdirs
 
-from ..a111.algo import ModuleInfo
 from . import data_processing
 from .elements.helper import Count, ExptoolArgumentParser, LoadState
 from .elements.modules import (
