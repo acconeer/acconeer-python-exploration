@@ -9,7 +9,7 @@ from PySide6 import QtCore
 
 import acconeer.exptool as et
 
-from .constants import FUSION_HISTORY, FUSION_MAX_OBSTACLES, FUSION_MAX_SHADOWS, WAVELENGTH
+from .constants import WAVELENGTH
 
 
 log = logging.getLogger("acconeer.exptool.examples.obstacle_detection")
@@ -27,9 +27,6 @@ class PGUpdater:
         self.downsampling = processing_config["downsampling"]["value"]
         self.threshold = processing_config["static_threshold"]["value"]
         self.sensor_separation = processing_config["sensor_separation"]["value"]
-        self.fusion_max_obstacles = FUSION_MAX_OBSTACLES
-        self.fusion_max_shadows = FUSION_MAX_SHADOWS
-        self.fusion_history = FUSION_HISTORY
         self.fft_bg_data = None
         self.threshold_data = None
 
@@ -47,18 +44,7 @@ class PGUpdater:
             "background_map": processing_config["background_map"]["value"],
             "threshold_map": processing_config["threshold_map"]["value"],
             "show_line_outs": processing_config["show_line_outs"]["value"],
-            "fusion_map": processing_config["fusion_map"]["value"],
-            "show_shadows": False,
         }
-
-        if self.advanced_plots["fusion_map"] and len(sensor_config.sensor) > 2:
-            self.advanced_plots["fusion_map"] = False
-            log.warning("Sensor fusion needs 2 sensors!")
-        if self.advanced_plots["fusion_map"] and len(sensor_config.sensor) == 1:
-            log.warning("Sensor fusion needs 2 sensors! Plotting single sensor data.")
-
-        if self.advanced_plots["fusion_map"]:
-            self.advanced_plots["show_shadows"] = processing_config["show_shadows"]["value"]
 
     def setup(self, win):
         win.setWindowTitle("Acconeer obstacle detection example")
@@ -156,104 +142,6 @@ class PGUpdater:
             self.obstacle_thresh_ax.addItem(self.obstacle_thresh_im)
             row_idx += 1
 
-        if self.advanced_plots["fusion_map"]:
-            b = et.utils.color_cycler(0)
-            r = et.utils.color_cycler(1)
-            p = et.utils.color_cycler(4)
-            spos = self.sensor_separation / 2
-            pos0 = self.sensor_config.range_start * 100
-            pos1 = self.sensor_config.range_end * 100
-            self.fusion_ax = win.addPlot(
-                row=row_idx,
-                col=0,
-                colspan=self.num_hist_plots,
-                title="Fused obstacle map",
-            )
-            self.fusion_ax.setMenuEnabled(False)
-            self.fusion_ax.setMouseEnabled(x=False, y=False)
-            self.fusion_ax.hideButtons()
-            self.fusion_legend = self.fusion_ax.addLegend()
-            self.fusion_ax.showGrid(True, True)
-            self.fusion_ax.setLabel("bottom", "X (cm)")
-            self.fusion_ax.setLabel("left", "Y (cm)")
-            self.fusion_ax.setXRange(-pos0, pos0)
-            self.fusion_ax.setYRange(pos0 - 10, pos1)
-
-            # Add plots for fused obstacles
-            self.fusion_scatter = pg.ScatterPlotItem(brush=pg.mkBrush("k"), size=10)
-            self.fusion_legend.addItem(self.fusion_scatter, "Fused")
-            self.fusion_ax.addItem(self.fusion_scatter)
-            self.fusion_scatter.setZValue(10)
-            self.fusion_hist = []
-            for i in range(self.fusion_max_obstacles):
-                self.fusion_hist.append(self.fusion_ax.plot(pen=et.utils.pg_pen_cycler(2, "--")))
-                self.fusion_ax.addItem(self.fusion_hist[i])
-                self.fusion_hist[i].setZValue(10)
-
-            # Add plots for shadow obstacles
-            if self.advanced_plots["show_shadows"]:
-                self.left_sensor_shadows = pg.ScatterPlotItem(brush=pg.mkBrush(r), size=10)
-                self.right_sensor_shadows = pg.ScatterPlotItem(brush=pg.mkBrush(b), size=10)
-                self.fusion_ax.addItem(self.left_sensor_shadows)
-                self.fusion_ax.addItem(self.right_sensor_shadows)
-                self.fusion_left_shadow_hist = []
-                self.fusion_right_shadow_hist = []
-                for i in range(self.fusion_max_shadows):
-                    self.fusion_left_shadow_hist.append(
-                        self.fusion_ax.plot(pen=et.utils.pg_pen_cycler(0, "--"))
-                    )
-                    self.fusion_right_shadow_hist.append(
-                        self.fusion_ax.plot(pen=et.utils.pg_pen_cycler(1, "--"))
-                    )
-                    self.fusion_ax.addItem(self.fusion_left_shadow_hist[i])
-                    self.fusion_ax.addItem(self.fusion_right_shadow_hist[i])
-
-            self.left_sensor = pg.InfiniteLine(
-                pos=-spos,
-                angle=90,
-                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine),
-            )
-            self.right_sensor = pg.InfiniteLine(
-                pos=spos,
-                angle=90,
-                pen=pg.mkPen(width=2, style=QtCore.Qt.DotLine),
-            )
-            self.detection_limit = pg.InfiniteLine(
-                pos=self.sensor_config.range_start * 100,
-                angle=0,
-                pen=pg.mkPen(color=p, width=2, style=QtCore.Qt.DotLine),
-            )
-            self.fusion_ax.addItem(self.left_sensor)
-            self.fusion_ax.addItem(self.right_sensor)
-            self.fusion_ax.addItem(self.detection_limit)
-            self.right_sensor_rect = pg.QtGui.QGraphicsRectItem(spos - 1, pos0 - 1, 2, 2)
-            self.right_sensor_rect.setPen(pg.mkPen(None))
-            self.right_sensor_rect.setBrush(pg.mkBrush(b))
-            self.fusion_ax.addItem(self.right_sensor_rect)
-
-            self.left_sensor_rect = pg.QtGui.QGraphicsRectItem(-spos - 1, pos0 - 1, 2, 2)
-            self.left_sensor_rect.setPen(pg.mkPen(None))
-            self.left_sensor_rect.setBrush(pg.mkBrush(r))
-            self.fusion_ax.addItem(self.left_sensor_rect)
-
-            id1 = self.sensor_config.sensor[0]
-            if len(self.sensor_config.sensor) == 2:
-                id2 = self.sensor_config.sensor[1]
-            else:
-                id2 = -1
-            self.right_sensor_text = pg.TextItem("Sensor {}".format(id1), color=b, anchor=(0, 1))
-            self.left_sensor_text = pg.TextItem("Sensor {}".format(id2), color=r, anchor=(1, 1))
-            self.fusion_ax.addItem(self.left_sensor_text)
-            self.fusion_ax.addItem(self.right_sensor_text)
-            self.left_sensor_text.setPos(-spos, spos)
-            self.right_sensor_text.setPos(spos, spos)
-
-            if id2 == -1:
-                self.left_sensor_text.hide()
-                self.left_sensor_rect.hide()
-
-            row_idx += 1
-
         hist_col = 0
         row_idx += self.num_hist_plots
         if self.hist_plots["distance"][1]:
@@ -347,10 +235,7 @@ class PGUpdater:
     def update(self, data):
         nfft = data["fft_map"].shape[2]
         if self.plot_index == 0:
-            nr_sensors = data["fft_map"].shape[0]
-            spos = self.sensor_separation / 2
             pos0 = self.sensor_config.range_start * 100
-            pos1 = self.sensor_config.range_end * 100
             num_points = data["env_ampl"].size
             self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, num_points)
             self.peak_x = self.env_xs[data["peak_idx"]]
@@ -378,36 +263,6 @@ class PGUpdater:
                 )
                 self.obstacle_thresh_im.setTransform(tr)
 
-            show_fusion = self.advanced_plots["fusion_map"]
-            show_shadows = self.advanced_plots["show_shadows"]
-            if show_fusion:
-                self.fusion_ax.setXRange(-pos1, pos1)
-                self.fusion_ax.setYRange(pos0 - 10, pos1)
-                self.left_sensor_text.setPos(-spos, pos0 - 10)
-                self.right_sensor_text.setPos(spos, pos0 - 10)
-                self.left_sensor.setValue(spos)
-                self.right_sensor.setValue(-spos)
-                self.left_sensor_rect.setRect(-spos - 1, pos0 - 1, 2, 2)
-                self.right_sensor_rect.setRect(spos - 1, pos0 - 1, 2, 2)
-
-                id1 = self.sensor_config.sensor[0]
-                self.right_sensor_text.setText("Sensor {}".format(id1))
-                if show_shadows:
-                    self.fusion_legend.addItem(self.right_sensor_shadows, "Sensor {}".format(id1))
-                if len(self.sensor_config.sensor) == 2:
-                    id2 = self.sensor_config.sensor[1]
-                    self.left_sensor_text.setText("Sensor {}".format(id2))
-                    if show_shadows:
-                        self.fusion_legend.addItem(
-                            self.left_sensor_shadows, "Sensor {}".format(id2)
-                        )
-
-                if nr_sensors == 1:
-                    self.left_sensor_text.hide()
-                    self.left_sensor_rect.hide()
-                else:
-                    self.left_sensor_text.show()
-                    self.left_sensor_rect.show()
         else:
             self.peak_x = self.peak_x * 0.7 + 0.3 * self.env_xs[data["peak_idx"]]
 
@@ -533,23 +388,4 @@ class PGUpdater:
 
             self.obstacle_bg_im.updateImage(fft_data, levels=(map_min, map_max))
 
-        if self.advanced_plots["fusion_map"]:
-            self.fusion_scatter.setData(
-                data["fused_obstacles"][0][0, :],
-                data["fused_obstacles"][1][0, :],
-            )
-            for i in range(self.fusion_max_obstacles):
-                self.fusion_hist[i].setData(
-                    data["fused_obstacles"][0][:, i],
-                    data["fused_obstacles"][1][:, i],
-                )
-            if self.advanced_plots["show_shadows"]:
-                self.left_sensor_shadows.setData(
-                    data["left_shadows"][0][0, :],
-                    data["left_shadows"][1][0, :],
-                )
-                self.right_sensor_shadows.setData(
-                    data["right_shadows"][0][0, :],
-                    data["right_shadows"][1][0, :],
-                )
         self.plot_index += 1
