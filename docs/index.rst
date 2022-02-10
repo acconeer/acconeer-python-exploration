@@ -13,6 +13,7 @@ Table of contents
    file_format_ref
    faq
    api_ref
+   changelog
    disclaimer
 
 .. toctree::

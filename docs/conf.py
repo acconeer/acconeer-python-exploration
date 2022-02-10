@@ -10,6 +10,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
     "enum_tools.autoenum",
+    "m2r2",
 ]
 
 autodoc_member_order = "bysource"
@@ -29,7 +30,13 @@ master_doc = "index"
 
 language = None
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "README.md",
+    "how_to_docs.txt",
+]
 
 pygments_style = None
 
