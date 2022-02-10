@@ -214,7 +214,6 @@ class ObstacleDetectionProcessor:
         self.robot_velocity = processing_config["robot_velocity"]["value"]
         self.edge_ratio = processing_config["edge_to_peak"]["value"]
         self.downsampling = processing_config["downsampling"]["value"]
-        self.bg_params = []
 
     def _load_calibration(self, nr_sensors):
         if not isinstance(self.saved_bg, dict):
@@ -224,10 +223,7 @@ class ObstacleDetectionProcessor:
         try:
             for s in range(nr_sensors):
                 # Generate background from piece-wise-linear (pwl) interpolation
-                self.bg_params.append(self.saved_bg)
                 self.generate_background_from_pwl_params(self.fft_bg[s, :, :], self.saved_bg)
-                if s == 0:
-                    self.dump_bg_params_to_yaml()
                 self.use_bg = False
             log.info("Using saved parameterized FFT background data!")
         except Exception:
@@ -261,11 +257,12 @@ class ObstacleDetectionProcessor:
 
     def _save_calibration(self, nr_sensors):
         for i in range(nr_sensors):
-            self.bg_params.append(self.parameterize_bg(self.fft_bg[i, :, :]))
+            bg_params = self.parameterize_bg(self.fft_bg[i, :, :])
             # only dump first sensor params
             if i == 0:
-                self.dump_bg_params_to_yaml()
-            self.generate_background_from_pwl_params(self.fft_bg[i, :, :], self.bg_params[i])
+                self.dump_bg_params_to_yaml(bg_params=bg_params)
+                self.saved_bg = bg_params
+            self.generate_background_from_pwl_params(self.fft_bg[i, :, :], bg_params)
 
     def _process_single_sensor(self, sweep, s, fft_psd, nr_sensors, fused_obstacles):
         self.push(sweep[s, :], self.sweep_map[s, :, :])
@@ -405,7 +402,7 @@ class ObstacleDetectionProcessor:
             filename = os.path.join(DIR_PATH, "obstacle_bg_params_dump.yaml")
 
         if bg_params is None:
-            bg_params = self.bg_params[0]
+            bg_params = self.saved_bg
 
         with open(filename, "w") as f_handle:
             yaml.dump(bg_params, f_handle, default_flow_style=False)
