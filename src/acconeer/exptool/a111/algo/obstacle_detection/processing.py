@@ -215,23 +215,22 @@ class ObstacleDetectionProcessor:
         self.edge_ratio = processing_config["edge_to_peak"]["value"]
         self.downsampling = processing_config["downsampling"]["value"]
 
-    def _load_calibration(self, nr_sensors):
+    def _load_calibration(self):
         if not isinstance(self.saved_bg, dict):
             log.warning("Received unsupported background data!")
             return
 
         try:
-            for s in range(nr_sensors):
-                # Generate background from piece-wise-linear (pwl) interpolation
-                self.generate_background_from_pwl_params(self.fft_bg[s, :, :], self.saved_bg)
-                self.use_bg = False
+            # Generate background from piece-wise-linear (pwl) interpolation
+            self.generate_background_from_pwl_params(self.fft_bg[0, :, :], self.saved_bg)
+            self.use_bg = False
             log.info("Using saved parameterized FFT background data!")
         except Exception:
             log.warning("Could not reconstruct background!")
 
-    def _first_sweep_setup(self, nr_sensors, len_range):
-        self.sweep_map = np.zeros((nr_sensors, len_range, self.fft_len), dtype="complex")
-        self.fft_bg = np.zeros((nr_sensors, len_range, self.fft_len))
+    def _first_sweep_setup(self, len_range):
+        self.sweep_map = np.zeros((1, len_range, self.fft_len), dtype="complex")
+        self.fft_bg = np.zeros((1, len_range, self.fft_len))
         self.hamming_map = np.zeros((len_range, self.fft_len))
 
         for i in range(len_range):
@@ -239,15 +238,13 @@ class ObstacleDetectionProcessor:
 
         self.env_xs = np.linspace(*self.sensor_config.range_interval * 100, len_range)
         self.peak_prop_num = 4
-        self.peak_hist = np.zeros(
-            (nr_sensors, self.nr_locals, self.peak_prop_num, self.peak_hist_len)
-        )
+        self.peak_hist = np.zeros((1, self.nr_locals, self.peak_prop_num, self.peak_hist_len))
         self.peak_hist *= float(np.nan)
         self.mask = np.zeros((len_range, self.fft_len))
         self.threshold_map = np.zeros((len_range, self.fft_len))
 
         if self.saved_bg is not None:
-            self._load_calibration(nr_sensors)
+            self._load_calibration()
 
         for dist in range(len_range):
             for freq in range(self.fft_len):
@@ -255,32 +252,28 @@ class ObstacleDetectionProcessor:
                     freq, dist, self.threshold, self.static_threshold
                 )
 
-    def _save_calibration(self, nr_sensors):
-        for i in range(nr_sensors):
-            bg_params = self.parameterize_bg(self.fft_bg[i, :, :])
-            # only dump first sensor params
-            if i == 0:
-                self.dump_bg_params_to_yaml(bg_params=bg_params)
-                self.saved_bg = bg_params
-            self.generate_background_from_pwl_params(self.fft_bg[i, :, :], bg_params)
+    def _save_calibration(self):
+        bg_params = self.parameterize_bg(self.fft_bg[0, :, :])
+        self.dump_bg_params_to_yaml(bg_params=bg_params)
+        self.saved_bg = bg_params
+        self.generate_background_from_pwl_params(self.fft_bg[0, :, :], bg_params)
 
-    def _process_single_sensor(self, sweep, s, fft_psd, nr_sensors):
-        self.push(sweep[s, :], self.sweep_map[s, :, :])
+    def _process_single_sensor(self, sweep, fft_psd):
+        self.push(sweep[0, :], self.sweep_map[0, :, :])
 
-        signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
-        fft_psd[s, :, :] = np.square(np.abs(signalFFT))
-        signalPSD = fft_psd[s, :, :]
+        signalFFT = fftshift(fft(self.sweep_map[0, :, :] * self.hamming_map, axis=1), axes=1)
+        fft_psd[0, :, :] = np.square(np.abs(signalFFT))
+        signalPSD = fft_psd[0, :, :]
 
         if self.use_bg and self.sweep_index == self.fft_len - 1:
-            self.fft_bg[s, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[s, :, :])
-            if s == nr_sensors - 1:
-                self.bg_avg += 1
-                if self.bg_avg == self.use_bg:
-                    self._save_calibration(nr_sensors)
+            self.fft_bg[0, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[0, :, :])
+            self.bg_avg += 1
+            if self.bg_avg == self.use_bg:
+                self._save_calibration()
 
-        signalPSD_sub = signalPSD - self.fft_bg[s, :, :]
+        signalPSD_sub = signalPSD - self.fft_bg[0, :, :]
         signalPSD_sub[signalPSD_sub < 0] = 0
-        env = np.abs(sweep[s, :])
+        env = np.abs(sweep[0, :])
 
         fft_peaks, peaks_found = self.find_peaks(signalPSD_sub)
         fft_max_env = signalPSD[:, 8]
@@ -310,16 +303,16 @@ class ObstacleDetectionProcessor:
                     angle = float(np.nan)
                     amp = float(np.nan)
 
-                self.push_vec(distance, self.peak_hist[s, i, 0, :])
-                self.push_vec(velocity, self.peak_hist[s, i, 1, :])
-                self.push_vec(angle, self.peak_hist[s, i, 2, :])
-                self.push_vec(amp, self.peak_hist[s, i, 3, :])
+                self.push_vec(distance, self.peak_hist[0, i, 0, :])
+                self.push_vec(velocity, self.peak_hist[0, i, 1, :])
+                self.push_vec(angle, self.peak_hist[0, i, 2, :])
+                self.push_vec(amp, self.peak_hist[0, i, 3, :])
 
             fft_peaks = fft_peaks[:peaks_found, :]
         else:
             for i in range(self.nr_locals):
                 for j in range(self.peak_prop_num):
-                    self.push_vec(float(np.nan), self.peak_hist[s, i, j, :])
+                    self.push_vec(float(np.nan), self.peak_hist[0, i, j, :])
 
         out_data_contrib = {
             "env_ampl": env,
@@ -346,18 +339,14 @@ class ObstacleDetectionProcessor:
 
         sweep = sweep / 2 ** 12
 
-        nr_sensors, len_range = sweep.shape
-
-        nr_sensors = min(len(self.sensor_config.sensor), nr_sensors)
+        _, len_range = sweep.shape
 
         if self.sweep_index == 0 and self.bg_avg == 0:
-            self._first_sweep_setup(nr_sensors, len_range)
+            self._first_sweep_setup(len_range)
 
-        fft_psd = np.empty((nr_sensors, len_range, self.fft_len))
-        out_datas = []
+        fft_psd = np.empty((1, len_range, self.fft_len))
 
-        for s in range(nr_sensors):
-            out_datas.append(self._process_single_sensor(sweep, s, fft_psd, nr_sensors))
+        out_data = self._process_single_sensor(sweep, fft_psd)
 
         fft_bg = None
         fft_bg_send = None
@@ -375,7 +364,6 @@ class ObstacleDetectionProcessor:
             threshold_map = self.threshold_map
 
         # Only second sensor for dual setup.
-        out_data = out_datas[-1]
         out_data.update(
             {
                 "fft_bg": fft_bg,
