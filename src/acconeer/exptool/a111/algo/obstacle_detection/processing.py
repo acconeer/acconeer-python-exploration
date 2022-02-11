@@ -264,7 +264,7 @@ class ObstacleDetectionProcessor:
                 self.saved_bg = bg_params
             self.generate_background_from_pwl_params(self.fft_bg[i, :, :], bg_params)
 
-    def _process_single_sensor(self, sweep, s, fft_psd, nr_sensors, fused_obstacles):
+    def _process_single_sensor(self, sweep, s, fft_psd, nr_sensors):
         self.push(sweep[s, :], self.sweep_map[s, :, :])
 
         signalFFT = fftshift(fft(self.sweep_map[s, :, :] * self.hamming_map, axis=1), axes=1)
@@ -287,7 +287,6 @@ class ObstacleDetectionProcessor:
         angle = None
         velocity = None
         peak_idx = np.argmax(env)
-        obstacles = []
 
         if self.sweep_index < self.fft_len:
             fft_peaks = None
@@ -321,7 +320,6 @@ class ObstacleDetectionProcessor:
             for i in range(self.nr_locals):
                 for j in range(self.peak_prop_num):
                     self.push_vec(float(np.nan), self.peak_hist[s, i, j, :])
-        fused_obstacles["{}".format(s)] = obstacles
 
         out_data_contrib = {
             "env_ampl": env,
@@ -356,13 +354,10 @@ class ObstacleDetectionProcessor:
             self._first_sweep_setup(nr_sensors, len_range)
 
         fft_psd = np.empty((nr_sensors, len_range, self.fft_len))
-        fused_obstacles = {}
         out_datas = []
 
         for s in range(nr_sensors):
-            out_datas.append(
-                self._process_single_sensor(sweep, s, fft_psd, nr_sensors, fused_obstacles)
-            )
+            out_datas.append(self._process_single_sensor(sweep, s, fft_psd, nr_sensors))
 
         fft_bg = None
         fft_bg_send = None
