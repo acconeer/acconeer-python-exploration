@@ -75,6 +75,10 @@ def test(session):
         nargs=argparse.REMAINDER,
         default=["--mock"],
     )
+    parser.add_argument(
+        "--pytest-args",
+        nargs=argparse.REMAINDER,
+    )
     args = parser.parse_args(session.posargs)
 
     install_deps = {"pytest"}
@@ -113,6 +117,11 @@ def test(session):
                 ["--timeout=60", "--timeout_method=thread", "tests/gui"],
             ]
         )
+
+    # Override pytest command:
+
+    if args.pytest_args is not None:
+        pytest_commands = [args.pytest_args]
 
     # Install and run:
 
