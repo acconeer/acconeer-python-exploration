@@ -11,17 +11,28 @@ def main():
     except CalledProcessError:
         check_call([sys.executable, here / "get-pip.py", "--no-warn-script-location"])
 
-    check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--no-warn-script-location",
-            "--no-input",
-            "acconeer-exptool[app]",
-        ]
-    )
+    install_cmd = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--no-warn-script-location",
+        "--no-input",
+    ]
+
+    if Path("testpypi").is_file():
+        install_cmd.extend(
+            [
+                "--index-url",
+                "https://test.pypi.org/simple/",
+                "--extra-index-url",
+                "https://pypi.org/simple/",
+            ]
+        )
+
+    install_cmd.append("acconeer-exptool[app]")
+
+    check_call(install_cmd)
 
 
 if __name__ == "__main__":
