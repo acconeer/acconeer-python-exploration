@@ -39,7 +39,6 @@ The Exploration Tool has been tested on the following operating systems
 
 - Windows 10
 - Ubuntu (18.04, 20.04)
-- WSL (Windows Subsystem for Linux)
 
 but others should work fine, too (such as macOS or other versions of Linux).
 Installing the Exploration Tool GUI on a Raspberry Pi is not supported!

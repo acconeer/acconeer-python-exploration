@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pathlib
-import re
 import signal
 import sys
 import threading
@@ -619,15 +618,9 @@ class GUI(QMainWindow):
         return sensors
 
     def update_ports(self):
-        try:
-            opsys = os.uname()
-            in_wsl = "microsoft" in opsys.release.lower() and "linux" in opsys.sysname.lower()
-        except Exception:
-            in_wsl = False
-
         select = -1
         port_tag_tuples = utils.get_tagged_serial_ports()
-        if not in_wsl and os.name == "posix":
+        if os.name == "posix":
             ports = []
             for i, (port, tag) in enumerate(port_tag_tuples):
                 tag_string = ""
@@ -637,17 +630,6 @@ class GUI(QMainWindow):
                 ports.append(port + tag_string)
         else:
             ports = [port for port, *_ in port_tag_tuples]
-
-        try:
-            if in_wsl:
-                print("WSL detected. Limiting serial ports")
-                ports_reduced = []
-                for p in ports:
-                    if int(re.findall(r"\d+", p)[0]) < 20:
-                        ports_reduced.append(p)
-                ports = ports_reduced
-        except Exception:
-            pass
 
         self.ports_dd.clear()
         self.ports_dd.addItems(ports)
