@@ -1,39 +1,27 @@
-import importlib.util
-import os
-from glob import glob
-from subprocess import check_call
+import sys
+from pathlib import Path
+from subprocess import DEVNULL, CalledProcessError, check_call
 
 
 def main():
-    root_dir = os.getcwd()
-    repo_name = "acconeer-python-exploration"
-    repo_dir = os.path.join(root_dir, repo_name)
-    repo_addr = "https://github.com/acconeer/acconeer-python-exploration.git"
-    python_dir = os.path.abspath(glob("tools\\python-3.*")[0])
-    python = os.path.abspath(os.path.join(python_dir, "python.exe"))
+    here = Path(__file__).resolve().parent
 
-    # Check that pip is installed
-    check_call([python, "-m", "pip", "--version"])
-    pip_install = [python, "-m", "pip", "install", "--no-warn-script-location"]
+    try:
+        check_call([sys.executable, "-m", "pip", "-V"], stdout=DEVNULL, stderr=DEVNULL)
+    except CalledProcessError:
+        check_call([sys.executable, here / "get-pip.py", "--no-warn-script-location"])
 
-    # Install and import dulwich
-    if importlib.util.find_spec("dulwich") is None:
-        check_call(pip_install + ["urllib3", "certifi"])
-        check_call(pip_install + ["dulwich==0.20.28", "--global-option=--pure"])
-
-    from dulwich import porcelain
-
-    # Clone/clean/update repo
-    if os.path.isdir(repo_dir):
-        os.chdir(repo_dir)
-        porcelain.pull(".", repo_addr)
-    else:
-        os.chdir(root_dir)
-        porcelain.clone(repo_addr, target=repo_dir)
-
-    # Install package
-    os.chdir(repo_dir)
-    check_call(pip_install + [".[app]"])
+    check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--no-warn-script-location",
+            "--no-input",
+            "acconeer-exptool[app]",
+        ]
+    )
 
 
 if __name__ == "__main__":
