@@ -29,6 +29,15 @@ def main():
         with zipfile.ZipFile(py_zip_path, "r") as z:
             z.extractall(py_target_dir)
 
+        pth_file = py_target_dir / "python39._pth"
+
+        with open(pth_file, "r") as f:
+            contents = f.read()
+
+        if "#import site" in contents:
+            with open(pth_file, "w") as f:
+                f.write(contents.replace("#import site", "import site"))
+
     shutil.make_archive(package_zip.with_suffix(""), "zip", package_dir)
 
 
