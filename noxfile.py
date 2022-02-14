@@ -14,6 +14,8 @@ BLACK_SPEC = "black==21.11b1"
 ISORT_SPEC = "isort==5.6.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 
+SPHINX_ARGS = ("-QW", "-b", "html", "docs", "docs/_build")
+
 
 @nox.session
 def lint(session):
@@ -45,7 +47,14 @@ def reformat(session):
 @nox.session
 def docs(session):
     session.install(".[docs]")
-    session.run("python", "-m", "sphinx", "-QW", "-b", "html", "docs", "docs/_build")
+    session.run("python", "-m", "sphinx", *SPHINX_ARGS)
+
+
+@nox.session
+def docs_autobuild(session):
+    session.install("-e", ".[docs]")
+    session.install("sphinx_autobuild")
+    session.run("python", "-m", "sphinx_autobuild", *SPHINX_ARGS, "--watch", "src")
 
 
 @nox.session
