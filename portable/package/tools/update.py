@@ -9,7 +9,7 @@ def main():
     repo_name = "acconeer-python-exploration"
     repo_dir = os.path.join(root_dir, repo_name)
     repo_addr = "https://github.com/acconeer/acconeer-python-exploration.git"
-    python_dir = os.path.abspath(glob("tools\\python-3.7.*")[0])
+    python_dir = os.path.abspath(glob("tools\\python-3.*")[0])
     python = os.path.abspath(os.path.join(python_dir, "python.exe"))
 
     # Check that pip is installed

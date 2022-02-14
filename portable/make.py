@@ -17,7 +17,7 @@ def main():
     if not os.path.isfile(path):
         download("https://bootstrap.pypa.io/get-pip.py", path)
 
-    url = "https://www.python.org/ftp/python/3.7.4/python-3.7.4-embed-amd64.zip"
+    url = "https://www.python.org/ftp/python/3.9.10/python-3.9.10-embed-amd64.zip"
     py_zip_name = url.split("/")[-1]
     py_dir_name = os.path.splitext(py_zip_name)[0]
     py_target_dir = os.path.join(package_dir, "tools", py_dir_name)
