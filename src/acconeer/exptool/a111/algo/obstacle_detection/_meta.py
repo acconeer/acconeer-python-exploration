@@ -1,5 +1,10 @@
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 
+from .calibration import (
+    ObstacleDetectionCalibration,
+    ObstacleDetectionCalibrationConfiguration,
+    ObstacleDetectionCalibrationMapper,
+)
 from .plotting import PGUpdater
 from .processing import ObstacleDetectionProcessor, get_processing_config, get_sensor_config
 
@@ -16,4 +21,7 @@ module_info = ModuleInfo(
     docs_url=(
         "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html"
     ),
+    calibration_class=ObstacleDetectionCalibration,
+    calibration_config_class=ObstacleDetectionCalibrationConfiguration,
+    calibration_mapper=ObstacleDetectionCalibrationMapper,
 )

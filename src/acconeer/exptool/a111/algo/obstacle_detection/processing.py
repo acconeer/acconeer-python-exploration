@@ -1,13 +1,16 @@
+import copy
 import logging
 import os
+from typing import Optional
 
+import attrs
 import numpy as np
-import yaml
 from numpy import pi, unravel_index
 from scipy.fftpack import fft, fftshift
 
 import acconeer.exptool as et
 
+from .calibration import ObstacleDetectionCalibration
 from .constants import WAVELENGTH
 
 
@@ -183,18 +186,13 @@ def get_processing_config():
             "type": float,
             "advanced": True,
         },
-        # Allows saving and loading from GUI
-        "send_process_data": {
-            "value": None,
-            "text": "FFT background",
-        },
     }
 
 
 class ObstacleDetectionProcessor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.sweep_index = 0
-        self.bg_avg = 0
+        self.parameterized_calibration: Optional[dict] = None
 
         self.sensor_config = sensor_config
         self.sensor_separation = processing_config["sensor_separation"]["value"]
@@ -203,9 +201,9 @@ class ObstacleDetectionProcessor:
         self.static_threshold = processing_config["static_threshold"]["value"]
         self.static_distance = processing_config["static_distance"]["value"]
         self.close_threshold_addition = processing_config["close_threshold_addition"]["value"]
-        self.use_bg = max(processing_config["calib"]["value"], 0)
+        self.calibration_iterations_left = max(processing_config["calib"]["value"], 0)
+        self.calibration_iterations = self.calibration_iterations_left
         self.bg_off = processing_config["bg_offset"]["value"]
-        self.saved_bg = processing_config["send_process_data"]["value"]
         self.peak_hist_len = processing_config["peak_hist"]["value"]
         self.nr_locals = processing_config["nr_peaks"]["value"]
         self.static_freq_limit = processing_config["static_freq"]["value"]
@@ -214,21 +212,66 @@ class ObstacleDetectionProcessor:
         self.robot_velocity = processing_config["robot_velocity"]["value"]
         self.edge_ratio = processing_config["edge_to_peak"]["value"]
         self.downsampling = processing_config["downsampling"]["value"]
+        self.is_calibrated = False
 
-    def _load_calibration(self):
-        if not isinstance(self.saved_bg, dict):
+        self.len_range = session_info["data_length"]
+        self._reset_calculation_arrays(self.len_range)
+
+        if calibration is not None:
+            self.update_calibration(calibration)
+
+    def update_calibration(self, calibration: Optional[ObstacleDetectionCalibration]):
+        """
+        Updates the calibration of processor
+
+        `calibration=None` is expected to remove the calibration from the processor
+
+        Calibration will not truly change until `process` is called.
+        """
+        if calibration is None:
+            self._reset_calibration()
+            return
+
+        calib_bg_params = attrs.asdict(copy.deepcopy(calibration))
+        calib_bg_params["moving_max"] = [calib_bg_params["moving_max"]]
+        calib_bg_params["static_adjacent_factor"] = [calib_bg_params["static_adjacent_factor"]]
+
+        self.parameterized_calibration = calib_bg_params
+
+    def _reset_calibration(self):
+        """
+        Will cause `self` to enter `_first_sweep_setup` on the next `process`-call,
+        which will reset most of the state.
+        A new calibration will then begin since `self.bg_avg` and `self.sweep_index` is set to 0.
+        """
+        self.sweep_index = 0
+        self.calibration_iterations_left = self.calibration_iterations
+        self.parameterized_calibration = None
+        self.is_calibrated = False
+        self._reset_calculation_arrays(self.len_range)
+
+    def _apply_calibration(self, parameterized_calibration):
+        """
+        Will populate self.fft_bg with a "raw" background that is calculated
+        from the passed parameterization.
+        """
+        if not isinstance(parameterized_calibration, dict):
             log.warning("Received unsupported background data!")
             return
 
         try:
             # Generate background from piece-wise-linear (pwl) interpolation
-            self.generate_background_from_pwl_params(self.fft_bg[0, :, :], self.saved_bg)
-            self.use_bg = False
+            self.generate_background_from_pwl_params(
+                self.fft_bg[0, :, :], parameterized_calibration
+            )
+            self.calibration_iterations_left = 0
+            self.is_calibrated = True
             log.info("Using saved parameterized FFT background data!")
         except Exception:
             log.warning("Could not reconstruct background!")
 
-    def _first_sweep_setup(self, len_range):
+    def _reset_calculation_arrays(self, len_range):
+        """Resets all arrays used for calculations. This was done on first sweep before."""
         self.sweep_map = np.zeros((1, len_range, self.fft_len), dtype="complex")
         self.fft_bg = np.zeros((1, len_range, self.fft_len))
         self.hamming_map = np.zeros((len_range, self.fft_len))
@@ -243,20 +286,11 @@ class ObstacleDetectionProcessor:
         self.mask = np.zeros((len_range, self.fft_len))
         self.threshold_map = np.zeros((len_range, self.fft_len))
 
-        if self.saved_bg is not None:
-            self._load_calibration()
-
         for dist in range(len_range):
             for freq in range(self.fft_len):
                 self.threshold_map[dist, freq] = self.variable_thresholding(
                     freq, dist, self.threshold, self.static_threshold
                 )
-
-    def _save_calibration(self):
-        bg_params = self.parameterize_bg(self.fft_bg[0, :, :])
-        self.dump_bg_params_to_yaml(bg_params=bg_params)
-        self.saved_bg = bg_params
-        self.generate_background_from_pwl_params(self.fft_bg[0, :, :], bg_params)
 
     def _process_single_sensor(self, sweep, fft_psd):
         self.push(sweep[0, :], self.sweep_map[0, :, :])
@@ -265,11 +299,17 @@ class ObstacleDetectionProcessor:
         fft_psd[0, :, :] = np.square(np.abs(signalFFT))
         signalPSD = fft_psd[0, :, :]
 
-        if self.use_bg and self.sweep_index == self.fft_len - 1:
+        out_data = {}
+
+        if self.calibration_iterations_left > 0 and self.sweep_index == self.fft_len - 1:
             self.fft_bg[0, :, :] = np.maximum(self.bg_off * signalPSD, self.fft_bg[0, :, :])
-            self.bg_avg += 1
-            if self.bg_avg == self.use_bg:
-                self._save_calibration()
+            self.calibration_iterations_left -= 1
+            if self.calibration_iterations_left == 0:
+                bg_params = self.parameterize_bg(self.fft_bg[0, :, :])
+
+                self.parameterized_calibration = bg_params
+                self.generate_background_from_pwl_params(self.fft_bg[0, :, :], bg_params)
+                out_data["new_calibration"] = ObstacleDetectionCalibration(**bg_params)
 
         signalPSD_sub = signalPSD - self.fft_bg[0, :, :]
         signalPSD_sub[signalPSD_sub < 0] = 0
@@ -314,19 +354,21 @@ class ObstacleDetectionProcessor:
                 for j in range(self.peak_prop_num):
                     self.push_vec(float(np.nan), self.peak_hist[0, i, j, :])
 
-        out_data_contrib = {
-            "env_ampl": env,
-            "fft_max_env": fft_max_env,
-            "fft_map": fft_psd,
-            "peak_idx": peak_idx,
-            "angle": angle,
-            "velocity": velocity,
-            "fft_peaks": fft_peaks,
-            "peak_hist": self.peak_hist[0, :, :, :],
-            "sweep_index": self.sweep_index,
-            "peaks_found": peaks_found,
-        }
-        return out_data_contrib
+        out_data.update(
+            {
+                "env_ampl": env,
+                "fft_max_env": fft_max_env,
+                "fft_map": fft_psd,
+                "peak_idx": peak_idx,
+                "angle": angle,
+                "velocity": velocity,
+                "fft_peaks": fft_peaks,
+                "peak_hist": self.peak_hist[0, :, :, :],
+                "sweep_index": self.sweep_index,
+                "peaks_found": peaks_found,
+            }
+        )
+        return out_data
 
     def process(self, data, data_info):
         sweep = data
@@ -341,8 +383,8 @@ class ObstacleDetectionProcessor:
 
         _, len_range = sweep.shape
 
-        if self.sweep_index == 0 and self.bg_avg == 0:
-            self._first_sweep_setup(len_range)
+        if not self.is_calibrated and self.parameterized_calibration is not None:
+            self._apply_calibration(self.parameterized_calibration)
 
         fft_psd = np.empty((1, len_range, self.fft_len))
 
@@ -354,41 +396,25 @@ class ObstacleDetectionProcessor:
             fft_bg = self.fft_bg[0, :, :]
             fft_bg_send = self.fft_bg
 
-        if self.use_bg:
-            iterations_left = self.use_bg - self.bg_avg
-        else:
-            iterations_left = 0
-
         threshold_map = None
         if self.sweep_index < 3 * self.fft_len:  # Make sure data gets send to plotting
             threshold_map = self.threshold_map
 
-        # Only second sensor for dual setup.
         out_data.update(
             {
                 "fft_bg": fft_bg,
-                "fft_bg_iterations_left": iterations_left,
+                "fft_bg_iterations_left": self.calibration_iterations_left,
                 "threshold_map": threshold_map,
                 "send_process_data": fft_bg_send,
             }
         )
 
-        if (self.bg_avg < self.use_bg) and (self.sweep_index == self.fft_len - 1):
+        if self.calibration_iterations_left > 0 and self.sweep_index == self.fft_len - 1:
             self.sweep_index = 0
         else:
             self.sweep_index += 1
 
         return out_data
-
-    def dump_bg_params_to_yaml(self, filename=None, bg_params=None):
-        if filename is None:
-            filename = os.path.join(DIR_PATH, "obstacle_bg_params_dump.yaml")
-
-        if bg_params is None:
-            bg_params = self.saved_bg
-
-        with open(filename, "w") as f_handle:
-            yaml.dump(bg_params, f_handle, default_flow_style=False)
 
     def remap(self, val, x1, x2, y1, y2):
         if x1 == x2:

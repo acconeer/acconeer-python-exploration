@@ -1,13 +1,14 @@
-import os
 import tempfile
 from pathlib import Path
 
+import attrs
 import h5py
 import numpy as np
 import pytest
 import yaml
 
 import acconeer.exptool as et
+from acconeer.exptool.a111.algo.obstacle_detection.calibration import ObstacleDetectionCalibration
 from acconeer.exptool.a111.algo.obstacle_detection.processing import (
     ObstacleDetectionProcessor,
     get_processing_config,
@@ -27,7 +28,7 @@ PARAMETER_SETS = [
 ]
 
 
-def get_yaml_dump(parameter_set=None):
+def get_bg_parameters(parameter_set=None):
     input_record = et.recording.load(HERE / "input.h5")
 
     processing_config = get_processing_config()
@@ -41,50 +42,49 @@ def get_yaml_dump(parameter_set=None):
         processing_config,
         input_record.session_info,
     )
-    for data_info, data in input_record:
-        if data.shape[0] == 1:
-            _ = processor.process(data.squeeze(0), data_info[0])
-        else:
-            _ = processor.process(data, data_info[0])
 
-    _, temp_file = tempfile.mkstemp()
-    processor.dump_bg_params_to_yaml(temp_file)
-
-    with open(temp_file, "r") as stream:
-        parametrization = yaml.safe_load(stream)
-
-    os.remove(temp_file)
-
-    return parametrization
-
-
-def get_output_for_calib(parameter_set=None):
-    input_record = et.recording.load(HERE / "input.h5")
-
-    with open(HERE / "obstacle_bg_params_dump.yaml", "r") as stream:
-        bg_params = yaml.safe_load(stream)
-
-    processing_config = get_processing_config()
-
-    if parameter_set is not None:
-        for k, v in parameter_set.items():
-            processing_config[k]["value"] = v
-
-    processing_config["send_process_data"]["value"] = bg_params
-
-    processor = ObstacleDetectionProcessor(
-        input_record.sensor_config,
-        processing_config,
-        input_record.session_info,
-    )
-
-    output = {k: [] for k in TEST_KEYS}
+    calibrations = []
 
     for data_info, data in input_record:
         if data.shape[0] == 1:
             result = processor.process(data.squeeze(0), data_info[0])
         else:
             result = processor.process(data, data_info[0])
+        if "new_calibration" in result:
+            calibrations.append(result["new_calibration"])
+
+    assert len(calibrations) == 1
+
+    return attrs.asdict(calibrations[0])
+
+
+def get_output_for_calib(parameter_set=None):
+    input_record = et.recording.load(HERE / "input.h5")
+
+    processing_config = get_processing_config()
+    calibration = ObstacleDetectionCalibration.load(HERE / "obstacle_bg_params_dump.yaml")
+
+    if parameter_set is not None:
+        for k, v in parameter_set.items():
+            processing_config[k]["value"] = v
+
+    processor = ObstacleDetectionProcessor(
+        input_record.sensor_config,
+        processing_config,
+        input_record.session_info,
+        calibration,
+    )
+
+    output = {k: [] for k in TEST_KEYS}
+
+    for data_info, data in input_record:
+
+        if data.shape[0] == 1:
+            result = processor.process(data.squeeze(0), data_info[0])
+        else:
+            result = processor.process(data, data_info[0])
+
+        assert "new_calibration" not in result
 
         for k in TEST_KEYS:
             output[k].append(result[k])
@@ -202,7 +202,7 @@ def test_processor_against_reference(parameter_set):
 
 @pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
 def test_dumped_parameters(parameter_set):
-    actual_dict = get_yaml_dump(parameter_set)
+    actual_dict = get_bg_parameters(parameter_set)
 
     with open(HERE / "obstacle_bg_params_dump.yaml") as stream:
         expected_dict = yaml.safe_load(stream)
@@ -212,7 +212,7 @@ def test_dumped_parameters(parameter_set):
 
 @pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
 def test_wrong_dumped_parameters(parameter_set):
-    actual_dict = get_yaml_dump(parameter_set)
+    actual_dict = get_bg_parameters(parameter_set)
 
     with open(HERE / "obstacle_bg_params_dump_wrong.yaml") as stream:
         wrong_dict = yaml.safe_load(stream)
@@ -220,6 +220,86 @@ def test_wrong_dumped_parameters(parameter_set):
     assert actual_dict.keys() == wrong_dict.keys()
 
     assert not compare_dicts(actual_dict, wrong_dict)
+
+
+@pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
+def test_setting_calibration_yeilds_expected_results(parameter_set):
+    path = path_for_parameter_set(parameter_set).as_posix().replace(".h5", "_calib.h5")
+    with open(path, "rb") as f:
+        expected = load_output(f)
+
+    actual = get_output_for_calib(parameter_set)
+    assert compare_dicts(actual, expected)
+
+
+@pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
+def test_calibration_instantiated_processor_does_not_return_new_calibration(parameter_set):
+    input_record = et.recording.load(HERE / "input.h5")
+
+    processing_config = get_processing_config()
+    calibration = ObstacleDetectionCalibration.load(HERE / "obstacle_bg_params_dump.yaml")
+
+    for k, v in parameter_set.items():
+        processing_config[k]["value"] = v
+
+    processor = ObstacleDetectionProcessor(
+        input_record.sensor_config,
+        processing_config,
+        input_record.session_info,
+        calibration,
+    )
+
+    for data_info, data in input_record:
+        result = processor.process(data, data_info[0])
+        assert "new_calibration" not in result
+
+
+@pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
+def test_update_calibration_actually_updates(parameter_set):
+    input_record = et.recording.load(HERE / "input.h5")
+
+    processing_config = get_processing_config()
+    calibration = ObstacleDetectionCalibration.load(HERE / "obstacle_bg_params_dump.yaml")
+    wrong_calibration = ObstacleDetectionCalibration.load(
+        HERE / "obstacle_bg_params_dump_wrong.yaml"
+    )
+
+    if parameter_set is not None:
+        for k, v in parameter_set.items():
+            processing_config[k]["value"] = v
+
+    processor = ObstacleDetectionProcessor(
+        input_record.sensor_config,
+        processing_config,
+        input_record.session_info,
+    )
+
+    for _ in range(10):
+        processor.update_calibration(wrong_calibration)
+    processor.update_calibration(calibration)
+
+    output = {k: [] for k in TEST_KEYS}
+
+    for data_info, data in input_record:
+
+        if data.shape[0] == 1:
+            result = processor.process(data.squeeze(0), data_info[0])
+        else:
+            result = processor.process(data, data_info[0])
+
+        assert "new_calibration" not in result
+
+        for k in TEST_KEYS:
+            output[k].append(result[k])
+
+    # Explicit `dtype=float` makes the conversion `None` -> `np.nan`.
+    actual = {k: np.array(v, dtype=float) for k, v in output.items()}
+
+    path = path_for_parameter_set(parameter_set).as_posix().replace(".h5", "_calib.h5")
+    with open(path, "rb") as f:
+        expected = load_output(f)
+
+    assert compare_dicts(actual, expected)
 
 
 @pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
@@ -249,5 +329,12 @@ if __name__ == "__main__":
         for parameter_set in PARAMETER_SETS:
             output = get_output(parameter_set)
             save_output(path_for_parameter_set(parameter_set), output)
+
+        for parameter_set in PARAMETER_SETS:
+            output = get_output_for_calib(parameter_set)
+            save_output(
+                path_for_parameter_set(parameter_set).as_posix().replace(".h5", "_calib.h5"),
+                output,
+            )
     else:
         raise RuntimeError
