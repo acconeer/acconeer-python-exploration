@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import os
-import pathlib
 from abc import ABC, abstractclassmethod, abstractmethod
+from pathlib import Path
 from typing import Optional, Protocol, Sequence, Tuple, Union
 
 from acconeer.exptool.structs.configbase import Config
@@ -10,7 +9,7 @@ from acconeer.exptool.structs.configbase import Config
 
 _Description = str
 _FileExtension = str
-_Path = Union[str, pathlib.Path]
+_Path = Union[str, Path]
 _AcceptedFileExtensions = Sequence[Tuple[_FileExtension, _Description]]
 
 
@@ -28,10 +27,19 @@ class Calibration(ABC):
         ...
 
     @classmethod
-    def validate_path(cls, path: _Path) -> None:
-        _, extension = os.path.splitext(path)
-        extension = extension.strip(".")
-        valid_extensions = [extension.strip(".") for ext, _ in cls.file_extensions()]
+    def validate_path(
+        cls, path: _Path, file_extensions: Optional[_AcceptedFileExtensions] = None
+    ) -> None:
+        """
+        :param path: Path to validate
+        :param file_extensions: Override the class-defined file extensions to accept.
+
+        :raises: ValueError if path is not an acceptable path.
+        """
+        file_extensions = file_extensions or cls.file_extensions()
+
+        extension = Path(path).suffix.strip(".")
+        valid_extensions = [ext.strip(".") for ext, _ in file_extensions]
 
         extension_ok = extension in valid_extensions
 

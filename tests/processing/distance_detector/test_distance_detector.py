@@ -1,4 +1,5 @@
 import tempfile
+from contextlib import nullcontext as does_not_raise
 from enum import Enum
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import numpy as np
 import pytest
 
 import acconeer.exptool as et
+from acconeer.exptool.a111.algo.distance_detector.calibration import DistanceDetectorCalibration
 from acconeer.exptool.a111.algo.distance_detector.processing import (
     ProcessingConfiguration,
     Processor,
@@ -83,13 +85,12 @@ def get_output_precalibrated(parameter_set=None):
     if parameter_set.get("threshold_type") != ProcessingConfiguration.ThresholdType.RECORDED:
         pytest.skip(f'Test is N/A with threshold_type={parameter_set.get("threshold_type")}')
 
-    def sc_load_save_bg_setter(processor):
-        loaded_threshold_data = np.load(HERE / "calibration.npy")
-        processor.sc_load_save_bg.loaded_data = loaded_threshold_data
-        assert processor.sc_load_save_bg.error is None
+    def calibration_updater(processor):
+        calibration = DistanceDetectorCalibration.load(HERE / "calibration.npy")
+        processor.update_calibration(calibration)
         return processor
 
-    return get_output(parameter_set=parameter_set, processor_modifier=sc_load_save_bg_setter)
+    return get_output(parameter_set=parameter_set, processor_modifier=calibration_updater)
 
 
 def get_calibration(parameter_set=None):
@@ -108,9 +109,10 @@ def get_calibration(parameter_set=None):
     )
 
     for data_info, data in input_record:
-        _ = processor.process(data.squeeze(0), data_info[0])
-        if processor.sc_bg_calculated:
-            return processor.sc_load_save_bg.buffered_data
+        output = processor.process(data.squeeze(0), data_info[0])
+        if "new_calibration" in output:
+            return output["new_calibration"]
+    assert False
 
 
 def save_output(file, output):
@@ -203,7 +205,13 @@ def test_calibration_against_reference_calibration():
     for parameter_set in PARAMETER_SETS_CALIBRATION:
         expected = np.load(HERE / "calibration.npy")
         actual = get_calibration(parameter_set)
-        np.testing.assert_array_equal(expected, actual)
+        actual_legacy_format = np.array(
+            [
+                actual.stationary_clutter_mean,
+                actual.stationary_clutter_std,
+            ]
+        )
+        np.testing.assert_array_equal(expected, actual_legacy_format)
 
 
 @pytest.mark.parametrize("reference_file", HERE.glob("output_*.h5"))
@@ -213,6 +221,25 @@ def test_output_references_have_detections(reference_file):
     found_peaks = reference.get("found_peaks")
     assert isinstance(found_peaks, np.ndarray)
     assert not np.isnan(found_peaks).all()
+
+
+@pytest.mark.parametrize("path", ["test.npy", "test.npz"])
+def test_load_calibration_from_paths(path):
+    DistanceDetectorCalibration.validate_path(path)
+
+
+@pytest.mark.parametrize(
+    "path,expectation",
+    [
+        ("test.npy", pytest.raises(ValueError)),
+        ("test.npz", does_not_raise()),
+    ],
+)
+def test_save_calibration_from_paths(path, expectation):
+    with expectation:
+        DistanceDetectorCalibration.validate_path(
+            path, file_extensions=[("npz", "Numpy data archives (*.npz)")]
+        )
 
 
 if __name__ == "__main__":

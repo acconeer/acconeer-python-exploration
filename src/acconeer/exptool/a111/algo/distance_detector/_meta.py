@@ -1,5 +1,10 @@
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 
+from .calibration import (
+    DistaceDetectorCalibrationConfiguration,
+    DistaceDetectorCalibrationMapper,
+    DistanceDetectorCalibration,
+)
 from .plotting import PGUpdater
 from .processing import Processor, get_processing_config, get_sensor_config
 
@@ -17,4 +22,7 @@ module_info = ModuleInfo(
         "https://acconeer-python-exploration.readthedocs.io/"
         + "en/latest/processing/distance_detector.html"
     ),
+    calibration_class=DistanceDetectorCalibration,
+    calibration_config_class=DistaceDetectorCalibrationConfiguration,
+    calibration_mapper=DistaceDetectorCalibrationMapper,
 )

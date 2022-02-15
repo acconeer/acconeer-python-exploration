@@ -1,9 +1,12 @@
 from copy import copy
 from enum import Enum
+from typing import Optional
 
 import numpy as np
 
 import acconeer.exptool as et
+
+from .calibration import DistanceDetectorCalibration
 
 
 PEAK_MERGE_LIMIT_M = 0.005
@@ -25,20 +28,16 @@ class Processor:
 
         self.f = sensor_config.update_rate
 
-        num_depths = self.session_info["data_length"]
+        self.num_depths = self.session_info["data_length"]
 
-        self.current_mean_sweep = np.zeros(num_depths)
-        self.last_mean_sweep = np.full(num_depths, np.nan)
+        self.current_mean_sweep = np.zeros(self.num_depths)
+        self.last_mean_sweep = np.full(self.num_depths, np.nan)
         self.sweeps_since_mean = 0
 
-        self.sc_sum_bg_sweeps = np.zeros(num_depths)
-        self.sc_sum_squared_bg_sweeps = np.zeros(num_depths)
-        self.sc_bg_sweep_mean = np.full(num_depths, np.nan)
-        self.sc_bg_sweep_std = np.full(num_depths, np.nan)
-        self.sc_bg_threshold = np.full(num_depths, np.nan)
-        self.sc_used_mean = np.full(num_depths, np.nan)
-        self.sc_used_std = np.full(num_depths, np.nan)
-        self.sc_used_threshold = np.full(num_depths, np.nan)
+        self.sc_sum_bg_sweeps = np.zeros(self.num_depths)
+        self.sc_sum_squared_bg_sweeps = np.zeros(self.num_depths)
+        self.sc_used_threshold = np.full(self.num_depths, np.nan)
+        self.calibration: Optional[DistanceDetectorCalibration] = None
 
         self.sc_bg_calculated = False
 
@@ -56,6 +55,8 @@ class Processor:
 
         self.update_processing_config(processing_config)
 
+        self.update_calibration(calibration)
+
     def update_processing_config(self, processing_config):
         self.nbr_average = processing_config.nbr_average
         self.threshold_type = processing_config.threshold_type
@@ -65,7 +66,6 @@ class Processor:
 
         self.sc_sensitivity = processing_config.sc_sensitivity
         self.sc_bg_nbr_sweeps = processing_config.sc_nbr_sweep_for_bg
-        self.sc_load_save_bg = processing_config.sc_load_save_bg
 
         self.idx_cfar_pts = np.round(
             (
@@ -81,60 +81,53 @@ class Processor:
 
         self.history_length_s = processing_config.history_length_s
 
+    def update_calibration(self, new_calibration: DistanceDetectorCalibration):
+        self.calibration = new_calibration
+        self.update_sc_threshold()
+
+    @property
+    def sc_used_mean(self):
+        if self.calibration is None:
+            return np.full(self.num_depths, np.nan)
+        else:
+            return self.calibration.stationary_clutter_mean
+
+    @property
+    def sc_used_std(self):
+        if self.calibration is None:
+            return np.full(self.num_depths, np.nan)
+        else:
+            return self.calibration.stationary_clutter_std
+
     def update_sc_threshold(self):
         self.sc_used_threshold = (
             self.sc_used_mean + (1.0 / (self.sc_sensitivity + 1e-10) - 1.0) * self.sc_used_std
         )
 
-    def get_sc_threshold(self, sweep):
+    def get_sc_threshold(self, sweep) -> Optional[DistanceDetectorCalibration]:
         # Collect first sweeps to construct a stationary clutter threshold
         # Accumulate sweeps instead of saving each for lower memory footprint
+        calibration = None
+
         if self.sweep_index < self.sc_bg_nbr_sweeps:
             self.sc_sum_bg_sweeps += sweep
             self.sc_sum_squared_bg_sweeps += np.square(sweep)
 
         if self.sweep_index >= self.sc_bg_nbr_sweeps - 1 and not self.sc_bg_calculated:
-            self.sc_bg_sweep_mean = self.sc_sum_bg_sweeps / self.sc_bg_nbr_sweeps
+            sc_bg_sweep_mean = self.sc_sum_bg_sweeps / self.sc_bg_nbr_sweeps
             mean_square = self.sc_sum_squared_bg_sweeps / self.sc_bg_nbr_sweeps
-            square_mean = np.square(self.sc_bg_sweep_mean)
-            self.sc_bg_sweep_std = np.sqrt(
+            square_mean = np.square(sc_bg_sweep_mean)
+            sc_bg_sweep_std = np.sqrt(
                 (mean_square - square_mean) * self.sc_bg_nbr_sweeps / (self.sc_bg_nbr_sweeps - 1)
+            )
+            calibration = DistanceDetectorCalibration(
+                sc_bg_sweep_mean,
+                sc_bg_sweep_std,
             )
 
             self.sc_bg_calculated = True
 
-            self.sc_load_save_bg.buffered_data = np.array(
-                [
-                    self.sc_bg_sweep_mean,
-                    self.sc_bg_sweep_std,
-                ]
-            )
-            # self.sc_load_save_bg.loaded_data = self.sc_load_save_bg.buffered_data
-
-        # Checking if user loaded a threshold and if it is compatible
-        if self.sc_load_save_bg.error is None:
-            loaded_threshold_data = self.sc_load_save_bg.loaded_data
-
-            if loaded_threshold_data is not None:
-                try:
-                    if not isinstance(loaded_threshold_data, np.ndarray):
-                        self.sc_load_save_bg.error = "Wrong type"
-                    elif np.iscomplexobj(loaded_threshold_data):
-                        self.sc_load_save_bg.error = "Wrong type (is complex)"
-                    elif loaded_threshold_data.shape != (2, sweep.size):
-                        self.sc_load_save_bg.error = "Size mismatch"
-                    else:
-                        self.sc_used_mean = loaded_threshold_data[0, :]
-                        self.sc_used_std = loaded_threshold_data[1, :]
-                except Exception:
-                    self.sc_used_mean = np.full(sweep.shape, np.nan)
-                    self.sc_used_std = np.full(sweep.shape, np.nan)
-                    self.sc_load_save_bg.error = "Invalid threshold data"
-            else:
-                self.sc_used_mean = np.full(sweep.shape, np.nan)
-                self.sc_used_std = np.full(sweep.shape, np.nan)
-
-        self.update_sc_threshold()
+        return calibration
 
     def calculate_cfar_threshold(self, sweep, idx_cfar_pts, alpha, one_side):
 
@@ -287,7 +280,7 @@ class Processor:
 
         # Accumulate sweeps for stationary clutter threshold and check if user has
         # loaded one from disk
-        self.get_sc_threshold(sweep)
+        new_calibration = self.get_sc_threshold(sweep)
 
         # Average envelope sweeps, written to handle varying nbr_average
         weight = 1.0 / (1.0 + self.sweeps_since_mean)
@@ -391,6 +384,9 @@ class Processor:
             "found_peaks": found_peaks,
         }
 
+        if new_calibration:
+            out_data["new_calibration"] = new_calibration
+
         self.sweep_index += 1
 
         return out_data
@@ -460,13 +456,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             "The number of (non-averaged) sweeps collected for calculating the Stationary"
             " Clutter threshold."
         ),
-    )
-
-    sc_load_save_bg = et.configbase.ReferenceDataParameter(
-        label="Recorded threshold",
-        visible=lambda conf: conf.threshold_type == conf.ThresholdType.RECORDED,
-        order=23,
-        help="Load/Save a recorded threshold from/to disk.",
     )
 
     sc_sensitivity = et.configbase.FloatParameter(
