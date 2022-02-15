@@ -58,6 +58,41 @@ def get_yaml_dump(parameter_set=None):
     return parametrization
 
 
+def get_output_for_calib(parameter_set=None):
+    input_record = et.recording.load(HERE / "input.h5")
+
+    with open(HERE / "obstacle_bg_params_dump.yaml", "r") as stream:
+        bg_params = yaml.safe_load(stream)
+
+    processing_config = get_processing_config()
+
+    if parameter_set is not None:
+        for k, v in parameter_set.items():
+            processing_config[k]["value"] = v
+
+    processing_config["send_process_data"]["value"] = bg_params
+
+    processor = ObstacleDetectionProcessor(
+        input_record.sensor_config,
+        processing_config,
+        input_record.session_info,
+    )
+
+    output = {k: [] for k in TEST_KEYS}
+
+    for data_info, data in input_record:
+        if data.shape[0] == 1:
+            result = processor.process(data.squeeze(0), data_info[0])
+        else:
+            result = processor.process(data, data_info[0])
+
+        for k in TEST_KEYS:
+            output[k].append(result[k])
+
+    # Explicit `dtype=float` makes the conversion `None` -> `np.nan`.
+    return {k: np.array(v, dtype=float) for k, v in output.items()}
+
+
 def get_output(parameter_set=None):
     input_record = et.recording.load(HERE / "input.h5")
 
@@ -185,6 +220,17 @@ def test_wrong_dumped_parameters(parameter_set):
     assert actual_dict.keys() == wrong_dict.keys()
 
     assert not compare_dicts(actual_dict, wrong_dict)
+
+
+@pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
+def test_preloaded_bg_params(parameter_set):
+    actual = get_output_for_calib(parameter_set)
+
+    path = path_for_parameter_set(parameter_set).as_posix().replace(".h5", "_calib.h5")
+    with open(path, "rb") as f:
+        expected = load_output(f)
+
+    assert compare_dicts(actual, expected)
 
 
 if __name__ == "__main__":
