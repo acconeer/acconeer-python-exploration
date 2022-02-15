@@ -36,11 +36,16 @@ def main(module_info: ModuleInfo):
 
     while not interrupt_handler.got_signal:
         info, sweep = client.get_next()
-        plot_data = processor.process(sweep, info)
+        processed_data = processor.process(sweep, info)
 
-        if plot_data is not None:
+        if processed_data is not None:
+            if hasattr(processor, "update_calibration"):
+                new_calibration = processed_data.get("new_calibration")
+                if new_calibration is not None:
+                    processor.update_calibration(new_calibration)
+
             try:
-                pg_process.put_data(plot_data)
+                pg_process.put_data(processed_data)
             except et.PGProccessDiedException:
                 break
 
