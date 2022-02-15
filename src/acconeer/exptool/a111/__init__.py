@@ -1,8 +1,6 @@
 from . import recording
-from ._clients.base import BaseClient
-from ._clients.json.client import SocketClient
-from ._clients.mock.client import MockClient
-from ._clients.reg.client import PollingUARTClient, SPIClient, UARTClient
+from ._clients import Client, Link, Protocol
+from ._clients.base import SessionSetupError
 from ._configs import (
     EnvelopeServiceConfig,
     IQServiceConfig,

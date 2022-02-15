@@ -5,17 +5,23 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a111
+from acconeer.exptool.a111._clients.mock.client import MockClient
+
+
+@pytest.fixture
+def mocker():
+    mocker = MockClient()
+    mocker.squeeze = False
+    return mocker
 
 
 @pytest.mark.parametrize("mode", a111.Mode)
 @pytest.mark.parametrize("ext", ["h5", "npz"])
 @pytest.mark.parametrize("give_pathlib_path", [True, False])
-def test_recording(tmp_path, mode, ext, give_pathlib_path):
+def test_recording(tmp_path, mode, ext, give_pathlib_path, mocker):
     config = a111._configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.downsampling_factor = 2
 
-    mocker = a111.MockClient()
-    mocker.squeeze = False
     session_info = mocker.start_session(config)
 
     recorder = a111.recording.Recorder(
@@ -50,10 +56,8 @@ def test_recording(tmp_path, mode, ext, give_pathlib_path):
     assert record.sensor_config.downsampling_factor == config.downsampling_factor
 
 
-def test_unknown_mode():
+def test_unknown_mode(mocker):
     config = a111.EnvelopeServiceConfig()
-    mocker = a111.MockClient()
-    mocker.squeeze = False
     session_info = mocker.start_session(config)
     recorder = a111.recording.Recorder(sensor_config=config, session_info=session_info)
     data_info, data = mocker.get_next()

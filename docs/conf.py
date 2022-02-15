@@ -9,9 +9,12 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
+    "enum_tools.autoenum",
 ]
 
 autodoc_member_order = "bysource"
+
+autodoc_typehints_format = "short"
 
 graphviz_dot_args = [
     "-Gfontname=sans-serif",

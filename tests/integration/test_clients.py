@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 import acconeer.exptool as et
+from acconeer.exptool.a111._clients.json.client import SocketClient
+from acconeer.exptool.a111._clients.mock.client import MockClient
+from acconeer.exptool.a111._clients.reg.client import SPIClient, UARTClient
 
 
 @pytest.fixture(scope="module")
@@ -11,17 +14,17 @@ def setup(request):
     conn_type, *args = request.param
 
     if conn_type == "spi":
-        client = et.a111.SPIClient()
+        client = SPIClient()
         sensor = 1
     elif conn_type == "uart":
         port = args[0] or et.utils.autodetect_serial_port()
-        client = et.a111.UARTClient(port)
+        client = UARTClient(port)
         sensor = 1
     elif conn_type == "socket":
-        client = et.a111.SocketClient(args[0])
+        client = SocketClient(args[0])
         sensor = int(args[1])
     elif conn_type == "mock":
-        client = et.a111.MockClient()
+        client = MockClient()
         sensor = 1
     else:
         pytest.fail()
@@ -59,7 +62,7 @@ def test_run_a_sensor_driven_session(setup):
 def test_run_illegal_config(setup):
     client, sensor = setup
 
-    if isinstance(client, et.a111.MockClient):
+    if isinstance(client, MockClient):
         return
 
     config = et.a111.EnvelopeServiceConfig()
@@ -215,7 +218,7 @@ def test_repetition_mode(setup):
     client, sensor = setup
 
     # TODO Test not stable for exploration server
-    if isinstance(client, et.a111.SocketClient):
+    if isinstance(client, SocketClient):
         pytest.skip("Skip socket client")
 
     def measure(config):
@@ -264,7 +267,7 @@ def test_repetition_mode(setup):
     config.update_rate = 2.0 / nominal_dt
     dt, missed = measure(config)
 
-    if isinstance(client, et.a111.SocketClient):  # TODO
+    if isinstance(client, SocketClient):  # TODO
         assert missed
 
     assert dt == pytest.approx(nominal_dt, rel=0.15)

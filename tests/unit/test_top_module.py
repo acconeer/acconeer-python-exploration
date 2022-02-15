@@ -26,15 +26,6 @@ def is_test(member_name, modules):
 
 
 @pytest.mark.parametrize(
-    "client_type",
-    ["UARTClient", "SPIClient", "SocketClient", "PollingUARTClient", "MockClient"],
-)
-def test_top_module_clients(client_type):
-    assert et.a111 == et.a111
-    assert is_test(client_type, [et.a111, et.a111, et.a111])
-
-
-@pytest.mark.parametrize(
     "config_type",
     [
         "EnvelopeServiceConfig",
