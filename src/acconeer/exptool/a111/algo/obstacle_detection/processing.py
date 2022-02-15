@@ -192,7 +192,6 @@ def get_processing_config():
 class ObstacleDetectionProcessor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.sweep_index = 0
-        self.parameterized_calibration: Optional[dict] = None
 
         self.sensor_config = sensor_config
         self.sensor_separation = processing_config["sensor_separation"]["value"]
@@ -236,7 +235,7 @@ class ObstacleDetectionProcessor:
         calib_bg_params["moving_max"] = [calib_bg_params["moving_max"]]
         calib_bg_params["static_adjacent_factor"] = [calib_bg_params["static_adjacent_factor"]]
 
-        self.parameterized_calibration = calib_bg_params
+        self._apply_calibration(calib_bg_params)
 
     def _reset_calibration(self):
         """
@@ -246,7 +245,6 @@ class ObstacleDetectionProcessor:
         """
         self.sweep_index = 0
         self.calibration_iterations_left = self.calibration_iterations
-        self.parameterized_calibration = None
         self.is_calibrated = False
         self._reset_calculation_arrays(self.len_range)
 
@@ -306,9 +304,6 @@ class ObstacleDetectionProcessor:
             self.calibration_iterations_left -= 1
             if self.calibration_iterations_left == 0:
                 bg_params = self.parameterize_bg(self.fft_bg[0, :, :])
-
-                self.parameterized_calibration = bg_params
-                self.generate_background_from_pwl_params(self.fft_bg[0, :, :], bg_params)
                 out_data["new_calibration"] = ObstacleDetectionCalibration(**bg_params)
 
         signalPSD_sub = signalPSD - self.fft_bg[0, :, :]
@@ -382,9 +377,6 @@ class ObstacleDetectionProcessor:
         sweep = sweep / 2 ** 12
 
         _, len_range = sweep.shape
-
-        if not self.is_calibrated and self.parameterized_calibration is not None:
-            self._apply_calibration(self.parameterized_calibration)
 
         fft_psd = np.empty((1, len_range, self.fft_len))
 
