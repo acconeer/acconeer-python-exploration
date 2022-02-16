@@ -31,7 +31,7 @@ def parse_config_dump(cfg_str):
 
 
 def record_to_csv(
-    record: et.recording.Record,
+    record: et.a111.recording.Record,
     sensor_index: int = 0,
     sweep_as_column: bool = False,
     add_sweep_metadata: bool = False,
@@ -55,7 +55,7 @@ def record_to_csv(
     data = record.data[:, sensor_index, :]
     dest_rows = []
 
-    depths = et.utils.get_range_depths(record.sensor_config, record.session_info)
+    depths = et.a111.get_range_depths(record.sensor_config, record.session_info)
 
     if record.mode == et.Mode.SPARSE and add_sweep_metadata:
         depths = np.tile(depths, record.sensor_config.sweeps_per_frame)

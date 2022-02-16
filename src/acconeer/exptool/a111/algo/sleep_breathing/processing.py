@@ -5,7 +5,7 @@ import acconeer.exptool as et
 
 
 def get_sensor_config():
-    config = et.configs.IQServiceConfig()
+    config = et.a111.IQServiceConfig()
     config.range_interval = [0.4, 0.8]
     config.update_rate = 60
     config.gain = 0.6

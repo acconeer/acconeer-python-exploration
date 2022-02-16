@@ -27,7 +27,7 @@ For further reading on the IQ service we refer to the `IQ documentation`_ on the
 Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: acconeer.exptool.configs.IQServiceConfig
+.. autoclass:: acconeer.exptool.a111.IQServiceConfig
    :noindex:
    :members:
    :inherited-members:

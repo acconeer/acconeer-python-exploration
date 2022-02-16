@@ -66,7 +66,7 @@ These fields are the only ones that are mandatory.
 
    The mode (service) used in the recording.
    For example ``"sparse"``.
-   Unpack the original enum member using ``acconeer.exptool.modes.get_mode`` on this field.
+   Unpack the original enum member using ``acconeer.exptool.a111.get_mode`` on this field.
 
 ``sensor_config_dump``
    Type: string

@@ -1,7 +1,7 @@
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui
 
-from acconeer.exptool import utils
+import acconeer.exptool as et
 
 from .processing import ProcessingConfig
 
@@ -11,9 +11,9 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.depth_res = session_info["step_length_m"]
-        self.smooth_max = utils.SmoothMax(sensor_config.update_rate)
+        self.smooth_max = et.utils.SmoothMax(sensor_config.update_rate)
 
         self.setup_is_done = False
 
@@ -36,9 +36,9 @@ class PGUpdater:
         self.peak_lines = []
         for i, sensor_id in enumerate(self.sensor_config.sensor):
             legend = "Sensor {}".format(sensor_id)
-            ampl_curve = self.ampl_plot.plot(pen=utils.pg_pen_cycler(i), name=legend)
-            bg_curve = self.ampl_plot.plot(pen=utils.pg_pen_cycler(i, style="--"))
-            color_tuple = utils.hex_to_rgb_tuple(utils.color_cycler(i))
+            ampl_curve = self.ampl_plot.plot(pen=et.utils.pg_pen_cycler(i), name=legend)
+            bg_curve = self.ampl_plot.plot(pen=et.utils.pg_pen_cycler(i, style="--"))
+            color_tuple = et.utils.hex_to_rgb_tuple(et.utils.color_cycler(i))
             peak_line = pg.InfiniteLine(pen=pg.mkPen(pg.mkColor(*color_tuple, 150), width=2))
             self.ampl_plot.addItem(peak_line)
             self.ampl_curves.append(ampl_curve)
@@ -70,7 +70,7 @@ class PGUpdater:
             plot.setLabel("bottom", xlabel)
             plot.setLabel("left", "Depth (m)")
             im = pg.ImageItem(autoDownsample=True)
-            im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+            im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
             im.resetTransform()
             tr = QtGui.QTransform()
             tr.translate(x_offset, y_offset)

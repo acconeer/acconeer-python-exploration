@@ -12,7 +12,7 @@ class PGUpdater:
         self.processing_config = processing_config
 
         self.history_length_s = processing_config.history_length_s
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
 
         max_num_of_sectors = max(6, self.depths.size // 3)
         self.sector_size = max(1, -(-self.depths.size // max_num_of_sectors))

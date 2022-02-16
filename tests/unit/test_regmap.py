@@ -3,9 +3,9 @@ import inspect
 import pytest
 
 import acconeer.exptool.structs.configbase as cb
-from acconeer.exptool import configs
-from acconeer.exptool.clients.reg import regmap
-from acconeer.exptool.modes import Mode
+from acconeer.exptool.a111 import _configs
+from acconeer.exptool.a111._clients.reg import regmap
+from acconeer.exptool.a111._modes import Mode
 
 
 BO = regmap.BYTEORDER
@@ -51,7 +51,7 @@ def test_get_reg():
 def test_config_to_reg_map_completeness():
     all_param_keys = set()
 
-    for mode, config_class in configs.MODE_TO_CONFIG_CLASS_MAP.items():
+    for mode, config_class in _configs.MODE_TO_CONFIG_CLASS_MAP.items():
         params = {k: v for k, v in inspect.getmembers(config_class) if isinstance(v, cb.Parameter)}
         all_param_keys.update(params.keys())
 
@@ -126,7 +126,7 @@ def test_encode_enum():
     # Explicit remapping
     reg = regmap.get_reg("repetition_mode")
     truth = int(reg.enum.STREAMING).to_bytes(4, BO)
-    assert reg.encode(configs.BaseServiceConfig.RepetitionMode.SENSOR_DRIVEN) == truth
+    assert reg.encode(_configs.BaseServiceConfig.RepetitionMode.SENSOR_DRIVEN) == truth
 
 
 def test_decode_enum():

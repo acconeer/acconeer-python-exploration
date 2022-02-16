@@ -3,7 +3,7 @@ import time
 import numpy as np
 import pytest
 
-from acconeer.exptool import clients, configs, modes, utils
+import acconeer.exptool as et
 
 
 @pytest.fixture(scope="module")
@@ -11,17 +11,17 @@ def setup(request):
     conn_type, *args = request.param
 
     if conn_type == "spi":
-        client = clients.SPIClient()
+        client = et.a111.SPIClient()
         sensor = 1
     elif conn_type == "uart":
-        port = args[0] or utils.autodetect_serial_port()
-        client = clients.UARTClient(port)
+        port = args[0] or et.utils.autodetect_serial_port()
+        client = et.a111.UARTClient(port)
         sensor = 1
     elif conn_type == "socket":
-        client = clients.SocketClient(args[0])
+        client = et.a111.SocketClient(args[0])
         sensor = int(args[1])
     elif conn_type == "mock":
-        client = clients.MockClient()
+        client = et.a111.MockClient()
         sensor = 1
     else:
         pytest.fail()
@@ -34,9 +34,9 @@ def setup(request):
 def test_run_a_host_driven_session(setup):
     client, sensor = setup
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
     config.sensor = sensor
-    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.HOST_DRIVEN
+    config.repetition_mode = et.a111.EnvelopeServiceConfig.RepetitionMode.HOST_DRIVEN
 
     client.start_session(config)
     client.get_next()
@@ -46,9 +46,9 @@ def test_run_a_host_driven_session(setup):
 def test_run_a_sensor_driven_session(setup):
     client, sensor = setup
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
     config.sensor = sensor
-    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.a111.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
     config.update_rate = 10
 
     client.start_session(config)
@@ -59,19 +59,19 @@ def test_run_a_sensor_driven_session(setup):
 def test_run_illegal_config(setup):
     client, sensor = setup
 
-    if isinstance(client, clients.MockClient):
+    if isinstance(client, et.a111.MockClient):
         return
 
-    config = configs.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
     config.sensor = sensor
-    config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.a111.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
     config.update_rate = 10
     config.range_interval = [0.2, 2.0]  # too long without stitching
 
-    with pytest.raises(clients.base.IllegalConfigError):
+    with pytest.raises(et.a111._clients.base.IllegalConfigError):
         client.setup_session(config)
 
-    with pytest.raises(clients.base.SessionSetupError):
+    with pytest.raises(et.a111._clients.base.SessionSetupError):
         client.setup_session(config, check_config=False)
 
     config.range_interval = [0.2, 0.4]
@@ -80,13 +80,13 @@ def test_run_illegal_config(setup):
     client.stop_session()
 
 
-@pytest.mark.parametrize("mode", modes.Mode)
+@pytest.mark.parametrize("mode", et.a111.Mode)
 def test_squeeze(setup, mode):
     client, sensor = setup
 
     restore_squeeze = client.squeeze
 
-    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config = et.a111._configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.sensor = sensor
 
     client.squeeze = True
@@ -99,7 +99,7 @@ def test_squeeze(setup, mode):
     unsqueezed_data_info, unsqueezed_data = client.get_next()
     client.stop_session()
 
-    if mode == modes.Mode.SPARSE:
+    if mode == et.a111.Mode.SPARSE:
         expected_squeezed_ndim = 2
     else:
         expected_squeezed_ndim = 1
@@ -112,15 +112,15 @@ def test_squeeze(setup, mode):
     client.squeeze = restore_squeeze
 
 
-@pytest.mark.parametrize("mode", modes.Mode)
+@pytest.mark.parametrize("mode", et.a111.Mode)
 def test_sanity_check_output(setup, mode):
     client, sensor = setup
 
-    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config = et.a111._configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.sensor = sensor
     config.range_interval = [0.30, 0.60]  # Important with multiple of 0.06m for sparse
 
-    if mode == modes.Mode.SPARSE:
+    if mode == et.a111.Mode.SPARSE:
         config.sweeps_per_frame = 10  # Avoid the default value to make sure it bites
 
     session_info = client.start_session(config)
@@ -131,12 +131,12 @@ def test_sanity_check_output(setup, mode):
     assert session_info["range_length_m"] == pytest.approx(config.range_length, abs=0.01)
     assert "step_length_m" in session_info
 
-    if mode == modes.Mode.POWER_BINS:
+    if mode == et.a111.Mode.POWER_BINS:
         assert "bin_count" in session_info
     else:
         assert "data_length" in session_info
 
-    if mode == modes.Mode.SPARSE:
+    if mode == et.a111.Mode.SPARSE:
         assert "sweep_rate" in session_info
     else:
         assert "stitch_count" in session_info
@@ -144,27 +144,27 @@ def test_sanity_check_output(setup, mode):
     assert type(data_info["data_saturated"]) == bool
     assert type(data_info["missed_data"]) == bool
 
-    if mode != modes.Mode.SPARSE:
+    if mode != et.a111.Mode.SPARSE:
         assert type(data_info["data_quality_warning"]) == bool
 
     assert isinstance(data, np.ndarray)
 
-    if mode == modes.Mode.POWER_BINS:
+    if mode == et.a111.Mode.POWER_BINS:
         assert data.dtype == float
         size = session_info["bin_count"]
         assert data.shape == (size,)
         assert 1 < size < 10
-    elif mode == modes.Mode.ENVELOPE:
+    elif mode == et.a111.Mode.ENVELOPE:
         assert data.dtype == float
         size = session_info["data_length"]
         assert data.shape == (size,)
         assert size == pytest.approx(config.range_length / 0.06 * 124, abs=10)
-    elif mode == modes.Mode.IQ:
+    elif mode == et.a111.Mode.IQ:
         assert data.dtype == complex
         size = session_info["data_length"]
         assert data.shape == (size,)
         assert size == pytest.approx(config.range_length / 0.06 * 124, abs=10)
-    elif mode == modes.Mode.SPARSE:
+    elif mode == et.a111.Mode.SPARSE:
         assert data.dtype == float
         data_length = session_info["data_length"]
         num_depths = data_length // config.sweeps_per_frame
@@ -176,14 +176,14 @@ def test_sanity_check_output(setup, mode):
         pytest.fail("test does not cover all modes")
 
 
-@pytest.mark.parametrize("mode", modes.Mode)
+@pytest.mark.parametrize("mode", et.a111.Mode)
 def test_downsampling_factor(setup, mode):
     client, sensor = setup
 
-    if mode == modes.Mode.POWER_BINS:
+    if mode == et.a111.Mode.POWER_BINS:
         return
 
-    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config = et.a111._configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.sensor = sensor
     config.range_interval = [0.30, 0.60]
 
@@ -198,7 +198,7 @@ def test_downsampling_factor(setup, mode):
 
         step_length = session_info["step_length_m"]
 
-        if mode == modes.Mode.SPARSE:
+        if mode == et.a111.Mode.SPARSE:
             expected = df * 0.06
         else:  # Envelope, IQ
             expected = df * 0.48e-3
@@ -215,7 +215,7 @@ def test_repetition_mode(setup):
     client, sensor = setup
 
     # TODO Test not stable for exploration server
-    if isinstance(client, clients.SocketClient):
+    if isinstance(client, et.a111.SocketClient):
         pytest.skip("Skip socket client")
 
     def measure(config):
@@ -236,7 +236,7 @@ def test_repetition_mode(setup):
         dt = (t1 - t0) / n
         return (dt, missed)
 
-    config = configs.SparseServiceConfig()
+    config = et.a111.SparseServiceConfig()
     config.sensor = sensor
     config.range_interval = [0.3, 0.36]
     config.sweeps_per_frame = 50
@@ -246,7 +246,7 @@ def test_repetition_mode(setup):
     nominal_dt = 1.0 / nominal_f
 
     # on demand / host driven
-    config.repetition_mode = configs.SparseServiceConfig.RepetitionMode.HOST_DRIVEN
+    config.repetition_mode = et.a111.SparseServiceConfig.RepetitionMode.HOST_DRIVEN
 
     # no rate limit
     config.update_rate = None
@@ -264,13 +264,13 @@ def test_repetition_mode(setup):
     config.update_rate = 2.0 / nominal_dt
     dt, missed = measure(config)
 
-    if isinstance(client, clients.SocketClient):  # TODO
+    if isinstance(client, et.a111.SocketClient):  # TODO
         assert missed
 
     assert dt == pytest.approx(nominal_dt, rel=0.15)
 
     # streaming / sensor driven
-    config.repetition_mode = configs.SparseServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.a111.SparseServiceConfig.RepetitionMode.SENSOR_DRIVEN
 
     # ok rate
     config.update_rate = 0.5 / nominal_dt

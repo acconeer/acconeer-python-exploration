@@ -1,5 +1,5 @@
-from acconeer.exptool import configs
+from acconeer.exptool.a111 import PowerBinServiceConfig
 
 
 def get_sensor_config():
-    return configs.PowerBinServiceConfig()
+    return PowerBinServiceConfig()

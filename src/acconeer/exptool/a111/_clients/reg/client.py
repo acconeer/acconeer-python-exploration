@@ -12,15 +12,15 @@ from time import sleep, time
 import numpy as np
 
 from acconeer.exptool import libft4222
-from acconeer.exptool.clients import links
-from acconeer.exptool.clients.base import (
+from acconeer.exptool.a111._clients import links
+from acconeer.exptool.a111._clients.base import (
     BaseClient,
     ClientError,
     SessionSetupError,
     decode_version_str,
 )
-from acconeer.exptool.clients.reg import protocol, regmap
-from acconeer.exptool.modes import Mode
+from acconeer.exptool.a111._clients.reg import protocol, regmap
+from acconeer.exptool.a111._modes import Mode
 
 
 log = logging.getLogger(__name__)

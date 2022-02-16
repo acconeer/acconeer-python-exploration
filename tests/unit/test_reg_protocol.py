@@ -1,6 +1,6 @@
-import acconeer.exptool.clients.reg.protocol as ptcl
-from acconeer.exptool.clients.reg import regmap
-from acconeer.exptool.modes import Mode
+import acconeer.exptool.a111._clients.reg.protocol as ptcl
+from acconeer.exptool.a111 import Mode
+from acconeer.exptool.a111._clients.reg import regmap
 
 
 unp_reg_val = ptcl.RegVal(2, b"\x03\x00\x00\x00")

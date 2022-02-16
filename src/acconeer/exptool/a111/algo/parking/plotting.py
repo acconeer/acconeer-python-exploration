@@ -9,7 +9,7 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
 
     def update_processing_config(self, processing_config=None):
         if processing_config is None:

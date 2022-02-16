@@ -2,45 +2,44 @@ from enum import Enum
 
 import numpy as np
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 def get_sensor_config():
-    config = configs.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
     config.range_interval = [0.2, 0.8]
     config.hw_accelerated_average_samples = 15
     config.update_rate = 30
     return config
 
 
-class ProcessingConfig(configbase.ProcessingConfig):
+class ProcessingConfig(et.configbase.ProcessingConfig):
     VERSION = 1
 
     class BackgroundMode(Enum):
         SUBTRACT = "Subtract"
         LIMIT = "Limit"
 
-    show_peak_depths = configbase.BoolParameter(
+    show_peak_depths = et.configbase.BoolParameter(
         label="Show peak distances",
         default_value=True,
         updateable=True,
         order=-10,
     )
 
-    bg_buffer_length = configbase.IntParameter(
+    bg_buffer_length = et.configbase.IntParameter(
         default_value=50,
         limits=(1, 200),
         label="Background buffer length",
         order=0,
     )
 
-    bg = configbase.ReferenceDataParameter(
+    bg = et.configbase.ReferenceDataParameter(
         label="Background",
         order=10,
     )
 
-    bg_mode = configbase.EnumParameter(
+    bg_mode = et.configbase.EnumParameter(
         label="Background mode",
         default_value=BackgroundMode.SUBTRACT,
         enum=BackgroundMode,
@@ -48,7 +47,7 @@ class ProcessingConfig(configbase.ProcessingConfig):
         order=20,
     )
 
-    history_length = configbase.IntParameter(
+    history_length = et.configbase.IntParameter(
         default_value=100,
         limits=(10, 1000),
         label="History length",
@@ -66,7 +65,7 @@ class Processor:
         self.processing_config.bg.buffered_data = None
         self.processing_config.bg.error = None
 
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         num_depths = self.depths.size
         num_sensors = len(sensor_config.sensor)
 

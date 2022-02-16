@@ -11,9 +11,6 @@ import numpy as np
 import serial.tools.list_ports
 from packaging import version
 
-from acconeer.exptool.modes import Mode
-from acconeer.exptool.structs import configbase
-
 
 try:
     import pyqtgraph as pg
@@ -494,22 +491,6 @@ class FreqCounter:
         else:
             s = " {:5.1f} ms, {:5.1f} Hz, {:5.2f} Mbit/s".format(dt_ms, f, data_rate_mbps)
             print(s, end="\r")
-
-
-def get_range_depths(sensor_config: configbase.SensorConfig, session_info: dict) -> np.ndarray:
-    """Get range depths in meters."""
-
-    range_start = session_info["range_start_m"]
-    range_end = range_start + session_info["range_length_m"]
-
-    if sensor_config.mode == Mode.SPARSE:
-        num_depths = session_info["data_length"] // sensor_config.sweeps_per_frame
-    elif sensor_config.mode == Mode.POWER_BINS:
-        num_depths = session_info["bin_count"]
-    else:
-        num_depths = session_info["data_length"]
-
-    return np.linspace(range_start, range_end, num_depths)
 
 
 def hex_to_rgb_tuple(hex_color):

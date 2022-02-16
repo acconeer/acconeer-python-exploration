@@ -10,7 +10,7 @@ class PGUpdater:
         self.processing_config = processing_config
 
         self.f = sensor_config.update_rate
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.downsampling_factor = sensor_config.downsampling_factor
         self.step_length = session_info["step_length_m"]
 

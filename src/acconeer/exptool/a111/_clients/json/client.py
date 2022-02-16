@@ -6,14 +6,14 @@ from time import time
 
 import numpy as np
 
-from acconeer.exptool.clients import links
-from acconeer.exptool.clients.base import (
+from acconeer.exptool.a111._clients import links
+from acconeer.exptool.a111._clients.base import (
     BaseClient,
     ClientError,
     SessionSetupError,
     decode_version_str,
 )
-from acconeer.exptool.modes import Mode, get_mode
+from acconeer.exptool.a111._modes import Mode, get_mode
 
 
 log = logging.getLogger(__name__)

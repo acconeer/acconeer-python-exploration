@@ -4,9 +4,9 @@ import acconeer.exptool as et
 
 
 def get_sensor_config():
-    config = et.configs.SparseServiceConfig()
-    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_3
-    config.sampling_mode = et.configs.SparseServiceConfig.SamplingMode.A
+    config = et.a111.SparseServiceConfig()
+    config.profile = et.a111.SparseServiceConfig.Profile.PROFILE_3
+    config.sampling_mode = et.a111.SparseServiceConfig.SamplingMode.A
     config.range_interval = [0.24, 0.48]
     config.sweeps_per_frame = 64
     config.sweep_rate = 3e3

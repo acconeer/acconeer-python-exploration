@@ -6,14 +6,14 @@ from .constants import HISTORY_LENGTH_S
 
 
 def get_sensor_config():
-    config = et.configs.EnvelopeServiceConfig()
-    config.profile = et.configs.EnvelopeServiceConfig.Profile.PROFILE_1
+    config = et.a111.EnvelopeServiceConfig()
+    config.profile = et.a111.EnvelopeServiceConfig.Profile.PROFILE_1
     config.range_interval = [0.04, 0.05]
     config.running_average_factor = 0.01
     config.maximize_signal_attenuation = True
     config.update_rate = 60
     config.gain = 0.2
-    config.repetition_mode = et.configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.a111.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
 
 

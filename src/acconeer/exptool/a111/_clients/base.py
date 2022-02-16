@@ -3,7 +3,8 @@ import logging
 
 from packaging import version
 
-from acconeer.exptool import SDK_VERSION, modes
+from acconeer.exptool import SDK_VERSION
+from acconeer.exptool.a111 import _modes
 from acconeer.exptool.structs import configbase
 
 
@@ -192,7 +193,7 @@ class BaseClient(abc.ABC):
         raise IllegalConfigError(msg)
 
     def _get_supported_modes(self):
-        return set(modes.Mode)
+        return set(_modes.Mode)
 
     @abc.abstractmethod
     def _connect(self):

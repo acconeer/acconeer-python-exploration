@@ -24,9 +24,9 @@ log = logging.getLogger(__name__)
 
 
 def get_sensor_config():
-    config = et.configs.IQServiceConfig()
+    config = et.a111.IQServiceConfig()
     config.range_interval = [0.1, 0.5]
-    config.repetition_mode = et.configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.a111.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
     config.update_rate = int(np.ceil(MAX_SPEED * 4 / WAVELENGTH))
     config.gain = 0.7
     return config

@@ -2,8 +2,9 @@ import functools
 
 import pytest
 
-import acconeer.exptool as pet
-from acconeer.exptool import clients, configs, modes, structs
+import acconeer.exptool as et
+from acconeer.exptool import structs
+from acconeer.exptool.a111 import _configs, _modes
 
 
 def is_test(member_name, modules):
@@ -29,8 +30,8 @@ def is_test(member_name, modules):
     ["UARTClient", "SPIClient", "SocketClient", "PollingUARTClient", "MockClient"],
 )
 def test_top_module_clients(client_type):
-    assert pet.clients == clients
-    assert is_test(client_type, [pet, clients, pet.clients])
+    assert et.a111 == et.a111
+    assert is_test(client_type, [et.a111, et.a111, et.a111])
 
 
 @pytest.mark.parametrize(
@@ -43,14 +44,14 @@ def test_top_module_clients(client_type):
     ],
 )
 def test_top_module_configs(config_type):
-    assert pet.configs == configs
-    assert is_test(config_type, [pet, configs, pet.configs])
+    assert et.a111._configs == _configs
+    assert is_test(config_type, [et.a111, _configs, et.a111._configs])
 
 
 @pytest.mark.parametrize("structs_member", ["configbase"])
 def test_top_module_structs(structs_member):
-    assert is_test(structs_member, [pet, structs, pet.structs])
+    assert is_test(structs_member, [et, structs, et.structs])
 
 
 def test_top_module_mode():
-    assert is_test("Mode", [pet, modes])
+    assert is_test("Mode", [et.a111, _modes])

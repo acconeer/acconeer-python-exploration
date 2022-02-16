@@ -3,8 +3,8 @@ import warnings
 
 from PySide6.QtCore import QThread
 
-from acconeer.exptool import modes
-from acconeer.exptool.recording import Recorder
+from acconeer.exptool.a111 import _modes
+from acconeer.exptool.a111.recording import Recorder
 
 
 warnings.filterwarnings("ignore")
@@ -91,7 +91,7 @@ class DataProcessing:
 
         sensor_config_dict = json.loads(record.sensor_config_dump)
         rate = sensor_config_dict.get("update_rate", None)
-        if rate is None and record.mode == modes.Mode.SPARSE:
+        if rate is None and record.mode == _modes.Mode.SPARSE:
             sweep_rate = sensor_config_dict.get("sweep_rate", None)
             if sweep_rate is None:
                 sweep_rate = record.session_info.get("sweep_rate", None)

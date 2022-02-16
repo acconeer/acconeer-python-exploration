@@ -3,7 +3,7 @@ import pyqtgraph as pg
 from matplotlib.colors import LinearSegmentedColormap
 from pyqtgraph.Qt import QtGui
 
-from acconeer.exptool import utils
+import acconeer.exptool as et
 
 
 class PGUpdater:
@@ -11,10 +11,10 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processing_config = processing_config
 
-        self.depths = utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.depth_res = session_info["step_length_m"]
         self.xs = np.tile(self.depths, sensor_config.sweeps_per_frame)
-        self.smooth_limits = utils.SmoothLimits(sensor_config.update_rate)
+        self.smooth_limits = et.utils.SmoothLimits(sensor_config.update_rate)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer sparse example")
@@ -63,7 +63,7 @@ class PGUpdater:
             self.presence_history_plot.setMouseEnabled(x=False, y=False)
             self.presence_history_plot.hideButtons()
             presence_history_im = pg.ImageItem(autoDownsample=True)
-            presence_history_im.setLookupTable(utils.pg_mpl_cmap("viridis"))
+            presence_history_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
             self.presence_history_plot.addItem(presence_history_im)
             self.presence_history_plot.setLabel("bottom", xlabel)
             self.presence_history_plot.setLabel("left", "Depth (m)")

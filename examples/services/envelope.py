@@ -6,16 +6,16 @@ def main():
     et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = et.SocketClient(args.socket_addr)
+        client = et.a111.SocketClient(args.socket_addr)
     elif args.spi:
-        client = et.SPIClient()
+        client = et.a111.SPIClient()
     else:
         port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.UARTClient(port)
+        client = et.a111.UARTClient(port)
 
     client.squeeze = False
 
-    sensor_config = et.EnvelopeServiceConfig()
+    sensor_config = et.a111.EnvelopeServiceConfig()
     sensor_config.sensor = args.sensors
     sensor_config.range_interval = [0.2, 1.0]
     sensor_config.profile = sensor_config.Profile.PROFILE_2
@@ -49,7 +49,7 @@ def main():
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
 
     def setup(self, win):
         win.setWindowTitle("Acconeer envelope example")

@@ -2,7 +2,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from acconeer.exptool.modes import Mode, get_mode
+from acconeer.exptool.a111._modes import Mode, get_mode
 
 
 RegVal = namedtuple("RegVal", ["addr", "val"])

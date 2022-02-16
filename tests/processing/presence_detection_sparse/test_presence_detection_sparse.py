@@ -22,7 +22,7 @@ PARAMETER_SETS = [
 
 
 def get_output(parameter_set=None):
-    input_record = et.recording.load(HERE / "input.h5")
+    input_record = et.a111.recording.load(HERE / "input.h5")
 
     processing_config = ProcessingConfiguration()
 

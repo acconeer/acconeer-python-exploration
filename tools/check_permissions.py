@@ -30,7 +30,6 @@ def main():
     )
 
     filenames = p.stdout.decode().splitlines()
-
     failed = False
     for filename in filenames:
         info = os.stat(filename)

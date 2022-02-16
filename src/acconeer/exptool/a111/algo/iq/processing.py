@@ -1,27 +1,26 @@
 import numpy as np
 
-from acconeer.exptool import configs, utils
-from acconeer.exptool.structs import configbase
+import acconeer.exptool as et
 
 
 def get_sensor_config():
-    config = configs.IQServiceConfig()
+    config = et.a111.IQServiceConfig()
     config.range_interval = [0.2, 0.8]
     config.update_rate = 30
     return config
 
 
-class ProcessingConfig(configbase.ProcessingConfig):
+class ProcessingConfig(et.configbase.ProcessingConfig):
     VERSION = 2
 
-    history_length = configbase.IntParameter(
+    history_length = et.configbase.IntParameter(
         default_value=100,
         limits=(10, 1000),
         label="History length",
         order=0,
     )
 
-    sf = configbase.FloatParameter(
+    sf = et.configbase.FloatParameter(
         label="Smoothing factor",
         default_value=None,
         limits=(0.1, 0.999),
@@ -39,7 +38,7 @@ get_processing_config = ProcessingConfig
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
-        depths = utils.get_range_depths(sensor_config, session_info)
+        depths = et.a111.get_range_depths(sensor_config, session_info)
         num_depths = depths.size
         num_sensors = len(sensor_config.sensor)
         history_length = processing_config.history_length

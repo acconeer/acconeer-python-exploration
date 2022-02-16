@@ -84,8 +84,8 @@ Slow motions - looking for a person resting in a sofa
       If too low, some (too fast) motions might not be detected.
       If too high, unnecessary noise might be entered into the detector.
 
-      Values larger than half the :attr:`~acconeer.exptool.configs.SparseServiceConfig.update_rate` disables this filter.
-      If that is not enough, you need a higher :attr:`~acconeer.exptool.configs.SparseServiceConfig.update_rate` or to use the intra-frame part.
+      Values larger than half the :attr:`~acconeer.exptool.a111.SparseServiceConfig.update_rate` disables this filter.
+      If that is not enough, you need a higher :attr:`~acconeer.exptool.a111.SparseServiceConfig.update_rate` or to use the intra-frame part.
 
    :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_slow_cutoff`
       If too high, some (too slow) motions might not be detected.
@@ -116,26 +116,26 @@ Tuning the service parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Always start by setting the
-:attr:`~acconeer.exptool.configs.SparseServiceConfig.range_interval`
+:attr:`~acconeer.exptool.a111.SparseServiceConfig.range_interval`
 to the desired interval. This is important, since other parameters depend on this.
 
 The
-:attr:`~acconeer.exptool.configs.SparseServiceConfig.update_rate`
+:attr:`~acconeer.exptool.a111.SparseServiceConfig.update_rate`
 should high enough to keep up with faster motions.
 However, doing so will increase the duty cycle and therefore the power consumption of the system.
 
 The
-:attr:`~acconeer.exptool.configs.SparseServiceConfig.sweeps_per_frame`
+:attr:`~acconeer.exptool.a111.SparseServiceConfig.sweeps_per_frame`
 should also in most cases be set as high as possible, but **after** the frame rate is set. This will also increase the duty cycle and power consumption of the system.
 
 If you want to distinguish depths with presence from those with no presence, set the
-:attr:`~acconeer.exptool.configs.SparseServiceConfig.sampling_mode`
+:attr:`~acconeer.exptool.a111.SparseServiceConfig.sampling_mode`
 to A, otherwise keep it at B (the default) for maximum SNR.
 
 Limiting the
-:attr:`~acconeer.exptool.configs.SparseServiceConfig.sweep_rate`
+:attr:`~acconeer.exptool.a111.SparseServiceConfig.sweep_rate`
 or decreasing
-:attr:`~acconeer.exptool.configs.SparseServiceConfig.hw_accelerated_average_samples`
+:attr:`~acconeer.exptool.a111.SparseServiceConfig.hw_accelerated_average_samples`
 is not recommend.
 
 Detailed description

@@ -6,9 +6,9 @@ import acconeer.exptool as et
 
 
 def get_sensor_config():
-    config = et.configs.SparseServiceConfig()
-    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_3
-    config.sampling_mode = et.configs.SparseServiceConfig.SamplingMode.B
+    config = et.a111.SparseServiceConfig()
+    config.profile = et.a111.SparseServiceConfig.Profile.PROFILE_3
+    config.sampling_mode = et.a111.SparseServiceConfig.SamplingMode.B
     config.range_interval = [0.3, 1.3]
     config.update_rate = 80
     config.sweeps_per_frame = 32
@@ -199,7 +199,7 @@ class Processor:
 
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.f = sensor_config.update_rate
         self.num_removed_pc = processing_config.num_removed_pc

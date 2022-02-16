@@ -14,7 +14,7 @@ INIT_Y_RANGE = 500000
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
         self.sensor_config = sensor_config
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.processing_config = processing_config
 
     def setup(self, win):

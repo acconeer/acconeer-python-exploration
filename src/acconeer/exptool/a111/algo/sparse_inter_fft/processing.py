@@ -4,8 +4,8 @@ import acconeer.exptool as et
 
 
 def get_sensor_config():
-    config = et.configs.SparseServiceConfig()
-    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_3
+    config = et.a111.SparseServiceConfig()
+    config.profile = et.a111.SparseServiceConfig.Profile.PROFILE_3
     config.range_interval = [0.48, 0.72]
     config.sweeps_per_frame = 16
     config.hw_accelerated_average_samples = 60
@@ -87,7 +87,7 @@ get_processing_config = ProcessingConfiguration
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.f = sensor_config.update_rate
-        depths = et.utils.get_range_depths(sensor_config, session_info)
+        depths = et.a111.get_range_depths(sensor_config, session_info)
         self.num_depths = depths.size
 
         max_window_size = 2 ** ProcessingConfiguration.WINDOW_SIZE_POW_OF_2_MAX

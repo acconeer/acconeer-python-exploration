@@ -20,7 +20,7 @@ EPSILON = 0.00001
 
 
 def get_sensor_config():
-    sensor_config = et.configs.SparseServiceConfig()
+    sensor_config = et.a111.SparseServiceConfig()
     sensor_config.range_interval = [0.06, 0.3]
     sensor_config.sweeps_per_frame = 32
     sensor_config.update_rate = 80

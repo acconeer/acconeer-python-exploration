@@ -26,7 +26,7 @@ For further reading on the envelope service we refer to the `Envelope documentat
 Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: acconeer.exptool.configs.EnvelopeServiceConfig
+.. autoclass:: acconeer.exptool.a111.EnvelopeServiceConfig
    :noindex:
    :members:
    :inherited-members:

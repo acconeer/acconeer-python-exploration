@@ -2,7 +2,7 @@ import enum
 import json
 
 from acconeer.exptool import utils
-from acconeer.exptool.modes import Mode, get_mode
+from acconeer.exptool.a111._modes import Mode, get_mode
 from acconeer.exptool.structs import configbase
 
 

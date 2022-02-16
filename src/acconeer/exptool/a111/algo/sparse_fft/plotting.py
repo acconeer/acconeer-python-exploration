@@ -12,7 +12,7 @@ class PGUpdater:
         self.downsampling_factor = sensor_config.downsampling_factor
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         sweep_rate = session_info["sweep_rate"]
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.step_length = session_info["step_length_m"]
         self.f_res = sweep_rate / self.sweeps_per_frame
         self.fft_x_scale = 100 * self.step_length

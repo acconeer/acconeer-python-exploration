@@ -18,16 +18,16 @@ def main():
 
     # Pick client depending on whether socket, SPI, or UART is used
     if args.socket_addr:
-        client = et.SocketClient(args.socket_addr)
+        client = et.a111.SocketClient(args.socket_addr)
     elif args.spi:
-        client = et.SPIClient()
+        client = et.a111.SPIClient()
     else:
         port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.UARTClient(port)
+        client = et.a111.UARTClient(port)
 
     # Create a configuration to run on the sensor. A good first choice
     # is the envelope service, so let's pick that one.
-    config = et.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
 
     # In all examples, we let you set the sensor(s) via the command line
     config.sensor = args.sensors

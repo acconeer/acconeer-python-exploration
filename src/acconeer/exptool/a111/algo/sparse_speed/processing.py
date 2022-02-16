@@ -13,9 +13,9 @@ SEQUENCE_TIMEOUT_LENGTH = 0.5  # s
 
 
 def get_sensor_config():
-    config = et.configs.SparseServiceConfig()
-    config.profile = et.configs.SparseServiceConfig.Profile.PROFILE_4
-    config.sampling_mode = et.configs.SparseServiceConfig.SamplingMode.A
+    config = et.a111.SparseServiceConfig()
+    config.profile = et.a111.SparseServiceConfig.Profile.PROFILE_4
+    config.sampling_mode = et.a111.SparseServiceConfig.SamplingMode.A
     config.range_interval = [0.36, 0.60]
     config.downsampling_factor = 4
     config.sweeps_per_frame = 512
@@ -199,7 +199,7 @@ class Processor:
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         sweep_rate = session_info["sweep_rate"]
         est_frame_rate = sweep_rate / self.sweeps_per_frame
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
 
         if processing_config.processing_method == ProcessingConfiguration.ProcessingMethod.WELCH:
             segment_length = 2 * self.sweeps_per_frame // (processing_config.num_segments + 1)

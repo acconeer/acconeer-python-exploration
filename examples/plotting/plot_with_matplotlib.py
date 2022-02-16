@@ -9,19 +9,19 @@ def main():
     et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = et.SocketClient(args.socket_addr)
+        client = et.a111.SocketClient(args.socket_addr)
     elif args.spi:
-        client = et.SPIClient()
+        client = et.a111.SPIClient()
     else:
         port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.UARTClient(port)
+        client = et.a111.UARTClient(port)
 
-    config = et.configs.IQServiceConfig()
+    config = et.a111.IQServiceConfig()
     config.sensor = args.sensors
     config.update_rate = 10
 
     session_info = client.setup_session(config)
-    depths = et.utils.get_range_depths(config, session_info)
+    depths = et.a111.get_range_depths(config, session_info)
 
     amplitude_y_max = 1000
 

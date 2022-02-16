@@ -6,12 +6,12 @@ def main():
     et.utils.config_logging(args)
 
     if args.socket_addr:
-        client = et.SocketClient(args.socket_addr)
+        client = et.a111.SocketClient(args.socket_addr)
     elif args.spi:
-        client = et.SPIClient()
+        client = et.a111.SPIClient()
     else:
         port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.UARTClient(port)
+        client = et.a111.UARTClient(port)
 
     # Normally when using a single sensor, get_next will return
     # (info, data). When using mulitple sensors, get_next will return
@@ -20,7 +20,7 @@ def main():
     # get_next _always_ return lists, set:
     # client.squeeze = False
 
-    config = et.configs.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
     config.sensor = args.sensors
     config.range_interval = [0.2, 0.3]
     config.update_rate = 5

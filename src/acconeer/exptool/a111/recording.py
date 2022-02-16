@@ -11,14 +11,14 @@ import h5py
 import numpy as np
 
 import acconeer.exptool
-from acconeer.exptool import configs, modes
+from acconeer.exptool.a111 import _configs, _modes
 from acconeer.exptool.structs import configbase
 
 
 @attr.s
 class Record:
     # Sensor session related (required):
-    mode = attr.ib(type=modes.Mode)  # save as str (Mode.name), restore with get_mode
+    mode = attr.ib(type=_modes.Mode)  # save as str (Mode.name), restore with get_mode
     sensor_config_dump = attr.ib(type=str)  # SensorConfig._dumps
     session_info = attr.ib(type=dict)  # save/restore with json.dumps/loads
     data = attr.ib(default=None)  # [np.array], saved as np.array, restore as is
@@ -57,7 +57,7 @@ class Record:
 
     @property
     def sensor_config(self):
-        return configs.load(self.sensor_config_dump, self.mode)
+        return _configs.load(self.sensor_config_dump, self.mode)
 
 
 class Recorder:
@@ -102,7 +102,7 @@ class Recorder:
         self.record.sample_times = []
 
     def sample(self, data_info: list, data: np.ndarray):
-        expected_num_dims = 3 if self.record.mode == modes.Mode.SPARSE else 2
+        expected_num_dims = 3 if self.record.mode == _modes.Mode.SPARSE else 2
         if data.ndim != expected_num_dims:  # then assume data is squeezed
             # unsqueeze (add back sensor dim)
             data = data[None, ...]
@@ -219,7 +219,7 @@ def unpack(packed: dict) -> Record:
             kwargs[k] = packed.get(k, None)
 
     try:
-        mode = modes.get_mode(packed["mode"])
+        mode = _modes.get_mode(packed["mode"])
     except ValueError:
         mode = None
         warnings.warn("unknown mode encountered while unpacking record")

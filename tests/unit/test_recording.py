@@ -4,21 +4,21 @@ import attr
 import numpy as np
 import pytest
 
-from acconeer.exptool import clients, configs, modes, recording
+from acconeer.exptool import a111
 
 
-@pytest.mark.parametrize("mode", modes.Mode)
+@pytest.mark.parametrize("mode", a111.Mode)
 @pytest.mark.parametrize("ext", ["h5", "npz"])
 @pytest.mark.parametrize("give_pathlib_path", [True, False])
 def test_recording(tmp_path, mode, ext, give_pathlib_path):
-    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config = a111._configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.downsampling_factor = 2
 
-    mocker = clients.MockClient()
+    mocker = a111.MockClient()
     mocker.squeeze = False
     session_info = mocker.start_session(config)
 
-    recorder = recording.Recorder(
+    recorder = a111.recording.Recorder(
         sensor_config=config,
         session_info=session_info,
     )
@@ -41,50 +41,50 @@ def test_recording(tmp_path, mode, ext, give_pathlib_path):
     if not give_pathlib_path:
         filename = str(filename)
 
-    recording.save(filename, record)
-    loaded_record = recording.load(filename)
+    a111.recording.save(filename, record)
+    loaded_record = a111.recording.load(filename)
 
-    for a in attr.fields(recording.Record):
+    for a in attr.fields(a111.recording.Record):
         assert np.all(getattr(record, a.name) == getattr(loaded_record, a.name))
 
     assert record.sensor_config.downsampling_factor == config.downsampling_factor
 
 
 def test_unknown_mode():
-    config = configs.EnvelopeServiceConfig()
-    mocker = clients.MockClient()
+    config = a111.EnvelopeServiceConfig()
+    mocker = a111.MockClient()
     mocker.squeeze = False
     session_info = mocker.start_session(config)
-    recorder = recording.Recorder(sensor_config=config, session_info=session_info)
+    recorder = a111.recording.Recorder(sensor_config=config, session_info=session_info)
     data_info, data = mocker.get_next()
     recorder.sample(data_info, data)
     recorder.close()
     record = recorder.record
 
-    packed = recording.pack(record)
+    packed = a111.recording.pack(record)
     assert "mode" in packed
 
     with pytest.warns(None) as captured_warnings:
-        recording.unpack(packed)
+        a111.recording.unpack(packed)
 
     assert len(captured_warnings) == 0
 
     with pytest.warns(UserWarning):
         packed["mode"] = "some_unknown_mode"
-        unpacked = recording.unpack(packed)
+        unpacked = a111.recording.unpack(packed)
 
     assert unpacked.mode is None
 
 
-@pytest.mark.parametrize("mode", modes.Mode)
+@pytest.mark.parametrize("mode", a111.Mode)
 def test_packing_mode(tmp_path, mode):
-    config = configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
+    config = a111._configs.MODE_TO_CONFIG_CLASS_MAP[mode]()
     config.downsampling_factor = 2
 
     sensor_config_dump = config._dumps()
     session_info = {"foo": "bar"}
 
-    record = recording.Record(
+    record = a111.recording.Record(
         mode=mode,
         sensor_config_dump=sensor_config_dump,
         session_info=session_info,
@@ -92,7 +92,7 @@ def test_packing_mode(tmp_path, mode):
         data_info=[],
     )
 
-    packed = recording.pack(record)
-    restored = recording.unpack(packed)
+    packed = a111.recording.pack(record)
+    restored = a111.recording.unpack(packed)
 
     assert restored.mode == mode

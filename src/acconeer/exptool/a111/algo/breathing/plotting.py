@@ -11,7 +11,7 @@ class PGUpdater:
         assert sensor_config.update_rate is not None
 
         f = sensor_config.update_rate
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.hist_plot_len_s = processing_config.hist_plot_len
         self.hist_plot_len = int(round(self.hist_plot_len_s * f))
         self.move_xs = (np.arange(-self.hist_plot_len, 0) + 1) / f

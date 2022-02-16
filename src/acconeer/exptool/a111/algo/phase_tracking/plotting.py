@@ -8,7 +8,7 @@ import acconeer.exptool as et
 
 class PGUpdater:
     def __init__(self, sensor_config, processing_config, session_info):
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.smooth_max = et.utils.SmoothMax(sensor_config.update_rate)
 
     def setup(self, win):

@@ -1,6 +1,6 @@
 import numpy as np
 
-from acconeer.exptool.clients.base import BaseClient, ClientError
+from acconeer.exptool.a111._clients.base import BaseClient, ClientError
 
 
 class MultiClientWrapper(BaseClient):

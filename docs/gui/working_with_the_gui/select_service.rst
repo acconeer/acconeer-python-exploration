@@ -113,14 +113,14 @@ You must not change any function or class names; the only class name you can cha
 
     def get_sensor_config():
         # Define default sensor config and service to use
-        config = configs.EnvelopeServiceConfig()
-        config.profile = configs.EnvelopeServiceConfig.Profile.PROFILE_1
+        config = a111.EnvelopeServiceConfig()
+        config.profile = a111.EnvelopeServiceConfig.Profile.PROFILE_1
         config.range_interval = [0.04, 0.05]
         config.running_average_factor = 0.01
         config.maximize_signal_attenuation = True
         config.update_rate = 60
         config.gain = 0.2
-        config.repetition_mode = configs.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
+        config.repetition_mode = a111.EnvelopeServiceConfig.RepetitionMode.SENSOR_DRIVEN
         return config
 
 

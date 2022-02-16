@@ -4,10 +4,10 @@ import acconeer.exptool as et
 
 
 def get_sensor_config():
-    config = et.configs.IQServiceConfig()
+    config = et.a111.IQServiceConfig()
     config.range_interval = [0.3, 0.6]
     config.update_rate = 80
-    config.repetition_mode = et.configs.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
+    config.repetition_mode = et.a111.IQServiceConfig.RepetitionMode.SENSOR_DRIVEN
     return config
 
 

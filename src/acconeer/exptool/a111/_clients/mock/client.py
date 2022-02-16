@@ -4,9 +4,9 @@ from time import sleep, time
 import numpy as np
 
 from acconeer.exptool import SDK_VERSION
-from acconeer.exptool.clients.base import BaseClient, ClientError, decode_version_str
-from acconeer.exptool.configs import BaseServiceConfig
-from acconeer.exptool.modes import Mode
+from acconeer.exptool.a111._clients.base import BaseClient, ClientError, decode_version_str
+from acconeer.exptool.a111._configs import BaseServiceConfig
+from acconeer.exptool.a111._modes import Mode
 
 
 log = logging.getLogger(__name__)

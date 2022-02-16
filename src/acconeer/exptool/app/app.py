@@ -33,9 +33,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool import SDK_VERSION, clients, configs, recording, utils
+import acconeer.exptool as et
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo
-from acconeer.exptool.structs import configbase
 
 import platformdirs
 
@@ -91,7 +90,7 @@ class GUI(QMainWindow):
         self.client = None
         self.num_recv_frames = 0
         self.num_missed_frames = 0
-        self.measured_update_rate_fc = utils.FreqCounter()
+        self.measured_update_rate_fc = et.utils.FreqCounter()
         self.reset_missed_frame_text_time = None
         self.service_labels = {}
         self.service_params = None
@@ -292,7 +291,7 @@ class GUI(QMainWindow):
         processing_config = self.update_service_params()
 
         if session_info is None:
-            session_info = clients.MockClient().setup_session(sensor_config, check_config=False)
+            session_info = et.a111.MockClient().setup_session(sensor_config, check_config=False)
 
         if self.current_module_info is None:
             return
@@ -315,7 +314,7 @@ class GUI(QMainWindow):
                     continue
 
                 category = pidget.param.category
-                if category == configbase.Category.ADVANCED:
+                if category == et.configbase.Category.ADVANCED:
                     grid = self.advanced_sensor_config_section.grid
                     count = self.advanced_sensor_param_count
                 else:
@@ -328,7 +327,7 @@ class GUI(QMainWindow):
         self.last_processing_config = None
 
         for processing_config in self.module_label_to_processing_config_map.values():
-            if not isinstance(processing_config, configbase.Config):
+            if not isinstance(processing_config, et.configbase.Config):
                 continue
 
             processing_config._event_handlers.add(self.pidget_processing_config_event_handler)
@@ -338,7 +337,7 @@ class GUI(QMainWindow):
                 if pidget is None:
                     continue
 
-                if pidget.param.category == configbase.Category.ADVANCED:
+                if pidget.param.category == et.configbase.Category.ADVANCED:
                     grid = self.advanced_processing_config_section.grid
                     count = self.param_grid_count
                 else:
@@ -351,7 +350,7 @@ class GUI(QMainWindow):
         self.last_calibration_config = None
 
         for calibration_config in self.module_label_to_calibration_config_map.values():
-            if not isinstance(calibration_config, configbase.Config):
+            if not isinstance(calibration_config, et.configbase.Config):
                 continue
 
             calibration_config._event_handlers.add(self.pidget_calibration_config_event_handler)
@@ -381,7 +380,7 @@ class GUI(QMainWindow):
 
         if self.last_sensor_config != sensor_config:
             if self.last_sensor_config is not None:
-                self.last_sensor_config._state = configbase.Config.State.UNLOADED
+                self.last_sensor_config._state = et.configbase.Config.State.UNLOADED
 
             self.last_sensor_config = sensor_config
 
@@ -390,12 +389,12 @@ class GUI(QMainWindow):
             self.advanced_sensor_config_section.setVisible(False)
             return
 
-        sensor_config._state = configbase.Config.State.LOADED
+        sensor_config._state = et.configbase.Config.State.LOADED
 
         has_basic_params = has_advanced_params = False
         for param in sensor_config._get_params():
             if param.visible:
-                if param.category == configbase.Category.ADVANCED:
+                if param.category == et.configbase.Category.ADVANCED:
                     has_advanced_params = True
                 else:
                     has_basic_params = True
@@ -407,8 +406,8 @@ class GUI(QMainWindow):
         processing_config = self.get_processing_config()
 
         if self.last_processing_config != processing_config:
-            if isinstance(self.last_processing_config, configbase.Config):
-                self.last_processing_config._state = configbase.Config.State.UNLOADED
+            if isinstance(self.last_processing_config, et.configbase.Config):
+                self.last_processing_config._state = et.configbase.Config.State.UNLOADED
 
             self.last_processing_config = processing_config
 
@@ -418,15 +417,15 @@ class GUI(QMainWindow):
             return
 
         # TODO: remove the follow check when migration to configbase is done
-        if not isinstance(processing_config, configbase.Config):
+        if not isinstance(processing_config, et.configbase.Config):
             return
 
-        processing_config._state = configbase.Config.State.LOADED
+        processing_config._state = et.configbase.Config.State.LOADED
 
         has_basic_params = has_advanced_params = False
         for param in processing_config._get_params():
             if param.visible:
-                if param.category == configbase.Category.ADVANCED:
+                if param.category == et.configbase.Category.ADVANCED:
                     has_advanced_params = True
                 else:
                     has_basic_params = True
@@ -438,8 +437,8 @@ class GUI(QMainWindow):
         calibration_config = self.get_calibration_config()
 
         if self.last_calibration_config != calibration_config:
-            if isinstance(self.last_calibration_config, configbase.Config):
-                self.last_calibration_config._state = configbase.Config.State.UNLOADED
+            if isinstance(self.last_calibration_config, et.configbase.Config):
+                self.last_calibration_config._state = et.configbase.Config.State.UNLOADED
 
             self.last_calibration_config = calibration_config
 
@@ -447,7 +446,7 @@ class GUI(QMainWindow):
             self.calibration_config_section.hide()
             return
 
-        calibration_config._state = configbase.Config.State.LOADED_READONLY
+        calibration_config._state = et.configbase.Config.State.LOADED_READONLY
 
         self.calibration_config_section.setVisible(True)
 
@@ -530,7 +529,7 @@ class GUI(QMainWindow):
         alerts = sensor_config._update_pidgets(additional_alerts=pass_on_alerts["sensor"])
         all_alerts.extend(alerts)
 
-        if isinstance(processing_config, configbase.Config):
+        if isinstance(processing_config, et.configbase.Config):
             alerts = processing_config._update_pidgets(
                 additional_alerts=pass_on_alerts["processing"]
             )
@@ -539,11 +538,11 @@ class GUI(QMainWindow):
         if calibration_config is None:
             calibration_config = self.get_calibration_config()
 
-        if isinstance(calibration_config, configbase.Config):
+        if isinstance(calibration_config, et.configbase.Config):
             alerts = calibration_config._update_pidgets()
             all_alerts.extend(alerts)
 
-        has_error = any([a.severity == configbase.Severity.ERROR for a in all_alerts])
+        has_error = any([a.severity == et.configbase.Severity.ERROR for a in all_alerts])
         self.set_gui_state("has_config_error", has_error)
 
     def init_dropdowns(self):
@@ -619,7 +618,7 @@ class GUI(QMainWindow):
 
     def update_ports(self):
         select = -1
-        port_tag_tuples = utils.get_tagged_serial_ports()
+        port_tag_tuples = et.utils.get_tagged_serial_ports()
         if os.name == "posix":
             ports = []
             for i, (port, tag) in enumerate(port_tag_tuples):
@@ -989,7 +988,7 @@ class GUI(QMainWindow):
     def service_defaults_handler(self):
         processing_config = self.get_processing_config()
 
-        if isinstance(processing_config, configbase.Config):
+        if isinstance(processing_config, et.configbase.Config):
             processing_config._reset()
             return
 
@@ -1330,16 +1329,16 @@ class GUI(QMainWindow):
         self.reset_missed_frame_text_time = None
         self.threaded_scan.start()
 
-        if isinstance(processing_config, configbase.Config):
+        if isinstance(processing_config, et.configbase.Config):
             self.basic_processing_config_section.body_widget.setEnabled(True)
             self.buttons["service_defaults"].setEnabled(False)
             self.buttons["advanced_defaults"].setEnabled(False)
-            processing_config._state = configbase.Config.State.LIVE
+            processing_config._state = et.configbase.Config.State.LIVE
         else:
             self.basic_processing_config_section.body_widget.setEnabled(False)
 
         if calibration_config:
-            calibration_config._state = configbase.Config.State.LOADED_READONLY
+            calibration_config._state = et.configbase.Config.State.LOADED_READONLY
 
         self.buttons["connect"].setEnabled(False)
 
@@ -1438,9 +1437,9 @@ class GUI(QMainWindow):
             strict_ver = None
 
         if strict_ver is not None:
-            if strict_ver < version.parse(SDK_VERSION):
+            if strict_ver < version.parse(et.SDK_VERSION):
                 ver_mismatch = "RSS server"
-            elif strict_ver > version.parse(SDK_VERSION):
+            elif strict_ver > version.parse(et.SDK_VERSION):
                 ver_mismatch = "Exploration Tool"
             else:
                 ver_mismatch = None
@@ -1467,11 +1466,11 @@ class GUI(QMainWindow):
         sensor_config = self.get_sensor_config()
         if sensor_config:
             if states["load_state"] == LoadState.LOADED:
-                sensor_config._state = configbase.Config.State.LOADED_READONLY
+                sensor_config._state = et.configbase.Config.State.LOADED_READONLY
             elif not states["scan_is_running"]:
-                sensor_config._state = configbase.Config.State.LOADED
+                sensor_config._state = et.configbase.Config.State.LOADED
             else:
-                sensor_config._state = configbase.Config.State.LIVE
+                sensor_config._state = et.configbase.Config.State.LIVE
 
         calibration_config = self.get_calibration_config()
         if calibration_config:
@@ -1479,14 +1478,14 @@ class GUI(QMainWindow):
                 # Covers case where scan is stopped before a calibration
                 # is returned from the processor, which would leave the config
                 # in an editable state.
-                calibration_config._state = configbase.Config.State.LOADED_READONLY
+                calibration_config._state = et.configbase.Config.State.LOADED_READONLY
             else:
                 if states["load_state"] == LoadState.LOADED:
-                    calibration_config._state = configbase.Config.State.LOADED_READONLY
+                    calibration_config._state = et.configbase.Config.State.LOADED_READONLY
                 elif not states["scan_is_running"]:
-                    calibration_config._state = configbase.Config.State.LOADED
+                    calibration_config._state = et.configbase.Config.State.LOADED
                 else:
-                    calibration_config._state = configbase.Config.State.LIVE
+                    calibration_config._state = et.configbase.Config.State.LIVE
 
         for sensor_widget in self.sensor_widgets.values():
             sensor_widget.setEnabled(not states["scan_is_running"])
@@ -1537,10 +1536,10 @@ class GUI(QMainWindow):
         self.basic_processing_config_section.body_widget.setEnabled(True)
 
         processing_config = self.get_processing_config()
-        if isinstance(processing_config, configbase.Config):
+        if isinstance(processing_config, et.configbase.Config):
             self.buttons["service_defaults"].setEnabled(True)
             self.buttons["advanced_defaults"].setEnabled(True)
-            processing_config._state = configbase.Config.State.LOADED
+            processing_config._state = et.configbase.Config.State.LOADED
 
         self.set_gui_state("replaying_data", False)
 
@@ -1550,19 +1549,19 @@ class GUI(QMainWindow):
         log_level = logging.INFO
         if self.checkboxes["verbose"].isChecked():
             log_level = logging.DEBUG
-        utils.set_loglevel(log_level)
+        et.utils.set_loglevel(log_level)
 
     def connect_to_server(self):
         if not self.get_gui_state("server_connected"):
             if self.interface_dd.currentText().lower() == "socket (exploration server)":
                 host = self.textboxes["host"].text()
-                self.client = clients.SocketClient(host)
+                self.client = et.a111.SocketClient(host)
                 statusbar_connection_info = "socket ({})".format(host)
             elif self.interface_dd.currentText().lower() == "spi (module server)":
-                self.client = clients.SPIClient()
+                self.client = et.a111.SPIClient()
                 statusbar_connection_info = "SPI"
             elif self.interface_dd.currentText().lower() == "simulated":
-                self.client = clients.MockClient()
+                self.client = et.a111.MockClient()
                 statusbar_connection_info = "simulated interface"
             else:
                 port = self.ports_dd.currentText()
@@ -1576,11 +1575,11 @@ class GUI(QMainWindow):
                     print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
 
                 if self.interface_dd.currentText().lower() == "serial (exploration server)":
-                    self.client = clients.SocketClient(
+                    self.client = et.a111.SocketClient(
                         port, serial_link=True, override_baudrate=self.override_baudrate
                     )
                 else:
-                    self.client = clients.UARTClient(
+                    self.client = et.a111.UARTClient(
                         port, override_baudrate=self.override_baudrate
                     )
                 statusbar_connection_info = "UART ({})".format(port)
@@ -1593,7 +1592,7 @@ class GUI(QMainWindow):
                 text = "Could not connect to server"
                 info_text = None
 
-                if isinstance(self.client, clients.UARTClient):
+                if isinstance(self.client, et.a111.UARTClient):
                     info_text = (
                         "Did you select the right COM port?"
                         " Try unplugging and plugging back in the module!"
@@ -1607,12 +1606,12 @@ class GUI(QMainWindow):
             connected_sensors = [1]  # for the initial set
             self.sensors_available = [1]  # for the sensor widget(s)
 
-            if isinstance(self.client, clients.SocketClient):
+            if isinstance(self.client, et.a111.SocketClient):
                 sensor_count = min(info.get("board_sensor_count", 4), 4)
                 self.sensors_available = list(range(1, sensor_count + 1))
 
                 if sensor_count > 1:
-                    config = configs.SparseServiceConfig()
+                    config = et.a111.SparseServiceConfig()
                     connected_sensors = []
                     for i in range(sensor_count):
                         sensor = i + 1
@@ -1620,14 +1619,14 @@ class GUI(QMainWindow):
                         try:
                             self.client.start_session(config)
                             self.client.stop_session()
-                        except clients.base.SessionSetupError:
+                        except et.a111.SessionSetupError:
                             pass
                         except Exception:
                             self.error_message("Could not connect to server")
                             return
                         else:
                             connected_sensors.append(sensor)
-            elif isinstance(self.client, clients.MockClient):
+            elif isinstance(self.client, et.a111.MockClient):
                 self.sensors_available = list(range(1, 5))
 
             if not connected_sensors:
@@ -1667,7 +1666,7 @@ class GUI(QMainWindow):
         return self.get_sensor_config()
 
     def update_service_params(self):
-        if isinstance(self.get_processing_config(), configbase.Config):
+        if isinstance(self.get_processing_config(), et.configbase.Config):
             return self.get_processing_config()
 
         errors = []
@@ -1765,7 +1764,7 @@ class GUI(QMainWindow):
             return
 
         try:
-            record = recording.load(filename)
+            record = et.a111.recording.load(filename)
         except Exception:
             traceback.print_exc()
             self.error_message(
@@ -1813,7 +1812,7 @@ class GUI(QMainWindow):
 
         if has_loaded_module:
             processing_config = self.get_processing_config()
-            if isinstance(processing_config, configbase.ProcessingConfig):
+            if isinstance(processing_config, et.configbase.ProcessingConfig):
                 if record.processing_config_dump is not None:
                     try:
                         processing_config._loads(record.processing_config_dump)
@@ -1851,7 +1850,7 @@ class GUI(QMainWindow):
         record.legacy_processing_config_dump = None
 
         processing_config = self.get_processing_config()
-        if isinstance(processing_config, configbase.Config):
+        if isinstance(processing_config, et.configbase.Config):
             record.processing_config_dump = processing_config._dumps()
         else:
             try:
@@ -1861,9 +1860,9 @@ class GUI(QMainWindow):
 
         try:
             if "h5" in info:
-                recording.save_h5(filename, record)
+                et.a111.recording.save_h5(filename, record)
             else:
-                recording.save_npz(filename, record)
+                et.a111.recording.save_npz(filename, record)
         except Exception as e:
             traceback.print_exc()
             self.error_message("Failed to save file:\n {:s}".format(e))
@@ -2138,7 +2137,7 @@ class GUI(QMainWindow):
                 if not processing_config:
                     continue
 
-                if isinstance(processing_config, configbase.Config):
+                if isinstance(processing_config, et.configbase.Config):
                     continue
 
                 self.add_params(processing_config, start_up_mode=module_label)
@@ -2291,7 +2290,7 @@ class Threaded_Scan(QtCore.QThread):
                 self._emit("session_info", "", session_info)
                 self.radar.prepare_processing(self, self.params, session_info)
                 self.client.start_session()
-            except clients.base.SessionSetupError:
+            except et.a111.SessionSetupError:
                 self.running = False
                 self._emit("session_setup_error", "")
             except Exception as e:
@@ -2403,7 +2402,7 @@ def remove_user_data_files():
 
 
 def main():
-    utils.config_logging(level=logging.INFO)
+    et.utils.config_logging(level=logging.INFO)
 
     # Enable warnings to be printed to the log, e.g. DeprecationWarning
     warnings.simplefilter("module")

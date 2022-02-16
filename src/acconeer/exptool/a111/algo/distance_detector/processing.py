@@ -10,7 +10,7 @@ PEAK_MERGE_LIMIT_M = 0.005
 
 
 def get_sensor_config():
-    config = et.configs.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
     config.range_interval = [0.2, 0.6]
     config.update_rate = 40
     config.gain = 0.5
@@ -50,7 +50,7 @@ class Processor:
         self.above_thres_hist_sweep_idx = []
         self.above_thres_hist_dist = []
 
-        self.r = et.utils.get_range_depths(sensor_config, session_info)
+        self.r = et.a111.get_range_depths(sensor_config, session_info)
         self.dr = self.r[1] - self.r[0]
         self.sweep_index = 0
 

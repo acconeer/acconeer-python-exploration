@@ -1,36 +1,35 @@
 import numpy as np
 
-from acconeer.exptool import configs, utils
+import acconeer.exptool as et
 from acconeer.exptool.a111.algo.presence_detection_sparse import processing as presence_processing
-from acconeer.exptool.structs import configbase
 
 
 def get_sensor_config():
-    sensor_config = configs.SparseServiceConfig()
+    sensor_config = et.a111.SparseServiceConfig()
     sensor_config.range_interval = [0.24, 1.20]
     sensor_config.update_rate = 60
-    sensor_config.sampling_mode = configs.SparseServiceConfig.SamplingMode.A
-    sensor_config.profile = configs.SparseServiceConfig.Profile.PROFILE_3
+    sensor_config.sampling_mode = et.a111.SparseServiceConfig.SamplingMode.A
+    sensor_config.profile = et.a111.SparseServiceConfig.Profile.PROFILE_3
     sensor_config.hw_accelerated_average_samples = 60
     return sensor_config
 
 
-class ProcessingConfiguration(configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 2
 
-    history_length = configbase.IntParameter(
+    history_length = et.configbase.IntParameter(
         label="History length",
         default_value=100,
     )
 
-    show_data_history_plot = configbase.BoolParameter(
+    show_data_history_plot = et.configbase.BoolParameter(
         label="Show data history",
         default_value=True,
         updateable=True,
         order=110,
     )
 
-    show_move_history_plot = configbase.BoolParameter(
+    show_move_history_plot = et.configbase.BoolParameter(
         label="Show movement history",
         default_value=True,
         updateable=True,
@@ -44,7 +43,7 @@ get_processing_config = ProcessingConfiguration
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         num_sensors = len(sensor_config.sensor)
-        num_depths = utils.get_range_depths(sensor_config, session_info).size
+        num_depths = et.a111.get_range_depths(sensor_config, session_info).size
         history_len = processing_config.history_length
 
         pd_config = presence_processing.get_processing_config()

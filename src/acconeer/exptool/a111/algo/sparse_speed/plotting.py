@@ -15,7 +15,7 @@ class PGUpdater:
 
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         self.sweep_rate = session_info["sweep_rate"]
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.est_update_rate = self.sweep_rate / self.sweeps_per_frame
 

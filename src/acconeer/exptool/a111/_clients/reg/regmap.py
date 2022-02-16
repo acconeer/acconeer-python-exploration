@@ -6,8 +6,8 @@ from functools import partial, reduce
 import attr
 import yaml
 
-from acconeer.exptool import configs
-from acconeer.exptool.modes import Mode, get_mode
+from acconeer.exptool.a111 import _configs
+from acconeer.exptool.a111._modes import Mode, get_mode
 
 
 BYTEORDER = "little"
@@ -160,8 +160,8 @@ STRIPPED_NAME_TO_INFO_REMAP = {
 }
 
 ENUM_REMAP = {
-    configs.BaseServiceConfig.RepetitionMode.SENSOR_DRIVEN: "streaming",
-    configs.BaseServiceConfig.RepetitionMode.HOST_DRIVEN: "on_demand",
+    _configs.BaseServiceConfig.RepetitionMode.SENSOR_DRIVEN: "streaming",
+    _configs.BaseServiceConfig.RepetitionMode.HOST_DRIVEN: "on_demand",
 }
 
 REGISTERS = None
@@ -229,7 +229,7 @@ get_data_info_regs = partial(get_regs_for_mode_in_category, Category.DATA_INFO)
 
 def get_config_key_to_reg_map(mode):  # {config_key: reg}
     mode = get_mode(mode)
-    config_cls = configs.MODE_TO_CONFIG_CLASS_MAP[mode]
+    config_cls = _configs.MODE_TO_CONFIG_CLASS_MAP[mode]
 
     m = {}
     for config_key, reg_name in CONFIG_TO_STRIPPED_REG_NAME_MAP.items():
@@ -256,7 +256,7 @@ def load_yaml():
         return
 
     here = os.path.dirname(os.path.realpath(__file__))
-    yaml_filename = os.path.abspath(os.path.join(here, "../../data/regmap.yaml"))
+    yaml_filename = os.path.abspath(os.path.join(here, "../../../data/regmap.yaml"))
 
     with open(yaml_filename, "r") as f:
         raw_regs = yaml.safe_load(f)

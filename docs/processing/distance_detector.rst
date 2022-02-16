@@ -22,7 +22,7 @@ Sweep averaging
 
 To increase the signal quality, multiple envelope sweeps can be averaged. Averaging many sweeps will stabilize the signal and reduce the influence from noise. Collecting sweeps takes time and consumes power, so the optimal number of sweeps collected for averaging is use-case dependent.
 
-In this detector, sweep averaging is performed in the detector. Therefore, the :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.running_average_factor` in the Envelope service is set to zero so no exponential averaging is performed in the service.
+In this detector, sweep averaging is performed in the detector. Therefore, the :attr:`~acconeer.exptool.a111.EnvelopeServiceConfig.running_average_factor` in the Envelope service is set to zero so no exponential averaging is performed in the service.
 
 Setting threshold
 -----------------
@@ -32,7 +32,7 @@ To be able to determine if any objects are present, the measurement needs to be 
 Fixed threshold
    The most simple approach to setting the threshold is choosing a fixed threshold over the full range. This approach requires that no background objects are present that can trigger detection.
 
-   To maximize the performance with this type of threshold, it is important that the :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.noise_level_normalization` functionality in the Envelope service has not been disabled. Otherwise, there can be variation in noise level over different sensors and different temperatures, which leads to less performance with a fixed threshold.
+   To maximize the performance with this type of threshold, it is important that the :attr:`~acconeer.exptool.a111.EnvelopeServiceConfig.noise_level_normalization` functionality in the Envelope service has not been disabled. Otherwise, there can be variation in noise level over different sensors and different temperatures, which leads to less performance with a fixed threshold.
 
 Recorded or Stationary clutter threshold
    In situations where stationary objects are present, or when measuring very close to the sensor, the background envelope signal is not flat. In these situations it is recommended to use a threshold based on sweeps recorded of only the background, in order to only detect new objects in the scene. The threshold calculation based on background measurements is called Stationary Clutter and sets the threshold from the mean and standard deviation of collected background sweeps. It is important that no object that should be detected is present during the recording of the background.
@@ -85,7 +85,7 @@ In the lower plot in the Distance detector GUI, the first peak after sorting is 
 Measuring close to the sensor
 -----------------------------
 
-Measuring the distance to objects very close to the sensor is difficult due to the presence of the strong direct leakage closer than approximately 6 cm to the radar. However, often the presence of strongly reflecting objects, such as fluid surfaces, can be detected. Optimal performance is obtained by using :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.profile` 1, setting :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.gain` to zero and enabling :attr:`~acconeer.exptool.configs.EnvelopeServiceConfig.maximize_signal_attenuation` to not saturate the sensor and using Recorded threshold. Often, the presence of an object only slightly alters the shape of the direct leakage, so that a well shaped peak is not found. Instead, it is recommended to see if the envelope signal is above threshold by enabling :attr:`~examples.processing.distance_detector.processing.ProcessingConfiguration.show_first_above_threshold`.
+Measuring the distance to objects very close to the sensor is difficult due to the presence of the strong direct leakage closer than approximately 6 cm to the radar. However, often the presence of strongly reflecting objects, such as fluid surfaces, can be detected. Optimal performance is obtained by using :attr:`~acconeer.exptool.a111.EnvelopeServiceConfig.profile` 1, setting :attr:`~acconeer.exptool.a111.EnvelopeServiceConfig.gain` to zero and enabling :attr:`~acconeer.exptool.a111.EnvelopeServiceConfig.maximize_signal_attenuation` to not saturate the sensor and using Recorded threshold. Often, the presence of an object only slightly alters the shape of the direct leakage, so that a well shaped peak is not found. Instead, it is recommended to see if the envelope signal is above threshold by enabling :attr:`~examples.processing.distance_detector.processing.ProcessingConfiguration.show_first_above_threshold`.
 
 Configuration parameters
 ------------------------

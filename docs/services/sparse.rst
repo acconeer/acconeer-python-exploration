@@ -53,7 +53,7 @@ If you're doing things like **gesture recognition** or any **velocity measuremen
 Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: acconeer.exptool.configs.SparseServiceConfig
+.. autoclass:: acconeer.exptool.a111.SparseServiceConfig
    :noindex:
    :members:
    :inherited-members:
@@ -115,7 +115,7 @@ Missed data
    | Type: int
 
    Indicates if a data frame was missed, for example due to a too high
-   :attr:`~acconeer.exptool.configs.SparseServiceConfig.update_rate`.
+   :attr:`~acconeer.exptool.a111.SparseServiceConfig.update_rate`.
 
 Data saturated
    | Python and C SDK: ``data_saturated``

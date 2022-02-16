@@ -25,7 +25,7 @@ For further reading on the power bins service we refer to the `Power Bins docume
 Configuration parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: acconeer.exptool.configs.PowerBinServiceConfig
+.. autoclass:: acconeer.exptool.a111.PowerBinServiceConfig
    :noindex:
    :members:
    :inherited-members:

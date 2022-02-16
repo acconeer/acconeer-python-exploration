@@ -7,13 +7,13 @@ ENVELOPE_BACKGROUND_LEVEL = 100
 
 
 def get_sensor_config():
-    config = et.EnvelopeServiceConfig()
+    config = et.a111.EnvelopeServiceConfig()
     config.downsampling_factor = 2
     config.range_interval = [0.12, 0.62]
     config.running_average_factor = 0
     config.update_rate = 0.5
     config.hw_accelerated_average_samples = 20
-    config.power_save_mode = et.configs.BaseServiceConfig.PowerSaveMode.OFF
+    config.power_save_mode = et.a111._configs.BaseServiceConfig.PowerSaveMode.OFF
     config.asynchronous_measurement = False
 
     return config
@@ -24,7 +24,7 @@ class Processor:
         self.session_info = session_info
 
         self.f = sensor_config.update_rate
-        self.depths = et.utils.get_range_depths(sensor_config, session_info)
+        self.depths = et.a111.get_range_depths(sensor_config, session_info)
 
         self.update_processing_config(processing_config)
 

@@ -5,7 +5,7 @@ import json
 
 import numpy as np
 
-from acconeer.exptool import recording, utils
+import acconeer.exptool as et
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
     filename = args.filename
 
-    record = recording.load(filename)
+    record = et.a111.recording.load(filename)
 
     print_record(record)
 
@@ -26,7 +26,7 @@ def main():
 
     fig, ax = plt.subplots()
 
-    depths = utils.get_range_depths(record.sensor_config, record.session_info)
+    depths = et.a111.get_range_depths(record.sensor_config, record.session_info)
 
     if len(record.data.shape) == 3:  # Envelope, IQ, Power bins
         x = np.arange(len(record.data))

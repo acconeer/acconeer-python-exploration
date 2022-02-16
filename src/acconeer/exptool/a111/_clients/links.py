@@ -10,7 +10,7 @@ from time import sleep, time
 
 import serial
 
-from acconeer.exptool.clients.base import ClientError
+from acconeer.exptool.a111._clients.base import ClientError
 
 
 log = logging.getLogger(__name__)
