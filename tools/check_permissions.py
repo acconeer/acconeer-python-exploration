@@ -50,11 +50,8 @@ def main():
             failed = True
 
     if failed:
-        raise Exception
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception:
-        sys.exit(1)
+    main()
