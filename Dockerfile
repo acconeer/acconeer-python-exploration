@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     python3-pip \
     wget \
+    texlive \
+    texlive-latex-extra \
+    latexmk \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-dev.txt /tmp/

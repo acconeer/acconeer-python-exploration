@@ -35,6 +35,7 @@ pipeline {
             steps {
                 sh 'python3 -m build'
                 sh 'nox -s lint docs test -- --test-groups unit integration app'
+                sh 'nox -s docs_latexpdf'
             }
         }
         stage('Integration tests') {
@@ -93,6 +94,7 @@ pipeline {
         aborted { gerritReview labels: [Verified: -1], message: "Aborted: ${env.BUILD_URL}" }
         always {
             archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'docs/_build/latex/*.pdf', allowEmptyArchive: true
         }
     }
 }
