@@ -3,16 +3,11 @@ How to docs
 
 How to build and run locally::
 
-   # Install Sphinx
-   python3 -m pip install --user sphinx sphinx-autobuild sphinx_rtd_theme
+   # Install development requirements
+   python3 -m pip install -r requirements-dev.txt
 
-   # Install our Python libs
-   # In the root dir:
-   python3 setup.py install --user
-
-   # Start Sphinx autobuild
-   # Also in the root dir:
-   sphinx-autobuild -b html docs docs/_build
+   # Start Sphinx autobuild through nox (installed with the last command)
+   nox -s docs_autobuild
 
 Open http://127.0.0.1:8000/ in your preferred browser.
 
