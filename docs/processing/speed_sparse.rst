@@ -62,7 +62,7 @@ When the estimated PSD is attained by the methods above, the speed can easily be
 Graphical overview
 ^^^^^^^^^^^^^^^^^^
 
-.. graphviz:: /graphs/speed_sparse.dot
+.. graphviz:: /_graphs/speed_sparse.dot
    :align: center
 
 Configuration parameters

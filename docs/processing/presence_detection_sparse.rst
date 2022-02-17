@@ -312,7 +312,7 @@ parameter.
 Graphical overview
 ^^^^^^^^^^^^^^^^^^
 
-.. graphviz:: /graphs/presence_detection_sparse.dot
+.. graphviz:: /_graphs/presence_detection_sparse.dot
    :align: center
 
 .. _calculating-smoothing-factors:
