@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-dev.txt /tmp/
-RUN python3 -m pip install -r /tmp/requirements-dev.txt
+RUN python3 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
 
 ENV QT_QPA_PLATFORM offscreen
 
