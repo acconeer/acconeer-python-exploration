@@ -4,12 +4,15 @@ import signal
 import struct
 import sys
 import time
-from argparse import ArgumentParser
+from argparse import SUPPRESS, ArgumentParser, Namespace
 from datetime import datetime
+from typing import Any, Dict
 
 import numpy as np
 import serial.tools.list_ports
 from packaging import version
+
+import acconeer.exptool as et
 
 
 try:
@@ -53,6 +56,14 @@ class ExampleArgumentParser(ArgumentParser):
         )
 
         self.add_argument(
+            "--protocol",
+            metavar="protocol",
+            help='What specific protocol to use. Any of "module", "exploration" or "streaming"',
+            choices=["module", "exploration", "streaming"],
+            default=SUPPRESS,
+        )
+
+        self.add_argument(
             "--sensor",
             metavar="id",
             dest="sensors",
@@ -77,6 +88,31 @@ class ExampleArgumentParser(ArgumentParser):
             "--quiet",
             action="store_true",
         )
+
+
+def get_client_args(namespace: Namespace) -> Dict[str, Any]:
+    """
+    Filters a passed Namespace to extract client-creation related args.
+
+    :returns: dictionary with client-related keyword-arguments.
+    """
+    result = {}
+    ns_dict = vars(namespace)
+
+    if "protocol" in ns_dict:
+        result["protocol"] = ns_dict["protocol"]
+
+    if "socket_addr" in ns_dict:
+        result["host"] = ns_dict["socket_addr"]
+        result["link"] = et.a111.Link.SOCKET
+    elif "spi" in ns_dict:
+        result["link"] = et.a111.Link.SPI
+    elif "serial_port" in ns_dict:
+        if ns_dict["serial_port"]:
+            result["serial_port"] = ns_dict["serial_port"]
+        result["link"] = et.a111.Link.UART
+
+    return result
 
 
 class ExampleInterruptHandler:

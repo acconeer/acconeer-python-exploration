@@ -7,13 +7,7 @@ def main(module_info: ModuleInfo):
     args = et.utils.ExampleArgumentParser(**arg_parse_kwargs).parse_args()
     et.utils.config_logging(args)
 
-    if args.socket_addr:
-        client = et.a111.SocketClient(args.socket_addr)
-    elif args.spi:
-        client = et.a111.SPIClient()
-    else:
-        port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.a111.UARTClient(port)
+    client = et.a111.Client(**et.utils.get_client_args(args))
 
     client.squeeze = not module_info.multi_sensor
 
