@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import numpy as np
 
 import acconeer.exptool as et
 
 from .client_factory import ClientFactory
-from .common import LinkArg, ProtocolArg
+from .common import Link, LinkArg, ProtocolArg
+from .json.client import SocketClient
+from .mock.client import MockClient
+from .reg.client import SPIClient, UARTClient
 
 
 class Client:
@@ -16,6 +19,7 @@ class Client:
         *,
         protocol: Optional[ProtocolArg] = None,
         link: Optional[LinkArg] = None,
+        mock: bool = False,
         **kwargs: Any,
     ):
         """
@@ -28,6 +32,9 @@ class Client:
             What link the client is supposed to use. Can be any :class:`.Link`
             member or their ``str```-counterparts.
             ``link=None`` (default) will try to auto-detect.
+
+        :param mock:
+            Whether this Client should be a simulated client.
 
         :param kwargs:
             These are the supported kwargs:
@@ -43,7 +50,22 @@ class Client:
 
         :raises: ValueError if a ``Client`` could not be created from the arguments.
         """
-        self.subclient = ClientFactory.from_kwargs(protocol=protocol, link=link, **kwargs)
+        if mock:
+            self.subclient = MockClient()
+        else:
+            self.subclient = ClientFactory.from_kwargs(protocol=protocol, link=link, **kwargs)
+
+    def get_link_type(self) -> Union[Link, Literal["mock"]]:
+        if isinstance(self.subclient, MockClient):
+            return "mock"
+        elif isinstance(self.subclient, UARTClient):
+            return Link.UART
+        elif isinstance(self.subclient, SPIClient):
+            return Link.SPI
+        elif isinstance(self.subclient, SocketClient):
+            return Link.SOCKET
+        else:
+            raise ValueError(f"Unknown subclient type: {type(self.subclient)}")
 
     def connect(self) -> dict:
         """Initiates a connection with the device.
@@ -133,7 +155,7 @@ class Client:
 
     @property
     def supported_modes(self):
-        return self.subclient._get_supported_modes()
+        return self.subclient.supported_modes
 
     @property
     def squeeze(self):

@@ -35,9 +35,6 @@ from PySide6.QtWidgets import (
 import pyqtgraph as pg
 
 import acconeer.exptool as et
-from acconeer.exptool.a111._clients.json.client import SocketClient
-from acconeer.exptool.a111._clients.mock.client import MockClient
-from acconeer.exptool.a111._clients.reg.client import SPIClient, UARTClient
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo
 
 import platformdirs
@@ -295,7 +292,8 @@ class GUI(QMainWindow):
         processing_config = self.update_service_params()
 
         if session_info is None:
-            session_info = MockClient().setup_session(sensor_config, check_config=False)
+            client = et.a111.Client(mock=True)
+            session_info = client.setup_session(sensor_config, check_config=False)
 
         if self.current_module_info is None:
             return
@@ -1555,36 +1553,44 @@ class GUI(QMainWindow):
             log_level = logging.DEBUG
         et.utils.set_loglevel(log_level)
 
+    def get_client_arguments_from_ui_elements(self):
+        interface_text = self.interface_dd.currentText()
+
+        if "simulated" in interface_text.lower():
+            return dict(mock=True)
+
+        kwargs = {}
+
+        if "socket" in interface_text.lower():
+            kwargs["host"] = self.textboxes["host"].text()
+            kwargs["link"] = "socket"
+        elif "spi" in interface_text.lower():
+            kwargs["link"] = "spi"
+        elif "serial" in interface_text.lower():
+            port_label = self.ports_dd.currentText()
+            port, *_ = port_label.split(" ")
+            kwargs["serial_port"] = port
+            kwargs["link"] = "uart"
+
+        if self.override_baudrate is not None:
+            kwargs["override_baudrate"] = self.override_baudrate
+
+        if "exploration" in interface_text.lower():
+            kwargs["protocol"] = "exploration"
+        elif "module" in interface_text.lower():
+            kwargs["protocol"] = "module"
+
+        return kwargs
+
     def connect_to_server(self):
         if not self.get_gui_state("server_connected"):
-            if self.interface_dd.currentText().lower() == "socket (exploration server)":
-                host = self.textboxes["host"].text()
-                self.client = SocketClient(host)
-                statusbar_connection_info = "socket ({})".format(host)
-            elif self.interface_dd.currentText().lower() == "spi (module server)":
-                self.client = SPIClient()
-                statusbar_connection_info = "SPI"
-            elif self.interface_dd.currentText().lower() == "simulated":
-                self.client = MockClient()
-                statusbar_connection_info = "simulated interface"
-            else:
-                port = self.ports_dd.currentText()
-                if not port:
-                    self.error_message("Please select port first!")
-                    return
+            client_kwargs = self.get_client_arguments_from_ui_elements()
+            self.client = et.a111.Client(**client_kwargs)
 
-                port, *_ = port.split(" ")
+            statusbar_connection_info = self.client.description
 
-                if self.override_baudrate:
-                    print("Warning: Overriding baudrate ({})!".format(self.override_baudrate))
-
-                if self.interface_dd.currentText().lower() == "serial (exploration server)":
-                    self.client = SocketClient(
-                        port, serial_link=True, override_baudrate=self.override_baudrate
-                    )
-                else:
-                    self.client = UARTClient(port, override_baudrate=self.override_baudrate)
-                statusbar_connection_info = "UART ({})".format(port)
+            if self.override_baudrate:
+                log.warning(f"Overriding baudrate ({self.override_baudrate})!")
 
             self.client.squeeze = False
 
@@ -1594,7 +1600,7 @@ class GUI(QMainWindow):
                 text = "Could not connect to server"
                 info_text = None
 
-                if isinstance(self.client, UARTClient):
+                if self.client.get_link_type() == et.a111.Link.UART:
                     info_text = (
                         "Did you select the right COM port?"
                         " Try unplugging and plugging back in the module!"
@@ -1608,7 +1614,7 @@ class GUI(QMainWindow):
             connected_sensors = [1]  # for the initial set
             self.sensors_available = [1]  # for the sensor widget(s)
 
-            if isinstance(self.client, SocketClient):
+            if self.client.get_link_type() == et.a111.Link.SOCKET:
                 sensor_count = min(info.get("board_sensor_count", 4), 4)
                 self.sensors_available = list(range(1, sensor_count + 1))
 
@@ -1628,7 +1634,7 @@ class GUI(QMainWindow):
                             return
                         else:
                             connected_sensors.append(sensor)
-            elif isinstance(self.client, MockClient):
+            if self.client.get_link_type() == "mock":
                 self.sensors_available = list(range(1, 5))
 
             if not connected_sensors:
