@@ -424,6 +424,10 @@ class UARTClient(RegBaseClient):
         exp_frame = protocol.insert_packet_into_frame(exp_packet)
         self._link.recv_until(exp_frame)
 
+    @property
+    def description(self):
+        return f"UART ({self._link._port})"
+
 
 class PollingUARTClient(UARTClient):
     def __init__(self, port, **kwargs):
@@ -610,6 +614,10 @@ class SPIClient(RegBaseClient):
             elif ret_cmd != cmd:
                 raise ClientError
         return ret_args
+
+    @property
+    def description(self):
+        return "SPI"
 
 
 class SPICommProcess(mp.Process):

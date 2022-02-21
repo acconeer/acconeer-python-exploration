@@ -192,6 +192,11 @@ class BaseClient(abc.ABC):
         msg = "error in config: {}: {}".format(error_alert.param, error_alert.msg)
         raise IllegalConfigError(msg)
 
+    @property
+    @abc.abstractmethod
+    def description(self):
+        pass
+
     def _get_supported_modes(self):
         return set(_modes.Mode)
 

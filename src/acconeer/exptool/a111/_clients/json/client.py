@@ -561,6 +561,13 @@ class SocketClient(BaseClient):
             self._protocol.squeeze = squeeze
         self._squeeze = squeeze
 
+    @property
+    def description(self):
+        if isinstance(self._link, links.ExploreSerialLink):
+            return f"UART ({self._link._port})"
+        else:
+            return f"socket ({self._link._host})"
+
 
 CONFIG_TO_CMD_KEY_MAP = {
     "sensor": "sensors",

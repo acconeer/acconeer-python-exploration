@@ -142,3 +142,7 @@ class Client:
     @squeeze.setter
     def squeeze(self, squeeze):
         self.subclient.squeeze = squeeze
+
+    @property
+    def description(self) -> str:
+        return self.subclient.description

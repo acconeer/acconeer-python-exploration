@@ -96,6 +96,10 @@ class MockClient(BaseClient):
     def _disconnect(self):
         pass
 
+    @property
+    def description(self):
+        return "simulated interface"
+
 
 class DenseMocker:
     BASE_STEP_LENGTH = 0.485e-3
