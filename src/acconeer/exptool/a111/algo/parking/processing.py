@@ -13,7 +13,7 @@ def get_sensor_config():
     config.running_average_factor = 0
     config.update_rate = 0.5
     config.hw_accelerated_average_samples = 20
-    config.power_save_mode = et.a111._configs.BaseServiceConfig.PowerSaveMode.OFF
+    config.power_save_mode = et.a111.EnvelopeServiceConfig.PowerSaveMode.OFF
     config.asynchronous_measurement = False
 
     return config
