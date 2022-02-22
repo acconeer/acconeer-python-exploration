@@ -87,9 +87,10 @@ You must not change any function or class names; the only class name you can cha
    :emphasize-lines: 11,12,26,27,39,40,41,61,62,63,71,72,75,76,77,87,88,95,96,97,113,114,117,118,119
 
     import numpy as np
-    import pyqtgraph as pg
 
     from PySide6 import QtCore
+
+    import pyqtgraph as pg
 
     from acconeer.exptool import configs, utils
     from acconeer.exptool.clients import SocketClient, SPIClient, UARTClient

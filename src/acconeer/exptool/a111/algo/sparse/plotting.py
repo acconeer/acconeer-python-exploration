@@ -1,7 +1,9 @@
 import numpy as np
-import pyqtgraph as pg
 from matplotlib.colors import LinearSegmentedColormap
-from pyqtgraph.Qt import QtGui
+
+from PySide6 import QtGui
+
+import pyqtgraph as pg
 
 import acconeer.exptool as et
 

@@ -1,5 +1,6 @@
+from PySide6 import QtGui
+
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui
 
 import acconeer.exptool as et
 

@@ -13,7 +13,6 @@ import webbrowser
 from typing import Optional
 
 import numpy as np
-import pyqtgraph as pg
 from packaging import version
 
 from PySide6 import QtCore, QtWidgets
@@ -32,6 +31,8 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QWidget,
 )
+
+import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo

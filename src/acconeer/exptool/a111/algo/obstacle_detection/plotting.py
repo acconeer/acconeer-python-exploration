@@ -1,11 +1,11 @@
 import logging
 
 import numpy as np
-import pyqtgraph as pg
 from numpy import unravel_index
-from pyqtgraph.Qt import QtGui
 
-from PySide6 import QtCore
+from PySide6 import QtCore, QtGui
+
+import pyqtgraph as pg
 
 import acconeer.exptool as et
 

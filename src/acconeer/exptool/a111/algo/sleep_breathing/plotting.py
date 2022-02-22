@@ -1,4 +1,5 @@
 import numpy as np
+
 import pyqtgraph as pg
 
 import acconeer.exptool as et

@@ -1,6 +1,8 @@
 import numpy as np
+
+from PySide6 import QtGui, QtWidgets
+
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtWidgets
 
 import acconeer.exptool as et
 

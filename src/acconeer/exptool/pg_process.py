@@ -46,9 +46,9 @@ class PGProcess:
 
 
 def pg_process_program(q, exit_event, updater, max_freq):
-    import pyqtgraph as pg
-
     from PySide6 import QtWidgets
+
+    import pyqtgraph as pg
 
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 

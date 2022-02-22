@@ -13,14 +13,14 @@ from packaging import version
 
 
 try:
-    import pyqtgraph as pg
-except ImportError:
-    pg = None
-
-try:
     from PySide6 import QtCore
 except ImportError:
     QtCore = None
+
+try:
+    import pyqtgraph as pg
+except ImportError:
+    pg = None
 
 
 class ExampleArgumentParser(ArgumentParser):
