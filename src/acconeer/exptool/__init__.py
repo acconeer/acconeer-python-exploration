@@ -1,6 +1,6 @@
 SDK_VERSION = "2.10.0"
 
-from . import a111
+from . import a111, utils
 from .pg_process import PGProccessDiedException, PGProcess
 from .structs import configbase
 
