@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-
-import os
-import sys
-
-
-conf_dir = os.path.dirname(os.path.realpath(__file__))
-root_dir = os.path.abspath(os.path.join(conf_dir, ".."))
-sys.path.append(root_dir)
-
 project = "acconeer-python-exploration"
 copyright = "2019 - 2022, Acconeer AB"
 author = "Acconeer AB"
