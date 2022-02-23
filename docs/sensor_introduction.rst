@@ -23,7 +23,9 @@ To further support and guide you through the development process we also provide
 
 .. figure:: /_static/introduction/fig_selected_use_cases.png
     :align: center
+    :width: 38%
 
+    Selected use cases.
 
 Radar basics and the Acconeer pulsed coherent radar
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -44,6 +46,7 @@ There are different approaches to building radar systems, each with its own pros
 .. _fig_pulsed_coherent_radar:
 .. figure:: /_static/introduction/fig_pulsed_coherent_radar.png
     :align: center
+    :width: 60%
 
     Pulsed coherent radar.
 
@@ -53,6 +56,7 @@ The unique selling points of the PCR sensor are summarized in :numref:`fig_uniqu
 .. _fig_unique_selling_points:
 .. figure:: /_static/introduction/fig_unique_selling_points.png
     :align: center
+    :width: 85%
 
     Unique selling points of the Acconeer pulsed coherent radar.
 
@@ -81,6 +85,7 @@ The A111 sensor is the core of the hardware offer and is available in modules an
 .. _fig_system_structure:
 .. figure:: /_static/introduction/fig_system_structure.png
     :align: center
+    :width: 65%
 
     System structure, the RSS software runs on a host that controls the sensor.
 
@@ -115,6 +120,7 @@ Based on these deliveries it is possible for the customer to create their own in
 .. _fig_product_sw_offer:
 .. figure:: /_static/introduction/fig_product_sw_offer.png
     :align: center
+    :width: 92%
 
     Products and software deliverables.
 
@@ -130,6 +136,7 @@ The two setups listed above are also illustrated in :numref:`fig_setups`.
 .. _fig_setups:
 .. figure:: /_static/introduction/fig_setups.png
     :align: center
+    :width: 97%
 
     Setup.
 
@@ -146,6 +153,7 @@ To help you to get to know the Acconeer products and get started quickly with ap
 .. _fig_sw_hw_if:
 .. figure:: /_static/introduction/fig_sw_hw_if.png
     :align: center
+    :width: 97%
 
     Overview of software and hardware interfaces to Acconeer tools.
 
@@ -158,6 +166,7 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 .. _fig_detectors_services:
 .. figure:: /_static/introduction/fig_detectors_services.png
     :align: center
+    :width: 70%
 
     Available Detectors and Services.
 
@@ -183,6 +192,7 @@ Envelope and Power Bins services
 .. _fig_env_demo:
 .. figure:: /_static/introduction/fig_env_demo.png
     :align: center
+    :width: 80%
 
     Output from the Envelope service in Exploration Tool.
 
@@ -203,6 +213,7 @@ The cartesian data can be transformed to polar data providing phase and amplitud
 .. _fig_wavelet:
 .. figure:: /_static/introduction/fig_wavelet.png
     :align: center
+    :width: 95%
 
     Illustration of envelope and phase change of a received pulse for a reflection from a moving object, what is returned from the IQ Service is in cartesian form.
 
@@ -331,6 +342,7 @@ The radar cross section is the effective area of the object that the signal is r
 .. _fig_rcs:
 .. figure:: /_static/introduction/fig_rcs.png
     :align: center
+    :width: 95%
 
     Radiation pattern and analytical expressions for simple geometrical shapes.
 
@@ -628,6 +640,7 @@ The A111 sensor contains the mmWave front-end, digital control logic, digitizati
 .. _fig_host_platform:
 .. figure:: /_static/introduction/fig_host_platform.png
     :align: center
+    :width: 80%
 
     Illustration of integration into host platform, the A111 is marked with the Acconeer logo.
 
@@ -636,6 +649,7 @@ In addition to the above it is also important for optimized integration to consi
 .. _fig_radar_loop_pattern:
 .. figure:: /_static/introduction/fig_radar_loop_pattern.png
     :align: center
+    :width: 85%
 
     Setup configuration for radar loop pattern measurements.
 
@@ -644,6 +658,7 @@ The radiation pattern of the integrated antennas will be affected by anything th
 .. _fig_h_plan_pattern:
 .. figure:: /_static/introduction/fig_h_plan_pattern.png
     :align: center
+    :width: 85%
 
     Integration of sensor cover and how different materials impact the radiation pattern on the H-plane. The object used is a trihedral corner of radius 5 cm.
 

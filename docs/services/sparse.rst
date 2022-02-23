@@ -14,6 +14,7 @@ Due to the highly undersampled signal from the sparse service, it should not be 
 
 .. figure:: /_tikz/res/sparse/over_time.png
    :align: center
+   :width: 65%
 
    An illustration of how the sparse service samples reflected waves from a moving object.
 
@@ -26,6 +27,7 @@ The bottom plot lays out the sampled points over a time scale. In this simple ex
 
 .. figure:: /_tikz/res/sparse/sweeps_and_frames.png
    :align: center
+   :width: 70%
 
    An illustration of the sparse data frames consisting of a number of sweeps.
 
