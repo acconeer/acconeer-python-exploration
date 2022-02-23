@@ -1,6 +1,3 @@
-
-@import url("theme.css");       /* for the Read the Docs theme */
-
 @media only screen and (max-width: 768px) {
     figure img {
         width: initial !important;

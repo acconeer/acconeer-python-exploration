@@ -47,7 +47,7 @@ pygments_style = None
 
 html_theme = "sphinx_rtd_theme"
 
-html_style = "css/custom.css"
+html_css_files = ["css/custom.css"]
 
 html_static_path = ["_static"]
 
@@ -99,11 +99,6 @@ latex_documents = [
         False,
     )
 ]
-
-
-def setup(app):
-    app.add_css_file("css/custom.css")
-
 
 numfig = True
 numfig_format = {"figure": "Figure %s"}
