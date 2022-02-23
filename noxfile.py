@@ -19,6 +19,42 @@ SPHINX_OUTPUT_DIR = "docs/_build"
 SPHINX_HTML_ARGS = ("-b", "html", SPHINX_SOURCE_DIR, SPHINX_OUTPUT_DIR)
 
 
+class Parser(argparse.ArgumentParser):
+    KNOWN_TEST_GROUPS = ["unit", "integration", "app"]
+    DEFAULT_TEST_GROUPS = ["unit", "integration"]
+
+    KNOWN_DOCS_BUILDERS = ["html", "latexpdf"]
+    DEFAULT_DOCS_BUILDERS = ["html"]
+
+    def __init__(self):
+        super().__init__()
+
+        test_group = self.add_argument_group("test")
+        test_group.add_argument(
+            "--test-groups",
+            nargs="+",
+            choices=self.KNOWN_TEST_GROUPS,
+            default=self.DEFAULT_TEST_GROUPS,
+        )
+        test_group.add_argument(
+            "--integration-args",
+            nargs=argparse.REMAINDER,
+            default=["--mock"],
+        )
+        test_group.add_argument(
+            "--pytest-args",
+            nargs=argparse.REMAINDER,
+        )
+
+        docs_group = self.add_argument_group("docs")
+        docs_group.add_argument(
+            "--docs-builders",
+            nargs="+",
+            choices=self.KNOWN_DOCS_BUILDERS,
+            default=self.DEFAULT_DOCS_BUILDERS,
+        )
+
+
 @nox.session
 def lint(session):
     session.install(
@@ -49,8 +85,23 @@ def reformat(session):
 
 @nox.session
 def docs(session):
+    args = Parser().parse_args(session.posargs)
+
     session.install(".[docs]")
-    session.run("python", "-m", "sphinx", "-W", *SPHINX_HTML_ARGS)
+
+    if "html" in args.docs_builders:
+        session.run("python", "-m", "sphinx", "-W", *SPHINX_HTML_ARGS)
+
+    if "latexpdf" in args.docs_builders:
+        session.run(
+            "python",
+            "-m",
+            "sphinx",
+            "-M",
+            "latexpdf",
+            SPHINX_SOURCE_DIR,
+            SPHINX_OUTPUT_DIR,
+        )
 
 
 @nox.session
@@ -61,42 +112,9 @@ def docs_autobuild(session):
 
 
 @nox.session
-def docs_latexpdf(session):
-    session.install(".[docs]")
-    session.run(
-        "python",
-        "-m",
-        "sphinx",
-        "-M",
-        "latexpdf",
-        SPHINX_SOURCE_DIR,
-        SPHINX_OUTPUT_DIR,
-    )
-
-
-@nox.session
 @nox.parametrize("python", ["3.7", "3.8", "3.9", "3.10"])
 def test(session):
-    KNOWN_GROUPS = ["unit", "integration", "app"]
-    DEFAULT_GROUPS = ["unit", "integration"]
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--test-groups",
-        nargs="+",
-        choices=KNOWN_GROUPS,
-        default=DEFAULT_GROUPS,
-    )
-    parser.add_argument(
-        "--integration-args",
-        nargs=argparse.REMAINDER,
-        default=["--mock"],
-    )
-    parser.add_argument(
-        "--pytest-args",
-        nargs=argparse.REMAINDER,
-    )
-    args = parser.parse_args(session.posargs)
+    args = Parser().parse_args(session.posargs)
 
     install_deps = {"pytest"}
     install_extras = set()
