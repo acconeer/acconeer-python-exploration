@@ -11,6 +11,7 @@ extensions = [
     "sphinx.ext.graphviz",
     "enum_tools.autoenum",
     "m2r2",
+    "sphinxext.rediraffe",
 ]
 
 autodoc_member_order = "bysource"
@@ -23,6 +24,10 @@ graphviz_dot_args = [
     "-Nfontname=sans-serif",
 ]
 graphviz_output_format = "svg"
+
+rediraffe_redirects = "redirects.txt"
+rediraffe_branch = "HEAD~1"
+rediraffe_auto_redirect_perc = 95
 
 source_suffix = ".rst"
 

@@ -23,7 +23,7 @@ class Parser(argparse.ArgumentParser):
     KNOWN_TEST_GROUPS = ["unit", "integration", "app"]
     DEFAULT_TEST_GROUPS = ["unit", "integration"]
 
-    KNOWN_DOCS_BUILDERS = ["html", "latexpdf"]
+    KNOWN_DOCS_BUILDERS = ["html", "latexpdf", "rediraffecheckdiff", "rediraffewritediff"]
     DEFAULT_DOCS_BUILDERS = ["html"]
 
     def __init__(self):
@@ -99,6 +99,28 @@ def docs(session):
             "sphinx",
             "-M",
             "latexpdf",
+            SPHINX_SOURCE_DIR,
+            SPHINX_OUTPUT_DIR,
+        )
+
+    if "rediraffewritediff" in args.docs_builders:
+        session.run(
+            "python",
+            "-m",
+            "sphinx",
+            "-b",
+            "rediraffewritediff",
+            SPHINX_SOURCE_DIR,
+            SPHINX_OUTPUT_DIR,
+        )
+
+    if "rediraffecheckdiff" in args.docs_builders:
+        session.run(
+            "python",
+            "-m",
+            "sphinx",
+            "-b",
+            "rediraffecheckdiff",
             SPHINX_SOURCE_DIR,
             SPHINX_OUTPUT_DIR,
         )
