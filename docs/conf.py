@@ -106,3 +106,6 @@ def setup(app):
 
 
 numfig = True
+numfig_format = {"figure": "Figure %s"}
+math_eqref_format = "Eq. {number}"
+numfig_secnum_depth = 0

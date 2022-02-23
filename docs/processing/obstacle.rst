@@ -23,21 +23,37 @@ Sweep collection
 Each radar sweep :math:`s_n` consists of :math:`N_D` complex delay points, where each delay point represents a specific distance.
 For moving obstacles, the phase :math:`\phi` of its corresponding complex delay point will change based on the sensor-to-object distance change between consecutive sweeps, while the amplitude :math:`A` will be unchanged
 
-.. math:: s_n\left[d_{object}\right] = A e^{i\phi} \tag{1}
-.. math:: s_{n+1}\left[d_{object}\right] = A e^{i(\phi+\Delta\phi)} \tag{2}
+.. math::
+    :label:
+
+    s_n\left[d_{object}\right] = A e^{i\phi}
+
+.. math::
+    :label:
+
+    s_{n+1}\left[d_{object}\right] = A e^{i(\phi+\Delta\phi)}
 
 With a sweep frequency :math:`f_s` and object velocity :math:`v_o`, the phase change :math:`\Delta\phi` is given by:
 
-.. math:: \Delta\phi = \frac{4v_o\pi}{f_s\lambda} \tag{3}
+.. math::
+    :label: obst_phase_change
+
+    \Delta\phi = \frac{4v_o\pi}{f_s\lambda}
 
 Note that for Acconeers radar module
 
-.. math:: \lambda = \frac{c}{f_c} =  4.9\,\text{mm} \tag{4}
+.. math::
+    :label:
+
+    \lambda = \frac{c}{f_c} =  4.9\,\text{mm}
 
 where :math:`c` is the speed of light in vacuum and :math:`f_c` the radar frequency (:math:`\sim60\,\text{GHz}`).
 During the time the obstacle velocity and angle towards the radar are not changing significantly, the phase change is directly proportional to the number of sweeps :math:`k`
 
-.. math:: s_{n+k}\left[d_{object}\right] = A e^{i(\phi+k\Delta\phi)} \tag{5}
+.. math::
+    :label:
+
+    s_{n+k}\left[d_{object}\right] = A e^{i(\phi+k\Delta\phi)}
 
 On the other hand, for static background amplitude **and** phase are constant. Static background usually originates from reflections of enclosure or other parts attached close to or in front of the sensor.
 
@@ -56,12 +72,18 @@ FFT and PSD
 The FFT is performed along the x-Axis of the 2 dimensional sweep matrix, i.e. along the time axis.
 Thus, each bin :math:`b` of the :math:`N_s` bins along the x-Axis represents a frequency related to a specific phase change :math:`\Delta\phi`
 
-.. math:: \Delta\phi = b \frac{2\pi}{N_s} \tag{6}
+.. math::
+    :label:
+
+    \Delta\phi = b \frac{2\pi}{N_s}
 
 Note that :math:`b` starts at :math:`0` and stops at :math:`N_s - 1`, thus, phase changes of :math:`0` **and** :math:`2\pi` will both appear in bin :math:`b = 0`.
-Knowing the relation between bins along the x-Axis of the FFT matrix and the phase change :math:`\Delta\phi`, we can interpret each bin as velocity according to Eq. 3
+Knowing the relation between bins along the x-Axis of the FFT matrix and the phase change :math:`\Delta\phi`, we can interpret each bin as velocity according to :eq:`obst_phase_change`
 
-.. math:: v_o = \frac{\Delta\phi f_s\lambda}{4\pi} = \frac{bf_s\lambda}{2N_b} \tag{7}
+.. math::
+    :label: obs_vo
+
+    v_o = \frac{\Delta\phi f_s\lambda}{4\pi} = \frac{bf_s\lambda}{2N_b}
 
 When computing the FFT, delay points of a moving object will coherently add for the bin with the matching phase shift, resulting in an increased amplitude.
 For all other delay points and other bins, the complex addition of random phase will result in significantly reduced amplitudes compared to the amplitude in the original sweeps.
@@ -69,9 +91,12 @@ To visualize this concept, the python example calculates the power spectral dens
 
 Note that generally obstacles can move towards or away from the radar sensor (or the sensor towards or away from objects).
 Hence, a phase shift from :math:`0` to :math:`\pi` is here considered as a "positive" velocity and a phase shift from :math:`\pi` to :math:`2\pi` as a "negative" velocity (the sign is arbitrarily chosen).
-Consequently, only phase shifts of up to :math:`\pi` can un-ambiguously be attributed to a velocity and the maximum resolvable velocity :math:`v_{max}` is given for :math:`\Delta\phi = \pi` with Eq. 7 by
+Consequently, only phase shifts of up to :math:`\pi` can un-ambiguously be attributed to a velocity and the maximum resolvable velocity :math:`v_{max}` is given for :math:`\Delta\phi = \pi` with :eq:`obs_vo` by
 
-.. math:: v_{max} = \frac{f_s\lambda}{4} \tag{8}
+.. math::
+    :label:
+
+    v_{max} = \frac{f_s\lambda}{4}
 
 For special cases, where only one direction of motion occurs, this can be extended to :math:`2\pi`.
 Thus, an FFT shift is performed to "sort" the bins in a way that :math:`0` phase shift and velocity is centered and negative and positive velocities extend to the left and right, respectively.
@@ -105,7 +130,7 @@ Distance and angle
 -------------------
 In the final step, the example calculates the angle :math:`\alpha` the obstacle has with respect to the sensor.
 In order to do so, we need to assume that either the sensor is moving and all found obstacles are motionless or vice versa.
-In general, when the sensor and the obstacles are moving at the same time, the measured phase shift cannot be related un-ambiguously to a velocity according to Eq. 3 and hence no statement about the obstacle's angle can be made.
+In general, when the sensor and the obstacles are moving at the same time, the measured phase shift cannot be related un-ambiguously to a velocity according to :eq:`obst_phase_change` and hence no statement about the obstacle's angle can be made.
 
 .. image:: /_static/processing/obstacle_results.png
 
@@ -113,40 +138,67 @@ We assume that the radar sensor is moving at a constant velocity :math:`v_{robot
 Thus, in the reference frame of the sensor, all obstacles are moving with :math:`v_{robot}` towards the robot parallel to the normal of the robot front.
 In this example we set the robot velocity to
 
-.. math:: v_{robot} = v_{max} = \frac{f_s\lambda}{4} \tag{9}
+.. math::
+    :label:
+
+    v_{robot} = v_{max} = \frac{f_s\lambda}{4}
 
 Note that between consecutive sweeps
 
-.. math:: \Delta t = \frac{1}{f_s} \tag{10}
+.. math::
+    :label:
+
+    \Delta t = \frac{1}{f_s}
 
 the robot travels a fixed distance :math:`\Delta s` of
 
-.. math:: \Delta s = v_{robot}\Delta t = \frac{\lambda}{4} \tag{11}
+.. math::
+    :label:
+
+    \Delta s = v_{robot}\Delta t = \frac{\lambda}{4}
 
 In order to calculate the angle :math:`\alpha` of the obstacle with respect to the sensor, we need to resolve the obstacle's velocity vector into its radial and tangential component (as shown in above figure) such that
 
-.. math:: \vec{v}_{obstacle} = \vec{v}_{robot} + \vec{v}_{o_i} \tag{12}
+.. math::
+    :label:
+
+    \vec{v}_{obstacle} = \vec{v}_{robot} + \vec{v}_{o_i}
 
 The velocity :math:`v_{0_i}` of obstacle :math:`i`, measured with the FFT matrix, is the radial component of :math:`v_{robot}` with respect to the object.
 From this we can calculate :math:`\alpha` using
 
-.. math:: \alpha = \cos^{-1}\left(\frac{v_{o_i}}{v_{robot}}\right) \tag{13}
+.. math::
+    :label:
+
+    \alpha = \cos^{-1}\left(\frac{v_{o_i}}{v_{robot}}\right)
 
 For calculation of the actual value of :math:`\alpha`, we need to substitute the velocities with bins (along the x-Axis of the FFT matrix) and consider that half the bins are for positive and the other half for negative velocities.
 We thus get for the obstacle bin :math:`b_{o_i}`
 
-.. math:: v_{o_i} = \frac{b_{o_i}}{N_s/2}\frac{\lambda f_s}{4} \tag{14}
+.. math::
+    :label:
+
+    v_{o_i} = \frac{b_{o_i}}{N_s/2}\frac{\lambda f_s}{4}
 
 and for the robot bin :math:`b_{robot}`
 
-.. math:: v_{robot} = \frac{b_{robot}}{N_s/2}\frac{\lambda f_s}{4} \tag{15}
+.. math::
+    :label:
+
+    v_{robot} = \frac{b_{robot}}{N_s/2}\frac{\lambda f_s}{4}
 
 which results in
 
-.. math:: \alpha = \cos^{-1}\left(\frac{b_{o_i}}{b_{robot}}\right) \tag{16}
+.. math::
+    :label:
+
+    \alpha = \cos^{-1}\left(\frac{b_{o_i}}{b_{robot}}\right)
 
 Note that in this example, since we set :math:`v_{robot}` to be :math:`v_{max}`, the bin matching the robot velocity is
 
-.. math:: b_{robot} = \frac{N_s}{2} \tag{17}
+.. math::
+    :label:
+
+    b_{robot} = \frac{N_s}{2}
 
 Finally, if the example finds an obstacle in the FFT matrix, it prints the obstacle distance, velocity and angle at the lower left side of the FFT matrix, taking above assumptions into account.
