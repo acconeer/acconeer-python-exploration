@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import pytest
 
 from acconeer.exptool.app.elements import helper
@@ -5,7 +7,8 @@ from acconeer.exptool.app.elements import helper
 
 @pytest.fixture
 def calibration_ui_state() -> helper.CalibrationUiState:
-    return helper.CalibrationUiState()
+    auto_apply_cb_mock = Mock()
+    return helper.CalibrationUiState(auto_apply_cb=auto_apply_cb_mock)
 
 
 def test_fields_with_newly_instantiated_ui_state(calibration_ui_state):
@@ -14,6 +17,8 @@ def test_fields_with_newly_instantiated_ui_state(calibration_ui_state):
     assert not calibration_ui_state.save_button_enabled
     assert calibration_ui_state.load_button_enabled
     assert not calibration_ui_state.clear_button_enabled
+    assert not calibration_ui_state.auto_apply
+    assert not calibration_ui_state.apply_button_enabled
 
 
 @pytest.mark.parametrize(
@@ -56,6 +61,12 @@ def test_load_button_state(calibration_ui_state):
     assert not calibration_ui_state.load_button_enabled
 
 
+def test_apply_button_state(calibration_ui_state):
+    assert not calibration_ui_state.apply_button_enabled
+    calibration_ui_state.source = "smth"
+    assert calibration_ui_state.apply_button_enabled
+
+
 def test_clear_button_state(calibration_ui_state):
     assert not calibration_ui_state.clear_button_enabled
     calibration_ui_state.source = "Session"
@@ -83,3 +94,9 @@ def test_load_verb(calibration_ui_state):
     calibration_ui_state.load("test")
     assert calibration_ui_state.source == "test"
     assert not calibration_ui_state.modified
+
+
+def test_autoapply_checkbox(calibration_ui_state):
+    calibration_ui_state.auto_apply = True
+    assert calibration_ui_state.auto_apply
+    calibration_ui_state._auto_apply_cb.setChecked.assert_called_with(True)

@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtWidgets import QLineEdit, QPushButton
+from PySide6.QtWidgets import QCheckBox, QLineEdit, QPushButton
 
 
 class LoadState(enum.Enum):
@@ -74,13 +74,18 @@ class CalibrationUiState:
         save_btn: Optional[QPushButton] = None,
         clear_btn: Optional[QPushButton] = None,
         status_text: Optional[QLineEdit] = None,
+        auto_apply_cb: Optional[QCheckBox] = None,
+        apply_btn: Optional[QPushButton] = None,
     ):
         self._source: Optional[str] = None
         self._modified: bool = False
+        self._auto_apply: bool = False
         self._load_btn = load_btn
         self._save_btn = save_btn
         self._clear_btn = clear_btn
         self._status_text = status_text
+        self._auto_apply_cb = auto_apply_cb
+        self._apply_btn = apply_btn
         self._update_ui_elements()
 
     def get_display_tooltip_text(self):
@@ -149,6 +154,12 @@ class CalibrationUiState:
             else:
                 self._status_text.setStyleSheet("")
 
+        if self._auto_apply_cb:
+            self._auto_apply_cb.setChecked(self._auto_apply)
+
+        if self._apply_btn:
+            self._apply_btn.setEnabled(self.apply_button_enabled)
+
     @property
     def source(self):
         return self._source
@@ -186,6 +197,17 @@ class CalibrationUiState:
         return self.modified
 
     @property
-    def clear_button_enabled(self):
-        """If the calibration has a source (filename or session) it is clearable"""
+    def _has_source(self):
         return self.source is not None
+
+    clear_button_enabled = _has_source
+    apply_button_enabled = _has_source
+
+    @property
+    def auto_apply(self):
+        return self._auto_apply
+
+    @auto_apply.setter
+    def auto_apply(self, auto_apply):
+        self._auto_apply = auto_apply
+        self._update_ui_elements()

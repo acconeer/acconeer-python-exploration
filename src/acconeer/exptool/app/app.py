@@ -167,6 +167,8 @@ class GUI(QMainWindow):
             save_btn=self.buttons["save_calibration"],
             clear_btn=self.buttons["clear_calibration"],
             status_text=self.textboxes["calibration_status"],
+            auto_apply_cb=self.checkboxes["calibration_auto_apply"],
+            apply_btn=self.buttons["apply_calibration"],
         )
 
         self.canvas_widget = QFrame(self.main_widget)
@@ -245,6 +247,13 @@ class GUI(QMainWindow):
         # text, status, visible, enabled, function
         checkbox_info = {
             "verbose": ("Verbose logging", False, True, True, self.set_log_level),
+            "calibration_auto_apply": (
+                "Auto apply calibration",
+                False,
+                True,
+                True,
+                self.set_calibration_auto_apply,
+            ),
         }
 
         self.checkboxes = {}
@@ -497,14 +506,6 @@ class GUI(QMainWindow):
 
         # Assumes that an update means that the calibration is modified.
         self.calibration_ui_state.modified = True
-
-        # Processor
-        try:
-            if isinstance(self.radar.external, self.current_module_info.processor):
-                self.radar.external.update_calibration(self.calibration)
-        except AttributeError:
-            pass
-
         self.update_pidgets_on_event(calibration_config=calibration_config)
 
     def update_pidgets_on_event(
@@ -746,6 +747,13 @@ class GUI(QMainWindow):
                 False,
                 "calibration",
             ),
+            "apply_calibration": (
+                "Apply calibration",
+                self.apply_current_calibration,
+                True,
+                False,
+                "calibration",
+            ),
         }
 
         self.buttons = {}
@@ -855,8 +863,12 @@ class GUI(QMainWindow):
         self.calibration_config_section.grid.addWidget(
             self.buttons["clear_calibration"], 3, 0, 1, 2
         )
+        self.calibration_config_section.grid.addWidget(self.buttons["apply_calibration"], 4, 0)
+        self.calibration_config_section.grid.addWidget(
+            self.checkboxes["calibration_auto_apply"], 4, 1
+        )
 
-        self.main_sublayout.setRowStretch(10, 1)
+        self.main_sublayout.setRowStretch(11, 1)
 
     def init_panel_scroll_area(self):
         self.panel_scroll_area = QtWidgets.QScrollArea()
@@ -1138,6 +1150,18 @@ class GUI(QMainWindow):
             processor.update_calibration(None)
 
         self.refresh_pidgets()
+
+    def set_calibration_auto_apply(self):
+        cb_is_checked = self.checkboxes["calibration_auto_apply"].isChecked()
+        self.calibration_ui_state.auto_apply = cb_is_checked
+
+    def apply_current_calibration(self):
+        if not self.calibration:
+            self.error_message("Could not apply calibration as it is not present.")
+            return
+
+        if isinstance(self.radar.external, self.current_module_info.processor):
+            self.radar.external.update_calibration(self.calibration)
 
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
@@ -2021,6 +2045,9 @@ class GUI(QMainWindow):
                 )
                 self.calibration_ui_state.source = "Session"
                 self.calibration_ui_state.modified = True
+
+                if self.calibration_ui_state.auto_apply:
+                    self.apply_current_calibration()
 
                 self.refresh_pidgets()
         else:
