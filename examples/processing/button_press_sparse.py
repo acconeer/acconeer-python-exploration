@@ -98,7 +98,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
     sensitivity = et.configbase.FloatParameter(
         label="Detection sensitivity",
-        default_value=0.9,
+        default_value=0.7,
         limits=(0.0, SENSITIVITY_MAX),
         logscale=False,
         updateable=True,
