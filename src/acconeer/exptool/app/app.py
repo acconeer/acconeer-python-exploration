@@ -841,7 +841,7 @@ class GUI(QMainWindow):
         )
 
         self.calibration_config_section = CollapsibleSection(
-            "Calibration settings", init_collapsed=True
+            "Calibration management", init_collapsed=True
         )
         self.main_sublayout.addWidget(self.calibration_config_section, 9, 0)
 
