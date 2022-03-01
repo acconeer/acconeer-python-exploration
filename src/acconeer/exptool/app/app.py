@@ -50,7 +50,6 @@ from .elements.qt_subclasses import (
     AdvancedSerialDialog,
     BiggerMessageBox,
     CollapsibleSection,
-    HandleAdvancedProcessData,
     Label,
     SensorSelection,
     SessionInfoView,
@@ -1943,60 +1942,6 @@ class GUI(QMainWindow):
 
         if d:
             record.legacy_processing_config_dump = json.dumps(d)
-
-    def handle_advanced_process_data(self, action=None):
-        load_text = self.buttons["load_process_data"].text()
-        try:
-            data_text = self.service_params["send_process_data"]["text"]
-        except Exception as e:
-            print("Function not available! \n{}".format(e))
-            return
-
-        if action == "save":
-            if self.advanced_process_data["process_data"] is not None:
-                options = QtWidgets.QFileDialog.Options()
-                options |= QtWidgets.QFileDialog.DontUseNativeDialog
-
-                title = "Save " + load_text
-                file_types = "NumPy data files (*.npy)"
-                fname, info = QtWidgets.QFileDialog.getSaveFileName(
-                    self, title, "", file_types, options=options
-                )
-                if fname:
-                    try:
-                        np.save(fname, self.advanced_process_data["process_data"])
-                    except Exception as e:
-                        self.error_message("Failed to save " + load_text + "{}".format(e))
-                        return
-                    self.advanced_process_data["use_data"] = True
-                    self.buttons["load_process_data"].setText(load_text.replace("Load", "Unload"))
-                    self.buttons["load_process_data"].setStyleSheet("QPushButton {color: red}")
-            else:
-                self.error_message(data_text + " data not availble!".format())
-        elif action == "load":
-            loaded = False
-            if "Unload" not in load_text:
-                mode = self.current_module_label
-                dialog = HandleAdvancedProcessData(mode, data_text, self)
-                dialog.exec_()
-                data = dialog.get_data()
-                if data is not None:
-                    loaded = True
-
-                dialog.deleteLater()
-
-            if loaded:
-                self.advanced_process_data["use_data"] = True
-                self.advanced_process_data["process_data"] = data
-                self.buttons["load_process_data"].setText(load_text.replace("Load", "Unload"))
-                self.buttons["load_process_data"].setStyleSheet("QPushButton {color: red}")
-            else:
-                self.buttons["load_process_data"].setText(load_text.replace("Unload", "Load"))
-                self.buttons["load_process_data"].setStyleSheet("QPushButton {color: black}")
-                self.advanced_process_data["use_data"] = False
-                self.advanced_process_data["process_data"] = None
-        else:
-            print("Process data action not implemented")
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
