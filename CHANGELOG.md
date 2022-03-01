@@ -16,7 +16,7 @@
   `python -m acconeer.exptool.a111.algo.<service or detector>`
 - `internal/` renamed to `tools/`. Still intended for internal use.
 - Structure of standalones are separated into
-  `processing`- and `plotting` modules
+  `processor`- and `ui` modules
 - Reduced code duplication of standalones' main functions.
 - App sessions are saved to a standard user location instead of the current
   directory.

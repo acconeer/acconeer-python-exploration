@@ -4,7 +4,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 
-from .processing import ProcessingConfig
+from ._processor import ProcessingConfig
 
 
 class PGUpdater:

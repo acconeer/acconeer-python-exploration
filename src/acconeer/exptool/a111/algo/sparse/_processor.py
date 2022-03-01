@@ -1,7 +1,7 @@
 import numpy as np
 
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.presence_detection_sparse import processing as presence_processing
+from acconeer.exptool.a111.algo.presence_detection_sparse import _processor as presence_processing
 
 
 def get_sensor_config():

@@ -431,12 +431,12 @@ class Processor:
 
         fft_bg = None
         fft_bg_send = None
-        if self.sweep_index < 3 * self.fft_len:  # Make sure data gets send to plotting
+        if self.sweep_index < 3 * self.fft_len:  # Make sure data gets send to ui
             fft_bg = self.fft_bg[0, :, :]
             fft_bg_send = self.fft_bg
 
         threshold_map = None
-        if self.sweep_index < 3 * self.fft_len:  # Make sure data gets send to plotting
+        if self.sweep_index < 3 * self.fft_len:  # Make sure data gets send to ui
             threshold_map = self.threshold_map
 
         out_data.update(

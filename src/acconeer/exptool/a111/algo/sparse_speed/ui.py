@@ -6,8 +6,8 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 
+from ._processor import ProcessingConfiguration
 from .constants import EST_VEL_HISTORY_LENGTH, HALF_WAVELENGTH, NUM_SAVED_SEQUENCES
-from .processing import ProcessingConfiguration
 
 
 class PGUpdater:

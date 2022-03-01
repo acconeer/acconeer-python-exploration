@@ -8,11 +8,11 @@ import pytest
 import yaml
 
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.obstacle_detection.calibration import ObstacleDetectionCalibration
-from acconeer.exptool.a111.algo.obstacle_detection.processing import (
+from acconeer.exptool.a111.algo.obstacle_detection._processor import (
     Processor,
     get_processing_config,
 )
+from acconeer.exptool.a111.algo.obstacle_detection.calibration import ObstacleDetectionCalibration
 
 
 HERE = Path(__file__).parent

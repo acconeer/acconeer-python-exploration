@@ -1,8 +1,8 @@
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 from acconeer.exptool.a111.algo.utils import multi_sensor_pg_updater, multi_sensor_processor
 
-from .plotting import PGUpdater
-from .processing import Processor, get_processing_config, get_sensor_config
+from ._processor import Processor, get_processing_config, get_sensor_config
+from .ui import PGUpdater
 
 
 module_info = ModuleInfo(

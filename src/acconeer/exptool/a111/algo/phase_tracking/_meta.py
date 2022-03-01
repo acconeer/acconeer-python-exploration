@@ -1,7 +1,7 @@
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 
-from .plotting import PGUpdater
-from .processing import Processor, get_sensor_config
+from ._processor import Processor, get_sensor_config
+from .ui import PGUpdater
 
 
 module_info = ModuleInfo(

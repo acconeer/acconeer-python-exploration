@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.distance_detector.calibration import DistanceDetectorCalibration
-from acconeer.exptool.a111.algo.distance_detector.processing import (
+from acconeer.exptool.a111.algo.distance_detector._processor import (
     ProcessingConfiguration,
     Processor,
 )
+from acconeer.exptool.a111.algo.distance_detector.calibration import DistanceDetectorCalibration
 
 
 HERE = Path(__file__).parent
