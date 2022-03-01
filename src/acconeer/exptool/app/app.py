@@ -560,6 +560,7 @@ class GUI(QMainWindow):
 
         self.init_dropdown_sections(modules)
 
+        self.module_dd.currentIndexChanged.connect(self.clear_application_owned_calibration)
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
         self.interface_dd = QComboBox(self)
@@ -1124,6 +1125,10 @@ class GUI(QMainWindow):
 
         log.info(f"Saved calibration as '{filename}'")
 
+    def clear_application_owned_calibration(self):
+        self.calibration_ui_state.clear()
+        self.calibration = None
+
     def calibration_clear_button_handler(self):
         should_clear = not self.calibration_ui_state.modified or self.warning_message(
             "Are you sure you want to clear the calibration?", "Unsaved changes will be lost."
@@ -1137,8 +1142,7 @@ class GUI(QMainWindow):
         if calibration_config:
             calibration_config._reset()
 
-        self.calibration_ui_state.clear()
-        self.calibration = None
+        self.clear_application_owned_calibration()
 
         processor = self.radar.external
         can_update_processors_calibration = (
