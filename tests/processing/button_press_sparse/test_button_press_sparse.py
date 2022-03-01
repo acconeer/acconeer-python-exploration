@@ -6,8 +6,8 @@ import numpy as np
 
 import acconeer.exptool as et
 from acconeer.exptool.a111.algo.button_press_sparse.processing import (
-    ButtonPressProcessor,
     ProcessingConfiguration,
+    Processor,
 )
 
 
@@ -28,7 +28,7 @@ def get_output(parameter_set=None):
         for k, v in parameter_set.items():
             setattr(processing_config, k, v)
 
-    processor = ButtonPressProcessor(
+    processor = Processor(
         input_record.sensor_config,
         processing_config,
         input_record.session_info,

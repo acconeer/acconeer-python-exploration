@@ -10,7 +10,7 @@ import yaml
 import acconeer.exptool as et
 from acconeer.exptool.a111.algo.obstacle_detection.calibration import ObstacleDetectionCalibration
 from acconeer.exptool.a111.algo.obstacle_detection.processing import (
-    ObstacleDetectionProcessor,
+    Processor,
     get_processing_config,
 )
 
@@ -37,7 +37,7 @@ def get_bg_parameters(parameter_set=None):
         for k, v in parameter_set.items():
             processing_config[k]["value"] = v
 
-    processor = ObstacleDetectionProcessor(
+    processor = Processor(
         input_record.sensor_config,
         processing_config,
         input_record.session_info,
@@ -68,7 +68,7 @@ def get_output_for_calib(parameter_set=None):
         for k, v in parameter_set.items():
             processing_config[k]["value"] = v
 
-    processor = ObstacleDetectionProcessor(
+    processor = Processor(
         input_record.sensor_config,
         processing_config,
         input_record.session_info,
@@ -102,7 +102,7 @@ def get_output(parameter_set=None):
         for k, v in parameter_set.items():
             processing_config[k]["value"] = v
 
-    processor = ObstacleDetectionProcessor(
+    processor = Processor(
         input_record.sensor_config,
         processing_config,
         input_record.session_info,
@@ -242,7 +242,7 @@ def test_calibration_instantiated_processor_does_not_return_new_calibration(para
     for k, v in parameter_set.items():
         processing_config[k]["value"] = v
 
-    processor = ObstacleDetectionProcessor(
+    processor = Processor(
         input_record.sensor_config,
         processing_config,
         input_record.session_info,
@@ -268,7 +268,7 @@ def test_update_calibration_actually_updates(parameter_set):
         for k, v in parameter_set.items():
             processing_config[k]["value"] = v
 
-    processor = ObstacleDetectionProcessor(
+    processor = Processor(
         input_record.sensor_config,
         processing_config,
         input_record.session_info,

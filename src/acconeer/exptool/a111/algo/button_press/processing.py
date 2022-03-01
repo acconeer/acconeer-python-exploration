@@ -84,7 +84,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 get_processing_config = ProcessingConfiguration
 
 
-class ButtonPressProcessor:
+class Processor:
     # lp(f): low pass (filtered)
     # cut: cutoff frequency [Hz]
     # tc: time constant [s]

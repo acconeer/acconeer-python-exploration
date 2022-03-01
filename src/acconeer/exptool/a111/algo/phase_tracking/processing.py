@@ -11,7 +11,7 @@ def get_sensor_config():
     return config
 
 
-class PhaseTrackingProcessor:
+class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         assert sensor_config.update_rate is not None
 

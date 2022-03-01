@@ -6,7 +6,7 @@ from .calibration import (
     ObstacleDetectionCalibrationMapper,
 )
 from .plotting import PGUpdater
-from .processing import ObstacleDetectionProcessor, get_processing_config, get_sensor_config
+from .processing import Processor, get_processing_config, get_sensor_config
 
 
 module_info = ModuleInfo(
@@ -16,7 +16,7 @@ module_info = ModuleInfo(
     processing_config_class=get_processing_config,
     module_family=ModuleFamily.DETECTOR,
     sensor_config_class=get_sensor_config,
-    processor=ObstacleDetectionProcessor,
+    processor=Processor,
     multi_sensor=[1, 2],
     docs_url=(
         "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html"

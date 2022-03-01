@@ -29,7 +29,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 get_processing_config = ProcessingConfiguration
 
 
-class BreathingProcessor:
+class Processor:
     peak_hist_len = 600
 
     phase_weights_alpha = 0.9
