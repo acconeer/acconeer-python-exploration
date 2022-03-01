@@ -53,7 +53,7 @@ def mock_handler_gui(qtbot, mocker):
 
 
 def test_select_interface(qtbot, gui):
-    interfaces = [MOCK_INTERFACE, "SPI (Module server)", MOCK_INTERFACE]
+    interfaces = [MOCK_INTERFACE, "SPI", MOCK_INTERFACE]
     for interface in interfaces:
         set_and_check_cb(qtbot, gui.interface_dd, interface)
 

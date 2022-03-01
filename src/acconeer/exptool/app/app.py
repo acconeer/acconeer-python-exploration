@@ -10,7 +10,7 @@ import time
 import traceback
 import warnings
 import webbrowser
-from typing import Optional
+from typing import Any, Optional, Tuple
 
 import numpy as np
 from packaging import version
@@ -160,6 +160,7 @@ class GUI(QMainWindow):
         self.init_panel_scroll_area()
         self.init_statusbar()
         self.init_pidgets()
+        self.update_interface()
 
         self.calibration_ui_state = CalibrationUiState(
             load_btn=self.buttons["load_calibration"],
@@ -210,6 +211,7 @@ class GUI(QMainWindow):
             "rssver": ("",),
             "libver": ("",),
             "unsupported_mode": ("Mode not supported by this module",),
+            "protocol": ("Protocol",),
         }
 
         self.labels = {}
@@ -563,16 +565,19 @@ class GUI(QMainWindow):
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
 
         self.interface_dd = QComboBox(self)
-        self.interface_dd.addItem("Socket (Exploration server)")
-        self.interface_dd.addItem("Serial (Exploration server)")
-        self.interface_dd.addItem("Serial (Module server)")
-        self.interface_dd.addItem("SPI (Module server)")
-        self.interface_dd.addItem("Simulated")
+        self.interface_dd.addItem("Socket", userData=et.a111.Link.SOCKET)
+        self.interface_dd.addItem("Serial", userData=et.a111.Link.UART)
+        self.interface_dd.addItem("SPI", userData=et.a111.Link.SPI)
+        self.interface_dd.addItem("Simulated", userData="mock")
         self.interface_dd.currentIndexChanged.connect(self.update_interface)
 
         self.ports_dd = QComboBox(self)
         self.ports_dd.hide()
         self.update_ports()
+
+        self.protocol_dd = QComboBox(self)
+        self.protocol_dd.setEnabled(False)
+        # protocol_dd items and enabled-flag are dynamically set in update_interface.
 
     def init_dropdown_sections(self, modules: dict):
 
@@ -772,14 +777,27 @@ class GUI(QMainWindow):
 
         self.server_section = CollapsibleSection("Connection", is_top=True)
         self.main_sublayout.addWidget(self.server_section, 0, 0)
+
+        # Interface. Always visible
         self.server_section.grid.addWidget(self.labels["interface"], 0, 0)
         self.server_section.grid.addWidget(self.interface_dd, 0, 1)
-        self.server_section.grid.addWidget(self.ports_dd, 1, 0)
-        self.server_section.grid.addWidget(self.textboxes["host"], 1, 0, 1, 2)
-        self.server_section.grid.addWidget(self.buttons["scan_ports"], 1, 1)
-        self.server_section.grid.addWidget(self.buttons["advanced_port"], 2, 0, 1, 2)
-        self.server_section.grid.addWidget(self.buttons["connect"], 3, 0, 1, 2)
-        self.server_section.grid.addWidget(self.labels["rssver"], 4, 0, 1, 2)
+
+        # Protocol, always visible.
+        self.server_section.grid.addWidget(self.labels["protocol"], 1, 0)
+        self.server_section.grid.addWidget(self.protocol_dd, 1, 1)
+
+        # Ports selection. Only visible with UART
+        self.server_section.grid.addWidget(self.ports_dd, 2, 0)
+        self.server_section.grid.addWidget(self.buttons["scan_ports"], 2, 1)
+
+        # Host textfield. Only visible with Socket
+        self.server_section.grid.addWidget(self.textboxes["host"], 3, 0, 1, 2)
+
+        # Advanced port, visible with UART
+        self.server_section.grid.addWidget(self.buttons["advanced_port"], 4, 0, 1, 2)
+
+        self.server_section.grid.addWidget(self.buttons["connect"], 5, 0, 1, 2)
+        self.server_section.grid.addWidget(self.labels["rssver"], 6, 0, 1, 2)
 
         self.control_section = CollapsibleSection("Scan controls")
         self.main_sublayout.addWidget(self.control_section, 1, 0)
@@ -1226,37 +1244,49 @@ class GUI(QMainWindow):
         self.canvas_layout.addWidget(new_canvas)
         self.canvas = new_canvas
 
+    def populate_protocol_dd(self, *text_data_tuples: Tuple[str, Any]):
+        """
+        Populates the Protocol dropdown (self.protocol_dd)
+
+        :param text_data_tuples:
+            Variable number of tuples of (<displayed text>, <data>).
+            The first one passed will be the default (as it will have index=0)
+            If only one tuples is passed, the dropdown will be disabled as no choice can be made.
+        """
+        self.protocol_dd.setEnabled(len(text_data_tuples) > 1)
+        for text, data in text_data_tuples:
+            self.protocol_dd.addItem(text, userData=data)
+
     def update_interface(self):
+        EXPLORATION_DD_ITEM = ("Exploration", et.a111.Protocol.EXPLORATION)
+        AUTODETECT_DD_ITEM = ("Auto-detected", None)
+        MODULE_DD_ITEM = ("Module", et.a111.Protocol.MODULE)
+        NA_DD_ITEM = ("Not Applicable", None)
+
         if self.gui_states["server_connected"]:
             self.connect_to_server()
+        link = self.interface_dd.currentData()
 
-        if "serial (module server)" in self.interface_dd.currentText().lower():
+        # Start from clean slate
+        self.ports_dd.hide()
+        self.buttons["advanced_port"].hide()
+        self.buttons["scan_ports"].hide()
+        self.textboxes["host"].hide()
+        self.protocol_dd.clear()
+
+        if link == et.a111.Link.UART:
             self.ports_dd.show()
-            self.textboxes["host"].hide()
             self.buttons["advanced_port"].show()
             self.buttons["scan_ports"].show()
             self.update_ports()
-        elif "serial (exploration server)" in self.interface_dd.currentText().lower():
-            self.ports_dd.show()
-            self.textboxes["host"].hide()
-            self.buttons["advanced_port"].show()
-            self.buttons["scan_ports"].hide()
-            self.update_ports()
-        elif "spi (module server)" in self.interface_dd.currentText().lower():
-            self.ports_dd.hide()
-            self.textboxes["host"].hide()
-            self.buttons["advanced_port"].hide()
-            self.buttons["scan_ports"].hide()
-        elif "socket (exploration server)" in self.interface_dd.currentText().lower():
-            self.ports_dd.hide()
+            self.populate_protocol_dd(MODULE_DD_ITEM, EXPLORATION_DD_ITEM)
+        elif link == et.a111.Link.SPI:
+            self.populate_protocol_dd(MODULE_DD_ITEM)
+        elif link == et.a111.Link.SOCKET:
             self.textboxes["host"].show()
-            self.buttons["advanced_port"].hide()
-            self.buttons["scan_ports"].hide()
-        elif "simulated" in self.interface_dd.currentText().lower():
-            self.ports_dd.hide()
-            self.textboxes["host"].hide()
-            self.buttons["advanced_port"].hide()
-            self.buttons["scan_ports"].hide()
+            self.populate_protocol_dd(AUTODETECT_DD_ITEM)
+        elif link == "mock":
+            self.populate_protocol_dd(NA_DD_ITEM)
 
         self.set_multi_sensors()
 
@@ -1581,31 +1611,23 @@ class GUI(QMainWindow):
         et.utils.set_loglevel(log_level)
 
     def get_client_arguments_from_ui_elements(self):
-        interface_text = self.interface_dd.currentText()
+        link = self.interface_dd.currentData()
+        protocol = self.protocol_dd.currentData()
 
-        if "simulated" in interface_text.lower():
+        if link == "mock":
             return dict(mock=True)
 
-        kwargs = {}
+        kwargs = dict(link=link, protocol=protocol)
 
-        if "socket" in interface_text.lower():
+        if link == et.a111.Link.SOCKET:
             kwargs["host"] = self.textboxes["host"].text()
-            kwargs["link"] = "socket"
-        elif "spi" in interface_text.lower():
-            kwargs["link"] = "spi"
-        elif "serial" in interface_text.lower():
+        elif link == et.a111.Link.UART:
             port_label = self.ports_dd.currentText()
             port, *_ = port_label.split(" ")
             kwargs["serial_port"] = port
-            kwargs["link"] = "uart"
 
         if self.override_baudrate is not None:
             kwargs["override_baudrate"] = self.override_baudrate
-
-        if "exploration" in interface_text.lower():
-            kwargs["protocol"] = "exploration"
-        elif "module" in interface_text.lower():
-            kwargs["protocol"] = "module"
 
         return kwargs
 
