@@ -1,6 +1,7 @@
 import enum
 import json
 import logging
+import warnings
 from copy import deepcopy
 from time import time
 
@@ -116,6 +117,13 @@ class JsonProtocolStreamingServer(JsonProtocolBase):
     def __init__(self, link, squeeze):
         super().__init__(link)
         self._squeeze = squeeze
+        # stacklevel=5 will warn user code as deprecated.
+        # (JsonPSS -> SocketClient -> ClientFactory -> Client -> <user code>)
+        warnings.warn(
+            "Streaming Server is deprecated. Consider upgrading to Exploration Server.",
+            DeprecationWarning,
+            stacklevel=5,
+        )
 
     def setup_session(self, config):
         if isinstance(config, dict):
