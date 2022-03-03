@@ -113,7 +113,7 @@ MODULE_INFOS = [
         None,
         True,
         True,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/index.html",
+        "https://docs.acconeer.com/en/latest/services/index.html",
     ),
     ModuleInfo(
         Mode.ENVELOPE.name.lower(),
@@ -124,7 +124,7 @@ MODULE_INFOS = [
         envelope_module.Processor,
         True,
         True,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/envelope.html",
+        "https://docs.acconeer.com/en/latest/services/envelope.html",
     ),
     ModuleInfo(
         Mode.IQ.name.lower(),
@@ -135,7 +135,7 @@ MODULE_INFOS = [
         iq_module.Processor,
         True,
         True,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html",
+        "https://docs.acconeer.com/en/latest/services/iq.html",
     ),
     ModuleInfo(
         Mode.POWER_BINS.name.lower(),
@@ -146,7 +146,7 @@ MODULE_INFOS = [
         PassthroughProcessor,
         False,
         False,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html",
+        "https://docs.acconeer.com/en/latest/services/pb.html",
     ),
     ModuleInfo(
         Mode.SPARSE.name.lower(),
@@ -157,7 +157,7 @@ MODULE_INFOS = [
         sparse_module.Processor,
         True,
         True,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html",
+        "https://docs.acconeer.com/en/latest/services/sparse.html",
     ),
     ModuleInfo(
         "sparse_presence",
@@ -168,8 +168,7 @@ MODULE_INFOS = [
         multi_sensor_presence_detection_sparse_module.Processor,
         True,
         False,
-        "https://acconeer-python-exploration.readthedocs.io"
-        "/en/latest/processing/presence_detection_sparse.html",
+        "https://docs.acconeer.com/en/latest/processing/presence_detection_sparse.html",
     ),
     ModuleInfo(
         "sparse_fft",
@@ -224,8 +223,7 @@ MODULE_INFOS = [
         phase_tracking_module.PhaseTrackingProcessor,
         False,
         False,
-        "https://acconeer-python-exploration.readthedocs.io"
-        "/en/latest/processing/phase_tracking.html",
+        "https://docs.acconeer.com/en/latest/processing/phase_tracking.html",
     ),
     ModuleInfo(
         "iq_sleep_breathing",
@@ -236,8 +234,7 @@ MODULE_INFOS = [
         sleep_breathing_module.Processor,
         False,
         False,
-        "https://acconeer-python-exploration.readthedocs.io"
-        "/en/latest/processing/sleep_breathing.html",
+        "https://docs.acconeer.com/en/latest/processing/sleep_breathing.html",
     ),
     ModuleInfo(
         "iq_obstacle",
@@ -248,7 +245,7 @@ MODULE_INFOS = [
         obstacle_detection_module.ObstacleDetectionProcessor,
         [1, 2],
         False,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html",
+        "https://docs.acconeer.com/en/latest/processing/obstacle.html",
     ),
     ModuleInfo(
         "envelope_button_press",
@@ -259,8 +256,7 @@ MODULE_INFOS = [
         button_press_module.ButtonPressProcessor,
         False,
         False,
-        "https://acconeer-python-exploration.readthedocs.io/"
-        "en/latest/processing/button_press.html",
+        "https://docs.acconeer.com/en/latest/processing/button_press.html",
     ),
     ModuleInfo(
         "button_press_sparse",
@@ -282,8 +278,7 @@ MODULE_INFOS = [
         multi_sensor_distance_detector_module.Processor,
         True,
         False,
-        "https://acconeer-python-exploration.readthedocs.io/"
-        "en/latest/processing/distance_detector.html",
+        "https://docs.acconeer.com/en/latest/processing/distance_detector.html",
     ),
     ModuleInfo(
         "envelope_parking",
@@ -294,7 +289,7 @@ MODULE_INFOS = [
         multi_sensor_parking_module.Processor,
         True,
         False,
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/parking.html",
+        "https://docs.acconeer.com/en/latest/processing/parking.html",
     ),
 ]
 
