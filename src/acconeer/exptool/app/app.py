@@ -299,7 +299,7 @@ class GUI(QMainWindow):
             self.swap_canvas(canvas)
 
         sensor_config = self.get_sensor_config()
-        processing_config = self.update_service_params()
+        processing_config = self.get_processing_config()
 
         if session_info is None:
             client = et.a111.Client(mock=True)
@@ -1226,7 +1226,7 @@ class GUI(QMainWindow):
 
         if force_update or switching_module:
             if not switching_module:
-                self.update_service_params()
+                self.get_processing_config()
 
             new_canvas = self.init_graphs(refresh=(not switching_module))
             self.swap_canvas(new_canvas)
@@ -1357,7 +1357,7 @@ class GUI(QMainWindow):
 
         self.update_canvas(force_update=True)
 
-        processing_config = self.update_service_params()
+        processing_config = self.get_processing_config()
         sensor_config = self.save_gui_settings_to_sensor_config()
         calibration_config = self.get_calibration_config()
 
@@ -1717,58 +1717,6 @@ class GUI(QMainWindow):
 
     def save_gui_settings_to_sensor_config(self):  # TODO
         return self.get_sensor_config()
-
-    def update_service_params(self):
-        processing_config = self.get_processing_config()
-        if processing_config is not None:
-            return processing_config
-
-        errors = []
-        mode = self.current_module_label
-
-        if mode not in self.service_labels:
-            return None
-
-        for key in self.service_labels[mode]:
-            entry = self.service_labels[mode][key]
-            if "box" in entry:
-                er = False
-                val = self.is_float(entry["box"].text(), is_positive=False)
-                limits = entry["limits"]
-                default = entry["default"]
-                if val is not False:
-                    val, er = self.check_limit(
-                        val, entry["box"], limits[0], limits[1], set_to=default
-                    )
-                else:
-                    er = True
-                    val = default
-                    entry["box"].setText(str(default))
-                if er:
-                    errors.append(
-                        "{:s} must be between {:s} and {:s}!\n".format(
-                            key, str(limits[0]), str(limits[1])
-                        )
-                    )
-                self.service_params[key]["value"] = self.service_params[key]["type"](val)
-            elif "checkbox" in entry:
-                self.service_params[key]["value"] = entry["checkbox"].isChecked()
-
-            if "send_process_data" in key:
-                if self.advanced_process_data["use_data"]:
-                    if self.advanced_process_data["process_data"] is not None:
-                        data = self.advanced_process_data["process_data"]
-                        self.service_params["send_process_data"]["value"] = data
-                    else:
-                        data = self.service_params["send_process_data"]["text"]
-                        print(data + " data not available")
-                else:
-                    self.service_params["send_process_data"]["value"] = None
-
-        if len(errors):
-            self.error_message("".join(errors))
-
-        return self.service_params
 
     def is_float(self, val, is_positive=True):
         try:
