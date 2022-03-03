@@ -339,7 +339,7 @@ class GUI(QMainWindow):
         self.last_processing_config = None
 
         for processing_config in self.module_label_to_processing_config_map.values():
-            if not isinstance(processing_config, et.configbase.Config):
+            if processing_config is None:
                 continue
 
             processing_config._event_handlers.add(self.pidget_processing_config_event_handler)
@@ -362,7 +362,7 @@ class GUI(QMainWindow):
         self.last_calibration_config = None
 
         for calibration_config in self.module_label_to_calibration_config_map.values():
-            if not isinstance(calibration_config, et.configbase.Config):
+            if calibration_config is None:
                 continue
 
             calibration_config._event_handlers.add(self.pidget_calibration_config_event_handler)
@@ -418,7 +418,7 @@ class GUI(QMainWindow):
         processing_config = self.get_processing_config()
 
         if self.last_processing_config != processing_config:
-            if isinstance(self.last_processing_config, et.configbase.Config):
+            if self.last_processing_config is not None:
                 self.last_processing_config._state = et.configbase.Config.State.UNLOADED
 
             self.last_processing_config = processing_config
@@ -426,10 +426,6 @@ class GUI(QMainWindow):
         if processing_config is None:
             self.basic_processing_config_section.hide()
             self.advanced_processing_config_section.hide()
-            return
-
-        # TODO: remove the follow check when migration to configbase is done
-        if not isinstance(processing_config, et.configbase.Config):
             return
 
         processing_config._state = et.configbase.Config.State.LOADED
@@ -449,7 +445,7 @@ class GUI(QMainWindow):
         calibration_config = self.get_calibration_config()
 
         if self.last_calibration_config != calibration_config:
-            if isinstance(self.last_calibration_config, et.configbase.Config):
+            if self.last_calibration_config is not None:
                 self.last_calibration_config._state = et.configbase.Config.State.UNLOADED
 
             self.last_calibration_config = calibration_config
@@ -515,11 +511,14 @@ class GUI(QMainWindow):
         if sensor_config is None:
             sensor_config = self.get_sensor_config()
 
-            if sensor_config is None:
-                return
-
         if processing_config is None:
             processing_config = self.get_processing_config()
+
+        if calibration_config is None:
+            calibration_config = self.get_calibration_config()
+
+        if sensor_config is None:
+            return
 
         if hasattr(processing_config, "check_sensor_config"):
             pass_on_alerts = processing_config.check_sensor_config(sensor_config)
@@ -533,16 +532,13 @@ class GUI(QMainWindow):
         alerts = sensor_config._update_pidgets(additional_alerts=pass_on_alerts["sensor"])
         all_alerts.extend(alerts)
 
-        if isinstance(processing_config, et.configbase.Config):
+        if processing_config is not None:
             alerts = processing_config._update_pidgets(
                 additional_alerts=pass_on_alerts["processing"]
             )
             all_alerts.extend(alerts)
 
-        if calibration_config is None:
-            calibration_config = self.get_calibration_config()
-
-        if isinstance(calibration_config, et.configbase.Config):
+        if calibration_config is not None:
             alerts = calibration_config._update_pidgets()
             all_alerts.extend(alerts)
 
@@ -1020,7 +1016,7 @@ class GUI(QMainWindow):
     def service_defaults_handler(self):
         processing_config = self.get_processing_config()
 
-        if isinstance(processing_config, et.configbase.Config):
+        if processing_config is not None:
             processing_config._reset()
             return
 
@@ -1388,7 +1384,7 @@ class GUI(QMainWindow):
         self.reset_missed_frame_text_time = None
         self.threaded_scan.start()
 
-        if isinstance(processing_config, et.configbase.Config):
+        if processing_config is not None:
             self.basic_processing_config_section.body_widget.setEnabled(True)
             self.buttons["service_defaults"].setEnabled(False)
             self.buttons["advanced_defaults"].setEnabled(False)
@@ -1595,7 +1591,7 @@ class GUI(QMainWindow):
         self.basic_processing_config_section.body_widget.setEnabled(True)
 
         processing_config = self.get_processing_config()
-        if isinstance(processing_config, et.configbase.Config):
+        if processing_config is not None:
             self.buttons["service_defaults"].setEnabled(True)
             self.buttons["advanced_defaults"].setEnabled(True)
             processing_config._state = et.configbase.Config.State.LOADED
@@ -1723,8 +1719,9 @@ class GUI(QMainWindow):
         return self.get_sensor_config()
 
     def update_service_params(self):
-        if isinstance(self.get_processing_config(), et.configbase.Config):
-            return self.get_processing_config()
+        processing_config = self.get_processing_config()
+        if processing_config is not None:
+            return processing_config
 
         errors = []
         mode = self.current_module_label
@@ -1907,13 +1904,8 @@ class GUI(QMainWindow):
         record.legacy_processing_config_dump = None
 
         processing_config = self.get_processing_config()
-        if isinstance(processing_config, et.configbase.Config):
+        if processing_config is not None:
             record.processing_config_dump = processing_config._dumps()
-        else:
-            try:
-                self.save_legacy_processing_config_dump_to_record(record)
-            except Exception:
-                traceback.print_exc()
 
         try:
             if "h5" in info:
@@ -2140,10 +2132,7 @@ class GUI(QMainWindow):
             for module_label in last_config["service_settings"]:
                 processing_config = self.get_default_processing_config(module_label)
 
-                if not processing_config:
-                    continue
-
-                if isinstance(processing_config, et.configbase.Config):
+                if processing_config is None:
                     continue
 
                 self.add_params(processing_config, start_up_mode=module_label)
