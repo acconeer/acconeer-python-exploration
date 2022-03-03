@@ -57,9 +57,6 @@ class ClientFactory:
                     + "These cannot be used together."
                 )
 
-        if kwargs.get("cli") is not None and len(keys_to_check) > 1:
-            raise ValueError('"cli" cannot be combined with any other keyword-argument.')
-
     @classmethod
     def _try_infer_link_from_kwargs(cls, **kwargs: Any) -> Link:
         """
