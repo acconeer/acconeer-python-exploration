@@ -2078,41 +2078,7 @@ class GUI(QMainWindow):
         if last_config.get("override_baudrate"):
             self.override_baudrate = last_config["override_baudrate"]
 
-        # Restore processing configs (legacy)
-        if last_config["service_settings"]:
-            for module_label in last_config["service_settings"]:
-                processing_config = self.get_default_processing_config(module_label)
-
-                if processing_config is None:
-                    continue
-
-                self.add_params(processing_config, start_up_mode=module_label)
-
-                labels = last_config["service_settings"][module_label]
-                for key in labels:
-                    if "checkbox" in labels[key]:
-                        checked = labels[key]["checkbox"]
-                        self.service_labels[module_label][key]["checkbox"].setChecked(checked)
-                    elif "box" in labels[key]:
-                        text = str(labels[key]["box"])
-                        self.service_labels[module_label][key]["box"].setText(text)
-
     def closeEvent(self, event=None):
-        # Legacy processing params
-        service_params = {}
-        for mode in self.service_labels:
-            if service_params.get(mode) is None:
-                service_params[mode] = {}
-            for key in self.service_labels[mode]:
-                if service_params[mode].get(key) is None:
-                    service_params[mode][key] = {}
-                    if "checkbox" in self.service_labels[mode][key]:
-                        checked = self.service_labels[mode][key]["checkbox"].isChecked()
-                        service_params[mode][key]["checkbox"] = checked
-                    elif "box" in self.service_labels[mode][key]:
-                        val = self.service_labels[mode][key]["box"].text()
-                        service_params[mode][key]["box"] = val
-
         sensor_config_dumps = {}
         for module_label, config in self.module_label_to_sensor_config_map.items():
             try:
@@ -2134,7 +2100,6 @@ class GUI(QMainWindow):
             "sweep_buffer": self.textboxes["sweep_buffer"].text(),
             "interface": self.interface_dd.currentIndex(),
             "port": self.ports_dd.currentIndex(),
-            "service_settings": service_params,
             "override_baudrate": self.override_baudrate,
         }
 
