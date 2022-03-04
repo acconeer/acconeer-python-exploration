@@ -16,7 +16,7 @@ Running this version is strongly recommended, as we continuously fix bugs and ad
 There is a portable version of the Acconeer Exploration Tool for Windows:
 
 * [Download](https://developer.acconeer.com/download/portable_exploration_tool-zip/) the zip file and extract
-* Double click the `update.bat` file and wait for the installation to finish, which takes a couple of minutes
+* Double click the `update.bat` file and wait for the installation to finish, which might take a couple of minutes
 * Double click the `run_gui.bat`
 
 For an in-depth evaluation we recommend a full installation as described below.
@@ -50,7 +50,8 @@ Tested on:
 
 #### Dependencies
 
-If you have PyQt4 installed, it might conflict with PyQt5. If this is the case for you, we recommend using virtual environments to separate the two installations.
+If you have a version of PyQt installed, it might conflict with PySide6.
+If this is the case for you, we recommend using virtual environments to separate the two installations.
 
 To run the GUI on Ubuntu 20.04, `libxcb-xinerama0-dev` needs to be installed:
 ```
@@ -58,13 +59,13 @@ sudo apt update
 sudo apt install -y libxcb-xinerama0-dev
 ```
 
-#### Installing the acconeer.exptool library
+#### Installing the `acconeer.exptool` package
 
-Install the supplied library `acconeer.exptool`:
+**NEW:** Install from PyPi:
 ```
-python -m pip install -U --user ".[app]"
+python -m pip install acconeer-exptool[app]
 ```
-**Note: The library has to be reinstalled after any change under `src/`, and it is therefore recommended to reinstall after every update.**
+> *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
 
 #### Windows COM port drivers
 
@@ -101,6 +102,7 @@ Using the GUI is the easiest way to start exploring Acconeer's radar sensor and 
 ```
 python -m acconeer.exptool.app
 ```
+> *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
 
 In the top right box of the GUI, named _Connection_, select the interface you wish to use
 - SPI: auto-detects an XM112 connected to USB2 (USB1 is also needed for power)
@@ -113,30 +115,52 @@ Now you may tune the sensor and processing settings to your specific setup.
 Once you press _Start measurement_, the application will start fetching data from the sensor and plotting the results.
 After pressing _Stop_, you can save (and later load data) or just replay the data stored in the buffer.
 
-Except for Envelope, IQ, Power bins, and Sparse, the GUI is loading modules from the examples directory.
-If you modify code in those files, the changes will appear in the GUI once you reload it.
+### The ML GUI *(no longer supported)*
+
+Support for the Machine Learning interface in Exploration Tool have been dropped.
+
+If you still need to use it, it is possible use and old version of Exploration Tool.
+
+From the `acconeer-python-exploration` directory:
+
+```
+git checkout v3
+```
+
+And follow the instructions in an old version of this document (`README.md`).
+
+Note that this version of Exploration Tool will not be actively supported. Compatibility with new
+RSS versions **is not guaranteed** .
 
 ## Running an example script on your local machine
 
 If you prefer using the command line for testing and evaluation of our examples you can use the following instructions.
 
 XC111+XR111 or XC112+XR112 (mounted on a Raspberry Pi):
+
 ```
-python examples/basic.py -s <your Raspberry Pi IP address>
+python examples/a111/basic.py -s <your Raspberry Pi IP address>
 ```
+
 XM112+XB112 via SPI over USB:
+
 ```
-python examples/basic.py -spi
+python examples/a111/basic.py -spi
 ```
+
 Any module via UART over USB, attempting to auto-detect the serial port:
+
 ```
-python examples/basic.py -u
+python examples/a111/basic.py -u
 ```
+
 Any module via UART over USB, using a specific serial port:
+
 ```
-python examples/basic.py -u <the serial port, for example COM3>
+python examples/a111/basic.py -u <the serial port, for example COM3>
 ```
-_Again, depending on your environment, you might have to replace `python` with `python3` or `py`._
+
+> *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
 
 Choosing which sensor(s) to be used can be done by adding the argument `--sensor <id 1> [id 2] ...`. The default is the sensor on port 1. This is not applicable for the modules.
 

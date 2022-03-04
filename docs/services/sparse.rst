@@ -5,6 +5,8 @@ Sparse
 
 *The sparse service is ideal for motion-sensing applications requiring high robustness and low power consumption.*
 
+``examples/a111/services/sparse.py`` contains example code on how the Sparse service can be used.
+
 How it works
 ------------
 

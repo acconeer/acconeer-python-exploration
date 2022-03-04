@@ -113,7 +113,7 @@ Both RSS and Applications run on a host platform and Acconeer provides a softwar
 
 * Other ARM Cortex M0, M4 and M7 based platform can easily be used by writing a custom implementation of the HAL integration layer. A handful functions that use MCU specific driver functions for accessing timers, SPI and GPIO have to be implemented.
 
-For more detailed information on how to implement the HAL integration layer used by RSS, there is a user guide available at `acconeer.com <https://acconeer.com>`__.
+For more detailed information on how to implement the HAL integration layer used by RSS, there is a user guide available at `developer.acconeer.com <https://developer.acconeer.com>`__ under *Documents and learning > SW*.
 
 Based on these deliveries it is possible for the customer to create their own integration layer for any platform that uses a supported processor architecture. The currently available products and corresponding software deliveries are listed in :numref:`fig_product_sw_offer`, refer to documentation for each specific product for further details.
 
@@ -695,6 +695,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Update link to HAL-integration guide.  2.9     2022-03-07
     Acconeer AB Updated max range in tables.           2.8     2020-12-14
     Acconeer AB Product sw offer figure updated.       2.7     2020-09-29
     Acconeer AB Product offer figure updated.          2.6     2020-09-28

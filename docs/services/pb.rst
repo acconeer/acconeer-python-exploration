@@ -13,7 +13,7 @@ For use cases with weaker radar echoes, i.e., lower SNR, or when the resolution 
 
 The Power Bins service can be configured with different pulse length profiles, see the :ref:`sensor-intro`.
 
-``power_bins.py`` contains example code on how the Power Bins service can be used.
+``examples/a111/services/power_bins.py`` contains example code on how the Power Bins service can be used.
 
 .. figure:: /_static/services/pb.png
    :align: center

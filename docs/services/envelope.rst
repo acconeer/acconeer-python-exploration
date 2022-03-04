@@ -13,7 +13,7 @@ The filtering of data in the Envelope Service applies a low-pass filter in the r
 
 The Envelope service can be configured with different pulse length profiles, see the :ref:`sensor-intro`.
 
-``envelope.py`` contains example code on how this service can be used.
+``examples/a111/services/envelope.py`` contains example code on how this service can be used.
 
 .. figure:: /_static/services/envelope_snr.png
    :align: center

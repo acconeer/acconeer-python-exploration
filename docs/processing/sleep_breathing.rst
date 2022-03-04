@@ -85,3 +85,9 @@ Since chest motion during breathing is highly non-sinusodial, many harmonics of 
 and :math:`i_p/2` corresponds to a valid frequency.
 
 These two thresholds has been set after analyzing detector performance on data sets collected on a few adults and children. However, depending on the mechanical integration of the sensor and the trade-off between missed detections and false detection, these thresholds might need tuning to achieve the optimal performance for each design.
+
+Configuration parameters
+------------------------
+
+.. autoclass:: acconeer.exptool.a111.algo.sleep_breathing._processor.ProcessingConfiguration
+   :members:

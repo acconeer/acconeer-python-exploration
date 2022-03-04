@@ -127,7 +127,8 @@ These fields are optional.
 
    Key of the processing module used during the recording.
    For example ``sparse_presence``.
-   The keys are defined in ``gui/elements/modules.py``.
+   The keys are defined in respective ``_meta.py`` files;
+   e.g. ``src/acconeer/exptool/a111/algo/presence_detection_sparse/_meta.py``.
 
 ``processing_config_dump``
    Type: string
@@ -136,7 +137,13 @@ These fields are optional.
 
    Load the original processing configuration using ``ProcessingConfig._load`` on this field.
    Here, ``ProcessingConfig`` refers to the subclassed ``acconeer.exptool.configbase.ProcessingConfig`` for the processing module used.
-   For example, ``ProcessingConfiguration`` in `examples/processing/presence_detection_sparse.py <https://github.com/acconeer/acconeer-python-exploration/blob/bd9dc6d909e89c152b9831e5ce5999834430f3d3/examples/processing/presence_detection_sparse.py#L68>`__.
+   For example, ``ProcessingConfiguration`` in `presence_detection_sparse.py <https://github.com/acconeer/acconeer-python-exploration/blob/bd9dc6d909e89c152b9831e5ce5999834430f3d3/examples/processing/presence_detection_sparse.py#L68>`__.
+
+   .. note::
+      The referenced ``ProcessingConfiguration`` is of an old version, mainly meant for illustrative
+      purposes.
+
+      Please refer to the :ref:`changelog` in order to find the corresponding file in v4.
 
    This field can also be loaded to a dict using ``json.loads``.
 

@@ -202,3 +202,9 @@ Note that in this example, since we set :math:`v_{robot}` to be :math:`v_{max}`,
     b_{robot} = \frac{N_s}{2}
 
 Finally, if the example finds an obstacle in the FFT matrix, it prints the obstacle distance, velocity and angle at the lower left side of the FFT matrix, taking above assumptions into account.
+
+Configuration parameters
+------------------------
+
+.. autoclass:: acconeer.exptool.a111.algo.obstacle_detection._processor.ProcessingConfiguration
+   :members:
