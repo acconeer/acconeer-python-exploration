@@ -23,14 +23,14 @@ For an in-depth evaluation we recommend a full installation as described below.
 
 ## Documentation
 
-Additional documentation is available [here](https://acconeer-python-exploration.readthedocs.io).
+Additional documentation is available at <https://docs.acconeer.com>.
 
 ## Setting up your evaluation kit
 
-* [Raspberry Pi (XC111+XR111 or XC112+XR112)](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/raspberry.html)
-* [XM112](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/xm112.html)
-* [XM122](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/xm122.html)
-* [XM132](https://acconeer-python-exploration.readthedocs.io/en/latest/evk_setup/xm132.html)
+* [Raspberry Pi (XC111+XR111 or XC112+XR112)](https://docs.acconeer.com/en/latest/evk_setup/raspberry.html)
+* [XM112](https://docs.acconeer.com/en/latest/evk_setup/xm112.html)
+* [XM122](https://docs.acconeer.com/en/latest/evk_setup/xm122.html)
+* [XM132](https://docs.acconeer.com/en/latest/evk_setup/xm132.html)
 
 For general help on getting started head over to the [Acconeer developer page](https://developer.acconeer.com/). There you will find both a getting started guide and a video showing you how to set up your evaluation kit. There you will also find the SDK download.
 
@@ -116,7 +116,6 @@ After pressing _Stop_, you can save (and later load data) or just replay the dat
 Except for Envelope, IQ, Power bins, and Sparse, the GUI is loading modules from the examples directory.
 If you modify code in those files, the changes will appear in the GUI once you reload it.
 
-
 ## Running an example script on your local machine
 
 If you prefer using the command line for testing and evaluation of our examples you can use the following instructions.
@@ -156,30 +155,30 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ### Services
 
-- `power_bins.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html)) \
+- `power_bins.py` ([doc](https://docs.acconeer.com/en/latest/services/pb.html)) \
   Demonstrates the power bins service.
-- `envelope.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/envelope.html)) \
+- `envelope.py` ([doc](https://docs.acconeer.com/en/latest/services/envelope.html)) \
   Demonstrates the envelope service.
-- `iq.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/iq.html)) \
+- `iq.py` ([doc](https://docs.acconeer.com/en/latest/services/iq.html)) \
   Demonstrates the IQ service.
-- `sparse.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html)) \
+- `sparse.py` ([doc](https://docs.acconeer.com/en/latest/services/sparse.html)) \
   Demonstrates the Sparse service.
 
 ### Processing
 
 - `breathing.py` \
   An example breathing detection algorithm.
-- `button_press.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/button_press.html)) \
+- `button_press.py` ([doc](https://docs.acconeer.com/en/latest/processing/button_press.html)) \
   An example of a "button press" detection algorithm detecting a motion at short distances (~3-5 cm) based on the envelope service, which could be used as "hidden" touch buttons.
-- `distance_detector.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/distance_detector.html)) \
+- `distance_detector.py` ([doc](https://docs.acconeer.com/en/latest/processing/distance_detector.html)) \
   An example of the envelope-based distance detection algorithm that estimates the distance to an object.
-- `obstacle_detection.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html)) \
+- `obstacle_detection.py` ([doc](https://docs.acconeer.com/en/latest/processing/obstacle.html)) \
   An example of an obstacle detection algorithm estimating the distance and angle to an approaching obstacle.
-- `phase_tracking.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/phase_tracking.html)) \
+- `phase_tracking.py` ([doc](https://docs.acconeer.com/en/latest/processing/phase_tracking.html)) \
   An example of a relative movements tracking algorithm using phase information.
-- `presence_detection_sparse.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/presence_detection_sparse.html)) \
+- `presence_detection_sparse.py` ([doc](https://docs.acconeer.com/en/latest/processing/presence_detection_sparse.html)) \
   An example of a presence/motion detection algorithm based on the sparse service.
-- `sleep_breathing.py` ([doc](https://acconeer-python-exploration.readthedocs.io/en/latest/processing/sleep_breathing.html)) \
+- `sleep_breathing.py` ([doc](https://docs.acconeer.com/en/latest/processing/sleep_breathing.html)) \
   An example of a "sleep breathing" detection algorithm assuming that the person is still (as when in sleep) where only the motion from breathing is to be detected.
 - `sparse_fft.py` \
   An example of a frequency analyzer to get an idea of the frequency content in the sparse service data.
@@ -207,8 +206,8 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 
 ## Disclaimer
 
-Here you find the [disclaimer](https://acconeer-python-exploration.readthedocs.io/en/latest/disclaimer.html).
+Here you find the [disclaimer](https://docs.acconeer.com/en/latest/disclaimer.html).
 
 ## FAQ and common issues
 
-We've moved the FAQ to [Read the Docs](https://acconeer-python-exploration.readthedocs.io/en/latest/faq.html).
+See <https://docs.acconeer.com/en/latest/faq.html>.

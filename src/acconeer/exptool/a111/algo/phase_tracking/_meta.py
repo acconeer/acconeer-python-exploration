@@ -13,8 +13,5 @@ module_info = ModuleInfo(
     sensor_config_class=get_sensor_config,
     processor=Processor,
     multi_sensor=False,
-    docs_url=(
-        "https://acconeer-python-exploration.readthedocs.io/"
-        + "en/latest/processing/phase_tracking.html"
-    ),
+    docs_url="https://docs.acconeer.com/en/latest/processing/phase_tracking.html",
 )

@@ -1563,9 +1563,12 @@ class GUI(QMainWindow):
                 self.statusBar().showMessage("Not connected")
 
         if self.current_module_info is None:
-            tooltip_text = "Get help with services on ReadTheDocs"
+            tooltip_text = "Get help with services on the Acconeer documentation pages"
         elif self.current_module_info.docs_url is not None:
-            tooltip_text = f'Get help with "{self.current_module_info.label}" on ReadTheDocs'
+            tooltip_text = (
+                f'Get help with "{self.current_module_info.label}" '
+                + "on the Acconeer documentation pages"
+            )
         else:
             tooltip_text = None
 

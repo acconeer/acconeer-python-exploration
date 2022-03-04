@@ -53,7 +53,7 @@ class Processor:
 
         self.breath_sos = np.concatenate(butter(2, 2 * 0.3 / self.f))
         self.breath_zi = np.zeros((1, 2))
-        self.pulse_sos = np.concatenate(butter(2, 2 * np.array([5]) / self.f))
+        self.pulse_sos = np.concatenate(butter(2, 2 * 5 / self.f))
         self.pulse_zi = np.zeros((1, 2))
 
         self.last_lp_sweep = None

@@ -14,8 +14,5 @@ module_info = ModuleInfo(
     sensor_config_class=get_sensor_config,
     processor=multi_sensor_processor(Processor),
     multi_sensor=True,
-    docs_url=(
-        "https://acconeer-python-exploration.readthedocs.io/"
-        + "en/latest/processing/presence_detection_sparse.html"
-    ),
+    docs_url="https://docs.acconeer.com/en/latest/processing/presence_detection_sparse.html",
 )

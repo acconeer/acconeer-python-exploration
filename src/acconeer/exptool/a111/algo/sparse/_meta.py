@@ -13,5 +13,5 @@ module_info = ModuleInfo(
     sensor_config_class=get_sensor_config,
     processor=Processor,
     multi_sensor=True,
-    docs_url="https://acconeer-python-exploration.readthedocs.io/en/latest/services/sparse.html",
+    docs_url="https://docs.acconeer.com/en/latest/services/sparse.html",
 )

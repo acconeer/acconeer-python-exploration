@@ -319,7 +319,8 @@ class Processor:
 
         if self.num_removed_pc > 0:
             noise_coeffs = frame_diff @ self.noise_base.transpose()
-            frame_diff -= noise_coeffs @ self.noise_base
+            frame_diff = np.abs(frame_diff) - np.abs(noise_coeffs @ self.noise_base)
+            frame_diff = np.maximum(frame_diff, 0)
 
         sweep_dev = self.abs_dev(frame_diff, axis=0, ddof=1, subtract_mean=False)
 
@@ -347,9 +348,10 @@ class Processor:
 
         if self.num_removed_pc > 0:
             noise_coeffs = inter_diff @ self.noise_base.transpose()
-            inter_diff -= noise_coeffs @ self.noise_base
-
-        inter_dev = np.abs(inter_diff)
+            inter_diff = np.abs(inter_diff) - np.abs(noise_coeffs @ self.noise_base)
+            inter_dev = np.maximum(inter_diff, 0)
+        else:
+            inter_dev = np.abs(inter_diff)
 
         sf = self.dynamic_sf(self.inter_dev_sf)
         self.lp_inter_dev = sf * self.lp_inter_dev + (1.0 - sf) * inter_dev

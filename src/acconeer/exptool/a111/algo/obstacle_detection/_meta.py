@@ -18,9 +18,7 @@ module_info = ModuleInfo(
     sensor_config_class=get_sensor_config,
     processor=Processor,
     multi_sensor=[1, 2],
-    docs_url=(
-        "https://acconeer-python-exploration.readthedocs.io/en/latest/processing/obstacle.html"
-    ),
+    docs_url="https://docs.acconeer.com/en/latest/processing/obstacle.html",
     calibration_class=ObstacleDetectionCalibration,
     calibration_config_class=ObstacleDetectionCalibrationConfiguration,
     calibration_mapper=ObstacleDetectionCalibrationMapper,

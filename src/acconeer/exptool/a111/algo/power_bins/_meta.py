@@ -14,5 +14,5 @@ module_info = ModuleInfo(
     sensor_config_class=get_sensor_config,
     processor=PassthroughProcessor,
     multi_sensor=False,
-    docs_url="https://acconeer-python-exploration.readthedocs.io/en/latest/services/pb.html",
+    docs_url="https://docs.acconeer.com/en/latest/services/pb.html",
 )
