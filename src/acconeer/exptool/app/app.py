@@ -1889,25 +1889,6 @@ class GUI(QMainWindow):
             except Exception:
                 traceback.print_exc()
 
-    def save_legacy_processing_config_dump_to_record(self, record):
-        if not (self.service_params and isinstance(self.service_params, dict)):
-            return
-
-        d = {}
-        for key in self.service_params:
-            if key == "processing_handle":
-                continue
-
-            try:
-                val = self.service_params[key]["value"]
-                json.dumps(val)  # Make sure it's serializable
-                d[key] = val
-            except Exception:
-                traceback.print_exc()
-
-        if d:
-            record.legacy_processing_config_dump = json.dumps(d)
-
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
             if message_type == "session_setup_error":
