@@ -9,7 +9,6 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
-    "enum_tools.autoenum",
     "m2r2",
     "sphinxext.rediraffe",
 ]
