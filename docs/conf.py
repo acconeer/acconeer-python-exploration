@@ -9,7 +9,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
-    "m2r2",
+    "myst_parser",
     "sphinxext.rediraffe",
 ]
 
