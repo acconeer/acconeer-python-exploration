@@ -15,8 +15,13 @@ The Envelope service can be configured with different pulse length profiles, see
 
 ``envelope.py`` contains example code on how this service can be used.
 
-.. image:: /_static/services/envelope_snr.png
-.. image:: /_static/services/envelope_depth.png
+.. figure:: /_static/services/envelope_snr.png
+   :align: center
+   :width: 90%
+
+.. figure:: /_static/services/envelope_depth.png
+   :align: center
+   :width: 90%
 
 For further reading on the envelope service we refer to the `Envelope documentation`_ on the `Acconeer developer page`_.
 

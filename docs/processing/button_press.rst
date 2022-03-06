@@ -9,6 +9,7 @@ A radar sensor can by simple reconfiguration have multiple functionalities. A ra
 
 .. figure:: /_tikz/res/button_press/button_press.png
    :align: center
+   :width: 60%
 
    The A1 radar sensor can be configured to measure only very close to the sensor, thereby acting as a touch button behind solid plastic.
 

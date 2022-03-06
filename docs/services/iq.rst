@@ -17,7 +17,9 @@ The IQ service can be configured with different pulse length profiles, see the :
 
 ``iq.py`` contains example code on how the IQ service can be used. Detection of micro-motions using the IQ service in a target scene has many use cases, some of which are presented in ``breathing.py``, ``sleep_breathing.py``, ``obstacle_detection.py``, and ``phase_tracking.py``.
 
-.. image:: /_static/services/iq.png
+.. figure:: /_static/services/iq.png
+   :align: center
+   :width: 90%
 
 For further reading on the IQ service we refer to the `IQ documentation`_ on the `Acconeer developer page`_.
 

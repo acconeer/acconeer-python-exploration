@@ -15,7 +15,9 @@ The Power Bins service can be configured with different pulse length profiles, s
 
 ``power_bins.py`` contains example code on how the Power Bins service can be used.
 
-.. image:: /_static/services/pb.png
+.. figure:: /_static/services/pb.png
+   :align: center
+   :width: 90%
 
 For further reading on the power bins service we refer to the `Power Bins documentation`_ on the `Acconeer developer page`_.
 
