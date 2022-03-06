@@ -14,7 +14,6 @@ Table of contents
    faq
    api_ref
    changelog
-   disclaimer
 
 .. toctree::
    :maxdepth: 1
@@ -38,3 +37,5 @@ Table of contents
    :caption: Acconeer Exploration Tool GUI
 
    Introduction <gui/index>
+
+:doc:`disclaimer`
