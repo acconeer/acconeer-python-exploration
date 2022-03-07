@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 import os
@@ -92,9 +91,6 @@ class GUI(QMainWindow):
         self.num_missed_frames = 0
         self.measured_update_rate_fc = et.utils.FreqCounter()
         self.reset_missed_frame_text_time = None
-        self.service_labels = {}
-        self.service_params = None
-        self.service_defaults = None
         self.advanced_process_data = {"use_data": False, "process_data": None}
         self.override_baudrate = None
         self.session_info = None
@@ -267,28 +263,14 @@ class GUI(QMainWindow):
                 cb.stateChanged.connect(fun)
             self.checkboxes[key] = cb
 
-    def init_graphs(self, refresh=False):
-        processing_config = self.get_default_processing_config()
-
+    def init_graphs(self):
         if self.current_module_info is None:
             canvas = Label(self.ACC_IMG_FILENAME)
             self.refresh_pidgets()
             return canvas
 
         canvas = pg.GraphicsLayoutWidget()
-
-        if not refresh:
-            if not (processing_config and isinstance(processing_config, dict)):
-                self.service_params = None
-                self.service_defaults = None
-            else:
-                self.service_params = processing_config
-                self.service_defaults = copy.deepcopy(self.service_params)
-
-            self.add_params(self.service_params)
-
         self.reload_pg_updater(canvas=canvas)
-
         self.refresh_pidgets()
 
         return canvas
@@ -915,95 +897,6 @@ class GUI(QMainWindow):
         self.statusBar().setStyleSheet("QStatusBar{border-top: 1px solid lightgrey;}")
         self.statusBar().show()
 
-    def add_params(self, params, start_up_mode=None):
-        if params is None:
-            params = {}
-
-        self.buttons["load_process_data"].hide()
-        self.buttons["save_process_data"].hide()
-        for mode in self.service_labels:
-            for param_key in self.service_labels[mode]:
-                for element in self.service_labels[mode][param_key]:
-                    if element in ["label", "box", "checkbox", "button"]:
-                        self.service_labels[mode][param_key][element].setVisible(False)
-
-        if start_up_mode is None:
-            mode = self.current_module_label
-            set_visible = True
-        else:
-            mode = start_up_mode
-            set_visible = False
-
-        if mode not in self.service_labels:
-            self.service_labels[mode] = {}
-
-        advanced_available = False
-        for param_key, param_dict in params.items():
-            if param_key not in self.service_labels[mode]:
-                param_gui_dict = {}
-                self.service_labels[mode][param_key] = param_gui_dict
-
-                advanced_available = bool(param_dict.get("advanced"))
-                if advanced_available:
-                    grid = self.advanced_processing_config_section.grid
-                else:
-                    grid = self.basic_processing_config_section.grid
-
-                param_gui_dict["advanced"] = advanced_available
-
-                if "send_process_data" == param_key:
-                    data_buttons = param_gui_dict
-                    data_buttons["load_button"] = self.buttons["load_process_data"]
-                    data_buttons["save_button"] = self.buttons["save_process_data"]
-                    data_buttons["load_text"] = "Load " + param_dict["text"]
-                    data_buttons["save_text"] = "Save " + param_dict["text"]
-                    data_buttons["load_button"].setText(data_buttons["load_text"])
-                    data_buttons["save_button"].setText(data_buttons["save_text"])
-                    data_buttons["load_button"].setVisible(set_visible)
-                    data_buttons["save_button"].setVisible(set_visible)
-                elif isinstance(param_dict["value"], bool):
-                    param_gui_dict["checkbox"] = QCheckBox(param_dict["name"], self)
-                    param_gui_dict["checkbox"].setChecked(param_dict["value"])
-                    grid.addWidget(param_gui_dict["checkbox"], self.param_grid_count.val, 0, 1, 2)
-                elif param_dict["value"] is not None:
-                    param_gui_dict["label"] = QLabel(self)
-                    param_gui_dict["label"].setMinimumWidth(125)
-                    param_gui_dict["label"].setText(param_dict["name"])
-                    param_gui_dict["box"] = QLineEdit(self)
-                    param_gui_dict["box"].setText(str(param_dict["value"]))
-                    param_gui_dict["limits"] = param_dict["limits"]
-                    param_gui_dict["default"] = param_dict["value"]
-                    grid.addWidget(param_gui_dict["label"], self.param_grid_count.val, 0)
-                    grid.addWidget(param_gui_dict["box"], self.param_grid_count.val, 1)
-                    param_gui_dict["box"].setVisible(set_visible)
-                else:  # param is only a label
-                    param_gui_dict["label"] = QLabel(self)
-                    param_gui_dict["label"].setText(str(param_dict["text"]))
-                    grid.addWidget(param_gui_dict["label"], self.param_grid_count.val, 0, 1, 2)
-
-                self.param_grid_count.post_incr()
-            else:
-                param_gui_dict = self.service_labels[mode][param_key]
-
-                for element in param_gui_dict:
-                    if element in ["label", "box", "checkbox"]:
-                        param_gui_dict[element].setVisible(set_visible)
-                    if "button" in element:
-                        data_buttons = param_gui_dict
-                        data_buttons["load_button"].setText(data_buttons["load_text"])
-                        data_buttons["save_button"].setText(data_buttons["save_text"])
-                        data_buttons["load_button"].setVisible(set_visible)
-                        data_buttons["save_button"].setVisible(set_visible)
-                    if param_gui_dict["advanced"]:
-                        advanced_available = True
-
-        if start_up_mode is None:
-            if advanced_available:
-                self.advanced_processing_config_section.show()
-                self.advanced_processing_config_section.button_event(override=True)
-            else:
-                self.advanced_processing_config_section.hide()
-
     def sensor_defaults_handler(self):
         config = self.get_sensor_config()
 
@@ -1018,21 +911,6 @@ class GUI(QMainWindow):
 
         if processing_config is not None:
             processing_config._reset()
-            return
-
-        mode = self.current_module_label
-        if self.service_defaults is None:
-            return
-        for key in self.service_defaults:
-            if key in self.service_labels[mode]:
-                if "box" in self.service_labels[mode][key]:
-                    self.service_labels[mode][key]["box"].setText(
-                        str(self.service_defaults[key]["value"])
-                    )
-                if "checkbox" in self.service_labels[mode][key]:
-                    self.service_labels[mode][key]["checkbox"].setChecked(
-                        bool(self.service_defaults[key]["value"])
-                    )
 
     def service_help_button_handler(self):
         if self.current_module_info and self.current_module_info.docs_url is None:
@@ -1228,7 +1106,7 @@ class GUI(QMainWindow):
             if not switching_module:
                 self.get_processing_config()
 
-            new_canvas = self.init_graphs(refresh=(not switching_module))
+            new_canvas = self.init_graphs()
             self.swap_canvas(new_canvas)
 
     def swap_canvas(self, new_canvas):
@@ -1866,28 +1744,6 @@ class GUI(QMainWindow):
         except Exception as e:
             traceback.print_exc()
             self.error_message("Failed to save file:\n {:s}".format(e))
-
-    def load_legacy_processing_config_dump(self, record):
-        try:
-            d = json.loads(record.legacy_processing_config_dump)
-        except Exception:
-            return
-
-        assert isinstance(self.get_processing_config(), dict)
-
-        for k, v in d.items():
-            try:
-                param = self.service_params[k]
-                objtype = param.get("type", None)
-                if objtype is None:
-                    continue
-
-                v = objtype(v)
-                self.service_params[k]["value"] = v
-                box = self.service_labels[self.current_module_info.label][k]["box"]
-                box.setText(str(v))
-            except Exception:
-                traceback.print_exc()
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
