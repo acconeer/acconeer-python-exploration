@@ -1492,9 +1492,9 @@ class GUI(QMainWindow):
             strict_ver = None
 
         if strict_ver is not None:
-            if strict_ver < version.parse(et.SDK_VERSION):
+            if strict_ver < version.parse(et.a111.SDK_VERSION):
                 ver_mismatch = "RSS server"
-            elif strict_ver > version.parse(et.SDK_VERSION):
+            elif strict_ver > version.parse(et.a111.SDK_VERSION):
                 ver_mismatch = "Exploration Tool"
             else:
                 ver_mismatch = None

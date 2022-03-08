@@ -1,3 +1,5 @@
+SDK_VERSION = "2.10.0"
+
 from . import recording
 from ._clients import Client, Link, Protocol
 from ._clients.base import SessionSetupError

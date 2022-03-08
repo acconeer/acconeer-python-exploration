@@ -3,8 +3,7 @@ import logging
 
 from packaging import version
 
-from acconeer.exptool import SDK_VERSION
-from acconeer.exptool.a111 import _modes
+from acconeer.exptool.a111 import SDK_VERSION, _modes
 from acconeer.exptool.structs import configbase
 
 
