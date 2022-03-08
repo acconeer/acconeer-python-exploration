@@ -144,9 +144,6 @@ You must not change any function or class names; the only class name you can cha
         ...
 
 
-    get_processing_config = ProcessingConfiguration
-
-
     class MyNewProcessor:
         # Detector class, which does all the processing. This is the only class/function name you
         # can change!

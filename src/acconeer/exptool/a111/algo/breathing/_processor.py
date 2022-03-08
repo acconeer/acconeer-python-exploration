@@ -26,9 +26,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
     )
 
 
-get_processing_config = ProcessingConfiguration
-
-
 class Processor:
     peak_hist_len = 600
 

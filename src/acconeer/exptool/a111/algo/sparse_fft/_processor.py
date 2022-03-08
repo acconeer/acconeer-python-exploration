@@ -32,9 +32,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
     )
 
 
-get_processing_config = ProcessingConfiguration
-
-
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         pass

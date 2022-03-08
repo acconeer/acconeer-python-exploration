@@ -10,7 +10,7 @@ def get_sensor_config():
     return config
 
 
-class ProcessingConfig(et.configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 2
 
     history_length = et.configbase.IntParameter(
@@ -31,9 +31,6 @@ class ProcessingConfig(et.configbase.ProcessingConfig):
         updateable=True,
         order=10,
     )
-
-
-get_processing_config = ProcessingConfig
 
 
 class Processor:

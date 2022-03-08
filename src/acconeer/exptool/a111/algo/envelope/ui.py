@@ -4,7 +4,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 
-from ._processor import ProcessingConfig
+from ._processor import ProcessingConfiguration
 
 
 class PGUpdater:
@@ -98,7 +98,7 @@ class PGUpdater:
 
         bg = processing_config.bg
         has_bg = bg.use and bg.loaded_data is not None and bg.error is None
-        limit_mode = ProcessingConfig.BackgroundMode.LIMIT
+        limit_mode = ProcessingConfiguration.BackgroundMode.LIMIT
         show_bg = has_bg and processing_config.bg_mode == limit_mode
 
         for curve in self.bg_curves:

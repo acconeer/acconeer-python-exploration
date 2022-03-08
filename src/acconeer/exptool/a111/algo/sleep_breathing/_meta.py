@@ -1,6 +1,6 @@
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 
-from ._processor import Processor, get_processing_config, get_sensor_config
+from ._processor import ProcessingConfiguration, Processor, get_sensor_config
 from .ui import PGUpdater
 
 
@@ -8,7 +8,7 @@ module_info = ModuleInfo(
     key="iq_sleep_breathing",
     label="Sleep breathing (IQ)",
     pg_updater=PGUpdater,
-    processing_config_class=get_processing_config,
+    processing_config_class=ProcessingConfiguration,
     module_family=ModuleFamily.EXAMPLE,
     sensor_config_class=get_sensor_config,
     processor=Processor,

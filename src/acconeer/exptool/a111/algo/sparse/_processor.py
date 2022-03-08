@@ -37,16 +37,13 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
     )
 
 
-get_processing_config = ProcessingConfiguration
-
-
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         num_sensors = len(sensor_config.sensor)
         num_depths = et.a111.get_range_depths(sensor_config, session_info).size
         history_len = processing_config.history_length
 
-        pd_config = presence_processing.get_processing_config()
+        pd_config = presence_processing.ProcessingConfiguration()
         processor_class = presence_processing.Processor
 
         try:

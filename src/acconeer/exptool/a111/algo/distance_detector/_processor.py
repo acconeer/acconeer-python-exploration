@@ -587,6 +587,3 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
                 )
 
         return alerts
-
-
-get_processing_config = ProcessingConfiguration

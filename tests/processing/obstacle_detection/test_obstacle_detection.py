@@ -8,10 +8,7 @@ import pytest
 import yaml
 
 import acconeer.exptool as et
-from acconeer.exptool.a111.algo.obstacle_detection._processor import (
-    Processor,
-    get_processing_config,
-)
+from acconeer.exptool.a111.algo.obstacle_detection import ProcessingConfiguration, Processor
 from acconeer.exptool.a111.algo.obstacle_detection.calibration import ObstacleDetectionCalibration
 
 
@@ -31,7 +28,7 @@ PARAMETER_SETS = [
 def get_bg_parameters(parameter_set=None):
     input_record = et.a111.recording.load(HERE / "input.h5")
 
-    processing_config = get_processing_config()
+    processing_config = ProcessingConfiguration()
 
     if parameter_set is not None:
         for k, v in parameter_set.items():
@@ -61,7 +58,7 @@ def get_bg_parameters(parameter_set=None):
 def get_output_for_calib(parameter_set=None):
     input_record = et.a111.recording.load(HERE / "input.h5")
 
-    processing_config = get_processing_config()
+    processing_config = ProcessingConfiguration()
     calibration = ObstacleDetectionCalibration.load(HERE / "obstacle_bg_params_dump.yaml")
 
     if parameter_set is not None:
@@ -96,7 +93,7 @@ def get_output_for_calib(parameter_set=None):
 def get_output(parameter_set=None):
     input_record = et.a111.recording.load(HERE / "input.h5")
 
-    processing_config = get_processing_config()
+    processing_config = ProcessingConfiguration()
 
     if parameter_set is not None:
         for k, v in parameter_set.items():
@@ -236,7 +233,7 @@ def test_setting_calibration_yeilds_expected_results(parameter_set):
 def test_calibration_instantiated_processor_does_not_return_new_calibration(parameter_set):
     input_record = et.a111.recording.load(HERE / "input.h5")
 
-    processing_config = get_processing_config()
+    processing_config = ProcessingConfiguration()
     calibration = ObstacleDetectionCalibration.load(HERE / "obstacle_bg_params_dump.yaml")
 
     for k, v in parameter_set.items():
@@ -258,7 +255,7 @@ def test_calibration_instantiated_processor_does_not_return_new_calibration(para
 def test_update_calibration_actually_updates(parameter_set):
     input_record = et.a111.recording.load(HERE / "input.h5")
 
-    processing_config = get_processing_config()
+    processing_config = ProcessingConfiguration()
     calibration = ObstacleDetectionCalibration.load(HERE / "obstacle_bg_params_dump.yaml")
     wrong_calibration = ObstacleDetectionCalibration.load(
         HERE / "obstacle_bg_params_dump_wrong.yaml"

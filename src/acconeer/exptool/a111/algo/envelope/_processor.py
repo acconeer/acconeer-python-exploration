@@ -13,7 +13,7 @@ def get_sensor_config():
     return config
 
 
-class ProcessingConfig(et.configbase.ProcessingConfig):
+class ProcessingConfiguration(et.configbase.ProcessingConfig):
     VERSION = 1
 
     class BackgroundMode(Enum):
@@ -53,9 +53,6 @@ class ProcessingConfig(et.configbase.ProcessingConfig):
         label="History length",
         order=30,
     )
-
-
-get_processing_config = ProcessingConfig
 
 
 class Processor:
@@ -98,7 +95,7 @@ class Processor:
                 self.processing_config.bg.error = "Dimension mismatch"
             elif self.processing_config.bg.use:
                 try:
-                    subtract_mode = ProcessingConfig.BackgroundMode.SUBTRACT
+                    subtract_mode = ProcessingConfiguration.BackgroundMode.SUBTRACT
                     if self.processing_config.bg_mode == subtract_mode:
                         output_data = np.maximum(0, data - loaded_bg)
                     else:

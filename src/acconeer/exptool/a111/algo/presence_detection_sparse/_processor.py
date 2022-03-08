@@ -188,9 +188,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         return alerts
 
 
-get_processing_config = ProcessingConfiguration
-
-
 class Processor:
     # lp(f): low pass (filtered)
     # cut: cutoff frequency [Hz]
