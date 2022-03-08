@@ -83,6 +83,14 @@ pipeline {
                         sh 'python3 -m twine upload -u $CREDS_USR -p $CREDS_PSW -r testpypi dist/*'
                     }
                 }
+                stage('Publish to PyPI') {
+                    environment {
+                        CREDS = credentials('pypi')
+                    }
+                    steps {
+                        sh 'python3 -m twine upload -u $CREDS_USR -p $CREDS_PSW dist/*'
+                    }
+                }
             }
         }
     }
