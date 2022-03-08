@@ -96,10 +96,7 @@ class PGUpdater:
         self.show_peaks = processing_config.show_peak_depths
         self.peak_text.setVisible(self.show_peaks)
 
-        bg = processing_config.bg
-        has_bg = bg.use and bg.loaded_data is not None and bg.error is None
-        limit_mode = ProcessingConfiguration.BackgroundMode.LIMIT
-        show_bg = has_bg and processing_config.bg_mode == limit_mode
+        show_bg = processing_config.bg_mode == ProcessingConfiguration.BackgroundMode.LIMIT
 
         for curve in self.bg_curves:
             curve.setVisible(show_bg)
@@ -112,7 +109,9 @@ class PGUpdater:
         for i, _ in enumerate(self.sensor_config.sensor):
             self.ampl_curves[i].setData(self.depths, sweeps[i])
 
-            if bgs is not None:
+            if bgs is None:
+                self.bg_curves[i].clear()
+            else:
                 self.bg_curves[i].setData(self.depths, bgs[i])
 
             peak = d["peak_depths"][i]

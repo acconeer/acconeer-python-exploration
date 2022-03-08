@@ -4,6 +4,8 @@ import numpy as np
 
 import acconeer.exptool as et
 
+from .calibration import EnvelopeCalibration
+
 
 def get_sensor_config():
     config = et.a111.EnvelopeServiceConfig()
@@ -34,11 +36,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         order=0,
     )
 
-    bg = et.configbase.ReferenceDataParameter(
-        label="Background",
-        order=10,
-    )
-
     bg_mode = et.configbase.EnumParameter(
         label="Background mode",
         default_value=BackgroundMode.SUBTRACT,
@@ -59,9 +56,6 @@ class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self.processing_config = processing_config
 
-        self.processing_config.bg.buffered_data = None
-        self.processing_config.bg.error = None
-
         self.depths = et.a111.get_range_depths(sensor_config, session_info)
         num_depths = self.depths.size
         num_sensors = len(sensor_config.sensor)
@@ -73,37 +67,25 @@ class Processor:
         self.history = np.zeros([history_length, num_sensors, num_depths])
 
         self.data_index = 0
+        self.calibration = calibration
 
     def process(self, data, data_info):
-        if self.data_index < self.bg_buffer.shape[0]:
-            self.bg_buffer[self.data_index] = data
-        if self.data_index == self.bg_buffer.shape[0] - 1:
-            self.processing_config.bg.buffered_data = self.bg_buffer.mean(axis=0)
-
+        new_calibration = None
         bg = None
         output_data = data
-        if self.processing_config.bg.error is None:
-            loaded_bg = self.processing_config.bg.loaded_data
 
-            if loaded_bg is None:
-                pass
-            elif not isinstance(loaded_bg, np.ndarray):
-                self.processing_config.bg.error = "Wrong type"
-            elif np.iscomplexobj(loaded_bg):
-                self.processing_config.bg.error = "Wrong type (is complex)"
-            elif loaded_bg.shape != data.shape:
-                self.processing_config.bg.error = "Dimension mismatch"
-            elif self.processing_config.bg.use:
-                try:
-                    subtract_mode = ProcessingConfiguration.BackgroundMode.SUBTRACT
-                    if self.processing_config.bg_mode == subtract_mode:
-                        output_data = np.maximum(0, data - loaded_bg)
-                    else:
-                        output_data = np.maximum(data, loaded_bg)
-                except Exception:
-                    self.processing_config.bg.error = "Invalid data"
-                else:
-                    bg = loaded_bg
+        if self.calibration is None:
+            if self.data_index < self.bg_buffer.shape[0]:
+                self.bg_buffer[self.data_index] = data
+            if self.data_index == self.bg_buffer.shape[0] - 1:
+                new_calibration = EnvelopeCalibration(self.bg_buffer.mean(axis=0))
+        else:
+            if self.processing_config.bg_mode == ProcessingConfiguration.BackgroundMode.SUBTRACT:
+                output_data = np.maximum(0, data - self.calibration.background)
+            else:
+                output_data = np.maximum(data, self.calibration.background)
+
+            bg = self.calibration.background
 
         self.history = np.roll(self.history, -1, axis=0)
         self.history[-1] = output_data
@@ -118,7 +100,13 @@ class Processor:
             "history": self.history,
             "peak_depths": filtered_peak_depths,
         }
+        if new_calibration is not None:
+            output["new_calibration"] = new_calibration
 
         self.data_index += 1
 
         return output
+
+    def update_calibration(self, new_calibration: EnvelopeCalibration):
+        self.calibration = new_calibration
+        self.data_index = 0

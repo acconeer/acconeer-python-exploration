@@ -1,6 +1,11 @@
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 
 from ._processor import ProcessingConfiguration, Processor, get_sensor_config
+from .calibration import (
+    EnvelopeCalibration,
+    EnvelopeCalibrationConfiguration,
+    EnvelopeCalibrationMapper,
+)
 from .ui import PGUpdater
 
 
@@ -14,4 +19,7 @@ module_info = ModuleInfo(
     processor=Processor,
     multi_sensor=True,
     docs_url="https://docs.acconeer.com/en/latest/services/envelope.html",
+    calibration_class=EnvelopeCalibration,
+    calibration_config_class=EnvelopeCalibrationConfiguration,
+    calibration_mapper=EnvelopeCalibrationMapper,
 )
