@@ -242,7 +242,7 @@ There are three options for handling multi-sensor support:
 
 
     multi_sensor_distance_detector_module = multi_sensor_wrap(distance_detector_module)
-    multi_sensor_sparse_speed_module = multi_sensor_wrap(sparse_speed_module)
+    multi_sensor_speed_sparse_module = multi_sensor_wrap(speed_sparse_module)
     multi_sensor_presence_detection_sparse_module = multi_sensor_wrap(presence_detection_sparse_module)
     # If you want to wrap your graphs for multiple sensors, define a wrapper for your detector here
 

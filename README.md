@@ -184,7 +184,7 @@ The basic scripts contains a lot of comments guiding you through the steps taken
   An example of a frequency analyzer to get an idea of the frequency content in the sparse service data.
 - `sparse_inter_fft.py` \
   Another example of a frequency analyzer which keeps a history of frequency data at different distances.
-- `sparse_speed.py` \
+- `speed_sparse.py` \
   An example of a speed detection algorithm estimating speeds of an approaching object based on the sparse service.
 
 ### Record data

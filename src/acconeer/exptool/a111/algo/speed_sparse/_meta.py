@@ -6,7 +6,7 @@ from .ui import PGUpdater
 
 
 module_info = ModuleInfo(
-    key="sparse_speed",
+    key="speed_sparse",
     label="Speed (sparse)",
     pg_updater=multi_sensor_pg_updater(PGUpdater),
     processing_config_class=ProcessingConfiguration,

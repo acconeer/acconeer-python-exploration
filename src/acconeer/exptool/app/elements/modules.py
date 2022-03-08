@@ -13,7 +13,7 @@ import acconeer.exptool.a111.algo.sleep_breathing._meta as sleep_breathing_meta
 import acconeer.exptool.a111.algo.sparse._meta as sparse_meta
 import acconeer.exptool.a111.algo.sparse_fft._meta as sparse_fft_meta
 import acconeer.exptool.a111.algo.sparse_inter_fft._meta as sparse_inter_fft_meta
-import acconeer.exptool.a111.algo.sparse_speed._meta as sparse_speed_meta
+import acconeer.exptool.a111.algo.speed_sparse._meta as speed_sparse_meta
 
 
 MODULE_INFOS = [
@@ -24,7 +24,7 @@ MODULE_INFOS = [
     presence_detection_sparse_meta.module_info,
     sparse_fft_meta.module_info,
     sparse_inter_fft_meta.module_info,
-    sparse_speed_meta.module_info,
+    speed_sparse_meta.module_info,
     breathing_meta.module_info,
     phase_tracking_meta.module_info,
     sleep_breathing_meta.module_info,

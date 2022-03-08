@@ -68,6 +68,6 @@ Graphical overview
 Configuration parameters
 ------------------------
 
-.. autoclass:: acconeer.exptool.a111.algo.sparse_speed._processor.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.speed_sparse._processor.ProcessingConfiguration
    :members:
    :exclude-members: SpeedUnit
