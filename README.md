@@ -23,7 +23,7 @@ For an in-depth evaluation we recommend a full installation as described below.
 
 ## Documentation
 
-Additional documentation is available at <https://docs.acconeer.com>.
+Additional documentation is available at [docs.acconeer.com](https://docs.acconeer.com).
 
 ## Setting up your evaluation kit
 
@@ -210,4 +210,4 @@ Here you find the [disclaimer](https://docs.acconeer.com/en/latest/disclaimer.ht
 
 ## FAQ and common issues
 
-See <https://docs.acconeer.com/en/latest/faq.html>.
+See the [FAQ](https://docs.acconeer.com/en/latest/faq.html) on the Acconeer documentation pages.
