@@ -2404,6 +2404,10 @@ if __name__ == "__main__":
         # Enable warnings to be printed to the log, e.g. DeprecationWarning
         warnings.simplefilter("module")
 
+        QApplication.setHighDpiScaleFactorRoundingPolicy(
+            QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
+        )
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
         app = QApplication(sys.argv)
         ex = GUI()
 
