@@ -60,15 +60,61 @@ Collecting background data
     :figwidth: 40%
     :align: right
 
-    Background settings for Envelope and IQ service
+    Background settings for Envelope service
 
 Especially when using Envelope data, taking a background measurement and subtracting it can be very useful.
-To test the general idea, place one object in the line of sight of the sensor and start a new scan.
+To test the general idea, place one object in the line of sight of the sensor.
 On the side-panel, scroll down to the **Processing settings** tab and expand it if necessary.
-Wait for 50 frames (the current number of elapsed frames is shown in the bottom panel of the GUI) and click on **Use measured**.
+You can either limit or subtract the background, selectable via the **Background mode** drop-down menu.
+For this example, we will subtract.
+
+Scroll down a bit further, and you come across the **Calibration management** section (New in **v4**).
+This section allows you to have full control over your recorded background data, *or calibrations*.
+
+.. _calibration-management:
+.. figure:: /_static/gui/no_calibration.png
+    :figwidth: 60%
+    :align: center
+
+    The Calibration management section
+
+The elements in the blue rectangle controls the saving and loading of a calibration.
+
+* **Load calibration**: Lets you load a calibration that you have recorded before
+* **Save calibration**: Lets you save the current calibration (loaded from file or produced by the Envelope service)
+* **Clear calibration**: Lets you delete the current calibration and start with a clean slate.
+
+The elements in the green rectangle controls the calibration's interaction with the current processor (the Envelope service for example)
+
+* **Apply calibration**: Sends the current calibration to the processor (Can be seen in the plots)
+* **Auto apply calibration**: Automatically applies the calibration to the processor as soon as it's ready (After 50 frames for example).
+* **Clear calibration**: Resets the processor's calibration. (In addition to deleting the current calibration, as mentioned before.)
+
+.. attention::
+    Calibration changes within a measurement are not saved. Altering calibration during recording is **not recommended**.
+
+With this in mind, go ahead and start a new measurement.
+Wait for 50 frames (the current number of elapsed frames is shown in the bottom panel of the GUI)
+
+Once the 50 frames have passed, the calibration can be handled from the **Calibration management** section:
+
+.. figure:: /_static/gui/session_calibration.png
+    :figwidth: 60%
+    :align: center
+
+    Calibration section with an unsaved calibration
+
+While still measuring, press **Apply calibration**.
 This will subtract the average envelope signal of the first 50 frames of the current scan from every new frame.
-You can also save the background and apply it to another scan by loading it.
-You can either limit or subtract the background, selectable via the *Background mode* drop-down menu.
+
+You can also save the background and apply it to another scan by loading it:
+
+.. figure:: /_static/gui/saved_calibration.png
+    :figwidth: 60%
+    :align: center
+
+    Calibration section after **Save calibration** is pressed
+
 Now you can place a second object within the FOV of the radar and see the difference in response by enabling and disabling the background subtraction.
 
 .. _bg-scan:
