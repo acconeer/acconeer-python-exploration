@@ -19,3 +19,4 @@ The general work-flow with the Exploration Tool GUI is described in the followin
    working_with_the_gui/select_service
    working_with_the_gui/collect_data
    working_with_the_gui/optimizing_detectors
+   working_with_the_gui/adding_your_own_algorithm_module

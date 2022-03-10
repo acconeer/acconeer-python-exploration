@@ -9,6 +9,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
+    "sphinx.ext.extlinks",
     "myst_parser",
     "sphinxext.rediraffe",
 ]
@@ -23,6 +24,14 @@ graphviz_dot_args = [
     "-Nfontname=sans-serif",
 ]
 graphviz_output_format = "svg"
+
+extlinks = {
+    "github_1a5d2c6": (
+        "https://github.com/acconeer/acconeer-python-exploration/tree/"
+        + "1a5d2c68d1c0b458109818af788ed2b386144644/%s",
+        "%s",
+    ),
+}
 
 rediraffe_redirects = "redirects.txt"
 rediraffe_branch = "HEAD~1"
