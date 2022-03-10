@@ -279,7 +279,9 @@ These transmitted signals are reflected by an object and the time elapsed betwee
 
     v=\frac{c_0}{\sqrt{\varepsilon_r}}
 
-where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' in the denominator of :eq:`eq_dist` is due to the fact that :math:`t_{delay}` is the time for the signal to travel to the object and back, hence to get the distance to the object a division by 2 is needed, as illustrated in :numref:`fig_sensor_wave_object`. As :math:`f_{RF}` is 60.5 GHz one wavelength (:math:`\lambda`) is roughly 5 mm, which then corresponds to a distance to the object of 2.5 mm.
+where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' in the denominator of :eq:`eq_dist` is due to the fact that :math:`t_{delay}` is the time for the signal to travel to the object and back, hence to get the distance to the object a division by 2 is needed, as illustrated in :numref:`fig_sensor_wave_object`.
+The wavelength :math:`\lambda` of the 60.5 GHz carrier frequency :math:`f_\text{RF}` is roughly 5 mm in free space.
+This means that a 5 mm shift of the received wavelet corresponds to a 2.5 mm shift of the detected object due to the round trip distance.
 
 :numref:`fig_block_diagram` shows a block diagram of the A111 sensor. The signal is transmitted from the Tx antenna and received by the Rx antenna, both integrated in the top layer of the A111 package substrate. In addition to the mmWave radio the sensor consists of power management and digital control, signal quantization, memory and a timing circuit.
 
@@ -695,6 +697,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Minor update.                          2.10    2022-03-10
     Acconeer AB Update link to HAL-integration guide.  2.9     2022-03-07
     Acconeer AB Updated max range in tables.           2.8     2020-12-14
     Acconeer AB Product sw offer figure updated.       2.7     2020-09-29
