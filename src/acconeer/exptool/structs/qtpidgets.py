@@ -5,12 +5,10 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
-    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QSlider,
     QSpinBox,
     QVBoxLayout,
@@ -511,121 +509,3 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
             x = np.exp(x)
 
         return x
-
-
-class ReferenceDataPidget(PidgetStub):
-    def __init__(self, param, parent_instance):
-        super().__init__(param, parent_instance)
-
-        self.title_label = QLabel(param.label)
-        self.grid.addWidget(self.title_label, 0, 0, 1, 2)
-
-        self.buffer_btn = QPushButton()
-        self.buffer_btn.clicked.connect(self.__buffer_btn_clicked)
-        self.grid.addWidget(self.buffer_btn, 1, 0, 1, 1)
-
-        self.load_btn = QPushButton()
-        self.load_btn.clicked.connect(self.__load_btn_clicked)
-        self.grid.addWidget(self.load_btn, 1, 1, 1, 1)
-
-        self.info_label = QLabel()
-        self.grid.addWidget(self.info_label, 2, 0, 1, 2)
-
-        self.use_cb = QCheckBox("Enable", self)
-        self.use_cb.setTristate(False)
-        self.use_cb.stateChanged.connect(self.__use_cb_state_changed)
-        self.grid.addWidget(self.use_cb, 3, 0, 1, 2)
-
-        self.update()
-
-    def _update(self, *args, **kwargs):
-        super()._update(*args, **kwargs)
-
-        config = self._get_param_value()
-
-        if config.is_loaded:
-            enabled = config.source == "buffer"
-            text = "Save" if enabled else "Already saved"
-        else:
-            enabled = config.has_buffered
-
-            if config.has_buffered:
-                text = "Use measured"
-            else:
-                if self._parent_instance._state == cb.Config.State.LIVE:
-                    text = "Measuring..."
-                else:
-                    text = "Waiting..."
-
-        self.buffer_btn.setEnabled(enabled)
-        self.buffer_btn.setText(text)
-
-        text = "Unload" if config.is_loaded else "Load from file"
-        self.load_btn.setText(text)
-
-        if config.is_loaded:
-            if config.source == "file":
-                text = "Loaded {}".format(config.source_file)
-            else:
-                text = "Loaded measured data"
-        else:
-            text = ""
-
-        self.info_label.setText(text)
-        self.info_label.setVisible(config.is_loaded)
-
-        self.use_cb.setEnabled(not config.error)
-        self.use_cb.setChecked(False if config.error else config.use)
-        self.use_cb.setVisible(config.is_loaded)
-
-        if config.error:
-            self._set_alert(cb.Error(None, config.error))
-        else:
-            self._set_alert(None)
-
-    def __buffer_btn_clicked(self):
-        config = self._get_param_value()
-
-        if config.is_loaded:
-            filename = self.__file_dialog(save=True)
-            if filename:
-                config.save_to_file(filename)
-        else:
-            config.load_buffered()
-
-    def __load_btn_clicked(self):
-        config = self._get_param_value()
-
-        if config.is_loaded:
-            config.unload()
-        else:
-            filename = self.__file_dialog(save=False)
-            if filename:
-                config.load_from_file(filename)
-
-    def __use_cb_state_changed(self, state):
-        config = self._get_param_value()
-        config.use = bool(state)
-
-    def __file_dialog(self, save=True):
-        caption = "Save" if save else "Load"
-        caption = caption + " " + self.param.label.lower().strip()
-        suggested_filename = self.param.label.lower().strip().replace(" ", "_") + ".npy"
-        file_types = "NumPy data files (*.npy)"
-
-        if save:
-            filename, info = QFileDialog.getSaveFileName(
-                self,
-                caption,
-                suggested_filename,
-                file_types,
-            )
-        else:
-            filename, info = QFileDialog.getOpenFileName(
-                self,
-                caption,
-                suggested_filename,
-                file_types,
-            )
-
-        return filename
