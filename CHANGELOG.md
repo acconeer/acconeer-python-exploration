@@ -18,6 +18,7 @@
   with `python -m acconeer.exptool.app` instead of `python gui/main.py`
 - Detector- and Service standalone examples have been moved into the
   `acconeer-exptool`-package. (`acconeer.exptool.a111.algo` to be precise.)
+- Some algorithm modules have been renamed
 - Standalones are now runnable with
   `python -m acconeer.exptool.a111.algo.<service or detector>`
 - `internal/` renamed to `tools/`. Still intended for internal use.
@@ -30,6 +31,7 @@
 - Replace tox with nox
 - Update python version for portable to 3.9.10
 - Update run and update batch files for portable version for Windows. Old portable version is no longer compatible.
+- SDK version is now specific for A111 (acconeer.exptool.a111.SDK_VERSION)
 
 ### Removed
 - Machine Learning GUI
@@ -37,3 +39,5 @@
 - Sensor fusion in obstacle
 - Multi-sensor support in distance and obstacle
 - WSL support
+- Legacy dict based processing configuration interface
+- Legacy calibration interfaces
