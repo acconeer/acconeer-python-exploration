@@ -27,10 +27,13 @@
 - Reduced code duplication of standalones' main functions.
 - App sessions are saved to a standard user location instead of the current
   directory.
-- Move package dependencies to setup.cfg from requirements.txt (Removing requirements.txt and requirements_client_only.txt). Add extras algo and app to define additional dependencies.
+- Move package dependencies to setup.cfg from requirements.txt (Removing
+  requirements.txt and requirements_client_only.txt). Add extras algo and app
+  to define additional dependencies.
 - Replace tox with nox
 - Update python version for portable to 3.9.10
-- Update run and update batch files for portable version for Windows. Old portable version is no longer compatible.
+- Update run and update batch files for portable version for Windows. Old
+  portable version is no longer compatible.
 - SDK version is now specific for A111 (acconeer.exptool.a111.SDK_VERSION)
 
 ### Removed
