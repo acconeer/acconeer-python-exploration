@@ -48,24 +48,17 @@ Tested on:
 
 ### Setup
 
-#### Dependencies
-
-If you have a version of PyQt installed, it might conflict with PySide6.
-If this is the case for you, we recommend using virtual environments to separate the two installations.
-
-To run the application on Ubuntu 20.04, `libxcb-xinerama0-dev` needs to be installed:
-```
-sudo apt update
-sudo apt install -y libxcb-xinerama0-dev
-```
-
 #### Installing the `acconeer.exptool` package
 
-**NEW:** Install from PyPi:
+**NEW:** Install from PyPI:
 ```
 python -m pip install acconeer-exptool[app]
 ```
 > *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
+
+The Exploration Tool application uses PySide6.
+If you have other versions of PyQt/PySide installed, it may cause conflicts.
+If this is the case for you, we recommend using virtual environments to separate the two installations.
 
 #### Windows COM port drivers
 
@@ -73,6 +66,14 @@ If no COM port is recognized when plugging in a module, you might need to instal
 
 * XM112, XM122: [FTDI](https://ftdichip.com/drivers/vcp-drivers/)
 * XM132: [Silicon Labs](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)
+
+#### Linux dependencies
+
+To run the application on Ubuntu 20.04, `libxcb-xinerama0-dev` needs to be installed:
+```
+sudo apt update
+sudo apt install -y libxcb-xinerama0-dev
+```
 
 #### Connecting to a module through UART on Linux
 
