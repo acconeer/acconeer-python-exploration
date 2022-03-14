@@ -31,3 +31,10 @@ else:
     print("Acconeer Exploration Tool v4 is installed. Run it with:")
     print()
     print("    python -m acconeer.exptool.app")
+
+print(SEPARATOR)
+print("If you are using the portable install of Exploration Tool,")
+print("please download the new version available at:")
+print()
+print("    https://github.com/acconeer/acconeer-python-exploration#quickstart-for-windows")
+print(SEPARATOR)
