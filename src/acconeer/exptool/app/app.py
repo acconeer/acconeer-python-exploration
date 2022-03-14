@@ -2167,6 +2167,9 @@ def main():
 
         os.makedirs(USER_DATA_DIR, exist_ok=True)
 
+    if args.portable:
+        pass
+
     app = QApplication(sys.argv)
     ex = GUI(use_last_config=args.use_last_config)
 

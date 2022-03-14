@@ -10,7 +10,7 @@ if %errorlevel% neq 0 (
     exit
 )
 
-tools\python-3.9.10-embed-amd64\python.exe -m acconeer.exptool.app
+tools\python-3.9.10-embed-amd64\python.exe -m acconeer.exptool.app --portable
 
 if %errorlevel% neq 0 (
     pause

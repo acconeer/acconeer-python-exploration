@@ -1,7 +1,7 @@
 import enum
 import os
 import sys
-from argparse import ArgumentParser
+from argparse import SUPPRESS, ArgumentParser
 from pathlib import Path
 from typing import Optional
 
@@ -59,6 +59,11 @@ class ExptoolArgumentParser(ArgumentParser):
             action="store_false",
             dest="use_last_config",
             help="Runs Exptool without loading or saving gui configuration.",
+        )
+        self.add_argument(
+            "--portable",
+            action="store_true",
+            help=SUPPRESS,  # makes option hidden
         )
 
 
