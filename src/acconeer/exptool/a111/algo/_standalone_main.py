@@ -4,10 +4,10 @@ from acconeer.exptool.a111.algo import ModuleInfo
 
 def main(module_info: ModuleInfo):
     arg_parse_kwargs = {} if module_info.multi_sensor else dict(num_sens=1)
-    args = et.utils.ExampleArgumentParser(**arg_parse_kwargs).parse_args()
+    args = et.a111.ExampleArgumentParser(**arg_parse_kwargs).parse_args()
     et.utils.config_logging(args)
 
-    client = et.a111.Client(**et.utils.get_client_args(args))
+    client = et.a111.Client(**et.a111.get_client_args(args))
 
     client.squeeze = not module_info.multi_sensor
 
