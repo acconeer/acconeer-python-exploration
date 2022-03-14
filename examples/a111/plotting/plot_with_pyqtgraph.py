@@ -8,16 +8,10 @@ import acconeer.exptool as et
 
 
 def main():
-    args = et.utils.ExampleArgumentParser(num_sens=1).parse_args()
+    args = et.a111.ExampleArgumentParser(num_sens=1).parse_args()
     et.utils.config_logging(args)
 
-    if args.socket_addr:
-        client = et.a111.SocketClient(args.socket_addr)
-    elif args.spi:
-        client = et.a111.SPIClient()
-    else:
-        port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.a111.UARTClient(port)
+    client = et.a111.Client(**et.a111.get_client_args(args))
 
     config = et.a111.EnvelopeServiceConfig()
     config.sensor = args.sensors

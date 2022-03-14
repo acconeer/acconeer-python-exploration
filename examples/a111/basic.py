@@ -5,7 +5,7 @@ def main():
     # To simplify the examples, we use a generic argument parser. It
     # lets you choose between UART/SPI/socket, set which sensor(s) to
     # use, and the verbosity level of the logging.
-    args = et.utils.ExampleArgumentParser().parse_args()
+    args = et.a111.ExampleArgumentParser().parse_args()
 
     # The client logs using the logging module with a logger named
     # acconeer.exptool.*. We call another helper function which sets up
@@ -16,14 +16,9 @@ def main():
     # -vv or --debug:   DEBUG
     et.utils.config_logging(args)
 
-    # Pick client depending on whether socket, SPI, or UART is used
-    if args.socket_addr:
-        client = et.a111.SocketClient(args.socket_addr)
-    elif args.spi:
-        client = et.a111.SPIClient()
-    else:
-        port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.a111.UARTClient(port)
+    # Pick client depending on whether socket, SPI, or UART is chosen
+    # from the command line.
+    client = et.a111.Client(**et.a111.get_client_args(args))
 
     # Create a configuration to run on the sensor. A good first choice
     # is the envelope service, so let's pick that one.

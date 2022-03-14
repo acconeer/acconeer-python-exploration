@@ -5,7 +5,7 @@ import acconeer.exptool as et
 
 
 def main():
-    parser = et.utils.ExampleArgumentParser()
+    parser = et.a111.ExampleArgumentParser()
     parser.add_argument("-o", "--output-file", type=str, required=True)
     parser.add_argument("-l", "--limit-frames", type=int)
     args = parser.parse_args()
@@ -24,13 +24,7 @@ def main():
         print("Frame limit must be at least 1")
         sys.exit(1)
 
-    if args.socket_addr:
-        client = et.a111.SocketClient(args.socket_addr)
-    elif args.spi:
-        client = et.a111.SPIClient()
-    else:
-        port = args.serial_port or et.utils.autodetect_serial_port()
-        client = et.a111.UARTClient(port)
+    client = et.a111.Client(**et.a111.get_client_args(args))
 
     config = et.a111.EnvelopeServiceConfig()
     config.sensor = args.sensors
@@ -66,7 +60,7 @@ def main():
 
     record = recorder.close()
     os.makedirs(os.path.dirname(os.path.abspath(args.output_file)), exist_ok=True)
-    et.recording.save(args.output_file, record)
+    et.a111.recording.save(args.output_file, record)
     print("Saved to '{}'".format(args.output_file))
 
 
