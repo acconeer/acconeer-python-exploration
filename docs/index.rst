@@ -15,6 +15,7 @@ Table of contents
    file_format_ref
    faq
    changelog
+   migration_v3_to_v4
 
 .. toctree::
    :maxdepth: 1
