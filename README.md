@@ -1,6 +1,6 @@
 # Acconeer Exploration Tool
 
-_**Explore the Next Sense**_ with Acconeer Exploration Tool! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and GUI in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
+_**Explore the Next Sense**_ with Acconeer Exploration Tool! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and application in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
 
 To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Streaming or Module server, which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
@@ -8,7 +8,7 @@ This release is developed for [Acconeer SDK and Module SW](https://developer.acc
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">
-  <img alt="The GUI in action" src="docs/_static/gui.png" width=85%>
+  <img alt="The application in action" src="docs/_static/gui.png" width=85%>
 </p>
 
 ## Quickstart for Windows
@@ -17,7 +17,7 @@ There is a portable version of the Acconeer Exploration Tool for Windows:
 
 * [Download](https://developer.acconeer.com/download/portable_exploration_tool-zip/) the zip file and extract
 * Double click the `update.bat` file and wait for the installation to finish, which might take a couple of minutes
-* Double click the `run_gui.bat`
+* Double click the `run_app.bat`
 
 For an in-depth evaluation we recommend a full installation as described below.
 
@@ -53,7 +53,7 @@ Tested on:
 If you have a version of PyQt installed, it might conflict with PySide6.
 If this is the case for you, we recommend using virtual environments to separate the two installations.
 
-To run the GUI on Ubuntu 20.04, `libxcb-xinerama0-dev` needs to be installed:
+To run the application on Ubuntu 20.04, `libxcb-xinerama0-dev` needs to be installed:
 ```
 sudo apt update
 sudo apt install -y libxcb-xinerama0-dev
@@ -96,15 +96,15 @@ SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="601c", MODE:="0666
 ```
 This method is confirmed to work for **Ubuntu 18.04 and 20.04**.
 
-## GUI
+## Application
 
-Using the GUI is the easiest way to start exploring Acconeer's radar sensor and our application examples:
+Using the application is the easiest way to start exploring Acconeer's radar sensor and our application examples:
 ```
 python -m acconeer.exptool.app
 ```
 > *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
 
-In the top right box of the GUI, named _Connection_, select the interface you wish to use
+In the top right box of the application, named _Connection_, select the interface you wish to use
 - SPI: auto-detects an XM112 connected to USB2 (USB1 is also needed for power)
 - Socket: specify the IP address of your Raspberry Pi running the streaming server
 - Serial: specify the serial port that is assigned to the sensor
@@ -115,7 +115,7 @@ Now you may tune the sensor and processing settings to your specific setup.
 Once you press _Start measurement_, the application will start fetching data from the sensor and plotting the results.
 After pressing _Stop_, you can save (and later load data) or just replay the data stored in the buffer.
 
-### The ML GUI *(no longer supported)*
+### The ML interface *(no longer supported)*
 
 Support for the Machine Learning interface in Exploration Tool have been dropped.
 
