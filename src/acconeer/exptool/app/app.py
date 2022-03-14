@@ -1908,9 +1908,13 @@ class GUI(QMainWindow):
 
         # Restore misc. settings
         self.textboxes["sweep_buffer"].setText(last_config["sweep_buffer"])
-        self.interface_dd.setCurrentIndex(last_config["interface"])
         self.ports_dd.setCurrentIndex(last_config["port"])
         self.textboxes["host"].setText(last_config["host"])
+
+        interface_index = last_config["interface"]
+        if interface_index not in range(0, self.interface_dd.count()):
+            interface_index = 0
+        self.interface_dd.setCurrentIndex(interface_index)
 
         if last_config.get("override_baudrate"):
             self.override_baudrate = last_config["override_baudrate"]
