@@ -11,9 +11,9 @@ Table of contents
 
    sensor_introduction
    gui/index
+   api_ref
    file_format_ref
    faq
-   api_ref
    changelog
 
 .. toctree::
