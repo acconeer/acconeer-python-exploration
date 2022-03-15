@@ -58,17 +58,3 @@ There, you can find detailed instructions for installing our libraries; in a nut
 #. Once, you have installed everything, you can start the GUI from anywhere via::
 
     python -m acconeer.exptool.app
-
-
-GUI Framework
-=============
-The GUI acts as a front-end to the Acconeer Exploration Tool.
-It handles sensor connections, sensor settings and allows you to test examples, tune detectors and save and load data for in-depth analysis or easy sharing.
-In below figure, you can find a top-level depiction of the data-flow and control connections between the GUI and the Exploration Tool.
-
-.. figure:: /_static/gui/gui_flow.png
-
-   Framework of the Exploration Tool GUI
-
-.. attention::
-    The GUI never stores processed data, only the original service data, including all sensor and detector settings. Whenever you replay data (saved or buffered), the processing is always redone on the original sensor data.
