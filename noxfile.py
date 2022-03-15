@@ -68,6 +68,7 @@ def lint(session):
     session.run("python", "tools/check_permissions.py")
     session.run("python", "tools/check_whitespace.py")
     session.run("python", "tools/check_line_length.py")
+    session.run("python", "tools/check_sdk_mentions.py")
     session.run("python", "-m", "flake8")
     session.run("python", "-m", "black", "--check", "--diff", "--quiet", ".")
     session.run("python", "-m", "isort", "--check", "--diff", "--quiet", ".")
