@@ -48,7 +48,7 @@ Tested on:
 
 ### Setup
 
-#### Installing the `acconeer.exptool` package
+#### Installing the `acconeer-exptool` package
 
 **NEW:** Install from PyPI:
 ```
