@@ -10,6 +10,7 @@ Table of contents
    :maxdepth: 1
 
    sensor_introduction
+   gui/index
    file_format_ref
    faq
    api_ref
@@ -31,11 +32,5 @@ Table of contents
 
    services/index
    processing/index
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Acconeer Exploration Tool GUI
-
-   Introduction <gui/index>
 
 :doc:`disclaimer`
