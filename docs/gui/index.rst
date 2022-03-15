@@ -32,29 +32,3 @@ The general work-flow with the Exploration Tool GUI is described in the followin
    working_with_the_gui/select_service
    working_with_the_gui/collect_data
    working_with_the_gui/optimizing_detectors
-
-Getting started
-===============
-The Exploration Tool has been tested on the following operating systems
-
-- Windows 10
-- Ubuntu (18.04, 20.04)
-
-but others should work fine, too (such as macOS or other versions of Linux).
-Installing the Exploration Tool GUI on a Raspberry Pi is not supported!
-(You can still use the Exploration Tool without graphical interface on the Raspberry Pi.)
-
-.. attention::
-    In order to get started, you need either a Raspberry Pi with an XC/XR112 (:ref:`setup_raspberry`) or one of our modules with the latest firmware (:ref:`setup_xm112`, :ref:`setup_xm122`, :ref:`setup_xm132`).
-
-First, you should clone the Exploration Tool repository from `GitHub <https://github.com/acconeer/acconeer-python-exploration>`_.
-There, you can find detailed instructions for installing our libraries; in a nut-shell:
-
-#. Make sure you have Python 3.7 or newer installed.
-#. Install the acconeer.exptool library::
-
-    python -m pip install -U --user ".[app]"
-
-#. Once, you have installed everything, you can start the GUI from anywhere via::
-
-    python -m acconeer.exptool.app
