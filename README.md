@@ -2,7 +2,7 @@
 
 _**Explore the Next Sense**_ with Acconeer Exploration Tool! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and application in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
 
-To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Streaming or Module server, which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
+To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Exploration or Module server, which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
 This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 2.10.0**.
 Running this version is strongly recommended, as we continuously fix bugs and add features.
