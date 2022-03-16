@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v4.0.0
 
 ### Added
 - Command line arguments `--no-config` and `--purge-config` which lets you
