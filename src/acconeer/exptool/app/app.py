@@ -205,7 +205,7 @@ class GUI(QMainWindow):
             "measured_update_rate": ("",),
             "data_warnings": ("",),
             "rssver": ("",),
-            "libver": ("",),
+            "libver": (f"Lib {et.__version__.split('+')[0]}",),
             "unsupported_mode": ("Mode not supported by this module",),
             "protocol": ("Protocol",),
         }
