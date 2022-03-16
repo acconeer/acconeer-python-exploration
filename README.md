@@ -25,6 +25,12 @@ For an in-depth evaluation we recommend a full installation as described below.
 
 Additional documentation is available at [docs.acconeer.com](https://docs.acconeer.com).
 
+## News
+
+* v4.0.0 released. See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html)
+  and the [Migration Guide](https://docs.acconeer.com/en/latest/migration_v3_to_v4.html).
+
+
 ## Setting up your evaluation kit
 
 * [Raspberry Pi (XC111+XR111 or XC112+XR112)](https://docs.acconeer.com/en/latest/evk_setup/raspberry.html)
