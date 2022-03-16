@@ -16,7 +16,8 @@ Python related
 
 #) The GUI does not load properly after updating
 
-   Try removing the ``last_config.npy`` file in the ``gui`` directory.
+   Try running ``python -m acconeer.exptool.app --purge-config`` from anywhere. Accept the
+   removal of the files and try starting Exploration Tool again.
 
    If the above does not work, please open an issue on GitHub.
 

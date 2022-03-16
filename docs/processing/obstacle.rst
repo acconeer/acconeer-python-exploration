@@ -3,7 +3,9 @@
 Obstacle detection
 ==================
 
-``obstacle_detection.py`` is an example of a simple obstacle detection algorithm based on the synthetic aperture radar (SAR) principle. The main goal of the obstacle detector is to find obstacles in front of the sensor and estimate their distance and angle. In an application where the sensor is installed on a robot (such as vacuum cleaners or lawn mowers), the object data can be used to issue movement commands to the robot to avoid and circumnavigate the found obstacles.
+The
+:github_1a5d2c6:`Obstacle Detector <src/acconeer/exptool/a111/algo/obstacle_detection/_processor.py>`
+is an example of a simple obstacle detection algorithm based on the synthetic aperture radar (SAR) principle. The main goal of the obstacle detector is to find obstacles in front of the sensor and estimate their distance and angle. In an application where the sensor is installed on a robot (such as vacuum cleaners or lawn mowers), the object data can be used to issue movement commands to the robot to avoid and circumnavigate the found obstacles.
 Note that the half power beam width (HPBW) along the H- and E-plane of the sensor is 60 and 40 degrees, respectively.
 
 .. image:: /_static/processing/obstacle_setup.png

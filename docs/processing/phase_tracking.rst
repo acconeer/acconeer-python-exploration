@@ -7,7 +7,9 @@ An example of a relative movements tracking algorithm using phase information.
 
 .. image:: /_static/processing/phase_tracking.png
 
-``phase_tracking.py`` is an example of how single objects can be tracked using only the phase information of the IQ service. The point in which the phase is tracked is shown in dashed orange. It is the "center of mass" of the low pass filtered IQ envelope, shown in the upper left plot. The unfiltered phase information is shown below in the lower left plot.
+
+:github_1a5d2c6:`Phase Tracking <src/acconeer/exptool/a111/algo/phase_tracking/_processor.py>`
+is an example of how single objects can be tracked using only the phase information of the IQ service. The point in which the phase is tracked is shown in dashed orange. It is the "center of mass" of the low pass filtered IQ envelope, shown in the upper left plot. The unfiltered phase information is shown below in the lower left plot.
 
 To illustrate how the IQ data behaves, the point in which the phase is tracked is also shown in the polar plot. As you move an object towards and away from the radar, you will see the point rotating. It is this rotation that is translated into a relative movement, which is shown in the remaining two plots. One phase rotation translates to a movement of half a wavelength, which is roughly 2.5mm.
 
