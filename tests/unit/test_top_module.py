@@ -3,7 +3,6 @@ import functools
 import pytest
 
 import acconeer.exptool as et
-from acconeer.exptool import structs
 from acconeer.exptool.a111 import _configs, _modes
 
 
@@ -41,7 +40,7 @@ def test_top_module_configs(config_type):
 
 @pytest.mark.parametrize("structs_member", ["configbase"])
 def test_top_module_structs(structs_member):
-    assert is_test(structs_member, [et, structs, et.structs])
+    assert is_test(structs_member, [et, et._structs])
 
 
 def test_top_module_mode():

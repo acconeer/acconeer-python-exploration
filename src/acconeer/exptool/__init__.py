@@ -1,6 +1,6 @@
 from . import a111, utils
+from ._structs import configbase
 from .pg_process import PGProccessDiedException, PGProcess
-from .structs import configbase
 
 
 try:

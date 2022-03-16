@@ -4,7 +4,7 @@ from abc import ABC, abstractclassmethod, abstractmethod
 from pathlib import Path
 from typing import Optional, Protocol, Sequence, Tuple, Union
 
-from acconeer.exptool.structs.configbase import Config
+import acconeer.exptool as et
 
 
 _Description = str
@@ -61,7 +61,7 @@ class CalibrationMapper(Protocol):
 
     @abstractclassmethod
     def get_updated_calibration_from_configuration(
-        cls, configuration: Config, calibration: Optional[Calibration]
+        cls, configuration: et.configbase.Config, calibration: Optional[Calibration]
     ) -> Calibration:
         """
         Creates a new Calibration instance given a Config and (optionally) a Calibration.
@@ -73,7 +73,7 @@ class CalibrationMapper(Protocol):
 
     @abstractclassmethod
     def update_config_from_calibration(
-        cls, configuration: Config, calibration: Calibration
+        cls, configuration: et.configbase.Config, calibration: Calibration
     ) -> None:
         """
         Updates the passed Config with the fields of the passed calibration.

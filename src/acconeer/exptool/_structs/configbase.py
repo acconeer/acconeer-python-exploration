@@ -89,7 +89,7 @@ class Parameter:
         return obj.__dict__.get(self.pidget_attr_key)
 
     def create_pidget(self, obj):
-        from acconeer.exptool.structs import qtpidgets
+        from . import qtpidgets
 
         if self._pidget_class is None:
             return None

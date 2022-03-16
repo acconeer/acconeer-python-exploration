@@ -10,9 +10,9 @@ import attr
 import h5py
 import numpy as np
 
-import acconeer.exptool
+import acconeer.exptool as et
+from acconeer.exptool._structs import configbase
 from acconeer.exptool.a111 import _configs, _modes
-from acconeer.exptool.structs import configbase
 
 
 @attr.s
@@ -94,7 +94,7 @@ class Recorder:
             module_key=module_key,
             processing_config_dump=processing_config_dump,
             rss_version=rss_version,
-            lib_version=acconeer.exptool.__version__,
+            lib_version=et.__version__,
             timestamp=datetime.datetime.now().isoformat(timespec="seconds"),
         )
 

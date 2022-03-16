@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool.structs import configbase
+from . import configbase
 
 
 cb = configbase  # Workaround for Python 3.6 issue 30024

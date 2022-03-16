@@ -2,7 +2,7 @@ import inspect
 
 import pytest
 
-import acconeer.exptool.structs.configbase as cb
+from acconeer.exptool import configbase as cb
 from acconeer.exptool.a111 import _configs
 from acconeer.exptool.a111._clients.reg import regmap
 from acconeer.exptool.a111._modes import Mode

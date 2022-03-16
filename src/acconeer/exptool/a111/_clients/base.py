@@ -3,8 +3,8 @@ import logging
 
 from packaging import version
 
+from acconeer.exptool._structs import configbase
 from acconeer.exptool.a111 import SDK_VERSION, _modes
-from acconeer.exptool.structs import configbase
 
 
 log = logging.getLogger(__name__)
