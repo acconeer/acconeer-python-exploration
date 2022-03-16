@@ -2174,6 +2174,10 @@ def main():
     if args.portable:
         pass
 
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
+    )
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     app = QApplication(sys.argv)
     ex = GUI(use_last_config=args.use_last_config)
 
