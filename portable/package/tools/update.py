@@ -18,6 +18,7 @@ def main():
         "install",
         "--no-warn-script-location",
         "--no-input",
+        "--upgrade",
     ]
 
     if Path("testpypi").is_file():
