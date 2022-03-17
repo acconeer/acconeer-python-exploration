@@ -8,7 +8,7 @@ This release is developed for [Acconeer SDK and Module SW](https://developer.acc
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">
-  <img alt="The application in action" src="docs/_static/gui.png" width=85%>
+  <img alt="The application in action" src="https://raw.githubusercontent.com/acconeer/acconeer-python-exploration/0aa884c4a7c17e6f5299e2e57aa1ccc02d3f4c05/docs/_static/gui.png" width=85%>
 </p>
 
 ## Quickstart for Windows
