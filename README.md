@@ -1,8 +1,8 @@
 # Acconeer Exploration Tool
 
-_**Explore the Next Sense**_ with Acconeer Exploration Tool! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and application in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
+_**Explore the Next Sense**_ with Acconeer Exploration Tool! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and the Application in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
 
-To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Exploration or Module server, which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
+To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Exploration or Module server, both of which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
 This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 2.10.0**.
 Running this version is strongly recommended, as we continuously fix bugs and add features.
@@ -19,7 +19,7 @@ There is a portable version of the Acconeer Exploration Tool for Windows:
 * Double click the `update.bat` file and wait for the installation to finish, which might take a couple of minutes
 * Double click the `run_app.bat`
 
-For an in-depth evaluation we recommend a full installation as described below.
+For an in-depth evaluation, we recommend a full installation as described below.
 
 ## Documentation
 
@@ -93,7 +93,7 @@ Note: If you have ModemManager installed and running it might try to connect to 
 
 #### Connecting to an XM112 through SPI on Linux
 
-If you are using Linux together with an XM112, you probably need permission to access the SPI bridge USB device. Either run the scripts with `sudo`, or create an udev rule as follows. Create and edit:
+If you are using Linux together with an XM112, you probably need permission to access the SPI bridge USB device. Either run the scripts with `sudo` or create an udev rule as follows. Create and edit:
 ```
 sudo nano /etc/udev/rules.d/50-ft4222.rules
 ```
@@ -122,16 +122,16 @@ on the module (*Module server* or *Exploration server*, respectively). Choosing 
 protocol will show an error.
 
 After pressing _Connect_, a connection should be established.
-In the box below labeled _Scan controls_, select the service or processing example you want to test.
+In the box below labelled _Scan controls_, select the service or processing example you want to test.
 Now you may tune the sensor and processing settings to your specific setup.
 Once you press _Start measurement_, the application will start fetching data from the sensor and plotting the results.
 After pressing _Stop_, you can save (and later load data) or just replay the data stored in the buffer.
 
 ### The ML interface *(no longer supported)*
 
-Support for the Machine Learning interface in Exploration Tool have been dropped.
+Support for the Machine Learning interface in Exploration Tool has been dropped.
 
-If you still need to use it, it is possible use and old version of Exploration Tool.
+If you still need to use it, it is possible to use an old version of Exploration Tool.
 
 From the `acconeer-python-exploration` directory:
 
@@ -182,7 +182,7 @@ Scripts can be terminated by pressing Ctrl-C in the terminal.
 
 ### Basic: `examples/a111/`
 
-The basic scripts contains a lot of comments guiding you through the steps taken in most example scripts. We recommend taking a look at these scripts before working with the others.
+The basic scripts contain a lot of comments guiding you through the steps taken in most example scripts. We recommend taking a look at these scripts before working with the others.
 
 - `basic.py` \
   Basic script for getting data from the radar. **Start here!**
@@ -205,7 +205,7 @@ The basic scripts contains a lot of comments guiding you through the steps taken
 - `barebones.py` \
   A barebones stub that demonstrates how to save sensor data to file.
 - `with_cli.py` \
-  A stub for saving sensor data to file that uses command line arguments
+  A stub for saving sensor data to file that uses command-line arguments
   allowing you to set the filename, etc.
 - `long_duration_split_files.py` \
   A stub that demonstrates how you can split one recording session into multiple files.
