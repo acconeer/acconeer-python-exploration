@@ -1,6 +1,6 @@
 import enum
+import importlib.resources
 import operator
-import os
 from functools import partial, reduce
 
 import attr
@@ -8,6 +8,8 @@ import yaml
 
 from acconeer.exptool.a111 import _configs
 from acconeer.exptool.a111._modes import Mode, get_mode
+
+from . import data
 
 
 BYTEORDER = "little"
@@ -255,11 +257,8 @@ def load_yaml():
     if REGISTERS is not None:
         return
 
-    here = os.path.dirname(os.path.realpath(__file__))
-    yaml_filename = os.path.abspath(os.path.join(here, "../../../data/regmap.yaml"))
-
-    with open(yaml_filename, "r") as f:
-        raw_regs = yaml.safe_load(f)
+    with importlib.resources.open_text(data, "regmap.yaml") as stream:
+        raw_regs = yaml.safe_load(stream)
 
     REGISTERS = []
 
