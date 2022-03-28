@@ -1,4 +1,4 @@
-SDK_VERSION = "2.10.0"
+SDK_VERSION = "2.11.0"
 
 from . import recording
 from ._clients import Client, Link, Protocol

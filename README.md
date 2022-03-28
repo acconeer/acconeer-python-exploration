@@ -4,7 +4,7 @@ _**Explore the Next Sense**_ with Acconeer Exploration Tool! Use one of our [eva
 
 To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Exploration or Module server, both of which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
-This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 2.10.0**.
+This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 2.11.0**.
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">
