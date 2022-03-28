@@ -62,9 +62,9 @@ class ProcessingTestModule:
             actual_arr = actual[k]
 
             if exact:
-                assert np.all(expected_arr == actual_arr)
+                assert np.all(np.array_equal(expected_arr, actual_arr, equal_nan=True))
             else:
-                assert np.all(np.isclose(expected_arr, actual_arr))
+                assert np.all(np.isclose(expected_arr, actual_arr, equal_nan=True))
 
     def path_for_parameter_set(self, parameter_set):
         if parameter_set:
