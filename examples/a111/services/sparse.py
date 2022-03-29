@@ -68,7 +68,7 @@ class PGUpdater:
             plot.showGrid(x=True, y=True)
             plot.setLabel("bottom", "Depth (m)")
             plot.setLabel("left", "Amplitude")
-            plot.setYRange(-(2 ** 15), 2 ** 15)
+            plot.setYRange(-(2**15), 2**15)
             scatter = pg.ScatterPlotItem(size=10)
             plot.addItem(scatter)
             win.nextRow()

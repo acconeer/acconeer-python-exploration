@@ -41,7 +41,7 @@ class PGUpdater:
         self.data_plot.showGrid(x=True, y=True)
         self.data_plot.setLabel("bottom", "Depth (m)")
         self.data_plot.setLabel("left", "Amplitude")
-        self.data_plot.setYRange(0, 2 ** 16)
+        self.data_plot.setYRange(0, 2**16)
         self.frame_scatter = pg.ScatterPlotItem(
             size=10,
             brush=et.utils.pg_brush_cycler(0),

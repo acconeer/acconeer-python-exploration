@@ -33,7 +33,7 @@ class PGUpdater:
         self.signal_hist_plot.showGrid(x=True, y=True)
         self.signal_hist_plot.setLabel("bottom", "Time (s)")
         self.signal_hist_plot.setXRange(-HISTORY_LENGTH_S, 0)
-        self.signal_hist_plot.setYRange(0, 2 ** 15)
+        self.signal_hist_plot.setYRange(0, 2**15)
 
         self.signal_hist_curve = self.signal_hist_plot.plot(
             pen=et.utils.pg_pen_cycler(0),

@@ -267,7 +267,7 @@ class Processor:
         elif self.peak_sorting_method == PeakSorting.STRONGEST:
             quantity_to_sort = -amp
         elif self.peak_sorting_method == PeakSorting.STRONGEST_REFLECTOR:
-            quantity_to_sort = -amp * r ** 2
+            quantity_to_sort = -amp * r**2
         elif self.peak_sorting_method == PeakSorting.STRONGEST_FLAT_REFLECTOR:
             quantity_to_sort = -amp * r
         else:

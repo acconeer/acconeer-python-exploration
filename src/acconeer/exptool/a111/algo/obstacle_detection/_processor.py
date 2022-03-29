@@ -418,7 +418,7 @@ class Processor:
         if self.downsampling:
             sweep = sweep[:, :: self.downsampling]
 
-        sweep = sweep / 2 ** 12
+        sweep = sweep / 2**12
 
         _, len_range = sweep.shape
 
@@ -756,7 +756,7 @@ class Processor:
                 dist_from_peak = (
                     abs(i) * angle_scaling_per_index + abs(j) * distance_scaling_per_index
                 )
-                mask_val = (1 - dist_from_peak ** 2) * peak_val * amplitude_margin
+                mask_val = (1 - dist_from_peak**2) * peak_val * amplitude_margin
                 if self.mask[int(j + distance_index), int(wrapped_row)] < mask_val:
                     self.mask[int(j + distance_index), int(wrapped_row)] = 0
 

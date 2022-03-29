@@ -10,7 +10,7 @@ nox.options.stop_on_first_error = True
 nox.options.reuse_existing_virtualenvs = True
 
 
-BLACK_SPEC = "black==21.11b1"
+BLACK_SPEC = "black>=22.3.0"
 ISORT_SPEC = "isort==5.6.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 

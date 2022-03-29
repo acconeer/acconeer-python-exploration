@@ -43,7 +43,7 @@ class PGUpdater:
             plot.setMenuEnabled(False)
             plot.setMouseEnabled(x=False, y=False)
             plot.hideButtons()
-            plot.setYRange(0, 2 ** 16)
+            plot.setYRange(0, 2**16)
             plot.hideAxis("left")
 
             if self.depths.size < 8:
@@ -60,7 +60,7 @@ class PGUpdater:
             else:
                 plot.hideAxis("bottom")
 
-            plot.plot(np.arange(self.sweeps_per_frame), 2 ** 15 * np.ones(self.sweeps_per_frame))
+            plot.plot(np.arange(self.sweeps_per_frame), 2**15 * np.ones(self.sweeps_per_frame))
             curve = plot.plot(pen=et.utils.pg_pen_cycler())
             self.plots.append(plot)
             self.curves.append(curve)

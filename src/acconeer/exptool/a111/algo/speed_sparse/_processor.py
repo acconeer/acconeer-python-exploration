@@ -256,7 +256,7 @@ class Processor:
             segment_length = self.sweeps_per_frame // self.num_segments
 
         window = hann(segment_length, sym=False)
-        window_norm = np.sum(window ** 2)
+        window_norm = np.sum(window**2)
 
         fft_segments = np.empty((self.num_segments, psd_length, len(self.depths)))
 

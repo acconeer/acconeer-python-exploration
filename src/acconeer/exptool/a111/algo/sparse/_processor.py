@@ -54,7 +54,7 @@ class Processor:
         except AssertionError:
             self.pd_processors = None
 
-        self.data_history = np.ones([history_len, num_sensors, num_depths]) * 2 ** 15
+        self.data_history = np.ones([history_len, num_sensors, num_depths]) * 2**15
         self.presence_history = np.zeros([history_len, num_sensors, num_depths])
 
     def process(self, data, data_info):

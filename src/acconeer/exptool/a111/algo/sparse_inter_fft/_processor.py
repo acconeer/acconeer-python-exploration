@@ -87,7 +87,7 @@ class Processor:
         depths = et.a111.get_range_depths(sensor_config, session_info)
         self.num_depths = depths.size
 
-        max_window_size = 2 ** ProcessingConfiguration.WINDOW_SIZE_POW_OF_2_MAX
+        max_window_size = 2**ProcessingConfiguration.WINDOW_SIZE_POW_OF_2_MAX
         self.sweep_history = np.full([max_window_size, self.num_depths], np.nan)
 
         self.collapsed_asd = None
