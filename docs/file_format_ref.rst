@@ -7,7 +7,7 @@ The data files store a ``Record``, a simple key-value store containing the field
 Either HDF5 ``.h5`` or NumPy ``.npz`` can be used to save it,
 although HDF5 is preferred due to its wider compatibility across systems and languages.
 
-We recommend loading and saving records using the ``load`` and ``save`` functions in the ``acconeer.exptool.recording`` module.
+We recommend loading and saving records using the ``load`` and ``save`` functions in the ``acconeer.exptool.a111.recording`` module.
 These functions take care of packing and unpacking the ``Record`` fields on save and load respectively.
 See `utils/load_record.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/utils/load_record.py>`__
 for an example of loading data,
@@ -21,12 +21,12 @@ Examples of loading
 
 Some minimal examples of loading the session info from a data file:
 
-Using ``acconeer.exptool.recording.load`` (recommended):
+Using ``acconeer.exptool.a111.recording.load`` (recommended):
 
 .. code-block:: python
 
    import acconeer.exptool as et
-   record = et.recording.load("data.h5")  # or .npz
+   record = et.a111.recording.load("data.h5")  # or .npz
    print(record.session_info)
    # {'data_length': 1238, 'range_length_m': 0.6, ...
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Outdated referenced to `recording` module in File format reference (docs)
+
 ## v4.0.1
 
 ### Changed

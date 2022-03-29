@@ -127,7 +127,7 @@ class Client:
                 | Type: complex128
 
                 | **Sparse:**
-                | Shape: (number of sensors, number of sweeps, number of dephts)
+                | Shape: (number of sensors, number of sweeps, number of depths)
                 | Type: float64
 
                 `Number of sensors`, `bin count` and `number of sweeps` can be explicitly set.
