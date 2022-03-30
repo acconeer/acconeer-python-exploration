@@ -3,3 +3,4 @@ include src/acconeer/exptool/a111/_clients/reg/data/regmap.yaml
 include src/acconeer/exptool/app/elements/acc.png
 prune docs
 prune tests
+recursive-include src/acconeer/exptool py.typed
