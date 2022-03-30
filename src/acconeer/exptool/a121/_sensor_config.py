@@ -1,0 +1,2 @@
+class SensorConfig:
+    pass
