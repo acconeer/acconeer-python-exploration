@@ -86,6 +86,13 @@ def reformat(session):
 
 
 @nox.session
+def mypy(session):
+    session.install(".")
+    session.install("mypy")
+    session.run("python", "-m", "mypy", "-p", "acconeer.exptool.a121")
+
+
+@nox.session
 def docs(session):
     args = Parser().parse_args(session.posargs)
 
