@@ -3,11 +3,11 @@ from __future__ import annotations
 import attrs
 import numpy.typing as npt
 
-from ._metadata import Metadata
+from ._metadata import Metadata, SensorDataType
 
 
 @attrs.frozen
-class _ResultContext:
+class ResultContext:
     metadata: Metadata = attrs.field()
     ticks_per_second: int = attrs.field()
 
@@ -22,11 +22,20 @@ class Result:
 
     tick: int = attrs.field()
 
-    _context: _ResultContext = attrs.field()
+    _context: ResultContext = attrs.field()
 
     @property
     def frame(self) -> npt.NDArray:
-        raise NotImplementedError
+        data_type = self._context.metadata._data_type
+
+        if data_type == SensorDataType.INT_16_COMPLEX:
+            real_part = self._frame["real"].astype("float")
+            imag_part = self._frame["imag"].astype("float")
+            return real_part + 1.0j * imag_part
+        elif data_type in [SensorDataType.INT_16, SensorDataType.UINT_16]:
+            return self._frame.astype("float")
+        else:
+            raise RuntimeError
 
     @property
     def subframes(self) -> list[npt.NDArray]:
