@@ -39,7 +39,9 @@ class Result:
 
     @property
     def subframes(self) -> list[npt.NDArray]:
-        raise NotImplementedError
+        offsets = self._context.metadata.subsweep_data_offset
+        lengths = self._context.metadata.subsweep_data_length
+        return [self.frame[:, o : (o + l)] for o, l in zip(offsets, lengths)]
 
     @property
     def tick_time(self) -> float:

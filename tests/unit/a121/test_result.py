@@ -62,3 +62,30 @@ def test_frame_complex_conversion(good_result):
 
     assert good_result.frame.dtype == expected_converted_frame.dtype
     assert np.array_equal(good_result.frame, expected_converted_frame)
+
+
+def test_subframes(good_result):
+    expected_subframes = [
+        np.array(
+            [
+                [(0 - 0j), (1 - 1j)],
+                [(5 - 5j), (6 - 6j)],
+                [(10 - 10j), (11 - 11j)],
+            ],
+            dtype="complex",
+        ),
+        np.array(
+            [
+                [(2 - 2j), (3 - 3j), (4 - 4j)],
+                [(7 - 7j), (8 - 8j), (9 - 9j)],
+                [(12 - 12j), (13 - 13j), (14 - 14j)],
+            ],
+            dtype="complex",
+        ),
+    ]
+
+    assert len(good_result.subframes) == 2
+
+    for actual, expected in zip(good_result.subframes, expected_subframes):
+        assert actual.dtype == np.dtype("complex")
+        assert np.array_equal(actual, expected)
