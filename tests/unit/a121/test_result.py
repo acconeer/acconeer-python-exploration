@@ -89,3 +89,7 @@ def test_subframes(good_result):
     for actual, expected in zip(good_result.subframes, expected_subframes):
         assert actual.dtype == np.dtype("complex")
         assert np.array_equal(actual, expected)
+
+
+def test_tick_time(good_result):
+    assert np.isclose(good_result.tick_time, 1.5)

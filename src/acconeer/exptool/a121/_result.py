@@ -45,4 +45,4 @@ class Result:
 
     @property
     def tick_time(self) -> float:
-        raise NotImplementedError
+        return self.tick / self._context.ticks_per_second
