@@ -46,6 +46,24 @@ class SessionConfig:
 
         self._update_rate = value
 
+    @property
+    def sensor_id(self) -> int:
+        if self.extended:
+            raise Exception
+
+        (group,) = self._groups
+        (sensor_id,) = group.keys()
+        return sensor_id
+
+    @sensor_id.setter
+    def sensor_id(self, value: int) -> None:
+        if self.extended:
+            raise Exception
+
+        (group,) = self._groups
+        (entry,) = group.values()
+        self._groups = [{value: entry}]
+
 
 def _unsqueeze_groups(arg):
     if isinstance(arg, SensorConfig):
