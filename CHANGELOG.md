@@ -4,6 +4,8 @@
 
 ### Fixed
 - Outdated referenced to `recording` module in File format reference (docs)
+- Bug that did not allow examples and standalones to be run over UART
+
 
 ## v4.0.1
 
