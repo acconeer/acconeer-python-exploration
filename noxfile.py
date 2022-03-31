@@ -29,6 +29,13 @@ class Parser(argparse.ArgumentParser):
     def __init__(self):
         super().__init__()
 
+        self.add_argument(
+            "-e",
+            "--editable",
+            action="store_true",
+            default=False,
+        )
+
         test_group = self.add_argument_group("test")
         test_group.add_argument(
             "--test-groups",
@@ -96,7 +103,10 @@ def mypy(session):
 def docs(session):
     args = Parser().parse_args(session.posargs)
 
-    session.install(".[docs]")
+    if args.editable:
+        session.install("-e", ".[docs]")
+    else:
+        session.install(".[docs]")
 
     if "html" in args.docs_builders:
         session.run("python", "-m", "sphinx", "-W", *SPHINX_HTML_ARGS)
@@ -192,6 +202,9 @@ def test(session):
     # Install and run:
 
     install = []
+
+    if args.editable:
+        install.append("-e")
 
     if install_extras:
         install.append(f".[{','.join(install_extras)}]")
