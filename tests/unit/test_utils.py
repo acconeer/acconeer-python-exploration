@@ -105,9 +105,9 @@ def namespace_transformations():
         argparse.Namespace(serial_port=None, socket_addr=None, spi=True),
     ]
     client_dict = [
-        dict(link="uart"),
+        dict(link="uart", protocol="module"),
         dict(link="uart", protocol="exploration"),
-        dict(serial_port="serial_port_name", link="uart"),
+        dict(serial_port="serial_port_name", link="uart", protocol="module"),
         dict(host="localhost", link="socket"),
         dict(link="spi"),
     ]

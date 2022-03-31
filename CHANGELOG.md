@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## v4.0.2
+
+### Changed
+- Module server protocol is now default for UART connections in examples
 
 ### Fixed
 - Outdated referenced to `recording` module in File format reference (docs)
