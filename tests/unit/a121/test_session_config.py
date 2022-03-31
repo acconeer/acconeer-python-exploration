@@ -58,13 +58,13 @@ def test_update_rate():
 
 def test_input_checking():
     with pytest.raises(ValueError):
-        a121.SessionConfig(None)
+        a121.SessionConfig(None)  # type: ignore[arg-type]
 
     with pytest.raises(ValueError):
-        a121.SessionConfig({1: 123})
+        a121.SessionConfig({1: 123})  # type: ignore[dict-item]
 
     with pytest.raises(ValueError):
-        a121.SessionConfig({"foo": a121.SensorConfig()})
+        a121.SessionConfig({"foo": a121.SensorConfig()})  # type: ignore[dict-item]
 
     with pytest.raises(ValueError):
         a121.SessionConfig({})
