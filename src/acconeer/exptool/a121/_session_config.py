@@ -46,23 +46,23 @@ class SessionConfig:
 
         self._update_rate = value
 
+    def _assert_not_extended(self):
+        if self.extended:
+            raise RuntimeError("This operation requires SessionConfig not to be extended.")
+
     @property
     def sensor_id(self) -> int:
-        if self.extended:
-            raise Exception
-
+        self._assert_not_extended()
         (group,) = self._groups
         (sensor_id,) = group.keys()
         return sensor_id
 
-    @sensor_id.setter
-    def sensor_id(self, value: int) -> None:
-        if self.extended:
-            raise Exception
-
+    @property
+    def sensor_config(self) -> SensorConfig:
+        self._assert_not_extended()
         (group,) = self._groups
-        (entry,) = group.values()
-        self._groups = [{value: entry}]
+        (sensor_config,) = group.values()
+        return sensor_config
 
 
 def _unsqueeze_groups(arg):
