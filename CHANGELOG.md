@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Implicit behavior of calibration application. Now never applies a
+  calibration unless explicitly done by the user.
+
+
 ## v4.0.2
 
 ### Changed

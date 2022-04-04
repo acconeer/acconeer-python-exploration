@@ -155,8 +155,6 @@ class GUI(QMainWindow):
         self.init_sublayouts()
         self.init_panel_scroll_area()
         self.init_statusbar()
-        self.init_pidgets()
-        self.update_interface()
 
         self.calibration_ui_state = CalibrationUiState(
             load_btn=self.buttons["load_calibration"],
@@ -166,6 +164,14 @@ class GUI(QMainWindow):
             auto_apply_cb=self.checkboxes["calibration_auto_apply"],
             apply_btn=self.buttons["apply_calibration"],
         )
+        self.sig_scan.connect(
+            lambda start_or_stop, *_: self.calibration_ui_state.set_scan_is_running(
+                start_or_stop == "start"
+            )
+        )
+
+        self.init_pidgets()
+        self.update_interface()
 
         self.canvas_widget = QFrame(self.main_widget)
         self.canvas_layout = QtWidgets.QVBoxLayout(self.canvas_widget)
@@ -241,24 +247,27 @@ class GUI(QMainWindow):
         calibration_textbox.setPlaceholderText("No calibration")
 
     def init_checkboxes(self):
-        # text, status, visible, enabled, function
+        # text, status, visible, enabled, function, tooltip
         checkbox_info = {
-            "verbose": ("Verbose logging", False, True, True, self.set_log_level),
+            "verbose": ("Verbose logging", False, True, True, self.set_log_level, None),
             "calibration_auto_apply": (
                 "Auto apply calibration",
                 False,
                 True,
                 True,
                 self.set_calibration_auto_apply,
+                "When checked, any calibration returned from the processor will automatically\n"
+                + "be used. It will not apply the buffered calibration.",
             ),
         }
 
         self.checkboxes = {}
-        for key, (text, status, visible, enabled, fun) in checkbox_info.items():
+        for key, (text, status, visible, enabled, fun, tooltip) in checkbox_info.items():
             cb = QCheckBox(text, self)
             cb.setChecked(status)
             cb.setVisible(visible)
             cb.setEnabled(enabled)
+            cb.setToolTip(tooltip)
             if fun:
                 cb.stateChanged.connect(fun)
             self.checkboxes[key] = cb
@@ -1211,6 +1220,7 @@ class GUI(QMainWindow):
         return retval == 1024
 
     def start_scan(self, from_file=False):
+        self.sig_scan.emit("start", "", None)
         if not self.get_sensors():
             self.error_message("Please select at least one sensor")
             return
@@ -1424,6 +1434,7 @@ class GUI(QMainWindow):
             sensor_widget.setEnabled(not states["scan_is_running"])
 
         self.set_multi_sensors()
+        self.calibration_ui_state.scan_is_running = states["scan_is_running"]
 
         self.buttons["sensor_defaults"].setEnabled(not states["scan_is_running"])
 
@@ -2096,6 +2107,8 @@ class Threaded_Scan(QtCore.QThread):
             self.radar.update_feature_extraction(message, data)
         elif message_type == "update_feature_list":
             self.radar.update_feature_list(data)
+        elif message_type == "start":
+            pass
         else:
             print("Scan thread received unknown signal: {}".format(message_type))
 
