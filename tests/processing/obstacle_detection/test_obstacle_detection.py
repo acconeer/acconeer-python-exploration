@@ -8,11 +8,13 @@ import pytest
 import yaml
 
 import acconeer.exptool as et
+from acconeer.exptool._tests.test_rig import ProcessingTestModule
 from acconeer.exptool.a111.algo.obstacle_detection import ProcessingConfiguration, Processor
 from acconeer.exptool.a111.algo.obstacle_detection.calibration import ObstacleDetectionCalibration
 
 
 HERE = Path(__file__).parent
+
 TEST_KEYS = [
     "env_ampl",
     "peak_idx",
@@ -23,6 +25,14 @@ TEST_KEYS = [
 PARAMETER_SETS = [
     {},
 ]
+
+test_module = ProcessingTestModule(
+    Processor,
+    ProcessingConfiguration,
+    HERE,
+    TEST_KEYS,
+    PARAMETER_SETS,
+)
 
 
 def get_bg_parameters(parameter_set=None):
@@ -90,36 +100,6 @@ def get_output_for_calib(parameter_set=None):
     return {k: np.array(v, dtype=float) for k, v in output.items()}
 
 
-def get_output(parameter_set=None):
-    input_record = et.a111.recording.load(HERE / "input.h5")
-
-    processing_config = ProcessingConfiguration()
-
-    if parameter_set is not None:
-        for k, v in parameter_set.items():
-            processing_config[k]["value"] = v
-
-    processor = Processor(
-        input_record.sensor_config,
-        processing_config,
-        input_record.session_info,
-    )
-
-    output = {k: [] for k in TEST_KEYS}
-
-    for data_info, data in input_record:
-        if data.shape[0] == 1:
-            result = processor.process(data.squeeze(0), data_info[0])
-        else:
-            result = processor.process(data, data_info[0])
-
-        for k in TEST_KEYS:
-            output[k].append(result[k])
-
-    # Explicit `dtype=float` makes the conversion `None` -> `np.nan`.
-    return {k: np.array(v, dtype=float) for k, v in output.items()}
-
-
 def save_output(file, output):
     with h5py.File(file, "w") as f:
         for k in TEST_KEYS:
@@ -129,16 +109,6 @@ def save_output(file, output):
                 raise TypeError(
                     f"Could not create dataset with name: {k}, data={output[k]}"
                 ) from te
-
-
-def load_output(file):
-    output = {}
-
-    with h5py.File(file, "r") as f:
-        for k in TEST_KEYS:
-            output[k] = f[k][()]
-
-    return output
 
 
 def compare_dicts(expected, actual, keys={}, exact=False) -> bool:
@@ -176,24 +146,24 @@ def path_for_parameter_set(parameter_set):
 def test_load_save_compare():
     temp_file = tempfile.TemporaryFile()
 
-    saved_output = get_output()
+    saved_output = test_module.get_output()
 
     save_output(temp_file, saved_output)
-    loaded_output = load_output(temp_file)
+    loaded_output = test_module.load_output(temp_file)
 
     compare_output(saved_output, loaded_output)
 
 
 def test_path_for_parameter_set():
-    assert path_for_parameter_set({"foo": "bar"}) == (HERE / "output_foo-bar.h5")
+    test_module.test_path_for_parameter_set()
 
 
 @pytest.mark.parametrize("parameter_set", PARAMETER_SETS)
 def test_processor_against_reference(parameter_set):
     with open(path_for_parameter_set(parameter_set), "rb") as f:
-        expected = load_output(f)
+        expected = test_module.load_output(f)
 
-    actual = get_output(parameter_set)
+    actual = test_module.get_output(parameter_set)
     compare_output(expected, actual)
 
 
@@ -223,7 +193,7 @@ def test_wrong_dumped_parameters(parameter_set):
 def test_setting_calibration_yeilds_expected_results(parameter_set):
     path = path_for_parameter_set(parameter_set).as_posix().replace(".h5", "_calib.h5")
     with open(path, "rb") as f:
-        expected = load_output(f)
+        expected = test_module.load_output(f)
 
     actual = get_output_for_calib(parameter_set)
     assert compare_dicts(actual, expected)
@@ -294,7 +264,7 @@ def test_update_calibration_actually_updates(parameter_set):
 
     path = path_for_parameter_set(parameter_set).as_posix().replace(".h5", "_calib.h5")
     with open(path, "rb") as f:
-        expected = load_output(f)
+        expected = test_module.load_output(f)
 
     assert compare_dicts(actual, expected)
 
@@ -305,7 +275,7 @@ def test_preloaded_bg_params(parameter_set):
 
     path = path_for_parameter_set(parameter_set).as_posix().replace(".h5", "_calib.h5")
     with open(path, "rb") as f:
-        expected = load_output(f)
+        expected = test_module.load_output(f)
 
     assert compare_dicts(actual, expected)
 
@@ -318,14 +288,13 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(dest="command")
     subparsers.required = True
 
-    sp = subparsers.add_parser("save")
+    subparsers.add_parser("save")
 
     args = parser.parse_args()
 
+    test_module.main()
+
     if args.command == "save":
-        for parameter_set in PARAMETER_SETS:
-            output = get_output(parameter_set)
-            save_output(path_for_parameter_set(parameter_set), output)
 
         for parameter_set in PARAMETER_SETS:
             output = get_output_for_calib(parameter_set)

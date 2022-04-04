@@ -16,7 +16,6 @@ class ProcessingTestModule:
         self.parameter_sets = parameter_sets
 
     def get_output(self, parameter_set=None):
-
         input_record = et.a111.recording.load(self.path / "input.h5")
 
         processing_config = self.processsing_config_class()
@@ -34,18 +33,27 @@ class ProcessingTestModule:
         output = {k: [] for k in self.test_keys}
 
         for data_info, data in input_record:
-            result = processor.process(data.squeeze(0), data_info[0])
-
+            if data.shape[0] == 1:
+                result = processor.process(data.squeeze(0), data_info[0])
+            else:
+                result = processor.process(data, data_info[0])
             if result is not None:
+
                 for k in self.test_keys:
                     output[k].append(result[k])
 
-        return {k: np.array(v) for k, v in output.items()}
+        # Explicit `dtype=float` makes the conversion `None` -> `np.nan`.
+        return {k: np.array(v, dtype=float) for k, v in output.items()}
 
     def save_output(self, file, output):
         with h5py.File(file, "w") as f:
             for k in self.test_keys:
-                f.create_dataset(name=k, data=output[k], track_times=False)
+                try:
+                    f.create_dataset(name=k, data=output[k], track_times=False, compression="gzip")
+                except TypeError as te:
+                    raise TypeError(
+                        f"Could not create dataset with name: {k}, data={output[k]}"
+                    ) from te
 
     def load_output(self, file):
         output = {}
