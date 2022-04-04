@@ -80,6 +80,48 @@ def set_loglevel(level):
     log.setLevel(level)
 
 
+def tag_serial_ports_objects(port_infos):
+    PRODUCT_REGEX = r"[X][A-Z]\d{3}"
+    USB_IDS = [  # (vid, pid, 'model number')
+        (0x0483, 0xA41D, "XC120"),
+        (0x0483, 0xA42C, "XC120"),
+        (0x0483, 0xA42D, "XC120"),
+    ]
+
+    port_tag_tuples = []
+
+    for _, port_object in enumerate(port_infos):
+        desc = port_object.product or port_object.description
+
+        match = re.search(PRODUCT_REGEX, desc)
+        if match is None:
+            for vid, pid, model_number in USB_IDS:
+                if port_object.vid == vid and port_object.pid == pid:
+                    port_tag_tuples.append((port_object, model_number))
+                    break
+            else:
+                port_tag_tuples.append((port_object, None))
+        elif "xe132" in match.group().lower():
+            if version.parse(serial.__version__) >= version.parse("3.5"):
+                # Special handling of xe132 with pyserial >= 3.5
+                interface = port_object.interface
+
+                if interface and "enhanced" in interface.lower():
+                    # Add the "enhanced" interface
+                    port_tag_tuples.append((port_object, "XE132"))
+                else:
+                    # Add the "standard" interface but don't tag it
+                    port_tag_tuples.append((port_object, None))
+
+            else:  # pyserial <= 3.4
+                # Add "?" to both to indicate that it could be either.
+                port_tag_tuples.append((port_object, "XE132 (?)"))
+        else:
+            port_tag_tuples.append((port_object, match.group()))
+
+    return port_tag_tuples
+
+
 def tag_serial_ports(port_infos):
     """
     Returns every port and Acconeer model number in a tuple if it's an
@@ -94,43 +136,8 @@ def tag_serial_ports(port_infos):
         `serial.tools.list_ports.comports()`
     :returns: List of tuples [(<port>, <model number> or None), ...]
     """
-    PRODUCT_REGEX = r"[X][A-Z]\d{3}"
-    USB_IDS = [  # (vid, pid, 'model number')
-        (0x0483, 0xA42D, "XC120"),
-    ]
-
-    port_tag_tuples = []
-
-    for _, port_object in enumerate(port_infos):
-        port = port_object.device
-        desc = port_object.product or port_object.description
-
-        match = re.search(PRODUCT_REGEX, desc)
-        if match is None:
-            for vid, pid, model_number in USB_IDS:
-                if port_object.vid == vid and port_object.pid == pid:
-                    port_tag_tuples.append((port, model_number))
-                    break
-            else:
-                port_tag_tuples.append((port, None))
-        elif "xe132" in match.group().lower():
-            if version.parse(serial.__version__) >= version.parse("3.5"):
-                # Special handling of xe132 with pyserial >= 3.5
-                interface = port_object.interface
-
-                if interface and "enhanced" in interface.lower():
-                    # Add the "enhanced" interface
-                    port_tag_tuples.append((port, "XE132"))
-                else:
-                    # Add the "standard" interface but don't tag it
-                    port_tag_tuples.append((port, None))
-
-            else:  # pyserial <= 3.4
-                # Add "?" to both to indicate that it could be either.
-                port_tag_tuples.append((port, "XE132 (?)"))
-        else:
-            port_tag_tuples.append((port, match.group()))
-
+    port_tag_tuples = tag_serial_ports_objects(port_infos)
+    port_tag_tuples = [(port.device, tag) for (port, tag) in port_tag_tuples]
     return port_tag_tuples
 
 
