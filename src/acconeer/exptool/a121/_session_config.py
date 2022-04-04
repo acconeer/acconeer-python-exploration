@@ -65,7 +65,9 @@ class SessionConfig:
         return sensor_config
 
 
-def _unsqueeze_groups(arg):
+def _unsqueeze_groups(
+    arg: Union[SensorConfig, dict[int, SensorConfig], list[dict[int, SensorConfig]]],
+) -> list[dict[int, SensorConfig]]:
     if isinstance(arg, SensorConfig):
         return [{1: arg}]
 

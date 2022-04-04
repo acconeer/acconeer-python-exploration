@@ -31,7 +31,7 @@ class Result:
         if data_type == SensorDataType.INT_16_COMPLEX:
             real_part = self._frame["real"].astype("float")
             imag_part = self._frame["imag"].astype("float")
-            return real_part + 1.0j * imag_part
+            return real_part + 1.0j * imag_part  # type: ignore[no-any-return]
         elif data_type in [SensorDataType.INT_16, SensorDataType.UINT_16]:
             return self._frame.astype("float")
         else:
