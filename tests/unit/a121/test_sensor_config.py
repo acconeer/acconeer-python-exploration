@@ -7,7 +7,6 @@ import pytest
 from acconeer.exptool import a121
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_sweeps_per_frame():
     # Default value
 
