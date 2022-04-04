@@ -24,11 +24,11 @@ class SensorConfig:
         elif num_subsweeps is not None:
             self._subsweeps = [SubsweepConfig() for _ in range(num_subsweeps)]
         else:
-            RuntimeError
+            raise RuntimeError
 
     @property
     def subsweeps(self) -> list[SubsweepConfig]:
-        pass
+        return self._subsweeps
 
     @property
     def num_subsweeps(self) -> int:
