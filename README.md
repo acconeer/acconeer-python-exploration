@@ -58,7 +58,7 @@ Tested on:
 
 **NEW:** Install from PyPI:
 ```
-python -m pip install acconeer-exptool[app]
+python -m pip install --upgrade acconeer-exptool[app]
 ```
 > *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
 

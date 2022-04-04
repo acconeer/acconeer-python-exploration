@@ -16,7 +16,7 @@ print(SEPARATOR)
 if et_ver is None or not et_ver.startswith("4"):
     print("Install Acconeer Exploration Tool v4 with:")
     print()
-    print("    python -m pip install acconeer-exptool[app]")
+    print("    python -m pip install --upgrade acconeer-exptool[app]")
     print()
     print("    -- or --")
     print()
