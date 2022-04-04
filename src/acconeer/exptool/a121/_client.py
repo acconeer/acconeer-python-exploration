@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Union
+from typing import Any, Optional, Union
 
 from ._client_info import ClientInfo
 from ._metadata import Metadata
+from ._recorder import Recorder
 from ._result import Result
 from ._sensor_config import SensorConfig
 from ._server_info import ServerInfo
@@ -23,13 +24,13 @@ class Client:
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
         pass
 
-    def start_session(self) -> None:
+    def start_session(self, recorder: Optional[Recorder] = None) -> None:
         pass
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         pass
 
-    def stop_session(self) -> None:
+    def stop_session(self) -> Any:
         pass
 
     def disconnect(self) -> None:
