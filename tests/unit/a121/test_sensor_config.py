@@ -170,3 +170,15 @@ def test_single_subsweep_at_instantiation():
     # Make sure the subsweep is properly used
 
     assert sensor_config.hwaas == sensor_config.subsweeps[0].hwaas == 4
+
+
+@pytest.mark.xfail(reason="Not yet implemented")
+def test_eq():
+    assert a121.SensorConfig() == a121.SensorConfig()
+    assert a121.SensorConfig() != a121.SensorConfig(sweeps_per_frame=3)
+    assert a121.SensorConfig() != a121.SensorConfig(num_subsweeps=2)
+    assert a121.SensorConfig(num_subsweeps=2) == a121.SensorConfig(num_subsweeps=2)
+
+    other = a121.SensorConfig(num_subsweeps=2)
+    other.subsweeps[1].hwaas = 3
+    assert a121.SensorConfig(num_subsweeps=2) != other
