@@ -22,8 +22,14 @@ def test_sweeps_per_frame():
     assert config.sweeps_per_frame == 3
     assert isinstance(config.sweeps_per_frame, int)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         config.sweeps_per_frame = "not-an-int"
+
+    with pytest.raises(TypeError):
+        config.sweeps_per_frame = "3"
+
+    with pytest.raises(TypeError):
+        config.sweeps_per_frame = 3.5
 
     config = a121.SensorConfig(sweeps_per_frame=2)
     assert config.sweeps_per_frame == 2
@@ -33,8 +39,14 @@ def test_sweeps_per_frame():
     assert config.sweeps_per_frame == 3
     assert isinstance(config.sweeps_per_frame, int)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         a121.SensorConfig(sweeps_per_frame="not-an-int")
+
+    with pytest.raises(TypeError):
+        a121.SensorConfig(sweeps_per_frame="3")
+
+    with pytest.raises(TypeError):
+        a121.SensorConfig(sweeps_per_frame=3.5)
 
     # Validation
 
