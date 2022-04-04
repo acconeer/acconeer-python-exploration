@@ -33,3 +33,17 @@ class SensorConfig:
     @property
     def num_subsweeps(self) -> int:
         return len(self.subsweeps)
+
+    def to_dict(self) -> dict:
+        raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, dict_: dict) -> SensorConfig:
+        raise NotImplementedError
+
+    def to_json(self) -> str:
+        raise NotImplementedError
+
+    @classmethod
+    def from_json(cls, json_str: str) -> SensorConfig:
+        raise NotImplementedError

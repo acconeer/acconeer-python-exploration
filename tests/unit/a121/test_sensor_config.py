@@ -1,5 +1,7 @@
 # type: ignore
 
+import json
+
 import pytest
 
 from acconeer.exptool import a121
@@ -182,3 +184,23 @@ def test_eq():
     other = a121.SensorConfig(num_subsweeps=2)
     other.subsweeps[1].hwaas = 3
     assert a121.SensorConfig(num_subsweeps=2) != other
+
+
+@pytest.mark.xfail(reason="Not yet implemented")
+def test_from_to_dict():
+    original_config = a121.SensorConfig(sweeps_per_frame=3)
+    dict_ = original_config.to_dict()
+    recreated_config = a121.SensorConfig.from_dict(dict_)
+    assert recreated_config == original_config
+
+
+@pytest.mark.xfail(reason="Not yet implemented")
+def test_from_to_json():
+    original_config = a121.SensorConfig(sweeps_per_frame=3)
+    json_str = original_config.to_json()
+    recreated_config = a121.SensorConfig.from_json(json_str)
+    assert recreated_config == original_config
+
+    dict_from_json = json.loads(json_str)
+    dict_from_config = original_config.to_dict()
+    assert dict_from_json == dict_from_config
