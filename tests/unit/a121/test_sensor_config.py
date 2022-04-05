@@ -121,29 +121,71 @@ def test_explicit_subsweeps():
 
 
 @pytest.mark.xfail(reason="Not yet implemented")
-def test_single_subsweep_param():
-    # Make sure we don't happen to use the default value in the test
-    assert a121.SubsweepConfig().hwaas not in [3, 4]
+def test_subsweep_accessor():
+    subsweep_config = a121.SubsweepConfig()
+    sensor_config = a121.SensorConfig(subsweeps=[subsweep_config])
 
+    # As long as we have a single subsweep, it should be accessible
+    # through ".subsweep".
+    assert sensor_config.subsweep is subsweep_config is sensor_config.subsweeps[0]
+
+    # ... and not settable.
+    with pytest.raises(Exception):
+        sensor_config.subsweep = a121.SubsweepConfig()
+
+    # When we have more than 1, an error should be raised.
+    sensor_config = a121.SensorConfig(num_subsweeps=2)
+    with pytest.raises(Exception):
+        _ = sensor_config.subsweep
+
+    # A docstring is nessecary to infrom the user of the raising
+    # behavior.
+    assert a121.SensorConfig.subsweep.__doc__
+
+
+@pytest.mark.xfail(reason="Not yet implemented")
+def test_single_subsweep_hwaas():
     sensor_config = a121.SensorConfig()
 
     # The sensor config and the (only) subsweep config should match
-    assert sensor_config.hwaas == sensor_config.subsweeps[0].hwaas
+    assert sensor_config.hwaas == sensor_config.subsweeps[0].hwaas == sensor_config.subsweep.hwaas
 
     # We should be able to set values through the sensor config
     sensor_config.hwaas = 3
-    assert sensor_config.hwaas == sensor_config.subsweeps[0].hwaas == 3
+    assert (
+        sensor_config.hwaas
+        == sensor_config.subsweeps[0].hwaas
+        == sensor_config.subsweep.hwaas
+        == 3
+    )
 
     # And the subsweep config
     sensor_config.subsweeps[0].hwaas = 4
-    assert sensor_config.hwaas == sensor_config.subsweeps[0].hwaas == 4
+    assert (
+        sensor_config.hwaas
+        == sensor_config.subsweeps[0].hwaas
+        == sensor_config.subsweep.hwaas
+        == 4
+    )
+
+    # And through single subsweep accessor
+    sensor_config.subsweep.hwaas = 5
+    assert (
+        sensor_config.hwaas
+        == sensor_config.subsweeps[0].hwaas
+        == sensor_config.subsweep.hwaas
+        == 5
+    )
+
+
+@pytest.mark.xfail(reason="Not yet implemented")
+def test_num_subsweeps_creates_unique_subsweep_configs():
+    sensor_config = a121.SensorConfig(num_subsweeps=2)
+    assert sensor_config.subsweeps[0] is not sensor_config.subsweeps[1]
 
 
 @pytest.mark.xfail(reason="Not yet implemented")
 def test_multiple_subsweeps_param():
-    # Make sure we don't happen to use the default value in the test
-    assert a121.SubsweepConfig().hwaas != 4
-
     sensor_config = a121.SensorConfig(num_subsweeps=2)
 
     # With multiple subsweeps, we should not be able to get/set subsweep parameters through the
@@ -155,22 +197,14 @@ def test_multiple_subsweeps_param():
     with pytest.raises(Exception):
         sensor_config.hwaas = 1
 
-    # Make sure we can set subsweep parameters individually
-    sensor_config.subsweeps[0].hwaas = 4
-    assert sensor_config.subsweeps[1].hwaas != 4
-
 
 @pytest.mark.xfail(reason="Not yet implemented")
 def test_single_subsweep_at_instantiation():
-    # Make sure we don't happen to use the default value in the test
-    assert a121.SubsweepConfig().hwaas != 4
-
     sensor_config = a121.SensorConfig(
         subsweeps=[a121.SubsweepConfig(hwaas=4)],
     )
 
     # Make sure the subsweep is properly used
-
     assert sensor_config.hwaas == sensor_config.subsweeps[0].hwaas == 4
 
 
