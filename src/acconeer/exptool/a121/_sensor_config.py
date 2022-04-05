@@ -26,6 +26,19 @@ class SensorConfig:
         else:
             raise RuntimeError
 
+    def _assert_single_subsweep(self) -> None:
+        if self.num_subsweeps > 1:
+            raise AttributeError("num_subsweeps is > 1.")
+
+    @property
+    def subsweep(self) -> SubsweepConfig:
+        """Convenience attribute for accessing the one and only SubsweepConfig.
+
+        raises an AttributeError if num_subsweeps > 1
+        """
+        self._assert_single_subsweep()
+        return self.subsweeps[0]
+
     @property
     def subsweeps(self) -> list[SubsweepConfig]:
         return self._subsweeps

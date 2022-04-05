@@ -118,7 +118,6 @@ def test_explicit_subsweeps():
         )
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_subsweep_accessor():
     subsweep_config = a121.SubsweepConfig()
     sensor_config = a121.SensorConfig(subsweeps=[subsweep_config])
