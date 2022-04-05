@@ -77,7 +77,6 @@ def test_subsweep_properties_read_only():
         sensor_config.subsweeps = [a121.SubsweepConfig()]
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_implicit_subsweep():
     sensor_config = a121.SensorConfig()
 
@@ -85,7 +84,6 @@ def test_implicit_subsweep():
     assert len(sensor_config.subsweeps) == 1
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_explicit_subsweeps():
     # Should be able to explicitly give the subsweeps
 
@@ -178,7 +176,6 @@ def test_single_subsweep_hwaas():
     )
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_num_subsweeps_creates_unique_subsweep_configs():
     sensor_config = a121.SensorConfig(num_subsweeps=2)
     assert sensor_config.subsweeps[0] is not sensor_config.subsweeps[1]
