@@ -1,24 +1,52 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
 
 from ._subsweep_config import SubsweepConfig
-from ._utils import convert_validate_int
+from ._utils import ProxyProperty, convert_validate_int
+
+
+T = TypeVar("T")
+
+
+class SubsweepProxyProperty(ProxyProperty[T]):
+    def __init__(self, prop: Any) -> None:
+        super().__init__(
+            accessor=self.get_subsweep,
+            prop=prop,
+        )
+
+    @staticmethod
+    def get_subsweep(sensor_config: SensorConfig) -> SubsweepConfig:
+        return sensor_config.subsweep
 
 
 class SensorConfig:
     _sweeps_per_frame: int
     _subsweeps: list[SubsweepConfig]
+    hwaas = SubsweepProxyProperty[int](SubsweepConfig.hwaas)
 
     def __init__(
         self,
+        *,
         subsweeps: Optional[list[SubsweepConfig]] = None,
         num_subsweeps: Optional[int] = None,
         sweeps_per_frame: int = 1,
+        hwaas: Optional[int] = None,
     ) -> None:
         if subsweeps is not None and num_subsweeps is not None:
-            raise ValueError
+            raise ValueError(
+                "It's not allowed to set both subsweeps and num_subsweeps. Choose one."
+            )
+        if subsweeps == []:
+            raise ValueError("Cannot pass an empty subsweeps list.")
+
+        if subsweeps is not None and hwaas is not None:
+            raise ValueError(
+                "Combining hwaas and subsweeps is not allowed. "
+                + "Specify hwaas in each SubsweepConfig instead"
+            )
 
         if subsweeps is None and num_subsweeps is None:
             num_subsweeps = 1
@@ -31,6 +59,8 @@ class SensorConfig:
             raise RuntimeError
 
         self.sweeps_per_frame = sweeps_per_frame
+        if hwaas is not None:
+            self.hwaas = hwaas
 
     def _assert_single_subsweep(self) -> None:
         if self.num_subsweeps > 1:

@@ -83,6 +83,19 @@ def test_implicit_subsweep():
     assert len(sensor_config.subsweeps) == 1
 
 
+def test_init_with_hwaas():
+    sc = a121.SensorConfig(hwaas=1)
+    assert sc.hwaas == sc.subsweep.hwaas == 1
+
+    with pytest.raises(ValueError):
+        # This should techically be allowed, but is ambiguous as hwaas can be set
+        # on in 2 places. That is why it is not allowed.
+        _ = a121.SensorConfig(hwaas=1, subsweeps=[a121.SubsweepConfig()])
+
+    with pytest.raises(AttributeError):
+        _ = a121.SensorConfig(num_subsweeps=2, hwaas=1)
+
+
 def test_explicit_subsweeps():
     # Should be able to explicitly give the subsweeps
 
@@ -95,6 +108,10 @@ def test_explicit_subsweeps():
 
     assert sensor_config.num_subsweeps == 2
     assert len(sensor_config.subsweeps) == 2
+
+    # an empty subsweeps list is not allowed
+    with pytest.raises(ValueError):
+        _ = a121.SensorConfig(subsweeps=[])
 
     # Should be able to explicitly give the number of subsweeps
 
@@ -139,7 +156,6 @@ def test_subsweep_accessor():
     assert a121.SensorConfig.subsweep.__doc__
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_single_subsweep_hwaas():
     sensor_config = a121.SensorConfig()
 
@@ -179,7 +195,6 @@ def test_num_subsweeps_creates_unique_subsweep_configs():
     assert sensor_config.subsweeps[0] is not sensor_config.subsweeps[1]
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_multiple_subsweeps_param():
     sensor_config = a121.SensorConfig(num_subsweeps=2)
 
@@ -193,7 +208,6 @@ def test_multiple_subsweeps_param():
         sensor_config.hwaas = 1
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_single_subsweep_at_instantiation():
     sensor_config = a121.SensorConfig(
         subsweeps=[a121.SubsweepConfig(hwaas=4)],
