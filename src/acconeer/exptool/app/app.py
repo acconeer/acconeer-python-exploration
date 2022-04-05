@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
 import pyqtgraph as pg
 
 import acconeer.exptool as et
+from acconeer.exptool.a111 import _conf_to_rss_sdk
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo
 
 import platformdirs
@@ -653,9 +654,30 @@ class GUI(QMainWindow):
     def replay_btn_clicked(self):
         self.load_scan(restart=True)
 
+    def save_rss_sensor_config_btn_clicked(self):
+        stringToSave = _conf_to_rss_sdk.config_to_rss_usage(self, self.get_sensor_config())
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        title = "Save configuration"
+        file_types = "Text file (*.txt)"
+        filename, info = QtWidgets.QFileDialog.getSaveFileName(
+            self, title, "", file_types, options=options
+        )
+
+        if filename:
+            with open(filename, "w") as f:
+                f.write(stringToSave)
+
     def init_buttons(self):
         # key: text, function, enabled, hidden, group
         button_info = {
+            "save_rss_sensor_config": (
+                "Save as C SDK config",
+                self.save_rss_sensor_config_btn_clicked,
+                True,
+                False,
+                "connection",
+            ),
             "start": ("Start", self.start_btn_clicked, False, False, "scan"),
             "connect": ("Connect", self.connect_to_server, True, False, "connection"),
             "stop": ("Stop", self.stop_scan, False, False, "scan"),
@@ -815,6 +837,11 @@ class GUI(QMainWindow):
         self.basic_sensor_config_section.grid.addWidget(
             self.buttons["sensor_defaults"], c.post_incr(), 0, 1, 2
         )
+
+        self.basic_sensor_config_section.grid.addWidget(
+            self.buttons["save_rss_sensor_config"], c.post_incr(), 0, 1, 2
+        )
+
         self.basic_sensor_config_section.grid.addWidget(self.labels["sensor"], c.val, 0)
 
         sensor_selection = SensorSelection(error_handler=self.error_message)
