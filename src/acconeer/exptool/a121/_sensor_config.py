@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-
-class SubsweepConfig:
-    pass
+from ._subsweep_config import SubsweepConfig
+from ._utils import convert_validate_int
 
 
 class SensorConfig:
@@ -76,14 +75,5 @@ class SensorConfig:
 
     @sweeps_per_frame.setter
     def sweeps_per_frame(self, value: int) -> None:
-        try:
-            int_value = int(value)  # may raise ValueError if "value" is a non-int string
-            if int_value != value:  # a float may be rounded and lose it's decimals
-                raise ValueError
-        except ValueError:
-            raise TypeError(f"{value} cannot be fully represented as an int.")
-
-        if int_value < 1:
-            raise ValueError("sweeps_per_frame cannot be less than 1.")
-
+        int_value = convert_validate_int(value, min_value=1)
         self._sweeps_per_frame = int_value
