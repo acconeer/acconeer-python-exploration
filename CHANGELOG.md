@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.0.4
+
+### Fixed
+- Issue where Exploration tool could not be run on Python 3.7.
+
+
 ## v4.0.3
 
 ### Added

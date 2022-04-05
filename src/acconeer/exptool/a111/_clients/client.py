@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 
@@ -55,7 +55,7 @@ class Client:
         else:
             self.subclient = ClientFactory.from_kwargs(protocol=protocol, link=link, **kwargs)
 
-    def get_link_type(self) -> Union[Link, Literal["mock"]]:
+    def get_link_type(self) -> Union[Link, str]:
         if isinstance(self.subclient, MockClient):
             return "mock"
         elif isinstance(self.subclient, UARTClient):

@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractclassmethod, abstractmethod
 from pathlib import Path
-from typing import Optional, Protocol, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
+
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
 
 import acconeer.exptool as et
 
