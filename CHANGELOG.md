@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## v4.0.3
+
+### Added
+- Control for amount of peaks plotted in Distance Detector.
 
 ### Fixed
 - Implicit behavior of calibration application. Now never applies a
