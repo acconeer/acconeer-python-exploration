@@ -203,7 +203,6 @@ def test_single_subsweep_at_instantiation():
     assert sensor_config.hwaas == sensor_config.subsweeps[0].hwaas == 4
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_eq():
     assert a121.SensorConfig() == a121.SensorConfig()
     assert a121.SensorConfig() != a121.SensorConfig(sweeps_per_frame=3)
@@ -215,7 +214,16 @@ def test_eq():
     assert a121.SensorConfig(num_subsweeps=2) != other
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
+def test_basic_to_dict():
+    # Having an explicit SubsweepConfig-dict here is out of scope as
+    # SubsweepConfig.to_dict is tested in test_subsweep_config.py
+    expected = {"sweeps_per_frame": 1, "subsweeps": [a121.SubsweepConfig().to_dict()]}
+    assert (
+        a121.SensorConfig(sweeps_per_frame=1, subsweeps=[a121.SubsweepConfig()]).to_dict()
+        == expected
+    )
+
+
 def test_from_to_dict():
     original_config = a121.SensorConfig(sweeps_per_frame=3)
     dict_ = original_config.to_dict()
@@ -223,7 +231,6 @@ def test_from_to_dict():
     assert recreated_config == original_config
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_from_to_json():
     original_config = a121.SensorConfig(sweeps_per_frame=3)
     json_str = original_config.to_json()

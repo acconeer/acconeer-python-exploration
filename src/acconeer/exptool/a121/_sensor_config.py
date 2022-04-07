@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional
+import json
+from typing import Any, Optional
 
 from ._subsweep_config import SubsweepConfig
 from ._utils import convert_validate_int
@@ -8,6 +9,7 @@ from ._utils import convert_validate_int
 
 class SensorConfig:
     _sweeps_per_frame: int
+    _subsweeps: list[SubsweepConfig]
 
     def __init__(
         self,
@@ -51,19 +53,31 @@ class SensorConfig:
     def num_subsweeps(self) -> int:
         return len(self.subsweeps)
 
-    def to_dict(self) -> dict:
-        raise NotImplementedError
+    def __eq__(self, other: Any) -> bool:
+        return (
+            type(self) == type(other)
+            and self.sweeps_per_frame == other.sweeps_per_frame
+            and self.subsweeps == other.subsweeps
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "sweeps_per_frame": self.sweeps_per_frame,
+            "subsweeps": [subsweep.to_dict() for subsweep in self.subsweeps],
+        }
 
     @classmethod
-    def from_dict(cls, dict_: dict) -> SensorConfig:
-        raise NotImplementedError
+    def from_dict(cls, d: dict) -> SensorConfig:
+        d = d.copy()
+        d["subsweeps"] = [SubsweepConfig.from_dict(subsweep_d) for subsweep_d in d["subsweeps"]]
+        return cls(**d)
 
     def to_json(self) -> str:
-        raise NotImplementedError
+        return json.dumps(self.to_dict())
 
     @classmethod
     def from_json(cls, json_str: str) -> SensorConfig:
-        raise NotImplementedError
+        return cls.from_dict(json.loads(json_str))
 
     @property
     def sweeps_per_frame(self) -> int:
