@@ -28,7 +28,6 @@ def test_init_with_bad_arguments(kwargs, exception_type):
         a121.SubsweepConfig(**kwargs)
 
 
-@pytest.mark.xfail(reason="Not implemented yet")
 def test_equals():
     assert a121.SubsweepConfig() == a121.SubsweepConfig()
     a_config = a121.SubsweepConfig(hwaas=1)
@@ -36,42 +35,34 @@ def test_equals():
     assert a_config != another_config
 
 
-@pytest.mark.xfail(reason="Not implemented yet")
 def test_to_dict():
     subsweep = a121.SubsweepConfig(hwaas=1)
     expected = {
         "hwaas": 1,
     }
 
-    assert subsweep.to_dict() == expected  # type: ignore[attr-defined]
+    assert subsweep.to_dict() == expected
 
 
-@pytest.mark.xfail(reason="Not implemented yet")
 def test_from_dict():
     expected = a121.SubsweepConfig(hwaas=1)
     config_dict = {
         "hwaas": 1,
     }
 
-    reconstructed = a121.SubsweepConfig.from_dict(config_dict)  # type: ignore[attr-defined]
+    reconstructed = a121.SubsweepConfig.from_dict(config_dict)
     assert reconstructed == expected
 
 
-@pytest.mark.xfail(reason="Not implemented yet")
 def test_to_from_dict_identity():
     config = a121.SubsweepConfig(hwaas=42)
-    reconstructed_config = a121.SubsweepConfig.from_dict(  # type: ignore[attr-defined]
-        config.to_dict()  # type: ignore[attr-defined]
-    )
+    reconstructed_config = a121.SubsweepConfig.from_dict(config.to_dict())
 
     assert reconstructed_config == config
 
 
-@pytest.mark.xfail(reason="Not implemented yet")
 def test_to_from_json_identity():
     config = a121.SubsweepConfig(hwaas=42)
-    reconstructed_config = a121.SubsweepConfig.from_json(  # type: ignore[attr-defined]
-        config.to_json()  # type: ignore[attr-defined]
-    )
+    reconstructed_config = a121.SubsweepConfig.from_json(config.to_json())
 
     assert reconstructed_config == config
