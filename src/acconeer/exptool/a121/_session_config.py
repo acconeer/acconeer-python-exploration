@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, Union
+import json
+from typing import Any, Optional, Union
 
 from ._sensor_config import SensorConfig
 
@@ -63,6 +64,64 @@ class SessionConfig:
         (group,) = self._groups
         (sensor_config,) = group.values()
         return sensor_config
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            type(self) == type(other)
+            and self.extended == other.extended
+            and self.update_rate == other.update_rate
+            and self._groups == other._groups
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"groups": [], "extended": self.extended}
+        for group_dict in self._groups:
+            d["groups"].append(
+                {
+                    sensor_id: sensor_config.to_dict()
+                    for sensor_id, sensor_config in group_dict.items()
+                }
+            )
+
+        if self._update_rate is not None:
+            d["update_rate"] = self._update_rate
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> SessionConfig:
+        d = d.copy()
+        d["arg"] = []
+        groups_list = d.pop("groups")
+
+        for group_dict in groups_list:
+            d["arg"].append(
+                {
+                    sensor_id: SensorConfig.from_dict(sensor_config_dict)
+                    for sensor_id, sensor_config_dict in group_dict.items()
+                }
+            )
+
+        return cls(**d)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_json(cls, json_str: str) -> SessionConfig:
+        session_config_dict = json.loads(json_str)
+
+        # sensor_ids in groups will be strings.
+        groups_list = session_config_dict.pop("groups")
+        session_config_dict["groups"] = []
+        for group_dict in groups_list:
+            session_config_dict["groups"].append(
+                {
+                    int(str_sensor_id): sensor_config_dict
+                    for str_sensor_id, sensor_config_dict in group_dict.items()
+                }
+            )
+
+        return cls.from_dict(session_config_dict)
 
 
 def _unsqueeze_groups(

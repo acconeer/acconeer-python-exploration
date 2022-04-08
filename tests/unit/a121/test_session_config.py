@@ -1,3 +1,5 @@
+# type: ignore
+
 import pytest
 
 from acconeer.exptool import a121
@@ -58,13 +60,13 @@ def test_update_rate():
 
 def test_input_checking():
     with pytest.raises(ValueError):
-        a121.SessionConfig(None)  # type: ignore[arg-type]
+        a121.SessionConfig(None)
 
     with pytest.raises(ValueError):
-        a121.SessionConfig({1: 123})  # type: ignore[dict-item]
+        a121.SessionConfig({1: 123})
 
     with pytest.raises(ValueError):
-        a121.SessionConfig({"foo": a121.SensorConfig()})  # type: ignore[dict-item]
+        a121.SessionConfig({"foo": a121.SensorConfig()})
 
     with pytest.raises(ValueError):
         a121.SessionConfig({})
@@ -102,3 +104,51 @@ def test_sensor_config_property():
 
     with pytest.raises(Exception):
         _ = session_config.sensor_config
+
+
+def test_to_dict():
+    default_session_config = a121.SessionConfig(a121.SensorConfig())
+    expected_dict = {"groups": [{1: a121.SensorConfig().to_dict()}], "extended": False}
+
+    assert expected_dict == default_session_config.to_dict()
+
+    full_out_session_config = a121.SessionConfig(
+        [{2: a121.SensorConfig(), 3: a121.SensorConfig()}], update_rate=20
+    )
+    expected_dict = {
+        "update_rate": 20,
+        "groups": [{2: a121.SensorConfig().to_dict(), 3: a121.SensorConfig().to_dict()}],
+        "extended": True,
+    }
+
+    assert full_out_session_config.to_dict() == expected_dict
+
+
+def test_eq():
+    default_session_config = a121.SessionConfig(a121.SensorConfig())
+
+    # Same contents means they are equal.
+    assert default_session_config == a121.SessionConfig(a121.SensorConfig())
+
+    # If a member differs in SessionConfig, they are no longer equal.
+    assert default_session_config != a121.SessionConfig(a121.SensorConfig(), update_rate=1)
+
+    # Even if a member in a contained instance differs, they should also differ.
+    assert default_session_config != a121.SessionConfig(a121.SensorConfig(hwaas=42))
+
+    # Extended will also make session configs unequal
+    assert default_session_config != a121.SessionConfig(a121.SensorConfig(), extended=True)
+
+
+@pytest.mark.parametrize(
+    "original",
+    [
+        a121.SessionConfig(a121.SensorConfig()),
+        a121.SessionConfig(a121.SensorConfig(hwaas=20), update_rate=1337),
+    ],
+)
+def test_to_from_dict_and_json_identity(original):
+    reconstructed = a121.SessionConfig.from_dict(original.to_dict())
+    assert original == reconstructed
+    reconstructed = a121.SessionConfig.from_json(original.to_json())
+    assert original == reconstructed
