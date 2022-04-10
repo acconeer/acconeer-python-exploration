@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+from typing import Any
 
 import attrs
 import numpy as np
@@ -20,3 +21,17 @@ class Metadata:
     subsweep_data_offset: npt.NDArray = attrs.field()
     subsweep_data_length: npt.NDArray = attrs.field()
     _data_type: SensorDataType = attrs.field()
+
+    def to_dict(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @classmethod
+    def from_dict(cls, d: dict) -> Metadata:
+        raise NotImplementedError
+
+    def to_json(self) -> str:
+        raise NotImplementedError
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Metadata:
+        raise NotImplementedError
