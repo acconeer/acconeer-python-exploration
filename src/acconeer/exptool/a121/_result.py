@@ -6,13 +6,13 @@ import numpy.typing as npt
 from ._metadata import Metadata, SensorDataType
 
 
-@attrs.frozen
+@attrs.frozen(kw_only=True)
 class ResultContext:
     metadata: Metadata = attrs.field()
     ticks_per_second: int = attrs.field()
 
 
-@attrs.frozen
+@attrs.frozen(kw_only=True)
 class Result:
     data_saturated: bool = attrs.field()
     frame_delayed: bool = attrs.field()

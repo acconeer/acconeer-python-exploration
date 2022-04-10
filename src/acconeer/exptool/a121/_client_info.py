@@ -5,7 +5,7 @@ from typing import Any
 import attrs
 
 
-@attrs.frozen
+@attrs.frozen(kw_only=True)
 class ClientInfo:
     def to_dict(self) -> dict[str, Any]:
         raise NotImplementedError

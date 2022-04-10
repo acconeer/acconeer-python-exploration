@@ -14,7 +14,7 @@ class SensorDataType(enum.Enum):
     INT_16_COMPLEX = np.dtype([("real", "int16"), ("imag", "int16")])
 
 
-@attrs.frozen
+@attrs.frozen(kw_only=True)
 class Metadata:
     frame_data_length: int = attrs.field()
     sweep_data_length: int = attrs.field()
