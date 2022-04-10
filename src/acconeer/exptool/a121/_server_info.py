@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import attrs
@@ -12,15 +13,15 @@ class ServerInfo:
     ticks_per_second: int = attrs.field()
 
     def to_dict(self) -> dict[str, Any]:
-        raise NotImplementedError
+        return attrs.asdict(self)
 
     @classmethod
     def from_dict(cls, d: dict) -> ServerInfo:
-        raise NotImplementedError
+        return cls(**d)
 
     def to_json(self) -> str:
-        raise NotImplementedError
+        return json.dumps(self.to_dict())
 
     @classmethod
     def from_json(cls, json_str: str) -> ServerInfo:
-        raise NotImplementedError
+        return cls.from_dict(json.loads(json_str))
