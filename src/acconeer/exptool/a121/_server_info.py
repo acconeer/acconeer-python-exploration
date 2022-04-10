@@ -7,6 +7,10 @@ import attrs
 
 @attrs.frozen(kw_only=True)
 class ServerInfo:
+    rss_version: str = attrs.field()
+    sensor_count: int = attrs.field()
+    ticks_per_second: int = attrs.field()
+
     def to_dict(self) -> dict[str, Any]:
         raise NotImplementedError
 
