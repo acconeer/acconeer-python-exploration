@@ -5,10 +5,10 @@ from typing import Union
 
 import h5py
 
-from ._record import Record
+from ._record import PersistentRecord, Record
 
 
-def open_record(path_or_file: Union[os.PathLike, h5py.File]) -> Record:
+def open_record(path_or_file: Union[os.PathLike, h5py.File]) -> PersistentRecord:
     raise NotImplementedError
 
 

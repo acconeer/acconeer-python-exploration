@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Iterable
+from typing import Any, Iterable
 
 from ._client_info import ClientInfo
 from ._metadata import Metadata
@@ -60,5 +60,14 @@ class Record(abc.ABC):
     def metadata(self) -> Metadata:
         raise NotImplementedError
 
+
+class PersistentRecord(Record):
+    @abc.abstractmethod
     def close(self) -> None:
         pass
+
+    def __enter__(self) -> Record:
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self.close()
