@@ -3,8 +3,8 @@ import json
 import numpy as np
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._metadata import SensorDataType
-from acconeer.exptool.a121._protocol import ExplorationProtocol
+from acconeer.exptool.a121._entities import SensorDataType
+from acconeer.exptool.a121._peripherals import ExplorationProtocol
 
 
 def test_get_system_info_command():

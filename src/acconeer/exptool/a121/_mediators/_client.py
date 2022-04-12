@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from typing import Any, Optional, Union
 
-from ._client_info import ClientInfo
-from ._metadata import Metadata
+from acconeer.exptool.a121._entities import (
+    ClientInfo,
+    Metadata,
+    Result,
+    SensorConfig,
+    ServerInfo,
+    SessionConfig,
+)
+
 from ._recorder import Recorder
-from ._result import Result
-from ._sensor_config import SensorConfig
-from ._server_info import ServerInfo
-from ._session_config import SessionConfig
 
 
 class Client:

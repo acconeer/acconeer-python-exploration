@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 from typing import Any, Optional, TypeVar
 
+from acconeer.exptool.a121._utils import ProxyProperty, convert_validate_int
+
 from ._subsweep_config import SubsweepConfig
-from ._utils import ProxyProperty, convert_validate_int
 
 
 T = TypeVar("T")

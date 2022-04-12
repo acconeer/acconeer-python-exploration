@@ -8,11 +8,7 @@ try:
 except ImportError:
     from typing_extensions import Protocol  # type: ignore[misc]
 
-from ._client_info import ClientInfo
-from ._metadata import Metadata
-from ._result import Result
-from ._server_info import ServerInfo
-from ._session_config import SessionConfig
+from acconeer.exptool.a121._entities import ClientInfo, Metadata, Result, ServerInfo, SessionConfig
 
 
 class Recorder(Protocol):

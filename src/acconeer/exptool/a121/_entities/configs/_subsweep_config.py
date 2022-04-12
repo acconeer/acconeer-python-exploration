@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ._utils import convert_validate_int
+from acconeer.exptool.a121._utils import convert_validate_int
 
 
 class SubsweepConfig:

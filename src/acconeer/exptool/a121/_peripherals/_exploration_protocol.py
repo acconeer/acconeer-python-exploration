@@ -5,33 +5,11 @@ from typing import Any, Literal, Union
 
 import numpy as np
 
-from typing_extensions import Protocol, TypedDict
+from acconeer.exptool.a121 import Metadata, ServerInfo, SessionConfig
+from acconeer.exptool.a121._entities.containers._metadata import SensorDataType
+from acconeer.exptool.a121._mediators import CommunicationProtocol
 
-from ._metadata import Metadata, SensorDataType
-from ._server_info import ServerInfo
-from ._session_config import SessionConfig
-
-
-class CommunicationProtocol(Protocol):
-    def get_system_info_command(self) -> bytes:
-        ...
-
-    def get_system_info_response(self, bytes_: bytes) -> ServerInfo:
-        ...
-
-    def get_sensor_info_command(self) -> bytes:
-        ...
-
-    def get_sensor_info_response(self, bytes_: bytes) -> list[int]:
-        ...
-
-    def setup_command(self, session_config: SessionConfig) -> bytes:
-        ...
-
-    def setup_response(
-        self, bytes_: bytes, context_session_config: SessionConfig
-    ) -> list[dict[int, Metadata]]:
-        ...
+from typing_extensions import TypedDict
 
 
 class Response(TypedDict):

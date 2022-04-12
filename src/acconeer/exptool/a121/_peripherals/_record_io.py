@@ -5,7 +5,7 @@ from typing import Union
 
 import h5py
 
-from ._record import PersistentRecord, Record
+from acconeer.exptool.a121._entities import PersistentRecord, Record
 
 
 def open_record(path_or_file: Union[os.PathLike, h5py.File]) -> PersistentRecord:
