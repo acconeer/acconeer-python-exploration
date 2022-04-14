@@ -88,11 +88,12 @@ class Client:
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         self._assert_session_started()
 
-        payload_size = self._protocol.get_next_header(
-            self._link.recv_until(self._protocol.end_sequence)
+        payload_size, partial_results = self._protocol.get_next_header(
+            self._link.recv_until(self._protocol.end_sequence),
+            self.extended_metadata,
         )
         payload = self._link.recv(payload_size)
-        return self._protocol.get_next_payload(payload)
+        return self._protocol.get_next_payload(payload, partial_results)
 
     def stop_session(self) -> Any:
         self._assert_session_started()

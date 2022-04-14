@@ -48,6 +48,9 @@ def mock_communication_protocol(metadata):
 
     mock_comm_p.stop_streaming_command.return_value = b"stop_streaming"
     mock_comm_p.stop_streaming_response.return_value = True
+
+    mock_comm_p.get_next_header.return_value = (0, [])
+    mock_comm_p.get_next_payload.return_value = []
     return mock_comm_p
 
 
@@ -169,7 +172,8 @@ def test_client_started(started_client_and_link):
     assert client.session_is_started
 
     # `get_next` should work at this point
-    _ = client.get_next()
+    result = client.get_next()
+    assert result == []
 
 
 def test_client_stop_session(stopped_client_and_link):

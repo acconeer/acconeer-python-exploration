@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Literal, Union
+from typing import Any, Literal, Tuple, Union
 
+import attrs
 import numpy as np
 
-from acconeer.exptool.a121 import Metadata, ServerInfo, SessionConfig
-from acconeer.exptool.a121._entities.containers._metadata import SensorDataType
+from acconeer.exptool.a121 import Metadata, Result, ServerInfo, SessionConfig
+from acconeer.exptool.a121._entities import ResultContext, SensorDataType
 
 from typing_extensions import TypedDict
 
@@ -14,15 +15,21 @@ from .communication_protocol import CommunicationProtocol
 
 
 class Response(TypedDict):
-    status: str
+    status: Union[
+        Literal["ok"], Literal["error"], Literal["start"], Literal["stop"], Literal["end"]
+    ]
 
 
-class GetSystemInfoResponse(Response):
+class SystemInfo(TypedDict):
     rss_version: str
     sensor: str
     sensor_count: int
     ticks_per_second: int
     hw: str
+
+
+class GetSystemInfoResponse(Response):
+    system_info: SystemInfo
 
 
 class GetSensorInfoResponse(Response):
@@ -42,7 +49,25 @@ class SetupResponse(Response):
     metadata: list[list[MetadataResponse]]
 
 
+class ResultInfoDict(TypedDict):
+    tick: int
+    data_saturated: bool
+    frame_delayed: bool
+    temperature: int
+
+
+class GetNextHeader(Response):
+    result_info: list[list[ResultInfoDict]]
+    payload_size: int
+
+
+class ExplorationProtocolError(Exception):
+    pass
+
+
 class ExplorationProtocol(CommunicationProtocol):
+    end_sequence: bytes = b"\n"
+
     @classmethod
     def get_system_info_command(cls) -> bytes:
         return b'{"cmd":"get_system_info"}\n'
@@ -51,11 +76,17 @@ class ExplorationProtocol(CommunicationProtocol):
     def get_system_info_response(cls, bytes_: bytes) -> ServerInfo:
         response: GetSystemInfoResponse = json.loads(bytes_)
 
-        return ServerInfo(
-            rss_version=response["rss_version"],
-            sensor_count=response["sensor_count"],
-            ticks_per_second=response["ticks_per_second"],
-        )
+        try:
+            system_info = response["system_info"]
+            return ServerInfo(
+                rss_version=system_info["rss_version"],
+                sensor_count=system_info["sensor_count"],
+                ticks_per_second=system_info["ticks_per_second"],
+            )
+        except KeyError as ke:
+            raise ExplorationProtocolError(
+                f"Could not parse 'get_system_info' response. Response: {response}"
+            ) from ke
 
     @classmethod
     def get_sensor_info_command(cls) -> bytes:
@@ -81,10 +112,13 @@ class ExplorationProtocol(CommunicationProtocol):
 
         result["cmd"] = "setup"
         result["groups"] = cls._translate_groups_representation(session_config.to_dict()["groups"])
-        return json.dumps(
-            result,
-            separators=(",", ":"),
-            ensure_ascii=True,
+        return (
+            json.dumps(
+                result,
+                separators=(",", ":"),
+                ensure_ascii=True,
+            )
+            + "\n"
         ).encode("ascii")
 
     @classmethod
@@ -149,3 +183,85 @@ class ExplorationProtocol(CommunicationProtocol):
             subsweep_data_length=np.array(metadata_dict["subsweep_data_length"]),
             data_type=data_type,
         )
+
+    @classmethod
+    def start_streaming_command(cls) -> bytes:
+        return b'{"cmd":"start_streaming"}\n'
+
+    @classmethod
+    def start_streaming_response(cls, bytes_: bytes) -> bool:
+        response: Response = json.loads(bytes_)
+        return response["status"] == "start"
+
+    @classmethod
+    def stop_streaming_command(cls):
+        return b'{"cmd":"stop_streaming"}\n'
+
+    @classmethod
+    def stop_streaming_response(cls, bytes_: bytes) -> bool:
+        response: Response = json.loads(bytes_)
+        return response["status"] == "stop"
+
+    @classmethod
+    def get_next_header(
+        cls, bytes_: bytes, extended_metadata: list[dict[int, Metadata]]
+    ) -> Tuple[int, list[dict[int, Result]]]:
+        header_dict: GetNextHeader = json.loads(bytes_)
+        payload_size = header_dict["payload_size"]
+
+        extended_partial_results = []
+        partial_result_groups = header_dict["result_info"]
+
+        for partial_result_group, metadata_group in zip(partial_result_groups, extended_metadata):
+            inner_result = {}
+            for partial_result_dict, (sensor_id, metadata) in zip(
+                partial_result_group, metadata_group.items()
+            ):
+                inner_result[sensor_id] = cls._create_partial_result(
+                    **partial_result_dict, metadata=metadata
+                )
+
+            extended_partial_results.append(inner_result)
+
+        return payload_size, extended_partial_results
+
+    @classmethod
+    def _create_partial_result(
+        cls,
+        *,
+        tick: int,
+        data_saturated: bool,
+        temperature: int,
+        frame_delayed: bool,
+        metadata: Metadata,
+    ) -> Result:
+        return Result(
+            tick=tick,
+            data_saturated=data_saturated,
+            frame=np.ndarray([]),
+            temperature=temperature,
+            frame_delayed=frame_delayed,
+            context=ResultContext(
+                metadata=metadata,
+                # FIXME: not correct below this line
+                ticks_per_second=0,
+            ),
+            calibration_needed=False,
+        )
+
+    @classmethod
+    def get_next_payload(
+        cls, bytes_: bytes, partial_results: list[dict[int, Result]]
+    ) -> list[dict[int, Result]]:
+        start = 0
+        for partial_group in partial_results:
+            for sensor_id, partial_result in partial_group.items():
+                metadata = partial_result._context.metadata
+                data_type = metadata._data_type
+                end = start + metadata.frame_data_length * 4
+
+                raw_frame = bytes_[start:end]
+                np_frame = np.frombuffer(raw_frame, dtype=data_type.value)
+                partial_group[sensor_id] = attrs.evolve(partial_result, frame=np_frame)
+                start += end
+        return partial_results

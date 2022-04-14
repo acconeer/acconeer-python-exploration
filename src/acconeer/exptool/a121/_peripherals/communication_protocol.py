@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Tuple
+
 from acconeer.exptool.a121 import Metadata, Result, ServerInfo, SessionConfig
 
 from typing_extensions import Protocol
@@ -42,12 +44,20 @@ class CommunicationProtocol(Protocol):
         """Response of `start_streaming` command. Returns True if it was a success."""
         ...
 
-    def get_next_header(self, bytes_: bytes) -> int:
-        """Parses the header of a data package. Returns the payload size."""
+    def get_next_header(
+        self, bytes_: bytes, extended_metadata: list[dict[int, Metadata]]
+    ) -> Tuple[int, list[dict[int, Result]]]:
+        """Parses the header of a data package. Returns the payload size and
+        partial (incomplete) Results.
+        """
         ...
 
-    def get_next_payload(self, bytes_: bytes) -> list[dict[int, Result]]:
-        """Parses the payload of the data package. Returns an extended Result."""
+    def get_next_payload(
+        self, bytes_: bytes, partial_results: list[dict[int, Result]]
+    ) -> list[dict[int, Result]]:
+        """Parses the payload of the data package. Populates the partial (incomplete)
+        Results with data from the payload.
+        """
         ...
 
     def stop_streaming_command(self) -> bytes:
