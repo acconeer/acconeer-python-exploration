@@ -56,7 +56,7 @@ def record_to_csv(
 
     depths = et.a111.get_range_depths(record.sensor_config, record.session_info)
 
-    if record.mode == et.Mode.SPARSE and add_sweep_metadata:
+    if record.mode == et.a111.Mode.SPARSE and add_sweep_metadata:
         depths = np.tile(depths, record.sensor_config.sweeps_per_frame)
         sweep_number = np.floor(
             np.linspace(0, record.sensor_config.sweeps_per_frame, num=len(depths), endpoint=False)
@@ -102,7 +102,7 @@ def main():
     _check_files(input_file, output_file, force)
 
     print(f'Reading from "{input_file}" ... \n')
-    record = et.recording.load(input_file)
+    record = et.a111.recording.load(input_file)
 
     if verbose:
         print("=== Session info " + "=" * 43)
