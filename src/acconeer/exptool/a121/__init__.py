@@ -13,6 +13,8 @@ from ._mediators import Recorder
 from ._peripherals import (
     Client,
     ClientError,
+    H5Record,
+    H5Recorder,
     load_record,
     open_record,
     save_record,
