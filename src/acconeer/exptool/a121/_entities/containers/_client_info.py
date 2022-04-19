@@ -1,22 +1,29 @@
 from __future__ import annotations
 
-from typing import Any
+import json
+from typing import Any, Optional
 
 import attrs
 
 
 @attrs.frozen(kw_only=True)
 class ClientInfo:
+    address: Optional[str] = None
+    serial_port: Optional[str] = None
+    override_baudrate: Optional[int] = None
+    protocol: Optional[str] = None
+    link: Optional[str] = None
+
     def to_dict(self) -> dict[str, Any]:
-        raise NotImplementedError
+        return attrs.asdict(self)
 
     @classmethod
     def from_dict(cls, d: dict) -> ClientInfo:
-        raise NotImplementedError
+        return cls(**d)
 
     def to_json(self) -> str:
-        raise NotImplementedError
+        return json.dumps(self.to_dict())
 
     @classmethod
     def from_json(cls, json_str: str) -> ClientInfo:
-        raise NotImplementedError
+        return cls.from_dict(json.loads(json_str))
