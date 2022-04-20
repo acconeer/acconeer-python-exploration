@@ -1,10 +1,17 @@
 from uuid import uuid4
 
 import h5py
+import numpy as np
 import pytest
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._entities import SensorDataType
 from acconeer.exptool.a121._peripherals.h5_record import H5PY_STR_DTYPE
+
+
+@pytest.fixture
+def tmp_file_path(tmp_path):
+    return tmp_path / str(uuid4())
 
 
 @pytest.fixture
@@ -43,8 +50,77 @@ def ref_client_info():
 
 
 @pytest.fixture
-def tmp_file_path(tmp_path):
-    return tmp_path / str(uuid4())
+def ref_session_config():
+    return a121.SessionConfig(a121.SensorConfig())
+
+
+@pytest.fixture(
+    params=[
+        [{2, 3}, {2}],
+        [{1, 2}, {3, 4}, {1, 2, 3, 4, 5}],
+    ]
+)
+def ref_structure(request):
+    return request.param
+
+
+@pytest.fixture(params=range(1, 4, 2))
+def ref_num_frames(request):
+    """This is a parametrized fixture.
+    Dependent fixtures will also be parameterized as a result
+    """
+    return request.param
+
+
+@pytest.fixture(params=range(1, 4, 2))
+def ref_sweep_data_length(request):
+    """This is a parametrized fixture.
+    Dependent fixtures will also be parameterized as a result
+    """
+    return request.param
+
+
+@pytest.fixture
+def ref_frame_data_length(ref_num_frames, ref_sweep_data_length):
+    return ref_num_frames * ref_sweep_data_length
+
+
+@pytest.fixture
+def ref_frame_raw(ref_sweep_data_length, ref_frame_data_length, ref_num_frames):
+    array = np.arange(ref_frame_data_length)
+    array = array.astype(dtype=SensorDataType.INT_16_COMPLEX.value)
+
+    num_sweeps = ref_frame_data_length // ref_sweep_data_length
+    array.resize(num_sweeps, ref_sweep_data_length)
+
+    return array
+
+
+@pytest.fixture
+def ref_frame(ref_frame_raw):
+    return ref_frame_raw["real"] + 1j * ref_frame_raw["imag"]
+
+
+@pytest.fixture
+def ref_metadata(ref_sweep_data_length, ref_frame_data_length):
+    # Note: This is metadata for a no-subsweep frame
+    return a121.Metadata(
+        frame_data_length=ref_frame_data_length,
+        sweep_data_length=ref_sweep_data_length,
+        subsweep_data_length=np.array([ref_sweep_data_length]),
+        subsweep_data_offset=np.array([0]),
+        data_type=SensorDataType.INT_16_COMPLEX,
+    )
+
+
+@pytest.fixture
+def ref_data(ref_frame_raw, ref_num_frames):
+    data_frames = np.stack((ref_frame_raw,) * ref_num_frames)
+
+    # sanity check
+    np.testing.assert_array_equal(data_frames[0], ref_frame_raw)
+
+    return data_frames
 
 
 @pytest.fixture
@@ -54,6 +130,12 @@ def ref_record_file(
     ref_uuid,
     ref_server_info,
     ref_client_info,
+    ref_metadata,
+    ref_session_config,
+    ref_frame_raw,
+    ref_structure,
+    ref_num_frames,
+    ref_data,
     tmp_file_path,
 ):
     with h5py.File(tmp_file_path, mode="x") as f:
@@ -73,14 +155,28 @@ def ref_record_file(
             "client_info", data=client_info_data, dtype=H5PY_STR_DTYPE, track_times=False
         )
 
-        e0 = f.create_group("session/group_0/entry_0")
-        e0.create_dataset("sensor_id", data=2)
+        session_config_data = ref_session_config.to_json()
+        f.create_dataset(
+            "session_config", data=session_config_data, dtype=H5PY_STR_DTYPE, track_times=False
+        )
 
-        e1 = f.create_group("session/group_0/entry_1")
-        e1.create_dataset("sensor_id", data=3)
+        zero_array = np.zeros(ref_num_frames)
+        false_array = np.zeros(ref_num_frames, dtype=bool)
+        tick_array = np.arange(ref_num_frames)
 
-        e2 = f.create_group("session/group_1/entry_2")
-        e2.create_dataset("sensor_id", data=2)
+        for group_id, group in enumerate(ref_structure):
+            for entry_id, sensor_id in enumerate(group):
+                entry_group = f.create_group(f"session/group_{group_id}/entry_{entry_id}")
+                entry_group.create_dataset("metadata", data=ref_metadata.to_json())
+                entry_group.create_dataset("sensor_id", data=sensor_id)
+
+                result_group = entry_group.create_group("result")
+                result_group.create_dataset("frame", data=ref_data)
+                result_group.create_dataset("data_saturated", data=false_array)
+                result_group.create_dataset("calibration_needed", data=false_array)
+                result_group.create_dataset("frame_delayed", data=false_array)
+                result_group.create_dataset("temperature", data=zero_array)
+                result_group.create_dataset("tick", data=tick_array)
 
     return tmp_file_path
 
