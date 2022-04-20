@@ -4,6 +4,7 @@
 
 ### Added
 - Wave to exit algorithm added.
+- Tank level algorithm for small tanks.
 
 ## v4.0.4
 
