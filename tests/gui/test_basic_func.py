@@ -105,8 +105,10 @@ def test_start_and_stop_all_modules(qtbot, gui):
         set_and_check_cb(qtbot, gui.module_dd, module_info.label)
         qtbot.wait(200)
 
+        # This can trigger a bug in the parking detector (due to the low update rate)
+        # The wait from start to the next call needs to be above 2000 (ish)
         qtbot.mouseClick(gui.buttons["start"], LB)
-        qtbot.wait(600)
+        qtbot.wait(1800)
         qtbot.mouseClick(gui.buttons["stop"], LB)
         qtbot.wait(200)
 
