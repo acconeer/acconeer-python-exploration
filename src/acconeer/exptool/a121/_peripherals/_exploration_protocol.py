@@ -238,7 +238,7 @@ class ExplorationProtocol(CommunicationProtocol):
         return Result(
             tick=tick,
             data_saturated=data_saturated,
-            frame=np.ndarray([]),
+            frame=np.array([0]),
             temperature=temperature,
             frame_delayed=frame_delayed,
             context=ResultContext(
