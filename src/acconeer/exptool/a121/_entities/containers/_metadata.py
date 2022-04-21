@@ -8,6 +8,8 @@ import attrs
 import numpy as np
 import numpy.typing as npt
 
+from .common import attrs_ndarray_eq
+
 
 class SensorDataType(enum.Enum):
     UINT_16 = np.dtype("uint16")
@@ -15,15 +17,12 @@ class SensorDataType(enum.Enum):
     INT_16_COMPLEX = np.dtype([("real", "int16"), ("imag", "int16")])
 
 
-_ndarray_eq = attrs.cmp_using(eq=np.array_equal)  # type: ignore[attr-defined]
-
-
 @attrs.frozen(kw_only=True)
 class Metadata:
     frame_data_length: int = attrs.field()
     sweep_data_length: int = attrs.field()
-    subsweep_data_offset: npt.NDArray = attrs.field(eq=_ndarray_eq)
-    subsweep_data_length: npt.NDArray = attrs.field(eq=_ndarray_eq)
+    subsweep_data_offset: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
+    subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
     _data_type: SensorDataType = attrs.field()
 
     def to_dict(self) -> dict[str, Any]:

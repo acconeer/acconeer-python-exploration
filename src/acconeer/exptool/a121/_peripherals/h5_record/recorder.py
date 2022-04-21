@@ -35,6 +35,7 @@ class H5Recorder(Recorder):
     path: Optional[os.PathLike]
     file: h5py.File
     owns_file: bool
+    _num_frames: int
 
     def __init__(
         self,
@@ -65,7 +66,7 @@ class H5Recorder(Recorder):
         if _uuid is None:
             _uuid = get_uuid()
 
-        self.num_frames = 0
+        self._num_frames = 0
 
         self.file.create_dataset(
             "uuid",
@@ -118,8 +119,9 @@ class H5Recorder(Recorder):
         for i, metadata_group_dict in enumerate(extended_metadata):
             group_group = session_group.create_group(f"group_{i}")
 
-            for sensor_id, metadata in metadata_group_dict.items():
-                entry_group = group_group.create_group(f"sensor_{sensor_id}")
+            for entry_id, (sensor_id, metadata) in enumerate(metadata_group_dict.items()):
+                entry_group = group_group.create_group(f"entry_{entry_id}")
+                entry_group.create_dataset("sensor_id", data=sensor_id, track_times=False)
 
                 entry_group.create_dataset(
                     "metadata",
@@ -133,11 +135,11 @@ class H5Recorder(Recorder):
 
     def sample(self, extended_result: list[dict[int, Result]]) -> None:
         for group_index, result_group_dict in enumerate(extended_result):
-            for sensor_id, result in result_group_dict.items():
-                result_group = self.file[f"session/group_{group_index}/sensor_{sensor_id}/result"]
-                self.write_result(result_group, self.num_frames, result)
+            for entry_id, result in enumerate(result_group_dict.values()):
+                result_group = self.file[f"session/group_{group_index}/entry_{entry_id}/result"]
+                self.write_result(result_group, self._num_frames, result)
 
-        self.num_frames += 1
+        self._num_frames += 1
 
     def stop(self) -> Any:
         if self.owns_file:
@@ -198,4 +200,23 @@ class H5Recorder(Recorder):
 
     @staticmethod
     def write_result(g: h5py.Group, index: int, result: Result) -> None:
-        raise NotImplementedError
+        """Extends the Dataset to the appropriate (new) size with .resize,
+        and then copies the data over
+        """
+        datasets_to_extend = [
+            "data_saturated",
+            "frame_delayed",
+            "calibration_needed",
+            "temperature",
+            "tick",
+            "frame",
+        ]
+        for dataset_name in datasets_to_extend:
+            g[dataset_name].resize(size=index + 1, axis=0)
+
+        g["data_saturated"][index] = result.data_saturated
+        g["frame_delayed"][index] = result.frame_delayed
+        g["calibration_needed"][index] = result.calibration_needed
+        g["temperature"][index] = result.temperature
+        g["tick"][index] = result.tick
+        g["frame"][index] = result._frame

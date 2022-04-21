@@ -4,6 +4,7 @@ import attrs
 import numpy.typing as npt
 
 from ._metadata import Metadata, SensorDataType
+from .common import attrs_ndarray_eq
 
 
 @attrs.frozen(kw_only=True)
@@ -18,7 +19,7 @@ class Result:
     frame_delayed: bool = attrs.field()
     calibration_needed: bool = attrs.field()
     temperature: int = attrs.field()
-    _frame: npt.NDArray = attrs.field()
+    _frame: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
 
     tick: int = attrs.field()
 

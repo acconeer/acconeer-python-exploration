@@ -132,7 +132,6 @@ def ref_record_file(
     ref_client_info,
     ref_metadata,
     ref_session_config,
-    ref_frame_raw,
     ref_structure,
     ref_num_frames,
     ref_data,
@@ -160,9 +159,9 @@ def ref_record_file(
             "session_config", data=session_config_data, dtype=H5PY_STR_DTYPE, track_times=False
         )
 
-        zero_array = np.zeros(ref_num_frames)
+        zero_array = np.zeros(ref_num_frames, dtype=int)
         false_array = np.zeros(ref_num_frames, dtype=bool)
-        tick_array = np.arange(ref_num_frames)
+        tick_array = np.arange(ref_num_frames, dtype=int)
 
         for group_id, group in enumerate(ref_structure):
             for entry_id, sensor_id in enumerate(group):
