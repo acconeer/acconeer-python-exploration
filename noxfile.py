@@ -183,7 +183,7 @@ def test(session):
         install_extras |= {"app"}
         pytest_commands.extend(
             [
-                ["--timeout=60", "--timeout_method=thread", "tests/gui"],
+                ["--timeout=120", "--timeout_method=thread", "tests/gui"],
             ]
         )
 

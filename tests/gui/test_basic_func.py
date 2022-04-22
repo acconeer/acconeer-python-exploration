@@ -110,7 +110,7 @@ def test_start_and_stop_all_modules(qtbot, gui):
         qtbot.mouseClick(gui.buttons["start"], LB)
         qtbot.wait(1800)
         qtbot.mouseClick(gui.buttons["stop"], LB)
-        qtbot.wait(200)
+        qtbot.wait(1000)
 
 
 @pytest.mark.skipif(not _have_internet_connection(), reason="No internet connection")
