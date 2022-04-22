@@ -8,10 +8,9 @@ import numpy as np
 
 from acconeer.exptool.a121 import Metadata, Result, ServerInfo, SessionConfig
 from acconeer.exptool.a121._entities import ResultContext, SensorDataType
+from acconeer.exptool.a121._mediators import CommunicationProtocol
 
 from typing_extensions import TypedDict
-
-from .communication_protocol import CommunicationProtocol
 
 
 class Response(TypedDict):

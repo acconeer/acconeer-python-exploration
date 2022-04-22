@@ -1,150 +1,63 @@
-from __future__ import annotations
+from typing import Optional
 
-from typing import Any, Optional, Union
+from acconeer.exptool.a111._clients.links import SocketLink  # type: ignore[import]
+from acconeer.exptool.a121 import ClientInfo
+from acconeer.exptool.a121._mediators import AgnosticClient, BufferedLink, CommunicationProtocol
 
-from acconeer.exptool.a121._entities import (
-    ClientInfo,
-    Metadata,
-    Result,
-    SensorConfig,
-    ServerInfo,
-    SessionConfig,
-)
-from acconeer.exptool.a121._mediators import Recorder
-
-from .communication_protocol import CommunicationProtocol
-from .link import BufferedLink
+from .exploration_protocol import ExplorationProtocol
 
 
-class ClientError(Exception):
-    pass
+class AdaptedSocketLink(SocketLink):
+    """This subclass only adapts the signature.
+    Positional arguments would've executed fine.
+    """
+
+    def recv_until(self, byte_sequence: bytes) -> bytes:
+        return bytes(super().recv_until(bs=byte_sequence))
+
+    def send(self, bytes_: bytes) -> None:
+        super().send(data=bytes_)
 
 
-class Client:
-    _link: BufferedLink
-    _protocol: CommunicationProtocol
-    _server_info: Optional[ServerInfo]
-    _session_config: Optional[SessionConfig]
-    _metadata: Optional[list[dict[int, Metadata]]]
-    _session_is_started: bool
+def protocol_factory(client_info: ClientInfo) -> CommunicationProtocol:
+    if client_info.protocol == "exploration":
+        # Ignore comes from an unresolved bug in mypy as of 22/04/22
+        # [https://github.com/python/mypy/issues/4536]
+        return ExplorationProtocol  # type: ignore[return-value]
 
-    def __init__(self, link: BufferedLink, protocol: CommunicationProtocol) -> None:
-        self._link = link
-        self._protocol = protocol
-        self._server_info = None
-        self._session_config = None
-        self._session_is_started = False
-        self._metadata = None
+    raise ValueError(f"Could not construct a suitable protocol with arguments {vars(client_info)}")
 
-    def _assert_connected(self):
-        if not self.connected:
-            raise ClientError("Client is not connected.")
 
-    def _assert_session_setup(self):
-        self._assert_connected()
-        if not self.session_is_setup:
-            raise ClientError("Session is not set up.")
+def link_factory(client_info: ClientInfo) -> BufferedLink:
 
-    def _assert_session_started(self):
-        self._assert_session_setup()
-        if not self.session_is_started:
-            raise ClientError("Session is not started.")
+    if client_info.address is not None:
+        return AdaptedSocketLink(host=client_info.address)
 
-    def connect(self) -> None:
-        self._link.connect()
+    raise ValueError(f"Could not construct a suitable link with arguments {vars(client_info)}")
 
-        self._link.send(self._protocol.get_system_info_command())
-        sys_response = self._link.recv_until(self._protocol.end_sequence)
-        self._server_info = self._protocol.get_system_info_response(sys_response)
 
-        self._link.send(self._protocol.get_sensor_info_command())
-        sens_response = self._link.recv_until(self._protocol.end_sequence)
-        _ = self._protocol.get_sensor_info_response(sens_response)
+class Client(AgnosticClient):
+    _client_info: ClientInfo
 
-    def setup_session(
+    def __init__(
         self,
-        config: Union[SensorConfig, SessionConfig],
-    ) -> Union[Metadata, list[dict[int, Metadata]]]:
-        self._assert_connected()
-
-        if isinstance(config, SensorConfig):
-            config = SessionConfig(config)
-
-        self._link.send(self._protocol.setup_command(config))
-        reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
-        self._session_config = config
-        self._metadata = self._protocol.setup_response(
-            reponse_bytes, context_session_config=config
+        address: Optional[str] = None,
+        link: Optional[str] = None,
+        override_baudrate: Optional[int] = None,
+        protocol: Optional[str] = None,
+        serial_port: Optional[str] = None,
+    ):
+        self._client_info = ClientInfo(
+            address=address,
+            link=link,
+            override_baudrate=override_baudrate,
+            protocol=protocol,
+            serial_port=serial_port,
         )
-        return self._metadata
-
-    def start_session(self, recorder: Optional[Recorder] = None) -> None:
-        self._assert_session_setup()
-
-        self._link.send(self._protocol.start_streaming_command())
-        reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
-        self._session_is_started = self._protocol.start_streaming_response(reponse_bytes)
-
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:
-        self._assert_session_started()
-
-        payload_size, partial_results = self._protocol.get_next_header(
-            self._link.recv_until(self._protocol.end_sequence),
-            self.extended_metadata,
+        super().__init__(
+            link=link_factory(self._client_info), protocol=protocol_factory(self._client_info)
         )
-        payload = self._link.recv(payload_size)
-        return self._protocol.get_next_payload(payload, partial_results)
-
-    def stop_session(self) -> Any:
-        self._assert_session_started()
-
-        self._link.send(self._protocol.stop_streaming_command())
-        reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
-        self._session_is_started = not self._protocol.stop_streaming_response(reponse_bytes)
-
-    def disconnect(self) -> None:
-        self._assert_connected()
-
-        self._server_info = None
-        self._link.disconnect()
-
-    def __enter__(self):
-        self.connect()
-        return self
-
-    def __exit__(self, type_, value, traceback):
-        self.disconnect()
-
-    @property
-    def connected(self) -> bool:
-        return self._server_info is not None
-
-    @property
-    def session_is_setup(self) -> bool:
-        return self._session_config is not None
-
-    @property
-    def session_is_started(self) -> bool:
-        return self._session_is_started
-
-    @property
-    def server_info(self) -> ServerInfo:
-        self._assert_connected()
-
-        return self._server_info  # type: ignore[return-value]
 
     @property
     def client_info(self) -> ClientInfo:
-        return ClientInfo()
-
-    @property
-    def session_config(self) -> SessionConfig:
-        self._assert_session_setup()
-
-        return self._session_config  # type: ignore[return-value]
-
-    @property
-    def extended_metadata(self) -> list[dict[int, Metadata]]:
-        self._assert_session_setup()
-
-        return self._metadata  # type: ignore[return-value]
+        return self._client_info

@@ -9,10 +9,9 @@ from ._entities import (
     SessionConfig,
     SubsweepConfig,
 )
-from ._mediators import Recorder
+from ._mediators import ClientError, Recorder
 from ._peripherals import (
     Client,
-    ClientError,
     H5Record,
     H5Recorder,
     load_record,

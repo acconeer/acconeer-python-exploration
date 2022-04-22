@@ -3,7 +3,6 @@ from unittest.mock import Mock, call
 import numpy as np
 import pytest
 
-from acconeer.exptool.a121 import Client, ClientError
 from acconeer.exptool.a121._entities import (
     Metadata,
     SensorConfig,
@@ -11,6 +10,7 @@ from acconeer.exptool.a121._entities import (
     ServerInfo,
     SessionConfig,
 )
+from acconeer.exptool.a121._mediators import AgnosticClient, ClientError
 
 
 @pytest.fixture(scope="function")
@@ -56,7 +56,7 @@ def mock_communication_protocol(metadata):
 
 @pytest.fixture(scope="function")
 def clean_client_and_link(mock_link, mock_communication_protocol):
-    return Client(mock_link, mock_communication_protocol), mock_link
+    return AgnosticClient(mock_link, mock_communication_protocol), mock_link
 
 
 @pytest.fixture(scope="function")
