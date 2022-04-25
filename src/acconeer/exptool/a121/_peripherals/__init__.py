@@ -1,5 +1,4 @@
-from .client import Client
-from .exploration_protocol import ExplorationProtocol
+from .communication import Client, ExplorationProtocol
 from .h5_record import (
     H5Record,
     H5Recorder,
