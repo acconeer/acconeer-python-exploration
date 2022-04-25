@@ -69,7 +69,7 @@ def connected_client_and_link(clean_client_and_link):
 @pytest.fixture(scope="function")
 def setup_client_and_link_and_metadata(connected_client_and_link):
     client, link = connected_client_and_link
-    metadata = client.setup_session(SessionConfig(SensorConfig()))
+    metadata = client.setup_session(SessionConfig(SensorConfig(), extended=True))
     return client, link, metadata
 
 

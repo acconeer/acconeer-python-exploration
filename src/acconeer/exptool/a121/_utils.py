@@ -75,6 +75,16 @@ class ProxyProperty(Generic[T]):
         self._property.__set__(proxee, value)
 
 
+def unextend(structure: list[dict[int, T]]) -> T:
+    """'Unexpands' a structure and returns the single element in the structure."""
+    try:
+        (group,) = structure
+        (entry,) = group.values()
+        return entry
+    except Exception as e:
+        raise ValueError(f"Could not unextend the structure {structure}") from e
+
+
 def convert_validate_int(
     value: Union[float, int], max_value: Optional[int] = None, min_value: Optional[int] = None
 ) -> int:

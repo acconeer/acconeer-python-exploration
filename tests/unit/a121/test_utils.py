@@ -88,3 +88,14 @@ def test_proxy_descriptor_edge_cases():
 
         class Wrapper2:
             wrong_type = utils.ProxyProperty[int](lambda wrapper: wrapper.get_first(), prop=3)
+
+
+def test_unextend():
+    argument = [{1: "test"}]
+    assert utils.unextend(argument) == "test"
+
+
+def test_unextend_bad_argument():
+    argument = ["test"]
+    with pytest.raises(ValueError):
+        utils.unextend(argument)

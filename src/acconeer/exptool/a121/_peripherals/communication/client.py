@@ -13,7 +13,7 @@ def protocol_factory(client_info: ClientInfo) -> CommunicationProtocol:
         # [https://github.com/python/mypy/issues/4536]
         return ExplorationProtocol  # type: ignore[return-value]
 
-    raise ValueError(f"Could not construct a suitable protocol with arguments {vars(client_info)}")
+    raise ValueError(f"Could not construct a suitable protocol with arguments {client_info}")
 
 
 def link_factory(client_info: ClientInfo) -> BufferedLink:
@@ -30,7 +30,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
 
         return link
 
-    raise ValueError(f"Could not construct a suitable link with arguments {vars(client_info)}")
+    raise ValueError(f"Could not construct a suitable link with arguments {client_info}")
 
 
 class Client(AgnosticClient):

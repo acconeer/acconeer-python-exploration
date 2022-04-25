@@ -11,6 +11,7 @@ from acconeer.exptool.a121._entities import (
     SessionConfig,
 )
 from acconeer.exptool.a121._mediators import Recorder
+from acconeer.exptool.a121._utils import unextend
 
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
@@ -76,10 +77,17 @@ class AgnosticClient:
         self._metadata = self._protocol.setup_response(
             reponse_bytes, context_session_config=config
         )
-        return self._metadata
+
+        if self.session_config.extended:
+            return self._metadata
+        else:
+            return unextend(self._metadata)
 
     def start_session(self, recorder: Optional[Recorder] = None) -> None:
         self._assert_session_setup()
+
+        if recorder is not None:
+            raise NotImplementedError("Passing a recorder is not supported yet. Stay tuned.")
 
         self._link.send(self._protocol.start_streaming_command())
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
@@ -94,7 +102,12 @@ class AgnosticClient:
             ticks_per_second=self.server_info.ticks_per_second,
         )
         payload = self._link.recv(payload_size)
-        return self._protocol.get_next_payload(payload, partial_results)
+        extended_results = self._protocol.get_next_payload(payload, partial_results)
+
+        if self.session_config.extended:
+            return extended_results
+        else:
+            return unextend(extended_results)
 
     def stop_session(self) -> Any:
         self._assert_session_started()
