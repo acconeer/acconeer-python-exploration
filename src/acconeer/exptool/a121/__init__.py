@@ -1,7 +1,9 @@
 from ._entities import (
+    PRF,
     ClientInfo,
     Metadata,
     PersistentRecord,
+    Profile,
     Record,
     Result,
     SensorConfig,

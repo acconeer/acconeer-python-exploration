@@ -98,3 +98,21 @@ def convert_validate_int(
         raise ValueError(f"Cannot be less than {min_value}")
 
     return int_value
+
+
+def is_multiple_of(multiplier: int, product: int) -> bool:
+    """Returns True if `product` is a multiple of `multiplier`.
+    I.e. checks if `multiplicand` is an integer in the equation
+
+    `multiplicand` * `multiplier` = `product`
+    """
+    return product >= multiplier and product % multiplier == 0
+
+
+def is_divisor_of(divisor: int, dividend: int) -> bool:
+    """Returns True if `dividend` is divided by `divisor` with no remainder
+    I.e. checks that `quotient` is an integer in the equation
+
+    `dividend` / `divisor` = `quotient`
+    """
+    return is_multiple_of(dividend, divisor)

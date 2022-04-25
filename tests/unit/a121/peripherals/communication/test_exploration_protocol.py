@@ -95,7 +95,7 @@ def test_setup_command_simple_session_config():
                 {
                     "sensor_id": 1,
                     "config": {
-                        "subsweeps": [{"hwaas": 8}],
+                        "subsweeps": [a121.SubsweepConfig(hwaas=8).to_dict()],
                         "sweeps_per_frame": 1,
                     },
                 },

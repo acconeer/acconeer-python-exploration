@@ -1,4 +1,4 @@
-from .configs import SensorConfig, SessionConfig, SubsweepConfig
+from .configs import PRF, Profile, SensorConfig, SessionConfig, SubsweepConfig
 from .containers import (
     ClientInfo,
     Metadata,

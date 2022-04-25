@@ -254,3 +254,28 @@ def test_from_to_json():
     dict_from_json = json.loads(json_str)
     dict_from_config = original_config.to_dict()
     assert dict_from_json == dict_from_config
+
+
+@pytest.mark.parametrize(
+    ("attribute", "non_default_value"),
+    [
+        ("start_point", 123),
+        ("num_points", 22),
+        ("step_length", 24),
+        ("profile", 1),
+        ("hwaas", 17),
+        ("receiver_gain", 13),
+        ("enable_tx", False),
+        ("phase_enhancement", True),
+        ("prf", 3),
+    ],
+)
+def test_get_and_set_proxy_properties(attribute, non_default_value):
+    subsweep_config = a121.SubsweepConfig()
+    sensor_config = a121.SensorConfig(subsweeps=[subsweep_config])
+
+    # make sure test doesn't test default values.
+    assert getattr(subsweep_config, attribute) != non_default_value
+    assert getattr(sensor_config, attribute) == getattr(subsweep_config, attribute)
+    setattr(sensor_config, attribute, non_default_value)
+    assert getattr(sensor_config, attribute) == getattr(subsweep_config, attribute)

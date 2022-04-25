@@ -35,10 +35,18 @@ def test_equals():
     assert a_config != another_config
 
 
-def test_to_dict():
-    subsweep = a121.SubsweepConfig(hwaas=1)
+def test_to_dict_defaults():
+    subsweep = a121.SubsweepConfig()
     expected = {
-        "hwaas": 1,
+        "start_point": 80,
+        "num_points": 160,
+        "step_length": 1,
+        "profile": 3,
+        "hwaas": 8,
+        "receiver_gain": 16,
+        "enable_tx": True,
+        "phase_enhancement": False,
+        "prf": 1,
     }
 
     assert subsweep.to_dict() == expected
@@ -66,3 +74,32 @@ def test_to_from_json_identity():
     reconstructed_config = a121.SubsweepConfig.from_json(config.to_json())
 
     assert reconstructed_config == config
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"step_length": 7},
+        {"step_length": 13},
+        {"step_length": 25},
+    ],
+)
+def test_bad_step_lengths(kwargs):
+    with pytest.raises(ValueError):
+        _ = a121.SubsweepConfig(**kwargs)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"step_length": 1},
+        {"step_length": 2},
+        {"step_length": 3},
+        {"step_length": 6},
+        {"step_length": 12},
+        {"step_length": 24},
+        {"step_length": 48},
+    ],
+)
+def test_step_length(kwargs):
+    _ = a121.SubsweepConfig(**kwargs)

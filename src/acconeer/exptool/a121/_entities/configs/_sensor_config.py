@@ -6,6 +6,7 @@ from typing import Any, Optional, TypeVar
 from acconeer.exptool.a121._utils import ProxyProperty, convert_validate_int
 
 from ._subsweep_config import SubsweepConfig
+from .config_enums import PRF, Profile
 
 
 T = TypeVar("T")
@@ -26,7 +27,16 @@ class SubsweepProxyProperty(ProxyProperty[T]):
 class SensorConfig:
     _sweeps_per_frame: int
     _subsweeps: list[SubsweepConfig]
+
+    start_point = SubsweepProxyProperty[int](SubsweepConfig.start_point)
+    num_points = SubsweepProxyProperty[int](SubsweepConfig.num_points)
+    step_length = SubsweepProxyProperty[int](SubsweepConfig.step_length)
+    profile = SubsweepProxyProperty[Profile](SubsweepConfig.profile)
     hwaas = SubsweepProxyProperty[int](SubsweepConfig.hwaas)
+    receiver_gain = SubsweepProxyProperty[int](SubsweepConfig.receiver_gain)
+    enable_tx = SubsweepProxyProperty[bool](SubsweepConfig.enable_tx)
+    phase_enhancement = SubsweepProxyProperty[bool](SubsweepConfig.phase_enhancement)
+    prf = SubsweepProxyProperty[PRF](SubsweepConfig.prf)
 
     def __init__(
         self,
@@ -34,7 +44,15 @@ class SensorConfig:
         subsweeps: Optional[list[SubsweepConfig]] = None,
         num_subsweeps: Optional[int] = None,
         sweeps_per_frame: int = 1,
+        start_point: Optional[int] = None,
+        num_points: Optional[int] = None,
+        step_length: Optional[int] = None,
+        profile: Optional[Profile] = None,
         hwaas: Optional[int] = None,
+        receiver_gain: Optional[int] = None,
+        enable_tx: Optional[bool] = None,
+        phase_enhancement: Optional[bool] = None,
+        prf: Optional[PRF] = None,
     ) -> None:
         if subsweeps is not None and num_subsweeps is not None:
             raise ValueError(
@@ -60,8 +78,27 @@ class SensorConfig:
             raise RuntimeError
 
         self.sweeps_per_frame = sweeps_per_frame
+
+        # Init proxy attributes
+
         if hwaas is not None:
             self.hwaas = hwaas
+        if start_point is not None:
+            self.start_point = start_point
+        if num_points is not None:
+            self.num_points = num_points
+        if step_length is not None:
+            self.step_length = step_length
+        if profile is not None:
+            self.profile = profile
+        if receiver_gain is not None:
+            self.receiver_gain = receiver_gain
+        if enable_tx is not None:
+            self.enable_tx = enable_tx
+        if phase_enhancement is not None:
+            self.phase_enhancement = phase_enhancement
+        if prf is not None:
+            self.prf = prf
 
     def _assert_single_subsweep(self) -> None:
         if self.num_subsweeps > 1:
