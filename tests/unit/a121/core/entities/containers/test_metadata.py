@@ -70,3 +70,9 @@ def test_to_from_json_equality(ref_metadata):
     assert reconstructed == ref_metadata
     assert isinstance(reconstructed.subsweep_data_length, np.ndarray)
     assert isinstance(reconstructed.subsweep_data_offset, np.ndarray)
+
+
+def test_frame_shape(ref_metadata):
+    num_sweeps = 1
+    sweep_len = 10
+    assert ref_metadata.frame_shape == (num_sweeps, sweep_len)

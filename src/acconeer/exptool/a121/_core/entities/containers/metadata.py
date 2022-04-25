@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import json
-from typing import Any
+from typing import Any, Tuple
 
 import attrs
 import numpy as np
@@ -24,6 +24,12 @@ class Metadata:
     subsweep_data_offset: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
     subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
     _data_type: SensorDataType = attrs.field()
+
+    @property
+    def frame_shape(self) -> Tuple[int, int]:
+        """The frame shape this Metadata defines"""
+        num_sweeps = self.frame_data_length // self.sweep_data_length
+        return (num_sweeps, self.sweep_data_length)
 
     def to_dict(self) -> dict[str, Any]:
         d = attrs.asdict(self)

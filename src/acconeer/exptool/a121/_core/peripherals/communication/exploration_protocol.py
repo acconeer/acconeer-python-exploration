@@ -286,6 +286,7 @@ class ExplorationProtocol(CommunicationProtocol):
 
                 raw_frame = bytes_[start:end]
                 np_frame = np.frombuffer(raw_frame, dtype=data_type.value)
+                np_frame.resize(metadata.frame_shape)
                 partial_group[sensor_id] = attrs.evolve(partial_result, frame=np_frame)
                 start += end
         return partial_results

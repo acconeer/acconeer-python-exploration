@@ -257,6 +257,7 @@ def test_get_next_payload_single_sweep(single_sweep_metadata):
         }
     ]
     data_array = np.array(range(100), dtype=SensorDataType.INT_16_COMPLEX.value)
+    data_array.resize(1, 100)
     mock_payload = data_array.tobytes()
     assert len(mock_payload) == 400
 
@@ -290,13 +291,24 @@ def test_get_next_payload_multiple_sweep(single_sweep_metadata):
     ]
 
     first_frame = np.array(range(100), dtype=SensorDataType.INT_16_COMPLEX.value)
+    first_frame.resize(1, 100)
     second_frame = np.array(range(100, 200), dtype=SensorDataType.INT_16_COMPLEX.value)
+    second_frame.resize(1, 100)
+
     mock_payload = np.concatenate((first_frame, second_frame)).tobytes()
     assert len(mock_payload) == 800
 
     full_results = ExplorationProtocol.get_next_payload(mock_payload, partial_results)
     assert len(full_results) == 1
-    assert len(full_results[0]) == 2
+
+    (group,) = full_results
+    assert len(group) == 2
+
+    results = list(group.values())
+
+    for result in results:
+        # Make sure frame is resized correctly.
+        assert result.frame.shape == (1, 100)
 
     np.testing.assert_array_equal(
         full_results[0][1].frame, first_frame["real"] + 1j * first_frame["imag"]
