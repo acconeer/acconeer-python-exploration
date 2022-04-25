@@ -7,16 +7,23 @@ from ._sensor_config import SensorConfig
 
 
 class SessionConfig:
+    _groups: list[dict[int, SensorConfig]]
+
     def __init__(
         self,
-        arg: Union[SensorConfig, dict[int, SensorConfig], list[dict[int, SensorConfig]]],
+        arg: Optional[
+            Union[SensorConfig, dict[int, SensorConfig], list[dict[int, SensorConfig]]]
+        ] = None,
         *,
         extended: Optional[bool] = None,
         update_rate: Optional[float] = None,
     ) -> None:
         self.update_rate = update_rate
 
-        self._groups = _unsqueeze_groups(arg)
+        if arg is None:
+            self._groups = [{1: SensorConfig()}]
+        else:
+            self._groups = _unsqueeze_groups(arg)
         _validate_groups(self._groups)
 
         num_entries = sum(len(g) for g in self._groups)

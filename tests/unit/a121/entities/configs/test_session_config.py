@@ -59,8 +59,10 @@ def test_update_rate():
 
 
 def test_input_checking():
-    with pytest.raises(ValueError):
-        a121.SessionConfig(None)
+
+    # Should not raise an error
+    a121.SessionConfig(None)
+    a121.SessionConfig()
 
     with pytest.raises(ValueError):
         a121.SessionConfig({1: 123})
@@ -152,3 +154,7 @@ def test_to_from_dict_and_json_identity(original):
     assert original == reconstructed
     reconstructed = a121.SessionConfig.from_json(original.to_json())
     assert original == reconstructed
+
+
+def test_empty_init_is_the_same_as_single_sensor_config():
+    assert a121.SessionConfig() == a121.SessionConfig(a121.SensorConfig())
