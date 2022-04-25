@@ -34,7 +34,7 @@ class ExampleArgumentParser(ArgumentParser):
             "--uart",
             metavar="port",
             dest="serial_port",
-            help="connect via uart (using register-based protocol)",
+            help="connect via uart (using module protocol by default)",
             nargs="?",
             const="",  # as argparse does not support setting const to None
         )
@@ -95,7 +95,7 @@ def get_client_args(namespace: Namespace) -> Dict[str, Any]:
     :returns: dictionary with client-related keyword-arguments.
     """
     result = {}
-    ns_dict = vars(namespace)
+    ns_dict = {k: v for k, v in vars(namespace).items() if v is not None}
 
     if "protocol" in ns_dict:
         result["protocol"] = ns_dict["protocol"]
@@ -103,11 +103,18 @@ def get_client_args(namespace: Namespace) -> Dict[str, Any]:
     if "socket_addr" in ns_dict:
         result["host"] = ns_dict["socket_addr"]
         result["link"] = et.a111.Link.SOCKET
-    elif "spi" in ns_dict:
+        return result
+
+    if "spi" in ns_dict and ns_dict["spi"]:
         result["link"] = et.a111.Link.SPI
-    elif "serial_port" in ns_dict:
-        if ns_dict["serial_port"]:
+        return result
+
+    if "serial_port" in ns_dict:
+        if ns_dict["serial_port"] != "":
             result["serial_port"] = ns_dict["serial_port"]
+        if "protocol" not in result:
+            result["protocol"] = et.a111.Protocol.MODULE
         result["link"] = et.a111.Link.UART
+        return result
 
     return result

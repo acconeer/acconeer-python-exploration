@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 import pytest
@@ -5,6 +6,7 @@ import serial
 from serial.tools.list_ports_common import ListPortInfo
 
 from acconeer.exptool import utils
+from acconeer.exptool.a111 import ExampleArgumentParser, get_client_args
 
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Windows unsupported")
@@ -80,3 +82,53 @@ def test_port_tagging_finds_all_acconeer_devices(mock_comports, pyserial_version
     tagged_ports = utils.tag_serial_ports(mock_comports)
     only_acconeer = _only_acconeer_devices(tagged_ports)
     assert len(only_acconeer) == expected
+
+
+def namespace_transformations():
+    """
+    These describe how commandline arguments gets translated from an
+    1. `argv` -> Namespace (by ExampleArgumentParser)
+    2. Namespace -> dict (by get_client_args)
+    """
+    cli_args = [
+        ["-u"],
+        ["-u", "--protocol", "exploration"],
+        ["-u", "serial_port_name"],
+        ["-s", "localhost"],
+        ["-spi"],
+    ]
+    namespaces = [
+        argparse.Namespace(serial_port="", socket_addr=None, spi=False),
+        argparse.Namespace(serial_port="", socket_addr=None, spi=False, protocol="exploration"),
+        argparse.Namespace(serial_port="serial_port_name", socket_addr=None, spi=False),
+        argparse.Namespace(serial_port=None, socket_addr="localhost", spi=False),
+        argparse.Namespace(serial_port=None, socket_addr=None, spi=True),
+    ]
+    client_dict = [
+        dict(link="uart", protocol="module"),
+        dict(link="uart", protocol="exploration"),
+        dict(serial_port="serial_port_name", link="uart", protocol="module"),
+        dict(host="localhost", link="socket"),
+        dict(link="spi"),
+    ]
+    assert len(cli_args) == len(namespaces) == len(client_dict)
+    return zip(cli_args, namespaces, client_dict)
+
+
+@pytest.mark.parametrize(
+    "cl_args,namespace", [(cl_arg, ns) for cl_arg, ns, _ in namespace_transformations()]
+)
+def test_example_argument_parser(cl_args, namespace):
+    actual_ns = ExampleArgumentParser().parse_args(cl_args)
+
+    assert actual_ns.serial_port == namespace.serial_port
+    assert actual_ns.socket_addr == namespace.socket_addr
+    assert actual_ns.spi == namespace.spi
+
+
+@pytest.mark.parametrize(
+    "namespace,client_dict",
+    [(ns, client_dict) for _, ns, client_dict in namespace_transformations()],
+)
+def test_get_client_args(namespace, client_dict):
+    assert client_dict == get_client_args(namespace)

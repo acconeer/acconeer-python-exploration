@@ -78,7 +78,7 @@ class Processor:
         self.cfar_sensitivity = processing_config.cfar_sensitivity
 
         self.update_sc_threshold()
-
+        self.max_nbr_peaks_to_plot = processing_config.max_nbr_peaks_to_plot
         self.history_length_s = processing_config.history_length_s
 
     def update_calibration(self, new_calibration: DistanceDetectorCalibration):
@@ -328,7 +328,7 @@ class Processor:
                 self.main_peak_hist_dist.append(self.r[found_peaks[0]])
 
             # Adding minor peaks to history
-            for i in range(1, len(found_peaks)):
+            for i in range(1, min(len(found_peaks), self.max_nbr_peaks_to_plot)):
                 self.minor_peaks_hist_sweep_idx.append(self.sweep_index)
                 self.minor_peaks_hist_dist.append(self.r[found_peaks[i]])
 
@@ -552,11 +552,21 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         help="Length of time history for plotting.",
     )
 
+    max_nbr_peaks_to_plot = et.configbase.IntParameter(
+        default_value=1,
+        limits=(1, 15),
+        updateable=True,
+        unit="peaks",
+        label="Peaks per sweep in plot",
+        order=200,
+        help="The maximum number of peaks per averaged sweep to be plotted in the lower figure.",
+    )
+
     show_first_above_threshold = et.configbase.BoolParameter(
         label="Show first distance above threshold",
         default_value=False,
         updateable=True,
-        order=199,
+        order=201,
         help=(
             "When detect in the presence of object very close to the sensor, the "
             "strong direct leakage might cause that no well shaped peaks are detected, "

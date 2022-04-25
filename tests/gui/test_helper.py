@@ -64,6 +64,7 @@ def test_load_button_state(calibration_ui_state):
 def test_apply_button_state(calibration_ui_state):
     assert not calibration_ui_state.apply_button_enabled
     calibration_ui_state.source = "smth"
+    calibration_ui_state.set_scan_is_running(True)
     assert calibration_ui_state.apply_button_enabled
 
 

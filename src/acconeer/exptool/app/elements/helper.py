@@ -85,6 +85,8 @@ class CalibrationUiState:
         self._source: Optional[str] = None
         self._modified: bool = False
         self._auto_apply: bool = False
+        self._scan_is_running: bool = False  # Will be updated from GUI
+
         self._load_btn = load_btn
         self._save_btn = save_btn
         self._clear_btn = clear_btn
@@ -128,6 +130,10 @@ class CalibrationUiState:
 
         mby_asterisk = "*" if self.modified else ""
         return f"{source_str}{mby_asterisk}"
+
+    def set_scan_is_running(self, value: bool):
+        self._scan_is_running = value
+        self._update_ui_elements()
 
     def clear(self):
         self.source = None
@@ -206,7 +212,11 @@ class CalibrationUiState:
         return self.source is not None
 
     clear_button_enabled = _has_source
-    apply_button_enabled = _has_source
+
+    @property
+    def apply_button_enabled(self):
+        """The apply button should only work in a "LIVE" scenario."""
+        return self._has_source and self._scan_is_running
 
     @property
     def auto_apply(self):

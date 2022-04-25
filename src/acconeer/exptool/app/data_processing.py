@@ -68,7 +68,6 @@ class DataProcessing:
                     self.sensor_config,
                     processing_config,
                     self.session_info,
-                    calibration=self.calibration,
                 )
             except TypeError as te:
                 raise TypeError(f"Could not instantiate {ext.__name__}") from te

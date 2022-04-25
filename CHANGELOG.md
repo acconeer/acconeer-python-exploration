@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Wave to exit algorithm added.
+
+## v4.0.4
+
+### Fixed
+- Issue where Exploration tool could not be run on Python 3.7.
+
+
+## v4.0.3
+
+### Added
+- Control for amount of peaks plotted in Distance Detector.
+
+### Fixed
+- Implicit behavior of calibration application. Now never applies a
+  calibration unless explicitly done by the user.
+
+
+## v4.0.2
+
+### Changed
+- Module server protocol is now default for UART connections in examples
+
+### Fixed
+- Outdated referenced to `recording` module in File format reference (docs)
+- Bug that did not allow examples and standalones to be run over UART
+
+
 ## v4.0.1
 
 ### Changed

@@ -130,6 +130,7 @@ class PGUpdater:
         )
 
         self.setup_is_done = True
+        self.update_processing_config()
 
     def update(self, data):
         self.sweep_curve.setData(1000.0 * self.r, data["sweep"])

@@ -8,7 +8,7 @@ Here are some things that may affect you when you transition to Exploration Tool
 General
 -------
 - The preferred way to install *Exploration Tool* is now via Python's package
-  manager; ``pip``. Install is done with ``python -m pip install acconeer-exptool[app]``,
+  manager; ``pip``. Install is done with ``python -m pip install --upgrade acconeer-exptool[app]``,
   which downloads and installs the *Exploration Tool App* including all its Python dependencies.
 
 - The *Exploration Tool App* is no longer run with ``python gui/main.py``.
