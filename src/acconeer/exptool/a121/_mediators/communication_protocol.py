@@ -45,7 +45,7 @@ class CommunicationProtocol(Protocol):
         ...
 
     def get_next_header(
-        self, bytes_: bytes, extended_metadata: list[dict[int, Metadata]]
+        self, bytes_: bytes, extended_metadata: list[dict[int, Metadata]], ticks_per_second: int
     ) -> Tuple[int, list[dict[int, Result]]]:
         """Parses the header of a data package. Returns the payload size and
         partial (incomplete) Results.

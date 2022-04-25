@@ -52,6 +52,7 @@ class ResultInfoDict(TypedDict):
     tick: int
     data_saturated: bool
     frame_delayed: bool
+    calibration_needed: bool
     temperature: int
 
 
@@ -203,7 +204,7 @@ class ExplorationProtocol(CommunicationProtocol):
 
     @classmethod
     def get_next_header(
-        cls, bytes_: bytes, extended_metadata: list[dict[int, Metadata]]
+        cls, bytes_: bytes, extended_metadata: list[dict[int, Metadata]], ticks_per_second: int
     ) -> Tuple[int, list[dict[int, Result]]]:
         header_dict: GetNextHeader = json.loads(bytes_)
         payload_size = header_dict["payload_size"]
@@ -217,7 +218,7 @@ class ExplorationProtocol(CommunicationProtocol):
                 partial_result_group, metadata_group.items()
             ):
                 inner_result[sensor_id] = cls._create_partial_result(
-                    **partial_result_dict, metadata=metadata
+                    **partial_result_dict, metadata=metadata, ticks_per_second=ticks_per_second
                 )
 
             extended_partial_results.append(inner_result)
@@ -229,9 +230,11 @@ class ExplorationProtocol(CommunicationProtocol):
         cls,
         *,
         tick: int,
+        ticks_per_second: int,
         data_saturated: bool,
         temperature: int,
         frame_delayed: bool,
+        calibration_needed: bool,
         metadata: Metadata,
     ) -> Result:
         return Result(
@@ -240,12 +243,11 @@ class ExplorationProtocol(CommunicationProtocol):
             frame=np.array([0]),
             temperature=temperature,
             frame_delayed=frame_delayed,
+            calibration_needed=calibration_needed,
             context=ResultContext(
                 metadata=metadata,
-                # FIXME: not correct below this line
-                ticks_per_second=0,
+                ticks_per_second=ticks_per_second,
             ),
-            calibration_needed=False,
         )
 
     @classmethod

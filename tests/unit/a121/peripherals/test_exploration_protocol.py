@@ -187,7 +187,15 @@ def test_get_next_header(single_sweep_metadata):
     get_next_header = json.dumps(
         {
             "result_info": [
-                [{"tick": 0, "data_saturated": False, "temperature": 0, "frame_delayed": False}]
+                [
+                    {
+                        "tick": 0,
+                        "data_saturated": False,
+                        "temperature": 0,
+                        "frame_delayed": False,
+                        "calibration_needed": False,
+                    }
+                ]
             ],
             "payload_size": 400,
         }
@@ -196,7 +204,9 @@ def test_get_next_header(single_sweep_metadata):
     extended_metadata = [{1: single_sweep_metadata}]
 
     payload_size, partial_results = ExplorationProtocol.get_next_header(
-        get_next_header, extended_metadata
+        get_next_header,
+        extended_metadata,
+        ticks_per_second=0,
     )
     assert payload_size == 400
     assert partial_results == [

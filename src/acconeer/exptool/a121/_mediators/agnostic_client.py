@@ -89,8 +89,9 @@ class AgnosticClient:
         self._assert_session_started()
 
         payload_size, partial_results = self._protocol.get_next_header(
-            self._link.recv_until(self._protocol.end_sequence),
-            self.extended_metadata,
+            bytes_=self._link.recv_until(self._protocol.end_sequence),
+            extended_metadata=self.extended_metadata,
+            ticks_per_second=self.server_info.ticks_per_second,
         )
         payload = self._link.recv(payload_size)
         return self._protocol.get_next_payload(payload, partial_results)
