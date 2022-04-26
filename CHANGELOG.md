@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v4.1.0
 
 ### Added
 - Wave to exit algorithm added.
