@@ -267,7 +267,7 @@ def test_from_to_json():
         ("receiver_gain", 13),
         ("enable_tx", False),
         ("phase_enhancement", True),
-        ("prf", 3),
+        ("prf", a121.PRF.PRF_6_5_MHz),
     ],
 )
 def test_get_and_set_proxy_properties(attribute, non_default_value):

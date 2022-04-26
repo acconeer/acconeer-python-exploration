@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from acconeer.exptool import a121
@@ -46,7 +48,7 @@ def test_to_dict_defaults():
         "receiver_gain": 16,
         "enable_tx": True,
         "phase_enhancement": False,
-        "prf": 1,
+        "prf": a121.PRF.PRF_13_0_MHz,
     }
 
     assert subsweep.to_dict() == expected
@@ -76,6 +78,16 @@ def test_to_from_json_identity():
     assert reconstructed_config == config
 
 
+def test_prf_field_in_json_representation_is_a_string_that_can_be_converted_back():
+    config = a121.SubsweepConfig()
+
+    json_dict = json.loads(config.to_json())
+
+    enum_member_name = json_dict["prf"]
+    assert isinstance(enum_member_name, str)
+    assert a121.PRF(enum_member_name) in a121.PRF  # type: ignore[arg-type]
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
@@ -103,3 +115,18 @@ def test_bad_step_lengths(kwargs):
 )
 def test_step_length(kwargs):
     _ = a121.SubsweepConfig(**kwargs)
+
+
+def test_setting_enum_parameters():
+    conf = a121.SubsweepConfig()
+
+    # These 2 should be valid
+
+    conf.prf = a121.PRF.PRF_13_0_MHz
+
+    conf.prf = "PRF_13_0_MHz"  # type: ignore[assignment]
+
+    # But something like this should not be.
+    RSS_KEY = 1
+    with pytest.raises(ValueError):
+        conf.prf = RSS_KEY  # type: ignore[assignment]

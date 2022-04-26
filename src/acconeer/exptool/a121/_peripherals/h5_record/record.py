@@ -15,6 +15,7 @@ from acconeer.exptool.a121._entities import (
     ServerInfo,
     SessionConfig,
 )
+from acconeer.exptool.a121._utils import map_over_extended_structure
 
 
 T = TypeVar("T")
@@ -104,8 +105,7 @@ class H5Record(PersistentRecord):
         return [structure[i] for i in range(len(structure))]
 
     def _map_over_entries(self, func: Callable[[h5py.Group], T]) -> list[dict[int, T]]:
-        structure = self._get_entries()
-        return [{k: func(v) for k, v in d.items()} for d in structure]
+        return map_over_extended_structure(func, self._get_entries())
 
     def _iterate_entries(self) -> Iterable[Tuple[int, int, h5py.Group]]:
         """Iterates over "Entry" items in this record.

@@ -5,6 +5,9 @@ from typing import Any, Callable, Generic, Optional, TypeVar, Union
 
 T = TypeVar("T")
 
+KeyT = TypeVar("KeyT")
+ValueT = TypeVar("ValueT")
+
 
 class ProxyProperty(Generic[T]):
     """
@@ -116,3 +119,20 @@ def is_divisor_of(divisor: int, dividend: int) -> bool:
     `dividend` / `divisor` = `quotient`
     """
     return is_multiple_of(dividend, divisor)
+
+
+def map_over_extended_structure(
+    func: Callable[[ValueT], T], structure: list[dict[KeyT, ValueT]]
+) -> list[dict[KeyT, T]]:
+    """Applies a function, `func`, to each element of the extended structure.
+
+    Example:
+
+        structure = [{1: "one"}, {2: "two"}]        # KeyT = int, ValueT = str
+        func = str.encode                           # ValueT = str, T = bytes
+
+        # Result
+        result = [{1: b"one"}, {2: b"two"}]         # KeyT = int, T = bytes
+
+    """
+    return [{k: func(v) for k, v in d.items()} for d in structure]

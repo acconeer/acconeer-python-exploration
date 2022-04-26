@@ -6,9 +6,10 @@ from typing import Any, Literal, Tuple, Union
 import attrs
 import numpy as np
 
-from acconeer.exptool.a121 import Metadata, Result, ServerInfo, SessionConfig
+from acconeer.exptool.a121 import PRF, Metadata, Result, ServerInfo, SessionConfig
 from acconeer.exptool.a121._entities import ResultContext, SensorDataType
 from acconeer.exptool.a121._mediators import CommunicationProtocol
+from acconeer.exptool.a121._utils import map_over_extended_structure
 
 from typing_extensions import TypedDict
 
@@ -68,6 +69,13 @@ class ExplorationProtocolError(Exception):
 class ExplorationProtocol(CommunicationProtocol):
     end_sequence: bytes = b"\n"
 
+    PRF_MAPPING = {
+        PRF.PRF_19_5_MHz: "19_5_MHz",
+        PRF.PRF_13_0_MHz: "13_0_MHz",
+        PRF.PRF_8_7_MHz: "8_7_MHz",
+        PRF.PRF_6_5_MHz: "6_5_MHz",
+    }
+
     @classmethod
     def get_system_info_command(cls) -> bytes:
         return b'{"cmd":"get_system_info"}\n'
@@ -110,8 +118,10 @@ class ExplorationProtocol(CommunicationProtocol):
         # Exploration server is not interested in this.
         result.pop("extended")
 
+        result["groups"] = map_over_extended_structure(cls._translate_prf_enums, result["groups"])
+
         result["cmd"] = "setup"
-        result["groups"] = cls._translate_groups_representation(session_config.to_dict()["groups"])
+        result["groups"] = cls._translate_groups_representation(result["groups"])
         return (
             json.dumps(
                 result,
@@ -120,6 +130,12 @@ class ExplorationProtocol(CommunicationProtocol):
             )
             + "\n"
         ).encode("ascii")
+
+    @classmethod
+    def _translate_prf_enums(cls, sensor_config_dict: dict[str, Any]) -> dict[str, Any]:
+        for subsweep_config_dict in sensor_config_dict["subsweeps"]:
+            subsweep_config_dict["prf"] = cls.PRF_MAPPING[subsweep_config_dict["prf"]]
+        return sensor_config_dict
 
     @classmethod
     def _translate_groups_representation(

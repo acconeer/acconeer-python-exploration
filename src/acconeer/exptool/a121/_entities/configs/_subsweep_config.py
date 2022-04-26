@@ -135,7 +135,9 @@ class SubsweepConfig:
         return SubsweepConfig(**d)
 
     def to_json(self) -> str:
-        return json.dumps(self.to_dict())
+        d = self.to_dict()
+        d["prf"] = d.pop("prf").name
+        return json.dumps(d)
 
     @classmethod
     def from_json(cls, json_str: str) -> SubsweepConfig:
