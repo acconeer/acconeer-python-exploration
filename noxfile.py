@@ -12,6 +12,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 BLACK_SPEC = "black>=22.3.0"
 ISORT_SPEC = "isort==5.6.3"
+PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 
 SPHINX_SOURCE_DIR = "docs"
@@ -97,6 +98,7 @@ def docs(session):
     args = Parser().parse_args(session.posargs)
 
     if args.editable:
+        session.install(PIP_SPEC)
         session.install("-e", ".[docs]")
     else:
         session.install(".[docs]")
@@ -140,6 +142,7 @@ def docs(session):
 
 @nox.session
 def docs_autobuild(session):
+    session.install(PIP_SPEC)
     session.install("-e", ".[docs]")
     session.install("sphinx_autobuild")
     session.run("python", "-m", "sphinx_autobuild", *SPHINX_HTML_ARGS, "--watch", "src")
@@ -197,6 +200,7 @@ def test(session):
     install = []
 
     if args.editable:
+        session.install(PIP_SPEC)
         install.append("-e")
 
     if install_extras:
