@@ -12,6 +12,7 @@ extensions = [
     "sphinx.ext.extlinks",
     "myst_parser",
     "sphinxext.rediraffe",
+    "notfound.extension",
 ]
 
 autodoc_member_order = "bysource"
