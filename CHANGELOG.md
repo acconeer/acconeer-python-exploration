@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.1.1
+
+### Changed
+ - Bump A111 SDK version to v2.11.1
+
 ## v4.1.0
 
 ### Added
