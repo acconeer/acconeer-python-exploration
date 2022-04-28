@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Optional, TypeVar, Union
+from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
 
 
 T = TypeVar("T")
@@ -57,10 +57,18 @@ class ProxyProperty(Generic[T]):
 
         self.__doc__ = prop.__doc__
 
+    @overload
+    def __get__(self, obj: None, objtype: Optional[Type] = ...) -> ProxyProperty[T]:
+        ...
+
+    @overload
+    def __get__(self, obj: Any, objtype: Optional[Type] = ...) -> T:
+        ...
+
     def __get__(
         self,
-        obj: Any,
-        objtype: Any = None,
+        obj: Optional[Any],
+        objtype: Optional[Type] = None,
     ) -> Union[T, ProxyProperty[T]]:
         if obj is not None:
             proxee = self._accessor(obj)
