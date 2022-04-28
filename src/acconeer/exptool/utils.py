@@ -1,5 +1,6 @@
 import logging
 import operator
+import re
 import signal
 import struct
 import sys
@@ -93,16 +94,18 @@ def tag_serial_ports(port_infos):
         `serial.tools.list_ports.comports()`
     :returns: List of tuples [(<port>, <model number> or None), ...]
     """
+    PRODUCT_REGEX = r"[X][A-Z]\d{3}"
+
     port_tag_tuples = []
 
-    for i, port_object in enumerate(port_infos):
+    for _, port_object in enumerate(port_infos):
         port = port_object.device
         desc = port_object.product or port_object.description
 
-        if desc.lower() in {"xb112", "xb122"}:
-            port_tag_tuples.append((port, desc))
-
-        elif "xe132" in desc.lower():
+        match = re.search(PRODUCT_REGEX, desc)
+        if match is None:
+            port_tag_tuples.append((port, None))
+        elif "xe132" in match.group().lower():
             if version.parse(serial.__version__) >= version.parse("3.5"):
                 # Special handling of xe132 with pyserial >= 3.5
                 interface = port_object.interface
@@ -118,7 +121,8 @@ def tag_serial_ports(port_infos):
                 # Add "?" to both to indicate that it could be either.
                 port_tag_tuples.append((port, "XE132 (?)"))
         else:
-            port_tag_tuples.append((port, None))
+            port_tag_tuples.append((port, match.group()))
+
     return port_tag_tuples
 
 
