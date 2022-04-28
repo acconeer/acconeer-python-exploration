@@ -1,23 +1,10 @@
 from typing import Optional
 
 from acconeer.exptool.a121._core.entities import ClientInfo
-from acconeer.exptool.a121._core.mediators import (
-    AgnosticClient,
-    BufferedLink,
-    CommunicationProtocol,
-)
+from acconeer.exptool.a121._core.mediators import AgnosticClient, BufferedLink
 
 from .exploration_protocol import ExplorationProtocol
 from .links import AdaptedSerialLink, AdaptedSocketLink
-
-
-def protocol_factory(client_info: ClientInfo) -> CommunicationProtocol:
-    if client_info.protocol == "exploration":
-        # Ignore comes from an unresolved bug in mypy as of 22/04/22
-        # [https://github.com/python/mypy/issues/4536]
-        return ExplorationProtocol  # type: ignore[return-value]
-
-    raise ValueError(f"Could not construct a suitable protocol with arguments {client_info}")
 
 
 def link_factory(client_info: ClientInfo) -> BufferedLink:
@@ -43,20 +30,25 @@ class Client(AgnosticClient):
     def __init__(
         self,
         address: Optional[str] = None,
-        link: Optional[str] = None,
-        override_baudrate: Optional[int] = None,
-        protocol: Optional[str] = None,
         serial_port: Optional[str] = None,
+        override_baudrate: Optional[int] = None,
     ):
+        if address is not None and serial_port is not None:
+            raise ValueError(
+                f"Both 'address' ({address}) and 'serial_port' ({serial_port}) "
+                + "are not allowed. Chose one."
+            )
         self._client_info = ClientInfo(
             address=address,
-            link=link,
             override_baudrate=override_baudrate,
-            protocol=protocol,
             serial_port=serial_port,
         )
+
+        # "protocol"-ignore comes from an unresolved bug in mypy as of 22/04/22
+        # [https://github.com/python/mypy/issues/4536]
         super().__init__(
-            link=link_factory(self._client_info), protocol=protocol_factory(self._client_info)
+            link=link_factory(self._client_info),
+            protocol=ExplorationProtocol,  # type: ignore[arg-type]
         )
 
     @property

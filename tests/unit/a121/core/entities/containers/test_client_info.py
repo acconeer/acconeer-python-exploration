@@ -18,8 +18,6 @@ def client_info_dict():
         "address": "addr",
         "serial_port": "port",
         "override_baudrate": 0,
-        "protocol": None,
-        "link": None,
     }
 
 

@@ -11,8 +11,6 @@ class ClientInfo:
     address: Optional[str] = None
     serial_port: Optional[str] = None
     override_baudrate: Optional[int] = None
-    protocol: Optional[str] = None
-    link: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)

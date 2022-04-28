@@ -44,8 +44,6 @@ def ref_client_info():
         address="address",
         serial_port="serial_port",
         override_baudrate=0,
-        protocol="protocol",
-        link="link",
     )
 
 
