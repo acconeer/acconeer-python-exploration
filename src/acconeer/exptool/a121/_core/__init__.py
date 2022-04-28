@@ -1,20 +1,21 @@
-from ._core import (
+from ._entities import (
     PRF,
-    Client,
-    ClientError,
     ClientInfo,
-    H5Record,
-    H5Recorder,
     Metadata,
     PersistentRecord,
     Profile,
     Record,
-    Recorder,
     Result,
     SensorConfig,
     ServerInfo,
     SessionConfig,
     SubsweepConfig,
+)
+from ._mediators import ClientError, Recorder
+from ._peripherals import (
+    Client,
+    H5Record,
+    H5Recorder,
     load_record,
     open_record,
     save_record,
