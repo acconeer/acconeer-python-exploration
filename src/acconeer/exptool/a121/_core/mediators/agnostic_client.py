@@ -28,6 +28,7 @@ class AgnosticClient:
     _session_config: Optional[SessionConfig]
     _metadata: Optional[list[dict[int, Metadata]]]
     _session_is_started: bool
+    _recorder: Optional[Recorder]
 
     def __init__(self, link: BufferedLink, protocol: CommunicationProtocol) -> None:
         self._link = link
@@ -36,6 +37,7 @@ class AgnosticClient:
         self._session_config = None
         self._session_is_started = False
         self._metadata = None
+        self._recorder = None
 
     def _assert_connected(self):
         if not self.connected:
@@ -87,7 +89,13 @@ class AgnosticClient:
         self._assert_session_setup()
 
         if recorder is not None:
-            raise NotImplementedError("Passing a recorder is not supported yet. Stay tuned.")
+            self._recorder = recorder
+            self._recorder.start(
+                client_info=self.client_info,
+                extended_metadata=self.extended_metadata,
+                server_info=self.server_info,
+                session_config=self.session_config,
+            )
 
         self._link.send(self._protocol.start_streaming_command())
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
@@ -104,6 +112,9 @@ class AgnosticClient:
         payload = self._link.recv(payload_size)
         extended_results = self._protocol.get_next_payload(payload, partial_results)
 
+        if self._recorder is not None:
+            self._recorder.sample(extended_results)
+
         if self.session_config.extended:
             return extended_results
         else:
@@ -112,12 +123,18 @@ class AgnosticClient:
     def stop_session(self) -> Any:
         self._assert_session_started()
 
+        if self._recorder is not None:
+            return self._recorder.stop()
+
         self._link.send(self._protocol.stop_streaming_command())
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
         self._session_is_started = not self._protocol.stop_streaming_response(reponse_bytes)
 
     def disconnect(self) -> None:
         self._assert_connected()
+
+        if self.session_is_started:
+            _ = self.stop_session()
 
         self._server_info = None
         self._link.disconnect()

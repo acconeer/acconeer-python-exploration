@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import os
+from pathlib import Path
 from typing import Any, Optional, TypeVar, Union
 from uuid import uuid4
 
@@ -17,6 +18,8 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.mediators import Recorder
 
 import importlib_metadata
+
+from .record import H5Record
 
 
 T = TypeVar("T")
@@ -45,14 +48,17 @@ class H5Recorder(Recorder):
 
     def __init__(
         self,
-        path_or_file: Union[os.PathLike, h5py.File],
+        path_or_file: Union[str, os.PathLike, h5py.File],
         mode: str = "x",
         *,
         _lib_version: Optional[str] = None,
         _timestamp: Optional[str] = None,
         _uuid: Optional[str] = None,
     ) -> None:
-        if isinstance(path_or_file, os.PathLike):
+        if isinstance(path_or_file, str):
+            path_or_file = Path(path_or_file)
+
+        if isinstance(path_or_file, os.PathLike):  # Typically pathlib.Path
             self.path = path_or_file
             self.file = h5py.File(self.path, mode)
             self.owns_file = True
@@ -150,6 +156,8 @@ class H5Recorder(Recorder):
     def stop(self) -> Any:
         if self.owns_file:
             self.file.close()
+
+        return H5Record(self.file)
 
     @staticmethod
     def create_result_datasets(g: h5py.Group, metadata: Metadata) -> None:
