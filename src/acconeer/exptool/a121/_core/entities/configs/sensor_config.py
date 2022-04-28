@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 from typing import Any, Optional, TypeVar
 
-from acconeer.exptool.a121._core._utils import ProxyProperty, convert_validate_int
+from acconeer.exptool.a121._core.utils import ProxyProperty, convert_validate_int
 
-from ._subsweep_config import SubsweepConfig
 from .config_enums import PRF, Profile
+from .subsweep_config import SubsweepConfig
 
 
 T = TypeVar("T")

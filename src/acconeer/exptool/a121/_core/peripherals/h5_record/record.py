@@ -6,7 +6,7 @@ from typing import Callable, Iterable, Tuple, TypeVar
 import h5py
 import numpy as np
 
-from acconeer.exptool.a121._core._entities import (
+from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     PersistentRecord,
@@ -15,7 +15,7 @@ from acconeer.exptool.a121._core._entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core._utils import map_over_extended_structure
+from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
 
 T = TypeVar("T")

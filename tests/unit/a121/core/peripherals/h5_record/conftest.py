@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core._entities import SensorDataType
-from acconeer.exptool.a121._core._peripherals.h5_record import H5PY_STR_DTYPE
+from acconeer.exptool.a121._core.entities import SensorDataType
+from acconeer.exptool.a121._core.peripherals.h5_record import H5PY_STR_DTYPE
 
 
 @pytest.fixture

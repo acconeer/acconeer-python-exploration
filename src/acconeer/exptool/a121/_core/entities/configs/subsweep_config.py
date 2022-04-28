@@ -5,7 +5,7 @@ from typing import Any
 
 import attrs
 
-from acconeer.exptool.a121._core._utils import convert_validate_int, is_divisor_of, is_multiple_of
+from acconeer.exptool.a121._core.utils import convert_validate_int, is_divisor_of, is_multiple_of
 
 from .config_enums import PRF, Profile
 

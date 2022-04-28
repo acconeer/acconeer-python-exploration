@@ -2,7 +2,7 @@
 
 import pytest
 
-from acconeer.exptool.a121._core import _utils as utils
+from acconeer.exptool.a121._core import utils
 
 
 def test_convert_validate_int_ok_value():

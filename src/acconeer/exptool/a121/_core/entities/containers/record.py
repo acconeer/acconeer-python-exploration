@@ -3,12 +3,12 @@ from __future__ import annotations
 import abc
 from typing import Any, Iterable
 
-from acconeer.exptool.a121._core._entities.configs import SessionConfig
+from acconeer.exptool.a121._core.entities.configs import SessionConfig
 
-from ._client_info import ClientInfo
-from ._metadata import Metadata
-from ._result import Result
-from ._server_info import ServerInfo
+from .client_info import ClientInfo
+from .metadata import Metadata
+from .result import Result
+from .server_info import ServerInfo
 
 
 class Record(abc.ABC):

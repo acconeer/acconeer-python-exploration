@@ -1,4 +1,4 @@
-from ._entities import (
+from .entities import (
     PRF,
     ClientInfo,
     Metadata,
@@ -11,8 +11,8 @@ from ._entities import (
     SessionConfig,
     SubsweepConfig,
 )
-from ._mediators import ClientError, Recorder
-from ._peripherals import (
+from .mediators import ClientError, Recorder
+from .peripherals import (
     Client,
     H5Record,
     H5Recorder,

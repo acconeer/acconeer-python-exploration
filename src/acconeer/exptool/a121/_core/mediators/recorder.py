@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from acconeer.exptool.a121._core._entities import (
+from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     Result,

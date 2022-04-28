@@ -3,8 +3,8 @@ from __future__ import annotations
 import attrs
 import numpy.typing as npt
 
-from ._metadata import Metadata, SensorDataType
 from .common import attrs_ndarray_eq
+from .metadata import Metadata, SensorDataType
 
 
 @attrs.frozen(kw_only=True)

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core._entities import ResultContext, SensorDataType
+from acconeer.exptool.a121._core.entities import ResultContext, SensorDataType
 
 
 @pytest.fixture

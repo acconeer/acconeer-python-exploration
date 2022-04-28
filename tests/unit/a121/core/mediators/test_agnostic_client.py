@@ -3,14 +3,14 @@ from unittest.mock import Mock, call
 import numpy as np
 import pytest
 
-from acconeer.exptool.a121._core._entities import (
+from acconeer.exptool.a121._core.entities import (
     Metadata,
     SensorConfig,
     SensorDataType,
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core._mediators import AgnosticClient, ClientError
+from acconeer.exptool.a121._core.mediators import AgnosticClient, ClientError
 
 
 @pytest.fixture(scope="function")

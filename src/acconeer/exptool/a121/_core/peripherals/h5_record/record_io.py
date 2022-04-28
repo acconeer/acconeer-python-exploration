@@ -5,7 +5,7 @@ from typing import Union
 
 import h5py
 
-from acconeer.exptool.a121._core._entities import PersistentRecord, Record
+from acconeer.exptool.a121._core.entities import PersistentRecord, Record
 
 from .record import H5Record
 from .recorder import H5Recorder

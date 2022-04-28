@@ -6,7 +6,7 @@ from typing import Any, Literal, Tuple, Union
 import attrs
 import numpy as np
 
-from acconeer.exptool.a121._core._entities import (
+from acconeer.exptool.a121._core.entities import (
     PRF,
     Metadata,
     Result,
@@ -15,8 +15,8 @@ from acconeer.exptool.a121._core._entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core._mediators import CommunicationProtocol
-from acconeer.exptool.a121._core._utils import map_over_extended_structure
+from acconeer.exptool.a121._core.mediators import CommunicationProtocol
+from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
 from typing_extensions import TypedDict
 

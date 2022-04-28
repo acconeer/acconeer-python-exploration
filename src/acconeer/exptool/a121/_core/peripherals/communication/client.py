@@ -1,7 +1,7 @@
 from typing import Optional
 
-from acconeer.exptool.a121._core._entities import ClientInfo
-from acconeer.exptool.a121._core._mediators import (
+from acconeer.exptool.a121._core.entities import ClientInfo
+from acconeer.exptool.a121._core.mediators import (
     AgnosticClient,
     BufferedLink,
     CommunicationProtocol,

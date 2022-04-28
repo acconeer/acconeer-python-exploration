@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Tuple
 
-from acconeer.exptool.a121._core._entities import Metadata, Result, ServerInfo, SessionConfig
+from acconeer.exptool.a121._core.entities import Metadata, Result, ServerInfo, SessionConfig
 
 from typing_extensions import Protocol
 

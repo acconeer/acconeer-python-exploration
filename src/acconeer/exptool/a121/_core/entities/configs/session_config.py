@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Optional, Union
 
-from ._sensor_config import SensorConfig
+from .sensor_config import SensorConfig
 
 
 class SessionConfig:

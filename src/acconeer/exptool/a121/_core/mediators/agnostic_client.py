@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional, Union
 
-from acconeer.exptool.a121._core._entities import (
+from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     Result,
@@ -10,11 +10,11 @@ from acconeer.exptool.a121._core._entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core._mediators import Recorder
-from acconeer.exptool.a121._core._utils import unextend
+from acconeer.exptool.a121._core.utils import unextend
 
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
+from .recorder import Recorder
 
 
 class ClientError(Exception):

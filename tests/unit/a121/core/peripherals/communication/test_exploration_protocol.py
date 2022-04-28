@@ -5,13 +5,13 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core._entities import (
+from acconeer.exptool.a121._core.entities import (
     ResultContext,
     SensorConfig,
     SensorDataType,
     SessionConfig,
 )
-from acconeer.exptool.a121._core._peripherals import ExplorationProtocol
+from acconeer.exptool.a121._core.peripherals import ExplorationProtocol
 
 
 @pytest.fixture

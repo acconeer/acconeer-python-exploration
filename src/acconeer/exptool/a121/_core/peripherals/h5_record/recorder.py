@@ -7,14 +7,14 @@ from uuid import uuid4
 
 import h5py
 
-from acconeer.exptool.a121._core._entities import (
+from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     Result,
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core._mediators import Recorder
+from acconeer.exptool.a121._core.mediators import Recorder
 
 import importlib_metadata
 
