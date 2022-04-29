@@ -109,6 +109,11 @@ def test_setup_command_simple_session_config():
                     "config": {
                         "subsweeps": [expected_subsweep_dict],
                         "sweeps_per_frame": 1,
+                        "sweep_rate": 0.0,
+                        "frame_rate": 0.0,
+                        "continuous_sweep_mode": False,
+                        "inter_frame_idle_state": "deep_sleep",
+                        "inter_sweep_idle_state": "ready",
                     },
                 },
             ]

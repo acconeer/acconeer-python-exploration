@@ -5,7 +5,7 @@ from typing import Any, Optional, TypeVar
 
 from acconeer.exptool.a121._core.utils import ProxyProperty, convert_validate_int
 
-from .config_enums import PRF, Profile
+from .config_enums import PRF, IdleState, Profile
 from .subsweep_config import SubsweepConfig
 
 
@@ -15,18 +15,20 @@ T = TypeVar("T")
 class SubsweepProxyProperty(ProxyProperty[T]):
     def __init__(self, prop: Any) -> None:
         super().__init__(
-            accessor=self.get_subsweep,
+            accessor=lambda sensor_config: sensor_config.subsweep,
             prop=prop,
         )
 
-    @staticmethod
-    def get_subsweep(sensor_config: SensorConfig) -> SubsweepConfig:
-        return sensor_config.subsweep
-
 
 class SensorConfig:
-    _sweeps_per_frame: int
     _subsweeps: list[SubsweepConfig]
+
+    _sweeps_per_frame: int
+    _sweep_rate: Optional[float]
+    _frame_rate: Optional[float]
+    _continuous_sweep_mode: bool
+    _inter_frame_idle_state: IdleState
+    _inter_sweep_idle_state: IdleState
 
     start_point = SubsweepProxyProperty[int](SubsweepConfig.start_point)
     num_points = SubsweepProxyProperty[int](SubsweepConfig.num_points)
@@ -44,6 +46,11 @@ class SensorConfig:
         subsweeps: Optional[list[SubsweepConfig]] = None,
         num_subsweeps: Optional[int] = None,
         sweeps_per_frame: int = 1,
+        sweep_rate: Optional[float] = None,
+        frame_rate: Optional[float] = None,
+        continuous_sweep_mode: bool = False,
+        inter_frame_idle_state: IdleState = IdleState.DEEP_SLEEP,
+        inter_sweep_idle_state: IdleState = IdleState.READY,
         start_point: Optional[int] = None,
         num_points: Optional[int] = None,
         step_length: Optional[int] = None,
@@ -78,6 +85,11 @@ class SensorConfig:
             raise RuntimeError
 
         self.sweeps_per_frame = sweeps_per_frame
+        self.sweep_rate = sweep_rate
+        self.frame_rate = frame_rate
+        self.continuous_sweep_mode = continuous_sweep_mode
+        self.inter_frame_idle_state = inter_frame_idle_state
+        self.inter_sweep_idle_state = inter_sweep_idle_state
 
         # Init proxy attributes
 
@@ -130,6 +142,11 @@ class SensorConfig:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "sweep_rate": self.sweep_rate,
+            "frame_rate": self.frame_rate,
+            "continuous_sweep_mode": self.continuous_sweep_mode,
+            "inter_frame_idle_state": self.inter_frame_idle_state,
+            "inter_sweep_idle_state": self.inter_sweep_idle_state,
             "sweeps_per_frame": self.sweeps_per_frame,
             "subsweeps": [subsweep.to_dict() for subsweep in self.subsweeps],
         }
@@ -159,3 +176,49 @@ class SensorConfig:
     def sweeps_per_frame(self, value: int) -> None:
         int_value = convert_validate_int(value, min_value=1)
         self._sweeps_per_frame = int_value
+
+    @property
+    def sweep_rate(self) -> Optional[float]:
+        return self._sweep_rate
+
+    @sweep_rate.setter
+    def sweep_rate(self, value: Optional[float]) -> None:
+        if value is None:
+            self._sweep_rate = None
+        else:
+            self._sweep_rate = float(value)
+
+    @property
+    def frame_rate(self) -> Optional[float]:
+        return self._frame_rate
+
+    @frame_rate.setter
+    def frame_rate(self, value: Optional[float]) -> None:
+        if value is None:
+            self._frame_rate = None
+        else:
+            self._frame_rate = float(value)
+
+    @property
+    def continuous_sweep_mode(self) -> bool:
+        return self._continuous_sweep_mode
+
+    @continuous_sweep_mode.setter
+    def continuous_sweep_mode(self, value: bool) -> None:
+        self._continuous_sweep_mode = bool(value)
+
+    @property
+    def inter_frame_idle_state(self) -> IdleState:
+        return self._inter_frame_idle_state
+
+    @inter_frame_idle_state.setter
+    def inter_frame_idle_state(self, value: IdleState) -> None:
+        self._inter_frame_idle_state = IdleState(value)
+
+    @property
+    def inter_sweep_idle_state(self) -> IdleState:
+        return self._inter_sweep_idle_state
+
+    @inter_sweep_idle_state.setter
+    def inter_sweep_idle_state(self, value: IdleState) -> None:
+        self._inter_sweep_idle_state = IdleState(value)

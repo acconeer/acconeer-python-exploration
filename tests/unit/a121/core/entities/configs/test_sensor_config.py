@@ -231,7 +231,15 @@ def test_eq():
 def test_basic_to_dict():
     # Having an explicit SubsweepConfig-dict here is out of scope as
     # SubsweepConfig.to_dict is tested in test_subsweep_config.py
-    expected = {"sweeps_per_frame": 1, "subsweeps": [a121.SubsweepConfig().to_dict()]}
+    expected = {
+        "sweeps_per_frame": 1,
+        "sweep_rate": None,
+        "frame_rate": None,
+        "continuous_sweep_mode": False,
+        "inter_frame_idle_state": a121.IdleState.DEEP_SLEEP,
+        "inter_sweep_idle_state": a121.IdleState.READY,
+        "subsweeps": [a121.SubsweepConfig().to_dict()],
+    }
     assert (
         a121.SensorConfig(sweeps_per_frame=1, subsweeps=[a121.SubsweepConfig()]).to_dict()
         == expected

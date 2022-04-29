@@ -41,3 +41,13 @@ class PRF(IntEnum):
     @classmethod
     def _missing_(cls, value: object) -> Optional[PRF]:
         return search_enum_after_value(cls, value)
+
+
+class IdleState(str, Enum):
+    DEEP_SLEEP = "deep_sleep"
+    SLEEP = "sleep"
+    READY = "ready"
+
+    @classmethod
+    def _missing_(cls, value: object) -> Optional[IdleState]:
+        return search_enum_after_value(cls, value)

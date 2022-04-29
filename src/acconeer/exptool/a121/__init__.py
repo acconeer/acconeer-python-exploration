@@ -5,6 +5,7 @@ from ._core import (
     ClientInfo,
     H5Record,
     H5Recorder,
+    IdleState,
     Metadata,
     PersistentRecord,
     Profile,

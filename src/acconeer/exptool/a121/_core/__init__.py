@@ -1,6 +1,7 @@
 from .entities import (
     PRF,
     ClientInfo,
+    IdleState,
     Metadata,
     PersistentRecord,
     Profile,

@@ -126,6 +126,9 @@ class ExplorationProtocol(CommunicationProtocol):
         result.pop("extended")
 
         result["groups"] = map_over_extended_structure(cls._translate_prf_enums, result["groups"])
+        result["groups"] = map_over_extended_structure(
+            cls._translate_sentiel_values, result["groups"]
+        )
 
         result["cmd"] = "setup"
         result["groups"] = cls._translate_groups_representation(result["groups"])
@@ -142,6 +145,15 @@ class ExplorationProtocol(CommunicationProtocol):
     def _translate_prf_enums(cls, sensor_config_dict: dict[str, Any]) -> dict[str, Any]:
         for subsweep_config_dict in sensor_config_dict["subsweeps"]:
             subsweep_config_dict["prf"] = cls.PRF_MAPPING[subsweep_config_dict["prf"]]
+        return sensor_config_dict
+
+    @classmethod
+    def _translate_sentiel_values(cls, sensor_config_dict: dict[str, Any]) -> dict[str, Any]:
+        """'sweep_rate' and 'frame_rate' has unlocked rate when they are = None.
+        RSS's sentinel is 0.0 (zero)
+        """
+        sensor_config_dict["sweep_rate"] = sensor_config_dict["sweep_rate"] or 0.0
+        sensor_config_dict["frame_rate"] = sensor_config_dict["frame_rate"] or 0.0
         return sensor_config_dict
 
     @classmethod
