@@ -104,6 +104,7 @@ def mypy(session):
     session.install("mypy")
     session.run("python", "-m", "mypy", "-p", "acconeer.exptool.a121")
     session.run("python", "-m", "mypy", "tests/unit/a121")
+    session.run("python", "-m", "mypy", "examples/a121")
 
 
 @nox.session
