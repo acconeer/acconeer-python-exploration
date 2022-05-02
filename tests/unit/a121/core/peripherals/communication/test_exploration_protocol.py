@@ -9,6 +9,7 @@ from acconeer.exptool.a121._core.entities import (
     ResultContext,
     SensorConfig,
     SensorDataType,
+    SensorInfo,
     SessionConfig,
 )
 from acconeer.exptool.a121._core.peripherals import ExplorationProtocol, ServerError
@@ -57,9 +58,11 @@ def test_get_system_info_response():
             },
         }
     ).encode("ascii")
-    expected = a121.ServerInfo(rss_version="v2.9.0", sensor_count=5, ticks_per_second=1000000)
+    expected = a121.ServerInfo(
+        rss_version="v2.9.0", sensor_count=5, ticks_per_second=1000000, sensor_infos={}
+    )
 
-    assert ExplorationProtocol.get_system_info_response(response) == expected
+    assert ExplorationProtocol.get_system_info_response(response, {}) == expected
 
 
 def test_get_sensor_info_command():
@@ -80,7 +83,13 @@ def test_get_sensor_info_response():
             ],
         }
     ).encode("ascii")
-    expected = [1, 3]
+    expected = {
+        1: SensorInfo(connected=True),
+        2: SensorInfo(connected=False),
+        3: SensorInfo(connected=True),
+        4: SensorInfo(connected=False),
+        5: SensorInfo(connected=False),
+    }
 
     assert ExplorationProtocol.get_sensor_info_response(response) == expected
 

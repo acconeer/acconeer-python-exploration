@@ -8,6 +8,7 @@ from .entities import (
     Record,
     Result,
     SensorConfig,
+    SensorInfo,
     ServerInfo,
     SessionConfig,
     SubsweepConfig,

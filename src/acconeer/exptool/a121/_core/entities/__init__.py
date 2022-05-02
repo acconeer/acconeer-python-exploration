@@ -7,5 +7,6 @@ from .containers import (
     Result,
     ResultContext,
     SensorDataType,
+    SensorInfo,
     ServerInfo,
 )

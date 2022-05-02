@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.entities import SensorDataType
+from acconeer.exptool.a121._core.entities import SensorDataType, SensorInfo
 from acconeer.exptool.a121._core.peripherals.h5_record import H5PY_STR_DTYPE
 
 
@@ -35,6 +35,11 @@ def ref_server_info():
         rss_version="0.2.4",
         sensor_count=3,
         ticks_per_second=100,
+        sensor_infos={
+            1: SensorInfo(connected=True),
+            2: SensorInfo(connected=True),
+            3: SensorInfo(connected=True),
+        },
     )
 
 

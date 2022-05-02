@@ -7,6 +7,7 @@ from acconeer.exptool.a121._core.entities import (
     Metadata,
     SensorConfig,
     SensorDataType,
+    SensorInfo,
     ServerInfo,
     SessionConfig,
 )
@@ -34,11 +35,14 @@ def mock_communication_protocol(metadata):
     mock_comm_p = Mock()
     mock_comm_p.get_system_info_command.return_value = b"get_system_info"
     mock_comm_p.get_system_info_response.return_value = ServerInfo(
-        rss_version="rss_version", sensor_count=1, ticks_per_second=1
+        rss_version="rss_version",
+        sensor_count=1,
+        ticks_per_second=1,
+        sensor_infos={1: SensorInfo(connected=True)},
     )
 
     mock_comm_p.get_sensor_info_command.return_value = b"get_sensor_info"
-    mock_comm_p.get_sensor_info_response.return_value = [1]
+    mock_comm_p.get_sensor_info_response.return_value = {1: SensorInfo(connected=True)}
 
     mock_comm_p.setup_command.return_value = b"setup"
     mock_comm_p.setup_response.return_value = [{1: metadata}]

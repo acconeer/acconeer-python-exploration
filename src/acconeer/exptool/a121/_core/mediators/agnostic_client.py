@@ -60,13 +60,13 @@ class AgnosticClient:
         """
         self._link.connect()
 
-        self._link.send(self._protocol.get_system_info_command())
-        sys_response = self._link.recv_until(self._protocol.end_sequence)
-        self._server_info = self._protocol.get_system_info_response(sys_response)
-
         self._link.send(self._protocol.get_sensor_info_command())
         sens_response = self._link.recv_until(self._protocol.end_sequence)
-        _ = self._protocol.get_sensor_info_response(sens_response)
+        sensor_infos = self._protocol.get_sensor_info_response(sens_response)
+
+        self._link.send(self._protocol.get_system_info_command())
+        sys_response = self._link.recv_until(self._protocol.end_sequence)
+        self._server_info = self._protocol.get_system_info_response(sys_response, sensor_infos)
 
     def setup_session(
         self,

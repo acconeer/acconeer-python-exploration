@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from typing import Tuple
 
-from acconeer.exptool.a121._core.entities import Metadata, Result, ServerInfo, SessionConfig
+from acconeer.exptool.a121._core.entities import (
+    Metadata,
+    Result,
+    SensorInfo,
+    ServerInfo,
+    SessionConfig,
+)
 
 from typing_extensions import Protocol
 
@@ -14,7 +20,9 @@ class CommunicationProtocol(Protocol):
         """The `get_system_info` command."""
         ...
 
-    def get_system_info_response(self, bytes_: bytes) -> ServerInfo:
+    def get_system_info_response(
+        self, bytes_: bytes, sensor_infos: dict[int, SensorInfo]
+    ) -> ServerInfo:
         """Reads the response of `get_system_info` and parses it to a `ServerInfo`."""
         ...
 
@@ -22,8 +30,10 @@ class CommunicationProtocol(Protocol):
         """The `get_sensor_info` command."""
         ...
 
-    def get_sensor_info_response(self, bytes_: bytes) -> list[int]:
-        """Reads the response of `get_sensor_info` and returns a list of connected sensor_ids."""
+    def get_sensor_info_response(self, bytes_: bytes) -> dict[int, SensorInfo]:
+        """Reads the response of `get_sensor_info` and returns
+        a dict of the mapping sensor_id -> SensorInfo
+        """
         ...
 
     def setup_command(self, session_config: SessionConfig) -> bytes:

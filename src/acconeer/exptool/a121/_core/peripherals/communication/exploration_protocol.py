@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Literal, Tuple, Union
+from typing import Any, Literal, Optional, Tuple, Union
 
 import attrs
 import numpy as np
@@ -13,6 +13,7 @@ from acconeer.exptool.a121._core.entities import (
     Result,
     ResultContext,
     SensorDataType,
+    SensorInfo,
     ServerInfo,
     SessionConfig,
 )
@@ -50,8 +51,13 @@ class GetSystemInfoResponse(ValidResponse):
     system_info: SystemInfo
 
 
+class SensorInfoDict(TypedDict):
+    connected: bool
+    serial: Optional[str]
+
+
 class GetSensorInfoResponse(ValidResponse):
-    sensor_info: list[dict[Literal["connected"], bool]]
+    sensor_info: list[SensorInfoDict]
 
 
 class MetadataResponse(TypedDict):
@@ -119,7 +125,9 @@ class ExplorationProtocol(CommunicationProtocol):
         return b'{"cmd":"get_system_info"}\n'
 
     @classmethod
-    def get_system_info_response(cls, bytes_: bytes) -> ServerInfo:
+    def get_system_info_response(
+        cls, bytes_: bytes, sensor_infos: dict[int, SensorInfo]
+    ) -> ServerInfo:
         response: GetSystemInfoResponse = json.loads(bytes_)
         cls.check_status(response, expected="ok")
 
@@ -129,6 +137,7 @@ class ExplorationProtocol(CommunicationProtocol):
                 rss_version=system_info["rss_version"],
                 sensor_count=system_info["sensor_count"],
                 ticks_per_second=system_info["ticks_per_second"],
+                sensor_infos=sensor_infos,
             )
         except KeyError as ke:
             raise ExplorationProtocolError(
@@ -140,17 +149,18 @@ class ExplorationProtocol(CommunicationProtocol):
         return b'{"cmd":"get_sensor_info"}\n'
 
     @classmethod
-    def get_sensor_info_response(cls, bytes_: bytes) -> list[int]:
+    def get_sensor_info_response(cls, bytes_: bytes) -> dict[int, SensorInfo]:
         response: GetSensorInfoResponse = json.loads(bytes_)
         cls.check_status(response, expected="ok")
 
-        sensor_info = response["sensor_info"]
+        sensor_infos = response["sensor_info"]
 
-        return [
-            i
-            for i, connected_dict in enumerate(sensor_info, start=1)
-            if connected_dict["connected"]
-        ]
+        return {
+            sensor_id: SensorInfo(
+                connected=sensor_info_dict["connected"], serial=sensor_info_dict.get("serial")
+            )
+            for sensor_id, sensor_info_dict in enumerate(sensor_infos, start=1)
+        }
 
     @classmethod
     def setup_command(cls, session_config: SessionConfig) -> bytes:
