@@ -21,10 +21,20 @@ from acconeer.exptool.a121._core.utils import map_over_extended_structure
 from typing_extensions import TypedDict
 
 
-class Response(TypedDict):
-    status: Union[
-        Literal["ok"], Literal["error"], Literal["start"], Literal["stop"], Literal["end"]
-    ]
+GoodStatus = Union[Literal["ok"], Literal["start"], Literal["stop"], Literal["end"]]
+BadStatus = Literal["error"]
+
+
+class ValidResponse(TypedDict):
+    status: GoodStatus
+
+
+class ErroneousResponse(TypedDict):
+    status: BadStatus
+    message: str
+
+
+AnyResponse = Union[ValidResponse, ErroneousResponse]
 
 
 class SystemInfo(TypedDict):
@@ -35,11 +45,11 @@ class SystemInfo(TypedDict):
     hw: str
 
 
-class GetSystemInfoResponse(Response):
+class GetSystemInfoResponse(ValidResponse):
     system_info: SystemInfo
 
 
-class GetSensorInfoResponse(Response):
+class GetSensorInfoResponse(ValidResponse):
     sensor_info: list[dict[Literal["connected"], bool]]
 
 
@@ -51,7 +61,7 @@ class MetadataResponse(TypedDict):
     data_type: Union[Literal["int_16_complex"], Literal["int_16"], Literal["uint_16"]]
 
 
-class SetupResponse(Response):
+class SetupResponse(ValidResponse):
     tick_period: int
     metadata: list[list[MetadataResponse]]
 
@@ -64,12 +74,16 @@ class ResultInfoDict(TypedDict):
     temperature: int
 
 
-class GetNextHeader(Response):
+class GetNextHeader(ValidResponse):
     result_info: list[list[ResultInfoDict]]
     payload_size: int
 
 
 class ExplorationProtocolError(Exception):
+    pass
+
+
+class ServerError(Exception):
     pass
 
 
@@ -83,6 +97,17 @@ class ExplorationProtocol(CommunicationProtocol):
         PRF.PRF_6_5_MHz: "6_5_MHz",
     }
 
+    @staticmethod
+    def check_status(response: AnyResponse, expected: GoodStatus) -> None:
+        if response["status"] == "error":
+            raise ServerError(response["message"])
+
+        if response["status"] != expected:
+            raise ServerError(
+                f'Unexpected reponse status from server. Was "{response}", '
+                + f'expected "{expected}"'
+            )
+
     @classmethod
     def get_system_info_command(cls) -> bytes:
         return b'{"cmd":"get_system_info"}\n'
@@ -90,6 +115,7 @@ class ExplorationProtocol(CommunicationProtocol):
     @classmethod
     def get_system_info_response(cls, bytes_: bytes) -> ServerInfo:
         response: GetSystemInfoResponse = json.loads(bytes_)
+        cls.check_status(response, expected="ok")
 
         try:
             system_info = response["system_info"]
@@ -110,6 +136,8 @@ class ExplorationProtocol(CommunicationProtocol):
     @classmethod
     def get_sensor_info_response(cls, bytes_: bytes) -> list[int]:
         response: GetSensorInfoResponse = json.loads(bytes_)
+        cls.check_status(response, expected="ok")
+
         sensor_info = response["sensor_info"]
 
         return [
@@ -190,6 +218,8 @@ class ExplorationProtocol(CommunicationProtocol):
         cls, bytes_: bytes, context_session_config: SessionConfig
     ) -> list[dict[int, Metadata]]:
         response: SetupResponse = json.loads(bytes_)
+        cls.check_status(response, expected="ok")
+
         metadata_groups = response["metadata"]
 
         result = []
@@ -224,24 +254,26 @@ class ExplorationProtocol(CommunicationProtocol):
         return b'{"cmd":"start_streaming"}\n'
 
     @classmethod
-    def start_streaming_response(cls, bytes_: bytes) -> bool:
-        response: Response = json.loads(bytes_)
-        return response["status"] == "start"
+    def start_streaming_response(cls, bytes_: bytes) -> None:
+        response: AnyResponse = json.loads(bytes_)
+        cls.check_status(response, "start")
 
     @classmethod
     def stop_streaming_command(cls):
         return b'{"cmd":"stop_streaming"}\n'
 
     @classmethod
-    def stop_streaming_response(cls, bytes_: bytes) -> bool:
-        response: Response = json.loads(bytes_)
-        return response["status"] == "stop"
+    def stop_streaming_response(cls, bytes_: bytes) -> None:
+        response: AnyResponse = json.loads(bytes_)
+        cls.check_status(response, "stop")
 
     @classmethod
     def get_next_header(
         cls, bytes_: bytes, extended_metadata: list[dict[int, Metadata]], ticks_per_second: int
     ) -> Tuple[int, list[dict[int, Result]]]:
         header_dict: GetNextHeader = json.loads(bytes_)
+        cls.check_status(header_dict, expected="ok")
+
         payload_size = header_dict["payload_size"]
 
         extended_partial_results = []
@@ -294,7 +326,7 @@ class ExplorationProtocol(CommunicationProtocol):
             for sensor_id, partial_result in partial_group.items():
                 metadata = partial_result._context.metadata
                 data_type = metadata._data_type
-                end = start + metadata.frame_data_length * 4
+                end = start + metadata.frame_data_length * 4  # 4 = sizeof(int_16_complex)
 
                 raw_frame = bytes_[start:end]
                 np_frame = np.frombuffer(raw_frame, dtype=data_type.value)

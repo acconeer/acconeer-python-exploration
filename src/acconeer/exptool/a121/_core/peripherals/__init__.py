@@ -1,4 +1,4 @@
-from .communication import Client, ExplorationProtocol
+from .communication import Client, ExplorationProtocol, ServerError
 from .h5_record import (
     H5Record,
     H5Recorder,

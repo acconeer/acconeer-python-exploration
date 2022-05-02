@@ -11,7 +11,7 @@ from acconeer.exptool.a121._core.entities import (
     SensorDataType,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.peripherals import ExplorationProtocol
+from acconeer.exptool.a121._core.peripherals import ExplorationProtocol, ServerError
 
 
 @pytest.fixture
@@ -180,10 +180,11 @@ def test_start_streaming_response():
     response_bytes = json.dumps(
         {"status": "start", "payload_size": 0, "message": "Start streaming."}
     ).encode("ascii")
-    assert ExplorationProtocol.start_streaming_response(response_bytes) is True
+    ExplorationProtocol.start_streaming_response(response_bytes)
 
-    error_bytes = json.dumps({"status": "error"}).encode("ascii")
-    assert ExplorationProtocol.start_streaming_response(error_bytes) is False
+    error_bytes = json.dumps({"status": "error", "message": "error"}).encode("ascii")
+    with pytest.raises(ServerError):
+        ExplorationProtocol.start_streaming_response(error_bytes)
 
 
 def test_stop_streaming_command():
@@ -194,15 +195,17 @@ def test_stop_streaming_response():
     response_bytes = json.dumps(
         {"status": "stop", "payload_size": 0, "message": "Stop streaming."}
     ).encode("ascii")
-    assert ExplorationProtocol.stop_streaming_response(response_bytes) is True
+    ExplorationProtocol.stop_streaming_response(response_bytes)
 
-    response_bytes = json.dumps({"status": "error"}).encode("ascii")
-    assert ExplorationProtocol.stop_streaming_response(response_bytes) is False
+    response_bytes = json.dumps({"status": "error", "message": "error"}).encode("ascii")
+    with pytest.raises(ServerError):
+        ExplorationProtocol.stop_streaming_response(response_bytes)
 
 
 def test_get_next_header(single_sweep_metadata):
     get_next_header = json.dumps(
         {
+            "status": "ok",
             "result_info": [
                 [
                     {

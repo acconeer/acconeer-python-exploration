@@ -40,8 +40,10 @@ class CommunicationProtocol(Protocol):
         """The `start_streaming` command."""
         ...
 
-    def start_streaming_response(self, bytes_: bytes) -> bool:
-        """Response of `start_streaming` command. Returns True if it was a success."""
+    def start_streaming_response(self, bytes_: bytes) -> None:
+        """Response of `start_streaming` command. May raise an exception if
+        the server could not start streaming
+        """
         ...
 
     def get_next_header(
@@ -64,6 +66,8 @@ class CommunicationProtocol(Protocol):
         """The `stop_streaming` command"""
         ...
 
-    def stop_streaming_response(self, bytes_: bytes) -> bool:
-        """Response of `stop_streaming` command. Returns True if it was a success."""
+    def stop_streaming_response(self, bytes_: bytes) -> None:
+        """Response of `stop_streaming` command. May raise an exception if
+        the server could not stop streaming
+        """
         ...

@@ -99,7 +99,8 @@ class AgnosticClient:
 
         self._link.send(self._protocol.start_streaming_command())
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
-        self._session_is_started = self._protocol.start_streaming_response(reponse_bytes)
+        self._protocol.start_streaming_response(reponse_bytes)
+        self._session_is_started = True
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         self._assert_session_started()
@@ -128,7 +129,8 @@ class AgnosticClient:
 
         self._link.send(self._protocol.stop_streaming_command())
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
-        self._session_is_started = not self._protocol.stop_streaming_response(reponse_bytes)
+        self._protocol.stop_streaming_response(reponse_bytes)
+        self._session_is_started = False
 
     def disconnect(self) -> None:
         self._assert_connected()
