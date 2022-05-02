@@ -1,6 +1,7 @@
 project = "acconeer-python-exploration"
 copyright = "2019 - 2022, Acconeer AB"
 author = "Acconeer AB"
+html_title = "Acconeer docs"
 
 # version = ""  # The short X.Y version
 # release = ""  # The full version, including alpha/beta/rc tags
@@ -10,6 +11,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
     "sphinx.ext.extlinks",
+    "sphinx_design",
     "myst_parser",
     "sphinxext.rediraffe",
 ]
@@ -53,9 +55,52 @@ exclude_patterns = [
 
 pygments_style = None
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 
 html_css_files = ["css/custom.css"]
+
+html_logo = "_static/logo.svg"
+
+html_sidebars = {
+    "index": [],
+    "disclaimer": [],
+    "**": ["sidebar-nav-bs"],
+}
+
+html_theme_options = {
+    "external_links": [
+        {"name": "Developer", "url": "https://developer.acconeer.com/"},
+    ],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/acconeer/acconeer-python-exploration",
+            "icon": "fab fa-github",
+            "type": "fontawesome",
+        },
+        {
+            "name": "Twitter",
+            "url": "https://twitter.com/acconeer_ab",
+            "icon": "fab fa-twitter",
+        },
+        {
+            "name": "Instagram",
+            "url": "https://instagram.com/acconeerab",
+            "icon": "fab fa-instagram",
+        },
+    ],
+    "navbar_center": [
+        "navbar-nav",
+    ],
+    "navbar_end": [
+        "search-field",
+        "navbar-icon-links",
+    ],
+    "search_bar_text": "Search...",
+    "footer_items": ["copyright", "last-updated"],
+}
+
+html_last_updated_fmt = "%Y-%m-%d"
 
 html_static_path = ["_static"]
 
@@ -99,7 +144,7 @@ latex_elements = {
 # (startdocname, targetname, title, author, documentclass, toctree_only)
 latex_documents = [
     (
-        "sensor_introduction",
+        "exploration_tool/sensor_introduction",
         "sensor_introduction.tex",
         "Sensor Introduction",
         author,
