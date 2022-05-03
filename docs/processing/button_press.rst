@@ -58,14 +58,14 @@ Configuration parameters
 ------------------------
 
 In the implementation, the smoothing factors :math:`\alpha_y` and :math:`\alpha_z` are set through the
-:attr:`~examples.processing.button_press.ProcessingConfiguration.signal_tc_s`
+:attr:`~acconeer.exptool.a111.algo.button_press.ProcessingConfiguration.signal_tc_s`
 and
-:attr:`~examples.processing.button_press.ProcessingConfiguration.rel_dev_tc_s`
+:attr:`~acconeer.exptool.a111.algo.button_press.ProcessingConfiguration.rel_dev_tc_s`
 parameters and the threshold :math:`\lambda` and the minimal button press time :math:`T_{bp}` are set through
-:attr:`~examples.processing.button_press.ProcessingConfiguration.threshold`
+:attr:`~acconeer.exptool.a111.algo.button_press.ProcessingConfiguration.threshold`
 and
-:attr:`~examples.processing.button_press.ProcessingConfiguration.buttonpress_length_s`.
+:attr:`~acconeer.exptool.a111.algo.button_press.ProcessingConfiguration.buttonpress_length_s`.
 
 
-.. autoclass:: acconeer.exptool.a111.algo.button_press._processor.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.button_press.ProcessingConfiguration
    :members:
