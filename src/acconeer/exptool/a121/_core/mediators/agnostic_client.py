@@ -54,6 +54,10 @@ class AgnosticClient:
             raise ClientError("Session is not started.")
 
     def connect(self) -> None:
+        """Connects to the specified host.
+
+        :raises: Exception if the host cannot be connected to.
+        """
         self._link.connect()
 
         self._link.send(self._protocol.get_system_info_command())
@@ -68,6 +72,14 @@ class AgnosticClient:
         self,
         config: Union[SensorConfig, SessionConfig],
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
+        """Sets up the session specified by ``config``.
+
+        :param config: The session to set up.
+        :raises: ClientError if the Client is not connected.
+        :returns:
+            ``Metadata`` if ``config.extended is False``,
+            ``list[dict[int, Metadata]]`` otherwise.
+        """
         self._assert_connected()
 
         if isinstance(config, SensorConfig):
@@ -86,6 +98,14 @@ class AgnosticClient:
             return unextend(self._metadata)
 
     def start_session(self, recorder: Optional[Recorder] = None) -> None:
+        """Starts the already set up session.
+
+        After this call, the server starts streaming data to the client.
+
+        :param recorder:
+            An optional ``Recorder``, which samples every ``get_next()``
+        :raises: ``ClientError`` if ``Client``'s  session is not set up.
+        """
         self._assert_session_setup()
 
         if recorder is not None:
@@ -103,6 +123,14 @@ class AgnosticClient:
         self._session_is_started = True
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
+        """Gets results from the server.
+
+        :returns:
+            A ``Result`` if the setup ``SessionConfig.extended is False``,
+            ``list[dict[int, Result]]`` otherwise.
+        :raises:
+            ``ClientError`` if ``Client``'s session is not started.
+        """
         self._assert_session_started()
 
         payload_size, partial_results = self._protocol.get_next_header(
@@ -122,6 +150,13 @@ class AgnosticClient:
             return unextend(extended_results)
 
     def stop_session(self) -> Any:
+        """Stops an on-going session
+
+        :returns:
+            The return value of the passed ``Recorder.stop()`` passed in ``start_session``.
+        :raises:
+            ``ClientError`` if ``Client``'s session is not started.
+        """
         self._assert_session_started()
 
         if self._recorder is not None:
@@ -133,6 +168,10 @@ class AgnosticClient:
         self._session_is_started = False
 
     def disconnect(self) -> None:
+        """Disconnects the client from the host.
+
+        :raises: ``ClientError`` if ``Client`` is not connected.
+        """
         self._assert_connected()
 
         if self.session_is_started:
@@ -150,28 +189,34 @@ class AgnosticClient:
 
     @property
     def connected(self) -> bool:
+        """Whether this Client is connected."""
         return self._server_info is not None
 
     @property
     def session_is_setup(self) -> bool:
+        """Whether this Client has a session set up."""
         return self._session_config is not None
 
     @property
     def session_is_started(self) -> bool:
+        """Whether this Client's session is started."""
         return self._session_is_started
 
     @property
     def server_info(self) -> ServerInfo:
+        """The ``ServerInfo``."""
         self._assert_connected()
 
         return self._server_info  # type: ignore[return-value]
 
     @property
     def client_info(self) -> ClientInfo:
+        """The ``ClientInfo``."""
         return ClientInfo()
 
     @property
     def session_config(self) -> SessionConfig:
+        """The ``SessionConfig`` passed in ``setup_session``."""
         self._assert_session_setup()
 
         return self._session_config  # type: ignore[return-value]
