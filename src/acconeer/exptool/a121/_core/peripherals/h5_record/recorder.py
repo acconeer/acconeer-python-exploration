@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import os
 from pathlib import Path
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar
 from uuid import uuid4
 
 import h5py
@@ -18,6 +18,8 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.mediators import Recorder
 
 import importlib_metadata
+
+from .utils import PathOrH5File, h5_file_factory
 
 
 T = TypeVar("T")
@@ -46,26 +48,15 @@ class H5Recorder(Recorder):
 
     def __init__(
         self,
-        path_or_file: Union[str, os.PathLike, h5py.File],
+        path_or_file: PathOrH5File,
         mode: str = "x",
         *,
         _lib_version: Optional[str] = None,
         _timestamp: Optional[str] = None,
         _uuid: Optional[str] = None,
     ) -> None:
-        if isinstance(path_or_file, str):
-            path_or_file = Path(path_or_file)
-
-        if isinstance(path_or_file, os.PathLike):  # Typically pathlib.Path
-            self.path = path_or_file
-            self.file = h5py.File(self.path, mode)
-            self.owns_file = True
-        elif isinstance(path_or_file, h5py.File):
-            self.path = None
-            self.file = path_or_file
-            self.owns_file = False
-        else:
-            raise TypeError
+        self.file, self.owns_file = h5_file_factory(path_or_file, h5_file_mode=mode)
+        self.path = Path(self.file.filename) if self.owns_file else None
 
         if _lib_version is None:
             _lib_version = importlib_metadata.version("acconeer-exptool")
