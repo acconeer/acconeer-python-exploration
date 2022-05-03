@@ -15,6 +15,8 @@ SPARSE_IQ_PPC = 24
 
 @attrs.define(init=False)
 class SubsweepConfig:
+    """Configuration of a single subsweep."""
+
     _start_point: int
     _num_points: int
     _step_length: int
@@ -50,6 +52,7 @@ class SubsweepConfig:
 
     @property
     def start_point(self) -> int:
+        """The starting point of the sweep."""
         return self._start_point
 
     @start_point.setter
@@ -58,6 +61,7 @@ class SubsweepConfig:
 
     @property
     def num_points(self) -> int:
+        """Number of data points to measure."""
         return self._num_points
 
     @num_points.setter
@@ -66,6 +70,7 @@ class SubsweepConfig:
 
     @property
     def step_length(self) -> int:
+        """The step length."""
         return self._step_length
 
     @step_length.setter
@@ -81,6 +86,7 @@ class SubsweepConfig:
 
     @property
     def profile(self) -> Profile:
+        """The currently used profile"""
         return self._profile
 
     @profile.setter
@@ -89,6 +95,7 @@ class SubsweepConfig:
 
     @property
     def hwaas(self) -> int:
+        """Hardware accelerated average samples."""
         return self._hwaas
 
     @hwaas.setter
@@ -97,6 +104,7 @@ class SubsweepConfig:
 
     @property
     def receiver_gain(self) -> int:
+        """Receiver gain setting."""
         return self._receiver_gain
 
     @receiver_gain.setter
@@ -105,6 +113,7 @@ class SubsweepConfig:
 
     @property
     def enable_tx(self) -> bool:
+        """Enable or disable the transmitter."""
         return self._enable_tx
 
     @enable_tx.setter
@@ -113,6 +122,7 @@ class SubsweepConfig:
 
     @property
     def phase_enhancement(self) -> bool:
+        """Phase enhancement setting."""
         return self._phase_enhancement
 
     @phase_enhancement.setter
@@ -121,6 +131,7 @@ class SubsweepConfig:
 
     @property
     def prf(self) -> PRF:
+        """Pulse repetition frequency."""
         return self._prf
 
     @prf.setter

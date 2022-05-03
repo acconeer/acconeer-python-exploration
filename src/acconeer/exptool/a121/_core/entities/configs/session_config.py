@@ -7,6 +7,19 @@ from .sensor_config import SensorConfig
 
 
 class SessionConfig:
+    """Configuration of a session.
+
+    A session consists of groups of SensorConfigs.
+    Groups are run sequentially while SensorConfigs in a single group
+    are run in parallel.
+
+    A SessionConfig with multiple SensorConfigs (in a single group or multiple)
+    is considered "extended". Which is reflected in the shape of some return types.
+
+    A SessionConfig with a single SensorConfig is not extended, but the return values can
+    be passed as extended with the keyword argument `extended=True`
+    """
+
     _groups: list[dict[int, SensorConfig]]
 
     def __init__(
@@ -40,14 +53,21 @@ class SessionConfig:
 
     @property
     def extended(self) -> bool:
+        """Extended."""
         return self._extended
 
     @property
     def update_rate(self) -> Optional[float]:
+        """Update rate.
+
+        The update rate in Hz. Must be > 0,
+        `update_rate = None` is interpreted as unlimited.
+        """
         return self._update_rate
 
     @update_rate.setter
     def update_rate(self, value: Optional[float]) -> None:
+        # TODO: convert_validate_float?
         if value is not None:
             if value < 0:
                 raise ValueError("update_rate must be > 0")
@@ -60,6 +80,7 @@ class SessionConfig:
 
     @property
     def sensor_id(self) -> int:
+        """If not extended, retrieves the `sensor_id`."""
         self._assert_not_extended()
         (group,) = self._groups
         (sensor_id,) = group.keys()
@@ -67,6 +88,7 @@ class SessionConfig:
 
     @property
     def sensor_config(self) -> SensorConfig:
+        """If not extended, retrieves the `session_config`."""
         self._assert_not_extended()
         (group,) = self._groups
         (sensor_config,) = group.values()

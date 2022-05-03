@@ -16,6 +16,8 @@ def search_enum_after_value(enum: Type[T], value: object) -> Optional[T]:
 
 @unique
 class Profile(IntEnum):
+    """Profile."""
+
     PROFILE_1 = 1
     PROFILE_2 = 2
     PROFILE_3 = 3
@@ -29,6 +31,8 @@ class Profile(IntEnum):
 
 @unique
 class PRF(IntEnum):
+    """Pulse Repetition Frequency."""
+
     PRF_19_5_MHz = 19500000
     PRF_13_0_MHz = 13000000
     PRF_8_7_MHz = 8700000
@@ -43,7 +47,18 @@ class PRF(IntEnum):
         return search_enum_after_value(cls, value)
 
 
+@unique
 class IdleState(str, Enum):
+    """Idle state.
+
+    Idle state ``DEEP_SLEEP`` is the deepest state where as much of the
+    sensor hardware as possible is shut down and idle state ``READY`` is
+    the lightest state where most of the sensor hardware is kept on.
+
+    ``DEEP_SLEEP`` is the slowest to transition from while ``READY`` is
+    the fastest.
+    """
+
     DEEP_SLEEP = "deep_sleep"
     SLEEP = "sleep"
     READY = "ready"

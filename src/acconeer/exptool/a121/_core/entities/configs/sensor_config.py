@@ -21,6 +21,8 @@ class SubsweepProxyProperty(ProxyProperty[T]):
 
 
 class SensorConfig:
+    """Configuration of a single sensor"""
+
     _subsweeps: list[SubsweepConfig]
 
     _sweeps_per_frame: int
@@ -63,10 +65,10 @@ class SensorConfig:
     ) -> None:
         if subsweeps is not None and num_subsweeps is not None:
             raise ValueError(
-                "It's not allowed to set both subsweeps and num_subsweeps. Choose one."
+                "It is not allowed to pass both `subsweeps` and `num_subsweeps`. Choose one."
             )
         if subsweeps == []:
-            raise ValueError("Cannot pass an empty subsweeps list.")
+            raise ValueError("Cannot pass an empty `subsweeps` list.")
 
         if subsweeps is not None and hwaas is not None:
             raise ValueError(
@@ -113,24 +115,26 @@ class SensorConfig:
             self.prf = prf
 
     def _assert_single_subsweep(self) -> None:
-        if self.num_subsweeps > 1:
-            raise AttributeError("num_subsweeps is > 1.")
+        if self.num_subsweeps != 1:
+            raise AttributeError("num_subsweeps is != 1.")
 
     @property
     def subsweep(self) -> SubsweepConfig:
         """Convenience attribute for accessing the one and only SubsweepConfig.
 
-        raises an AttributeError if num_subsweeps > 1
+        :raises: AttributeError if ``num_subsweeps`` != 1
         """
         self._assert_single_subsweep()
         return self.subsweeps[0]
 
     @property
     def subsweeps(self) -> list[SubsweepConfig]:
+        """The list of used subsweep configurations."""
         return self._subsweeps
 
     @property
     def num_subsweeps(self) -> int:
+        """The number of used subsweep configurations."""
         return len(self.subsweeps)
 
     def __eq__(self, other: Any) -> bool:
@@ -166,9 +170,9 @@ class SensorConfig:
 
     @property
     def sweeps_per_frame(self) -> int:
-        """Number of sweeps per frame (SPF).
+        """Sweeps per frame.
 
-        Must be greater than or equal to 1.
+        Must be > 0.
         """
         return self._sweeps_per_frame
 
@@ -179,6 +183,11 @@ class SensorConfig:
 
     @property
     def sweep_rate(self) -> Optional[float]:
+        """Sweep rate.
+
+        The sweep rate in Hz. Must be > 0,
+        ``None`` is interpreted as max sweep rate.
+        """
         return self._sweep_rate
 
     @sweep_rate.setter
@@ -186,10 +195,16 @@ class SensorConfig:
         if value is None:
             self._sweep_rate = None
         else:
+            # TODO: convert_validate_float?
             self._sweep_rate = float(value)
 
     @property
     def frame_rate(self) -> Optional[float]:
+        """Frame rate.
+
+        The frame rate in Hz. Must be > 0,
+        ``None`` is interpreted as unlimited.
+        """
         return self._frame_rate
 
     @frame_rate.setter
@@ -197,26 +212,56 @@ class SensorConfig:
         if value is None:
             self._frame_rate = None
         else:
+            # TODO: convert_validate_float?
             self._frame_rate = float(value)
 
     @property
     def continuous_sweep_mode(self) -> bool:
+        """Continuous sweep mode.
+
+        In continuous sweep mode the timing will be identical over all sweeps, not
+        just the sweeps in a frame.
+
+        Constraints:
+        * Frame rate must be set to unlimited (``None``).
+        * Sweep rate must be set (``> 0``).
+        * Inter frame idle state must be set equal to inter sweep idle state.
+        """
         return self._continuous_sweep_mode
 
     @continuous_sweep_mode.setter
     def continuous_sweep_mode(self, value: bool) -> None:
+        # TODO: Enforce constraints
         self._continuous_sweep_mode = bool(value)
 
     @property
     def inter_frame_idle_state(self) -> IdleState:
+        """Inter frame idle state.
+
+        The inter frame idle state is the state the sensor idles in
+        between each frame.
+
+        See also :class:`.config_enums.IdleState`.
+
+        The inter frame idle state of the frame must be deeper or
+        the same as the inter sweep idle state.
+        """
         return self._inter_frame_idle_state
 
     @inter_frame_idle_state.setter
     def inter_frame_idle_state(self, value: IdleState) -> None:
+        # TODO: enforce this being deeper or as deep as inter sweep idle state
         self._inter_frame_idle_state = IdleState(value)
 
     @property
     def inter_sweep_idle_state(self) -> IdleState:
+        """Inter sweep idle state.
+
+        The inter frame idle state is the state the sensor idles in
+        between each sweep in a frame.
+
+        See also :class:`.config_enums.IdleState`.
+        """
         return self._inter_sweep_idle_state
 
     @inter_sweep_idle_state.setter
