@@ -132,7 +132,7 @@ well enough over varying circumstances. Define the ramp function :math:`f` accor
 With this ramp function, a smoothly filtered amplitude observable with background subtraction
 is calculated according to
 
-.. math:: z(d) = f\left(y(d)\big/x_{\textrm{BG}} - 1\right)\max\left(y(d) - x_{\textrm{BG}}, 0\right).
+.. math:: z(d) = f\left(y(d)\big/x_{\textrm{BG}}\right)\max\left(y(d) - x_{\textrm{BG}}, 0\right).
 
 The intensity of the radar reflection from a flat surface falls off as :math:`d^{-2}` with
 distance and that corresponds to a proportionality to :math:`d^{-1}` for the signal amplitude.
