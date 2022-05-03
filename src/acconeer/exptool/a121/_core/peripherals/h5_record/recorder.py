@@ -19,8 +19,6 @@ from acconeer.exptool.a121._core.mediators import Recorder
 
 import importlib_metadata
 
-from .record import H5Record
-
 
 T = TypeVar("T")
 
@@ -156,8 +154,6 @@ class H5Recorder(Recorder):
     def stop(self) -> Any:
         if self.owns_file:
             self.file.close()
-
-        return H5Record(self.file)
 
     @staticmethod
     def create_result_datasets(g: h5py.Group, metadata: Metadata) -> None:
