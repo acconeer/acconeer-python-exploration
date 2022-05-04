@@ -10,3 +10,14 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :hidden:
 
    Overview <self>
+
+.. raw:: latex
+
+   \part{Pulsed Coherent Radar}
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: Pulsed Coherent Radar
+
+   radar_principles
