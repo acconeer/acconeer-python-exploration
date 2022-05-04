@@ -21,6 +21,7 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :caption: Pulsed Coherent Radar
 
    radar_principles
+   physical_integration
 
 .. raw:: latex
 
