@@ -21,3 +21,13 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :caption: Pulsed Coherent Radar
 
    radar_principles
+
+.. raw:: latex
+
+   \part{A111}
+
+.. toctree::
+   :hidden:
+   :caption: A111
+
+   a111/profiles
