@@ -18,7 +18,7 @@ Acconeer documentation pages
       :octicon:`rocket;5em;sd-text-secondary;`
 
       New to Acconeer radar technology?
-      The *Getting started* page helps you get up and running to Explore the Next Sense!
+      The *Getting started* page helps you get up and running to explore the next sense!
 
       +++
 
