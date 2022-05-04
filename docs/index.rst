@@ -12,6 +12,7 @@ Table of contents
    sensor_introduction
    gui/index
    api_ref
+   api_ref_a121
    file_format_ref
    faq
    changelog
