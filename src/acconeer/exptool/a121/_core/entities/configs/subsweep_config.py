@@ -50,6 +50,9 @@ class SubsweepConfig:
         self.phase_enhancement = phase_enhancement
         self.prf = prf
 
+    def validate(self) -> None:
+        pass
+
     @property
     def start_point(self) -> int:
         """The starting point of the sweep."""

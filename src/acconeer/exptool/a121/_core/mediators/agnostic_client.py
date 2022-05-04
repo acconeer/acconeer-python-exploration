@@ -75,7 +75,10 @@ class AgnosticClient:
         """Sets up the session specified by ``config``.
 
         :param config: The session to set up.
-        :raises: ClientError if the Client is not connected.
+        :raises:
+            ``ClientError`` if the Client is not connected
+            or ``ValueError`` if the config is invalid.
+
         :returns:
             ``Metadata`` if ``config.extended is False``,
             ``list[dict[int, Metadata]]`` otherwise.
@@ -84,6 +87,8 @@ class AgnosticClient:
 
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
+
+        config.validate()
 
         self._link.send(self._protocol.setup_command(config))
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)

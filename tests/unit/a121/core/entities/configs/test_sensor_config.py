@@ -287,3 +287,20 @@ def test_get_and_set_proxy_properties(attribute, non_default_value):
     assert getattr(sensor_config, attribute) == getattr(subsweep_config, attribute)
     setattr(sensor_config, attribute, non_default_value)
     assert getattr(sensor_config, attribute) == getattr(subsweep_config, attribute)
+
+
+def test_validating_an_invalid_config_raises_error():
+    config = a121.SensorConfig()
+    config.inter_frame_idle_state = a121.IdleState.READY
+    config.inter_sweep_idle_state = a121.IdleState.DEEP_SLEEP
+
+    with pytest.raises(ValueError):
+        config.validate()
+
+    config = a121.SensorConfig()
+    config.continuous_sweep_mode = True
+    config.frame_rate = None
+    config.sweep_rate = None  # <- should be > 0
+
+    with pytest.raises(ValueError):
+        config.validate()

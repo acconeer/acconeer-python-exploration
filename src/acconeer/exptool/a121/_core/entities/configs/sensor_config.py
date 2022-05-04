@@ -168,6 +168,33 @@ class SensorConfig:
     def from_json(cls, json_str: str) -> SensorConfig:
         return cls.from_dict(json.loads(json_str))
 
+    def validate(self) -> None:
+        """Preforms self-validation.
+
+        :raises: ``ValueError`` if the config is invalid.
+        """
+        # TODO: ValueErrors are the wrong Exception type for this.
+        if self.continuous_sweep_mode:
+            if self.frame_rate is not None:
+                raise ValueError("Frame rate must unset (`None`) to use continuous sweep mode.")
+
+            if self.sweep_rate is None:
+                raise ValueError("Sweep rate must set (`> 0`) to use continuous sweep mode.")
+
+            if self.inter_frame_idle_state != self.inter_sweep_idle_state:
+                raise ValueError("Idles states must be equal to use continuous sweep mode.")
+
+        if not (
+            self.inter_frame_idle_state.is_deeper_than(self.inter_sweep_idle_state)
+            or self.inter_frame_idle_state == self.inter_sweep_idle_state
+        ):
+            raise ValueError(
+                "Inter frame idle state needs to be deeper or the same as inter sweep idle state"
+            )
+
+        for subsweep_config in self.subsweeps:
+            subsweep_config.validate()
+
     @property
     def sweeps_per_frame(self) -> int:
         """Sweeps per frame.
@@ -229,7 +256,6 @@ class SensorConfig:
 
     @continuous_sweep_mode.setter
     def continuous_sweep_mode(self, value: bool) -> None:
-        # TODO: Enforce constraints
         self._continuous_sweep_mode = bool(value)
 
     @property
@@ -248,7 +274,6 @@ class SensorConfig:
 
     @inter_frame_idle_state.setter
     def inter_frame_idle_state(self, value: IdleState) -> None:
-        # TODO: enforce this being deeper or as deep as inter sweep idle state
         self._inter_frame_idle_state = IdleState(value)
 
     @property

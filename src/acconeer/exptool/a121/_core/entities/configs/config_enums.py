@@ -89,3 +89,6 @@ class IdleState(IntEnum):
             return find_by_lowercase_name(cls, value)
 
         return None
+
+    def is_deeper_than(self, other: IdleState) -> bool:
+        return self < other

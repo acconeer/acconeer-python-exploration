@@ -39,7 +39,7 @@ class SessionConfig:
             self._groups = [{1: SensorConfig()}]
         else:
             self._groups = _unsqueeze_groups(arg)
-        _validate_groups(self._groups)
+        _validate_groups_structure(self._groups)
 
         num_entries = sum(len(g) for g in self._groups)
         must_be_extended = num_entries > 1
@@ -77,6 +77,15 @@ class SessionConfig:
     def _assert_not_extended(self):
         if self.extended:
             raise RuntimeError("This operation requires SessionConfig not to be extended.")
+
+    def validate(self) -> None:
+        """Preforms self-validation and validation of SensorConfigs
+
+        :raises: ``ValueError`` if anything is invalid
+        """
+        for group in self._groups:
+            for _, sensor_config in group.items():
+                sensor_config.validate()
 
     @property
     def sensor_id(self) -> int:
@@ -168,7 +177,7 @@ def _unsqueeze_groups(
     raise ValueError
 
 
-def _validate_groups(groups):
+def _validate_groups_structure(groups):
     if len(groups) < 1:
         raise ValueError
 
