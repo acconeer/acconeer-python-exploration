@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from typing import Any, Optional, Union
 
+from acconeer.exptool.a121._core import utils
+
 from .sensor_config import SensorConfig
 
 
@@ -67,12 +69,10 @@ class SessionConfig:
 
     @update_rate.setter
     def update_rate(self, value: Optional[float]) -> None:
-        # TODO: convert_validate_float?
-        if value is not None:
-            if value < 0:
-                raise ValueError("update_rate must be > 0")
-
-        self._update_rate = value
+        if value is None:
+            self._update_rate = None
+        else:
+            self._update_rate = utils.validate_float(value, min_value=0.0, inclusive=False)
 
     def _assert_not_extended(self):
         if self.extended:

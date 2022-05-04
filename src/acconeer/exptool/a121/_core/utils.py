@@ -8,6 +8,8 @@ T = TypeVar("T")
 KeyT = TypeVar("KeyT")
 ValueT = TypeVar("ValueT")
 
+Number = Union[int, float]
+
 
 class ProxyProperty(Generic[T]):
     """
@@ -93,6 +95,47 @@ def unextend(structure: list[dict[int, T]]) -> T:
         raise ValueError(f"Could not unextend the structure {structure}") from e
 
 
+def _convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
+    try:
+        # May raise ValueError if e.g. "value" is a non-int string
+        converted_value = factory(value)
+
+        if converted_value != value:
+            # E.g. int("3") != "3", int(3.5) != 3.5. is catched here.
+            raise ValueError
+
+        return converted_value
+    except ValueError:
+        raise TypeError(f"{value} cannot be converted with {factory}")
+
+
+def _check_bounds(
+    value: Number,
+    lower_bound: Optional[Number] = None,
+    upper_bound: Optional[Number] = None,
+    inclusive: bool = True,
+) -> None:
+    """Raises a ValueError if:
+    * ``value`` is not in [lower_bound, upper_bound], if inclusive = True
+    * ``value`` is not in (lower_bound, upper_bound), if inclusive = False
+    """
+    exclusive = not inclusive
+
+    boundaries = f"{lower_bound}, {upper_bound}"
+    interval = f"({boundaries})" if exclusive else f"[{boundaries}]"
+    error = ValueError(f"{value} needs to be in {interval}")
+
+    if lower_bound is not None and (
+        (exclusive and value <= lower_bound) or (inclusive and value < lower_bound)
+    ):
+        raise error
+
+    if upper_bound is not None and (
+        (exclusive and value >= upper_bound) or (inclusive and value > upper_bound)
+    ):
+        raise error
+
+
 def convert_validate_int(
     value: Union[float, int], max_value: Optional[int] = None, min_value: Optional[int] = None
 ) -> int:
@@ -105,20 +148,32 @@ def convert_validate_int(
     :raises: TypeError if value is a string or a float with decimals
     :raises: ValueError if value does not agree with max_value and min_value
     """
-    try:
-        int_value = int(value)  # may raise ValueError if "value" is a non-int string
-        if int_value != value:  # catches e.g. int("3") != "3", int(3.5) != 3.5.
-            raise ValueError
-    except ValueError:
-        raise TypeError(f"{value} cannot be fully represented as an int.")
-
-    if max_value is not None and int_value > max_value:
-        raise ValueError(f"Cannot be greater than {max_value}")
-
-    if min_value is not None and int_value < min_value:
-        raise ValueError(f"Cannot be less than {min_value}")
-
+    int_value = _convert_value(value, factory=int)
+    _check_bounds(int_value, lower_bound=min_value, upper_bound=max_value, inclusive=True)
     return int_value
+
+
+def validate_float(
+    value: float,
+    max_value: Optional[float] = None,
+    min_value: Optional[float] = None,
+    inclusive: bool = True,
+) -> float:
+    """Converts an argument to a float.
+
+    :param value: The argument to be converted and boundary checked
+    :param max_value: Maximum value allowed
+    :param min_value: Minimum value allowed
+    :param inclusive:
+        Whether the bounds ``max_value`` and ``min_value`` should be considered inclusive.
+        E.g. value = 0.0, min_value = 0.0, inclusive = False raises a ValueError.
+
+    :raises: TypeError if value cannot be converted to a float.
+    :raises: ValueError if value does not agree with max_value and min_value
+    """
+    float_value = _convert_value(value, factory=float)
+    _check_bounds(float_value, lower_bound=min_value, upper_bound=max_value, inclusive=inclusive)
+    return float_value
 
 
 def is_multiple_of(multiplier: int, product: int) -> bool:

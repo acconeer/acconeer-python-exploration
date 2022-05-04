@@ -26,6 +26,32 @@ def test_convert_validate_int_boundaries():
         _ = utils.convert_validate_int(1, max_value=0)
 
 
+def test_validate_float_ok_value():
+    _ = utils.validate_float(3.1)
+    _ = utils.validate_float(3.1, max_value=3.1)
+    _ = utils.validate_float(3.1, min_value=3.1)
+    _ = utils.validate_float(3.1, min_value=3.0, max_value=3.2)
+
+
+def test_validate_float_type_errors():
+    with pytest.raises(TypeError):
+        _ = utils.validate_float("3.1")
+
+
+def test_validate_float_boundaries():
+    with pytest.raises(ValueError):
+        _ = utils.validate_float(0.0, min_value=1.0)
+
+    with pytest.raises(ValueError):
+        _ = utils.validate_float(1.0, max_value=0.0)
+
+    with pytest.raises(ValueError):
+        _ = utils.validate_float(0.0, max_value=0.0, inclusive=False)
+
+    with pytest.raises(ValueError):
+        _ = utils.validate_float(0.1, min_value=0.0, max_value=0.1, inclusive=False)
+
+
 class Wrappee:
     def __init__(self):
         self._rw_property = 10

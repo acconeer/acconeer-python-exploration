@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Optional, TypeVar
 
-from acconeer.exptool.a121._core.utils import ProxyProperty, convert_validate_int
+from acconeer.exptool.a121._core import utils
 
 from .config_enums import PRF, IdleState, Profile
 from .subsweep_config import SubsweepConfig
@@ -12,7 +12,7 @@ from .subsweep_config import SubsweepConfig
 T = TypeVar("T")
 
 
-class SubsweepProxyProperty(ProxyProperty[T]):
+class SubsweepProxyProperty(utils.ProxyProperty[T]):
     def __init__(self, prop: Any) -> None:
         super().__init__(
             accessor=lambda sensor_config: sensor_config.subsweep,
@@ -178,7 +178,7 @@ class SensorConfig:
 
     @sweeps_per_frame.setter
     def sweeps_per_frame(self, value: int) -> None:
-        int_value = convert_validate_int(value, min_value=1)
+        int_value = utils.convert_validate_int(value, min_value=1)
         self._sweeps_per_frame = int_value
 
     @property
@@ -195,8 +195,7 @@ class SensorConfig:
         if value is None:
             self._sweep_rate = None
         else:
-            # TODO: convert_validate_float?
-            self._sweep_rate = float(value)
+            self._sweep_rate = utils.validate_float(value, min_value=0.0, inclusive=False)
 
     @property
     def frame_rate(self) -> Optional[float]:
@@ -212,8 +211,7 @@ class SensorConfig:
         if value is None:
             self._frame_rate = None
         else:
-            # TODO: convert_validate_float?
-            self._frame_rate = float(value)
+            self._frame_rate = utils.validate_float(value, min_value=0.0, inclusive=False)
 
     @property
     def continuous_sweep_mode(self) -> bool:
