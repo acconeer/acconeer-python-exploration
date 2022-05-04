@@ -69,7 +69,7 @@ html_sidebars = {
 
 html_theme_options = {
     "external_links": [
-        {"name": "Developer", "url": "https://developer.acconeer.com/"},
+        {"name": "Developer site", "url": "https://developer.acconeer.com/"},
     ],
     "icon_links": [
         {
