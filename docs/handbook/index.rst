@@ -32,3 +32,4 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :caption: A111
 
    a111/profiles
+   a111/typical_ranges
