@@ -8,6 +8,7 @@ import numpy as np
 
 from acconeer.exptool.a121._core.entities import (
     PRF,
+    IdleState,
     Metadata,
     Result,
     ResultContext,
@@ -96,6 +97,11 @@ class ExplorationProtocol(CommunicationProtocol):
         PRF.PRF_8_7_MHz: "8_7_MHz",
         PRF.PRF_6_5_MHz: "6_5_MHz",
     }
+    IDLE_STATE_MAPPING = {
+        IdleState.DEEP_SLEEP: "deep_sleep",
+        IdleState.SLEEP: "sleep",
+        IdleState.READY: "ready",
+    }
 
     @staticmethod
     def check_status(response: AnyResponse, expected: GoodStatus) -> None:
@@ -155,6 +161,9 @@ class ExplorationProtocol(CommunicationProtocol):
 
         result["groups"] = map_over_extended_structure(cls._translate_prf_enums, result["groups"])
         result["groups"] = map_over_extended_structure(
+            cls._translate_idle_state_enums, result["groups"]
+        )
+        result["groups"] = map_over_extended_structure(
             cls._translate_sentiel_values, result["groups"]
         )
 
@@ -173,6 +182,16 @@ class ExplorationProtocol(CommunicationProtocol):
     def _translate_prf_enums(cls, sensor_config_dict: dict[str, Any]) -> dict[str, Any]:
         for subsweep_config_dict in sensor_config_dict["subsweeps"]:
             subsweep_config_dict["prf"] = cls.PRF_MAPPING[subsweep_config_dict["prf"]]
+        return sensor_config_dict
+
+    @classmethod
+    def _translate_idle_state_enums(cls, sensor_config_dict: dict[str, Any]) -> dict[str, Any]:
+        sensor_config_dict["inter_frame_idle_state"] = cls.IDLE_STATE_MAPPING[
+            sensor_config_dict["inter_frame_idle_state"]
+        ]
+        sensor_config_dict["inter_sweep_idle_state"] = cls.IDLE_STATE_MAPPING[
+            sensor_config_dict["inter_sweep_idle_state"]
+        ]
         return sensor_config_dict
 
     @classmethod

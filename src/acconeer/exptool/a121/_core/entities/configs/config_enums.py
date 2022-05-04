@@ -7,9 +7,23 @@ from typing import Optional, Type, TypeVar
 T = TypeVar("T", bound=Enum)
 
 
-def search_enum_after_value(enum: Type[T], value: object) -> Optional[T]:
+def find_by_value(enum: Type[T], value: object) -> Optional[T]:
     for member in enum:
-        if member.name == value or member.value == value:
+        if member.value == value:
+            return member
+    return None
+
+
+def find_by_name(enum: Type[T], name: object) -> Optional[T]:
+    for member in enum:
+        if member.name == name:
+            return member
+    return None
+
+
+def find_by_lowercase_name(enum: Type[T], lowercase_name: object) -> Optional[T]:
+    for member in enum:
+        if member.name.lower() == lowercase_name:
             return member
     return None
 
@@ -26,7 +40,7 @@ class Profile(IntEnum):
 
     @classmethod
     def _missing_(cls, value: object) -> Optional[Profile]:
-        return search_enum_after_value(cls, value)
+        return find_by_value(cls, value) or find_by_name(cls, value)
 
 
 @unique
@@ -44,11 +58,11 @@ class PRF(IntEnum):
 
     @classmethod
     def _missing_(cls, value: object) -> Optional[PRF]:
-        return search_enum_after_value(cls, value)
+        return find_by_value(cls, value) or find_by_name(cls, value)
 
 
 @unique
-class IdleState(str, Enum):
+class IdleState(IntEnum):
     """Idle state.
 
     Idle state ``DEEP_SLEEP`` is the deepest state where as much of the
@@ -59,10 +73,19 @@ class IdleState(str, Enum):
     the fastest.
     """
 
-    DEEP_SLEEP = "deep_sleep"
-    SLEEP = "sleep"
-    READY = "ready"
+    DEEP_SLEEP = 0
+    SLEEP = 1
+    READY = 2
 
     @classmethod
     def _missing_(cls, value: object) -> Optional[IdleState]:
-        return search_enum_after_value(cls, value)
+        if find_by_value(cls, value) is not None:
+            return find_by_value(cls, value)
+
+        if find_by_name(cls, value) is not None:
+            return find_by_name(cls, value)
+
+        if find_by_lowercase_name(cls, value) is not None:
+            return find_by_lowercase_name(cls, value)
+
+        return None

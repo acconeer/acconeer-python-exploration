@@ -26,3 +26,20 @@ def test_prf_init():
         == a121.PRF(13e6)  # type: ignore[arg-type]
         == a121.PRF("PRF_13_0_MHz")  # type: ignore[arg-type]
     )
+
+
+def test_idle_state_init():
+    assert (
+        a121.IdleState.DEEP_SLEEP
+        == a121.IdleState(a121.IdleState.DEEP_SLEEP)
+        == a121.IdleState("DEEP_SLEEP")  # type: ignore[arg-type]
+        == a121.IdleState("deep_sleep")  # type: ignore[arg-type]
+    )
+
+
+def test_idle_state_order():
+    """This asserts that "depth" of IdleStates can be correctly compared.
+    Deeper <=> lower value.
+    """
+    assert a121.IdleState.DEEP_SLEEP < a121.IdleState.SLEEP
+    assert a121.IdleState.SLEEP < a121.IdleState.READY
