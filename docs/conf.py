@@ -145,9 +145,9 @@ latex_elements = {
 # (startdocname, targetname, title, author, documentclass, toctree_only)
 latex_documents = [
     (
-        "exploration_tool/sensor_introduction",
-        "sensor_introduction.tex",
-        "Sensor Introduction",
+        "handbook/index",
+        "handbook.tex",
+        "Handbook",
         author,
         "howto",
         False,
