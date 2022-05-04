@@ -8,8 +8,87 @@ Acconeer documentation pages
    handbook/index
    exploration_tool/index
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam et ipsum at elit luctus pellentesque blandit at ipsum. Mauris sodales mollis justo id dapibus. Morbi fermentum tincidunt ipsum, in ullamcorper purus consectetur ac. Nam sit amet mauris sit amet neque imperdiet ullamcorper. Maecenas elementum malesuada luctus. Morbi consequat nisi a lectus cursus, quis viverra purus semper. Sed lacus purus, blandit at massa eget, iaculis pharetra justo. Nam pellentesque finibus lectus nec auctor. Nullam convallis erat nec ante luctus sagittis. Nulla malesuada iaculis volutpat. Donec vel dui pretium, bibendum arcu id, hendrerit nibh.
+.. grid:: 1 2 2 2
+   :gutter: 4
 
-Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt mauris sed pellentesque ultrices. In tincidunt dui elementum, iaculis lectus a, iaculis nisl. In in maximus turpis, vitae molestie eros. Sed consequat euismod dolor. Nam tempus ante id ultricies hendrerit. Praesent non ex finibus, mattis enim sagittis, dignissim ante. Nam at nunc sed metus viverra sagittis a id est. Phasellus auctor facilisis egestas. Praesent varius magna ac diam consectetur bibendum. Vestibulum dignissim nisl a ipsum elementum, scelerisque rutrum lorem malesuada.
+   .. grid-item-card::
+
+      .. rst-class:: center
+
+      :octicon:`rocket;5em;sd-text-secondary;`
+
+      New to Acconeer radar technology?
+      The *Getting started* page helps you get up and running to Explore the Next Sense!
+
+      +++
+
+      .. button-ref:: getting_started/index
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Getting started**
+
+   .. grid-item-card::
+
+      .. rst-class:: center
+
+      :octicon:`mortar-board;5em;sd-text-secondary;`
+
+      Already up and running and want to learn more?
+      The *Handbook* provides in-depth information on a wide range of topics.
+
+      +++
+
+      .. button-ref:: handbook/index
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Handbook**
+
+   .. grid-item-card::
+
+      .. rst-class:: center
+
+      :octicon:`tools;5em;sd-text-secondary;`
+
+      The *Exploration Tool* page covers information related to that project,
+      such as API and file format reference.
+
+      +++
+
+      .. button-ref:: exploration_tool/index
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Exploration Tool**
+
+   .. grid-item-card::
+
+      .. rst-class:: center
+
+      :octicon:`archive;5em;sd-text-secondary;`
+
+      Looking for software downloads and additional resources?
+      Head over to the developer site.
+
+      +++
+
+      .. button-link:: https://developer.acconeer.com
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Developer site**
 
 :doc:`disclaimer`
