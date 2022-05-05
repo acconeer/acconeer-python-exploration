@@ -73,7 +73,7 @@ class H5Record(PersistentRecord):
 
     @property
     def session_config(self) -> SessionConfig:
-        return SessionConfig.from_json(self.file["session_config"][()])
+        return SessionConfig.from_json(self.file["session/session_config"][()])
 
     @property
     def timestamp(self) -> str:

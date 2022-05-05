@@ -154,7 +154,10 @@ def ref_record_file(
 
         session_config_data = ref_session_config.to_json()
         f.create_dataset(
-            "session_config", data=session_config_data, dtype=H5PY_STR_DTYPE, track_times=False
+            "session/session_config",
+            data=session_config_data,
+            dtype=H5PY_STR_DTYPE,
+            track_times=False,
         )
 
         zero_array = np.zeros(ref_num_frames, dtype=int)

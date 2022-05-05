@@ -108,14 +108,15 @@ class H5Recorder(Recorder):
             dtype=H5PY_STR_DTYPE,
             track_times=False,
         )
-        self.file.create_dataset(
+
+        session_group = self.file.create_group("session")
+
+        session_group.create_dataset(
             "session_config",
             data=session_config.to_json(),
             dtype=H5PY_STR_DTYPE,
             track_times=False,
         )
-
-        session_group = self.file.create_group("session")
 
         for i, metadata_group_dict in enumerate(extended_metadata):
             group_group = session_group.create_group(f"group_{i}")
