@@ -1,10 +1,17 @@
 # Acconeer Exploration Tool
 
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/acconeer-exptool.svg?logo=python&logoColor=FFE873)](https://pypi.org/project/acconeer-exptool/)
+[![PyPI version](https://img.shields.io/pypi/v/acconeer-exptool.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/acconeer-exptool/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/acconeer-exptool.svg)](https://pypistats.org/packages/acconeer-exptool)
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Documentation Status](https://readthedocs.com/projects/acconeer-acconeer-python-exploration/badge/?version=latest)](https://docs.acconeer.com/en/latest/?badge=latest)
+
 _**Explore the Next Sense**_ with Acconeer Exploration Tool! Use one of our [evaluation kits](https://www.acconeer.com/products) together with our Python examples and start exploring the world of Acconeer's radar sensor technology. The Python scripts and the Application in this repository will help you to easily stream the radar sensor's data to your local machine to start radar sensor evaluation and/or algorithm development for your application.
 
 To run the Python exploration scripts, you will need an [evaluation kit](https://www.acconeer.com/products) running the included Exploration or Module server, both of which are supplied with the [Acconeer SDK and Module SW](https://developer.acconeer.com/) image.
 
-This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 2.11.0**.
+This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/) **version 2.11.1**.
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">

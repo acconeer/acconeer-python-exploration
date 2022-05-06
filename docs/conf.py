@@ -12,6 +12,7 @@ extensions = [
     "sphinx.ext.extlinks",
     "myst_parser",
     "sphinxext.rediraffe",
+    "notfound.extension",
 ]
 
 autodoc_member_order = "bysource"
@@ -34,7 +35,7 @@ extlinks = {
 }
 
 rediraffe_redirects = "redirects.txt"
-rediraffe_branch = "HEAD~1"
+rediraffe_branch = "origin/master"
 rediraffe_auto_redirect_perc = 95
 
 source_suffix = ".rst"

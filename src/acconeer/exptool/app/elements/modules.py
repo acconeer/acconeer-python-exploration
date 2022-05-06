@@ -14,6 +14,7 @@ import acconeer.exptool.a111.algo.sparse._meta as sparse_meta
 import acconeer.exptool.a111.algo.sparse_fft._meta as sparse_fft_meta
 import acconeer.exptool.a111.algo.sparse_inter_fft._meta as sparse_inter_fft_meta
 import acconeer.exptool.a111.algo.speed_sparse._meta as speed_sparse_meta
+import acconeer.exptool.a111.algo.tank_level_short._meta as tank_level_short
 import acconeer.exptool.a111.algo.wave_to_exit._meta as wave_sparse_meta
 
 
@@ -35,6 +36,7 @@ MODULE_INFOS = [
     distance_detector_meta.module_info,
     parking_meta.module_info,
     wave_sparse_meta.module_info,
+    tank_level_short.module_info,
 ]
 
 MODULE_KEY_TO_MODULE_INFO_MAP = {mi.key: mi for mi in MODULE_INFOS}

@@ -52,10 +52,10 @@ This means that both the inter- and intra-frame parts are used. We recommend thi
 
 .. tip::
    The overall sensitivity can be adjusted with the
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.detection_threshold`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.detection_threshold`
    parameter.
    If the detection toggles too often, try increasing the
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.output_time_const`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.output_time_const`
    parameter. If it is too sluggish, try decreasing it instead.
    The effects of these two parameters can be clearly seen in the bottom plot (detector output).
 
@@ -63,11 +63,11 @@ The other parameters are best described by example:
 
 Fast motions - looking for a person walking towards or away from the sensor
    Disable the inter-frame part by setting the
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
    to 1.
 
    The intra-frame part has one parameter - its filter time constant
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`.
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`.
    Look at the depthwise presence (middle plot). If it can't keep up with the movements, try decreasing the time constant. Instead, if it's too flickery, try increasing the time constant.
    This will also be seen in the presence distance.
 
@@ -75,30 +75,30 @@ Fast motions - looking for a person walking towards or away from the sensor
 
 Slow motions - looking for a person resting in a sofa
    Disable the intra-frame part by setting the
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
    to 0.
 
    The inter-frame part has a couple of parameters:
 
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_fast_cutoff`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.inter_frame_fast_cutoff`
       If too low, some (too fast) motions might not be detected.
       If too high, unnecessary noise might be entered into the detector.
 
       Values larger than half the :attr:`~acconeer.exptool.a111.SparseServiceConfig.update_rate` disables this filter.
       If that is not enough, you need a higher :attr:`~acconeer.exptool.a111.SparseServiceConfig.update_rate` or to use the intra-frame part.
 
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_slow_cutoff`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.inter_frame_slow_cutoff`
       If too high, some (too slow) motions might not be detected.
       If too low, unnecessary noise might be entered into the detector, and changes to the static environment takes a long time to adjust to.
 
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_deviation_time_const`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.inter_frame_deviation_time_const`
       This behaves in the same way as the intra-frame time constant
-      :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`.
+      :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`.
 
       Look at the depthwise presence (middle plot). If it can't keep up with movements changing depth, try decreasing the time constant. Instead, if it's too flickery, try increasing the time constant.
 
    Since the intra-frame part is disabled, the
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`
    has no effect.
 
 PCA based noise reduction
@@ -106,10 +106,10 @@ PCA based noise reduction
    Principal component analysis(PCA) based noise reduction suppress detection from static objects while signals from real movements are preserved.
 
    For maximum noise reduction the
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.num_removed_pc`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.num_removed_pc`
    is set to 2. If the parameter is set to 0, no PCA based noise reduction is performed.
    With no strong reflective static objects in the FoV of the radar, PCA based noise reduction can give a minor degradation in performance. In these situations we recommend setting
-   :attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.num_removed_pc`
+   :attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.num_removed_pc`
    to 0.
 
 Tuning the service parameters
@@ -174,7 +174,7 @@ From the fast and slow filtered sweep means, a deviation metric :math:`s_\text{i
 
 Where :math:`\sqrt{N_s}` is a normalization constant.
 In other words, :math:`s_\text{inter}` relates to the instantaneous power of a bandpass filtered version of :math:`y`. This metric is then filtered again with a smoothing factor, :math:`\alpha_\text{dev}`, set through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.inter_frame_deviation_time_const`
+:attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.inter_frame_deviation_time_const`
 parameter,
 to get a more stable metric:
 
@@ -201,7 +201,7 @@ Then, let the low pass filtered (smoothened) version be:
    \bar{s}_\text{intra}(f, d) = \alpha_\text{intra} \cdot \bar{s}_\text{intra}(f-1, d) + (1 - \alpha_\text{intra}) \cdot s_\text{intra}(f, d)
 
 The smoothing factor :math:`\alpha_\text{intra}` is set through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`
+:attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.intra_frame_time_const`
 parameter.
 
 Noise estimation
@@ -273,7 +273,7 @@ To form the depthwise output we weigh the inter and intra parts together and nor
    }
 
 The intra-frame weight :math:`w_\text{intra}` is settable through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
+:attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.intra_frame_weight`
 parameter.
 The inter-frame weight :math:`w_\text{inter} = 1 - w_\text{intra}`.
 
@@ -285,7 +285,7 @@ Finally, since the reflection typically span several depth points, we apply a sm
 where the signal :math:`\bar{s}_n` is zero-padded, i.e.:
 
 .. math::
-   \bar{s}_n(f, d) = 0 \text{ for } d \lt 1 \text{ and } d \gt N_d
+   \bar{s}_n(f, d) = 0 \text{ for } d < 1 \text{ and } d > N_d
 
 From :math:`z`, we can extract the information we are looking for. Is there someone present in front of the sensor, and if so, where? To answer this, we simply look for a peak in the data :math:`z`. To give the detection decision a bit of inertia, we also add a smoothing filter to the peak value.
 
@@ -304,9 +304,9 @@ From :math:`z`, we can extract the information we are looking for. Is there some
 where :math:`p` is the "present"/"not present" output and :math:`d_p` is the presence depth index output.
 
 It is possible to tune :math:`\alpha_\text{output}` through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.output_time_const`
+:attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.output_time_const`
 parameter. The threshold :math:`v_\text{threshold}` is settable through the
-:attr:`~examples.processing.presence_detection_sparse.ProcessingConfiguration.detection_threshold`
+:attr:`~acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration.detection_threshold`
 parameter.
 
 Graphical overview
@@ -358,7 +358,7 @@ Read more:
 Configuration parameters
 ------------------------
 
-.. autoclass:: acconeer.exptool.a111.algo.presence_detection_sparse._processor.ProcessingConfiguration
+.. autoclass:: acconeer.exptool.a111.algo.presence_detection_sparse.ProcessingConfiguration
    :members:
 
 .. _`exponential smoothing`: https://en.wikipedia.org/wiki/Exponential_smoothing
