@@ -46,7 +46,7 @@ def ref_server_info():
 @pytest.fixture
 def ref_client_info():
     return a121.ClientInfo(
-        address="address",
+        ip_address="address",
         serial_port="serial_port",
         override_baudrate=0,
     )

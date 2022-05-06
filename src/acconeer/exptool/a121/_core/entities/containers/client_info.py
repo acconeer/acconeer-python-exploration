@@ -8,7 +8,7 @@ import attrs
 
 @attrs.frozen(kw_only=True)
 class ClientInfo:
-    address: Optional[str] = None
+    ip_address: Optional[str] = None
     serial_port: Optional[str] = None
     override_baudrate: Optional[int] = None
 

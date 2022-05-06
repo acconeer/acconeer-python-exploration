@@ -8,7 +8,7 @@ def main():
     h5_recorder = a121.H5Recorder(filename)
 
     # Client creation
-    client = a121.Client(address="192.168.0.1")
+    client = a121.Client(ip_address="192.168.0.1")
     client.connect()
 
     # Session setup, just like the other examples.

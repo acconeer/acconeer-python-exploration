@@ -9,8 +9,8 @@ from .links import AdaptedSerialLink, AdaptedSocketLink
 
 def link_factory(client_info: ClientInfo) -> BufferedLink:
 
-    if client_info.address is not None:
-        return AdaptedSocketLink(host=client_info.address)
+    if client_info.ip_address is not None:
+        return AdaptedSocketLink(host=client_info.ip_address)
 
     if client_info.serial_port is not None:
         link = AdaptedSerialLink(
@@ -29,17 +29,17 @@ class Client(AgnosticClient):
 
     def __init__(
         self,
-        address: Optional[str] = None,
+        ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
         override_baudrate: Optional[int] = None,
     ):
-        if address is not None and serial_port is not None:
+        if ip_address is not None and serial_port is not None:
             raise ValueError(
-                f"Both 'address' ({address}) and 'serial_port' ({serial_port}) "
+                f"Both 'ip_address' ({ip_address}) and 'serial_port' ({serial_port}) "
                 + "are not allowed. Chose one."
             )
         self._client_info = ClientInfo(
-            address=address,
+            ip_address=ip_address,
             override_baudrate=override_baudrate,
             serial_port=serial_port,
         )
