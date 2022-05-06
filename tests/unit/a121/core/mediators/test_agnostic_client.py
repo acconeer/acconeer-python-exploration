@@ -5,18 +5,12 @@ import pytest
 
 from acconeer.exptool.a121._core.entities import (
     Metadata,
-    SensorConfig,
     SensorDataType,
     SensorInfo,
     ServerInfo,
     SessionConfig,
 )
 from acconeer.exptool.a121._core.mediators import AgnosticClient, ClientError
-
-
-@pytest.fixture(scope="function")
-def mock_link():
-    return Mock()
 
 
 @pytest.fixture
@@ -31,164 +25,220 @@ def metadata():
 
 
 @pytest.fixture
-def mock_communication_protocol(metadata):
-    mock_comm_p = Mock()
-    mock_comm_p.get_system_info_command.return_value = b"get_system_info"
-    mock_comm_p.get_system_info_response.return_value = ServerInfo(
-        rss_version="rss_version",
-        sensor_count=1,
-        ticks_per_second=1,
-        sensor_infos={1: SensorInfo(connected=True)},
-    )
+def mock_protocol(metadata):
+    class MockCommunicationProtocol:
+        end_sequence = b""
+        get_system_info_command = Mock(return_value=b"get_system_info")
+        get_system_info_response = Mock(
+            return_value=ServerInfo(
+                rss_version="rss_version",
+                sensor_count=1,
+                ticks_per_second=1,
+                sensor_infos={1: SensorInfo(connected=True)},
+            )
+        )
+        get_sensor_info_command = Mock(return_value=b"get_sensor_info")
+        get_sensor_info_response = Mock(return_value=[1])
+        setup_command = Mock(return_value=b"setup")
+        setup_response = Mock(return_value=[{1: metadata}])
+        start_streaming_command = Mock(return_value=b"start_streaming")
+        start_streaming_response = Mock(return_value=True)
+        stop_streaming_command = Mock(return_value=b"stop_streaming")
+        stop_streaming_response = Mock(return_value=True)
+        get_next_header = Mock(return_value=(0, []))
+        get_next_payload = Mock(return_value=[])
 
-    mock_comm_p.get_sensor_info_command.return_value = b"get_sensor_info"
-    mock_comm_p.get_sensor_info_response.return_value = {1: SensorInfo(connected=True)}
-
-    mock_comm_p.setup_command.return_value = b"setup"
-    mock_comm_p.setup_response.return_value = [{1: metadata}]
-
-    mock_comm_p.start_streaming_command.return_value = b"start_streaming"
-    mock_comm_p.start_streaming_response.return_value = True
-
-    mock_comm_p.stop_streaming_command.return_value = b"stop_streaming"
-    mock_comm_p.stop_streaming_response.return_value = True
-
-    mock_comm_p.get_next_header.return_value = (0, [])
-    mock_comm_p.get_next_payload.return_value = []
-    return mock_comm_p
-
-
-@pytest.fixture(scope="function")
-def clean_client_and_link(mock_link, mock_communication_protocol):
-    return AgnosticClient(mock_link, mock_communication_protocol), mock_link
+    return MockCommunicationProtocol()
 
 
-@pytest.fixture(scope="function")
-def connected_client_and_link(clean_client_and_link):
-    client, link = clean_client_and_link
-    client.connect()
-    return client, link
+class TestAnUnconnectedClient:
+    @pytest.fixture
+    def link(self):
+        return Mock()
+
+    @pytest.fixture(autouse=True)
+    def client(self, link, mock_protocol):
+        client = AgnosticClient(link, mock_protocol)
+        return client
+
+    def test_reports_correct_statuses(self, client):
+        assert not client.connected
+        assert not client.session_is_setup
+        assert not client.session_is_started
+
+    def test_can_connect(self, client):
+        client.connect()
+
+    def test_cannot_be_setup(self, client):
+        with pytest.raises(ClientError):
+            _ = client.setup_session(SessionConfig(extended=True))
+
+    def test_cannot_be_started(self, client):
+        with pytest.raises(ClientError):
+            client.start_session()
+
+    def test_cannot_get_next_result(self, client):
+        with pytest.raises(ClientError):
+            _ = client.get_next()
+
+    def test_doesnt_have_server_info(self, client):
+        with pytest.raises(ClientError):
+            _ = client.server_info
+
+    def test_doesnt_have_session_config(self, client):
+        with pytest.raises(ClientError):
+            _ = client.session_config
+
+    def test_doesnt_have_any_metadata(self, client):
+        with pytest.raises(ClientError):
+            _ = client.extended_metadata
 
 
-@pytest.fixture(scope="function")
-def setup_client_and_link_and_metadata(connected_client_and_link):
-    client, link = connected_client_and_link
-    metadata = client.setup_session(SessionConfig(SensorConfig(), extended=True))
-    return client, link, metadata
+class TestAConnectedClient:
+    @pytest.fixture
+    def link(self):
+        return Mock()
 
+    @pytest.fixture(autouse=True)
+    def client(self, link, mock_protocol):
+        client = AgnosticClient(link, mock_protocol)
+        client.connect()
+        return client
 
-@pytest.fixture(scope="function")
-def started_client_and_link(setup_client_and_link_and_metadata):
-    client, link, _ = setup_client_and_link_and_metadata
-    client.start_session()
-    return client, link
+    def test_connects_link(self, link):
+        link.connect.assert_called_once_with()
 
+    def test_sends_get_server_info_commands(self, link):
+        link.send.assert_has_calls(
+            [call(b"get_system_info"), call(b"get_sensor_info")], any_order=True
+        )
 
-@pytest.fixture(scope="function")
-def stopped_client_and_link(started_client_and_link):
-    client, link = started_client_and_link
-    client.stop_session()
-    return client, link
-
-
-@pytest.fixture(scope="function")
-def disconnected_client_and_link(stopped_client_and_link):
-    client, link = stopped_client_and_link
-    client.disconnect()
-    return client, link
-
-
-def test_client_unconnected(clean_client_and_link):
-    client, _ = clean_client_and_link
-    assert not client.connected
-    assert not client.session_is_setup
-    assert not client.session_is_started
-
-    with pytest.raises(ClientError):
-        _ = client.setup_session(SessionConfig(SensorConfig()))
-
-    with pytest.raises(ClientError):
-        client.start_session()
-
-    with pytest.raises(ClientError):
-        _ = client.get_next()
-
-    with pytest.raises(ClientError):
+    def test_can_access_server_info(self, client):
         _ = client.server_info
 
-    with pytest.raises(ClientError):
-        _ = client.session_config
+    def test_reports_correct_statuses(self, client):
+        assert client.connected
+        assert not client.session_is_setup
+        assert not client.session_is_started
 
-    with pytest.raises(ClientError):
+    def test_cannot_start_session(self, client):
+        with pytest.raises(ClientError):
+            client.start_session()
+
+    def test_cannot_get_next(self, client):
+        with pytest.raises(ClientError):
+            _ = client.get_next()
+
+    def test_cannot_access_session_config(self, client):
+        with pytest.raises(ClientError):
+            _ = client.session_config
+
+    def test_cannot_access_metadata(self, client):
+        with pytest.raises(ClientError):
+            _ = client.extended_metadata
+
+
+class Test_a_setup_client:
+    @pytest.fixture
+    def link(self):
+        return Mock()
+
+    @pytest.fixture(autouse=True)
+    def client(self, link, mock_protocol):
+        client = AgnosticClient(link, mock_protocol)
+        client.connect()
+        client.setup_session(SessionConfig(extended=True))
+        return client
+
+    def test_sends_setup_command_to_link(self, link):
+        link.send.assert_called_with(b"setup")
+
+    def test_has_correct_metadata(self, client, metadata):
+        assert client.extended_metadata == [{1: metadata}]
+
+    def test_reports_correct_statuses(self, client):
+        assert client.connected
+        assert client.session_is_setup
+        assert not client.session_is_started
+
+    def test_can_access_all_data_structures(self, client):
+        _ = client.server_info
+        _ = client.session_config
         _ = client.extended_metadata
 
+    def test_cannot_get_next(self, client):
+        with pytest.raises(ClientError):
+            _ = client.get_next()
 
-def test_client_connected(connected_client_and_link):
-    client, mock_link = connected_client_and_link
 
-    mock_link.connect.assert_called_once_with()
-    mock_link.send.assert_has_calls(
-        [call(b"get_system_info"), call(b"get_sensor_info")], any_order=True
-    )
+class TestAStartedClient:
+    @pytest.fixture
+    def link(self):
+        return Mock()
 
-    assert client.connected
-    assert not client.session_is_setup
-    assert not client.session_is_started
-
-    with pytest.raises(ClientError):
+    @pytest.fixture(autouse=True)
+    def client(self, link, mock_protocol):
+        client = AgnosticClient(link, mock_protocol)
+        client.connect()
+        client.setup_session(SessionConfig(extended=True))
         client.start_session()
+        return client
 
-    with pytest.raises(ClientError):
-        _ = client.get_next()
+    def test_sends_start_streaming_command_to_link(self, link):
+        link.send.assert_called_with(b"start_streaming")
 
-    _ = client.server_info
+    def test_reports_correct_statuses(self, client):
+        assert client.connected
+        assert client.session_is_setup
+        assert client.session_is_started
 
-    with pytest.raises(ClientError):
-        _ = client.session_config
-
-    with pytest.raises(ClientError):
-        _ = client.extended_metadata
-
-
-def test_client_setup(setup_client_and_link_and_metadata, metadata):
-    client, mock_link, actual_metadata = setup_client_and_link_and_metadata
-    expected_metadata = metadata
-
-    # On setup, the client is supposed to send the appropriate config via the link
-    # And recieve some metadata
-    assert actual_metadata == [{1: expected_metadata}]
-    mock_link.send.assert_called_with(b"setup")
-    assert client.session_is_setup
-
-    with pytest.raises(ClientError):
-        _ = client.get_next()
-
-    _ = client.server_info
-    _ = client.session_config
-    _ = client.extended_metadata
+    def test_can_get_next(self, client):
+        result = client.get_next()
+        assert result == []
 
 
-def test_client_started(started_client_and_link):
-    client, mock_link = started_client_and_link
+class TestAStoppedClient:
+    @pytest.fixture
+    def link(self):
+        return Mock()
 
-    # When starting a session
-    mock_link.send.assert_called_with(b"start_streaming")
-    assert client.session_is_started
+    @pytest.fixture(autouse=True)
+    def client(self, link, mock_protocol):
+        client = AgnosticClient(link, mock_protocol)
+        client.connect()
+        client.setup_session(SessionConfig(extended=True))
+        client.start_session()
+        client.stop_session()
+        return client
 
-    # `get_next` should work at this point
-    result = client.get_next()
-    assert result == []
+    def test_sends_stop_streaming_command_to_link(self, link, client):
+        link.send.assert_called_with(b"stop_streaming")
+
+    def test_reports_correct_statuses(self, client):
+        assert client.connected
+        assert client.session_is_setup
+        assert not client.session_is_started
 
 
-def test_client_stop_session(stopped_client_and_link):
-    client, mock_link = stopped_client_and_link
+class TestADisconnectedClient:
+    @pytest.fixture
+    def link(self):
+        return Mock()
 
-    mock_link.send.assert_called_with(b"stop_streaming")
-    assert not client.session_is_started
+    @pytest.fixture(autouse=True)
+    def client(self, link, mock_protocol):
+        client = AgnosticClient(link, mock_protocol)
+        client.connect()
+        client.setup_session(SessionConfig(extended=True))
+        client.start_session()
+        client.stop_session()
+        client.disconnect()
+        return client
 
+    def test_reports_correct_statuses(self, client):
+        assert not client.connected
+        assert client.session_is_setup
+        assert not client.session_is_started
 
-def test_client_disconnect(disconnected_client_and_link):
-    client, mock_link = disconnected_client_and_link
-
-    mock_link.disconnect.assert_called_once_with()
-    assert not client.connected
+    def test_disconnects_link(self, link):
+        link.disconnect.assert_called_once_with()
