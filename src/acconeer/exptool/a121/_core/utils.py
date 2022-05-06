@@ -1,6 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Optional, Type, TypeVar, Union, overload
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Iterator,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
 
 T = TypeVar("T")
@@ -209,3 +220,16 @@ def map_over_extended_structure(
 
     """
     return [{k: func(v) for k, v in d.items()} for d in structure]
+
+
+def iterate_extended_structure(
+    structure: list[dict[int, ValueT]]
+) -> Iterator[Tuple[int, int, ValueT]]:
+    """Iterates over the elements of the extended structure.
+
+    :returns: Iterator of (<group id>, <sensor id>, <element>)
+    """
+
+    for group_id, group in enumerate(structure):
+        for sensor_id, elem in group.items():
+            yield (group_id, sensor_id, elem)

@@ -87,6 +87,16 @@ class SessionConfig:
             for _, sensor_config in group.items():
                 sensor_config.validate()
 
+        if self.update_rate is not None:
+            for group_id, sensor_id, sensor_config in utils.iterate_extended_structure(
+                self._groups
+            ):
+                if sensor_config.frame_rate is not None:
+                    raise ValueError(
+                        f"Sensor config in group {group_id} with sensor id {sensor_id} "
+                        + " has a set `frame_rate`. This is not allowed."
+                    )
+
     @property
     def sensor_id(self) -> int:
         """If not extended, retrieves the `sensor_id`."""

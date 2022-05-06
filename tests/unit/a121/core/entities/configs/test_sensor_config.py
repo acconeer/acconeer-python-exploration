@@ -1,6 +1,7 @@
 # type: ignore
 
 import json
+import warnings
 
 import pytest
 
@@ -289,7 +290,7 @@ def test_get_and_set_proxy_properties(attribute, non_default_value):
     assert getattr(sensor_config, attribute) == getattr(subsweep_config, attribute)
 
 
-def test_validating_an_invalid_config_raises_error():
+def test_invalid_idle_states_raises_error_upon_validate():
     config = a121.SensorConfig()
     config.inter_frame_idle_state = a121.IdleState.READY
     config.inter_sweep_idle_state = a121.IdleState.DEEP_SLEEP
@@ -297,10 +298,46 @@ def test_validating_an_invalid_config_raises_error():
     with pytest.raises(ValueError):
         config.validate()
 
+
+def test_invalid_continuous_sweep_mode_constraints_raises_error_upon_validate():
     config = a121.SensorConfig()
     config.continuous_sweep_mode = True
     config.frame_rate = None
     config.sweep_rate = None  # <- should be > 0
+
+    with pytest.raises(ValueError):
+        config.validate()
+
+
+def test_too_high_frame_rate_compared_to_sweep_rate_and_spf_raise_error_upon_validate():
+    config = a121.SensorConfig()
+    config.frame_rate = 10
+    config.sweep_rate = 1
+    config.sweeps_per_frame = 1
+
+    with pytest.raises(ValueError):
+        config.validate()
+
+
+def test_approx_frame_rate_and_frame_time_raise_error_upon_validate():
+    config = a121.SensorConfig()
+    config.frame_rate = 10
+    config.sweep_rate = 10
+    config.sweeps_per_frame = 1
+
+    with warnings.catch_warnings(record=True) as collected_warnings:
+        config.validate()
+
+    assert collected_warnings != []
+
+
+@pytest.mark.parametrize(("num_points", "sweeps_per_frame"), [(4096, 1), (2048, 2)])
+def test_config_that_require_too_much_buffer_space_raises_error_upon_validate(
+    num_points, sweeps_per_frame
+):
+    config = a121.SensorConfig()
+    config.num_points = num_points
+    config.sweeps_per_frame = sweeps_per_frame
 
     with pytest.raises(ValueError):
         config.validate()

@@ -158,3 +158,20 @@ def test_to_from_dict_and_json_identity(original):
 
 def test_empty_init_is_the_same_as_single_sensor_config():
     assert a121.SessionConfig() == a121.SessionConfig(a121.SensorConfig())
+
+
+@pytest.mark.parametrize(
+    "sensor_configs",
+    [
+        {1: a121.SensorConfig(frame_rate=1)},
+        {1: a121.SensorConfig(frame_rate=1), 2: a121.SensorConfig(frame_rate=None)},
+    ],
+)
+def test_update_rate_in_session_config_and_frame_rate_in_any_sensor_config_is_disallowed(
+    sensor_configs,
+):
+    config = a121.SessionConfig(sensor_configs)
+    config.update_rate = 10
+
+    with pytest.raises(ValueError):
+        config.validate()

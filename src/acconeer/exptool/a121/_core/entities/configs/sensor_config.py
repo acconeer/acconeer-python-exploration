@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import Any, Optional, TypeVar
+
+import numpy as np
 
 from acconeer.exptool.a121._core import utils
 
@@ -173,7 +176,16 @@ class SensorConfig:
 
         :raises: ``ValueError`` if the config is invalid.
         """
-        # TODO: ValueErrors are the wrong Exception type for this.
+        # TODO: ValueErrors are the wrong Exception type sub-validators.
+        self._validate_continuous_sweep_mode()
+        self._validate_idle_states()
+        self._validate_sweep_and_frame_rate()
+        self._validate_required_buffer_usage()
+
+        for subsweep_config in self.subsweeps:
+            subsweep_config.validate()
+
+    def _validate_continuous_sweep_mode(self) -> None:
         if self.continuous_sweep_mode:
             if self.frame_rate is not None:
                 raise ValueError("Frame rate must unset (`None`) to use continuous sweep mode.")
@@ -184,6 +196,7 @@ class SensorConfig:
             if self.inter_frame_idle_state != self.inter_sweep_idle_state:
                 raise ValueError("Idles states must be equal to use continuous sweep mode.")
 
+    def _validate_idle_states(self) -> None:
         if not (
             self.inter_frame_idle_state.is_deeper_than(self.inter_sweep_idle_state)
             or self.inter_frame_idle_state == self.inter_sweep_idle_state
@@ -192,8 +205,34 @@ class SensorConfig:
                 "Inter frame idle state needs to be deeper or the same as inter sweep idle state"
             )
 
-        for subsweep_config in self.subsweeps:
-            subsweep_config.validate()
+    def _validate_sweep_and_frame_rate(self) -> None:
+        if self.sweep_rate is not None and self.frame_rate is not None:
+            seconds_needed_per_frame = self.sweeps_per_frame / self.sweep_rate
+
+            if self.frame_rate > 1 / seconds_needed_per_frame:
+                raise ValueError(
+                    "The frame rate is set faster than what the sweep rate allows."
+                    + f"Frame rate: {self.frame_rate} Hz\n"
+                    + "Sweep rate / sweeps per frame: "
+                    + f"{self.sweep_rate / self.sweeps_per_frame} Hz"
+                )
+
+            if np.isclose(self.frame_rate, 1 / seconds_needed_per_frame):
+                warnings.warn(
+                    "Frame rate is approximately equal to SPF / Sweep rate. "
+                    + "Use contiuous sweep mode instead."
+                )
+
+    def _validate_required_buffer_usage(self) -> None:
+        BUFFER_SIZE = 4095
+
+        total_num_points = sum(subsweep_config.num_points for subsweep_config in self.subsweeps)
+        required_buffer_size = total_num_points * self.sweeps_per_frame
+        if required_buffer_size > BUFFER_SIZE:
+            raise ValueError(
+                "This config would have required buffer size "
+                + f"{required_buffer_size}, but the max is {BUFFER_SIZE}"
+            )
 
     @property
     def sweeps_per_frame(self) -> int:
