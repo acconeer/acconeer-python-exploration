@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- The update rate when replaying a saved file is now
+  the same as the file was captured in.
+
 ## v4.1.1
 
 ### Changed
