@@ -73,10 +73,21 @@ class SensorConfig:
         if subsweeps == []:
             raise ValueError("Cannot pass an empty `subsweeps` list.")
 
-        if subsweeps is not None and hwaas is not None:
+        no_subsweep_param_passed = (
+            start_point is None
+            and num_points is None
+            and step_length is None
+            and profile is None
+            and hwaas is None
+            and receiver_gain is None
+            and enable_tx is None
+            and phase_enhancement is None
+            and prf is None
+        )
+        if subsweeps is not None and not no_subsweep_param_passed:
             raise ValueError(
-                "Combining hwaas and subsweeps is not allowed. "
-                + "Specify hwaas in each SubsweepConfig instead"
+                "Combining 'subsweeps' and subsweep parameters is not allowed."
+                + "Specify subsweep params in each 'SubsweepConfig' instead."
             )
 
         if subsweeps is None and num_subsweeps is None:
