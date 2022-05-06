@@ -59,6 +59,11 @@ class SessionConfig:
         return self._extended
 
     @property
+    def groups(self) -> list[dict[int, SensorConfig]]:
+        """The config groups of this session."""
+        return self._groups
+
+    @property
     def update_rate(self) -> Optional[float]:
         """Update rate.
 
