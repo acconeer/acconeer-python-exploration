@@ -1,4 +1,4 @@
-from unittest.mock import Mock, call
+from unittest.mock import DEFAULT, Mock, call
 
 import numpy as np
 import pytest
@@ -26,6 +26,12 @@ def metadata():
 
 @pytest.fixture
 def mock_protocol(metadata):
+    def mock_get_next_header(bytes_, extended_metadata, ticks_per_second):
+        if bytes_ == b"data_header":
+            return DEFAULT
+
+        raise Exception
+
     class MockCommunicationProtocol:
         end_sequence = b""
         get_system_info_command = Mock(return_value=b"get_system_info")
@@ -45,7 +51,7 @@ def mock_protocol(metadata):
         start_streaming_response = Mock(return_value=True)
         stop_streaming_command = Mock(return_value=b"stop_streaming")
         stop_streaming_response = Mock(return_value=True)
-        get_next_header = Mock(return_value=(0, []))
+        get_next_header = Mock(return_value=(0, []), side_effect=mock_get_next_header)
         get_next_payload = Mock(return_value=[])
 
     return MockCommunicationProtocol()
@@ -54,7 +60,9 @@ def mock_protocol(metadata):
 class TestAnUnconnectedClient:
     @pytest.fixture
     def link(self):
-        return Mock()
+        link = Mock()
+        link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
+        return link
 
     @pytest.fixture(autouse=True)
     def client(self, link, mock_protocol):
@@ -97,7 +105,9 @@ class TestAnUnconnectedClient:
 class TestAConnectedClient:
     @pytest.fixture
     def link(self):
-        return Mock()
+        link = Mock()
+        link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
+        return link
 
     @pytest.fixture(autouse=True)
     def client(self, link, mock_protocol):
@@ -141,7 +151,9 @@ class TestAConnectedClient:
 class Test_a_setup_client:
     @pytest.fixture
     def link(self):
-        return Mock()
+        link = Mock()
+        link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
+        return link
 
     @pytest.fixture(autouse=True)
     def client(self, link, mock_protocol):
@@ -174,7 +186,9 @@ class Test_a_setup_client:
 class TestAStartedClient:
     @pytest.fixture
     def link(self):
-        return Mock()
+        link = Mock()
+        link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
+        return link
 
     @pytest.fixture(autouse=True)
     def client(self, link, mock_protocol):
@@ -196,11 +210,32 @@ class TestAStartedClient:
         result = client.get_next()
         assert result == []
 
+    @pytest.mark.parametrize(
+        "recv_until_buffer",
+        [
+            [b"end"],
+            [b"data_header", b"end"],
+            [b"data_header", b"data_header", b"end"],
+        ],
+        ids=str,
+    )
+    def test_can_stop(self, link, client, recv_until_buffer, mock_protocol):
+        link.recv_until.reset_mock()
+
+        link.recv_until.side_effect = recv_until_buffer
+        client.stop_session()
+
+        assert mock_protocol.get_next_header.call_count == len(recv_until_buffer)
+        assert link.recv_until.call_count == len(recv_until_buffer)
+        mock_protocol.stop_streaming_response.assert_called_once_with(b"end")
+
 
 class TestAStoppedClient:
     @pytest.fixture
     def link(self):
-        return Mock()
+        link = Mock()
+        link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
+        return link
 
     @pytest.fixture(autouse=True)
     def client(self, link, mock_protocol):
@@ -211,7 +246,7 @@ class TestAStoppedClient:
         client.stop_session()
         return client
 
-    def test_sends_stop_streaming_command_to_link(self, link, client):
+    def test_sends_stop_streaming_command_to_link(self, link):
         link.send.assert_called_with(b"stop_streaming")
 
     def test_reports_correct_statuses(self, client):
@@ -223,7 +258,9 @@ class TestAStoppedClient:
 class TestADisconnectedClient:
     @pytest.fixture
     def link(self):
-        return Mock()
+        link = Mock()
+        link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
+        return link
 
     @pytest.fixture(autouse=True)
     def client(self, link, mock_protocol):

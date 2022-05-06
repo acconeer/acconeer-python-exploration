@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any, Optional, Union
 
 from acconeer.exptool.a121._core.entities import (
@@ -168,9 +169,28 @@ class AgnosticClient:
             return self._recorder.stop()
 
         self._link.send(self._protocol.stop_streaming_command())
-        reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
+        reponse_bytes = self._drain_buffer()
         self._protocol.stop_streaming_response(reponse_bytes)
         self._session_is_started = False
+
+    def _drain_buffer(
+        self, timeout_s: float = 1.0
+    ) -> bytes:  # TODO: Make `timeout_s` session-dependant
+        """Drains data in the buffer. Returning the first bytes that are not data packets."""
+        start = time.time()
+
+        while time.time() < start + timeout_s:
+            next_header = self._link.recv_until(self._protocol.end_sequence)
+            try:
+                payload_size, _ = self._protocol.get_next_header(
+                    bytes_=next_header,
+                    extended_metadata=self.extended_metadata,
+                    ticks_per_second=self.server_info.ticks_per_second,
+                )
+                _ = self._link.recv(payload_size)
+            except Exception:
+                return next_header
+        raise ClientError("Client timed out when waiting for 'stop'-response.")
 
     def disconnect(self) -> None:
         """Disconnects the client from the host.
