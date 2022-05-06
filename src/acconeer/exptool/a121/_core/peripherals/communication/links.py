@@ -2,6 +2,34 @@ from acconeer.exptool.a111._clients.links import (  # type: ignore[import]
     ExploreSerialLink,
     SocketLink,
 )
+from acconeer.exptool.a121._core.mediators import BufferedLink
+
+
+class NullLinkError(RuntimeError):
+    pass
+
+
+class NullLink(BufferedLink):
+    ERROR = NullLinkError("Link is undetermined.")
+    """Link null object.
+
+    :raises: ``RuntimeError`` if any of its methods is called.
+    """
+
+    def connect(self) -> None:
+        raise self.ERROR
+
+    def recv(self, num_bytes: int) -> bytes:
+        raise self.ERROR
+
+    def send(self, bytes_: bytes) -> None:
+        raise self.ERROR
+
+    def disconnect(self) -> None:
+        raise self.ERROR
+
+    def recv_until(self, byte_sequence: bytes) -> bytes:
+        raise self.ERROR
 
 
 class AdaptedSocketLink(SocketLink):
