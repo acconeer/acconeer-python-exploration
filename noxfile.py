@@ -182,11 +182,12 @@ def test(session):
         )
 
     if "integration" in args.test_groups:
-        pytest_commands.extend(
-            [
-                ["-p", "no:pytest-qt", "tests/integration", *args.integration_args],
-            ]
-        )
+        pass
+        # pytest_commands.extend(
+        #    [
+        #        ["-p", "no:pytest-qt", "tests/integration", *args.integration_args],
+        #    ]
+        # )
 
     if "app" in args.test_groups:
         install_deps |= {
