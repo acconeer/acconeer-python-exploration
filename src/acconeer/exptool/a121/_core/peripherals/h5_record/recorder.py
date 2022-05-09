@@ -7,6 +7,7 @@ from typing import Any, Optional, TypeVar
 from uuid import uuid4
 
 import h5py
+import numpy as np
 
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
@@ -182,7 +183,7 @@ class H5Recorder(Recorder):
             "tick",
             shape=(0,),
             maxshape=(None,),
-            dtype=int,
+            dtype=np.dtype("int64"),
             track_times=False,
         )
 
