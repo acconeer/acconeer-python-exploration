@@ -1,13 +1,18 @@
+import acconeer.exptool as et
 from acconeer.exptool import a121
 
 
+parser = a121.ExampleArgumentParser()
+parser.add_argument("--output-file", required=True)
+parser.add_argument("--num-frames", required=True, type=int)
+args = parser.parse_args()
+et.utils.config_logging(args)
+
 # Here we create a H5Recorder.
 # The H5Recorder is an object that saves frames directly to a H5-file.
-filename = "data.h5"
-h5_recorder = a121.H5Recorder(filename)
+h5_recorder = a121.H5Recorder(args.output_file)
 
-# Client creation
-client = a121.Client(ip_address="192.168.0.1")
+client = a121.Client(**a121.get_client_args(args))
 client.connect()
 
 # Session setup, just like the other examples.
@@ -20,14 +25,10 @@ client.setup_session(config)
 # "stop_session" is called.
 client.start_session(recorder=h5_recorder)
 
-n = 10
-for i in range(n):
+for i in range(args.num_frames):
     # Client will send its Results to the H5Recorder.
     client.get_next()
-    print(f"Result {i + 1}/{n} was sampled")
+    print(f"Result {i + 1}/{args.num_frames} was sampled")
 
 client.stop_session()
 client.disconnect()
-
-with a121.open_record(filename) as record:
-    print(record)
