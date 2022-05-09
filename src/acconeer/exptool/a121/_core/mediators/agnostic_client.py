@@ -75,16 +75,18 @@ class AgnosticClient:
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
         """Sets up the session specified by ``config``.
 
+        If the Client is not already connected, it will connect before setting up the session.
+
         :param config: The session to set up.
         :raises:
-            ``ClientError`` if the Client is not connected
-            or ``ValueError`` if the config is invalid.
+            ``ValueError`` if the config is invalid.
 
         :returns:
             ``Metadata`` if ``config.extended is False``,
             ``list[dict[int, Metadata]]`` otherwise.
         """
-        self._assert_connected()
+        if not self.connected:
+            self.connect()
 
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)

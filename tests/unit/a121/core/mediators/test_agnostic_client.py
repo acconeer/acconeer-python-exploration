@@ -77,9 +77,8 @@ class TestAnUnconnectedClient:
     def test_can_connect(self, client):
         client.connect()
 
-    def test_cannot_be_setup(self, client):
-        with pytest.raises(ClientError):
-            _ = client.setup_session(SessionConfig(extended=True))
+    def test_can_be_setup(self, client):
+        _ = client.setup_session(SessionConfig(extended=True))
 
     def test_cannot_be_started(self, client):
         with pytest.raises(ClientError):
