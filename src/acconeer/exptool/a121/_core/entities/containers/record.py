@@ -59,7 +59,9 @@ class Record(abc.ABC):
 
     @property
     def metadata(self) -> Metadata:
-        raise NotImplementedError
+        (group,) = self.extended_metadata
+        (metadata,) = group.values()
+        return metadata
 
 
 class PersistentRecord(Record):
