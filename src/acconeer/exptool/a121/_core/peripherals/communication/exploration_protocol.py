@@ -7,12 +7,12 @@ import attrs
 import numpy as np
 
 from acconeer.exptool.a121._core.entities import (
+    INT_16_COMPLEX,
     PRF,
     IdleState,
     Metadata,
     Result,
     ResultContext,
-    SensorDataType,
     SensorInfo,
     ServerInfo,
     SessionConfig,
@@ -65,7 +65,6 @@ class MetadataResponse(TypedDict):
     sweep_data_length: int
     subsweep_data_offset: list[int]
     subsweep_data_length: list[int]
-    data_type: Union[Literal["int_16_complex"], Literal["int_16"], Literal["uint_16"]]
 
 
 class SetupResponse(ValidResponse):
@@ -267,15 +266,11 @@ class ExplorationProtocol(CommunicationProtocol):
 
     @classmethod
     def _metadata_from_dict(cls, metadata_dict: MetadataResponse) -> Metadata:
-        data_type_str = metadata_dict["data_type"]
-        data_type = SensorDataType[data_type_str.upper()]
-
         return Metadata(
             frame_data_length=metadata_dict["frame_data_length"],
             sweep_data_length=metadata_dict["sweep_data_length"],
             subsweep_data_offset=np.array(metadata_dict["subsweep_data_offset"]),
             subsweep_data_length=np.array(metadata_dict["subsweep_data_length"]),
-            data_type=data_type,
         )
 
     @classmethod
@@ -354,11 +349,10 @@ class ExplorationProtocol(CommunicationProtocol):
         for partial_group in partial_results:
             for sensor_id, partial_result in partial_group.items():
                 metadata = partial_result._context.metadata
-                data_type = metadata._data_type
                 end = start + metadata.frame_data_length * 4  # 4 = sizeof(int_16_complex)
 
                 raw_frame = bytes_[start:end]
-                np_frame = np.frombuffer(raw_frame, dtype=data_type.value)
+                np_frame = np.frombuffer(raw_frame, dtype=INT_16_COMPLEX)
                 np_frame.resize(metadata.frame_shape)
                 partial_group[sensor_id] = attrs.evolve(partial_result, frame=np_frame)
                 start += end

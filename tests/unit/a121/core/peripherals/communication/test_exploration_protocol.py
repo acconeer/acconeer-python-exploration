@@ -6,9 +6,9 @@ import pytest
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import (
+    INT_16_COMPLEX,
     ResultContext,
     SensorConfig,
-    SensorDataType,
     SensorInfo,
     SessionConfig,
 )
@@ -22,7 +22,6 @@ def single_sweep_metadata():
         frame_data_length=100,
         subsweep_data_offset=np.array([0]),
         subsweep_data_length=np.array([100]),
-        data_type=SensorDataType.INT_16_COMPLEX,
     )
 
 
@@ -146,7 +145,6 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 100,
                         "subsweep_data_offset": [0],
                         "subsweep_data_length": [100],
-                        "data_type": "int_16_complex",
                     },
                 ],
                 [  # Group 2
@@ -155,7 +153,6 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 200,
                         "subsweep_data_offset": [0, 100],
                         "subsweep_data_length": [100, 100],
-                        "data_type": "uint_16",
                     },
                 ],
             ],
@@ -170,7 +167,6 @@ def test_setup_response(single_sweep_metadata):
                 frame_data_length=200,
                 subsweep_data_offset=np.array([0, 100]),
                 subsweep_data_length=np.array([100, 100]),
-                data_type=SensorDataType.UINT_16,
             )
         },
     ]
@@ -273,7 +269,7 @@ def test_get_next_payload_single_sweep(single_sweep_metadata):
             )
         }
     ]
-    data_array = np.array(range(100), dtype=SensorDataType.INT_16_COMPLEX.value)
+    data_array = np.array(range(100), dtype=INT_16_COMPLEX)
     data_array.resize(1, 100)
     mock_payload = data_array.tobytes()
     assert len(mock_payload) == 400
@@ -307,9 +303,9 @@ def test_get_next_payload_multiple_sweep(single_sweep_metadata):
         }
     ]
 
-    first_frame = np.array(range(100), dtype=SensorDataType.INT_16_COMPLEX.value)
+    first_frame = np.array(range(100), dtype=INT_16_COMPLEX)
     first_frame.resize(1, 100)
-    second_frame = np.array(range(100, 200), dtype=SensorDataType.INT_16_COMPLEX.value)
+    second_frame = np.array(range(100, 200), dtype=INT_16_COMPLEX)
     second_frame.resize(1, 100)
 
     mock_payload = np.concatenate((first_frame, second_frame)).tobytes()

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.entities import SensorDataType, SensorInfo
+from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, SensorInfo
 from acconeer.exptool.a121._core.peripherals.h5_record import H5PY_STR_DTYPE
 
 
@@ -91,7 +91,7 @@ def ref_frame_data_length(ref_num_frames, ref_sweep_data_length):
 @pytest.fixture
 def ref_frame_raw(ref_sweep_data_length, ref_frame_data_length, ref_num_frames):
     array = np.arange(ref_frame_data_length)
-    array = array.astype(dtype=SensorDataType.INT_16_COMPLEX.value)
+    array = array.astype(dtype=INT_16_COMPLEX)
 
     num_sweeps = ref_frame_data_length // ref_sweep_data_length
     array.resize(num_sweeps, ref_sweep_data_length)
@@ -112,7 +112,6 @@ def ref_metadata(ref_sweep_data_length, ref_frame_data_length):
         sweep_data_length=ref_sweep_data_length,
         subsweep_data_length=np.array([ref_sweep_data_length]),
         subsweep_data_offset=np.array([0]),
-        data_type=SensorDataType.INT_16_COMPLEX,
     )
 
 

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.entities import ResultContext, SensorDataType
+from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, ResultContext
 
 
 @pytest.fixture
@@ -12,7 +12,6 @@ def good_metadata():
         sweep_data_length=5,
         subsweep_data_offset=np.array([0, 2]),
         subsweep_data_length=np.array([2, 3]),
-        data_type=SensorDataType.INT_16_COMPLEX,
     )
 
 
@@ -32,7 +31,7 @@ def good_raw_frame():
             [(5, -5), (6, -6), (7, -7), (8, -8), (9, -9)],
             [(10, -10), (11, -11), (12, -12), (13, -13), (14, -14)],
         ],
-        dtype=SensorDataType.INT_16_COMPLEX.value,
+        dtype=INT_16_COMPLEX,
     )
 
 

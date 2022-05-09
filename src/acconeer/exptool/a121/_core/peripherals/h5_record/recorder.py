@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 
 from acconeer.exptool.a121._core.entities import (
+    INT_16_COMPLEX,
     ClientInfo,
     Metadata,
     Result,
@@ -191,13 +192,11 @@ class H5Recorder(Recorder):
         num_distances = metadata.sweep_data_length
         frame_shape = (num_sweeps, num_distances)
 
-        frame_dtype = metadata._data_type.value
-
         g.create_dataset(
             "frame",
             shape=(0, *frame_shape),
             maxshape=(None, *frame_shape),
-            dtype=frame_dtype,
+            dtype=INT_16_COMPLEX,
             track_times=False,
         )
 

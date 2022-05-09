@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.entities import SensorDataType
 
 
 @pytest.fixture
@@ -12,7 +11,6 @@ def ref_metadata():
         sweep_data_length=10,
         subsweep_data_length=np.array([10]),
         subsweep_data_offset=np.array([0]),
-        data_type=SensorDataType.INT_16_COMPLEX,
     )
 
 
@@ -23,7 +21,6 @@ def ref_metadata_dict():
         "sweep_data_length": 10,
         "subsweep_data_length": np.array([10]),
         "subsweep_data_offset": np.array([0]),
-        "data_type": SensorDataType.INT_16_COMPLEX,
     }
 
 
@@ -40,7 +37,6 @@ def test_eq(ref_metadata):
         sweep_data_length=10,
         subsweep_data_length=np.array([10]),
         subsweep_data_offset=np.array([0]),
-        data_type=SensorDataType.INT_16_COMPLEX,
     )
 
 

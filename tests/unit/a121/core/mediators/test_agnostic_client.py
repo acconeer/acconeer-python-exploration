@@ -3,13 +3,7 @@ from unittest.mock import DEFAULT, Mock, call
 import numpy as np
 import pytest
 
-from acconeer.exptool.a121._core.entities import (
-    Metadata,
-    SensorDataType,
-    SensorInfo,
-    ServerInfo,
-    SessionConfig,
-)
+from acconeer.exptool.a121._core.entities import Metadata, SensorInfo, ServerInfo, SessionConfig
 from acconeer.exptool.a121._core.mediators import AgnosticClient, ClientError
 
 
@@ -20,7 +14,6 @@ def metadata():
         sweep_data_length=1,
         subsweep_data_length=np.array([1]),
         subsweep_data_offset=np.array([0]),
-        data_type=SensorDataType.INT_16_COMPLEX,
     )
 
 

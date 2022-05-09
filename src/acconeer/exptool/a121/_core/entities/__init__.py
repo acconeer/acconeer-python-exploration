@@ -6,7 +6,7 @@ from .containers import (
     Record,
     Result,
     ResultContext,
-    SensorDataType,
     SensorInfo,
     ServerInfo,
 )
+from .dtypes import INT_16_COMPLEX

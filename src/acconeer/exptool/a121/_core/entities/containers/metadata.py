@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import enum
 import json
 from typing import Any, Tuple
 
@@ -11,19 +10,12 @@ import numpy.typing as npt
 from .common import attrs_ndarray_eq
 
 
-class SensorDataType(enum.Enum):
-    UINT_16 = np.dtype("uint16")
-    INT_16 = np.dtype("int16")
-    INT_16_COMPLEX = np.dtype([("real", "int16"), ("imag", "int16")])
-
-
 @attrs.frozen(kw_only=True)
 class Metadata:
     frame_data_length: int = attrs.field()
     sweep_data_length: int = attrs.field()
     subsweep_data_offset: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
     subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
-    _data_type: SensorDataType = attrs.field()
 
     @property
     def frame_shape(self) -> Tuple[int, int]:
@@ -32,9 +24,7 @@ class Metadata:
         return (num_sweeps, self.sweep_data_length)
 
     def to_dict(self) -> dict[str, Any]:
-        d = attrs.asdict(self)
-        d["data_type"] = d.pop("_data_type")
-        return d
+        return attrs.asdict(self)
 
     @classmethod
     def from_dict(cls, d: dict) -> Metadata:
@@ -61,7 +51,6 @@ class MetadataEncoder(json.JSONEncoder):
             # Since they are integer arrays, no precision will be lost
             metadata_dict["subsweep_data_length"] = metadata_dict["subsweep_data_length"].tolist()
             metadata_dict["subsweep_data_offset"] = metadata_dict["subsweep_data_offset"].tolist()
-            metadata_dict["data_type"] = metadata_dict["data_type"].name
             return metadata_dict
 
         return super().default(obj)
@@ -76,7 +65,5 @@ class MetadataDecoder(json.JSONDecoder):
         # post process the parsed dict to have numpy-arrays instead of plain lists
         metadata_dict["subsweep_data_length"] = np.array(metadata_dict["subsweep_data_length"])
         metadata_dict["subsweep_data_offset"] = np.array(metadata_dict["subsweep_data_offset"])
-        # - || - for the enum value.
-        metadata_dict["data_type"] = SensorDataType[metadata_dict["data_type"]]
 
         return metadata_dict
