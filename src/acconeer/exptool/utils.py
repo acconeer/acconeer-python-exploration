@@ -95,6 +95,9 @@ def tag_serial_ports(port_infos):
     :returns: List of tuples [(<port>, <model number> or None), ...]
     """
     PRODUCT_REGEX = r"[X][A-Z]\d{3}"
+    USB_IDS = [  # (vid, pid, 'model number')
+        (0x0483, 0xA42D, "XC120"),
+    ]
 
     port_tag_tuples = []
 
@@ -104,7 +107,12 @@ def tag_serial_ports(port_infos):
 
         match = re.search(PRODUCT_REGEX, desc)
         if match is None:
-            port_tag_tuples.append((port, None))
+            for vid, pid, model_number in USB_IDS:
+                if port_object.vid == vid and port_object.pid == pid:
+                    port_tag_tuples.append((port, model_number))
+                    break
+            else:
+                port_tag_tuples.append((port, None))
         elif "xe132" in match.group().lower():
             if version.parse(serial.__version__) >= version.parse("3.5"):
                 # Special handling of xe132 with pyserial >= 3.5
