@@ -188,14 +188,10 @@ class H5Recorder(Recorder):
             track_times=False,
         )
 
-        num_sweeps = metadata.frame_data_length // metadata.sweep_data_length
-        num_distances = metadata.sweep_data_length
-        frame_shape = (num_sweeps, num_distances)
-
         g.create_dataset(
             "frame",
-            shape=(0, *frame_shape),
-            maxshape=(None, *frame_shape),
+            shape=(0, *metadata.frame_shape),
+            maxshape=(None, *metadata.frame_shape),
             dtype=INT_16_COMPLEX,
             track_times=False,
         )
