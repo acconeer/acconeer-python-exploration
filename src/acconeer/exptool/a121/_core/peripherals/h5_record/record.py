@@ -14,6 +14,7 @@ from acconeer.exptool.a121._core.entities import (
     ResultContext,
     ServerInfo,
     SessionConfig,
+    StackedResults,
 )
 from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
@@ -36,12 +37,27 @@ class H5Record(PersistentRecord):
         return self._map_over_entries(self._get_metadata_for_entry_group)
 
     @property
+    def extended_stacked_results(self) -> list[dict[int, StackedResults]]:
+        return self._map_over_entries(self._entry_group_to_stacked_results)
+
+    def _entry_group_to_stacked_results(self, entry_group: h5py.Group) -> StackedResults:
+        return StackedResults(
+            data_saturated=entry_group["result/data_saturated"][()],
+            calibration_needed=entry_group["result/calibration_needed"][()],
+            temperature=entry_group["result/temperature"][()],
+            tick=entry_group["result/tick"][()],
+            frame_delayed=entry_group["result/frame_delayed"][()],
+            frame=entry_group["result/frame"][()],
+            context=self._get_result_context_for_entry_group(entry_group),
+        )
+
+    @property
     def extended_results(self) -> Iterable[list[dict[int, Result]]]:
         for frame_no in range(self.num_frames):
             yield self._get_result_for_all_entries(frame_no)
 
     def _get_result_for_all_entries(self, frame_no: int) -> list[dict[int, Result]]:
-        def entry_group_to_result(entry_group):
+        def entry_group_to_result(entry_group: h5py.Group) -> Result:
             return Result(
                 data_saturated=entry_group["result/data_saturated"][frame_no],
                 frame_delayed=entry_group["result/frame_delayed"][frame_no],
@@ -49,14 +65,16 @@ class H5Record(PersistentRecord):
                 temperature=entry_group["result/temperature"][frame_no],
                 tick=entry_group["result/tick"][frame_no],
                 frame=np.array(entry_group["result/frame"][frame_no]),
-                # TODO: ResultContext could use some optimization (caching) in the future.
-                context=ResultContext(
-                    metadata=self._get_metadata_for_entry_group(entry_group),
-                    ticks_per_second=self.server_info.ticks_per_second,
-                ),
+                context=self._get_result_context_for_entry_group(entry_group),
             )
 
         return self._map_over_entries(entry_group_to_result)
+
+    def _get_result_context_for_entry_group(self, entry_group: h5py.Group) -> ResultContext:
+        return ResultContext(
+            metadata=self._get_metadata_for_entry_group(entry_group),
+            ticks_per_second=self.server_info.ticks_per_second,
+        )
 
     @property
     def lib_version(self) -> str:

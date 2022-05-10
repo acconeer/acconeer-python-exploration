@@ -9,6 +9,7 @@ from .client_info import ClientInfo
 from .metadata import Metadata
 from .result import Result
 from .server_info import ServerInfo
+from .stacked_results import StackedResults
 
 
 class Record(abc.ABC):
@@ -25,6 +26,11 @@ class Record(abc.ABC):
     @property
     @abc.abstractmethod
     def extended_results(self) -> Iterable[list[dict[int, Result]]]:
+        ...
+
+    @property
+    @abc.abstractmethod
+    def extended_stacked_results(self) -> list[dict[int, StackedResults]]:
         ...
 
     @property

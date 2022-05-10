@@ -57,3 +57,16 @@ def test_extended_results(ref_record, ref_frame_raw, ref_frame):
 
 def test_num_frames(ref_record, ref_num_frames):
     assert ref_record.num_frames == ref_num_frames
+
+
+def test_stacked_results_num_frames(ref_record, ref_num_frames, ref_structure):
+    for group_id, group in enumerate(ref_structure):
+        for sensor_id in group:
+            assert len(ref_record.extended_stacked_results[group_id][sensor_id]) == ref_num_frames
+
+
+def test_stacked_results_data(ref_record, ref_frame, ref_structure):
+    for group_id, group in enumerate(ref_structure):
+        for sensor_id in group:
+            for frame in ref_record.extended_stacked_results[group_id][sensor_id].frame:
+                np.testing.assert_array_equal(frame, ref_frame)
