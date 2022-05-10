@@ -40,6 +40,17 @@ class SubsweepConfig:
         phase_enhancement: bool = False,
         prf: PRF = PRF.PRF_13_0_MHz,
     ) -> None:
+        self.__attrs_init__(  # type: ignore[attr-defined]
+            start_point=start_point,
+            num_points=num_points,
+            step_length=step_length,
+            profile=profile,
+            hwaas=hwaas,
+            receiver_gain=receiver_gain,
+            enable_tx=enable_tx,
+            phase_enhancement=phase_enhancement,
+            prf=prf,
+        )
         self.start_point = start_point
         self.num_points = num_points
         self.step_length = step_length
