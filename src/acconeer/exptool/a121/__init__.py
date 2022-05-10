@@ -16,6 +16,7 @@ from ._core import (
     SensorConfig,
     ServerInfo,
     SessionConfig,
+    StackedResults,
     SubsweepConfig,
     load_record,
     open_record,

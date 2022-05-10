@@ -8,5 +8,6 @@ from .containers import (
     ResultContext,
     SensorInfo,
     ServerInfo,
+    StackedResults,
 )
 from .dtypes import INT_16_COMPLEX

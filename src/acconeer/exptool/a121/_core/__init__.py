@@ -12,6 +12,7 @@ from .entities import (
     SensorInfo,
     ServerInfo,
     SessionConfig,
+    StackedResults,
     SubsweepConfig,
 )
 from .mediators import ClientError, Recorder
