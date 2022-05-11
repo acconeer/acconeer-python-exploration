@@ -184,15 +184,14 @@ Envelope and Power Bins services
 :numref:`fig_power_bins_demo` and :numref:`fig_env_demo` show outputs from the Power Bins and Envelope Services obtained with one of the scripts in Exploration Tool, the setup and environment are identical for the two data sets. Here it can be seen that Power Bins and Envelope Services provide output of the same type, i.e. amplitude of received signal as a function of distance. The difference lies in the signal processing done and the Power Bins output has lower SNR, lower resolution in range, but requires less processing and memory allocation than Envelope.
 
 .. _fig_power_bins_demo:
-.. figure:: /_static/introduction/fig_power_bins_demo.png
+.. figure:: /_static/introduction/fig_power_bins_tool_demo.png
     :align: center
 
     Output from the Power Bins service in Exploration Tool. Each bin correspond to a region of the scanned range, where Bin 1 is closest to the sensor.
 
 .. _fig_env_demo:
-.. figure:: /_static/introduction/fig_env_demo.png
+.. figure:: /_static/introduction/fig_env_tool_demo.png
     :align: center
-    :width: 80%
 
     Output from the Envelope service in Exploration Tool.
 
@@ -203,7 +202,7 @@ IQ service
 The IQ Service provides complex data in cartesian form, which is shown in :numref:`fig_iq_demo` with distance on the third axis and data taken with the same setup as for Envelope and Power bins in :numref:`fig_power_bins_demo` and :numref:`fig_env_demo`.
 
 .. _fig_iq_demo:
-.. figure:: /_static/introduction/fig_iq_demo.png
+.. figure:: /_static/introduction/fig_iq_tool_demo.png
     :align: center
 
     Output from the IQ Service in Exploration Tool.
@@ -697,6 +696,7 @@ Document history
     =========== ====================================== ======= ============
     Author      Comments                               Version Date
     =========== ====================================== ======= ============
+    Acconeer AB Update demo images.                    2.11    2022-05-11
     Acconeer AB Minor update.                          2.10    2022-03-10
     Acconeer AB Update link to HAL-integration guide.  2.9     2022-03-07
     Acconeer AB Updated max range in tables.           2.8     2020-12-14

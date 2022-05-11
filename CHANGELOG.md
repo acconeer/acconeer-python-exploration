@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+ - Update demo images in sensor introduction
+
 ### Fixed
 - The update rate when replaying a saved file is now
   the same as the file was captured in.
