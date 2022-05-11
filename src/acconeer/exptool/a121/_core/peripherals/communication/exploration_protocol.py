@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Literal, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import attrs
 import numpy as np
@@ -20,7 +20,7 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.mediators import CommunicationProtocol
 from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
-from typing_extensions import TypedDict
+from typing_extensions import Literal, TypedDict
 
 
 GoodStatus = Union[Literal["ok"], Literal["start"], Literal["stop"], Literal["end"]]
