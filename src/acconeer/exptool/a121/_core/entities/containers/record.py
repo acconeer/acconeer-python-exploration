@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Iterable
+from typing import Any, Iterator
 
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities.configs import SessionConfig
@@ -30,11 +30,11 @@ class Record(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def extended_results(self) -> Iterable[list[dict[int, Result]]]:
+    def extended_results(self) -> Iterator[list[dict[int, Result]]]:
         ...
 
     @property
-    def results(self) -> Iterable[Result]:
+    def results(self) -> Iterator[Result]:
         for extended_result in self.extended_results:
             yield utils.unextend(extended_result)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Callable, Iterable, Tuple, TypeVar
+from typing import Callable, Iterator, Tuple, TypeVar
 
 import h5py
 import numpy as np
@@ -52,7 +52,7 @@ class H5Record(PersistentRecord):
         )
 
     @property
-    def extended_results(self) -> Iterable[list[dict[int, Result]]]:
+    def extended_results(self) -> Iterator[list[dict[int, Result]]]:
         for frame_no in range(self.num_frames):
             yield self._get_result_for_all_entries(frame_no)
 
@@ -130,7 +130,7 @@ class H5Record(PersistentRecord):
     def _map_over_entries(self, func: Callable[[h5py.Group], T]) -> list[dict[int, T]]:
         return utils.map_over_extended_structure(func, self._get_entries())
 
-    def _iterate_entries(self) -> Iterable[Tuple[int, int, h5py.Group]]:
+    def _iterate_entries(self) -> Iterator[Tuple[int, int, h5py.Group]]:
         """Iterates over "Entry" items in this record.
 
         :returns: An iterable of <group_id>, <sensor_id>, <"EntryGroup">
