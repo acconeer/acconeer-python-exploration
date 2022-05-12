@@ -9,8 +9,8 @@ round-trip through:
 4. Deserialization
 5. ... and finally compared.
 """
-
 import numpy as np
+import pytest
 
 
 def test_lib_version(ref_record, ref_lib_version):
@@ -70,3 +70,11 @@ def test_stacked_results_data(ref_record, ref_frame, ref_structure):
         for sensor_id in group:
             for frame in ref_record.extended_stacked_results[group_id][sensor_id].frame:
                 np.testing.assert_array_equal(frame, ref_frame)
+
+
+def test_sensor_id(ref_record, ref_structure):
+    if ref_structure == [{1}]:
+        assert ref_record.sensor_id == 1
+    else:
+        with pytest.raises(ValueError):
+            _ = ref_record.sensor_id

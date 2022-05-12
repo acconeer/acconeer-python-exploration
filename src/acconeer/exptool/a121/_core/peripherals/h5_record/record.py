@@ -6,6 +6,7 @@ from typing import Callable, Iterable, Tuple, TypeVar
 import h5py
 import numpy as np
 
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
@@ -16,7 +17,6 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
     StackedResults,
 )
-from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
 
 T = TypeVar("T")
@@ -94,6 +94,11 @@ class H5Record(PersistentRecord):
         return SessionConfig.from_json(self.file["session/session_config"][()])
 
     @property
+    def sensor_id(self) -> int:
+        entry_group = utils.unextend(self._get_entries())
+        return int(entry_group["sensor_id"][()])
+
+    @property
     def timestamp(self) -> str:
         return self._h5py_dataset_to_str(self.file["timestamp"])
 
@@ -123,7 +128,7 @@ class H5Record(PersistentRecord):
         return [structure[i] for i in range(len(structure))]
 
     def _map_over_entries(self, func: Callable[[h5py.Group], T]) -> list[dict[int, T]]:
-        return map_over_extended_structure(func, self._get_entries())
+        return utils.map_over_extended_structure(func, self._get_entries())
 
     def _iterate_entries(self) -> Iterable[Tuple[int, int, h5py.Group]]:
         """Iterates over "Entry" items in this record.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 from typing import Any, Iterable
 
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities.configs import SessionConfig
 
 from .client_info import ClientInfo
@@ -24,14 +25,27 @@ class Record(abc.ABC):
         ...
 
     @property
+    def metadata(self) -> Metadata:
+        return utils.unextend(self.extended_metadata)
+
+    @property
     @abc.abstractmethod
     def extended_results(self) -> Iterable[list[dict[int, Result]]]:
         ...
 
     @property
+    def results(self) -> Iterable[Result]:
+        for extended_result in self.extended_results:
+            yield utils.unextend(extended_result)
+
+    @property
     @abc.abstractmethod
     def extended_stacked_results(self) -> list[dict[int, StackedResults]]:
         ...
+
+    @property
+    def stacked_results(self) -> StackedResults:
+        return utils.unextend(self.extended_stacked_results)
 
     @property
     @abc.abstractmethod
@@ -55,6 +69,11 @@ class Record(abc.ABC):
 
     @property
     @abc.abstractmethod
+    def sensor_id(self) -> int:
+        ...
+
+    @property
+    @abc.abstractmethod
     def timestamp(self) -> str:
         ...
 
@@ -62,12 +81,6 @@ class Record(abc.ABC):
     @abc.abstractmethod
     def uuid(self) -> str:
         ...
-
-    @property
-    def metadata(self) -> Metadata:
-        (group,) = self.extended_metadata
-        (metadata,) = group.values()
-        return metadata
 
 
 class PersistentRecord(Record):

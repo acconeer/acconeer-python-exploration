@@ -59,6 +59,7 @@ def ref_session_config():
 
 @pytest.fixture(
     params=[
+        [{1}],
         [{2, 3}, {2}],
         [{1, 2}, {3, 4}, {1, 2, 3, 4, 5}],
     ]
