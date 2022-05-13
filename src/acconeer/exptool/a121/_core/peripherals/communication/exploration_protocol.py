@@ -351,9 +351,9 @@ class ExplorationProtocol(CommunicationProtocol):
                 metadata = partial_result._context.metadata
                 end = start + metadata.frame_data_length * 4  # 4 = sizeof(int_16_complex)
 
-                raw_frame = bytes_[start:end]
-                np_frame = np.frombuffer(raw_frame, dtype=INT_16_COMPLEX)
-                np_frame.resize(metadata.frame_shape)
-                partial_group[sensor_id] = attrs.evolve(partial_result, frame=np_frame)
+                raw_frame_data = bytes_[start:end]
+                np_frame = np.frombuffer(raw_frame_data, dtype=INT_16_COMPLEX)
+                resized_frame = np.resize(np_frame, metadata.frame_shape)
+                partial_group[sensor_id] = attrs.evolve(partial_result, frame=resized_frame)
                 start += end
         return partial_results
