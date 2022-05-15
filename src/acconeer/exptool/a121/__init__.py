@@ -14,6 +14,7 @@ from ._core import (
     Recorder,
     Result,
     SensorConfig,
+    SensorInfo,
     ServerInfo,
     SessionConfig,
     StackedResults,
