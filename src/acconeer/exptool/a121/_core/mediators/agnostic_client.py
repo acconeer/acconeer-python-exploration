@@ -245,11 +245,11 @@ class AgnosticClient:
     def session_config(self) -> SessionConfig:
         """The ``SessionConfig`` passed in ``setup_session``."""
         self._assert_session_setup()
-
-        return self._session_config  # type: ignore[return-value]
+        assert self._session_config is not None  # Should never happen if session is setup
+        return self._session_config
 
     @property
     def extended_metadata(self) -> list[dict[int, Metadata]]:
         self._assert_session_setup()
-
-        return self._metadata  # type: ignore[return-value]
+        assert self._metadata is not None  # Should never happen if session is setup
+        return self._metadata
