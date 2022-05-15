@@ -52,7 +52,7 @@ def test_sample_whole_record(tmp_path, ref_record):
         _uuid=ref_record.uuid,
     )
 
-    recorder.start(
+    recorder._start(
         client_info=ref_record.client_info,
         extended_metadata=ref_record.extended_metadata,
         server_info=ref_record.server_info,
@@ -60,8 +60,8 @@ def test_sample_whole_record(tmp_path, ref_record):
     )
 
     for extended_results in ref_record.extended_results:
-        recorder.sample(extended_results)
-    recorder.stop()
+        recorder._sample(extended_results)
+    recorder._stop()
 
     with a121.open_record(filename) as record:
         assert_record_equals(record, ref_record)

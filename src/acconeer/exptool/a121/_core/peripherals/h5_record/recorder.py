@@ -90,7 +90,7 @@ class H5Recorder(Recorder):
             track_times=False,
         )
 
-    def start(
+    def _start(
         self,
         *,
         client_info: ClientInfo,
@@ -135,22 +135,22 @@ class H5Recorder(Recorder):
                 )
 
                 result_group = entry_group.create_group("result")
-                self.create_result_datasets(result_group, metadata)
+                self._create_result_datasets(result_group, metadata)
 
-    def sample(self, extended_result: list[dict[int, Result]]) -> None:
+    def _sample(self, extended_result: list[dict[int, Result]]) -> None:
         for group_index, result_group_dict in enumerate(extended_result):
             for entry_id, result in enumerate(result_group_dict.values()):
                 result_group = self.file[f"session/group_{group_index}/entry_{entry_id}/result"]
-                self.write_result(result_group, self._num_frames, result)
+                self._write_result(result_group, self._num_frames, result)
 
         self._num_frames += 1
 
-    def stop(self) -> Any:
+    def _stop(self) -> Any:
         if self.owns_file:
             self.file.close()
 
     @staticmethod
-    def create_result_datasets(g: h5py.Group, metadata: Metadata) -> None:
+    def _create_result_datasets(g: h5py.Group, metadata: Metadata) -> None:
         g.create_dataset(
             "data_saturated",
             shape=(0,),
@@ -197,7 +197,7 @@ class H5Recorder(Recorder):
         )
 
     @staticmethod
-    def write_result(g: h5py.Group, index: int, result: Result) -> None:
+    def _write_result(g: h5py.Group, index: int, result: Result) -> None:
         """Extends the Dataset to the appropriate (new) size with .resize,
         and then copies the data over
         """

@@ -14,7 +14,7 @@ from typing_extensions import Protocol
 
 
 class Recorder(Protocol):
-    def start(
+    def _start(
         self,
         *,
         client_info: ClientInfo,
@@ -24,8 +24,8 @@ class Recorder(Protocol):
     ) -> None:
         ...
 
-    def sample(self, extended_result: list[dict[int, Result]]) -> None:
+    def _sample(self, extended_result: list[dict[int, Result]]) -> None:
         ...
 
-    def stop(self) -> Any:
+    def _stop(self) -> Any:
         ...

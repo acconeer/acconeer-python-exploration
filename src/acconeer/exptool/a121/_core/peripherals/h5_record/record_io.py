@@ -56,7 +56,7 @@ def save_record_to_h5(path_or_file: PathOrH5File, record: Record) -> None:
 
     recorder = H5Recorder(path_or_file)
 
-    recorder.start(
+    recorder._start(
         client_info=record.client_info,
         extended_metadata=record.extended_metadata,
         server_info=record.server_info,
@@ -64,6 +64,6 @@ def save_record_to_h5(path_or_file: PathOrH5File, record: Record) -> None:
     )
 
     for extended_result in record.extended_results:
-        recorder.sample(extended_result)
+        recorder._sample(extended_result)
 
-    recorder.stop()
+    recorder._stop()

@@ -118,7 +118,7 @@ class AgnosticClient:
 
         if recorder is not None:
             self._recorder = recorder
-            self._recorder.start(
+            self._recorder._start(
                 client_info=self.client_info,
                 extended_metadata=self.extended_metadata,
                 server_info=self.server_info,
@@ -150,7 +150,7 @@ class AgnosticClient:
         extended_results = self._protocol.get_next_payload(payload, partial_results)
 
         if self._recorder is not None:
-            self._recorder.sample(extended_results)
+            self._recorder._sample(extended_results)
 
         if self.session_config.extended:
             return extended_results
@@ -168,7 +168,7 @@ class AgnosticClient:
         self._assert_session_started()
 
         if self._recorder is not None:
-            return self._recorder.stop()
+            return self._recorder._stop()
 
         self._link.send(self._protocol.stop_streaming_command())
         reponse_bytes = self._drain_buffer()
