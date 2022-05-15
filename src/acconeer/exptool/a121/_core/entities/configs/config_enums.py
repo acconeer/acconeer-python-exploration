@@ -30,7 +30,7 @@ def find_by_lowercase_name(enum: Type[T], lowercase_name: object) -> Optional[T]
 
 @unique
 class Profile(IntEnum):
-    """Profile."""
+    """Profile"""
 
     PROFILE_1 = 1
     PROFILE_2 = 2
@@ -45,7 +45,7 @@ class Profile(IntEnum):
 
 @unique
 class PRF(IntEnum):
-    """Pulse Repetition Frequency."""
+    """Pulse Repetition Frequency (PRF)"""
 
     PRF_19_5_MHz = 19500000
     PRF_13_0_MHz = 13000000
@@ -63,7 +63,7 @@ class PRF(IntEnum):
 
 @unique
 class IdleState(IntEnum):
-    """Idle state.
+    """Idle state
 
     Idle state ``DEEP_SLEEP`` is the deepest state where as much of the
     sensor hardware as possible is shut down and idle state ``READY`` is

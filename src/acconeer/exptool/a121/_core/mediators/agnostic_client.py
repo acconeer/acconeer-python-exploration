@@ -243,13 +243,16 @@ class AgnosticClient:
 
     @property
     def session_config(self) -> SessionConfig:
-        """The ``SessionConfig`` passed in ``setup_session``."""
+        """The :class:`SessionConfig` for the current session"""
+
         self._assert_session_setup()
         assert self._session_config is not None  # Should never happen if session is setup
         return self._session_config
 
     @property
     def extended_metadata(self) -> list[dict[int, Metadata]]:
+        """The extended :class:`Metadata` for the current session"""
+
         self._assert_session_setup()
         assert self._metadata is not None  # Should never happen if session is setup
         return self._metadata
