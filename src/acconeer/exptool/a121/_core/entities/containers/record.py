@@ -3,6 +3,9 @@ from __future__ import annotations
 import abc
 from typing import Any, Iterator
 
+import numpy as np
+import numpy.typing as npt
+
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities.configs import SessionConfig
 
@@ -46,6 +49,10 @@ class Record(abc.ABC):
     @property
     def stacked_results(self) -> StackedResults:
         return utils.unextend(self.extended_stacked_results)
+
+    @property
+    def frames(self) -> npt.NDArray[np.complex_]:
+        return self.stacked_results.frame
 
     @property
     @abc.abstractmethod
