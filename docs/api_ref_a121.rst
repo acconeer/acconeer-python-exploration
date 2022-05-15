@@ -1,7 +1,7 @@
 API reference (A121)
 ====================
 
-Config classes
+Configurations
 --------------
 
 .. autoclass:: acconeer.exptool.a121.SessionConfig
@@ -25,20 +25,70 @@ Config classes
     :members:
     :undoc-members:
 
+Entities
+--------
+
+.. autoclass:: acconeer.exptool.a121.Result
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.StackedResults
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.Metadata
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.ClientInfo
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.ServerInfo
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.SensorInfo
+    :members:
+    :undoc-members:
+
 Input/Output
 ------------
 
 .. autoclass:: acconeer.exptool.a121.Client
     :members:
-       connect,
-       setup_session,
-       start_session,
-       get_next,
-       stop_session,
-       disconnect,
-       connected,
-       session_is_setup,
-       session_is_started,
-       server_info,
-       client_info,
-       session_config,
+    :undoc-members:
+    :member-order: groupwise
+    :inherited-members:
+
+Recording
+---------
+
+Recorders
+^^^^^^^^^
+
+.. autoclass:: acconeer.exptool.a121.H5Recorder
+    :members:
+    :undoc-members:
+
+Records
+^^^^^^^
+
+.. autoclass:: acconeer.exptool.a121.Record
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.PersistentRecord
+    :members:
+    :undoc-members:
+
+Open/load/save functions
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: acconeer.exptool.a121.load_record
+
+.. autofunction:: acconeer.exptool.a121.open_record
+
+.. autofunction:: acconeer.exptool.a121.save_record
+
+.. autofunction:: acconeer.exptool.a121.save_record_to_h5
