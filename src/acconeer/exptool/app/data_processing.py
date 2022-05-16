@@ -97,6 +97,11 @@ class DataProcessing:
             if sweep_rate is not None:
                 rate = sweep_rate / sensor_config_dict.get("sweeps_per_frame", 16)
 
+        if rate is not None:
+            sleep_time_ms = int(round(1000 / rate))
+        else:
+            sleep_time_ms = 3
+
         selected_sensors = self.sensor_config.sensor
         stored_sensors = sensor_config_dict["sensor"]
 
@@ -120,7 +125,7 @@ class DataProcessing:
             if self.abort:
                 break
 
-            QThread.msleep(3)
+            QThread.msleep(sleep_time_ms)
 
             subdata = subdata[sensor_list]
             self.process(subdata, subinfo, do_record=False)

@@ -1,5 +1,17 @@
 # Changelog
 
+## v4.2.0
+
+### Added
+- Possibility to export Sensor configuration to C code for use with RSS.
+
+### Changed
+ - Update demo images in sensor introduction
+
+### Fixed
+- The update rate when replaying a saved file is now
+  the same as the file was captured in.
+
 ## v4.1.1
 
 ### Changed
