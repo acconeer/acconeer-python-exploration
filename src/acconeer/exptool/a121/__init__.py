@@ -1,3 +1,5 @@
+import sys
+
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
     PRF,
@@ -24,3 +26,12 @@ from ._core import (
     save_record,
     save_record_to_h5,
 )
+
+
+if "pytest" not in sys.modules:
+    import warnings
+
+    warnings.warn(
+        "The a121 package is currently an unstable API and may change at any time.",
+        FutureWarning,
+    )
