@@ -265,9 +265,20 @@ def test_from_to_json():
     recreated_config = a121.SensorConfig.from_json(json_str)
     assert recreated_config == original_config
 
+
+def test_enum_fields_in_to_json():
+    json_str = a121.SensorConfig(
+        inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
+        subsweeps=[
+            a121.SubsweepConfig(
+                profile=a121.Profile.PROFILE_3,
+            ),
+        ],
+    ).to_json()
     dict_from_json = json.loads(json_str)
-    dict_from_config = original_config.to_dict()
-    assert dict_from_json == dict_from_config
+
+    assert dict_from_json["inter_frame_idle_state"] == "DEEP_SLEEP"
+    assert dict_from_json["subsweeps"][0]["profile"] == "PROFILE_3"
 
 
 @pytest.mark.parametrize(

@@ -157,7 +157,7 @@ class SessionConfig:
         return cls(**d)
 
     def to_json(self) -> str:
-        return json.dumps(self.to_dict())
+        return json.dumps(self.to_dict(), cls=utils.EntityJSONEncoder)
 
     @classmethod
     def from_json(cls, json_str: str) -> SessionConfig:

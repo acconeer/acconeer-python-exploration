@@ -5,7 +5,12 @@ from typing import Any
 
 import attrs
 
-from acconeer.exptool.a121._core.utils import convert_validate_int, is_divisor_of, is_multiple_of
+from acconeer.exptool.a121._core.utils import (
+    EntityJSONEncoder,
+    convert_validate_int,
+    is_divisor_of,
+    is_multiple_of,
+)
 
 from .config_enums import PRF, Profile
 
@@ -160,9 +165,7 @@ class SubsweepConfig:
         return SubsweepConfig(**d)
 
     def to_json(self) -> str:
-        d = self.to_dict()
-        d["prf"] = d.pop("prf").name
-        return json.dumps(d)
+        return json.dumps(self.to_dict(), cls=EntityJSONEncoder)
 
     @classmethod
     def from_json(cls, json_str: str) -> SubsweepConfig:

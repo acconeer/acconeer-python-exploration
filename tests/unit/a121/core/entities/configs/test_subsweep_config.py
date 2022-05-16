@@ -82,13 +82,14 @@ def test_to_from_json_identity():
 
 
 def test_prf_field_in_json_representation_is_a_string_that_can_be_converted_back():
-    config = a121.SubsweepConfig()
+    config = a121.SubsweepConfig(prf=a121.PRF.PRF_8_7_MHz)
 
     json_dict = json.loads(config.to_json())
 
     enum_member_name = json_dict["prf"]
+    assert enum_member_name == "PRF_8_7_MHz"
     assert isinstance(enum_member_name, str)
-    assert a121.PRF(enum_member_name) in a121.PRF  # type: ignore[arg-type]
+    assert a121.PRF(enum_member_name) in a121.PRF
 
 
 @pytest.mark.parametrize(

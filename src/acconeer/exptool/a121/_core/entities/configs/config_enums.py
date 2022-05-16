@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum, IntEnum, unique
+from enum import Enum, unique
 from typing import Optional, Type, TypeVar
 
 
@@ -29,7 +29,7 @@ def find_by_lowercase_name(enum: Type[T], lowercase_name: object) -> Optional[T]
 
 
 @unique
-class Profile(IntEnum):
+class Profile(Enum):
     """Profile"""
 
     PROFILE_1 = 1
@@ -44,7 +44,7 @@ class Profile(IntEnum):
 
 
 @unique
-class PRF(IntEnum):
+class PRF(Enum):
     """Pulse Repetition Frequency (PRF)"""
 
     PRF_19_5_MHz = 19500000
@@ -62,7 +62,7 @@ class PRF(IntEnum):
 
 
 @unique
-class IdleState(IntEnum):
+class IdleState(Enum):
     """Idle state
 
     Idle state ``DEEP_SLEEP`` is the deepest state where as much of the
@@ -91,4 +91,4 @@ class IdleState(IntEnum):
         return None
 
     def is_deeper_than(self, other: IdleState) -> bool:
-        return self < other
+        return self.value < other.value

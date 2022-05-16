@@ -170,6 +170,9 @@ class ExplorationProtocol(CommunicationProtocol):
 
         result["groups"] = map_over_extended_structure(cls._translate_prf_enums, result["groups"])
         result["groups"] = map_over_extended_structure(
+            cls._translate_profile_enums, result["groups"]
+        )
+        result["groups"] = map_over_extended_structure(
             cls._translate_idle_state_enums, result["groups"]
         )
         result["groups"] = map_over_extended_structure(
@@ -186,6 +189,12 @@ class ExplorationProtocol(CommunicationProtocol):
             )
             + "\n"
         ).encode("ascii")
+
+    @classmethod
+    def _translate_profile_enums(cls, sensor_config_dict: dict[str, Any]) -> dict[str, Any]:
+        for subsweep_config_dict in sensor_config_dict["subsweeps"]:
+            subsweep_config_dict["profile"] = subsweep_config_dict["profile"].value
+        return sensor_config_dict
 
     @classmethod
     def _translate_prf_enums(cls, sensor_config_dict: dict[str, Any]) -> dict[str, Any]:

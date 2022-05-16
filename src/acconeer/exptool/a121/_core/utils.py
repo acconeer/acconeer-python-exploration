@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import enum
+import json
 from typing import (
     Any,
     Callable,
@@ -233,3 +235,11 @@ def iterate_extended_structure(
     for group_id, group in enumerate(structure):
         for sensor_id, elem in group.items():
             yield (group_id, sensor_id, elem)
+
+
+class EntityJSONEncoder(json.JSONEncoder):
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, enum.Enum):
+            return obj.name
+
+        return json.JSONEncoder.default(self, obj)

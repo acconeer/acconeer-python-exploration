@@ -1,5 +1,8 @@
 # type: ignore
 
+import enum
+import json
+
 import pytest
 
 from acconeer.exptool.a121._core import utils
@@ -125,3 +128,22 @@ def test_unextend_bad_argument():
     argument = ["test"]
     with pytest.raises(ValueError):
         utils.unextend(argument)
+
+
+def test_entity_json_encoder():
+    SomeEnum = enum.Enum("SomeEnum", ["FOO", "BAR"])
+    assert SomeEnum.FOO.value == 1
+
+    dump_dict = {
+        "some_enum_value": SomeEnum.BAR,
+        "some_other_value": 123,
+    }
+    expected = {
+        "some_enum_value": "BAR",
+        "some_other_value": 123,
+    }
+    actual = json.loads(json.dumps(dump_dict, cls=utils.EntityJSONEncoder))
+
+    assert actual == expected
+    for k, expected_v in expected.items():
+        assert type(actual[k]) is type(expected_v)
