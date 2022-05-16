@@ -241,10 +241,15 @@ def test_basic_to_dict():
         "inter_sweep_idle_state": a121.IdleState.READY,
         "subsweeps": [a121.SubsweepConfig().to_dict()],
     }
-    assert (
-        a121.SensorConfig(sweeps_per_frame=1, subsweeps=[a121.SubsweepConfig()]).to_dict()
-        == expected
-    )
+    actual = a121.SensorConfig(sweeps_per_frame=1, subsweeps=[a121.SubsweepConfig()]).to_dict()
+
+    assert actual == expected
+
+    for k, expected_v in expected.items():
+        if k == "subsweeps":
+            continue
+
+        assert type(actual[k]) is type(expected_v)
 
 
 def test_from_to_dict():
@@ -271,7 +276,7 @@ def test_from_to_json():
         ("start_point", 123),
         ("num_points", 22),
         ("step_length", 24),
-        ("profile", 1),
+        ("profile", a121.Profile.PROFILE_1),
         ("hwaas", 17),
         ("receiver_gain", 13),
         ("enable_tx", False),

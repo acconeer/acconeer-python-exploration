@@ -43,7 +43,7 @@ def test_to_dict_defaults():
         "start_point": 80,
         "num_points": 160,
         "step_length": 1,
-        "profile": 3,
+        "profile": a121.Profile.PROFILE_3,
         "hwaas": 8,
         "receiver_gain": 16,
         "enable_tx": True,
@@ -52,6 +52,9 @@ def test_to_dict_defaults():
     }
 
     assert subsweep.to_dict() == expected
+
+    for k, expected_v in expected.items():
+        assert type(subsweep.to_dict()[k]) is type(expected_v)
 
 
 def test_from_dict():

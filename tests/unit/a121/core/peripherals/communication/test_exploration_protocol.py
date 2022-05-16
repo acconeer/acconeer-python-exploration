@@ -97,16 +97,15 @@ def test_setup_command_simple_session_config():
     config = a121.SessionConfig(
         a121.SensorConfig(
             subsweeps=[
-                a121.SubsweepConfig(hwaas=8, prf=a121.PRF.PRF_6_5_MHz),
+                a121.SubsweepConfig(
+                    hwaas=8,
+                    prf=a121.PRF.PRF_6_5_MHz,
+                ),
             ],
             sweeps_per_frame=1,
         ),
         update_rate=20,
     )
-    expected_subsweep_dict = a121.SubsweepConfig(hwaas=8, prf=a121.PRF.PRF_6_5_MHz).to_dict()
-
-    # PRF_6_5_MHz |-> "6_5_MHz" in the Exploration protocol
-    expected_subsweep_dict["prf"] = "6_5_MHz"
 
     expected_dict = {
         "cmd": "setup",
@@ -115,7 +114,19 @@ def test_setup_command_simple_session_config():
                 {
                     "sensor_id": 1,
                     "config": {
-                        "subsweeps": [expected_subsweep_dict],
+                        "subsweeps": [
+                            {
+                                "start_point": 80,
+                                "num_points": 160,
+                                "step_length": 1,
+                                "profile": 3,
+                                "hwaas": 8,
+                                "receiver_gain": 16,
+                                "enable_tx": True,
+                                "phase_enhancement": False,
+                                "prf": "6_5_MHz",
+                            }
+                        ],
                         "sweeps_per_frame": 1,
                         "sweep_rate": 0.0,
                         "frame_rate": 0.0,
