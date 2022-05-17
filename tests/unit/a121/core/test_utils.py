@@ -3,6 +3,7 @@
 import enum
 import json
 
+import packaging.version
 import pytest
 
 from acconeer.exptool.a121._core import utils
@@ -147,3 +148,32 @@ def test_entity_json_encoder():
     assert actual == expected
     for k, expected_v in expected.items():
         assert type(actual[k]) is type(expected_v)
+
+
+@pytest.mark.parametrize(
+    ("raw", "version"),
+    [
+        ("a121-v1.2.3", "1.2.3"),
+        ("a121-v1.2.3-rc4", "1.2.3rc4"),
+        ("a121-v1.2.3-123-g0e03503be1", "1.2.4.dev123+g0e03503be1"),
+        ("a121-v1.2.3-rc4-123-g0e03503be1", "1.2.3rc5.dev123+g0e03503be1"),
+    ],
+)
+def test_parse_rss_version(raw, version):
+    assert utils.parse_rss_version(raw) == packaging.version.Version(version)
+
+
+def test_rss_version_order():
+    correctly_ordered_versions = [
+        "a121-v1.2.3",
+        "a121-v1.2.3-1-g123",
+        "a121-v1.2.3-2-g123",
+        "a121-v1.2.4-rc1",
+        "a121-v1.2.4-rc1-1-g123",
+        "a121-v1.2.4-rc1-2-g123",
+        "a121-v1.2.4-rc2",
+        "a121-v1.2.4-rc2-1-g123",
+        "a121-v1.2.4",
+    ]
+    correctly_ordered_versions = [utils.parse_rss_version(s) for s in correctly_ordered_versions]
+    assert correctly_ordered_versions == sorted(correctly_ordered_versions)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import json
+import re
 from typing import (
     Any,
     Callable,
@@ -14,6 +15,8 @@ from typing import (
     Union,
     overload,
 )
+
+import packaging.version
 
 
 T = TypeVar("T")
@@ -243,3 +246,39 @@ class EntityJSONEncoder(json.JSONEncoder):
             return obj.name
 
         return json.JSONEncoder.default(self, obj)
+
+
+def parse_rss_version(rss_version: str) -> packaging.version.Version:
+    pattern = (
+        r"a121-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)"
+        r"(?:-(?P<pre_phase>rc)(?P<pre_number>\d+))?"
+        r"(?:-(?P<dev_number>\d+)-(?P<dev_commit>g\w+))?"
+    )
+    match = re.fullmatch(pattern, rss_version)
+    if not match:
+        raise ValueError("Not a valid RSS version")
+
+    groups = match.groupdict()
+
+    is_prerelease = groups["pre_number"] is not None
+    is_devrelease = groups["dev_number"] is not None
+
+    release_segment = ""
+    pre_segment = ""
+    dev_segment = ""
+
+    if is_devrelease:
+        dev_segment = f".dev{groups['dev_number']}+{groups['dev_commit']}"
+
+        if is_prerelease:
+            groups["pre_number"] = int(groups["pre_number"]) + 1
+        else:
+            groups["micro"] = int(groups["micro"]) + 1
+
+    if is_prerelease:
+        pre_segment = f"{groups['pre_phase']}{groups['pre_number']}"
+
+    release_segment = f"{groups['major']}.{groups['minor']}.{groups['micro']}"
+
+    version = release_segment + pre_segment + dev_segment
+    return packaging.version.Version(version)
