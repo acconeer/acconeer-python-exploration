@@ -112,7 +112,7 @@ class SessionConfig:
 
     @property
     def sensor_config(self) -> SensorConfig:
-        """If not extended, retrieves the `session_config`."""
+        """If not extended, retrieves the `sensor_config`."""
         self._assert_not_extended()
         (group,) = self._groups
         (sensor_config,) = group.values()
