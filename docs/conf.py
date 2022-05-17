@@ -18,6 +18,7 @@ extensions = [
 autodoc_member_order = "bysource"
 
 autodoc_typehints_format = "short"
+python_use_unqualified_type_names = True
 
 graphviz_dot_args = [
     "-Gfontname=sans-serif",

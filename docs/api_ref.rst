@@ -1,9 +1,9 @@
 .. _api-ref:
 
-API reference
-=============
+API reference - A111
+====================
 
-This page provides an auto-generated summary of Acconeer Exploration Tool's API.
+This page provides an auto-generated summary of Acconeer Exploration Tool's A111 API.
 
 .. autoclass:: acconeer.exptool.a111.Client
    :members:

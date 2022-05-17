@@ -13,3 +13,19 @@ write_to_template = "__version__ = \"{version}\"\n"
 
 [tool.black]
 line-length = 99
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+show_error_codes = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = [
+    "h5py.*",
+    "pytest.*",
+]
+ignore_missing_imports = true

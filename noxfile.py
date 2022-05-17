@@ -94,6 +94,20 @@ def reformat(session):
 
 
 @nox.session
+def mypy(session):
+    args = Parser().parse_args(session.posargs)
+
+    if args.editable:
+        session.install("-e", ".")
+    else:
+        session.install(".")
+
+    session.install("mypy")
+    session.run("python", "-m", "mypy", "-p", "acconeer.exptool.a121")
+    session.run("python", "-m", "mypy", "tests/unit/a121")
+
+
+@nox.session
 def docs(session):
     args = Parser().parse_args(session.posargs)
 
