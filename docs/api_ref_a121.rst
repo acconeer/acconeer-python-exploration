@@ -1,5 +1,11 @@
-API reference (A121)
+API reference - A121
 ====================
+
+This page provides an auto-generated summary of Acconeer Exploration Tool's A121 API.
+
+.. warning::
+
+    The ``acconeer.exptool.a121`` package is currently an unstable API and may change at any time.
 
 Configurations
 --------------
