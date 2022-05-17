@@ -9,17 +9,64 @@ from .sensor_config import SensorConfig
 
 
 class SessionConfig:
-    """Configuration of a session.
+    """Session configuration
 
-    A session consists of groups of SensorConfigs.
-    Groups are run sequentially while SensorConfigs in a single group
-    are run in parallel.
+    The session configuration defines the highest level of configuration available in Exploration
+    Tool. It mainly consists of one or several sensor configurations (:class:`SensorConfig`) for
+    the server to run. It also sets the update rate for the server, and the data format
+    ("extended") returned from the client.
 
-    A SessionConfig with multiple SensorConfigs (in a single group or multiple)
-    is considered "extended". Which is reflected in the shape of some return types.
+    Mapping from sensor ID to sensor config is done here in the session config. For example, if you
+    want to want to use sensor 2, you can do:
 
-    A SessionConfig with a single SensorConfig is not extended, but the return values can
-    be passed as extended with the keyword argument `extended=True`
+    .. code-block:: python
+
+        SessionConfig({2: SensorConfig(start_point=123)})
+
+    The default sensor ID is 1. Going further, you may run multiple sensors at the same time (in
+    parallel) like this:
+
+    .. code-block:: python
+
+        SessionConfig(
+            {
+                2: SensorConfig(start_point=123),
+                3: SensorConfig(start_point=456),
+            }
+        )
+
+    The dictionary shown above forms a *group* of sensor configs. Further extending upon this, you
+    may specify multiple groups which are run in sequence, like this:
+
+    .. code-block:: python
+
+        SessionConfig(
+            [
+                {
+                    2: SensorConfig(start_point=123),
+                    3: SensorConfig(start_point=456),
+                },
+                {
+                    2: SensorConfig(start_point=789),
+                },
+            ]
+        )
+
+    You may reuse the same sensor across groups. If a sensor is used multiple times, a
+    reconfiguration will be done prior to each measurement.
+
+    A session config with multiple sensor configs (in a single group or multiple) is considered
+    "extended". This is reflected in the shape of some return types. A SessionConfig with a single
+    SensorConfig is not extended, but the return values can be passed as extended with the keyword
+    argument ``extended=True``.
+
+    :param arg: The sensor configuration(s).
+    :param extended:
+        Forces whether to use the extended format or not. If not given (``= None``), the extended
+        format will be used automatically if multiple sensor configs are given.
+    :param update_rate:
+        The update rate limit on the server. Defaults to None, not limiting the rate.
+    :raises ValueError: If the session config must be extended but ``extended=False``.
     """
 
     _groups: list[dict[int, SensorConfig]]
@@ -51,25 +98,27 @@ class SessionConfig:
 
         if extended is not None:
             if not extended and must_be_extended:
-                raise ValueError
+                raise ValueError("Must be extended since multiple sensor configs are given")
 
     @property
     def extended(self) -> bool:
-        """Extended."""
+        """Whether or not the extended format is used"""
+
         return self._extended
 
     @property
     def groups(self) -> list[dict[int, SensorConfig]]:
-        """The config groups of this session."""
+        """The sensor config groups of this session"""
+
         return self._groups
 
     @property
     def update_rate(self) -> Optional[float]:
-        """Update rate.
+        """The update rate limit in Hz
 
-        The update rate in Hz. Must be > 0,
-        `update_rate = None` is interpreted as unlimited.
+        Must be > 0 or None, where None means unlimited.
         """
+
         return self._update_rate
 
     @update_rate.setter
@@ -84,10 +133,11 @@ class SessionConfig:
             raise RuntimeError("This operation requires SessionConfig not to be extended.")
 
     def validate(self) -> None:
-        """Preforms self-validation and validation of SensorConfigs
+        """Performs self-validation and validation of its sensor configs
 
-        :raises: ``ValueError`` if anything is invalid
+        :raises ValueError: If anything is invalid
         """
+
         for group in self._groups:
             for _, sensor_config in group.items():
                 sensor_config.validate()
@@ -104,7 +154,11 @@ class SessionConfig:
 
     @property
     def sensor_id(self) -> int:
-        """If not extended, retrieves the `sensor_id`."""
+        """Retrieves the sole sensor ID
+
+        :raises RuntimeError: If this session config is extended
+        """
+
         self._assert_not_extended()
         (group,) = self._groups
         (sensor_id,) = group.keys()
@@ -112,7 +166,11 @@ class SessionConfig:
 
     @property
     def sensor_config(self) -> SensorConfig:
-        """If not extended, retrieves the `sensor_config`."""
+        """Retrieves the sole sensor config
+
+        :raises RuntimeError: If this session config is extended
+        """
+
         self._assert_not_extended()
         (group,) = self._groups
         (sensor_config,) = group.values()

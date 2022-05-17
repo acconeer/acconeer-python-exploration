@@ -18,6 +18,7 @@ Table of contents
 
 .. toctree::
    :caption: API reference
+   :maxdepth: 1
 
    A111 <api_ref>
    A121 <api_ref_a121>
