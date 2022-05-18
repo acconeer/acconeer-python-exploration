@@ -20,7 +20,12 @@ SPARSE_IQ_PPC = 24
 
 @attrs.define(init=False)
 class SubsweepConfig:
-    """Configuration of a single subsweep."""
+    """Subsweep configuration
+
+    The subsweep config represents a 1-1 mapping to the RSS service subsweep config.
+
+    Normally used as a part of the :attr:`SensorConfig`.
+    """
 
     _start_point: int
     _num_points: int
@@ -67,7 +72,10 @@ class SubsweepConfig:
         self.prf = prf
 
     def validate(self) -> None:
-        pass
+        """Performs self-validation
+
+        :raises ValueError: If anything is invalid.
+        """
 
     @property
     def start_point(self) -> int:

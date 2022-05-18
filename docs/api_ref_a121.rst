@@ -10,14 +10,26 @@ This page provides an auto-generated summary of Acconeer Exploration Tool's A121
 Configurations
 --------------
 
+Session
+^^^^^^^
+
 .. autoclass:: acconeer.exptool.a121.SessionConfig
     :members:
+
+Sensor
+^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.SensorConfig
     :members:
 
+Subsweep
+^^^^^^^^
+
 .. autoclass:: acconeer.exptool.a121.SubsweepConfig
     :members:
+
+Parameter enums
+^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.PRF
     :members:
@@ -58,8 +70,8 @@ Entities
     :members:
     :undoc-members:
 
-Input/Output
-------------
+Client
+------
 
 .. autoclass:: acconeer.exptool.a121.Client
     :members:

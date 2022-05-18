@@ -24,7 +24,63 @@ class SubsweepProxyProperty(utils.ProxyProperty[T]):
 
 
 class SensorConfig:
-    """Configuration of a single sensor"""
+    """Sensor configuration
+
+    The sensor config represents a 1-1 mapping to the RSS service config.
+
+    By default, the sensor config holds a single :class:`SubsweepConfig`. The parameters defined by
+    the subsweep config, like :attr:`start_point`, can be accessed via the sensor config. If
+    multiple subsweeps are used, those parameters must be accessed via their respective subsweep
+    configs.
+
+    For example, a sensor config can be created like this:
+
+    .. code-block:: python
+
+        SensorConfig(sweeps_per_frame=16, start_point=123)
+
+    Note that the :attr:`start_point` is implicitly set in the underlying subsweep config. If you
+    want to explicitly set the subsweep config(s), you can do
+
+    .. code-block:: python
+
+        SensorConfig(
+            sweeps_per_frame=16,
+            subsweeps=[
+                SubsweepConfig(start_point=123),
+            ],
+        )
+
+    Parameters can also be accessed via the class attributes:
+
+    .. code-block:: python
+
+        sensor_config = SensorConfig()
+        sensor_config.sweeps_per_frame = 16
+        sensor_config.start_point = 123
+
+    If you want to use multiple subsweeps with this style of setting/getting the attributes, you
+    can do like this:
+
+    .. code-block:: python
+
+        sensor_config = SensorConfig(num_subsweeps=3)
+        sensor_config.sweeps_per_frame = 16
+        sensor_config.subsweeps[0].start_point = 123
+
+    .. note::
+
+        The sensor config does not control on which sensor it should be run. That is handled by
+        the :class:`SessionConfig`.
+
+    :param subsweeps:
+        The list of subsweeps to initialize with. May not be combined with ``num_subsweeps``.
+    :param num_subsweeps:
+        Initialize with a given number of subsweeps. May not be combined with ``subsweeps``.
+    :raises ValueError: If ``subsweeps`` and ``num_subsweeps`` are both given.
+    :raises ValueError: If the given list of ``subsweeps`` is empty.
+    :raises ValueError: If subsweeps parameters are both given implicitly and via ``subsweeps``.
+    """
 
     _subsweeps: list[SubsweepConfig]
 
@@ -134,21 +190,24 @@ class SensorConfig:
 
     @property
     def subsweep(self) -> SubsweepConfig:
-        """Convenience attribute for accessing the one and only SubsweepConfig.
+        """Retrieves the sole ``SubsweepConfig``
 
-        :raises: AttributeError if ``num_subsweeps`` != 1
+        :raises AttributeError: If ``num_subsweeps`` != 1
         """
+
         self._assert_single_subsweep()
         return self.subsweeps[0]
 
     @property
     def subsweeps(self) -> list[SubsweepConfig]:
-        """The list of used subsweep configurations."""
+        """The list of subsweep configs"""
+
         return self._subsweeps
 
     @property
     def num_subsweeps(self) -> int:
-        """The number of used subsweep configurations."""
+        """The number of subsweep configs"""
+
         return len(self.subsweeps)
 
     def __eq__(self, other: Any) -> bool:
@@ -183,9 +242,9 @@ class SensorConfig:
         return cls.from_dict(json.loads(json_str))
 
     def validate(self) -> None:
-        """Preforms self-validation.
+        """Performs self-validation and validation of its subsweep configs
 
-        :raises: ``ValueError`` if the config is invalid.
+        :raises ValueError: If anything is invalid.
         """
         # TODO: ValueErrors are the wrong Exception type sub-validators.
         self._validate_continuous_sweep_mode()

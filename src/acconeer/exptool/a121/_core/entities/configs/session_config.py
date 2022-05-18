@@ -135,7 +135,7 @@ class SessionConfig:
     def validate(self) -> None:
         """Performs self-validation and validation of its sensor configs
 
-        :raises ValueError: If anything is invalid
+        :raises ValueError: If anything is invalid.
         """
 
         for group in self._groups:
