@@ -20,6 +20,7 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
 .. toctree::
    :caption: API reference
    :maxdepth: 1
+   :hidden:
 
    A111 <api/a111>
    A121 <api/a121>
