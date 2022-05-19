@@ -12,14 +12,27 @@ from .common import attrs_ndarray_eq
 
 @attrs.frozen(kw_only=True)
 class Metadata:
+    """Metadata
+
+    Represents the RSS ``processing_metadata``.
+    """
+
     frame_data_length: int = attrs.field()
+    """Number of elements in the frame"""
+
     sweep_data_length: int = attrs.field()
+    """Number of elements in the sweep"""
+
     subsweep_data_offset: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
+    """Offset to the subsweeps data"""
+
     subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
+    """Number of elements in the subsweeps"""
 
     @property
     def frame_shape(self) -> Tuple[int, int]:
         """The frame shape this Metadata defines"""
+
         num_sweeps = self.frame_data_length // self.sweep_data_length
         return (num_sweeps, self.sweep_data_length)
 

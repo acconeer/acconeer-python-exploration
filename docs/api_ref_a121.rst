@@ -31,6 +31,11 @@ Subsweep
 Parameter enums
 ^^^^^^^^^^^^^^^
 
+.. note::
+
+    The configuration parameter enum values (e.g. 0, 1, 19500000, ...) are not to be used directly.
+    They are subject to change at any time.
+
 .. autoclass:: acconeer.exptool.a121.PRF
     :members:
     :undoc-members:
@@ -46,17 +51,19 @@ Parameter enums
 Entities
 --------
 
-.. autoclass:: acconeer.exptool.a121.Result
-    :members:
-    :undoc-members:
+RSS representations
+^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: acconeer.exptool.a121.StackedResults
+.. autoclass:: acconeer.exptool.a121.Result
     :members:
     :undoc-members:
 
 .. autoclass:: acconeer.exptool.a121.Metadata
     :members:
     :undoc-members:
+
+System info
+^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.ClientInfo
     :members:
@@ -97,6 +104,10 @@ Records
     :undoc-members:
 
 .. autoclass:: acconeer.exptool.a121.PersistentRecord
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.StackedResults
     :members:
     :undoc-members:
 

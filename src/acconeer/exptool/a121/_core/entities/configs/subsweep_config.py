@@ -79,7 +79,12 @@ class SubsweepConfig:
 
     @property
     def start_point(self) -> int:
-        """The starting point of the sweep."""
+        """Starting point of the sweep
+
+        The starting point of the sweep. The corresponding start in millimeter is approximately
+        ``start_point`` * 2.5 mm.
+        """
+
         return self._start_point
 
     @start_point.setter
@@ -88,7 +93,11 @@ class SubsweepConfig:
 
     @property
     def num_points(self) -> int:
-        """Number of data points to measure."""
+        """Number of data points to measure
+
+        The number of data points to measure in a sweep.
+        """
+
         return self._num_points
 
     @num_points.setter
@@ -97,7 +106,14 @@ class SubsweepConfig:
 
     @property
     def step_length(self) -> int:
-        """The step length."""
+        """Step length in a sweep
+
+        This sets the number of steps to have between each data point.
+
+        Sampling produces complex (IQ) data points with configurable distance spacing, starting
+        from ~2.5mm.
+        """
+
         return self._step_length
 
     @step_length.setter
@@ -113,7 +129,15 @@ class SubsweepConfig:
 
     @property
     def profile(self) -> Profile:
-        """The currently used profile"""
+        """Profile
+
+        Each profile consists of a number of settings for the sensor that configures the RX and TX
+        paths. Lower profiles have higher depth resolution while higher profiles have higher radar
+        loop gain.
+
+        See also :class:`Profile`.
+        """
+
         return self._profile
 
     @profile.setter
@@ -122,7 +146,16 @@ class SubsweepConfig:
 
     @property
     def hwaas(self) -> int:
-        """Hardware accelerated average samples."""
+        """Hardware accelerated average samples (HWAAS)
+
+        Each data point can be sampled several times and the sensor hardware then produces an
+        average value of those samples. The time needed to measure a sweep is roughly proportional
+        to the number of averaged samples. Hence, if there is a need to obtain a higher update
+        rate, HWAAS could be decreased but this leads to lower SNR.
+
+        HWAAS must be between 1 and 511 inclusive.
+        """
+
         return self._hwaas
 
     @hwaas.setter
@@ -131,7 +164,14 @@ class SubsweepConfig:
 
     @property
     def receiver_gain(self) -> int:
-        """Receiver gain setting."""
+        """Receiver gain setting
+
+        Must be a value between 0 and 23 inclusive where 23 is the highest gain and 0 the lowest.
+
+        Lower gain gives higher SNR. However, too low gain may result in quantization, lowering
+        SNR. Too high gain may result in saturation, corrupting the data.
+        """
+
         return self._receiver_gain
 
     @receiver_gain.setter
@@ -140,7 +180,12 @@ class SubsweepConfig:
 
     @property
     def enable_tx(self) -> bool:
-        """Enable or disable the transmitter."""
+        """Enable or disable the transmitter
+
+        If set to True, TX is enabled. This will enable the radio transmitter. By turning the
+        transmitter off the RX noise floor can be measured.
+        """
+
         return self._enable_tx
 
     @enable_tx.setter
@@ -149,7 +194,15 @@ class SubsweepConfig:
 
     @property
     def phase_enhancement(self) -> bool:
-        """Phase enhancement setting."""
+        """Enable or disable phase enhancement
+
+        If enabled, the data phase will be enhanced such that coherent distance filtering can be
+        applied. Given a single reflection from an object, the phase will appear as "flat" around
+        the amplitude peak.
+
+        Enabling the phase enhancement increases the processing execution time.
+        """
+
         return self._phase_enhancement
 
     @phase_enhancement.setter
@@ -158,7 +211,11 @@ class SubsweepConfig:
 
     @property
     def prf(self) -> PRF:
-        """Pulse repetition frequency."""
+        """Pulse Repetition Frequency (PRF)
+
+        See :class:`PRF` for details.
+        """
+
         return self._prf
 
     @prf.setter

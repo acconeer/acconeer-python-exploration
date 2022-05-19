@@ -306,10 +306,13 @@ class SensorConfig:
 
     @property
     def sweeps_per_frame(self) -> int:
-        """Sweeps per frame.
+        """Sweeps per frame (SPF)
+
+        The number of sweeps that will be captured in each frame (measurement).
 
         Must be > 0.
         """
+
         return self._sweeps_per_frame
 
     @sweeps_per_frame.setter
@@ -319,11 +322,13 @@ class SensorConfig:
 
     @property
     def sweep_rate(self) -> Optional[float]:
-        """Sweep rate.
+        """Sweep rate
 
-        The sweep rate in Hz. Must be > 0,
-        ``None`` is interpreted as max sweep rate.
+        The sweep rate for sweeps in a frame (measurement).
+
+        In Hz. Must be > 0 or ``None``, where ``None`` is interpreted as max sweep rate.
         """
+
         return self._sweep_rate
 
     @sweep_rate.setter
@@ -335,11 +340,14 @@ class SensorConfig:
 
     @property
     def frame_rate(self) -> Optional[float]:
-        """Frame rate.
+        """Frame rate
 
-        The frame rate in Hz. Must be > 0,
-        ``None`` is interpreted as unlimited.
+        Setting the frame rate to unlimited means that the rate is not limited by the sensor but
+        the rate that the host acknowledge and reads out the measurement data.
+
+        In Hz. Must be > 0 or ``None``, where ``None`` is interpreted as unlimited.
         """
+
         return self._frame_rate
 
     @frame_rate.setter
@@ -351,16 +359,18 @@ class SensorConfig:
 
     @property
     def continuous_sweep_mode(self) -> bool:
-        """Continuous sweep mode.
+        """Continuous sweep mode
 
-        In continuous sweep mode the timing will be identical over all sweeps, not
-        just the sweeps in a frame.
+        In continuous sweep mode the timing will be identical over all sweeps, not just the sweeps
+        in a frame.
 
         Constraints:
-        * Frame rate must be set to unlimited (``None``).
-        * Sweep rate must be set (``> 0``).
-        * Inter frame idle state must be set equal to inter sweep idle state.
+
+        - :attr:`frame_rate` must be set to unlimited (``None``).
+        - :attr:`sweep_rate` must be set (> 0).
+        - :attr:`inter_frame_idle_state` must be set equal to :attr:`inter_sweep_idle_state`.
         """
+
         return self._continuous_sweep_mode
 
     @continuous_sweep_mode.setter
@@ -369,16 +379,16 @@ class SensorConfig:
 
     @property
     def inter_frame_idle_state(self) -> IdleState:
-        """Inter frame idle state.
+        """Inter frame idle state
 
-        The inter frame idle state is the state the sensor idles in
-        between each frame.
+        The inter frame idle state is the state the sensor idles in between each frame.
 
         See also :class:`.config_enums.IdleState`.
 
-        The inter frame idle state of the frame must be deeper or
-        the same as the inter sweep idle state.
+        The :attr:`inter_frame_idle_state` of the frame must be deeper or
+        the same as the :attr:`inter_sweep_idle_state` .
         """
+
         return self._inter_frame_idle_state
 
     @inter_frame_idle_state.setter
@@ -387,13 +397,14 @@ class SensorConfig:
 
     @property
     def inter_sweep_idle_state(self) -> IdleState:
-        """Inter sweep idle state.
+        """Inter sweep idle state
 
         The inter frame idle state is the state the sensor idles in
         between each sweep in a frame.
 
         See also :class:`.config_enums.IdleState`.
         """
+
         return self._inter_sweep_idle_state
 
     @inter_sweep_idle_state.setter

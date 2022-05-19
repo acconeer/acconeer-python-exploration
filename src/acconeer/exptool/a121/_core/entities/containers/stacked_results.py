@@ -15,6 +15,18 @@ NDArrayInt = npt.NDArray[np.int64]
 
 @attrs.frozen(kw_only=True)
 class StackedResults:
+    """Stacked results
+
+    For loading/processing data.
+
+    Representation of multiple :class:`Result` stacked together. Scalar values, like
+    :attr:`Result.data_saturated`, become 1-D arrays of the same type. The :attr:`Result.frame`,
+    which is originally a 2-D array, becomes a 3-D array where the frames are stacked in the first
+    dimension.
+
+    See :class:`Result` for details on the attributes/properties.
+    """
+
     data_saturated: NDArrayBool = attrs.field(eq=attrs_ndarray_eq)
     frame_delayed: NDArrayBool = attrs.field(eq=attrs_ndarray_eq)
     calibration_needed: NDArrayBool = attrs.field(eq=attrs_ndarray_eq)
