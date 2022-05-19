@@ -57,6 +57,8 @@ exclude_patterns = [
 
 pygments_style = None
 
+html_favicon = "_static/favicon.png"
+
 html_theme = "pydata_sphinx_theme"
 
 html_css_files = ["css/custom.css"]
