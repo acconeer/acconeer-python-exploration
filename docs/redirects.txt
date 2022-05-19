@@ -1,5 +1,5 @@
-"api_ref.rst" "exploration_tool/api_ref.rst"
-"api_ref_a121.rst" "exploration_tool/api_ref_a121.rst"
+"api_ref.rst" "exploration_tool/api/a111.rst"
+"api_ref_a121.rst" "exploration_tool/api/a121.rst"
 "changelog.rst" "exploration_tool/changelog.rst"
 "evk_setup/find_serial_port.rst" "exploration_tool/evk_setup/find_serial_port.rst"
 "evk_setup/raspberry.rst" "exploration_tool/evk_setup/raspberry.rst"

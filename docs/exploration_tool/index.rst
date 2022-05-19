@@ -21,8 +21,8 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :caption: API reference
    :maxdepth: 1
 
-   A111 <api_ref>
-   A121 <api_ref_a121>
+   A111 <api/a111>
+   A121 <api/a121>
 
 .. toctree::
    :maxdepth: 1
