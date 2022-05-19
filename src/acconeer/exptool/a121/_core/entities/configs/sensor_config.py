@@ -98,6 +98,7 @@ class SensorConfig:
     hwaas = SubsweepProxyProperty[int](SubsweepConfig.hwaas)
     receiver_gain = SubsweepProxyProperty[int](SubsweepConfig.receiver_gain)
     enable_tx = SubsweepProxyProperty[bool](SubsweepConfig.enable_tx)
+    enable_loopback = SubsweepProxyProperty[bool](SubsweepConfig.enable_loopback)
     phase_enhancement = SubsweepProxyProperty[bool](SubsweepConfig.phase_enhancement)
     prf = SubsweepProxyProperty[PRF](SubsweepConfig.prf)
 
@@ -119,6 +120,7 @@ class SensorConfig:
         hwaas: Optional[int] = None,
         receiver_gain: Optional[int] = None,
         enable_tx: Optional[bool] = None,
+        enable_loopback: Optional[bool] = None,
         phase_enhancement: Optional[bool] = None,
         prf: Optional[PRF] = None,
     ) -> None:
@@ -137,6 +139,7 @@ class SensorConfig:
             and hwaas is None
             and receiver_gain is None
             and enable_tx is None
+            and enable_loopback is None
             and phase_enhancement is None
             and prf is None
         )
@@ -179,6 +182,8 @@ class SensorConfig:
             self.receiver_gain = receiver_gain
         if enable_tx is not None:
             self.enable_tx = enable_tx
+        if enable_loopback is not None:
+            self.enable_loopback = enable_loopback
         if phase_enhancement is not None:
             self.phase_enhancement = phase_enhancement
         if prf is not None:

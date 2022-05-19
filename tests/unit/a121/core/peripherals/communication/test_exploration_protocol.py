@@ -123,6 +123,7 @@ def test_setup_command_simple_session_config():
                                 "hwaas": 8,
                                 "receiver_gain": 16,
                                 "enable_tx": True,
+                                "enable_loopback": False,
                                 "phase_enhancement": False,
                                 "prf": "6_5_MHz",
                             }

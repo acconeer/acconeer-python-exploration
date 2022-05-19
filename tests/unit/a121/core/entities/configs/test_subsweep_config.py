@@ -47,6 +47,7 @@ def test_to_dict_defaults():
         "hwaas": 8,
         "receiver_gain": 16,
         "enable_tx": True,
+        "enable_loopback": False,
         "phase_enhancement": False,
         "prf": a121.PRF.PRF_13_0_MHz,
     }

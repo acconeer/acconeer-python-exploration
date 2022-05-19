@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- `enable_loopback` parameter to `SubsweepConfig`.
+
 ### Fixed
 - Bug that made `a121.Client` not stop its session
   if the session was started with a recorder.

@@ -34,6 +34,7 @@ class SubsweepConfig:
     _hwaas: int
     _receiver_gain: int
     _enable_tx: bool
+    _enable_loopback: bool
     _phase_enhancement: bool
     _prf: PRF
 
@@ -47,6 +48,7 @@ class SubsweepConfig:
         hwaas: int = 8,
         receiver_gain: int = 16,
         enable_tx: bool = True,
+        enable_loopback: bool = False,
         phase_enhancement: bool = False,
         prf: PRF = PRF.PRF_13_0_MHz,
     ) -> None:
@@ -58,6 +60,7 @@ class SubsweepConfig:
             hwaas=hwaas,
             receiver_gain=receiver_gain,
             enable_tx=enable_tx,
+            enable_loopback=enable_loopback,
             phase_enhancement=phase_enhancement,
             prf=prf,
         )
@@ -68,6 +71,7 @@ class SubsweepConfig:
         self.hwaas = hwaas
         self.receiver_gain = receiver_gain
         self.enable_tx = enable_tx
+        self.enable_loopback = enable_loopback
         self.phase_enhancement = phase_enhancement
         self.prf = prf
 
@@ -76,6 +80,8 @@ class SubsweepConfig:
 
         :raises ValueError: If anything is invalid.
         """
+        if self.enable_loopback and self.profile == Profile.PROFILE_2:
+            raise ValueError("Enable loopback is incompatible with Profile 2.")
 
     @property
     def start_point(self) -> int:
@@ -191,6 +197,18 @@ class SubsweepConfig:
     @enable_tx.setter
     def enable_tx(self, value: bool) -> None:
         self._enable_tx = bool(value)
+
+    @property
+    def enable_loopback(self) -> bool:
+        """Enable or disable loopback
+
+        Note, loopback can't be enabled together with profile 2.
+        """
+        return self._enable_loopback
+
+    @enable_loopback.setter
+    def enable_loopback(self, value: bool) -> None:
+        self._enable_loopback = bool(value)
 
     @property
     def phase_enhancement(self) -> bool:
