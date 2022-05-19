@@ -12,11 +12,17 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    Overview <self>
    sensor_introduction
    gui/index
-   api_ref
    file_format_ref
    faq
    changelog
    migration_v3_to_v4
+
+.. toctree::
+   :caption: API reference
+   :maxdepth: 1
+
+   A111 <api_ref>
+   A121 <api_ref_a121>
 
 .. toctree::
    :maxdepth: 1

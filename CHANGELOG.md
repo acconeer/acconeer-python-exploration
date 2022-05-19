@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.3.0
+
+### Added
+- Unstable (but fully featured) library for the A121 sensor
+  generation under `acconeer.exptool.a121`.
+
 ## v4.2.0
 
 ### Added

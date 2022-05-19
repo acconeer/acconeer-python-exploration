@@ -42,3 +42,6 @@ docs/_build
 
 # Jenkins
 stash/
+
+# mypy
+.mypy_cache/
