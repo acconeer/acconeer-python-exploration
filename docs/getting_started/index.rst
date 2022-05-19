@@ -10,3 +10,6 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :hidden:
 
    Overview <self>
+   pcr
+   product_offer
+   tools

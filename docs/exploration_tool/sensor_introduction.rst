@@ -27,137 +27,6 @@ To further support and guide you through the development process we also provide
 
     Selected use cases.
 
-Radar basics and the Acconeer pulsed coherent radar
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Radar is a well-established technology which has been used in many different applications where accurate and robust distance measurement is required. You can find radar in cars, in the process industry, in airplanes etc. However, most often these radar systems are big, power hungry and expensive, what Acconeer offer is a way to take radar into applications where size, cost and power consumption matter.
-Radar is an acronym for Radio Detection and Ranging and is a way of determining range to an object by transmitting and detecting radio waves. Acconeer’s radar system is a time-of-flight system, which means that a radio wave is transmitted by a first antenna, reflected by an object, and then received by a second antenna. The time of flight between transmission and reception of the signal is measured, as illustrated in :numref:`fig_sensor_wave_object`.
-
-.. _fig_sensor_wave_object:
-.. figure:: /_static/introduction/fig_sensor_wave_object.png
-    :align: center
-
-    Illustration of the pulsed coherent radar system where the time of flight is measured to determine distance to object
-
-The distance to the object can then be calculated by multiplying the time-of-flight with the speed of the radio wave (same as speed of light) and then dividing by two as the distance the signal has traveled is equal to two times the distance to the object. More details about the radar and the Acconeer approach can be found in the chapter `System Overview`_.
-
-There are different approaches to building radar systems, each with its own pros and cons that typically results in a trade-off between accuracy and power consumption, see :numref:`fig_pulsed_coherent_radar`. At Acconeer we have solved this by combining two important features of a radar system, the first is that it is pulsed, which means that the radio part is shut down in between transmission of signals. In fact, the Acconeer radar is pulsed so fast that, typically, the radio is active less than 1 % of the time even when transmitting at maximum rate. This is how the power consumption can be kept low and optimized dependent on the update rate required by your application.
-
-.. _fig_pulsed_coherent_radar:
-.. figure:: /_static/introduction/fig_pulsed_coherent_radar.png
-    :align: center
-    :width: 60%
-
-    Pulsed coherent radar.
-
-The second feature is that it is coherent, which means that each transmitted signal has a stable time and phase reference on the pico second scale, which allows for high accuracy measurements. Coherent radar systems usually rely on a continuous generation of the radio signal, which consumes a lot of current independent on update rate, hence one of the innovations Acconeer has made is to combine the benefits of pulsed systems and the benefits of coherent systems into one product, the Pulsed Coherent Radar (PCR).
-The unique selling points of the PCR sensor are summarized in :numref:`fig_unique_selling_points`. The sensor makes it possible to perform high accuracy measurements while consuming very little power and the fast pulsing of the system makes it possible to track fast movements.
-
-.. _fig_unique_selling_points:
-.. figure:: /_static/introduction/fig_unique_selling_points.png
-    :align: center
-    :width: 85%
-
-    Unique selling points of the Acconeer pulsed coherent radar.
-
-Another benefit of the pulse coherent radar is that amplitude, time and phase of the received signal can be handled separately and allow for classification of different materials that the signal has been reflected on. These are all benefits when compared to sensors such as infra-red and ultrasonic. Additional benefits are that the Acconeer radar can be hidden behind colored plastic or glass and hence do not need an open or visible aperture, we call this optimized integration. The sensor is also robust as it is not sensitive to ambient light or sound and not sensitive to dust or even color of the object.
-
-
-The Acconeer offer
-^^^^^^^^^^^^^^^^^^
-
-The Acconeer offer consists of two parts, hardware and software, as illustrated in :numref:`fig_acconeer_offer`. In addition, Acconeer also provides various tools to aid the customer in the development process.
-
-.. _fig_acconeer_offer:
-.. figure:: /_static/introduction/fig_acconeer_offer.png
-    :align: center
-
-    The Acconeer offer.
-
-The A111 sensor is the core of the hardware offer and is available in modules and in evaluation kits. The purpose of the evaluation kit is to provide a platform to get acquainted with the pulsed coherent radar and to start use case evaluation. The sensor evaluation kits are based on Raspberry Pi, which is a well-known and available platform which also allows you to connected other types of sensors. The module is an integration of the A111 and a microcontroller unit (MCU) and has its own evaluation kit. Just as the sensor evaluation kit it can be used to get familiar with the pulsed coherent radar technology and get started with use case development. It can also be included as a single unit in your product to decrease your development cost and decrease time to market.
-
-:numref:`fig_system_structure` outlines the software structure, platform for running it, and communication interfaces. The software for controlling the A111 sensor and retrieving data from it is called Radar System Software (RSS) and provides output at two levels:
-
-* Service, provides pre-processed sensor data
-
-* Detector, provides results based on the sensor data - all Detectors are based on Services
-
-.. _fig_system_structure:
-.. figure:: /_static/introduction/fig_system_structure.png
-    :align: center
-    :width: 65%
-
-    System structure, the RSS software runs on a host that controls the sensor.
-
-RSS is provided as library files and is written in C and designed to be portable between different platforms, a list of currently supported processor architectures and toolchains are available at the `Acconeer developer site <https://developer.acconeer.com>`__. Apart from RSS, Acconeer provides Example applications and stubbed software integration source code in the Software development kits (SDKs) as well as full reference integrations for selected platforms.
-
-Acconeer provides four types of applications:
-
-* Example applications: Example of how to use RSS, available in SDK at Acconeer developer site
-
-* Reference applications: Use case specific reference application available in SDK at Acconeer developer site
-
-* Exploration server: Application streaming data from sensor evaluation kit to PC, available in SDK for Raspberry Pi at Acconeer developer site
-
-* Module server: Application providing a register write based interface to Acconeer modules, available in Module software image at Acconeer developer site.
-
-Both RSS and Applications run on a host platform and Acconeer provides a software integration reference with guidance on how to integrate to your host platform as well as specific integration for the modules and evaluation kits that Acconeer provides.
-
-* For our EVK platforms we provide a software package and for
-
-    * Raspberry Pi it includes hardware abstraction layer, device drivers, and build environment provided as source code
-
-    * Modules it includes hardware abstraction layer and build environment provided as source code
-
-* For STM32 platforms we provide example integration files and instructions for how to set up a project in STM32CubeIDE.
-
-* Other ARM Cortex M0, M4 and M7 based platform can easily be used by writing a custom implementation of the HAL integration layer. A handful functions that use MCU specific driver functions for accessing timers, SPI and GPIO have to be implemented.
-
-For more detailed information on how to implement the HAL integration layer used by RSS, there is a user guide available at `developer.acconeer.com <https://developer.acconeer.com>`__ under *Documents and learning > SW*.
-
-Based on these deliveries it is possible for the customer to create their own integration layer for any platform that uses a supported processor architecture. The currently available products and corresponding software deliveries are listed in :numref:`fig_product_sw_offer`, refer to documentation for each specific product for further details.
-
-.. _fig_product_sw_offer:
-.. figure:: /_static/introduction/fig_product_sw_offer.png
-    :align: center
-    :width: 92%
-
-    Products and software deliverables.
-
-At `acconeer.com <https://acconeer.com>`__, there are modules and SDK variants and they all contain RSS, Software integration, and Example applications. The Module software image contains RSS, software integration, and Module server.
-The module can be used in two different setups:
-
-* Stand-alone module: The module has got no dependency on external controllers. The application is customized to a specific use case by the customer and runs on the embedded MCU. The customers application is accessing the RSS API via a software interface.
-
-* Controlled module: The module is connected to an external controller where the customer runs their application software. The customers are accessing the RSS API via a hardware interface through the module software, that provided register mapped protocol.
-
-The two setups listed above are also illustrated in :numref:`fig_setups`.
-
-.. _fig_setups:
-.. figure:: /_static/introduction/fig_setups.png
-    :align: center
-    :width: 97%
-
-    Setup.
-
-For the Stand-alone module setup the customer should use the RSS library and Software integration source code provided in the corresponding SDK and build their own application on these deliveries. For the Controlled module regime, i.e. the modules designed by Acconeer, the complete software that runs on the module is delivered as an image. The customer can freely select between these two options, Acconeer supports both.
-
-
-.. _Acconeer tools:
-
-The Acconeer tools
-^^^^^^^^^^^^^^^^^^
-
-To help you to get to know the Acconeer products and get started quickly with application development we provide a Python based tool which consists of several scripts that gives you access to real time data and sensor configuration to easily start developing signal processing for specific use cases. The scripts can also be used to graphically display the radar output and to investigate the reflective properties of different objects. The Exploration Tool requires that the exploration server or Module server is installed on your sensor evaluation kit or module evaluation kit, respectively. The exploration server and Module server reflects the RSS API, which helps to understand how to manage the RSS API in your application. The Exploration Tool is provided for all our evaluation kits and is available at `Acconeer GitHub <https://github.com/acconeer/acconeer-python-exploration>`__. An overview of how Exploration Tool interface software and hardware for the evaluation kits is presented in :numref:`fig_sw_hw_if`.
-
-.. _fig_sw_hw_if:
-.. figure:: /_static/introduction/fig_sw_hw_if.png
-    :align: center
-    :width: 97%
-
-    Overview of software and hardware interfaces to Acconeer tools.
-
-
 Services and Detectors
 ----------------------
 
@@ -170,7 +39,7 @@ The RSS provides output at two different levels, Service and Detector. The Servi
 
     Available Detectors and Services.
 
-Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see Section `Acconeer tools`_) to observe the different outputs and understand what they represent. Each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`__.
+Each Detector is built on top of a Service, i.e. you have the possibility to use our out-of-the-box Detectors or develop your own. To select the Service or Detector applicable for your use case it is recommended to use the Exploration tool (see :ref:`getting-started-tools`) to observe the different outputs and understand what they represent. Each Service and Detector also comes with its own user guide, which can be found at `acconeer.com <https://acconeer.com>`__.
 
 At `developer.acconeer.com <https://developer.acconeer.com>`__, we have several movies showing demos where the Acconeer sensor is used in different use cases. Together with the demo movies, corresponding reference applications are available in our different SDKs at Acconeer developer site. These reference applications are written in C code and use our Services and Detectors, check them out to get inspiration on how to build your product with the Acconeer sensor.
 
@@ -253,7 +122,7 @@ Obstacle detector
 Assumes that the Acconeer sensor is placed on a moving object with a known velocity, such as a robotic vacuum cleaner or lawn mower. The detector creates a virtual antenna array and uses synthetic aperture radar (SAR) signal processing to localize objects. This detector is used in the Obstacle localization demo movie. More details about the detector is found `here <https://docs.acconeer.com/en/latest/processing/obstacle.html>`__.
 
 
-.. _ System Overview:
+.. _sensor-intro-system-overview:
 
 System overview
 ---------------
