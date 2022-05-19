@@ -167,13 +167,15 @@ class AgnosticClient:
         """
         self._assert_session_started()
 
+        recorder_result = None
         if self._recorder is not None:
-            return self._recorder._stop()
+            recorder_result = self._recorder._stop()
 
         self._link.send(self._protocol.stop_streaming_command())
         reponse_bytes = self._drain_buffer()
         self._protocol.stop_streaming_response(reponse_bytes)
         self._session_is_started = False
+        return recorder_result
 
     def _drain_buffer(
         self, timeout_s: float = 1.0

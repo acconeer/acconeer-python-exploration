@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Bug that made `a121.Client` not stop its session
+  if the session was started with a recorder.
+
 ## v4.3.0
 
 ### Added
