@@ -40,6 +40,7 @@ def ref_server_info():
             2: SensorInfo(connected=True),
             3: SensorInfo(connected=True),
         },
+        hardware_name="xy123",
     )
 
 

@@ -5,7 +5,7 @@ from typing import Any, Optional, Tuple, Union
 
 import attrs
 import numpy as np
-from typing_extensions import Literal, TypedDict
+from typing_extensions import Literal, NotRequired, TypedDict
 
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
@@ -43,7 +43,7 @@ class SystemInfo(TypedDict):
     sensor: str
     sensor_count: int
     ticks_per_second: int
-    hw: str
+    hw: NotRequired[Optional[str]]
 
 
 class GetSystemInfoResponse(ValidResponse):
@@ -136,6 +136,7 @@ class ExplorationProtocol(CommunicationProtocol):
                 sensor_count=system_info["sensor_count"],
                 ticks_per_second=system_info["ticks_per_second"],
                 sensor_infos=sensor_infos,
+                hardware_name=system_info.get("hw"),
             )
         except KeyError as ke:
             raise ExplorationProtocolError(

@@ -58,7 +58,11 @@ def test_get_system_info_response():
         }
     ).encode("ascii")
     expected = a121.ServerInfo(
-        rss_version="v2.9.0", sensor_count=5, ticks_per_second=1000000, sensor_infos={}
+        rss_version="v2.9.0",
+        sensor_count=5,
+        ticks_per_second=1000000,
+        sensor_infos={},
+        hardware_name="linux",
     )
 
     assert ExplorationProtocol.get_system_info_response(response, {}) == expected

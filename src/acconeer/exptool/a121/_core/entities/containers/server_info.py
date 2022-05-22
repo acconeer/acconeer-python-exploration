@@ -37,6 +37,7 @@ class ServerInfo:
     sensor_count: int = attrs.field()
     ticks_per_second: int = attrs.field()
     sensor_infos: dict[int, SensorInfo] = attrs.field()
+    hardware_name: Optional[str] = attrs.field(default=None)
 
     @property
     def parsed_rss_version(self) -> packaging.version.Version:
