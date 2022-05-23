@@ -3,19 +3,15 @@
 Parking (envelope)
 ==================
 
-An example of a detection algorithm for a parked car using a ground mounted sensor.
-
-Detection of a parked car over the sensor is straightforward if it is parked with a
-large metal surface directly above the sensor. A plastic cover over the metal surface
-is usually not a problem either. A harder but not unusual case occurs when a car with
-a polymer fuel tank is parked with the tank directly above the sensor. In that case,
-the radar reflection can be weak enough to make detection difficult.
+An example of a detection algorithm for a parked car.
+The sensor position is intended to be either ground mounted or side mounted,
+either on the curb or on a pole. Perhaps on a Electric Vehicle charging station.
 
 This example algorithm is meant as a starting point for parking detector implementations
 that can handle weak radar reflections as well. One issue with the use of weak
-reflections is that reflections from people or items near the sensor can lead to false
-detects. For that reason, the detection algorithm monitors changes between each sweep
-to exclude objects that move.
+reflections is that reflections from people or items near the sensor pose a risk of false
+detections. However, low update rate mitigates this issue, since a person needs to be
+relatively still in front of the sensor for consecutive frames in order to generate a detection.
 
 The algorithm is designed to work with only one radar sweep every 10 seconds to keep
 power consumption low enough for a battery supply to last for several years. Designs
@@ -24,8 +20,7 @@ that do not have this limitation can use a higher sweep rate.
 The exclusion of moving objects leads to delayed detection of a car that just has parked.
 For default settings, the first two scans after a car stopped over the sensor will report
 false detection status. Hence, it takes up to 30 seconds before a parked car is detected
-with one scan every 10 seconds. There is no extra delay when a car leaves, as the first
-scan with no car above the sensor gives a false detection status.
+with one scan every 10 seconds.
 
 The quality of the radar data depends strongly on the design of the sensor casing. It's
 important that the amount of radar waves that bounce back within the casing is minimized
@@ -35,11 +30,8 @@ sensor, it's likely that the reflections within the casing are too strong for re
 detection. If that is the case, then consider a revisit of the sensor integration or
 tuning of the detector parameters (described below).
 
-The default values of the parameters are selected based on laboratory tests in the full
-sensor design temperature range of -40°C to 85°C. These tests have progressed since our
-first release of this parking detector, and we have changed the ``leak_max_amplitude``
-parameter default value from 1000 to 2000. This change is intended to avoid false car
-detections at temperatures near -40°C.
+In the same manner, it is important that the sensor is angled towards the parking
+spot in a way so that the amount of reflection from a parked car is maximized.
 
 Plots
 -----
@@ -75,8 +67,8 @@ a newly parked car will not be detected during the first :math:`K - 1` scans imm
 after it parked.
 
 
-Detailed description
---------------------
+Technical description
+---------------------
 
 This example detector uses the :ref:`envelope-service` service with settings that work
 well for detection of weak reflections in laboratory tests. Only the update rate is
@@ -86,6 +78,10 @@ set to 0.5 Hz instead of 0.1 Hz to work better for interactive exploration.
 
 Leakage subtraction
 ~~~~~~~~~~~~~~~~~~~
+
+If the range is beyond the direct leakage (estimated for each profile,
+0.10 m for profile 2 for example), the leakage subtraction is ignored in the algorithm.
+This is in order to generalize well for varying settings.
 
 The default configuration for parking detection uses Profile 2 and a sweep range that
 starts 12 cm from the sensor. This setting excludes direct leakage caused by radar waves
@@ -138,7 +134,7 @@ The intensity of the radar reflection from a flat surface falls off as :math:`d^
 distance and that corresponds to a proportionality to :math:`d^{-1}` for the signal amplitude.
 To correct for that distance dependence, a weight function is calculated according to
 
-.. math:: w(d) = z(d)d.
+.. math:: w(d) = z(d)d_{norm}.
 
 From the weight function, a weight average :math:`W` and a mean reflection distance :math:`D`
 are calculated for each sweep according to

@@ -4,6 +4,8 @@
 
 ### Added
 - `enable_loopback` parameter to `SubsweepConfig`.
+- Side/pole mounted case for parking detector.
+  Modifies some default settings as well as slight changes in computations.
 
 ### Fixed
 - Bug that made `a121.Client` not stop its session
