@@ -114,6 +114,9 @@ def ref_metadata(ref_sweep_data_length, ref_frame_data_length):
         sweep_data_length=ref_sweep_data_length,
         subsweep_data_length=np.array([ref_sweep_data_length]),
         subsweep_data_offset=np.array([0]),
+        calibration_temperature=None,
+        tick_period=50,
+        base_step_length_m=0.0025,
     )
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 import attrs
 import numpy as np
@@ -14,7 +14,7 @@ from .common import attrs_ndarray_eq
 class Metadata:
     """Metadata
 
-    Represents the RSS ``processing_metadata``.
+    Represents a superset of the RSS ``processing_metadata``.
     """
 
     frame_data_length: int = attrs.field()
@@ -28,6 +28,15 @@ class Metadata:
 
     subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
     """Number of elements in the subsweeps"""
+
+    calibration_temperature: Optional[int] = attrs.field(default=None)
+    """Temperature during calibration"""
+
+    tick_period: Optional[int] = attrs.field(default=None)
+    """Target tick period if update rate is set, otherwise 0"""
+
+    base_step_length_m: Optional[float] = attrs.field(default=None)
+    """Base step length in meter"""
 
     @property
     def frame_shape(self) -> Tuple[int, int]:

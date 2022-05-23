@@ -22,6 +22,9 @@ def single_sweep_metadata():
         frame_data_length=100,
         subsweep_data_offset=np.array([0]),
         subsweep_data_length=np.array([100]),
+        calibration_temperature=None,
+        tick_period=50,
+        base_step_length_m=0.0025,
     )
 
 
@@ -161,6 +164,8 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 100,
                         "subsweep_data_offset": [0],
                         "subsweep_data_length": [100],
+                        "calibration_temperature": None,
+                        "base_step_length_m": 0.0025,
                     },
                 ],
                 [  # Group 2
@@ -169,6 +174,8 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 200,
                         "subsweep_data_offset": [0, 100],
                         "subsweep_data_length": [100, 100],
+                        # "calibration_temperature": None,  # omitting is ok
+                        "base_step_length_m": 0.0025,
                     },
                 ],
             ],
@@ -183,6 +190,9 @@ def test_setup_response(single_sweep_metadata):
                 frame_data_length=200,
                 subsweep_data_offset=np.array([0, 100]),
                 subsweep_data_length=np.array([100, 100]),
+                calibration_temperature=None,
+                tick_period=50,
+                base_step_length_m=0.0025,
             )
         },
     ]

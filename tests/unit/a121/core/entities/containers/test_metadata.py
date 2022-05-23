@@ -11,6 +11,9 @@ def ref_metadata():
         sweep_data_length=10,
         subsweep_data_length=np.array([10]),
         subsweep_data_offset=np.array([0]),
+        calibration_temperature=None,
+        tick_period=50,
+        base_step_length_m=0.0025,
     )
 
 
@@ -21,6 +24,9 @@ def ref_metadata_dict():
         "sweep_data_length": 10,
         "subsweep_data_length": np.array([10]),
         "subsweep_data_offset": np.array([0]),
+        "calibration_temperature": None,
+        "tick_period": 50,
+        "base_step_length_m": 0.0025,
     }
 
 
@@ -29,6 +35,9 @@ def test_init(ref_metadata):
     assert ref_metadata.sweep_data_length == 10
     assert ref_metadata.subsweep_data_length == np.array([10])
     assert ref_metadata.subsweep_data_offset == np.array([0])
+    assert ref_metadata.calibration_temperature is None
+    assert ref_metadata.tick_period == 50
+    assert ref_metadata.base_step_length_m == 0.0025
 
 
 def test_eq(ref_metadata):
@@ -37,6 +46,9 @@ def test_eq(ref_metadata):
         sweep_data_length=10,
         subsweep_data_length=np.array([10]),
         subsweep_data_offset=np.array([0]),
+        calibration_temperature=None,
+        tick_period=50,
+        base_step_length_m=0.0025,
     )
 
 

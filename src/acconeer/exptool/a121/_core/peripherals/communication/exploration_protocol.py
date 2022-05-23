@@ -64,6 +64,8 @@ class MetadataResponse(TypedDict):
     sweep_data_length: int
     subsweep_data_offset: list[int]
     subsweep_data_length: list[int]
+    calibration_temperature: NotRequired[int]
+    base_step_length_m: NotRequired[float]
 
 
 class SetupResponse(ValidResponse):
@@ -266,7 +268,7 @@ class ExplorationProtocol(CommunicationProtocol):
             # Bugs may arise where meta-data is unaligned with configs.
             result.append(
                 {
-                    sensor_id: cls._metadata_from_dict(metadata_dict)
+                    sensor_id: cls._create_metadata(metadata_dict, response["tick_period"])
                     for metadata_dict, sensor_id in zip(metadata_group, config_group.keys())
                 }
             )
@@ -274,12 +276,15 @@ class ExplorationProtocol(CommunicationProtocol):
         return result
 
     @classmethod
-    def _metadata_from_dict(cls, metadata_dict: MetadataResponse) -> Metadata:
+    def _create_metadata(cls, metadata_dict: MetadataResponse, tick_period: int) -> Metadata:
         return Metadata(
             frame_data_length=metadata_dict["frame_data_length"],
             sweep_data_length=metadata_dict["sweep_data_length"],
             subsweep_data_offset=np.array(metadata_dict["subsweep_data_offset"]),
             subsweep_data_length=np.array(metadata_dict["subsweep_data_length"]),
+            calibration_temperature=metadata_dict.get("calibration_temperature"),
+            tick_period=tick_period,
+            base_step_length_m=metadata_dict.get("base_step_length_m"),
         )
 
     @classmethod
