@@ -1,9 +1,9 @@
 # Changelog
 
-## Unreleased
+## v4.4.0
 
 ### Added
-- `enable_loopback` parameter to `SubsweepConfig`.
+- `enable_loopback` parameter to `a121.SubsweepConfig`.
 - Side/pole mounted case for parking detector.
   Modifies some default settings as well as slight changes in computations.
 
