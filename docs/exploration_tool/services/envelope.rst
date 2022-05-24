@@ -11,7 +11,7 @@ To stabilize the signal and increase the SNR, the sweeps in the Envelope Service
 
 The filtering of data in the Envelope Service applies a low-pass filter in the range dimension. This leads to some filter edge effects in the first few centimeters of the sweep. For very short sweeps, approx. 3 cm for Profile 1 and approx 6 cm for Profile 2-5, these edge effects affects the magnitude of the whole sweep. The :ref:`pb-service`, with only a few bins, is recommended for short sweeps.
 
-The Envelope service can be configured with different pulse length profiles, see the :ref:`sensor-intro`.
+The Envelope service can be configured with different pulse length profiles, see :ref:`handbook-a111-profiles`.
 
 ``examples/a111/services/envelope.py`` contains example code on how this service can be used.
 

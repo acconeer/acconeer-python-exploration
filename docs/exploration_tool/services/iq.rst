@@ -13,7 +13,7 @@ For phase estimation in the vital sign use case and for object detection in the 
 
 The filtering of data in the IQ Service applies a low-pass filter in the range dimension. This leads to some filter edge effects in the first few centimeters of the sweep. For very short sweeps, approx. 3 cm for Profile 1 and approx 6 cm for Profile 2-5, these edge effects affects the magnitude and phase of the whole sweep. It is therefore recommended to add at least 3 cm to the sweep at each end for Profile 1, and 6 cm for Profile 2-5, to the region where the amplitude and phase should be estimated.
 
-The IQ service can be configured with different pulse length profiles, see the :ref:`sensor-intro`.
+The IQ service can be configured with different pulse length profiles, see :ref:`handbook-a111-profiles`.
 
 Detection of micro-motions using the IQ service in a target scene has many use cases,
 some of which are presented in :ref:`sleep-breathing`, :ref:`obstacle-detection`, and :ref:`phase-tracking`.

@@ -11,7 +11,7 @@ The power bins values are calculated using an algorithm optimized for low comput
 
 For use cases with weaker radar echoes, i.e., lower SNR, or when the resolution of the signal is important, we recommend using the Envelope, IQ or Sparse data service instead.
 
-The Power Bins service can be configured with different pulse length profiles, see the :ref:`sensor-intro`.
+The Power Bins service can be configured with different pulse length profiles, see :ref:`handbook-a111-profiles`.
 
 ``examples/a111/services/power_bins.py`` contains example code on how the Power Bins service can be used.
 
