@@ -47,7 +47,7 @@ class Parser(argparse.ArgumentParser):
         test_group.add_argument(
             "--integration-args",
             nargs=argparse.REMAINDER,
-            default=["--mock"],
+            default=["a111", "--mock"],
         )
         test_group.add_argument(
             "--pytest-args",
@@ -184,11 +184,24 @@ def test(session):
         )
 
     if "integration" in args.test_groups:
-        pytest_commands.extend(
-            [
-                ["-p", "no:pytest-qt", "tests/integration", *args.integration_args],
-            ]
-        )
+        real_args = [arg for arg in args.integration_args if arg not in {"a111", "a121"}]
+        if "a111" in args.integration_args:
+            pytest_commands.extend(
+                [
+                    ["-p", "no:pytest-qt", "tests/integration/a111", *real_args],
+                ]
+            )
+        elif "a121" in args.integration_args:
+            pytest_commands.extend(
+                [
+                    ["-p", "no:pytest-qt", "tests/integration/a121", *real_args],
+                ]
+            )
+        else:
+            session.error(
+                "The 'integration' session needs to be passed"
+                + "either 'a121' or 'a111' in its '--integration-args'"
+            )
 
     if "app" in args.test_groups:
         install_deps |= {

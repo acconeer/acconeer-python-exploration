@@ -17,13 +17,15 @@ pipeline {
                     artifactNames: [
                         "internal_stash_python_libs.tgz",
                         "internal_stash_binaries_xm112.tgz",
-                        "internal_stash_binaries_sanitizer_a111.tgz"
+                        "internal_stash_binaries_sanitizer_a111.tgz",
+                        "internal_stash_binaries_sanitizer_a121.tgz"
                     ]
                 )
                 sh 'mkdir stash'
                 sh 'tar -xzf internal_stash_python_libs.tgz -C stash'
                 sh 'tar -xzf internal_stash_binaries_xm112.tgz -C stash'
                 sh 'tar -xzf internal_stash_binaries_sanitizer_a111.tgz -C stash'
+                sh 'tar -xzf internal_stash_binaries_sanitizer_a121.tgz -C stash'
             }
         }
         stage('Build and run standalone tests') {
