@@ -34,3 +34,4 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    a111/profiles
    a111/typical_ranges
    a111/services_and_detectors_overview
+   a111/services/index

@@ -41,5 +41,4 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :caption: Services and detectors
    :hidden:
 
-   services/index
    processing/index
