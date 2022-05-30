@@ -5,6 +5,10 @@
 ### Changed
  - Remove references to Ubuntu 18.04
 
+### Fixed
+ - Add sampling mode for Sparse.
+   Was accidentally removed, when sampling mode was removed for IQ.
+
 ## v4.4.0
 
 ### Added

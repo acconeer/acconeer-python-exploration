@@ -244,6 +244,9 @@ class JsonProtocolStreamingServer(JsonProtocolBase):
         for config_key, cmd_key in CONFIG_TO_CMD_KEY_MAP.items():
             config_val = getattr(config, config_key, None)
 
+            if self._mode == Mode.IQ and config_key == "sampling_mode":
+                continue
+
             if config_val is None:
                 continue
 
@@ -341,6 +344,9 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
             config_val = getattr(config, config_key, None)
 
             if config_key in ["sensor", "update_rate", "repetition_mode"]:
+                continue
+
+            if self._mode == Mode.IQ and config_key == "sampling_mode":
                 continue
 
             if config_val is None:
@@ -591,6 +597,7 @@ CONFIG_TO_CMD_KEY_MAP = {
     "noise_level_normalization": "noise_level_normalization",
     "maximize_signal_attenuation": "maximize_signal_attenuation",
     "running_average_factor": "running_average_factor",
+    "sampling_mode": "sampling_mode",
     "sweeps_per_frame": "sweeps_per_frame",
     "sweep_rate": "sweep_rate",
     "tx_disable": "tx_disable",
