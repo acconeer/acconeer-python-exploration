@@ -5,7 +5,21 @@ IQ
 
 The IQ service utilizes the phase-coherency of the Acconeer pulsed radar to produce stable In-phase and Quadrature (IQ) components, capable of detecting fine movement occurring in a target scene. Such micro-motions can be used in, for instance, presence detection in front of the sensor, detection of breathing rate and obstacle detection.
 
-The In-phase and Quadrature components are represented as complex values, generating a complex set of :math:`N_D` samples represented as :math:`x[d]`, where :math:`d` is the delay sample index. Each complex value has an amplitude and a phase as in :math:`x[d] = A_de^{i\phi_d}`. A :math:`2\pi` phase rotation of an IQ data point corresponds to a movement at the specific distance of :math:`\lambda/2 \approx 2.5` mm, providing high relative spatial resolution.
+
+.. figure:: /_static/services/iq.png
+   :align: center
+   :width: 90%
+
+The In-phase and Quadrature components are represented as complex values in cartesian form, generating a complex set of :math:`N_D` samples represented as :math:`x[d]`, where :math:`d` is the delay sample index. Each complex value has an amplitude and a phase as in :math:`x[d] = A_de^{i\phi_d}`. A :math:`2\pi` phase rotation of an IQ data point corresponds to a movement at the specific distance of :math:`\lambda/2 \approx 2.5` mm, providing high relative spatial resolution.
+
+The cartesian data can be transformed to polar data providing phase and amplitude of the signal. Having the phase of the signal available makes it possible to perform more accurate measurements as compared to the Power bins and Envelope Services where only the amplitude is available. This is illustrated in :numref:`fig_wavelet` where an object is moving towards the radar. The envelope of the signal only varies slightly when the object is moving, while the value of the coherent signal at a fixed time delay varies substantially. This change will be present in the phase of the data from the IQ Service.
+
+.. _fig_wavelet:
+.. figure:: /_static/introduction/fig_wavelet.png
+    :align: center
+    :width: 95%
+
+    Illustration of envelope and phase change of a received pulse for a reflection from a moving object, what is returned from the IQ Service is in cartesian form.
 
 Similarly to the :ref:`envelope-service` service the amplitudes obtained through the IQ service provide a method for examining the reflectivity at different distances from the radar sensor. These two services are however differently optimized. The :ref:`envelope-service` service is optimized for providing an accurate envelope estimate, while the IQ service is optimized for producing a phase-stable estimate. Thus, one should only use the IQ service if phase information is of importance.
 
@@ -19,10 +33,6 @@ Detection of micro-motions using the IQ service in a target scene has many use c
 some of which are presented in :ref:`sleep-breathing`, :ref:`obstacle-detection`, and :ref:`phase-tracking`.
 
 ``examples/a111/services/iq.py`` contains example code on how the IQ service can be used.
-
-.. figure:: /_static/services/iq.png
-   :align: center
-   :width: 90%
 
 For further reading on the IQ service we refer to the `IQ documentation`_ on the `Acconeer developer page`_.
 
