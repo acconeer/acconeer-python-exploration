@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+ - Remove references to Ubuntu 18.04
+
 ## v4.4.0
 
 ### Added

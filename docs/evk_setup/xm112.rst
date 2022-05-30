@@ -24,7 +24,7 @@ Now you should be able to flash the Module software (``acc_module_server.bin``).
 BOSSA on Linux
 ^^^^^^^^^^^^^^
 
-If you're on Linux you likely will need to compile BOSSA on your own. Here's how to do it on Ubuntu 18.04.
+If you're on Linux you likely will need to compile BOSSA on your own. Here's how to do it on Ubuntu 20.04.
 
 Get everything you need to build::
 

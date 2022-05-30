@@ -57,7 +57,7 @@ Tested on:
 
 * Python 3 (developed and tested on 3.7, 3.8 and 3.9)
 * Windows 10
-* Ubuntu 18.04 and 20.04
+* Ubuntu 20.04
 
 ### Setup
 
@@ -108,7 +108,7 @@ with the following content:
 ```
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="601c", MODE:="0666"
 ```
-This method is confirmed to work for **Ubuntu 18.04 and 20.04**.
+This method is confirmed to work for **Ubuntu 20.04**.
 
 ## Application
 
