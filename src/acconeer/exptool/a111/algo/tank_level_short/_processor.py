@@ -10,7 +10,7 @@ import acconeer.exptool as et
 from .calibration import EnvelopeCalibration
 
 
-SUB_MEAN_PIECE_LENGTH = 250
+ENVELOPE_BACKGROUND_LEVEL = 100
 
 
 def get_sensor_config():
@@ -29,19 +29,7 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-    VERSION = 1
-
-    precision = et.configbase.IntParameter(
-        default_value=150,
-        limits=(1, 2000),
-        label="Precision",
-        updateable=False,
-        order=0,
-        help=(
-            "Number of possible output values. "
-            "High number yields slower performance and finer grain of output."
-        ),
-    )
+    VERSION = 2
 
     bg_buffer_length = et.configbase.IntParameter(
         default_value=50,
@@ -69,14 +57,40 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         help=("Time constant for the smoothing filter of the normalized raw data."),
     )
 
+    use_masks = et.configbase.BoolParameter(
+        label="Use mask system for distance measurement",
+        default_value=False,
+        updateable=False,
+        order=40,
+        help=(
+            "Whether to use the mask system for distance evaluation. "
+            "Otherwise, use a faster, less precise 'naive' measurement."
+        ),
+    )
+
+    precision = et.configbase.IntParameter(
+        default_value=150,
+        limits=(1, 2000),
+        label="Precision",
+        updateable=False,
+        order=50,
+        help=(
+            "Number of possible output values. "
+            "High number yields slower performance and finer grain of output."
+        ),
+    )
+
     score_threshold = et.configbase.FloatParameter(
         label="Confidence threshold to return a guess.",
-        default_value=0.9,
+        default_value=0.75,
         limits=(0.5, 1.0),
         logscale=True,
         updateable=True,
-        order=40,
-        help=("Threshold for the similarity measurement to return a value."),
+        order=60,
+        help=(
+            "Threshold for the similarity measurement to return a value. "
+            "Only used when use_masks is active."
+        ),
     )
 
     def check_sensor_config(self, sensor_config):
@@ -84,6 +98,13 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             "processing": [],
             "sensor": [],
         }
+
+        if not sensor_config.noise_level_normalization:
+            alerts["sensor"].append(
+                et.configbase.Warning(
+                    "noise_level_normalization", "Should be set unless using calibration."
+                )
+            )
 
         if (
             sensor_config.profile != sensor_config.Profile.PROFILE_1
@@ -105,9 +126,10 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
                 et.configbase.Warning("range_interval", "Long range might yield poor results.")
             )
 
-        if sensor_config.downsampling_factor > 1:
-            alerts["sensor"].append(
-                et.configbase.Error("downsampling_factor", "Only downsampling factor 1.")
+        if not self.use_masks:
+            alerts["processing"].append(et.configbase.Info("precision", "Not used in this mode"))
+            alerts["processing"].append(
+                et.configbase.Info("score_threshold", "Not used in this mode")
             )
 
         return alerts
@@ -115,6 +137,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
+
         self.session_info = session_info
         self.sensor_config = sensor_config
         self.processing_config = processing_config
@@ -122,8 +145,6 @@ class Processor:
         self.depths = et.a111.get_range_depths(sensor_config, session_info)
         self.num_depths = self.depths.size
         self.num_sensors = len(sensor_config.sensor)
-
-        self.score_threshold = processing_config.score_threshold
 
         self.calibration = calibration
         buffer_length = self.processing_config.bg_buffer_length
@@ -134,6 +155,8 @@ class Processor:
 
         self.data_index = 0
 
+        self.use_masks = processing_config.use_masks
+
         tc = processing_config.smoothing_time_const
         self.fs = sensor_config.update_rate
         alpha = self.tc_to_sf(tc, self.fs)
@@ -143,12 +166,12 @@ class Processor:
         self.smooth_const = alpha
         self.smooth_val = np.zeros(self.num_depths)
 
-        self.depths = et.a111.get_range_depths(sensor_config, session_info)
-
         self.scale_array = self.depths / max(self.depths)
 
-        self.peak_width = self.get_peak_width(sensor_config)
-        self.masks = self.make_mask_list(processing_config.precision)
+        if self.use_masks:
+            self.score_threshold = processing_config.score_threshold
+            self.peak_width = self.get_peak_width(sensor_config)
+            self.masks = self.make_mask_list(processing_config.precision)
 
         self.guess_history = np.zeros(self.history_length_s)
         self.guess_index_history = np.zeros(self.history_length_s)
@@ -174,28 +197,6 @@ class Processor:
             return 0.0
 
         return np.exp(-1.0 / (tc * fs))
-
-    def sub_mean(self, data):
-        """
-        Estimate of noise floor.
-        Decent estimate even with object in range.
-        Uses subsampling.
-        """
-        piece_len = SUB_MEAN_PIECE_LENGTH
-        min_mean = data.max()
-        min_dev = data.max()
-        start = 0
-        end = min(piece_len, data.shape[0])
-        for start in range(end):
-            d_slice = data[start::piece_len]
-            sub_mean = np.mean(d_slice)
-            dev = np.std(d_slice)
-
-            if sub_mean < min_mean:
-                min_mean = sub_mean
-                min_dev = dev
-
-        return min_mean + min_dev
 
     def normalize(self, data):
         div = np.amax(data)
@@ -241,30 +242,7 @@ class Processor:
 
         return masks
 
-    def process(self, data, data_info):
-
-        new_calibration = None
-
-        if self.calibration is None:
-            if self.data_index < self.bg_buffer.shape[0]:
-                self.bg_buffer[self.data_index] = data
-            if self.data_index == self.bg_buffer.shape[0] - 1:
-                new_calibration = EnvelopeCalibration(self.bg_buffer.mean(axis=0))
-            mean = self.sub_mean(data)
-            data = np.maximum(0, data - mean)
-        else:
-            data = np.maximum(0, data - self.calibration.background)
-
-        plot_data = {}
-        plot_data["smooth_data"] = np.zeros(data.shape[0])
-        plot_data["index"] = self.data_index
-
-        data = data * self.scale_array  # Scale by distance
-
-        data = self.normalize(data)  # Allow for using a set threshold.
-
-        # Necessary since we have normalized noise.
-        self.smooth_val = self.smooth_val * self.smooth_const + (1.0 - self.smooth_const) * data
+    def get_mask_guess(self):
 
         best_score = -1.0
         guess = 0.0
@@ -281,6 +259,43 @@ class Processor:
 
         if best_score < self.score_threshold:  # test if we have a reasonable guess.
             guess = 0.0
+
+        return guess
+
+    def get_naive_guess(self):
+        max_val = np.argmax(self.smooth_val)
+        guess = self.get_distance(max_val)
+        return guess
+
+    def process(self, data, data_info):
+
+        new_calibration = None
+
+        if self.calibration is None:
+            if self.data_index < self.bg_buffer.shape[0]:
+                self.bg_buffer[self.data_index] = data
+            if self.data_index == self.bg_buffer.shape[0] - 1:
+                new_calibration = EnvelopeCalibration(self.bg_buffer.mean(axis=0))
+            mean = np.ones(self.num_depths) * ENVELOPE_BACKGROUND_LEVEL
+            data = np.maximum(0, data - mean)
+        else:
+            data = np.maximum(0, data - self.calibration.background)
+
+        plot_data = {}
+        plot_data["smooth_data"] = np.zeros(data.shape[0])
+        plot_data["index"] = self.data_index
+
+        data = data * self.scale_array  # Scale by distance
+
+        data = self.normalize(data)  # Allow for using a set threshold.
+
+        # Necessary since we have normalized noise.
+        self.smooth_val = self.smooth_val * self.smooth_const + (1.0 - self.smooth_const) * data
+
+        if self.use_masks:
+            guess = self.get_mask_guess()
+        else:
+            guess = self.get_naive_guess()
 
         plot_data["best_guess"] = guess
 
