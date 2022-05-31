@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 import attrs
+import numpy as np
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import algo
@@ -121,7 +122,13 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
             next_expected_start_point = c.start_point + c.num_points * step_length
 
     def process(self, result: a121.Result) -> DistanceProcessorResult:
+        subframes = [result.subframes[i] for i in self.subsweep_indexes]
+        frame = np.concatenate(subframes, axis=1)
+        sweep = frame.mean(axis=0)  # noqa: F841
+
         ...
+
+        return DistanceProcessorResult(distance=None)
 
     def update_config(self, config: DistanceProcessorConfig) -> None:
         ...
