@@ -55,6 +55,8 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
         self.profile = self._get_profile(sensor_config, subsweep_indexes)
         self.step_length = self._get_step_length(sensor_config, subsweep_indexes)
+        self.start_point = self._get_start_point(sensor_config, subsweep_indexes)
+        self.num_points = self._get_num_points(sensor_config, subsweep_indexes)
 
     @classmethod
     def _get_subsweep_configs(
@@ -87,6 +89,18 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
         (step_length,) = step_lengths
         return step_length
+
+    @classmethod
+    def _get_start_point(
+        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
+    ) -> int:
+        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+        return subsweep_configs[0].start_point
+
+    @classmethod
+    def _get_num_points(cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]) -> int:
+        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+        return sum(c.num_points for c in subsweep_configs)
 
     def process(self, result: a121.Result) -> DistanceProcessorResult:
         ...

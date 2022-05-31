@@ -33,3 +33,29 @@ def test_get_profile():
 
     with pytest.raises(Exception):
         distance.DistanceProcessor._get_profile(sensor_config, [0, 1, 2])
+
+
+def test_get_start_point():
+    sensor_config = a121.SensorConfig(
+        subsweeps=[
+            a121.SubsweepConfig(start_point=100),
+            a121.SubsweepConfig(start_point=150),
+            a121.SubsweepConfig(start_point=123),
+        ],
+    )
+
+    actual = distance.DistanceProcessor._get_start_point(sensor_config, [1, 0])
+    assert actual == 150
+
+
+def test_get_num_points():
+    sensor_config = a121.SensorConfig(
+        subsweeps=[
+            a121.SubsweepConfig(num_points=100),
+            a121.SubsweepConfig(num_points=150),
+            a121.SubsweepConfig(num_points=123),
+        ],
+    )
+
+    actual = distance.DistanceProcessor._get_num_points(sensor_config, [0, 1])
+    assert actual == 250
