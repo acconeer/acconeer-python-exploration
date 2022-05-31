@@ -59,3 +59,42 @@ def test_get_num_points():
 
     actual = distance.DistanceProcessor._get_num_points(sensor_config, [0, 1])
     assert actual == 250
+
+
+def test_validate_range():
+    distance.DistanceProcessor._validate_range(
+        a121.SensorConfig(
+            subsweeps=[
+                a121.SubsweepConfig(
+                    start_point=100,
+                    num_points=3,
+                    step_length=2,
+                ),
+                a121.SubsweepConfig(
+                    start_point=106,
+                    num_points=4,
+                    step_length=2,
+                ),
+            ],
+        ),
+        [0, 1],
+    )
+
+    with pytest.raises(Exception):
+        distance.DistanceProcessor._validate_range(
+            a121.SensorConfig(
+                subsweeps=[
+                    a121.SubsweepConfig(
+                        start_point=100,
+                        num_points=3,
+                        step_length=2,
+                    ),
+                    a121.SubsweepConfig(
+                        start_point=100,
+                        num_points=4,
+                        step_length=2,
+                    ),
+                ],
+            ),
+            [0, 1],
+        )
