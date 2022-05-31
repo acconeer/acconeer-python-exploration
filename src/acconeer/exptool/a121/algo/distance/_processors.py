@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import attrs
 import numpy as np
+from scipy.signal import butter
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import algo
@@ -132,3 +133,15 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
     def update_config(self, config: DistanceProcessorConfig) -> None:
         ...
+
+    @staticmethod
+    def _get_distance_filter_coeffs(profile: a121.Profile, step_length: int) -> Any:
+        envelope_width_mm = {
+            a121.Profile.PROFILE_1: 40,
+            a121.Profile.PROFILE_2: 70,
+            a121.Profile.PROFILE_3: 140,
+            a121.Profile.PROFILE_4: 190,
+            a121.Profile.PROFILE_5: 320,
+        }
+        wnc = 2.5 * step_length / envelope_width_mm[profile]
+        return butter(N=2, Wn=wnc)
