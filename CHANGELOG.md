@@ -4,6 +4,7 @@
 
 ### Changed
  - Remove references to Ubuntu 18.04
+ - Moved Parking to examples
 
 ### Fixed
  - Add sampling mode for Sparse.
