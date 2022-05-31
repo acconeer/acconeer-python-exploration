@@ -1,2 +1,11 @@
+from .backend import Backend
+
+
 def main():
-    pass
+    backend = Backend()
+
+    backend.start()
+
+    ...
+
+    backend.stop()
