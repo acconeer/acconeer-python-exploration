@@ -26,17 +26,20 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
     def __init__(
         self,
         *,
-        session_config: a121.SessionConfig,
+        sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: DistanceProcessorConfig,
         subsweep_indexes: Optional[list[int]] = None,
         context: Optional[DistanceProcessorContext] = None,
     ) -> None:
-        self.sensor_config = session_config
+        self.sensor_config = sensor_config
         self.metadata = metadata
         self.processor_config = processor_config
         self.subsweep_indexes = subsweep_indexes
         self.context = context
 
     def process(self, result: a121.Result) -> DistanceProcessorResult:
+        ...
+
+    def update_config(self, config: DistanceProcessorConfig) -> None:
         ...
