@@ -37,11 +37,31 @@ class DistanceDetector:
     def start(self) -> None:
         ...
 
-    def get_next(self) -> DistanceDetectorResult:
+        # TODO:
+        sensor_config = a121.SensorConfig()
+        config_groups = [{self.sensor_id: sensor_config}]
+        session_config = a121.SessionConfig(
+            config_groups,
+            extended=True,
+        )
+
+        extended_metadata = self.client.setup_session(session_config)
+        assert isinstance(extended_metadata, list)
+
         ...
+
+        self.client.start_session()
+
+    def get_next(self) -> DistanceDetectorResult:
+        extended_result = self.client.get_next()
+        assert isinstance(extended_result, list)
+
+        ...
+
+        return DistanceDetectorResult(distance=None)
 
     def update_config(self, config: DistanceDetectorConfig) -> None:
         ...
 
     def stop(self) -> None:
-        ...
+        self.client.stop_session()
