@@ -25,6 +25,8 @@ class DistanceProcessorResult:
 class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcessorResult]):
     """Distance processor
 
+    For all used subsweeps, the ``profile`` must be the same.
+
     :param sensor_config: Sensor configuration
     :param metadata: Metadata yielded by the sensor config
     :param processor_config: Processor configuration
@@ -50,6 +52,27 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         self.processor_config = processor_config
         self.subsweep_indexes = subsweep_indexes
         self.context = context
+
+        self.profile = self._get_profile(sensor_config, subsweep_indexes)
+
+    @classmethod
+    def _get_subsweep_configs(
+        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
+    ) -> list[a121.SubsweepConfig]:
+        return [sensor_config.subsweeps[i] for i in subsweep_indexes]
+
+    @classmethod
+    def _get_profile(
+        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
+    ) -> a121.Profile:
+        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+        profiles = {c.profile for c in subsweep_configs}
+
+        if len(profiles) > 1:
+            raise ValueError
+
+        (profile,) = profiles
+        return profile
 
     def process(self, result: a121.Result) -> DistanceProcessorResult:
         ...
