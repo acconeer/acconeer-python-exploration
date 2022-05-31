@@ -121,3 +121,25 @@ Open/load/save functions
 .. autofunction:: acconeer.exptool.a121.save_record
 
 .. autofunction:: acconeer.exptool.a121.save_record_to_h5
+
+Algo
+----
+
+Distance (under development)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessor
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessorConfig
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessorContext
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessorResult
+    :members:
+    :undoc-members:
