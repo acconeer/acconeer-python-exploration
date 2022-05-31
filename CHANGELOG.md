@@ -7,8 +7,9 @@
  - Moved Parking to examples
 
 ### Fixed
- - Add sampling mode for Sparse.
+ - Add sampling mode for Sparse in configuration.
    Was accidentally removed, when sampling mode was removed for IQ.
+ - Add sampling mode for Sparse when exporting C code.
 
 ## v4.4.0
 
