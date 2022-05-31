@@ -23,6 +23,16 @@ class DistanceProcessorResult:
 
 
 class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcessorResult]):
+    """Distance processor
+
+    :param sensor_config: Sensor configuration
+    :param metadata: Metadata yielded by the sensor config
+    :param processor_config: Processor configuration
+    :param subsweep_indexes:
+        The subsweep indexes to be processed. If ``None``, all subsweeps will be used.
+    :param context: Context
+    """
+
     def __init__(
         self,
         *,
@@ -32,6 +42,9 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         subsweep_indexes: Optional[list[int]] = None,
         context: Optional[DistanceProcessorContext] = None,
     ) -> None:
+        if subsweep_indexes is None:
+            subsweep_indexes = list(range(sensor_config.num_subsweeps))
+
         self.sensor_config = sensor_config
         self.metadata = metadata
         self.processor_config = processor_config
