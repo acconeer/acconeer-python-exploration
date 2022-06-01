@@ -9,8 +9,8 @@ class Backend:
         self._process = mp.Process(
             target=process_program,
             args=(
-                self._recv_queue,
                 self._send_queue,
+                self._recv_queue,
                 self._stop_event,
             ),
             daemon=True,
