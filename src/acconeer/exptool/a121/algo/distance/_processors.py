@@ -51,7 +51,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
         subsweep_configs = self._get_subsweep_configs(sensor_config, subsweep_indexes)
 
-        self._validate_range(subsweep_configs)
+        self._validate(subsweep_configs)
 
         self.sensor_config = sensor_config
         self.metadata = metadata
@@ -97,6 +97,14 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
     @classmethod
     def _get_num_points(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
         return sum(c.num_points for c in subsweep_configs)
+
+    @classmethod
+    def _validate(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
+        cls._validate_range(subsweep_configs)
+
+        for c in subsweep_configs:
+            if not c.phase_enhancement:
+                raise ValueError
 
     @classmethod
     def _validate_range(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
