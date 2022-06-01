@@ -37,7 +37,7 @@ pipeline {
             }
             steps {
                 sh 'python3 -m build'
-                sh 'nox -s lint docs test -- --test-groups unit integration app --docs-builders html latexpdf rediraffecheckdiff'
+                sh 'nox -s lint docs test -- --test-groups unit integration --docs-builders html latexpdf rediraffecheckdiff'
                 sh 'nox -s mypy'
             }
         }
