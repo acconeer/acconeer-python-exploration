@@ -565,6 +565,7 @@ class GUI(QMainWindow):
 
         self.module_dd.currentIndexChanged.connect(self.clear_application_owned_calibration)
         self.module_dd.currentIndexChanged.connect(self.update_canvas)
+        self.module_dd.currentIndexChanged.connect(self.set_rss_config_save_button)
 
         self.interface_dd = QComboBox(self)
         self.interface_dd.addItem("Socket", userData=et.a111.Link.SOCKET)
@@ -1116,11 +1117,19 @@ class GUI(QMainWindow):
             else:
                 self.calibration_ui_state.calibration_status = CalibrationStatus.IN_PROCESSOR
 
+    def set_rss_config_save_button(self):
+        services = ["", "Envelope", "Sparse", "IQ", "Power bins"]
+        if self.module_dd.currentText() in services:
+            self.buttons["save_rss_sensor_config"].setEnabled(True)
+        else:
+            self.buttons["save_rss_sensor_config"].setEnabled(False)
+
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
 
         selectable_dd_labels = [SELECT_A_SERVICE_TEXT]
         selectable_dd_labels.extend(MODULE_LABEL_TO_MODULE_INFO_MAP.keys())
+
         while (
             module_label not in selectable_dd_labels
         ):  # Fixes bug when using arrow keys to go trough dropdown
