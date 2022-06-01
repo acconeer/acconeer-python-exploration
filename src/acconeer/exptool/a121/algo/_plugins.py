@@ -13,3 +13,15 @@ class DetectorPlotPlugin(plugin.PlotPlugin):
 
 class DetectorViewPlugin(plugin.ViewPlugin):
     pass
+
+
+class ProcessorBackendPlugin(plugin.BackendPlugin):
+    pass
+
+
+class ProcessorPlotPlugin(plugin.PlotPlugin):
+    pass
+
+
+class ProcessorViewPlugin(plugin.ViewPlugin):
+    pass
