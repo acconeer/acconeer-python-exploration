@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 from typing import Any, Optional
 
 import attrs
@@ -10,8 +11,22 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121 import algo
 
 
+class ProcessorMode(enum.Enum):
+    DISTANCE_ESTIMATION = enum.auto()
+    LEAKAGE_CALIBRATION = enum.auto()
+    RECORDED_THRESHOLD_CALIBRATION = enum.auto()
+
+
+class ThresholdMethod(enum.Enum):
+    CFAR = enum.auto()
+    FIXED = enum.auto()
+    RECORDED = enum.auto()
+
+
+@attrs.frozen(kw_only=True)
 class DistanceProcessorConfig:
-    pass
+    processor_mode: ProcessorMode = attrs.field()
+    threshold_method: ThresholdMethod = attrs.field()
 
 
 @attrs.frozen(kw_only=True)
