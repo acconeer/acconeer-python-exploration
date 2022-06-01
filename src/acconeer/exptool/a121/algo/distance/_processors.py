@@ -49,7 +49,9 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         if subsweep_indexes is None:
             subsweep_indexes = list(range(sensor_config.num_subsweeps))
 
-        self._validate_range(sensor_config, subsweep_indexes)
+        subsweep_configs = self._get_subsweep_configs(sensor_config, subsweep_indexes)
+
+        self._validate_range(subsweep_configs)
 
         self.sensor_config = sensor_config
         self.metadata = metadata
@@ -57,10 +59,10 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         self.subsweep_indexes = subsweep_indexes
         self.context = context
 
-        self.profile = self._get_profile(sensor_config, subsweep_indexes)
-        self.step_length = self._get_step_length(sensor_config, subsweep_indexes)
-        self.start_point = self._get_start_point(sensor_config, subsweep_indexes)
-        self.num_points = self._get_num_points(sensor_config, subsweep_indexes)
+        self.profile = self._get_profile(subsweep_configs)
+        self.step_length = self._get_step_length(subsweep_configs)
+        self.start_point = self._get_start_point(subsweep_configs)
+        self.num_points = self._get_num_points(subsweep_configs)
 
     @classmethod
     def _get_subsweep_configs(
@@ -69,10 +71,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         return [sensor_config.subsweeps[i] for i in subsweep_indexes]
 
     @classmethod
-    def _get_profile(
-        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
-    ) -> a121.Profile:
-        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+    def _get_profile(cls, subsweep_configs: list[a121.SubsweepConfig]) -> a121.Profile:
         profiles = {c.profile for c in subsweep_configs}
 
         if len(profiles) > 1:
@@ -82,10 +81,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         return profile
 
     @classmethod
-    def _get_step_length(
-        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
-    ) -> int:
-        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+    def _get_step_length(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
         step_lengths = {c.step_length for c in subsweep_configs}
 
         if len(step_lengths) > 1:
@@ -95,23 +91,16 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         return step_length
 
     @classmethod
-    def _get_start_point(
-        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
-    ) -> int:
-        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+    def _get_start_point(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
         return subsweep_configs[0].start_point
 
     @classmethod
-    def _get_num_points(cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]) -> int:
-        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+    def _get_num_points(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
         return sum(c.num_points for c in subsweep_configs)
 
     @classmethod
-    def _validate_range(
-        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
-    ) -> None:
-        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
-        step_length = cls._get_step_length(sensor_config, subsweep_indexes)
+    def _validate_range(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
+        step_length = cls._get_step_length(subsweep_configs)
 
         next_expected_start_point = None
 
