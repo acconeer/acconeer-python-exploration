@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 import attrs
 import numpy as np
-from scipy.signal import butter
+from scipy.signal import butter, filtfilt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import algo
@@ -63,6 +63,8 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         self.step_length = self._get_step_length(subsweep_configs)
         self.start_point = self._get_start_point(subsweep_configs)
         self.num_points = self._get_num_points(subsweep_configs)
+
+        (self.b, self.a) = self._get_distance_filter_coeffs(self.profile, self.step_length)
 
     @classmethod
     def _get_subsweep_configs(
@@ -123,6 +125,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         subframes = [result.subframes[i] for i in self.subsweep_indexes]
         frame = np.concatenate(subframes, axis=1)
         sweep = frame.mean(axis=0)  # noqa: F841
+        filtered_sweep = filtfilt(self.b, self.a, sweep)  # noqa: F841
 
         ...
 
