@@ -6,7 +6,10 @@ import attrs
 
 from acconeer.exptool import a121
 
+from ._processors import DistanceProcessor, DistanceProcessorConfig, ProcessorMode
 
+
+@attrs.frozen(kw_only=True)
 class DistanceDetectorConfig:
     pass
 
@@ -28,6 +31,9 @@ class DistanceDetector:
         self.sensor_id = sensor_id
         self.detector_config = detector_config
 
+        self.started = False
+        self.processor: Optional[DistanceProcessor] = None
+
     def calibrate(self) -> None:
         ...
 
@@ -35,33 +41,56 @@ class DistanceDetector:
         ...
 
     def start(self) -> None:
-        ...
+        if self.started:
+            raise RuntimeError("Already started")
 
         # TODO:
         sensor_config = a121.SensorConfig()
         config_groups = [{self.sensor_id: sensor_config}]
         session_config = a121.SessionConfig(
             config_groups,
-            extended=True,
+            extended=False,
         )
 
-        extended_metadata = self.client.setup_session(session_config)
-        assert isinstance(extended_metadata, list)
+        metadata = self.client.setup_session(session_config)
+        assert isinstance(metadata, a121.Metadata)
 
-        ...
+        processor_config = DistanceProcessorConfig(
+            processor_mode=ProcessorMode.DISTANCE_ESTIMATION,
+        )
+
+        self.processor = DistanceProcessor(
+            sensor_config=sensor_config,
+            metadata=metadata,
+            processor_config=processor_config,
+        )
 
         self.client.start_session()
 
+        self.started = True
+
     def get_next(self) -> DistanceDetectorResult:
-        extended_result = self.client.get_next()
-        assert isinstance(extended_result, list)
+        if not self.started:
+            raise RuntimeError("Not started")
 
-        ...
+        result = self.client.get_next()
+        assert isinstance(result, a121.Result)
 
-        return DistanceDetectorResult(distance=None)
+        assert self.processor is not None
+        processor_result = self.processor.process(result)
+
+        return DistanceDetectorResult(
+            distance=processor_result.distance,
+        )
 
     def update_config(self, config: DistanceDetectorConfig) -> None:
         ...
 
     def stop(self) -> None:
+        if not self.started:
+            raise RuntimeError("Already stopped")
+
         self.client.stop_session()
+
+        self.processor = None
+        self.started = False
