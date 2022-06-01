@@ -3,8 +3,8 @@ import multiprocessing as mp
 
 class Backend:
     def __init__(self):
-        self._recv_queue = mp.Queue()
-        self._send_queue = mp.Queue()
+        self._recv_queue: mp.Queue = mp.Queue()
+        self._send_queue: mp.Queue = mp.Queue()
         self._stop_event = mp.Event()
         self._process = mp.Process(
             target=process_program,
