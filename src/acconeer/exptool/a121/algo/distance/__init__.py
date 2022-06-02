@@ -4,4 +4,6 @@ from ._processors import (
     DistanceProcessorConfig,
     DistanceProcessorContext,
     DistanceProcessorResult,
+    ProcessorMode,
+    ThresholdMethod,
 )
