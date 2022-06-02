@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Callable
+from typing import Any, Callable, Dict, Tuple
+
+
+TaskName = str
+TaskKwargs = Dict[str, Any]
+Task = Tuple[TaskName, TaskKwargs]
 
 
 class BackendPlugin(abc.ABC):
@@ -18,7 +23,7 @@ class BackendPlugin(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def execute_task(self, *, task: Any) -> None:
+    def execute_task(self, *, task: Task) -> None:
         pass
 
     @abc.abstractmethod

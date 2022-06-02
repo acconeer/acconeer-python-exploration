@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import Optional
 
-from acconeer.exptool.app.new.plugin import BackendPlugin, Plugin
+from acconeer.exptool.app.new.plugin import BackendPlugin, Plugin, Task
 
 
 class Model:
     def __init__(self) -> None:
         self.backend_plugin: Optional[BackendPlugin] = None
 
-    def execute_task(self, task):
+    def execute_task(self, task: Task) -> None:
         method_name, kwargs = task
         method = getattr(self, "_" + method_name)
         method(**kwargs)
