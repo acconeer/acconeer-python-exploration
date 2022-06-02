@@ -165,13 +165,19 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         abs_sweep = np.abs(filtered_sweep)
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
-            pass
+            return self._process_distance_estimation(abs_sweep)
         elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
             pass
         elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
             return self._process_recorded_threshold_calibration(abs_sweep)
 
         raise RuntimeError
+
+    def _process_distance_estimation(
+        self, abs_sweep: npt.NDArray[np.float_]
+    ) -> DistanceProcessorResult:
+        extra_result = DistanceProcessorExtraResult(abs_sweep=abs_sweep)
+        return DistanceProcessorResult(extra=extra_result)
 
     def _init_recorded_threshold_calibration(self) -> None:
         self.bg_sc_mean = np.zeros(self.num_points)
