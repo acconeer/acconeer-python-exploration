@@ -31,10 +31,16 @@ class ProcessorConfig:
     sc_bg_num_std_dev: float = attrs.field(default=3.0)
     fixed_threshold_value: float = attrs.field(default=100.0)
 
+    cfar_guard_length_m: Optional[float] = attrs.field(default=None)
+    cfar_window_length_m: Optional[float] = attrs.field(default=None)
+    cfar_sensitivity: float = attrs.field(default=0.5)
+    cfar_one_sided: bool = attrs.field(default=False)
+
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
     recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    abs_noise_std: Optional[float] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -68,6 +74,20 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     :param context: Context
     """
 
+    ENVELOPE_WIDTH_MM = {
+        a121.Profile.PROFILE_1: 40.0,
+        a121.Profile.PROFILE_2: 70.0,
+        a121.Profile.PROFILE_3: 140.0,
+        a121.Profile.PROFILE_4: 190.0,
+        a121.Profile.PROFILE_5: 320.0,
+    }
+
+    MM_to_M = 0.001
+    M_TO_MM = 1000
+    APPROX_BASE_STEP_LENGTH_M = 2.5e-3
+    CFAR_GUARD_LENGTH_ADJUSTMENT = 2
+    CFAR_WINDOW_LENGTH_ADJUSTMENT = 0.25
+
     def __init__(
         self,
         *,
@@ -92,8 +112,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         self.profile = self._get_profile(subsweep_configs)
         self.step_length = self._get_step_length(subsweep_configs)
+        self.approx_step_length_m = self.step_length * self.APPROX_BASE_STEP_LENGTH_M
         self.start_point = self._get_start_point(subsweep_configs)
         self.num_points = self._get_num_points(subsweep_configs)
+
+        assert self.metadata.base_step_length_m is not None
+        self.step_length_m = self.step_length * self.metadata.base_step_length_m
 
         (self.b, self.a) = self._get_distance_filter_coeffs(self.profile, self.step_length)
 
@@ -189,11 +213,32 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         elif self.threshold_method == ThresholdMethod.FIXED:
             self.threshold = np.full(self.num_points, self.processor_config.fixed_threshold_value)
         elif self.threshold_method == ThresholdMethod.CFAR:
-            raise NotImplementedError
-        else:
-            raise RuntimeError
+            if self.processor_config.cfar_guard_length_m is None:
+                self.cfar_guard_length_m = (
+                    self.ENVELOPE_WIDTH_MM[self.profile]
+                    * self.CFAR_GUARD_LENGTH_ADJUSTMENT
+                    * self.MM_to_M
+                )
+            else:
+                self.cfar_guard_length_m = self.processor_config.cfar_guard_length_m
+            if self.processor_config.cfar_window_length_m is None:
+                self.cfar_window_length_m = (
+                    self.ENVELOPE_WIDTH_MM[self.profile]
+                    * self.CFAR_WINDOW_LENGTH_ADJUSTMENT
+                    * self.MM_to_M
+                )
+            else:
+                self.cfar_window_length_m = self.processor_config.cfar_window_length_m
+
+            self.cfar_one_sided = self.processor_config.cfar_one_sided
+            self.cfar_sensitivity = self.processor_config.cfar_sensitivity
+            guard_half_length = int(np.round(self.cfar_guard_length_m / 2.0 / self.step_length_m))
+            window_length = int(np.round(self.cfar_window_length_m / self.approx_step_length_m))
+            self.idx_cfar_pts = guard_half_length + np.arange(window_length)
 
     def _process_distance_estimation(self, abs_sweep: npt.NDArray[np.float_]) -> ProcessorResult:
+        self.threshold = self._update_threshold(abs_sweep)
+
         found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
         (estimated_distances, estimated_amplitudes) = self._interpolate_peaks(
             abs_sweep, found_peaks_idx, self.start_point, self.step_length
@@ -240,17 +285,58 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     def update_config(self, config: ProcessorConfig) -> None:
         ...
 
-    @staticmethod
-    def _get_distance_filter_coeffs(profile: a121.Profile, step_length: int) -> Any:
-        envelope_width_mm = {
-            a121.Profile.PROFILE_1: 40,
-            a121.Profile.PROFILE_2: 70,
-            a121.Profile.PROFILE_3: 140,
-            a121.Profile.PROFILE_4: 190,
-            a121.Profile.PROFILE_5: 320,
-        }
-        wnc = 2.5 * step_length / envelope_width_mm[profile]
+    @classmethod
+    def _get_distance_filter_coeffs(cls, profile: a121.Profile, step_length: int) -> Any:
+        wnc = (
+            cls.APPROX_BASE_STEP_LENGTH_M
+            * cls.M_TO_MM
+            * step_length
+            / cls.ENVELOPE_WIDTH_MM[profile]
+        )
         return butter(N=2, Wn=wnc)
+
+    def _update_threshold(self, abs_sweep: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
+        if self.threshold_method == ThresholdMethod.CFAR:
+            return self._calculate_cfar_threshold(
+                abs_sweep,
+                self.idx_cfar_pts,
+                self.cfar_sensitivity,
+                self.cfar_one_sided,
+                self.context,
+            )
+        elif self.threshold_method == ThresholdMethod.FIXED:
+            raise NotImplementedError
+        elif self.threshold_method == ThresholdMethod.RECORDED:
+            raise NotImplementedError
+        else:
+            raise RuntimeError
+
+    @staticmethod
+    def _calculate_cfar_threshold(
+        abs_sweep: npt.NDArray[np.float_],
+        idx_cfar_pts: npt.NDArray[np.int_],
+        alpha: float,
+        one_side: bool,
+        context: Optional[ProcessorContext],
+    ) -> npt.NDArray[np.float_]:
+        threshold = np.full(abs_sweep.shape, np.nan)
+        start_idx = np.max(idx_cfar_pts)
+        if one_side:
+            take_relative_indexes = -idx_cfar_pts
+            end_idx = abs_sweep.size
+        else:
+            take_relative_indexes = np.concatenate((-idx_cfar_pts, +idx_cfar_pts), axis=0)
+            end_idx = abs_sweep.size - start_idx
+
+        for idx in np.arange(start_idx, end_idx):
+            take_indexes = idx + take_relative_indexes
+            threshold[idx] = np.mean(np.take(abs_sweep, take_indexes))
+
+        if context is not None and context.abs_noise_std is not None:
+            threshold += context.abs_noise_std
+
+        threshold *= 1.0 / (alpha + 1e-10)
+        return threshold
 
     @staticmethod
     def _find_peaks(
