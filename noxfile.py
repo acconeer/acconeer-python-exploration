@@ -69,6 +69,7 @@ def lint(session):
         BLACK_SPEC,
         ISORT_SPEC,
         "flake8>=4,<5",
+        "flake8-future-annotations",
         "flake8-mutable",
         "flake8-quotes",
         "flake8-tidy-imports",

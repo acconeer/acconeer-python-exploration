@@ -1,4 +1,7 @@
 """This script checks whether CHANGELOG refers to the same version as the current git tag."""
+
+from __future__ import annotations
+
 import re
 import subprocess
 from pathlib import Path

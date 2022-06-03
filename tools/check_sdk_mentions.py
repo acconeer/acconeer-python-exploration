@@ -1,4 +1,7 @@
 """This is a script that checks whether version-strings in the docs are up to date"""
+
+from __future__ import annotations
+
 import configparser
 import re
 from pathlib import Path
