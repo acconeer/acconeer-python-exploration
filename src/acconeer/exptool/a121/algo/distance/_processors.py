@@ -29,6 +29,7 @@ class DistanceProcessorConfig:
     processor_mode: ProcessorMode = attrs.field(default=ProcessorMode.DISTANCE_ESTIMATION)
     threshold_method: ThresholdMethod = attrs.field(default=ThresholdMethod.CFAR)
     sc_bg_num_std_dev: float = attrs.field(default=3.0)
+    fixed_threshold_value: float = attrs.field(default=100.0)
 
 
 @attrs.frozen(kw_only=True)
@@ -39,7 +40,7 @@ class DistanceProcessorContext:
 @attrs.frozen(kw_only=True)
 class DistanceProcessorExtraResult:
     """
-    Contains information for visuallization in ET.
+    Contains information for visualization in ET.
     """
 
     abs_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
@@ -185,6 +186,12 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
                 raise ValueError("Missing recorded threshold in context")
             else:
                 self.threshold = self.context.recorded_threshold
+        elif self.threshold_method == ThresholdMethod.FIXED:
+            self.threshold = np.full(self.num_points, self.processor_config.fixed_threshold_value)
+        elif self.threshold_method == ThresholdMethod.CFAR:
+            raise NotImplementedError
+        else:
+            raise RuntimeError
 
     def _process_distance_estimation(
         self, abs_sweep: npt.NDArray[np.float_]
