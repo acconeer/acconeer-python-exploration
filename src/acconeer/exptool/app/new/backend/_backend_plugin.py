@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable
 
-
-TaskName = str
-TaskKwargs = Dict[str, Any]
-Task = Tuple[TaskName, TaskKwargs]
+from ._types import Task
 
 
 class BackendPlugin(abc.ABC):

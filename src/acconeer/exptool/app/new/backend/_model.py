@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from acconeer.exptool.app.new.plugin import BackendPlugin, Plugin, Task
+from ._backend_plugin import BackendPlugin
+from ._types import Task
 
 
 class Model:
@@ -17,6 +18,6 @@ class Model:
     def _plugin_callback(self, *args, **kwargs):
         pass
 
-    def _load_plugin(self, *, plugin: Plugin) -> None:
-        self.backend_plugin = plugin.backend_plugin()
+    def _load_plugin(self, *, plugin: BackendPlugin) -> None:
+        self.backend_plugin = plugin
         self.backend_plugin.setup(callback=self._plugin_callback)

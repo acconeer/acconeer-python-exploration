@@ -4,7 +4,8 @@ from typing import Type
 
 import attrs
 
-from ._backend import BackendPlugin
+from acconeer.exptool.app.new.backend import BackendPlugin
+
 from ._plot import PlotPlugin
 from ._view import ViewPlugin
 

@@ -17,8 +17,8 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorViewPlugin,
 )
 from acconeer.exptool.a121.algo._utils import approx_distances_m, approx_fft_vels
-from acconeer.exptool.app.new.backend import Backend
-from acconeer.exptool.app.new.plugin import Plugin, Task
+from acconeer.exptool.app.new.backend import Backend, Task
+from acconeer.exptool.app.new.plugin import Plugin
 
 from ._processor import SparseIQProcessor, SparseIQProcessorConfig, SparseIQProcessorResult
 
@@ -121,12 +121,20 @@ class SparseIQProcessorViewPlugin(ProcessorViewPlugin):
 
     def _send_start_requests(self) -> None:
         # FIXME: don't hard-code these
-        self.backend.put_task(("start_session", (a121.SessionConfig(), SparseIQProcessorConfig())))
-        self.backend.set_idle_task("get_next")
+        self.backend.put_task(
+            (
+                "start_session",
+                {
+                    "session_config": a121.SessionConfig(),
+                    "processor_config": SparseIQProcessorConfig(),
+                },
+            )
+        )
+        self.backend.set_idle_task(("get_next", {}))
 
     def _send_stop_requests(self) -> None:
         self.backend.clear_idle_task()
-        self.backend.put_task(("stop_session", None))
+        self.backend.put_task(("stop_session", {}))
 
     def teardown(self) -> None:
         self.layout.deleteLater()
