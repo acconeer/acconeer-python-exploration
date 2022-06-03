@@ -1,15 +1,10 @@
 import sys
 
-from PySide6.QtWidgets import (
-    QApplication,
-    QHBoxLayout,
-    QMainWindow,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
 from acconeer.exptool.app.new.backend import Backend
+
+from .connection_widget import ClientConnectionWidget
 
 
 class MainWindow(QMainWindow):
@@ -25,11 +20,12 @@ class MainWindow(QMainWindow):
         rhs_dummy = QWidget()
         rhs_dummy.setProperty("acc_type", "rhs")
         rhs_dummy.setLayout(self.rhs_layout)
+        self.rhs_layout.addWidget(ClientConnectionWidget(self.backend))
 
         self.lhs_layout = QVBoxLayout()
         lhs_dummy = QWidget()
         lhs_dummy.setProperty("acc_type", "lhs")
-        lhs_dummy.setLayout(self.rhs_layout)
+        lhs_dummy.setLayout(self.lhs_layout)
 
         main_layout.addWidget(lhs_dummy)
         main_layout.addWidget(rhs_dummy)
@@ -49,7 +45,6 @@ def run_with_backend(backend: Backend) -> None:
         """
     )
     mw = MainWindow(backend)
-    mw.rhs_layout.addWidget(QPushButton("Hello"))
     mw.show()
 
     app.exec()
