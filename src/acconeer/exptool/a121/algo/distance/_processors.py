@@ -186,24 +186,30 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         self.sc_bg_num_std_dev = self.processor_config.sc_bg_num_std_dev
 
     def _process_recorded_threshold_calibration(
-        self, sweep: npt.NDArray[np.float_]
+        self, abs_sweep: npt.NDArray[np.float_]
     ) -> DistanceProcessorResult:
         min_num_sweeps_in_valid_threshold = 2
 
-        self.bg_sc_mean += sweep
-        self.bg_sc_sum_squared_bg_sweeps += np.square(sweep)
+        self.bg_sc_mean += abs_sweep
+        self.bg_sc_sum_squared_bg_sweeps += np.square(abs_sweep)
         mean_sweep = self.bg_sc_mean / self.sc_bg_num_sweeps
         mean_square = self.bg_sc_sum_squared_bg_sweeps / self.sc_bg_num_sweeps
         square_mean = np.square(mean_sweep)
-        sc_bg_sweep_std = np.sqrt(
-            np.abs(mean_square - square_mean) * self.sc_bg_num_sweeps / (self.sc_bg_num_sweeps - 1)
-        )
-        threshold = mean_sweep + self.sc_bg_num_std_dev * sc_bg_sweep_std
-        if self.sc_bg_num_sweeps < min_num_sweeps_in_valid_threshold:
+
+        if min_num_sweeps_in_valid_threshold <= self.sc_bg_num_sweeps:
+            sc_bg_sweep_std = np.sqrt(
+                np.abs(mean_square - square_mean)
+                * self.sc_bg_num_sweeps
+                / (self.sc_bg_num_sweeps - 1)
+            )
+            threshold = mean_sweep + self.sc_bg_num_std_dev * sc_bg_sweep_std
+        else:
             threshold = None
+
         self.sc_bg_num_sweeps += 1
 
-        return DistanceProcessorResult(threshold=threshold)
+        extra_result = DistanceProcessorExtraResult(abs_sweep=abs_sweep)
+        return DistanceProcessorResult(extra=extra_result, threshold=threshold)
 
     def update_config(self, config: DistanceProcessorConfig) -> None:
         ...
