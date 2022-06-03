@@ -16,7 +16,7 @@ class DistanceDetectorConfig:
 
 @attrs.frozen(kw_only=True)
 class DistanceDetectorResult:
-    distance: Optional[float] = attrs.field()
+    distances: Optional[list[float]] = attrs.field(default=None)
 
 
 class DistanceDetector:
@@ -80,7 +80,7 @@ class DistanceDetector:
         processor_result = self.processor.process(result)
 
         return DistanceDetectorResult(
-            distance=processor_result.distance,
+            distances=processor_result.estimated_distances,
         )
 
     def update_config(self, config: DistanceDetectorConfig) -> None:

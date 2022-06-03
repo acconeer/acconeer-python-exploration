@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 import attrs
 import numpy as np
@@ -33,19 +33,25 @@ class DistanceProcessorConfig:
 
 @attrs.frozen(kw_only=True)
 class DistanceProcessorContext:
-    pass  # e.g. calibration, background measurement
+    recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
 class DistanceProcessorExtraResult:
+    """
+    Contains information for visuallization in ET.
+    """
+
     abs_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    used_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
 class DistanceProcessorResult:
-    distance: Optional[float] = attrs.field(default=None)
-    threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    extra: DistanceProcessorExtraResult = attrs.field(factory=DistanceProcessorExtraResult)
+    estimated_distances: Optional[list[float]] = attrs.field(default=None)
+    estimated_amplitudes: Optional[list[float]] = attrs.field(default=None)
+    recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    extra_result: DistanceProcessorExtraResult = attrs.field(factory=DistanceProcessorExtraResult)
 
 
 class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcessorResult]):
@@ -94,7 +100,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         self.threshold_method = processor_config.threshold_method
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
-            pass
+            self._init_process_distance_estimation()
         elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
             pass
         elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
@@ -173,11 +179,28 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
         raise RuntimeError
 
+    def _init_process_distance_estimation(self) -> None:
+        if self.threshold_method == ThresholdMethod.RECORDED:
+            if self.context is None or self.context.recorded_threshold is None:
+                raise ValueError("Missing recorded threshold in context")
+            else:
+                self.threshold = self.context.recorded_threshold
+
     def _process_distance_estimation(
         self, abs_sweep: npt.NDArray[np.float_]
     ) -> DistanceProcessorResult:
-        extra_result = DistanceProcessorExtraResult(abs_sweep=abs_sweep)
-        return DistanceProcessorResult(extra=extra_result)
+        found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
+        (estimated_distances, estimated_amplitudes) = self._interpolate_peaks(
+            abs_sweep, found_peaks_idx, self.start_point, self.step_length
+        )
+        extra_result = DistanceProcessorExtraResult(
+            abs_sweep=abs_sweep, used_threshold=self.threshold
+        )
+        return DistanceProcessorResult(
+            estimated_distances=estimated_distances,
+            estimated_amplitudes=estimated_amplitudes,
+            extra_result=extra_result,
+        )
 
     def _init_recorded_threshold_calibration(self) -> None:
         self.bg_sc_mean = np.zeros(self.num_points)
@@ -209,7 +232,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         self.sc_bg_num_sweeps += 1
 
         extra_result = DistanceProcessorExtraResult(abs_sweep=abs_sweep)
-        return DistanceProcessorResult(extra=extra_result, threshold=threshold)
+        return DistanceProcessorResult(extra_result=extra_result, recorded_threshold=threshold)
 
     def update_config(self, config: DistanceProcessorConfig) -> None:
         ...
@@ -225,3 +248,68 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         }
         wnc = 2.5 * step_length / envelope_width_mm[profile]
         return butter(N=2, Wn=wnc)
+
+    @staticmethod
+    def _find_peaks(
+        abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.float_]
+    ) -> list[int]:
+        if threshold is None:
+            raise ValueError
+        found_peaks = []
+        d = 1
+        N = len(abs_sweep)
+        while d < (N - 1):
+            if np.isnan(threshold[d - 1]):
+                d += 1
+                continue
+            if np.isnan(threshold[d + 1]):
+                break
+            if abs_sweep[d] <= threshold[d]:
+                d += 2
+                continue
+            if abs_sweep[d - 1] <= threshold[d - 1]:
+                d += 1
+                continue
+            if abs_sweep[d - 1] >= abs_sweep[d]:
+                d += 1
+                continue
+            d_upper = d + 1
+            while True:
+                if (d_upper) >= (N - 1):
+                    break
+                if np.isnan(threshold[d_upper]):
+                    break
+                if abs_sweep[d_upper] <= threshold[d_upper]:
+                    break
+                if abs_sweep[d_upper] > abs_sweep[d]:
+                    break
+                elif abs_sweep[d_upper] < abs_sweep[d]:
+                    found_peaks.append(int(np.argmax(abs_sweep[d:d_upper]) + d))
+                    break
+                else:
+                    d_upper += 1
+            d = d_upper
+        return found_peaks
+
+    @staticmethod
+    def _interpolate_peaks(
+        abs_sweep: npt.NDArray[np.float_],
+        peak_idxs: list[int],
+        start_point: int,
+        step_length: int,
+    ) -> Tuple[list[float], list[float]]:
+        estimated_distances = []
+        estimated_amplitudes = []
+        for peak_idx in peak_idxs:
+            # (https://math.stackexchange.com/questions/680646/get-polynomial-function-from-3-points)
+            x = np.arange(peak_idx - 1, peak_idx + 2, 1)
+            y = abs_sweep[peak_idx - 1 : peak_idx + 2]
+            a = (x[0] * (y[2] - y[1]) + x[1] * (y[0] - y[2]) + x[2] * (y[1] - y[0])) / (
+                (x[0] - x[1]) * (x[0] - x[2]) * (x[1] - x[2])
+            )
+            b = (y[1] - y[0]) / (x[1] - x[0]) - a * (x[0] + x[1])
+            c = y[0] - a * x[0] ** 2 - b * x[0]
+            peak_loc = -b / (2 * a)
+            estimated_distances.append((start_point + peak_loc * step_length) * 2.5)
+            estimated_amplitudes.append(a * peak_loc**2 + b * peak_loc + c)
+        return estimated_distances, estimated_amplitudes
