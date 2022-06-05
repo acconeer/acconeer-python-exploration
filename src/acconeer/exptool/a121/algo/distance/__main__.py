@@ -1,7 +1,7 @@
 import acconeer.exptool as et
 from acconeer.exptool import a121
 
-from . import DistanceDetector, DistanceDetectorConfig
+from . import Detector, DetectorConfig
 
 
 parser = a121.ExampleArgumentParser()
@@ -12,9 +12,9 @@ et.utils.config_logging(args)  # type: ignore[attr-defined]
 client = a121.Client(**a121.get_client_args(args))
 client.connect()
 
-detector_config = DistanceDetectorConfig()
+detector_config = DetectorConfig()
 
-detector = DistanceDetector(
+detector = Detector(
     client=client,
     sensor_id=args.sensor,
     detector_config=detector_config,

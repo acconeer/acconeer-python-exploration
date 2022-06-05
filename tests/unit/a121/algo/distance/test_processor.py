@@ -13,14 +13,14 @@ def test_get_subsweep_configs():
         ],
     )
 
-    actual_subsweeps = distance.DistanceProcessor._get_subsweep_configs(sensor_config, [1, 0])
+    actual_subsweeps = distance.Processor._get_subsweep_configs(sensor_config, [1, 0])
     actual = [c.profile for c in actual_subsweeps]
     expected = [a121.Profile.PROFILE_2, a121.Profile.PROFILE_1]
     assert actual == expected
 
 
 def test_get_profile():
-    actual = distance.DistanceProcessor._get_profile(
+    actual = distance.Processor._get_profile(
         [
             a121.SubsweepConfig(profile=a121.Profile.PROFILE_2),
             a121.SubsweepConfig(profile=a121.Profile.PROFILE_2),
@@ -29,7 +29,7 @@ def test_get_profile():
     assert actual == a121.Profile.PROFILE_2
 
     with pytest.raises(Exception):
-        distance.DistanceProcessor._get_profile(
+        distance.Processor._get_profile(
             [
                 a121.SubsweepConfig(profile=a121.Profile.PROFILE_2),
                 a121.SubsweepConfig(profile=a121.Profile.PROFILE_2),
@@ -39,7 +39,7 @@ def test_get_profile():
 
 
 def test_get_start_point():
-    actual = distance.DistanceProcessor._get_start_point(
+    actual = distance.Processor._get_start_point(
         [
             a121.SubsweepConfig(start_point=100),
             a121.SubsweepConfig(start_point=150),
@@ -49,7 +49,7 @@ def test_get_start_point():
 
 
 def test_get_num_points():
-    actual = distance.DistanceProcessor._get_num_points(
+    actual = distance.Processor._get_num_points(
         [
             a121.SubsweepConfig(num_points=100),
             a121.SubsweepConfig(num_points=150),
@@ -59,7 +59,7 @@ def test_get_num_points():
 
 
 def test_validate_range():
-    distance.DistanceProcessor._validate_range(
+    distance.Processor._validate_range(
         [
             a121.SubsweepConfig(
                 start_point=100,
@@ -75,7 +75,7 @@ def test_validate_range():
     )
 
     with pytest.raises(Exception):
-        distance.DistanceProcessor._validate_range(
+        distance.Processor._validate_range(
             [
                 a121.SubsweepConfig(
                     start_point=100,
@@ -92,7 +92,7 @@ def test_validate_range():
 
 
 def test_get_distance_filter_coeffs():
-    (actual_B, actual_A) = distance.DistanceProcessor._get_distance_filter_coeffs(
+    (actual_B, actual_A) = distance.Processor._get_distance_filter_coeffs(
         a121.Profile.PROFILE_1, 1
     )
 
@@ -104,7 +104,7 @@ def test_get_distance_filter_coeffs():
     assert actual_A[1] == pytest.approx(-1.72377617, 0.01)
     assert actual_A[2] == pytest.approx(0.75754694, 0.01)
 
-    (actual_B, actual_A) = distance.DistanceProcessor._get_distance_filter_coeffs(
+    (actual_B, actual_A) = distance.Processor._get_distance_filter_coeffs(
         a121.Profile.PROFILE_5, 6
     )
     assert actual_B[0] == pytest.approx(0.00490303, 0.01)

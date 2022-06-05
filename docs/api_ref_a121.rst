@@ -128,18 +128,18 @@ Algo
 Distance (under development)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessor
+.. autoclass:: acconeer.exptool.a121.algo.distance.Processor
     :members:
     :undoc-members:
 
-.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessorConfig
+.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorConfig
     :members:
     :undoc-members:
 
-.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessorContext
+.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorContext
     :members:
     :undoc-members:
 
-.. autoclass:: acconeer.exptool.a121.algo.distance.DistanceProcessorResult
+.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorResult
     :members:
     :undoc-members:

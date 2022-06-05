@@ -12,21 +12,21 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._plugins import (
-    ProcessorBackendPlugin,
-    ProcessorPlotPlugin,
-    ProcessorViewPlugin,
+    ProcessorBackendPluginBase,
+    ProcessorPlotPluginBase,
+    ProcessorViewPluginBase,
 )
 from acconeer.exptool.a121.algo._utils import approx_distances_m, approx_fft_vels
 from acconeer.exptool.app.new.backend import Backend, Task
 from acconeer.exptool.app.new.plugin import Plugin
 
-from ._processor import SparseIQProcessor, SparseIQProcessorConfig, SparseIQProcessorResult
+from ._processor import Processor, ProcessorConfig, ProcessorResult
 
 
-class SparseIQProcessorBackendPlugin(ProcessorBackendPlugin):
+class BackendPlugin(ProcessorBackendPluginBase):
     client: Optional[a121.Client]
     callback: Optional[Callable]
-    processor_instance: Optional[SparseIQProcessor]
+    processor_instance: Optional[Processor]
 
     def __init__(self):
         self.processor_instance = None
@@ -51,9 +51,9 @@ class SparseIQProcessorBackendPlugin(ProcessorBackendPlugin):
     def execute_task(self, *, task: Task) -> None:
         """Accepts the following tasks:
 
-        - ("start_session", (a121.SessionConfig, SparseIQProcessorConfig)) -> None
+        - ("start_session", (a121.SessionConfig, ProcessorConfig)) -> None
         - ("stop_session", <Ignored>) -> None
-        - ("get_next", <Ignored>) -> SparseIQProcessorResult
+        - ("get_next", <Ignored>) -> ProcessorResult
         """
         task_name, task_kwargs = task
         if task_name == "start_session":
@@ -66,7 +66,7 @@ class SparseIQProcessorBackendPlugin(ProcessorBackendPlugin):
             raise RuntimeError(f"Unknown task: {task_name}")
 
     def _execute_start(
-        self, session_config: a121.SessionConfig, processor_config: SparseIQProcessorConfig
+        self, session_config: a121.SessionConfig, processor_config: ProcessorConfig
     ) -> None:
         if self.client is None:
             raise RuntimeError("Client is not attached. Can not 'start'.")
@@ -76,7 +76,7 @@ class SparseIQProcessorBackendPlugin(ProcessorBackendPlugin):
         metadata = self.client.setup_session(session_config)
         assert isinstance(metadata, a121.Metadata)
 
-        self.processor_instance = SparseIQProcessor(
+        self.processor_instance = Processor(
             sensor_config=session_config.sensor_config,
             metadata=metadata,
             processor_config=processor_config,
@@ -103,7 +103,7 @@ class SparseIQProcessorBackendPlugin(ProcessorBackendPlugin):
         self.callback({"plot": processor_result, "get_next": processor_result})
 
 
-class SparseIQProcessorViewPlugin(ProcessorViewPlugin):
+class ViewPlugin(ProcessorViewPluginBase):
     def __init__(self, *, parent: QWidget, backend: Backend) -> None:
         self.parent = parent
         self.backend = backend
@@ -126,7 +126,7 @@ class SparseIQProcessorViewPlugin(ProcessorViewPlugin):
                 "start_session",
                 {
                     "session_config": a121.SessionConfig(),
-                    "processor_config": SparseIQProcessorConfig(),
+                    "processor_config": ProcessorConfig(),
                 },
             )
         )
@@ -140,7 +140,7 @@ class SparseIQProcessorViewPlugin(ProcessorViewPlugin):
         self.layout.deleteLater()
 
 
-class SparseIQProcessorPlotPlugin(ProcessorPlotPlugin):
+class PlotPlugin(ProcessorPlotPluginBase):
     def __init__(self, sensor_config: a121.SensorConfig, *, parent: pg.GraphicsLayout) -> None:
         self.sensor_config = sensor_config
         self.parent = parent
@@ -218,7 +218,7 @@ class SparseIQProcessorPlotPlugin(ProcessorPlotPlugin):
         # self.ft_im.scale(self.step_length_m, self.vel_res)
         return ft_plot
 
-    def update(self, processor_result: SparseIQProcessorResult) -> None:
+    def update(self, processor_result: ProcessorResult) -> None:
         ampls = processor_result.amplitudes
         self.ampl_curve.setData(self.depths_m, ampls)
         self.phase_curve.setData(self.depths_m, processor_result.phases)
@@ -235,7 +235,7 @@ class SparseIQProcessorPlotPlugin(ProcessorPlotPlugin):
 
 SPARSE_IQ_PLUGIN = Plugin(
     key="sparse_iq",
-    backend_plugin=SparseIQProcessorBackendPlugin,
-    plot_plugin=SparseIQProcessorPlotPlugin,
-    view_plugin=SparseIQProcessorViewPlugin,
+    backend_plugin=BackendPlugin,
+    plot_plugin=PlotPlugin,
+    view_plugin=ViewPlugin,
 )

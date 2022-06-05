@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import Processor
+from acconeer.exptool.a121.algo import ProcessorBase
 
 
 class AmplitudeMethod(Enum):
@@ -17,32 +17,32 @@ class AmplitudeMethod(Enum):
 
 
 @attrs.frozen(kw_only=True)
-class SparseIQProcessorConfig:
+class ProcessorConfig:
     amplitude_method: AmplitudeMethod = attrs.field(default=AmplitudeMethod.COHERENT)
 
 
 @attrs.frozen(kw_only=True)
-class SparseIQProcessorResult:
+class ProcessorResult:
     frame: npt.NDArray[np.complex_]
     distance_velocity_map: npt.NDArray[np.float_]
     amplitudes: npt.NDArray[np.float_]
     phases: npt.NDArray[np.float_]
 
 
-class SparseIQProcessor(Processor[SparseIQProcessorConfig, SparseIQProcessorResult]):
+class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     def __init__(
         self,
         *,
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
-        processor_config: SparseIQProcessorConfig,
+        processor_config: ProcessorConfig,
     ) -> None:
         self.processor_config = processor_config
         spf = sensor_config.sweeps_per_frame
         self.window = np.hanning(spf)[:, None]
         self.window /= np.sum(self.window)
 
-    def process(self, result: a121.Result) -> SparseIQProcessorResult:
+    def process(self, result: a121.Result) -> ProcessorResult:
         frame = result.frame
 
         z_ft = np.fft.fftshift(np.fft.fft(frame * self.window, axis=0), axes=(0,))
@@ -60,12 +60,12 @@ class SparseIQProcessor(Processor[SparseIQProcessorConfig, SparseIQProcessorResu
 
         phases = np.angle(frame.mean(axis=0))
 
-        return SparseIQProcessorResult(
+        return ProcessorResult(
             frame=frame,
             distance_velocity_map=abs_z_ft,
             amplitudes=ampls,
             phases=phases,
         )
 
-    def update_config(self, config: SparseIQProcessorConfig) -> None:
+    def update_config(self, config: ProcessorConfig) -> None:
         self.processor_config = config

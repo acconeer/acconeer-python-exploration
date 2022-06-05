@@ -7,9 +7,9 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo.distance import (
-    DistanceProcessor,
-    DistanceProcessorConfig,
-    DistanceProcessorContext,
+    Processor,
+    ProcessorConfig,
+    ProcessorContext,
     ProcessorMode,
     ThresholdMethod,
 )
@@ -46,11 +46,11 @@ def main():
 
     metadata = client.setup_session(sensor_config)
 
-    threshold_config = DistanceProcessorConfig(
+    threshold_config = ProcessorConfig(
         processor_mode=ProcessorMode.RECORDED_THRESHOLD_CALIBRATION,
         threshold_method=ThresholdMethod.RECORDED,
     )
-    threshold_processor = DistanceProcessor(
+    threshold_processor = Processor(
         sensor_config=sensor_config,
         metadata=metadata,
         processor_config=threshold_config,
@@ -71,11 +71,11 @@ def main():
         result = client.get_next()
         processed_data = threshold_processor.process(result)
 
-    distance_context = DistanceProcessorContext(recorded_threshold=processed_data.threshold)
-    distance_config = DistanceProcessorConfig(
+    distance_context = ProcessorContext(recorded_threshold=processed_data.threshold)
+    distance_config = ProcessorConfig(
         processor_mode=ProcessorMode.DISTANCE_ESTIMATION, threshold_method=ThresholdMethod.RECORDED
     )
-    distance_processor = DistanceProcessor(
+    distance_processor = Processor(
         sensor_config=sensor_config,
         metadata=metadata,
         processor_config=distance_config,

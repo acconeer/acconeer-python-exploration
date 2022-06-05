@@ -3,25 +3,25 @@ from __future__ import annotations
 from acconeer.exptool.app.new import plugin
 
 
-class DetectorBackendPlugin(plugin.BackendPlugin):
+class DetectorBackendPluginBase(plugin.BackendPlugin):
     pass
 
 
-class DetectorPlotPlugin(plugin.PlotPlugin):
+class DetectorPlotPluginBase(plugin.PlotPlugin):
     pass
 
 
-class DetectorViewPlugin(plugin.ViewPlugin):
+class DetectorViewPluginBase(plugin.ViewPlugin):
     pass
 
 
-class ProcessorBackendPlugin(plugin.BackendPlugin):
+class ProcessorBackendPluginBase(plugin.BackendPlugin):
     pass
 
 
-class ProcessorPlotPlugin(plugin.PlotPlugin):
+class ProcessorPlotPluginBase(plugin.PlotPlugin):
     pass
 
 
-class ProcessorViewPlugin(plugin.ViewPlugin):
+class ProcessorViewPluginBase(plugin.ViewPlugin):
     pass

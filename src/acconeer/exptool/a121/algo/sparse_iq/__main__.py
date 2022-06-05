@@ -1,7 +1,7 @@
 import acconeer.exptool as et
 from acconeer.exptool import a121
 
-from . import SparseIQProcessor, SparseIQProcessorConfig
+from . import Processor, ProcessorConfig
 
 
 parser = a121.ExampleArgumentParser()
@@ -18,9 +18,9 @@ session_config = a121.SessionConfig({args.sensor: sensor_config})
 metadata = client.setup_session(session_config)
 assert isinstance(metadata, a121.Metadata)
 
-processor_config = SparseIQProcessorConfig()
+processor_config = ProcessorConfig()
 
-processor = SparseIQProcessor(
+processor = Processor(
     sensor_config=sensor_config,
     metadata=metadata,
     processor_config=processor_config,

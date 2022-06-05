@@ -1,28 +1,28 @@
 from __future__ import annotations
 
 from acconeer.exptool.a121.algo._plugins import (
-    DetectorBackendPlugin,
-    DetectorPlotPlugin,
-    DetectorViewPlugin,
+    DetectorBackendPluginBase,
+    DetectorPlotPluginBase,
+    DetectorViewPluginBase,
 )
 from acconeer.exptool.app.new.plugin import Plugin
 
 
-class DistanceDetectorBackendPlugin(DetectorBackendPlugin):
+class BackendPlugin(DetectorBackendPluginBase):
     pass
 
 
-class DistanceDetectorPlotPlugin(DetectorPlotPlugin):
+class PlotPlugin(DetectorPlotPluginBase):
     pass
 
 
-class DistanceDetectorViewPlugin(DetectorViewPlugin):
+class ViewPlugin(DetectorViewPluginBase):
     pass
 
 
 DISTANCE_DETECTOR_PLUGIN = Plugin(
     key="distance_detector",
-    backend_plugin=DistanceDetectorBackendPlugin,  # type: ignore[misc]
-    plot_plugin=DistanceDetectorPlotPlugin,  # type: ignore[misc]
-    view_plugin=DistanceDetectorViewPlugin,  # type: ignore[misc]
+    backend_plugin=BackendPlugin,  # type: ignore[misc]
+    plot_plugin=PlotPlugin,  # type: ignore[misc]
+    view_plugin=ViewPlugin,  # type: ignore[misc]
 )

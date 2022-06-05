@@ -14,7 +14,7 @@ ResultT = TypeVar("ResultT")
 # cannot be made in general. Maybe we need different variants?
 
 
-class Processor(abc.ABC, Generic[ConfigT, ResultT]):
+class ProcessorBase(abc.ABC, Generic[ConfigT, ResultT]):
     @abc.abstractmethod
     def process(self, result: a121.Result) -> ResultT:
         ...

@@ -6,33 +6,33 @@ import attrs
 
 from acconeer.exptool import a121
 
-from ._processors import DistanceProcessor, DistanceProcessorConfig, ProcessorMode
+from ._processors import Processor, ProcessorConfig, ProcessorMode
 
 
 @attrs.frozen(kw_only=True)
-class DistanceDetectorConfig:
+class DetectorConfig:
     pass
 
 
 @attrs.frozen(kw_only=True)
-class DistanceDetectorResult:
+class DetectorResult:
     distances: Optional[list[float]] = attrs.field(default=None)
 
 
-class DistanceDetector:
+class Detector:
     def __init__(
         self,
         *,
         client: a121.Client,
         sensor_id: int,
-        detector_config: DistanceDetectorConfig,
+        detector_config: DetectorConfig,
     ) -> None:
         self.client = client
         self.sensor_id = sensor_id
         self.detector_config = detector_config
 
         self.started = False
-        self.processor: Optional[DistanceProcessor] = None
+        self.processor: Optional[Processor] = None
 
     def calibrate(self) -> None:
         ...
@@ -55,11 +55,11 @@ class DistanceDetector:
         metadata = self.client.setup_session(session_config)
         assert isinstance(metadata, a121.Metadata)
 
-        processor_config = DistanceProcessorConfig(
+        processor_config = ProcessorConfig(
             processor_mode=ProcessorMode.DISTANCE_ESTIMATION,
         )
 
-        self.processor = DistanceProcessor(
+        self.processor = Processor(
             sensor_config=sensor_config,
             metadata=metadata,
             processor_config=processor_config,
@@ -69,7 +69,7 @@ class DistanceDetector:
 
         self.started = True
 
-    def get_next(self) -> DistanceDetectorResult:
+    def get_next(self) -> DetectorResult:
         if not self.started:
             raise RuntimeError("Not started")
 
@@ -79,11 +79,11 @@ class DistanceDetector:
         assert self.processor is not None
         processor_result = self.processor.process(result)
 
-        return DistanceDetectorResult(
+        return DetectorResult(
             distances=processor_result.estimated_distances,
         )
 
-    def update_config(self, config: DistanceDetectorConfig) -> None:
+    def update_config(self, config: DetectorConfig) -> None:
         ...
 
     def stop(self) -> None:

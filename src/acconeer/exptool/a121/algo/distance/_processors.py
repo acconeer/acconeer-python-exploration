@@ -9,7 +9,7 @@ import numpy.typing as npt
 from scipy.signal import butter, filtfilt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121 import algo
+from acconeer.exptool.a121.algo import ProcessorBase
 
 
 class ProcessorMode(enum.Enum):
@@ -25,7 +25,7 @@ class ThresholdMethod(enum.Enum):
 
 
 @attrs.frozen(kw_only=True)
-class DistanceProcessorConfig:
+class ProcessorConfig:
     processor_mode: ProcessorMode = attrs.field(default=ProcessorMode.DISTANCE_ESTIMATION)
     threshold_method: ThresholdMethod = attrs.field(default=ThresholdMethod.CFAR)
     sc_bg_num_std_dev: float = attrs.field(default=3.0)
@@ -33,12 +33,12 @@ class DistanceProcessorConfig:
 
 
 @attrs.frozen(kw_only=True)
-class DistanceProcessorContext:
+class ProcessorContext:
     recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
-class DistanceProcessorExtraResult:
+class ProcessorExtraResult:
     """
     Contains information for visualization in ET.
     """
@@ -48,14 +48,14 @@ class DistanceProcessorExtraResult:
 
 
 @attrs.frozen(kw_only=True)
-class DistanceProcessorResult:
+class ProcessorResult:
     estimated_distances: Optional[list[float]] = attrs.field(default=None)
     estimated_amplitudes: Optional[list[float]] = attrs.field(default=None)
     recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    extra_result: DistanceProcessorExtraResult = attrs.field(factory=DistanceProcessorExtraResult)
+    extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 
-class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcessorResult]):
+class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     """Distance processor
 
     For all used subsweeps, the ``profile`` and ``step_length`` must be the same.
@@ -73,9 +73,9 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         *,
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
-        processor_config: DistanceProcessorConfig,
+        processor_config: ProcessorConfig,
         subsweep_indexes: Optional[list[int]] = None,
-        context: Optional[DistanceProcessorContext] = None,
+        context: Optional[ProcessorContext] = None,
     ) -> None:
         if subsweep_indexes is None:
             subsweep_indexes = list(range(sensor_config.num_subsweeps))
@@ -164,7 +164,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
             next_expected_start_point = c.start_point + c.num_points * step_length
 
-    def process(self, result: a121.Result) -> DistanceProcessorResult:
+    def process(self, result: a121.Result) -> ProcessorResult:
         subframes = [result.subframes[i] for i in self.subsweep_indexes]
         frame = np.concatenate(subframes, axis=1)
         sweep = frame.mean(axis=0)
@@ -193,17 +193,13 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
         else:
             raise RuntimeError
 
-    def _process_distance_estimation(
-        self, abs_sweep: npt.NDArray[np.float_]
-    ) -> DistanceProcessorResult:
+    def _process_distance_estimation(self, abs_sweep: npt.NDArray[np.float_]) -> ProcessorResult:
         found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
         (estimated_distances, estimated_amplitudes) = self._interpolate_peaks(
             abs_sweep, found_peaks_idx, self.start_point, self.step_length
         )
-        extra_result = DistanceProcessorExtraResult(
-            abs_sweep=abs_sweep, used_threshold=self.threshold
-        )
-        return DistanceProcessorResult(
+        extra_result = ProcessorExtraResult(abs_sweep=abs_sweep, used_threshold=self.threshold)
+        return ProcessorResult(
             estimated_distances=estimated_distances,
             estimated_amplitudes=estimated_amplitudes,
             extra_result=extra_result,
@@ -217,7 +213,7 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
     def _process_recorded_threshold_calibration(
         self, abs_sweep: npt.NDArray[np.float_]
-    ) -> DistanceProcessorResult:
+    ) -> ProcessorResult:
         min_num_sweeps_in_valid_threshold = 2
 
         self.bg_sc_mean += abs_sweep
@@ -238,10 +234,10 @@ class DistanceProcessor(algo.Processor[DistanceProcessorConfig, DistanceProcesso
 
         self.sc_bg_num_sweeps += 1
 
-        extra_result = DistanceProcessorExtraResult(abs_sweep=abs_sweep)
-        return DistanceProcessorResult(extra_result=extra_result, recorded_threshold=threshold)
+        extra_result = ProcessorExtraResult(abs_sweep=abs_sweep)
+        return ProcessorResult(extra_result=extra_result, recorded_threshold=threshold)
 
-    def update_config(self, config: DistanceProcessorConfig) -> None:
+    def update_config(self, config: ProcessorConfig) -> None:
         ...
 
     @staticmethod

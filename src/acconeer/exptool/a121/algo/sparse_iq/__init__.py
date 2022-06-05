@@ -1,1 +1,1 @@
-from ._processor import SparseIQProcessor, SparseIQProcessorConfig, SparseIQProcessorResult
+from ._processor import AmplitudeMethod, Processor, ProcessorConfig, ProcessorResult

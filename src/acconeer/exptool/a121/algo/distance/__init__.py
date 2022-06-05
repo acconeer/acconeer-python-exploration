@@ -1,9 +1,9 @@
-from ._detector import DistanceDetector, DistanceDetectorConfig
+from ._detector import Detector, DetectorConfig
 from ._processors import (
-    DistanceProcessor,
-    DistanceProcessorConfig,
-    DistanceProcessorContext,
-    DistanceProcessorResult,
+    Processor,
+    ProcessorConfig,
+    ProcessorContext,
     ProcessorMode,
+    ProcessorResult,
     ThresholdMethod,
 )
