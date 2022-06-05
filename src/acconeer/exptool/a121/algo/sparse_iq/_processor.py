@@ -69,3 +69,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def update_config(self, config: ProcessorConfig) -> None:
         self.processor_config = config
+
+
+def get_sensor_config() -> a121.SensorConfig:
+    return a121.SensorConfig(
+        sweeps_per_frame=32,
+        num_points=40,
+        step_length=8,
+    )
