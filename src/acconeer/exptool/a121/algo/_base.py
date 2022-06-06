@@ -15,6 +15,17 @@ ResultT = TypeVar("ResultT")
 
 
 class ProcessorBase(abc.ABC, Generic[ConfigT, ResultT]):
+    def __init__(
+        self,
+        *,
+        sensor_config: a121.SensorConfig,
+        metadata: a121.Metadata,
+        processor_config: ConfigT,
+    ) -> None:
+        self.sensor_config = sensor_config
+        self.metadata = metadata
+        self.processor_config = processor_config
+
     @abc.abstractmethod
     def process(self, result: a121.Result) -> ResultT:
         ...
