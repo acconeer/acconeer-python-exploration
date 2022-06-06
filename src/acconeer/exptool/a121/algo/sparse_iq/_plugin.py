@@ -17,7 +17,6 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorPlotPluginBase,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.a121.algo._utils import approx_fft_vels
 from acconeer.exptool.app.new.backend import Backend, Task
 from acconeer.exptool.app.new.plugin import Plugin
 
@@ -152,7 +151,7 @@ class PlotPlugin(ProcessorPlotPluginBase):
         self.sensor_config = sensor_config
         self.parent = parent
         self.depths_m, self.step_length_m = algo.get_distances_m(sensor_config, metadata)
-        self.vels, self.vel_res = approx_fft_vels(sensor_config)
+        self.vels, self.vel_res = algo.get_approx_fft_vels(sensor_config)
 
     def setup(self) -> None:
         self.ampl_plot = self._create_amplitude_plot(self.parent)

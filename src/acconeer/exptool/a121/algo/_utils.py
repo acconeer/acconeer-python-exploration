@@ -21,7 +21,7 @@ def get_distances_m(
     return distances_m, step_length_m
 
 
-def approx_sweep_rate(config: a121.SensorConfig) -> float:
+def get_approx_sweep_rate(config: a121.SensorConfig) -> float:
     ppp = {1: 24, 2: 20, 3: 16, 4: 16, 5: 16}[config.profile.value]
 
     n = 3 * ppp + config.num_points * config.hwaas * ppp
@@ -29,8 +29,8 @@ def approx_sweep_rate(config: a121.SensorConfig) -> float:
     return config.prf.frequency / n
 
 
-def approx_fft_vels(config: a121.SensorConfig) -> Tuple[npt.NDArray, float]:
-    sweep_rate = approx_sweep_rate(config)
+def get_approx_fft_vels(config: a121.SensorConfig) -> Tuple[npt.NDArray, float]:
+    sweep_rate = get_approx_sweep_rate(config)
     if config.sweep_rate is not None:
         sweep_rate = min([sweep_rate, config.sweep_rate])
 
