@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
 
+from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 import pyqtgraph as pg
@@ -150,12 +151,12 @@ class PlotPlugin(ProcessorPlotPluginBase):
     ) -> None:
         self.sensor_config = sensor_config
         self.parent = parent
-        self.depths_m, self.step_length_m = algo.get_distances_m(sensor_config, metadata)
+        self.distances_m, self.step_length_m = algo.get_distances_m(sensor_config, metadata)
         self.vels, self.vel_res = algo.get_approx_fft_vels(sensor_config)
 
     def setup(self) -> None:
         self.ampl_plot = self._create_amplitude_plot(self.parent)
-        self.ampl_curve = self._create_amplitude_curve(0, self.depths_m)
+        self.ampl_curve = self._create_amplitude_curve(0, self.distances_m)
         self.ampl_plot.addDataItem(self.ampl_curve)
 
         self.parent.nextRow()
@@ -166,11 +167,13 @@ class PlotPlugin(ProcessorPlotPluginBase):
 
         self.parent.nextRow()
 
-        self.ft_plot = self._create_fft_plot(self.parent)
-        self.ft_im = pg.ImageItem(autoDownsample=True)
-        self.ft_im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))  # type: ignore[attr-defined]
-        self.ft_im.resetTransform()
-        self.ft_plot.addItem(self.ft_im)
+        self.ft_plot, self.ft_im = self._create_fft_plot(
+            self.parent,
+            distances_m=self.distances_m,
+            step_length_m=self.step_length_m,
+            vels=self.vels,
+            vel_res=self.vel_res,
+        )
         self.smooth_max = et.utils.SmoothMax()  # type: ignore[attr-defined]
 
     @staticmethod
@@ -209,30 +212,43 @@ class PlotPlugin(ProcessorPlotPluginBase):
         phase_plot.showGrid(x=True, y=True)
         phase_plot.setLabel("left", "Phase")
         phase_plot.setYRange(-np.pi, np.pi)
-        # TODO:
-        # phase_plot.getAxis("left").setTicks(utils.pg_phase_ticks)
+        phase_plot.getAxis("left").setTicks(et.utils.pg_phase_ticks)  # type: ignore [attr-defined]
         return phase_plot
 
     @staticmethod
-    def _create_fft_plot(parent: pg.GraphicsLayout) -> pg.PlotItem:
-        ft_plot = parent.addPlot()
-        ft_plot.setMenuEnabled(False)
-        ft_plot.setLabel("bottom", "Distance (m)")
-        ft_plot.setLabel("left", "Velocity (m/s)")
-        # TODO:
-        # self.ft_im.translate(self.depths_m[0], self.vels[0] - 0.5 * self.vel_res)
-        # self.ft_im.scale(self.step_length_m, self.vel_res)
-        return ft_plot
+    def _create_fft_plot(
+        parent: pg.GraphicsLayout,
+        *,
+        distances_m: npt.NDArray[np.float_],
+        step_length_m: float,
+        vels: npt.NDArray[np.float_],
+        vel_res: float,
+    ) -> Tuple[pg.PlotItem, pg.ImageItem]:
+        transform = QTransform()
+        transform.translate(distances_m[0], vels[0] - 0.5 * vel_res)
+        transform.scale(step_length_m, vel_res)
+
+        im = pg.ImageItem(autoDownsample=True)
+        im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))  # type: ignore[attr-defined]
+        im.setTransform(transform)
+
+        plot = parent.addPlot()
+        plot.setMenuEnabled(False)
+        plot.setLabel("bottom", "Distance (m)")
+        plot.setLabel("left", "Velocity (m/s)")
+        plot.addItem(im)
+
+        return plot, im
 
     def update(self, processor_result: ProcessorResult) -> None:
         ampls = processor_result.amplitudes
-        self.ampl_curve.setData(self.depths_m, ampls)
-        self.phase_curve.setData(self.depths_m, processor_result.phases)
+        self.ampl_curve.setData(self.distances_m, ampls)
+        self.phase_curve.setData(self.distances_m, processor_result.phases)
         self.ampl_plot.setYRange(0, self.smooth_max.update(ampls))
-        abs_ft = processor_result.distance_velocity_map
+        dvm = processor_result.distance_velocity_map
         self.ft_im.updateImage(
-            abs_ft.T,
-            levels=(0, 1.05 * np.max(abs_ft[0])),
+            dvm.T,
+            levels=(0, 1.05 * np.max(dvm)),
         )
 
     def teardown(self) -> None:
