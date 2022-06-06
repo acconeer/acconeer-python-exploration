@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
-import pyqtgraph as pg  # type: ignore[import]
+import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121

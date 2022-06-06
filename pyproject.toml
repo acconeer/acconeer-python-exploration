@@ -27,6 +27,7 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = [
     "h5py.*",
+    "pyqtgraph.*",
     "PySide6.*",
     "pytest.*",
     "scipy.*",
