@@ -21,13 +21,6 @@ def get_distances_m(
     return distances_m, step_length_m
 
 
-def approx_distances_m(config: a121.SensorConfig) -> Tuple[npt.NDArray[np.float_], float]:
-    points = np.arange(config.num_points) * config.step_length + config.start_point
-    distances = points * 2.5e-3
-    step_length_m = config.step_length * 2.5e-3
-    return distances, step_length_m
-
-
 def approx_sweep_rate(config: a121.SensorConfig) -> float:
     ppp = {1: 24, 2: 20, 3: 16, 4: 16, 5: 16}[config.profile.value]
 
