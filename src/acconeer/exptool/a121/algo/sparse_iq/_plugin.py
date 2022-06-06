@@ -11,12 +11,13 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
     ProcessorPlotPluginBase,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.a121.algo._utils import approx_distances_m, approx_fft_vels
+from acconeer.exptool.a121.algo._utils import approx_fft_vels
 from acconeer.exptool.app.new.backend import Backend, Task
 from acconeer.exptool.app.new.plugin import Plugin
 
@@ -141,10 +142,16 @@ class ViewPlugin(ProcessorViewPluginBase):
 
 
 class PlotPlugin(ProcessorPlotPluginBase):
-    def __init__(self, sensor_config: a121.SensorConfig, *, parent: pg.GraphicsLayout) -> None:
+    def __init__(
+        self,
+        *,
+        sensor_config: a121.SensorConfig,
+        metadata: a121.Metadata,
+        parent: pg.GraphicsLayout,
+    ) -> None:
         self.sensor_config = sensor_config
         self.parent = parent
-        self.depths_m, self.step_length_m = approx_distances_m(sensor_config)
+        self.depths_m, self.step_length_m = algo.get_distances_m(sensor_config, metadata)
         self.vels, self.vel_res = approx_fft_vels(sensor_config)
 
     def setup(self) -> None:
