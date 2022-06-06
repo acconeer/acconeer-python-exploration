@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Optional, Union
+from typing import Any, Optional, Tuple, Union
+
+import attrs
 
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
@@ -11,7 +13,12 @@ from acconeer.exptool.a121._core.entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.utils import unextend
+from acconeer.exptool.a121._core.utils import (
+    create_extended_structure,
+    iterate_extended_structure,
+    unextend,
+    unwrap_ticks,
+)
 
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
@@ -30,6 +37,7 @@ class AgnosticClient:
     _metadata: Optional[list[dict[int, Metadata]]]
     _session_is_started: bool
     _recorder: Optional[Recorder]
+    _tick_unwrapper: TickUnwrapper
 
     def __init__(self, link: BufferedLink, protocol: CommunicationProtocol) -> None:
         self._link = link
@@ -39,6 +47,7 @@ class AgnosticClient:
         self._session_is_started = False
         self._metadata = None
         self._recorder = None
+        self._tick_unwrapper = TickUnwrapper()
 
     def _assert_connected(self):
         if not self.connected:
@@ -149,6 +158,8 @@ class AgnosticClient:
         payload = self._link.recv(payload_size)
         extended_results = self._protocol.get_next_payload(payload, partial_results)
 
+        extended_results = self._tick_unwrapper.unwrap_ticks(extended_results)
+
         if self._recorder is not None:
             self._recorder._sample(extended_results)
 
@@ -175,6 +186,7 @@ class AgnosticClient:
         reponse_bytes = self._drain_buffer()
         self._protocol.stop_streaming_response(reponse_bytes)
         self._session_is_started = False
+        self._tick_unwrapper = TickUnwrapper()
         return recorder_result
 
     def _drain_buffer(
@@ -258,3 +270,22 @@ class AgnosticClient:
         self._assert_session_setup()
         assert self._metadata is not None  # Should never happen if session is setup
         return self._metadata
+
+
+class TickUnwrapper:
+    """Wraps unwrap_ticks to be applied over extended results"""
+
+    def __init__(self) -> None:
+        self.next_minimum_tick: Optional[int] = None
+
+    def unwrap_ticks(self, extended_results: list[dict[int, Result]]) -> list[dict[int, Result]]:
+        result_items = list(iterate_extended_structure(extended_results))
+        ticks = [result.tick for _, _, result in result_items]
+        unwrapped_ticks, self.next_minimum_tick = unwrap_ticks(ticks, self.next_minimum_tick)
+
+        def f(result_item: Tuple[int, int, Result], updated_tick: int) -> Tuple[int, int, Result]:
+            group_index, sensor_id, result = result_item
+            updated_result = attrs.evolve(result, tick=updated_tick)
+            return (group_index, sensor_id, updated_result)
+
+        return create_extended_structure(map(f, result_items, unwrapped_ticks))
