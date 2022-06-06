@@ -5,17 +5,30 @@ from typing import Tuple
 import numpy as np
 import numpy.typing as npt
 
-from acconeer.exptool.a121._core import SensorConfig
+from acconeer.exptool import a121
 
 
-def approx_distances_m(config: SensorConfig) -> Tuple[npt.NDArray[np.float_], float]:
+def get_distances_m(
+    config: a121.SensorConfig,
+    metadata: a121.Metadata,
+) -> Tuple[npt.NDArray[np.float_], float]:
+    if metadata.base_step_length_m is None:
+        raise ValueError("Metadata is missing 'base_step_length_m'")
+
+    points = np.arange(config.num_points) * config.step_length + config.start_point
+    distances_m = points * metadata.base_step_length_m
+    step_length_m = config.step_length * metadata.base_step_length_m
+    return distances_m, step_length_m
+
+
+def approx_distances_m(config: a121.SensorConfig) -> Tuple[npt.NDArray[np.float_], float]:
     points = np.arange(config.num_points) * config.step_length + config.start_point
     distances = points * 2.5e-3
     step_length_m = config.step_length * 2.5e-3
     return distances, step_length_m
 
 
-def approx_sweep_rate(config: SensorConfig) -> float:
+def approx_sweep_rate(config: a121.SensorConfig) -> float:
     ppp = {1: 24, 2: 20, 3: 16, 4: 16, 5: 16}[config.profile.value]
 
     n = 3 * ppp + config.num_points * config.hwaas * ppp
@@ -23,7 +36,7 @@ def approx_sweep_rate(config: SensorConfig) -> float:
     return config.prf.frequency / n
 
 
-def approx_fft_vels(config: SensorConfig) -> Tuple[npt.NDArray, float]:
+def approx_fft_vels(config: a121.SensorConfig) -> Tuple[npt.NDArray, float]:
     sweep_rate = approx_sweep_rate(config)
     if config.sweep_rate is not None:
         sweep_rate = min([sweep_rate, config.sweep_rate])
