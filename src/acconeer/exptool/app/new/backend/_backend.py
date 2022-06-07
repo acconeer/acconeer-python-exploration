@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import multiprocessing as mp
 import queue
 from typing import Any, Dict, Tuple, Union
@@ -7,6 +8,8 @@ from typing import Any, Dict, Tuple, Union
 from ._model import Model
 from ._types import Task
 
+
+log = logging.getLogger(__name__)
 
 CommandKwargs = Dict[str, Any]
 Command = Tuple[str, Union[Task, CommandKwargs, None]]
@@ -28,9 +31,11 @@ class Backend:
         )
 
     def start(self):
+        log.debug("Backend starting ...")
         self._process.start()
 
     def stop(self):
+        log.debug("Backend stopping ...")
         self._stop_event.set()
         self._send(("stop", {}))
         self._process.join()
@@ -40,9 +45,11 @@ class Backend:
         self._send(("task", task))
 
     def set_idle_task(self, task: Task) -> None:
+        log.debug(f"Backend is setting idle task {task} ...")
         self._send(("set_idle_task", task))
 
     def clear_idle_task(self):
+        log.debug("Backend cleared its idle task ...")
         self._send(("set_idle_task", None))
 
     def _send(self, command: Command) -> None:
@@ -60,9 +67,11 @@ def process_program(recv_queue, send_queue, stop_event):
         while not stop_event.is_set():
             if idle_task is None:
                 msg = recv_queue.get()
+                log.debug(f"Backend received the command: {msg}")
             else:
                 try:
                     msg = recv_queue.get_nowait()
+                    log.debug(f"Backend received the command: {msg}")
                 except queue.Empty:
                     msg = ("task", idle_task)
 
