@@ -20,6 +20,9 @@ Steps to reproduce the behavior:
 **Traceback**
 If applicable, add any exception tracebacks.
 
+**Installed packages**
+If applicable, add a list of installed packages. Obtain the list with `pip freeze`.
+
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
