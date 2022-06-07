@@ -131,6 +131,26 @@ def test_unextend_bad_argument():
         utils.unextend(argument)
 
 
+def test_create_extended_structure():
+    structure = [{2: "foo", 1: "bar"}, {1: "baz"}]
+    items = utils.iterate_extended_structure(structure)
+    recreated_structure = utils.create_extended_structure(items)
+
+    assert [list(d.items()) for d in recreated_structure] == [list(d.items()) for d in structure]
+
+    # Catch that we must start with group index 0
+    with pytest.raises(ValueError):
+        utils.create_extended_structure([(1, 0, "foo")])
+
+    # Catch that we can't skip a group index
+    with pytest.raises(ValueError):
+        utils.create_extended_structure([(0, 0, "foo"), (2, 0, "bar")])
+
+    # Catch duplicate sensor id in a group
+    with pytest.raises(ValueError):
+        utils.create_extended_structure([(0, 0, "foo"), (0, 0, "bar")])
+
+
 def test_entity_json_encoder():
     SomeEnum = enum.Enum("SomeEnum", ["FOO", "BAR"])
     assert SomeEnum.FOO.value == 1

@@ -240,6 +240,36 @@ def iterate_extended_structure(
             yield (group_id, sensor_id, elem)
 
 
+def create_extended_structure(items: Iterator[Tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:
+    structure: list[dict[int, ValueT]] = []
+    current_group_index: Optional[int] = None
+    current_group: Optional[dict[int, ValueT]] = None
+
+    for group_index, sensor_id, value in items:
+        if current_group_index is None:
+            if group_index != 0:
+                raise ValueError
+
+            current_group_index = 0
+            current_group = {}
+            structure.append(current_group)
+        elif group_index != current_group_index:
+            if group_index != current_group_index + 1:
+                raise ValueError
+
+            current_group_index += 1
+            current_group = {}
+            structure.append(current_group)
+
+        assert current_group is not None
+        if sensor_id in current_group:
+            raise ValueError
+
+        current_group[sensor_id] = value
+
+    return structure
+
+
 class EntityJSONEncoder(json.JSONEncoder):
     def default(self, obj: Any) -> Any:
         if isinstance(obj, enum.Enum):
