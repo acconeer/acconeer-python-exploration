@@ -1,2 +1,4 @@
+from .put_client_connect_request_interaction import put_client_connect_request
+from .put_client_disconnect_request_interaction import put_client_disconnect_request
 from .response import Error, Response, Success
 from .setup_plugin_interaction import setup_plugin

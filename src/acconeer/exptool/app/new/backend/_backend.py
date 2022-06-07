@@ -62,7 +62,7 @@ class Backend:
 
 def process_program(recv_queue, send_queue, stop_event):
     try:
-        model = Model()
+        model = Model(task_callback=send_queue.put)
         idle_task = None
 
         while not stop_event.is_set():

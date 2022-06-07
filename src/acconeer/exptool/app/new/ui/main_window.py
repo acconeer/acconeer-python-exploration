@@ -13,7 +13,6 @@ class MainWindow(QMainWindow):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
         self.app_model = app_model
-        self.app_model.sig_notify.connect(print)
         self.setup_ui()
 
     def setup_ui(self) -> None:
@@ -42,6 +41,3 @@ class MainWindow(QMainWindow):
         dummy = QWidget()
         dummy.setLayout(main_layout)
         self.setCentralWidget(dummy)
-
-    def on_app_model_notify(self, app_model: AppModel) -> None:
-        ...

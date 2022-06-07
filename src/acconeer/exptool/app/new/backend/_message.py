@@ -9,4 +9,4 @@ import attrs
 class Message:
     status: str
     command_name: str
-    exception: Optional[Exception]
+    exception: Optional[Exception] = None

@@ -48,10 +48,17 @@ class AppModel(QObject):
     def _handle_backend_message(self, message: Message) -> None:
         if message.status != "ok":
             self.sig_error.emit(message.exception)
-            return
 
         if message.command_name == "connect_client":
-            self.connection_state = ConnectionState.CONNECTED
+            if message.status == "ok":
+                self.connection_state = ConnectionState.CONNECTED
+            else:
+                self.connection_state = ConnectionState.DISCONNECTED
+        elif message.command_name == "disconnect_client":
+            if message.status == "ok":
+                self.connection_state = ConnectionState.DISCONNECTED
+            else:
+                self.connection_state = ConnectionState.CONNECTED
 
         self.broadcast()
 
@@ -63,4 +70,9 @@ class AppModel(QObject):
             )
         )
         self.connection_state = ConnectionState.CONNECTING
+        self.broadcast()
+
+    def disconnect_client(self) -> None:
+        self._backend.put_task(task=("disconnect_client", {}))
+        self.connection_state = ConnectionState.DISCONNECTING
         self.broadcast()

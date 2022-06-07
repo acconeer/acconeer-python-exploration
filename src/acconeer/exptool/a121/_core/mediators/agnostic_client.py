@@ -213,6 +213,8 @@ class AgnosticClient:
 
         :raises: ``ClientError`` if ``Client`` is not connected.
         """
+        # TODO: Make sure this cleans up corner-cases (like lost connection)
+        #       to not hog resources.
         self._assert_connected()
 
         if self.session_is_started:
