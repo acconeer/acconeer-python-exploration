@@ -22,7 +22,7 @@ class CommunicationProtocol(Protocol):
 
     def get_system_info_response(
         self, bytes_: bytes, sensor_infos: dict[int, SensorInfo]
-    ) -> ServerInfo:
+    ) -> Tuple[ServerInfo, str]:
         """Reads the response of `get_system_info` and parses it to a `ServerInfo`."""
         ...
 

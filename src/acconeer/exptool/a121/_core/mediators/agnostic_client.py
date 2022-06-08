@@ -76,7 +76,13 @@ class AgnosticClient:
 
         self._link.send(self._protocol.get_system_info_command())
         sys_response = self._link.recv_until(self._protocol.end_sequence)
-        self._server_info = self._protocol.get_system_info_response(sys_response, sensor_infos)
+        self._server_info, sensor = self._protocol.get_system_info_response(
+            sys_response, sensor_infos
+        )
+
+        if sensor != "a121":
+            self._link.disconnect()
+            raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
 
     def setup_session(
         self,

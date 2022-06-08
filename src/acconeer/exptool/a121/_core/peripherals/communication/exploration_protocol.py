@@ -127,18 +127,21 @@ class ExplorationProtocol(CommunicationProtocol):
     @classmethod
     def get_system_info_response(
         cls, bytes_: bytes, sensor_infos: dict[int, SensorInfo]
-    ) -> ServerInfo:
+    ) -> Tuple[ServerInfo, str]:
         response: GetSystemInfoResponse = json.loads(bytes_)
         cls.check_status(response, expected="ok")
 
         try:
             system_info = response["system_info"]
-            return ServerInfo(
-                rss_version=system_info["rss_version"],
-                sensor_count=system_info["sensor_count"],
-                ticks_per_second=system_info["ticks_per_second"],
-                sensor_infos=sensor_infos,
-                hardware_name=system_info.get("hw"),
+            return (
+                ServerInfo(
+                    rss_version=system_info["rss_version"],
+                    sensor_count=system_info["sensor_count"],
+                    ticks_per_second=system_info["ticks_per_second"],
+                    sensor_infos=sensor_infos,
+                    hardware_name=system_info.get("hw"),
+                ),
+                system_info["sensor"],
             )
         except KeyError as ke:
             raise ExplorationProtocolError(

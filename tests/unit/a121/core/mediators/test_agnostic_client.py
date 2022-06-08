@@ -29,11 +29,14 @@ def mock_protocol(metadata):
         end_sequence = b""
         get_system_info_command = Mock(return_value=b"get_system_info")
         get_system_info_response = Mock(
-            return_value=ServerInfo(
-                rss_version="rss_version",
-                sensor_count=1,
-                ticks_per_second=1,
-                sensor_infos={1: SensorInfo(connected=True)},
+            return_value=(
+                ServerInfo(
+                    rss_version="rss_version",
+                    sensor_count=1,
+                    ticks_per_second=1,
+                    sensor_infos={1: SensorInfo(connected=True)},
+                ),
+                "a121",
             )
         )
         get_sensor_info_command = Mock(return_value=b"get_sensor_info")
