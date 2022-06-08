@@ -5,6 +5,7 @@ import multiprocessing as mp
 import queue
 from typing import Any, Dict, Tuple, Union
 
+from ._message import Message
 from ._model import Model
 from ._types import Task
 
@@ -17,7 +18,7 @@ Command = Tuple[str, Union[Task, CommandKwargs, None]]
 
 class Backend:
     def __init__(self):
-        self._recv_queue: mp.Queue = mp.Queue()
+        self._recv_queue: mp.Queue[Message] = mp.Queue()
         self._send_queue: mp.Queue[Command] = mp.Queue()
         self._stop_event = mp.Event()
         self._process = mp.Process(

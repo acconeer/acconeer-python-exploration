@@ -1,7 +1,7 @@
 from typing import Any
 
 from acconeer.exptool.a121._core import SensorConfig
-from acconeer.exptool.app.new.backend import Backend
+from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.plugin import Plugin
 
 from .response import Error, Response, Success
@@ -9,14 +9,14 @@ from .response import Error, Response, Success
 
 def setup_plugin(
     plugin: Plugin,
-    backend: Backend,
+    app_model: AppModel,
     view_widget: Any,
     plot_widget: Any,
 ) -> Response[None]:
     if plugin is None:
         return Error(plugin, None, "Passed plugin was None.")
 
-    error = _setup_view_plugin(plugin, view_widget, backend).error
+    error = _setup_view_plugin(plugin, view_widget, app_model).error
     if error:
         return error
 
@@ -24,17 +24,17 @@ def setup_plugin(
     if error:
         return error
 
-    error = _setup_backend_plugin(plugin, backend).error
+    error = _setup_backend_plugin(plugin, app_model).error
     if error:
         return error
 
     return Success(plugin, None, None)
 
 
-def _setup_view_plugin(plugin: Plugin, view_widget: Any, backend: Backend) -> Response[None]:
+def _setup_view_plugin(plugin: Plugin, view_widget: Any, app_model: AppModel) -> Response[None]:
     try:
         view_plugin = plugin.view_plugin(  # type: ignore[call-arg]
-            backend=backend, parent=view_widget
+            app_model=app_model, parent=view_widget
         )
         view_plugin.setup()
     except Exception as e:
@@ -55,7 +55,7 @@ def _setup_plot_plugin(plugin: Plugin, plot_widget: Any) -> Response[None]:
         return Success(plot_plugin, None, None)
 
 
-def _setup_backend_plugin(plugin: Plugin, backend: Backend) -> Response[None]:
+def _setup_backend_plugin(plugin: Plugin, app_model: AppModel) -> Response[None]:
     backend_plugin = plugin.backend_plugin()
     _ = backend_plugin
     # TODO: backend.load_plugin(backend_plugin)

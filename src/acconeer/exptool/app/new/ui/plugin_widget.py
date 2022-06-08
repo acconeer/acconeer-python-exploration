@@ -7,21 +7,21 @@ from PySide6.QtWidgets import QComboBox, QVBoxLayout, QWidget
 import pyqtgraph as pg
 
 from acconeer.exptool.app.new import interactions, utils
-from acconeer.exptool.app.new.backend import Backend
+from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.plugin import Plugin
 
 
 class PluginControlWidget(QWidget):
     def __init__(
         self,
-        backend: Backend,
+        app_model: AppModel,
         plot_layout_widget: pg.GraphicsLayoutWidget,
         plugins: list[Plugin],
         *,
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
-        self.backend = backend
+        self.app_model = app_model
 
         layout = QVBoxLayout(self)
         self.plugin_dropdown = QComboBox()
@@ -55,7 +55,7 @@ class PluginControlWidget(QWidget):
         self.handle_plugin_setup_response(
             interactions.setup_plugin(
                 plugin=plugin,
-                backend=self.backend,
+                app_model=self.app_model,
                 plot_widget=self.lended_plot_layout_widget.ci,
                 view_widget=self.lended_control_widget,
             )

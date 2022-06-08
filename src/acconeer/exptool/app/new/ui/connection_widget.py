@@ -14,13 +14,13 @@ from PySide6.QtWidgets import (
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.app.new.backend import Backend
+from acconeer.exptool.app.new.app_model import AppModel
 
 
 class _SocketConnectionWidget(QWidget):
-    def __init__(self, backend: Backend, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.backend = backend
+        self.app_model = app_model
         layout = QGridLayout()
 
         self.ip_line_edit = QLineEdit()
@@ -32,18 +32,13 @@ class _SocketConnectionWidget(QWidget):
         self.setLayout(layout)
 
     def on_connect(self) -> None:
-        self.backend.put_task(
-            (
-                "connect_client",
-                {"client_info": a121.ClientInfo(ip_address=self.ip_line_edit.text())},
-            )
-        )
+        self.app_model.connect_client(a121.ClientInfo(ip_address=self.ip_line_edit.text()))
 
 
 class _SerialConnectionWidget(QWidget):
-    def __init__(self, backend: Backend, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.backend = backend
+        self.app_model = app_model
 
         layout = QGridLayout()
 
@@ -73,15 +68,10 @@ class _SerialConnectionWidget(QWidget):
             self.port_combo_box.addItem(label, port)
 
     def on_connect(self) -> None:
-        self.backend.put_task(
-            (
-                "connect_client",
-                {
-                    "client_info": a121.ClientInfo(
-                        serial_port=self.port_combo_box.currentData(),
-                        # override_baudrate=int(self.baudrate_line_edit.text()),  # TODO
-                    )
-                },
+        self.app_model.connect_client(
+            a121.ClientInfo(
+                serial_port=self.port_combo_box.currentData(),
+                # override_baudrate=int(self.baudrate_line_edit.text()),  # TODO
             )
         )
 
@@ -89,7 +79,7 @@ class _SerialConnectionWidget(QWidget):
 class ClientConnectionWidget(QWidget):
     stacked_layout: QStackedLayout
 
-    def __init__(self, backend: Backend, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.main_layout = QVBoxLayout()
 
@@ -100,8 +90,8 @@ class ClientConnectionWidget(QWidget):
         self.main_layout.addWidget(interface_dd)
 
         self.stacked_layout = QStackedLayout()
-        self.stacked_layout.addWidget(_SocketConnectionWidget(backend))
-        self.stacked_layout.addWidget(_SerialConnectionWidget(backend))
+        self.stacked_layout.addWidget(_SocketConnectionWidget(app_model))
+        self.stacked_layout.addWidget(_SerialConnectionWidget(app_model))
         self.main_layout.addLayout(self.stacked_layout)
 
         self.setLayout(self.main_layout)

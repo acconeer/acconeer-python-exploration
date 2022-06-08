@@ -12,7 +12,8 @@ from .plugin_widget import PluginControlWidget
 class MainWindow(QMainWindow):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
-        self.backend = app_model._backend  # TODO: remove access to backend
+        self.app_model = app_model
+        self.app_model.sig_notify.connect(print)
         self.setup_ui()
 
     def setup_ui(self) -> None:
@@ -30,9 +31,9 @@ class MainWindow(QMainWindow):
         rhs_dummy = QWidget()
         rhs_dummy.setProperty("acc_type", "rhs")
         rhs_dummy.setLayout(self.rhs_layout)
-        self.rhs_layout.addWidget(ClientConnectionWidget(self.backend))
+        self.rhs_layout.addWidget(ClientConnectionWidget(self.app_model))
         self.rhs_layout.addWidget(
-            PluginControlWidget(self.backend, self.plot_layout_widget, load_default_plugins())
+            PluginControlWidget(self.app_model, self.plot_layout_widget, load_default_plugins())
         )
 
         main_layout.addWidget(lhs_dummy)
@@ -41,3 +42,6 @@ class MainWindow(QMainWindow):
         dummy = QWidget()
         dummy.setLayout(main_layout)
         self.setCentralWidget(dummy)
+
+    def on_app_model_notify(self, app_model: AppModel) -> None:
+        ...
