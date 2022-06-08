@@ -16,7 +16,7 @@ cat output_a111.txt
 
 
 echo "Running A121 integration tests"
-stash/out/customer/a121/internal_sanitizer_x86_64/out/acc_exploration_server_a121 > output_a121.txt &
+ACC_MOCK_TEST_PATTERN=1 stash/out/customer/a121/internal_sanitizer_x86_64/out/acc_exploration_server_a121 > output_a121.txt &
 a121_pid=$!
 nox -s test -- --test-groups integration --integration-args a121
 a121_test_exit_code=$?

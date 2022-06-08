@@ -14,26 +14,26 @@ class TestMockExplorationServerDataParsing:
     @pytest.fixture
     def expected_sweep(self):
         return np.array(
-            [1 + 2j, 3 + 4j, 5 + 6j, 7 + 8j, 9 + 10j],
+            [100 + 100j, 101 + 101j, 102 + 102j, 103 + 103j, 104 + 104j],
         )
 
     @pytest.mark.parametrize(
         "config",
         [
-            a121.SessionConfig(a121.SensorConfig(num_points=5), extended=True),
+            a121.SessionConfig(a121.SensorConfig(num_points=5, start_point=100), extended=True),
             a121.SessionConfig(
                 [
-                    {1: a121.SensorConfig(num_points=5)},
-                    {1: a121.SensorConfig(num_points=5)},
+                    {1: a121.SensorConfig(num_points=5, start_point=100)},
+                    {1: a121.SensorConfig(num_points=5, start_point=100)},
                 ]
             ),
             a121.SessionConfig(
                 [
-                    {1: a121.SensorConfig(num_points=5)},
-                    {1: a121.SensorConfig(num_points=5)},
-                    {1: a121.SensorConfig(num_points=5)},
-                    {1: a121.SensorConfig(num_points=5)},
-                    {1: a121.SensorConfig(num_points=5)},
+                    {1: a121.SensorConfig(num_points=5, start_point=100)},
+                    {1: a121.SensorConfig(num_points=5, start_point=100)},
+                    {1: a121.SensorConfig(num_points=5, start_point=100)},
+                    {1: a121.SensorConfig(num_points=5, start_point=100)},
+                    {1: a121.SensorConfig(num_points=5, start_point=100)},
                 ]
             ),
         ],
