@@ -1,7 +1,9 @@
+from PySide6.QtCore import QObject
+
 from acconeer.exptool.app.new.backend import Backend
 
 
-class AppModel:
+class AppModel(QObject):
     def __init__(self, backend: Backend) -> None:
         self._backend = backend
 
