@@ -1,10 +1,8 @@
-import sys
-
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
 
-from acconeer.exptool.app.new.backend import Backend
+from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
 from .connection_widget import ClientConnectionWidget
@@ -12,9 +10,9 @@ from .plugin_widget import PluginControlWidget
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, backend: Backend) -> None:
+    def __init__(self, app_model: AppModel) -> None:
         super().__init__()
-        self.backend = backend
+        self.backend = app_model._backend  # TODO: remove access to backend
         self.setup_ui()
 
     def setup_ui(self) -> None:
@@ -43,18 +41,3 @@ class MainWindow(QMainWindow):
         dummy = QWidget()
         dummy.setLayout(main_layout)
         self.setCentralWidget(dummy)
-
-
-def run_with_backend(backend: Backend) -> None:
-    app = QApplication(sys.argv)
-
-    app.setStyleSheet(
-        """
-        *[acc_type="rhs"] { background-color: #e6a595 }
-        *[acc_type="lhs"] { background-color: #a3c9ad }
-        """
-    )
-    mw = MainWindow(backend)
-    mw.show()
-
-    app.exec()
