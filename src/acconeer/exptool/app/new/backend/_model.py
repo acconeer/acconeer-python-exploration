@@ -6,7 +6,7 @@ from typing import Callable, Optional
 from acconeer.exptool import a121
 
 from ._backend_plugin import BackendPlugin
-from ._message import Message
+from ._message import DataMessage, ErrorMessage, Message, OkMessage
 from ._types import Task
 
 
@@ -46,21 +46,16 @@ class Model:
         try:
             self.client.connect()
         except Exception as e:
-            self.task_callback(Message("error", "connect_client", e))
+            self.task_callback(ErrorMessage("connect_client", e))
             self.client = None
         else:
-            self.task_callback(
-                Message(
-                    "ok",
-                    "connect_client",
-                )
-            )
+            self.task_callback(OkMessage("connect_client"))
+            self.task_callback(DataMessage("server_info", self.client.server_info))
 
     def disconnect_client(self) -> None:
         if self.client is None:
             self.task_callback(
-                Message(
-                    "error",
+                ErrorMessage(
                     "disconnect_client",
                     RuntimeError("Backend has no client to disconnect."),
                 )

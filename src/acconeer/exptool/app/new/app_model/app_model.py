@@ -7,6 +7,8 @@ from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 from acconeer.exptool import a121
 from acconeer.exptool.app.new.backend import Backend, Message
 
+from .core_store import CoreStore
+
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +50,7 @@ class AppModel(QObject):
         self._backend = backend
         self._listener = _BackendListeningThread(self._backend, self)
         self._listener.sig_received_from_backend.connect(self._handle_backend_message)
+        self._core_store = CoreStore()
         self.connection_state = ConnectionState.DISCONNECTED
 
     def start(self) -> None:
@@ -65,7 +68,8 @@ class AppModel(QObject):
         self.sig_notify.emit(self)
 
     def _handle_backend_message(self, message: Message) -> None:
-        if message.status != "ok":
+        log.debug(f"{self.__class__.__name__} got from server: {message}")
+        if message.status == "error":
             self.sig_error.emit(message.exception)
 
         if message.command_name == "connect_client":
@@ -78,6 +82,8 @@ class AppModel(QObject):
                 self.connection_state = ConnectionState.DISCONNECTED
             else:
                 self.connection_state = ConnectionState.CONNECTED
+        elif message.command_name == "server_info":
+            self._core_store.server_info = message.data
 
         self.broadcast()
 
