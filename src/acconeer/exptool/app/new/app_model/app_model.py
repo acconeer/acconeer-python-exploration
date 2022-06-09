@@ -1,9 +1,14 @@
+import logging
+import queue
 from enum import Enum, auto
 
-from PySide6.QtCore import QObject, QThread, Signal
+from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new.backend import Backend, Message
+
+
+log = logging.getLogger(__name__)
 
 
 class ConnectionState(Enum):
@@ -21,8 +26,17 @@ class _BackendListeningThread(QThread):
         self.backend = backend
 
     def run(self) -> None:
-        while True:
-            self.sig_received_from_backend.emit(self.backend.recv())
+        log.debug("Backend listening thread starting...")
+
+        while not self.isInterruptionRequested():
+            try:
+                message = self.backend.recv(timeout=0.1)
+            except queue.Empty:
+                continue
+            else:
+                self.sig_received_from_backend.emit(message)
+
+        log.debug("Backend listening thread stopping...")
 
 
 class AppModel(QObject):
@@ -40,7 +54,12 @@ class AppModel(QObject):
         self._listener.start()
 
     def stop(self) -> None:
-        self._listener.quit()
+        self._listener.requestInterruption()
+        status = self._listener.wait(QDeadlineTimer(500))
+
+        if not status:
+            log.debug("Backend listening thread did not stop when requested, terminating...")
+            self._listener.terminate()
 
     def broadcast(self) -> None:
         self.sig_notify.emit(self)

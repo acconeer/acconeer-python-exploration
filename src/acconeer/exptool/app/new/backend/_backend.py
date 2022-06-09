@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 import queue
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from ._message import Message
 from ._model import Model
@@ -56,8 +56,8 @@ class Backend:
     def _send(self, command: Command) -> None:
         self._send_queue.put(command)
 
-    def recv(self) -> Any:
-        return self._recv_queue.get()
+    def recv(self, timeout: Optional[float] = None) -> Any:
+        return self._recv_queue.get(timeout=timeout)
 
 
 def process_program(recv_queue, send_queue, stop_event):
