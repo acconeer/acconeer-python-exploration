@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QMainWindow, QStatusBar, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
 
@@ -12,32 +12,89 @@ from .plugin_widget import PluginControlWidget
 class MainWindow(QMainWindow):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
-        self.app_model = app_model
-        self.setup_ui()
 
-    def setup_ui(self) -> None:
-        main_layout = QHBoxLayout()
+        self.setCentralWidget(MainWindowCentralWidget(app_model, self))
+        self.setStatusBar(StatusBar(app_model, self))
 
-        self.lhs_layout = QVBoxLayout()
-        lhs_dummy = QWidget()
-        lhs_dummy.setProperty("acc_type", "lhs")
-        lhs_dummy.setLayout(self.lhs_layout)
 
-        self.plot_layout_widget = pg.GraphicsLayoutWidget()
-        self.lhs_layout.addWidget(self.plot_layout_widget)
+class MainWindowCentralWidget(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
 
-        self.rhs_layout = QVBoxLayout()
-        rhs_dummy = QWidget()
-        rhs_dummy.setProperty("acc_type", "rhs")
-        rhs_dummy.setLayout(self.rhs_layout)
-        self.rhs_layout.addWidget(ClientConnectionWidget(self.app_model))
-        self.rhs_layout.addWidget(
-            PluginControlWidget(self.app_model, self.plot_layout_widget, load_default_plugins())
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+
+        self.layout().addWidget(TopBar(app_model, self))
+        self.layout().addWidget(WorkingArea(app_model, self))
+
+
+class TopBar(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QHBoxLayout(self))
+
+        self.layout().addWidget(ClientConnectionWidget(app_model, self))
+        self.layout().addStretch()
+
+
+class WorkingArea(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+
+        graphics_layout_widget = pg.GraphicsLayoutWidget()
+
+        self.layout().addWidget(LeftBar(app_model, self, graphics_layout_widget))
+        self.layout().addWidget(graphics_layout_widget)
+        self.layout().addWidget(RightBar(app_model, self))
+
+
+class LeftBar(QWidget):
+    def __init__(
+        self,
+        app_model: AppModel,
+        parent: QWidget,
+        graphics_layout_widget: pg.GraphicsLayoutWidget,  # TODO: remove
+    ) -> None:
+        super().__init__(parent)
+
+        self.setStyleSheet("background-color: #a3c9ad;")  # TODO: remove
+
+        self.setLayout(QHBoxLayout(self))
+
+        plugin_control_widget = PluginControlWidget(
+            app_model,
+            graphics_layout_widget,  # TODO: remove
+            load_default_plugins(),  # TODO: remove
+            parent=self,  # TODO: remove kwarg
         )
+        self.layout().addWidget(plugin_control_widget)
 
-        main_layout.addWidget(lhs_dummy)
-        main_layout.addWidget(rhs_dummy)
+        self.layout().addStretch()
 
-        dummy = QWidget()
-        dummy.setLayout(main_layout)
-        self.setCentralWidget(dummy)
+
+class RightBar(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setStyleSheet("background-color: #e6a595;")  # TODO: remove
+
+        self.setLayout(QHBoxLayout(self))
+
+        placeholder_label = QLabel(self)
+        self.layout().addWidget(placeholder_label)
+        placeholder_label.setText("Right bar placeholder")
+
+        self.layout().addStretch()
+
+
+class StatusBar(QStatusBar):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.showMessage("Status bar placeholder")

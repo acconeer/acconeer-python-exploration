@@ -19,12 +19,7 @@ def main():
 
     app = QApplication(sys.argv)
 
-    app.setStyleSheet(
-        """
-        *[acc_type="rhs"] { background-color: #e6a595 }
-        *[acc_type="lhs"] { background-color: #a3c9ad }
-        """
-    )
+    app.setStyleSheet("")
 
     mw = MainWindow(model)
     mw.show()
