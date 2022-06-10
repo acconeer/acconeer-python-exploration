@@ -9,6 +9,7 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import _base, _plugins
+from acconeer.exptool.app.new.backend import DataMessage, KwargMessage
 
 
 def processor_main(
@@ -76,12 +77,10 @@ class ProcessorPGUpdater:
     metadata: a121.Metadata = attrs.field()
 
     def setup(self, win: pg.GraphicsLayout) -> None:
-        self.plot_plugin_obj = self.plot_plugin(
-            sensor_config=self.sensor_config,
-            metadata=self.metadata,
-            parent=win,
+        self.plot_plugin_obj = self.plot_plugin(plot_layout=win)
+        self.plot_plugin_obj.handle_message(
+            KwargMessage("setup", dict(sensor_config=self.sensor_config, metadata=self.metadata))
         )
-        self.plot_plugin_obj.setup()
 
     def update(self, data: Any) -> None:
-        self.plot_plugin_obj.update(data)
+        self.plot_plugin_obj.handle_message(DataMessage("get_next", data))

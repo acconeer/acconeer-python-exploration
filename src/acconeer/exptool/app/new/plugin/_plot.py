@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import abc
 
+import pyqtgraph as pg
+
+from acconeer.exptool.app.new.backend import Message
+
 
 class PlotPlugin(abc.ABC):
-    @abc.abstractmethod
-    def setup(self) -> None:
-        pass
+    def __init__(self, plot_layout: pg.GraphicsLayout) -> None:
+        self.plot_layout = plot_layout
 
     @abc.abstractmethod
-    def teardown(self) -> None:
+    def handle_message(self, message: Message) -> None:
         pass

@@ -1,11 +1,5 @@
 from __future__ import annotations
 
-import abc
-from typing import Any
-
-import pyqtgraph as pg
-
-from acconeer.exptool import a121
 from acconeer.exptool.app.new import plugin
 
 
@@ -26,18 +20,7 @@ class ProcessorBackendPluginBase(plugin.BackendPlugin):
 
 
 class ProcessorPlotPluginBase(plugin.PlotPlugin):
-    def __init__(
-        self,
-        *,
-        sensor_config: a121.SensorConfig,
-        metadata: a121.Metadata,
-        parent: pg.GraphicsLayout,
-    ) -> None:
-        pass
-
-    @abc.abstractmethod
-    def update(self, processor_result: Any) -> None:
-        pass
+    pass
 
 
 class ProcessorViewPluginBase(plugin.ViewPlugin):

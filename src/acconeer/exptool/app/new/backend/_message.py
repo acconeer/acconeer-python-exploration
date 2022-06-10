@@ -31,3 +31,8 @@ class ErrorMessage(Message):
 @attrs.define
 class DataMessage(OkMessage):
     data: Any
+
+
+@attrs.define
+class KwargMessage(OkMessage):
+    kwargs: dict[str, Any]
