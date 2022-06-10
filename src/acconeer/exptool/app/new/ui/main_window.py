@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(MainWindowCentralWidget(app_model, self))
         self.setStatusBar(StatusBar(app_model, self))
+        self.setWindowTitle("Acconeer Exploration Tool (Beta)")
 
 
 class MainWindowCentralWidget(QWidget):
