@@ -4,8 +4,8 @@ from typing import Optional
 
 from PySide6.QtWidgets import (
     QButtonGroup,
-    QComboBox,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -14,9 +14,8 @@ from PySide6.QtWidgets import (
 
 import pyqtgraph as pg
 
-from acconeer.exptool.app.new import interactions, utils
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.app.new.plugin import Plugin, PluginFamily
+from acconeer.exptool.app.new.plugin import PlotPlugin, Plugin, PluginFamily, ViewPlugin
 
 
 class PluginSelectionButton(QPushButton):
@@ -111,55 +110,41 @@ class PluginSelection(QWidget):
             button.setChecked(True)
 
 
-class PluginControlWidget(QWidget):
-    def __init__(
-        self,
-        app_model: AppModel,
-        plot_layout_widget: pg.GraphicsLayoutWidget,
-        *,
-        parent: Optional[QWidget] = None,
-    ) -> None:
+class PluginPlotArea(pg.GraphicsLayoutWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
+
+        app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
+
+        self.plot_plugin: Optional[PlotPlugin] = None
+
+    def _on_app_model_load_plugin(self, plugin: Plugin) -> None:
+        if self.plot_plugin is not None:
+            pass  # TODO: teardown
+
+        print(type(self).__name__, plugin)  # TODO
+        # plot_plugin = plugin.plot_plugin(self.app_model, self)
+
+
+class PluginControlArea(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
         self.app_model = app_model
 
-        layout = QVBoxLayout(self)
-        self.plugin_dropdown = QComboBox()
-        self.plugin_dropdown.addItem("Select an application")
-        self.update_plugins_list(app_model.plugins)
-        layout.addWidget(self.plugin_dropdown)
+        app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
 
-        self.lended_control_widget = QWidget()
-        layout.addWidget(self.lended_control_widget)
+        self.view_plugin: Optional[ViewPlugin] = None
 
-        self.lended_plot_layout_widget = plot_layout_widget
+        self.setLayout(QHBoxLayout(self))
 
-        self.plugin_dropdown.currentIndexChanged.connect(self.on_dropdown_change)
-        self.setLayout(layout)
+        placeholder_label = QLabel(self)
+        self.layout().addWidget(placeholder_label)
+        placeholder_label.setText("Plugin control placeholder")
 
-    def update_plugins_list(self, plugins: list[Plugin]) -> None:
-        while self.plugin_dropdown.count() > 1:
-            self.plugin_dropdown.removeItem(1)
+    def _on_app_model_load_plugin(self, plugin: Plugin) -> None:
+        if self.view_plugin is not None:
+            pass  # TODO: teardown
 
-        for plugin in plugins:
-            self.plugin_dropdown.addItem(plugin.key, plugin)
-
-    def on_dropdown_change(self) -> None:
-        self.tear_down_plugin()
-
-        label = self.plugin_dropdown.currentText()
-        if label == "Select a service":
-            return
-
-        _ = self.plugin_dropdown.currentData()
-
-    def handle_plugin_setup_response(self, response: interactions.Response) -> None:
-        if response.error:
-            utils.show_error_pop_up(
-                "Plugin setup error",
-                response.error.message,
-            )
-
-    def tear_down_plugin(self) -> None:
-        self.lended_plot_layout_widget.ci.clear()
-        for child in self.lended_control_widget.children():
-            child.deleteLater()
+        print(type(self).__name__, plugin)  # TODO
+        # view_plugin = plugin.view_plugin(self.app_model, self)

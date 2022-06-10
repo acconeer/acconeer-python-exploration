@@ -13,12 +13,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-import pyqtgraph as pg
-
 from acconeer.exptool.app.new.app_model import AppModel
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
-from .plugin_widget import PluginControlWidget, PluginSelection
+from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelection
 
 
 class MainWindow(QMainWindow):
@@ -70,14 +68,13 @@ class WorkingArea(QSplitter):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
 
-        graphics_layout_widget = pg.GraphicsLayoutWidget()
-
-        left_area = LeftArea(app_model, self, graphics_layout_widget)
+        left_area = LeftArea(app_model, self)
         self.layout().addWidget(left_area)
         self.layout().setStretchFactor(left_area, 0)
 
-        self.layout().addWidget(graphics_layout_widget)
-        self.layout().setStretchFactor(graphics_layout_widget, 1)
+        plot_plugin_area = PluginPlotArea(app_model, self)
+        self.layout().addWidget(plot_plugin_area)
+        self.layout().setStretchFactor(plot_plugin_area, 1)
 
         right_area = RightArea(app_model, self)
         self.layout().addWidget(right_area)
@@ -85,12 +82,7 @@ class WorkingArea(QSplitter):
 
 
 class LeftArea(QScrollArea):
-    def __init__(
-        self,
-        app_model: AppModel,
-        parent: QWidget,
-        graphics_layout_widget: pg.GraphicsLayoutWidget,  # TODO: remove
-    ) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.setWidgetResizable(True)
@@ -101,28 +93,16 @@ class LeftArea(QScrollArea):
         self.setMinimumWidth(250)
         self.setMaximumWidth(350)
 
-        self.setWidget(LeftAreaContent(app_model, self, graphics_layout_widget))
+        self.setWidget(LeftAreaContent(app_model, self))
 
 
 class LeftAreaContent(QWidget):
-    def __init__(
-        self,
-        app_model: AppModel,
-        parent: QWidget,
-        graphics_layout_widget: pg.GraphicsLayoutWidget,  # TODO: remove
-    ) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.setLayout(QVBoxLayout(self))
 
         self.layout().addWidget(PluginSelection(app_model, self))
-
-        plugin_control_widget = PluginControlWidget(
-            app_model,
-            graphics_layout_widget,  # TODO: remove
-            parent=self,  # TODO: remove kwarg
-        )
-        self.layout().addWidget(plugin_control_widget)
 
         self.layout().addStretch(1)
 
@@ -148,9 +128,7 @@ class RightAreaContent(QWidget):
 
         self.setLayout(QVBoxLayout(self))
 
-        placeholder_label = QLabel(self)
-        self.layout().addWidget(placeholder_label)
-        placeholder_label.setText("Right bar placeholder")
+        self.layout().addWidget(PluginControlArea(app_model, self))
 
         self.layout().addStretch(1)
 

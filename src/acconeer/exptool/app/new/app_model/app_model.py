@@ -54,6 +54,7 @@ class _BackendListeningThread(QThread):
 class AppModel(QObject):
     sig_notify = Signal(object)
     sig_error = Signal(Exception)
+    sig_load_plugin = Signal(object)
 
     plugins: list[Plugin]
     plugin: Optional[Plugin]
@@ -152,7 +153,8 @@ class AppModel(QObject):
         if plugin == self.plugin:
             return
 
-        print("load_plugin:", plugin)  # TODO
+        print("load_plugin:", plugin)  # TODO: put task to backend
 
+        self.sig_load_plugin.emit(plugin)
         self.plugin = plugin
         self.broadcast()
