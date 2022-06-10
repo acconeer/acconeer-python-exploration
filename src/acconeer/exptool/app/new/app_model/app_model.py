@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import queue
 from enum import Enum, auto
+from typing import Optional
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 
@@ -50,14 +53,22 @@ class AppModel(QObject):
     sig_notify = Signal(object)
     sig_error = Signal(Exception)
 
+    connection_state: ConnectionState
+    connection_interface: ConnectionInterface
+    socket_connection_ip: str
+    serial_connection_port: Optional[str]
+
     def __init__(self, backend: Backend) -> None:
         super().__init__()
         self._backend = backend
         self._listener = _BackendListeningThread(self._backend, self)
         self._listener.sig_received_from_backend.connect(self._handle_backend_message)
         self._core_store = CoreStore()
+
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_interface = ConnectionInterface.SERIAL
+        self.socket_connection_ip = ""
+        self.serial_connection_port = None
 
     def start(self) -> None:
         self._listener.start()
@@ -93,7 +104,16 @@ class AppModel(QObject):
 
         self.broadcast()
 
-    def connect_client(self, client_info: a121.ClientInfo) -> None:
+    def connect_client(self) -> None:
+        if self.connection_interface == ConnectionInterface.SOCKET:
+            client_info = a121.ClientInfo(ip_address=self.socket_connection_ip)
+        elif self.connection_interface == ConnectionInterface.SERIAL:
+            client_info = a121.ClientInfo(serial_port=self.serial_connection_port)
+        else:
+            raise RuntimeError
+
+        log.debug(f"Connecting client with {client_info}")
+
         self._backend.put_task(
             task=(
                 "connect_client",
@@ -110,4 +130,12 @@ class AppModel(QObject):
 
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
         self.connection_interface = connection_interface
+        self.broadcast()
+
+    def set_socket_connection_ip(self, ip: str) -> None:
+        self.socket_connection_ip = ip
+        self.broadcast()
+
+    def set_serial_connection_port(self, port: Optional[str]) -> None:
+        self.serial_connection_port = port
         self.broadcast()

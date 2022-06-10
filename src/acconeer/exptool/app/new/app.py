@@ -23,6 +23,9 @@ def main():
 
     mw = MainWindow(model)
     mw.show()
+
+    model.broadcast()
+
     app.exec()
 
     model.stop()

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -14,36 +13,40 @@ from PySide6.QtWidgets import (
 )
 
 import acconeer.exptool as et
-from acconeer.exptool import a121
-from acconeer.exptool.app.new import interactions, utils
+from acconeer.exptool.app.new import utils
 from acconeer.exptool.app.new.app_model import AppModel, ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
 
-class _ConnectAndDisconnectButtons(QWidget):
-    sig_connect_clicked = Signal()
-    sig_disconnect_clicked = Signal()
-
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
-        # TODO: make these not be comically large.
+class _ConnectAndDisconnectButton(QPushButton):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        connect_button = QPushButton("Connect")
-        connect_button.clicked.connect(self.sig_connect_clicked.emit)
+        self.app_model = app_model
 
-        disconnect_button = QPushButton("Disconnect")
-        disconnect_button.clicked.connect(self.sig_disconnect_clicked.emit)
+        app_model.sig_notify.connect(self._on_app_model_update)
 
-        self._layout = QStackedLayout()
-        self._layout.addWidget(connect_button)
-        self._layout.addWidget(disconnect_button)
-        self.setLayout(self._layout)
+        self.clicked.connect(self._on_click)
 
-    def show_connect_button(self) -> None:
-        self._layout.setCurrentIndex(0)
+    def _on_click(self) -> None:
+        if self.app_model.connection_state == ConnectionState.DISCONNECTED:
+            self.app_model.connect_client()
+        elif self.app_model.connection_state == ConnectionState.CONNECTED:
+            self.app_model.disconnect_client()
+        else:
+            raise RuntimeError
 
-    def show_disconnect_button(self) -> None:
-        self._layout.setCurrentIndex(1)
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        TEXTS = {
+            ConnectionState.DISCONNECTED: "Connect",
+            ConnectionState.CONNECTING: "Connecting...",
+            ConnectionState.CONNECTED: "Disconnect",
+            ConnectionState.DISCONNECTING: "Disconnecting...",
+        }
+        ENABLED_STATES = {ConnectionState.CONNECTED, ConnectionState.DISCONNECTED}
+
+        self.setText(TEXTS[app_model.connection_state])
+        self.setEnabled(app_model.connection_state in ENABLED_STATES)
 
 
 class _SocketConnectionWidget(AppModelAwareWidget):
@@ -54,26 +57,16 @@ class _SocketConnectionWidget(AppModelAwareWidget):
 
         self.ip_line_edit = QLineEdit()
         self.ip_line_edit.setPlaceholderText("<IP address>")
+        self.ip_line_edit.editingFinished.connect(self._on_line_edit)
         layout.addWidget(self.ip_line_edit)
 
-        self.connection_buttons = _ConnectAndDisconnectButtons(self)
-        self.connection_buttons.sig_connect_clicked.connect(
-            lambda: interactions.put_client_connect_request(
-                self.app_model, a121.ClientInfo(ip_address=self.ip_line_edit.text())
-            )
-        )
-        self.connection_buttons.sig_disconnect_clicked.connect(
-            lambda: interactions.put_client_disconnect_request(self.app_model)
-        )
-
-        layout.addWidget(self.connection_buttons)
         self.setLayout(layout)
 
+    def _on_line_edit(self):
+        self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
+
     def on_app_model_update(self, app_model: AppModel) -> None:
-        if app_model.connection_state == ConnectionState.DISCONNECTED:
-            self.connection_buttons.show_connect_button()
-        elif app_model.connection_state == ConnectionState.CONNECTED:
-            self.connection_buttons.show_disconnect_button()
+        pass
 
     def on_app_model_error(self, exception: Exception) -> None:
         utils.show_error_pop_up("Client Error", str(exception))
@@ -87,31 +80,12 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         layout = QGridLayout()
 
         self.port_combo_box = QComboBox()
+        self.port_combo_box.currentTextChanged.connect(self._on_combo_box_change)
         layout.addWidget(self.port_combo_box, 0, 0)
 
         refresh_button = QPushButton("Refresh")
         refresh_button.clicked.connect(self.refresh_ports)
         layout.addWidget(refresh_button, 0, 1)
-
-        self.baudrate_line_edit = QLineEdit()
-        self.baudrate_line_edit.setEnabled(False)  # TODO
-        self.baudrate_line_edit.setPlaceholderText("Baudrate")
-        layout.addWidget(self.baudrate_line_edit, 1, 0, 1, 2)
-
-        self.connection_buttons = _ConnectAndDisconnectButtons(self)
-        self.connection_buttons.sig_connect_clicked.connect(
-            lambda: interactions.put_client_connect_request(
-                self.app_model,
-                a121.ClientInfo(
-                    serial_port=self.port_combo_box.currentData(),
-                    override_baudrate=None,  # TODO
-                ),
-            )
-        )
-        self.connection_buttons.sig_disconnect_clicked.connect(
-            lambda: interactions.put_client_disconnect_request(self.app_model)
-        )
-        layout.addWidget(self.connection_buttons, 2, 0, 1, 2)
 
         self.refresh_ports()
         self.setLayout(layout)
@@ -124,11 +98,11 @@ class _SerialConnectionWidget(AppModelAwareWidget):
             label = port if tag is None else f"{port} ({tag})"
             self.port_combo_box.addItem(label, port)
 
+    def _on_combo_box_change(self) -> None:
+        self.app_model.set_serial_connection_port(self.port_combo_box.currentData())
+
     def on_app_model_update(self, app_model: AppModel) -> None:
-        if app_model.connection_state == ConnectionState.DISCONNECTED:
-            self.connection_buttons.show_connect_button()
-        elif app_model.connection_state == ConnectionState.CONNECTED:
-            self.connection_buttons.show_disconnect_button()
+        pass
 
     def on_app_model_error(self, exception: Exception) -> None:
         utils.show_error_pop_up("Client Error", str(exception))
@@ -156,6 +130,9 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.stacked_layout.addWidget(_SocketConnectionWidget(app_model))
         self.stacked_layout.addWidget(_SerialConnectionWidget(app_model))
         self.main_layout.addLayout(self.stacked_layout)
+
+        self.main_layout.addWidget(_ConnectAndDisconnectButton(app_model, self))
+        self.main_layout.addStretch()
 
         self.setLayout(self.main_layout)
 
