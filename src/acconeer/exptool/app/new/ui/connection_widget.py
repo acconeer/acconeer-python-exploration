@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtWidgets import (
     QComboBox,
-    QGridLayout,
+    QHBoxLayout,
     QLineEdit,
     QPushButton,
-    QStackedLayout,
-    QVBoxLayout,
+    QStackedWidget,
     QWidget,
 )
 
@@ -50,20 +47,19 @@ class _ConnectAndDisconnectButton(QPushButton):
 
 
 class _SocketConnectionWidget(AppModelAwareWidget):
-    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(app_model, parent)
         self.app_model = app_model
-        layout = QGridLayout()
 
-        self.ip_line_edit = QLineEdit()
+        self.setLayout(QHBoxLayout(self))
+
+        self.ip_line_edit = QLineEdit(self)
         self.ip_line_edit.setPlaceholderText("<IP address>")
         self.ip_line_edit.editingFinished.connect(self._on_line_edit)
-        layout.addWidget(self.ip_line_edit)
+        self.layout().addWidget(self.ip_line_edit)
 
-        self.setLayout(layout)
-
-    def _on_line_edit(self):
-        self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
+    def _on_line_edit(self, text: str) -> None:
+        self.app_model.set_socket_connection_ip(text)
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         pass
@@ -73,22 +69,21 @@ class _SocketConnectionWidget(AppModelAwareWidget):
 
 
 class _SerialConnectionWidget(AppModelAwareWidget):
-    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(app_model, parent)
         self.app_model = app_model
 
-        layout = QGridLayout()
+        self.setLayout(QHBoxLayout(self))
 
-        self.port_combo_box = QComboBox()
+        self.port_combo_box = QComboBox(self)
         self.port_combo_box.currentTextChanged.connect(self._on_combo_box_change)
-        layout.addWidget(self.port_combo_box, 0, 0)
+        self.layout().addWidget(self.port_combo_box)
 
-        refresh_button = QPushButton("Refresh")
+        refresh_button = QPushButton("Refresh", self)
         refresh_button.clicked.connect(self.refresh_ports)
-        layout.addWidget(refresh_button, 0, 1)
+        self.layout().addWidget(refresh_button)
 
         self.refresh_ports()
-        self.setLayout(layout)
 
     def refresh_ports(self) -> None:
         tagged_ports = et.utils.get_tagged_serial_ports()  # type: ignore[attr-defined]
@@ -109,32 +104,28 @@ class _SerialConnectionWidget(AppModelAwareWidget):
 
 
 class ClientConnectionWidget(AppModelAwareWidget):
-    stacked_layout: QStackedLayout
-
-    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(app_model, parent)
 
         self.app_model = app_model
 
-        self.main_layout = QVBoxLayout()
+        self.setLayout(QHBoxLayout(self))
 
-        self.interface_dd = QComboBox()
+        self.interface_dd = QComboBox(self)
+        self.layout().addWidget(self.interface_dd)
 
         self.interface_dd.addItem("Socket", userData=ConnectionInterface.SOCKET)
         self.interface_dd.addItem("Serial", userData=ConnectionInterface.SERIAL)
 
         self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
-        self.main_layout.addWidget(self.interface_dd)
 
-        self.stacked_layout = QStackedLayout()
-        self.stacked_layout.addWidget(_SocketConnectionWidget(app_model))
-        self.stacked_layout.addWidget(_SerialConnectionWidget(app_model))
-        self.main_layout.addLayout(self.stacked_layout)
+        self.stacked = QStackedWidget(self)
+        self.stacked.addWidget(_SocketConnectionWidget(app_model, self.stacked))
+        self.stacked.addWidget(_SerialConnectionWidget(app_model, self.stacked))
+        self.layout().addWidget(self.stacked)
 
-        self.main_layout.addWidget(_ConnectAndDisconnectButton(app_model, self))
-        self.main_layout.addStretch()
-
-        self.setLayout(self.main_layout)
+        self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))
+        self.layout().addStretch()
 
     def _on_interface_dd_change(self) -> None:
         self.app_model.set_connection_interface(self.interface_dd.currentData())
@@ -155,4 +146,4 @@ class ClientConnectionWidget(AppModelAwareWidget):
             raise RuntimeError
 
         self.interface_dd.setCurrentIndex(interface_index)
-        self.stacked_layout.setCurrentIndex(interface_index)
+        self.stacked.setCurrentIndex(interface_index)
