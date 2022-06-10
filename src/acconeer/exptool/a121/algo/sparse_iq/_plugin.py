@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Callable, Optional, Tuple
 
 import numpy as np
@@ -18,15 +19,25 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorPlotPluginBase,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.app.new.backend import Backend, Message, Task
+from acconeer.exptool.app.new.backend import (
+    Backend,
+    DataMessage,
+    KwargMessage,
+    Message,
+    OkMessage,
+    Task,
+)
 from acconeer.exptool.app.new.plugin import Plugin, PluginFamily
 
 from ._processor import Processor, ProcessorConfig, ProcessorResult
 
 
+log = logging.getLogger(__name__)
+
+
 class BackendPlugin(ProcessorBackendPluginBase):
     client: Optional[a121.Client]
-    callback: Optional[Callable]
+    callback: Optional[Callable[[Message], None]]
     processor_instance: Optional[Processor]
 
     def __init__(self):
@@ -34,12 +45,10 @@ class BackendPlugin(ProcessorBackendPluginBase):
         self.client = None
         self.callback = None
 
-    def setup(self, *, callback: Callable) -> None:
+    def setup(self, *, callback: Callable[[Message], None]) -> None:
         self.callback = callback
 
     def attach_client(self, *, client: a121.Client) -> None:
-        if not client.connected:
-            raise RuntimeError("Only connected Clients can be attached.")
         self.client = client
 
     def detach_client(self) -> None:
@@ -52,7 +61,13 @@ class BackendPlugin(ProcessorBackendPluginBase):
     def execute_task(self, *, task: Task) -> None:
         """Accepts the following tasks:
 
-        - ("start_session", (a121.SessionConfig, ProcessorConfig)) -> None
+        -   (
+                "start_session",
+                {
+                    session_config=a121.SessionConfig
+                    processor_config=ProcessorConfig
+                }
+            ) -> [a121.Metadata, a121.SensorConfig]
         - ("stop_session", <Ignored>) -> None
         - ("get_next", <Ignored>) -> ProcessorResult
         """
@@ -67,27 +82,45 @@ class BackendPlugin(ProcessorBackendPluginBase):
             raise RuntimeError(f"Unknown task: {task_name}")
 
     def _execute_start(
-        self, session_config: a121.SessionConfig, processor_config: ProcessorConfig
+        self,
+        session_config: a121.SessionConfig,
+        processor_config: ProcessorConfig,
     ) -> None:
         if self.client is None:
             raise RuntimeError("Client is not attached. Can not 'start'.")
-        if session_config.extended:
-            raise RuntimeError("Extended configs are not supported.")
+        if not self.client.connected:
+            # This check is here to avoid the
+            # "auto-connect" behaviour in a121.Client.setup_session.
+            raise RuntimeError("Client is not connected. Can not 'start'.")
 
-        metadata = self.client.setup_session(session_config)
-        assert isinstance(metadata, a121.Metadata)
+        if self.callback is None:
+            raise RuntimeError("callback is None. 'setup' needs to be called before 'get_next'")
+        if session_config.extended:
+            raise ValueError("Extended configs are not supported.")
+
+        self.metadata = self.client.setup_session(session_config)
+        assert isinstance(self.metadata, a121.Metadata)
 
         self.processor_instance = Processor(
             sensor_config=session_config.sensor_config,
-            metadata=metadata,
+            metadata=self.metadata,
             processor_config=processor_config,
         )
         self.client.start_session()
+        self.callback(
+            KwargMessage(
+                "setup", dict(metadata=self.metadata, sensor_config=session_config.sensor_config)
+            )
+        )
 
     def _execute_stop(self) -> None:
         if self.client is None:
             raise RuntimeError("Client is not attached. Can not 'stop'.")
+        if self.callback is None:
+            raise RuntimeError("callback is None. 'setup' needs to be called before 'get_next'")
+
         self.client.stop_session()
+        self.callback(OkMessage("stop_session"))
 
     def _execute_get_next(self) -> None:
         if self.client is None:
@@ -101,7 +134,7 @@ class BackendPlugin(ProcessorBackendPluginBase):
         assert isinstance(result, a121.Result)
 
         processor_result = self.processor_instance.process(result)
-        self.callback({"plot": processor_result, "get_next": processor_result})
+        self.callback(DataMessage("plot", processor_result))
 
 
 class ViewPlugin(ProcessorViewPluginBase):
@@ -142,45 +175,61 @@ class ViewPlugin(ProcessorViewPluginBase):
 
 
 class PlotPlugin(ProcessorPlotPluginBase):
-    def __init__(
-        self,
-        *,
-        sensor_config: a121.SensorConfig,
-        metadata: a121.Metadata,
-        parent: pg.GraphicsLayout,
-    ) -> None:
-        self.sensor_config = sensor_config
-        self.parent = parent
-        self.distances_m, self.step_length_m = algo.get_distances_m(sensor_config, metadata)
-        self.vels, self.vel_res = algo.get_approx_fft_vels(sensor_config)
+    def __init__(self, plot_widget: pg.GraphicsLayout) -> None:
+        super().__init__(plot_widget)
+        self.smooth_max = et.utils.SmoothMax()  # type: ignore[attr-defined]
 
     def handle_message(self, message: Message) -> None:
-        ...
+        if message.command_name == "setup":
+            assert isinstance(message, KwargMessage)
+            self.setup(**message.kwargs)
+        elif message.command_name == "plot":
+            self._update_plot_data(message.data)
+        else:
+            log.warn(
+                f"{self.__class__.__name__} got an unsupported command: {message.command_name!r}."
+            )
 
     def draw(self) -> None:
         ...
 
-    def setup(self) -> None:
-        self.ampl_plot = self._create_amplitude_plot(self.parent)
+    def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
+        if isinstance(metadata, list):
+            raise ValueError("Support for extended configs is not implemented.")
+
+        self.distances_m, _ = algo.get_distances_m(sensor_config, metadata)
+        vels, vel_res = algo.get_approx_fft_vels(sensor_config)
+
+        self.ampl_plot = self._create_amplitude_plot(self.plot_layout)
         self.ampl_curve = self._create_amplitude_curve(0, self.distances_m)
         self.ampl_plot.addDataItem(self.ampl_curve)
 
-        self.parent.nextRow()
+        self.plot_layout.nextRow()
 
-        self.phase_plot = self._create_phase_plot(self.parent)
+        self.phase_plot = self._create_phase_plot(self.plot_layout)
         self.phase_curve = self._create_phase_curve(0)
         self.phase_plot.addDataItem(self.phase_curve)
 
-        self.parent.nextRow()
+        self.plot_layout.nextRow()
 
         self.ft_plot, self.ft_im = self._create_fft_plot(
-            self.parent,
+            self.plot_layout,
             distances_m=self.distances_m,
-            step_length_m=self.step_length_m,
-            vels=self.vels,
-            vel_res=self.vel_res,
+            step_length_m=2.5e-3,
+            vels=vels,
+            vel_res=vel_res,
         )
-        self.smooth_max = et.utils.SmoothMax()  # type: ignore[attr-defined]
+
+    def _update_plot_data(self, processor_result: ProcessorResult) -> None:
+        ampls = processor_result.amplitudes
+        self.ampl_curve.setData(self.distances_m, ampls)
+        self.phase_curve.setData(self.distances_m, processor_result.phases)
+        self.ampl_plot.setYRange(0, self.smooth_max.update(ampls))
+        dvm = processor_result.distance_velocity_map
+        self.ft_im.updateImage(
+            dvm.T,
+            levels=(0, 1.05 * np.max(dvm)),
+        )
 
     @staticmethod
     def _create_amplitude_curve(
@@ -245,20 +294,6 @@ class PlotPlugin(ProcessorPlotPluginBase):
         plot.addItem(im)
 
         return plot, im
-
-    def update(self, processor_result: ProcessorResult) -> None:
-        ampls = processor_result.amplitudes
-        self.ampl_curve.setData(self.distances_m, ampls)
-        self.phase_curve.setData(self.distances_m, processor_result.phases)
-        self.ampl_plot.setYRange(0, self.smooth_max.update(ampls))
-        dvm = processor_result.distance_velocity_map
-        self.ft_im.updateImage(
-            dvm.T,
-            levels=(0, 1.05 * np.max(dvm)),
-        )
-
-    def teardown(self) -> None:
-        self.parent.clear()
 
 
 SPARSE_IQ_PLUGIN = Plugin(
