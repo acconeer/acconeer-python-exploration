@@ -305,9 +305,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 self.context,
             )
         elif self.threshold_method == ThresholdMethod.FIXED:
-            raise NotImplementedError
+            return self.threshold
         elif self.threshold_method == ThresholdMethod.RECORDED:
-            raise NotImplementedError
+            return self.threshold
         else:
             raise RuntimeError
 

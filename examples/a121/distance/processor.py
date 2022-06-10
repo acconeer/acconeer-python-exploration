@@ -71,9 +71,9 @@ def main():
         result = client.get_next()
         processed_data = threshold_processor.process(result)
 
-    distance_context = ProcessorContext(recorded_threshold=processed_data.threshold)
+    distance_context = ProcessorContext(recorded_threshold=processed_data.recorded_threshold)
     distance_config = ProcessorConfig(
-        processor_mode=ProcessorMode.DISTANCE_ESTIMATION, threshold_method=ThresholdMethod.RECORDED
+        processor_mode=ProcessorMode.DISTANCE_ESTIMATION, threshold_method=ThresholdMethod.CFAR
     )
     distance_processor = Processor(
         sensor_config=sensor_config,
@@ -119,13 +119,15 @@ class PGUpdater:
         self.smooth_max = et.utils.SmoothMax()
 
     def update(self, d):
+        threshold = d.extra_result.used_threshold
+        valid_threshold_idx = np.where(~np.isnan(threshold))[0]
+        threshold = threshold[valid_threshold_idx]
+
         self.curves["Sweep"].setData(d.extra_result.abs_sweep)
-        self.curves["Threshold"].setData(d.extra_result.threshold)
+        self.curves["Threshold"].setData(valid_threshold_idx, threshold)
         self.sweep_plot.setYRange(
             0,
-            self.smooth_max.update(
-                np.amax(np.concatenate((d.extra_result.abs_sweep, d.extra_result.threshold)))
-            ),
+            self.smooth_max.update(np.amax(np.concatenate((d.extra_result.abs_sweep, threshold)))),
         )
 
 
