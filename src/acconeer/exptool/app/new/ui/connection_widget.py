@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.app.new import interactions, utils
-from acconeer.exptool.app.new.app_model import AppModel, ConnectionState
+from acconeer.exptool.app.new.app_model import AppModel, ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
 
@@ -139,12 +139,17 @@ class ClientConnectionWidget(AppModelAwareWidget):
 
     def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(app_model, parent)
+
+        self.app_model = app_model
+
         self.main_layout = QVBoxLayout()
 
         self.interface_dd = QComboBox()
-        self.interface_dd.addItem("Socket")
-        self.interface_dd.addItem("Serial")
-        self.interface_dd.currentIndexChanged.connect(self.change_subwidget)
+
+        self.interface_dd.addItem("Socket", userData=ConnectionInterface.SOCKET)
+        self.interface_dd.addItem("Serial", userData=ConnectionInterface.SERIAL)
+
+        self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
         self.main_layout.addWidget(self.interface_dd)
 
         self.stacked_layout = QStackedLayout()
@@ -154,11 +159,8 @@ class ClientConnectionWidget(AppModelAwareWidget):
 
         self.setLayout(self.main_layout)
 
-    def change_subwidget(self, index: int) -> None:
-        if index in {0, 1}:
-            self.stacked_layout.setCurrentIndex(index)
-        else:
-            raise ValueError(f"Combobox index is bad: {index}")
+    def _on_interface_dd_change(self) -> None:
+        self.app_model.set_connection_interface(self.interface_dd.currentData())
 
     def on_app_model_error(self, exception: Exception) -> None:
         pass
@@ -170,3 +172,10 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.interface_dd.setEnabled(
             app_model.connection_state != ConnectionState.CONNECTED,
         )
+
+        interface_index = self.interface_dd.findData(app_model.connection_interface)
+        if interface_index == -1:
+            raise RuntimeError
+
+        self.interface_dd.setCurrentIndex(interface_index)
+        self.stacked_layout.setCurrentIndex(interface_index)

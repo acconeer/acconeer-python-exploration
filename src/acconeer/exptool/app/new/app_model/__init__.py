@@ -1,1 +1,1 @@
-from .app_model import AppModel, ConnectionState
+from .app_model import AppModel, ConnectionInterface, ConnectionState

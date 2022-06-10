@@ -20,6 +20,11 @@ class ConnectionState(Enum):
     DISCONNECTING = auto()
 
 
+class ConnectionInterface(Enum):
+    SERIAL = auto()
+    SOCKET = auto()
+
+
 class _BackendListeningThread(QThread):
     sig_received_from_backend = Signal(Message)
 
@@ -52,6 +57,7 @@ class AppModel(QObject):
         self._listener.sig_received_from_backend.connect(self._handle_backend_message)
         self._core_store = CoreStore()
         self.connection_state = ConnectionState.DISCONNECTED
+        self.connection_interface = ConnectionInterface.SERIAL
 
     def start(self) -> None:
         self._listener.start()
@@ -100,4 +106,8 @@ class AppModel(QObject):
     def disconnect_client(self) -> None:
         self._backend.put_task(task=("disconnect_client", {}))
         self.connection_state = ConnectionState.DISCONNECTING
+        self.broadcast()
+
+    def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
+        self.connection_interface = connection_interface
         self.broadcast()
