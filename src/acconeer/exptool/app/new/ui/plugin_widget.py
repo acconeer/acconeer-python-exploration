@@ -51,15 +51,7 @@ class PluginControlWidget(QWidget):
         if label == "Select a service":
             return
 
-        plugin = self.plugin_dropdown.currentData()
-        self.handle_plugin_setup_response(
-            interactions.setup_plugin(
-                plugin=plugin,
-                app_model=self.app_model,
-                plot_widget=self.lended_plot_layout_widget.ci,
-                view_widget=self.lended_control_widget,
-            )
-        )
+        _ = self.plugin_dropdown.currentData()
 
     def handle_plugin_setup_response(self, response: interactions.Response) -> None:
         if response.error:
