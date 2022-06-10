@@ -237,6 +237,7 @@ def test_basic_to_dict():
         "sweep_rate": None,
         "frame_rate": None,
         "continuous_sweep_mode": False,
+        "double_buffering": False,
         "inter_frame_idle_state": a121.IdleState.DEEP_SLEEP,
         "inter_sweep_idle_state": a121.IdleState.READY,
         "subsweeps": [a121.SubsweepConfig().to_dict()],

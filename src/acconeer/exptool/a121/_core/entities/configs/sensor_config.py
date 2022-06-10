@@ -88,6 +88,7 @@ class SensorConfig:
     _sweep_rate: Optional[float]
     _frame_rate: Optional[float]
     _continuous_sweep_mode: bool
+    _double_buffering: bool
     _inter_frame_idle_state: IdleState
     _inter_sweep_idle_state: IdleState
 
@@ -111,6 +112,7 @@ class SensorConfig:
         sweep_rate: Optional[float] = None,
         frame_rate: Optional[float] = None,
         continuous_sweep_mode: bool = False,
+        double_buffering: bool = False,
         inter_frame_idle_state: IdleState = IdleState.DEEP_SLEEP,
         inter_sweep_idle_state: IdleState = IdleState.READY,
         start_point: Optional[int] = None,
@@ -163,6 +165,7 @@ class SensorConfig:
         self.sweep_rate = sweep_rate
         self.frame_rate = frame_rate
         self.continuous_sweep_mode = continuous_sweep_mode
+        self.double_buffering = double_buffering
         self.inter_frame_idle_state = inter_frame_idle_state
         self.inter_sweep_idle_state = inter_sweep_idle_state
 
@@ -227,6 +230,7 @@ class SensorConfig:
             "sweep_rate": self.sweep_rate,
             "frame_rate": self.frame_rate,
             "continuous_sweep_mode": self.continuous_sweep_mode,
+            "double_buffering": self.double_buffering,
             "inter_frame_idle_state": self.inter_frame_idle_state,
             "inter_sweep_idle_state": self.inter_sweep_idle_state,
             "sweeps_per_frame": self.sweeps_per_frame,
@@ -295,18 +299,21 @@ class SensorConfig:
             if np.isclose(self.frame_rate, 1 / seconds_needed_per_frame):
                 warnings.warn(
                     "Frame rate is approximately equal to SPF / Sweep rate. "
-                    + "Use contiuous sweep mode instead."
+                    + "Use continuous sweep mode instead."
                 )
 
     def _validate_required_buffer_usage(self) -> None:
-        BUFFER_SIZE = 4095
+        BUFFER_SIZE = 4096
 
+        buffer_size_available = (
+            (BUFFER_SIZE // 2) - 1 if self.double_buffering else BUFFER_SIZE - 1
+        )
         total_num_points = sum(subsweep_config.num_points for subsweep_config in self.subsweeps)
         required_buffer_size = total_num_points * self.sweeps_per_frame
-        if required_buffer_size > BUFFER_SIZE:
+        if required_buffer_size > buffer_size_available:
             raise ValueError(
                 "This config would have required buffer size "
-                + f"{required_buffer_size}, but the max is {BUFFER_SIZE}"
+                + f"{required_buffer_size}, but the max is {buffer_size_available}"
             )
 
     @property
@@ -381,6 +388,21 @@ class SensorConfig:
     @continuous_sweep_mode.setter
     def continuous_sweep_mode(self, value: bool) -> None:
         self._continuous_sweep_mode = bool(value)
+
+    @property
+    def double_buffering(self) -> bool:
+        """Double buffering
+
+        If enabled, the sensor buffer will be split in two halves reducing the
+        maximum number of samples. A frame can be read while sampling is done into the
+        other buffer.
+        """
+
+        return self._double_buffering
+
+    @double_buffering.setter
+    def double_buffering(self, value: bool) -> None:
+        self._double_buffering = bool(value)
 
     @property
     def inter_frame_idle_state(self) -> IdleState:

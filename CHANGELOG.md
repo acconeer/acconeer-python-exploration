@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `double_buffering` parameter to `a121.SensorConfig`.
+
 ## v4.4.1
 
 ### Changed

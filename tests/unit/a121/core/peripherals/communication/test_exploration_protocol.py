@@ -142,6 +142,7 @@ def test_setup_command_simple_session_config():
                         "sweep_rate": 0.0,
                         "frame_rate": 0.0,
                         "continuous_sweep_mode": False,
+                        "double_buffering": False,
                         "inter_frame_idle_state": "deep_sleep",
                         "inter_sweep_idle_state": "ready",
                     },
