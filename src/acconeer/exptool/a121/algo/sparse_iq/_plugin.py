@@ -19,15 +19,16 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorPlotPluginBase,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.app.new.backend import (
-    Backend,
+from acconeer.exptool.app.new import (
+    AppModel,
     DataMessage,
     KwargMessage,
     Message,
     OkMessage,
+    Plugin,
+    PluginFamily,
     Task,
 )
-from acconeer.exptool.app.new.plugin import Plugin, PluginFamily
 
 from ._processor import Processor, ProcessorConfig, ProcessorResult
 
@@ -138,9 +139,9 @@ class BackendPlugin(ProcessorBackendPluginBase):
 
 
 class ViewPlugin(ProcessorViewPluginBase):
-    def __init__(self, *, parent: QWidget, backend: Backend) -> None:
-        self.parent = parent
-        self.backend = backend
+    def __init__(self, view_widget: QWidget, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model, view_widget=view_widget)
+        self.view_widget = view_widget
 
     def setup(self) -> None:
         self.layout = QHBoxLayout()
@@ -151,11 +152,11 @@ class ViewPlugin(ProcessorViewPluginBase):
 
         self.layout.addWidget(start_button)
         self.layout.addWidget(stop_button)
-        self.parent.setLayout(self.layout)
+        self.view_widget.setLayout(self.layout)
 
     def _send_start_requests(self) -> None:
         # FIXME: don't hard-code these
-        self.backend.put_task(
+        self.send_backend_task(
             (
                 "start_session",
                 {
@@ -164,19 +165,25 @@ class ViewPlugin(ProcessorViewPluginBase):
                 },
             )
         )
-        self.backend.set_idle_task(("get_next", {}))
+        self.send_backend_command(("set_idle_task", ("get_next", {})))
 
     def _send_stop_requests(self) -> None:
-        self.backend.clear_idle_task()
-        self.backend.put_task(("stop_session", {}))
+        self.send_backend_command(("set_idle_task", None))
+        self.send_backend_task(("stop_session", {}))
 
     def teardown(self) -> None:
         self.layout.deleteLater()
 
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        pass  # TODO
+
+    def on_app_model_error(self, exception: Exception) -> None:
+        pass  # TODO
+
 
 class PlotPlugin(ProcessorPlotPluginBase):
-    def __init__(self, plot_widget: pg.GraphicsLayout) -> None:
-        super().__init__(plot_widget)
+    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
+        super().__init__(plot_layout=plot_layout, app_model=app_model)
         self.smooth_max = et.utils.SmoothMax()  # type: ignore[attr-defined]
 
     def handle_message(self, message: Message) -> None:
@@ -294,6 +301,12 @@ class PlotPlugin(ProcessorPlotPluginBase):
         plot.addItem(im)
 
         return plot, im
+
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        pass  # TODO
+
+    def on_app_model_error(self, exception: Exception) -> None:
+        pass  # TODO
 
 
 SPARSE_IQ_PLUGIN = Plugin(

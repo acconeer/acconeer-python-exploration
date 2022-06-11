@@ -77,7 +77,7 @@ class ProcessorPGUpdater:
     metadata: a121.Metadata = attrs.field()
 
     def setup(self, win: pg.GraphicsLayout) -> None:
-        self.plot_plugin_obj = self.plot_plugin(plot_layout=win)
+        self.plot_plugin_obj = self.plot_plugin(plot_layout=win, app_model=_plugins.NullAppModel())
         self.plot_plugin_obj.handle_message(
             KwargMessage("setup", dict(sensor_config=self.sensor_config, metadata=self.metadata))
         )

@@ -5,7 +5,7 @@ from acconeer.exptool.a121.algo._plugins import (
     DetectorPlotPluginBase,
     DetectorViewPluginBase,
 )
-from acconeer.exptool.app.new.plugin import Plugin, PluginFamily
+from acconeer.exptool.app.new.app_model import Plugin, PluginFamily
 
 
 class BackendPlugin(DetectorBackendPluginBase):

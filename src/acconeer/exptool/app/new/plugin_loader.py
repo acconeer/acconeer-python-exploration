@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .plugin import Plugin
+from .app_model import Plugin
 
 
 def load_default_plugins() -> list[Plugin]:

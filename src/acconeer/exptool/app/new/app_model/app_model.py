@@ -1,20 +1,82 @@
 from __future__ import annotations
 
+import abc
 import logging
 import queue
 from enum import Enum, auto
-from typing import Optional
+from typing import Optional, Type
+
+import attrs
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
+from PySide6.QtWidgets import QWidget
+
+import pyqtgraph as pg
 
 from acconeer.exptool import a121
-from acconeer.exptool.app.new.backend import Backend, Message
-from acconeer.exptool.app.new.plugin import Plugin
+from acconeer.exptool.app.new.backend import Backend, BackendPlugin, Command, Message, Task
 
 from .core_store import CoreStore
 
 
 log = logging.getLogger(__name__)
+
+
+class AppModelAware(abc.ABC):
+    def __init__(self, app_model: AppModel) -> None:
+        app_model.sig_notify.connect(self.on_app_model_update)
+        app_model.sig_error.connect(self.on_app_model_error)
+
+    @abc.abstractmethod
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        pass
+
+    @abc.abstractmethod
+    def on_app_model_error(self, exception: Exception) -> None:
+        pass
+
+
+class PlotPlugin(AppModelAware):
+    def __init__(self, app_model: AppModel, plot_layout: pg.GraphicsLayout) -> None:
+        super().__init__(app_model=app_model)
+        self.plot_layout = plot_layout
+
+    @abc.abstractmethod
+    def handle_message(self, message: Message) -> None:
+        pass
+
+    @abc.abstractmethod
+    def draw(self) -> None:
+        pass
+
+
+class ViewPlugin(AppModelAware):
+    def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
+        super().__init__(app_model=app_model)
+        self.app_model = app_model
+        self.view_widget = view_widget
+
+    def send_backend_command(self, command: Command) -> None:
+        self.app_model._backend._send(command)
+
+    def send_backend_task(self, task: Task) -> None:
+        self.send_backend_command(("task", task))
+
+
+class PluginFamily(Enum):
+    SERVICE = "Services"
+    DETECTOR = "Detectors"
+
+
+@attrs.frozen(kw_only=True)
+class Plugin:
+    key: str = attrs.field()
+    title: str = attrs.field()
+    description: Optional[str] = attrs.field(default=None)
+    family: PluginFamily = attrs.field()
+    backend_plugin: Type[BackendPlugin] = attrs.field()
+    plot_plugin: Type[PlotPlugin] = attrs.field()
+    view_plugin: Type[ViewPlugin] = attrs.field()
 
 
 class ConnectionState(Enum):

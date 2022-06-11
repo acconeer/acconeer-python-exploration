@@ -15,8 +15,13 @@ from PySide6.QtWidgets import (
 
 import pyqtgraph as pg
 
-from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.app.new.plugin import PlotPlugin, Plugin, PluginFamily, ViewPlugin
+from acconeer.exptool.app.new.app_model import (
+    AppModel,
+    PlotPlugin,
+    Plugin,
+    PluginFamily,
+    ViewPlugin,
+)
 
 
 class PluginSelectionButton(QPushButton):

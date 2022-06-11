@@ -1,27 +1,42 @@
 from __future__ import annotations
 
-from acconeer.exptool.app.new import plugin
+from typing import Callable
+
+from acconeer.exptool.app.new import AppModel, BackendPlugin, PlotPlugin, ViewPlugin
 
 
-class DetectorBackendPluginBase(plugin.BackendPlugin):
+class NullAppModel(AppModel):
+    class _NullSignal:
+        def connect(self, slot: Callable) -> None:
+            pass
+
+    sig_notify: _NullSignal
+    sig_error: _NullSignal
+
+    def __init__(self) -> None:
+        self.sig_notify = self._NullSignal()
+        self.sig_error = self._NullSignal()
+
+
+class DetectorBackendPluginBase(BackendPlugin):
     pass
 
 
-class DetectorPlotPluginBase(plugin.PlotPlugin):
+class DetectorPlotPluginBase(PlotPlugin):
     pass
 
 
-class DetectorViewPluginBase(plugin.ViewPlugin):
+class DetectorViewPluginBase(ViewPlugin):
     pass
 
 
-class ProcessorBackendPluginBase(plugin.BackendPlugin):
+class ProcessorBackendPluginBase(BackendPlugin):
     pass
 
 
-class ProcessorPlotPluginBase(plugin.PlotPlugin):
+class ProcessorPlotPluginBase(PlotPlugin):
     pass
 
 
-class ProcessorViewPluginBase(plugin.ViewPlugin):
+class ProcessorViewPluginBase(ViewPlugin):
     pass

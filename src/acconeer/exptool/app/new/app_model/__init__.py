@@ -1,1 +1,10 @@
-from .app_model import AppModel, ConnectionInterface, ConnectionState
+from .app_model import (
+    AppModel,
+    AppModelAware,
+    ConnectionInterface,
+    ConnectionState,
+    PlotPlugin,
+    Plugin,
+    PluginFamily,
+    ViewPlugin,
+)
