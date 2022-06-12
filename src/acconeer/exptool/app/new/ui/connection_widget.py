@@ -58,8 +58,8 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         self.ip_line_edit.editingFinished.connect(self._on_line_edit)
         self.layout().addWidget(self.ip_line_edit)
 
-    def _on_line_edit(self, text: str) -> None:
-        self.app_model.set_socket_connection_ip(text)
+    def _on_line_edit(self) -> None:
+        self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         pass
