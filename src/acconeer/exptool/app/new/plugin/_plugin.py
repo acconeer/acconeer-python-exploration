@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Type
+import enum
+from typing import Optional, Type
 
 import attrs
 
@@ -10,9 +11,17 @@ from ._plot import PlotPlugin
 from ._view import ViewPlugin
 
 
+class PluginFamily(enum.Enum):
+    SERVICE = "Services"
+    DETECTOR = "Detectors"
+
+
 @attrs.frozen(kw_only=True)
 class Plugin:
     key: str = attrs.field()
+    title: str = attrs.field()
+    description: Optional[str] = attrs.field(default=None)
+    family: PluginFamily = attrs.field()
     backend_plugin: Type[BackendPlugin] = attrs.field()
     plot_plugin: Type[PlotPlugin] = attrs.field()
     view_plugin: Type[ViewPlugin] = attrs.field()

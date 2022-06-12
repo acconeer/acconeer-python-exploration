@@ -19,7 +19,7 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorViewPluginBase,
 )
 from acconeer.exptool.app.new.backend import Backend, Task
-from acconeer.exptool.app.new.plugin import Plugin
+from acconeer.exptool.app.new.plugin import Plugin, PluginFamily
 
 from ._processor import Processor, ProcessorConfig, ProcessorResult
 
@@ -257,6 +257,9 @@ class PlotPlugin(ProcessorPlotPluginBase):
 
 SPARSE_IQ_PLUGIN = Plugin(
     key="sparse_iq",
+    title="Sparse IQ",
+    description="Basic usage of the sparse IQ service.",
+    family=PluginFamily.SERVICE,
     backend_plugin=BackendPlugin,
     plot_plugin=PlotPlugin,
     view_plugin=ViewPlugin,
