@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
 import pyqtgraph as pg
 
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
 from .plugin_widget import PluginControlWidget
@@ -119,7 +118,6 @@ class LeftAreaContent(QWidget):
         plugin_control_widget = PluginControlWidget(
             app_model,
             graphics_layout_widget,  # TODO: remove
-            load_default_plugins(),  # TODO: remove
             parent=self,  # TODO: remove kwarg
         )
         self.layout().addWidget(plugin_control_widget)

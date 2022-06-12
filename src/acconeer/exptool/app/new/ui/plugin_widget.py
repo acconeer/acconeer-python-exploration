@@ -16,7 +16,6 @@ class PluginControlWidget(QWidget):
         self,
         app_model: AppModel,
         plot_layout_widget: pg.GraphicsLayoutWidget,
-        plugins: list[Plugin],
         *,
         parent: Optional[QWidget] = None,
     ) -> None:
@@ -26,7 +25,7 @@ class PluginControlWidget(QWidget):
         layout = QVBoxLayout(self)
         self.plugin_dropdown = QComboBox()
         self.plugin_dropdown.addItem("Select an application")
-        self.update_plugins_list(plugins)
+        self.update_plugins_list(app_model.plugins)
         layout.addWidget(self.plugin_dropdown)
 
         self.lended_control_widget = QWidget()
