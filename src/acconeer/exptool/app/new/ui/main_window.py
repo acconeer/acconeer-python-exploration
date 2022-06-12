@@ -13,6 +13,8 @@ class MainWindow(QMainWindow):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
 
+        self.resize(1200, 800)
+
         self.setCentralWidget(MainWindowCentralWidget(app_model, self))
         self.setStatusBar(StatusBar(app_model, self))
 
