@@ -205,6 +205,7 @@ class SerialLink(BaseSerialLink):
 class ExploreSerialLink(SerialLink):
     _SERIAL_READ_PACKET_SIZE = 65536
     _SERIAL_PACKET_TIMEOUT = 0.01
+    _SERIAL_WRITE_TIMEOUT = 1.0
 
     def __init__(self, port, flowcontrol=True):
         super().__init__(port, flowcontrol)
@@ -214,7 +215,10 @@ class ExploreSerialLink(SerialLink):
         pass
 
     def connect(self):
-        self._ser = serial.Serial(timeout=self._SERIAL_PACKET_TIMEOUT)
+        self._ser = serial.Serial(
+            timeout=self._SERIAL_PACKET_TIMEOUT,
+            write_timeout=self._SERIAL_WRITE_TIMEOUT,
+        )
         self._ser.baudrate = self._baudrate
         self._ser.port = self._port
         self._ser.rtscts = self._flowcontrol
