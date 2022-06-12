@@ -1,3 +1,5 @@
+import importlib_metadata
+
 from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QFrame,
@@ -157,4 +159,6 @@ class StatusBar(QStatusBar):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.showMessage("Status bar placeholder")
+        et_version = importlib_metadata.version("acconeer-exptool")
+        et_version_text = f"ET: {et_version}"
+        self.addPermanentWidget(QLabel(et_version_text, self))
