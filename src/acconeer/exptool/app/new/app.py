@@ -3,6 +3,8 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
+import pyqtgraph as pg
+
 from .app_model import AppModel
 from .backend import Backend
 from .ui import MainWindow
@@ -16,6 +18,11 @@ def main():
 
     model = AppModel(backend)
     model.start()
+
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOption("leftButtonPan", False)
+    pg.setConfigOptions(antialias=True)
 
     app = QApplication(sys.argv)
 
