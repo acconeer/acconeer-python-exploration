@@ -18,7 +18,7 @@ import pyqtgraph as pg
 from acconeer.exptool.app.new.app_model import AppModel
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
-from .plugin_widget import PluginControlWidget
+from .plugin_widget import PluginControlWidget, PluginSelection
 
 
 class MainWindow(QMainWindow):
@@ -114,6 +114,8 @@ class LeftAreaContent(QWidget):
         super().__init__(parent)
 
         self.setLayout(QVBoxLayout(self))
+
+        self.layout().addWidget(PluginSelection(app_model, self))
 
         plugin_control_widget = PluginControlWidget(
             app_model,
