@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 
 from PySide6.QtGui import QTransform
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
 
@@ -29,6 +29,7 @@ from acconeer.exptool.app.new import (
     PluginFamily,
     Task,
 )
+from acconeer.exptool.app.new.ui.plugin import SessionConfigEditor
 
 from ._processor import Processor, ProcessorConfig, ProcessorResult
 
@@ -99,6 +100,8 @@ class BackendPlugin(ProcessorBackendPluginBase):
         if session_config.extended:
             raise ValueError("Extended configs are not supported.")
 
+        log.debug(f"SessionConfig has the update rate: {session_config.update_rate}")
+
         self.metadata = self.client.setup_session(session_config)
         assert isinstance(self.metadata, a121.Metadata)
 
@@ -142,26 +145,29 @@ class ViewPlugin(ProcessorViewPluginBase):
     def __init__(self, view_widget: QWidget, app_model: AppModel) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
         self.view_widget = view_widget
+        self.layout = QVBoxLayout(self.view_widget)
 
-    def setup(self) -> None:
-        self.layout = QHBoxLayout()
-        start_button = QPushButton("Start")
-        stop_button = QPushButton("Stop")
-        start_button.clicked.connect(self._send_start_requests)
-        stop_button.clicked.connect(self._send_stop_requests)
+        self.start_button = QPushButton("Start", self.view_widget)
+        self.stop_button = QPushButton("Stop", self.view_widget)
+        self.start_button.clicked.connect(self._send_start_requests)
+        self.stop_button.clicked.connect(self._send_stop_requests)
 
-        self.layout.addWidget(start_button)
-        self.layout.addWidget(stop_button)
+        button_layout = QHBoxLayout(self.view_widget)
+        button_layout.addWidget(self.start_button)
+        button_layout.addWidget(self.stop_button)
+
+        self.layout.addLayout(button_layout)
+        self.session_config_editor = SessionConfigEditor(self.view_widget)
+        self.layout.addWidget(self.session_config_editor)
         self.view_widget.setLayout(self.layout)
 
     def _send_start_requests(self) -> None:
-        # FIXME: don't hard-code these
         self.send_backend_task(
             (
                 "start_session",
                 {
-                    "session_config": a121.SessionConfig(),
-                    "processor_config": ProcessorConfig(),
+                    "session_config": self.session_config_editor.session_config,
+                    "processor_config": ProcessorConfig(),  # TODO: Dont hard-code
                 },
             )
         )
