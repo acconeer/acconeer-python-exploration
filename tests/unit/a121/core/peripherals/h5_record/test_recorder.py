@@ -1,8 +1,7 @@
 import h5py
+import importlib_metadata
 
 from acconeer.exptool import a121
-
-import importlib_metadata
 
 
 def assert_record_equals(record_a, record_b):

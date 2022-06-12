@@ -7,6 +7,7 @@ from typing import Any, Optional, TypeVar
 from uuid import uuid4
 
 import h5py
+import importlib_metadata
 import numpy as np
 
 from acconeer.exptool.a121._core.entities import (
@@ -18,8 +19,6 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
 )
 from acconeer.exptool.a121._core.mediators import Recorder
-
-import importlib_metadata
 
 from .utils import PathOrH5File, h5_file_factory
 
