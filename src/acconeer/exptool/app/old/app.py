@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.resources
 import json
 import logging
 import os
@@ -38,6 +39,7 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool.a111 import _conf_to_rss_sdk
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo
+from acconeer.exptool.app import resources
 
 import platformdirs
 
@@ -74,8 +76,6 @@ log = logging.getLogger(__name__)
 
 
 class GUI(QMainWindow):
-    ACC_IMG_FILENAME = os.path.join(HERE, "elements/acc.png")
-
     sig_scan = Signal(str, str, object)
     sig_sensor_config_pidget_event = Signal(object)
     sig_processing_config_pidget_event = Signal(object)
@@ -142,7 +142,8 @@ class GUI(QMainWindow):
                     calibration_config = mi.calibration_config_class()
                     self.module_label_to_calibration_config_map[mi.label] = calibration_config
 
-        self.setWindowIcon(QIcon(self.ACC_IMG_FILENAME))
+        with importlib.resources.path(resources, "icon.png") as path:
+            self.setWindowIcon(QIcon(str(path)))
 
         self.main_widget = QtWidgets.QSplitter(self.centralWidget())
         self.main_widget.setStyleSheet("QSplitter::handle{background: lightgrey}")
@@ -277,7 +278,9 @@ class GUI(QMainWindow):
 
     def init_graphs(self):
         if self.current_module_info is None:
-            canvas = Label(self.ACC_IMG_FILENAME)
+            with importlib.resources.path(resources, "icon.png") as path:
+                canvas = Label(str(path))
+
             self.refresh_pidgets()
             return canvas
 
