@@ -39,7 +39,18 @@ class Backend:
         log.debug("Backend stopping ...")
         self._stop_event.set()
         self._send(("stop", {}))
-        self._process.join()
+
+        self._process.join(timeout=3)
+
+        if self._process.exitcode is None:
+            log.warning("Backend process join timed out, killing...")
+
+            self._process.kill()
+            self._process.join(timeout=1)
+
+        if self._process.exitcode is None:
+            raise RuntimeError
+
         self._process.close()
 
     def put_task(self, task: Task) -> None:
