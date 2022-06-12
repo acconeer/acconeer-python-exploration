@@ -153,3 +153,11 @@ class ClientConnectionWidget(AppModelAwareWidget):
 
         self.interface_dd.setCurrentIndex(interface_index)
         self.stacked.setCurrentIndex(interface_index)
+
+
+class GenerationSelection(QComboBox):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.addItem("A121")
+        self.setEnabled(False)

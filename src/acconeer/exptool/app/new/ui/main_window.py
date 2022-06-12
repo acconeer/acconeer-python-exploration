@@ -16,7 +16,7 @@ import pyqtgraph as pg
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
-from .connection_widget import ClientConnectionWidget
+from .connection_widget import ClientConnectionWidget, GenerationSelection
 from .plugin_widget import PluginControlWidget
 
 
@@ -56,6 +56,7 @@ class TopBar(QFrame):
 
         self.setLayout(QHBoxLayout(self))
 
+        self.layout().addWidget(GenerationSelection(app_model, self))
         self.layout().addWidget(ClientConnectionWidget(app_model, self))
         self.layout().addStretch(1)
 
