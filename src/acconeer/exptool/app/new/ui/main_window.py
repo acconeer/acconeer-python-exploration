@@ -25,8 +25,13 @@ class MainWindowCentralWidget(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
 
-        self.layout().addWidget(TopBar(app_model, self))
-        self.layout().addWidget(WorkingArea(app_model, self))
+        top_bar = TopBar(app_model, self)
+        self.layout().addWidget(top_bar)
+        self.layout().setStretchFactor(top_bar, 0)
+
+        working_area = WorkingArea(app_model, self)
+        self.layout().addWidget(working_area)
+        self.layout().setStretchFactor(working_area, 1)
 
 
 class TopBar(QWidget):
@@ -36,7 +41,7 @@ class TopBar(QWidget):
         self.setLayout(QHBoxLayout(self))
 
         self.layout().addWidget(ClientConnectionWidget(app_model, self))
-        self.layout().addStretch()
+        self.layout().addStretch(1)
 
 
 class WorkingArea(QWidget):
@@ -75,7 +80,7 @@ class LeftBar(QWidget):
         )
         self.layout().addWidget(plugin_control_widget)
 
-        self.layout().addStretch()
+        self.layout().addStretch(1)
 
 
 class RightBar(QWidget):
@@ -90,7 +95,7 @@ class RightBar(QWidget):
         self.layout().addWidget(placeholder_label)
         placeholder_label.setText("Right bar placeholder")
 
-        self.layout().addStretch()
+        self.layout().addStretch(1)
 
 
 class StatusBar(QStatusBar):

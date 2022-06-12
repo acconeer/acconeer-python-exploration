@@ -21,6 +21,8 @@ class _ConnectAndDisconnectButton(QPushButton):
 
         self.app_model = app_model
 
+        self.setFixedWidth(100)
+
         app_model.sig_notify.connect(self._on_app_model_update)
 
         self.clicked.connect(self._on_click)
@@ -52,6 +54,7 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         self.app_model = app_model
 
         self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
 
         self.ip_line_edit = QLineEdit(self)
         self.ip_line_edit.setPlaceholderText("<IP address>")
@@ -74,6 +77,7 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         self.app_model = app_model
 
         self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
 
         self.port_combo_box = QComboBox(self)
         self.port_combo_box.currentTextChanged.connect(self._on_combo_box_change)
@@ -110,6 +114,7 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.app_model = app_model
 
         self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
 
         self.interface_dd = QComboBox(self)
         self.layout().addWidget(self.interface_dd)
@@ -120,12 +125,13 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
 
         self.stacked = QStackedWidget(self)
+        self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
         self.stacked.addWidget(_SocketConnectionWidget(app_model, self.stacked))
         self.stacked.addWidget(_SerialConnectionWidget(app_model, self.stacked))
         self.layout().addWidget(self.stacked)
 
         self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))
-        self.layout().addStretch()
+        self.layout().addStretch(1)
 
     def _on_interface_dd_change(self) -> None:
         self.app_model.set_connection_interface(self.interface_dd.currentData())
