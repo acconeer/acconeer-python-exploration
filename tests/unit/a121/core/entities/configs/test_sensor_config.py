@@ -312,7 +312,7 @@ def test_invalid_idle_states_raises_error_upon_validate():
     config.inter_frame_idle_state = a121.IdleState.READY
     config.inter_sweep_idle_state = a121.IdleState.DEEP_SLEEP
 
-    with pytest.raises(ValueError):
+    with pytest.raises(a121.ValidationError):
         config.validate()
 
 
@@ -322,7 +322,7 @@ def test_invalid_continuous_sweep_mode_constraints_raises_error_upon_validate():
     config.frame_rate = None
     config.sweep_rate = None  # <- should be > 0
 
-    with pytest.raises(ValueError):
+    with pytest.raises(a121.ValidationError):
         config.validate()
 
 
@@ -332,7 +332,7 @@ def test_too_high_frame_rate_compared_to_sweep_rate_and_spf_raise_error_upon_val
     config.sweep_rate = 1
     config.sweeps_per_frame = 1
 
-    with pytest.raises(ValueError):
+    with pytest.raises(a121.ValidationError):
         config.validate()
 
 
@@ -356,5 +356,5 @@ def test_config_that_require_too_much_buffer_space_raises_error_upon_validate(
     config.num_points = num_points
     config.sweeps_per_frame = sweeps_per_frame
 
-    with pytest.raises(ValueError):
+    with pytest.raises(a121.ValidationError):
         config.validate()

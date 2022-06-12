@@ -2,6 +2,7 @@ from .entities import (
     INT_16_COMPLEX,
     PRF,
     ClientInfo,
+    Criticality,
     IdleState,
     Metadata,
     PersistentRecord,
@@ -14,6 +15,9 @@ from .entities import (
     SessionConfig,
     StackedResults,
     SubsweepConfig,
+    ValidationError,
+    ValidationResult,
+    ValidationWarning,
 )
 from .mediators import ClientError, Recorder
 from .peripherals import (

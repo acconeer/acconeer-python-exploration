@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import Any, Optional, Union
 
 from acconeer.exptool.a121._core import utils
 
 from .sensor_config import SensorConfig
+from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
 class SessionConfig:
@@ -132,25 +134,38 @@ class SessionConfig:
         if self.extended:
             raise RuntimeError("This operation requires SessionConfig not to be extended.")
 
-    def validate(self) -> None:
-        """Performs self-validation and validation of its sensor configs
-
-        :raises ValueError: If anything is invalid.
-        """
-
+    def _collect_validation_results(self) -> list[ValidationResult]:
+        validation_results = []
         for group in self._groups:
             for _, sensor_config in group.items():
-                sensor_config.validate()
+                validation_results.extend(sensor_config._collect_validation_results())
 
         if self.update_rate is not None:
             for group_id, sensor_id, sensor_config in utils.iterate_extended_structure(
                 self._groups
             ):
+                error_msg = (
+                    f"Sensor config in group {group_id} with sensor id {sensor_id} "
+                    + "has a set `frame_rate`. This is not allowed."
+                )
                 if sensor_config.frame_rate is not None:
-                    raise ValueError(
-                        f"Sensor config in group {group_id} with sensor id {sensor_id} "
-                        + " has a set `frame_rate`. This is not allowed."
+                    validation_results.append(ValidationError(self, "update_rate", error_msg))
+                    validation_results.append(
+                        ValidationError(sensor_config, "frame_rate", error_msg)
                     )
+
+        return validation_results
+
+    def validate(self) -> None:
+        """Performs self-validation and validation of its sensor configs
+
+        :raises ValidationError: If anything is invalid.
+        """
+        for validation_result in self._collect_validation_results():
+            try:
+                raise validation_result
+            except ValidationWarning as vw:
+                warnings.warn(vw.message)
 
     @property
     def sensor_id(self) -> int:

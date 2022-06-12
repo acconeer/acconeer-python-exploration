@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import Any
 
 import attrs
@@ -13,6 +14,7 @@ from acconeer.exptool.a121._core.utils import (
 )
 
 from .config_enums import PRF, Profile
+from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
 SPARSE_IQ_PPC = 24
@@ -75,13 +77,28 @@ class SubsweepConfig:
         self.phase_enhancement = phase_enhancement
         self.prf = prf
 
+    def _collect_validation_results(self) -> list[ValidationResult]:
+        if self.enable_loopback and self.profile == Profile.PROFILE_2:
+            return [
+                ValidationError(
+                    self, "enable_loopback", "Enable loopback is incompatible with Profile 2."
+                ),
+                ValidationError(
+                    self, "profile", "Enable loopback is incompatible with Profile 2."
+                ),
+            ]
+        return []
+
     def validate(self) -> None:
         """Performs self-validation
 
-        :raises ValueError: If anything is invalid.
+        :raises ValidationError: If anything is invalid.
         """
-        if self.enable_loopback and self.profile == Profile.PROFILE_2:
-            raise ValueError("Enable loopback is incompatible with Profile 2.")
+        for validation_result in self._collect_validation_results():
+            try:
+                raise validation_result
+            except ValidationWarning as vw:
+                warnings.warn(vw.message)
 
     @property
     def start_point(self) -> int:

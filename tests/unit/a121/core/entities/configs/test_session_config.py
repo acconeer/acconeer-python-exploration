@@ -173,5 +173,5 @@ def test_update_rate_in_session_config_and_frame_rate_in_any_sensor_config_is_di
     config = a121.SessionConfig(sensor_configs)
     config.update_rate = 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(a121.ValidationError):
         config.validate()
