@@ -1,4 +1,15 @@
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QMainWindow, QStatusBar, QVBoxLayout, QWidget
+from PySide6 import QtCore
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QScrollArea,
+    QSplitter,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
 
 import pyqtgraph as pg
 
@@ -46,7 +57,7 @@ class TopBar(QWidget):
         self.layout().addStretch(1)
 
 
-class WorkingArea(QWidget):
+class WorkingArea(QSplitter):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
@@ -56,12 +67,19 @@ class WorkingArea(QWidget):
 
         graphics_layout_widget = pg.GraphicsLayoutWidget()
 
-        self.layout().addWidget(LeftBar(app_model, self, graphics_layout_widget))
+        left_area = LeftArea(app_model, self, graphics_layout_widget)
+        self.layout().addWidget(left_area)
+        self.layout().setStretchFactor(left_area, 0)
+
         self.layout().addWidget(graphics_layout_widget)
-        self.layout().addWidget(RightBar(app_model, self))
+        self.layout().setStretchFactor(graphics_layout_widget, 1)
+
+        right_area = RightArea(app_model, self)
+        self.layout().addWidget(right_area)
+        self.layout().setStretchFactor(right_area, 0)
 
 
-class LeftBar(QWidget):
+class LeftArea(QScrollArea):
     def __init__(
         self,
         app_model: AppModel,
@@ -70,9 +88,27 @@ class LeftBar(QWidget):
     ) -> None:
         super().__init__(parent)
 
-        self.setStyleSheet("background-color: #a3c9ad;")  # TODO: remove
+        self.setWidgetResizable(True)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.horizontalScrollBar().setEnabled(False)
 
-        self.setLayout(QHBoxLayout(self))
+        self.setMinimumWidth(250)
+        self.setMaximumWidth(350)
+
+        self.setWidget(LeftAreaContent(app_model, self, graphics_layout_widget))
+
+
+class LeftAreaContent(QWidget):
+    def __init__(
+        self,
+        app_model: AppModel,
+        parent: QWidget,
+        graphics_layout_widget: pg.GraphicsLayoutWidget,  # TODO: remove
+    ) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QVBoxLayout(self))
 
         plugin_control_widget = PluginControlWidget(
             app_model,
@@ -85,13 +121,26 @@ class LeftBar(QWidget):
         self.layout().addStretch(1)
 
 
-class RightBar(QWidget):
+class RightArea(QScrollArea):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setStyleSheet("background-color: #e6a595;")  # TODO: remove
+        self.setWidgetResizable(True)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.horizontalScrollBar().setEnabled(False)
 
-        self.setLayout(QHBoxLayout(self))
+        self.setMinimumWidth(300)
+        self.setMaximumWidth(400)
+
+        self.setWidget(RightAreaContent(app_model, self))
+
+
+class RightAreaContent(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QVBoxLayout(self))
 
         placeholder_label = QLabel(self)
         self.layout().addWidget(placeholder_label)
