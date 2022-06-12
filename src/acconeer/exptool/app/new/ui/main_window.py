@@ -47,9 +47,12 @@ class MainWindowCentralWidget(QWidget):
         self.layout().setStretchFactor(working_area, 1)
 
 
-class TopBar(QWidget):
+class TopBar(QFrame):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
+
+        self.setObjectName("TopBar")
+        self.setStyleSheet("QFrame#TopBar {background: #ebebeb;}")
 
         self.setLayout(QHBoxLayout(self))
 

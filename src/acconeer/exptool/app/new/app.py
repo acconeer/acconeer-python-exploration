@@ -1,6 +1,8 @@
 import logging
 import sys
 
+import qdarktheme
+
 from PySide6 import QtCore
 from PySide6.QtWidgets import QApplication
 
@@ -32,7 +34,7 @@ def main():
 
     app = QApplication(sys.argv)
 
-    app.setStyleSheet("")
+    app.setStyleSheet(qdarktheme.load_stylesheet("light"))
     app.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
     mw = MainWindow(model)
