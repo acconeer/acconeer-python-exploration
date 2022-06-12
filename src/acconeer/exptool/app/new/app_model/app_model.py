@@ -56,6 +56,7 @@ class AppModel(QObject):
     sig_error = Signal(Exception)
 
     plugins: list[Plugin]
+    plugin: Optional[Plugin]
 
     connection_state: ConnectionState
     connection_interface: ConnectionInterface
@@ -70,6 +71,7 @@ class AppModel(QObject):
         self._core_store = CoreStore()
 
         self.plugins = load_default_plugins()
+        self.plugin = None
 
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_interface = ConnectionInterface.SERIAL
@@ -144,4 +146,13 @@ class AppModel(QObject):
 
     def set_serial_connection_port(self, port: Optional[str]) -> None:
         self.serial_connection_port = port
+        self.broadcast()
+
+    def load_plugin(self, plugin: Optional[Plugin]) -> None:
+        if plugin == self.plugin:
+            return
+
+        print("load_plugin:", plugin)  # TODO
+
+        self.plugin = plugin
         self.broadcast()

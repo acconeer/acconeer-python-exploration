@@ -57,6 +57,8 @@ class PluginSelection(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
+        self.app_model = app_model
+
         app_model.sig_notify.connect(self._on_app_model_update)
 
         self.setLayout(QVBoxLayout(self))
@@ -91,10 +93,10 @@ class PluginSelection(QWidget):
 
     def _on_click(self):
         plugin = self.button_group.checkedButton().plugin
-        print(plugin)  # TODO: propagate to app model
+        self.app_model.load_plugin(plugin)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        plugin: Optional[Plugin] = None  # TODO: get actual selected plugin
+        plugin: Optional[Plugin] = app_model.plugin
 
         if plugin is None:
             self.button_group.setExclusive(False)
