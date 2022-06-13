@@ -51,6 +51,7 @@ class ProcessorExtraResult:
 
     abs_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     used_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    distances_m: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -118,6 +119,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         assert self.metadata.base_step_length_m is not None
         self.step_length_m = self.step_length * self.metadata.base_step_length_m
+
+        self.distances_m = (
+            self.start_point + np.arange(self.num_points) * self.step_length
+        ) * self.metadata.base_step_length_m
 
         (self.b, self.a) = self._get_distance_filter_coeffs(self.profile, self.step_length)
 
@@ -243,7 +248,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         (estimated_distances, estimated_amplitudes) = self._interpolate_peaks(
             abs_sweep, found_peaks_idx, self.start_point, self.step_length
         )
-        extra_result = ProcessorExtraResult(abs_sweep=abs_sweep, used_threshold=self.threshold)
+        extra_result = ProcessorExtraResult(
+            abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
+        )
         return ProcessorResult(
             estimated_distances=estimated_distances,
             estimated_amplitudes=estimated_amplitudes,
