@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QButtonGroup,
     QGroupBox,
@@ -110,20 +111,37 @@ class PluginSelection(QWidget):
             button.setChecked(True)
 
 
-class PluginPlotArea(pg.GraphicsLayoutWidget):
+class PluginPlotArea(QWidget):
+    _FPS = 60
+
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
+        self.plot_plugin: Optional[PlotPlugin] = None
+
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+
+        self.graphics_layout_widget = pg.GraphicsLayoutWidget(self)
+        self.layout().addWidget(self.graphics_layout_widget)
+
         app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
 
-        self.plot_plugin: Optional[PlotPlugin] = None
+        self.startTimer(int(1000 / self._FPS))
+
+    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
+        if self.plot_plugin is None:
+            return
+
+        self.plot_plugin.draw()
 
     def _on_app_model_load_plugin(self, plugin: Plugin) -> None:
         if self.plot_plugin is not None:
             pass  # TODO: teardown
 
         print(type(self).__name__, plugin)  # TODO
-        # plot_plugin = plugin.plot_plugin(self.app_model, self)
+        # self.plot_plugin = plugin.plot_plugin(self.app_model, self.graphics_layout_widget)
 
 
 class PluginControlArea(QWidget):

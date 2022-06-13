@@ -157,6 +157,9 @@ class PlotPlugin(ProcessorPlotPluginBase):
     def handle_message(self, message: Message) -> None:
         ...
 
+    def draw(self) -> None:
+        ...
+
     def setup(self) -> None:
         self.ampl_plot = self._create_amplitude_plot(self.parent)
         self.ampl_curve = self._create_amplitude_curve(0, self.distances_m)

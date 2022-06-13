@@ -14,3 +14,7 @@ class PlotPlugin(abc.ABC):
     @abc.abstractmethod
     def handle_message(self, message: Message) -> None:
         pass
+
+    @abc.abstractmethod
+    def draw(self) -> None:
+        pass
