@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 import queue
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
+from ._backend_plugin import BackendPlugin
 from ._message import Message
 from ._model import Model
 from ._types import Task
@@ -64,20 +65,31 @@ class Backend:
         log.debug("Backend cleared its idle task ...")
         self._send(("set_idle_task", None))
 
+    def load_plugin(self, plugin: Type[BackendPlugin]) -> None:
+        self.put_task(("load_plugin", {"plugin": plugin}))
+
+    def unload_plugin(self) -> None:
+        self.put_task(("unload_plugin", {}))
+
     def _send(self, command: Command) -> None:
         self._send_queue.put(command)
 
-    def recv(self, timeout: Optional[float] = None) -> Any:
+    def recv(self, timeout: Optional[float] = None) -> Message:
         return self._recv_queue.get(timeout=timeout)
 
 
-def process_program(recv_queue, send_queue, stop_event):
+def process_program(
+    recv_queue: mp.Queue[Command],
+    send_queue: mp.Queue[Message],
+    stop_event: mp._EventType,
+) -> None:
     try:
         model = Model(task_callback=send_queue.put)
         idle_task = None
 
         while not stop_event.is_set():
             if idle_task is None:
+                log.debug("Backend is waiting patiently for a new command ...")
                 msg = recv_queue.get()
                 log.debug(f"Backend received the command: {msg}")
             else:
@@ -91,13 +103,21 @@ def process_program(recv_queue, send_queue, stop_event):
 
             if cmd == "stop":
                 break
-
-            if cmd == "task":
-                model.execute_task(arg)
+            elif cmd == "task":
+                if not isinstance(arg, tuple):
+                    log.warn(
+                        f"'task' argument is malformed: {arg}. "
+                        + "Should be a tuple[str, dict[str, Any]]."
+                    )
+                    continue
+                model.execute_task(task=arg)
             elif cmd == "set_idle_task":
                 idle_task = arg
             else:
                 raise RuntimeError
+
+            log.debug("Backend successfully processed the command:")
+            log.debug(f"  {msg}")
     finally:
         recv_queue.close()
         send_queue.close()

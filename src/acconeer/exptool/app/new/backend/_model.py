@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional
+from typing import Callable, Optional, Type
 
 from acconeer.exptool import a121
 
@@ -36,6 +36,10 @@ class Model:
             self.connect_client(**task_kwargs)
         elif task_name == "disconnect_client":
             self.disconnect_client(**task_kwargs)
+        elif task_name == "load_plugin":
+            self.load_plugin(**task_kwargs)
+        elif task_name == "unload_plugin":
+            self.unload_plugin()
         elif self.backend_plugin is not None:
             self.backend_plugin.execute_task(task=task)
         else:
@@ -84,6 +88,19 @@ class Model:
         self.client.disconnect()
         self.task_callback(OkMessage("disconnect_client"))
 
-    def _load_plugin(self, *, plugin: BackendPlugin) -> None:
-        self.backend_plugin = plugin
+    def load_plugin(self, *, plugin: Type[BackendPlugin]) -> None:
+        self.backend_plugin = plugin()
         self.backend_plugin.setup(callback=self.task_callback)
+        log.info(f"{plugin.__name__} was loaded.")
+
+        if self.client is not None and self.client.connected:
+            self.backend_plugin.attach_client(client=self.client)
+            log.debug(f"{plugin.__class__.__name__} was attached a Client")
+
+    def unload_plugin(self) -> None:
+        if self.backend_plugin is None:
+            return
+
+        self.backend_plugin.teardown()
+        self.backend_plugin = None
+        log.debug("Current BackendPlugin was torn down")
