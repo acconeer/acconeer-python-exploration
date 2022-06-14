@@ -225,9 +225,8 @@ class AppModel(QObject):
 
         if plugin is None:
             self._backend.unload_plugin()
-            return
-
-        self._backend.load_plugin(plugin.backend_plugin)
+        else:
+            self._backend.load_plugin(plugin.backend_plugin)
 
         self.sig_load_plugin.emit(plugin)
         self.plugin = plugin
