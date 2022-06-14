@@ -55,6 +55,7 @@ class AppModel(QObject):
     sig_notify = Signal(object)
     sig_error = Signal(Exception)
     sig_load_plugin = Signal(object)
+    sig_message_plot_plugin = Signal(object)
 
     plugins: list[Plugin]
     plugin: Optional[Plugin]
@@ -97,6 +98,14 @@ class AppModel(QObject):
         log.debug(f"{self.__class__.__name__} got from server: {message}")
         if message.status == "error":
             self.sig_error.emit(message.exception)
+
+        if message.recipient is not None:
+            if message.recipient == "plot_plugin":
+                self.sig_message_plot_plugin.emit(message)
+            else:
+                raise RuntimeError
+
+            return
 
         if message.command_name == "connect_client":
             if message.status == "ok":

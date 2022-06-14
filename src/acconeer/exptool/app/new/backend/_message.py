@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 import attrs
 from typing_extensions import Literal
@@ -13,6 +13,7 @@ StatusLiteral = Union[Literal["ok"], Literal["error"]]
 class Message:
     status: StatusLiteral
     command_name: str
+    recipient: Optional[Literal["plot_plugin"]] = attrs.field(default=None, kw_only=True)
     exception: Exception = attrs.field(default=None, init=False)
     data: Any = attrs.field(default=None, init=False)
 
