@@ -10,7 +10,6 @@ from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 from acconeer.exptool import a121
 from acconeer.exptool.app.new.backend import Backend, Message
 from acconeer.exptool.app.new.plugin import Plugin
-from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
 from .core_store import CoreStore
 
@@ -65,14 +64,14 @@ class AppModel(QObject):
     socket_connection_ip: str
     serial_connection_port: Optional[str]
 
-    def __init__(self, backend: Backend) -> None:
+    def __init__(self, backend: Backend, plugins: list[Plugin]) -> None:
         super().__init__()
         self._backend = backend
         self._listener = _BackendListeningThread(self._backend, self)
         self._listener.sig_received_from_backend.connect(self._handle_backend_message)
         self._core_store = CoreStore()
 
-        self.plugins = load_default_plugins()
+        self.plugins = plugins
         self.plugin = None
 
         self.connection_state = ConnectionState.DISCONNECTED

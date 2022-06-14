@@ -13,6 +13,7 @@ from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 
 from .app_model import AppModel
 from .backend import Backend
+from .plugin_loader import load_default_plugins
 from .ui import MainWindow
 
 
@@ -22,7 +23,7 @@ def main():
     backend = Backend()
     backend.start()
 
-    model = AppModel(backend)
+    model = AppModel(backend, load_default_plugins())
     model.start()
 
     pg.setConfigOption("background", "w")
