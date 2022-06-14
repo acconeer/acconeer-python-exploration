@@ -11,7 +11,7 @@ def flash_image(image_path, flash_port):
         if flash_port.pid in PRODUCT_FLASH_MAP.keys():
             PRODUCT_FLASH_MAP[flash_port.pid].flash(flash_port.device, image_path)
         else:
-            print(f"No flash support for Acconeer device {flash_port.product}")
+            raise NotImplementedError(f"No flash support for Acconeer device {flash_port.product}")
 
 
 def find_flash_port(port=None):

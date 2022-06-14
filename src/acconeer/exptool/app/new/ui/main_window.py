@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool.app.new.app_model import AppModel
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
+from .flash_widget import FlashButton
 from .misc import ExceptionWidget
 from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelection
 from .recording_widget import RecordingWidget
@@ -65,6 +66,7 @@ class TopBar(QFrame):
 
         self.layout().addWidget(GenerationSelection(app_model, self))
         self.layout().addWidget(ClientConnectionWidget(app_model, self))
+        self.layout().addWidget(FlashButton(app_model, self))
         self.layout().addStretch(1)
         self.layout().addWidget(RecordingWidget(app_model, self))
 

@@ -93,5 +93,6 @@ module = [
     "qdarktheme.*",
     "qtawesome.*",
     "scipy.*",
+    "serial.*",
 ]
 ignore_missing_imports = true
