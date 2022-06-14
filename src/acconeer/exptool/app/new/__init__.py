@@ -1,4 +1,3 @@
-from . import utils
 from .app import main
 from .app_model import (
     AppModel,

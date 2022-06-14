@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool.app.new.app_model import AppModel
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
+from .misc import ExceptionWidget
 from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelection
 
 
@@ -28,6 +29,11 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(MainWindowCentralWidget(app_model, self))
         self.setStatusBar(StatusBar(app_model, self))
         self.setWindowTitle("Acconeer Exploration Tool (Beta)")
+
+        app_model.sig_error.connect(self.on_app_model_error)
+
+    def on_app_model_error(self, exception: Exception) -> None:
+        ExceptionWidget(self, exc=exception).exec()
 
 
 class MainWindowCentralWidget(QWidget):

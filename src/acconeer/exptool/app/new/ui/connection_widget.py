@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
 )
 
 import acconeer.exptool as et
-from acconeer.exptool.app.new import utils
 from acconeer.exptool.app.new.app_model import AppModel, ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
@@ -68,7 +67,7 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         pass
 
     def on_app_model_error(self, exception: Exception) -> None:
-        utils.show_error_pop_up("Client Error", str(exception))
+        pass
 
 
 class _SerialConnectionWidget(AppModelAwareWidget):
@@ -104,7 +103,7 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         pass
 
     def on_app_model_error(self, exception: Exception) -> None:
-        utils.show_error_pop_up("Client Error", str(exception))
+        pass
 
 
 class ClientConnectionWidget(AppModelAwareWidget):
