@@ -167,7 +167,7 @@ class ExplorationProtocol(CommunicationProtocol):
         }
 
     @classmethod
-    def setup_command(cls, session_config: SessionConfig) -> bytes:
+    def _setup_command_preprocessing(cls, session_config: SessionConfig) -> dict:
         result = session_config.to_dict()
 
         # Exploration server is not interested in this.
@@ -185,6 +185,11 @@ class ExplorationProtocol(CommunicationProtocol):
         )
 
         result["cmd"] = "setup"
+        return result
+
+    @classmethod
+    def setup_command(cls, session_config: SessionConfig) -> bytes:
+        result = cls._setup_command_preprocessing(session_config)
         result["groups"] = cls._translate_groups_representation(result["groups"])
         return (
             json.dumps(
