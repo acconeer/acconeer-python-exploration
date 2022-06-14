@@ -133,6 +133,8 @@ class PluginPlotArea(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
+        self.app_model = app_model
+
         self.plot_plugin: Optional[PlotPlugin] = None
 
         self.setLayout(QVBoxLayout(self))
@@ -152,12 +154,16 @@ class PluginPlotArea(QWidget):
 
         self.plot_plugin.draw()
 
-    def _on_app_model_load_plugin(self, plugin: Plugin) -> None:
+    def _on_app_model_load_plugin(self, plugin: Optional[Plugin]) -> None:
         if self.plot_plugin is not None:
-            pass  # TODO: teardown
+            # TODO: teardown
+            self.plot_plugin = None
 
-        print(type(self).__name__, plugin)  # TODO
-        # self.plot_plugin = plugin.plot_plugin(self.app_model, self.graphics_layout_widget)
+        if plugin is not None:
+            self.plot_plugin = plugin.plot_plugin(
+                app_model=self.app_model,
+                plot_layout=self.graphics_layout_widget,
+            )
 
 
 class PluginControlArea(QWidget):
@@ -176,9 +182,13 @@ class PluginControlArea(QWidget):
         self.layout().addWidget(placeholder_label)
         placeholder_label.setText("Plugin control placeholder")
 
-    def _on_app_model_load_plugin(self, plugin: Plugin) -> None:
+    def _on_app_model_load_plugin(self, plugin: Optional[Plugin]) -> None:
         if self.view_plugin is not None:
-            pass  # TODO: teardown
+            # TODO: teardown
+            self.view_plugin = None
 
-        print(type(self).__name__, plugin)  # TODO
-        # view_plugin = plugin.view_plugin(self.app_model, self)
+        if plugin is not None:
+            self.view_plugin = plugin.view_plugin(
+                app_model=self.app_model,
+                view_widget=self,
+            )
