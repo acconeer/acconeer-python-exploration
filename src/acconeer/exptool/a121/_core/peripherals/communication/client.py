@@ -8,7 +8,7 @@ import acconeer.exptool as et
 from acconeer.exptool.a121._core.entities import ClientInfo
 from acconeer.exptool.a121._core.mediators import AgnosticClient, BufferedLink, ClientError
 
-from .exploration_protocol import ExplorationProtocol
+from .exploration_protocol import ExplorationProtocol, get_exploration_protocol
 from .links import AdaptedSerialLink, AdaptedSocketLink, NullLink, NullLinkError
 
 
@@ -92,3 +92,12 @@ class Client(AgnosticClient):
             )
             self._link = link_factory(self.client_info)
             super().connect()
+
+        if issubclass(self._protocol, ExplorationProtocol):
+            try:
+                new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+            except Exception:
+                self.disconnect()
+                raise
+            else:
+                self._protocol = new_protocol
