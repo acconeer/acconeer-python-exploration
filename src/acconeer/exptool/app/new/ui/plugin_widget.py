@@ -5,6 +5,7 @@ from typing import Optional
 from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -127,7 +128,7 @@ class PluginSelection(QWidget):
         self.unload_button.setEnabled(plugin is not None)
 
 
-class PluginPlotArea(QWidget):
+class PluginPlotArea(QFrame):
     _FPS = 60
 
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
@@ -135,14 +136,16 @@ class PluginPlotArea(QWidget):
 
         self.app_model = app_model
 
+        self.child_widget: Optional[QWidget] = None
         self.plot_plugin: Optional[PlotPlugin] = None
+
+        self.setObjectName("PluginPlotArea")
+        self.setStyleSheet("QFrame#PluginPlotArea {background: #fff; border: 0;}")
+        self.setFrameStyle(0)
 
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
-
-        self.graphics_layout_widget = pg.GraphicsLayoutWidget(self)
-        self.layout().addWidget(self.graphics_layout_widget)
 
         app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
 
@@ -159,11 +162,31 @@ class PluginPlotArea(QWidget):
             # TODO: teardown
             self.plot_plugin = None
 
+        if self.child_widget is not None:
+            self.layout().removeWidget(self.child_widget)
+            self.child_widget.deleteLater()
+            self.child_widget = None
+
         if plugin is not None:
+            self.child_widget = pg.GraphicsLayoutWidget(self)
             self.plot_plugin = plugin.plot_plugin(
                 app_model=self.app_model,
-                plot_layout=self.graphics_layout_widget,
+                plot_layout=self.child_widget.ci,
             )
+        else:
+            self.child_widget = PlotPlaceholder(self.app_model, self)
+
+        self.layout().addWidget(self.child_widget)
+
+
+class PlotPlaceholder(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QVBoxLayout(self))
+        label = QLabel("No module selected", self)
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        self.layout().addWidget(label)
 
 
 class PluginControlArea(QWidget):
