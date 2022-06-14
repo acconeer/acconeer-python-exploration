@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Type
 
 import attrs
 
 import acconeer.exptool as et
 from acconeer.exptool.a121._core.entities import ClientInfo
-from acconeer.exptool.a121._core.mediators import AgnosticClient, BufferedLink, ClientError
+from acconeer.exptool.a121._core.mediators import (
+    AgnosticClient,
+    BufferedLink,
+    ClientError,
+    CommunicationProtocol,
+)
 
 from .exploration_protocol import ExplorationProtocol, get_exploration_protocol
 from .links import AdaptedSerialLink, AdaptedSocketLink, NullLink, NullLinkError
@@ -53,6 +58,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
 
 
 class Client(AgnosticClient):
+    _protocol_overridden: bool
     _client_info: ClientInfo
 
     def __init__(
@@ -60,12 +66,21 @@ class Client(AgnosticClient):
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
         override_baudrate: Optional[int] = None,
+        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ):
         if ip_address is not None and serial_port is not None:
             raise ValueError(
                 f"Both 'ip_address' ({ip_address}) and 'serial_port' ({serial_port}) "
                 + "are not allowed. Chose one."
             )
+
+        protocol: Type[CommunicationProtocol] = ExplorationProtocol
+        self._protocol_overridden = False
+
+        if _override_protocol is not None:
+            protocol = _override_protocol
+            self._protocol_overridden = True
+
         self._client_info = ClientInfo(
             ip_address=ip_address,
             override_baudrate=override_baudrate,
@@ -74,7 +89,7 @@ class Client(AgnosticClient):
 
         super().__init__(
             link=link_factory(self._client_info),
-            protocol=ExplorationProtocol,
+            protocol=protocol,
         )
 
     @property
@@ -91,11 +106,12 @@ class Client(AgnosticClient):
             self._link = link_factory(self.client_info)
             super().connect()
 
-        if issubclass(self._protocol, ExplorationProtocol):
-            try:
-                new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
-            except Exception:
-                self.disconnect()
-                raise
-            else:
-                self._protocol = new_protocol
+        if not self._protocol_overridden:
+            if issubclass(self._protocol, ExplorationProtocol):
+                try:
+                    new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+                except Exception:
+                    self.disconnect()
+                    raise
+                else:
+                    self._protocol = new_protocol
