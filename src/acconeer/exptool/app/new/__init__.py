@@ -1,2 +1,2 @@
-from . import interactions, utils
+from . import utils
 from .app import main
