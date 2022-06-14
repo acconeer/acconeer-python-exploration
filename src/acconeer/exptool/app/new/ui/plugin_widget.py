@@ -80,7 +80,7 @@ class PluginSelection(QWidget):
             group_boxes[family] = group_box
 
         self.button_group = PluginSelectionButtonGroup(self)
-        self.button_group.buttonClicked.connect(self._on_click)
+        self.button_group.buttonClicked.connect(self._on_load_click)
 
         for plugin in app_model.plugins:
             group_box = group_boxes[plugin.family]
@@ -96,9 +96,18 @@ class PluginSelection(QWidget):
                 label.setWordWrap(True)
                 group_box.layout().addWidget(label)
 
-    def _on_click(self):
+        self.unload_button = QPushButton("Deselect", self)
+        self.unload_button.setStyleSheet("text-align: left;")
+        self.unload_button.setFlat(True)
+        self.unload_button.clicked.connect(self._on_unload_click)
+        self.layout().addWidget(self.unload_button)
+
+    def _on_load_click(self):
         plugin = self.button_group.checkedButton().plugin
         self.app_model.load_plugin(plugin)
+
+    def _on_unload_click(self):
+        self.app_model.load_plugin(None)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         plugin: Optional[Plugin] = app_model.plugin
@@ -114,6 +123,8 @@ class PluginSelection(QWidget):
             buttons = self.button_group.buttons()
             button = next(b for b in buttons if b.plugin == plugin)
             button.setChecked(True)
+
+        self.unload_button.setEnabled(plugin is not None)
 
 
 class PluginPlotArea(QWidget):
