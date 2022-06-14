@@ -12,7 +12,7 @@ et.utils.config_logging(args)
 client = a121.Client(**a121.get_client_args(args))
 client.connect()
 
-detector_config = DetectorConfig()
+detector_config = DetectorConfig(start_m=0.2, end_m=1)
 
 detector = Detector(
     client=client,
