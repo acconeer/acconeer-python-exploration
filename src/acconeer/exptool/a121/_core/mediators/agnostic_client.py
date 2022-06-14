@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Type, Union
 
 import attrs
 
@@ -31,7 +31,7 @@ class ClientError(Exception):
 
 class AgnosticClient:
     _link: BufferedLink
-    _protocol: CommunicationProtocol
+    _protocol: Type[CommunicationProtocol]
     _server_info: Optional[ServerInfo]
     _session_config: Optional[SessionConfig]
     _metadata: Optional[list[dict[int, Metadata]]]
@@ -39,7 +39,7 @@ class AgnosticClient:
     _recorder: Optional[Recorder]
     _tick_unwrapper: TickUnwrapper
 
-    def __init__(self, link: BufferedLink, protocol: CommunicationProtocol) -> None:
+    def __init__(self, link: BufferedLink, protocol: Type[CommunicationProtocol]) -> None:
         self._link = link
         self._protocol = protocol
         self._server_info = None

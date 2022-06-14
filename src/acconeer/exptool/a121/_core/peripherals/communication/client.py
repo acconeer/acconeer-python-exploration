@@ -76,7 +76,7 @@ class Client(AgnosticClient):
         # [https://github.com/python/mypy/issues/4536]
         super().__init__(
             link=link_factory(self._client_info),
-            protocol=ExplorationProtocol,  # type: ignore[arg-type]
+            protocol=ExplorationProtocol,
         )
 
     @property
