@@ -7,13 +7,14 @@ from typing_extensions import Literal
 
 
 StatusLiteral = Union[Literal["ok"], Literal["error"]]
+RecipientLiteral = Union[Literal["plot_plugin"], Literal["view_plugin"]]
 
 
 @attrs.define
 class Message:
     status: StatusLiteral
     command_name: str
-    recipient: Optional[Literal["plot_plugin"]] = attrs.field(default=None, kw_only=True)
+    recipient: Optional[RecipientLiteral] = attrs.field(default=None, kw_only=True)
     exception: Exception = attrs.field(default=None, init=False)
     data: Any = attrs.field(default=None, init=False)
 

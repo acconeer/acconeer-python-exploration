@@ -115,6 +115,7 @@ class AppModel(QObject):
     sig_error = Signal(Exception)
     sig_load_plugin = Signal(object)
     sig_message_plot_plugin = Signal(object)
+    sig_message_view_plugin = Signal(object)
 
     plugins: list[Plugin]
     plugin: Optional[Plugin]
@@ -170,8 +171,12 @@ class AppModel(QObject):
         if message.recipient is not None:
             if message.recipient == "plot_plugin":
                 self.sig_message_plot_plugin.emit(message)
+            elif message.recipient == "view_plugin":
+                self.sig_message_view_plugin.emit(message)
             else:
-                raise RuntimeError
+                raise RuntimeError(
+                    f"AppModel cannot handle messages with recipient {message.recipient!r}"
+                )
 
             return
 
