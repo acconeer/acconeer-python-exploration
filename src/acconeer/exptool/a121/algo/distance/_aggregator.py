@@ -12,7 +12,7 @@ from acconeer.exptool.a121.algo.distance._processors import (
     Processor,
     ProcessorConfig,
     ProcessorContext,
-    ProcessorExtraResult,
+    ProcessorResult,
 )
 
 
@@ -38,7 +38,7 @@ class AggregatorConfig:
 
 @attrs.frozen(kw_only=True)
 class AggregatorResult:
-    processor_extra_results: list[ProcessorExtraResult] = attrs.field()
+    processor_results: list[ProcessorResult] = attrs.field()
     estimated_distances: npt.NDArray[np.float_] = attrs.field()
 
 
@@ -78,12 +78,12 @@ class Aggregator:
             self.processors.append(processor)
 
     def process(self, extended_result: list[dict[int, a121.Result]]) -> AggregatorResult:
-        extra_result = []
+        processors_result = []
         ampls: npt.NDArray[np.float_] = np.array([])
         dists: npt.NDArray[np.float_] = np.array([])
         for spec, processor in zip(self.specs, self.processors):
             processor_result = processor.process(extended_result[spec.group_index][spec.sensor_id])
-            extra_result.append(processor_result.extra_result)
+            processors_result.append(processor_result)
             ampls = np.concatenate((ampls, np.array(processor_result.estimated_amplitudes)))
             dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))
 
@@ -92,7 +92,7 @@ class Aggregator:
             dists_merged, ampls_merged, self.aggregator_config.peak_sorting_method
         )
         return AggregatorResult(
-            processor_extra_results=extra_result, estimated_distances=dists_sorted
+            processor_results=processors_result, estimated_distances=dists_sorted
         )
 
     @staticmethod

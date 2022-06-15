@@ -10,7 +10,7 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 
 from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
-from ._processors import ProcessorConfig, ProcessorExtraResult, ProcessorMode, ThresholdMethod
+from ._processors import ProcessorConfig, ProcessorMode, ProcessorResult, ThresholdMethod
 
 
 class MeasurementType(enum.Enum):
@@ -34,12 +34,13 @@ class DetectorConfig:
     end_m: float = attrs.field()
     max_step_length: Optional[int] = attrs.field(default=None)
     max_profile: Optional[a121.Profile] = attrs.field(default=None)
+    num_frames_in_recorded_threshold: int = attrs.field(default=10)
 
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
     distances: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    extra_results: list[ProcessorExtraResult] = attrs.field()
+    processor_results: list[ProcessorResult] = attrs.field()
 
 
 class Detector:
@@ -64,7 +65,33 @@ class Detector:
         ...
 
     def execute_background_measurement(self) -> None:
-        ...
+        if self.started:
+            raise RuntimeError("Already started")
+
+        specs = self._update_processor_mode(
+            self.processor_specs, ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
+        )
+
+        extended_metadata = self.client.setup_session(self.session_config)
+        assert isinstance(extended_metadata, list)
+
+        aggregator = Aggregator(
+            session_config=self.session_config,
+            extended_metadata=extended_metadata,
+            aggregator_config=AggregatorConfig(),
+            specs=specs,
+        )
+
+        self.client.start_session()
+        for _ in range(self.detector_config.num_frames_in_recorded_threshold):
+            extended_result = self.client.get_next()
+            assert isinstance(extended_result, list)
+            aggregator_result = aggregator.process(extended_result=extended_result)
+        self.client.stop_session()
+        self.recorded_thresholds = [
+            processor_result.recorded_threshold
+            for processor_result in aggregator_result.processor_results
+        ]
 
     def start(self) -> None:
         if self.started:
@@ -94,7 +121,7 @@ class Detector:
 
         return DetectorResult(
             distances=aggregator_result.estimated_distances,
-            extra_results=aggregator_result.processor_extra_results,
+            processor_results=aggregator_result.processor_results,
         )
 
     def update_config(self, config: DetectorConfig) -> None:

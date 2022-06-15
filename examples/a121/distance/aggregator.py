@@ -153,15 +153,15 @@ class PGUpdater:
 
     def update(self, result: AggregatorResult):
 
-        for idx, processor_result in enumerate(result.processor_extra_results):
-            threshold = processor_result.used_threshold
+        for idx, processor_result in enumerate(result.processor_results):
+            threshold = processor_result.extra_result.used_threshold
             valid_threshold_idx = np.where(~np.isnan(threshold))[0]
             threshold = threshold[valid_threshold_idx]
             self.sweep_curves[idx].setData(
-                processor_result.distances_m, processor_result.abs_sweep
+                processor_result.extra_result.distances_m, processor_result.extra_result.abs_sweep
             )
             self.threshold_curves[idx].setData(
-                processor_result.distances_m[valid_threshold_idx], threshold
+                processor_result.extra_result.distances_m[valid_threshold_idx], threshold
             )
 
 
