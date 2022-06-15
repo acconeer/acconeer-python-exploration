@@ -10,7 +10,7 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 
 from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
-from ._processors import ProcessorConfig, ProcessorExtraResult, ThresholdMethod
+from ._processors import ProcessorConfig, ProcessorExtraResult, ProcessorMode, ThresholdMethod
 
 
 class MeasurementType(enum.Enum):
@@ -190,3 +190,15 @@ class Detector:
             np.round((num_points / (bpts_m[-1] - bpts_m[0]) * (bpts_m - bpts_m[0]))) + start_point
         )
         return bpts  # type: ignore[no-any-return]
+
+    @classmethod
+    def _update_processor_mode(
+        cls, processor_specs: list[ProcessorSpec], processor_mode: ProcessorMode
+    ) -> list[ProcessorSpec]:
+        updated_specs = []
+        for spec in processor_specs:
+            new_processor_config = attrs.evolve(
+                spec.processor_config, processor_mode=processor_mode
+            )
+            updated_specs.append(attrs.evolve(spec, processor_config=new_processor_config))
+        return updated_specs
