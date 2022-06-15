@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-import acconeer.exptool as et
 from acconeer.exptool.app.new.app_model import AppModel, ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
@@ -82,25 +81,23 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         self.port_combo_box.currentTextChanged.connect(self._on_combo_box_change)
         self.layout().addWidget(self.port_combo_box)
 
-        refresh_button = QPushButton("Refresh", self)
-        refresh_button.clicked.connect(self.refresh_ports)
-        self.layout().addWidget(refresh_button)
+    def _on_combo_box_change(self) -> None:
+        self.app_model.set_serial_connection_port(self.port_combo_box.currentData())
 
-        self.refresh_ports()
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        self.port_combo_box.blockSignals(True)
 
-    def refresh_ports(self) -> None:
-        tagged_ports = et.utils.get_tagged_serial_ports()  # type: ignore[attr-defined]
+        tagged_ports = app_model.available_tagged_ports
 
         self.port_combo_box.clear()
         for port, tag in tagged_ports:
             label = port if tag is None else f"{port} ({tag})"
             self.port_combo_box.addItem(label, port)
 
-    def _on_combo_box_change(self) -> None:
-        self.app_model.set_serial_connection_port(self.port_combo_box.currentData())
+        index = self.port_combo_box.findData(app_model.serial_connection_port)
+        self.port_combo_box.setCurrentIndex(index)
 
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        pass
+        self.port_combo_box.blockSignals(False)
 
     def on_app_model_error(self, exception: Exception) -> None:
         pass
@@ -139,11 +136,11 @@ class ClientConnectionWidget(AppModelAwareWidget):
         pass
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.setEnabled(
-            app_model.connection_state in {ConnectionState.DISCONNECTED, ConnectionState.CONNECTED}
+        self.stacked.setEnabled(
+            app_model.connection_state == ConnectionState.DISCONNECTED,
         )
         self.interface_dd.setEnabled(
-            app_model.connection_state != ConnectionState.CONNECTED,
+            app_model.connection_state == ConnectionState.DISCONNECTED,
         )
 
         interface_index = self.interface_dd.findData(app_model.connection_interface)

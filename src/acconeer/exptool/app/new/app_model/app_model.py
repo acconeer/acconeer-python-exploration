@@ -4,7 +4,7 @@ import abc
 import logging
 import queue
 from enum import Enum, auto
-from typing import Optional, Type
+from typing import Optional, Tuple, Type
 
 import attrs
 
@@ -17,6 +17,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.app.new.backend import Backend, BackendPlugin, Command, Message, Task
 
 from .core_store import CoreStore
+from .serial_port_updater import SerialPortUpdater
 
 
 log = logging.getLogger(__name__)
@@ -125,12 +126,15 @@ class AppModel(QObject):
     connection_interface: ConnectionInterface
     socket_connection_ip: str
     serial_connection_port: Optional[str]
+    available_tagged_ports: list[Tuple[str, Optional[str]]]
 
     def __init__(self, backend: Backend, plugins: list[Plugin]) -> None:
         super().__init__()
         self._backend = backend
         self._listener = _BackendListeningThread(self._backend, self)
         self._listener.sig_received_from_backend.connect(self._handle_backend_message)
+        self._serial_port_updater = SerialPortUpdater(self)
+        self._serial_port_updater.sig_update.connect(self._handle_serial_port_update)
         self._core_store = CoreStore()
 
         self.plugins = plugins
@@ -140,9 +144,11 @@ class AppModel(QObject):
         self.connection_interface = ConnectionInterface.SERIAL
         self.socket_connection_ip = ""
         self.serial_connection_port = None
+        self.available_tagged_ports = []
 
     def start(self) -> None:
         self._listener.start()
+        self._serial_port_updater.start()
 
     def stop(self) -> None:
         self._listener.requestInterruption()
@@ -151,6 +157,8 @@ class AppModel(QObject):
         if not status:
             log.debug("Backend listening thread did not stop when requested, terminating...")
             self._listener.terminate()
+
+        self._serial_port_updater.stop()
 
     def broadcast(self) -> None:
         self.sig_notify.emit(self)
@@ -182,6 +190,46 @@ class AppModel(QObject):
             self._core_store.server_info = message.data
 
         self.broadcast()
+
+    def _handle_serial_port_update(self, tagged_ports: list[Tuple[str, Optional[str]]]) -> None:
+        self.serial_connection_port = self._select_new_serial_port(
+            dict(self.available_tagged_ports),
+            dict(tagged_ports),
+            self.serial_connection_port,
+        )
+        self.available_tagged_ports = tagged_ports
+
+        self.broadcast()
+
+    def _select_new_serial_port(
+        self,
+        old_ports: dict[str, Optional[str]],
+        new_ports: dict[str, Optional[str]],
+        current_port: Optional[str],
+    ) -> Optional[str]:
+        if self.connection_state != ConnectionState.DISCONNECTED:
+            return current_port
+
+        if current_port not in new_ports:  # Then find a new suitable port
+            port = None
+
+            for port, tag in new_ports.items():
+                if tag:
+                    return port
+
+            return port
+
+        # If we already have a tagged port, keep it
+        if new_ports[current_port]:
+            return current_port
+
+        # If a tagged port was added, select it
+        added_ports = {k: v for k, v in new_ports.items() if k not in old_ports}
+        for port, tag in added_ports.items():
+            if tag:
+                return port
+
+        return current_port
 
     def connect_client(self) -> None:
         if self.connection_interface == ConnectionInterface.SOCKET:
