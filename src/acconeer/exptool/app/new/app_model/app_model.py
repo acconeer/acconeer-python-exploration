@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import logging
 import queue
-from enum import Enum, auto
+from enum import Enum
 from typing import Optional, Tuple, Type
 
 import attrs
@@ -18,6 +18,7 @@ from acconeer.exptool.app.new.backend import Backend, BackendPlugin, Command, Me
 
 from .core_store import CoreStore
 from .serial_port_updater import SerialPortUpdater
+from .state_enums import ConnectionInterface, ConnectionState, PluginState
 
 
 log = logging.getLogger(__name__)
@@ -80,18 +81,6 @@ class Plugin:
     view_plugin: Type[ViewPlugin] = attrs.field()
 
 
-class ConnectionState(Enum):
-    DISCONNECTED = auto()
-    CONNECTING = auto()
-    CONNECTED = auto()
-    DISCONNECTING = auto()
-
-
-class ConnectionInterface(Enum):
-    SERIAL = auto()
-    SOCKET = auto()
-
-
 class _BackendListeningThread(QThread):
     sig_received_from_backend = Signal(Message)
 
@@ -124,6 +113,7 @@ class AppModel(QObject):
 
     connection_state: ConnectionState
     connection_interface: ConnectionInterface
+    plugin_state: PluginState
     socket_connection_ip: str
     serial_connection_port: Optional[str]
     available_tagged_ports: list[Tuple[str, Optional[str]]]
@@ -142,6 +132,7 @@ class AppModel(QObject):
 
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_interface = ConnectionInterface.SERIAL
+        self.plugin_state = PluginState.UNLOADED
         self.socket_connection_ip = ""
         self.serial_connection_port = None
         self.available_tagged_ports = []
@@ -188,6 +179,16 @@ class AppModel(QObject):
                 self.connection_state = ConnectionState.CONNECTED
         elif message.command_name == "server_info":
             self._core_store.server_info = message.data
+        elif message.command_name == "load_plugin":
+            if message.status == "ok":
+                self.plugin_state = PluginState.LOADED_IDLE
+            else:
+                self.plugin_state = PluginState.UNLOADED
+        elif message.command_name == "unload_plugin":
+            if message.status == "ok":
+                self.plugin_state = PluginState.UNLOADED
+            else:
+                self.plugin_state = PluginState.LOADED_IDLE
 
         self.broadcast()
 
@@ -273,8 +274,12 @@ class AppModel(QObject):
 
         if plugin is None:
             self._backend.unload_plugin()
+            if self.plugin is not None:
+                self.plugin_state = PluginState.UNLOADING
         else:
             self._backend.load_plugin(plugin.backend_plugin)
+            if self.plugin is not None:
+                self.plugin_state = PluginState.LOADING
 
         self.sig_load_plugin.emit(plugin)
         self.plugin = plugin

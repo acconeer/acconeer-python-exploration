@@ -89,6 +89,10 @@ class Model:
         self.task_callback(OkMessage("disconnect_client"))
 
     def load_plugin(self, *, plugin: Type[BackendPlugin]) -> None:
+        if self.backend_plugin is not None:
+            log.warn("Cannot load a plugin before unloading the current one.")
+            return
+
         self.backend_plugin = plugin()
         self.backend_plugin.setup(callback=self.task_callback)
         log.info(f"{plugin.__name__} was loaded.")
@@ -97,6 +101,8 @@ class Model:
             self.backend_plugin.attach_client(client=self.client)
             log.debug(f"{plugin.__class__.__name__} was attached a Client")
 
+        self.task_callback(OkMessage("load_plugin"))
+
     def unload_plugin(self) -> None:
         if self.backend_plugin is None:
             return
@@ -104,3 +110,4 @@ class Model:
         self.backend_plugin.teardown()
         self.backend_plugin = None
         log.debug("Current BackendPlugin was torn down")
+        self.task_callback(OkMessage("unload_plugin"))
