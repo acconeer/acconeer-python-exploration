@@ -5,7 +5,7 @@ from ._aggregator import (
     PeakSortingMethod,
     ProcessorSpec,
 )
-from ._detector import Detector, DetectorConfig
+from ._detector import Detector, DetectorConfig, DetectorResult
 from ._processors import (
     Processor,
     ProcessorConfig,
