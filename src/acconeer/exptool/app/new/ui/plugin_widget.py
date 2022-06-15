@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
     QGroupBox,
-    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -197,21 +196,40 @@ class PluginControlArea(QWidget):
 
         app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
 
+        self.child_widget: Optional[QWidget] = None
         self.view_plugin: Optional[ViewPlugin] = None
 
-        self.setLayout(QHBoxLayout(self))
-
-        placeholder_label = QLabel(self)
-        self.layout().addWidget(placeholder_label)
-        placeholder_label.setText("Plugin control placeholder")
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
 
     def _on_app_model_load_plugin(self, plugin: Optional[Plugin]) -> None:
         if self.view_plugin is not None:
             # TODO: teardown
             self.view_plugin = None
 
+        if self.child_widget is not None:
+            self.layout().removeWidget(self.child_widget)
+            self.child_widget.deleteLater()
+            self.child_widget = None
+
         if plugin is not None:
+            self.child_widget = QWidget(self)
             self.view_plugin = plugin.view_plugin(
                 app_model=self.app_model,
-                view_widget=self,
+                view_widget=self.child_widget,
             )
+        else:
+            self.child_widget = ControlPlaceholder(self.app_model, self)
+
+        self.layout().addWidget(self.child_widget)
+
+
+class ControlPlaceholder(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QVBoxLayout(self))
+        label = QLabel("...", self)
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        self.layout().addWidget(label)

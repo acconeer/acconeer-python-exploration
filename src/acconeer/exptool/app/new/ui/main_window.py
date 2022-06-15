@@ -137,8 +137,6 @@ class RightAreaContent(QWidget):
 
         self.layout().addWidget(PluginControlArea(app_model, self))
 
-        self.layout().addStretch(1)
-
 
 class StatusBar(QStatusBar):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
