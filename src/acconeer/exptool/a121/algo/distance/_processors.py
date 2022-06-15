@@ -75,16 +75,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     :param context: Context
     """
 
-    ENVELOPE_WIDTH_MM = {
-        a121.Profile.PROFILE_1: 40.0,
-        a121.Profile.PROFILE_2: 70.0,
-        a121.Profile.PROFILE_3: 140.0,
-        a121.Profile.PROFILE_4: 190.0,
-        a121.Profile.PROFILE_5: 320.0,
+    ENVELOPE_WIDTH_M = {
+        a121.Profile.PROFILE_1: 0.04,
+        a121.Profile.PROFILE_2: 0.07,
+        a121.Profile.PROFILE_3: 0.14,
+        a121.Profile.PROFILE_4: 0.19,
+        a121.Profile.PROFILE_5: 0.32,
     }
 
-    MM_to_M = 0.001
-    M_TO_MM = 1000
     APPROX_BASE_STEP_LENGTH_M = 2.5e-3
     CFAR_GUARD_LENGTH_ADJUSTMENT = 2
     CFAR_WINDOW_LENGTH_ADJUSTMENT = 0.25
@@ -120,8 +118,13 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         assert self.metadata.base_step_length_m is not None
         self.step_length_m = self.step_length * self.metadata.base_step_length_m
 
+        (_, self.margin_p) = self.depth_filter_init_margin(self.profile, self.step_length)
+
+        self.start_point_cropped = self.start_point + self.margin_p
+        self.num_points_cropped = self.num_points - 2 * self.margin_p
+
         self.distances_m = (
-            self.start_point + np.arange(self.num_points) * self.step_length
+            self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
         ) * self.metadata.base_step_length_m
 
         (self.b, self.a) = self._get_distance_filter_coeffs(self.profile, self.step_length)
@@ -199,6 +202,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         sweep = frame.mean(axis=0)
         filtered_sweep = filtfilt(self.b, self.a, sweep)
         abs_sweep = np.abs(filtered_sweep)
+        abs_sweep = abs_sweep[self.margin_p : -self.margin_p]
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             return self._process_distance_estimation(abs_sweep)
@@ -216,21 +220,19 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             else:
                 self.threshold = self.context.recorded_threshold
         elif self.threshold_method == ThresholdMethod.FIXED:
-            self.threshold = np.full(self.num_points, self.processor_config.fixed_threshold_value)
+            self.threshold = np.full(
+                self.num_points_cropped, self.processor_config.fixed_threshold_value
+            )
         elif self.threshold_method == ThresholdMethod.CFAR:
             if self.processor_config.cfar_guard_length_m is None:
                 self.cfar_guard_length_m = (
-                    self.ENVELOPE_WIDTH_MM[self.profile]
-                    * self.CFAR_GUARD_LENGTH_ADJUSTMENT
-                    * self.MM_to_M
+                    self.ENVELOPE_WIDTH_M[self.profile] * self.CFAR_GUARD_LENGTH_ADJUSTMENT
                 )
             else:
                 self.cfar_guard_length_m = self.processor_config.cfar_guard_length_m
             if self.processor_config.cfar_window_length_m is None:
                 self.cfar_window_length_m = (
-                    self.ENVELOPE_WIDTH_MM[self.profile]
-                    * self.CFAR_WINDOW_LENGTH_ADJUSTMENT
-                    * self.MM_to_M
+                    self.ENVELOPE_WIDTH_M[self.profile] * self.CFAR_WINDOW_LENGTH_ADJUSTMENT
                 )
             else:
                 self.cfar_window_length_m = self.processor_config.cfar_window_length_m
@@ -246,7 +248,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
         (estimated_distances, estimated_amplitudes) = self._interpolate_peaks(
-            abs_sweep, found_peaks_idx, self.start_point, self.step_length
+            abs_sweep, found_peaks_idx, self.start_point_cropped, self.step_length
         )
         extra_result = ProcessorExtraResult(
             abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
@@ -258,8 +260,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         )
 
     def _init_recorded_threshold_calibration(self) -> None:
-        self.bg_sc_mean = np.zeros(self.num_points)
-        self.bg_sc_sum_squared_bg_sweeps = np.zeros(self.num_points)
+        self.bg_sc_mean = np.zeros(self.num_points_cropped)
+        self.bg_sc_sum_squared_bg_sweeps = np.zeros(self.num_points_cropped)
         self.sc_bg_num_sweeps = 1.0
         self.sc_bg_num_std_dev = self.processor_config.sc_bg_num_std_dev
 
@@ -294,12 +296,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     @classmethod
     def _get_distance_filter_coeffs(cls, profile: a121.Profile, step_length: int) -> Any:
-        wnc = (
-            cls.APPROX_BASE_STEP_LENGTH_M
-            * cls.M_TO_MM
-            * step_length
-            / cls.ENVELOPE_WIDTH_MM[profile]
-        )
+        wnc = cls.APPROX_BASE_STEP_LENGTH_M * step_length / cls.ENVELOPE_WIDTH_M[profile]
         return butter(N=2, Wn=wnc)
 
     def _update_threshold(self, abs_sweep: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
@@ -409,3 +406,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             estimated_distances.append((start_point + peak_loc * step_length) * 2.5)
             estimated_amplitudes.append(a * peak_loc**2 + b * peak_loc + c)
         return estimated_distances, estimated_amplitudes
+
+    @classmethod
+    def depth_filter_init_margin(cls, profile: a121.Profile, step_length: int) -> Tuple[int, int]:
+        margin_p = np.ceil(
+            cls.ENVELOPE_WIDTH_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length)
+        ).astype(int)
+        margin_m = margin_p * cls.APPROX_BASE_STEP_LENGTH_M * step_length
+        return (margin_m, margin_p)

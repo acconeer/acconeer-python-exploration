@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import enum
 from typing import Dict, List, Optional, Tuple
 
@@ -10,7 +11,13 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 
 from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
-from ._processors import ProcessorConfig, ProcessorMode, ProcessorResult, ThresholdMethod
+from ._processors import (
+    Processor,
+    ProcessorConfig,
+    ProcessorMode,
+    ProcessorResult,
+    ThresholdMethod,
+)
 
 
 class MeasurementType(enum.Enum):
@@ -149,11 +156,13 @@ class Detector:
         groups = []
         group_index = 0
 
+        #  TODO : Add logic for subsweep group configuration. Values below are just for
+        # demonstrative purposes.
         plan = {
             MeasurementType.FAR_RANGE: [
                 SubsweepGroupPlan(
                     step_length=1,
-                    breakpoints_m=[config.start_m, config.end_m],
+                    breakpoints_m=[config.start_m, 0.5, config.end_m],
                     profile=a121.Profile.PROFILE_1,
                 ),
             ],
@@ -187,15 +196,19 @@ class Detector:
         processor_specs_subsweep_indexes = []
         subsweep_idx = 0
         for plan in subsweep_group_plans:
-            breakpoints = cls._m_to_points(
-                breakpoints_m=plan.breakpoints_m, step_length=plan.step_length
+            (margin_m, _) = Processor.depth_filter_init_margin(plan.profile, plan.step_length)
+            extended_breakpoints_m = copy.copy(plan.breakpoints_m)
+            extended_breakpoints_m[0] -= margin_m
+            extended_breakpoints_m[-1] += margin_m
+            extended_breakpoints = cls._m_to_points(
+                breakpoints_m=extended_breakpoints_m, step_length=plan.step_length
             )
             subsweep_indexes = []
-            for idx in range(len(breakpoints) - 1):
+            for idx in range(len(extended_breakpoints) - 1):
                 subsweeps.append(
                     a121.SubsweepConfig(
-                        start_point=breakpoints[idx],
-                        num_points=breakpoints[idx + 1] - breakpoints[idx],
+                        start_point=extended_breakpoints[idx],
+                        num_points=extended_breakpoints[idx + 1] - extended_breakpoints[idx],
                         step_length=plan.step_length,
                         profile=plan.profile,
                         hwaas=8,
