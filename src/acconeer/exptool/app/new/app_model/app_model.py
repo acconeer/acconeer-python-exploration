@@ -164,7 +164,6 @@ class AppModel(QObject):
         self.sig_notify.emit(self)
 
     def _handle_backend_message(self, message: Message) -> None:
-        log.debug(f"{self.__class__.__name__} got from server: {message}")
         if message.status == "error":
             self.sig_error.emit(message.exception)
 
