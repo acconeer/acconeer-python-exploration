@@ -38,3 +38,12 @@ class PluginState(Enum):
     LOADED_STARTING = auto()
     LOADED_BUSY = auto()
     LOADED_STOPPING = auto()
+
+    @property
+    def is_loaded(self) -> bool:
+        return self in {
+            self.LOADED_IDLE,
+            self.LOADED_STARTING,
+            self.LOADED_BUSY,
+            self.LOADED_STOPPING,
+        }

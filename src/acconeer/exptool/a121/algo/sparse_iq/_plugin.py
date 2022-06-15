@@ -21,7 +21,9 @@ from acconeer.exptool.a121.algo._plugins import (
 )
 from acconeer.exptool.app.new import (
     AppModel,
+    BusyMessage,
     DataMessage,
+    IdleMessage,
     KwargMessage,
     Message,
     OkMessage,
@@ -29,6 +31,7 @@ from acconeer.exptool.app.new import (
     PluginFamily,
     Task,
 )
+from acconeer.exptool.app.new.app_model.state_enums import PluginState
 from acconeer.exptool.app.new.ui.plugin import SessionConfigEditor
 
 from ._processor import Processor, ProcessorConfig, ProcessorResult
@@ -49,6 +52,13 @@ class BackendPlugin(ProcessorBackendPluginBase):
 
     def setup(self, *, callback: Callable[[Message], None]) -> None:
         self.callback = callback
+        self.callback(
+            DataMessage(
+                "session_config",
+                a121.SessionConfig(update_rate=1.0),
+                recipient="view_plugin",
+            )
+        )
 
     def attach_client(self, *, client: a121.Client) -> None:
         self.client = client
@@ -113,9 +123,12 @@ class BackendPlugin(ProcessorBackendPluginBase):
         self.client.start_session()
         self.callback(
             KwargMessage(
-                "setup", dict(metadata=self.metadata, sensor_config=session_config.sensor_config)
+                "setup",
+                dict(metadata=self.metadata, sensor_config=session_config.sensor_config),
+                recipient="plot_plugin",
             )
         )
+        self.callback(BusyMessage())
 
     def _execute_stop(self) -> None:
         if self.client is None:
@@ -125,6 +138,7 @@ class BackendPlugin(ProcessorBackendPluginBase):
 
         self.client.stop_session()
         self.callback(OkMessage("stop_session"))
+        self.callback(IdleMessage())
 
     def _execute_get_next(self) -> None:
         if self.client is None:
@@ -138,12 +152,13 @@ class BackendPlugin(ProcessorBackendPluginBase):
         assert isinstance(result, a121.Result)
 
         processor_result = self.processor_instance.process(result)
-        self.callback(DataMessage("plot", processor_result))
+        self.callback(DataMessage("plot", processor_result, recipient="plot_plugin"))
 
 
 class ViewPlugin(ProcessorViewPluginBase):
     def __init__(self, view_widget: QWidget, app_model: AppModel) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
+        app_model.sig_message_view_plugin.connect(self._handle_addressed_message)
         self.view_widget = view_widget
         self.layout = QVBoxLayout(self.view_widget)
 
@@ -172,16 +187,28 @@ class ViewPlugin(ProcessorViewPluginBase):
             )
         )
         self.send_backend_command(("set_idle_task", ("get_next", {})))
+        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_stop_requests(self) -> None:
         self.send_backend_command(("set_idle_task", None))
         self.send_backend_task(("stop_session", {}))
+        self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def teardown(self) -> None:
         self.layout.deleteLater()
 
+    def _handle_addressed_message(self, message: Message) -> None:
+        if message.command_name == "session_config":
+            self.session_config_editor.session_config = message.data
+        else:
+            raise ValueError(
+                f"{self.__class__.__name__} cannot handle the message {message.command_name}"
+            )
+
     def on_app_model_update(self, app_model: AppModel) -> None:
-        pass  # TODO
+        self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.start_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def on_app_model_error(self, exception: Exception) -> None:
         pass  # TODO
@@ -190,21 +217,28 @@ class ViewPlugin(ProcessorViewPluginBase):
 class PlotPlugin(ProcessorPlotPluginBase):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
+        app_model.sig_message_plot_plugin.connect(self.handle_message)
         self.smooth_max = et.utils.SmoothMax()
+        self._is_setup = False
+        self._plot_job = None
 
     def handle_message(self, message: Message) -> None:
         if message.command_name == "setup":
             assert isinstance(message, KwargMessage)
             self.setup(**message.kwargs)
         elif message.command_name == "plot":
-            self._update_plot_data(message.data)
+            self._plot_job = message.data
         else:
             log.warn(
                 f"{self.__class__.__name__} got an unsupported command: {message.command_name!r}."
             )
 
     def draw(self) -> None:
-        ...
+        if not self._is_setup or self._plot_job is None:
+            return
+
+        self._update_plot_data(self._plot_job)
+        self._plot_job = None
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
         if isinstance(metadata, list):
@@ -232,6 +266,7 @@ class PlotPlugin(ProcessorPlotPluginBase):
             vels=vels,
             vel_res=vel_res,
         )
+        self._is_setup = True
 
     def _update_plot_data(self, processor_result: ProcessorResult) -> None:
         ampls = processor_result.amplitudes

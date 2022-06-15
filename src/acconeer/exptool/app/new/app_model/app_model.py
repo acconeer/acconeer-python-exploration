@@ -285,6 +285,10 @@ class AppModel(QObject):
         self.serial_connection_port = port
         self.broadcast()
 
+    def set_plugin_state(self, state: PluginState) -> None:
+        self.plugin_state = state
+        self.broadcast()
+
     def load_plugin(self, plugin: Optional[Plugin]) -> None:
         if plugin == self.plugin:
             return
