@@ -14,7 +14,15 @@ from PySide6.QtWidgets import QWidget
 import pyqtgraph as pg
 
 from acconeer.exptool import a121
-from acconeer.exptool.app.new.backend import Backend, BackendPlugin, Command, Message, Task
+from acconeer.exptool.app.new.backend import (
+    Backend,
+    BackendPlugin,
+    BusyMessage,
+    Command,
+    IdleMessage,
+    Message,
+    Task,
+)
 
 from .core_store import CoreStore
 from .serial_port_updater import SerialPortUpdater
@@ -189,6 +197,10 @@ class AppModel(QObject):
                 self.plugin_state = PluginState.UNLOADED
             else:
                 self.plugin_state = PluginState.LOADED_IDLE
+        elif message == BusyMessage():
+            self.plugin_state = PluginState.LOADED_BUSY
+        elif message == IdleMessage():
+            self.plugin_state = PluginState.LOADED_IDLE
 
         self.broadcast()
 

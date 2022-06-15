@@ -12,9 +12,11 @@ from .app_model import (
 from .backend import (
     Backend,
     BackendPlugin,
+    BusyMessage,
     Command,
     DataMessage,
     ErrorMessage,
+    IdleMessage,
     KwargMessage,
     Message,
     OkMessage,

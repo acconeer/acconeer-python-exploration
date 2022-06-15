@@ -37,3 +37,13 @@ class DataMessage(OkMessage):
 @attrs.define
 class KwargMessage(OkMessage):
     kwargs: dict[str, Any]
+
+
+@attrs.define
+class BusyMessage(OkMessage):
+    command_name: str = attrs.field(default="busy")
+
+
+@attrs.define
+class IdleMessage(OkMessage):
+    command_name: str = attrs.field(default="idle")
