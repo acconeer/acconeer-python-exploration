@@ -146,9 +146,10 @@ class PluginPlotArea(QFrame):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
 
-        app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
-
         self.startTimer(int(1000 / self._FPS))
+
+        app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
+        self._on_app_model_load_plugin(app_model.plugin)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         if self.plot_plugin is None:
@@ -194,14 +195,15 @@ class PluginControlArea(QWidget):
 
         self.app_model = app_model
 
-        app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
-
         self.child_widget: Optional[QWidget] = None
         self.view_plugin: Optional[ViewPlugin] = None
 
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
+
+        app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
+        self._on_app_model_load_plugin(app_model.plugin)
 
     def _on_app_model_load_plugin(self, plugin: Optional[Plugin]) -> None:
         if self.view_plugin is not None:
