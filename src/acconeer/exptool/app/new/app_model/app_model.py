@@ -4,6 +4,7 @@ import abc
 import logging
 import queue
 from enum import Enum
+from pathlib import Path
 from typing import Optional, Tuple, Type
 
 import attrs
@@ -126,6 +127,7 @@ class AppModel(QObject):
     socket_connection_ip: str
     serial_connection_port: Optional[str]
     available_tagged_ports: list[Tuple[str, Optional[str]]]
+    saveable_file: Optional[Path]
 
     def __init__(self, backend: Backend, plugins: list[Plugin]) -> None:
         super().__init__()
@@ -145,6 +147,7 @@ class AppModel(QObject):
         self.socket_connection_ip = ""
         self.serial_connection_port = None
         self.available_tagged_ports = []
+        self.saveable_file = None
 
     def start(self) -> None:
         self._listener.start()
@@ -304,3 +307,11 @@ class AppModel(QObject):
         self.sig_load_plugin.emit(plugin)
         self.plugin = plugin
         self.broadcast()
+
+    def save_to_file(self, path: Path) -> None:
+        log.debug(f"{self.__class__.__name__} saving to file '{path}'")
+        # TODO
+
+    def load_from_file(self, path: Path) -> None:
+        log.debug(f"{self.__class__.__name__} loading from file '{path}'")
+        # TODO
