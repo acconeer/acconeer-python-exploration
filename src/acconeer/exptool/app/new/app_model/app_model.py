@@ -328,3 +328,10 @@ class AppModel(QObject):
     def load_from_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} loading from file '{path}'")
         # TODO
+
+    @property
+    def rss_version(self) -> Optional[str]:
+        if self._a121_server_info is None:
+            return None
+
+        return self._a121_server_info.rss_version

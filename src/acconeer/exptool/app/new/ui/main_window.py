@@ -144,6 +144,22 @@ class StatusBar(QStatusBar):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
+        app_model.sig_notify.connect(self._on_app_model_update)
+
+        self.rss_version_label = QLabel(self)
+        self.addPermanentWidget(self.rss_version_label)
+
         et_version = importlib_metadata.version("acconeer-exptool")
         et_version_text = f"ET: {et_version}"
         self.addPermanentWidget(QLabel(et_version_text, self))
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        if app_model.rss_version is None:
+            css = "color: #888;"
+            text = "RSS: <not connected>"
+        else:
+            css = ""
+            text = f"RSS: {app_model.rss_version}"
+
+        self.rss_version_label.setStyleSheet(css)
+        self.rss_version_label.setText(text)
