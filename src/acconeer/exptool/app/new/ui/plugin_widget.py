@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.resources
 from typing import Optional
 
+import qtawesome as qta
+
 from PySide6 import QtCore
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
@@ -11,6 +13,7 @@ from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QGridLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -188,10 +191,21 @@ class PlotPlaceholder(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setLayout(QVBoxLayout(self))
-        label = QLabel("No module selected", self)
+        self.setLayout(QHBoxLayout(self))
+
+        self.layout().addStretch(1)
+
+        icon_widget = qta.IconWidget()
+        icon_widget.setIconSize(QtCore.QSize(36, 36))
+        icon_widget.setIcon(qta.icon("ph.arrow-left-bold", color="#4d5157"))
+        self.layout().addWidget(icon_widget)
+
+        label = QLabel("Select a module to begin", self)
+        label.setStyleSheet("font-size: 20px;")
         label.setAlignment(QtCore.Qt.AlignCenter)
         self.layout().addWidget(label)
+
+        self.layout().addStretch(1)
 
 
 class PluginControlArea(QWidget):
