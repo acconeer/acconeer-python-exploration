@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Mapping, Optional, Tuple
+from typing import Any, Callable, Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
@@ -10,10 +10,10 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
+from .types import PidgetMapping
 
 
 log = logging.getLogger(__name__)
-PidgetMapping = Mapping[str, Tuple[pidgets.ParameterWidget, Callable]]
 
 
 class SessionConfigEditor(QWidget):
@@ -151,27 +151,33 @@ class SessionConfigEditor(QWidget):
         self._layout.addWidget(pidget)
 
     def _setup_session_config_pidget(
-        self, pidget: pidgets.ParameterWidget, aspect: str, func: Callable
+        self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
     ) -> None:
         self._add_pidget_to_layout(pidget)
         pidget.sig_parameter_changed.connect(
-            lambda val: self._update_session_config_aspect(aspect, func(val))
+            lambda val: self._update_session_config_aspect(
+                aspect, val if (func is None) else func(val)
+            )
         )
 
     def _setup_sensor_config_pidget(
-        self, pidget: pidgets.ParameterWidget, aspect: str, func: Callable
+        self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
     ) -> None:
         self._add_pidget_to_layout(pidget)
         pidget.sig_parameter_changed.connect(
-            lambda val: self._update_sensor_config_aspect(aspect, func(val))
+            lambda val: self._update_sensor_config_aspect(
+                aspect, val if (func is None) else func(val)
+            )
         )
 
     def _setup_subsweep_config_pidget(
-        self, pidget: pidgets.ParameterWidget, aspect: str, func: Callable
+        self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
     ) -> None:
         self._add_pidget_to_layout(pidget)
         pidget.sig_parameter_changed.connect(
-            lambda val: self._update_subsweep_config_aspect(aspect, func(val))
+            lambda val: self._update_subsweep_config_aspect(
+                aspect, val if (func is None) else func(val)
+            )
         )
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> None:
