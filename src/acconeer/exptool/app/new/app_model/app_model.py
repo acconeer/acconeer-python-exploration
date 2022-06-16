@@ -25,7 +25,6 @@ from acconeer.exptool.app.new.backend import (
     Task,
 )
 
-from .core_store import CoreStore
 from .serial_port_updater import SerialPortUpdater
 from .state_enums import ConnectionInterface, ConnectionState, PluginState
 
@@ -142,7 +141,8 @@ class AppModel(QObject):
         self._listener.sig_received_from_backend.connect(self._handle_backend_message)
         self._serial_port_updater = SerialPortUpdater(self)
         self._serial_port_updater.sig_update.connect(self._handle_serial_port_update)
-        self._core_store = CoreStore()
+
+        self._a121_server_info: Optional[a121.ServerInfo] = None
 
         self.plugins = plugins
         self.plugin = None
@@ -199,7 +199,7 @@ class AppModel(QObject):
             else:
                 self.connection_state = ConnectionState.CONNECTED
         elif message.command_name == "server_info":
-            self._core_store.server_info = message.data
+            self._a121_server_info = message.data
         elif message.command_name == "load_plugin":
             if message.status == "ok":
                 self.plugin_state = PluginState.LOADED_IDLE
