@@ -54,10 +54,11 @@ class ParameterWidget(QWidget):
         parameter_widget: QWidget,
         name_label_text: str,
         note_label_text: str = "",
+        name_parameter_layout: Type[QLayout] = QVBoxLayout,
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent=parent)
-        vert_layout = QVBoxLayout(parent=self)
+        vert_layout = name_parameter_layout(parent=self)
 
         self.parameter_widget = parameter_widget
         self.note_label_widget = QLabel(parent=self)
@@ -201,6 +202,7 @@ class CheckboxParameterWidget(ParameterWidget):
             parameter_widget=self.checkbox,
             name_label_text=name_label_text,
             note_label_text=note_label_text,
+            name_parameter_layout=QHBoxLayout,
             parent=parent,
         )
         self.checkbox.clicked.connect(self._on_checkbox_click)

@@ -11,6 +11,7 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .types import PidgetMapping
+from .utils import VerticalGroupBox
 
 
 log = logging.getLogger(__name__)
@@ -20,19 +21,33 @@ class SessionConfigEditor(QWidget):
     sig_session_config_updated = Signal(a121.SessionConfig)
 
     _session_config: Optional[a121.SessionConfig]
+    _all_pidgets: list[pidgets.ParameterWidget]
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
 
         self._session_config = None
-        self._layout = QVBoxLayout()
-        self.setLayout(self._layout)
+        self._all_pidgets = []
+
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(11)
+
+        # Session pidgets
+        self.session_group_box = VerticalGroupBox("Session parameters", parent=self)
         self._session_config_pidgets: PidgetMapping = {
             "update_rate": (
                 pidgets.OptionalTextParameterWidget("Update rate:", parent=self),
                 lambda val: None if (val is None) else float(val),
             )
         }
+        for aspect, (pidget, func) in self._session_config_pidgets.items():
+            self._setup_session_config_pidget(pidget, aspect, func)
+            self._all_pidgets.append(pidget)
+        self.layout().addWidget(self.session_group_box)
+
+        # Sensor pidgets
+        self.sensor_group_box = VerticalGroupBox("Sensor parameters", parent=self)
         self._sensor_config_pidgets: PidgetMapping = {
             "sweeps_per_frame": (
                 pidgets.TextParameterWidget("Sweeps per frame:", parent=self),
@@ -59,6 +74,17 @@ class SessionConfigEditor(QWidget):
                 a121.IdleState,
             ),
         }
+        for aspect, (pidget, func) in self._sensor_config_pidgets.items():
+            self._setup_sensor_config_pidget(pidget, aspect, func)
+            self._all_pidgets.append(pidget)
+        self.layout().addWidget(self.sensor_group_box)
+
+        # Subsweeps pidgets
+        self.subsweep_group_box = VerticalGroupBox(
+            "Subsweep-specific parameters", parent=self.session_group_box
+        )
+        self.sensor_group_box.layout().addWidget(self.subsweep_group_box)
+
         self._subsweep_config_pidgets: PidgetMapping = {
             "start_point": (pidgets.TextParameterWidget("Start point:", parent=self), int),
             "num_points": (pidgets.TextParameterWidget("Number of points:", parent=self), int),
@@ -80,15 +106,6 @@ class SessionConfigEditor(QWidget):
             ),
             "prf": (pidgets.EnumParameterWidget(a121.PRF, "PRF"), a121.PRF),
         }
-
-        self._all_pidgets = []
-        for aspect, (pidget, func) in self._session_config_pidgets.items():
-            self._setup_session_config_pidget(pidget, aspect, func)
-            self._all_pidgets.append(pidget)
-
-        for aspect, (pidget, func) in self._sensor_config_pidgets.items():
-            self._setup_sensor_config_pidget(pidget, aspect, func)
-            self._all_pidgets.append(pidget)
 
         for aspect, (pidget, func) in self._subsweep_config_pidgets.items():
             self._setup_subsweep_config_pidget(pidget, aspect, func)
@@ -147,13 +164,10 @@ class SessionConfigEditor(QWidget):
         else:
             self._handle_validation_results(self._session_config._collect_validation_results())
 
-    def _add_pidget_to_layout(self, pidget: pidgets.ParameterWidget) -> None:
-        self._layout.addWidget(pidget)
-
     def _setup_session_config_pidget(
         self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
     ) -> None:
-        self._add_pidget_to_layout(pidget)
+        self.session_group_box.layout().addWidget(pidget)
         pidget.sig_parameter_changed.connect(
             lambda val: self._update_session_config_aspect(
                 aspect, val if (func is None) else func(val)
@@ -163,7 +177,7 @@ class SessionConfigEditor(QWidget):
     def _setup_sensor_config_pidget(
         self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
     ) -> None:
-        self._add_pidget_to_layout(pidget)
+        self.sensor_group_box.layout().addWidget(pidget)
         pidget.sig_parameter_changed.connect(
             lambda val: self._update_sensor_config_aspect(
                 aspect, val if (func is None) else func(val)
@@ -173,7 +187,7 @@ class SessionConfigEditor(QWidget):
     def _setup_subsweep_config_pidget(
         self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
     ) -> None:
-        self._add_pidget_to_layout(pidget)
+        self.subsweep_group_box.layout().addWidget(pidget)
         pidget.sig_parameter_changed.connect(
             lambda val: self._update_subsweep_config_aspect(
                 aspect, val if (func is None) else func(val)

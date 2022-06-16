@@ -166,6 +166,7 @@ class ViewPlugin(ProcessorViewPluginBase):
         app_model.sig_message_view_plugin.connect(self._handle_addressed_message)
         self.view_widget = view_widget
         self.layout = QVBoxLayout(self.view_widget)
+        self.view_widget.setLayout(self.layout)
 
         self.start_button = QPushButton("Start", self.view_widget)
         self.stop_button = QPushButton("Stop", self.view_widget)
@@ -177,8 +178,11 @@ class ViewPlugin(ProcessorViewPluginBase):
         button_layout.addWidget(self.stop_button)
 
         self.layout.addLayout(button_layout)
+        self.layout.addSpacing(10)
+
         self.session_config_editor = SessionConfigEditor(self.view_widget)
         self.processor_config_editor = AttrsConfigEditor[ProcessorConfig](
+            title="Processor config parameters",
             pidget_mapping={
                 "amplitude_method": (
                     pidgets.EnumParameterWidget(AmplitudeMethod, "Amplitude method:"),
@@ -188,8 +192,9 @@ class ViewPlugin(ProcessorViewPluginBase):
             parent=self.view_widget,
         )
         self.layout.addWidget(self.processor_config_editor)
+        self.layout.addSpacing(10)
         self.layout.addWidget(self.session_config_editor)
-        self.view_widget.setLayout(self.layout)
+        self.layout.addStretch()
 
     def _send_start_requests(self) -> None:
         self.send_backend_task(
