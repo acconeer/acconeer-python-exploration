@@ -22,6 +22,7 @@ from acconeer.exptool.a121.algo._plugins import (
 from acconeer.exptool.app.new import (
     AppModel,
     BusyMessage,
+    ConnectionState,
     DataMessage,
     IdleMessage,
     KwargMessage,
@@ -224,7 +225,10 @@ class ViewPlugin(ProcessorViewPluginBase):
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.processor_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.start_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.start_button.setEnabled(
+            app_model.plugin_state == PluginState.LOADED_IDLE
+            and app_model.connection_state == ConnectionState.CONNECTED
+        )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def on_app_model_error(self, exception: Exception) -> None:
