@@ -65,8 +65,8 @@ class Backend:
         log.debug("Backend cleared its idle task ...")
         self._send(("set_idle_task", None))
 
-    def load_plugin(self, plugin: Type[BackendPlugin]) -> None:
-        self.put_task(("load_plugin", {"plugin": plugin}))
+    def load_plugin(self, plugin: Type[BackendPlugin], key: str) -> None:
+        self.put_task(("load_plugin", {"plugin": plugin, "key": key}))
 
     def unload_plugin(self) -> None:
         self.put_task(("unload_plugin", {}))

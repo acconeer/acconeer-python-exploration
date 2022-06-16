@@ -8,8 +8,9 @@ from ._types import Task
 
 
 class BackendPlugin(abc.ABC):
-    def __init__(self, callback: Callable[[Message], None]) -> None:
+    def __init__(self, callback: Callable[[Message], None], key: str) -> None:
         self.callback = callback
+        self.key = key
 
     @abc.abstractmethod
     def attach_client(self, *, client: Any) -> None:

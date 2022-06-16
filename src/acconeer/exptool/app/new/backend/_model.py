@@ -116,7 +116,7 @@ class Model:
         self.client = None
         self.task_callback(OkMessage("disconnect_client"))
 
-    def load_plugin(self, *, plugin: Type[BackendPlugin]) -> None:
+    def load_plugin(self, *, plugin: Type[BackendPlugin], key: str) -> None:
         """Loads a plugin
 
         Callbacks:
@@ -134,7 +134,7 @@ class Model:
             )
             return
 
-        self.backend_plugin = plugin(callback=self.task_callback)
+        self.backend_plugin = plugin(callback=self.task_callback, key=key)
         log.info(f"{plugin.__name__} was loaded.")
 
         if self.client is not None and self.client.connected:

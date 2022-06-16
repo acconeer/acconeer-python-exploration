@@ -45,8 +45,8 @@ class BackendPlugin(ProcessorBackendPluginBase):
     _client: Optional[a121.Client]
     _processor_instance: Optional[Processor]
 
-    def __init__(self, callback: Callable[[Message], None]):
-        super().__init__(callback=callback)
+    def __init__(self, callback: Callable[[Message], None], key: str):
+        super().__init__(callback=callback, key=key)
         self._processor_instance = None
         self._client = None
         self._send_default_session_config_to_view()

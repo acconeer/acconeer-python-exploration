@@ -317,7 +317,7 @@ class AppModel(QObject):
             if self.plugin is not None:
                 self.plugin_state = PluginState.UNLOADING
         else:
-            self._backend.load_plugin(plugin.backend_plugin)
+            self._backend.load_plugin(plugin.backend_plugin, plugin.key)
             if self.plugin is not None:
                 self.plugin_state = PluginState.LOADING
 
