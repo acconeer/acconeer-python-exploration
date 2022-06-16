@@ -118,9 +118,6 @@ def process_program(
                 idle_task = arg
             else:
                 raise RuntimeError
-
-            log.debug("Backend successfully processed the command:")
-            log.debug(f"  {msg}")
     finally:
         recv_queue.close()
         send_queue.close()

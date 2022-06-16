@@ -41,34 +41,32 @@ log = logging.getLogger(__name__)
 
 
 class BackendPlugin(ProcessorBackendPluginBase):
-    client: Optional[a121.Client]
-    callback: Optional[Callable[[Message], None]]
-    processor_instance: Optional[Processor]
+    _client: Optional[a121.Client]
+    _processor_instance: Optional[Processor]
 
-    def __init__(self):
-        self.processor_instance = None
-        self.client = None
-        self.callback = None
+    def __init__(self, callback: Callable[[Message], None]):
+        super().__init__(callback=callback)
+        self._processor_instance = None
+        self._client = None
+        self._send_default_session_config_to_view()
 
-    def setup(self, *, callback: Callable[[Message], None]) -> None:
-        self.callback = callback
+    def _send_default_session_config_to_view(self) -> None:
         self.callback(
             DataMessage(
                 "session_config",
-                a121.SessionConfig(update_rate=1.0),
+                a121.SessionConfig(),
                 recipient="view_plugin",
             )
         )
 
     def attach_client(self, *, client: a121.Client) -> None:
-        self.client = client
+        self._client = client
 
     def detach_client(self) -> None:
-        self.client = None
+        self._client = None
 
     def teardown(self) -> None:
         self.detach_client()
-        self.callback = None
 
     def execute_task(self, *, task: Task) -> None:
         """Accepts the following tasks:
@@ -85,7 +83,11 @@ class BackendPlugin(ProcessorBackendPluginBase):
         """
         task_name, task_kwargs = task
         if task_name == "start_session":
-            self._execute_start(**task_kwargs)
+            try:
+                self._execute_start(**task_kwargs)
+            except Exception as e:
+                log.exception(e)
+                self.callback(IdleMessage())
         elif task_name == "stop_session":
             self._execute_stop()
         elif task_name == "get_next":
@@ -98,29 +100,27 @@ class BackendPlugin(ProcessorBackendPluginBase):
         session_config: a121.SessionConfig,
         processor_config: ProcessorConfig,
     ) -> None:
-        if self.client is None:
+        if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'start'.")
-        if not self.client.connected:
+        if not self._client.connected:
             # This check is here to avoid the
             # "auto-connect" behaviour in a121.Client.setup_session.
             raise RuntimeError("Client is not connected. Can not 'start'.")
 
-        if self.callback is None:
-            raise RuntimeError("callback is None. 'setup' needs to be called before 'get_next'")
         if session_config.extended:
             raise ValueError("Extended configs are not supported.")
 
         log.debug(f"SessionConfig has the update rate: {session_config.update_rate}")
 
-        self.metadata = self.client.setup_session(session_config)
+        self.metadata = self._client.setup_session(session_config)
         assert isinstance(self.metadata, a121.Metadata)
 
-        self.processor_instance = Processor(
+        self._processor_instance = Processor(
             sensor_config=session_config.sensor_config,
             metadata=self.metadata,
             processor_config=processor_config,
         )
-        self.client.start_session()
+        self._client.start_session()
         self.callback(
             KwargMessage(
                 "setup",
@@ -131,27 +131,23 @@ class BackendPlugin(ProcessorBackendPluginBase):
         self.callback(BusyMessage())
 
     def _execute_stop(self) -> None:
-        if self.client is None:
+        if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'stop'.")
-        if self.callback is None:
-            raise RuntimeError("callback is None. 'setup' needs to be called before 'get_next'")
 
-        self.client.stop_session()
+        self._client.stop_session()
         self.callback(OkMessage("stop_session"))
         self.callback(IdleMessage())
 
     def _execute_get_next(self) -> None:
-        if self.client is None:
+        if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'get_next'.")
-        if self.processor_instance is None:
+        if self._processor_instance is None:
             raise RuntimeError("Processor is None. 'start' needs to be called before 'get_next'")
-        if self.callback is None:
-            raise RuntimeError("callback is None. 'setup' needs to be called before 'get_next'")
 
-        result = self.client.get_next()
+        result = self._client.get_next()
         assert isinstance(result, a121.Result)
 
-        processor_result = self.processor_instance.process(result)
+        processor_result = self._processor_instance.process(result)
         self.callback(DataMessage("plot", processor_result, recipient="plot_plugin"))
 
 

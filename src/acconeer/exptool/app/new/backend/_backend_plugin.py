@@ -3,13 +3,13 @@ from __future__ import annotations
 import abc
 from typing import Any, Callable
 
+from ._message import Message
 from ._types import Task
 
 
 class BackendPlugin(abc.ABC):
-    @abc.abstractmethod
-    def setup(self, *, callback: Callable) -> None:
-        pass
+    def __init__(self, callback: Callable[[Message], None]) -> None:
+        self.callback = callback
 
     @abc.abstractmethod
     def attach_client(self, *, client: Any) -> None:

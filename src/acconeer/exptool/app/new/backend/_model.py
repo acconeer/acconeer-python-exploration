@@ -53,22 +53,33 @@ class Model:
             log.warning(f"Got unsupported task: {task_name}")
 
     def connect_client(self, client_info: a121.ClientInfo) -> None:
-        if self.client is None:
-            self.client = a121.Client(
-                ip_address=client_info.ip_address,
-                serial_port=client_info.serial_port,
-                override_baudrate=client_info.override_baudrate,
+        """Connects the Model's client
+
+        Callbacks:
+        - ErrorMessage("connect_client") if Model already have a client.
+        - ErrorMessage("connect_client") if the client cannot be connected.
+        - OkMessage("connect_client") if client connected succesfully
+        - DataMessage("server_info")  -||-
+
+        :param client_info: Used to create and connect the client
+        """
+        if self.client is not None:
+            self.task_callback(
+                ErrorMessage(
+                    "connect_client",
+                    RuntimeError(
+                        "Model already has a Client. "
+                        + "The current Client needs to be disconnected first."
+                    ),
+                )
             )
-        elif self.client.connected:
-            log.warn("Tried to connect when the Client is already connected. Will do nothing.")
             return
-        elif self.backend_plugin is not None:
-            self.client = a121.Client(
-                ip_address=client_info.ip_address,
-                serial_port=client_info.serial_port,
-                override_baudrate=client_info.override_baudrate,
-            )
-            self.backend_plugin.attach_client(client=self.client)
+
+        self.client = a121.Client(
+            ip_address=client_info.ip_address,
+            serial_port=client_info.serial_port,
+            override_baudrate=client_info.override_baudrate,
+        )
 
         try:
             self.client.connect()
@@ -76,10 +87,19 @@ class Model:
             self.task_callback(ErrorMessage("connect_client", e))
             self.client = None
         else:
+            if self.backend_plugin is not None:
+                self.backend_plugin.attach_client(client=self.client)
+
             self.task_callback(OkMessage("connect_client"))
             self.task_callback(DataMessage("server_info", self.client.server_info))
 
     def disconnect_client(self) -> None:
+        """Disconnects the Model's client
+
+        Callbacks:
+        - ErrorMessage("disconnect_client") if Model doesn't have a client (already disconnected).
+        - OkMessage("disconnect_client") if client disconnected succesfully
+        """
         if self.client is None:
             self.task_callback(
                 ErrorMessage(
@@ -93,24 +113,42 @@ class Model:
             self.backend_plugin.detach_client()
 
         self.client.disconnect()
+        self.client = None
         self.task_callback(OkMessage("disconnect_client"))
 
     def load_plugin(self, *, plugin: Type[BackendPlugin]) -> None:
+        """Loads a plugin
+
+        Callbacks:
+        - ErrorMessage("load_plugin") if Model already has a loaded plugin
+        - OkMessage("load_plugin") if the plugin was loaded succesfully
+
+        :param plugin: Type of ``BackendPlugin`` to load.
+        """
         if self.backend_plugin is not None:
-            log.warn("Cannot load a plugin before unloading the current one.")
+            self.task_callback(
+                ErrorMessage(
+                    "load_plugin",
+                    RuntimeError("Cannot load a plugin. Unload the current one first"),
+                )
+            )
             return
 
-        self.backend_plugin = plugin()
-        self.backend_plugin.setup(callback=self.task_callback)
+        self.backend_plugin = plugin(callback=self.task_callback)
         log.info(f"{plugin.__name__} was loaded.")
 
         if self.client is not None and self.client.connected:
             self.backend_plugin.attach_client(client=self.client)
-            log.debug(f"{plugin.__class__.__name__} was attached a Client")
+            log.debug(f"{plugin.__name__} was attached a Client")
 
         self.task_callback(OkMessage("load_plugin"))
 
     def unload_plugin(self) -> None:
+        """Unloads a plugin.
+
+        Callbacks:
+        - OkMessage("unload_plugin") always.
+        """
         if self.backend_plugin is None:
             return
 
