@@ -24,6 +24,7 @@ from acconeer.exptool.app.new.backend import (
     Message,
     Task,
 )
+from acconeer.exptool.app.new.storage import remove_temp_dir
 
 from .serial_port_updater import SerialPortUpdater
 from .state_enums import ConnectionInterface, ConnectionState, PluginState
@@ -160,6 +161,8 @@ class AppModel(QObject):
         self._serial_port_updater.start()
 
     def stop(self) -> None:
+        remove_temp_dir()
+
         self._listener.requestInterruption()
         status = self._listener.wait(QDeadlineTimer(500))
 
