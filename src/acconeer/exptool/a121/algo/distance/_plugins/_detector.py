@@ -5,7 +5,7 @@ from acconeer.exptool.a121.algo._plugins import (
     DetectorPlotPluginBase,
     DetectorViewPluginBase,
 )
-from acconeer.exptool.app.new.app_model import Plugin, PluginFamily
+from acconeer.exptool.app.new.app_model import Plugin, PluginFamily, PluginGeneration
 
 
 class BackendPlugin(DetectorBackendPluginBase):
@@ -21,6 +21,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
 
 DISTANCE_DETECTOR_PLUGIN = Plugin(
+    generation=PluginGeneration.A121,
     key="distance_detector",
     title="Distance detector",
     description="Easily measure distance to objects.",

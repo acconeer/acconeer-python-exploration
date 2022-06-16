@@ -6,5 +6,6 @@ from .app_model import (
     PlotPlugin,
     Plugin,
     PluginFamily,
+    PluginGeneration,
     ViewPlugin,
 )

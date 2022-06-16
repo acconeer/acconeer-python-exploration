@@ -79,8 +79,14 @@ class PluginFamily(Enum):
     DETECTOR = "Detectors"
 
 
+class PluginGeneration(Enum):
+    A111 = "a111"
+    A121 = "a121"
+
+
 @attrs.frozen(kw_only=True)
 class Plugin:
+    generation: PluginGeneration = attrs.field()
     key: str = attrs.field()
     title: str = attrs.field()
     description: Optional[str] = attrs.field(default=None)

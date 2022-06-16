@@ -29,6 +29,7 @@ from acconeer.exptool.app.new import (
     OkMessage,
     Plugin,
     PluginFamily,
+    PluginGeneration,
     Task,
 )
 from acconeer.exptool.app.new.app_model.state_enums import PluginState
@@ -347,6 +348,7 @@ class PlotPlugin(ProcessorPlotPluginBase):
 
 
 SPARSE_IQ_PLUGIN = Plugin(
+    generation=PluginGeneration.A121,
     key="sparse_iq",
     title="Sparse IQ",
     description="Basic usage of the sparse IQ service.",

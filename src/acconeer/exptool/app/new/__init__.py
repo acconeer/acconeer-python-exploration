@@ -7,6 +7,7 @@ from .app_model import (
     PlotPlugin,
     Plugin,
     PluginFamily,
+    PluginGeneration,
     ViewPlugin,
 )
 from .backend import (
