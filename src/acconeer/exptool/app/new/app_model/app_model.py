@@ -310,7 +310,13 @@ class AppModel(QObject):
 
     def save_to_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} saving to file '{path}'")
-        # TODO
+
+        if self.saveable_file is None:
+            raise RuntimeError
+
+        self.saveable_file.rename(path)
+        self.saveable_file = None
+        self.broadcast()
 
     def load_from_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} loading from file '{path}'")
