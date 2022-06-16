@@ -190,7 +190,7 @@ class ViewPlugin(ProcessorViewPluginBase):
 class PlotPlugin(ProcessorPlotPluginBase):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
-        self.smooth_max = et.utils.SmoothMax()  # type: ignore[attr-defined]
+        self.smooth_max = et.utils.SmoothMax()
 
     def handle_message(self, message: Message) -> None:
         if message.command_name == "setup":
@@ -248,19 +248,19 @@ class PlotPlugin(ProcessorPlotPluginBase):
     def _create_amplitude_curve(
         cycle_num: int, depths_m: npt.NDArray[np.float_]
     ) -> pg.PlotDataItem:
-        pen = et.utils.pg_pen_cycler(cycle_num)  # type: ignore[attr-defined]
+        pen = et.utils.pg_pen_cycler(cycle_num)
 
         if len(depths_m) > 32:
             return pg.PlotDataItem(pen=pen)
         else:
-            brush = et.utils.pg_brush_cycler(cycle_num)  # type: ignore[attr-defined]
+            brush = et.utils.pg_brush_cycler(cycle_num)
             return pg.PlotDataItem(
                 pen=pen, symbol="o", symbolSize=5, symbolBrush=brush, symbolPen="k"
             )
 
     @staticmethod
     def _create_phase_curve(cycle_num: int) -> pg.PlotDataItem:
-        brush = et.utils.pg_brush_cycler(cycle_num)  # type: ignore[attr-defined]
+        brush = et.utils.pg_brush_cycler(cycle_num)
         return pg.PlotDataItem(
             pen=None, symbol="o", symbolSize=5, symbolBrush=brush, symbolPen="k"
         )
@@ -280,7 +280,7 @@ class PlotPlugin(ProcessorPlotPluginBase):
         phase_plot.showGrid(x=True, y=True)
         phase_plot.setLabel("left", "Phase")
         phase_plot.setYRange(-np.pi, np.pi)
-        phase_plot.getAxis("left").setTicks(et.utils.pg_phase_ticks)  # type: ignore [attr-defined]
+        phase_plot.getAxis("left").setTicks(et.utils.pg_phase_ticks)
         return phase_plot
 
     @staticmethod
@@ -297,7 +297,7 @@ class PlotPlugin(ProcessorPlotPluginBase):
         transform.scale(step_length_m, vel_res)
 
         im = pg.ImageItem(autoDownsample=True)
-        im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))  # type: ignore[attr-defined]
+        im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
         im.setTransform(transform)
 
         plot = parent.addPlot()

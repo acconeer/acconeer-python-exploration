@@ -1,5 +1,4 @@
 import importlib.resources
-import logging
 import sys
 
 import qdarktheme
@@ -10,7 +9,9 @@ from PySide6.QtWidgets import QApplication
 import pyqtgraph as pg
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
+from acconeer.exptool.utils import config_logging  # type: ignore[import]
 
+from ._argument_parser import ExptoolArgumentParser
 from .app_model import AppModel
 from .backend import Backend
 from .plugin_loader import load_default_plugins
@@ -18,7 +19,9 @@ from .ui import MainWindow
 
 
 def main():
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    parser = ExptoolArgumentParser()
+    args = parser.parse_args()
+    config_logging(args)
 
     backend = Backend()
     backend.start()

@@ -19,7 +19,7 @@ from .links import AdaptedSerialLink, AdaptedSocketLink, NullLink, NullLinkError
 
 def determine_serial_port(serial_port: Optional[str]) -> str:
     if serial_port is None:
-        tagged_ports = et.utils.get_tagged_serial_ports()  # type: ignore[attr-defined]
+        tagged_ports = et.utils.get_tagged_serial_ports()
         A121_TAGS = ["XC120"]
         hopefully_a_single_tagged_port = [port for port, tag in tagged_ports if tag in A121_TAGS]
         try:

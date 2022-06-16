@@ -22,7 +22,7 @@ def processor_main(
     parser = a121.ExampleArgumentParser()
     parser.add_argument("--sensor", type=int, default=1)
     args = parser.parse_args()
-    et.utils.config_logging(args)  # type: ignore[attr-defined]
+    et.utils.config_logging(args)
 
     client = a121.Client(**a121.get_client_args(args))
     client.connect()
@@ -51,7 +51,7 @@ def processor_main(
 
     client.start_session()
 
-    interrupt_handler = et.utils.ExampleInterruptHandler()  # type: ignore[attr-defined]
+    interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
