@@ -31,8 +31,7 @@ class LoadFileButton(QPushButton):
         app_model.sig_notify.connect(self._on_app_model_update)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        # self.setEnabled(False)
-        pass
+        self.setEnabled(app_model.plugin_state.is_steady)
 
     def _on_click(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
@@ -61,7 +60,7 @@ class SaveFileButton(QPushButton):
         app_model.sig_notify.connect(self._on_app_model_update)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        self.setEnabled(app_model.saveable_file is not None)
+        self.setEnabled(app_model.saveable_file is not None and app_model.plugin_state.is_steady)
 
     def _on_click(self) -> None:
         if self.app_model.saveable_file is None:
