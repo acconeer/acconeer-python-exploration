@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QWidget
 import pyqtgraph as pg
 
 from acconeer.exptool import a121
+from acconeer.exptool.app.new.app_model.file_detective import investigate_file
 from acconeer.exptool.app.new.backend import (
     Backend,
     BackendPlugin,
@@ -326,7 +327,34 @@ class AppModel(QObject):
 
     def load_from_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} loading from file '{path}'")
-        # TODO
+
+        findings = investigate_file(path)
+
+        if findings is None:
+            self.sig_error.emit(Exception("Cannot load file"))
+            return
+
+        if findings.generation != PluginGeneration.A121:
+            self.sig_error.emit(Exception("This app can currently only load A121 files"))
+            return
+
+        try:
+            plugin = self._find_plugin(findings.key)
+        except Exception:
+            log.debug(f"Could not find plugin '{findings.key}'")
+
+            # TODO: Don't hardcode
+            plugin = self._find_plugin("sparse_iq")  # noqa: F841
+
+        # TODO:
+        # self.load_plugin(plugin)
+        # ...
+
+    def _find_plugin(self, find_key: Optional[str]) -> Plugin:  # TODO: Also find by generation
+        if find_key is None:
+            raise Exception
+
+        return next(plugin for plugin in self.plugins if plugin.key == find_key)
 
     @property
     def rss_version(self) -> Optional[str]:
