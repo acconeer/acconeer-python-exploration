@@ -162,8 +162,13 @@ class Detector:
             MeasurementType.FAR_RANGE: [
                 SubsweepGroupPlan(
                     step_length=1,
-                    breakpoints_m=[config.start_m, 0.5, config.end_m],
+                    breakpoints_m=[config.start_m, 0.5, 1.0],
                     profile=a121.Profile.PROFILE_1,
+                ),
+                SubsweepGroupPlan(
+                    step_length=1,
+                    breakpoints_m=[1.0, config.end_m],
+                    profile=a121.Profile.PROFILE_3,
                 ),
             ],
         }
@@ -195,13 +200,11 @@ class Detector:
         subsweeps = []
         processor_specs_subsweep_indexes = []
         subsweep_idx = 0
-        for plan in subsweep_group_plans:
-            (margin_m, _) = Processor.depth_filter_init_margin(plan.profile, plan.step_length)
-            extended_breakpoints_m = copy.copy(plan.breakpoints_m)
-            extended_breakpoints_m[0] -= margin_m
-            extended_breakpoints_m[-1] += margin_m
-            extended_breakpoints = cls._m_to_points(
-                breakpoints_m=extended_breakpoints_m, step_length=plan.step_length
+        for plan_idx, plan in enumerate(subsweep_group_plans):
+            extended_breakpoints = cls._add_margins_and_convert_to_points(
+                plan=plan,
+                plan_idx=plan_idx,
+                last_plan_idx=len(subsweep_group_plans) - 1,
             )
             subsweep_indexes = []
             for idx in range(len(extended_breakpoints) - 1):
@@ -220,6 +223,35 @@ class Detector:
                 subsweep_idx += 1
             processor_specs_subsweep_indexes.append(subsweep_indexes)
         return (a121.SensorConfig(subsweeps=subsweeps), processor_specs_subsweep_indexes)
+
+    @classmethod
+    def _add_margins_and_convert_to_points(
+        cls, plan: SubsweepGroupPlan, plan_idx: int, last_plan_idx: int
+    ) -> npt.NDArray[np.int_]:
+        """
+        Add margin to edges of the range spanned by a subsweep group.
+
+        A margin is added for the following two reasons(if both reasons are applicable, two margins
+        are added)
+
+        1. Add margin to edges of each subsweep group plan for distance filter initialization.
+        2. Add margin to edges of neigbouring subsweep group plans to create overlap for smooth
+        transition between segments(utilizing peak merging).
+
+        Before returned, the extended range is converted from meters to points.
+        """
+        (margin_m, _) = Processor.distance_filter_init_margin(plan.profile, plan.step_length)
+        extended_breakpoints_m = copy.copy(plan.breakpoints_m)
+        if plan_idx == 0:
+            extended_breakpoints_m[0] -= margin_m
+            extended_breakpoints_m[-1] += 2 * margin_m
+        elif plan_idx == last_plan_idx:
+            extended_breakpoints_m[0] -= 2 * margin_m
+            extended_breakpoints_m[-1] += margin_m
+        else:
+            extended_breakpoints_m[0] -= 2 * margin_m
+            extended_breakpoints_m[-1] += 2 * margin_m
+        return cls._m_to_points(breakpoints_m=extended_breakpoints_m, step_length=plan.step_length)
 
     @classmethod
     def _m_to_points(cls, breakpoints_m: list[float], step_length: int) -> npt.NDArray[np.int_]:

@@ -118,7 +118,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         assert self.metadata.base_step_length_m is not None
         self.step_length_m = self.step_length * self.metadata.base_step_length_m
 
-        (_, self.margin_p) = self.depth_filter_init_margin(self.profile, self.step_length)
+        (_, self.margin_p) = self.distance_filter_init_margin(self.profile, self.step_length)
 
         self.start_point_cropped = self.start_point + self.margin_p
         self.num_points_cropped = self.num_points - 2 * self.margin_p
@@ -408,7 +408,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return estimated_distances, estimated_amplitudes
 
     @classmethod
-    def depth_filter_init_margin(cls, profile: a121.Profile, step_length: int) -> Tuple[int, int]:
+    def distance_filter_init_margin(
+        cls, profile: a121.Profile, step_length: int
+    ) -> Tuple[int, int]:
         margin_p = np.ceil(
             cls.ENVELOPE_WIDTH_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length)
         ).astype(int)

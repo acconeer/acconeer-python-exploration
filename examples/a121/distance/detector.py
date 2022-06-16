@@ -15,8 +15,9 @@ def main():
 
     client = a121.Client(**a121.get_client_args(args))
     client.connect()
-    detector_config = DetectorConfig(start_m=0.2, end_m=1.0)
+    detector_config = DetectorConfig(start_m=0.2, end_m=2.0)
     detector = Detector(client=client, sensor_id=1, detector_config=detector_config)
+
     detector.start()
 
     pg_updater = PGUpdater(num_curves=len(detector.processor_specs))
@@ -81,15 +82,15 @@ class PGUpdater:
         self.distance_history.pop(0)
         self.distance_history.append(result.distances[0])
 
-        for idx, processor_result in enumerate(result.extra_results):
-            threshold = processor_result.used_threshold
+        for idx, processor_result in enumerate(result.processor_results):
+            threshold = processor_result.extra_result.used_threshold
             valid_threshold_idx = np.where(~np.isnan(threshold))[0]
             threshold = threshold[valid_threshold_idx]
             self.sweep_curves[idx].setData(
-                processor_result.distances_m, processor_result.abs_sweep
+                processor_result.extra_result.distances_m, processor_result.extra_result.abs_sweep
             )
             self.threshold_curves[idx].setData(
-                processor_result.distances_m[valid_threshold_idx], threshold
+                processor_result.extra_result.distances_m[valid_threshold_idx], threshold
             )
         self.dist_history_curve.setData(self.distance_history)
 
