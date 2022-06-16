@@ -41,6 +41,7 @@ known_third_party = [
     "typing_extensions",
     "qdarktheme",
     "importlib_metadata",
+    "qtawesome",
 ]
 known_qt = "PySide6"
 known_plotting = "pyqtgraph"
@@ -90,6 +91,7 @@ module = [
     "PySide6.*",
     "pytest.*",
     "qdarktheme.*",
+    "qtawesome.*",
     "scipy.*",
 ]
 ignore_missing_imports = true
