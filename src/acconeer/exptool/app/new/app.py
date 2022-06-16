@@ -15,7 +15,7 @@ from ._argument_parser import ExptoolArgumentParser
 from .app_model import AppModel
 from .backend import Backend
 from .plugin_loader import load_default_plugins
-from .ui import MainWindow
+from .ui import AppModelViewer, MainWindow
 
 
 def main():
@@ -49,6 +49,10 @@ def main():
 
     mw = MainWindow(model)
     mw.show()
+
+    if args.amv:
+        app_model_viewer = AppModelViewer(model)
+        app_model_viewer.show()
 
     model.broadcast()
 
