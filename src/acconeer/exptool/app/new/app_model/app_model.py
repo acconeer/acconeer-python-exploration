@@ -214,6 +214,13 @@ class AppModel(QObject):
                 self.plugin_state = PluginState.UNLOADED
             else:
                 self.plugin_state = PluginState.LOADED_IDLE
+        elif message.command_name == "saveable_file":
+            assert message.data is None or isinstance(message.data, Path)
+
+            if self.saveable_file is not None:
+                self.saveable_file.unlink(missing_ok=True)
+
+            self.saveable_file = message.data
         elif message == BusyMessage():
             self.plugin_state = PluginState.LOADED_BUSY
         elif message == IdleMessage():
