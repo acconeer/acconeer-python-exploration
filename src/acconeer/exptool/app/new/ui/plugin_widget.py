@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import importlib.resources
 from typing import Optional
 
 from PySide6 import QtCore
+from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
+    QGraphicsOpacityEffect,
+    QGridLayout,
     QGroupBox,
     QLabel,
     QPushButton,
@@ -15,6 +19,7 @@ from PySide6.QtWidgets import (
 
 import pyqtgraph as pg
 
+from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new.app_model import (
     AppModel,
     PlotPlugin,
@@ -231,7 +236,15 @@ class ControlPlaceholder(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setLayout(QVBoxLayout(self))
-        label = QLabel("...", self)
-        label.setAlignment(QtCore.Qt.AlignCenter)
-        self.layout().addWidget(label)
+        self.setLayout(QGridLayout(self))
+
+        with importlib.resources.path(resources, "icon-black.svg") as path:
+            icon = QSvgWidget(str(path), self)
+
+        icon.setMaximumSize(60, 60)
+        icon.renderer().setAspectRatioMode(QtCore.Qt.KeepAspectRatio)
+        effect = QGraphicsOpacityEffect(icon)
+        effect.setOpacity(0.1)
+        icon.setGraphicsEffect(effect)
+
+        self.layout().addWidget(icon)
