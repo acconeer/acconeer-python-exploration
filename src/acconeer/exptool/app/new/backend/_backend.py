@@ -110,7 +110,10 @@ def process_program(
                         + "Should be a tuple[str, dict[str, Any]]."
                     )
                     continue
-                model.execute_task(task=arg)
+                success = model.execute_task(task=arg)
+                if not success and arg == idle_task:
+                    log.warn(f"Idle task ({idle_task}) failed and was unset as a result.")
+                    idle_task = None
             elif cmd == "set_idle_task":
                 idle_task = arg
             else:

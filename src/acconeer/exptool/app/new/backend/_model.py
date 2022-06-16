@@ -22,13 +22,20 @@ class Model:
         self.client = None
         self.task_callback = task_callback
 
-    def execute_task(self, task: Task) -> None:
+    def execute_task(self, task: Task) -> bool:
+        """Executes the task ``task``.
+
+        :returns: True if it was successful (no ``Exception``s raised) else False
+        """
         try:
             self._execute_task(task)
         except Exception as e:
             task_name, _ = task
             self.task_callback(ErrorMessage(task_name, e))
             log.exception(e)
+            return False
+        else:
+            return True
 
     def _execute_task(self, task: Task) -> None:
         task_name, task_kwargs = task
