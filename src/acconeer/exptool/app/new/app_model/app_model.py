@@ -196,6 +196,7 @@ class AppModel(QObject):
         elif message.command_name == "disconnect_client":
             if message.status == "ok":
                 self.connection_state = ConnectionState.DISCONNECTED
+                self._a121_server_info = None
             else:
                 self.connection_state = ConnectionState.CONNECTED
         elif message.command_name == "server_info":
