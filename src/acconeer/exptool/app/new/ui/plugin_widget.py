@@ -134,6 +134,8 @@ class PluginSelection(QWidget):
 
         self.unload_button.setEnabled(plugin is not None)
 
+        self.setEnabled(app_model.plugin_state.is_steady)
+
 
 class PluginPlotArea(QFrame):
     _FPS = 60

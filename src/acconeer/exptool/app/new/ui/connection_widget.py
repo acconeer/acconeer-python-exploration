@@ -43,7 +43,9 @@ class _ConnectAndDisconnectButton(QPushButton):
         ENABLED_STATES = {ConnectionState.CONNECTED, ConnectionState.DISCONNECTED}
 
         self.setText(TEXTS[app_model.connection_state])
-        self.setEnabled(app_model.connection_state in ENABLED_STATES)
+        self.setEnabled(
+            app_model.connection_state in ENABLED_STATES and app_model.plugin_state.is_steady
+        )
 
 
 class _SocketConnectionWidget(AppModelAwareWidget):
