@@ -8,7 +8,7 @@ def get_temp_dir() -> Path:
     et_dir = Path(platformdirs.user_data_dir(appname="acconeer_exptool", appauthor="Acconeer AB"))
     codename = "plugoneer"
     temp_dir = et_dir / codename / "temp"
-    temp_dir.mkdir(parents=True)
+    temp_dir.mkdir(parents=True, exist_ok=True)
     return temp_dir
 
 
