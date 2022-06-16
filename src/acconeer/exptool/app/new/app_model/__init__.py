@@ -7,5 +7,6 @@ from .app_model import (
     Plugin,
     PluginFamily,
     PluginGeneration,
+    PluginState,
     ViewPlugin,
 )

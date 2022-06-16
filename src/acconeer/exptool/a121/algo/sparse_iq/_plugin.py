@@ -30,9 +30,9 @@ from acconeer.exptool.app.new import (
     Plugin,
     PluginFamily,
     PluginGeneration,
+    PluginState,
     Task,
 )
-from acconeer.exptool.app.new.app_model.state_enums import PluginState
 from acconeer.exptool.app.new.ui.plugin import SessionConfigEditor
 
 from ._processor import Processor, ProcessorConfig, ProcessorResult
