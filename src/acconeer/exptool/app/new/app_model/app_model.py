@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import logging
 import queue
+import shutil
 from pathlib import Path
 from typing import Optional, Tuple, Type
 
@@ -321,9 +322,7 @@ class AppModel(QObject):
         if self.saveable_file is None:
             raise RuntimeError
 
-        self.saveable_file.rename(path)
-        self.saveable_file = None
-        self.broadcast()
+        shutil.copyfile(self.saveable_file, path)
 
     def load_from_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} loading from file '{path}'")
