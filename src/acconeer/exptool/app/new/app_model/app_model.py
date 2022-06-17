@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 import logging
 import queue
-from enum import Enum
 from pathlib import Path
 from typing import Optional, Tuple, Type
 
@@ -26,6 +25,7 @@ from acconeer.exptool.app.new.backend import (
 )
 from acconeer.exptool.app.new.storage import remove_temp_dir
 
+from .plugin_enums import PluginFamily, PluginGeneration
 from .serial_port_updater import SerialPortUpdater
 from .state_enums import ConnectionInterface, ConnectionState, PluginState
 
@@ -72,16 +72,6 @@ class ViewPlugin(AppModelAware):
 
     def send_backend_task(self, task: Task) -> None:
         self.send_backend_command(("task", task))
-
-
-class PluginFamily(Enum):
-    SERVICE = "Services"
-    DETECTOR = "Detectors"
-
-
-class PluginGeneration(Enum):
-    A111 = "a111"
-    A121 = "a121"
 
 
 @attrs.frozen(kw_only=True)

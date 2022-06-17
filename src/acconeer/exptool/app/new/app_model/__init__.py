@@ -5,8 +5,7 @@ from .app_model import (
     ConnectionState,
     PlotPlugin,
     Plugin,
-    PluginFamily,
-    PluginGeneration,
     PluginState,
     ViewPlugin,
 )
+from .plugin_enums import PluginFamily, PluginGeneration
