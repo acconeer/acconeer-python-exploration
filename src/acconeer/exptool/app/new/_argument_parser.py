@@ -6,6 +6,11 @@ class ExptoolArgumentParser(argparse.ArgumentParser):
         super().__init__()
 
         self.add_argument("--amv", action="store_true")
+        self.add_argument(
+            "--portable",
+            action="store_true",
+            help=argparse.SUPPRESS,  # makes option hidden
+        )
 
         verbosity_group = self.add_mutually_exclusive_group(required=False)
         verbosity_group.add_argument(
