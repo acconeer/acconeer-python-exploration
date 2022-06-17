@@ -24,6 +24,7 @@ from acconeer.exptool.app.new import (
     BusyMessage,
     ConnectionState,
     DataMessage,
+    ErrorMessage,
     IdleMessage,
     KwargMessage,
     Message,
@@ -100,7 +101,7 @@ class BackendPlugin(ProcessorBackendPluginBase):
             try:
                 self._execute_start(**task_kwargs)
             except Exception as e:
-                log.exception(e)
+                self.callback(ErrorMessage("start_session", e))
                 self.callback(IdleMessage())
         elif task_name == "stop_session":
             self._execute_stop()
