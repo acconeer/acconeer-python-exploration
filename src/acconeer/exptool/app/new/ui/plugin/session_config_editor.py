@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Optional
 
-from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
@@ -18,8 +17,6 @@ log = logging.getLogger(__name__)
 
 
 class SessionConfigEditor(QWidget):
-    sig_session_config_updated = Signal(a121.SessionConfig)
-
     _session_config: Optional[a121.SessionConfig]
     _all_pidgets: list[pidgets.ParameterWidget]
 
