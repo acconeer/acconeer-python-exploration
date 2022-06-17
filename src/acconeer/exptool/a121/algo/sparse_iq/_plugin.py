@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Callable, Optional, Tuple
 
 import numpy as np
@@ -35,6 +36,7 @@ from acconeer.exptool.app.new import (
     PluginState,
     Task,
 )
+from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
     HorizontalGroupBox,
@@ -51,11 +53,13 @@ log = logging.getLogger(__name__)
 class BackendPlugin(ProcessorBackendPluginBase):
     _client: Optional[a121.Client]
     _processor_instance: Optional[Processor]
+    _recorder: Optional[a121.H5Recorder]
 
     def __init__(self, callback: Callable[[Message], None], key: str):
         super().__init__(callback=callback, key=key)
         self._processor_instance = None
         self._client = None
+        self._recorder = None
         self._send_default_configs_to_view()
 
     def _send_default_configs_to_view(self) -> None:
@@ -135,7 +139,14 @@ class BackendPlugin(ProcessorBackendPluginBase):
             metadata=self.metadata,
             processor_config=processor_config,
         )
-        self._client.start_session()
+
+        self.callback(DataMessage("saveable_file", None))
+        self._recorder = a121.H5Recorder(get_temp_h5_path())
+        algo_group = self._recorder.require_algo_group(self.key)  # noqa: F841
+
+        # TODO: write processor_config etc. to algo group
+
+        self._client.start_session(self._recorder)
         self.callback(
             KwargMessage(
                 "setup",
@@ -150,6 +161,12 @@ class BackendPlugin(ProcessorBackendPluginBase):
             raise RuntimeError("Client is not attached. Can not 'stop'.")
 
         self._client.stop_session()
+
+        if self._recorder is not None:
+            assert self._recorder.path is not None
+            path = Path(self._recorder.path)
+            self.callback(DataMessage("saveable_file", path))
+
         self.callback(OkMessage("stop_session"))
         self.callback(IdleMessage())
 
