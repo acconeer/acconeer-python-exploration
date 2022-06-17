@@ -2223,7 +2223,9 @@ def main():
         QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
     )
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-    app = QApplication(sys.argv)
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
     ex = GUI(use_last_config=args.use_last_config)
 
     signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
