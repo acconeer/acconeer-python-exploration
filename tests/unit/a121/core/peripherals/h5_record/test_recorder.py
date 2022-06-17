@@ -32,6 +32,7 @@ def test_init_defaults_with_path(tmp_file_path):
 
     with h5py.File(tmp_file_path, "r") as f:
         assert f["lib_version"][()].decode() == importlib_metadata.version("acconeer-exptool")
+        assert f["generation"][()].decode() == "a121"
 
 
 def test_init_defaults_with_file_object(tmp_file_path):
@@ -40,6 +41,7 @@ def test_init_defaults_with_file_object(tmp_file_path):
         assert recorder.owns_file is False
         assert recorder.path is None
         assert f["lib_version"][()].decode() == importlib_metadata.version("acconeer-exptool")
+        assert f["generation"][()].decode() == "a121"
 
 
 def test_sample_whole_record(tmp_path, ref_record):

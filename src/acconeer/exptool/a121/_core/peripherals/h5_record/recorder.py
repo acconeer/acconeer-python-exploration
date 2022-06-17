@@ -88,6 +88,12 @@ class H5Recorder(Recorder):
             dtype=H5PY_STR_DTYPE,
             track_times=False,
         )
+        self.file.create_dataset(
+            "generation",
+            data="a121",
+            dtype=H5PY_STR_DTYPE,
+            track_times=False,
+        )
 
     def _start(
         self,
