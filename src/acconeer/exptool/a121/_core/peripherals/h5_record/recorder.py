@@ -223,3 +223,20 @@ class H5Recorder(Recorder):
         g["temperature"][index] = result.temperature
         g["tick"][index] = result.tick
         g["frame"][index] = result._frame
+
+    def require_algo_group(self, key: str) -> h5py.Group:
+        group = self.file.require_group("algo")
+
+        if "key" in group:
+            existing_key = bytes(group["key"][()]).decode()
+            if existing_key != key:
+                raise Exception(f"Algo group key mismatch: got '{key}' but had '{existing_key}'")
+        else:
+            group.create_dataset(
+                "key",
+                data=key,
+                dtype=H5PY_STR_DTYPE,
+                track_times=False,
+            )
+
+        return group
