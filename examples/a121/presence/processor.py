@@ -85,10 +85,40 @@ class PGUpdater:
         self.limit_lines = []
         dashed_pen = pg.mkPen("k", width=2.5, style=QtCore.Qt.DashLine)
 
+        # Amplitude plot
+
+        self.ampl_plot = win.addPlot(
+            row=0,
+            col=0,
+            title="Amplitude, sweeps (orange), mean sweep (blue)",
+        )
+
+        self.ampl_plot.setMenuEnabled(False)
+        self.ampl_plot.setMouseEnabled(x=False, y=False)
+        self.ampl_plot.hideButtons()
+        self.ampl_plot.showGrid(x=True, y=True)
+        self.ampl_plot.setLabel("bottom", "Distance (m)")
+        self.ampl_plot.setLabel("left", "Amplitude")
+
+        self.ampl_plot.setYRange(0, 2**16)
+
+        self.frame_scatter = pg.ScatterPlotItem(
+            size=10,
+            brush=et.utils.pg_brush_cycler(1),
+        )
+        self.mean_sweep_scatter = pg.ScatterPlotItem(
+            size=10,
+            brush=et.utils.pg_brush_cycler(0),
+        )
+
+        self.ampl_plot.addItem(self.frame_scatter)
+        self.ampl_plot.addItem(self.mean_sweep_scatter)
+        self.frame_smooth_limits = et.utils.SmoothLimits(self.sensor_config.frame_rate)
+
         # Noise estimation plot
 
         self.noise_plot = win.addPlot(
-            row=0,
+            row=1,
             col=0,
             title="Noise",
         )
@@ -96,15 +126,16 @@ class PGUpdater:
         self.noise_plot.setMouseEnabled(x=False, y=False)
         self.noise_plot.hideButtons()
         self.noise_plot.showGrid(x=True, y=True)
-        self.noise_plot.setLabel("bottom", "Depth (m)")
+        self.noise_plot.setLabel("bottom", "Distance (m)")
         self.noise_plot.setLabel("left", "Amplitude")
+        self.noise_plot.setVisible(False)
         self.noise_curve = self.noise_plot.plot(pen=et.utils.pg_pen_cycler())
         self.noise_smooth_max = et.utils.SmoothMax(self.sensor_config.frame_rate)
 
         # Depthwise presence plot
 
         self.move_plot = win.addPlot(
-            row=1,
+            row=2,
             col=0,
             title="Depthwise presence",
         )
@@ -112,7 +143,7 @@ class PGUpdater:
         self.move_plot.setMouseEnabled(x=False, y=False)
         self.move_plot.hideButtons()
         self.move_plot.showGrid(x=True, y=True)
-        self.move_plot.setLabel("bottom", "Depth (m)")
+        self.move_plot.setLabel("bottom", "Distance (m)")
         self.move_plot.setLabel("left", "Norm. ampl.")
         zero_curve = self.move_plot.plot(self.distances, np.zeros_like(self.distances))
         self.inter_curve = self.move_plot.plot()
@@ -218,6 +249,15 @@ class PGUpdater:
         self.setup_is_done = True
 
     def update(self, data):
+        amplitudes = np.abs(data.extra_result.frame)
+        self.frame_scatter.setData(
+            np.tile(self.distances, self.sensor_config.sweeps_per_frame),
+            amplitudes.flatten(),
+        )
+
+        self.mean_sweep_scatter.setData(self.distances, data.extra_result.mean_sweep)
+        self.ampl_plot.setYRange(*self.frame_smooth_limits.update(amplitudes))
+
         noise = data.extra_result.lp_noise
         self.noise_curve.setData(self.distances, noise)
         self.noise_plot.setYRange(0, self.noise_smooth_max.update(noise))
