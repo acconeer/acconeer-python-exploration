@@ -23,6 +23,19 @@ class SessionConfigEditor(QWidget):
     _session_config: Optional[a121.SessionConfig]
     _all_pidgets: list[pidgets.ParameterWidget]
 
+    IDLE_STATE_LABEL_MAP = {
+        a121.IdleState.DEEP_SLEEP: "Deep sleep",
+        a121.IdleState.SLEEP: "Sleep",
+        a121.IdleState.READY: "Ready",
+    }
+    PROFILE_LABEL_MAP = {member: str(member.value) for member in a121.Profile}
+    PRF_LABEL_MAP = {
+        a121.PRF.PRF_19_5_MHz: "19.5 MHz",
+        a121.PRF.PRF_13_0_MHz: "13.0 MHz",
+        a121.PRF.PRF_8_7_MHz: "8.7 MHz",
+        a121.PRF.PRF_6_5_MHz: "6.5 MHz",
+    }
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
 
@@ -66,11 +79,19 @@ class SessionConfigEditor(QWidget):
                 bool,
             ),
             "inter_frame_idle_state": (
-                pidgets.EnumParameterWidget(a121.IdleState, "Inter frame idle state:"),
+                pidgets.EnumParameterWidget(
+                    a121.IdleState,
+                    "Inter frame idle state:",
+                    label_mapping=self.IDLE_STATE_LABEL_MAP,
+                ),
                 a121.IdleState,
             ),
             "inter_sweep_idle_state": (
-                pidgets.EnumParameterWidget(a121.IdleState, "Inter sweep idle state:"),
+                pidgets.EnumParameterWidget(
+                    a121.IdleState,
+                    "Inter sweep idle state:",
+                    label_mapping=self.IDLE_STATE_LABEL_MAP,
+                ),
                 a121.IdleState,
             ),
         }
@@ -89,7 +110,12 @@ class SessionConfigEditor(QWidget):
             "start_point": (pidgets.TextParameterWidget("Start point:", parent=self), int),
             "num_points": (pidgets.TextParameterWidget("Number of points:", parent=self), int),
             "step_length": (pidgets.TextParameterWidget("Step length:", parent=self), int),
-            "profile": (pidgets.EnumParameterWidget(a121.Profile, "Profile:"), a121.Profile),
+            "profile": (
+                pidgets.EnumParameterWidget(
+                    a121.Profile, "Profile:", parent=self, label_mapping=self.PROFILE_LABEL_MAP
+                ),
+                a121.Profile,
+            ),
             "hwaas": (pidgets.TextParameterWidget("HWAAS:", parent=self), int),
             "receiver_gain": (pidgets.TextParameterWidget("Receiver gain:", parent=self), int),
             "enable_tx": (
@@ -104,7 +130,12 @@ class SessionConfigEditor(QWidget):
                 pidgets.CheckboxParameterWidget("Phase enhancement:", parent=self),
                 bool,
             ),
-            "prf": (pidgets.EnumParameterWidget(a121.PRF, "PRF"), a121.PRF),
+            "prf": (
+                pidgets.EnumParameterWidget(
+                    a121.PRF, "PRF", parent=self, label_mapping=self.PRF_LABEL_MAP
+                ),
+                a121.PRF,
+            ),
         }
 
         for aspect, (pidget, func) in self._subsweep_config_pidgets.items():

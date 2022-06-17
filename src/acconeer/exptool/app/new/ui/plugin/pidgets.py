@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, Type, TypeVar
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
@@ -26,6 +26,7 @@ def widget_wrap_layout(layout: QLayout) -> QWidget:
 
 
 T = TypeVar("T")
+EnumT = TypeVar("EnumT", bound=Enum)
 
 
 class ParameterWidget(QWidget):
@@ -214,10 +215,10 @@ class CheckboxParameterWidget(ParameterWidget):
         self.checkbox.setChecked(bool(param))
 
 
-class ComboboxParameterWidget(ParameterWidget):
+class ComboboxParameterWidget(ParameterWidget, Generic[T]):
     def __init__(
         self,
-        items: list[tuple[str, Any]],
+        items: list[tuple[str, T]],
         name_label_text: str,
         note_label_text: str = "",
         parent: Optional[QWidget] = None,
@@ -244,16 +245,17 @@ class ComboboxParameterWidget(ParameterWidget):
         self.combobox.setCurrentIndex(index)
 
 
-class EnumParameterWidget(ComboboxParameterWidget):
+class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
     def __init__(
         self,
-        enum_type: Type[Enum],
+        enum_type: Type[EnumT],
         name_label_text: str,
         note_label_text: str = "",
+        label_mapping: dict[EnumT, str] = {},
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(
-            items=[(member.name, member) for member in enum_type],
+            items=[(label_mapping.get(member, member.name), member) for member in enum_type],
             name_label_text=name_label_text,
             note_label_text=note_label_text,
             parent=parent,

@@ -185,9 +185,17 @@ class ViewPlugin(ProcessorViewPluginBase):
             title="Processor config parameters",
             pidget_mapping={
                 "amplitude_method": (
-                    pidgets.EnumParameterWidget(AmplitudeMethod, "Amplitude method:"),
-                    id,
-                )
+                    pidgets.EnumParameterWidget(
+                        enum_type=AmplitudeMethod,
+                        name_label_text="Amplitude method:",
+                        label_mapping={
+                            AmplitudeMethod.COHERENT: "Coherent",
+                            AmplitudeMethod.NONCOHERENT: "Non-coherent",
+                            AmplitudeMethod.FFT_MAX: "FFT Max",
+                        },
+                    ),
+                    None,
+                ),
             },
             parent=self.view_widget,
         )
