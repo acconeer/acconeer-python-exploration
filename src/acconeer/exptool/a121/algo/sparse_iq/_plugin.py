@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 
 from PySide6.QtGui import QTransform
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
 
@@ -34,7 +34,12 @@ from acconeer.exptool.app.new import (
     PluginState,
     Task,
 )
-from acconeer.exptool.app.new.ui.plugin import AttrsConfigEditor, SessionConfigEditor, pidgets
+from acconeer.exptool.app.new.ui.plugin import (
+    AttrsConfigEditor,
+    HorizontalGroupBox,
+    SessionConfigEditor,
+    pidgets,
+)
 
 from ._processor import AmplitudeMethod, Processor, ProcessorConfig, ProcessorResult
 
@@ -173,16 +178,16 @@ class ViewPlugin(ProcessorViewPluginBase):
         self.start_button.clicked.connect(self._send_start_requests)
         self.stop_button.clicked.connect(self._send_stop_requests)
 
-        button_layout = QHBoxLayout(self.view_widget)
-        button_layout.addWidget(self.start_button)
-        button_layout.addWidget(self.stop_button)
+        button_group = HorizontalGroupBox("Processor controls", parent=self.view_widget)
+        button_group.layout().addWidget(self.start_button)
+        button_group.layout().addWidget(self.stop_button)
 
-        self.layout.addLayout(button_layout)
+        self.layout.addWidget(button_group)
         self.layout.addSpacing(10)
 
         self.session_config_editor = SessionConfigEditor(self.view_widget)
         self.processor_config_editor = AttrsConfigEditor[ProcessorConfig](
-            title="Processor config parameters",
+            title="Processor parameters",
             pidget_mapping={
                 "amplitude_method": (
                     pidgets.EnumParameterWidget(
