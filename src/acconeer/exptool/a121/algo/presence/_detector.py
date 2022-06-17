@@ -10,9 +10,12 @@ from ._processors import Processor, ProcessorConfig
 
 @attrs.mutable(kw_only=True)
 class DetectorConfig:
-    start_m: float = attrs.field()
-    end_m: float = attrs.field()
+    start_m: float = attrs.field(default=1.0)
+    end_m: float = attrs.field(default=2.0)
     detection_threshold: float = attrs.field(default=1.5)
+    update_rate: float = attrs.field(default=10.0)
+    sweeps_per_frame: int = attrs.field(default=16)
+    hwaas: int = attrs.field(default=32)
 
 
 @attrs.frozen(kw_only=True)
@@ -44,8 +47,9 @@ class Detector:
 
         sensor_config = self._get_sensor_config(self.detector_config)
         session_config = a121.SessionConfig(
-            sensor_config,
+            {self.sensor_id: sensor_config},
             extended=False,
+            update_rate=self.detector_config.update_rate,
         )
 
         metadata = self.client.setup_session(session_config)
@@ -77,6 +81,8 @@ class Detector:
             start_point=start_point,
             num_points=num_point,
             step_length=step_length,
+            hwaas=detector_config.hwaas,
+            sweeps_per_frame=detector_config.sweeps_per_frame,
         )
 
     @classmethod
