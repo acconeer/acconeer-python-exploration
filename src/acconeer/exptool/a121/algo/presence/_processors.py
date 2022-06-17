@@ -31,6 +31,7 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
+    frame: npt.NDArray[np.complex_] = attrs.field()
     mean_sweep: npt.NDArray[np.float_] = attrs.field()
     fast_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     slow_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
@@ -263,6 +264,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.update_index += 1
 
         extra_result = ProcessorExtraResult(
+            frame=frame,
             mean_sweep=mean_sweep,
             fast_lp_mean_sweep=self.fast_lp_mean_sweep,
             slow_lp_mean_sweep=self.slow_lp_mean_sweep,
