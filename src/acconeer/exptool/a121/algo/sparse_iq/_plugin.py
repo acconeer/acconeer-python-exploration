@@ -283,6 +283,8 @@ class PlotPlugin(ProcessorPlotPluginBase):
         if isinstance(metadata, list):
             raise ValueError("Support for extended configs is not implemented.")
 
+        self.plot_layout.clear()
+
         self.distances_m, _ = algo.get_distances_m(sensor_config, metadata)
         vels, vel_res = algo.get_approx_fft_vels(sensor_config)
 
