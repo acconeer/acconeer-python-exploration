@@ -71,6 +71,12 @@ class ViewPlugin(AppModelAware):
         self.app_model = app_model
         self.view_widget = view_widget
 
+        app_model.sig_message_view_plugin.connect(self.handle_message)
+
+    @abc.abstractmethod
+    def handle_message(self, message: Message) -> None:
+        pass
+
     def send_backend_command(self, command: Command) -> None:
         self.app_model._backend._send(command)
 
