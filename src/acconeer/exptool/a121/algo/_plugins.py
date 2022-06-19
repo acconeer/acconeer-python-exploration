@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable, Generic, Optional, Type, TypeVar
 
 import attrs
+import h5py
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
@@ -78,22 +79,29 @@ class DetectorViewPluginBase(ViewPlugin):
 class ProcessorBackendPluginSharedState(Generic[ConfigT]):
     session_config: a121.SessionConfig = attrs.field()
     processor_config: ConfigT = attrs.field()
+    replaying: bool = attrs.field(default=False)
 
 
 class ProcessorBackendPluginBase(
     Generic[ConfigT, ProcessorT], BackendPlugin[ProcessorBackendPluginSharedState[ConfigT]]
 ):
-    _client: Optional[a121.Client]
+    _live_client: Optional[a121.Client]
     _processor_instance: Optional[ProcessorT]
     _recorder: Optional[a121.H5Recorder]
     _started: bool
+    _opened_file: Optional[h5py.File]
+    _opened_record: Optional[a121.H5Record]
+    _replaying_client: Optional[a121.ReplayingClient]
 
     def __init__(self, callback: Callable[[Message], None], key: str):
         super().__init__(callback=callback, key=key)
         self._processor_instance = None
-        self._client = None
+        self._live_client = None
         self._recorder = None
         self._started = False
+        self._replaying_client = None
+        self._opened_file = False
+        self._opened_record = None
 
         self.shared_state = ProcessorBackendPluginSharedState[ConfigT](
             session_config=a121.SessionConfig(self.get_default_sensor_config()),
@@ -101,6 +109,13 @@ class ProcessorBackendPluginBase(
         )
 
         self.broadcast()
+
+    @property
+    def _client(self) -> Optional[a121.Client]:
+        if self._replaying_client is not None:
+            return self._replaying_client
+
+        return self._live_client
 
     def idle(self) -> bool:
         if self._started:
@@ -110,13 +125,36 @@ class ProcessorBackendPluginBase(
             return False
 
     def attach_client(self, *, client: a121.Client) -> None:
-        self._client = client
+        self._live_client = client
 
     def detach_client(self) -> None:
-        self._client = None
+        self._live_client = None
 
     def teardown(self) -> None:
         self.detach_client()
+
+    def load_from_file(self, *, path: Path) -> None:
+        self._opened_file = h5py.File(path, mode="r")
+        self._opened_record = a121.H5Record(self._opened_file)
+        self._replaying_client = a121.ReplayingClient(self._opened_record)
+
+        self.shared_state.session_config = self._opened_record.session_config
+
+        try:
+            algo_group = self._opened_record.get_algo_group(self.key)  # noqa: F841
+            # TODO: (try) load processor state
+        except KeyError:
+            log.warning(f"Could not load '{self.key}' from file")
+
+        self.shared_state.replaying = True
+
+        self.broadcast()
+
+        try:
+            self._execute_start(with_recorder=False)
+        except Exception as e:
+            self.callback(ErrorMessage("start_session", e))
+            self.callback(IdleMessage())
 
     def execute_task(self, *, task: Task) -> None:
         """Accepts the following tasks:
@@ -146,7 +184,7 @@ class ProcessorBackendPluginBase(
         else:
             raise RuntimeError(f"Unknown task: {task_name}")
 
-    def _execute_start(self) -> None:
+    def _execute_start(self, *, with_recorder: bool = True) -> None:
         if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'start'.")
         if not self._client.connected:
@@ -171,10 +209,13 @@ class ProcessorBackendPluginBase(
         )
 
         self.callback(DataMessage("saveable_file", None))
-        self._recorder = a121.H5Recorder(get_temp_h5_path())
-        algo_group = self._recorder.require_algo_group(self.key)  # noqa: F841
+        if with_recorder:
+            self._recorder = a121.H5Recorder(get_temp_h5_path())
+            algo_group = self._recorder.require_algo_group(self.key)  # noqa: F841
 
-        # TODO: write processor_config etc. to algo group
+            # TODO: write processor_config etc. to algo group
+        else:
+            self._recorder = None
 
         self._client.start_session(self._recorder)
 
@@ -200,8 +241,19 @@ class ProcessorBackendPluginBase(
             path = Path(self._recorder.path)
             self.callback(DataMessage("saveable_file", path))
 
+        if self.shared_state.replaying:
+            assert self._opened_record is not None
+            self._opened_record.close()
+
+            self._opened_file = None
+            self._opened_record = None
+            self._replaying_client = None
+
+            self.shared_state.replaying = False
+
         self._started = False
 
+        self.broadcast()
         self.callback(OkMessage("stop_session"))
         self.callback(IdleMessage())
 
@@ -211,7 +263,12 @@ class ProcessorBackendPluginBase(
         if self._processor_instance is None:
             raise RuntimeError("Processor is None. 'start' needs to be called before 'get_next'")
 
-        result = self._client.get_next()
+        try:
+            result = self._client.get_next()
+        except a121.StopReplay:
+            self._execute_stop()
+            return
+
         assert isinstance(result, a121.Result)
 
         processor_result = self._processor_instance.process(result)

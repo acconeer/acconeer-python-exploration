@@ -366,9 +366,10 @@ class AppModel(QObject):
             # TODO: Don't hardcode
             plugin = self._find_plugin("sparse_iq")  # noqa: F841
 
-        # TODO:
-        # self.load_plugin(plugin)
-        # ...
+        self.load_plugin(plugin)
+        self._backend.put_task(task=("load_from_file", {"path": path}))
+        self.plugin_state = PluginState.LOADED_STARTING
+        self.broadcast()
 
     def _find_plugin(self, find_key: Optional[str]) -> Plugin:  # TODO: Also find by generation
         if find_key is None:
