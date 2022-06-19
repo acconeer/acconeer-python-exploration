@@ -5,7 +5,7 @@ import logging
 import queue
 import shutil
 from pathlib import Path
-from typing import Optional, Tuple, Type
+from typing import Any, Optional, Tuple, Type
 
 import attrs
 
@@ -19,6 +19,7 @@ from acconeer.exptool.app.new.app_model.file_detective import investigate_file
 from acconeer.exptool.app.new.backend import (
     Backend,
     BackendPlugin,
+    BackendPluginStateMessage,
     BusyMessage,
     Command,
     IdleMessage,
@@ -127,6 +128,8 @@ class AppModel(QObject):
     plugins: list[Plugin]
     plugin: Optional[Plugin]
 
+    backend_plugin_state: Any
+
     connection_state: ConnectionState
     connection_interface: ConnectionInterface
     plugin_state: PluginState
@@ -147,6 +150,8 @@ class AppModel(QObject):
 
         self.plugins = plugins
         self.plugin = None
+
+        self.backend_plugin_state = None
 
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_interface = ConnectionInterface.SERIAL
@@ -221,10 +226,15 @@ class AppModel(QObject):
                 self.saveable_file.unlink(missing_ok=True)
 
             self.saveable_file = message.data
+        elif isinstance(message, BackendPluginStateMessage):
+            log.debug("AppModel received backend plugin state")
+            self.backend_plugin_state = message.data
         elif message == BusyMessage():
             self.plugin_state = PluginState.LOADED_BUSY
         elif message == IdleMessage():
             self.plugin_state = PluginState.LOADED_IDLE
+        else:
+            raise RuntimeError(f"AppModel cannot handle message: {message}")
 
         self.broadcast()
 
@@ -311,6 +321,8 @@ class AppModel(QObject):
     def load_plugin(self, plugin: Optional[Plugin]) -> None:
         if plugin == self.plugin:
             return
+
+        self.backend_plugin_state = None
 
         if plugin is None:
             self._backend.unload_plugin()

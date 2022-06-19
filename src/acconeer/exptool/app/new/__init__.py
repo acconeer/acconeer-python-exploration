@@ -14,6 +14,7 @@ from .app_model import (
 from .backend import (
     Backend,
     BackendPlugin,
+    BackendPluginStateMessage,
     BusyMessage,
     Command,
     DataMessage,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Optional
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
@@ -19,6 +20,8 @@ log = logging.getLogger(__name__)
 class SessionConfigEditor(QWidget):
     _session_config: Optional[a121.SessionConfig]
     _all_pidgets: list[pidgets.ParameterWidget]
+
+    sig_update = Signal(object)
 
     IDLE_STATE_LABEL_MAP = {
         a121.IdleState.DEEP_SLEEP: "Deep sleep",
@@ -139,18 +142,15 @@ class SessionConfigEditor(QWidget):
             self._setup_subsweep_config_pidget(pidget, aspect, func)
             self._all_pidgets.append(pidget)
 
-    @property
-    def session_config(self) -> Optional[a121.SessionConfig]:
-        return self._session_config
+    def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
+        self._session_config = session_config
+        self._update_ui()
 
-    @session_config.setter
-    def session_config(self, session_config: Optional[a121.SessionConfig]) -> None:
-        if session_config is None:
-            self.setEnabled(False)
-        else:
-            self._session_config = session_config
-            self.setEnabled(True)
-            self._update_ui()
+    def setEnabled(self, enabled: bool) -> None:
+        super().setEnabled(enabled and self._session_config is not None)
+
+    def _broadcast(self) -> None:
+        self.sig_update.emit(self._session_config)
 
     def _handle_validation_results(self, results: list[a121.ValidationResult]) -> None:
         if results == []:
@@ -170,6 +170,8 @@ class SessionConfigEditor(QWidget):
         else:
             self._handle_validation_results(self._session_config._collect_validation_results())
 
+        self._broadcast()
+
     def _update_sensor_config_aspect(self, aspect: str, value: Any) -> None:
         if self._session_config is None:
             raise TypeError("SessionConfig is None")
@@ -181,6 +183,8 @@ class SessionConfigEditor(QWidget):
         else:
             self._handle_validation_results(self._session_config._collect_validation_results())
 
+        self._broadcast()
+
     def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
         if self._session_config is None:
             raise TypeError("SessionConfig is None")
@@ -191,6 +195,8 @@ class SessionConfigEditor(QWidget):
             self._subsweep_config_pidgets[aspect][0].set_note_text(e.args[0], Criticality.ERROR)
         else:
             self._handle_validation_results(self._session_config._collect_validation_results())
+
+        self._broadcast()
 
     def _setup_session_config_pidget(
         self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]

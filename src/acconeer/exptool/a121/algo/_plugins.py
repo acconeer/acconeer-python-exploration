@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from typing import Callable, Generic, Optional, Type, TypeVar
 
+import attrs
+
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
@@ -40,6 +42,7 @@ from ._base import ProcessorBase
 ConfigT = TypeVar("ConfigT")
 ProcessorT = TypeVar("ProcessorT", bound=ProcessorBase)
 ResultT = TypeVar("ResultT")
+StateT = TypeVar("StateT")
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +74,15 @@ class DetectorViewPluginBase(ViewPlugin):
     pass
 
 
-class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
+@attrs.mutable(kw_only=True)
+class ProcessorBackendPluginSharedState(Generic[ConfigT]):
+    session_config: a121.SessionConfig = attrs.field()
+    processor_config: ConfigT = attrs.field()
+
+
+class ProcessorBackendPluginBase(
+    Generic[ConfigT, ProcessorT], BackendPlugin[ProcessorBackendPluginSharedState[ConfigT]]
+):
     _client: Optional[a121.Client]
     _processor_instance: Optional[ProcessorT]
     _recorder: Optional[a121.H5Recorder]
@@ -83,23 +94,13 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
         self._client = None
         self._recorder = None
         self._started = False
-        self._send_default_configs_to_view()
 
-    def _send_default_configs_to_view(self) -> None:
-        self.callback(
-            DataMessage(
-                "session_config",
-                a121.SessionConfig(self.get_default_sensor_config()),
-                recipient="view_plugin",
-            )
+        self.shared_state = ProcessorBackendPluginSharedState[ConfigT](
+            session_config=a121.SessionConfig(self.get_default_sensor_config()),
+            processor_config=self.get_processor_config_cls()(),
         )
-        self.callback(
-            DataMessage(
-                "processor_config",
-                self.get_processor_config_cls()(),
-                recipient="view_plugin",
-            )
-        )
+
+        self.broadcast()
 
     def idle(self) -> bool:
         if self._started:
@@ -120,38 +121,40 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
     def execute_task(self, *, task: Task) -> None:
         """Accepts the following tasks:
 
-        -   (
-                "start_session",
-                {
-                    session_config=a121.SessionConfig
-                    processor_config=ProcessorConfig
-                }
-            ) -> [a121.Metadata, a121.SensorConfig]
+        - ("start_session", <Ignored>) -> None
         - ("stop_session", <Ignored>) -> None
         """
         task_name, task_kwargs = task
         if task_name == "start_session":
             try:
-                self._execute_start(**task_kwargs)
+                self._execute_start()
             except Exception as e:
                 self.callback(ErrorMessage("start_session", e))
                 self.callback(IdleMessage())
         elif task_name == "stop_session":
             self._execute_stop()
+        elif task_name == "update_session_config":
+            session_config = task_kwargs["session_config"]
+            assert isinstance(session_config, a121.SessionConfig)
+            self.shared_state.session_config = session_config
+            self.broadcast()
+        elif task_name == "update_processor_config":
+            processor_config = task_kwargs["processor_config"]
+            assert isinstance(processor_config, self.get_processor_config_cls())
+            self.shared_state.processor_config = processor_config
+            self.broadcast()
         else:
             raise RuntimeError(f"Unknown task: {task_name}")
 
-    def _execute_start(
-        self,
-        session_config: a121.SessionConfig,
-        processor_config: ConfigT,
-    ) -> None:
+    def _execute_start(self) -> None:
         if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'start'.")
         if not self._client.connected:
             # This check is here to avoid the
             # "auto-connect" behaviour in a121.Client.setup_session.
             raise RuntimeError("Client is not connected. Can not 'start'.")
+
+        session_config = self.shared_state.session_config
 
         if session_config.extended:
             raise ValueError("Extended configs are not supported.")
@@ -164,7 +167,7 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
         self._processor_instance = self.get_processor_cls()(
             sensor_config=session_config.sensor_config,
             metadata=metadata,
-            processor_config=processor_config,
+            processor_config=self.shared_state.processor_config,
         )
 
         self.callback(DataMessage("saveable_file", None))
@@ -290,25 +293,25 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
         self.layout.addWidget(button_group)
 
         self.session_config_editor = SessionConfigEditor(self.view_widget)
+        self.session_config_editor.sig_update.connect(self._on_session_config_update)
         self.processor_config_editor = AttrsConfigEditor[ConfigT](
             title="Processor parameters",
             pidget_mapping=self.get_pidget_mapping(),
             parent=self.view_widget,
         )
+        self.processor_config_editor.sig_update.connect(self._on_processor_config_update)
         self.layout.addWidget(self.processor_config_editor)
         self.layout.addWidget(self.session_config_editor)
         self.layout.addStretch()
 
+    def _on_session_config_update(self, session_config: a121.SessionConfig) -> None:
+        self.send_backend_task(("update_session_config", {"session_config": session_config}))
+
+    def _on_processor_config_update(self, processor_config: ConfigT) -> None:
+        self.send_backend_task(("update_processor_config", {"processor_config": processor_config}))
+
     def _send_start_requests(self) -> None:
-        self.send_backend_task(
-            (
-                "start_session",
-                {
-                    "session_config": self.session_config_editor.session_config,
-                    "processor_config": self.processor_config_editor.config,
-                },
-            )
-        )
+        self.send_backend_task(("start_session", {}))
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_stop_requests(self) -> None:
@@ -319,15 +322,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
         self.layout.deleteLater()
 
     def handle_message(self, message: Message) -> None:
-        if message.command_name == "session_config":
-            self.session_config_editor.session_config = message.data
-        elif message.command_name == "processor_config":
-            assert isinstance(message.data, self.get_processor_config_cls())
-            self.processor_config_editor.config = message.data
-        else:
-            raise ValueError(
-                f"{self.__class__.__name__} cannot handle the message {message.command_name}"
-            )
+        pass
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
@@ -337,6 +332,18 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
             and app_model.connection_state == ConnectionState.CONNECTED
         )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
+
+        if app_model.backend_plugin_state is None:
+            self.session_config_editor.set_data(None)
+            self.processor_config_editor.set_data(None)
+        else:
+            assert isinstance(app_model.backend_plugin_state, ProcessorBackendPluginSharedState)
+            assert isinstance(
+                app_model.backend_plugin_state.processor_config, self.get_processor_config_cls()
+            )
+
+            self.session_config_editor.set_data(app_model.backend_plugin_state.session_config)
+            self.processor_config_editor.set_data(app_model.backend_plugin_state.processor_config)
 
     def on_app_model_error(self, exception: Exception) -> None:
         pass

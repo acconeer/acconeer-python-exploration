@@ -48,3 +48,9 @@ class BusyMessage(OkMessage):
 @attrs.define
 class IdleMessage(OkMessage):
     command_name: str = attrs.field(default="idle")
+
+
+@attrs.define
+class BackendPluginStateMessage(OkMessage):
+    data: Any = attrs.field()
+    command_name: str = attrs.field(default="backend_plugin_state")
