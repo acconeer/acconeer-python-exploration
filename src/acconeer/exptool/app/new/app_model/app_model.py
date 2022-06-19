@@ -54,6 +54,8 @@ class PlotPlugin(AppModelAware):
         super().__init__(app_model=app_model)
         self.plot_layout = plot_layout
 
+        app_model.sig_message_plot_plugin.connect(self.handle_message)
+
     @abc.abstractmethod
     def handle_message(self, message: Message) -> None:
         pass

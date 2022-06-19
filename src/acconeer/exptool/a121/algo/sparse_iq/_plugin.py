@@ -271,38 +271,12 @@ class ViewPlugin(ProcessorViewPluginBase):
         pass  # TODO
 
 
-class PlotPlugin(ProcessorPlotPluginBase):
+class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
-        app_model.sig_message_plot_plugin.connect(self.handle_message)
         self.smooth_max = et.utils.SmoothMax()
-        self._is_setup = False
-        self._plot_job = None
-
-    def handle_message(self, message: Message) -> None:
-        if message.command_name == "setup":
-            assert isinstance(message, KwargMessage)
-            self.setup(**message.kwargs)
-        elif message.command_name == "plot":
-            self._plot_job = message.data
-        else:
-            log.warn(
-                f"{self.__class__.__name__} got an unsupported command: {message.command_name!r}."
-            )
-
-    def draw(self) -> None:
-        if not self._is_setup or self._plot_job is None:
-            return
-
-        self._update_plot_data(self._plot_job)
-        self._plot_job = None
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
-        if isinstance(metadata, list):
-            raise ValueError("Support for extended configs is not implemented.")
-
-        self.plot_layout.clear()
-
         self.distances_m, _ = algo.get_distances_m(sensor_config, metadata)
         vels, vel_res = algo.get_approx_fft_vels(sensor_config)
 
@@ -325,9 +299,8 @@ class PlotPlugin(ProcessorPlotPluginBase):
             vels=vels,
             vel_res=vel_res,
         )
-        self._is_setup = True
 
-    def _update_plot_data(self, processor_result: ProcessorResult) -> None:
+    def update(self, processor_result: ProcessorResult) -> None:
         ampls = processor_result.amplitudes
         self.ampl_curve.setData(self.distances_m, ampls)
         self.phase_curve.setData(self.distances_m, processor_result.phases)
@@ -401,12 +374,6 @@ class PlotPlugin(ProcessorPlotPluginBase):
         plot.addItem(im)
 
         return plot, im
-
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        pass  # TODO
-
-    def on_app_model_error(self, exception: Exception) -> None:
-        pass  # TODO
 
 
 SPARSE_IQ_PLUGIN = Plugin(
