@@ -83,4 +83,5 @@ class ProcessorPGUpdater:
         )
 
     def update(self, data: Any) -> None:
-        self.plot_plugin_obj.handle_message(DataMessage("get_next", data))
+        self.plot_plugin_obj.handle_message(DataMessage("plot", data))
+        self.plot_plugin_obj.draw()
