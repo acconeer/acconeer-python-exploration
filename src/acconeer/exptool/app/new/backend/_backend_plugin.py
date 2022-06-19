@@ -13,6 +13,10 @@ class BackendPlugin(abc.ABC):
         self.key = key
 
     @abc.abstractmethod
+    def idle(self) -> bool:
+        pass
+
+    @abc.abstractmethod
     def attach_client(self, *, client: Any) -> None:
         pass
 

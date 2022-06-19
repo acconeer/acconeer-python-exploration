@@ -75,12 +75,14 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
     _client: Optional[a121.Client]
     _processor_instance: Optional[ProcessorT]
     _recorder: Optional[a121.H5Recorder]
+    _started: bool
 
     def __init__(self, callback: Callable[[Message], None], key: str):
         super().__init__(callback=callback, key=key)
         self._processor_instance = None
         self._client = None
         self._recorder = None
+        self._started = False
         self._send_default_configs_to_view()
 
     def _send_default_configs_to_view(self) -> None:
@@ -98,6 +100,13 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
                 recipient="view_plugin",
             )
         )
+
+    def idle(self) -> bool:
+        if self._started:
+            self._execute_get_next()
+            return True
+        else:
+            return False
 
     def attach_client(self, *, client: a121.Client) -> None:
         self._client = client
@@ -119,7 +128,6 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
                 }
             ) -> [a121.Metadata, a121.SensorConfig]
         - ("stop_session", <Ignored>) -> None
-        - ("get_next", <Ignored>) -> ProcessorResult
         """
         task_name, task_kwargs = task
         if task_name == "start_session":
@@ -130,8 +138,6 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
                 self.callback(IdleMessage())
         elif task_name == "stop_session":
             self._execute_stop()
-        elif task_name == "get_next":
-            self._execute_get_next()
         else:
             raise RuntimeError(f"Unknown task: {task_name}")
 
@@ -168,6 +174,9 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
         # TODO: write processor_config etc. to algo group
 
         self._client.start_session(self._recorder)
+
+        self._started = True
+
         self.callback(
             KwargMessage(
                 "setup",
@@ -187,6 +196,8 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
             assert self._recorder.path is not None
             path = Path(self._recorder.path)
             self.callback(DataMessage("saveable_file", path))
+
+        self._started = False
 
         self.callback(OkMessage("stop_session"))
         self.callback(IdleMessage())
@@ -293,11 +304,9 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
                 },
             )
         )
-        self.send_backend_command(("set_idle_task", ("get_next", {})))
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_stop_requests(self) -> None:
-        self.send_backend_command(("set_idle_task", None))
         self.send_backend_task(("stop_session", {}))
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 

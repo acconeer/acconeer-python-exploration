@@ -22,6 +22,16 @@ class Model:
         self.client = None
         self.task_callback = task_callback
 
+    def idle(self) -> bool:
+        if self.backend_plugin is None:
+            return False
+
+        try:
+            return self.backend_plugin.idle()
+        except Exception:
+            log.error("Backend plugin idle failed")
+            return False
+
     def execute_task(self, task: Task) -> bool:
         """Executes the task ``task``.
 

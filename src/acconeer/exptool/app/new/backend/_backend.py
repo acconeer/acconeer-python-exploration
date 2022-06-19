@@ -57,14 +57,6 @@ class Backend:
     def put_task(self, task: Task) -> None:
         self._send(("task", task))
 
-    def set_idle_task(self, task: Task) -> None:
-        log.debug(f"Backend is setting idle task {task} ...")
-        self._send(("set_idle_task", task))
-
-    def clear_idle_task(self):
-        log.debug("Backend cleared its idle task ...")
-        self._send(("set_idle_task", None))
-
     def load_plugin(self, plugin: Type[BackendPlugin], key: str) -> None:
         self.put_task(("load_plugin", {"plugin": plugin, "key": key}))
 
@@ -85,10 +77,12 @@ def process_program(
 ) -> None:
     try:
         model = Model(task_callback=send_queue.put)
-        idle_task = None
+        model_wants_to_idle = False
 
         while not stop_event.is_set():
-            if idle_task is None:
+            msg = None
+
+            if not model_wants_to_idle:
                 log.debug("Backend is waiting patiently for a new command ...")
                 msg = recv_queue.get()
                 log.debug(f"Backend received the command: {msg}")
@@ -97,7 +91,11 @@ def process_program(
                     msg = recv_queue.get_nowait()
                     log.debug(f"Backend received the command: {msg}")
                 except queue.Empty:
-                    msg = ("task", idle_task)
+                    pass
+
+            if msg is None:  # Model wanted idle and nothing in queue
+                model_wants_to_idle = model.idle()
+                continue
 
             cmd, arg = msg
 
@@ -110,12 +108,8 @@ def process_program(
                         + "Should be a tuple[str, dict[str, Any]]."
                     )
                     continue
-                success = model.execute_task(task=arg)
-                if not success and arg == idle_task:
-                    log.warn(f"Idle task ({idle_task}) failed and was unset as a result.")
-                    idle_task = None
-            elif cmd == "set_idle_task":
-                idle_task = arg
+                model.execute_task(task=arg)
+                model_wants_to_idle = True
             else:
                 raise RuntimeError
     finally:
