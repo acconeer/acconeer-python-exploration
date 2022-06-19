@@ -259,19 +259,19 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
     def __init__(self, view_widget: QWidget, app_model: AppModel) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
         self.layout = QVBoxLayout(self.view_widget)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.view_widget.setLayout(self.layout)
 
-        self.start_button = QPushButton("Start", self.view_widget)
+        self.start_button = QPushButton("Start measurement", self.view_widget)
         self.stop_button = QPushButton("Stop", self.view_widget)
         self.start_button.clicked.connect(self._send_start_requests)
         self.stop_button.clicked.connect(self._send_stop_requests)
 
-        button_group = HorizontalGroupBox("Processor controls", parent=self.view_widget)
+        button_group = HorizontalGroupBox("Controls", parent=self.view_widget)
         button_group.layout().addWidget(self.start_button)
         button_group.layout().addWidget(self.stop_button)
 
         self.layout.addWidget(button_group)
-        self.layout.addSpacing(10)
 
         self.session_config_editor = SessionConfigEditor(self.view_widget)
         self.processor_config_editor = AttrsConfigEditor[ConfigT](
@@ -280,7 +280,6 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
             parent=self.view_widget,
         )
         self.layout.addWidget(self.processor_config_editor)
-        self.layout.addSpacing(10)
         self.layout.addWidget(self.session_config_editor)
         self.layout.addStretch()
 
