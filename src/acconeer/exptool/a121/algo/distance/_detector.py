@@ -35,7 +35,7 @@ class SubsweepGroupPlan:
 Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
 
 
-@attrs.frozen(kw_only=True)
+@attrs.mutable(kw_only=True)
 class DetectorConfig:
     start_m: float = attrs.field()
     end_m: float = attrs.field()

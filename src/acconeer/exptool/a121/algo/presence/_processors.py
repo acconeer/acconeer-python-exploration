@@ -13,7 +13,7 @@ from acconeer.exptool.a121.algo import ProcessorBase
 from acconeer.exptool.a121.algo._utils import get_distances_m
 
 
-@attrs.frozen(kw_only=True)
+@attrs.mutable(kw_only=True)
 class ProcessorConfig:
     detection_threshold: float = attrs.field(default=1.5)
     intra_frame_weight: float = attrs.field(default=0.6)

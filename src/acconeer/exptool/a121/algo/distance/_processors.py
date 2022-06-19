@@ -24,7 +24,7 @@ class ThresholdMethod(enum.Enum):
     RECORDED = enum.auto()
 
 
-@attrs.frozen(kw_only=True)
+@attrs.mutable(kw_only=True)
 class ProcessorConfig:
     processor_mode: ProcessorMode = attrs.field(default=ProcessorMode.DISTANCE_ESTIMATION)
     threshold_method: ThresholdMethod = attrs.field(default=ThresholdMethod.CFAR)

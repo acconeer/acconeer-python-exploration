@@ -8,7 +8,7 @@ from acconeer.exptool import a121
 from ._processors import Processor, ProcessorConfig
 
 
-@attrs.frozen(kw_only=True)
+@attrs.mutable(kw_only=True)
 class DetectorConfig:
     start_m: float = attrs.field()
     end_m: float = attrs.field()

@@ -16,7 +16,7 @@ class AmplitudeMethod(Enum):
     FFT_MAX = "FFT max"
 
 
-@attrs.frozen(kw_only=True)
+@attrs.mutable(kw_only=True)
 class ProcessorConfig:
     amplitude_method: AmplitudeMethod = attrs.field(default=AmplitudeMethod.COHERENT)
 

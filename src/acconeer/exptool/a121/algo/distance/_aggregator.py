@@ -31,7 +31,7 @@ class ProcessorSpec:
     processor_context: Optional[ProcessorContext] = attrs.field(default=None)
 
 
-@attrs.frozen(kw_only=True)
+@attrs.mutable(kw_only=True)
 class AggregatorConfig:
     peak_sorting_method: PeakSortingMethod = attrs.field(default=PeakSortingMethod.STRONGEST)
 
