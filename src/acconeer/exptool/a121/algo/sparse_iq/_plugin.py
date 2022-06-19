@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Tuple, Type
 
 import numpy as np
 import numpy.typing as npt
@@ -19,21 +18,7 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorPlotPluginBase,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.app.new import (
-    AppModel,
-    BusyMessage,
-    DataMessage,
-    ErrorMessage,
-    IdleMessage,
-    KwargMessage,
-    Message,
-    OkMessage,
-    Plugin,
-    PluginFamily,
-    PluginGeneration,
-    Task,
-)
-from acconeer.exptool.app.new.storage import get_temp_h5_path
+from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGeneration
 from acconeer.exptool.app.new.ui.plugin import PidgetMapping, pidgets
 
 from ._processor import AmplitudeMethod, Processor, ProcessorConfig, ProcessorResult
@@ -42,137 +27,14 @@ from ._processor import AmplitudeMethod, Processor, ProcessorConfig, ProcessorRe
 log = logging.getLogger(__name__)
 
 
-class BackendPlugin(ProcessorBackendPluginBase):
-    _client: Optional[a121.Client]
-    _processor_instance: Optional[Processor]
-    _recorder: Optional[a121.H5Recorder]
+class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, Processor]):
+    @classmethod
+    def get_processor_cls(cls) -> Type[Processor]:
+        return Processor
 
-    def __init__(self, callback: Callable[[Message], None], key: str):
-        super().__init__(callback=callback, key=key)
-        self._processor_instance = None
-        self._client = None
-        self._recorder = None
-        self._send_default_configs_to_view()
-
-    def _send_default_configs_to_view(self) -> None:
-        self.callback(
-            DataMessage(
-                "session_config",
-                a121.SessionConfig(),
-                recipient="view_plugin",
-            )
-        )
-        self.callback(
-            DataMessage(
-                "processor_config",
-                ProcessorConfig(),
-                recipient="view_plugin",
-            )
-        )
-
-    def attach_client(self, *, client: a121.Client) -> None:
-        self._client = client
-
-    def detach_client(self) -> None:
-        self._client = None
-
-    def teardown(self) -> None:
-        self.detach_client()
-
-    def execute_task(self, *, task: Task) -> None:
-        """Accepts the following tasks:
-
-        -   (
-                "start_session",
-                {
-                    session_config=a121.SessionConfig
-                    processor_config=ProcessorConfig
-                }
-            ) -> [a121.Metadata, a121.SensorConfig]
-        - ("stop_session", <Ignored>) -> None
-        - ("get_next", <Ignored>) -> ProcessorResult
-        """
-        task_name, task_kwargs = task
-        if task_name == "start_session":
-            try:
-                self._execute_start(**task_kwargs)
-            except Exception as e:
-                self.callback(ErrorMessage("start_session", e))
-                self.callback(IdleMessage())
-        elif task_name == "stop_session":
-            self._execute_stop()
-        elif task_name == "get_next":
-            self._execute_get_next()
-        else:
-            raise RuntimeError(f"Unknown task: {task_name}")
-
-    def _execute_start(
-        self,
-        session_config: a121.SessionConfig,
-        processor_config: ProcessorConfig,
-    ) -> None:
-        if self._client is None:
-            raise RuntimeError("Client is not attached. Can not 'start'.")
-        if not self._client.connected:
-            # This check is here to avoid the
-            # "auto-connect" behaviour in a121.Client.setup_session.
-            raise RuntimeError("Client is not connected. Can not 'start'.")
-
-        if session_config.extended:
-            raise ValueError("Extended configs are not supported.")
-
-        log.debug(f"SessionConfig has the update rate: {session_config.update_rate}")
-
-        self.metadata = self._client.setup_session(session_config)
-        assert isinstance(self.metadata, a121.Metadata)
-
-        self._processor_instance = Processor(
-            sensor_config=session_config.sensor_config,
-            metadata=self.metadata,
-            processor_config=processor_config,
-        )
-
-        self.callback(DataMessage("saveable_file", None))
-        self._recorder = a121.H5Recorder(get_temp_h5_path())
-        algo_group = self._recorder.require_algo_group(self.key)  # noqa: F841
-
-        # TODO: write processor_config etc. to algo group
-
-        self._client.start_session(self._recorder)
-        self.callback(
-            KwargMessage(
-                "setup",
-                dict(metadata=self.metadata, sensor_config=session_config.sensor_config),
-                recipient="plot_plugin",
-            )
-        )
-        self.callback(BusyMessage())
-
-    def _execute_stop(self) -> None:
-        if self._client is None:
-            raise RuntimeError("Client is not attached. Can not 'stop'.")
-
-        self._client.stop_session()
-
-        if self._recorder is not None:
-            assert self._recorder.path is not None
-            path = Path(self._recorder.path)
-            self.callback(DataMessage("saveable_file", path))
-
-        self.callback(OkMessage("stop_session"))
-        self.callback(IdleMessage())
-
-    def _execute_get_next(self) -> None:
-        if self._client is None:
-            raise RuntimeError("Client is not attached. Can not 'get_next'.")
-        if self._processor_instance is None:
-            raise RuntimeError("Processor is None. 'start' needs to be called before 'get_next'")
-
-        result = self._client.get_next()
-        assert isinstance(result, a121.Result)
-
-        processor_result = self._processor_instance.process(result)
-        self.callback(DataMessage("plot", processor_result, recipient="plot_plugin"))
+    @classmethod
+    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+        return ProcessorConfig
 
 
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
