@@ -60,6 +60,6 @@ class AttrsConfigEditor(QWidget, Generic[T]):
             return
 
         try:
-            attrs.evolve(self._config, **{aspect: value})
+            self._config = attrs.evolve(self._config, **{aspect: value})
         except Exception as e:
             self._pidget_mapping[aspect][0].set_note_text(e.args[0], Criticality.ERROR)
