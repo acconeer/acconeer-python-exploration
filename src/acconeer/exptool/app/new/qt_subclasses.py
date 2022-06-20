@@ -12,11 +12,7 @@ class AppModelAwareWidget(QWidget):
         app_model.sig_error.connect(self.on_app_model_error)
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not implement 'on_app_model_update'."
-        )
+        pass
 
     def on_app_model_error(self, exception: Exception) -> None:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not implement 'on_app_model_error'."
-        )
+        pass

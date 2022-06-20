@@ -64,12 +64,6 @@ class _SocketConnectionWidget(AppModelAwareWidget):
     def _on_line_edit(self) -> None:
         self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
 
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        pass
-
-    def on_app_model_error(self, exception: Exception) -> None:
-        pass
-
 
 class _SerialConnectionWidget(AppModelAwareWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
@@ -101,9 +95,6 @@ class _SerialConnectionWidget(AppModelAwareWidget):
 
         self.port_combo_box.blockSignals(False)
 
-    def on_app_model_error(self, exception: Exception) -> None:
-        pass
-
 
 class ClientConnectionWidget(AppModelAwareWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
@@ -133,9 +124,6 @@ class ClientConnectionWidget(AppModelAwareWidget):
 
     def _on_interface_dd_change(self) -> None:
         self.app_model.set_connection_interface(self.interface_dd.currentData())
-
-    def on_app_model_error(self, exception: Exception) -> None:
-        pass
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.stacked.setEnabled(

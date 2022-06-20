@@ -36,21 +36,19 @@ from .state_enums import ConnectionInterface, ConnectionState, PluginState
 log = logging.getLogger(__name__)
 
 
-class AppModelAware(abc.ABC):
+class AppModelAware:
     def __init__(self, app_model: AppModel) -> None:
         app_model.sig_notify.connect(self.on_app_model_update)
         app_model.sig_error.connect(self.on_app_model_error)
 
-    @abc.abstractmethod
     def on_app_model_update(self, app_model: AppModel) -> None:
         pass
 
-    @abc.abstractmethod
     def on_app_model_error(self, exception: Exception) -> None:
         pass
 
 
-class PlotPlugin(AppModelAware):
+class PlotPlugin(AppModelAware, abc.ABC):
     def __init__(self, app_model: AppModel, plot_layout: pg.GraphicsLayout) -> None:
         super().__init__(app_model=app_model)
         self.plot_layout = plot_layout
@@ -66,7 +64,7 @@ class PlotPlugin(AppModelAware):
         pass
 
 
-class ViewPlugin(AppModelAware):
+class ViewPlugin(AppModelAware, abc.ABC):
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model=app_model)
         self.app_model = app_model

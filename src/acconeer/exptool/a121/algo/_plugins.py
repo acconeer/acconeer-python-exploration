@@ -325,12 +325,6 @@ class ProcessorPlotPluginBase(Generic[ResultT], PlotPlugin):
         self.update(self._plot_job)
         self._plot_job = None
 
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        pass
-
-    def on_app_model_error(self, exception: Exception) -> None:
-        pass
-
     @abc.abstractmethod
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
         pass
@@ -410,9 +404,6 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
 
             self.session_config_editor.set_data(app_model.backend_plugin_state.session_config)
             self.processor_config_editor.set_data(app_model.backend_plugin_state.processor_config)
-
-    def on_app_model_error(self, exception: Exception) -> None:
-        pass
 
     @classmethod
     @abc.abstractmethod
