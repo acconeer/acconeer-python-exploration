@@ -21,6 +21,7 @@ from .entities import (
 )
 from .mediators import ClientError, Recorder
 from .peripherals import (
+    H5PY_STR_DTYPE,
     Client,
     H5Record,
     H5Recorder,

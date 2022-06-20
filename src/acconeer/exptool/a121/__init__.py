@@ -2,6 +2,7 @@ import sys
 
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
+    H5PY_STR_DTYPE,
     PRF,
     Client,
     ClientError,
