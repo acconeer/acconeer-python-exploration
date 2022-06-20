@@ -29,6 +29,7 @@ from ._core import (
     save_record,
     save_record_to_h5,
 )
+from ._core_ext import ReplayingClient, StopReplay
 
 
 if "pytest" not in sys.modules:
