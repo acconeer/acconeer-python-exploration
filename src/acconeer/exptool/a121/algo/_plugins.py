@@ -158,12 +158,12 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
 
         log.debug(f"SessionConfig has the update rate: {session_config.update_rate}")
 
-        self.metadata = self._client.setup_session(session_config)
-        assert isinstance(self.metadata, a121.Metadata)
+        metadata = self._client.setup_session(session_config)
+        assert isinstance(metadata, a121.Metadata)
 
         self._processor_instance = self.get_processor_cls()(
             sensor_config=session_config.sensor_config,
-            metadata=self.metadata,
+            metadata=metadata,
             processor_config=processor_config,
         )
 
@@ -180,7 +180,7 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
         self.callback(
             KwargMessage(
                 "setup",
-                dict(metadata=self.metadata, sensor_config=session_config.sensor_config),
+                dict(metadata=metadata, sensor_config=session_config.sensor_config),
                 recipient="plot_plugin",
             )
         )
