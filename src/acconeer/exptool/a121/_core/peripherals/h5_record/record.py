@@ -146,3 +146,12 @@ class H5Record(PersistentRecord):
     @staticmethod
     def _h5py_dataset_to_str(dataset: h5py.Dataset) -> str:
         return bytes(dataset[()]).decode()
+
+    def get_algo_group(self, key: str) -> h5py.Group:
+        group = self.file["algo"]  # Raises KeyError if the "algo" group doesn't exist
+
+        existing_key = self._h5py_dataset_to_str(group["key"])
+        if existing_key != key:
+            raise KeyError
+
+        return group
