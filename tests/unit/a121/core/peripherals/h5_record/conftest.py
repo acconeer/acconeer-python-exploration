@@ -162,6 +162,8 @@ def ref_record_file(
             "client_info", data=client_info_data, dtype=H5PY_STR_DTYPE, track_times=False
         )
 
+        f.create_dataset("generation", data="a121", dtype=H5PY_STR_DTYPE, track_times=False)
+
         session_config_data = ref_session_config.to_json()
         f.create_dataset(
             "session/session_config",

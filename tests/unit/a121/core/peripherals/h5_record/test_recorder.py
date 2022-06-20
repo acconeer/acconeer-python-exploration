@@ -66,3 +66,6 @@ def test_sample_whole_record(tmp_path, ref_record):
 
     with a121.open_record(filename) as record:
         assert_record_equals(record, ref_record)
+
+    record = a121.load_record(filename)
+    assert_record_equals(record, ref_record)

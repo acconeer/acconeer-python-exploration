@@ -48,6 +48,7 @@ class ServerInfo:
 
     @classmethod
     def from_dict(cls, d: dict) -> ServerInfo:
+        d = d.copy()
         d["sensor_infos"] = {
             int(sensor_id): SensorInfo.from_dict(sensor_info_dict)
             for sensor_id, sensor_info_dict in d["sensor_infos"].items()

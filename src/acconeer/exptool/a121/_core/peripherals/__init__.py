@@ -14,3 +14,4 @@ from .h5_record import (
     save_record,
     save_record_to_h5,
 )
+from .im_record import InMemoryRecord

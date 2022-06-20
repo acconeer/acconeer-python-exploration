@@ -10,6 +10,7 @@ from ._core import (
     H5Record,
     H5Recorder,
     IdleState,
+    InMemoryRecord,
     Metadata,
     PersistentRecord,
     Profile,
