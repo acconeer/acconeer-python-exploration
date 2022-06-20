@@ -9,12 +9,12 @@ from numpy import cos, pi, sqrt, square
 from scipy.special import binom
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import ProcessorBase
+from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
 from acconeer.exptool.a121.algo._utils import get_distances_m
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig:
+class ProcessorConfig(AlgoConfigBase):
     detection_threshold: float = attrs.field(default=1.5)
     intra_frame_weight: float = attrs.field(default=0.6)
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)

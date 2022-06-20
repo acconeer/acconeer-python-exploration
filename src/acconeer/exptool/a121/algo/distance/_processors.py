@@ -9,32 +9,37 @@ import numpy.typing as npt
 from scipy.signal import butter, filtfilt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import ProcessorBase
+from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorBase
 
 
-class MeasurementType(enum.Enum):
+class MeasurementType(AlgoParamEnum):
     CLOSE_RANGE = enum.auto()
     FAR_RANGE = enum.auto()
 
 
-class ProcessorMode(enum.Enum):
+class ProcessorMode(AlgoParamEnum):
     DISTANCE_ESTIMATION = enum.auto()
     LEAKAGE_CALIBRATION = enum.auto()
     RECORDED_THRESHOLD_CALIBRATION = enum.auto()
 
 
-class ThresholdMethod(enum.Enum):
+class ThresholdMethod(AlgoParamEnum):
     CFAR = enum.auto()
     FIXED = enum.auto()
     RECORDED = enum.auto()
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig:
-    processor_mode: ProcessorMode = attrs.field(default=ProcessorMode.DISTANCE_ESTIMATION)
-    threshold_method: ThresholdMethod = attrs.field(default=ThresholdMethod.CFAR)
-    measurement_type: MeasurementType = attrs.field(default=MeasurementType.FAR_RANGE)
-
+class ProcessorConfig(AlgoConfigBase):
+    processor_mode: ProcessorMode = attrs.field(
+        default=ProcessorMode.DISTANCE_ESTIMATION, converter=ProcessorMode
+    )
+    threshold_method: ThresholdMethod = attrs.field(
+        default=ThresholdMethod.CFAR, converter=ThresholdMethod
+    )
+    measurement_type: MeasurementType = attrs.field(
+        default=MeasurementType.FAR_RANGE, converter=MeasurementType
+    )
     sc_bg_num_std_dev: float = attrs.field(default=3.0)
     fixed_threshold_value: float = attrs.field(default=100.0)
     cfar_guard_length_m: Optional[float] = attrs.field(default=None)

@@ -37,10 +37,10 @@ from acconeer.exptool.app.new.ui.plugin import (
     SessionConfigEditor,
 )
 
-from ._base import ProcessorBase
+from ._base import AlgoConfigBase, ProcessorBase
 
 
-ConfigT = TypeVar("ConfigT")
+ConfigT = TypeVar("ConfigT", bound=AlgoConfigBase)
 ProcessorT = TypeVar("ProcessorT", bound=ProcessorBase)
 ResultT = TypeVar("ResultT")
 StateT = TypeVar("StateT")

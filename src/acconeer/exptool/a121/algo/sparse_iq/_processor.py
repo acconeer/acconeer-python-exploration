@@ -1,24 +1,24 @@
 from __future__ import annotations
 
-from enum import Enum
-
 import attrs
 import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import ProcessorBase
+from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorBase
 
 
-class AmplitudeMethod(Enum):
+class AmplitudeMethod(AlgoParamEnum):
     COHERENT = "Coherent"
     NONCOHERENT = "Noncoherent"
     FFT_MAX = "FFT max"
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig:
-    amplitude_method: AmplitudeMethod = attrs.field(default=AmplitudeMethod.COHERENT)
+class ProcessorConfig(AlgoConfigBase):
+    amplitude_method: AmplitudeMethod = attrs.field(
+        default=AmplitudeMethod.COHERENT, converter=AmplitudeMethod
+    )
 
 
 @attrs.frozen(kw_only=True)
