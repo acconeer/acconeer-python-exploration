@@ -44,7 +44,7 @@ class AppModelAware:
     def on_app_model_update(self, app_model: AppModel) -> None:
         pass
 
-    def on_app_model_error(self, exception: Exception) -> None:
+    def on_app_model_error(self, exception: Exception, traceback_str: Optional[str]) -> None:
         pass
 
 
@@ -118,7 +118,7 @@ class _BackendListeningThread(QThread):
 
 class AppModel(QObject):
     sig_notify = Signal(object)
-    sig_error = Signal(Exception)
+    sig_error = Signal(Exception, object)
     sig_load_plugin = Signal(object)
     sig_message_plot_plugin = Signal(object)
     sig_message_view_plugin = Signal(object)
@@ -180,7 +180,7 @@ class AppModel(QObject):
 
     def _handle_backend_message(self, message: Message) -> None:
         if message.status == "error":
-            self.sig_error.emit(message.exception)
+            self.sig_error.emit(message.exception, message.traceback_str)
 
         if message.recipient is not None:
             if message.recipient == "plot_plugin":
@@ -349,11 +349,11 @@ class AppModel(QObject):
         findings = investigate_file(path)
 
         if findings is None:
-            self.sig_error.emit(Exception("Cannot load file"))
+            self.sig_error.emit(Exception("Cannot load file"), None)
             return
 
         if findings.generation != PluginGeneration.A121:
-            self.sig_error.emit(Exception("This app can currently only load A121 files"))
+            self.sig_error.emit(Exception("This app can currently only load A121 files"), None)
             return
 
         try:

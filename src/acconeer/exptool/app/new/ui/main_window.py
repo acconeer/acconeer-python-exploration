@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 import importlib_metadata
 
 from PySide6 import QtCore
@@ -34,8 +38,8 @@ class MainWindow(QMainWindow):
 
         app_model.sig_error.connect(self.on_app_model_error)
 
-    def on_app_model_error(self, exception: Exception) -> None:
-        ExceptionWidget(self, exc=exception).exec()
+    def on_app_model_error(self, exception: Exception, traceback_str: Optional[str]) -> None:
+        ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
 
 
 class MainWindowCentralWidget(QWidget):

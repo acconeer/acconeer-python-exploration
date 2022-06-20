@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import logging
+import traceback
 from pathlib import Path
 from typing import Callable, Generic, Optional, Type, TypeVar
 
@@ -156,7 +157,7 @@ class ProcessorBackendPluginBase(
         try:
             self._execute_start(with_recorder=False)
         except Exception as e:
-            self.callback(ErrorMessage("start_session", e))
+            self.callback(ErrorMessage("start_session", e, traceback_str=traceback.format_exc()))
             self.callback(IdleMessage())
 
     def execute_task(self, *, task: Task) -> None:
@@ -170,7 +171,9 @@ class ProcessorBackendPluginBase(
             try:
                 self._execute_start()
             except Exception as e:
-                self.callback(ErrorMessage("start_session", e))
+                self.callback(
+                    ErrorMessage("start_session", e, traceback_str=traceback.format_exc())
+                )
                 self.callback(IdleMessage())
         elif task_name == "stop_session":
             self._execute_stop()

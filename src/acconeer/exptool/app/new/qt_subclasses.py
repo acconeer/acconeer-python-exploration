@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from PySide6.QtWidgets import QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
@@ -14,5 +16,5 @@ class AppModelAwareWidget(QWidget):
     def on_app_model_update(self, app_model: AppModel) -> None:
         pass
 
-    def on_app_model_error(self, exception: Exception) -> None:
+    def on_app_model_error(self, exception: Exception, traceback_str: Optional[str]) -> None:
         pass

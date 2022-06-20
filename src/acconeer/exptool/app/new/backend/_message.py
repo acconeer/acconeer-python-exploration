@@ -17,6 +17,7 @@ class Message:
     recipient: Optional[RecipientLiteral] = attrs.field(default=None, kw_only=True)
     exception: Exception = attrs.field(default=None, init=False)
     data: Any = attrs.field(default=None, init=False)
+    traceback_str: Optional[str] = attrs.field(default=None, init=False)
 
 
 @attrs.define
@@ -27,6 +28,7 @@ class OkMessage(Message):
 @attrs.define
 class ErrorMessage(Message):
     exception: Exception
+    traceback_str: Optional[str] = attrs.field(default=None)
     status: StatusLiteral = attrs.field(default="error", init=False)
 
 

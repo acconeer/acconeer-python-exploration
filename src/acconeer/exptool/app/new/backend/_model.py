@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import traceback
 from pathlib import Path
 from typing import Callable, Optional, Type
 
@@ -42,7 +43,7 @@ class Model:
             self._execute_task(task)
         except Exception as e:
             task_name, _ = task
-            self.task_callback(ErrorMessage(task_name, e))
+            self.task_callback(ErrorMessage(task_name, e, traceback_str=traceback.format_exc()))
             log.exception(e)
             return False
         else:
@@ -97,7 +98,9 @@ class Model:
         try:
             self.client.connect()
         except Exception as e:
-            self.task_callback(ErrorMessage("connect_client", e))
+            self.task_callback(
+                ErrorMessage("connect_client", e, traceback_str=traceback.format_exc())
+            )
             self.client = None
         else:
             if self.backend_plugin is not None:
