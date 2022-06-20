@@ -322,6 +322,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
         if message.command_name == "session_config":
             self.session_config_editor.session_config = message.data
         elif message.command_name == "processor_config":
+            assert isinstance(message.data, self.get_processor_config_cls())
             self.processor_config_editor.config = message.data
         else:
             raise ValueError(
@@ -343,4 +344,9 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
     @classmethod
     @abc.abstractmethod
     def get_pidget_mapping(cls) -> PidgetMapping:
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def get_processor_config_cls(cls) -> Type[ConfigT]:
         pass

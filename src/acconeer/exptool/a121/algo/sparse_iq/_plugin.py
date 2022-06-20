@@ -65,6 +65,10 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
             ),
         }
 
+    @classmethod
+    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+        return ProcessorConfig
+
 
 class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
