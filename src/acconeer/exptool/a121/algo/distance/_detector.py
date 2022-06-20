@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import enum
 from typing import Dict, List, Optional, Tuple
 
 import attrs
@@ -12,17 +11,13 @@ from acconeer.exptool import a121
 
 from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
 from ._processors import (
+    MeasurementType,
     Processor,
     ProcessorConfig,
     ProcessorMode,
     ProcessorResult,
     ThresholdMethod,
 )
-
-
-class MeasurementType(enum.Enum):
-    CLOSE_RANGE = enum.auto()
-    FAR_RANGE = enum.auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -69,7 +64,31 @@ class Detector:
         self.update_config(self.detector_config)
 
     def calibrate(self) -> None:
-        ...
+        if self.started:
+            raise RuntimeError("Already started")
+
+        close_range_spec = self._filter_close_range_spec(self.processor_specs)
+        spec = self._update_processor_mode(close_range_spec, ProcessorMode.LEAKAGE_CALIBRATION)
+
+        # Note - Setup with full session_config to match the structure of spec
+        extended_metadata = self.client.setup_session(self.session_config)
+        assert isinstance(extended_metadata, list)
+
+        aggregator = Aggregator(
+            session_config=self.session_config,
+            extended_metadata=extended_metadata,
+            aggregator_config=AggregatorConfig(),
+            specs=spec,
+        )
+
+        self.client.start_session()
+        extended_result = self.client.get_next()
+        assert isinstance(extended_result, list)
+        aggregator_result = aggregator.process(extended_result=extended_result)
+        self.client.stop_session()
+        (processor_result,) = aggregator_result.processor_results
+        self.direct_leakage = processor_result.direct_leakage
+        self.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
 
     def execute_background_measurement(self) -> None:
         if self.started:
@@ -274,3 +293,15 @@ class Detector:
             )
             updated_specs.append(attrs.evolve(spec, processor_config=new_processor_config))
         return updated_specs
+
+    @classmethod
+    def _filter_close_range_spec(cls, specs: list[ProcessorSpec]) -> list[ProcessorSpec]:
+        NUM_CLOSE_RANGE_SPECS = 1
+        close_range_specs = []
+        for spec in specs:
+            if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+                close_range_specs.append(spec)
+        if len(close_range_specs) != NUM_CLOSE_RANGE_SPECS:
+            raise ValueError("Incorrect subsweep config for close range measurement")
+
+        return close_range_specs

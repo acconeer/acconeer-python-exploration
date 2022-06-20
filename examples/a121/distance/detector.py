@@ -18,6 +18,8 @@ def main():
     detector_config = DetectorConfig(start_m=0.2, end_m=2.0)
     detector = Detector(client=client, sensor_id=1, detector_config=detector_config)
 
+    detector.calibrate()
+
     detector.start()
 
     pg_updater = PGUpdater(num_curves=len(detector.processor_specs))

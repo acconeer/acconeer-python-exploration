@@ -12,6 +12,11 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import ProcessorBase
 
 
+class MeasurementType(enum.Enum):
+    CLOSE_RANGE = enum.auto()
+    FAR_RANGE = enum.auto()
+
+
 class ProcessorMode(enum.Enum):
     DISTANCE_ESTIMATION = enum.auto()
     LEAKAGE_CALIBRATION = enum.auto()
@@ -28,9 +33,10 @@ class ThresholdMethod(enum.Enum):
 class ProcessorConfig:
     processor_mode: ProcessorMode = attrs.field(default=ProcessorMode.DISTANCE_ESTIMATION)
     threshold_method: ThresholdMethod = attrs.field(default=ThresholdMethod.CFAR)
+    measurement_type: MeasurementType = attrs.field(default=MeasurementType.FAR_RANGE)
+
     sc_bg_num_std_dev: float = attrs.field(default=3.0)
     fixed_threshold_value: float = attrs.field(default=100.0)
-
     cfar_guard_length_m: Optional[float] = attrs.field(default=None)
     cfar_window_length_m: Optional[float] = attrs.field(default=None)
     cfar_sensitivity: float = attrs.field(default=0.5)
@@ -59,6 +65,8 @@ class ProcessorResult:
     estimated_distances: Optional[list[float]] = attrs.field(default=None)
     estimated_amplitudes: Optional[list[float]] = attrs.field(default=None)
     recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
+    phase_jitter_comp_reference: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 
@@ -84,8 +92,13 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     }
 
     APPROX_BASE_STEP_LENGTH_M = 2.5e-3
+
     CFAR_GUARD_LENGTH_ADJUSTMENT = 2
     CFAR_WINDOW_LENGTH_ADJUSTMENT = 0.25
+
+    CLOSE_RANGE_LOOPBACK_IDX = 0
+    CLOSE_RANGE_DIST_IDX = 1
+    NUM_SUBSWEEPS_IN_CLOSE_RANGE_MEASUREMENT = 2
 
     def __init__(
         self,
@@ -101,7 +114,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         subsweep_configs = self._get_subsweep_configs(sensor_config, subsweep_indexes)
 
-        self._validate(subsweep_configs)
+        self._validate(subsweep_configs, processor_config.measurement_type)
 
         self.sensor_config = sensor_config
         self.metadata = metadata
@@ -176,12 +189,23 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return sum(c.num_points for c in subsweep_configs)
 
     @classmethod
-    def _validate(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
+    def _validate(
+        cls, subsweep_configs: list[a121.SubsweepConfig], measurement_type: MeasurementType
+    ) -> None:
         cls._validate_range(subsweep_configs)
 
         for c in subsweep_configs:
             if not c.phase_enhancement:
                 raise ValueError
+
+        if measurement_type == MeasurementType.CLOSE_RANGE:
+            if not len(subsweep_configs) == cls.NUM_SUBSWEEPS_IN_CLOSE_RANGE_MEASUREMENT:
+                raise ValueError("Incorrect subsweep config for close range measurement")
+            if (
+                not subsweep_configs[cls.CLOSE_RANGE_LOOPBACK_IDX].enable_loopback
+                and subsweep_configs[cls.CLOSE_RANGE_DIST_IDX].enable_loopback
+            ):
+                raise ValueError("Incorrect subsweep config for close range measurement")
 
     @classmethod
     def _validate_range(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
@@ -207,7 +231,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             return self._process_distance_estimation(abs_sweep)
         elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
-            pass
+            return self._process_leakage_calibration(subframes)
         elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
             return self._process_recorded_threshold_calibration(abs_sweep)
 
@@ -257,6 +281,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             estimated_distances=estimated_distances,
             estimated_amplitudes=estimated_amplitudes,
             extra_result=extra_result,
+        )
+
+    def _process_leakage_calibration(
+        self, subframes: list[npt.NDArray[np.complex_]]
+    ) -> ProcessorResult:
+        return ProcessorResult(
+            phase_jitter_comp_reference=subframes[self.CLOSE_RANGE_LOOPBACK_IDX],
+            direct_leakage=subframes[self.CLOSE_RANGE_DIST_IDX],
         )
 
     def _init_recorded_threshold_calibration(self) -> None:
