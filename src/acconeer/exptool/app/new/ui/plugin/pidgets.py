@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, Tuple, Type, TypeVar
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QHBoxLayout,
     QLabel,
     QLayout,
@@ -135,42 +136,43 @@ class OptionalParameterWidget(ParameterWidget):
         pass
 
 
-class OptionalTextParameterWidget(OptionalParameterWidget):
+class OptionalFloatParameterWidget(OptionalParameterWidget):
     def __init__(
         self,
         name_label_text: str,
         note_label_text: str = "",
         parent: Optional[QWidget] = None,
+        decimals: int = 1,
+        limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
+        init_set_value: Optional[float] = None,
     ):
-        self.line_edit = QLineEdit()
+        self.spin_box = QDoubleSpinBox()
+        self.spin_box.setDecimals(decimals)
+        self.spin_box.setSingleStep(10 ** (-decimals))
+        self.spin_box.setKeyboardTracking(False)
+        self.spin_box.setRange(*_convert_float_limits_to_qt_range(limits))
+        if init_set_value is not None:
+            self.spin_box.setValue(init_set_value)
+
         super().__init__(
-            optional_parameter_widget=self.line_edit,
+            optional_parameter_widget=self.spin_box,
             name_label_text=name_label_text,
             note_label_text=note_label_text,
             parent=parent,
         )
-        self.none_checkbox.stateChanged.connect(self.emit_none_if_checkbox_is_unchecked)
-        self.none_checkbox.stateChanged.connect(self.emit_line_edit_text_if_checkbox_is_checked)
-        self.none_checkbox.stateChanged.connect(self.line_edit_enable_based_on_checkbox_state)
-        self.line_edit.editingFinished.connect(self.emit_line_edit_text_if_non_empty)
+        self.none_checkbox.stateChanged.connect(self._on_changed)
+        self.spin_box.valueChanged.connect(self._on_changed)
 
-    def emit_none_if_checkbox_is_unchecked(self, checked_state: int) -> None:
-        if checked_state == 0:  # 0 <=> unchecked
-            self.sig_parameter_changed.emit(None)
+    def _on_changed(self) -> None:
+        checked = self.none_checkbox.isChecked()
 
-    def emit_line_edit_text_if_non_empty(self) -> None:
-        if self.line_edit.text() != "":
-            self.sig_parameter_changed.emit(self.line_edit.text())
+        self.spin_box.setEnabled(checked)
 
-    def emit_line_edit_text_if_checkbox_is_checked(self, checked_state: int) -> None:
-        if checked_state == 2:  # 2 <=> checked
-            self.emit_line_edit_text_if_non_empty()
-
-    def line_edit_enable_based_on_checkbox_state(self, checked_state: int) -> None:
-        self.line_edit.setEnabled(checked_state == 2)  # 2 <=> checked
+        value = self.spin_box.value() if checked else None
+        self.sig_parameter_changed.emit(value)
 
     def set_not_none_parameter(self, value: Any) -> None:
-        self.line_edit.setText(str(value))
+        self.spin_box.setValue(value)
 
 
 class TextParameterWidget(ParameterWidget):
@@ -260,3 +262,20 @@ class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
             note_label_text=note_label_text,
             parent=parent,
         )
+
+
+def _convert_float_limits_to_qt_range(
+    limits: Optional[Tuple[Optional[float], Optional[float]]]
+) -> Tuple[float, float]:
+    if limits is None:
+        limits = (None, None)
+
+    lower, upper = limits
+
+    if lower is None:
+        lower = -1e9
+
+    if upper is None:
+        upper = 1e9
+
+    return (lower, upper)

@@ -50,7 +50,13 @@ class SessionConfigEditor(QWidget):
         self.session_group_box = VerticalGroupBox("Session parameters", parent=self)
         self._session_config_pidgets: PidgetMapping = {
             "update_rate": (
-                pidgets.OptionalTextParameterWidget("Update rate:", parent=self),
+                pidgets.OptionalFloatParameterWidget(
+                    "Update rate:",
+                    parent=self,
+                    limits=(0.01, None),
+                    decimals=1,
+                    init_set_value=10.0,
+                ),
                 lambda val: None if (val is None) else float(val),
             )
         }
@@ -67,11 +73,19 @@ class SessionConfigEditor(QWidget):
                 int,
             ),
             "sweep_rate": (
-                pidgets.OptionalTextParameterWidget("Sweep rate:", parent=self),
+                pidgets.OptionalFloatParameterWidget(
+                    "Sweep rate:", parent=self, limits=(1, None), decimals=0, init_set_value=1000.0
+                ),
                 lambda val: None if (val is None) else float(val),
             ),
             "frame_rate": (
-                pidgets.OptionalTextParameterWidget("Frame rate:", parent=self),
+                pidgets.OptionalFloatParameterWidget(
+                    "Frame rate:",
+                    parent=self,
+                    limits=(0.01, None),
+                    decimals=1,
+                    init_set_value=10.0,
+                ),
                 lambda val: None if (val is None) else float(val),
             ),
             "continuous_sweep_mode": (
