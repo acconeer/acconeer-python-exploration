@@ -142,8 +142,11 @@ class ProcessorBackendPluginBase(
 
         try:
             algo_group = self._opened_record.get_algo_group(self.key)  # noqa: F841
-            # TODO: (try) load processor state
-        except KeyError:
+            # TODO: break out loading (?)
+            self.shared_state.processor_config = self.get_processor_config_cls().from_json(
+                algo_group["processor_config"][()]
+            )
+        except Exception:
             log.warning(f"Could not load '{self.key}' from file")
 
         self.shared_state.replaying = True
@@ -213,7 +216,13 @@ class ProcessorBackendPluginBase(
             self._recorder = a121.H5Recorder(get_temp_h5_path())
             algo_group = self._recorder.require_algo_group(self.key)  # noqa: F841
 
-            # TODO: write processor_config etc. to algo group
+            # TODO: break out saving (?)
+            algo_group.create_dataset(
+                "processor_config",
+                data=self.shared_state.processor_config.to_json(),
+                dtype=a121.H5PY_STR_DTYPE,
+                track_times=False,
+            )
         else:
             self._recorder = None
 
