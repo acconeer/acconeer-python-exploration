@@ -89,7 +89,7 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
         self.callback(
             DataMessage(
                 "session_config",
-                a121.SessionConfig(),
+                a121.SessionConfig(self.get_default_sensor_config()),
                 recipient="view_plugin",
             )
         )
@@ -222,6 +222,11 @@ class ProcessorBackendPluginBase(Generic[ConfigT, ProcessorT], BackendPlugin):
     @classmethod
     @abc.abstractmethod
     def get_processor_config_cls(cls) -> Type[ConfigT]:
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def get_default_sensor_config(cls) -> a121.SensorConfig:
         pass
 
 

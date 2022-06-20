@@ -21,7 +21,13 @@ from acconeer.exptool.a121.algo._plugins import (
 from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGeneration
 from acconeer.exptool.app.new.ui.plugin import PidgetMapping, pidgets
 
-from ._processor import AmplitudeMethod, Processor, ProcessorConfig, ProcessorResult
+from ._processor import (
+    AmplitudeMethod,
+    Processor,
+    ProcessorConfig,
+    ProcessorResult,
+    get_sensor_config,
+)
 
 
 log = logging.getLogger(__name__)
@@ -35,6 +41,10 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, Processor]):
     @classmethod
     def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
         return ProcessorConfig
+
+    @classmethod
+    def get_default_sensor_config(cls) -> a121.SensorConfig:
+        return get_sensor_config()
 
 
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
