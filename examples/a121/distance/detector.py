@@ -6,7 +6,12 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo.distance import Detector, DetectorConfig, DetectorResult
+from acconeer.exptool.a121.algo.distance import (
+    Detector,
+    DetectorConfig,
+    DetectorResult,
+    ThresholdMethod,
+)
 
 
 def main():
@@ -15,10 +20,18 @@ def main():
 
     client = a121.Client(**a121.get_client_args(args))
     client.connect()
-    detector_config = DetectorConfig(start_m=0.2, end_m=2.0)
+    detector_config = DetectorConfig(
+        start_m=0.0,
+        end_m=2.0,
+        max_profile=a121.Profile.PROFILE_3,
+        max_step_length=12,
+        threshold_method=ThresholdMethod.RECORDED,
+    )
     detector = Detector(client=client, sensor_id=1, detector_config=detector_config)
 
-    detector.calibrate()
+    detector.calibrate_close_range()
+
+    detector.calibrate_background()
 
     detector.start()
 

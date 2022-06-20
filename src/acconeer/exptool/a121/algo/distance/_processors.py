@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import enum
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import attrs
 import numpy as np
@@ -50,6 +50,8 @@ class ProcessorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
+    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
+    phase_jitter_comp_ref: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     abs_noise_std: Optional[float] = attrs.field(default=None)
 
@@ -71,7 +73,7 @@ class ProcessorResult:
     estimated_amplitudes: Optional[list[float]] = attrs.field(default=None)
     recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
-    phase_jitter_comp_reference: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
+    phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 
@@ -103,7 +105,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     CLOSE_RANGE_LOOPBACK_IDX = 0
     CLOSE_RANGE_DIST_IDX = 1
-    NUM_SUBSWEEPS_IN_CLOSE_RANGE_MEASUREMENT = 2
 
     def __init__(
         self,
@@ -120,28 +121,45 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if subsweep_indexes is None:
             subsweep_indexes = list(range(sensor_config.num_subsweeps))
 
-        subsweep_configs = self._get_subsweep_configs(sensor_config, subsweep_indexes)
+        if (
+            processor_config.measurement_type is MeasurementType.CLOSE_RANGE
+            and processor_config.processor_mode is not ProcessorMode.LEAKAGE_CALIBRATION
+        ):
+            if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
+                raise ValueError("Sufficient processor context not provided")
 
-        self._validate(subsweep_configs, processor_config.measurement_type)
+        # range_subsweep_indexes holds the subsweep indexes corresponding to range measurements.
+        # - Far range - all subsweeps are range measurements.
+        # - Close range - The first subsweep is used for phase jitter compensation and the while
+        #   the second is a range measurement. The location of each is indicated by
+        #   CLOSE_RANGE_LOOPBACK_IDX and CLOSE_RANGE_DIST_IDX.
+        if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+            self._validate_close_config(sensor_config, subsweep_indexes)
+            self.range_subsweep_indexes = [self.CLOSE_RANGE_DIST_IDX]
+        elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
+            self.range_subsweep_indexes = subsweep_indexes
+        range_subsweep_configs = self._get_subsweep_configs(
+            sensor_config, self.range_subsweep_indexes
+        )
+        self._validate_range_configs(range_subsweep_configs)
 
         self.sensor_config = sensor_config
         self.metadata = metadata
         self.processor_config = processor_config
-        self.subsweep_indexes = subsweep_indexes
         self.context = context
 
-        self.profile = self._get_profile(subsweep_configs)
-        self.step_length = self._get_step_length(subsweep_configs)
+        self.profile = self._get_profile(range_subsweep_configs)
+        self.step_length = self._get_step_length(range_subsweep_configs)
         self.approx_step_length_m = self.step_length * self.APPROX_BASE_STEP_LENGTH_M
-        self.start_point = self._get_start_point(subsweep_configs)
-        self.num_points = self._get_num_points(subsweep_configs)
+        self.start_point = self._get_start_point(range_subsweep_configs)
+        self.num_points = self._get_num_points(range_subsweep_configs)
 
         assert self.metadata.base_step_length_m is not None
-        self.step_length_m = self.step_length * self.metadata.base_step_length_m
+        self.base_step_length_m = self.metadata.base_step_length_m
+        self.step_length_m = self.step_length * self.base_step_length_m
 
-        (_, self.margin_p) = self.distance_filter_init_margin(self.profile, self.step_length)
-
-        self.start_point_cropped = self.start_point + self.margin_p
+        (_, self.margin_p) = self.distance_filter_edge_margin(self.profile, self.step_length)
+        self.start_point_cropped = self.start_point + self.margin_p * self.step_length
         self.num_points_cropped = self.num_points - 2 * self.margin_p
 
         self.distances_m = (
@@ -181,10 +199,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     @classmethod
     def _get_step_length(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
         step_lengths = {c.step_length for c in subsweep_configs}
-
         if len(step_lengths) > 1:
             raise ValueError
-
         (step_length,) = step_lengths
         return step_length
 
@@ -197,23 +213,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return sum(c.num_points for c in subsweep_configs)
 
     @classmethod
-    def _validate(
-        cls, subsweep_configs: list[a121.SubsweepConfig], measurement_type: MeasurementType
-    ) -> None:
+    def _validate_range_configs(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
         cls._validate_range(subsweep_configs)
 
         for c in subsweep_configs:
             if not c.phase_enhancement:
                 raise ValueError
-
-        if measurement_type == MeasurementType.CLOSE_RANGE:
-            if not len(subsweep_configs) == cls.NUM_SUBSWEEPS_IN_CLOSE_RANGE_MEASUREMENT:
-                raise ValueError("Incorrect subsweep config for close range measurement")
-            if (
-                not subsweep_configs[cls.CLOSE_RANGE_LOOPBACK_IDX].enable_loopback
-                and subsweep_configs[cls.CLOSE_RANGE_DIST_IDX].enable_loopback
-            ):
-                raise ValueError("Incorrect subsweep config for close range measurement")
 
     @classmethod
     def _validate_range(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
@@ -228,9 +233,31 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
             next_expected_start_point = c.start_point + c.num_points * step_length
 
+    @classmethod
+    def _validate_close_config(
+        cls, sensor_config: a121.SensorConfig, subsweep_indexes: List[int]
+    ) -> None:
+        ERROR_MSG = "Incorrect subsweep config for close range measurement"
+
+        if subsweep_indexes != [cls.CLOSE_RANGE_LOOPBACK_IDX, cls.CLOSE_RANGE_DIST_IDX]:
+            raise ValueError(ERROR_MSG)
+
+        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
+
+        if (
+            not subsweep_configs[cls.CLOSE_RANGE_LOOPBACK_IDX].enable_loopback
+            and subsweep_configs[cls.CLOSE_RANGE_DIST_IDX].enable_loopback
+        ):
+            raise ValueError(ERROR_MSG)
+
     def process(self, result: a121.Result) -> ProcessorResult:
-        subframes = [result.subframes[i] for i in self.subsweep_indexes]
-        frame = np.concatenate(subframes, axis=1)
+        range_subframes = [result.subframes[i] for i in self.range_subsweep_indexes]
+        frame = np.concatenate(range_subframes, axis=1)
+        if self.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+            lb_angle = np.angle(result.subframes[self.CLOSE_RANGE_LOOPBACK_IDX]).astype(float)
+            if self.processor_mode != ProcessorMode.LEAKAGE_CALIBRATION:
+                frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
+
         sweep = frame.mean(axis=0)
         filtered_sweep = filtfilt(self.b, self.a, sweep)
         abs_sweep = np.abs(filtered_sweep)
@@ -239,11 +266,29 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             return self._process_distance_estimation(abs_sweep)
         elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
-            return self._process_leakage_calibration(subframes)
+            return ProcessorResult(
+                phase_jitter_comp_reference=lb_angle,
+                direct_leakage=frame,
+            )
         elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
             return self._process_recorded_threshold_calibration(abs_sweep)
 
         raise RuntimeError
+
+    @staticmethod
+    def _apply_phase_jitter_compensation(
+        context: ProcessorContext,
+        frame: npt.NDArray[np.complex_],
+        lb_angle: npt.NDArray[np.float_],
+    ) -> npt.NDArray[np.complex_]:
+        if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
+            raise ValueError("Sufficient context not provided")
+
+        adjusted_leakage = context.direct_leakage * np.exp(
+            -1j * (context.phase_jitter_comp_ref - lb_angle)
+        )
+
+        return frame - adjusted_leakage  # type: ignore[no-any-return]
 
     def _init_process_distance_estimation(self) -> None:
         if self.threshold_method == ThresholdMethod.RECORDED:
@@ -280,7 +325,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
         (estimated_distances, estimated_amplitudes) = self._interpolate_peaks(
-            abs_sweep, found_peaks_idx, self.start_point_cropped, self.step_length
+            abs_sweep,
+            found_peaks_idx,
+            self.start_point_cropped,
+            self.step_length,
+            self.base_step_length_m,
         )
         extra_result = ProcessorExtraResult(
             abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
@@ -289,14 +338,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             estimated_distances=estimated_distances,
             estimated_amplitudes=estimated_amplitudes,
             extra_result=extra_result,
-        )
-
-    def _process_leakage_calibration(
-        self, subframes: list[npt.NDArray[np.complex_]]
-    ) -> ProcessorResult:
-        return ProcessorResult(
-            phase_jitter_comp_reference=subframes[self.CLOSE_RANGE_LOOPBACK_IDX],
-            direct_leakage=subframes[self.CLOSE_RANGE_DIST_IDX],
         )
 
     def _init_recorded_threshold_calibration(self) -> None:
@@ -430,6 +471,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         peak_idxs: list[int],
         start_point: int,
         step_length: int,
+        step_length_m: float,
     ) -> Tuple[list[float], list[float]]:
         estimated_distances = []
         estimated_amplitudes = []
@@ -443,12 +485,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             b = (y[1] - y[0]) / (x[1] - x[0]) - a * (x[0] + x[1])
             c = y[0] - a * x[0] ** 2 - b * x[0]
             peak_loc = -b / (2 * a)
-            estimated_distances.append((start_point + peak_loc * step_length) * 2.5)
+            estimated_distances.append((start_point + peak_loc * step_length) * step_length_m)
             estimated_amplitudes.append(a * peak_loc**2 + b * peak_loc + c)
         return estimated_distances, estimated_amplitudes
 
     @classmethod
-    def distance_filter_init_margin(
+    def distance_filter_edge_margin(
         cls, profile: a121.Profile, step_length: int
     ) -> Tuple[int, int]:
         margin_p = np.ceil(

@@ -20,7 +20,7 @@ detector = Detector(
     detector_config=detector_config,
 )
 
-detector.calibrate()
+detector.calibrate_close_range()
 detector.start()
 
 interrupt_handler = et.utils.ExampleInterruptHandler()

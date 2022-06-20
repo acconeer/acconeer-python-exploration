@@ -7,6 +7,7 @@ from ._aggregator import (
 )
 from ._detector import Detector, DetectorConfig, DetectorResult
 from ._processors import (
+    MeasurementType,
     Processor,
     ProcessorConfig,
     ProcessorContext,
