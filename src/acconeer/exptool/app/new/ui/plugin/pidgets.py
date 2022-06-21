@@ -4,7 +4,7 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Any, Generic, Optional, Tuple, Type, TypeVar
 
-from PySide6.QtCore import Signal
+from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLayout,
-    QLineEdit,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -49,7 +49,7 @@ class ParameterWidget(QWidget):
     :param note_label_text: The text to display in the ``note`` segment
     """
 
-    sig_parameter_changed = Signal(object)
+    sig_parameter_changed = QtCore.Signal(object)
 
     def __init__(
         self,
@@ -96,6 +96,38 @@ class ParameterWidget(QWidget):
         pass
 
 
+class IntParameterWidget(ParameterWidget):
+    def __init__(
+        self,
+        name_label_text: str,
+        note_label_text: str = "",
+        limits: Optional[Tuple[Optional[int], Optional[int]]] = None,
+        parent: Optional[QWidget] = None,
+        suffix: Optional[str] = None,
+    ) -> None:
+        self.spin_box = QSpinBox()
+        self.spin_box.setKeyboardTracking(False)
+        self.spin_box.setRange(*_convert_int_limits_to_qt_range(limits))
+        self.spin_box.setAlignment(QtCore.Qt.AlignRight)
+        if suffix:
+            self.spin_box.setSuffix(f" {suffix}")
+
+        super().__init__(
+            parameter_widget=self.spin_box,
+            name_label_text=name_label_text,
+            note_label_text=note_label_text,
+            parent=parent,
+        )
+
+        self.spin_box.valueChanged.connect(self._on_changed)
+
+    def set_parameter(self, value: Any) -> None:
+        self.spin_box.setValue(int(value))
+
+    def _on_changed(self) -> None:
+        self.sig_parameter_changed.emit(self.spin_box.value())
+
+
 class OptionalParameterWidget(ParameterWidget):
     """Optional parameter, not optional widget"""
 
@@ -104,15 +136,20 @@ class OptionalParameterWidget(ParameterWidget):
         optional_parameter_widget: QWidget,
         name_label_text: str,
         note_label_text: str = "",
+        checkbox_label_text: Optional[str] = None,
         parent: Optional[QWidget] = None,
     ):
         layout = QHBoxLayout(parent=self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.none_checkbox = QCheckBox()
+        if checkbox_label_text:
+            self.none_checkbox.setText(checkbox_label_text)
+
         self.optional_parameter_widget = optional_parameter_widget
 
         layout.addWidget(self.none_checkbox)
+        layout.addStretch(1)
         layout.addWidget(self.optional_parameter_widget)
 
         super().__init__(
@@ -141,16 +178,21 @@ class OptionalFloatParameterWidget(OptionalParameterWidget):
         self,
         name_label_text: str,
         note_label_text: str = "",
+        checkbox_label_text: Optional[str] = None,
         parent: Optional[QWidget] = None,
         decimals: int = 1,
         limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
         init_set_value: Optional[float] = None,
+        suffix: Optional[str] = None,
     ):
         self.spin_box = QDoubleSpinBox()
         self.spin_box.setDecimals(decimals)
         self.spin_box.setSingleStep(10 ** (-decimals))
         self.spin_box.setKeyboardTracking(False)
         self.spin_box.setRange(*_convert_float_limits_to_qt_range(limits))
+        self.spin_box.setAlignment(QtCore.Qt.AlignRight)
+        if suffix:
+            self.spin_box.setSuffix(f" {suffix}")
         if init_set_value is not None:
             self.spin_box.setValue(init_set_value)
 
@@ -158,6 +200,7 @@ class OptionalFloatParameterWidget(OptionalParameterWidget):
             optional_parameter_widget=self.spin_box,
             name_label_text=name_label_text,
             note_label_text=note_label_text,
+            checkbox_label_text=checkbox_label_text,
             parent=parent,
         )
         self.none_checkbox.stateChanged.connect(self._on_changed)
@@ -173,27 +216,6 @@ class OptionalFloatParameterWidget(OptionalParameterWidget):
 
     def set_not_none_parameter(self, value: Any) -> None:
         self.spin_box.setValue(value)
-
-
-class TextParameterWidget(ParameterWidget):
-    def __init__(
-        self, name_label_text: str, note_label_text: str = "", parent: Optional[QWidget] = None
-    ) -> None:
-        self.line_edit = QLineEdit()
-        super().__init__(
-            parameter_widget=self.line_edit,
-            name_label_text=name_label_text,
-            note_label_text=note_label_text,
-            parent=parent,
-        )
-        self.line_edit.textChanged.connect(self.emit_change_if_string_is_not_empty)
-
-    def set_parameter(self, new_text: Any) -> None:
-        self.line_edit.setText(str(new_text))
-
-    def emit_change_if_string_is_not_empty(self, string: str) -> None:
-        if string != "":
-            self.sig_parameter_changed.emit(string)
 
 
 class CheckboxParameterWidget(ParameterWidget):
@@ -252,16 +274,37 @@ class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
         self,
         enum_type: Type[EnumT],
         name_label_text: str,
+        *,
+        label_mapping: dict[EnumT, str],
         note_label_text: str = "",
-        label_mapping: dict[EnumT, str] = {},
         parent: Optional[QWidget] = None,
     ) -> None:
+        if label_mapping.keys() != set(enum_type):
+            raise ValueError("label_mapping does not match enum_type")
+
         super().__init__(
-            items=[(label_mapping.get(member, member.name), member) for member in enum_type],
+            items=[(v, k) for k, v in label_mapping.items()],
             name_label_text=name_label_text,
             note_label_text=note_label_text,
             parent=parent,
         )
+
+
+def _convert_int_limits_to_qt_range(
+    limits: Optional[Tuple[Optional[int], Optional[int]]]
+) -> Tuple[int, int]:
+    if limits is None:
+        limits = (None, None)
+
+    lower, upper = limits
+
+    if lower is None:
+        lower = int(-1e9)
+
+    if upper is None:
+        upper = int(1e9)
+
+    return (lower, upper)
 
 
 def _convert_float_limits_to_qt_range(

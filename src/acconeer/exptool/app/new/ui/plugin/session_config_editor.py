@@ -24,11 +24,17 @@ class SessionConfigEditor(QWidget):
     sig_update = Signal(object)
 
     IDLE_STATE_LABEL_MAP = {
-        a121.IdleState.DEEP_SLEEP: "Deep sleep",
-        a121.IdleState.SLEEP: "Sleep",
         a121.IdleState.READY: "Ready",
+        a121.IdleState.SLEEP: "Sleep",
+        a121.IdleState.DEEP_SLEEP: "Deep sleep",
     }
-    PROFILE_LABEL_MAP = {member: str(member.value) for member in a121.Profile}
+    PROFILE_LABEL_MAP = {
+        a121.Profile.PROFILE_1: "1 (shortest)",
+        a121.Profile.PROFILE_2: "2",
+        a121.Profile.PROFILE_3: "3",
+        a121.Profile.PROFILE_4: "4",
+        a121.Profile.PROFILE_5: "5 (longest)",
+    }
     PRF_LABEL_MAP = {
         a121.PRF.PRF_19_5_MHz: "19.5 MHz",
         a121.PRF.PRF_13_0_MHz: "13.0 MHz",
@@ -53,9 +59,11 @@ class SessionConfigEditor(QWidget):
                 pidgets.OptionalFloatParameterWidget(
                     "Update rate:",
                     parent=self,
-                    limits=(0.01, None),
+                    limits=(0.1, 1e4),
                     decimals=1,
                     init_set_value=10.0,
+                    suffix="Hz",
+                    checkbox_label_text="Limit",
                 ),
                 lambda val: None if (val is None) else float(val),
             )
@@ -69,12 +77,22 @@ class SessionConfigEditor(QWidget):
         self.sensor_group_box = VerticalGroupBox("Sensor parameters", parent=self)
         self._sensor_config_pidgets: PidgetMapping = {
             "sweeps_per_frame": (
-                pidgets.TextParameterWidget("Sweeps per frame:", parent=self),
+                pidgets.IntParameterWidget(
+                    "Sweeps per frame:",
+                    parent=self,
+                    limits=(1, 4095),
+                ),
                 int,
             ),
             "sweep_rate": (
                 pidgets.OptionalFloatParameterWidget(
-                    "Sweep rate:", parent=self, limits=(1, None), decimals=0, init_set_value=1000.0
+                    "Sweep rate:",
+                    parent=self,
+                    limits=(1, 1e6),
+                    decimals=0,
+                    init_set_value=1000.0,
+                    suffix="Hz",
+                    checkbox_label_text="Limit",
                 ),
                 lambda val: None if (val is None) else float(val),
             ),
@@ -82,9 +100,11 @@ class SessionConfigEditor(QWidget):
                 pidgets.OptionalFloatParameterWidget(
                     "Frame rate:",
                     parent=self,
-                    limits=(0.01, None),
+                    limits=(0.1, 1e4),
                     decimals=1,
                     init_set_value=10.0,
+                    suffix="Hz",
+                    checkbox_label_text="Limit",
                 ),
                 lambda val: None if (val is None) else float(val),
             ),
@@ -92,18 +112,18 @@ class SessionConfigEditor(QWidget):
                 pidgets.CheckboxParameterWidget("Continuous sweep mode:", parent=self),
                 bool,
             ),
-            "inter_frame_idle_state": (
-                pidgets.EnumParameterWidget(
-                    a121.IdleState,
-                    "Inter frame idle state:",
-                    label_mapping=self.IDLE_STATE_LABEL_MAP,
-                ),
-                a121.IdleState,
-            ),
             "inter_sweep_idle_state": (
                 pidgets.EnumParameterWidget(
                     a121.IdleState,
                     "Inter sweep idle state:",
+                    label_mapping=self.IDLE_STATE_LABEL_MAP,
+                ),
+                a121.IdleState,
+            ),
+            "inter_frame_idle_state": (
+                pidgets.EnumParameterWidget(
+                    a121.IdleState,
+                    "Inter frame idle state:",
                     label_mapping=self.IDLE_STATE_LABEL_MAP,
                 ),
                 a121.IdleState,
@@ -121,17 +141,45 @@ class SessionConfigEditor(QWidget):
         self.sensor_group_box.layout().addWidget(self.subsweep_group_box)
 
         self._subsweep_config_pidgets: PidgetMapping = {
-            "start_point": (pidgets.TextParameterWidget("Start point:", parent=self), int),
-            "num_points": (pidgets.TextParameterWidget("Number of points:", parent=self), int),
-            "step_length": (pidgets.TextParameterWidget("Step length:", parent=self), int),
+            "start_point": (pidgets.IntParameterWidget("Start point:", parent=self), int),
+            "num_points": (
+                pidgets.IntParameterWidget(
+                    "Number of points:",
+                    parent=self,
+                    limits=(1, 4095),
+                ),
+                int,
+            ),
+            "step_length": (
+                pidgets.IntParameterWidget(
+                    "Step length:",
+                    parent=self,
+                    limits=(1, None),
+                ),
+                int,
+            ),
             "profile": (
                 pidgets.EnumParameterWidget(
                     a121.Profile, "Profile:", parent=self, label_mapping=self.PROFILE_LABEL_MAP
                 ),
                 a121.Profile,
             ),
-            "hwaas": (pidgets.TextParameterWidget("HWAAS:", parent=self), int),
-            "receiver_gain": (pidgets.TextParameterWidget("Receiver gain:", parent=self), int),
+            "hwaas": (
+                pidgets.IntParameterWidget(
+                    "HWAAS:",
+                    parent=self,
+                    limits=(1, 511),
+                ),
+                int,
+            ),
+            "receiver_gain": (
+                pidgets.IntParameterWidget(
+                    "Receiver gain:",
+                    parent=self,
+                    limits=(0, 23),
+                ),
+                int,
+            ),
             "enable_tx": (
                 pidgets.CheckboxParameterWidget("Enable transmitter:", parent=self),
                 bool,
@@ -146,7 +194,7 @@ class SessionConfigEditor(QWidget):
             ),
             "prf": (
                 pidgets.EnumParameterWidget(
-                    a121.PRF, "PRF", parent=self, label_mapping=self.PRF_LABEL_MAP
+                    a121.PRF, "PRF:", parent=self, label_mapping=self.PRF_LABEL_MAP
                 ),
                 a121.PRF,
             ),
