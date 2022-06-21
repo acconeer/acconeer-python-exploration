@@ -73,6 +73,7 @@ def lint(session):
         "flake8-mutable",
         "flake8-quotes",
         "flake8-tidy-imports",
+        "packaging",
     )
     session.run("python", "tools/check_permissions.py")
     session.run("python", "tools/check_whitespace.py")
