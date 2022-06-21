@@ -4,7 +4,7 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Any, Generic, Optional, Tuple, Type, TypeVar
 
-from PySide6 import QtCore
+from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -105,12 +105,7 @@ class IntParameterWidget(ParameterWidget):
         parent: Optional[QWidget] = None,
         suffix: Optional[str] = None,
     ) -> None:
-        self.spin_box = QSpinBox()
-        self.spin_box.setKeyboardTracking(False)
-        self.spin_box.setRange(*_convert_int_limits_to_qt_range(limits))
-        self.spin_box.setAlignment(QtCore.Qt.AlignRight)
-        if suffix:
-            self.spin_box.setSuffix(f" {suffix}")
+        self.spin_box = _PidgetSpinBox(limits=limits, suffix=suffix)
 
         super().__init__(
             parameter_widget=self.spin_box,
@@ -185,16 +180,9 @@ class OptionalFloatParameterWidget(OptionalParameterWidget):
         init_set_value: Optional[float] = None,
         suffix: Optional[str] = None,
     ):
-        self.spin_box = QDoubleSpinBox()
-        self.spin_box.setDecimals(decimals)
-        self.spin_box.setSingleStep(10 ** (-decimals))
-        self.spin_box.setKeyboardTracking(False)
-        self.spin_box.setRange(*_convert_float_limits_to_qt_range(limits))
-        self.spin_box.setAlignment(QtCore.Qt.AlignRight)
-        if suffix:
-            self.spin_box.setSuffix(f" {suffix}")
-        if init_set_value is not None:
-            self.spin_box.setValue(init_set_value)
+        self.spin_box = _PidgetDoubleSpinBox(
+            decimals=decimals, limits=limits, suffix=suffix, init_set_value=init_set_value
+        )
 
         super().__init__(
             optional_parameter_widget=self.spin_box,
@@ -247,7 +235,7 @@ class ComboboxParameterWidget(ParameterWidget, Generic[T]):
         note_label_text: str = "",
         parent: Optional[QWidget] = None,
     ) -> None:
-        self.combobox = QComboBox()
+        self.combobox = _PidgetComboBox()
         super().__init__(
             parameter_widget=self.combobox,
             name_label_text=name_label_text,
@@ -288,6 +276,81 @@ class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
             note_label_text=note_label_text,
             parent=parent,
         )
+
+
+class _PidgetComboBox(QComboBox):
+    def __init__(
+        self,
+        parent: Optional[QWidget] = None,
+    ) -> None:
+        super().__init__(parent)
+
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+
+class _PidgetSpinBox(QSpinBox):
+    def __init__(
+        self,
+        parent: Optional[QWidget] = None,
+        *,
+        limits: Optional[Tuple[Optional[int], Optional[int]]] = None,
+        suffix: Optional[str] = None,
+    ) -> None:
+        super().__init__(parent)
+
+        self.setKeyboardTracking(False)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setAlignment(QtCore.Qt.AlignRight)
+
+        self.setRange(*_convert_int_limits_to_qt_range(limits))
+
+        if suffix:
+            self.setSuffix(f" {suffix}")
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+
+class _PidgetDoubleSpinBox(QDoubleSpinBox):
+    def __init__(
+        self,
+        parent: Optional[QWidget] = None,
+        *,
+        limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
+        init_set_value: Optional[float] = None,
+        decimals: int = 1,
+        suffix: Optional[str] = None,
+    ) -> None:
+        super().__init__(parent)
+
+        self.setKeyboardTracking(False)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setAlignment(QtCore.Qt.AlignRight)
+
+        self.setRange(*_convert_float_limits_to_qt_range(limits))
+        self.setDecimals(decimals)
+        self.setSingleStep(10 ** (-decimals))
+
+        if suffix:
+            self.setSuffix(f" {suffix}")
+
+        if init_set_value is not None:
+            self.setValue(init_set_value)
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
 
 
 def _convert_int_limits_to_qt_range(
