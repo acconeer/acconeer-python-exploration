@@ -24,7 +24,6 @@ from acconeer.exptool.app.new import (
     IdleMessage,
     KwargMessage,
     Message,
-    OkMessage,
     PlotPlugin,
     PluginState,
     Task,
@@ -277,7 +276,6 @@ class ProcessorBackendPluginBase(
         self._started = False
 
         self.broadcast()
-        self.callback(OkMessage("stop_session"))
         self.callback(IdleMessage())
 
     def _execute_get_next(self) -> None:
