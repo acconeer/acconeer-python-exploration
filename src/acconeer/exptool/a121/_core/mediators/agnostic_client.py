@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, Optional, Tuple, Type, Union
 
@@ -23,6 +24,9 @@ from acconeer.exptool.a121._core.utils import (
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
 from .recorder import Recorder
+
+
+log = logging.getLogger(__name__)
 
 
 class ClientError(Exception):
@@ -212,6 +216,8 @@ class AgnosticClient:
                 _ = self._link.recv(payload_size)
             except Exception:
                 return next_header
+            else:
+                log.debug("Threw away get_next package when draining buffer")
         raise ClientError("Client timed out when waiting for 'stop'-response.")
 
     def disconnect(self) -> None:
