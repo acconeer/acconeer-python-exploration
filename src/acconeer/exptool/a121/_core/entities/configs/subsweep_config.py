@@ -78,16 +78,38 @@ class SubsweepConfig:
         self.prf = prf
 
     def _collect_validation_results(self) -> list[ValidationResult]:
+        validation_results: list[ValidationResult] = []
+
         if self.enable_loopback and self.profile == Profile.PROFILE_2:
-            return [
-                ValidationError(
-                    self, "enable_loopback", "Enable loopback is incompatible with Profile 2."
-                ),
-                ValidationError(
-                    self, "profile", "Enable loopback is incompatible with Profile 2."
-                ),
-            ]
-        return []
+            validation_results.extend(
+                [
+                    ValidationError(
+                        self, "enable_loopback", "Enable loopback is incompatible with Profile 2."
+                    ),
+                    ValidationError(
+                        self, "profile", "Enable loopback is incompatible with Profile 2."
+                    ),
+                ]
+            )
+
+        if self.prf == PRF.PRF_19_5_MHz:
+            FORBIDDEN_PROFILES = [Profile.PROFILE_3, Profile.PROFILE_4, Profile.PROFILE_5]
+
+            if self.profile in FORBIDDEN_PROFILES:
+                validation_results.extend(
+                    [
+                        ValidationError(
+                            self, "prf", "19.5 MHz PRF is only compatible with profile 1 and 2."
+                        ),
+                        ValidationError(
+                            self,
+                            "profile",
+                            f"Profile {self.profile.value} is not supported with 19.5 MHz PRF.",
+                        ),
+                    ]
+                )
+
+        return validation_results
 
     def validate(self) -> None:
         """Performs self-validation

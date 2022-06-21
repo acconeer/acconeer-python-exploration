@@ -135,3 +135,23 @@ def test_setting_enum_parameters():
     RSS_KEY = 1
     with pytest.raises(ValueError):
         conf.prf = RSS_KEY  # type: ignore[assignment]
+
+
+def test_bad_loopback_and_profile_combination():
+    conf = a121.SubsweepConfig(profile=a121.Profile.PROFILE_2, enable_loopback=True)
+    with pytest.raises(a121.ValidationError):
+        conf.validate()
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [
+        a121.Profile.PROFILE_3,
+        a121.Profile.PROFILE_4,
+        a121.Profile.PROFILE_5,
+    ],
+)
+def test_bad_prf_and_profile_combination(profile):
+    conf = a121.SubsweepConfig(profile=profile, prf=a121.PRF.PRF_19_5_MHz)
+    with pytest.raises(a121.ValidationError):
+        conf.validate()
