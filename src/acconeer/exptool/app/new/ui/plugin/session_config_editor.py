@@ -158,6 +158,8 @@ class SessionConfigEditor(QWidget):
 
     def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
         self._session_config = session_config
+
+    def sync(self) -> None:
         self._update_ui()
 
     def setEnabled(self, enabled: bool) -> None:

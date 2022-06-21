@@ -106,13 +106,19 @@ class ProcessorBackendPluginBase(
 
         self._restore_defaults()
 
+    def broadcast(self, sync: bool = False) -> None:
+        super().broadcast()
+
+        if sync:
+            self.callback(OkMessage("sync", recipient="view_plugin"))
+
     def _restore_defaults(self) -> None:
         self.shared_state = ProcessorBackendPluginSharedState[ConfigT](
             session_config=a121.SessionConfig(self.get_default_sensor_config()),
             processor_config=self.get_processor_config_cls()(),
         )
 
-        self.broadcast()
+        self.broadcast(sync=True)
 
     @property
     def _client(self) -> Optional[a121.Client]:
@@ -155,7 +161,7 @@ class ProcessorBackendPluginBase(
 
         self.shared_state.replaying = True
 
-        self.broadcast()
+        self.broadcast(sync=True)
 
         try:
             self._execute_start(with_recorder=False)
@@ -409,7 +415,13 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
         self.layout.deleteLater()
 
     def handle_message(self, message: Message) -> None:
-        pass
+        if message.command_name == "sync":
+            log.debug(f"{type(self).__name__} syncing")
+
+            self.session_config_editor.sync()
+            self.processor_config_editor.sync()
+        else:
+            raise RuntimeError("Unknown message")
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)

@@ -41,6 +41,8 @@ class AttrsConfigEditor(QWidget, Generic[T]):
 
     def set_data(self, config: Optional[T]) -> None:
         self._config = config
+
+    def sync(self) -> None:
         self._update_pidgets()
 
     def setEnabled(self, enabled: bool) -> None:
