@@ -34,6 +34,7 @@ from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
     GridGroupBox,
+    MetadataView,
     PidgetMapping,
     SessionConfigEditor,
 )
@@ -81,6 +82,7 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT]):
     session_config: a121.SessionConfig = attrs.field()
     processor_config: ConfigT = attrs.field()
     replaying: bool = attrs.field(default=False)
+    metadata: Optional[a121.Metadata] = attrs.field(default=None)
 
 
 class ProcessorBackendPluginBase(
@@ -244,6 +246,9 @@ class ProcessorBackendPluginBase(
 
         self._started = True
 
+        self.shared_state.metadata = metadata
+        self.broadcast()
+
         self.callback(
             KwargMessage(
                 "setup",
@@ -276,6 +281,7 @@ class ProcessorBackendPluginBase(
 
         self._started = False
 
+        self.shared_state.metadata = None
         self.broadcast()
         self.callback(IdleMessage())
 
@@ -381,6 +387,9 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
 
         self.layout.addWidget(button_group)
 
+        self.metadata_view = MetadataView(self.view_widget)
+        self.layout.addWidget(self.metadata_view)
+
         self.session_config_editor = SessionConfigEditor(self.view_widget)
         self.session_config_editor.sig_update.connect(self._on_session_config_update)
         self.processor_config_editor = AttrsConfigEditor[ConfigT](
@@ -435,6 +444,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
         if app_model.backend_plugin_state is None:
             self.session_config_editor.set_data(None)
             self.processor_config_editor.set_data(None)
+            self.metadata_view.update(None)
         else:
             assert isinstance(app_model.backend_plugin_state, ProcessorBackendPluginSharedState)
             assert isinstance(
@@ -443,6 +453,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
 
             self.session_config_editor.set_data(app_model.backend_plugin_state.session_config)
             self.processor_config_editor.set_data(app_model.backend_plugin_state.processor_config)
+            self.metadata_view.update(app_model.backend_plugin_state.metadata)
 
     @classmethod
     @abc.abstractmethod
