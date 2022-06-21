@@ -1,7 +1,5 @@
-.. _setup_raspberry:
-
-Setting up your Raspberry Pi EVK
-================================
+Setting up your Raspberry Pi EVK for A111
+=========================================
 
 This applies to the XC111+XR111 or XC112+XR112 kits (mounted on a Raspberry Pi).
 

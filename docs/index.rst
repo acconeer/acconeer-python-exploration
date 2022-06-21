@@ -32,7 +32,7 @@ Table of contents
    XM112 <evk_setup/xm112>
    XM122 <evk_setup/xm122>
    XM132 <evk_setup/xm132>
-   Raspberry Pi <evk_setup/raspberry>
+   Raspberry Pi (A111) <evk_setup/raspberry_a111>
 
 .. toctree::
    :maxdepth: 2
