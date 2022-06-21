@@ -28,6 +28,7 @@ Table of contents
    :glob:
    :caption: Setting up your EVK
 
+   XC120 + XE121 (A121) <evk_setup/xc120_xe121>
    XM112 <evk_setup/xm112>
    XM122 <evk_setup/xm122>
    XM132 <evk_setup/xm132>

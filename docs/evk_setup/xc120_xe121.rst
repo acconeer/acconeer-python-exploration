@@ -1,0 +1,12 @@
+Setting up your XC120 + XE121
+=============================
+
+Flashing
+--------
+Start by downloading the latest ``acc_exploration_server_a121.bin`` from our `developer page <https://developer.acconeer.com/>`_.
+
+Flash XC120 using the Exploration Tool Application
+
+or by using the following command::
+
+   python -m acconeer.exptool.flash -i acc_exploration_server_a121.bin
