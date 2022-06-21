@@ -122,6 +122,7 @@ class AppModel(QObject):
     sig_load_plugin = Signal(object)
     sig_message_plot_plugin = Signal(object)
     sig_message_view_plugin = Signal(object)
+    sig_status_message = Signal(object)
 
     plugins: list[Plugin]
     plugin: Optional[Plugin]
@@ -231,6 +232,8 @@ class AppModel(QObject):
             self.plugin_state = PluginState.LOADED_BUSY
         elif message == IdleMessage():
             self.plugin_state = PluginState.LOADED_IDLE
+        elif message.command_name == "status":
+            self.send_status_message(message.data)
         else:
             raise RuntimeError(f"AppModel cannot handle message: {message}")
 
@@ -381,3 +384,6 @@ class AppModel(QObject):
             return None
 
         return self._a121_server_info.rss_version
+
+    def send_status_message(self, message: Optional[str]) -> None:
+        self.sig_status_message.emit(message)

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import abc
 from pathlib import Path
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, Optional, TypeVar
 
-from ._message import BackendPluginStateMessage, Message
+from ._message import BackendPluginStateMessage, DataMessage, Message
 from ._types import Task
 
 
@@ -44,3 +44,6 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
 
     def broadcast(self) -> None:
         self.callback(BackendPluginStateMessage(self.shared_state))
+
+    def send_status_message(self, message: Optional[str]) -> None:
+        self.callback(DataMessage("status", message))

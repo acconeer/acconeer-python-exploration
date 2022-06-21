@@ -288,8 +288,21 @@ class ProcessorBackendPluginBase(
 
         assert isinstance(result, a121.Result)
 
+        if result.data_saturated:
+            self.send_status_message(self._format_warning("Data saturated - reduce gain"))
+
+        if result.calibration_needed:
+            self.send_status_message(self._format_warning("Calibration needed - restart"))
+
+        if result.frame_delayed:
+            self.send_status_message(self._format_warning("Frame delayed"))
+
         processor_result = self._processor_instance.process(result)
         self.callback(DataMessage("plot", processor_result, recipient="plot_plugin"))
+
+    @classmethod
+    def _format_warning(cls, s: str) -> str:
+        return f'<p style="color: #FD5200;"><b>Warning: {s}</b></p>'
 
     @classmethod
     @abc.abstractmethod

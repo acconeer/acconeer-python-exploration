@@ -151,6 +151,15 @@ class StatusBar(QStatusBar):
         super().__init__(parent)
 
         app_model.sig_notify.connect(self._on_app_model_update)
+        app_model.sig_status_message.connect(self._on_app_model_status_message)
+
+        self.message_timer = QtCore.QTimer(self)
+        self.message_timer.setInterval(3000)
+        self.message_timer.setSingleShot(True)
+        self.message_timer.timeout.connect(self._on_timer)
+
+        self.message_widget = QLabel(self)
+        self.addWidget(self.message_widget)
 
         self.rss_version_label = QLabel(self)
         self.addPermanentWidget(self.rss_version_label)
@@ -169,3 +178,15 @@ class StatusBar(QStatusBar):
 
         self.rss_version_label.setStyleSheet(css)
         self.rss_version_label.setText(text)
+
+    def _on_app_model_status_message(self, message: Optional[str]) -> None:
+        self.message_timer.stop()
+
+        if message:
+            self.message_widget.setText(message)
+            self.message_timer.start()
+        else:
+            self.message_widget.clear()
+
+    def _on_timer(self) -> None:
+        self.message_widget.clear()
