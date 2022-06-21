@@ -24,6 +24,7 @@ from acconeer.exptool.app.new import (
     IdleMessage,
     KwargMessage,
     Message,
+    OkMessage,
     PlotPlugin,
     PluginState,
     Task,
