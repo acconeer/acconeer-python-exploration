@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -32,14 +33,14 @@ class _FlashThread(QThread):
     flash_failed = Signal(str)
     flash_done = Signal()
 
-    def __init__(self, image_file: str, flash_port: serial.tools.list_ports.ListPortInfo) -> None:
+    def __init__(self, bin_file: str, flash_port: serial.tools.list_ports.ListPortInfo) -> None:
         super().__init__()
-        self.image_file = image_file
+        self.bin_file = bin_file
         self.flash_port = flash_port
 
     def run(self) -> None:
         try:
-            flash_image(self.image_file, self.flash_port)
+            flash_image(self.bin_file, self.flash_port)
             self.flash_done.emit()
         except Exception as e:
             log.error(str(e))
@@ -55,26 +56,28 @@ class _FlashDialog(QDialog):
 
         vbox = QVBoxLayout(self)
         vbox.setAlignment(Qt.AlignCenter)
+        vbox.setSizeConstraint(QVBoxLayout.SetMinimumSize)
 
-        loading = QLabel()
-        loading.setAlignment(Qt.AlignCenter)
+        self.loading = QLabel()
+        self.loading.setAlignment(Qt.AlignCenter)
 
         loader_gif = None
         with importlib.resources.path(resources, "loader.gif") as path:
             loader_gif = path
 
         self.flash_movie = QMovie(str(loader_gif))
-        loading.setMovie(self.flash_movie)
-        vbox.addWidget(loading)
+        self.loading.setMovie(self.flash_movie)
+        vbox.addWidget(self.loading)
 
         self.flash_label = QLabel(self)
+        self.flash_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         self.flash_label.setAlignment(Qt.AlignCenter)
         vbox.addWidget(self.flash_label)
 
         self.setLayout(vbox)
 
-    def flash(self, image_file, flash_port):
-        self.flash_thread = _FlashThread(image_file, flash_port)
+    def flash(self, bin_file, flash_port):
+        self.flash_thread = _FlashThread(bin_file, flash_port)
         self.flash_thread.started.connect(self._flash_start)
         self.flash_thread.finished.connect(self.flash_thread.deleteLater)
         self.flash_thread.finished.connect(self._flash_stop)
@@ -91,6 +94,7 @@ class _FlashDialog(QDialog):
 
     def _flash_stop(self) -> None:
         self.flash_movie.stop()
+        self.loading.hide()
         self._flashing = False
 
     def _flash_done(self) -> None:
@@ -114,11 +118,11 @@ class _FlashPopup(QDialog):
         self.setMinimumWidth(350)
 
         self.flash_port = None
-        self.image_file = None
+        self.bin_file = None
 
         layout = QFormLayout(self)
 
-        self.file_label = QLineEdit("<Select an image file>")
+        self.file_label = QLineEdit("<Select an bin file>")
         self.file_label.setReadOnly(True)
 
         browse_button = QPushButton("Browse", self)
@@ -140,7 +144,7 @@ class _FlashPopup(QDialog):
         self.setLayout(layout)
 
         self.browse_file_dialog = QFileDialog(None)
-        self.browse_file_dialog.setNameFilter("Image files (*.image)")
+        self.browse_file_dialog.setNameFilter("Bin files (*.bin)")
 
         self.flash_dialog = _FlashDialog(self)
 
@@ -158,20 +162,20 @@ class _FlashPopup(QDialog):
     def _browse_file(self) -> None:
         if self.browse_file_dialog.exec():
             filenames = self.browse_file_dialog.selectedFiles()
-            self.image_file = filenames[0]
-            self.file_label.setText(self.image_file)
+            self.bin_file = filenames[0]
+            self.file_label.setText(self.bin_file)
 
-        self.flash_button.setEnabled(self.flash_port is not None and self.image_file is not None)
+        self.flash_button.setEnabled(self.flash_port is not None and self.bin_file is not None)
 
     def _flash(self) -> None:
         flash_port = find_flash_port(self.flash_port)
 
-        self.flash_dialog.flash(self.image_file, flash_port)
+        self.flash_dialog.flash(self.bin_file, flash_port)
 
     def _on_port_combo_box_change(self) -> None:
         self.flash_port = self.port_combo_box.currentData()
 
-        self.flash_button.setEnabled(self.flash_port is not None and self.image_file is not None)
+        self.flash_button.setEnabled(self.flash_port is not None and self.bin_file is not None)
 
 
 class FlashButton(QPushButton):
