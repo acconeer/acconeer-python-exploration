@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6 import QtGui
-from PySide6.QtWidgets import QMessageBox, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QMessageBox, QWidget
 
 
 class ExceptionWidget(QMessageBox):
@@ -29,3 +29,15 @@ class ExceptionWidget(QMessageBox):
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
         self.setFixedWidth(500)
+
+
+class VerticalSeparator(QWidget):
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(5, 5, 5, 5)
+
+        frame = QFrame(self)
+        frame.setFrameShape(QFrame.VLine)
+        self.layout().addWidget(frame)
