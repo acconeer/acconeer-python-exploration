@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Iterator, Optional, Union, cast
+from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 from acconeer.exptool.a121 import (
     Client,
@@ -71,7 +71,7 @@ class ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
 
         try:
             result_ = next(self._result_iterator)
-            result = cast(Union[Result, list[dict[int, Result]]], result_)
+            result = cast(Union[Result, List[Dict[int, Result]]], result_)
         except StopIteration:
             raise StopReplay
 
