@@ -27,6 +27,12 @@ class MetadataView(QGroupBox):
         self.layout().addWidget(self.calibration_temperature, row, 1)
         self.layout().addWidget(QLabel("Calibration temperature", self), row, 0)
 
+        row += 1
+
+        self.max_sweep_rate = MetadataValueWidget(self)
+        self.layout().addWidget(self.max_sweep_rate, row, 1)
+        self.layout().addWidget(QLabel("Max sweep rate", self), row, 0)
+
         self.update(None)
 
     def update(self, metadata: Optional[a121.Metadata]) -> None:
@@ -34,6 +40,7 @@ class MetadataView(QGroupBox):
         self.calibration_temperature.setText(
             f"{metadata.calibration_temperature}" if metadata else "-"
         )
+        self.max_sweep_rate.setText(f"{metadata.max_sweep_rate:.0f} Hz" if metadata else "-")
 
 
 class MetadataValueWidget(QLineEdit):
