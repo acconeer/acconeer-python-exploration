@@ -133,7 +133,7 @@ class RightArea(QScrollArea):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.horizontalScrollBar().setEnabled(False)
 
-        self.setMinimumWidth(300)
+        self.setMinimumWidth(350)
         self.setMaximumWidth(400)
 
         self.setWidget(RightAreaContent(app_model, self))

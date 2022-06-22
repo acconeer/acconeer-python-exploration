@@ -10,6 +10,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
+from .range_help_view import RangeHelpView
 from .types import PidgetFactoryMapping
 from .utils import VerticalGroupBox
 
@@ -228,6 +229,9 @@ class SessionConfigEditor(QWidget):
         self.subsweep_group_box.layout().setSpacing(self.SPACING)
         self.sensor_group_box.layout().addWidget(self.subsweep_group_box)
 
+        self.range_help_view = RangeHelpView(self.subsweep_group_box)
+        self.subsweep_group_box.layout().addWidget(self.range_help_view)
+
         self._subsweep_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
         for aspect, (factory, func) in self.SUBSWEEP_CONFIG_FACTORIES.items():
             pidget = factory.create(self.subsweep_group_box)
@@ -240,6 +244,9 @@ class SessionConfigEditor(QWidget):
 
     def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
         self._session_config = session_config
+        self.range_help_view.update(
+            session_config.sensor_config.subsweep if session_config else None
+        )
 
     def sync(self) -> None:
         self._update_ui()
