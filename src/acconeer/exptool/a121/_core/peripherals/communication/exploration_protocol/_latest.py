@@ -66,6 +66,7 @@ class MetadataResponse(TypedDict):
     subsweep_data_length: list[int]
     calibration_temperature: NotRequired[int]
     base_step_length_m: NotRequired[float]
+    max_sweep_rate: NotRequired[float]
 
 
 class SetupResponse(ValidResponse):
@@ -293,6 +294,7 @@ class ExplorationProtocol(CommunicationProtocol):
             calibration_temperature=metadata_dict.get("calibration_temperature"),
             tick_period=tick_period,
             base_step_length_m=metadata_dict.get("base_step_length_m"),
+            max_sweep_rate=metadata_dict.get("max_sweep_rate"),
         )
 
     @classmethod

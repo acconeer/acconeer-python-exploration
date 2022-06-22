@@ -33,6 +33,7 @@ def single_sweep_metadata():
         calibration_temperature=None,
         tick_period=50,
         base_step_length_m=0.0025,
+        max_sweep_rate=1000.0,
     )
 
 
@@ -178,6 +179,7 @@ def test_setup_response(single_sweep_metadata):
                         "subsweep_data_length": [100],
                         "calibration_temperature": None,
                         "base_step_length_m": 0.0025,
+                        "max_sweep_rate": 1000.0,
                     },
                 ],
                 [  # Group 2
@@ -188,6 +190,7 @@ def test_setup_response(single_sweep_metadata):
                         "subsweep_data_length": [100, 100],
                         # "calibration_temperature": None,  # omitting is ok
                         "base_step_length_m": 0.0025,
+                        # "max_sweep_rate": 1000.0,  # omitting is ok
                     },
                 ],
             ],
@@ -205,6 +208,7 @@ def test_setup_response(single_sweep_metadata):
                 calibration_temperature=None,
                 tick_period=50,
                 base_step_length_m=0.0025,
+                max_sweep_rate=None,
             )
         },
     ]

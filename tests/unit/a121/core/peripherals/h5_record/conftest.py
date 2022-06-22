@@ -117,6 +117,7 @@ def ref_metadata(ref_sweep_data_length, ref_frame_data_length):
         calibration_temperature=None,
         tick_period=50,
         base_step_length_m=0.0025,
+        max_sweep_rate=1000.0,
     )
 
 

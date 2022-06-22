@@ -38,6 +38,9 @@ class Metadata:
     base_step_length_m: Optional[float] = attrs.field(default=None)
     """Base step length in meter"""
 
+    max_sweep_rate: Optional[float] = attrs.field(default=None)
+    """Maximum sweep rate that the sensor can provide for the given configuration"""
+
     @property
     def frame_shape(self) -> Tuple[int, int]:
         """The frame shape this Metadata defines"""
