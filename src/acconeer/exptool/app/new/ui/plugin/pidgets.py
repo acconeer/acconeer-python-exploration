@@ -75,7 +75,7 @@ class ParameterWidget(QWidget):
     def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
         """Called by ParameterWidget.__init__"""
 
-        layout = QVBoxLayout(self._body_widget)
+        layout = QHBoxLayout(self._body_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(note_label_widget)
         return layout
@@ -160,8 +160,8 @@ class OptionalParameterWidget(ParameterWidget):
 
         layout = QHBoxLayout(self._optional_widget)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(none_checkbox)
         layout.addStretch(1)
+        layout.addWidget(none_checkbox)
         return layout
 
     def set_parameter(self, value: Any) -> None:
@@ -310,11 +310,15 @@ class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
         super().__init__(factory, parent)
 
 
+_WIDGET_WIDTH = 125
+
+
 class _PidgetComboBox(QComboBox):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.setFixedWidth(_WIDGET_WIDTH)
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         if self.hasFocus():
@@ -336,6 +340,7 @@ class _PidgetSpinBox(QSpinBox):
         self.setKeyboardTracking(False)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setAlignment(QtCore.Qt.AlignRight)
+        self.setFixedWidth(_WIDGET_WIDTH)
 
         self.setRange(*_convert_int_limits_to_qt_range(limits))
 
@@ -364,6 +369,7 @@ class _PidgetDoubleSpinBox(QDoubleSpinBox):
         self.setKeyboardTracking(False)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setAlignment(QtCore.Qt.AlignRight)
+        self.setFixedWidth(_WIDGET_WIDTH)
 
         self.setRange(*_convert_float_limits_to_qt_range(limits))
         self.setDecimals(decimals)
