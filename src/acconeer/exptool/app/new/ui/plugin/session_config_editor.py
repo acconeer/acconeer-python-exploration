@@ -88,7 +88,7 @@ class SessionConfigEditor(QWidget):
         ),
         "continuous_sweep_mode": (
             pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Continuous sweep mode:",
+                name_label_text="Continuous sweep mode",
             ),
             bool,
         ),
@@ -154,19 +154,19 @@ class SessionConfigEditor(QWidget):
         ),
         "enable_tx": (
             pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable transmitter:",
+                name_label_text="Enable transmitter",
             ),
             bool,
         ),
         "enable_loopback": (
             pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable loopback:",
+                name_label_text="Enable loopback",
             ),
             bool,
         ),
         "phase_enhancement": (
             pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Phase enhancement:",
+                name_label_text="Phase enhancement",
             ),
             bool,
         ),

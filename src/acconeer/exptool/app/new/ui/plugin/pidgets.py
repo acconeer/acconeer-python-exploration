@@ -8,10 +8,10 @@ import attrs
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import (
-    QBoxLayout,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLayout,
@@ -226,18 +226,21 @@ class CheckboxParameterWidget(ParameterWidget):
     def __init__(self, factory: CheckboxParameterWidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
+        assert isinstance(self._body_layout, QGridLayout)
+
         self.__checkbox = QCheckBox(self._body_widget)
         self.__checkbox.clicked.connect(self.__on_checkbox_click)
-        self._body_layout.addWidget(self.__checkbox)
-        assert isinstance(self._body_layout, QBoxLayout)
-        self._body_layout.addStretch(1)
+        self._body_layout.addWidget(self.__checkbox, 0, 0)
+        self._body_layout.setColumnStretch(0, 0)
+        self._body_layout.setColumnStretch(1, 1)
 
     def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
         """Called by ParameterWidget.__init__"""
 
-        layout = QHBoxLayout(self._body_widget)
+        layout = QGridLayout(self._body_widget)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(note_label_widget)
+        layout.setSpacing(0)
+        layout.addWidget(note_label_widget, 0, 1)
         return layout
 
     def __on_checkbox_click(self, checked: bool) -> None:
