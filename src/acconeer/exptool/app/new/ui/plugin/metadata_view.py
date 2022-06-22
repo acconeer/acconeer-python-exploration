@@ -40,7 +40,16 @@ class MetadataView(QGroupBox):
         self.calibration_temperature.setText(
             f"{metadata.calibration_temperature}" if metadata else "-"
         )
-        self.max_sweep_rate.setText(f"{metadata.max_sweep_rate:.0f} Hz" if metadata else "-")
+
+        if metadata:
+            if metadata.max_sweep_rate:
+                max_sweep_rate_text = f"{metadata.max_sweep_rate:.0f} Hz"
+            else:
+                max_sweep_rate_text = "N/A"
+        else:
+            max_sweep_rate_text = "-"
+
+        self.max_sweep_rate.setText(max_sweep_rate_text)
 
 
 class MetadataValueWidget(QLineEdit):
