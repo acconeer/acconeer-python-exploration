@@ -234,6 +234,8 @@ class AppModel(QObject):
             self.plugin_state = PluginState.LOADED_IDLE
         elif message.command_name == "status":
             self.send_status_message(message.data)
+        elif message.command_name == "start_session":
+            pass  # TODO: Should this be handled
         else:
             raise RuntimeError(f"AppModel cannot handle message: {message}")
 
