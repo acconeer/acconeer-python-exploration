@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, Mapping, Optional, TypeVar
 
 import attrs
 
@@ -9,7 +9,8 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool.a121._core import Criticality
 
-from .types import PidgetMapping
+from .pidgets import ParameterWidget
+from .types import PidgetFactoryMapping
 from .utils import VerticalGroupBox
 
 
@@ -22,22 +23,26 @@ class AttrsConfigEditor(QWidget, Generic[T]):
     sig_update = Signal(object)
 
     def __init__(
-        self, title: str, pidget_mapping: PidgetMapping, parent: Optional[QWidget] = None
+        self, title: str, factory_mapping: PidgetFactoryMapping, parent: Optional[QWidget] = None
     ) -> None:
         super().__init__(parent=parent)
         self._config = None
-        self._pidget_mapping = pidget_mapping
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(11)
         group_box = VerticalGroupBox(title, parent=self)
         self.layout().addWidget(group_box)
 
-        for aspect, (pidget, f) in self._pidget_mapping.items():
+        self._pidget_mapping: Mapping[str, ParameterWidget] = {}
+
+        for aspect, (factory, f) in factory_mapping.items():
+            pidget = factory.create(group_box)
             pidget.sig_parameter_changed.connect(
                 lambda val: self._update_config_aspect(aspect, val if (f is None) else f(val))
             )
             group_box.layout().addWidget(pidget)
+
+            self._pidget_mapping[aspect] = pidget
 
     def set_data(self, config: Optional[T]) -> None:
         self._config = config
@@ -55,7 +60,7 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         if self._config is None:
             return
 
-        for aspect, (pidget, _) in self._pidget_mapping.items():
+        for aspect, pidget in self._pidget_mapping.items():
             config_value = getattr(self._config, aspect)
             pidget.set_parameter(config_value)
 
@@ -66,6 +71,6 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         try:
             self._config = attrs.evolve(self._config, **{aspect: value})
         except Exception as e:
-            self._pidget_mapping[aspect][0].set_note_text(e.args[0], Criticality.ERROR)
+            self._pidget_mapping[aspect].set_note_text(e.args[0], Criticality.ERROR)
 
         self._broadcast()

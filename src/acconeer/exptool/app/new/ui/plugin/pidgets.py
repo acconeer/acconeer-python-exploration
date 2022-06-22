@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+import abc
 from enum import Enum
 from typing import Any, Generic, Optional, Tuple, Type, TypeVar
 
+import attrs
+
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -30,53 +33,58 @@ T = TypeVar("T")
 EnumT = TypeVar("EnumT", bound=Enum)
 
 
+@attrs.frozen(kw_only=True)
+class ParameterWidgetFactory(abc.ABC):
+    name_label_text: str
+    note_label_text: Optional[str] = None
+
+    @abc.abstractmethod
+    def create(self, parent: QWidget) -> ParameterWidget:
+        ...
+
+
 class ParameterWidget(QWidget):
     """Base class for a parameter-bound widget.
 
     A ``ParameterWidget`` comes with a
     ``name`` label and an ``note`` label by default.
-
-        +------------------+------------------+
-        |              name label             |
-        +------------------+------------------+
-        |           parameter widget          |
-        +------------------+------------------+
-        |    note label (sometimes hidden)    |
-        +-------------------------------------+
-    :param parameter_widget:
-        The widget that lets the user edit the parameter.
-    :param name_label_text: The text to display in the ``label`` segment
-    :param note_label_text: The text to display in the ``note`` segment
     """
 
     sig_parameter_changed = QtCore.Signal(object)
 
-    def __init__(
-        self,
-        parameter_widget: QWidget,
-        name_label_text: str,
-        note_label_text: str = "",
-        name_parameter_layout: Type[QLayout] = QVBoxLayout,
-        parent: Optional[QWidget] = None,
-    ) -> None:
+    def __init__(self, factory: ParameterWidgetFactory, parent: QWidget) -> None:
         super().__init__(parent=parent)
-        vert_layout = name_parameter_layout(parent=self)
 
-        self.parameter_widget = parameter_widget
-        self.note_label_widget = QLabel(parent=self)
-        self.label_widget = QLabel(name_label_text, parent=self)
-        self.note_label_widget.setWordWrap(True)
-        self.note_label_widget.setContentsMargins(5, 5, 5, 5)
-        self.set_note_text(note_label_text)
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
 
-        vert_layout.addWidget(self.label_widget)
-        vert_layout.addWidget(self.parameter_widget)
-        vert_layout.addWidget(self.note_label_widget)
-        self.setLayout(vert_layout)
+        self._body_widget = QWidget(self)
+        self.layout().addWidget(self._body_widget)
 
-    def set_note_text(self, message: str, criticality: Optional[Criticality] = None) -> None:
-        if message == "":
-            self.note_label_widget.hide()
+        self.__label_widget = QLabel(factory.name_label_text, parent=self._body_widget)
+
+        self._body_layout = self._create_body_layout(self.__label_widget)
+        self._body_widget.setLayout(self._body_layout)
+
+        self.__note_widget = QLabel(parent=self)
+        self.__note_widget.setWordWrap(True)
+        self.__note_widget.setContentsMargins(5, 5, 5, 5)
+        self.set_note_text(factory.note_label_text)
+        self.layout().addWidget(self.__note_widget)
+
+    def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
+        """Called by ParameterWidget.__init__"""
+
+        layout = QVBoxLayout(self._body_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(note_label_widget)
+        return layout
+
+    def set_note_text(
+        self, message: Optional[str], criticality: Optional[Criticality] = None
+    ) -> None:
+        if not message:
+            self.__note_widget.hide()
             return
 
         COLOR_MAP = {
@@ -85,204 +93,222 @@ class ParameterWidget(QWidget):
             None: "white",
         }
 
-        self.note_label_widget.show()
-        self.note_label_widget.setText(message)
-        self.note_label_widget.setStyleSheet(
+        self.__note_widget.show()
+        self.__note_widget.setText(message)
+        self.__note_widget.setStyleSheet(
             f"background-color: {COLOR_MAP[criticality]}; color: white; font: bold italic;"
         )
 
-    @abstractmethod
+    @abc.abstractmethod
     def set_parameter(self, value: Any) -> None:
         pass
 
 
+@attrs.frozen(kw_only=True)
+class IntParameterWidgetFactory(ParameterWidgetFactory):
+    limits: Optional[Tuple[Optional[int], Optional[int]]] = None
+    suffix: Optional[str] = None
+
+    def create(self, parent: QWidget) -> IntParameterWidget:
+        return IntParameterWidget(self, parent)
+
+
 class IntParameterWidget(ParameterWidget):
-    def __init__(
-        self,
-        name_label_text: str,
-        note_label_text: str = "",
-        limits: Optional[Tuple[Optional[int], Optional[int]]] = None,
-        parent: Optional[QWidget] = None,
-        suffix: Optional[str] = None,
-    ) -> None:
-        self.spin_box = _PidgetSpinBox(limits=limits, suffix=suffix)
+    def __init__(self, factory: IntParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
 
-        super().__init__(
-            parameter_widget=self.spin_box,
-            name_label_text=name_label_text,
-            note_label_text=note_label_text,
-            parent=parent,
+        self.__spin_box = _PidgetSpinBox(
+            self._body_widget,
+            limits=factory.limits,
+            suffix=factory.suffix,
         )
-
-        self.spin_box.valueChanged.connect(self._on_changed)
+        self.__spin_box.valueChanged.connect(self.__on_changed)
+        self._body_layout.addWidget(self.__spin_box)
 
     def set_parameter(self, value: Any) -> None:
-        self.spin_box.setValue(int(value))
+        if value is None:
+            return
 
-    def _on_changed(self) -> None:
-        self.sig_parameter_changed.emit(self.spin_box.value())
+        self.__spin_box.setValue(int(value))
+
+    def __on_changed(self) -> None:
+        self.sig_parameter_changed.emit(self.__spin_box.value())
+
+
+@attrs.frozen(kw_only=True)
+class OptionalParameterWidgetFactory(ParameterWidgetFactory):
+    checkbox_label_text: Optional[str] = None
 
 
 class OptionalParameterWidget(ParameterWidget):
     """Optional parameter, not optional widget"""
 
-    def __init__(
-        self,
-        optional_parameter_widget: QWidget,
-        name_label_text: str,
-        note_label_text: str = "",
-        checkbox_label_text: Optional[str] = None,
-        parent: Optional[QWidget] = None,
-    ):
-        layout = QHBoxLayout(parent=self)
+    def __init__(self, factory: OptionalParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self._optional_widget = QWidget(self._body_widget)
+        self._body_layout.addWidget(self._optional_widget)
+
+        self._none_checkbox = QCheckBox(self._optional_widget)
+        if factory.checkbox_label_text:
+            self._none_checkbox.setText(factory.checkbox_label_text)
+
+        self._optional_layout = self._create_optional_layout(self._none_checkbox)
+
+    def _create_optional_layout(self, none_checkbox: QWidget) -> QLayout:
+        """Called by OptionalParameterWidget.__init__"""
+
+        layout = QHBoxLayout(self._optional_widget)
         layout.setContentsMargins(0, 0, 0, 0)
-
-        self.none_checkbox = QCheckBox()
-        if checkbox_label_text:
-            self.none_checkbox.setText(checkbox_label_text)
-
-        self.optional_parameter_widget = optional_parameter_widget
-
-        layout.addWidget(self.none_checkbox)
+        layout.addWidget(none_checkbox)
         layout.addStretch(1)
-        layout.addWidget(self.optional_parameter_widget)
-
-        super().__init__(
-            parameter_widget=widget_wrap_layout(layout),
-            name_label_text=name_label_text,
-            note_label_text=note_label_text,
-            parent=parent,
-        )
+        return layout
 
     def set_parameter(self, value: Any) -> None:
         if value is None:
-            self.none_checkbox.setChecked(False)
-            self.optional_parameter_widget.setEnabled(False)
+            self._none_checkbox.setChecked(False)
         else:
-            self.none_checkbox.setChecked(True)
-            self.optional_parameter_widget.setEnabled(True)
-            self.set_not_none_parameter(value)
+            self._none_checkbox.setChecked(True)
 
-    @abstractmethod
-    def set_not_none_parameter(self, value: Any) -> None:
-        pass
+
+@attrs.frozen(kw_only=True)
+class OptionalFloatParameterWidgetFactory(OptionalParameterWidgetFactory):
+    suffix: Optional[str] = None
+    decimals: int = 1
+    limits: Optional[Tuple[Optional[float], Optional[float]]] = None
+    init_set_value: Optional[float] = None
+
+    def create(self, parent: QWidget) -> OptionalFloatParameterWidget:
+        return OptionalFloatParameterWidget(self, parent)
 
 
 class OptionalFloatParameterWidget(OptionalParameterWidget):
-    def __init__(
-        self,
-        name_label_text: str,
-        note_label_text: str = "",
-        checkbox_label_text: Optional[str] = None,
-        parent: Optional[QWidget] = None,
-        decimals: int = 1,
-        limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
-        init_set_value: Optional[float] = None,
-        suffix: Optional[str] = None,
-    ):
-        self.spin_box = _PidgetDoubleSpinBox(
-            decimals=decimals, limits=limits, suffix=suffix, init_set_value=init_set_value
+    def __init__(self, factory: OptionalFloatParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self.__spin_box = _PidgetDoubleSpinBox(
+            self._optional_widget,
+            decimals=factory.decimals,
+            limits=factory.limits,
+            suffix=factory.suffix,
+            init_set_value=factory.init_set_value,
         )
+        self._optional_layout.addWidget(self.__spin_box)
 
-        super().__init__(
-            optional_parameter_widget=self.spin_box,
-            name_label_text=name_label_text,
-            note_label_text=note_label_text,
-            checkbox_label_text=checkbox_label_text,
-            parent=parent,
-        )
-        self.none_checkbox.stateChanged.connect(self._on_changed)
-        self.spin_box.valueChanged.connect(self._on_changed)
+        self._none_checkbox.stateChanged.connect(self.__on_changed)
+        self.__spin_box.valueChanged.connect(self.__on_changed)
 
-    def _on_changed(self) -> None:
-        checked = self.none_checkbox.isChecked()
+    def __on_changed(self) -> None:
+        checked = self._none_checkbox.isChecked()
 
-        self.spin_box.setEnabled(checked)
+        self.__spin_box.setEnabled(checked)
 
-        value = self.spin_box.value() if checked else None
+        value = self.__spin_box.value() if checked else None
         self.sig_parameter_changed.emit(value)
 
-    def set_not_none_parameter(self, value: Any) -> None:
-        self.spin_box.setValue(value)
+    def set_parameter(self, value: Any) -> None:
+        super().set_parameter(value)
+
+        if value is None:
+            self.__spin_box.setEnabled(False)
+        else:
+            self.__spin_box.setValue(value)
+            self.__spin_box.setEnabled(True)
+
+
+@attrs.frozen(kw_only=True)
+class CheckboxParameterWidgetFactory(ParameterWidgetFactory):
+    def create(self, parent: QWidget) -> CheckboxParameterWidget:
+        return CheckboxParameterWidget(self, parent)
 
 
 class CheckboxParameterWidget(ParameterWidget):
-    def __init__(
-        self, name_label_text: str, note_label_text: str = "", parent: Optional[QWidget] = None
-    ) -> None:
-        self.checkbox = QCheckBox()
-        super().__init__(
-            parameter_widget=self.checkbox,
-            name_label_text=name_label_text,
-            note_label_text=note_label_text,
-            name_parameter_layout=QHBoxLayout,
-            parent=parent,
-        )
-        self.checkbox.clicked.connect(self._on_checkbox_click)
+    def __init__(self, factory: CheckboxParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
 
-    def _on_checkbox_click(self, checked: bool) -> None:
+        self.__checkbox = QCheckBox(self._body_widget)
+        self.__checkbox.clicked.connect(self.__on_checkbox_click)
+        self._body_layout.addWidget(self.__checkbox)
+        assert isinstance(self._body_layout, QBoxLayout)
+        self._body_layout.addStretch(1)
+
+    def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
+        """Called by ParameterWidget.__init__"""
+
+        layout = QHBoxLayout(self._body_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(note_label_widget)
+        return layout
+
+    def __on_checkbox_click(self, checked: bool) -> None:
         self.sig_parameter_changed.emit(checked)
 
     def set_parameter(self, param: Any) -> None:
-        self.checkbox.setChecked(bool(param))
+        self.__checkbox.setChecked(bool(param))
+
+
+@attrs.frozen(kw_only=True)
+class ComboboxParameterWidgetFactory(ParameterWidgetFactory, Generic[T]):
+    items: list[tuple[str, T]]
+
+    def create(self, parent: QWidget) -> ComboboxParameterWidget[T]:
+        return ComboboxParameterWidget[T](self, parent)
 
 
 class ComboboxParameterWidget(ParameterWidget, Generic[T]):
-    def __init__(
-        self,
-        items: list[tuple[str, T]],
-        name_label_text: str,
-        note_label_text: str = "",
-        parent: Optional[QWidget] = None,
-    ) -> None:
-        self.combobox = _PidgetComboBox()
-        super().__init__(
-            parameter_widget=self.combobox,
-            name_label_text=name_label_text,
-            note_label_text=note_label_text,
-            parent=parent,
-        )
-        for displayed_text, user_data in items:
-            self.combobox.addItem(displayed_text, user_data)
-        self.combobox.currentIndexChanged.connect(self.emit_data_of_combobox_item)
+    def __init__(self, factory: ComboboxParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
 
-    def emit_data_of_combobox_item(self, index: int) -> None:
-        data = self.combobox.itemData(index)
+        self.__combobox = _PidgetComboBox(self._body_widget)
+        self._body_layout.addWidget(self.__combobox)
+
+        for displayed_text, user_data in factory.items:
+            self.__combobox.addItem(displayed_text, user_data)
+
+        self.__combobox.currentIndexChanged.connect(self.__emit_data_of_combobox_item)
+
+    def __emit_data_of_combobox_item(self, index: int) -> None:
+        data = self.__combobox.itemData(index)
         self.sig_parameter_changed.emit(data)
 
     def set_parameter(self, param: Any) -> None:
-        index = self.combobox.findData(param)
+        index = self.__combobox.findData(param)
         if index == -1:
             raise ValueError(f"Data item {param} could not be found in {self}.")
-        self.combobox.setCurrentIndex(index)
+        self.__combobox.setCurrentIndex(index)
+
+
+@attrs.frozen(kw_only=True)
+class EnumParameterWidgetFactory(ComboboxParameterWidgetFactory, Generic[EnumT]):
+    enum_type: Type[EnumT] = attrs.field()
+    label_mapping: dict[EnumT, str] = attrs.field()
+
+    items: list[tuple[str, EnumT]] = attrs.field(init=False)
+
+    def __attrs_post_init__(self) -> None:
+        if self.label_mapping.keys() != set(self.enum_type):
+            raise ValueError("label_mapping does not match enum_type")
+
+        items = [(v, k) for k, v in self.label_mapping.items()]
+
+        # The instance is immutable at this point, which is circumvented by the next row. See:
+        # - https://www.attrs.org/en/stable/api.html#attr.ib
+        # - https://github.com/python-attrs/attrs/issues/120
+        # - https://github.com/python-attrs/attrs/issues/147
+
+        object.__setattr__(self, "items", items)
+
+    def create(self, parent: QWidget) -> EnumParameterWidget[EnumT]:
+        return EnumParameterWidget[EnumT](self, parent)
 
 
 class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
-    def __init__(
-        self,
-        enum_type: Type[EnumT],
-        name_label_text: str,
-        *,
-        label_mapping: dict[EnumT, str],
-        note_label_text: str = "",
-        parent: Optional[QWidget] = None,
-    ) -> None:
-        if label_mapping.keys() != set(enum_type):
-            raise ValueError("label_mapping does not match enum_type")
-
-        super().__init__(
-            items=[(v, k) for k, v in label_mapping.items()],
-            name_label_text=name_label_text,
-            note_label_text=note_label_text,
-            parent=parent,
-        )
+    def __init__(self, factory: EnumParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
 
 
 class _PidgetComboBox(QComboBox):
-    def __init__(
-        self,
-        parent: Optional[QWidget] = None,
-    ) -> None:
+    def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
@@ -297,7 +323,7 @@ class _PidgetComboBox(QComboBox):
 class _PidgetSpinBox(QSpinBox):
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
+        parent: QWidget,
         *,
         limits: Optional[Tuple[Optional[int], Optional[int]]] = None,
         suffix: Optional[str] = None,
@@ -323,7 +349,7 @@ class _PidgetSpinBox(QSpinBox):
 class _PidgetDoubleSpinBox(QDoubleSpinBox):
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
+        parent: QWidget,
         *,
         limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
         init_set_value: Optional[float] = None,

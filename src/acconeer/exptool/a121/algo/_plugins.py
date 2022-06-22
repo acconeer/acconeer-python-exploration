@@ -35,7 +35,7 @@ from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
     GridGroupBox,
     MetadataView,
-    PidgetMapping,
+    PidgetFactoryMapping,
     SessionConfigEditor,
 )
 
@@ -394,7 +394,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
         self.session_config_editor.sig_update.connect(self._on_session_config_update)
         self.processor_config_editor = AttrsConfigEditor[ConfigT](
             title="Processor parameters",
-            pidget_mapping=self.get_pidget_mapping(),
+            factory_mapping=self.get_pidget_mapping(),
             parent=self.view_widget,
         )
         self.processor_config_editor.sig_update.connect(self._on_processor_config_update)
@@ -457,7 +457,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
 
     @classmethod
     @abc.abstractmethod
-    def get_pidget_mapping(cls) -> PidgetMapping:
+    def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         pass
 
     @classmethod

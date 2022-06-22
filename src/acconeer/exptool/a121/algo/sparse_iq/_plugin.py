@@ -19,7 +19,7 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorViewPluginBase,
 )
 from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGeneration
-from acconeer.exptool.app.new.ui.plugin import PidgetMapping, pidgets
+from acconeer.exptool.app.new.ui.plugin import PidgetFactoryMapping, pidgets
 
 from ._processor import (
     AmplitudeMethod,
@@ -49,10 +49,10 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, Processor]):
 
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     @classmethod
-    def get_pidget_mapping(cls) -> PidgetMapping:
+    def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
             "amplitude_method": (
-                pidgets.EnumParameterWidget(
+                pidgets.EnumParameterWidgetFactory(
                     enum_type=AmplitudeMethod,
                     name_label_text="Amplitude method:",
                     label_mapping={
