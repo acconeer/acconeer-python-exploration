@@ -86,12 +86,6 @@ class SessionConfigEditor(QWidget):
             ),
             lambda val: None if (val is None) else float(val),
         ),
-        "continuous_sweep_mode": (
-            pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Continuous sweep mode",
-            ),
-            bool,
-        ),
         "inter_sweep_idle_state": (
             pidgets.EnumParameterWidgetFactory(
                 enum_type=a121.IdleState,
@@ -107,6 +101,12 @@ class SessionConfigEditor(QWidget):
                 label_mapping=IDLE_STATE_LABEL_MAP,
             ),
             a121.IdleState,
+        ),
+        "continuous_sweep_mode": (
+            pidgets.CheckboxParameterWidgetFactory(
+                name_label_text="Continuous sweep mode",
+            ),
+            bool,
         ),
     }
     SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
@@ -130,14 +130,6 @@ class SessionConfigEditor(QWidget):
             ),
             int,
         ),
-        "profile": (
-            pidgets.EnumParameterWidgetFactory(
-                enum_type=a121.Profile,
-                name_label_text="Profile:",
-                label_mapping=PROFILE_LABEL_MAP,
-            ),
-            a121.Profile,
-        ),
         "hwaas": (
             pidgets.IntParameterWidgetFactory(
                 name_label_text="HWAAS:",
@@ -151,6 +143,22 @@ class SessionConfigEditor(QWidget):
                 limits=(0, 23),
             ),
             int,
+        ),
+        "profile": (
+            pidgets.EnumParameterWidgetFactory(
+                enum_type=a121.Profile,
+                name_label_text="Profile:",
+                label_mapping=PROFILE_LABEL_MAP,
+            ),
+            a121.Profile,
+        ),
+        "prf": (
+            pidgets.EnumParameterWidgetFactory(
+                enum_type=a121.PRF,
+                name_label_text="PRF:",
+                label_mapping=PRF_LABEL_MAP,
+            ),
+            a121.PRF,
         ),
         "enable_tx": (
             pidgets.CheckboxParameterWidgetFactory(
@@ -169,14 +177,6 @@ class SessionConfigEditor(QWidget):
                 name_label_text="Phase enhancement",
             ),
             bool,
-        ),
-        "prf": (
-            pidgets.EnumParameterWidgetFactory(
-                enum_type=a121.PRF,
-                name_label_text="PRF:",
-                label_mapping=PRF_LABEL_MAP,
-            ),
-            a121.PRF,
         ),
     }
 
