@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 import importlib_metadata
+import numpy as np
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import (
@@ -148,6 +149,34 @@ class RightAreaContent(QWidget):
         self.layout().addWidget(PluginControlArea(app_model, self))
 
 
+class UpdateRateLabel(QLabel):
+    _FPS: int = 60
+    last_update_rate: Optional[float]
+
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.last_update_rate = None
+
+        self.startTimer(int(1000 / self._FPS))
+
+        app_model.sig_update_rate.connect(self._on_app_model_update_rate)
+
+    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
+        if self.last_update_rate is None or np.isnan(self.last_update_rate):
+            css = "color: #888;"
+            text = "- Hz"
+        else:
+            css = ""
+            text = f"{self.last_update_rate:>10.1f} Hz"
+
+        self.setStyleSheet(css)
+        self.setText(text)
+
+    def _on_app_model_update_rate(self, update_rate: Optional[float]) -> None:
+        self.last_update_rate = update_rate
+
+
 class StatusBar(QStatusBar):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
@@ -162,6 +191,8 @@ class StatusBar(QStatusBar):
 
         self.message_widget = QLabel(self)
         self.addWidget(self.message_widget)
+
+        self.addPermanentWidget(UpdateRateLabel(app_model, self))
 
         self.rss_version_label = QLabel(self)
         self.addPermanentWidget(self.rss_version_label)

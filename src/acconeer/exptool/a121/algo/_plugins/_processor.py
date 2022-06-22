@@ -305,6 +305,7 @@ class ProcessorBackendPluginBase(
         self.shared_state.metadata = None
         self.broadcast()
         self.callback(IdleMessage())
+        self.callback(DataMessage("result_tick_time", None))
 
     def _execute_get_next(self) -> None:
         if self._client is None:
@@ -330,6 +331,7 @@ class ProcessorBackendPluginBase(
             self.send_status_message(self._format_warning("Frame delayed"))
 
         processor_result = self._processor_instance.process(result)
+        self.callback(DataMessage("result_tick_time", result.tick_time))
         self.callback(DataMessage("plot", processor_result, recipient="plot_plugin"))
 
     @classmethod

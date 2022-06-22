@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Optional, Tuple, Type
 
 import attrs
+import numpy as np
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 from PySide6.QtWidgets import QApplication, QWidget
@@ -124,6 +125,7 @@ class AppModel(QObject):
     sig_message_plot_plugin = Signal(object)
     sig_message_view_plugin = Signal(object)
     sig_status_message = Signal(object)
+    sig_update_rate = Signal(float)
 
     plugins: list[Plugin]
     plugin: Optional[Plugin]
@@ -160,6 +162,8 @@ class AppModel(QObject):
         self.serial_connection_port = None
         self.available_tagged_ports = []
         self.saveable_file = None
+
+        self.last_update_time = None
 
     def start(self) -> None:
         self._listener.start()
@@ -245,6 +249,14 @@ class AppModel(QObject):
             self.send_status_message(message.data)
         elif message.command_name == "start_session":
             pass  # TODO: Should this be handled
+        elif message.command_name == "result_tick_time":
+            update_time = message.data
+            if self.last_update_time is not None and update_time is not None:
+                update_rate = 1.0 / (update_time - self.last_update_time)
+                self.sig_update_rate.emit(update_rate)
+            else:
+                self.sig_update_rate.emit(np.nan)
+            self.last_update_time = update_time
         else:
             raise RuntimeError(f"AppModel cannot handle message: {message}")
 
