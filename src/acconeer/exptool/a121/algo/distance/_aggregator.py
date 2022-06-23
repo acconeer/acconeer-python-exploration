@@ -84,8 +84,9 @@ class Aggregator:
         for spec, processor in zip(self.specs, self.processors):
             processor_result = processor.process(extended_result[spec.group_index][spec.sensor_id])
             processors_result.append(processor_result)
-            ampls = np.concatenate((ampls, np.array(processor_result.estimated_amplitudes)))
-            dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))
+            if processor_result.estimated_distances is not None:
+                ampls = np.concatenate((ampls, np.array(processor_result.estimated_amplitudes)))
+                dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))
 
         (dists_merged, ampls_merged) = self._merge_peaks(self.MIN_PEAK_DIST_M, dists, ampls)
         dists_sorted = self._sort_peaks(
