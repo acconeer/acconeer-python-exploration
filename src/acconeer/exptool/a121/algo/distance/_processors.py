@@ -88,7 +88,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     :param context: Context
     """
 
-    ENVELOPE_WIDTH_M = {
+    ENVELOPE_FWHM_M = {
         a121.Profile.PROFILE_1: 0.04,
         a121.Profile.PROFILE_2: 0.07,
         a121.Profile.PROFILE_3: 0.14,
@@ -255,13 +255,13 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         elif self.threshold_method == ThresholdMethod.CFAR:
             if self.processor_config.cfar_guard_length_m is None:
                 self.cfar_guard_length_m = (
-                    self.ENVELOPE_WIDTH_M[self.profile] * self.CFAR_GUARD_LENGTH_ADJUSTMENT
+                    self.ENVELOPE_FWHM_M[self.profile] * self.CFAR_GUARD_LENGTH_ADJUSTMENT
                 )
             else:
                 self.cfar_guard_length_m = self.processor_config.cfar_guard_length_m
             if self.processor_config.cfar_window_length_m is None:
                 self.cfar_window_length_m = (
-                    self.ENVELOPE_WIDTH_M[self.profile] * self.CFAR_WINDOW_LENGTH_ADJUSTMENT
+                    self.ENVELOPE_FWHM_M[self.profile] * self.CFAR_WINDOW_LENGTH_ADJUSTMENT
                 )
             else:
                 self.cfar_window_length_m = self.processor_config.cfar_window_length_m
@@ -333,7 +333,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     @classmethod
     def _get_distance_filter_coeffs(cls, profile: a121.Profile, step_length: int) -> Any:
-        wnc = cls.APPROX_BASE_STEP_LENGTH_M * step_length / cls.ENVELOPE_WIDTH_M[profile]
+        wnc = cls.APPROX_BASE_STEP_LENGTH_M * step_length / cls.ENVELOPE_FWHM_M[profile]
         return butter(N=2, Wn=wnc)
 
     def _update_threshold(self, abs_sweep: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
@@ -449,7 +449,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         cls, profile: a121.Profile, step_length: int
     ) -> Tuple[int, int]:
         margin_p = np.ceil(
-            cls.ENVELOPE_WIDTH_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length)
+            cls.ENVELOPE_FWHM_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length)
         ).astype(int)
         margin_m = margin_p * cls.APPROX_BASE_STEP_LENGTH_M * step_length
         return (margin_m, margin_p)
