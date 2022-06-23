@@ -40,7 +40,7 @@ class ProcessorConfig(AlgoConfigBase):
     measurement_type: MeasurementType = attrs.field(
         default=MeasurementType.FAR_RANGE, converter=MeasurementType
     )
-    sc_bg_num_std_dev: float = attrs.field(default=3.0)
+    sc_bg_num_std_dev: float = attrs.field(default=6.0)
     fixed_threshold_value: float = attrs.field(default=100.0)
     cfar_guard_length_m: Optional[float] = attrs.field(default=None)
     cfar_window_length_m: Optional[float] = attrs.field(default=None)
