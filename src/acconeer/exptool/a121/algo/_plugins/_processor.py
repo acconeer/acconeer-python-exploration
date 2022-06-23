@@ -17,7 +17,6 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
 from acconeer.exptool.app.new import (
     AppModel,
-    BackendPlugin,
     BusyMessage,
     ConnectionState,
     DataMessage,
@@ -28,7 +27,6 @@ from acconeer.exptool.app.new import (
     OkMessage,
     PluginState,
     Task,
-    ViewPlugin,
 )
 from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
@@ -39,7 +37,7 @@ from acconeer.exptool.app.new.ui.plugin import (
     SessionConfigEditor,
 )
 
-from ._a121 import A121PlotPluginBase
+from ._a121 import A121BackendPluginBase, A121PlotPluginBase, A121ViewPluginBase
 
 
 ConfigT = TypeVar("ConfigT", bound=AlgoConfigBase)
@@ -60,7 +58,7 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT]):
 
 
 class ProcessorBackendPluginBase(
-    Generic[ConfigT, ProcessorT], BackendPlugin[ProcessorBackendPluginSharedState[ConfigT]]
+    Generic[ConfigT, ProcessorT], A121BackendPluginBase[ProcessorBackendPluginSharedState[ConfigT]]
 ):
     _live_client: Optional[a121.Client]
     _processor_instance: Optional[ProcessorT]
@@ -311,8 +309,6 @@ class ProcessorBackendPluginBase(
 class ProcessorPlotPluginBase(Generic[ResultT], A121PlotPluginBase):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
-        self._is_setup = False
-        self._plot_job = None
 
     def setup_from_message(self, message: Message) -> None:
         assert isinstance(message, KwargMessage)
@@ -331,7 +327,7 @@ class ProcessorPlotPluginBase(Generic[ResultT], A121PlotPluginBase):
         pass
 
 
-class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
+class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
     def __init__(self, view_widget: QWidget, app_model: AppModel) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
         self.layout = QVBoxLayout(self.view_widget)

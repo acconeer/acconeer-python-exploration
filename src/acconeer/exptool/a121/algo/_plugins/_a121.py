@@ -2,14 +2,25 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import Optional
+from typing import Generic, Optional, TypeVar
 
 import pyqtgraph as pg
 
-from acconeer.exptool.app.new import AppModel, Message, PlotPlugin
+from acconeer.exptool.app.new import AppModel, BackendPlugin, Message, PlotPlugin, ViewPlugin
 
 
 log = logging.getLogger(__name__)
+
+
+T = TypeVar("T")
+
+
+class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
+    pass
+
+
+class A121ViewPluginBase(ViewPlugin):
+    pass
 
 
 class A121PlotPluginBase(PlotPlugin):

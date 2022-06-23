@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from acconeer.exptool.app.new import BackendPlugin, ViewPlugin
+from typing import Generic, TypeVar
 
-from ._a121 import A121PlotPluginBase
+from ._a121 import A121BackendPluginBase, A121PlotPluginBase, A121ViewPluginBase
 
 
-class DetectorBackendPluginBase(BackendPlugin):
+T = TypeVar("T")
+
+
+class DetectorBackendPluginBase(Generic[T], A121BackendPluginBase[T]):
     pass
 
 
@@ -13,5 +16,5 @@ class DetectorPlotPluginBase(A121PlotPluginBase):
     pass
 
 
-class DetectorViewPluginBase(ViewPlugin):
+class DetectorViewPluginBase(A121ViewPluginBase):
     pass
