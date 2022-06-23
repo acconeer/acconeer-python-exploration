@@ -283,6 +283,7 @@ def parse_rss_version(rss_version: str) -> packaging.version.Version:
         r"a121-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)"
         r"(?:-(?P<pre_phase>rc)(?P<pre_number>\d+))?"
         r"(?:-(?P<dev_number>\d+)-(?P<dev_commit>g\w+))?"
+        r"(?:-(dirty))?"
     )
     match = re.fullmatch(pattern, rss_version)
     if not match:
