@@ -83,6 +83,7 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT]):
     processor_config: ConfigT = attrs.field()
     replaying: bool = attrs.field(default=False)
     metadata: Optional[a121.Metadata] = attrs.field(default=None)
+    ready: bool = attrs.field(default=False)
 
 
 class ProcessorBackendPluginBase(
@@ -194,6 +195,9 @@ class ProcessorBackendPluginBase(
             session_config = task_kwargs["session_config"]
             assert isinstance(session_config, a121.SessionConfig)
             self.shared_state.session_config = session_config
+            self.shared_state.ready = (
+                len(self.shared_state.session_config._collect_validation_results()) == 0
+            )
             self.broadcast()
         elif task_name == "update_processor_config":
             processor_config = task_kwargs["processor_config"]
@@ -437,6 +441,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], ViewPlugin):
         self.start_button.setEnabled(
             app_model.plugin_state == PluginState.LOADED_IDLE
             and app_model.connection_state == ConnectionState.CONNECTED
+            and app_model.backend_plugin_state.ready
         )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
         self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
