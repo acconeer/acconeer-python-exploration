@@ -27,6 +27,12 @@ class ImageFlasher:
         self._port = port
         self._comm = None
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.reset_and_close()
+
     def connect(self):
         """connect to bootloader board"""
 
@@ -34,9 +40,10 @@ class ImageFlasher:
 
     def reset_and_close(self):
         """reset system and close communication channel"""
-        self._comm.stop()
-        self._comm.reset()
-        self._comm.close()
+        if self._comm is not None:
+            self._comm.stop()
+            self._comm.reset()
+            self._comm.close()
 
     def erase_image(self, erase_size):
         """erase image"""
@@ -66,7 +73,6 @@ class ImageFlasher:
         print("Flashed Image:")
         print(f" - Name:    {self._comm.get_app_sw_name()}")
         print(f" - Version: {self._comm.get_app_sw_version()}")
-        self.reset_and_close()
 
     def flash_image_file(self, image_name):
         """flash image file to bootloader board"""
@@ -215,9 +221,9 @@ class BootloaderTool:
                 ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port
             )
             BootloaderTool._try_open_port(dfu_port)
-            image_flasher = ImageFlasher(dfu_port)
-            image_flasher.connect()
-            image_flasher.flash_image_file(image_path)
+            with ImageFlasher(dfu_port) as image_flasher:
+                image_flasher.connect()
+                image_flasher.flash_image_file(image_path)
 
     @staticmethod
     def erase(device_port):
@@ -227,6 +233,6 @@ class BootloaderTool:
             ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port
         )
         BootloaderTool._try_open_port(dfu_port)
-        image_flasher = ImageFlasher(dfu_port)
-        image_flasher.connect()
-        image_flasher.erase_image(1024)  # It is enough to erase the header
+        with ImageFlasher(dfu_port) as image_flasher:
+            image_flasher.connect()
+            image_flasher.erase_image(1024)  # It is enough to erase the header

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib
 import logging
+import traceback
+from typing import Optional
 
 import serial
 
@@ -20,9 +22,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-import acconeer.exptool as et
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new.app_model import AppModel, ConnectionState
+from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 from acconeer.exptool.flash import find_flash_port, flash_image  # type: ignore[import]
 
 
@@ -30,7 +32,7 @@ log = logging.getLogger(__name__)
 
 
 class _FlashThread(QThread):
-    flash_failed = Signal(str)
+    flash_failed = Signal(Exception, str)
     flash_done = Signal()
 
     def __init__(self, bin_file: str, flash_port: serial.tools.list_ports.ListPortInfo) -> None:
@@ -44,7 +46,7 @@ class _FlashThread(QThread):
             self.flash_done.emit()
         except Exception as e:
             log.error(str(e))
-            self.flash_failed.emit(str(e))
+            self.flash_failed.emit(e, traceback.format_exc())
 
 
 class _FlashDialog(QDialog):
@@ -52,7 +54,7 @@ class _FlashDialog(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle("Flash tool")
-        self.setMinimumWidth(200)
+        self.setMinimumWidth(350)
 
         vbox = QVBoxLayout(self)
         vbox.setAlignment(Qt.AlignCenter)
@@ -100,8 +102,9 @@ class _FlashDialog(QDialog):
     def _flash_done(self) -> None:
         self.flash_label.setText("Flashing done!")
 
-    def _flash_failed(self, msg: str) -> None:
-        self.flash_label.setText(f"Flashing failed ({msg})!")
+    def _flash_failed(self, exception: Exception, traceback_str: Optional[str]) -> None:
+        self.flash_label.setText("Flashing failed!")
+        ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self._flashing:
@@ -111,8 +114,10 @@ class _FlashDialog(QDialog):
 
 
 class _FlashPopup(QDialog):
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
+
+        self.app_model = app_model
 
         self.setWindowTitle("Flash tool")
         self.setMinimumWidth(350)
@@ -122,7 +127,7 @@ class _FlashPopup(QDialog):
 
         layout = QFormLayout(self)
 
-        self.file_label = QLineEdit("<Select an bin file>")
+        self.file_label = QLineEdit("<Select a bin file>")
         self.file_label.setReadOnly(True)
 
         browse_button = QPushButton("Browse", self)
@@ -131,10 +136,7 @@ class _FlashPopup(QDialog):
 
         self.port_combo_box = QComboBox(self)
         self.port_combo_box.currentTextChanged.connect(self._on_port_combo_box_change)
-
-        refresh_button = QPushButton("Refresh", self)
-        refresh_button.clicked.connect(self._refresh_ports)
-        layout.addRow(refresh_button, self.port_combo_box)
+        layout.addWidget(self.port_combo_box)
 
         self.flash_button = QPushButton("Flash", self)
         self.flash_button.clicked.connect(self._flash)
@@ -148,16 +150,7 @@ class _FlashPopup(QDialog):
 
         self.flash_dialog = _FlashDialog(self)
 
-        self._refresh_ports()
-
-    def _refresh_ports(self) -> None:
-        tagged_ports = et.utils.get_tagged_serial_ports()
-
-        self.port_combo_box.clear()
-        for port, tag in tagged_ports:
-            if tag:
-                label = f"{port} ({tag})"
-                self.port_combo_box.addItem(label, port)
+        app_model.sig_notify.connect(self._on_app_model_update)
 
     def _browse_file(self) -> None:
         if self.browse_file_dialog.exec():
@@ -173,9 +166,26 @@ class _FlashPopup(QDialog):
         self.flash_dialog.flash(self.bin_file, flash_port)
 
     def _on_port_combo_box_change(self) -> None:
+        self.app_model.set_serial_connection_port(self.port_combo_box.currentData())
         self.flash_port = self.port_combo_box.currentData()
 
         self.flash_button.setEnabled(self.flash_port is not None and self.bin_file is not None)
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        self.port_combo_box.blockSignals(True)
+
+        tagged_ports = app_model.available_tagged_ports
+
+        self.port_combo_box.clear()
+        for port, tag in tagged_ports:
+            label = port if tag is None else f"{port} ({tag})"
+            self.port_combo_box.addItem(label, port)
+
+        index = self.port_combo_box.findData(app_model.serial_connection_port)
+        self.port_combo_box.setCurrentIndex(index)
+        self.flash_port = self.port_combo_box.currentData()
+
+        self.port_combo_box.blockSignals(False)
 
 
 class FlashButton(QPushButton):
@@ -188,7 +198,7 @@ class FlashButton(QPushButton):
         self.setText("Flash")
 
         app_model.sig_notify.connect(self._on_app_model_update)
-        self.pop_up = _FlashPopup(self)
+        self.pop_up = _FlashPopup(app_model, self)
         self.clicked.connect(self._on_click)
 
     def _on_click(self) -> None:
