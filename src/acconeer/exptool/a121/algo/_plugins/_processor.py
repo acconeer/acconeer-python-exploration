@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 import pyqtgraph as pg
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
 from acconeer.exptool.app.new import (
     AppModel,
     BackendPlugin,
@@ -39,8 +40,6 @@ from acconeer.exptool.app.new.ui.plugin import (
     SessionConfigEditor,
 )
 
-from ._base import AlgoConfigBase, ProcessorBase
-
 
 ConfigT = TypeVar("ConfigT", bound=AlgoConfigBase)
 ProcessorT = TypeVar("ProcessorT", bound=ProcessorBase)
@@ -48,33 +47,6 @@ ResultT = TypeVar("ResultT")
 StateT = TypeVar("StateT")
 
 log = logging.getLogger(__name__)
-
-
-class NullAppModel(AppModel):
-    class _NullSignal:
-        def connect(self, slot: Callable) -> None:
-            pass
-
-    sig_notify: _NullSignal
-    sig_error: _NullSignal
-    sig_message_plot_plugin: _NullSignal
-
-    def __init__(self) -> None:
-        self.sig_notify = self._NullSignal()
-        self.sig_error = self._NullSignal()
-        self.sig_message_plot_plugin = self._NullSignal()
-
-
-class DetectorBackendPluginBase(BackendPlugin):
-    pass
-
-
-class DetectorPlotPluginBase(PlotPlugin):
-    pass
-
-
-class DetectorViewPluginBase(ViewPlugin):
-    pass
 
 
 @attrs.mutable(kw_only=True)

@@ -8,15 +8,18 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import _base, _plugins
-from acconeer.exptool.app.new.backend import DataMessage, KwargMessage
+from acconeer.exptool.a121 import algo
+from acconeer.exptool.app.new import DataMessage, KwargMessage
+
+from ._null_app_model import NullAppModel
+from ._processor import ProcessorPlotPluginBase
 
 
 def processor_main(
     *,
-    processor_cls: Type[_base.ProcessorBase],
-    processor_config_cls: Type[_base.ConfigT],
-    plot_plugin: Type[_plugins.ProcessorPlotPluginBase],
+    processor_cls: Type[algo.ProcessorBase],
+    processor_config_cls: Type[algo.AlgoConfigBase],
+    plot_plugin: Type[ProcessorPlotPluginBase],
     sensor_config_getter: Callable[[], a121.SensorConfig],
 ) -> None:
     parser = a121.ExampleArgumentParser()
@@ -72,12 +75,12 @@ def processor_main(
 
 @attrs.mutable(kw_only=True, slots=False)
 class ProcessorPGUpdater:
-    plot_plugin: Type[_plugins.ProcessorPlotPluginBase] = attrs.field()
+    plot_plugin: Type[ProcessorPlotPluginBase] = attrs.field()
     sensor_config: a121.SensorConfig = attrs.field()
     metadata: a121.Metadata = attrs.field()
 
     def setup(self, win: pg.GraphicsLayout) -> None:
-        self.plot_plugin_obj = self.plot_plugin(plot_layout=win, app_model=_plugins.NullAppModel())
+        self.plot_plugin_obj = self.plot_plugin(plot_layout=win, app_model=NullAppModel())
         self.plot_plugin_obj.handle_message(
             KwargMessage("setup", dict(sensor_config=self.sensor_config, metadata=self.metadata))
         )
