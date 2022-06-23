@@ -114,6 +114,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         subsweep_indexes: Optional[list[int]] = None,
         context: Optional[ProcessorContext] = None,
     ) -> None:
+        if context is None:
+            context = ProcessorContext()
+
         if subsweep_indexes is None:
             subsweep_indexes = list(range(sensor_config.num_subsweeps))
 
@@ -244,7 +247,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def _init_process_distance_estimation(self) -> None:
         if self.threshold_method == ThresholdMethod.RECORDED:
-            if self.context is None or self.context.recorded_threshold is None:
+            if self.context.recorded_threshold is None:
                 raise ValueError("Missing recorded threshold in context")
             else:
                 self.threshold = self.context.recorded_threshold
@@ -358,7 +361,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         idx_cfar_pts: npt.NDArray[np.int_],
         alpha: float,
         one_side: bool,
-        context: Optional[ProcessorContext],
+        context: ProcessorContext,
     ) -> npt.NDArray[np.float_]:
         threshold = np.full(abs_sweep.shape, np.nan)
         start_idx = int(np.max(idx_cfar_pts))
@@ -373,7 +376,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             take_indexes = idx + take_relative_indexes
             threshold[idx] = np.mean(np.take(abs_sweep, take_indexes))
 
-        if context is not None and context.abs_noise_std is not None:
+        if context.abs_noise_std is not None:
             threshold += context.abs_noise_std
 
         threshold *= 1.0 / (alpha + 1e-10)
