@@ -361,7 +361,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         context: Optional[ProcessorContext],
     ) -> npt.NDArray[np.float_]:
         threshold = np.full(abs_sweep.shape, np.nan)
-        start_idx = np.max(idx_cfar_pts)
+        start_idx = int(np.max(idx_cfar_pts))
         if one_side:
             take_relative_indexes = -idx_cfar_pts
             end_idx = abs_sweep.size
