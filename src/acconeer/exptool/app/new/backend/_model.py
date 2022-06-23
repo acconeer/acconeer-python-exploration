@@ -142,13 +142,7 @@ class Model:
         :param plugin: Type of ``BackendPlugin`` to load.
         """
         if self.backend_plugin is not None:
-            self.task_callback(
-                ErrorMessage(
-                    "load_plugin",
-                    RuntimeError("Cannot load a plugin. Unload the current one first"),
-                )
-            )
-            return
+            self.unload_plugin(send_callback=False)
 
         self.backend_plugin = plugin(callback=self.task_callback, key=key)
         log.info(f"{plugin.__name__} was loaded.")
@@ -159,7 +153,7 @@ class Model:
 
         self.task_callback(OkMessage("load_plugin"))
 
-    def unload_plugin(self) -> None:
+    def unload_plugin(self, send_callback: bool = True) -> None:
         """Unloads a plugin.
 
         Callbacks:
@@ -171,7 +165,8 @@ class Model:
         self.backend_plugin.teardown()
         self.backend_plugin = None
         log.debug("Current BackendPlugin was torn down")
-        self.task_callback(OkMessage("unload_plugin"))
+        if send_callback:
+            self.task_callback(OkMessage("unload_plugin"))
 
     def load_from_file(self, *, path: Path) -> None:
         if self.backend_plugin is None:
