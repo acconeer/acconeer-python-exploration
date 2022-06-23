@@ -107,6 +107,9 @@ class AgnosticClient:
         if not self.connected:
             self.connect()
 
+        if self.session_is_started:
+            raise ClientError("Session is currently running, can't setup.")
+
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
 
@@ -134,6 +137,9 @@ class AgnosticClient:
         :raises: ``ClientError`` if ``Client``'s  session is not set up.
         """
         self._assert_session_setup()
+
+        if self.session_is_started:
+            raise ClientError("Session is already started.")
 
         if recorder is not None:
             self._recorder = recorder
