@@ -50,7 +50,7 @@ class Aggregator:
     Aggregates result, based on selected peak sorting strategy, from underlying Processor objects.
     """
 
-    MIN_PEAK_DIST_MM = 100.0
+    MIN_PEAK_DIST_M = 0.005
 
     def __init__(
         self,
@@ -87,7 +87,7 @@ class Aggregator:
             ampls = np.concatenate((ampls, np.array(processor_result.estimated_amplitudes)))
             dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))
 
-        (dists_merged, ampls_merged) = self._merge_peaks(self.MIN_PEAK_DIST_MM, dists, ampls)
+        (dists_merged, ampls_merged) = self._merge_peaks(self.MIN_PEAK_DIST_M, dists, ampls)
         dists_sorted = self._sort_peaks(
             dists_merged, ampls_merged, self.aggregator_config.peak_sorting_method
         )
