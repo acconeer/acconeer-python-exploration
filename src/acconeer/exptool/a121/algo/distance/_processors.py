@@ -12,6 +12,12 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorBase
 
 
+DEFAULT_SC_BG_NUM_STD_DEV = 6.0
+DEFAULT_FIXED_THRESHOLD_VALUE = 100.0
+DEFAULT_CFAR_SENSITIVITY = 0.5
+DEFAULT_CFAR_ONE_SIDED = False
+
+
 class MeasurementType(AlgoParamEnum):
     CLOSE_RANGE = enum.auto()
     FAR_RANGE = enum.auto()
@@ -40,12 +46,12 @@ class ProcessorConfig(AlgoConfigBase):
     measurement_type: MeasurementType = attrs.field(
         default=MeasurementType.FAR_RANGE, converter=MeasurementType
     )
-    sc_bg_num_std_dev: float = attrs.field(default=6.0)
-    fixed_threshold_value: float = attrs.field(default=100.0)
+    sc_bg_num_std_dev: float = attrs.field(default=DEFAULT_SC_BG_NUM_STD_DEV)
+    fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
     cfar_guard_length_m: Optional[float] = attrs.field(default=None)
     cfar_window_length_m: Optional[float] = attrs.field(default=None)
-    cfar_sensitivity: float = attrs.field(default=0.5)
-    cfar_one_sided: bool = attrs.field(default=False)
+    cfar_sensitivity: float = attrs.field(default=DEFAULT_CFAR_SENSITIVITY)
+    cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
 
 
 @attrs.frozen(kw_only=True)

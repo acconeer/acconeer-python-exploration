@@ -12,6 +12,10 @@ from acconeer.exptool.a121.algo import AlgoConfigBase
 
 from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
 from ._processors import (
+    DEFAULT_CFAR_ONE_SIDED,
+    DEFAULT_CFAR_SENSITIVITY,
+    DEFAULT_FIXED_THRESHOLD_VALUE,
+    DEFAULT_SC_BG_NUM_STD_DEV,
     MeasurementType,
     Processor,
     ProcessorConfig,
@@ -47,11 +51,16 @@ class DetectorConfig(AlgoConfigBase):
     end_m: float = attrs.field(default=1.0)
     max_step_length: Optional[int] = attrs.field(default=None)  # TODO: Check validity
     max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
-    num_frames_in_recorded_threshold: int = attrs.field(default=20)
     threshold_method: ThresholdMethod = attrs.field(
         default=ThresholdMethod.CFAR,
         converter=ThresholdMethod,
     )
+
+    num_frames_in_recorded_threshold: int = attrs.field(default=20)
+    sc_bg_num_std_dev: float = attrs.field(default=DEFAULT_SC_BG_NUM_STD_DEV)
+    fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
+    cfar_sensitivity: float = attrs.field(default=DEFAULT_CFAR_SENSITIVITY)
+    cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
 
 
 @attrs.frozen(kw_only=True)
@@ -273,10 +282,19 @@ class Detector:
                 plans[MeasurementType.FAR_RANGE]
             )
             groups.append({sensor_id: sensor_config})
+
+            processor_config = ProcessorConfig(
+                threshold_method=config.threshold_method,
+                fixed_threshold_value=config.fixed_threshold_value,
+                sc_bg_num_std_dev=config.sc_bg_num_std_dev,
+                cfar_sensitivity=config.cfar_sensitivity,
+                cfar_one_sided=config.cfar_one_sided,
+            )
+
             for subsweep_indexes in processor_specs_subsweep_indexes:
                 processor_specs.append(
                     ProcessorSpec(
-                        processor_config=ProcessorConfig(threshold_method=config.threshold_method),
+                        processor_config=processor_config,
                         group_index=group_index,
                         sensor_id=sensor_id,
                         subsweep_indexes=subsweep_indexes,
