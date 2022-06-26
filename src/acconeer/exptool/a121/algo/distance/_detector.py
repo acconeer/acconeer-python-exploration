@@ -46,7 +46,7 @@ class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.2)
     end_m: float = attrs.field(default=1.0)
     max_step_length: Optional[int] = attrs.field(default=None)  # TODO: Check validity
-    max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5)
+    max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
     num_frames_in_recorded_threshold: int = attrs.field(default=20)
     threshold_method: ThresholdMethod = attrs.field(
         default=ThresholdMethod.CFAR,
