@@ -11,6 +11,11 @@ class ExptoolArgumentParser(argparse.ArgumentParser):
             action="store_true",
             help=argparse.SUPPRESS,  # makes option hidden
         )
+        self.add_argument(
+            "--purge-config",
+            action="store_true",
+            help="Remove configuration files.",
+        )
 
         verbosity_group = self.add_mutually_exclusive_group(required=False)
         verbosity_group.add_argument(

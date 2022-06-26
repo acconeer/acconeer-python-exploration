@@ -10,7 +10,7 @@ from typing import Any, Optional, Tuple, Type
 import attrs
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QApplication, QWidget
 
 import pyqtgraph as pg
 
@@ -23,10 +23,11 @@ from acconeer.exptool.app.new.backend import (
     BusyMessage,
     Command,
     IdleMessage,
+    KwargMessage,
     Message,
     Task,
 )
-from acconeer.exptool.app.new.storage import remove_temp_dir
+from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 
 from .plugin_enums import PluginFamily, PluginGeneration
 from .serial_port_updater import SerialPortUpdater
@@ -165,6 +166,11 @@ class AppModel(QObject):
         self._serial_port_updater.start()
 
     def stop(self) -> None:
+        self._backend.unload_plugin()
+
+        while self.plugin_state != PluginState.UNLOADED:  # TODO: Do this better
+            QApplication.processEvents()
+
         remove_temp_dir()
 
         self._listener.requestInterruption()
@@ -218,6 +224,9 @@ class AppModel(QObject):
                 self.plugin_state = PluginState.UNLOADED
             else:
                 self.plugin_state = PluginState.LOADED_IDLE
+        elif message.command_name == "serialized":
+            assert isinstance(message, KwargMessage)
+            self._handle_backend_serialized(**message.kwargs)
         elif message.command_name == "saveable_file":
             assert message.data is None or isinstance(message.data, Path)
 
@@ -240,6 +249,22 @@ class AppModel(QObject):
             raise RuntimeError(f"AppModel cannot handle message: {message}")
 
         self.broadcast()
+
+    @classmethod
+    def _handle_backend_serialized(
+        cls, *, generation: PluginGeneration, key: str, data: Optional[bytes]
+    ) -> None:
+        path = cls._get_plugin_config_path(generation, key)
+
+        if data is None:
+            path.unlink(missing_ok=True)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+
+    @classmethod
+    def _get_plugin_config_path(cls, generation: PluginGeneration, key: str) -> Path:
+        return (get_config_dir() / "plugin" / generation.value / key).with_suffix(".pickle")
 
     def _handle_serial_port_update(self, tagged_ports: list[Tuple[str, Optional[str]]]) -> None:
         self.serial_connection_port = self._select_new_serial_port(
@@ -333,6 +358,15 @@ class AppModel(QObject):
                 self.plugin_state = PluginState.UNLOADING
         else:
             self._backend.load_plugin(plugin.backend_plugin, plugin.key)
+
+            config_path = self._get_plugin_config_path(plugin.generation, plugin.key)
+            try:
+                data = config_path.read_bytes()
+            except Exception:
+                pass
+            else:
+                self._backend.put_task(task=("deserialize", {"data": data}))
+
             if self.plugin is not None:
                 self.plugin_state = PluginState.LOADING
 

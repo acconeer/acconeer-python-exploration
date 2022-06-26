@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import logging
+import pickle
 import traceback
 from pathlib import Path
 from typing import Callable, Generic, Optional, Type, TypeVar
@@ -28,6 +29,7 @@ from acconeer.exptool.app.new import (
     PluginState,
     Task,
 )
+from acconeer.exptool.app.new.app_model.plugin_enums import PluginGeneration
 from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
@@ -57,6 +59,12 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT]):
     ready: bool = attrs.field(default=False)
 
 
+@attrs.frozen(kw_only=True)
+class ProcessorSave(Generic[ConfigT]):
+    session_config: a121.SessionConfig = attrs.field()
+    processor_config: ConfigT = attrs.field()
+
+
 class ProcessorBackendPluginBase(
     Generic[ConfigT, ProcessorT], A121BackendPluginBase[ProcessorBackendPluginSharedState[ConfigT]]
 ):
@@ -79,6 +87,32 @@ class ProcessorBackendPluginBase(
         self._opened_record = None
 
         self._restore_defaults()
+
+    def _deserialize(self, pickled: bytes) -> None:
+        try:
+            obj = pickle.loads(pickled)
+        except Exception:
+            log.warning("Could not load pickled - pickle.loads() failed")
+            return
+
+        if not isinstance(obj, ProcessorSave):
+            log.warning("Could not load pickled - not the correct type")
+            return
+
+        if not isinstance(obj.processor_config, self.get_processor_config_cls()):
+            log.warning("Could not load pickled - not the correct type")
+            return
+
+        self.shared_state.session_config = obj.session_config
+        self.shared_state.processor_config = obj.processor_config
+        self.broadcast(sync=True)
+
+    def _serialize(self) -> bytes:
+        obj = ProcessorSave(
+            session_config=self.shared_state.session_config,
+            processor_config=self.shared_state.processor_config,
+        )
+        return pickle.dumps(obj, protocol=4)
 
     def broadcast(self, sync: bool = False) -> None:
         super().broadcast()
@@ -115,6 +149,16 @@ class ProcessorBackendPluginBase(
         self._live_client = None
 
     def teardown(self) -> None:
+        self.callback(
+            KwargMessage(
+                "serialized",
+                {
+                    "generation": PluginGeneration.A121,
+                    "key": self.key,
+                    "data": self._serialize(),
+                },
+            )
+        )
         self.detach_client()
 
     def load_from_file(self, *, path: Path) -> None:
@@ -175,6 +219,8 @@ class ProcessorBackendPluginBase(
             assert isinstance(processor_config, self.get_processor_config_cls())
             self.shared_state.processor_config = processor_config
             self.broadcast()
+        elif task_name == "deserialize":
+            self._deserialize(task_kwargs["data"])
         else:
             raise RuntimeError(f"Unknown task: {task_name}")
 

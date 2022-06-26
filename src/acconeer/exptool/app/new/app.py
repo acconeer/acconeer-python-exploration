@@ -15,6 +15,7 @@ from ._argument_parser import ExptoolArgumentParser
 from .app_model import AppModel
 from .backend import Backend
 from .plugin_loader import load_default_plugins
+from .storage import remove_config_dir, remove_temp_dir
 from .ui import AppModelViewer, MainWindow
 
 
@@ -22,6 +23,12 @@ def main():
     parser = ExptoolArgumentParser()
     args = parser.parse_args()
     config_logging(args)
+
+    if args.purge_config:
+        remove_config_dir()
+        remove_temp_dir()
+        print("Config purged")
+        sys.exit(0)
 
     backend = Backend()
     backend.start()
