@@ -164,7 +164,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.base_step_length_m = self.metadata.base_step_length_m
         self.step_length_m = self.step_length * self.base_step_length_m
 
-        (_, self.margin_p) = self.distance_filter_edge_margin(self.profile, self.step_length)
+        self.margin_p = self.distance_filter_edge_margin(self.profile, self.step_length)
         self.start_point_cropped = self.start_point + self.margin_p * self.step_length
         self.num_points_cropped = self.num_points - 2 * self.margin_p
 
@@ -512,11 +512,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return estimated_distances, estimated_amplitudes
 
     @classmethod
-    def distance_filter_edge_margin(
-        cls, profile: a121.Profile, step_length: int
-    ) -> Tuple[int, int]:
-        margin_p = np.ceil(
-            cls.ENVELOPE_FWHM_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length)
-        ).astype(int)
-        margin_m = margin_p * cls.APPROX_BASE_STEP_LENGTH_M * step_length
-        return (margin_m, margin_p)
+    def distance_filter_edge_margin(cls, profile: a121.Profile, step_length: int) -> int:
+        return int(
+            np.ceil(cls.ENVELOPE_FWHM_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length))
+        )

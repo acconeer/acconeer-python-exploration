@@ -29,7 +29,7 @@ from ._processors import (
 @attrs.frozen(kw_only=True)
 class SubsweepGroupPlan:
     step_length: int = attrs.field()
-    breakpoints_m: list[float] = attrs.field()
+    breakpoints: list[int] = attrs.field()
     profile: a121.Profile = attrs.field()
 
 
@@ -322,13 +322,20 @@ class Detector:
         """
         plans = {}
         if config.start_m < cls.TRANSITION_M:
+            profile = a121.Profile.PROFILE_1
+            step_length = cls._limit_step_length(profile, config.max_step_length)
+            breakpoints = cls._m_to_points([config.start_m, cls.TRANSITION_M], step_length)
+
+            has_neighbour = (False, cls.TRANSITION_M < config.end_m)
+
+            extended_breakpoints = cls._add_margin_to_breakpoints(
+                profile, step_length, breakpoints, has_neighbour
+            )
             plans[MeasurementType.CLOSE_RANGE] = [
                 SubsweepGroupPlan(
-                    step_length=cls._limit_step_length(
-                        a121.Profile.PROFILE_1, config.max_step_length
-                    ),
-                    breakpoints_m=[config.start_m, cls.TRANSITION_M],
-                    profile=a121.Profile.PROFILE_1,
+                    step_length=step_length,
+                    breakpoints=extended_breakpoints,
+                    profile=profile,
                 )
             ]
 
@@ -341,10 +348,18 @@ class Detector:
             profile_to_be_used = min_dists_profiles[viable_profile_idx[-1]]
 
             end_m = min(config.end_m, cls.MIN_DIST_M[config.max_profile])
+            step_length = cls._limit_step_length(profile_to_be_used, config.max_step_length)
+            breakpoints = cls._m_to_points([far_range_start_m, end_m], step_length)
+
+            has_neighbour = (len(plans) != 0, cls.MIN_DIST_M[config.max_profile] < end_m)
+
+            extended_breakpoints = cls._add_margin_to_breakpoints(
+                profile_to_be_used, step_length, breakpoints, has_neighbour
+            )
             far_subgroup_plans.append(
                 SubsweepGroupPlan(
-                    step_length=cls._limit_step_length(profile_to_be_used, config.max_step_length),
-                    breakpoints_m=[far_range_start_m, end_m],
+                    step_length=step_length,
+                    breakpoints=extended_breakpoints,
                     profile=profile_to_be_used,
                 )
             )
@@ -356,11 +371,20 @@ class Detector:
                 cls.NUM_SUBSWEEPS_IN_SENSOR_CONFIG + 1 - len(far_subgroup_plans),
             ).tolist()
 
+            profile = config.max_profile
+            step_length = cls._limit_step_length(config.max_profile, config.max_step_length)
+            breakpoints = cls._m_to_points(breakpoints_m, step_length)
+
+            has_neighbour = (len(plans) != 0 or len(far_subgroup_plans) != 0, False)
+
+            extended_breakpoints = cls._add_margin_to_breakpoints(
+                profile, step_length, breakpoints, has_neighbour
+            )
             far_subgroup_plans.append(
                 SubsweepGroupPlan(
-                    step_length=cls._limit_step_length(config.max_profile, config.max_step_length),
-                    breakpoints_m=breakpoints_m,
-                    profile=config.max_profile,
+                    step_length=step_length,
+                    breakpoints=extended_breakpoints,
+                    profile=profile,
                 )
             )
 
@@ -368,6 +392,37 @@ class Detector:
             plans[MeasurementType.FAR_RANGE] = far_subgroup_plans
 
         return plans
+
+    @classmethod
+    def _add_margin_to_breakpoints(
+        cls,
+        profile: a121.Profile,
+        step_length: int,
+        base_bpts: list[int],
+        has_neighbour: Tuple[bool, bool],
+    ) -> list[int]:
+        """
+        Add points to segment edges based on their position.
+
+        1. Add one margin to each segment for distance filter initialization
+        2. Add an additional margin to segments with neighbouring segments for segment overlap
+        """
+
+        margin_p = Processor.distance_filter_edge_margin(profile, step_length) * step_length
+        left_margin = margin_p
+        right_margin = margin_p
+
+        if has_neighbour[0]:
+            left_margin += margin_p
+
+        if has_neighbour[1]:
+            right_margin += margin_p
+
+        bpts = copy.copy(base_bpts)
+        bpts[0] -= left_margin
+        bpts[-1] += right_margin
+
+        return bpts
 
     @classmethod
     def _limit_step_length(cls, profile: a121.Profile, user_limit: Optional[int]) -> int:
@@ -402,15 +457,10 @@ class Detector:
                 enable_loopback=True,
             )
         )
-        extended_breakpoints = cls._add_margins_and_convert_to_points(
-            plan=plan,
-            plan_idx=0,
-            last_plan_idx=0,
-        )
-        num_points = int((extended_breakpoints[1] - extended_breakpoints[0]) / plan.step_length)
+        num_points = int((plan.breakpoints[1] - plan.breakpoints[0]) / plan.step_length)
         subsweeps.append(
             a121.SubsweepConfig(
-                start_point=extended_breakpoints[0],
+                start_point=plan.breakpoints[0],
                 num_points=num_points,
                 step_length=plan.step_length,
                 profile=plan.profile,
@@ -428,21 +478,15 @@ class Detector:
         subsweeps = []
         processor_specs_subsweep_indexes = []
         subsweep_idx = 0
-        for plan_idx, plan in enumerate(subsweep_group_plans):
-            extended_breakpoints = cls._add_margins_and_convert_to_points(
-                plan=plan,
-                plan_idx=plan_idx,
-                last_plan_idx=len(subsweep_group_plans) - 1,
-            )
+        for plan in subsweep_group_plans:
             subsweep_indexes = []
-            for bp_idx in range(len(extended_breakpoints) - 1):
+            for bp_idx in range(len(plan.breakpoints) - 1):
                 num_points = int(
-                    (extended_breakpoints[bp_idx + 1] - extended_breakpoints[bp_idx])
-                    / plan.step_length
+                    (plan.breakpoints[bp_idx + 1] - plan.breakpoints[bp_idx]) / plan.step_length
                 )
                 subsweeps.append(
                     a121.SubsweepConfig(
-                        start_point=extended_breakpoints[bp_idx],
+                        start_point=plan.breakpoints[bp_idx],
                         num_points=num_points,
                         step_length=plan.step_length,
                         profile=plan.profile,
@@ -455,36 +499,6 @@ class Detector:
                 subsweep_idx += 1
             processor_specs_subsweep_indexes.append(subsweep_indexes)
         return (a121.SensorConfig(subsweeps=subsweeps), processor_specs_subsweep_indexes)
-
-    @classmethod
-    def _add_margins_and_convert_to_points(
-        cls, plan: SubsweepGroupPlan, plan_idx: int, last_plan_idx: int
-    ) -> list[int]:
-        """
-        Add margin to edges of the range spanned by a subsweep group.
-
-        A margin is added for the following two reasons(if both reasons are applicable, two margins
-        are added)
-
-        1. Add margin to edges of each subsweep group plan for distance filter initialization.
-        2. Add margin to edges of neigbouring subsweep group plans to create overlap for smooth
-        transition between segments(utilizing peak merging).
-
-        Before returned, the extended range is converted from meters to points.
-        """
-        (margin_m, _) = Processor.distance_filter_edge_margin(plan.profile, plan.step_length)
-        extended_breakpoints_m = copy.copy(plan.breakpoints_m)
-
-        if plan_idx == 0:
-            extended_breakpoints_m[0] -= margin_m
-            extended_breakpoints_m[-1] += 2 * margin_m
-        elif plan_idx == last_plan_idx:
-            extended_breakpoints_m[0] -= 2 * margin_m
-            extended_breakpoints_m[-1] += margin_m
-        else:
-            extended_breakpoints_m[0] -= 2 * margin_m
-            extended_breakpoints_m[-1] += 2 * margin_m
-        return cls._m_to_points(breakpoints_m=extended_breakpoints_m, step_length=plan.step_length)
 
     @classmethod
     def _m_to_points(cls, breakpoints_m: list[float], step_length: int) -> list[int]:
