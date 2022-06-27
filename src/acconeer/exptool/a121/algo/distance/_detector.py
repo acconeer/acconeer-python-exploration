@@ -420,9 +420,7 @@ class Detector:
             right_margin += margin_p
 
         if config.threshold_method == ThresholdMethod.CFAR:
-            cfar_margin = (
-                Processor.calc_cfar_margin(profile, step_length, None, None) * step_length
-            )
+            cfar_margin = Processor.calc_cfar_margin(profile, step_length) * step_length
             left_margin += cfar_margin
             right_margin += cfar_margin
 

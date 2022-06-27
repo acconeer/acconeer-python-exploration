@@ -307,58 +307,31 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 self.num_points_cropped, self.processor_config.fixed_threshold_value
             )
         elif self.threshold_method == ThresholdMethod.CFAR:
-            self.cfar_margin = self.calc_cfar_margin(
-                self.profile,
-                self.step_length,
-                self.processor_config.cfar_window_length_m,
-                self.processor_config.cfar_guard_length_m,
-            )
+            self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
             self.cfar_one_sided = self.processor_config.cfar_one_sided
             self.cfar_sensitivity = self.processor_config.cfar_sensitivity
-            window_length = self._calc_cfar_window_length(
-                self.profile, self.step_length, self.processor_config.cfar_window_length_m
-            )
-            guard_half_length = self._calc_cfar_guard_half_length(
-                self.profile, self.step_length, self.processor_config.cfar_guard_length_m
-            )
+            window_length = self._calc_cfar_window_length(self.profile, self.step_length)
+            guard_half_length = self._calc_cfar_guard_half_length(self.profile, self.step_length)
             self.idx_cfar_pts = guard_half_length + np.arange(window_length)
 
     @classmethod
-    def _calc_cfar_window_length(
-        cls, profile: a121.Profile, step_length: int, config_window_length_m: Optional[float]
-    ) -> int:
-        if config_window_length_m is None:
-            window_length_m = cls.ENVELOPE_FWHM_M[profile] * cls.CFAR_WINDOW_LENGTH_ADJUSTMENT
-        else:
-            window_length_m = config_window_length_m
-
+    def _calc_cfar_window_length(cls, profile: a121.Profile, step_length: int) -> int:
+        window_length_m = cls.ENVELOPE_FWHM_M[profile] * cls.CFAR_WINDOW_LENGTH_ADJUSTMENT
         step_length_m = step_length * cls.APPROX_BASE_STEP_LENGTH_M
         return int(window_length_m / step_length_m)
 
     @classmethod
-    def _calc_cfar_guard_half_length(
-        cls, profile: a121.Profile, step_length: int, config_guard_length_m: Optional[float]
-    ) -> int:
-        if config_guard_length_m is None:
-            guard_length_m = cls.ENVELOPE_FWHM_M[profile] * cls.CFAR_GUARD_LENGTH_ADJUSTMENT
-        else:
-            guard_length_m = config_guard_length_m
-
+    def _calc_cfar_guard_half_length(cls, profile: a121.Profile, step_length: int) -> int:
+        guard_length_m = cls.ENVELOPE_FWHM_M[profile] * cls.CFAR_GUARD_LENGTH_ADJUSTMENT
         step_length_m = step_length * cls.APPROX_BASE_STEP_LENGTH_M
         guard_half_length_m = guard_length_m / 2
         return int(guard_half_length_m / step_length_m)
 
     @classmethod
-    def calc_cfar_margin(
-        cls,
-        profile: a121.Profile,
-        step_length: int,
-        window_length_m: Optional[float],
-        guard_length_m: Optional[float],
-    ) -> int:
+    def calc_cfar_margin(cls, profile: a121.Profile, step_length: int) -> int:
         return cls._calc_cfar_window_length(
-            profile, step_length, window_length_m
-        ) + cls._calc_cfar_guard_half_length(profile, step_length, guard_length_m)
+            profile, step_length
+        ) + cls._calc_cfar_guard_half_length(profile, step_length)
 
     def _process_distance_estimation(self, abs_sweep: npt.NDArray[np.float_]) -> ProcessorResult:
         self.threshold = self._update_threshold(abs_sweep)
