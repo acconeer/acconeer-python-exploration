@@ -56,7 +56,15 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT]):
     processor_config: ConfigT = attrs.field()
     replaying: bool = attrs.field(default=False)
     metadata: Optional[a121.Metadata] = attrs.field(default=None)
-    ready: bool = attrs.field(default=False)
+
+    @property
+    def ready(self):
+        try:
+            self.session_config.validate()
+        except a121.ValidationError:
+            return False
+        else:
+            return True
 
 
 @attrs.frozen(kw_only=True)
@@ -210,9 +218,6 @@ class ProcessorBackendPluginBase(
             session_config = task_kwargs["session_config"]
             assert isinstance(session_config, a121.SessionConfig)
             self.shared_state.session_config = session_config
-            self.shared_state.ready = (
-                len(self.shared_state.session_config._collect_validation_results()) == 0
-            )
             self.broadcast()
         elif task_name == "update_processor_config":
             processor_config = task_kwargs["processor_config"]
