@@ -150,7 +150,9 @@ class SessionConfigEditor(QWidget):
             pidget = factory.create(self.session_group_box)
             self.session_group_box.layout().addWidget(pidget)
 
-            self._setup_session_config_pidget(pidget, aspect)
+            pidget.sig_parameter_changed.connect(
+                partial(self._update_session_config_aspect, aspect)
+            )
 
             self._all_pidgets.append(pidget)
             self._session_config_pidgets[aspect] = pidget
@@ -166,7 +168,9 @@ class SessionConfigEditor(QWidget):
             pidget = factory.create(self.sensor_group_box)
             self.sensor_group_box.layout().addWidget(pidget)
 
-            self._setup_sensor_config_pidget(pidget, aspect)
+            pidget.sig_parameter_changed.connect(
+                partial(self._update_sensor_config_aspect, aspect)
+            )
 
             self._all_pidgets.append(pidget)
             self._sensor_config_pidgets[aspect] = pidget
@@ -187,7 +191,9 @@ class SessionConfigEditor(QWidget):
             pidget = factory.create(self.subsweep_group_box)
             self.subsweep_group_box.layout().addWidget(pidget)
 
-            self._setup_subsweep_config_pidget(pidget, aspect)
+            pidget.sig_parameter_changed.connect(
+                partial(self._update_subsweep_config_aspect, aspect)
+            )
 
             self._all_pidgets.append(pidget)
             self._subsweep_config_pidgets[aspect] = pidget
@@ -252,15 +258,6 @@ class SessionConfigEditor(QWidget):
             self._handle_validation_results(self._session_config._collect_validation_results())
 
         self._broadcast()
-
-    def _setup_session_config_pidget(self, pidget: pidgets.ParameterWidget, aspect: str) -> None:
-        pidget.sig_parameter_changed.connect(partial(self._update_session_config_aspect, aspect))
-
-    def _setup_sensor_config_pidget(self, pidget: pidgets.ParameterWidget, aspect: str) -> None:
-        pidget.sig_parameter_changed.connect(partial(self._update_sensor_config_aspect, aspect))
-
-    def _setup_subsweep_config_pidget(self, pidget: pidgets.ParameterWidget, aspect: str) -> None:
-        pidget.sig_parameter_changed.connect(partial(self._update_subsweep_config_aspect, aspect))
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> None:
         if result.aspect is None or self._session_config is None:
