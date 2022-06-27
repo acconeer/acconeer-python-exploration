@@ -249,6 +249,8 @@ class AppModel(QObject):
             self.send_status_message(message.data)
         elif message.command_name == "start_session":
             pass  # TODO: Should this be handled
+        elif message.command_name == "stop_session":
+            pass  # TODO: Should this be handled
         elif message.command_name == "result_tick_time":
             update_time = message.data
             if self.last_update_time is not None and update_time is not None:
