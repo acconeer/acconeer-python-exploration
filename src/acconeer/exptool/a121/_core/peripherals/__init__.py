@@ -6,7 +6,7 @@ from .communication import (
     get_exploration_protocol,
 )
 from .h5_record import (
-    H5PY_STR_DTYPE,
+    _H5PY_STR_DTYPE,
     H5Record,
     H5Recorder,
     load_record,

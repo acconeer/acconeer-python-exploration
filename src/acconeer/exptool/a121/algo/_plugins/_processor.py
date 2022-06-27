@@ -85,7 +85,7 @@ class ProcessorBackendPluginBase(
     _started: bool
     _opened_file: Optional[h5py.File]
     _opened_record: Optional[a121.H5Record]
-    _replaying_client: Optional[a121.ReplayingClient]
+    _replaying_client: Optional[a121._ReplayingClient]
 
     def __init__(self, callback: Callable[[Message], None], key: str):
         super().__init__(callback=callback, key=key)
@@ -175,7 +175,7 @@ class ProcessorBackendPluginBase(
     def load_from_file(self, *, path: Path) -> None:
         self._opened_file = h5py.File(path, mode="r")
         self._opened_record = a121.H5Record(self._opened_file)
-        self._replaying_client = a121.ReplayingClient(self._opened_record)
+        self._replaying_client = a121._ReplayingClient(self._opened_record)
 
         self.shared_state.session_config = self._opened_record.session_config
 
@@ -267,7 +267,7 @@ class ProcessorBackendPluginBase(
             algo_group.create_dataset(
                 "processor_config",
                 data=self.shared_state.processor_config.to_json(),
-                dtype=a121.H5PY_STR_DTYPE,
+                dtype=a121._H5PY_STR_DTYPE,
                 track_times=False,
             )
         else:
@@ -325,7 +325,7 @@ class ProcessorBackendPluginBase(
 
         try:
             result = self._client.get_next()
-        except a121.StopReplay:
+        except a121._StopReplay:
             self._execute_stop()
             return
 

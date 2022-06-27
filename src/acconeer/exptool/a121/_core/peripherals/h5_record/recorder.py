@@ -30,7 +30,7 @@ def get_h5py_str_dtype():
     return h5py.special_dtype(vlen=str)
 
 
-H5PY_STR_DTYPE = get_h5py_str_dtype()
+_H5PY_STR_DTYPE = get_h5py_str_dtype()
 
 
 def get_timestamp() -> str:
@@ -73,25 +73,25 @@ class H5Recorder(Recorder):
         self.file.create_dataset(
             "uuid",
             data=_uuid,
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
         self.file.create_dataset(
             "timestamp",
             data=_timestamp,
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
         self.file.create_dataset(
             "lib_version",
             data=_lib_version,
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
         self.file.create_dataset(
             "generation",
             data="a121",
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
 
@@ -106,13 +106,13 @@ class H5Recorder(Recorder):
         self.file.create_dataset(
             "client_info",
             data=client_info.to_json(),
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
         self.file.create_dataset(
             "server_info",
             data=server_info.to_json(),
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
 
@@ -121,7 +121,7 @@ class H5Recorder(Recorder):
         session_group.create_dataset(
             "session_config",
             data=session_config.to_json(),
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
 
@@ -135,7 +135,7 @@ class H5Recorder(Recorder):
                 entry_group.create_dataset(
                     "metadata",
                     data=metadata.to_json(),
-                    dtype=H5PY_STR_DTYPE,
+                    dtype=_H5PY_STR_DTYPE,
                     track_times=False,
                 )
 
@@ -235,7 +235,7 @@ class H5Recorder(Recorder):
             group.create_dataset(
                 "key",
                 data=key,
-                dtype=H5PY_STR_DTYPE,
+                dtype=_H5PY_STR_DTYPE,
                 track_times=False,
             )
 

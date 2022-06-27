@@ -2,7 +2,7 @@ import sys
 
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
-    H5PY_STR_DTYPE,
+    _H5PY_STR_DTYPE,
     PRF,
     Client,
     ClientError,
@@ -31,7 +31,7 @@ from ._core import (
     save_record,
     save_record_to_h5,
 )
-from ._core_ext import ReplayingClient, StopReplay
+from ._core_ext import _ReplayingClient, _StopReplay
 from ._perf_calc import _PerformanceCalc
 
 

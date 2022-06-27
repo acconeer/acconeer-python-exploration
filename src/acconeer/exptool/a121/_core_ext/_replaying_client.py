@@ -17,11 +17,11 @@ from acconeer.exptool.a121 import (
 )
 
 
-class StopReplay(Exception):
+class _StopReplay(Exception):
     pass
 
 
-class ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
+class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
     def __init__(self, record: Record):
         self._record = record
         self._is_started: bool = False
@@ -73,7 +73,7 @@ class ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
             result_ = next(self._result_iterator)
             result = cast(Union[Result, List[Dict[int, Result]]], result_)
         except StopIteration:
-            raise StopReplay
+            raise _StopReplay
 
         if isinstance(result, Result):
             some_result = result
