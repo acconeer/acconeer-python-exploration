@@ -164,9 +164,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.base_step_length_m = self.metadata.base_step_length_m
         self.step_length_m = self.step_length * self.base_step_length_m
 
-        self.margin_p = self.distance_filter_edge_margin(self.profile, self.step_length)
-        self.start_point_cropped = self.start_point + self.margin_p * self.step_length
-        self.num_points_cropped = self.num_points - 2 * self.margin_p
+        self.filt_margin = self.distance_filter_edge_margin(self.profile, self.step_length)
+        self.start_point_cropped = self.start_point + self.filt_margin * self.step_length
+        self.num_points_cropped = self.num_points - 2 * self.filt_margin
 
         self.distances_m = (
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
@@ -267,7 +267,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         sweep = frame.mean(axis=0)
         filtered_sweep = filtfilt(self.b, self.a, sweep)
         abs_sweep = np.abs(filtered_sweep)
-        abs_sweep = abs_sweep[self.margin_p : -self.margin_p]
+        abs_sweep = abs_sweep[self.filt_margin : -self.filt_margin]
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             return self._process_distance_estimation(abs_sweep)
@@ -307,18 +307,24 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 self.num_points_cropped, self.processor_config.fixed_threshold_value
             )
         elif self.threshold_method == ThresholdMethod.CFAR:
+            self.cfar_margin = self.calc_cfar_margin(
+                self.profile,
+                self.step_length,
+                self.processor_config.cfar_window_length_m,
+                self.processor_config.cfar_guard_length_m,
+            )
             self.cfar_one_sided = self.processor_config.cfar_one_sided
             self.cfar_sensitivity = self.processor_config.cfar_sensitivity
-            window_length = self.calc_cfar_window_length(
+            window_length = self._calc_cfar_window_length(
                 self.profile, self.step_length, self.processor_config.cfar_window_length_m
             )
-            guard_half_length = self.calc_cfar_guard_half_length(
+            guard_half_length = self._calc_cfar_guard_half_length(
                 self.profile, self.step_length, self.processor_config.cfar_guard_length_m
             )
             self.idx_cfar_pts = guard_half_length + np.arange(window_length)
 
     @classmethod
-    def calc_cfar_window_length(
+    def _calc_cfar_window_length(
         cls, profile: a121.Profile, step_length: int, config_window_length_m: Optional[float]
     ) -> int:
         if config_window_length_m is None:
@@ -330,7 +336,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return int(window_length_m / step_length_m)
 
     @classmethod
-    def calc_cfar_guard_half_length(
+    def _calc_cfar_guard_half_length(
         cls, profile: a121.Profile, step_length: int, config_guard_length_m: Optional[float]
     ) -> int:
         if config_guard_length_m is None:
@@ -341,6 +347,18 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         step_length_m = step_length * cls.APPROX_BASE_STEP_LENGTH_M
         guard_half_length_m = guard_length_m / 2
         return int(guard_half_length_m / step_length_m)
+
+    @classmethod
+    def calc_cfar_margin(
+        cls,
+        profile: a121.Profile,
+        step_length: int,
+        window_length_m: Optional[float],
+        guard_length_m: Optional[float],
+    ) -> int:
+        return cls._calc_cfar_window_length(
+            profile, step_length, window_length_m
+        ) + cls._calc_cfar_guard_half_length(profile, step_length, guard_length_m)
 
     def _process_distance_estimation(self, abs_sweep: npt.NDArray[np.float_]) -> ProcessorResult:
         self.threshold = self._update_threshold(abs_sweep)
@@ -353,9 +371,18 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self.step_length,
             self.base_step_length_m,
         )
-        extra_result = ProcessorExtraResult(
-            abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
-        )
+
+        if self.processor_config.threshold_method == ThresholdMethod.CFAR:
+            cfar_margin_slice = slice(self.cfar_margin, -self.cfar_margin)
+            extra_result = ProcessorExtraResult(
+                abs_sweep=abs_sweep[cfar_margin_slice],
+                used_threshold=self.threshold[cfar_margin_slice],
+                distances_m=self.distances_m[cfar_margin_slice],
+            )
+        else:
+            extra_result = ProcessorExtraResult(
+                abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
+            )
         return ProcessorResult(
             estimated_distances=estimated_distances,
             estimated_amplitudes=estimated_amplitudes,

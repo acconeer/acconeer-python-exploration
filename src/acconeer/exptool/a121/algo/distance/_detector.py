@@ -329,7 +329,7 @@ class Detector:
             has_neighbour = (False, cls.TRANSITION_M < config.end_m)
 
             extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile, step_length, breakpoints, has_neighbour
+                profile, step_length, breakpoints, has_neighbour, config
             )
             plans[MeasurementType.CLOSE_RANGE] = [
                 SubsweepGroupPlan(
@@ -354,7 +354,7 @@ class Detector:
             has_neighbour = (len(plans) != 0, cls.MIN_DIST_M[config.max_profile] < end_m)
 
             extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile_to_be_used, step_length, breakpoints, has_neighbour
+                profile_to_be_used, step_length, breakpoints, has_neighbour, config
             )
             far_subgroup_plans.append(
                 SubsweepGroupPlan(
@@ -378,7 +378,7 @@ class Detector:
             has_neighbour = (len(plans) != 0 or len(far_subgroup_plans) != 0, False)
 
             extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile, step_length, breakpoints, has_neighbour
+                profile, step_length, breakpoints, has_neighbour, config
             )
             far_subgroup_plans.append(
                 SubsweepGroupPlan(
@@ -400,6 +400,7 @@ class Detector:
         step_length: int,
         base_bpts: list[int],
         has_neighbour: Tuple[bool, bool],
+        config: DetectorConfig,
     ) -> list[int]:
         """
         Add points to segment edges based on their position.
@@ -417,6 +418,13 @@ class Detector:
 
         if has_neighbour[1]:
             right_margin += margin_p
+
+        if config.threshold_method == ThresholdMethod.CFAR:
+            cfar_margin = (
+                Processor.calc_cfar_margin(profile, step_length, None, None) * step_length
+            )
+            left_margin += cfar_margin
+            right_margin += cfar_margin
 
         bpts = copy.copy(base_bpts)
         bpts[0] -= left_margin
