@@ -8,6 +8,9 @@ from PySide6.QtWidgets import QGridLayout, QGroupBox, QLabel, QLineEdit, QWidget
 from acconeer.exptool import a121
 
 
+_WIDGET_WIDTH = 125
+
+
 class MetadataView(QGroupBox):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
@@ -57,3 +60,4 @@ class MetadataValueWidget(QLineEdit):
         super().__init__(parent)
         self.setEnabled(False)
         self.setAlignment(QtCore.Qt.AlignRight)
+        self.setFixedWidth(_WIDGET_WIDTH)
