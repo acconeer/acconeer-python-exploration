@@ -291,7 +291,7 @@ class SensorConfig:
         if self.sweep_rate is None:
             validation_results.append(
                 ValidationError(
-                    self, "sweep_rate", "Sweep rate must set (`> 0`) to use continuous sweep mode."
+                    self, "sweep_rate", "Sweep rate must be set to use continuous sweep mode."
                 )
             )
         if self.inter_frame_idle_state != self.inter_sweep_idle_state:
@@ -299,7 +299,7 @@ class SensorConfig:
                 ValidationError(
                     self,
                     idle_state,
-                    "Idles states must be equal to use continuous sweep mode.",
+                    "Inter sweep/frame idle states must be equal to use continuous sweep mode.",
                 )
                 for idle_state in ["inter_frame_idle_state", "inter_sweep_idle_state"]
             )
