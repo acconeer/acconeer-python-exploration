@@ -58,6 +58,7 @@ class MetadataView(QGroupBox):
 class MetadataValueWidget(QLineEdit):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setEnabled(False)
         self.setAlignment(QtCore.Qt.AlignRight)
         self.setFixedWidth(_WIDGET_WIDTH)
+        self.setReadOnly(True)
+        self.setFocusPolicy(QtCore.Qt.NoFocus)
