@@ -71,9 +71,8 @@ class DetectorResult:
 
 class Detector:
 
-    TRANSITION_M = 0.1
     MIN_DIST_M = {
-        a121.Profile.PROFILE_1: TRANSITION_M,
+        a121.Profile.PROFILE_1: 0.10,
         a121.Profile.PROFILE_2: 0.28,
         a121.Profile.PROFILE_3: 0.56,
         a121.Profile.PROFILE_4: 0.76,
@@ -311,7 +310,6 @@ class Detector:
         Create dictionary containing group plans for close and far range measurements.
 
         Constants used:
-        - TRANSITION_M defines the transition point between close and far range.
         - MIN_DIST_M defines the shortest distance possible to measure free of leakage.
 
         Outline of logic:
@@ -320,13 +318,18 @@ class Detector:
         - max_profile is used in the far range region to achive high SNR and low power consumption.
         - A shorter profile is used between the transition point and the MIN_DIST_M of max_profile.
         """
+
+        min_dist_m = cls._add_to_min_dist_m(config)
+        transition_m = list(min_dist_m.values())[0]
+
         plans = {}
-        if config.start_m < cls.TRANSITION_M:
+
+        if config.start_m < transition_m:
             profile = a121.Profile.PROFILE_1
             step_length = cls._limit_step_length(profile, config.max_step_length)
-            breakpoints = cls._m_to_points([config.start_m, cls.TRANSITION_M], step_length)
+            breakpoints = cls._m_to_points([config.start_m, transition_m], step_length)
 
-            has_neighbour = (False, cls.TRANSITION_M < config.end_m)
+            has_neighbour = (False, transition_m < config.end_m)
 
             extended_breakpoints = cls._add_margin_to_breakpoints(
                 profile, step_length, breakpoints, has_neighbour, config
@@ -340,18 +343,18 @@ class Detector:
             ]
 
         far_subgroup_plans = []
-        far_range_start_m = np.max([config.start_m, cls.TRANSITION_M])
-        if far_range_start_m <= cls.MIN_DIST_M[config.max_profile]:
-            min_dists_m = np.array(list(cls.MIN_DIST_M.values()))
-            min_dists_profiles = np.array(list(cls.MIN_DIST_M.keys()))
+        far_range_start_m = np.max([config.start_m, transition_m])
+        if far_range_start_m <= min_dist_m[config.max_profile]:
+            min_dists_m = np.array(list(min_dist_m.values()))
+            min_dists_profiles = np.array(list(min_dist_m.keys()))
             (viable_profile_idx,) = np.where(min_dists_m <= far_range_start_m)
             profile_to_be_used = min_dists_profiles[viable_profile_idx[-1]]
 
-            end_m = min(config.end_m, cls.MIN_DIST_M[config.max_profile])
+            end_m = min(config.end_m, min_dist_m[config.max_profile])
             step_length = cls._limit_step_length(profile_to_be_used, config.max_step_length)
             breakpoints = cls._m_to_points([far_range_start_m, end_m], step_length)
 
-            has_neighbour = (len(plans) != 0, cls.MIN_DIST_M[config.max_profile] < end_m)
+            has_neighbour = (len(plans) != 0, min_dist_m[config.max_profile] < end_m)
 
             extended_breakpoints = cls._add_margin_to_breakpoints(
                 profile_to_be_used, step_length, breakpoints, has_neighbour, config
@@ -364,9 +367,9 @@ class Detector:
                 )
             )
 
-        if cls.MIN_DIST_M[config.max_profile] < config.end_m:
+        if min_dist_m[config.max_profile] < config.end_m:
             breakpoints_m = np.linspace(
-                cls.MIN_DIST_M[config.max_profile],
+                min_dist_m[config.max_profile],
                 config.end_m,
                 cls.NUM_SUBSWEEPS_IN_SENSOR_CONFIG + 1 - len(far_subgroup_plans),
             ).tolist()
@@ -392,6 +395,21 @@ class Detector:
             plans[MeasurementType.FAR_RANGE] = far_subgroup_plans
 
         return plans
+
+    @classmethod
+    def _add_to_min_dist_m(cls, config: DetectorConfig) -> Dict[a121.Profile, float]:
+        min_dist_m = {}
+        for profile, min_dist in cls.MIN_DIST_M.items():
+            min_dist_m[profile] = min_dist
+            if config.threshold_method == ThresholdMethod.CFAR:
+                step_length = cls._limit_step_length(profile, config.max_step_length)
+                cfar_margin_m = (
+                    Processor.calc_cfar_margin(profile, step_length)
+                    * step_length
+                    * Processor.APPROX_BASE_STEP_LENGTH_M
+                )
+                min_dist_m[profile] += cfar_margin_m
+        return min_dist_m
 
     @classmethod
     def _add_margin_to_breakpoints(
