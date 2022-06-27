@@ -195,6 +195,8 @@ class ProcessorBackendPluginBase(
             self.callback(ErrorMessage("start_session", e, traceback_str=traceback.format_exc()))
             self.callback(IdleMessage())
 
+        self.send_status_message(f"<b>Replaying from {path.name}</b>")
+
     def execute_task(self, *, task: Task) -> None:
         """Accepts the following tasks:
 
