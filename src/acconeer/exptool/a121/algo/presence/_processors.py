@@ -57,6 +57,16 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     # tc: time constant [s]
     # sf: smoothing factor [dimensionless]
 
+    ENVELOPE_FWHM_M = {
+        a121.Profile.PROFILE_1: 0.04,
+        a121.Profile.PROFILE_2: 0.07,
+        a121.Profile.PROFILE_3: 0.14,
+        a121.Profile.PROFILE_4: 0.19,
+        a121.Profile.PROFILE_5: 0.32,
+    }
+
+    APPROX_BASE_STEP_LENGTH_M = 2.5e-3
+
     def __init__(
         self,
         *,
@@ -84,9 +94,13 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.num_distances = self.distances.size
         self.f = self.sensor_config.frame_rate
 
+        points_per_pulse = self.ENVELOPE_FWHM_M[sensor_config.profile] / (
+            self.APPROX_BASE_STEP_LENGTH_M * sensor_config.step_length
+        )
+        self.depth_filter_length = max(int(round(points_per_pulse)), 1)
+
         # Fixed parameters
         self.noise_est_diff_order = 3
-        self.depth_filter_length = 3
         noise_tc = 1.0
 
         if self.sweeps_per_frame <= self.noise_est_diff_order:
