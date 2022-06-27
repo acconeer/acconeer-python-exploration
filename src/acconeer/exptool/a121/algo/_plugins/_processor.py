@@ -35,6 +35,7 @@ from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
     GridGroupBox,
     MetadataView,
+    PerfCalcView,
     PidgetFactoryMapping,
     SessionConfigEditor,
 )
@@ -406,6 +407,9 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
         self.metadata_view = MetadataView(self.view_widget)
         self.layout.addWidget(self.metadata_view)
 
+        self.perf_calc_view = PerfCalcView(self.view_widget)
+        self.layout.addWidget(self.perf_calc_view)
+
         self.session_config_editor = SessionConfigEditor(self.view_widget)
         self.session_config_editor.sig_update.connect(self._on_session_config_update)
         self.processor_config_editor = AttrsConfigEditor[ConfigT](
@@ -462,6 +466,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
             self.session_config_editor.set_data(None)
             self.processor_config_editor.set_data(None)
             self.metadata_view.update(None)
+            self.perf_calc_view.update()
         else:
             assert isinstance(app_model.backend_plugin_state, ProcessorBackendPluginSharedState)
             assert isinstance(
@@ -471,6 +476,10 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
             self.session_config_editor.set_data(app_model.backend_plugin_state.session_config)
             self.processor_config_editor.set_data(app_model.backend_plugin_state.processor_config)
             self.metadata_view.update(app_model.backend_plugin_state.metadata)
+            self.perf_calc_view.update(
+                app_model.backend_plugin_state.session_config,
+                app_model.backend_plugin_state.metadata,
+            )
 
     @classmethod
     @abc.abstractmethod

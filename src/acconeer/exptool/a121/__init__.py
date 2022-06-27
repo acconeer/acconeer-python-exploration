@@ -32,6 +32,7 @@ from ._core import (
     save_record_to_h5,
 )
 from ._core_ext import ReplayingClient, StopReplay
+from ._perf_calc import _PerformanceCalc
 
 
 if "pytest" not in sys.modules:
