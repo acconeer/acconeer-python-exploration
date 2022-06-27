@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import qtawesome as qta
+
 from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QPushButton, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
+
+from .misc import BUTTON_ICON_COLOR
 
 
 class RecordingWidget(QWidget):
@@ -25,6 +29,7 @@ class LoadFileButton(QPushButton):
         self.app_model = app_model
 
         self.setText("Load from file")
+        self.setIcon(qta.icon("fa.folder-open", color=BUTTON_ICON_COLOR))
 
         self.clicked.connect(self._on_click)
 
@@ -54,6 +59,7 @@ class SaveFileButton(QPushButton):
         self.app_model = app_model
 
         self.setText("Save to file")
+        self.setIcon(qta.icon("mdi.content-save", color=BUTTON_ICON_COLOR))
 
         self.clicked.connect(self._on_click)
 

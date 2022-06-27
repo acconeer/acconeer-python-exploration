@@ -5,6 +5,7 @@ import logging
 import traceback
 from typing import Optional
 
+import qtawesome as qta
 import serial
 
 from PySide6.QtCore import Qt, QThread, Signal
@@ -26,6 +27,8 @@ from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new.app_model import AppModel, ConnectionState
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 from acconeer.exptool.flash import find_flash_port, flash_image  # type: ignore[import]
+
+from .misc import BUTTON_ICON_COLOR
 
 
 log = logging.getLogger(__name__)
@@ -196,6 +199,7 @@ class FlashButton(QPushButton):
 
         self.setFixedWidth(100)
         self.setText("Flash")
+        self.setIcon(qta.icon("mdi.flash", color=BUTTON_ICON_COLOR))
 
         app_model.sig_notify.connect(self._on_app_model_update)
         self.pop_up = _FlashPopup(app_model, self)

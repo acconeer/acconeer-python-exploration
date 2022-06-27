@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import qtawesome as qta
+
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -11,6 +13,8 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool.app.new.app_model import AppModel, ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
+
+from .misc import BUTTON_ICON_COLOR
 
 
 class _ConnectAndDisconnectButton(QPushButton):
@@ -41,11 +45,18 @@ class _ConnectAndDisconnectButton(QPushButton):
             ConnectionState.DISCONNECTING: "Disconnecting...",
         }
         ENABLED_STATES = {ConnectionState.CONNECTED, ConnectionState.DISCONNECTED}
+        ICONS = {
+            ConnectionState.DISCONNECTED: "fa5s.link",
+            ConnectionState.CONNECTING: "fa5s.link",
+            ConnectionState.CONNECTED: "fa5s.unlink",
+            ConnectionState.DISCONNECTING: "fa5s.unlink",
+        }
 
         self.setText(TEXTS[app_model.connection_state])
         self.setEnabled(
             app_model.connection_state in ENABLED_STATES and app_model.plugin_state.is_steady
         )
+        self.setIcon(qta.icon(ICONS[app_model.connection_state], color=BUTTON_ICON_COLOR))
 
 
 class _SocketConnectionWidget(AppModelAwareWidget):

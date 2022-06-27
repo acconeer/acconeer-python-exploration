@@ -6,6 +6,9 @@ from PySide6 import QtGui
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QMessageBox, QWidget
 
 
+BUTTON_ICON_COLOR = "#0081db"
+
+
 class ExceptionWidget(QMessageBox):
     def __init__(
         self,

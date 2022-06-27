@@ -9,6 +9,7 @@ from typing import Callable, Generic, Optional, Type, TypeVar
 
 import attrs
 import h5py
+import qtawesome as qta
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
@@ -17,6 +18,7 @@ import pyqtgraph as pg
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
 from acconeer.exptool.app.new import (
+    BUTTON_ICON_COLOR,
     AppModel,
     BusyMessage,
     ConnectionState,
@@ -390,9 +392,21 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.view_widget.setLayout(self.layout)
 
-        self.start_button = QPushButton("Start measurement", self.view_widget)
-        self.stop_button = QPushButton("Stop", self.view_widget)
-        self.defaults_button = QPushButton("Restore default settings", self.view_widget)
+        self.start_button = QPushButton(
+            qta.icon("fa5s.play-circle", color=BUTTON_ICON_COLOR),
+            "Start measurement",
+            self.view_widget,
+        )
+        self.stop_button = QPushButton(
+            qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
+            "Stop",
+            self.view_widget,
+        )
+        self.defaults_button = QPushButton(
+            qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
+            "Restore default settings",
+            self.view_widget,
+        )
         self.start_button.clicked.connect(self._send_start_requests)
         self.stop_button.clicked.connect(self._send_stop_requests)
         self.defaults_button.clicked.connect(self._send_defaults_request)
