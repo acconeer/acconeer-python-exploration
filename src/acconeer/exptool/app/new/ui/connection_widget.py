@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import qtawesome as qta
 
+from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -70,6 +71,7 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         self.ip_line_edit = QLineEdit(self)
         self.ip_line_edit.setPlaceholderText("<IP address>")
         self.ip_line_edit.editingFinished.connect(self._on_line_edit)
+        self.ip_line_edit.setMinimumWidth(125)
         self.layout().addWidget(self.ip_line_edit)
 
     def _on_line_edit(self) -> None:
@@ -92,19 +94,20 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         self.app_model.set_serial_connection_port(self.port_combo_box.currentData())
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.port_combo_box.blockSignals(True)
-
         tagged_ports = app_model.available_tagged_ports
 
-        self.port_combo_box.clear()
-        for port, tag in tagged_ports:
-            label = port if tag is None else f"{port} ({tag})"
-            self.port_combo_box.addItem(label, port)
+        ports = [port for port, _ in tagged_ports]
+        view_ports = [self.port_combo_box.itemData(i) for i in range(self.port_combo_box.count())]
 
-        index = self.port_combo_box.findData(app_model.serial_connection_port)
-        self.port_combo_box.setCurrentIndex(index)
+        with QtCore.QSignalBlocker(self.port_combo_box):
+            if ports != view_ports:
+                self.port_combo_box.clear()
+                for port, tag in tagged_ports:
+                    label = port if tag is None else f"{port} ({tag})"
+                    self.port_combo_box.addItem(label, port)
 
-        self.port_combo_box.blockSignals(False)
+            index = self.port_combo_box.findData(app_model.serial_connection_port)
+            self.port_combo_box.setCurrentIndex(index)
 
 
 class ClientConnectionWidget(AppModelAwareWidget):
