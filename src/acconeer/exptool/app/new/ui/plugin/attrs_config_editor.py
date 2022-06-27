@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import partial
 from typing import Any, Generic, Mapping, Optional, TypeVar
 
 import attrs
@@ -35,11 +36,9 @@ class AttrsConfigEditor(QWidget, Generic[T]):
 
         self._pidget_mapping: Mapping[str, ParameterWidget] = {}
 
-        for aspect, (factory, f) in factory_mapping.items():
+        for aspect, factory in factory_mapping.items():
             pidget = factory.create(group_box)
-            pidget.sig_parameter_changed.connect(
-                lambda val: self._update_config_aspect(aspect, val if (f is None) else f(val))
-            )
+            pidget.sig_parameter_changed.connect(partial(self._update_config_aspect, aspect))
             group_box.layout().addWidget(pidget)
 
             self._pidget_mapping[aspect] = pidget

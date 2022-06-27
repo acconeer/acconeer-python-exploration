@@ -264,63 +264,45 @@ class ViewPlugin(DetectorViewPluginBase):
     @classmethod
     def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "start_m": (
-                pidgets.FloatParameterWidgetFactory(
-                    name_label_text="Range start",
-                    suffix=" m",
-                    decimals=3,
-                ),
-                None,
+            "start_m": pidgets.FloatParameterWidgetFactory(
+                name_label_text="Range start",
+                suffix=" m",
+                decimals=3,
             ),
-            "end_m": (
-                pidgets.FloatParameterWidgetFactory(
-                    name_label_text="Range end",
-                    suffix=" m",
-                    decimals=3,
-                ),
-                None,
+            "end_m": pidgets.FloatParameterWidgetFactory(
+                name_label_text="Range end",
+                suffix=" m",
+                decimals=3,
             ),
-            "max_step_length": (
-                pidgets.OptionalIntParameterWidgetFactory(
-                    name_label_text="Max step length",
-                    checkbox_label_text="Set",
-                    limits=(1, None),
-                    init_set_value=12,
-                ),
-                None,
+            "max_step_length": pidgets.OptionalIntParameterWidgetFactory(
+                name_label_text="Max step length",
+                checkbox_label_text="Set",
+                limits=(1, None),
+                init_set_value=12,
             ),
-            "max_profile": (
-                pidgets.EnumParameterWidgetFactory(
-                    name_label_text="Max profile",
-                    enum_type=a121.Profile,
-                    label_mapping={
-                        a121.Profile.PROFILE_1: "1 (shortest)",
-                        a121.Profile.PROFILE_2: "2",
-                        a121.Profile.PROFILE_3: "3",
-                        a121.Profile.PROFILE_4: "4",
-                        a121.Profile.PROFILE_5: "5 (longest)",
-                    },
-                ),
-                None,
+            "max_profile": pidgets.EnumParameterWidgetFactory(
+                name_label_text="Max profile",
+                enum_type=a121.Profile,
+                label_mapping={
+                    a121.Profile.PROFILE_1: "1 (shortest)",
+                    a121.Profile.PROFILE_2: "2",
+                    a121.Profile.PROFILE_3: "3",
+                    a121.Profile.PROFILE_4: "4",
+                    a121.Profile.PROFILE_5: "5 (longest)",
+                },
             ),
-            "num_frames_in_recorded_threshold": (
-                pidgets.IntParameterWidgetFactory(
-                    name_label_text="Num frames in rec. thr.",
-                    limits=(1, None),
-                ),
-                None,
+            "num_frames_in_recorded_threshold": pidgets.IntParameterWidgetFactory(
+                name_label_text="Num frames in rec. thr.",
+                limits=(1, None),
             ),
-            "threshold_method": (
-                pidgets.EnumParameterWidgetFactory(
-                    name_label_text="Threshold method",
-                    enum_type=ThresholdMethod,
-                    label_mapping={
-                        ThresholdMethod.CFAR: "CFAR",
-                        ThresholdMethod.FIXED: "Fixed",
-                        ThresholdMethod.RECORDED: "Recorded",
-                    },
-                ),
-                None,
+            "threshold_method": pidgets.EnumParameterWidgetFactory(
+                name_label_text="Threshold method",
+                enum_type=ThresholdMethod,
+                label_mapping={
+                    ThresholdMethod.CFAR: "CFAR",
+                    ThresholdMethod.FIXED: "Fixed",
+                    ThresholdMethod.RECORDED: "Recorded",
+                },
             ),
         }
 

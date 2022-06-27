@@ -51,18 +51,15 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "amplitude_method": (
-                pidgets.EnumParameterWidgetFactory(
-                    enum_type=AmplitudeMethod,
-                    name_label_text="Amplitude method:",
-                    label_mapping={
-                        AmplitudeMethod.COHERENT: "Coherent",
-                        AmplitudeMethod.NONCOHERENT: "Non-coherent",
-                        AmplitudeMethod.FFT_MAX: "FFT Max",
-                    },
-                ),
-                None,
-            ),
+            "amplitude_method": pidgets.EnumParameterWidgetFactory(
+                enum_type=AmplitudeMethod,
+                name_label_text="Amplitude method:",
+                label_mapping={
+                    AmplitudeMethod.COHERENT: "Coherent",
+                    AmplitudeMethod.NONCOHERENT: "Non-coherent",
+                    AmplitudeMethod.FFT_MAX: "FFT Max",
+                },
+            )
         }
 
     @classmethod

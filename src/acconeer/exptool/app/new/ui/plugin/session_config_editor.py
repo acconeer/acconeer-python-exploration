@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Mapping, Optional
+from functools import partial
+from typing import Any, Mapping, Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
@@ -44,139 +45,88 @@ class SessionConfigEditor(QWidget):
         a121.PRF.PRF_6_5_MHz: "6.5 MHz",
     }
     SESSION_CONFIG_FACTORIES: PidgetFactoryMapping = {
-        "update_rate": (
-            pidgets.OptionalFloatParameterWidgetFactory(
-                name_label_text="Update rate:",
-                limits=(0.1, 1e4),
-                decimals=1,
-                init_set_value=10.0,
-                suffix="Hz",
-                checkbox_label_text="Limit",
-            ),
-            lambda val: None if (val is None) else float(val),
+        "update_rate": pidgets.OptionalFloatParameterWidgetFactory(
+            name_label_text="Update rate:",
+            limits=(0.1, 1e4),
+            decimals=1,
+            init_set_value=10.0,
+            suffix="Hz",
+            checkbox_label_text="Limit",
         )
     }
     SENSOR_CONFIG_FACTORIES: PidgetFactoryMapping = {
-        "sweeps_per_frame": (
-            pidgets.IntParameterWidgetFactory(
-                name_label_text="Sweeps per frame:",
-                limits=(1, 4095),
-            ),
-            int,
+        "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
+            name_label_text="Sweeps per frame:",
+            limits=(1, 4095),
         ),
-        "sweep_rate": (
-            pidgets.OptionalFloatParameterWidgetFactory(
-                name_label_text="Sweep rate:",
-                limits=(1, 1e6),
-                decimals=0,
-                init_set_value=1000.0,
-                suffix="Hz",
-                checkbox_label_text="Limit",
-            ),
-            lambda val: None if (val is None) else float(val),
+        "sweep_rate": pidgets.OptionalFloatParameterWidgetFactory(
+            name_label_text="Sweep rate:",
+            limits=(1, 1e6),
+            decimals=0,
+            init_set_value=1000.0,
+            suffix="Hz",
+            checkbox_label_text="Limit",
         ),
-        "frame_rate": (
-            pidgets.OptionalFloatParameterWidgetFactory(
-                name_label_text="Frame rate:",
-                limits=(0.1, 1e4),
-                decimals=1,
-                init_set_value=10.0,
-                suffix="Hz",
-                checkbox_label_text="Limit",
-            ),
-            lambda val: None if (val is None) else float(val),
+        "frame_rate": pidgets.OptionalFloatParameterWidgetFactory(
+            name_label_text="Frame rate:",
+            limits=(0.1, 1e4),
+            decimals=1,
+            init_set_value=10.0,
+            suffix="Hz",
+            checkbox_label_text="Limit",
         ),
-        "inter_sweep_idle_state": (
-            pidgets.EnumParameterWidgetFactory(
-                enum_type=a121.IdleState,
-                name_label_text="Inter sweep idle state:",
-                label_mapping=IDLE_STATE_LABEL_MAP,
-            ),
-            a121.IdleState,
+        "inter_sweep_idle_state": pidgets.EnumParameterWidgetFactory(
+            enum_type=a121.IdleState,
+            name_label_text="Inter sweep idle state:",
+            label_mapping=IDLE_STATE_LABEL_MAP,
         ),
-        "inter_frame_idle_state": (
-            pidgets.EnumParameterWidgetFactory(
-                enum_type=a121.IdleState,
-                name_label_text="Inter frame idle state:",
-                label_mapping=IDLE_STATE_LABEL_MAP,
-            ),
-            a121.IdleState,
+        "inter_frame_idle_state": pidgets.EnumParameterWidgetFactory(
+            enum_type=a121.IdleState,
+            name_label_text="Inter frame idle state:",
+            label_mapping=IDLE_STATE_LABEL_MAP,
         ),
-        "continuous_sweep_mode": (
-            pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Continuous sweep mode",
-            ),
-            bool,
+        "continuous_sweep_mode": pidgets.CheckboxParameterWidgetFactory(
+            name_label_text="Continuous sweep mode",
         ),
     }
     SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
-        "start_point": (
-            pidgets.IntParameterWidgetFactory(
-                name_label_text="Start point:",
-            ),
-            int,
+        "start_point": pidgets.IntParameterWidgetFactory(
+            name_label_text="Start point:",
         ),
-        "num_points": (
-            pidgets.IntParameterWidgetFactory(
-                name_label_text="Number of points:",
-                limits=(1, 4095),
-            ),
-            int,
+        "num_points": pidgets.IntParameterWidgetFactory(
+            name_label_text="Number of points:",
+            limits=(1, 4095),
         ),
-        "step_length": (
-            pidgets.IntParameterWidgetFactory(
-                name_label_text="Step length:",
-                limits=(1, None),
-            ),
-            int,
+        "step_length": pidgets.IntParameterWidgetFactory(
+            name_label_text="Step length:",
+            limits=(1, None),
         ),
-        "hwaas": (
-            pidgets.IntParameterWidgetFactory(
-                name_label_text="HWAAS:",
-                limits=(1, 511),
-            ),
-            int,
+        "hwaas": pidgets.IntParameterWidgetFactory(
+            name_label_text="HWAAS:",
+            limits=(1, 511),
         ),
-        "receiver_gain": (
-            pidgets.IntParameterWidgetFactory(
-                name_label_text="Receiver gain:",
-                limits=(0, 23),
-            ),
-            int,
+        "receiver_gain": pidgets.IntParameterWidgetFactory(
+            name_label_text="Receiver gain:",
+            limits=(0, 23),
         ),
-        "profile": (
-            pidgets.EnumParameterWidgetFactory(
-                enum_type=a121.Profile,
-                name_label_text="Profile:",
-                label_mapping=PROFILE_LABEL_MAP,
-            ),
-            a121.Profile,
+        "profile": pidgets.EnumParameterWidgetFactory(
+            enum_type=a121.Profile,
+            name_label_text="Profile:",
+            label_mapping=PROFILE_LABEL_MAP,
         ),
-        "prf": (
-            pidgets.EnumParameterWidgetFactory(
-                enum_type=a121.PRF,
-                name_label_text="PRF:",
-                label_mapping=PRF_LABEL_MAP,
-            ),
-            a121.PRF,
+        "prf": pidgets.EnumParameterWidgetFactory(
+            enum_type=a121.PRF,
+            name_label_text="PRF:",
+            label_mapping=PRF_LABEL_MAP,
         ),
-        "enable_tx": (
-            pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable transmitter",
-            ),
-            bool,
+        "enable_tx": pidgets.CheckboxParameterWidgetFactory(
+            name_label_text="Enable transmitter",
         ),
-        "enable_loopback": (
-            pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable loopback",
-            ),
-            bool,
+        "enable_loopback": pidgets.CheckboxParameterWidgetFactory(
+            name_label_text="Enable loopback",
         ),
-        "phase_enhancement": (
-            pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Phase enhancement",
-            ),
-            bool,
+        "phase_enhancement": pidgets.CheckboxParameterWidgetFactory(
+            name_label_text="Phase enhancement",
         ),
     }
 
@@ -196,11 +146,11 @@ class SessionConfigEditor(QWidget):
         self.layout().addWidget(self.session_group_box)
 
         self._session_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
-        for aspect, (factory, func) in self.SESSION_CONFIG_FACTORIES.items():
+        for aspect, factory in self.SESSION_CONFIG_FACTORIES.items():
             pidget = factory.create(self.session_group_box)
             self.session_group_box.layout().addWidget(pidget)
 
-            self._setup_session_config_pidget(pidget, aspect, func)
+            self._setup_session_config_pidget(pidget, aspect)
 
             self._all_pidgets.append(pidget)
             self._session_config_pidgets[aspect] = pidget
@@ -212,11 +162,11 @@ class SessionConfigEditor(QWidget):
         self.layout().addWidget(self.sensor_group_box)
 
         self._sensor_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
-        for aspect, (factory, func) in self.SENSOR_CONFIG_FACTORIES.items():
+        for aspect, factory in self.SENSOR_CONFIG_FACTORIES.items():
             pidget = factory.create(self.sensor_group_box)
             self.sensor_group_box.layout().addWidget(pidget)
 
-            self._setup_sensor_config_pidget(pidget, aspect, func)
+            self._setup_sensor_config_pidget(pidget, aspect)
 
             self._all_pidgets.append(pidget)
             self._sensor_config_pidgets[aspect] = pidget
@@ -233,11 +183,11 @@ class SessionConfigEditor(QWidget):
         self.subsweep_group_box.layout().addWidget(self.range_help_view)
 
         self._subsweep_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
-        for aspect, (factory, func) in self.SUBSWEEP_CONFIG_FACTORIES.items():
+        for aspect, factory in self.SUBSWEEP_CONFIG_FACTORIES.items():
             pidget = factory.create(self.subsweep_group_box)
             self.subsweep_group_box.layout().addWidget(pidget)
 
-            self._setup_subsweep_config_pidget(pidget, aspect, func)
+            self._setup_subsweep_config_pidget(pidget, aspect)
 
             self._all_pidgets.append(pidget)
             self._subsweep_config_pidgets[aspect] = pidget
@@ -303,32 +253,14 @@ class SessionConfigEditor(QWidget):
 
         self._broadcast()
 
-    def _setup_session_config_pidget(
-        self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
-    ) -> None:
-        pidget.sig_parameter_changed.connect(
-            lambda val: self._update_session_config_aspect(
-                aspect, val if (func is None) else func(val)
-            )
-        )
+    def _setup_session_config_pidget(self, pidget: pidgets.ParameterWidget, aspect: str) -> None:
+        pidget.sig_parameter_changed.connect(partial(self._update_session_config_aspect, aspect))
 
-    def _setup_sensor_config_pidget(
-        self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
-    ) -> None:
-        pidget.sig_parameter_changed.connect(
-            lambda val: self._update_sensor_config_aspect(
-                aspect, val if (func is None) else func(val)
-            )
-        )
+    def _setup_sensor_config_pidget(self, pidget: pidgets.ParameterWidget, aspect: str) -> None:
+        pidget.sig_parameter_changed.connect(partial(self._update_sensor_config_aspect, aspect))
 
-    def _setup_subsweep_config_pidget(
-        self, pidget: pidgets.ParameterWidget, aspect: str, func: Optional[Callable[[Any], Any]]
-    ) -> None:
-        pidget.sig_parameter_changed.connect(
-            lambda val: self._update_subsweep_config_aspect(
-                aspect, val if (func is None) else func(val)
-            )
-        )
+    def _setup_subsweep_config_pidget(self, pidget: pidgets.ParameterWidget, aspect: str) -> None:
+        pidget.sig_parameter_changed.connect(partial(self._update_subsweep_config_aspect, aspect))
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> None:
         if result.aspect is None or self._session_config is None:
