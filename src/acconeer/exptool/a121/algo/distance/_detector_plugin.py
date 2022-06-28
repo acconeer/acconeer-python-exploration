@@ -6,6 +6,7 @@ from typing import Any, Callable, Optional
 
 import attrs
 import numpy as np
+import qtawesome as qta
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
@@ -19,6 +20,7 @@ from acconeer.exptool.a121.algo._plugins import (
     DetectorViewPluginBase,
 )
 from acconeer.exptool.app.new import (
+    BUTTON_ICON_COLOR,
     AppModel,
     BusyMessage,
     ConnectionState,
@@ -242,9 +244,17 @@ class ViewPlugin(DetectorViewPluginBase):
 
         # TODO: Fix parents
 
-        self.start_button = QPushButton("Start measurement", self.view_widget)
+        self.start_button = QPushButton(
+            qta.icon("fa5s.play-circle", color=BUTTON_ICON_COLOR),
+            "Start measurement",
+            self.view_widget,
+        )
         self.start_button.clicked.connect(self._send_start_request)
-        self.stop_button = QPushButton("Stop", self.view_widget)
+        self.stop_button = QPushButton(
+            qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
+            "Stop",
+            self.view_widget,
+        )
         self.stop_button.clicked.connect(self._send_stop_request)
 
         button_group = GridGroupBox("Controls", parent=self.view_widget)
