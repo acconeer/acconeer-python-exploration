@@ -186,19 +186,39 @@ class Detector:
             assert threshold is not None  # Since we know what mode the processor is running in
             self.context.recorded_thresholds.append(threshold)
 
-    @property
-    def close_range_calibrated(self) -> bool:
-        has_dl = self.context.direct_leakage is not None
-        has_pjcr = self.context.phase_jitter_comp_reference is not None
+    @staticmethod
+    def _close_range_calibrated(context: DetectorContext) -> bool:
+        has_dl = context.direct_leakage is not None
+        has_pjcr = context.phase_jitter_comp_reference is not None
 
         if has_dl != has_pjcr:
             raise RuntimeError
 
         return has_dl and has_pjcr
 
-    @property
-    def recorded_threshold_calibrated(self) -> bool:
-        return self.context.recorded_thresholds is not None
+    @staticmethod
+    def _recorded_threshold_calibrated(context: DetectorContext) -> bool:
+        return context.recorded_thresholds is not None
+
+    @classmethod
+    def _has_close_range_measurement(self, config: DetectorConfig) -> bool:
+        (
+            _,
+            specs,
+        ) = self._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+        return MeasurementType.CLOSE_RANGE in [
+            spec.processor_config.measurement_type for spec in specs
+        ]
+
+    @classmethod
+    def _has_recorded_threshold_mode(self, config: DetectorConfig) -> bool:
+        (
+            _,
+            processor_specs,
+        ) = self._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+        return ThresholdMethod.RECORDED in [
+            spec.processor_config.threshold_method for spec in processor_specs
+        ]
 
     def start(self) -> None:
         if self.started:
@@ -634,17 +654,14 @@ class Detector:
         2. Recorded threshold requires recorded threshold calibration to be performed
         """
 
-        has_close_range_mode = MeasurementType.CLOSE_RANGE in [
-            spec.processor_config.measurement_type for spec in self.processor_specs
-        ]
-
-        if has_close_range_mode:
-            if not (self.close_range_calibrated and self.recorded_threshold_calibrated):
+        if self._has_close_range_measurement(self.detector_config):
+            if not (
+                self._close_range_calibrated(self.context)
+                and self._recorded_threshold_calibrated(self.context)
+            ):
                 raise ValueError("Detector not calibrated.")
 
-        has_recorded_threshold_mode = ThresholdMethod.RECORDED in [
-            spec.processor_config.threshold_method for spec in self.processor_specs
-        ]
-
-        if has_recorded_threshold_mode and not self.recorded_threshold_calibrated:
+        if self._has_recorded_threshold_mode(
+            self.detector_config
+        ) and not self._recorded_threshold_calibrated(self.context):
             raise ValueError("Detector not calibrated.")
