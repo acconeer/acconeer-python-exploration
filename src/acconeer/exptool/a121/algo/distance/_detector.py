@@ -40,6 +40,10 @@ class DetectorContext:
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_thresholds: Optional[List[npt.NDArray[np.float_]]] = attrs.field(default=None)
+    recorded_threshold_session_config_used: Optional[a121.SessionConfig] = attrs.field(
+        default=None
+    )
+    close_range_session_config_used: Optional[a121.SessionConfig] = attrs.field(default=None)
 
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
 
@@ -142,6 +146,7 @@ class Detector:
         self.context.direct_leakage = processor_result.direct_leakage
         assert processor_result.phase_jitter_comp_reference is not None
         self.context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
+        self.context.close_range_session_config_used = self.session_config
 
     def record_threshold(self) -> None:
         if self.started:
@@ -183,6 +188,7 @@ class Detector:
             threshold = processor_result.recorded_threshold
             assert threshold is not None  # Since we know what mode the processor is running in
             self.context.recorded_thresholds.append(threshold)
+        self.context.recorded_threshold_session_config_used = self.session_config
 
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
@@ -223,6 +229,7 @@ class Detector:
             raise RuntimeError("Already started")
 
         self._ensure_detector_is_calibrated()
+        self._ensure_matching_session_config()
 
         specs = self._add_context_to_processor_spec(self.processor_specs)
         extended_metadata = self.client.setup_session(self.session_config)
@@ -679,3 +686,16 @@ class Detector:
             self.detector_config
         ) and not self._recorded_threshold_calibrated(self.context):
             raise ValueError("Detector not calibrated.")
+
+    def _ensure_matching_session_config(self) -> None:
+        """
+        Check if session config matches session config used during calibration
+        """
+
+        if self._has_close_range_measurement(self.detector_config):
+            if self.context.close_range_session_config_used != self.session_config:
+                raise ValueError("Session config does not match config used during calibration")
+
+        if self._has_recorded_threshold_mode(self.detector_config):
+            if self.context.recorded_threshold_session_config_used != self.session_config:
+                raise ValueError("Session config does not match config used during calibration")
