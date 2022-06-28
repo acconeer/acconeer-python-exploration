@@ -45,8 +45,10 @@ class A121PlotPluginBase(PlotPlugin):
         if not self._is_setup or self._plot_job is None:
             return
 
-        self.update_from_message(self._plot_job)
-        self._plot_job = None
+        try:
+            self.update_from_message(self._plot_job)
+        finally:
+            self._plot_job = None
 
     @abc.abstractmethod
     def setup_from_message(self, message: Message) -> None:
