@@ -278,6 +278,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.dist_history_plot.addLegend()
         self.dist_history_plot.setLabel("left", "Estimated distance (m)")
         self.dist_history_plot.addItem(pg.PlotDataItem())
+        self.dist_history_plot.setXRange(0, len(self.distance_history))
 
         pen = et.utils.pg_pen_cycler(0)
         brush = et.utils.pg_brush_cycler(0)
@@ -302,7 +303,11 @@ class PlotPlugin(DetectorPlotPluginBase):
             self.threshold_curves[idx].setData(
                 processor_result.extra_result.distances_m, threshold
             )
-        self.dist_history_curve.setData(self.distance_history)
+
+        if np.any(~np.isnan(self.distance_history)):
+            self.dist_history_curve.setData(self.distance_history)
+        else:
+            self.dist_history_curve.setData([])
 
 
 class ViewPlugin(DetectorViewPluginBase):
