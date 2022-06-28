@@ -10,7 +10,7 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoConfigBase
 
-from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
+from ._aggregator import Aggregator, AggregatorConfig, PeakSortingMethod, ProcessorSpec
 from ._processors import (
     DEFAULT_CFAR_ONE_SIDED,
     DEFAULT_CFAR_SENSITIVITY,
@@ -54,6 +54,10 @@ class DetectorConfig(AlgoConfigBase):
     threshold_method: ThresholdMethod = attrs.field(
         default=ThresholdMethod.CFAR,
         converter=ThresholdMethod,
+    )
+    peaksorting_method: PeakSortingMethod = attrs.field(
+        default=PeakSortingMethod.STRONGEST,
+        converter=PeakSortingMethod,
     )
 
     num_frames_in_recorded_threshold: int = attrs.field(default=20)
@@ -203,10 +207,13 @@ class Detector:
         extended_metadata = self.client.setup_session(self.session_config)
         assert isinstance(extended_metadata, list)
 
+        aggregator_config = AggregatorConfig(
+            peak_sorting_method=self.detector_config.peaksorting_method
+        )
         self.aggregator = Aggregator(
             session_config=self.session_config,
             extended_metadata=extended_metadata,
-            aggregator_config=AggregatorConfig(),
+            aggregator_config=aggregator_config,
             specs=specs,
         )
 
