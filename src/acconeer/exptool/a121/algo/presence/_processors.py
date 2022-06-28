@@ -101,7 +101,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         # Fixed parameters
         self.noise_est_diff_order = 3
-        noise_tc = 1.0
+        noise_tc = 10.0
 
         if self.sweeps_per_frame <= self.noise_est_diff_order:
             raise ValueError(
