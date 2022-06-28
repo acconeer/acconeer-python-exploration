@@ -3,9 +3,9 @@ from acconeer.exptool import a121
 
 # Client is an object that is used to interact with the sensor.
 client = a121.Client(
-    ip_address="<ip address of host (like a RPi). E.g. 192.168.XXX.YYY>",
+    # ip_address="<ip address of host (like a RPi). E.g. 192.168.XXX.YYY>",
     # or
-    serial_port="<serial port of module. E.g. COM3 or /dev/ttyUSBx for Window/Linux>",
+    # serial_port="<serial port of module. E.g. COM3 or /dev/ttyUSBx for Window/Linux>",
 )
 
 # Establishes a connection to the server running on the sensor.
