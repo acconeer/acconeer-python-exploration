@@ -184,6 +184,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.sweep_plot.showGrid(x=True, y=True)
         self.sweep_plot.addLegend()
         self.sweep_plot.setLabel("left", "Amplitude")
+        self.sweep_plot.setLabel("bottom", "Distance (m)")
         self.sweep_plot.addItem(pg.PlotDataItem())
 
         pen = et.utils.pg_pen_cycler(0)
@@ -202,7 +203,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.dist_history_plot.setMenuEnabled(False)
         self.dist_history_plot.showGrid(x=True, y=True)
         self.dist_history_plot.addLegend()
-        self.dist_history_plot.setLabel("left", "Estimated_distance")
+        self.dist_history_plot.setLabel("left", "Estimated distance (m)")
         self.dist_history_plot.addItem(pg.PlotDataItem())
 
         pen = et.utils.pg_pen_cycler(0)
@@ -222,13 +223,11 @@ class PlotPlugin(DetectorPlotPluginBase):
             assert processor_result.extra_result.distances_m is not None
 
             threshold = processor_result.extra_result.used_threshold
-            valid_threshold_idx = np.where(~np.isnan(threshold))[0]
-            threshold = threshold[valid_threshold_idx]
             self.sweep_curves[idx].setData(
                 processor_result.extra_result.distances_m, processor_result.extra_result.abs_sweep
             )
             self.threshold_curves[idx].setData(
-                processor_result.extra_result.distances_m[valid_threshold_idx], threshold
+                processor_result.extra_result.distances_m, threshold
             )
         self.dist_history_curve.setData(self.distance_history)
 
