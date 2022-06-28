@@ -1,5 +1,3 @@
-import sys
-
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
     _H5PY_STR_DTYPE,
@@ -33,12 +31,3 @@ from ._core import (
 )
 from ._core_ext import _ReplayingClient, _StopReplay
 from ._perf_calc import _PerformanceCalc
-
-
-if "pytest" not in sys.modules:
-    import warnings
-
-    warnings.warn(
-        "The a121 package is currently an unstable API and may change at any time.",
-        FutureWarning,
-    )
