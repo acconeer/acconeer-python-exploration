@@ -8,7 +8,7 @@ import attrs
 import numpy as np
 import qtawesome as qta
 
-from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
 
@@ -42,7 +42,14 @@ from acconeer.exptool.app.new.ui.plugin import (
     pidgets,
 )
 
-from ._detector import Detector, DetectorConfig, DetectorResult, ThresholdMethod
+from ._detector import (
+    Detector,
+    DetectorConfig,
+    DetectorContext,
+    DetectorResult,
+    PeakSortingMethod,
+    ThresholdMethod,
+)
 
 
 log = logging.getLogger(__name__)
@@ -51,6 +58,17 @@ log = logging.getLogger(__name__)
 @attrs.mutable(kw_only=True)
 class SharedState:
     config: DetectorConfig = attrs.field()
+    context: DetectorContext = attrs.field(factory=DetectorContext)
+
+    @property
+    def has_recorded_threshold(self) -> bool:
+        # TODO: Implement in detector
+        return self.context.recorded_thresholds is not None
+
+    @property
+    def has_close_range_calibration(self) -> bool:
+        # TODO: Implement in detector
+        return self.context.phase_jitter_comp_reference is not None
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
@@ -91,6 +109,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self.__execute_start()
         elif task_name == "stop_session":
             self.__execute_stop()
+        elif task_name == "record_threshold":
+            self.__execute_record_threshold()
+        elif task_name == "calibrate_close_range":
+            self.__execute_calibrate_close_range()
         elif task_name == "update_config":
             config = task_kwargs["config"]
             assert isinstance(config, DetectorConfig)
@@ -119,6 +141,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             client=self._client,
             sensor_id=1,
             detector_config=self.shared_state.config,
+            context=self.shared_state.context,
         )
 
         self._detector_instance.start()
@@ -161,6 +184,54 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         result = self._detector_instance.get_next()
 
         self.callback(DataMessage("plot", result, recipient="plot_plugin"))
+
+    def __execute_record_threshold(self) -> None:
+        if self._started:
+            raise RuntimeError
+
+        if self._client is None:
+            raise RuntimeError
+
+        if not self._client.connected:
+            raise RuntimeError
+
+        self.callback(BusyMessage())
+
+        self._detector_instance = Detector(
+            client=self._client,
+            sensor_id=1,
+            detector_config=self.shared_state.config,
+            context=self.shared_state.context,
+        )
+        self._detector_instance.record_threshold()
+        self.shared_state.context = self._detector_instance.context
+
+        self.callback(IdleMessage())
+        self.broadcast()
+
+    def __execute_calibrate_close_range(self) -> None:
+        if self._started:
+            raise RuntimeError
+
+        if self._client is None:
+            raise RuntimeError
+
+        if not self._client.connected:
+            raise RuntimeError
+
+        self.callback(BusyMessage())
+
+        self._detector_instance = Detector(
+            client=self._client,
+            sensor_id=1,
+            detector_config=self.shared_state.config,
+            context=self.shared_state.context,
+        )
+        self._detector_instance.calibrate_close_range()
+        self.shared_state.context = self._detector_instance.context
+
+        self.callback(IdleMessage())
+        self.broadcast()
 
 
 class PlotPlugin(DetectorPlotPluginBase):
@@ -257,9 +328,30 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         self.stop_button.clicked.connect(self._send_stop_request)
 
+        self.record_threshold_button = QPushButton(
+            qta.icon("fa.video-camera", color=BUTTON_ICON_COLOR),
+            "Record threshold",
+            self.view_widget,
+        )
+        self.record_threshold_button.clicked.connect(self._on_record_threshold)
+
+        self.close_range_calibration_button = QPushButton(
+            qta.icon("mdi.adjust", color=BUTTON_ICON_COLOR),
+            "Calibrate close range",
+            self.view_widget,
+        )
+        self.close_range_calibration_button.clicked.connect(self._on_close_range_calibration)
+
+        self.record_threshold_status = QLabel(self.view_widget)
+        self.close_range_calibration_status = QLabel(self.view_widget)
+
         button_group = GridGroupBox("Controls", parent=self.view_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
+        button_group.layout().addWidget(self.close_range_calibration_button, 1, 0)
+        button_group.layout().addWidget(self.record_threshold_button, 1, 1)
+        button_group.layout().addWidget(self.close_range_calibration_status, 2, 0, 1, -1)
+        button_group.layout().addWidget(self.record_threshold_status, 3, 0, 1, -1)
         self.view_layout.addWidget(button_group)
 
         self.config_editor = AttrsConfigEditor[DetectorConfig](
@@ -315,21 +407,65 @@ class ViewPlugin(DetectorViewPluginBase):
                     ThresholdMethod.RECORDED: "Recorded",
                 },
             ),
+            "peaksorting_method": pidgets.EnumParameterWidgetFactory(
+                name_label_text="Peak sorting method",
+                enum_type=PeakSortingMethod,
+                label_mapping={
+                    PeakSortingMethod.STRONGEST: "Strongest",
+                    PeakSortingMethod.CLOSEST: "Closest",
+                    PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
+                },
+            ),
+            "sc_bg_num_std_dev": pidgets.FloatParameterWidgetFactory(
+                name_label_text="Std. devs. in rec. threshold",
+                decimals=1,
+                limits=(0, None),
+            ),
+            "fixed_threshold_value": pidgets.FloatParameterWidgetFactory(
+                name_label_text="Fixed threshold value",
+                decimals=1,
+                limits=(0, None),
+            ),
+            "cfar_sensitivity": pidgets.FloatParameterWidgetFactory(
+                name_label_text="CFAR sensitivity",
+                decimals=2,
+                limits=(0, 1),
+            ),
+            "cfar_one_sided": pidgets.CheckboxParameterWidgetFactory(
+                name_label_text="CFAR one sided",
+            ),
         }
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.start_button.setEnabled(
+
+        startable = (
             app_model.plugin_state == PluginState.LOADED_IDLE
             and app_model.connection_state == ConnectionState.CONNECTED
         )
+        self.start_button.setEnabled(startable)
+        self.record_threshold_button.setEnabled(startable)
+        self.close_range_calibration_button.setEnabled(startable)
+
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
         if app_model.backend_plugin_state is None:
             self.config_editor.set_data(None)
+            self.record_threshold_status.setText("")
+            self.close_range_calibration_status.setText("")
         else:
-            assert isinstance(app_model.backend_plugin_state, SharedState)
-            self.config_editor.set_data(app_model.backend_plugin_state.config)
+            state = app_model.backend_plugin_state
+            assert isinstance(state, SharedState)
+
+            self.config_editor.set_data(state.config)
+
+            text = "Threshold recorded: "
+            text += "Yes" if state.has_recorded_threshold else "No"
+            self.record_threshold_status.setText(text)
+
+            text = "Close range calibrated: "
+            text += "Yes" if state.has_close_range_calibration else "No"
+            self.close_range_calibration_status.setText(text)
 
     # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
@@ -353,6 +489,14 @@ class ViewPlugin(DetectorViewPluginBase):
     def _send_stop_request(self) -> None:
         self.send_backend_task(("stop_session", {}))
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
+
+    def _on_record_threshold(self) -> None:
+        self.send_backend_task(("record_threshold", {}))
+        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
+
+    def _on_close_range_calibration(self) -> None:
+        self.send_backend_task(("calibrate_close_range", {}))
+        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     # TODO: move to detector base (?)
     def teardown(self) -> None:
