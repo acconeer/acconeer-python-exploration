@@ -14,7 +14,7 @@ from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorB
 
 DEFAULT_SC_BG_NUM_STD_DEV = 6.0
 DEFAULT_FIXED_THRESHOLD_VALUE = 100.0
-DEFAULT_CFAR_SENSITIVITY = 0.25
+DEFAULT_THRESHOLD_SENSITIVITY = 0.25
 DEFAULT_CFAR_ONE_SIDED = False
 
 
@@ -46,11 +46,10 @@ class ProcessorConfig(AlgoConfigBase):
     measurement_type: MeasurementType = attrs.field(
         default=MeasurementType.FAR_RANGE, converter=MeasurementType
     )
-    sc_bg_num_std_dev: float = attrs.field(default=DEFAULT_SC_BG_NUM_STD_DEV)
+    threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
     cfar_guard_length_m: Optional[float] = attrs.field(default=None)
     cfar_window_length_m: Optional[float] = attrs.field(default=None)
-    cfar_sensitivity: float = attrs.field(default=DEFAULT_CFAR_SENSITIVITY)
     cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
 
 
@@ -175,6 +174,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
+        self.threshold_sensitivity = self.processor_config.threshold_sensitivity
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             self._init_process_distance_estimation()
@@ -308,7 +308,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         elif self.threshold_method == ThresholdMethod.CFAR:
             self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
             self.cfar_one_sided = self.processor_config.cfar_one_sided
-            self.cfar_sensitivity = self.processor_config.cfar_sensitivity
             window_length = self._calc_cfar_window_length(self.profile, self.step_length)
             guard_half_length = self._calc_cfar_guard_half_length(self.profile, self.step_length)
             self.idx_cfar_pts = guard_half_length + np.arange(window_length)
@@ -365,7 +364,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.bg_sc_mean = np.zeros(self.num_points_cropped)
         self.bg_sc_sum_squared_bg_sweeps = np.zeros(self.num_points_cropped)
         self.sc_bg_num_sweeps = 1.0
-        self.sc_bg_num_std_dev = self.processor_config.sc_bg_num_std_dev
 
     def _process_recorded_threshold_calibration(
         self, abs_sweep: npt.NDArray[np.float_]
@@ -384,7 +382,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 * self.sc_bg_num_sweeps
                 / (self.sc_bg_num_sweeps - 1)
             )
-            threshold = mean_sweep + self.sc_bg_num_std_dev * sc_bg_sweep_std
+            threshold = mean_sweep + sc_bg_sweep_std * 1.0 / (self.threshold_sensitivity + 1e-10)
         else:
             threshold = None
 
@@ -406,7 +404,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             return self._calculate_cfar_threshold(
                 abs_sweep,
                 self.idx_cfar_pts,
-                self.cfar_sensitivity,
+                self.threshold_sensitivity,
                 self.cfar_one_sided,
                 self.context,
             )

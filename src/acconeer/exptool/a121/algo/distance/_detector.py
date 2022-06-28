@@ -13,9 +13,8 @@ from acconeer.exptool.a121.algo import AlgoConfigBase
 from ._aggregator import Aggregator, AggregatorConfig, PeakSortingMethod, ProcessorSpec
 from ._processors import (
     DEFAULT_CFAR_ONE_SIDED,
-    DEFAULT_CFAR_SENSITIVITY,
     DEFAULT_FIXED_THRESHOLD_VALUE,
-    DEFAULT_SC_BG_NUM_STD_DEV,
+    DEFAULT_THRESHOLD_SENSITIVITY,
     MeasurementType,
     Processor,
     ProcessorConfig,
@@ -61,9 +60,8 @@ class DetectorConfig(AlgoConfigBase):
     )
 
     num_frames_in_recorded_threshold: int = attrs.field(default=20)
-    sc_bg_num_std_dev: float = attrs.field(default=DEFAULT_SC_BG_NUM_STD_DEV)
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
-    cfar_sensitivity: float = attrs.field(default=DEFAULT_CFAR_SENSITIVITY)
+    threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
     cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
 
 
@@ -315,8 +313,7 @@ class Detector:
             processor_config = ProcessorConfig(
                 threshold_method=config.threshold_method,
                 fixed_threshold_value=config.fixed_threshold_value,
-                sc_bg_num_std_dev=config.sc_bg_num_std_dev,
-                cfar_sensitivity=config.cfar_sensitivity,
+                threshold_sensitivity=config.threshold_sensitivity,
                 cfar_one_sided=config.cfar_one_sided,
             )
 

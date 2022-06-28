@@ -416,18 +416,13 @@ class ViewPlugin(DetectorViewPluginBase):
                     PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
                 },
             ),
-            "sc_bg_num_std_dev": pidgets.FloatParameterWidgetFactory(
-                name_label_text="Std. devs. in rec. threshold",
-                decimals=1,
-                limits=(0, None),
-            ),
             "fixed_threshold_value": pidgets.FloatParameterWidgetFactory(
                 name_label_text="Fixed threshold value",
                 decimals=1,
                 limits=(0, None),
             ),
-            "cfar_sensitivity": pidgets.FloatParameterWidgetFactory(
-                name_label_text="CFAR sensitivity",
+            "threshold_sensitivity": pidgets.FloatParameterWidgetFactory(
+                name_label_text="Threshold sensitivity",
                 decimals=2,
                 limits=(0, 1),
             ),
