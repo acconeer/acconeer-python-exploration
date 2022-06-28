@@ -529,7 +529,10 @@ class Detector:
                 subsweep_indexes.append(subsweep_idx)
                 subsweep_idx += 1
             processor_specs_subsweep_indexes.append(subsweep_indexes)
-        return (a121.SensorConfig(subsweeps=subsweeps), processor_specs_subsweep_indexes)
+        return (
+            a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=1),
+            processor_specs_subsweep_indexes,
+        )
 
     @classmethod
     def _m_to_points(cls, breakpoints_m: list[float], step_length: int) -> list[int]:
