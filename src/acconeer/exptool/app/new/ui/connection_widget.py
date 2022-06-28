@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import qtawesome as qta
 
-from PySide6 import QtCore
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -15,7 +14,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool.app.new.app_model import AppModel, ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
-from .misc import BUTTON_ICON_COLOR
+from .misc import BUTTON_ICON_COLOR, SerialPortComboBox
 
 
 class _ConnectAndDisconnectButton(QPushButton):
@@ -78,38 +77,6 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
 
 
-class _SerialConnectionWidget(AppModelAwareWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(app_model, parent)
-        self.app_model = app_model
-
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-
-        self.port_combo_box = QComboBox(self)
-        self.port_combo_box.currentTextChanged.connect(self._on_combo_box_change)
-        self.layout().addWidget(self.port_combo_box)
-
-    def _on_combo_box_change(self) -> None:
-        self.app_model.set_serial_connection_port(self.port_combo_box.currentData())
-
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        tagged_ports = app_model.available_tagged_ports
-
-        ports = [port for port, _ in tagged_ports]
-        view_ports = [self.port_combo_box.itemData(i) for i in range(self.port_combo_box.count())]
-
-        with QtCore.QSignalBlocker(self.port_combo_box):
-            if ports != view_ports:
-                self.port_combo_box.clear()
-                for port, tag in tagged_ports:
-                    label = port if tag is None else f"{port} ({tag})"
-                    self.port_combo_box.addItem(label, port)
-
-            index = self.port_combo_box.findData(app_model.serial_connection_port)
-            self.port_combo_box.setCurrentIndex(index)
-
-
 class ClientConnectionWidget(AppModelAwareWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(app_model, parent)
@@ -130,7 +97,7 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.stacked = QStackedWidget(self)
         self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
         self.stacked.addWidget(_SocketConnectionWidget(app_model, self.stacked))
-        self.stacked.addWidget(_SerialConnectionWidget(app_model, self.stacked))
+        self.stacked.addWidget(SerialPortComboBox(app_model, self.stacked))
         self.layout().addWidget(self.stacked)
 
         self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))
