@@ -240,6 +240,8 @@ class ViewPlugin(DetectorViewPluginBase):
         self.view_layout.setContentsMargins(0, 0, 0, 0)
         self.view_widget.setLayout(self.view_layout)
 
+        # TODO: Fix parents
+
         self.start_button = QPushButton("Start measurement", self.view_widget)
         self.start_button.clicked.connect(self._send_start_request)
         self.stop_button = QPushButton("Stop", self.view_widget)
