@@ -397,7 +397,7 @@ class Detector:
                 step_length=plan.step_length,
                 profile=plan.profile,
                 hwaas=4,
-                receiver_gain=8,  # TODO: reduce
+                receiver_gain=5,
                 phase_enhancement=True,
             )
         )
