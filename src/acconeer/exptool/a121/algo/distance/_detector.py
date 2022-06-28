@@ -153,6 +153,8 @@ class Detector:
         if self.session_config is None:
             raise ValueError("Session config not defined")
 
+        # TODO: Ignore/override threshold method while recording threshold
+
         specs_updated = self._update_processor_mode(
             self.processor_specs, ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
         )
