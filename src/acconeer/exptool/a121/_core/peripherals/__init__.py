@@ -1,10 +1,4 @@
-from .communication import (
-    Client,
-    ExplorationProtocol,
-    ExplorationProtocol_0_2_0,
-    ServerError,
-    get_exploration_protocol,
-)
+from .communication import Client, ExplorationProtocol, ServerError, get_exploration_protocol
 from .h5_record import (
     _H5PY_STR_DTYPE,
     H5Record,

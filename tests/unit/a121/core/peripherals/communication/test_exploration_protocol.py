@@ -17,9 +17,6 @@ from acconeer.exptool.a121._core.peripherals import (
     ServerError,
     get_exploration_protocol,
 )
-from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol import (
-    ExplorationProtocol_0_2_0,
-)
 from acconeer.exptool.a121._core.utils import parse_rss_version
 
 
@@ -376,10 +373,9 @@ def test_get_next_payload_multiple_sweep(single_sweep_metadata):
 @pytest.mark.parametrize(
     ("rss_version", "expected_protocol"),
     [
-        ("a121-v0.2.0-rc1", ExplorationProtocol_0_2_0),
-        ("a121-v0.2.0-rc1-1-g123", ExplorationProtocol_0_2_0),
-        ("a121-v0.2.0", ExplorationProtocol_0_2_0),
         ("a121-v0.2.0-1-g123", ExplorationProtocol),
+        ("a121-v0.4.0-rc1", ExplorationProtocol),
+        ("a121-v0.4.0", ExplorationProtocol),
     ],
 )
 def test_get_exploration_protocol_normal_cases(rss_version, expected_protocol):
@@ -389,5 +385,6 @@ def test_get_exploration_protocol_normal_cases(rss_version, expected_protocol):
 def test_get_exploration_protocol_special_cases():
     assert get_exploration_protocol() == ExplorationProtocol
 
+    incompatible_version = parse_rss_version("a121-v0.2.0")
     with pytest.raises(Exception):
-        get_exploration_protocol(parse_rss_version("0.1.0"))
+        get_exploration_protocol(incompatible_version)
