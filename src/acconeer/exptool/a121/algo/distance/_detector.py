@@ -89,6 +89,7 @@ class Detector:
 
     session_config: a121.SessionConfig
     processor_specs: List[ProcessorSpec]
+    context: DetectorContext
 
     def __init__(
         self,
