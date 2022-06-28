@@ -12,9 +12,6 @@ def get_distances_m(
     config: a121.SensorConfig,
     metadata: a121.Metadata,
 ) -> Tuple[npt.NDArray[np.float_], float]:
-    if metadata.base_step_length_m is None:
-        raise ValueError("Metadata is missing 'base_step_length_m'")
-
     points = np.arange(config.num_points) * config.step_length + config.start_point
     distances_m = points * metadata.base_step_length_m
     step_length_m = config.step_length * metadata.base_step_length_m

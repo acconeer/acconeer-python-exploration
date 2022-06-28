@@ -14,6 +14,10 @@ def metadata():
         sweep_data_length=1,
         subsweep_data_length=np.array([1]),
         subsweep_data_offset=np.array([0]),
+        calibration_temperature=0,
+        tick_period=0,
+        base_step_length_m=0,
+        max_sweep_rate=0,
     )
 
 

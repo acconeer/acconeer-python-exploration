@@ -30,7 +30,7 @@ def single_sweep_metadata():
         frame_data_length=100,
         subsweep_data_offset=np.array([0]),
         subsweep_data_length=np.array([100]),
-        calibration_temperature=None,
+        calibration_temperature=10,
         tick_period=50,
         base_step_length_m=0.0025,
         max_sweep_rate=1000.0,
@@ -177,7 +177,7 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 100,
                         "subsweep_data_offset": [0],
                         "subsweep_data_length": [100],
-                        "calibration_temperature": None,
+                        "calibration_temperature": 10,
                         "base_step_length_m": 0.0025,
                         "max_sweep_rate": 1000.0,
                     },
@@ -188,9 +188,9 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 200,
                         "subsweep_data_offset": [0, 100],
                         "subsweep_data_length": [100, 100],
-                        # "calibration_temperature": None,  # omitting is ok
+                        "calibration_temperature": 10,
                         "base_step_length_m": 0.0025,
-                        # "max_sweep_rate": 1000.0,  # omitting is ok
+                        "max_sweep_rate": 1000.0,
                     },
                 ],
             ],
@@ -205,10 +205,10 @@ def test_setup_response(single_sweep_metadata):
                 frame_data_length=200,
                 subsweep_data_offset=np.array([0, 100]),
                 subsweep_data_length=np.array([100, 100]),
-                calibration_temperature=None,
+                calibration_temperature=10,
                 tick_period=50,
                 base_step_length_m=0.0025,
-                max_sweep_rate=None,
+                max_sweep_rate=1000.0,
             )
         },
     ]

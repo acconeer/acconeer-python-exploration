@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 import attrs
 import numpy as np
@@ -29,16 +29,16 @@ class Metadata:
     subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
     """Number of elements in the subsweeps"""
 
-    calibration_temperature: Optional[int] = attrs.field(default=None)
+    calibration_temperature: int = attrs.field()
     """Temperature during calibration"""
 
-    tick_period: Optional[int] = attrs.field(default=None)
+    tick_period: int = attrs.field()
     """Target tick period if update rate is set, otherwise 0"""
 
-    base_step_length_m: Optional[float] = attrs.field(default=None)
+    base_step_length_m: float = attrs.field()
     """Base step length in meter"""
 
-    max_sweep_rate: Optional[float] = attrs.field(default=None)
+    max_sweep_rate: float = attrs.field()
     """Maximum sweep rate that the sensor can provide for the given configuration"""
 
     @property

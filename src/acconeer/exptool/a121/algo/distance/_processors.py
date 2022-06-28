@@ -160,7 +160,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.start_point = self._get_start_point(range_subsweep_configs)
         self.num_points = self._get_num_points(range_subsweep_configs)
 
-        assert self.metadata.base_step_length_m is not None
         self.base_step_length_m = self.metadata.base_step_length_m
         self.step_length_m = self.step_length * self.base_step_length_m
 

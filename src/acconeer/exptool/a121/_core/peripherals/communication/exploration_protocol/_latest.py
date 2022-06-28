@@ -64,9 +64,9 @@ class MetadataResponse(TypedDict):
     sweep_data_length: int
     subsweep_data_offset: list[int]
     subsweep_data_length: list[int]
-    calibration_temperature: NotRequired[int]
-    base_step_length_m: NotRequired[float]
-    max_sweep_rate: NotRequired[float]
+    calibration_temperature: int
+    base_step_length_m: float
+    max_sweep_rate: float
 
 
 class SetupResponse(ValidResponse):
@@ -291,10 +291,10 @@ class ExplorationProtocol(CommunicationProtocol):
             sweep_data_length=metadata_dict["sweep_data_length"],
             subsweep_data_offset=np.array(metadata_dict["subsweep_data_offset"]),
             subsweep_data_length=np.array(metadata_dict["subsweep_data_length"]),
-            calibration_temperature=metadata_dict.get("calibration_temperature"),
+            calibration_temperature=metadata_dict["calibration_temperature"],
             tick_period=tick_period,
-            base_step_length_m=metadata_dict.get("base_step_length_m"),
-            max_sweep_rate=metadata_dict.get("max_sweep_rate"),
+            base_step_length_m=metadata_dict["base_step_length_m"],
+            max_sweep_rate=metadata_dict["max_sweep_rate"],
         )
 
     @classmethod

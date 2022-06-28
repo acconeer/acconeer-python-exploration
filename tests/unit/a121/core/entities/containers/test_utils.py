@@ -9,6 +9,10 @@ def test_get_subsweeps_from_frame():
         sweep_data_length=4,
         subsweep_data_length=np.array([2, 2]),
         subsweep_data_offset=np.array([0, 2]),
+        calibration_temperature=0,
+        tick_period=0,
+        base_step_length_m=0,
+        max_sweep_rate=0,
     )
     input_array = np.array(
         [

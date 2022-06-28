@@ -29,7 +29,6 @@ class _PerformanceCalc:
         if self.sensor_config.sweep_rate is not None:
             return self.sensor_config.sweep_rate
         else:
-            assert self.metadata.max_sweep_rate is not None
             return self.metadata.max_sweep_rate
 
     @property
@@ -38,7 +37,6 @@ class _PerformanceCalc:
 
     @property
     def sweep_active_duration(self) -> float:
-        assert self.metadata.max_sweep_rate is not None
         return 1 / self.metadata.max_sweep_rate
 
     @property

@@ -12,6 +12,10 @@ def good_metadata():
         sweep_data_length=5,
         subsweep_data_offset=np.array([0, 2]),
         subsweep_data_length=np.array([2, 3]),
+        calibration_temperature=0,
+        tick_period=0,
+        base_step_length_m=0,
+        max_sweep_rate=0,
     )
 
 
