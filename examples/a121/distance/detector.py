@@ -31,7 +31,7 @@ def main():
 
     detector.calibrate_close_range()
 
-    detector.calibrate_background()
+    detector.record_threshold()
 
     detector.start()
 

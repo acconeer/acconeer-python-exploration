@@ -144,7 +144,7 @@ class Detector:
         assert processor_result.phase_jitter_comp_reference is not None
         self.context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
 
-    def calibrate_background(self) -> None:
+    def record_threshold(self) -> None:
         if self.started:
             raise RuntimeError("Already started")
         if self.processor_specs is None:
