@@ -23,13 +23,8 @@ from PySide6.QtWidgets import (
 import pyqtgraph as pg
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
-from acconeer.exptool.app.new.app_model import (
-    AppModel,
-    PlotPlugin,
-    Plugin,
-    PluginFamily,
-    ViewPlugin,
-)
+from acconeer.exptool.app.new._enums import PluginFamily
+from acconeer.exptool.app.new.app_model import AppModel, PlotPlugin, Plugin, ViewPlugin
 
 
 class PluginSelectionButton(QPushButton):

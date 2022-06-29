@@ -11,7 +11,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool.app.new.app_model import AppModel, ConnectionInterface, ConnectionState
+from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
+from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
 from .misc import BUTTON_ICON_COLOR, SerialPortComboBox

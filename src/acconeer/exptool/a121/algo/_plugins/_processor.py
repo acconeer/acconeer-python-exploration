@@ -28,10 +28,10 @@ from acconeer.exptool.app.new import (
     KwargMessage,
     Message,
     OkMessage,
+    PluginGeneration,
     PluginState,
     Task,
 )
-from acconeer.exptool.app.new.app_model.plugin_enums import PluginGeneration
 from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,

@@ -6,7 +6,7 @@ from typing import Optional
 import attrs
 import h5py
 
-from .plugin_enums import PluginGeneration
+from acconeer.exptool.app.new._enums import PluginGeneration
 
 
 @attrs.frozen(kw_only=True)

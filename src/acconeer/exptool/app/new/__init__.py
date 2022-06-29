@@ -1,15 +1,12 @@
-from .app import main
-from .app_model import (
-    AppModel,
+from ._enums import (
     ConnectionInterface,
     ConnectionState,
-    PlotPlugin,
-    Plugin,
     PluginFamily,
     PluginGeneration,
     PluginState,
-    ViewPlugin,
 )
+from .app import main
+from .app_model import AppModel, PlotPlugin, Plugin, ViewPlugin
 from .backend import (
     Backend,
     BackendPlugin,

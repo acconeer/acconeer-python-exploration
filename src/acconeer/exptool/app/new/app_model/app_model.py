@@ -16,6 +16,13 @@ from PySide6.QtWidgets import QApplication, QWidget
 import pyqtgraph as pg
 
 from acconeer.exptool import a121
+from acconeer.exptool.app.new._enums import (
+    ConnectionInterface,
+    ConnectionState,
+    PluginFamily,
+    PluginGeneration,
+    PluginState,
+)
 from acconeer.exptool.app.new.app_model.file_detective import investigate_file
 from acconeer.exptool.app.new.backend import (
     Backend,
@@ -29,9 +36,7 @@ from acconeer.exptool.app.new.backend import (
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 
-from .plugin_enums import PluginFamily, PluginGeneration
 from .serial_port_updater import SerialPortUpdater
-from .state_enums import ConnectionInterface, ConnectionState, PluginState
 
 
 log = logging.getLogger(__name__)

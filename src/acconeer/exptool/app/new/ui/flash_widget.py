@@ -23,7 +23,8 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
-from acconeer.exptool.app.new.app_model import AppModel, ConnectionState
+from acconeer.exptool.app.new._enums import ConnectionState
+from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 from acconeer.exptool.flash import find_flash_port, flash_image  # type: ignore[import]
 
