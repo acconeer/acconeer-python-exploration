@@ -3,9 +3,8 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 import queue
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
-from ._backend_plugin import BackendPlugin
 from ._message import Message
 from ._model import Model
 from ._types import Task
@@ -56,12 +55,6 @@ class Backend:
 
     def put_task(self, task: Task) -> None:
         self._send(("task", task))
-
-    def load_plugin(self, plugin: Type[BackendPlugin], key: str) -> None:
-        self.put_task(("load_plugin", {"plugin": plugin, "key": key}))
-
-    def unload_plugin(self) -> None:
-        self.put_task(("unload_plugin", {}))
 
     def _send(self, command: Command) -> None:
         self._send_queue.put(command)

@@ -162,7 +162,7 @@ class AppModel(QObject):
         self._serial_port_updater.start()
 
     def stop(self) -> None:
-        self._backend.unload_plugin()
+        self.load_plugin(None)
 
         while self.plugin_state != PluginState.UNLOADED:  # TODO: Do this better
             QApplication.processEvents()
@@ -368,11 +368,13 @@ class AppModel(QObject):
         self.backend_plugin_state = None
 
         if plugin is None:
-            self._backend.unload_plugin()
+            self.put_backend_task(("unload_plugin", {}))
             if self.plugin is not None:
                 self.plugin_state = PluginState.UNLOADING
         else:
-            self._backend.load_plugin(plugin.backend_plugin, plugin.key)
+            self.put_backend_task(
+                ("load_plugin", {"plugin": plugin.backend_plugin, "key": plugin.key})
+            )
 
             config_path = self._get_plugin_config_path(plugin.generation, plugin.key)
             try:
