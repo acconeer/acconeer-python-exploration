@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import enum
 from typing import Dict, List, Optional, Tuple
 
 import attrs
@@ -23,6 +24,13 @@ from ._processors import (
     ProcessorResult,
     ThresholdMethod,
 )
+
+
+class DetectorReadiness(enum.Enum):
+    NA = enum.auto()
+    OK = enum.auto()
+    NEED_CALIBRATION = enum.auto()
+    CONFIG_MISMATCH = enum.auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -191,30 +199,61 @@ class Detector:
         self.context.recorded_threshold_session_config_used = self.session_config
 
     @classmethod
-    def ready_for_close_range_calibration(cls, config: DetectorConfig) -> bool:
-        return cls._has_close_range_measurement(config)
+    def ready_for_close_range_calibration(cls, config: DetectorConfig) -> DetectorReadiness:
+        if cls._has_close_range_measurement(config):
+            return DetectorReadiness.OK
+        else:
+            return DetectorReadiness.NA
 
     @classmethod
     def ready_for_recorded_threshold_calibration(
         cls, config: DetectorConfig, context: DetectorContext
-    ) -> bool:
-        return (
-            cls._has_close_range_measurement(config) and cls._close_range_calibrated(context)
-        ) or (
+    ) -> DetectorReadiness:
+        if (
             not cls._has_close_range_measurement(config)
-            and config.threshold_method == ThresholdMethod.RECORDED
-        )
+            and config.threshold_method != ThresholdMethod.RECORDED
+        ):
+            return DetectorReadiness.NA
+
+        (
+            session_config,
+            _,
+        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+
+        if cls._has_close_range_measurement(config):
+            if not cls._close_range_calibrated(context):
+                return DetectorReadiness.NEED_CALIBRATION
+
+            if session_config != context.close_range_session_config_used:
+                return DetectorReadiness.CONFIG_MISMATCH
+
+        return DetectorReadiness.OK
 
     @classmethod
-    def ready_to_start(cls, config: DetectorConfig, context: DetectorContext) -> bool:
+    def ready_to_start(cls, config: DetectorConfig, context: DetectorContext) -> DetectorReadiness:
+        (
+            session_config,
+            _,
+        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+
         if cls._has_close_range_measurement(config):
-            return cls._close_range_calibrated(context) and cls._recorded_threshold_calibrated(
-                context
-            )
-        elif config.threshold_method == ThresholdMethod.RECORDED:
-            return cls._recorded_threshold_calibrated(context)
-        else:
-            return True
+            if (
+                session_config != context.close_range_session_config_used
+                or session_config != context.recorded_threshold_session_config_used
+            ):
+                return DetectorReadiness.CONFIG_MISMATCH
+
+            if not cls._recorded_threshold_calibrated(context):
+                return DetectorReadiness.NEED_CALIBRATION
+
+        if config.threshold_method == ThresholdMethod.RECORDED:
+            if session_config != context.recorded_threshold_session_config_used:
+                return DetectorReadiness.CONFIG_MISMATCH
+
+            if not cls._recorded_threshold_calibrated(context):
+                return DetectorReadiness.NEED_CALIBRATION
+
+        return DetectorReadiness.OK
 
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
@@ -676,11 +715,9 @@ class Detector:
             elif (
                 spec.processor_config.measurement_type == MeasurementType.FAR_RANGE
                 and spec.processor_config.threshold_method == ThresholdMethod.RECORDED
+                and self._recorded_threshold_calibrated(self.context)
             ):
-                if (
-                    not self._recorded_threshold_calibrated(self.context)
-                    or self.context.recorded_thresholds is None
-                ):
+                if self.context.recorded_thresholds is None:
                     raise Exception(ERR_MESSAGE_RECORDED)
 
                 context = ProcessorContext(
