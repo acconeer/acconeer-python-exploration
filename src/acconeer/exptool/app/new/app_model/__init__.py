@@ -1,6 +1,5 @@
 from .app_model import (
     AppModel,
-    AppModelAware,
     ConnectionInterface,
     ConnectionState,
     PlotPlugin,
