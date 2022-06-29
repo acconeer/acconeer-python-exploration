@@ -5,54 +5,42 @@ from typing import Any, Optional, Union
 import attrs
 from typing_extensions import Literal
 
+from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 
-StatusLiteral = Union[Literal["ok"], Literal["error"]]
+
 RecipientLiteral = Union[Literal["plot_plugin"], Literal["view_plugin"]]
 
 
-@attrs.define
-class Message:
-    status: StatusLiteral
-    command_name: str
-    recipient: Optional[RecipientLiteral] = attrs.field(default=None, kw_only=True)
-    exception: Exception = attrs.field(default=None, init=False)
-    data: Any = attrs.field(default=None, init=False)
-    traceback_str: Optional[str] = attrs.field(default=None, init=False)
+@attrs.frozen(kw_only=True, slots=False)
+class Message:  # Should not be instantiated
+    pass
 
 
-@attrs.define
-class OkMessage(Message):
-    status: StatusLiteral = attrs.field(default="ok", init=False)
+@attrs.frozen(kw_only=True, slots=False)
+class ConnectionStateMessage(Message):
+    state: ConnectionState = attrs.field()
 
 
-@attrs.define
-class ErrorMessage(Message):
-    exception: Exception
-    traceback_str: Optional[str] = attrs.field(default=None)
-    status: StatusLiteral = attrs.field(default="error", init=False)
+@attrs.frozen(kw_only=True, slots=False)
+class PluginStateMessage(Message):
+    state: PluginState = attrs.field()
 
 
-@attrs.define
-class DataMessage(OkMessage):
-    data: Any
+@attrs.frozen(kw_only=True, slots=False)
+class BackendPluginStateMessage(Message):
+    state: Any = attrs.field()
 
 
-@attrs.define
-class KwargMessage(OkMessage):
-    kwargs: dict[str, Any]
+@attrs.frozen(kw_only=True, slots=False)
+class StatusMessage(Message):
+    status: Optional[str] = attrs.field()
 
 
-@attrs.define
-class BusyMessage(OkMessage):
-    command_name: str = attrs.field(default="busy")
-
-
-@attrs.define
-class IdleMessage(OkMessage):
-    command_name: str = attrs.field(default="idle")
-
-
-@attrs.define
-class BackendPluginStateMessage(OkMessage):
-    data: Any = attrs.field()
-    command_name: str = attrs.field(default="backend_plugin_state")
+@attrs.frozen(kw_only=True, slots=False)
+class GeneralMessage(Message):
+    name: str = attrs.field()
+    recipient: Optional[RecipientLiteral] = attrs.field(default=None)
+    data: Optional[Any] = attrs.field(default=None)
+    kwargs: Optional[dict[str, Any]] = attrs.field(default=None)
+    exception: Optional[Exception] = attrs.field(default=None)
+    traceback_format_exc: Optional[str] = attrs.field(default=None)

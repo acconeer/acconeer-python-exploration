@@ -22,18 +22,14 @@ from acconeer.exptool.a121.algo._plugins import (
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
-    BusyMessage,
     ConnectionState,
-    DataMessage,
-    IdleMessage,
-    KwargMessage,
+    GeneralMessage,
     Message,
-    OkMessage,
     Plugin,
     PluginFamily,
     PluginGeneration,
     PluginState,
-    Task,
+    PluginStateMessage,
 )
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
@@ -88,7 +84,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         super().broadcast()
 
         if sync:
-            self.callback(OkMessage("sync", recipient="view_plugin"))
+            self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
 
     def idle(self) -> bool:
         if self._started:
@@ -103,23 +99,22 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def detach_client(self) -> None:
         self._client = None
 
-    def execute_task(self, *, task: Task) -> None:
-        task_name, task_kwargs = task
-        if task_name == "start_session":
+    def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
+        if name == "start_session":
             self.__execute_start()
-        elif task_name == "stop_session":
+        elif name == "stop_session":
             self.__execute_stop()
-        elif task_name == "record_threshold":
+        elif name == "record_threshold":
             self.__execute_record_threshold()
-        elif task_name == "calibrate_close_range":
+        elif name == "calibrate_close_range":
             self.__execute_calibrate_close_range()
-        elif task_name == "update_config":
-            config = task_kwargs["config"]
+        elif name == "update_config":
+            config = kwargs["config"]
             assert isinstance(config, DetectorConfig)
             self.shared_state.config = config
             self.broadcast()
         else:
-            raise RuntimeError
+            raise RuntimeError(f"Unknown task: {name}")
 
     def teardown(self) -> None:
         self.detach_client()
@@ -151,13 +146,13 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.broadcast()
 
         self.callback(
-            KwargMessage(
-                "setup",
-                dict(num_curves=len(self._detector_instance.processor_specs)),
+            GeneralMessage(
+                name="setup",
+                kwargs=dict(num_curves=len(self._detector_instance.processor_specs)),
                 recipient="plot_plugin",
             )
         )
-        self.callback(BusyMessage())
+        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
     def __execute_stop(self) -> None:
         if not self._started:
@@ -172,7 +167,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.broadcast()
 
-        self.callback(IdleMessage())
+        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
     def __execute_get_next(self) -> None:
         if not self._started:
@@ -183,7 +178,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         result = self._detector_instance.get_next()
 
-        self.callback(DataMessage("plot", result, recipient="plot_plugin"))
+        self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 
     def __execute_record_threshold(self) -> None:
         if self._started:
@@ -195,7 +190,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if not self._client.connected:
             raise RuntimeError
 
-        self.callback(BusyMessage())
+        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
         self._detector_instance = Detector(
             client=self._client,
@@ -206,7 +201,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self._detector_instance.record_threshold()
         self.shared_state.context = self._detector_instance.context
 
-        self.callback(IdleMessage())
+        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
         self.broadcast()
 
     def __execute_calibrate_close_range(self) -> None:
@@ -219,7 +214,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if not self._client.connected:
             raise RuntimeError
 
-        self.callback(BusyMessage())
+        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
         self._detector_instance = Detector(
             client=self._client,
@@ -230,7 +225,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self._detector_instance.calibrate_close_range()
         self.shared_state.context = self._detector_instance.context
 
-        self.callback(IdleMessage())
+        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
         self.broadcast()
 
 
@@ -238,13 +233,12 @@ class PlotPlugin(DetectorPlotPluginBase):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
 
-    def setup_from_message(self, message: Message) -> None:
-        assert isinstance(message, KwargMessage)
+    def setup_from_message(self, message: GeneralMessage) -> None:
+        assert message.kwargs is not None
         self.setup(**message.kwargs)
 
-    def update_from_message(self, message: Message) -> None:
-        assert isinstance(message, DataMessage)
-        self.update(message.data)
+    def update_from_message(self, message: GeneralMessage) -> None:
+        self.update(message.data)  # type: ignore[arg-type]
 
     def setup(self, num_curves: int) -> None:
         self.num_curves = num_curves
@@ -494,11 +488,11 @@ class ViewPlugin(DetectorViewPluginBase):
 
     # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
-        self.send_backend_task(("update_config", {"config": config}))
+        self.app_model.put_backend_plugin_task("update_config", {"config": config})
 
     # TODO: move to detector base (?)
-    def handle_message(self, message: Message) -> None:
-        if message.command_name == "sync":
+    def handle_message(self, message: GeneralMessage) -> None:
+        if message.name == "sync":
             log.debug(f"{type(self).__name__} syncing")
 
             self.config_editor.sync()
@@ -507,20 +501,20 @@ class ViewPlugin(DetectorViewPluginBase):
 
     # TODO: move to detector base (?)
     def _send_start_request(self) -> None:
-        self.send_backend_task(("start_session", {}))
+        self.app_model.put_backend_plugin_task("start_session")
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     # TODO: move to detector base (?)
     def _send_stop_request(self) -> None:
-        self.send_backend_task(("stop_session", {}))
+        self.app_model.put_backend_plugin_task("stop_session")
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def _on_record_threshold(self) -> None:
-        self.send_backend_task(("record_threshold", {}))
+        self.app_model.put_backend_plugin_task("record_threshold")
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _on_close_range_calibration(self) -> None:
-        self.send_backend_task(("calibrate_close_range", {}))
+        self.app_model.put_backend_plugin_task("calibrate_close_range")
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     # TODO: move to detector base (?)

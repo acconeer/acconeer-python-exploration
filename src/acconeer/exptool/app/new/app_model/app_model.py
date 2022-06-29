@@ -6,7 +6,8 @@ import queue
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Callable, Optional, Tuple, Type
+from uuid import UUID
 
 import attrs
 import numpy as np
@@ -29,11 +30,12 @@ from acconeer.exptool.app.new.backend import (
     Backend,
     BackendPlugin,
     BackendPluginStateMessage,
-    BusyMessage,
-    IdleMessage,
-    KwargMessage,
+    ClosedTask,
+    ConnectionStateMessage,
+    GeneralMessage,
     Message,
-    Task,
+    PluginStateMessage,
+    StatusMessage,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 
@@ -59,7 +61,7 @@ class PlotPlugin(AppModelAwarePlugin, abc.ABC):
         app_model.sig_message_plot_plugin.connect(self.handle_message)
 
     @abc.abstractmethod
-    def handle_message(self, message: Message) -> None:
+    def handle_message(self, message: GeneralMessage) -> None:
         pass
 
     @abc.abstractmethod
@@ -76,11 +78,8 @@ class ViewPlugin(AppModelAwarePlugin, abc.ABC):
         app_model.sig_message_view_plugin.connect(self.handle_message)
 
     @abc.abstractmethod
-    def handle_message(self, message: Message) -> None:
+    def handle_message(self, message: GeneralMessage) -> None:
         pass
-
-    def send_backend_task(self, task: Task) -> None:
-        self.app_model.put_backend_task(task)
 
 
 @attrs.frozen(kw_only=True)
@@ -96,7 +95,8 @@ class Plugin:
 
 
 class _BackendListeningThread(QThread):
-    sig_received_from_backend = Signal(Message)
+    sig_backend_closed_task = Signal(ClosedTask)
+    sig_backend_message = Signal(Message)
 
     def __init__(self, backend: Backend, parent: QObject) -> None:
         super().__init__(parent)
@@ -107,11 +107,16 @@ class _BackendListeningThread(QThread):
 
         while not self.isInterruptionRequested():
             try:
-                message = self.backend.recv(timeout=0.1)
+                item = self.backend.recv(timeout=0.1)
             except queue.Empty:
                 continue
+
+            if isinstance(item, Message):
+                self.sig_backend_message.emit(item)
+            elif isinstance(item, ClosedTask):
+                self.sig_backend_closed_task.emit(item)
             else:
-                self.sig_received_from_backend.emit(message)
+                raise AssertionError
 
         log.debug("Backend listening thread stopping...")
 
@@ -142,9 +147,11 @@ class AppModel(QObject):
         super().__init__()
         self._backend = backend
         self._listener = _BackendListeningThread(self._backend, self)
-        self._listener.sig_received_from_backend.connect(self._handle_backend_message)
+        self._listener.sig_backend_message.connect(self._handle_backend_message)
+        self._listener.sig_backend_closed_task.connect(self._handle_backend_closed_task)
         self._serial_port_updater = SerialPortUpdater(self)
         self._serial_port_updater.sig_update.connect(self._handle_serial_port_update)
+        self._backend_task_callbacks: dict[UUID, Any] = {}
 
         self._a121_server_info: Optional[a121.ServerInfo] = None
 
@@ -195,88 +202,118 @@ class AppModel(QObject):
         self.sig_notify.emit(self)
 
     def emit_error(self, exception: Exception, traceback_format_exc: Optional[str] = None) -> None:
+        log.debug("Emitting error")
         self.sig_error.emit(exception, traceback_format_exc)
 
-    def put_backend_task(
+    def _put_backend_task(
         self,
-        task: Task,
+        name: str,
+        kwargs: Optional[dict[str, Any]] = None,
+        *,
+        plugin: bool = False,
+        on_ok: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[Exception, Optional[str]], None]] = None,
     ) -> None:
-        self._backend.put_task(task)
+        if kwargs is None:
+            kwargs = {}
+
+        key = self._backend.put_task((name, kwargs, plugin))
+        self._backend_task_callbacks[key] = {
+            "on_ok": on_ok,
+            "on_error": on_error,
+        }
+
+        log.debug(f"Put backend task with name: '{name}', key: {key.time_low}")
+
+    def put_backend_plugin_task(
+        self,
+        name: str,
+        kwargs: Optional[dict[str, Any]] = None,
+        *,
+        on_ok: Optional[Callable[[], None]] = None,
+        on_error: Optional[Callable[[Exception, Optional[str]], None]] = None,
+    ) -> None:
+        self._put_backend_task(
+            name,
+            kwargs,
+            plugin=True,
+            on_ok=on_ok,
+            on_error=on_error,
+        )
+
+    def _handle_backend_closed_task(self, closed_task: ClosedTask) -> None:
+        log.debug(f"Got backend closed task: {closed_task.key.time_low}")
+
+        callbacks = self._backend_task_callbacks.pop(closed_task.key)
+
+        if closed_task.exception:
+            f = callbacks["on_error"]
+            if f:
+                f(closed_task.exception, closed_task.traceback_format_exc)
+        else:
+            f = callbacks["on_ok"]
+            if f:
+                f()
 
     def _handle_backend_message(self, message: Message) -> None:
-        if message.status == "error":
-            self.emit_error(message.exception, message.traceback_str)
-
-        if message.recipient is not None:
-            if message.recipient == "plot_plugin":
-                self.sig_message_plot_plugin.emit(message)
-            elif message.recipient == "view_plugin":
-                self.sig_message_view_plugin.emit(message)
+        if isinstance(message, ConnectionStateMessage):
+            log.debug("Got backend connection state message")
+            self.connection_state = message.state
+            self.broadcast()
+        elif isinstance(message, PluginStateMessage):
+            log.debug("Got backend plugin state message")
+            self.plugin_state = message.state
+            self.broadcast()
+        elif isinstance(message, BackendPluginStateMessage):
+            log.debug("Got backend plugin state message")
+            self.backend_plugin_state = message.state
+            self.broadcast()
+        elif isinstance(message, StatusMessage):
+            self.send_status_message(message.status)
+        elif isinstance(message, GeneralMessage):
+            if message.recipient is not None:
+                if message.recipient == "plot_plugin":
+                    self.sig_message_plot_plugin.emit(message)
+                elif message.recipient == "view_plugin":
+                    self.sig_message_view_plugin.emit(message)
+                else:
+                    raise RuntimeError(f"Got message with unknown recipient '{message.recipient}'")
             else:
-                raise RuntimeError(
-                    f"AppModel cannot handle messages with recipient {message.recipient!r}"
-                )
+                self._handle_backend_general_message(message)
+        else:
+            raise RuntimeError(f"Got message of unknown type '{type(message)}'")
 
+    def _handle_backend_general_message(self, message: GeneralMessage) -> None:
+        if message.exception:
+            self.emit_error(message.exception, message.traceback_format_exc)
             return
 
-        if message.command_name == "connect_client":
-            if message.status == "ok":
-                self.connection_state = ConnectionState.CONNECTED
-            else:
-                self.connection_state = ConnectionState.DISCONNECTED
-        elif message.command_name == "disconnect_client":
-            if message.status == "ok":
-                self.connection_state = ConnectionState.DISCONNECTED
-                self._a121_server_info = None
-            else:
-                self.connection_state = ConnectionState.CONNECTED
-        elif message.command_name == "server_info":
+        if message.name == "server_info":
             self._a121_server_info = message.data
-        elif message.command_name == "load_plugin":
-            if message.status == "ok":
-                self.plugin_state = PluginState.LOADED_IDLE
-            else:
-                self.plugin_state = PluginState.UNLOADED
-        elif message.command_name == "unload_plugin":
-            if message.status == "ok":
-                self.plugin_state = PluginState.UNLOADED
-            else:
-                self.plugin_state = PluginState.LOADED_IDLE
-        elif message.command_name == "serialized":
-            assert isinstance(message, KwargMessage)
+            self.broadcast()
+        elif message.name == "serialized":
+            assert message.kwargs is not None
             self._handle_backend_serialized(**message.kwargs)
-        elif message.command_name == "saveable_file":
+        elif message.name == "saveable_file":
             assert message.data is None or isinstance(message.data, Path)
 
             if self.saveable_file is not None:
                 self.saveable_file.unlink(missing_ok=True)
 
             self.saveable_file = message.data
-        elif isinstance(message, BackendPluginStateMessage):
-            log.debug("AppModel received backend plugin state")
-            self.backend_plugin_state = message.data
-        elif message == BusyMessage():
-            self.plugin_state = PluginState.LOADED_BUSY
-        elif message == IdleMessage():
-            self.plugin_state = PluginState.LOADED_IDLE
-        elif message.command_name == "status":
-            self.send_status_message(message.data)
-        elif message.command_name == "start_session":
-            pass  # TODO: Should this be handled
-        elif message.command_name == "stop_session":
-            pass  # TODO: Should this be handled
-        elif message.command_name == "result_tick_time":
+            self.broadcast()
+        elif message.name == "result_tick_time":
             update_time = message.data
+
             if self.last_update_time is not None and update_time is not None:
                 update_rate = 1.0 / (update_time - self.last_update_time)
                 self.sig_update_rate.emit(update_rate)
             else:
                 self.sig_update_rate.emit(np.nan)
+
             self.last_update_time = update_time
         else:
-            raise RuntimeError(f"AppModel cannot handle message: {message}")
-
-        self.broadcast()
+            raise RuntimeError(f"Got unknown general message '{message.name}'")
 
     @classmethod
     def _handle_backend_serialized(
@@ -344,18 +381,18 @@ class AppModel(QObject):
 
         log.debug(f"Connecting client with {client_info}")
 
-        self.put_backend_task(
-            task=(
-                "connect_client",
-                {"client_info": client_info},
-            )
+        self._put_backend_task(
+            "connect_client",
+            {"client_info": client_info},
+            on_error=self.emit_error,
         )
         self.connection_state = ConnectionState.CONNECTING
         self.broadcast()
 
     def disconnect_client(self) -> None:
-        self.put_backend_task(task=("disconnect_client", {}))
+        self._put_backend_task("disconnect_client", {})
         self.connection_state = ConnectionState.DISCONNECTING
+        self._a121_server_info = None
         self.broadcast()
 
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
@@ -381,12 +418,14 @@ class AppModel(QObject):
         self.backend_plugin_state = None
 
         if plugin is None:
-            self.put_backend_task(("unload_plugin", {}))
+            self._put_backend_task("unload_plugin", {}, on_error=self.emit_error)
             if self.plugin is not None:
                 self.plugin_state = PluginState.UNLOADING
         else:
-            self.put_backend_task(
-                ("load_plugin", {"plugin": plugin.backend_plugin, "key": plugin.key})
+            self._put_backend_task(
+                "load_plugin",
+                {"plugin": plugin.backend_plugin, "key": plugin.key},
+                on_error=self.emit_error,
             )
 
             config_path = self._get_plugin_config_path(plugin.generation, plugin.key)
@@ -395,7 +434,7 @@ class AppModel(QObject):
             except Exception:
                 pass
             else:
-                self.put_backend_task(task=("deserialize", {"data": data}))
+                self.put_backend_plugin_task("deserialize", {"data": data})
 
             if self.plugin is not None:
                 self.plugin_state = PluginState.LOADING
@@ -434,7 +473,7 @@ class AppModel(QObject):
             plugin = self._find_plugin("sparse_iq")  # noqa: F841
 
         self.load_plugin(plugin)
-        self.put_backend_task(task=("load_from_file", {"path": path}))
+        self._put_backend_task("load_from_file", {"path": path})
         self.plugin_state = PluginState.LOADED_STARTING
         self.broadcast()
 

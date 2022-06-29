@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import logging
-import traceback
 from pathlib import Path
-from typing import Callable, Optional, Type
+from typing import Any, Callable, Optional, Type
 
 from acconeer.exptool import a121
+from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 
 from ._backend_plugin import BackendPlugin
-from ._message import DataMessage, ErrorMessage, Message, OkMessage
-from ._types import Task
+from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginStateMessage
 
 
 log = logging.getLogger(__name__)
@@ -34,60 +33,32 @@ class Model:
             log.error("Backend plugin idle failed")
             return False
 
-    def execute_task(self, task: Task) -> bool:
-        """Executes the task ``task``.
+    def execute_task(self, name: str, kwargs: dict[str, Any], plugin: bool) -> None:
+        if plugin:
+            if self.backend_plugin is None:
+                raise RuntimeError
 
-        :returns: True if it was successful (no ``Exception``s raised) else False
-        """
-        try:
-            self._execute_task(task)
-        except Exception as e:
-            task_name, _ = task
-            self.task_callback(ErrorMessage(task_name, e, traceback_str=traceback.format_exc()))
-            log.exception(e)
-            return False
-        else:
-            return True
+            self.backend_plugin.execute_task(name, kwargs)
+            return
 
-    def _execute_task(self, task: Task) -> None:
-        task_name, task_kwargs = task
-        if task_name == "connect_client":
-            self.connect_client(**task_kwargs)
-        elif task_name == "disconnect_client":
-            self.disconnect_client(**task_kwargs)
-        elif task_name == "load_plugin":
-            self.load_plugin(**task_kwargs)
-        elif task_name == "unload_plugin":
-            self.unload_plugin()
-        elif task_name == "load_from_file":
-            self.load_from_file(**task_kwargs)
-        elif self.backend_plugin is not None:
-            self.backend_plugin.execute_task(task=task)
+        if name == "connect_client":
+            self.connect_client(**kwargs)
+        elif name == "disconnect_client":
+            self.disconnect_client(**kwargs)
+        elif name == "load_plugin":
+            self.load_plugin(**kwargs)
+        elif name == "unload_plugin":
+            self.unload_plugin(**kwargs)
+        elif name == "load_from_file":
+            self.load_from_file(**kwargs)
         else:
-            log.warning(f"Got unsupported task: {task_name}")
+            raise RuntimeError(f"Unknown task: {name}")
 
     def connect_client(self, client_info: a121.ClientInfo) -> None:
-        """Connects the Model's client
-
-        Callbacks:
-        - ErrorMessage("connect_client") if Model already have a client.
-        - ErrorMessage("connect_client") if the client cannot be connected.
-        - OkMessage("connect_client") if client connected succesfully
-        - DataMessage("server_info")  -||-
-
-        :param client_info: Used to create and connect the client
-        """
         if self.client is not None:
-            self.task_callback(
-                ErrorMessage(
-                    "connect_client",
-                    RuntimeError(
-                        "Model already has a Client. "
-                        + "The current Client needs to be disconnected first."
-                    ),
-                )
+            raise RuntimeError(
+                "Model already has a Client. The current Client needs to be disconnected first."
             )
-            return
 
         self.client = a121.Client(
             ip_address=client_info.ip_address,
@@ -97,52 +68,36 @@ class Model:
 
         try:
             self.client.connect()
-        except Exception as e:
-            self.task_callback(
-                ErrorMessage("connect_client", e, traceback_str=traceback.format_exc())
-            )
+        except Exception as exc:
             self.client = None
-        else:
-            if self.backend_plugin is not None:
-                self.backend_plugin.attach_client(client=self.client)
+            self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
+            raise Exception("Failed to connect") from exc
 
-            self.task_callback(OkMessage("connect_client"))
-            self.task_callback(DataMessage("server_info", self.client.server_info))
+        if self.backend_plugin is not None:
+            self.backend_plugin.attach_client(client=self.client)
+
+        self.task_callback(ConnectionStateMessage(state=ConnectionState.CONNECTED))
+        self.task_callback(GeneralMessage(name="server_info", data=self.client.server_info))
 
     def disconnect_client(self) -> None:
-        """Disconnects the Model's client
-
-        Callbacks:
-        - ErrorMessage("disconnect_client") if Model doesn't have a client (already disconnected).
-        - OkMessage("disconnect_client") if client disconnected succesfully
-        """
         if self.client is None:
-            self.task_callback(
-                ErrorMessage(
-                    "disconnect_client",
-                    RuntimeError("Backend has no client to disconnect."),
-                )
-            )
-            return
+            raise RuntimeError("Backend has no client to disconnect.")
 
         if self.backend_plugin is not None:
             self.backend_plugin.detach_client()
 
-        self.client.disconnect()
+        try:
+            self.client.disconnect()
+        except Exception:
+            pass
+
         self.client = None
-        self.task_callback(OkMessage("disconnect_client"))
+
+        self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
 
     def load_plugin(self, *, plugin: Type[BackendPlugin], key: str) -> None:
-        """Loads a plugin
-
-        Callbacks:
-        - ErrorMessage("load_plugin") if Model already has a loaded plugin
-        - OkMessage("load_plugin") if the plugin was loaded succesfully
-
-        :param plugin: Type of ``BackendPlugin`` to load.
-        """
         if self.backend_plugin is not None:
-            self.unload_plugin(send_callback=False)
+            self.unload_plugin()
 
         self.backend_plugin = plugin(callback=self.task_callback, key=key)
         log.info(f"{plugin.__name__} was loaded.")
@@ -151,22 +106,17 @@ class Model:
             self.backend_plugin.attach_client(client=self.client)
             log.debug(f"{plugin.__name__} was attached a Client")
 
-        self.task_callback(OkMessage("load_plugin"))
+        self.task_callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
-    def unload_plugin(self, send_callback: bool = True) -> None:
-        """Unloads a plugin.
-
-        Callbacks:
-        - OkMessage("unload_plugin") always.
-        """
+    def unload_plugin(self) -> None:
         if self.backend_plugin is None:
             return
 
         self.backend_plugin.teardown()
         self.backend_plugin = None
         log.debug("Current BackendPlugin was torn down")
-        if send_callback:
-            self.task_callback(OkMessage("unload_plugin"))
+
+        self.task_callback(PluginStateMessage(state=PluginState.UNLOADED))
 
     def load_from_file(self, *, path: Path) -> None:
         if self.backend_plugin is None:

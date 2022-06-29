@@ -4,8 +4,7 @@ import abc
 from pathlib import Path
 from typing import Any, Callable, Generic, Optional, TypeVar
 
-from ._message import BackendPluginStateMessage, DataMessage, Message
-from ._types import Task
+from ._message import BackendPluginStateMessage, Message, StatusMessage
 
 
 StateT = TypeVar("StateT")
@@ -31,7 +30,7 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         pass
 
     @abc.abstractmethod
-    def execute_task(self, *, task: Task) -> None:
+    def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
         pass
 
     @abc.abstractmethod
@@ -43,7 +42,7 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         pass
 
     def broadcast(self) -> None:
-        self.callback(BackendPluginStateMessage(self.shared_state))
+        self.callback(BackendPluginStateMessage(state=self.shared_state))
 
     def send_status_message(self, message: Optional[str]) -> None:
-        self.callback(DataMessage("status", message))
+        self.callback(StatusMessage(status=message))

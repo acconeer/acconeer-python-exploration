@@ -3,9 +3,8 @@ from __future__ import annotations
 import abc
 import logging
 import pickle
-import traceback
 from pathlib import Path
-from typing import Callable, Generic, Optional, Type, TypeVar
+from typing import Any, Callable, Generic, Optional, Type, TypeVar
 
 import attrs
 import h5py
@@ -20,17 +19,12 @@ from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
-    BusyMessage,
     ConnectionState,
-    DataMessage,
-    ErrorMessage,
-    IdleMessage,
-    KwargMessage,
+    GeneralMessage,
     Message,
-    OkMessage,
     PluginGeneration,
     PluginState,
-    Task,
+    PluginStateMessage,
 )
 from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
@@ -129,7 +123,7 @@ class ProcessorBackendPluginBase(
         super().broadcast()
 
         if sync:
-            self.callback(OkMessage("sync", recipient="view_plugin"))
+            self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
 
     def _restore_defaults(self) -> None:
         self.shared_state = ProcessorBackendPluginSharedState[ConfigT](
@@ -161,9 +155,9 @@ class ProcessorBackendPluginBase(
 
     def teardown(self) -> None:
         self.callback(
-            KwargMessage(
-                "serialized",
-                {
+            GeneralMessage(
+                name="serialized",
+                kwargs={
                     "generation": PluginGeneration.A121,
                     "key": self.key,
                     "data": self._serialize(),
@@ -194,45 +188,33 @@ class ProcessorBackendPluginBase(
 
         try:
             self._execute_start(with_recorder=False)
-        except Exception as e:
-            self.callback(ErrorMessage("start_session", e, traceback_str=traceback.format_exc()))
-            self.callback(IdleMessage())
+        except Exception:
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            raise
 
         self.send_status_message(f"<b>Replaying from {path.name}</b>")
 
-    def execute_task(self, *, task: Task) -> None:
-        """Accepts the following tasks:
-
-        - ("start_session", <Ignored>) -> None
-        - ("stop_session", <Ignored>) -> None
-        """
-        task_name, task_kwargs = task
-        if task_name == "start_session":
-            try:
-                self._execute_start()
-            except Exception as e:
-                self.callback(
-                    ErrorMessage("start_session", e, traceback_str=traceback.format_exc())
-                )
-                self.callback(IdleMessage())
-        elif task_name == "stop_session":
+    def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
+        if name == "start_session":
+            self._execute_start()
+        elif name == "stop_session":
             self._execute_stop()
-        elif task_name == "restore_defaults":
+        elif name == "restore_defaults":
             self._restore_defaults()
-        elif task_name == "update_session_config":
-            session_config = task_kwargs["session_config"]
+        elif name == "update_session_config":
+            session_config = kwargs["session_config"]
             assert isinstance(session_config, a121.SessionConfig)
             self.shared_state.session_config = session_config
             self.broadcast()
-        elif task_name == "update_processor_config":
-            processor_config = task_kwargs["processor_config"]
+        elif name == "update_processor_config":
+            processor_config = kwargs["processor_config"]
             assert isinstance(processor_config, self.get_processor_config_cls())
             self.shared_state.processor_config = processor_config
             self.broadcast()
-        elif task_name == "deserialize":
-            self._deserialize(task_kwargs["data"])
+        elif name == "deserialize":
+            self._deserialize(kwargs["data"])
         else:
-            raise RuntimeError(f"Unknown task: {task_name}")
+            raise RuntimeError(f"Unknown task: {name}")
 
     def _execute_start(self, *, with_recorder: bool = True) -> None:
         if self._client is None:
@@ -258,7 +240,7 @@ class ProcessorBackendPluginBase(
             processor_config=self.shared_state.processor_config,
         )
 
-        self.callback(DataMessage("saveable_file", None))
+        self.callback(GeneralMessage(name="saveable_file", data=None))
         if with_recorder:
             self._recorder = a121.H5Recorder(get_temp_h5_path())
             algo_group = self._recorder.require_algo_group(self.key)  # noqa: F841
@@ -281,13 +263,13 @@ class ProcessorBackendPluginBase(
         self.broadcast()
 
         self.callback(
-            KwargMessage(
-                "setup",
-                dict(metadata=metadata, sensor_config=session_config.sensor_config),
+            GeneralMessage(
+                name="setup",
+                kwargs=dict(metadata=metadata, sensor_config=session_config.sensor_config),
                 recipient="plot_plugin",
             )
         )
-        self.callback(BusyMessage())
+        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
     def _execute_stop(self) -> None:
         if self._client is None:
@@ -298,7 +280,7 @@ class ProcessorBackendPluginBase(
         if self._recorder is not None:
             assert self._recorder.path is not None
             path = Path(self._recorder.path)
-            self.callback(DataMessage("saveable_file", path))
+            self.callback(GeneralMessage(name="saveable_file", data=path))
 
         if self.shared_state.replaying:
             assert self._opened_record is not None
@@ -314,8 +296,8 @@ class ProcessorBackendPluginBase(
 
         self.shared_state.metadata = None
         self.broadcast()
-        self.callback(IdleMessage())
-        self.callback(DataMessage("result_tick_time", None))
+        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+        self.callback(GeneralMessage(name="result_tick_time", data=None))
 
     def _execute_get_next(self) -> None:
         if self._client is None:
@@ -341,8 +323,8 @@ class ProcessorBackendPluginBase(
             self.send_status_message(self._format_warning("Frame delayed"))
 
         processor_result = self._processor_instance.process(result)
-        self.callback(DataMessage("result_tick_time", result.tick_time))
-        self.callback(DataMessage("plot", processor_result, recipient="plot_plugin"))
+        self.callback(GeneralMessage(name="result_tick_time", data=result.tick_time))
+        self.callback(GeneralMessage(name="plot", data=processor_result, recipient="plot_plugin"))
 
     @classmethod
     def _format_warning(cls, s: str) -> str:
@@ -368,13 +350,12 @@ class ProcessorPlotPluginBase(Generic[ResultT], A121PlotPluginBase):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
 
-    def setup_from_message(self, message: Message) -> None:
-        assert isinstance(message, KwargMessage)
+    def setup_from_message(self, message: GeneralMessage) -> None:
+        assert message.kwargs is not None
         self.setup(**message.kwargs)
 
-    def update_from_message(self, message: Message) -> None:
-        assert isinstance(message, DataMessage)
-        self.update(message.data)
+    def update_from_message(self, message: GeneralMessage) -> None:
+        self.update(message.data)  # type: ignore[arg-type]
 
     @abc.abstractmethod
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
@@ -437,27 +418,31 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
         self.layout.addStretch()
 
     def _on_session_config_update(self, session_config: a121.SessionConfig) -> None:
-        self.send_backend_task(("update_session_config", {"session_config": session_config}))
+        self.app_model.put_backend_plugin_task(
+            "update_session_config", {"session_config": session_config}
+        )
 
     def _on_processor_config_update(self, processor_config: ConfigT) -> None:
-        self.send_backend_task(("update_processor_config", {"processor_config": processor_config}))
+        self.app_model.put_backend_plugin_task(
+            "update_processor_config", {"processor_config": processor_config}
+        )
 
     def _send_start_requests(self) -> None:
-        self.send_backend_task(("start_session", {}))
+        self.app_model.put_backend_plugin_task("start_session")
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_stop_requests(self) -> None:
-        self.send_backend_task(("stop_session", {}))
+        self.app_model.put_backend_plugin_task("stop_session")
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def _send_defaults_request(self) -> None:
-        self.send_backend_task(("restore_defaults", {}))
+        self.app_model.put_backend_plugin_task("restore_defaults")
 
     def teardown(self) -> None:
         self.layout.deleteLater()
 
-    def handle_message(self, message: Message) -> None:
-        if message.command_name == "sync":
+    def handle_message(self, message: GeneralMessage) -> None:
+        if message.name == "sync":
             log.debug(f"{type(self).__name__} syncing")
 
             self.session_config_editor.sync()
