@@ -185,9 +185,12 @@ class AppModel(QObject):
     def broadcast(self) -> None:
         self.sig_notify.emit(self)
 
+    def emit_error(self, exception: Exception, traceback_format_exc: Optional[str] = None) -> None:
+        self.sig_error.emit(exception, traceback_format_exc)
+
     def _handle_backend_message(self, message: Message) -> None:
         if message.status == "error":
-            self.sig_error.emit(message.exception, message.traceback_str)
+            self.emit_error(message.exception, message.traceback_str)
 
         if message.recipient is not None:
             if message.recipient == "plot_plugin":
@@ -398,11 +401,11 @@ class AppModel(QObject):
         findings = investigate_file(path)
 
         if findings is None:
-            self.sig_error.emit(Exception("Cannot load file"), None)
+            self.emit_error(Exception("Cannot load file"))
             return
 
         if findings.generation != PluginGeneration.A121:
-            self.sig_error.emit(Exception("This app can currently only load A121 files"), None)
+            self.emit_error(Exception("This app can currently only load A121 files"))
             return
 
         try:
