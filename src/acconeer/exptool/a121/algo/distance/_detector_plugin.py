@@ -347,16 +347,14 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         self.close_range_calibration_button.clicked.connect(self._on_close_range_calibration)
 
-        self.record_threshold_status = QLabel(self.view_widget)
-        self.close_range_calibration_status = QLabel(self.view_widget)
+        self.message_box = QLabel(self.view_widget)
 
         button_group = GridGroupBox("Controls", parent=self.view_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
         button_group.layout().addWidget(self.close_range_calibration_button, 1, 0)
         button_group.layout().addWidget(self.record_threshold_button, 1, 1)
-        button_group.layout().addWidget(self.close_range_calibration_status, 2, 0, 1, -1)
-        button_group.layout().addWidget(self.record_threshold_status, 3, 0, 1, -1)
+        button_group.layout().addWidget(self.message_box, 2, 0, 1, -1)
         self.view_layout.addWidget(button_group)
 
         self.config_editor = AttrsConfigEditor[DetectorConfig](
@@ -437,35 +435,62 @@ class ViewPlugin(DetectorViewPluginBase):
         }
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        state = app_model.backend_plugin_state
 
-        startable = (
+        if state is None:
+            self.start_button.setEnabled(False)
+            self.close_range_calibration_button.setEnabled(False)
+            self.record_threshold_button.setEnabled(False)
+            self.stop_button.setEnabled(False)
+
+            self.config_editor.set_data(None)
+            self.config_editor.setEnabled(False)
+            self.message_box.setText("")
+
+            return
+
+        assert isinstance(state, SharedState)
+
+        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.config_editor.set_data(state.config)
+
+        close_range_calibration_ready = Detector.calibrate_close_range_readiness(
+            state.config
+        ).is_ok
+        recorded_threshold_calibration_ready = Detector.record_threshold_readiness(
+            state.config, state.context
+        ).is_ok
+        start_ready = Detector.start_readiness(state.config, state.context).is_ok
+
+        text = ""
+        if close_range_calibration_ready:
+            if start_ready:
+                text = "Start measurement"
+            elif recorded_threshold_calibration_ready:
+                text = "Record threshold"
+            elif close_range_calibration_ready:
+                text = "Calibrate close range"
+        else:
+            if start_ready:
+                text = "Start measurement"
+            elif recorded_threshold_calibration_ready:
+                text = "Record threshold"
+
+        self.message_box.setText(text)
+
+        ready_for_session = (
             app_model.plugin_state == PluginState.LOADED_IDLE
             and app_model.connection_state == ConnectionState.CONNECTED
         )
-        self.start_button.setEnabled(startable)
-        self.record_threshold_button.setEnabled(startable)
-        self.close_range_calibration_button.setEnabled(startable)
 
+        self.start_button.setEnabled(ready_for_session and start_ready)
+        self.close_range_calibration_button.setEnabled(
+            ready_for_session and close_range_calibration_ready
+        )
+        self.record_threshold_button.setEnabled(
+            ready_for_session and recorded_threshold_calibration_ready
+        )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
-
-        if app_model.backend_plugin_state is None:
-            self.config_editor.set_data(None)
-            self.record_threshold_status.setText("")
-            self.close_range_calibration_status.setText("")
-        else:
-            state = app_model.backend_plugin_state
-            assert isinstance(state, SharedState)
-
-            self.config_editor.set_data(state.config)
-
-            text = "Threshold recorded: "
-            text += "Yes" if state.has_recorded_threshold else "No"
-            self.record_threshold_status.setText(text)
-
-            text = "Close range calibrated: "
-            text += "Yes" if state.has_close_range_calibration else "No"
-            self.close_range_calibration_status.setText(text)
 
     # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
