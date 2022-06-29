@@ -603,6 +603,10 @@ class Detector:
 
         If not one of these cases, add the unaltered processor specification.
         """
+
+        ERR_MESSAGE_CLOSE_RANGE_ERR = "Close range calibration not performed"
+        ERR_MESSAGE_RECORDED = "Recorded threshold calibration not performed"
+
         updated_specs: List[ProcessorSpec] = []
 
         for idx, spec in enumerate(processor_specs):
@@ -611,8 +615,15 @@ class Detector:
                 spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE
                 and spec.processor_config.processor_mode == ProcessorMode.DISTANCE_ESTIMATION
             ):
-                assert self.context.recorded_thresholds is not None
-                assert self.context.phase_jitter_comp_reference is not None
+                if not self.close_range_calibrated:
+                    raise Exception(ERR_MESSAGE_CLOSE_RANGE_ERR)
+
+                if (
+                    not self.recorded_threshold_calibrated
+                    or self.context.recorded_thresholds is None
+                ):
+                    raise Exception(ERR_MESSAGE_RECORDED)
+
                 context = ProcessorContext(
                     recorded_threshold=self.context.recorded_thresholds[idx],
                     direct_leakage=self.context.direct_leakage,
@@ -624,7 +635,9 @@ class Detector:
                 and spec.processor_config.processor_mode
                 == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
             ):
-                assert self.context.phase_jitter_comp_reference is not None
+                if not self.close_range_calibrated:
+                    raise Exception(ERR_MESSAGE_CLOSE_RANGE_ERR)
+
                 context = ProcessorContext(
                     direct_leakage=self.context.direct_leakage,
                     phase_jitter_comp_ref=self.context.phase_jitter_comp_reference,
@@ -633,9 +646,13 @@ class Detector:
             elif (
                 spec.processor_config.measurement_type == MeasurementType.FAR_RANGE
                 and spec.processor_config.threshold_method == ThresholdMethod.RECORDED
-                and self.context.recorded_thresholds is not None
             ):
-                assert self.context.recorded_thresholds is not None
+                if (
+                    not self.recorded_threshold_calibrated
+                    or self.context.recorded_thresholds is None
+                ):
+                    raise Exception(ERR_MESSAGE_RECORDED)
+
                 context = ProcessorContext(
                     recorded_threshold=self.context.recorded_thresholds[idx]
                 )
