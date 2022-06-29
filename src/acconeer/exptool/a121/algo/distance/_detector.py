@@ -190,6 +190,32 @@ class Detector:
             self.context.recorded_thresholds.append(threshold)
         self.context.recorded_threshold_session_config_used = self.session_config
 
+    @classmethod
+    def ready_for_close_range_calibration(cls, config: DetectorConfig) -> bool:
+        return cls._has_close_range_measurement(config)
+
+    @classmethod
+    def ready_for_recorded_threshold_calibration(
+        cls, config: DetectorConfig, context: DetectorContext
+    ) -> bool:
+        return (
+            cls._has_close_range_measurement(config) and cls._close_range_calibrated(context)
+        ) or (
+            not cls._has_close_range_measurement(config)
+            and config.threshold_method == ThresholdMethod.RECORDED
+        )
+
+    @classmethod
+    def ready_to_start(cls, config: DetectorConfig, context: DetectorContext) -> bool:
+        if cls._has_close_range_measurement(config):
+            return cls._close_range_calibrated(context) and cls._recorded_threshold_calibrated(
+                context
+            )
+        elif config.threshold_method == ThresholdMethod.RECORDED:
+            return cls._recorded_threshold_calibrated(context)
+        else:
+            return True
+
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
         has_dl = context.direct_leakage is not None
@@ -619,11 +645,11 @@ class Detector:
                 spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE
                 and spec.processor_config.processor_mode == ProcessorMode.DISTANCE_ESTIMATION
             ):
-                if not self.close_range_calibrated:
+                if not self._close_range_calibrated(self.context):
                     raise Exception(ERR_MESSAGE_CLOSE_RANGE_ERR)
 
                 if (
-                    not self.recorded_threshold_calibrated
+                    not self._recorded_threshold_calibrated(self.context)
                     or self.context.recorded_thresholds is None
                 ):
                     raise Exception(ERR_MESSAGE_RECORDED)
@@ -639,7 +665,7 @@ class Detector:
                 and spec.processor_config.processor_mode
                 == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
             ):
-                if not self.close_range_calibrated:
+                if not self._close_range_calibrated(self.context):
                     raise Exception(ERR_MESSAGE_CLOSE_RANGE_ERR)
 
                 context = ProcessorContext(
@@ -652,7 +678,7 @@ class Detector:
                 and spec.processor_config.threshold_method == ThresholdMethod.RECORDED
             ):
                 if (
-                    not self.recorded_threshold_calibrated
+                    not self._recorded_threshold_calibrated(self.context)
                     or self.context.recorded_thresholds is None
                 ):
                     raise Exception(ERR_MESSAGE_RECORDED)
