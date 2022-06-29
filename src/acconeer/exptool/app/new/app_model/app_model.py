@@ -4,6 +4,7 @@ import abc
 import logging
 import queue
 import shutil
+import time
 from pathlib import Path
 from typing import Any, Optional, Tuple, Type
 
@@ -167,10 +168,17 @@ class AppModel(QObject):
         self._serial_port_updater.start()
 
     def stop(self) -> None:
+        WAIT_FOR_UNLOAD_TIMEOUT = 1.0
+
         self.load_plugin(None)
 
+        wait_start_time = time.time()
         while self.plugin_state != PluginState.UNLOADED:  # TODO: Do this better
             QApplication.processEvents()
+
+            if (time.time() - wait_start_time) > WAIT_FOR_UNLOAD_TIMEOUT:
+                log.error("Plugin not unloaded on stop")
+                break
 
         remove_temp_dir()
 
