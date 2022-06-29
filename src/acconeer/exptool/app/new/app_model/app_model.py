@@ -22,7 +22,6 @@ from acconeer.exptool.app.new.backend import (
     BackendPlugin,
     BackendPluginStateMessage,
     BusyMessage,
-    Command,
     IdleMessage,
     KwargMessage,
     Message,
@@ -74,11 +73,8 @@ class ViewPlugin(AppModelAwarePlugin, abc.ABC):
     def handle_message(self, message: Message) -> None:
         pass
 
-    def send_backend_command(self, command: Command) -> None:
-        self.app_model._backend._send(command)
-
     def send_backend_task(self, task: Task) -> None:
-        self.send_backend_command(("task", task))
+        self.app_model.put_backend_task(task)
 
 
 @attrs.frozen(kw_only=True)
@@ -187,6 +183,12 @@ class AppModel(QObject):
 
     def emit_error(self, exception: Exception, traceback_format_exc: Optional[str] = None) -> None:
         self.sig_error.emit(exception, traceback_format_exc)
+
+    def put_backend_task(
+        self,
+        task: Task,
+    ) -> None:
+        self._backend.put_task(task)
 
     def _handle_backend_message(self, message: Message) -> None:
         if message.status == "error":
@@ -329,7 +331,7 @@ class AppModel(QObject):
 
         log.debug(f"Connecting client with {client_info}")
 
-        self._backend.put_task(
+        self.put_backend_task(
             task=(
                 "connect_client",
                 {"client_info": client_info},
@@ -339,7 +341,7 @@ class AppModel(QObject):
         self.broadcast()
 
     def disconnect_client(self) -> None:
-        self._backend.put_task(task=("disconnect_client", {}))
+        self.put_backend_task(task=("disconnect_client", {}))
         self.connection_state = ConnectionState.DISCONNECTING
         self.broadcast()
 
@@ -378,7 +380,7 @@ class AppModel(QObject):
             except Exception:
                 pass
             else:
-                self._backend.put_task(task=("deserialize", {"data": data}))
+                self.put_backend_task(task=("deserialize", {"data": data}))
 
             if self.plugin is not None:
                 self.plugin_state = PluginState.LOADING
@@ -417,7 +419,7 @@ class AppModel(QObject):
             plugin = self._find_plugin("sparse_iq")  # noqa: F841
 
         self.load_plugin(plugin)
-        self._backend.put_task(task=("load_from_file", {"path": path}))
+        self.put_backend_task(task=("load_from_file", {"path": path}))
         self.plugin_state = PluginState.LOADED_STARTING
         self.broadcast()
 
