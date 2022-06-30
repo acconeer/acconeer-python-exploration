@@ -5,6 +5,7 @@ from typing import Optional
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QComboBox, QFrame, QHBoxLayout, QMessageBox, QWidget
 
+from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel
 
 
@@ -27,6 +28,13 @@ class ExceptionWidget(QMessageBox):
 
         self.setWindowTitle(title)
         self.setText(str(exc))
+
+        try:
+            raise exc
+        except HandledException:
+            pass
+        except Exception:
+            self.setInformativeText("<b>Unhandled error - please file a bug</b>")
 
         if traceback_str:
             self.setDetailedText(traceback_str)

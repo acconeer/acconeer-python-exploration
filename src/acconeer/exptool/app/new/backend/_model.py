@@ -6,6 +6,7 @@ from typing import Any, Callable, Optional, Type
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new._enums import ConnectionState, PluginState
+from acconeer.exptool.app.new._exceptions import HandledException
 
 from ._backend_plugin import BackendPlugin
 from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginStateMessage
@@ -67,7 +68,7 @@ class Model:
         except Exception as exc:
             self.client = None
             self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
-            raise Exception("Failed to connect") from exc
+            raise HandledException("Failed to connect") from exc
 
         if self.backend_plugin is not None:
             self.backend_plugin.attach_client(client=self.client)
