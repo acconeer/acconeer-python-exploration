@@ -21,6 +21,7 @@ from acconeer.exptool.app.new import (
     AppModel,
     ConnectionState,
     GeneralMessage,
+    HandledException,
     Message,
     PluginGeneration,
     PluginState,
@@ -167,6 +168,25 @@ class ProcessorBackendPluginBase(
         self.detach_client()
 
     def _load_from_file(self, *, path: Path) -> None:
+        try:
+            self._load_from_file_setup(path=path)
+        except Exception as exc:
+            self._opened_file = None
+            self._opened_record = None
+            self._replaying_client = None
+            self.shared_state.replaying = False
+
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            raise HandledException("Could not load from file") from exc
+
+        self._execute_start(with_recorder=False)
+
+        self.shared_state.replaying = True
+
+        self.send_status_message(f"<b>Replaying from {path.name}</b>")
+        self.broadcast(sync=True)
+
+    def _load_from_file_setup(self, *, path: Path) -> None:
         self._opened_file = h5py.File(path, mode="r")
         self._opened_record = a121.H5Record(self._opened_file)
         self._replaying_client = a121._ReplayingClient(self._opened_record)
@@ -181,18 +201,6 @@ class ProcessorBackendPluginBase(
             )
         except Exception:
             log.warning(f"Could not load '{self.key}' from file")
-
-        self.shared_state.replaying = True
-
-        self.broadcast(sync=True)
-
-        try:
-            self._execute_start(with_recorder=False)
-        except Exception:
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            raise
-
-        self.send_status_message(f"<b>Replaying from {path.name}</b>")
 
     def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
         if name == "start_session":
@@ -227,20 +235,8 @@ class ProcessorBackendPluginBase(
             raise RuntimeError("Client is not connected. Can not 'start'.")
 
         session_config = self.shared_state.session_config
-
         if session_config.extended:
             raise ValueError("Extended configs are not supported.")
-
-        log.debug(f"SessionConfig has the update rate: {session_config.update_rate}")
-
-        metadata = self._client.setup_session(session_config)
-        assert isinstance(metadata, a121.Metadata)
-
-        self._processor_instance = self.get_processor_cls()(
-            sensor_config=session_config.sensor_config,
-            metadata=metadata,
-            processor_config=self.shared_state.processor_config,
-        )
 
         self.callback(GeneralMessage(name="saveable_file", data=None))
         if with_recorder:
@@ -257,7 +253,23 @@ class ProcessorBackendPluginBase(
         else:
             self._recorder = None
 
-        self._client.start_session(self._recorder)
+        try:
+            metadata = self._client.setup_session(session_config)
+            assert isinstance(metadata, a121.Metadata)
+
+            self._client.start_session(self._recorder)
+        except a121.ServerError as exc:
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            raise HandledException("Could not start session: " + str(exc)) from exc
+        except Exception as exc:
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            raise HandledException("Could not start session") from exc
+
+        self._processor_instance = self.get_processor_cls()(
+            sensor_config=session_config.sensor_config,
+            metadata=metadata,
+            processor_config=self.shared_state.processor_config,
+        )
 
         self._started = True
 
@@ -277,29 +289,32 @@ class ProcessorBackendPluginBase(
         if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'stop'.")
 
-        self._client.stop_session()
+        try:
+            self._client.stop_session()
+        except Exception as exc:
+            raise HandledException("Failure when stopping session") from exc
+        finally:
+            if self._recorder is not None:
+                assert self._recorder.path is not None
+                path = Path(self._recorder.path)
+                self.callback(GeneralMessage(name="saveable_file", data=path))
 
-        if self._recorder is not None:
-            assert self._recorder.path is not None
-            path = Path(self._recorder.path)
-            self.callback(GeneralMessage(name="saveable_file", data=path))
+            if self.shared_state.replaying:
+                assert self._opened_record is not None
+                self._opened_record.close()
 
-        if self.shared_state.replaying:
-            assert self._opened_record is not None
-            self._opened_record.close()
+                self._opened_file = None
+                self._opened_record = None
+                self._replaying_client = None
 
-            self._opened_file = None
-            self._opened_record = None
-            self._replaying_client = None
+                self.shared_state.replaying = False
 
-            self.shared_state.replaying = False
+            self._started = False
 
-        self._started = False
-
-        self.shared_state.metadata = None
-        self.broadcast()
-        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-        self.callback(GeneralMessage(name="result_tick_time", data=None))
+            self.shared_state.metadata = None
+            self.broadcast()
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            self.callback(GeneralMessage(name="result_tick_time", data=None))
 
     def _execute_get_next(self) -> None:
         if self._client is None:
@@ -309,11 +324,17 @@ class ProcessorBackendPluginBase(
 
         try:
             result = self._client.get_next()
+            assert isinstance(result, a121.Result)
         except a121._StopReplay:
             self._execute_stop()
             return
+        except Exception as exc:
+            try:
+                self._execute_stop()
+            except Exception:
+                pass
 
-        assert isinstance(result, a121.Result)
+            raise HandledException("Failed to get_next") from exc
 
         if result.data_saturated:
             self.send_status_message(self._format_warning("Data saturated - reduce gain"))
@@ -430,11 +451,11 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
         )
 
     def _send_start_requests(self) -> None:
-        self.app_model.put_backend_plugin_task("start_session")
+        self.app_model.put_backend_plugin_task("start_session", on_error=self.app_model.emit_error)
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_stop_requests(self) -> None:
-        self.app_model.put_backend_plugin_task("stop_session")
+        self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def _send_defaults_request(self) -> None:

@@ -19,7 +19,12 @@ def investigate_file(path: Path) -> Optional[FileFindings]:
     if path.suffix != ".h5":
         return None
 
-    with h5py.File(path, "r") as f:
+    try:
+        f = h5py.File(path, "r")
+    except Exception:
+        return None
+
+    try:
         try:
             generation = PluginGeneration(bytes(f["generation"][()]).decode())
         except Exception:
@@ -29,6 +34,8 @@ def investigate_file(path: Path) -> Optional[FileFindings]:
             key = bytes(f["algo"]["key"][()]).decode()
         except KeyError:
             key = None
+    finally:
+        f.close()
 
     if generation != PluginGeneration.A121:
         return None

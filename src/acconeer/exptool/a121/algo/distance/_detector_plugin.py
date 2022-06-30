@@ -24,6 +24,7 @@ from acconeer.exptool.app.new import (
     AppModel,
     ConnectionState,
     GeneralMessage,
+    HandledException,
     Message,
     Plugin,
     PluginFamily,
@@ -141,7 +142,11 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             context=self.shared_state.context,
         )
 
-        self._detector_instance.start()
+        try:
+            self._detector_instance.start()
+        except Exception as exc:
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            raise HandledException("Could not start") from exc
 
         self._started = True
 
@@ -163,13 +168,14 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if self._detector_instance is None:
             raise RuntimeError
 
-        self._detector_instance.stop()
-
-        self._started = False
-
-        self.broadcast()
-
-        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+        try:
+            self._detector_instance.stop()
+        except Exception as exc:
+            raise HandledException("Failure when stopping session") from exc
+        finally:
+            self._started = False
+            self.broadcast()
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
     def __execute_get_next(self) -> None:
         if not self._started:
@@ -178,7 +184,15 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if self._detector_instance is None:
             raise RuntimeError
 
-        result = self._detector_instance.get_next()
+        try:
+            result = self._detector_instance.get_next()
+        except Exception as exc:
+            try:
+                self.__execute_stop()
+            except Exception:
+                pass
+
+            raise HandledException("Failed to get_next") from exc
 
         self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 
@@ -194,16 +208,20 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
-        self._detector_instance = Detector(
-            client=self._client,
-            sensor_id=1,
-            detector_config=self.shared_state.config,
-            context=self.shared_state.context,
-        )
-        self._detector_instance.record_threshold()
-        self.shared_state.context = self._detector_instance.context
+        try:
+            self._detector_instance = Detector(
+                client=self._client,
+                sensor_id=1,
+                detector_config=self.shared_state.config,
+                context=self.shared_state.context,
+            )
+            self._detector_instance.record_threshold()
+        except Exception as exc:
+            raise HandledException("Failed to record threshold") from exc
+        finally:
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
-        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+        self.shared_state.context = self._detector_instance.context
         self.broadcast()
 
     def __execute_calibrate_close_range(self) -> None:
@@ -218,16 +236,20 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
-        self._detector_instance = Detector(
-            client=self._client,
-            sensor_id=1,
-            detector_config=self.shared_state.config,
-            context=self.shared_state.context,
-        )
-        self._detector_instance.calibrate_close_range()
-        self.shared_state.context = self._detector_instance.context
+        try:
+            self._detector_instance = Detector(
+                client=self._client,
+                sensor_id=1,
+                detector_config=self.shared_state.config,
+                context=self.shared_state.context,
+            )
+            self._detector_instance.calibrate_close_range()
+        except Exception as exc:
+            raise HandledException("Failed to calibrate close range") from exc
+        finally:
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
-        self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+        self.shared_state.context = self._detector_instance.context
         self.broadcast()
 
 
@@ -503,12 +525,12 @@ class ViewPlugin(DetectorViewPluginBase):
 
     # TODO: move to detector base (?)
     def _send_start_request(self) -> None:
-        self.app_model.put_backend_plugin_task("start_session")
+        self.app_model.put_backend_plugin_task("start_session", on_error=self.app_model.emit_error)
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     # TODO: move to detector base (?)
     def _send_stop_request(self) -> None:
-        self.app_model.put_backend_plugin_task("stop_session")
+        self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def _on_record_threshold(self) -> None:

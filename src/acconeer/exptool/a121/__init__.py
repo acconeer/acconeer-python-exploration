@@ -17,6 +17,7 @@ from ._core import (
     Result,
     SensorConfig,
     SensorInfo,
+    ServerError,
     ServerInfo,
     SessionConfig,
     StackedResults,

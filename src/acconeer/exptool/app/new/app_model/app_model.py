@@ -25,6 +25,7 @@ from acconeer.exptool.app.new._enums import (
     PluginGeneration,
     PluginState,
 )
+from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model.file_detective import investigate_file
 from acconeer.exptool.app.new.backend import (
     Backend,
@@ -457,11 +458,11 @@ class AppModel(QObject):
         findings = investigate_file(path)
 
         if findings is None:
-            self.emit_error(Exception("Cannot load file"))
+            self.emit_error(HandledException("Cannot load file"))
             return
 
         if findings.generation != PluginGeneration.A121:
-            self.emit_error(Exception("This app can currently only load A121 files"))
+            self.emit_error(HandledException("This app can currently only load A121 files"))
             return
 
         try:

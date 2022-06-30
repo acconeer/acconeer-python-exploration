@@ -26,6 +26,7 @@ from .peripherals import (
     H5Record,
     H5Recorder,
     InMemoryRecord,
+    ServerError,
     load_record,
     open_record,
     save_record,
