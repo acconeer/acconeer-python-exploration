@@ -166,7 +166,7 @@ class ProcessorBackendPluginBase(
         )
         self.detach_client()
 
-    def load_from_file(self, *, path: Path) -> None:
+    def _load_from_file(self, *, path: Path) -> None:
         self._opened_file = h5py.File(path, mode="r")
         self._opened_record = a121.H5Record(self._opened_file)
         self._replaying_client = a121._ReplayingClient(self._opened_record)
@@ -213,6 +213,8 @@ class ProcessorBackendPluginBase(
             self.broadcast()
         elif name == "deserialize":
             self._deserialize(kwargs["data"])
+        elif name == "load_from_file":
+            self._load_from_file(**kwargs)
         else:
             raise RuntimeError(f"Unknown task: {name}")
 

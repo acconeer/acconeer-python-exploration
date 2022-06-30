@@ -113,13 +113,15 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             assert isinstance(config, DetectorConfig)
             self.shared_state.config = config
             self.broadcast()
+        elif name == "load_from_file":
+            self._load_from_file(**kwargs)
         else:
             raise RuntimeError(f"Unknown task: {name}")
 
     def teardown(self) -> None:
         self.detach_client()
 
-    def load_from_file(self, *, path: Path) -> None:
+    def _load_from_file(self, *, path: Path) -> None:
         raise NotImplementedError
 
     def __execute_start(self) -> None:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-from pathlib import Path
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 from ._message import BackendPluginStateMessage, Message, StatusMessage
@@ -35,10 +34,6 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
 
     @abc.abstractmethod
     def teardown(self) -> None:
-        pass
-
-    @abc.abstractmethod
-    def load_from_file(self, *, path: Path) -> None:
         pass
 
     def broadcast(self) -> None:

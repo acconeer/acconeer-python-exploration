@@ -473,7 +473,7 @@ class AppModel(QObject):
             plugin = self._find_plugin("sparse_iq")  # noqa: F841
 
         self.load_plugin(plugin)
-        self._put_backend_task("load_from_file", {"path": path})
+        self.put_backend_plugin_task("load_from_file", {"path": path}, on_error=self.emit_error)
         self.plugin_state = PluginState.LOADED_STARTING
         self.broadcast()
 

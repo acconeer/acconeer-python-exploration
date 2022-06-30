@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any, Callable, Optional, Type
 
 from acconeer.exptool import a121
@@ -46,8 +45,6 @@ class Model:
             self.load_plugin(**kwargs)
         elif name == "unload_plugin":
             self.unload_plugin(**kwargs)
-        elif name == "load_from_file":
-            self.load_from_file(**kwargs)
         else:
             raise RuntimeError(f"Unknown task: {name}")
 
@@ -114,9 +111,3 @@ class Model:
         log.debug("Current BackendPlugin was torn down")
 
         self.task_callback(PluginStateMessage(state=PluginState.UNLOADED))
-
-    def load_from_file(self, *, path: Path) -> None:
-        if self.backend_plugin is None:
-            raise RuntimeError("Plugin not loaded on load_from_file")
-
-        self.backend_plugin.load_from_file(path=path)
