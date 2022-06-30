@@ -9,7 +9,7 @@ from typing import Any, Dict, Literal, Optional, Tuple, Union
 
 import attrs
 
-from ._message import Message
+from ._message import GeneralMessage, Message
 from ._model import Model
 
 
@@ -108,7 +108,18 @@ def process_program(
                     pass
 
             if msg is None:  # Model wanted idle and nothing in queue
-                model_wants_to_idle = model.idle()
+                try:
+                    model_wants_to_idle = model.idle()
+                except Exception as exc:
+                    model_wants_to_idle = False
+                    send_queue.put(
+                        GeneralMessage(
+                            name="error",
+                            exception=exc,
+                            traceback_format_exc=traceback.format_exc(),
+                        )
+                    )
+
                 continue
 
             cmd, maybe_key_and_task = msg

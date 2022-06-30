@@ -27,11 +27,7 @@ class Model:
         if self.backend_plugin is None:
             return False
 
-        try:
-            return self.backend_plugin.idle()
-        except Exception:
-            log.error("Backend plugin idle failed")
-            return False
+        return self.backend_plugin.idle()
 
     def execute_task(self, name: str, kwargs: dict[str, Any], plugin: bool) -> None:
         if plugin:
