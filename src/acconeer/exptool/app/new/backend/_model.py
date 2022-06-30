@@ -91,7 +91,7 @@ class Model:
 
     def load_plugin(self, *, plugin: Type[BackendPlugin], key: str) -> None:
         if self.backend_plugin is not None:
-            self.unload_plugin()
+            self.unload_plugin(send_callback=False)
 
         self.backend_plugin = plugin(callback=self.task_callback, key=key)
         log.info(f"{plugin.__name__} was loaded.")
@@ -102,7 +102,7 @@ class Model:
 
         self.task_callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
-    def unload_plugin(self) -> None:
+    def unload_plugin(self, send_callback: bool = True) -> None:
         if self.backend_plugin is None:
             return
 
@@ -110,4 +110,5 @@ class Model:
         self.backend_plugin = None
         log.debug("Current BackendPlugin was torn down")
 
-        self.task_callback(PluginStateMessage(state=PluginState.UNLOADED))
+        if send_callback:
+            self.task_callback(PluginStateMessage(state=PluginState.UNLOADED))
