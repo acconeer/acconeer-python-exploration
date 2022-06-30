@@ -32,6 +32,10 @@ class DetectorReadiness(enum.Enum):
     NEED_CALIBRATION = enum.auto()
     CONFIG_MISMATCH = enum.auto()
 
+    @property
+    def is_ok(self):
+        return self == self.OK
+
 
 @attrs.frozen(kw_only=True)
 class SubsweepGroupPlan:
@@ -199,14 +203,14 @@ class Detector:
         self.context.recorded_threshold_session_config_used = self.session_config
 
     @classmethod
-    def ready_for_close_range_calibration(cls, config: DetectorConfig) -> DetectorReadiness:
+    def calibrate_close_range_readiness(cls, config: DetectorConfig) -> DetectorReadiness:
         if cls._has_close_range_measurement(config):
             return DetectorReadiness.OK
         else:
             return DetectorReadiness.NA
 
     @classmethod
-    def ready_for_recorded_threshold_calibration(
+    def record_threshold_readiness(
         cls, config: DetectorConfig, context: DetectorContext
     ) -> DetectorReadiness:
         if (
@@ -230,7 +234,9 @@ class Detector:
         return DetectorReadiness.OK
 
     @classmethod
-    def ready_to_start(cls, config: DetectorConfig, context: DetectorContext) -> DetectorReadiness:
+    def start_readiness(
+        cls, config: DetectorConfig, context: DetectorContext
+    ) -> DetectorReadiness:
         (
             session_config,
             _,
