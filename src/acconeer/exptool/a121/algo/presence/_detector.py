@@ -5,7 +5,7 @@ import numpy as np
 
 from acconeer.exptool import a121
 
-from ._processors import Processor, ProcessorConfig
+from ._processors import Processor, ProcessorConfig, ProcessorExtraResult
 
 
 @attrs.mutable(kw_only=True)
@@ -13,7 +13,7 @@ class DetectorConfig:
     start_m: float = attrs.field(default=1.0)
     end_m: float = attrs.field(default=2.0)
     detection_threshold: float = attrs.field(default=1.5)
-    update_rate: float = attrs.field(default=10.0)
+    frame_rate: float = attrs.field(default=10.0)
     sweeps_per_frame: int = attrs.field(default=16)
     hwaas: int = attrs.field(default=32)
 
@@ -23,6 +23,12 @@ class DetectorResult:
     presence_score: float = attrs.field()
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
+    processor_extra_result: ProcessorExtraResult = attrs.field()
+
+    def __str__(self) -> str:
+        s = "Presence! " if self.presence_detected else "No presence. "
+        s += f"Score {self.presence_score:.3f} at {self.presence_distance:.3f} m "
+        return s
 
 
 class Detector:
@@ -49,7 +55,6 @@ class Detector:
         session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,
-            update_rate=self.detector_config.update_rate,
         )
 
         metadata = self.client.setup_session(session_config)
@@ -83,6 +88,7 @@ class Detector:
             step_length=step_length,
             hwaas=detector_config.hwaas,
             sweeps_per_frame=detector_config.sweeps_per_frame,
+            frame_rate=detector_config.frame_rate,
         )
 
     @classmethod
@@ -105,6 +111,7 @@ class Detector:
             presence_score=processor_result.presence_score,
             presence_distance=processor_result.presence_distance,
             presence_detected=processor_result.presence_detected,
+            processor_extra_result=processor_result.extra_result,
         )
 
     def update_config(self, config: DetectorConfig) -> None:

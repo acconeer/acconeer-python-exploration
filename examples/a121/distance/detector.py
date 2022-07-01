@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
+# Added here to force pyqtgraph to choose PySide
+import PySide6  # noqa: F401
+
 import pyqtgraph as pg
 
 import acconeer.exptool as et
