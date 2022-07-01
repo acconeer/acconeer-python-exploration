@@ -59,6 +59,7 @@ class PluginState(Enum):
 class PluginFamily(Enum):
     SERVICE = "Services"
     DETECTOR = "Detectors"
+    EXAMPLE_APP = "Example apps"
 
 
 class PluginGeneration(Enum):
