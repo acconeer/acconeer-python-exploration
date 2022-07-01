@@ -85,6 +85,7 @@ class Processor:
 
         # Config of the presence detector
         presence_config = presence_detection_sparse.ProcessingConfiguration()
+        presence_config.detection_threshold = processing_config.detection_threshold
         presence_config.intra_frame_weight = 1.0
         presence_config.intra_frame_time_const = 0.05
         presence_config.output_time_const = 0.02
@@ -115,7 +116,7 @@ class Processor:
         score = presence_result["presence_score"]
         button_press = False
 
-        if score > self.detection_threshold and self.cool_trig and self.cool_time:
+        if presence_result["presence_detected"] and self.cool_trig and self.cool_time:
             button_press = True
             self.cool_trig = False
             self.cool_time = False
