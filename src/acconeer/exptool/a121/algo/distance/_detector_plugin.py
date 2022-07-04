@@ -40,6 +40,7 @@ from acconeer.exptool.app.new.ui.plugin import (
 )
 
 from ._detector import (
+    DetailedStatus,
     Detector,
     DetectorConfig,
     DetectorContext,
@@ -329,6 +330,21 @@ class PlotPlugin(DetectorPlotPluginBase):
 
 
 class ViewPlugin(DetectorViewPluginBase):
+
+    TEXT_MSG_MAP = {
+        DetailedStatus.OK: "Ready to start.",
+        DetailedStatus.CLOSE_RANGE_CALIBRATION_MISSING: "Run close range calibration.",
+        DetailedStatus.CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH: (
+            "Configuration does not match"
+            + " configuration used during close range calibration. Please rerun calibration."
+        ),
+        DetailedStatus.RECORDED_THRESHOLD_MISSING: "Run recorded threshold calibration.",
+        DetailedStatus.RECORDED_THRESHOLD_CONFIG_MISMATCH: (
+            "Configuration does not match configuration"
+            + " used during recorded threshold calibration. Please rerun calibration."
+        ),
+    }
+
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
 
@@ -473,42 +489,22 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
 
-        close_range_calibration_ready = Detector.calibrate_close_range_readiness(
-            state.config
-        ).is_ok
-        recorded_threshold_calibration_ready = Detector.record_threshold_readiness(
-            state.config, state.context
-        ).is_ok
-        start_ready = Detector.start_readiness(state.config, state.context).is_ok
+        detector_status = Detector.get_detector_status(state.config, state.context)
 
-        text = ""
-        if close_range_calibration_ready:
-            if start_ready:
-                text = "Start measurement"
-            elif recorded_threshold_calibration_ready:
-                text = "Record threshold"
-            elif close_range_calibration_ready:
-                text = "Calibrate close range"
-        else:
-            if start_ready:
-                text = "Start measurement"
-            elif recorded_threshold_calibration_ready:
-                text = "Record threshold"
-
-        self.message_box.setText(text)
+        self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
 
         ready_for_session = (
             app_model.plugin_state == PluginState.LOADED_IDLE
             and app_model.connection_state == ConnectionState.CONNECTED
         )
 
-        self.start_button.setEnabled(ready_for_session and start_ready)
         self.close_range_calibration_button.setEnabled(
-            ready_for_session and close_range_calibration_ready
+            ready_for_session and detector_status.ready_to_calibrate_close_range
         )
         self.record_threshold_button.setEnabled(
-            ready_for_session and recorded_threshold_calibration_ready
+            ready_for_session and detector_status.ready_to_record_threshold
         )
+        self.start_button.setEnabled(ready_for_session and detector_status.ready_to_start)
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     # TODO: move to detector base (?)

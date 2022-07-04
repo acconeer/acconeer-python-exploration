@@ -26,15 +26,20 @@ from ._processors import (
 )
 
 
-class DetectorReadiness(enum.Enum):
-    NA = enum.auto()
-    OK = enum.auto()
-    NEED_CALIBRATION = enum.auto()
-    CONFIG_MISMATCH = enum.auto()
+@attrs.frozen(kw_only=True)
+class DetectorStatus:
+    detector_state: DetailedStatus
+    ready_to_calibrate_close_range: bool
+    ready_to_record_threshold: bool
+    ready_to_start: bool
 
-    @property
-    def is_ok(self):
-        return self == self.OK
+
+class DetailedStatus(enum.Enum):
+    OK = enum.auto()
+    CLOSE_RANGE_CALIBRATION_MISSING = enum.auto()
+    CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH = enum.auto()
+    RECORDED_THRESHOLD_MISSING = enum.auto()
+    RECORDED_THRESHOLD_CONFIG_MISMATCH = enum.auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -204,63 +209,50 @@ class Detector:
         self.context.recorded_threshold_session_config_used = self.session_config
 
     @classmethod
-    def calibrate_close_range_readiness(cls, config: DetectorConfig) -> DetectorReadiness:
+    def get_detector_status(
+        cls, config: DetectorConfig, context: DetectorContext
+    ) -> DetectorStatus:
+        (
+            session_config,
+            _,
+        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+
+        ready_to_record_threshold = False
         if cls._has_close_range_measurement(config):
-            return DetectorReadiness.OK
+            ready_to_calibrate_close_range = True
+            if cls._close_range_calibrated(context):
+                if session_config != context.close_range_session_config_used:
+                    detector_state = DetailedStatus.CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH
+                elif not cls._recorded_threshold_calibrated(context):
+                    detector_state = DetailedStatus.RECORDED_THRESHOLD_MISSING
+                    ready_to_record_threshold = True
+                elif session_config != context.recorded_threshold_session_config_used:
+                    detector_state = DetailedStatus.RECORDED_THRESHOLD_CONFIG_MISMATCH
+                else:
+                    detector_state = DetailedStatus.OK
+                    ready_to_record_threshold = True
+            else:
+                detector_state = DetailedStatus.CLOSE_RANGE_CALIBRATION_MISSING
         else:
-            return DetectorReadiness.NA
+            ready_to_calibrate_close_range = False
+            if cls._has_recorded_threshold_mode(config):
+                ready_to_record_threshold = True
+                if cls._recorded_threshold_calibrated(context):
+                    if session_config != context.recorded_threshold_session_config_used:
+                        detector_state = DetailedStatus.RECORDED_THRESHOLD_CONFIG_MISMATCH
+                    else:
+                        detector_state = DetailedStatus.OK
+                else:
+                    detector_state = DetailedStatus.RECORDED_THRESHOLD_MISSING
+            else:
+                detector_state = DetailedStatus.OK
 
-    @classmethod
-    def record_threshold_readiness(
-        cls, config: DetectorConfig, context: DetectorContext
-    ) -> DetectorReadiness:
-        if (
-            not cls._has_close_range_measurement(config)
-            and config.threshold_method != ThresholdMethod.RECORDED
-        ):
-            return DetectorReadiness.NA
-
-        (
-            session_config,
-            _,
-        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
-
-        if cls._has_close_range_measurement(config):
-            if not cls._close_range_calibrated(context):
-                return DetectorReadiness.NEED_CALIBRATION
-
-            if session_config != context.close_range_session_config_used:
-                return DetectorReadiness.CONFIG_MISMATCH
-
-        return DetectorReadiness.OK
-
-    @classmethod
-    def start_readiness(
-        cls, config: DetectorConfig, context: DetectorContext
-    ) -> DetectorReadiness:
-        (
-            session_config,
-            _,
-        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
-
-        if cls._has_close_range_measurement(config):
-            if (
-                session_config != context.close_range_session_config_used
-                or session_config != context.recorded_threshold_session_config_used
-            ):
-                return DetectorReadiness.CONFIG_MISMATCH
-
-            if not cls._recorded_threshold_calibrated(context):
-                return DetectorReadiness.NEED_CALIBRATION
-
-        if config.threshold_method == ThresholdMethod.RECORDED:
-            if session_config != context.recorded_threshold_session_config_used:
-                return DetectorReadiness.CONFIG_MISMATCH
-
-            if not cls._recorded_threshold_calibrated(context):
-                return DetectorReadiness.NEED_CALIBRATION
-
-        return DetectorReadiness.OK
+        return DetectorStatus(
+            detector_state=detector_state,
+            ready_to_calibrate_close_range=ready_to_calibrate_close_range,
+            ready_to_record_threshold=ready_to_record_threshold,
+            ready_to_start=(detector_state == DetailedStatus.OK),
+        )
 
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
