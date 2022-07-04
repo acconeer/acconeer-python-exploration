@@ -442,7 +442,10 @@ class Detector:
 
         far_subgroup_plans = []
         far_range_start_m = np.max([config.start_m, transition_m])
-        if far_range_start_m <= min_dist_m[config.max_profile]:
+        if (
+            config.max_profile is not a121.Profile.PROFILE_1
+            and far_range_start_m < min_dist_m[config.max_profile]
+        ):
             min_dists_m = np.array(list(min_dist_m.values()))
             min_dists_profiles = np.array(list(min_dist_m.keys()))
             (viable_profile_idx,) = np.where(min_dists_m <= far_range_start_m)
