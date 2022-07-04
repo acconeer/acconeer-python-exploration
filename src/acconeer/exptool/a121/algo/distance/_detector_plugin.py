@@ -58,16 +58,6 @@ class SharedState:
     config: DetectorConfig = attrs.field()
     context: DetectorContext = attrs.field(factory=DetectorContext)
 
-    @property
-    def has_recorded_threshold(self) -> bool:
-        # TODO: Implement in detector
-        return self.context.recorded_thresholds is not None
-
-    @property
-    def has_close_range_calibration(self) -> bool:
-        # TODO: Implement in detector
-        return self.context.phase_jitter_comp_reference is not None
-
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def __init__(self, callback: Callable[[Message], None], key: str) -> None:
