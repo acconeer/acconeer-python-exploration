@@ -366,6 +366,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.close_range_calibration_button.clicked.connect(self._on_close_range_calibration)
 
         self.message_box = QLabel(self.view_widget)
+        self.message_box.setWordWrap(True)
 
         button_group = GridGroupBox("Controls", parent=self.view_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
