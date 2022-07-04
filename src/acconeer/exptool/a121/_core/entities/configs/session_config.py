@@ -204,8 +204,7 @@ class SessionConfig:
                 }
             )
 
-        if self._update_rate is not None:
-            d["update_rate"] = self._update_rate
+        d["update_rate"] = self._update_rate
         return d
 
     @classmethod
