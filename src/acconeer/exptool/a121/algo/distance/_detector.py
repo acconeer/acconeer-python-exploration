@@ -159,6 +159,7 @@ class Detector:
         assert processor_result.phase_jitter_comp_reference is not None
         self.context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
         self.context.close_range_session_config_used = self.session_config
+        self.context.recorded_thresholds = None
 
     def record_threshold(self) -> None:
         if self.started:
