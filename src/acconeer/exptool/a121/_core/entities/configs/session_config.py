@@ -192,12 +192,7 @@ class SessionConfig:
         return sensor_config
 
     def __eq__(self, other: Any) -> bool:
-        return (
-            type(self) == type(other)
-            and self.extended == other.extended
-            and self.update_rate == other.update_rate
-            and self._groups == other._groups
-        )
+        return type(self) == type(other) and self.to_dict() == other.to_dict()
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"groups": [], "extended": self.extended}
