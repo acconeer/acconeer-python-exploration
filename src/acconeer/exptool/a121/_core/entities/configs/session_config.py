@@ -243,6 +243,24 @@ class SessionConfig:
 
         return cls.from_dict(session_config_dict)
 
+    def __str__(self) -> str:
+        lines = []
+
+        lines.append(f"{type(self).__name__}:")
+
+        d = self.to_dict()
+        del d["groups"]
+        lines.extend(utils.pretty_dict_line_strs(d))
+
+        lines.append("  groups:")
+        for group_idx, group_dict in enumerate(self.groups):
+            lines.append(f"    group {group_idx}:")
+            for sensor_id, sensor_config in group_dict.items():
+                sc_lines = sensor_config._pretty_str_lines(sensor_id=sensor_id)
+                lines.extend(utils.indent_strs(sc_lines, 3))
+
+        return "\n".join(lines)
+
 
 def _unsqueeze_groups(
     arg: Union[SensorConfig, dict[int, SensorConfig], list[dict[int, SensorConfig]]],

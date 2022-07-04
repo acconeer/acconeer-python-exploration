@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import warnings
-from typing import Any
+from typing import Any, Optional
 
 import attrs
 
@@ -11,6 +11,7 @@ from acconeer.exptool.a121._core.utils import (
     convert_validate_int,
     is_divisor_of,
     is_multiple_of,
+    pretty_dict_line_strs,
 )
 
 from .config_enums import PRF, Profile
@@ -292,3 +293,13 @@ class SubsweepConfig:
     @classmethod
     def from_json(cls, json_str: str) -> SubsweepConfig:
         return cls.from_dict(json.loads(json_str))
+
+    def _pretty_str_lines(self, index: Optional[int] = None) -> list[str]:
+        lines = []
+        index_str = "" if index is None else f" @ index {index}"
+        lines.append(f"{type(self).__name__}{index_str}:")
+        lines.extend(pretty_dict_line_strs(self.to_dict()))
+        return lines
+
+    def __str__(self) -> str:
+        return "\n".join(self._pretty_str_lines())

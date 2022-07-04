@@ -498,3 +498,23 @@ class SensorConfig:
     @inter_sweep_idle_state.setter
     def inter_sweep_idle_state(self, value: IdleState) -> None:
         self._inter_sweep_idle_state = IdleState(value)
+
+    def _pretty_str_lines(self, sensor_id: Optional[int] = None) -> list[str]:
+        lines = []
+
+        id_str = "" if sensor_id is None else f" @ sensor {sensor_id}"
+        lines.append(f"{type(self).__name__}{id_str}:")
+
+        d = self.to_dict()
+        del d["subsweeps"]
+        lines.extend(utils.pretty_dict_line_strs(d))
+
+        lines.append("  subsweeps:")
+        for i, subsweep in enumerate(self.subsweeps):
+            ss_lines = subsweep._pretty_str_lines(index=i)
+            lines.extend(utils.indent_strs(ss_lines, 2))
+
+        return lines
+
+    def __str__(self) -> str:
+        return "\n".join(self._pretty_str_lines())
