@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import platform
+
 import qtawesome as qta
 
 from PySide6.QtWidgets import (
@@ -15,7 +17,7 @@ from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
-from .misc import BUTTON_ICON_COLOR, SerialPortComboBox
+from .misc import BUTTON_ICON_COLOR, SerialPortComboBox, USBDeviceComboBox
 
 
 class _ConnectAndDisconnectButton(QPushButton):
@@ -55,7 +57,9 @@ class _ConnectAndDisconnectButton(QPushButton):
 
         self.setText(TEXTS[app_model.connection_state])
         self.setEnabled(
-            app_model.connection_state in ENABLED_STATES and app_model.plugin_state.is_steady
+            app_model.connection_state in ENABLED_STATES
+            and app_model.plugin_state.is_steady
+            and app_model.is_connect_ready()
         )
         self.setIcon(qta.icon(ICONS[app_model.connection_state], color=BUTTON_ICON_COLOR))
 
@@ -93,12 +97,17 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.interface_dd.addItem("Socket", userData=ConnectionInterface.SOCKET)
         self.interface_dd.addItem("Serial", userData=ConnectionInterface.SERIAL)
 
+        if platform.system().lower() == "windows":
+            self.interface_dd.addItem("USB", userData=ConnectionInterface.USB)
+
         self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
 
         self.stacked = QStackedWidget(self)
         self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
         self.stacked.addWidget(_SocketConnectionWidget(app_model, self.stacked))
         self.stacked.addWidget(SerialPortComboBox(app_model, self.stacked))
+        if platform.system().lower() == "windows":
+            self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
         self.layout().addWidget(self.stacked)
 
         self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))

@@ -39,8 +39,9 @@ from acconeer.exptool.app.new.backend import (
     StatusMessage,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
+from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
-from .serial_port_updater import SerialPortUpdater
+from .port_updater import PortUpdater
 
 
 log = logging.getLogger(__name__)
@@ -142,6 +143,8 @@ class AppModel(QObject):
     socket_connection_ip: str
     serial_connection_port: Optional[str]
     available_tagged_ports: list[Tuple[str, Optional[str]]]
+    usb_connection_device: Optional[USBDevice]
+    available_usb_devices: list[USBDevice]
     saveable_file: Optional[Path]
 
     def __init__(self, backend: Backend, plugins: list[Plugin]) -> None:
@@ -150,8 +153,10 @@ class AppModel(QObject):
         self._listener = _BackendListeningThread(self._backend, self)
         self._listener.sig_backend_message.connect(self._handle_backend_message)
         self._listener.sig_backend_closed_task.connect(self._handle_backend_closed_task)
-        self._serial_port_updater = SerialPortUpdater(self)
-        self._serial_port_updater.sig_update.connect(self._handle_serial_port_update)
+        self._port_updater = PortUpdater(self)
+        self._port_updater.sig_serial_update.connect(self._handle_serial_port_update)
+        self._port_updater.sig_usb_update.connect(self._handle_usb_device_update)
+
         self._backend_task_callbacks: dict[UUID, Any] = {}
 
         self._a121_server_info: Optional[a121.ServerInfo] = None
@@ -166,14 +171,16 @@ class AppModel(QObject):
         self.plugin_state = PluginState.UNLOADED
         self.socket_connection_ip = ""
         self.serial_connection_port = None
+        self.usb_connection_device = None
         self.available_tagged_ports = []
+        self.available_usb_devices = []
         self.saveable_file = None
 
         self.last_update_time = None
 
     def start(self) -> None:
         self._listener.start()
-        self._serial_port_updater.start()
+        self._port_updater.start()
 
     def stop(self) -> None:
         WAIT_FOR_UNLOAD_TIMEOUT = 1.0
@@ -197,7 +204,7 @@ class AppModel(QObject):
             log.debug("Backend listening thread did not stop when requested, terminating...")
             self._listener.terminate()
 
-        self._serial_port_updater.stop()
+        self._port_updater.stop()
 
     def broadcast(self) -> None:
         self.sig_notify.emit(self)
@@ -374,11 +381,38 @@ class AppModel(QObject):
 
         return current_port
 
+    def _handle_usb_device_update(self, usb_devices: list[USBDevice]) -> None:
+        self.usb_connection_device = self._select_new_usb_device(
+            usb_devices, self.usb_connection_device
+        )
+
+        self.available_usb_devices = usb_devices
+
+        self.broadcast()
+
+    def _select_new_usb_device(
+        self,
+        new_ports: list[str],
+        current_port: Optional[USBDevice],
+    ) -> Optional[USBDevice]:
+        if self.connection_state != ConnectionState.DISCONNECTED:
+            return current_port
+
+        if not new_ports:
+            return None
+
+        if current_port not in new_ports:
+            return new_ports[0]
+
+        return current_port
+
     def connect_client(self) -> None:
         if self.connection_interface == ConnectionInterface.SOCKET:
             client_info = a121.ClientInfo(ip_address=self.socket_connection_ip)
         elif self.connection_interface == ConnectionInterface.SERIAL:
             client_info = a121.ClientInfo(serial_port=self.serial_connection_port)
+        elif self.connection_interface == ConnectionInterface.USB:
+            client_info = a121.ClientInfo(usb_device=self.usb_connection_device)
         else:
             raise RuntimeError
 
@@ -398,6 +432,19 @@ class AppModel(QObject):
         self._a121_server_info = None
         self.broadcast()
 
+    def is_connect_ready(self) -> bool:
+        return (
+            (self.connection_interface == ConnectionInterface.SOCKET)
+            or (
+                self.connection_interface == ConnectionInterface.SERIAL
+                and self.serial_connection_port is not None
+            )
+            or (
+                self.connection_interface == ConnectionInterface.USB
+                and self.usb_connection_device is not None
+            )
+        )
+
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
         self.connection_interface = connection_interface
         self.broadcast()
@@ -408,6 +455,10 @@ class AppModel(QObject):
 
     def set_serial_connection_port(self, port: Optional[str]) -> None:
         self.serial_connection_port = port
+        self.broadcast()
+
+    def set_usb_connection_port(self, port: Optional[str]) -> None:
+        self.usb_connection_device = port
         self.broadcast()
 
     def set_plugin_state(self, state: PluginState) -> None:

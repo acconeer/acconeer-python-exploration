@@ -13,6 +13,12 @@ import serial
 from acconeer.exptool.a111._clients.base import ClientError
 
 
+try:
+    from acconeer.exptool._winusbcdc.usb_cdc import ComPort
+except ImportError:
+    ComPort = None
+
+
 log = logging.getLogger(__name__)
 
 
@@ -270,6 +276,83 @@ class ExploreSerialLink(SerialLink):
         self._buf = self._buf[i:]
 
         return data
+
+
+class USBLink(BaseLink):
+    _USB_PACKET_TIMEOUT = 0.01
+
+    def __init__(self, vid=None, pid=None, serial=None, name=None):
+        super().__init__()
+        self._vid = vid
+        self._pid = pid
+        self._serial = serial
+        self._name = name
+        self._port_timeout = self._USB_PACKET_TIMEOUT
+
+    def _update_timeout(self):
+        pass
+
+    def connect(self):
+        if ComPort is None:
+            raise ImportError("WinUsbPy only works on Windows platform")
+        self._port = ComPort(name=self._name, vid=self._vid, pid=self._pid, start=False)
+        self._port.open()
+        self._port.timeout = self._port_timeout
+        self._buf = bytearray()
+        self.send_break()
+
+    def send_break(self):
+        self._port.send_break()
+        sleep(0.5)
+        self._port.reset_input_buffer()
+
+    def recv(self, num_bytes):
+        t0 = time()
+        while len(self._buf) < num_bytes:
+            if time() - t0 > self._timeout:
+                raise LinkError("recv timeout")
+
+            try:
+                r = bytearray(self._port.read())
+            except OSError as e:
+                raise LinkError from e
+            self._buf.extend(r)
+
+        data = self._buf[:num_bytes]
+        self._buf = self._buf[num_bytes:]
+        return data
+
+    def recv_until(self, bs):
+        t0 = time()
+        while True:
+            try:
+                i = self._buf.index(bs)
+            except ValueError:
+                pass
+            else:
+                break
+
+            if time() - t0 > self._timeout:
+                raise LinkError("recv timeout")
+
+            try:
+                r = bytearray(self._port.read())
+            except OSError as e:
+                raise LinkError from e
+            self._buf.extend(r)
+
+        i += 1
+        data = self._buf[:i]
+        self._buf = self._buf[i:]
+
+        return data
+
+    def send(self, data):
+        self._port.write(data)
+
+    def disconnect(self):
+        self._port.close()
+        self._port = None
 
 
 class SerialProcessLink(BaseSerialLink):

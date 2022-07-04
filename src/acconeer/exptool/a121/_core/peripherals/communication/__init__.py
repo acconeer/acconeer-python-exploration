@@ -5,4 +5,4 @@ from .exploration_protocol import (
     ServerError,
     get_exploration_protocol,
 )
-from .links import AdaptedSerialLink, AdaptedSocketLink
+from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink

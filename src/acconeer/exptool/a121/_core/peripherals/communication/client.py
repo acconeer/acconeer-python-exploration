@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, Type
+import platform
+from typing import Optional, Type, Union
 
 import attrs
 
@@ -14,7 +15,7 @@ from acconeer.exptool.a121._core.mediators import (
 )
 
 from .exploration_protocol import ExplorationProtocol, get_exploration_protocol
-from .links import AdaptedSerialLink, AdaptedSocketLink, NullLink, NullLinkError
+from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink, NullLink, NullLinkError
 
 
 def determine_serial_port(serial_port: Optional[str]) -> str:
@@ -27,7 +28,7 @@ def determine_serial_port(serial_port: Optional[str]) -> str:
             return str(port)
         except ValueError:
             if hopefully_a_single_tagged_port == []:
-                raise ClientError("No devices detected. Cannot auto detect.")
+                raise ClientError("No serial devices detected. Cannot auto detect.")
             else:
                 port_list = "\n".join(
                     [f"* {port} ({tag})" for port, tag in hopefully_a_single_tagged_port]
@@ -38,6 +39,20 @@ def determine_serial_port(serial_port: Optional[str]) -> str:
                 )
     else:
         return serial_port
+
+
+def determine_usb_device(usb_device: Optional[str]) -> str:
+    if usb_device is None:
+        usb_devices = et.utils.get_usb_devices()
+
+        if not usb_devices:
+            raise ClientError("No USB devices detected. Cannot auto detect.")
+        elif len(usb_devices) > 1:
+            raise ClientError("There are multiple devices detected. Specify one:\n" + usb_devices)
+        else:
+            return str(usb_devices[0])
+    else:
+        return usb_device
 
 
 def link_factory(client_info: ClientInfo) -> BufferedLink:
@@ -54,7 +69,36 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
 
         return link
 
+    if client_info.usb_device is not None:
+        link = AdaptedUSBLink(
+            vid=client_info.usb_device.vid,
+            pid=client_info.usb_device.pid,
+        )
+
+        return link
+
     return NullLink()
+
+
+def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
+    if platform.system().lower() == "windows":
+        try:
+            client_info = attrs.evolve(
+                client_info,
+                usb_device=determine_usb_device(client_info.usb_device),
+            )
+
+            return client_info
+        except ClientError:
+            pass
+    try:
+        client_info = attrs.evolve(
+            client_info,
+            serial_port=determine_serial_port(client_info.serial_port),
+        )
+        return client_info
+    except ClientError:
+        raise ClientError("No devices detected. Cannot auto detect.")
 
 
 class Client(AgnosticClient):
@@ -65,14 +109,12 @@ class Client(AgnosticClient):
         self,
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
+        usb_device: Optional[Union[str, et.utils.USBDevice]] = None,
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ):
-        if ip_address is not None and serial_port is not None:
-            raise ValueError(
-                f"Both 'ip_address' ({ip_address}) and 'serial_port' ({serial_port}) "
-                + "are not allowed. Chose one."
-            )
+        if len([e for e in [ip_address, serial_port, usb_device] if e is not None]) > 1:
+            raise ValueError("Only one connection can be selected")
 
         protocol: Type[CommunicationProtocol] = ExplorationProtocol
         self._protocol_overridden = False
@@ -85,6 +127,7 @@ class Client(AgnosticClient):
             ip_address=ip_address,
             override_baudrate=override_baudrate,
             serial_port=serial_port,
+            usb_device=usb_device,
         )
 
         super().__init__(
@@ -100,9 +143,7 @@ class Client(AgnosticClient):
         try:
             super().connect()
         except NullLinkError:
-            self._client_info = attrs.evolve(
-                self._client_info, serial_port=determine_serial_port(self.client_info.serial_port)
-            )
+            self._client_info = autodetermine_client_link(self._client_info)
             self._link = link_factory(self.client_info)
             super().connect()
 

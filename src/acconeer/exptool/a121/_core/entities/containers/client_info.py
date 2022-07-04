@@ -5,11 +5,14 @@ from typing import Any, Optional
 
 import attrs
 
+from acconeer.exptool.utils import USBDevice  # type: ignore[import]
+
 
 @attrs.frozen(kw_only=True)
 class ClientInfo:
     ip_address: Optional[str] = None
     serial_port: Optional[str] = None
+    usb_device: Optional[USBDevice] = None
     override_baudrate: Optional[int] = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -17,6 +20,9 @@ class ClientInfo:
 
     @classmethod
     def from_dict(cls, d: dict) -> ClientInfo:
+        if d["usb_device"]:
+            d = d.copy()
+            d["usb_device"] = USBDevice.from_dict(d["usb_device"])
         return cls(**d)
 
     def to_json(self) -> str:

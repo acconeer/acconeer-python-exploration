@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import json
 import logging
 import operator
 import re
@@ -6,7 +9,9 @@ import struct
 import sys
 import time
 from datetime import datetime
+from typing import Any, Optional
 
+import attrs
 import numpy as np
 import serial.tools.list_ports
 from packaging import version
@@ -21,6 +26,40 @@ try:
     import pyqtgraph as pg
 except ImportError:
     pg = None
+
+try:
+    from acconeer.exptool._winusbcdc.winusbpy import WinUsbPy
+except ImportError:
+    WinUsbPy = None
+
+
+@attrs.frozen(kw_only=True)
+class USBDevice:
+    vid: int
+    pid: int
+    serial: Optional[str] = None
+    name: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return attrs.asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> USBDevice:
+        return cls(**d)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_json(cls, json_str: str) -> USBDevice:
+        return cls.from_dict(json.loads(json_str))
+
+
+_USB_IDS = [  # (vid, pid, 'model number')
+    (0x0483, 0xA41D, "XC120"),
+    (0x0483, 0xA42C, "XC120"),
+    (0x0483, 0xA42D, "XC120"),
+]
 
 
 class ExampleInterruptHandler:
@@ -82,11 +121,6 @@ def set_loglevel(level):
 
 def tag_serial_ports_objects(port_infos):
     PRODUCT_REGEX = r"[X][A-Z]\d{3}"
-    USB_IDS = [  # (vid, pid, 'model number')
-        (0x0483, 0xA41D, "XC120"),
-        (0x0483, 0xA42C, "XC120"),
-        (0x0483, 0xA42D, "XC120"),
-    ]
 
     port_tag_tuples = []
 
@@ -95,7 +129,7 @@ def tag_serial_ports_objects(port_infos):
 
         match = re.search(PRODUCT_REGEX, desc)
         if match is None:
-            for vid, pid, model_number in USB_IDS:
+            for vid, pid, model_number in _USB_IDS:
                 if port_object.vid == vid and port_object.pid == pid:
                     port_tag_tuples.append((port_object, model_number))
                     break
@@ -186,6 +220,32 @@ def autodetect_serial_port():
 
     print("Could not autodetect serial port")
     sys.exit()
+
+
+def get_usb_devices():
+    usb_devices = []
+
+    if WinUsbPy is None:
+        raise ImportError("USB ports only supported for Windows")
+
+    winusbpy = WinUsbPy()
+    all_usb_devices = winusbpy.list_usb_devices(deviceinterface=True, present=True)
+
+    for name, path in all_usb_devices.items():
+        found = False
+        pattern = r"(.*)#vid_(?P<vid>\w+)&pid_(?P<pid>\w+)(.*)"
+        match = re.fullmatch(pattern, path)
+        groups = match.groupdict()
+        v = int(f"0x{groups['vid']}", 16)
+        p = int(f"0x{groups['pid']}", 16)
+        for vid, pid, _ in _USB_IDS:
+            if v == vid and p == pid:
+                found = True
+
+        if found:
+            usb_devices.append(USBDevice(vid=v, pid=p, serial=None, name=name))
+
+    return usb_devices
 
 
 def color_cycler(i=0):

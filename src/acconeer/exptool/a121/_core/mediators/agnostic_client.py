@@ -207,7 +207,7 @@ class AgnosticClient:
         return recorder_result
 
     def _drain_buffer(
-        self, timeout_s: float = 1.0
+        self, timeout_s: float = 3.0
     ) -> bytes:  # TODO: Make `timeout_s` session-dependant
         """Drains data in the buffer. Returning the first bytes that are not data packets."""
         start = time.time()

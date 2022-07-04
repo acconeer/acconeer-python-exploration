@@ -57,6 +57,7 @@ class Model:
         self.client = a121.Client(
             ip_address=client_info.ip_address,
             serial_port=client_info.serial_port,
+            usb_device=client_info.usb_device,
             override_baudrate=client_info.override_baudrate,
         )
 

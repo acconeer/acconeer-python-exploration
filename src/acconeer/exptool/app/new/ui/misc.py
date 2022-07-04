@@ -81,3 +81,28 @@ class SerialPortComboBox(QComboBox):
 
             index = self.findData(app_model.serial_connection_port)
             self.setCurrentIndex(index)
+
+
+class USBDeviceComboBox(QComboBox):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.app_model = app_model
+        app_model.sig_notify.connect(self._on_app_model_update)
+        self.currentTextChanged.connect(self._on_change)
+
+    def _on_change(self) -> None:
+        self.app_model.set_usb_connection_port(self.currentData())
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        usb_devices = app_model.available_usb_devices
+
+        view_ports = [self.itemData(i) for i in range(self.count())]
+
+        with QtCore.QSignalBlocker(self):
+            if usb_devices != view_ports:
+                self.clear()
+                for usb_device in usb_devices:
+                    self.addItem(usb_device.name, usb_device)
+
+            index = self.findData(app_model.usb_connection_device)
+            self.setCurrentIndex(index)
