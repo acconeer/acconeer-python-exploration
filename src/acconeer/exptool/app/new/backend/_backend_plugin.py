@@ -29,10 +29,6 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         pass
 
     @abc.abstractmethod
-    def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
-        pass
-
-    @abc.abstractmethod
     def teardown(self) -> None:
         pass
 

@@ -4,7 +4,7 @@ import abc
 import logging
 import pickle
 from pathlib import Path
-from typing import Any, Callable, Generic, Optional, Type, TypeVar
+from typing import Callable, Generic, Optional, Type, TypeVar
 
 import attrs
 import h5py
@@ -26,6 +26,7 @@ from acconeer.exptool.app.new import (
     PluginGeneration,
     PluginState,
     PluginStateMessage,
+    is_task,
 )
 from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
@@ -92,11 +93,12 @@ class ProcessorBackendPluginBase(
         self._opened_file = None
         self._opened_record = None
 
-        self._restore_defaults()
+        self.restore_defaults()
 
-    def _deserialize(self, pickled: bytes) -> None:
+    @is_task
+    def deserialize(self, *, data: bytes) -> None:
         try:
-            obj = pickle.loads(pickled)
+            obj = pickle.loads(data)
         except Exception:
             log.warning("Could not load pickled - pickle.loads() failed")
             return
@@ -126,7 +128,8 @@ class ProcessorBackendPluginBase(
         if sync:
             self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
 
-    def _restore_defaults(self) -> None:
+    @is_task
+    def restore_defaults(self) -> None:
         self.shared_state = ProcessorBackendPluginSharedState[ConfigT](
             session_config=a121.SessionConfig(self.get_default_sensor_config()),
             processor_config=self.get_processor_config_cls()(),
@@ -143,7 +146,7 @@ class ProcessorBackendPluginBase(
 
     def idle(self) -> bool:
         if self._started:
-            self._execute_get_next()
+            self._get_next()
             return True
         else:
             return False
@@ -167,7 +170,8 @@ class ProcessorBackendPluginBase(
         )
         self.detach_client()
 
-    def _load_from_file(self, *, path: Path) -> None:
+    @is_task
+    def load_from_file(self, *, path: Path) -> None:
         try:
             self._load_from_file_setup(path=path)
         except Exception as exc:
@@ -179,7 +183,7 @@ class ProcessorBackendPluginBase(
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not load from file") from exc
 
-        self._execute_start(with_recorder=False)
+        self.start_session(with_recorder=False)
 
         self.shared_state.replaying = True
 
@@ -202,31 +206,18 @@ class ProcessorBackendPluginBase(
         except Exception:
             log.warning(f"Could not load '{self.key}' from file")
 
-    def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
-        if name == "start_session":
-            self._execute_start()
-        elif name == "stop_session":
-            self._execute_stop()
-        elif name == "restore_defaults":
-            self._restore_defaults()
-        elif name == "update_session_config":
-            session_config = kwargs["session_config"]
-            assert isinstance(session_config, a121.SessionConfig)
-            self.shared_state.session_config = session_config
-            self.broadcast()
-        elif name == "update_processor_config":
-            processor_config = kwargs["processor_config"]
-            assert isinstance(processor_config, self.get_processor_config_cls())
-            self.shared_state.processor_config = processor_config
-            self.broadcast()
-        elif name == "deserialize":
-            self._deserialize(kwargs["data"])
-        elif name == "load_from_file":
-            self._load_from_file(**kwargs)
-        else:
-            raise RuntimeError(f"Unknown task: {name}")
+    @is_task
+    def update_session_config(self, *, session_config: a121.SessionConfig) -> None:
+        self.shared_state.session_config = session_config
+        self.broadcast()
 
-    def _execute_start(self, *, with_recorder: bool = True) -> None:
+    @is_task
+    def update_processor_config(self, *, processor_config: ConfigT) -> None:
+        self.shared_state.processor_config = processor_config
+        self.broadcast()
+
+    @is_task
+    def start_session(self, *, with_recorder: bool = True) -> None:
         if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'start'.")
         if not self._client.connected:
@@ -285,7 +276,8 @@ class ProcessorBackendPluginBase(
         )
         self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
-    def _execute_stop(self) -> None:
+    @is_task
+    def stop_session(self) -> None:
         if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'stop'.")
 
@@ -316,7 +308,7 @@ class ProcessorBackendPluginBase(
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             self.callback(GeneralMessage(name="result_tick_time", data=None))
 
-    def _execute_get_next(self) -> None:
+    def _get_next(self) -> None:
         if self._client is None:
             raise RuntimeError("Client is not attached. Can not 'get_next'.")
         if self._processor_instance is None:
@@ -326,11 +318,11 @@ class ProcessorBackendPluginBase(
             result = self._client.get_next()
             assert isinstance(result, a121.Result)
         except a121._StopReplay:
-            self._execute_stop()
+            self.stop_session()
             return
         except Exception as exc:
             try:
-                self._execute_stop()
+                self.stop_session()
             except Exception:
                 pass
 

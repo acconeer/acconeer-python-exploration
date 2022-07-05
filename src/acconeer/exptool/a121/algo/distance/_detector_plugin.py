@@ -33,6 +33,7 @@ from acconeer.exptool.app.new import (
     PluginState,
     PluginStateMessage,
     get_temp_h5_path,
+    is_task,
 )
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
@@ -80,11 +81,12 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self._opened_record: Optional[a121.H5Record] = None
         self._detector_instance: Optional[Detector] = None
 
-        self._restore_defaults()
+        self.restore_defaults()
 
-    def _deserialize(self, pickled: bytes) -> None:
+    @is_task
+    def deserialize(self, *, data: bytes) -> None:
         try:
-            obj = pickle.loads(pickled)
+            obj = pickle.loads(data)
         except Exception:
             log.warning("Could not load pickled - pickle.loads() failed")
             return
@@ -118,7 +120,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if sync:
             self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
 
-    def _restore_defaults(self) -> None:
+    @is_task
+    def restore_defaults(self) -> None:
         self.shared_state = SharedState()
         self.broadcast(sync=True)
 
@@ -131,7 +134,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def idle(self) -> bool:
         if self._started:
-            self.__execute_get_next()
+            self._get_next()
             return True
         else:
             return False
@@ -142,28 +145,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def detach_client(self) -> None:
         self._live_client = None
 
-    def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
-        if name == "start_session":
-            self.__execute_start()
-        elif name == "stop_session":
-            self.__execute_stop()
-        elif name == "record_threshold":
-            self.__execute_record_threshold()
-        elif name == "calibrate_close_range":
-            self.__execute_calibrate_close_range()
-        elif name == "update_config":
-            config = kwargs["config"]
-            assert isinstance(config, DetectorConfig)
-            self.shared_state.config = config
-            self.broadcast()
-        elif name == "load_from_file":
-            self._load_from_file(**kwargs)
-        elif name == "deserialize":
-            self._deserialize(kwargs["data"])
-        elif name == "restore_defaults":
-            self._restore_defaults()
-        else:
-            raise RuntimeError(f"Unknown task: {name}")
+    @is_task
+    def update_config(self, *, config: DetectorConfig) -> None:
+        self.shared_state.config = config
+        self.broadcast()
 
     def teardown(self) -> None:
         self.callback(
@@ -178,7 +163,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         )
         self.detach_client()
 
-    def _load_from_file(self, *, path: Path) -> None:
+    @is_task
+    def load_from_file(self, *, path: Path) -> None:
         try:
             self._load_from_file_setup(path=path)
         except Exception as exc:
@@ -189,7 +175,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not load from file") from exc
 
-        self.__execute_start(with_recorder=False)
+        self.start_session(with_recorder=False)
 
         self.shared_state.replaying = True
 
@@ -207,7 +193,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.config = config
         self.shared_state.context = context
 
-    def __execute_start(self, *, with_recorder: bool = True) -> None:
+    @is_task
+    def start_session(self, *, with_recorder: bool = True) -> None:
         if self._started:
             raise RuntimeError
 
@@ -248,7 +235,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         )
         self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
-    def __execute_stop(self) -> None:
+    @is_task
+    def stop_session(self) -> None:
         if not self._started:
             raise RuntimeError
 
@@ -280,7 +268,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             self.callback(GeneralMessage(name="result_tick_time", data=None))
 
-    def __execute_get_next(self) -> None:
+    def _get_next(self) -> None:
         if not self._started:
             raise RuntimeError
 
@@ -290,11 +278,11 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         try:
             result = self._detector_instance.get_next()
         except a121._StopReplay:
-            self.__execute_stop()
+            self.stop_session()
             return
         except Exception as exc:
             try:
-                self.__execute_stop()
+                self.stop_session()
             except Exception:
                 pass
 
@@ -307,7 +295,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 
-    def __execute_record_threshold(self) -> None:
+    @is_task
+    def record_threshold(self) -> None:
         if self._started:
             raise RuntimeError
 
@@ -335,7 +324,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.context = self._detector_instance.context
         self.broadcast()
 
-    def __execute_calibrate_close_range(self) -> None:
+    @is_task
+    def calibrate_close_range(self) -> None:
         if self._started:
             raise RuntimeError
 

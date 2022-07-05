@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Optional, Type, TypeVar
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new._enums import ConnectionState, PluginState
@@ -12,6 +12,14 @@ from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginSta
 
 
 log = logging.getLogger(__name__)
+
+
+T = TypeVar("T")
+
+
+def is_task(func: T) -> T:
+    setattr(func, "is_task", True)
+    return func
 
 
 class Model:
@@ -34,20 +42,20 @@ class Model:
             if self.backend_plugin is None:
                 raise RuntimeError
 
-            self.backend_plugin.execute_task(name, kwargs)
-            return
-
-        if name == "connect_client":
-            self.connect_client(**kwargs)
-        elif name == "disconnect_client":
-            self.disconnect_client(**kwargs)
-        elif name == "load_plugin":
-            self.load_plugin(**kwargs)
-        elif name == "unload_plugin":
-            self.unload_plugin(**kwargs)
+            obj: Any = self.backend_plugin
         else:
-            raise RuntimeError(f"Unknown task: {name}")
+            obj = self
 
+        try:
+            method = getattr(obj, name)
+            if not getattr(method, "is_task"):
+                raise Exception
+        except Exception:
+            raise RuntimeError(f"'{name}' is not a task")
+
+        method(**kwargs)
+
+    @is_task
     def connect_client(self, client_info: a121.ClientInfo) -> None:
         if self.client is not None:
             raise RuntimeError(
@@ -74,6 +82,7 @@ class Model:
         self.task_callback(ConnectionStateMessage(state=ConnectionState.CONNECTED))
         self.task_callback(GeneralMessage(name="server_info", data=self.client.server_info))
 
+    @is_task
     def disconnect_client(self) -> None:
         if self.client is None:
             raise RuntimeError("Backend has no client to disconnect.")
@@ -90,6 +99,7 @@ class Model:
 
         self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
 
+    @is_task
     def load_plugin(self, *, plugin: Type[BackendPlugin], key: str) -> None:
         if self.backend_plugin is not None:
             self.unload_plugin(send_callback=False)
@@ -103,6 +113,7 @@ class Model:
 
         self.task_callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
+    @is_task
     def unload_plugin(self, send_callback: bool = True) -> None:
         if self.backend_plugin is None:
             return

@@ -8,3 +8,4 @@ from ._message import (
     PluginStateMessage,
     StatusMessage,
 )
+from ._model import is_task
