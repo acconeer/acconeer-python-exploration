@@ -449,7 +449,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 decimals=1,
                 limits=(0, None),
             ),
-            "threshold_sensitivity": pidgets.FloatParameterWidgetFactory(
+            "threshold_sensitivity": pidgets.FloatSliderParameterWidgetFactory(
                 name_label_text="Threshold sensitivity",
                 decimals=2,
                 limits=(0, 1),

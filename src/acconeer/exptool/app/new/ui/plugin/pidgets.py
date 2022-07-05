@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any, Generic, Optional, Tuple, Type, TypeVar
 
 import attrs
+import numpy as np
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import (
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLayout,
+    QSlider,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -166,6 +168,76 @@ class FloatParameterWidget(ParameterWidget):
 
     def __on_changed(self) -> None:
         self.sig_parameter_changed.emit(self.__spin_box.value())
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class FloatSliderParameterWidgetFactory(FloatParameterWidgetFactory):
+    limits: Tuple[float, float]
+    log_scale: bool = False
+
+    def __attrs_post_init__(self) -> None:
+        if self.log_scale:
+            if self.limits[0] <= 0:
+                raise ValueError("Lower limit must be > 0 when using log scale")
+
+    def create(self, parent: QWidget) -> FloatSliderParameterWidget:
+        return FloatSliderParameterWidget(self, parent)
+
+
+class FloatSliderParameterWidget(ParameterWidget):
+    def __init__(self, factory: FloatSliderParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self.__spin_box = _PidgetDoubleSpinBox(
+            self._body_widget,
+            limits=factory.limits,
+            suffix=factory.suffix,
+            decimals=factory.decimals,
+        )
+        self.__spin_box.valueChanged.connect(self.__on_spin_box_changed)
+        self._body_layout.addWidget(self.__spin_box, 0, 1)
+
+        wrapping_widget = QWidget(self._body_widget)
+        self._body_layout.addWidget(wrapping_widget, 1, 0, 1, -1)
+        wrapping_widget.setLayout(QHBoxLayout(wrapping_widget))
+        wrapping_widget.layout().setContentsMargins(11, 6, 11, 6)
+
+        self.__slider = _PidgetFloatSlider(
+            wrapping_widget,
+            limits=factory.limits,
+            decimals=factory.decimals,
+            log_scale=factory.log_scale,
+        )
+        self.__slider.wrapped_value_changed.connect(self.__on_slider_changed)
+        wrapping_widget.layout().addWidget(self.__slider)
+
+    def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
+        """Called by ParameterWidget.__init__"""
+
+        layout = QGridLayout(self._body_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(note_label_widget, 0, 0)
+        return layout
+
+    def set_parameter(self, value: Any) -> None:
+        assert isinstance(value, (int, float))
+
+        with QtCore.QSignalBlocker(self):
+            self.__spin_box.setValue(value)
+            self.__slider.wrapped_set_value(value)
+
+    def __on_spin_box_changed(self, value: float) -> None:
+        with QtCore.QSignalBlocker(self):
+            self.__slider.wrapped_set_value(value)
+
+        self.sig_parameter_changed.emit(value)
+
+    def __on_slider_changed(self, value: float) -> None:
+        with QtCore.QSignalBlocker(self):
+            self.__spin_box.setValue(value)
+
+        self.sig_parameter_changed.emit(value)
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -467,6 +539,68 @@ class _PidgetDoubleSpinBox(QDoubleSpinBox):
             super().wheelEvent(event)
         else:
             event.ignore()
+
+
+class _PidgetFloatSlider(QSlider):
+    NUM_STEPS = 1000
+
+    wrapped_value_changed = QtCore.Signal(float)
+
+    def __init__(
+        self,
+        parent: QWidget,
+        *,
+        limits: Tuple[float, float],
+        decimals: int,
+        log_scale: bool,
+    ) -> None:
+        super().__init__(QtCore.Qt.Horizontal, parent)
+
+        self.limits = limits
+        self.decimals = decimals
+        self.log_scale = log_scale
+
+        self.setRange(0, self.NUM_STEPS)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+        self.valueChanged.connect(self.__on_value_changed)
+
+    def __on_value_changed(self, value: int) -> None:
+        self.wrapped_value_changed.emit(self.__from_slider_scale(value))
+
+    def wrapped_set_value(self, value: float) -> None:
+        self.setValue(self.__to_slider_scale(value))
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+    def __to_slider_scale(self, x: float) -> int:
+        lower, upper = self.limits
+
+        if self.log_scale:
+            lower = np.log(lower)
+            upper = np.log(upper)
+            x = np.log(x)
+
+        y = (x - lower) / (upper - lower) * self.NUM_STEPS
+        return int(round(y))
+
+    def __from_slider_scale(self, y: int) -> float:
+        lower, upper = self.limits
+
+        if self.log_scale:
+            lower = np.log(lower)
+            upper = np.log(upper)
+
+        x = y / self.NUM_STEPS * (upper - lower) + lower
+
+        if self.log_scale:
+            x = np.exp(x)
+
+        return round(x, self.decimals)
 
 
 def _convert_int_limits_to_qt_range(
