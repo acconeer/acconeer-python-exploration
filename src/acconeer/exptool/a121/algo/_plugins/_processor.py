@@ -89,7 +89,7 @@ class ProcessorBackendPluginBase(
         self._recorder = None
         self._started = False
         self._replaying_client = None
-        self._opened_file = False
+        self._opened_file = None
         self._opened_record = None
 
         self._restore_defaults()
