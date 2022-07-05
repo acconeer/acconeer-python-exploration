@@ -171,6 +171,9 @@ class ExplorationProtocol(CommunicationProtocol):
     def _setup_command_preprocessing(cls, session_config: SessionConfig) -> dict:
         result = session_config.to_dict()
 
+        if session_config.update_rate is None:
+            del result["update_rate"]
+
         # Exploration server is not interested in this.
         result.pop("extended")
 

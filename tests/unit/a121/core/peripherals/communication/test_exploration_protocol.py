@@ -109,7 +109,8 @@ def test_get_sensor_info_response():
     assert ExplorationProtocol.get_sensor_info_response(response) == expected
 
 
-def test_setup_command_simple_session_config():
+@pytest.mark.parametrize("update_rate", [20, None])
+def test_setup_command_simple_session_config(update_rate):
     config = a121.SessionConfig(
         a121.SensorConfig(
             subsweeps=[
@@ -120,7 +121,7 @@ def test_setup_command_simple_session_config():
             ],
             sweeps_per_frame=1,
         ),
-        update_rate=20,
+        update_rate=update_rate,
     )
 
     expected_dict = {
@@ -155,8 +156,10 @@ def test_setup_command_simple_session_config():
                 },
             ]
         ],
-        "update_rate": 20,
     }
+
+    if update_rate is not None:
+        expected_dict["update_rate"] = update_rate
 
     assert json.loads(ExplorationProtocol.setup_command(config)) == expected_dict
 
