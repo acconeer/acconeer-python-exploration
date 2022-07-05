@@ -718,6 +718,7 @@ class Detector:
                 spec.processor_config.measurement_type == MeasurementType.FAR_RANGE
                 and spec.processor_config.threshold_method == ThresholdMethod.RECORDED
                 and self._recorded_threshold_calibrated(self.context)
+                and self.context.recorded_threshold_session_config_used == self.session_config
             ):
                 if self.context.recorded_thresholds is None:
                     raise Exception(ERR_MESSAGE_RECORDED)
