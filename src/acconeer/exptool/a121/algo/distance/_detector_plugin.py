@@ -56,7 +56,7 @@ log = logging.getLogger(__name__)
 
 @attrs.mutable(kw_only=True)
 class SharedState:
-    config: DetectorConfig = attrs.field()
+    config: DetectorConfig = attrs.field(factory=DetectorConfig)
     context: DetectorContext = attrs.field(factory=DetectorContext)
 
 
@@ -75,9 +75,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self._detector_instance: Optional[Detector] = None
 
-        self.shared_state = SharedState(config=DetectorConfig())
-
-        self.broadcast(sync=True)
+        self._restore_defaults()
 
     def _deserialize(self, pickled: bytes) -> None:
         try:
@@ -115,6 +113,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if sync:
             self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
 
+    def _restore_defaults(self) -> None:
+        self.shared_state = SharedState()
+        self.broadcast(sync=True)
+
     def idle(self) -> bool:
         if self._started:
             self.__execute_get_next()
@@ -146,6 +148,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self._load_from_file(**kwargs)
         elif name == "deserialize":
             self._deserialize(kwargs["data"])
+        elif name == "restore_defaults":
+            self._restore_defaults()
         else:
             raise RuntimeError(f"Unknown task: {name}")
 
@@ -420,6 +424,13 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         self.close_range_calibration_button.clicked.connect(self._on_close_range_calibration)
 
+        self.defaults_button = QPushButton(
+            qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
+            "Reset settings and calibrations",
+            self.view_widget,
+        )
+        self.defaults_button.clicked.connect(self._send_defaults_request)
+
         self.message_box = QLabel(self.view_widget)
         self.message_box.setWordWrap(True)
 
@@ -428,7 +439,8 @@ class ViewPlugin(DetectorViewPluginBase):
         button_group.layout().addWidget(self.stop_button, 0, 1)
         button_group.layout().addWidget(self.close_range_calibration_button, 1, 0)
         button_group.layout().addWidget(self.record_threshold_button, 1, 1)
-        button_group.layout().addWidget(self.message_box, 2, 0, 1, -1)
+        button_group.layout().addWidget(self.defaults_button, 2, 0, 1, -1)
+        button_group.layout().addWidget(self.message_box, 3, 0, 1, -1)
         self.view_layout.addWidget(button_group)
 
         self.config_editor = AttrsConfigEditor[DetectorConfig](
@@ -516,6 +528,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.close_range_calibration_button.setEnabled(False)
             self.record_threshold_button.setEnabled(False)
             self.stop_button.setEnabled(False)
+            self.defaults_button.setEnabled(False)
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
@@ -524,6 +537,8 @@ class ViewPlugin(DetectorViewPluginBase):
             return
 
         assert isinstance(state, SharedState)
+
+        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
@@ -576,6 +591,9 @@ class ViewPlugin(DetectorViewPluginBase):
     def _on_close_range_calibration(self) -> None:
         self.app_model.put_backend_plugin_task("calibrate_close_range")
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
+
+    def _send_defaults_request(self) -> None:
+        self.app_model.put_backend_plugin_task("restore_defaults")
 
     # TODO: move to detector base (?)
     def teardown(self) -> None:
