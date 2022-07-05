@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import pickle
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -59,6 +60,12 @@ class SharedState:
     context: DetectorContext = attrs.field(factory=DetectorContext)
 
 
+@attrs.frozen(kw_only=True)
+class Save:
+    config: DetectorConfig = attrs.field()
+    context: DetectorContext = attrs.field()
+
+
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def __init__(self, callback: Callable[[Message], None], key: str) -> None:
         super().__init__(callback=callback, key=key)
@@ -71,6 +78,36 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state = SharedState(config=DetectorConfig())
 
         self.broadcast(sync=True)
+
+    def _deserialize(self, pickled: bytes) -> None:
+        try:
+            obj = pickle.loads(pickled)
+        except Exception:
+            log.warning("Could not load pickled - pickle.loads() failed")
+            return
+
+        if not isinstance(obj, Save):
+            log.warning("Could not load pickled - not the correct type")
+            return
+
+        type_matches = [
+            isinstance(obj.config, DetectorConfig),
+            isinstance(obj.context, DetectorContext),
+        ]
+        if not all(type_matches):
+            log.warning("Could not load pickled - not the correct type")
+            return
+
+        self.shared_state.config = obj.config
+        self.shared_state.context = obj.context
+        self.broadcast(sync=True)
+
+    def _serialize(self) -> bytes:
+        obj = Save(
+            config=self.shared_state.config,
+            context=self.shared_state.context,
+        )
+        return pickle.dumps(obj, protocol=4)
 
     def broadcast(self, sync: bool = False) -> None:
         super().broadcast()
@@ -107,10 +144,22 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self.broadcast()
         elif name == "load_from_file":
             self._load_from_file(**kwargs)
+        elif name == "deserialize":
+            self._deserialize(kwargs["data"])
         else:
             raise RuntimeError(f"Unknown task: {name}")
 
     def teardown(self) -> None:
+        self.callback(
+            GeneralMessage(
+                name="serialized",
+                kwargs={
+                    "generation": PluginGeneration.A121,
+                    "key": self.key,
+                    "data": self._serialize(),
+                },
+            )
+        )
         self.detach_client()
 
     def _load_from_file(self, *, path: Path) -> None:
