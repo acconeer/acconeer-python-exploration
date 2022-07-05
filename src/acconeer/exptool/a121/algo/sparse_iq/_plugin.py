@@ -73,7 +73,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.smooth_max = et.utils.SmoothMax()
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
-        self.distances_m, _ = algo.get_distances_m(sensor_config, metadata)
+        self.distances_m, step_length_m = algo.get_distances_m(sensor_config, metadata)
         vels, vel_res = algo.get_approx_fft_vels(sensor_config)
 
         self.ampl_plot = self._create_amplitude_plot(self.plot_layout)
@@ -91,7 +91,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.ft_plot, self.ft_im = self._create_fft_plot(
             self.plot_layout,
             distances_m=self.distances_m,
-            step_length_m=2.5e-3,
+            step_length_m=step_length_m,
             vels=vels,
             vel_res=vel_res,
         )
