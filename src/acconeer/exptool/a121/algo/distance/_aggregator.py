@@ -8,6 +8,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo import AlgoParamEnum
 from acconeer.exptool.a121.algo.distance._processors import (
     Processor,
     ProcessorConfig,
@@ -16,7 +17,7 @@ from acconeer.exptool.a121.algo.distance._processors import (
 )
 
 
-class PeakSortingMethod(enum.Enum):
+class PeakSortingMethod(AlgoParamEnum):
     CLOSEST = enum.auto()
     STRONGEST = enum.auto()
     HIGHEST_RCS = enum.auto()

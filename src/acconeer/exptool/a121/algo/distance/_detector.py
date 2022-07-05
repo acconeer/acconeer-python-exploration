@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import copy
 import enum
-from typing import Dict, List, Optional, Tuple
+import warnings
+from typing import Any, Dict, List, Optional, Tuple
 
 import attrs
+import h5py
 import numpy as np
 import numpy.typing as npt
 
@@ -307,7 +309,7 @@ class Detector:
             spec.processor_config.threshold_method for spec in processor_specs
         ]
 
-    def start(self) -> None:
+    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
         if self.started:
             raise RuntimeError("Already started")
 
@@ -328,7 +330,20 @@ class Detector:
             specs=specs,
         )
 
-        self.client.start_session()
+        if recorder is not None:
+            if isinstance(recorder, a121.H5Recorder):
+                algo_group = recorder.require_algo_group("distance_detector")
+                _record_algo_data(
+                    algo_group,
+                    self.sensor_id,
+                    self.detector_config,
+                    self.context,
+                )
+            else:
+                # Should never happen as we currently only have the H5Recorder
+                warnings.warn("Will not save algo data")
+
+        self.client.start_session(recorder)
         self.started = True
 
     def get_next(self) -> DetectorResult:
@@ -355,13 +370,15 @@ class Detector:
             config=config, sensor_id=self.sensor_id
         )
 
-    def stop(self) -> None:
+    def stop(self) -> Any:
         if not self.started:
             raise RuntimeError("Already stopped")
 
-        self.client.stop_session()
+        recorder_result = self.client.stop_session()
 
         self.started = False
+
+        return recorder_result
 
     @classmethod
     def _detector_to_session_config_and_processor_specs(
@@ -819,3 +836,95 @@ class Detector:
         if self._has_recorded_threshold_mode(self.detector_config):
             if self.context.recorded_threshold_session_config_used != self.session_config:
                 raise ValueError("Session config does not match config used during calibration")
+
+
+def _record_algo_data(
+    algo_group: h5py.Group,
+    sensor_id: int,
+    detector_config: DetectorConfig,
+    context: DetectorContext,
+) -> None:
+    algo_group.create_dataset(
+        "sensor_id",
+        data=sensor_id,
+        track_times=False,
+    )
+    algo_group.create_dataset(
+        "detector_config",
+        data=detector_config.to_json(),
+        dtype=a121._H5PY_STR_DTYPE,
+        track_times=False,
+    )
+
+    context_group = algo_group.create_group("context")
+
+    for k, v in attrs.asdict(context).items():
+        if k == "recorded_thresholds":
+            continue
+
+        if v is None:
+            continue
+
+        if isinstance(v, a121.SessionConfig):
+            context_group.create_dataset(
+                k,
+                data=v.to_json(),
+                dtype=a121._H5PY_STR_DTYPE,
+                track_times=False,
+            )
+        elif isinstance(v, np.ndarray):
+            context_group.create_dataset(k, data=v, track_times=False)
+        else:
+            raise RuntimeError(f"Unexpected {DetectorContext.__name__} field type '{type(v)}'")
+
+    if context.recorded_thresholds is not None:
+        recorded_thresholds_group = context_group.create_group("recorded_thresholds")
+
+        for i, v in enumerate(context.recorded_thresholds):
+            recorded_thresholds_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+
+def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, DetectorContext]:
+    sensor_id = algo_group["sensor_id"][()]
+    config = DetectorConfig.from_json(algo_group["detector_config"][()])
+
+    context_dict = {}
+    context_group = algo_group["context"]
+
+    unknown_keys = set(context_group.keys()) - set(attrs.fields_dict(DetectorContext).keys())
+    if unknown_keys:
+        raise Exception(f"Unknown field(s) in stored context: {unknown_keys}")
+
+    field_map = {
+        "direct_leakage": None,
+        "phase_jitter_comp_reference": None,
+        "recorded_threshold_session_config_used": a121.SessionConfig.from_json,
+        "close_range_session_config_used": a121.SessionConfig.from_json,
+    }
+    for k, func in field_map.items():
+        try:
+            v = context_group[k][()]
+        except KeyError:
+            continue
+
+        context_dict[k] = func(v) if func else v
+
+    if "recorded_thresholds" in context_group:
+        recorded_thresholds_group = context_group["recorded_thresholds"]
+        recorded_thresholds = []
+
+        i = 0
+        while True:
+            try:
+                v = recorded_thresholds_group[f"index_{i}"][()]
+            except KeyError:
+                break
+
+            recorded_thresholds.append(v)
+            i += 1
+
+        context_dict["recorded_thresholds"] = recorded_thresholds
+
+    context = DetectorContext(**context_dict)
+
+    return sensor_id, config, context

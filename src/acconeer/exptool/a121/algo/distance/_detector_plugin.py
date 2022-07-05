@@ -32,6 +32,7 @@ from acconeer.exptool.app.new import (
     PluginGeneration,
     PluginState,
     PluginStateMessage,
+    get_temp_h5_path,
 )
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
@@ -48,6 +49,7 @@ from ._detector import (
     DetectorResult,
     PeakSortingMethod,
     ThresholdMethod,
+    _load_algo_data,
 )
 
 
@@ -58,6 +60,7 @@ log = logging.getLogger(__name__)
 class SharedState:
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
     context: DetectorContext = attrs.field(factory=DetectorContext)
+    replaying: bool = attrs.field(default=False)
 
 
 @attrs.frozen(kw_only=True)
@@ -71,8 +74,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         super().__init__(callback=callback, key=key)
 
         self._started: bool = False
-        self._client: Optional[a121.Client] = None
-
+        self._live_client: Optional[a121.Client] = None
+        self._replaying_client: Optional[a121._ReplayingClient] = None
+        self._recorder: Optional[a121.H5Recorder] = None
+        self._opened_record: Optional[a121.H5Record] = None
         self._detector_instance: Optional[Detector] = None
 
         self._restore_defaults()
@@ -117,6 +122,13 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state = SharedState()
         self.broadcast(sync=True)
 
+    @property
+    def _client(self) -> Optional[a121.Client]:
+        if self._replaying_client is not None:
+            return self._replaying_client
+
+        return self._live_client
+
     def idle(self) -> bool:
         if self._started:
             self.__execute_get_next()
@@ -125,10 +137,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             return False
 
     def attach_client(self, *, client: Any) -> None:
-        self._client = client
+        self._live_client = client
 
     def detach_client(self) -> None:
-        self._client = None
+        self._live_client = None
 
     def execute_task(self, name: str, kwargs: dict[str, Any]) -> None:
         if name == "start_session":
@@ -167,9 +179,35 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.detach_client()
 
     def _load_from_file(self, *, path: Path) -> None:
-        raise NotImplementedError
+        try:
+            self._load_from_file_setup(path=path)
+        except Exception as exc:
+            self._opened_record = None
+            self._replaying_client = None
+            self.shared_state.replaying = False
 
-    def __execute_start(self) -> None:
+            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            raise HandledException("Could not load from file") from exc
+
+        self.__execute_start(with_recorder=False)
+
+        self.shared_state.replaying = True
+
+        self.send_status_message(f"<b>Replaying from {path.name}</b>")
+        self.broadcast(sync=True)
+
+    def _load_from_file_setup(self, *, path: Path) -> None:
+        r = a121.open_record(path)
+        assert isinstance(r, a121.H5Record)
+        self._opened_record = r
+        self._replaying_client = a121._ReplayingClient(self._opened_record)
+
+        algo_group = self._opened_record.get_algo_group(self.key)
+        _, config, context = _load_algo_data(algo_group)
+        self.shared_state.config = config
+        self.shared_state.context = context
+
+    def __execute_start(self, *, with_recorder: bool = True) -> None:
         if self._started:
             raise RuntimeError
 
@@ -186,8 +224,13 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             context=self.shared_state.context,
         )
 
+        if with_recorder:
+            self._recorder = a121.H5Recorder(get_temp_h5_path())
+        else:
+            self._recorder = None
+
         try:
-            self._detector_instance.start()
+            self._detector_instance.start(self._recorder)
         except Exception as exc:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not start") from exc
@@ -217,6 +260,21 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         except Exception as exc:
             raise HandledException("Failure when stopping session") from exc
         finally:
+            if self._recorder is not None:
+                assert self._recorder.path is not None
+                path = Path(self._recorder.path)
+                self.callback(GeneralMessage(name="saveable_file", data=path))
+                self._recorder = None
+
+            if self.shared_state.replaying:
+                assert self._opened_record is not None
+                self._opened_record.close()
+
+                self._opened_record = None
+                self._replaying_client = None
+
+                self.shared_state.replaying = False
+
             self._started = False
             self.broadcast()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
@@ -230,6 +288,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         try:
             result = self._detector_instance.get_next()
+        except a121._StopReplay:
+            self.__execute_stop()
+            return
         except Exception as exc:
             try:
                 self.__execute_stop()
