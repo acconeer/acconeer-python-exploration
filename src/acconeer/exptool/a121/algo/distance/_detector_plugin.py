@@ -527,6 +527,11 @@ class ViewPlugin(DetectorViewPluginBase):
                 decimals=2,
                 limits=(0, 1),
             ),
+            "signal_quality": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Signal quality",
+                decimals=1,
+                limits=(-2, 38),
+            ),
             "cfar_one_sided": pidgets.CheckboxParameterWidgetFactory(
                 name_label_text="CFAR one sided",
             ),

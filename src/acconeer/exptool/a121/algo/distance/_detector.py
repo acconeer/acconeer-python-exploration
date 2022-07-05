@@ -47,6 +47,7 @@ class SubsweepGroupPlan:
     step_length: int = attrs.field()
     breakpoints: list[int] = attrs.field()
     profile: a121.Profile = attrs.field()
+    hwaas: list[int] = attrs.field()
 
 
 Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
@@ -71,6 +72,7 @@ class DetectorConfig(AlgoConfigBase):
     end_m: float = attrs.field(default=1.0)
     max_step_length: Optional[int] = attrs.field(default=None)  # TODO: Check validity
     max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
+    signal_quality: float = attrs.field(default=18.0)
     threshold_method: ThresholdMethod = attrs.field(
         default=ThresholdMethod.CFAR,
         converter=ThresholdMethod,
@@ -112,6 +114,16 @@ class Detector:
     VALID_STEP_LENGTHS_IN_COARSE = [1, 2, 3, 4, 6, 8, 12, 24]
     NUM_POINTS_IN_COARSE = 24
     NUM_SUBSWEEPS_IN_SENSOR_CONFIG = 4
+
+    MAX_HWAAS = 511
+    MIN_HWAAS = 4
+    RLG_PER_HWAAS_MAP = {
+        a121.Profile.PROFILE_1: 11.3,
+        a121.Profile.PROFILE_2: 13.7,
+        a121.Profile.PROFILE_3: 19.0,
+        a121.Profile.PROFILE_4: 20.5,
+        a121.Profile.PROFILE_5: 21.6,
+    }
 
     session_config: a121.SessionConfig
     processor_specs: List[ProcessorSpec]
@@ -433,17 +445,19 @@ class Detector:
             profile = a121.Profile.PROFILE_1
             step_length = cls._limit_step_length(profile, config.max_step_length)
             breakpoints = cls._m_to_points([config.start_m, transition_m], step_length)
+            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality)
 
             has_neighbour = (False, transition_m < config.end_m)
-
             extended_breakpoints = cls._add_margin_to_breakpoints(
                 profile, step_length, breakpoints, has_neighbour, config
             )
+
             plans[MeasurementType.CLOSE_RANGE] = [
                 SubsweepGroupPlan(
                     step_length=step_length,
                     breakpoints=extended_breakpoints,
                     profile=profile,
+                    hwaas=hwaas,
                 )
             ]
 
@@ -458,17 +472,19 @@ class Detector:
             end_m = min(config.end_m, min_dist_m[config.max_profile])
             step_length = cls._limit_step_length(profile_to_be_used, config.max_step_length)
             breakpoints = cls._m_to_points([far_range_start_m, end_m], step_length)
+            hwaas = cls._calculate_hwaas(profile_to_be_used, breakpoints, config.signal_quality)
 
             has_neighbour = (len(plans) != 0, min_dist_m[config.max_profile] < end_m)
-
             extended_breakpoints = cls._add_margin_to_breakpoints(
                 profile_to_be_used, step_length, breakpoints, has_neighbour, config
             )
+
             far_subgroup_plans.append(
                 SubsweepGroupPlan(
                     step_length=step_length,
                     breakpoints=extended_breakpoints,
                     profile=profile_to_be_used,
+                    hwaas=hwaas,
                 )
             )
 
@@ -482,17 +498,19 @@ class Detector:
             profile = config.max_profile
             step_length = cls._limit_step_length(config.max_profile, config.max_step_length)
             breakpoints = cls._m_to_points(breakpoints_m, step_length)
+            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality)
 
             has_neighbour = (len(plans) != 0 or len(far_subgroup_plans) != 0, False)
-
             extended_breakpoints = cls._add_margin_to_breakpoints(
                 profile, step_length, breakpoints, has_neighbour, config
             )
+
             far_subgroup_plans.append(
                 SubsweepGroupPlan(
                     step_length=step_length,
                     breakpoints=extended_breakpoints,
                     profile=profile,
+                    hwaas=hwaas,
                 )
             )
 
@@ -515,6 +533,19 @@ class Detector:
                 )
                 min_dist_m[profile] += cfar_margin_m
         return min_dist_m
+
+    @classmethod
+    def _calculate_hwaas(
+        cls, profile: a121.Profile, breakpoints: list[int], signal_quality: float
+    ) -> list[int]:
+        rlg_per_hwaas = cls.RLG_PER_HWAAS_MAP[profile]
+        hwaas = []
+        for idx in range(len(breakpoints) - 1):
+            subsweep_end_point_m = Processor.APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1]
+            rlg = signal_quality + 40 * np.log10(subsweep_end_point_m)
+            hwaas_in_subsweep = int(10 ** ((rlg - rlg_per_hwaas) / 10))
+            hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
+        return hwaas
 
     @classmethod
     def _add_margin_to_breakpoints(
@@ -580,7 +611,7 @@ class Detector:
                 num_points=1,
                 step_length=1,
                 profile=a121.Profile.PROFILE_4,
-                hwaas=4,
+                hwaas=plan.hwaas[0],
                 receiver_gain=15,
                 phase_enhancement=True,
                 enable_loopback=True,
@@ -593,7 +624,7 @@ class Detector:
                 num_points=num_points,
                 step_length=plan.step_length,
                 profile=plan.profile,
-                hwaas=4,
+                hwaas=plan.hwaas[0],
                 receiver_gain=5,
                 phase_enhancement=True,
                 prf=cls._select_prf(plan.breakpoints[1], plan.profile),
@@ -620,7 +651,7 @@ class Detector:
                         num_points=num_points,
                         step_length=plan.step_length,
                         profile=plan.profile,
-                        hwaas=8,
+                        hwaas=plan.hwaas[bp_idx],
                         receiver_gain=10,
                         phase_enhancement=True,
                         prf=cls._select_prf(plan.breakpoints[bp_idx + 1], plan.profile),
