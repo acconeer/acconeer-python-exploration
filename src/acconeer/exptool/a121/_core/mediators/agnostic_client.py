@@ -197,6 +197,7 @@ class AgnosticClient:
         recorder_result = None
         if self._recorder is not None:
             recorder_result = self._recorder._stop()
+            self._recorder = None
 
         self._link.send(self._protocol.stop_streaming_command())
         reponse_bytes = self._drain_buffer()
