@@ -94,6 +94,13 @@ class DetectorResult:
 
 class Detector:
 
+    MAX_MEAS_DIST_M = {
+        a121.PRF.PRF_19_5_MHz: 3.1,
+        a121.PRF.PRF_13_0_MHz: 7.0,
+        a121.PRF.PRF_8_7_MHz: 12.7,
+        a121.PRF.PRF_6_5_MHz: 18.5,
+    }
+
     MIN_DIST_M = {
         a121.Profile.PROFILE_1: 0.10,
         a121.Profile.PROFILE_2: 0.28,
@@ -592,6 +599,7 @@ class Detector:
                 hwaas=4,
                 receiver_gain=5,
                 phase_enhancement=True,
+                prf=cls._select_prf(plan.breakpoints[1], plan.profile),
             )
         )
         return a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=10)
@@ -618,6 +626,7 @@ class Detector:
                         hwaas=8,
                         receiver_gain=10,
                         phase_enhancement=True,
+                        prf=cls._select_prf(plan.breakpoints[bp_idx + 1], plan.profile),
                     )
                 )
                 subsweep_indexes.append(subsweep_idx)
@@ -627,6 +636,23 @@ class Detector:
             a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=1),
             processor_specs_subsweep_indexes,
         )
+
+    @classmethod
+    def _select_prf(cls, breakpoint: int, profile: a121.Profile) -> a121.PRF:
+        max_meas_dist_m = copy.copy(cls.MAX_MEAS_DIST_M)
+
+        if (
+            a121.PRF.PRF_19_5_MHz in max_meas_dist_m
+            and profile != a121.Profile.PROFILE_1
+            and profile != a121.Profile.PROFILE_2
+        ):
+            del max_meas_dist_m[a121.PRF.PRF_19_5_MHz]
+
+        breakpoint_m = breakpoint * Processor.APPROX_BASE_STEP_LENGTH_M
+        viable_prfs = [
+            prf for prf, max_dist_m in max_meas_dist_m.items() if breakpoint_m < max_dist_m
+        ]
+        return sorted(viable_prfs, key=lambda prf: prf.frequency)[-1]
 
     @classmethod
     def _m_to_points(cls, breakpoints_m: list[float], step_length: int) -> list[int]:
