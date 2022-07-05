@@ -297,12 +297,7 @@ class AppModel(QObject):
             self._handle_backend_serialized(**message.kwargs)
         elif message.name == "saveable_file":
             assert message.data is None or isinstance(message.data, Path)
-
-            if self.saveable_file is not None:
-                self.saveable_file.unlink(missing_ok=True)
-
-            self.saveable_file = message.data
-            self.broadcast()
+            self._update_saveable_file(message.data)
         elif message.name == "result_tick_time":
             update_time = message.data
 
@@ -327,6 +322,13 @@ class AppModel(QObject):
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
+
+    def _update_saveable_file(self, path: Optional[Path]) -> None:
+        if self.saveable_file is not None:
+            self.saveable_file.unlink(missing_ok=True)
+
+        self.saveable_file = path
+        self.broadcast()
 
     @classmethod
     def _get_plugin_config_path(cls, generation: PluginGeneration, key: str) -> Path:
@@ -416,6 +418,7 @@ class AppModel(QObject):
         if plugin == self.plugin:
             return
 
+        self._update_saveable_file(None)
         self.backend_plugin_state = None
 
         if plugin is None:
