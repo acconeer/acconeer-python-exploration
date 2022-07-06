@@ -32,3 +32,4 @@ from .peripherals import (
     save_record,
     save_record_to_h5,
 )
+from .utils import iterate_extended_structure

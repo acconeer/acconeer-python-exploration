@@ -25,6 +25,7 @@ from ._core import (
     ValidationError,
     ValidationResult,
     ValidationWarning,
+    iterate_extended_structure,
     load_record,
     open_record,
     save_record,
