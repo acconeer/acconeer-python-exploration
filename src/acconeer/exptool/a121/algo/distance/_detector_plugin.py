@@ -278,6 +278,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self._started = False
             self.broadcast()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+            self.callback(GeneralMessage(name="result_tick_time", data=None))
 
     def __execute_get_next(self) -> None:
         if not self._started:
@@ -298,6 +299,11 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 pass
 
             raise HandledException("Failed to get_next") from exc
+
+        _, _, some_service_result = next(
+            a121.iterate_extended_structure(result.service_extended_result)
+        )
+        self.callback(GeneralMessage(name="result_tick_time", data=some_service_result.tick_time))
 
         self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 
