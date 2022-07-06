@@ -22,7 +22,7 @@ class PerfCalcView(QGroupBox):
 
         self.average_current = PerfCalcValueWidget(self)
         layout.addWidget(self.average_current, 0, 1)
-        layout.addWidget(QLabel("Approx. avg. current", self), 0, 0)
+        layout.addWidget(QLabel("Estimated avg. current", self), 0, 0)
 
         self.update(None)
 
@@ -50,7 +50,7 @@ class PerfCalcView(QGroupBox):
 
         pc = a121._PerformanceCalc(session_config, metadata)
 
-        self.average_current.setText(f"{pc.average_current * 1e3:.1f} mA")
+        self.average_current.setText(f"{pc.average_current * 1e3:.0f} mA")
 
 
 class PerfCalcValueWidget(QLineEdit):
