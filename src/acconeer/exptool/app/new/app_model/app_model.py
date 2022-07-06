@@ -154,8 +154,7 @@ class AppModel(QObject):
         self._listener.sig_backend_message.connect(self._handle_backend_message)
         self._listener.sig_backend_closed_task.connect(self._handle_backend_closed_task)
         self._port_updater = PortUpdater(self)
-        self._port_updater.sig_serial_update.connect(self._handle_serial_port_update)
-        self._port_updater.sig_usb_update.connect(self._handle_usb_device_update)
+        self._port_updater.sig_update.connect(self._handle_port_update)
 
         self._backend_task_callbacks: dict[UUID, Any] = {}
 
@@ -341,13 +340,33 @@ class AppModel(QObject):
     def _get_plugin_config_path(cls, generation: PluginGeneration, key: str) -> Path:
         return (get_config_dir() / "plugin" / generation.value / key).with_suffix(".pickle")
 
-    def _handle_serial_port_update(self, tagged_ports: list[Tuple[str, Optional[str]]]) -> None:
-        self.serial_connection_port = self._select_new_serial_port(
+    def _handle_port_update(
+        self,
+        tagged_ports: list[Tuple[str, Optional[str]]],
+        usb_devices: Optional[list[USBDevice]],
+    ) -> None:
+        self.serial_connection_port, recognized = self._select_new_serial_port(
             dict(self.available_tagged_ports),
             dict(tagged_ports),
             self.serial_connection_port,
         )
         self.available_tagged_ports = tagged_ports
+
+        if recognized:
+            self.set_connection_interface(ConnectionInterface.SERIAL)
+            self.send_status_message(f"Recognized serial port: {self.serial_connection_port}")
+
+        if usb_devices is not None:
+            self.usb_connection_device, recognized = self._select_new_usb_device(
+                usb_devices, self.usb_connection_device
+            )
+
+            self.available_usb_devices = usb_devices
+
+            if recognized:
+                assert self.usb_connection_device is not None
+                self.set_connection_interface(ConnectionInterface.USB)
+                self.send_status_message(f"Recognized USB device: {self.usb_connection_device}")
 
         self.broadcast()
 
@@ -356,55 +375,46 @@ class AppModel(QObject):
         old_ports: dict[str, Optional[str]],
         new_ports: dict[str, Optional[str]],
         current_port: Optional[str],
-    ) -> Optional[str]:
+    ) -> Tuple[Optional[str], bool]:
         if self.connection_state != ConnectionState.DISCONNECTED:
-            return current_port
+            return current_port, False
 
         if current_port not in new_ports:  # Then find a new suitable port
             port = None
 
             for port, tag in new_ports.items():
                 if tag:
-                    return port
+                    return port, False
 
-            return port
+            return port, False
 
         # If we already have a tagged port, keep it
         if new_ports[current_port]:
-            return current_port
+            return current_port, False
 
         # If a tagged port was added, select it
         added_ports = {k: v for k, v in new_ports.items() if k not in old_ports}
         for port, tag in added_ports.items():
             if tag:
-                return port
+                return port, True
 
-        return current_port
-
-    def _handle_usb_device_update(self, usb_devices: list[USBDevice]) -> None:
-        self.usb_connection_device = self._select_new_usb_device(
-            usb_devices, self.usb_connection_device
-        )
-
-        self.available_usb_devices = usb_devices
-
-        self.broadcast()
+        return current_port, False
 
     def _select_new_usb_device(
         self,
         new_ports: list[str],
         current_port: Optional[USBDevice],
-    ) -> Optional[USBDevice]:
+    ) -> Tuple[Optional[USBDevice], bool]:
         if self.connection_state != ConnectionState.DISCONNECTED:
-            return current_port
+            return current_port, False
 
         if not new_ports:
-            return None
+            return None, False
 
         if current_port not in new_ports:
-            return new_ports[0]
+            return new_ports[0], True
 
-        return current_port
+        return current_port, False
 
     def connect_client(self) -> None:
         if self.connection_interface == ConnectionInterface.SOCKET:

@@ -54,6 +54,9 @@ class USBDevice:
     def from_json(cls, json_str: str) -> USBDevice:
         return cls.from_dict(json.loads(json_str))
 
+    def __str__(self) -> str:
+        return self.name
+
 
 _USB_IDS = [  # (vid, pid, 'model number')
     (0x0483, 0xA41D, "XC120"),
