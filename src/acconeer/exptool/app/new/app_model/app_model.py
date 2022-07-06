@@ -10,7 +10,6 @@ from typing import Any, Callable, Optional, Tuple, Type
 from uuid import UUID
 
 import attrs
-import numpy as np
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 from PySide6.QtWidgets import QApplication, QWidget
@@ -42,6 +41,7 @@ from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
 from .port_updater import PortUpdater
+from .rate_calc import RateCalculator
 
 
 log = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class AppModel(QObject):
     sig_message_plot_plugin = Signal(object)
     sig_message_view_plugin = Signal(object)
     sig_status_message = Signal(object)
-    sig_update_rate = Signal(float)
+    sig_update_rate = Signal(float, float)
 
     plugins: list[Plugin]
     plugin: Optional[Plugin]
@@ -175,7 +175,7 @@ class AppModel(QObject):
         self.available_usb_devices = []
         self.saveable_file = None
 
-        self.last_update_time = None
+        self.rate_calc = RateCalculator()
 
     def start(self) -> None:
         self._listener.start()
@@ -307,13 +307,8 @@ class AppModel(QObject):
         elif message.name == "result_tick_time":
             update_time = message.data
 
-            if self.last_update_time is not None and update_time is not None:
-                update_rate = 1.0 / (update_time - self.last_update_time)
-                self.sig_update_rate.emit(update_rate)
-            else:
-                self.sig_update_rate.emit(np.nan)
-
-            self.last_update_time = update_time
+            rate, jitter = self.rate_calc.update(update_time)
+            self.sig_update_rate.emit(rate, jitter)
         else:
             raise RuntimeError(f"Got unknown general message '{message.name}'")
 

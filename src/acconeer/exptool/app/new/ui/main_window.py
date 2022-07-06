@@ -152,30 +152,33 @@ class RightAreaContent(QWidget):
 
 class UpdateRateLabel(QLabel):
     _FPS: int = 60
-    last_update_rate: Optional[float]
 
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.last_update_rate = None
+        self.setToolTip("Reported update rate / jitter")
+
+        self.rate = np.nan
+        self.jitter = np.nan
 
         self.startTimer(int(1000 / self._FPS))
 
         app_model.sig_update_rate.connect(self._on_app_model_update_rate)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        if self.last_update_rate is None or np.isnan(self.last_update_rate):
+        if np.isnan(self.rate) or np.isnan(self.jitter):
             css = "color: #888;"
-            text = "- Hz"
+            text = "- Hz / - ms"
         else:
             css = ""
-            text = f"{self.last_update_rate:>10.1f} Hz"
+            text = f"{self.rate:>6.1f} Hz / {self.jitter * 1e3:5.1f} ms"
 
         self.setStyleSheet(css)
         self.setText(text)
 
-    def _on_app_model_update_rate(self, update_rate: Optional[float]) -> None:
-        self.last_update_rate = update_rate
+    def _on_app_model_update_rate(self, rate: float, jitter: float) -> None:
+        self.rate = rate
+        self.jitter = jitter
 
 
 class StatusBar(QStatusBar):
