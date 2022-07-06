@@ -15,6 +15,13 @@ from acconeer.exptool.flash._xc120._meta import (
     ACCONEER_XC120_EXPLORATION_SERVER_PID,
 )
 from acconeer.exptool.flash._xc120._xcbridge_comm import XCCommunication
+from acconeer.exptool.utils import get_usb_devices
+
+
+try:
+    from acconeer.exptool._winusbcdc.usb_cdc import ComPort
+except ImportError:
+    ComPort = None
 
 
 log = logging.getLogger(__name__)
@@ -104,6 +111,15 @@ class BootloaderTool:
         return None
 
     @staticmethod
+    def _find_usb_device(search_port):
+        try:
+            usb_devices = get_usb_devices()
+            if search_port in usb_devices:
+                return search_port
+        except ImportError:
+            return None
+
+    @staticmethod
     def _try_open_port(device_port):
         retries = 5
         port_ok = False
@@ -144,14 +160,23 @@ class BootloaderTool:
                 ACCONEER_XC120_EXPLORATION_SERVER_PID,
                 device_port,
             )
+            exploration_server_usb_device = BootloaderTool._find_usb_device(device_port)
 
-            if exploration_server_port:
-                BootloaderTool._try_open_port(exploration_server_port)
+            if exploration_server_port or exploration_server_usb_device:
                 log.debug("Exploration server active, enter DFU mode")
-                ser = serial.Serial(exploration_server_port, exclusive=True)
+                if exploration_server_port:
+                    BootloaderTool._try_open_port(exploration_server_port)
+                    ser = serial.Serial(exploration_server_port, exclusive=True)
+                else:
+                    if ComPort is None:
+                        raise ImportError("WinUsbPy only works on Windows platform")
+                    ser = ComPort(
+                        vid=exploration_server_usb_device.vid,
+                        pid=exploration_server_usb_device.pid,
+                    )
                 ser.send_break()
                 time.sleep(0.1)
-                ser.write(bytearray('{ "cmd": "stop_application" }\n'.encode("utf-8")))
+                ser.write(bytes('{ "cmd": "stop_application" }\n', "utf-8"))
                 ser.close()
 
             elif board_protocol_port:
@@ -192,6 +217,10 @@ class BootloaderTool:
 
         if BootloaderTool._find_port(ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port):
             # Already in DFU mode
+            return True
+
+        if BootloaderTool._find_usb_device(device_port):
+            # In exploration server mode, always upgrade
             return True
 
         board_protocol_port = BootloaderTool._find_port(

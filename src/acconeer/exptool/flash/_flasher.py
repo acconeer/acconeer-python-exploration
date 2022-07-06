@@ -8,10 +8,21 @@ from acconeer.exptool.flash._products import PRODUCT_FLASH_MAP
 
 def flash_image(image_path, flash_port):
     if flash_port:
-        if flash_port.pid in PRODUCT_FLASH_MAP.keys():
-            PRODUCT_FLASH_MAP[flash_port.pid].flash(flash_port.device, image_path)
+        if isinstance(flash_port, et.utils.USBDevice):
+            flash_pid = flash_port.pid
+            flash_device = flash_port
+            flash_product = flash_port.name
         else:
-            raise NotImplementedError(f"No flash support for Acconeer device {flash_port.product}")
+            flash_pid = flash_port.pid
+            flash_device = flash_port.device
+            flash_product = flash_port.product
+
+        if flash_pid in PRODUCT_FLASH_MAP.keys():
+            PRODUCT_FLASH_MAP[flash_pid].flash(flash_device, image_path)
+        else:
+            raise NotImplementedError(f"No flash support for Acconeer device {flash_product}")
+    else:
+        raise ValueError("Flash port is None")
 
 
 def find_flash_port(port=None):
@@ -23,21 +34,34 @@ def find_flash_port(port=None):
     ]
 
     if len(detected_ports) == 0:
+        detected_ports = et.utils.get_usb_devices()
+
+    if len(detected_ports) == 0:
         print("No devices connected")
     elif port:
         for pinfo in detected_ports:
-            if port == pinfo[0].device:
+            if isinstance(pinfo, et.utils.USBDevice):
+                if port == pinfo:
+                    flash_port = pinfo
+            elif port == pinfo[0].device:
                 flash_port = pinfo[0]
         if not flash_port:
-            print(f"No device connected to port {port}")
+            print(f"{port} in not connected")
     elif len(detected_ports) == 1:
-        flash_port = detected_ports[0][0]
+        if isinstance(detected_ports[0], et.utils.USBDevice):
+            flash_port = detected_ports[0]
+        else:
+            flash_port = detected_ports[0][0]
     elif len(detected_ports) > 1:
         print("Found multiple Acconeer products:", end="\n\n")
-        detected_ports = [(p.device, t) for (p, t) in detected_ports]
-        for port, tag in [("Serial port:", "Model:")] + detected_ports:
-            print(f"\t{port:<15} {tag:}")
-        print('\nRun the script again and specify port using the "--serial-port" flag.')
+        if isinstance(detected_ports[0], et.utils.USBDevice):
+            for port in detected_ports:
+                print(f"\t{port.name}")
+        else:
+            detected_ports = [(p.device, t) for (p, t) in detected_ports]
+            for port, tag in [("Serial port:", "Model:")] + detected_ports:
+                print(f"\t{port:<15} {tag:}")
+        print('\nRun the script again and specify port using the "--port" flag.')
 
     return flash_port
 
@@ -45,9 +69,7 @@ def find_flash_port(port=None):
 def main():
     parser = argparse.ArgumentParser(description="Image Flasher")
     parser.add_argument(
-        "--serial-port",
-        dest="serial_port",
-        metavar="port",
+        "--port", dest="port", metavar="port", help="Serial port or USB device name"
     )
     parser.add_argument("--image", "-i", required=True, help="Image file to flash")
 
@@ -72,6 +94,6 @@ def main():
 
     et.utils.config_logging(args)
 
-    flash_port = find_flash_port(args.serial_port)
+    flash_port = find_flash_port(args.port)
 
     flash_image(args.image, flash_port)

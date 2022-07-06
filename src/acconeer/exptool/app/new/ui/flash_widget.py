@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import platform
 import traceback
 from typing import Optional
 
@@ -11,6 +12,7 @@ import serial
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QCloseEvent, QMovie
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
     QFileDialog,
     QFormLayout,
@@ -18,17 +20,18 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QSizePolicy,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
-from acconeer.exptool.app.new._enums import ConnectionState
+from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 from acconeer.exptool.flash import find_flash_port, flash_image  # type: ignore[import]
 
-from .misc import BUTTON_ICON_COLOR, SerialPortComboBox
+from .misc import BUTTON_ICON_COLOR, SerialPortComboBox, USBDeviceComboBox
 
 
 log = logging.getLogger(__name__)
@@ -95,6 +98,7 @@ class _FlashDialog(QDialog):
 
     def _flash_start(self) -> None:
         self.flash_label.setText("Flashing...")
+        self.loading.show()
         self.flash_movie.start()
 
     def _flash_stop(self) -> None:
@@ -137,7 +141,20 @@ class _FlashPopup(QDialog):
         browse_button.clicked.connect(self._browse_file)
         layout.addRow(browse_button, self.file_label)
 
-        layout.addWidget(SerialPortComboBox(app_model, self))
+        self.interface_dd = QComboBox(self)
+        self.interface_dd.addItem("Serial", userData=ConnectionInterface.SERIAL)
+        if platform.system().lower() == "windows":
+            self.interface_dd.addItem("USB", userData=ConnectionInterface.USB)
+
+        self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
+
+        self.stacked = QStackedWidget(self)
+        self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
+        self.stacked.addWidget(SerialPortComboBox(app_model, self.stacked))
+        if platform.system().lower() == "windows":
+            self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
+
+        layout.addRow(self.interface_dd, self.stacked)
 
         self.flash_button = QPushButton("Flash", self)
         self.flash_button.clicked.connect(self._flash)
@@ -155,7 +172,11 @@ class _FlashPopup(QDialog):
 
     @property
     def flash_port(self) -> Optional[str]:
-        return self.app_model.serial_connection_port
+        if self.app_model.connection_interface == ConnectionInterface.SERIAL:
+            return self.app_model.serial_connection_port
+        if self.app_model.connection_interface == ConnectionInterface.USB:
+            return self.app_model.usb_connection_device
+        return None
 
     def _browse_file(self) -> None:
         if self.browse_file_dialog.exec():
@@ -169,12 +190,30 @@ class _FlashPopup(QDialog):
 
         self.flash_dialog.flash(self.bin_file, flash_port)
 
+    def _on_interface_dd_change(self) -> None:
+        self.app_model.set_connection_interface(self.interface_dd.currentData())
+
     def _on_app_model_update(self, app_model: AppModel) -> None:
+        interface_index = 0
+        if app_model.connection_interface in [ConnectionInterface.SERIAL, ConnectionInterface.USB]:
+            interface_index = self.interface_dd.findData(app_model.connection_interface)
+            if interface_index == -1:
+                raise RuntimeError
+
+        self.interface_dd.setCurrentIndex(interface_index)
+        self.stacked.setCurrentIndex(interface_index)
+
         self._draw()
 
     def _draw(self) -> None:
         self.file_label.setText(self.bin_file if self.bin_file else "")
         self.flash_button.setEnabled(self.flash_port is not None and self.bin_file is not None)
+
+    def exec(self) -> None:
+        if self.app_model.connection_interface == ConnectionInterface.SOCKET:
+            self.app_model.set_connection_interface(ConnectionInterface.SERIAL)
+
+        super().exec()
 
 
 class FlashButton(QPushButton):
