@@ -348,26 +348,38 @@ class PlotPlugin(DetectorPlotPluginBase):
         feat_kw = dict(pen=pen, **symbol_kw)
         self.dist_history_curve = self.dist_history_plot.plot(**feat_kw)
 
+        self.sweep_smooth_max = et.utils.SmoothMax()
+        self.distance_hist_smooth_lim = et.utils.SmoothLimits()
+
     def update(self, result: DetectorResult) -> None:
         assert result.distances is not None
 
         self.distance_history.pop(0)
         self.distance_history.append(result.distances[0])
 
+        max_val_in_plot = 0
         for idx, processor_result in enumerate(result.processor_results):
             assert processor_result.extra_result.used_threshold is not None
             assert processor_result.extra_result.distances_m is not None
+            assert processor_result.extra_result.abs_sweep is not None
 
+            abs_sweep = processor_result.extra_result.abs_sweep
             threshold = processor_result.extra_result.used_threshold
-            self.sweep_curves[idx].setData(
-                processor_result.extra_result.distances_m, processor_result.extra_result.abs_sweep
-            )
-            self.threshold_curves[idx].setData(
-                processor_result.extra_result.distances_m, threshold
-            )
+            distances_m = processor_result.extra_result.distances_m
+
+            self.sweep_curves[idx].setData(distances_m, abs_sweep)
+            self.threshold_curves[idx].setData(distances_m, threshold)
+
+            max_val_in_subsweep = max(max(threshold), max(abs_sweep))
+            if max_val_in_plot < max_val_in_subsweep:
+                max_val_in_plot = max_val_in_subsweep
+
+        self.sweep_plot.setYRange(0, self.sweep_smooth_max.update(max_val_in_plot))
 
         if np.any(~np.isnan(self.distance_history)):
             self.dist_history_curve.setData(self.distance_history)
+            lims = self.distance_hist_smooth_lim.update(self.distance_history)
+            self.dist_history_plot.setYRange(lims[0], lims[1])
         else:
             self.dist_history_curve.setData([])
 
