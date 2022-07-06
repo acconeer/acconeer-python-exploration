@@ -102,6 +102,7 @@ class USBDeviceComboBox(QComboBox):
         self.app_model = app_model
         app_model.sig_notify.connect(self._on_app_model_update)
         self.currentTextChanged.connect(self._on_change)
+        self.setMinimumWidth(175)
 
     def _on_change(self) -> None:
         self.app_model.set_usb_connection_port(self.currentData())
