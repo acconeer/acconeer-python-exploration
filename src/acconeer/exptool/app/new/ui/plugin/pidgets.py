@@ -174,6 +174,7 @@ class FloatParameterWidget(ParameterWidget):
 class FloatSliderParameterWidgetFactory(FloatParameterWidgetFactory):
     limits: Tuple[float, float]
     log_scale: bool = False
+    show_limit_values: bool = True
 
     def __attrs_post_init__(self) -> None:
         if self.log_scale:
@@ -197,19 +198,26 @@ class FloatSliderParameterWidget(ParameterWidget):
         self.__spin_box.valueChanged.connect(self.__on_spin_box_changed)
         self._body_layout.addWidget(self.__spin_box, 0, 1)
 
-        wrapping_widget = QWidget(self._body_widget)
-        self._body_layout.addWidget(wrapping_widget, 1, 0, 1, -1)
-        wrapping_widget.setLayout(QHBoxLayout(wrapping_widget))
-        wrapping_widget.layout().setContentsMargins(11, 6, 11, 6)
+        slider_widget = QWidget(self._body_widget)
+        self._body_layout.addWidget(slider_widget, 1, 0, 1, -1)
+        slider_widget.setLayout(QHBoxLayout(slider_widget))
+        slider_widget.layout().setContentsMargins(11, 6, 11, 6)
+
+        lower_limit, upper_limit = factory.limits
+        if factory.show_limit_values:
+            slider_widget.layout().addWidget(QLabel(str(lower_limit), slider_widget))
 
         self.__slider = _PidgetFloatSlider(
-            wrapping_widget,
+            slider_widget,
             limits=factory.limits,
             decimals=factory.decimals,
             log_scale=factory.log_scale,
         )
         self.__slider.wrapped_value_changed.connect(self.__on_slider_changed)
-        wrapping_widget.layout().addWidget(self.__slider)
+        slider_widget.layout().addWidget(self.__slider)
+
+        if factory.show_limit_values:
+            slider_widget.layout().addWidget(QLabel(str(upper_limit), slider_widget))
 
     def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
         """Called by ParameterWidget.__init__"""
