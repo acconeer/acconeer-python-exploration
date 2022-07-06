@@ -94,6 +94,7 @@ class DetectorConfig(AlgoConfigBase):
 class DetectorResult:
     distances: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     processor_results: list[ProcessorResult] = attrs.field()
+    service_extended_result: list[dict[int, a121.Result]] = attrs.field()
 
 
 class Detector:
@@ -360,6 +361,7 @@ class Detector:
         return DetectorResult(
             distances=aggregator_result.estimated_distances,
             processor_results=aggregator_result.processor_results,
+            service_extended_result=aggregator_result.service_extended_result,
         )
 
     def update_config(self, config: DetectorConfig) -> None:

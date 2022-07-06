@@ -41,6 +41,7 @@ class AggregatorConfig:
 class AggregatorResult:
     processor_results: list[ProcessorResult] = attrs.field()
     estimated_distances: npt.NDArray[np.float_] = attrs.field()
+    service_extended_result: list[dict[int, a121.Result]] = attrs.field()
 
 
 class Aggregator:
@@ -94,7 +95,9 @@ class Aggregator:
             dists_merged, ampls_merged, self.aggregator_config.peak_sorting_method
         )
         return AggregatorResult(
-            processor_results=processors_result, estimated_distances=dists_sorted
+            processor_results=processors_result,
+            estimated_distances=dists_sorted,
+            service_extended_result=extended_result,
         )
 
     @staticmethod
