@@ -175,6 +175,7 @@ class FloatSliderParameterWidgetFactory(FloatParameterWidgetFactory):
     limits: Tuple[float, float]
     log_scale: bool = False
     show_limit_values: bool = True
+    limit_texts: Optional[Tuple[Optional[str], Optional[str]]] = None
 
     def __attrs_post_init__(self) -> None:
         if self.log_scale:
@@ -201,7 +202,7 @@ class FloatSliderParameterWidget(ParameterWidget):
         slider_widget = QWidget(self._body_widget)
         self._body_layout.addWidget(slider_widget, 1, 0, 1, -1)
         slider_widget.setLayout(QHBoxLayout(slider_widget))
-        slider_widget.layout().setContentsMargins(11, 6, 11, 6)
+        slider_widget.layout().setContentsMargins(11, 6, 11, 0)
 
         lower_limit, upper_limit = factory.limits
         if factory.show_limit_values:
@@ -219,11 +220,30 @@ class FloatSliderParameterWidget(ParameterWidget):
         if factory.show_limit_values:
             slider_widget.layout().addWidget(QLabel(str(upper_limit), slider_widget))
 
+        if factory.limit_texts is not None:
+            label_text_widget = QWidget(self._body_widget)
+            self._body_layout.addWidget(label_text_widget, 2, 0, 1, -1)
+            label_text_widget.setLayout(QHBoxLayout(label_text_widget))
+            label_text_widget.layout().setContentsMargins(11, 0, 11, 0)
+            label_text_widget.layout().setSpacing(0)
+
+            left, right = factory.limit_texts
+
+            if left is not None:
+                label = QLabel(left, label_text_widget)
+                label_text_widget.layout().addWidget(label)
+
+            label_text_widget.layout().addStretch(1)
+
+            if right is not None:
+                label = QLabel(right, label_text_widget)
+                label_text_widget.layout().addWidget(label)
+
     def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
         """Called by ParameterWidget.__init__"""
 
         layout = QGridLayout(self._body_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, 6)
         layout.setSpacing(0)
         layout.addWidget(note_label_widget, 0, 0)
         return layout
