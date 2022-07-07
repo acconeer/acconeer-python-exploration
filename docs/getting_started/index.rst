@@ -23,6 +23,7 @@ To further support and guide you through the development process we also provide
     Selected use cases.
 
 .. toctree::
+   :caption: Getting started
    :maxdepth: 1
    :hidden:
 

@@ -6,6 +6,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam et ipsum at elit 
 Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt mauris sed pellentesque ultrices. In tincidunt dui elementum, iaculis lectus a, iaculis nisl. In in maximus turpis, vitae molestie eros. Sed consequat euismod dolor. Nam tempus ante id ultricies hendrerit. Praesent non ex finibus, mattis enim sagittis, dignissim ante. Nam at nunc sed metus viverra sagittis a id est. Phasellus auctor facilisis egestas. Praesent varius magna ac diam consectetur bibendum. Vestibulum dignissim nisl a ipsum elementum, scelerisque rutrum lorem malesuada.
 
 .. toctree::
+   :caption: Handbook
    :maxdepth: 1
    :hidden:
 
