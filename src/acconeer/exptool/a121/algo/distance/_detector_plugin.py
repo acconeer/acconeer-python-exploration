@@ -334,6 +334,11 @@ class PlotPlugin(DetectorPlotPluginBase):
         feat_kw = dict(pen=pen, **symbol_kw)
         self.threshold_curves = [self.sweep_plot.plot(**feat_kw) for _ in range(self.num_curves)]
 
+        sweep_plot_legend = pg.LegendItem(offset=(0.0, 0.5))
+        sweep_plot_legend.setParentItem(self.sweep_plot)
+        sweep_plot_legend.addItem(self.sweep_curves[0], "Sweep")
+        sweep_plot_legend.addItem(self.threshold_curves[0], "Threshold")
+
         self.dist_history_plot = win.addPlot(row=1, col=0)
         self.dist_history_plot.setMenuEnabled(False)
         self.dist_history_plot.showGrid(x=True, y=True)
