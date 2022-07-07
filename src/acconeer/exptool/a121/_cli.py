@@ -19,6 +19,11 @@ class ExampleArgumentParser(ArgumentParser):
             dest="ip_address",
             metavar="address",
         )
+        server_group.add_argument(
+            "--usb-device",
+            dest="usb_device",
+            metavar="serial_number",
+        )
 
         verbosity_group = self.add_mutually_exclusive_group(required=False)
         verbosity_group.add_argument(
@@ -45,5 +50,5 @@ def get_client_args(namespace: Namespace) -> Dict[str, Any]:
     :returns: dictionary with client-related keyword-arguments.
     """
 
-    CLIENT_RELATED_KEYS = ["ip_address", "serial_port"]
+    CLIENT_RELATED_KEYS = ["ip_address", "serial_port", "usb_device"]
     return {k: getattr(namespace, k) for k in CLIENT_RELATED_KEYS if hasattr(namespace, k)}

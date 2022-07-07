@@ -13,6 +13,7 @@ from acconeer.exptool.a121._core.mediators import (
     ClientError,
     CommunicationProtocol,
 )
+from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
 from .exploration_protocol import ExplorationProtocol, get_exploration_protocol
 from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink, NullLink, NullLinkError
@@ -41,7 +42,7 @@ def determine_serial_port(serial_port: Optional[str]) -> str:
         return serial_port
 
 
-def determine_usb_device(usb_device: Optional[str]) -> str:
+def determine_usb_device(usb_device: Optional[USBDevice]) -> USBDevice:
     if usb_device is None:
         usb_devices = et.utils.get_usb_devices()
 
@@ -50,7 +51,7 @@ def determine_usb_device(usb_device: Optional[str]) -> str:
         elif len(usb_devices) > 1:
             raise ClientError("There are multiple devices detected. Specify one:\n" + usb_devices)
         else:
-            return str(usb_devices[0])
+            return usb_devices[0]
     else:
         return usb_device
 
@@ -73,6 +74,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
         link = AdaptedUSBLink(
             vid=client_info.usb_device.vid,
             pid=client_info.usb_device.pid,
+            name=client_info.usb_device.name,
         )
 
         return link
@@ -115,6 +117,9 @@ class Client(AgnosticClient):
     ):
         if len([e for e in [ip_address, serial_port, usb_device] if e is not None]) > 1:
             raise ValueError("Only one connection can be selected")
+
+        if isinstance(usb_device, str):
+            raise NotImplementedError("Selecting device by serial number not supported")
 
         protocol: Type[CommunicationProtocol] = ExplorationProtocol
         self._protocol_overridden = False

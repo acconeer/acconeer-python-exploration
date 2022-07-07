@@ -295,8 +295,18 @@ class USBLink(BaseLink):
     def connect(self):
         if ComPort is None:
             raise ImportError("WinUsbPy only works on Windows platform")
-        self._port = ComPort(name=self._name, vid=self._vid, pid=self._pid, start=False)
-        self._port.open()
+        if self._vid and self._pid:
+            self._port = ComPort(vid=self._vid, pid=self._pid, start=False)
+        elif self._name:
+            self._port = ComPort(name=self._name, start=False)
+        else:
+            raise LinkError("Either vid and pid or name is needed to connect")
+
+        if not self._port.open():
+            raise LinkError(
+                f"Unable to connect to port (vid={self._vid}, pid={self._pid}, name={self._name})"
+            )
+
         self._port.timeout = self._port_timeout
         self._buf = bytearray()
         self.send_break()
