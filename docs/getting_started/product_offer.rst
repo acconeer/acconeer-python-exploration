@@ -1,5 +1,5 @@
-The Acconeer offer
-^^^^^^^^^^^^^^^^^^
+Product offering
+================
 
 The Acconeer offer consists of two parts, hardware and software, as illustrated in :numref:`fig_acconeer_offer`. In addition, Acconeer also provides various tools to aid the customer in the development process.
 
