@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+import warnings
+from typing import Any, Optional, Tuple
+
 import attrs
+import h5py
 import numpy as np
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo import AlgoConfigBase
 
 from ._processors import Processor, ProcessorConfig, ProcessorExtraResult
 
 
 @attrs.mutable(kw_only=True)
-class DetectorConfig:
+class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=1.0)
     end_m: float = attrs.field(default=2.0)
     detection_threshold: float = attrs.field(default=1.5)
@@ -47,7 +52,7 @@ class Detector:
 
         self.started = False
 
-    def start(self) -> None:
+    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
         if self.started:
             raise RuntimeError("Already started")
 
@@ -68,7 +73,19 @@ class Detector:
             processor_config=processor_config,
         )
 
-        self.client.start_session()
+        if recorder is not None:
+            if isinstance(recorder, a121.H5Recorder):
+                algo_group = recorder.require_algo_group("presence_detector")
+                _record_algo_data(
+                    algo_group,
+                    self.sensor_id,
+                    self.detector_config,
+                )
+            else:
+                # Should never happen as we currently only have the H5Recorder
+                warnings.warn("Will not save algo data")
+
+        self.client.start_session(recorder)
 
         self.started = True
 
@@ -117,10 +134,36 @@ class Detector:
     def update_config(self, config: DetectorConfig) -> None:
         raise NotImplementedError
 
-    def stop(self) -> None:
+    def stop(self) -> Any:
         if not self.started:
             raise RuntimeError("Already stopped")
 
-        self.client.stop_session()
+        recorder_result = self.client.stop_session()
 
         self.started = False
+
+        return recorder_result
+
+
+def _record_algo_data(
+    algo_group: h5py.Group,
+    sensor_id: int,
+    detector_config: DetectorConfig,
+) -> None:
+    algo_group.create_dataset(
+        "sensor_id",
+        data=sensor_id,
+        track_times=False,
+    )
+    algo_group.create_dataset(
+        "detector_config",
+        data=detector_config.to_json(),
+        dtype=a121._H5PY_STR_DTYPE,
+        track_times=False,
+    )
+
+
+def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig]:
+    sensor_id = algo_group["sensor_id"][()]
+    config = DetectorConfig.from_json(algo_group["detector_config"][()])
+    return sensor_id, config
