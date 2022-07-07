@@ -1,5 +1,5 @@
-Processing
-==========
+A111 algorithms
+===============
 
 .. toctree::
    :maxdepth: 1

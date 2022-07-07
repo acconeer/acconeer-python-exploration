@@ -39,7 +39,7 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
 
 .. toctree::
    :maxdepth: 2
-   :caption: Services and detectors
+   :caption: Algorithms
    :hidden:
 
-   processing/index
+   A111 <algo/a111/index>
