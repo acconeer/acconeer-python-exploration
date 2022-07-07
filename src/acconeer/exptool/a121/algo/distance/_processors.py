@@ -58,7 +58,7 @@ class ProcessorContext:
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_ref: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    abs_noise_std: Optional[float] = attrs.field(default=None)
+    abs_noise_std: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -166,6 +166,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.start_point_cropped = self.start_point + self.filt_margin * self.step_length
         self.num_points_cropped = self.num_points - 2 * self.filt_margin
 
+        self.cropped_subweeps_breakpoints = self._get_cropped_subsweep_breakpoints(
+            range_subsweep_configs, self.filt_margin
+        )
+
         self.distances_m = (
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
         ) * self.metadata.base_step_length_m
@@ -216,6 +220,27 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     @classmethod
     def _get_num_points(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
         return sum(c.num_points for c in subsweep_configs)
+
+    @classmethod
+    def _get_cropped_subsweep_breakpoints(
+        cls, subsweep_configs: list[a121.SubsweepConfig], filt_margin: int
+    ) -> list[int]:
+        """Return the breakpoints between subsweeps of the cropped sweep.
+
+        The breakpoints are calculated as the cumulative sum of the number of points in each
+        subsweep. Then, the cropped breakpoints are formed by adding filt_margin to the front
+        of the list and subtracted from the last element in the list.
+        """
+
+        num_points_in_subsweeps = [
+            subsweep_config.num_points for subsweep_config in subsweep_configs
+        ]
+        breakpoints_cropped = [
+            sum(num_points_in_subsweeps[: idx + 1]) for idx in range(len(num_points_in_subsweeps))
+        ]
+        breakpoints_cropped.insert(0, filt_margin)
+        breakpoints_cropped[-1] -= filt_margin
+        return breakpoints_cropped
 
     @classmethod
     def _validate_range_configs(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
@@ -306,6 +331,15 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 self.num_points_cropped, self.processor_config.fixed_threshold_value
             )
         elif self.threshold_method == ThresholdMethod.CFAR:
+            self.cfar_abs_noise = np.zeros(shape=self.num_points_cropped)
+            if self.context.abs_noise_std is not None:
+                for idx, abs_noise_std in enumerate(self.context.abs_noise_std):
+                    self.cfar_abs_noise[
+                        self.cropped_subweeps_breakpoints[idx] : self.cropped_subweeps_breakpoints[
+                            idx + 1
+                        ]
+                    ] = abs_noise_std
+
             self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
             self.cfar_one_sided = self.processor_config.cfar_one_sided
             window_length = self._calc_cfar_window_length(self.profile, self.step_length)
@@ -406,7 +440,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 self.idx_cfar_pts,
                 self.threshold_sensitivity,
                 self.cfar_one_sided,
-                self.context,
+                self.cfar_abs_noise,
             )
         elif self.threshold_method == ThresholdMethod.FIXED:
             return self.threshold
@@ -421,7 +455,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         idx_cfar_pts: npt.NDArray[np.int_],
         alpha: float,
         one_side: bool,
-        context: ProcessorContext,
+        abs_noise_std: npt.NDArray,
     ) -> npt.NDArray[np.float_]:
         threshold = np.full(abs_sweep.shape, np.nan)
         start_idx = int(np.max(idx_cfar_pts))
@@ -436,9 +470,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             take_indexes = idx + take_relative_indexes
             threshold[idx] = np.mean(np.take(abs_sweep, take_indexes))
 
-        if context.abs_noise_std is not None:
-            threshold += context.abs_noise_std
-
+        threshold += abs_noise_std
         threshold *= 1.0 / (alpha + 1e-10)
         return threshold
 
@@ -513,3 +545,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return int(
             np.ceil(cls.ENVELOPE_FWHM_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length))
         )
+
+
+def calculate_abs_noise_std(subframe: npt.NDArray[np.complex_]) -> float:
+    return float(np.std(np.abs(subframe)))

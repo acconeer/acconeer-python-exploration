@@ -175,9 +175,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not load from file") from exc
 
-        self.start_session(with_recorder=False)
-
         self.shared_state.replaying = True
+
+        self.start_session(with_recorder=False)
 
         self.send_status_message(f"<b>Replaying from {path.name}</b>")
         self.broadcast(sync=True)
@@ -217,7 +217,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self._recorder = None
 
         try:
-            self._detector_instance.start(self._recorder)
+            self._detector_instance.start(
+                self._recorder, skip_calibration=self.shared_state.replaying
+            )
         except Exception as exc:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not start") from exc

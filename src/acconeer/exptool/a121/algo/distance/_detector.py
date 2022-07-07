@@ -25,6 +25,7 @@ from ._processors import (
     ProcessorMode,
     ProcessorResult,
     ThresholdMethod,
+    calculate_abs_noise_std,
 )
 
 
@@ -61,6 +62,7 @@ class DetectorContext:
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_thresholds: Optional[List[npt.NDArray[np.float_]]] = attrs.field(default=None)
+    abs_noise_std: Optional[List[npt.NDArray[np.float_]]] = attrs.field(default=None)
     recorded_threshold_session_config_used: Optional[a121.SessionConfig] = attrs.field(
         default=None
     )
@@ -230,6 +232,33 @@ class Detector:
             self.context.recorded_thresholds.append(threshold)
         self.context.recorded_threshold_session_config_used = self.session_config
 
+    def calibrate_noise(self) -> None:
+        self._validate_ready_for_calibration()
+
+        session_config = copy.deepcopy(self.session_config)
+
+        for group in session_config.groups:
+            for subsweep in group[self.sensor_id].subsweeps:
+                subsweep.enable_tx = False
+
+        extended_metadata = self.client.setup_session(session_config)
+        assert isinstance(extended_metadata, list)
+
+        self.client.start_session()
+        extended_result = self.client.get_next()
+        assert isinstance(extended_result, list)
+        self.client.stop_session()
+
+        abs_noise_std = []
+        for spec in self.processor_specs:
+            abs_noise_std_in_spec = []
+            result = extended_result[spec.group_index][spec.sensor_id]
+            for subsweep_index in spec.subsweep_indexes:
+                subframe = result.subframes[subsweep_index]
+                abs_noise_std_in_spec.append(calculate_abs_noise_std(subframe))
+            abs_noise_std.append(np.array(abs_noise_std_in_spec))
+        self.context.abs_noise_std = abs_noise_std
+
     @classmethod
     def get_detector_status(
         cls, config: DetectorConfig, context: DetectorContext
@@ -322,43 +351,49 @@ class Detector:
             spec.processor_config.threshold_method for spec in processor_specs
         ]
 
-    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
+    def start(
+        self, recorder: Optional[a121.Recorder] = None, skip_calibration: bool = False
+    ) -> None:
         if self.started:
             raise RuntimeError("Already started")
 
         status = self.get_detector_status(self.detector_config, self.context)
 
-        if status.ready_to_start:
+        if not status.ready_to_start:
+            raise RuntimeError("Not ready to start")
 
-            specs = self._add_context_to_processor_spec(self.processor_specs)
-            extended_metadata = self.client.setup_session(self.session_config)
-            assert isinstance(extended_metadata, list)
+        if not skip_calibration:
+            self.calibrate_noise()
 
-            aggregator_config = AggregatorConfig(
-                peak_sorting_method=self.detector_config.peaksorting_method
-            )
-            self.aggregator = Aggregator(
-                session_config=self.session_config,
-                extended_metadata=extended_metadata,
-                aggregator_config=aggregator_config,
-                specs=specs,
-            )
+        specs = self._add_context_to_processor_spec(self.processor_specs)
+        extended_metadata = self.client.setup_session(self.session_config)
+        assert isinstance(extended_metadata, list)
 
-            if recorder is not None:
-                if isinstance(recorder, a121.H5Recorder):
-                    algo_group = recorder.require_algo_group("distance_detector")
-                    _record_algo_data(
-                        algo_group,
-                        self.sensor_id,
-                        self.detector_config,
-                        self.context,
-                    )
-                else:
-                    # Should never happen as we currently only have the H5Recorder
-                    warnings.warn("Will not save algo data")
+        aggregator_config = AggregatorConfig(
+            peak_sorting_method=self.detector_config.peaksorting_method
+        )
+        self.aggregator = Aggregator(
+            session_config=self.session_config,
+            extended_metadata=extended_metadata,
+            aggregator_config=aggregator_config,
+            specs=specs,
+        )
 
-            self.client.start_session(recorder)
-            self.started = True
+        if recorder is not None:
+            if isinstance(recorder, a121.H5Recorder):
+                algo_group = recorder.require_algo_group("distance_detector")
+                _record_algo_data(
+                    algo_group,
+                    self.sensor_id,
+                    self.detector_config,
+                    self.context,
+                )
+            else:
+                # Should never happen as we currently only have the H5Recorder
+                warnings.warn("Will not save algo data")
+
+        self.client.start_session(recorder)
+        self.started = True
 
     def get_next(self) -> DetectorResult:
         if not self.started:
@@ -779,7 +814,7 @@ class Detector:
         leakage and phase jitter compensation reference.
         2. Close range measurement and recorded threshold calibration -> Direct leakage and
         phase jitter compensation reference.
-        3. Far range measurement and recorded threshold calibration -> Recorded threshold.
+        3. Far range measurement and recorded threshold -> Recorded threshold.
 
         If not one of these cases, add the unaltered processor specification.
         """
@@ -836,8 +871,16 @@ class Detector:
                     recorded_threshold=self.context.recorded_thresholds[idx]
                 )
                 updated_specs.append(attrs.evolve(spec, processor_context=context))
+            elif (
+                spec.processor_config.measurement_type == MeasurementType.FAR_RANGE
+                and spec.processor_config.processor_mode
+                == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
+            ):
+                updated_specs.append(attrs.evolve(spec, processor_context=ProcessorContext()))
             else:
-                updated_specs.append(spec)
+                assert self.context.abs_noise_std is not None
+                context = ProcessorContext(abs_noise_std=self.context.abs_noise_std[idx])
+                updated_specs.append(attrs.evolve(spec, processor_context=context))
         return updated_specs
 
 
@@ -862,7 +905,7 @@ def _record_algo_data(
     context_group = algo_group.create_group("context")
 
     for k, v in attrs.asdict(context).items():
-        if k == "recorded_thresholds":
+        if k in ["recorded_thresholds", "abs_noise_std"]:
             continue
 
         if v is None:
@@ -885,6 +928,12 @@ def _record_algo_data(
 
         for i, v in enumerate(context.recorded_thresholds):
             recorded_thresholds_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+    if context.abs_noise_std is not None:
+        abs_noise_std_group = context_group.create_group("abs_noise_std")
+
+        for i, v in enumerate(context.abs_noise_std):
+            abs_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, DetectorContext]:
@@ -913,21 +962,28 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, Detect
         context_dict[k] = func(v) if func else v
 
     if "recorded_thresholds" in context_group:
-        recorded_thresholds_group = context_group["recorded_thresholds"]
-        recorded_thresholds = []
-
-        i = 0
-        while True:
-            try:
-                v = recorded_thresholds_group[f"index_{i}"][()]
-            except KeyError:
-                break
-
-            recorded_thresholds.append(v)
-            i += 1
-
+        recorded_thresholds = _get_group_items(context_group["recorded_thresholds"])
         context_dict["recorded_thresholds"] = recorded_thresholds
+
+    if "abs_noise_std" in context_group:
+        abs_noise_std = _get_group_items(context_group["abs_noise_std"])
+        context_dict["abs_noise_std"] = abs_noise_std
 
     context = DetectorContext(**context_dict)
 
     return sensor_id, config, context
+
+
+def _get_group_items(group: h5py.Group) -> list[npt.NDArray]:
+    group_items = []
+
+    i = 0
+    while True:
+        try:
+            v = group[f"index_{i}"][()]
+        except KeyError:
+            break
+
+        group_items.append(v)
+        i += 1
+    return group_items
