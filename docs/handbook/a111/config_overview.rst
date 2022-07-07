@@ -1,15 +1,12 @@
-Radar sensor introduction
-=========================
+.. _handbook-a111-configuring:
 
-.. _sensor-intro-configuring:
+Configuration overview
+======================
 
-Configuring the Acconeer sensor
--------------------------------
-
-The Acconeer sensor is highly configurable and can operate in many different modes where parameters are tuned to optimize the sensor performance for specific use cases.
+The Acconeer A111 is highly configurable and can operate in many different modes where parameters are tuned to optimize the sensor performance for specific use cases.
 
 Signal averaging and gain
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 
 In addition to the Profile configuration parameter, two main configuration parameters are available in all Services to optimize the signal quality:
 
@@ -19,7 +16,7 @@ In addition to the Profile configuration parameter, two main configuration param
 
 
 Sweep and update rate
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 A sweep is defined as a distance measurement range, starting at the distance *start range* and continues for *sweep length*. Hence, every sweep consists of one or several distance sampling points.
 
@@ -29,7 +26,7 @@ In addition, the sparse service introduces a concept of frames defined `here <ht
 
 
 Repetition modes
-^^^^^^^^^^^^^^^^
+----------------
 
 RSS supports two different *repetition modes*. They determine how and when data acquisition occurs. They are:
 
@@ -42,7 +39,7 @@ Note, Exploration Tool is capable of setting the update rate also in *on demand*
 .. _power-save-modes:
 
 Power save modes
-^^^^^^^^^^^^^^^^
+----------------
 
 The power save mode configuration sets what state the sensor waits in between measurements in an active service. There are five power save modes, see :numref:`tab_power_save_modes`.  The different states differentiate in current dissipation and response latency, where the most current consuming mode *Active* gives fastest response and the least current consuming mode *Off* gives the slowest response. The absolute response time and also maximum update rate is determined by several factors besides the power save mode configuration. These are profile, length, and hardware accelerated average samples. In addition, the host capabilities in terms of SPI communication speed and processing speed also impact on the absolute response time. Nonetheless, the relation between the power save modes are always kept such that *Active* is fastest and *Off* is slowest.
 
@@ -69,7 +66,7 @@ As part of the deactivation process of the service the sensor is disabled, which
 
 
 Configuration summary
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 :numref:`tab_sensor_params` shows a list of important parameters that are available through our API and that can be used to optimize the performance for a specific use case, refer to product documentation and user guides for a complete list of all parameters and how to use them.
 

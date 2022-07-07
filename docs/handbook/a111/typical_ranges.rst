@@ -2,7 +2,7 @@ Typical ranges for different objects
 ====================================
 
 In :numref:`tab_range_wo_lens` and :numref:`tab_range_w_lens` the visibility for a range of objects with common shapes (cylinder, plate, etc.) and of varying reflectivity, i.e. materials, is shown. Objects are at normal incidence and the governing system parameters are :math:`\sigma`, :math:`\gamma`, and C, as shown in :eq:`eq_radar_eq`. The envelope service was used to collect the data with Profile 2. The object counts as distinguishable from the noise with a SNR > 10 dB (Y), barely visible between 5 dB and 10 dB (-) and not visible with a SNR < 5 dB (N).
-The range can be further increased based on the configuration of the sensor, as described in :ref:`sensor-intro-configuring` and by optimizing the physical integration, as will be described in :ref:`handbook-physical-integration`. As an example for such an optimization :numref:`tab_range_wo_lens` shows results with an added radar Fresnel lens.
+The range can be further increased based on the configuration of the sensor, as described in :ref:`handbook-a111-configuring` and by optimizing the physical integration, as will be described in :ref:`handbook-physical-integration`. As an example for such an optimization :numref:`tab_range_wo_lens` shows results with an added radar Fresnel lens.
 
 .. _tab_range_wo_lens:
 .. table:: Typical ranges using the envelope service and Profile 2, **without radar lens**.

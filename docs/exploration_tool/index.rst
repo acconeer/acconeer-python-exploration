@@ -11,7 +11,6 @@ Phasellus a quam neque. Praesent sodales pharetra nibh ac porta. Donec tincidunt
    :hidden:
 
    Overview <self>
-   sensor_introduction
    gui/index
    file_format_ref
    faq
