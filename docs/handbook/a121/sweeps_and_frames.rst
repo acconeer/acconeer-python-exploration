@@ -16,7 +16,7 @@ Some examples of suitable applications for multiple sweeps per frame are detecti
 
    An illustration of the *sweep* and *frame* concept.
 
-As shown in :ref:`fig_a121_sweep_and_frame_illustration`,
+As shown in :numref:`fig_a121_sweep_and_frame_illustration`,
 :math:`N_s` is the number of *sweeps per frame (SPF)*.
 Typical values range from 1 to 64.
 The sweeps are sampled consecutively, where :math:`T_s` is the time between two corresponding points in consecutive sweeps.

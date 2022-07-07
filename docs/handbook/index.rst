@@ -37,6 +37,8 @@ The *Handbook* provides in-depth information on a wide range of topics.
    a121/measurement_range
    a121/sweeps_and_frames
    a121/interpreting_radar_data
+   a121/profiles
+   a121/signal_strength
 
 .. raw:: latex
 
