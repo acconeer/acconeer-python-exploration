@@ -1,9 +1,27 @@
 # Changelog
 
-## Unreleased
+## v5.0.0
+
+This major release provides initial support for the A121, with a new
+app, new algorithms, and a stable core API.
+
+No changes has been made to the old application nor the A111 API.
 
 ### Added
-- `double_buffering` parameter to `a121.SensorConfig`.
+- A new application, currently only for A121. In the future, A111 will
+  be supported in this new app as well, removing the need for two
+  separate apps.
+- Support for A121 v0.4, amongst other things adding a
+  `double_buffering` parameter to `a121.SensorConfig`.
+- A121: Initial version of a distance detector.
+- A121: Initial version of a presence detector.
+- A121: XC120 WinUSB support, for improved data streaming performance
+  on Windows.
+- A121: Ability to load record from file to RAM.
+
+### Fixed
+- A121: Several minor issues in the core API.
+- Avoid incompatible dependencies.
 
 ## v4.4.1
 
