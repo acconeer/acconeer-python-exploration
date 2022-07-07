@@ -3,6 +3,8 @@ API reference - A121
 
 This page provides an auto-generated summary of Acconeer Exploration Tool's A121 API.
 
+.. _api_a121_configs:
+
 Configurations
 --------------
 
