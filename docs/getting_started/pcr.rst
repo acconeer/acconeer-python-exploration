@@ -10,7 +10,7 @@ Radar is an acronym for Radio Detection and Ranging and is a way of determining 
 
     Illustration of the pulsed coherent radar system where the time of flight is measured to determine distance to object
 
-The distance to the object can then be calculated by multiplying the time-of-flight with the speed of the radio wave (same as speed of light) and then dividing by two as the distance the signal has traveled is equal to two times the distance to the object. More details about the radar and the Acconeer approach can be found in the :ref:`sensor-intro-system-overview`.
+The distance to the object can then be calculated by multiplying the time-of-flight with the speed of the radio wave (same as speed of light) and then dividing by two as the distance the signal has traveled is equal to two times the distance to the object. More details about the radar and the Acconeer approach can be found in the :ref:`handbook-a111-system-overview`.
 
 There are different approaches to building radar systems, each with its own pros and cons that typically results in a trade-off between accuracy and power consumption, see :numref:`fig_pulsed_coherent_radar`. At Acconeer we have solved this by combining two important features of a radar system, the first is that it is pulsed, which means that the radio part is shut down in between transmission of signals. In fact, the Acconeer radar is pulsed so fast that, typically, the radio is active less than 1 % of the time even when transmitting at maximum rate. This is how the power consumption can be kept low and optimized dependent on the update rate required by your application.
 
