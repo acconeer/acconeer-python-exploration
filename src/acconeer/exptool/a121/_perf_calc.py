@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 import attrs
 
 from ._core import IdleState, Metadata, SensorConfig, SessionConfig
@@ -14,7 +16,7 @@ class _PerformanceCalc:
     """
 
     session_config: SessionConfig = attrs.field()
-    metadata: Metadata = attrs.field()
+    metadata: Optional[Metadata] = attrs.field()
 
     @property
     def sensor_config(self) -> SensorConfig:
@@ -29,6 +31,8 @@ class _PerformanceCalc:
         if self.sensor_config.sweep_rate is not None:
             return self.sensor_config.sweep_rate
         else:
+            if self.metadata is None:
+                raise ValueError("Metadata is None")
             return self.metadata.max_sweep_rate
 
     @property
@@ -37,6 +41,8 @@ class _PerformanceCalc:
 
     @property
     def sweep_active_duration(self) -> float:
+        if self.metadata is None:
+            raise ValueError("Metadata is None")
         return 1 / self.metadata.max_sweep_rate
 
     @property

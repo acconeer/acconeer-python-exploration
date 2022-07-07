@@ -186,6 +186,7 @@ class TestAStartedClient:
     @pytest.fixture
     def link(self):
         link = Mock()
+        link.timeout = 2
         link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
         return link
 
@@ -233,6 +234,7 @@ class TestAStoppedClient:
     @pytest.fixture
     def link(self):
         link = Mock()
+        link.timeout = 2
         link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
         return link
 
@@ -258,6 +260,7 @@ class TestADisconnectedClient:
     @pytest.fixture
     def link(self):
         link = Mock()
+        link.timeout = 2
         link.recv_until.side_effect = ([b"data_header"] * 20) + [b"stop_streaming"]
         return link
 

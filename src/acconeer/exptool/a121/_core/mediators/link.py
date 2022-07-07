@@ -6,6 +6,16 @@ class Link(Protocol):
         """Establishes a connection."""
         ...
 
+    @property
+    def timeout(self) -> float:
+        """Return link timout."""
+        ...
+
+    @timeout.setter
+    def timeout(self, timeout: float) -> None:
+        """Set return link timeout."""
+        ...
+
     def recv(self, num_bytes: int) -> bytes:
         """Recieves `num_bytes` bytes."""
         ...

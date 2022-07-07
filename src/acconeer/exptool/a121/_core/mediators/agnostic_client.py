@@ -20,6 +20,7 @@ from acconeer.exptool.a121._core.utils import (
     unextend,
     unwrap_ticks,
 )
+from acconeer.exptool.a121._perf_calc import _PerformanceCalc
 
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
@@ -35,6 +36,8 @@ class ClientError(Exception):
 
 class AgnosticClient:
     _link: BufferedLink
+    _default_link_timeout: float
+    _link_timeout: float
     _protocol: Type[CommunicationProtocol]
     _server_info: Optional[ServerInfo]
     _session_config: Optional[SessionConfig]
@@ -45,6 +48,8 @@ class AgnosticClient:
 
     def __init__(self, link: BufferedLink, protocol: Type[CommunicationProtocol]) -> None:
         self._link = link
+        self._default_link_timeout = self._link.timeout
+        self._link_timeout = self._default_link_timeout
         self._protocol = protocol
         self._server_info = None
         self._session_config = None
@@ -115,6 +120,16 @@ class AgnosticClient:
 
         config.validate()
 
+        pc = _PerformanceCalc(config, None)
+
+        try:
+            # Increase timeout if update rate is very low, otherwise keep default
+            self._link_timeout = max(1.1 * (1 / pc.frame_rate) + 0.5, self._link.timeout)
+        except Exception:
+            self._link_timeout = self._default_link_timeout
+
+        self._link.timeout = self._link_timeout
+
         self._link.send(self._protocol.setup_command(config))
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
         self._session_config = config
@@ -149,6 +164,8 @@ class AgnosticClient:
                 server_info=self.server_info,
                 session_config=self.session_config,
             )
+
+        self._link.timeout = self._link_timeout
 
         self._link.send(self._protocol.start_streaming_command())
         reponse_bytes = self._link.recv_until(self._protocol.end_sequence)
@@ -200,8 +217,9 @@ class AgnosticClient:
             self._recorder = None
 
         self._link.send(self._protocol.stop_streaming_command())
-        reponse_bytes = self._drain_buffer()
+        reponse_bytes = self._drain_buffer(self._link.timeout + 1)
         self._protocol.stop_streaming_response(reponse_bytes)
+        self._link.timeout = self._default_link_timeout
         self._session_is_started = False
         self._tick_unwrapper = TickUnwrapper()
         return recorder_result
