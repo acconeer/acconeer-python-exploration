@@ -156,13 +156,16 @@ class Detector:
 
         self.update_config(self.detector_config)
 
-    def calibrate_close_range(self) -> None:
+    def _validate_ready_for_calibration(self) -> None:
         if self.started:
             raise RuntimeError("Already started")
         if self.processor_specs is None:
             raise ValueError("Processor specification not defined")
         if self.session_config is None:
             raise ValueError("Session config not defined")
+
+    def calibrate_close_range(self) -> None:
+        self._validate_ready_for_calibration()
 
         close_range_spec = self._filter_close_range_spec(self.processor_specs)
         spec = self._update_processor_mode(close_range_spec, ProcessorMode.LEAKAGE_CALIBRATION)
@@ -191,12 +194,7 @@ class Detector:
         self.context.recorded_thresholds = None
 
     def record_threshold(self) -> None:
-        if self.started:
-            raise RuntimeError("Already started")
-        if self.processor_specs is None:
-            raise ValueError("Processor specification not defined")
-        if self.session_config is None:
-            raise ValueError("Session config not defined")
+        self._validate_ready_for_calibration()
 
         # TODO: Ignore/override threshold method while recording threshold
 
