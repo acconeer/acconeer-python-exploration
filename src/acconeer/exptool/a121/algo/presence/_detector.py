@@ -29,6 +29,7 @@ class DetectorResult:
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
     processor_extra_result: ProcessorExtraResult = attrs.field()
+    service_result: a121.Result = attrs.field()
 
     def __str__(self) -> str:
         s = "Presence! " if self.presence_detected else "No presence. "
@@ -129,6 +130,7 @@ class Detector:
             presence_distance=processor_result.presence_distance,
             presence_detected=processor_result.presence_detected,
             processor_extra_result=processor_result.extra_result,
+            service_result=result,
         )
 
     def update_config(self, config: DetectorConfig) -> None:
