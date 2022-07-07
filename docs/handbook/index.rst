@@ -36,6 +36,7 @@ The *Handbook* provides in-depth information on a wide range of topics.
    a121/differences_from_a111
    a121/measurement_range
    a121/sweeps_and_frames
+   a121/interpreting_radar_data
 
 .. raw:: latex
 
