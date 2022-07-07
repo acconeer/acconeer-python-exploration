@@ -87,6 +87,9 @@ def test_sensor_id():
     session_config = a121.SessionConfig(a121.SensorConfig())
     assert session_config.sensor_id == 1
 
+    session_config.sensor_id = 2
+    assert session_config.sensor_id == 2
+
     session_config = a121.SessionConfig({2: a121.SensorConfig()})
     assert session_config.sensor_id == 2
 
@@ -94,6 +97,9 @@ def test_sensor_id():
 
     with pytest.raises(Exception):
         _ = session_config.sensor_id
+
+    with pytest.raises(Exception):
+        session_config.sensor_id = 2
 
 
 def test_sensor_config_property():

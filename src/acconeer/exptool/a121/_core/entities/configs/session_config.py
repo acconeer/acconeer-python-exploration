@@ -179,6 +179,18 @@ class SessionConfig:
         (sensor_id,) = group.keys()
         return sensor_id
 
+    @sensor_id.setter
+    def sensor_id(self, sensor_id: int) -> None:
+        """Sets the sole sensor ID
+
+        :raises RuntimeError: If this session config is extended
+        """
+
+        self._assert_not_extended()
+        (group,) = self._groups
+        (old_sensor_id,) = group.keys()
+        group[sensor_id] = group.pop(old_sensor_id)
+
     @property
     def sensor_config(self) -> SensorConfig:
         """Retrieves the sole sensor config
