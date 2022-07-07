@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `double_buffering` parameter to `a121.SensorConfig`.
+
+## v4.4.1
+
+### Changed
+ - Remove references to Ubuntu 18.04
+ - Moved Parking to examples
+
+### Fixed
+ - Add sampling mode for Sparse in configuration.
+   Was accidentally removed, when sampling mode was removed for IQ.
+ - Add sampling mode for Sparse when exporting C code.
+
+## v4.4.0
+
+### Added
+- `enable_loopback` parameter to `a121.SubsweepConfig`.
+- Side/pole mounted case for parking detector.
+  Modifies some default settings as well as slight changes in computations.
+
+### Fixed
+- Bug that made `a121.Client` not stop its session
+  if the session was started with a recorder.
+
 ## v4.3.0
 
 ### Added

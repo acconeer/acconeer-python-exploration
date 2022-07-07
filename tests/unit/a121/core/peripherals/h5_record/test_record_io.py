@@ -18,3 +18,8 @@ def test_close_h5_record(tmp_file_path):
 def test_open_record(ref_record_file):
     with a121.open_record(ref_record_file) as ref_record:
         assert isinstance(ref_record, a121.H5Record)
+
+
+def test_load_record(ref_record_file):
+    ref_record = a121.load_record(ref_record_file)
+    assert isinstance(ref_record, a121.InMemoryRecord)

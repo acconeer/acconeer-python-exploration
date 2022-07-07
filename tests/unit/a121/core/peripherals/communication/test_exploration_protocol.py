@@ -12,7 +12,12 @@ from acconeer.exptool.a121._core.entities import (
     SensorInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.peripherals import ExplorationProtocol, ServerError
+from acconeer.exptool.a121._core.peripherals import (
+    ExplorationProtocol,
+    ServerError,
+    get_exploration_protocol,
+)
+from acconeer.exptool.a121._core.utils import parse_rss_version
 
 
 @pytest.fixture
@@ -22,6 +27,10 @@ def single_sweep_metadata():
         frame_data_length=100,
         subsweep_data_offset=np.array([0]),
         subsweep_data_length=np.array([100]),
+        calibration_temperature=10,
+        tick_period=50,
+        base_step_length_m=0.0025,
+        max_sweep_rate=1000.0,
     )
 
 
@@ -57,8 +66,15 @@ def test_get_system_info_response():
             },
         }
     ).encode("ascii")
-    expected = a121.ServerInfo(
-        rss_version="v2.9.0", sensor_count=5, ticks_per_second=1000000, sensor_infos={}
+    expected = (
+        a121.ServerInfo(
+            rss_version="v2.9.0",
+            sensor_count=5,
+            ticks_per_second=1000000,
+            sensor_infos={},
+            hardware_name="linux",
+        ),
+        "sensor_version",
     )
 
     assert ExplorationProtocol.get_system_info_response(response, {}) == expected
@@ -93,7 +109,8 @@ def test_get_sensor_info_response():
     assert ExplorationProtocol.get_sensor_info_response(response) == expected
 
 
-def test_setup_command_simple_session_config():
+@pytest.mark.parametrize("update_rate", [20, None])
+def test_setup_command_simple_session_config(update_rate):
     config = a121.SessionConfig(
         a121.SensorConfig(
             subsweeps=[
@@ -104,7 +121,7 @@ def test_setup_command_simple_session_config():
             ],
             sweeps_per_frame=1,
         ),
-        update_rate=20,
+        update_rate=update_rate,
     )
 
     expected_dict = {
@@ -123,6 +140,7 @@ def test_setup_command_simple_session_config():
                                 "hwaas": 8,
                                 "receiver_gain": 16,
                                 "enable_tx": True,
+                                "enable_loopback": False,
                                 "phase_enhancement": False,
                                 "prf": "6_5_MHz",
                             }
@@ -131,14 +149,17 @@ def test_setup_command_simple_session_config():
                         "sweep_rate": 0.0,
                         "frame_rate": 0.0,
                         "continuous_sweep_mode": False,
+                        "double_buffering": False,
                         "inter_frame_idle_state": "deep_sleep",
                         "inter_sweep_idle_state": "ready",
                     },
                 },
             ]
         ],
-        "update_rate": 20,
     }
+
+    if update_rate is not None:
+        expected_dict["update_rate"] = update_rate
 
     assert json.loads(ExplorationProtocol.setup_command(config)) == expected_dict
 
@@ -156,6 +177,9 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 100,
                         "subsweep_data_offset": [0],
                         "subsweep_data_length": [100],
+                        "calibration_temperature": 10,
+                        "base_step_length_m": 0.0025,
+                        "max_sweep_rate": 1000.0,
                     },
                 ],
                 [  # Group 2
@@ -164,6 +188,9 @@ def test_setup_response(single_sweep_metadata):
                         "frame_data_length": 200,
                         "subsweep_data_offset": [0, 100],
                         "subsweep_data_length": [100, 100],
+                        "calibration_temperature": 10,
+                        "base_step_length_m": 0.0025,
+                        "max_sweep_rate": 1000.0,
                     },
                 ],
             ],
@@ -178,6 +205,10 @@ def test_setup_response(single_sweep_metadata):
                 frame_data_length=200,
                 subsweep_data_offset=np.array([0, 100]),
                 subsweep_data_length=np.array([100, 100]),
+                calibration_temperature=10,
+                tick_period=50,
+                base_step_length_m=0.0025,
+                max_sweep_rate=1000.0,
             )
         },
     ]
@@ -340,3 +371,23 @@ def test_get_next_payload_multiple_sweep(single_sweep_metadata):
     np.testing.assert_array_equal(
         full_results[0][2].frame, second_frame["real"] + 1j * second_frame["imag"]
     )
+
+
+@pytest.mark.parametrize(
+    ("rss_version", "expected_protocol"),
+    [
+        ("a121-v0.2.0-1-g123", ExplorationProtocol),
+        ("a121-v0.4.0-rc1", ExplorationProtocol),
+        ("a121-v0.4.0", ExplorationProtocol),
+    ],
+)
+def test_get_exploration_protocol_normal_cases(rss_version, expected_protocol):
+    assert get_exploration_protocol(parse_rss_version(rss_version)) == expected_protocol
+
+
+def test_get_exploration_protocol_special_cases():
+    assert get_exploration_protocol() == ExplorationProtocol
+
+    incompatible_version = parse_rss_version("a121-v0.2.0")
+    with pytest.raises(Exception):
+        get_exploration_protocol(incompatible_version)

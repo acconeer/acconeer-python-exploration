@@ -1,5 +1,6 @@
-from .communication import Client, ExplorationProtocol, ServerError
+from .communication import Client, ExplorationProtocol, ServerError, get_exploration_protocol
 from .h5_record import (
+    _H5PY_STR_DTYPE,
     H5Record,
     H5Recorder,
     load_record,
@@ -7,3 +8,4 @@ from .h5_record import (
     save_record,
     save_record_to_h5,
 )
+from .im_record import InMemoryRecord

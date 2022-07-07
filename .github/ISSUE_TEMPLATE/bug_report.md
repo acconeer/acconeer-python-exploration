@@ -20,11 +20,14 @@ Steps to reproduce the behavior:
 **Traceback**
 If applicable, add any exception tracebacks.
 
+**Installed packages**
+If applicable, add a list of installed packages. Obtain the list with `pip freeze`.
+
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
 **Environment (please complete the following information):**
- - Host OS: [e.g. Windows 10, Ubuntu 18.04]
+ - Host OS: [e.g. Windows 10, Ubuntu 20.04]
  - Acconeer hardware: [e.g. XM112, Raspberry Pi XC112 + XR112]
  - Acconeer software version: [e.g. 2.0.0]
  - Exploration version: [e.g. e78bdc6 or v3.0.2]

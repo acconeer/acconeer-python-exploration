@@ -1,8 +1,7 @@
 import h5py
+import importlib_metadata
 
 from acconeer.exptool import a121
-
-import importlib_metadata
 
 
 def assert_record_equals(record_a, record_b):
@@ -33,6 +32,7 @@ def test_init_defaults_with_path(tmp_file_path):
 
     with h5py.File(tmp_file_path, "r") as f:
         assert f["lib_version"][()].decode() == importlib_metadata.version("acconeer-exptool")
+        assert f["generation"][()].decode() == "a121"
 
 
 def test_init_defaults_with_file_object(tmp_file_path):
@@ -41,6 +41,7 @@ def test_init_defaults_with_file_object(tmp_file_path):
         assert recorder.owns_file is False
         assert recorder.path is None
         assert f["lib_version"][()].decode() == importlib_metadata.version("acconeer-exptool")
+        assert f["generation"][()].decode() == "a121"
 
 
 def test_sample_whole_record(tmp_path, ref_record):
@@ -65,3 +66,6 @@ def test_sample_whole_record(tmp_path, ref_record):
 
     with a121.open_record(filename) as record:
         assert_record_equals(record, ref_record)
+
+    record = a121.load_record(filename)
+    assert_record_equals(record, ref_record)

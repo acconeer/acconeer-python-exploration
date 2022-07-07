@@ -1,7 +1,6 @@
-import sys
-
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
+    _H5PY_STR_DTYPE,
     PRF,
     Client,
     ClientError,
@@ -9,6 +8,7 @@ from ._core import (
     H5Record,
     H5Recorder,
     IdleState,
+    InMemoryRecord,
     Metadata,
     PersistentRecord,
     Profile,
@@ -17,21 +17,19 @@ from ._core import (
     Result,
     SensorConfig,
     SensorInfo,
+    ServerError,
     ServerInfo,
     SessionConfig,
     StackedResults,
     SubsweepConfig,
+    ValidationError,
+    ValidationResult,
+    ValidationWarning,
+    iterate_extended_structure,
     load_record,
     open_record,
     save_record,
     save_record_to_h5,
 )
-
-
-if "pytest" not in sys.modules:
-    import warnings
-
-    warnings.warn(
-        "The a121 package is currently an unstable API and may change at any time.",
-        FutureWarning,
-    )
+from ._core_ext import _ReplayingClient, _StopReplay
+from ._perf_calc import _PerformanceCalc

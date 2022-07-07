@@ -14,6 +14,10 @@ def metadata():
         sweep_data_length=1,
         subsweep_data_length=np.array([1]),
         subsweep_data_offset=np.array([0]),
+        calibration_temperature=0,
+        tick_period=0,
+        base_step_length_m=0,
+        max_sweep_rate=0,
     )
 
 
@@ -29,11 +33,14 @@ def mock_protocol(metadata):
         end_sequence = b""
         get_system_info_command = Mock(return_value=b"get_system_info")
         get_system_info_response = Mock(
-            return_value=ServerInfo(
-                rss_version="rss_version",
-                sensor_count=1,
-                ticks_per_second=1,
-                sensor_infos={1: SensorInfo(connected=True)},
+            return_value=(
+                ServerInfo(
+                    rss_version="rss_version",
+                    sensor_count=1,
+                    ticks_per_second=1,
+                    sensor_infos={1: SensorInfo(connected=True)},
+                ),
+                "a121",
             )
         )
         get_sensor_info_command = Mock(return_value=b"get_sensor_info")

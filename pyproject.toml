@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "setuptools>=60.0.3",
-    "setuptools_scm>=6.4",
+    "setuptools_scm>=6.4,!=7.0.0",
     "wheel>=0.37.0",
 ]
 build-backend = "setuptools.build_meta"
@@ -14,11 +14,71 @@ write_to_template = "__version__ = \"{version}\"\n"
 [tool.black]
 line-length = 99
 
+[tool.isort]
+line_length = 99
+lines_after_imports = 2
+multi_line_output = 3
+indent = 4
+default_section = "FIRSTPARTY"
+include_trailing_comma = true
+known_third_party = [
+    "numpy",
+    "scipy",
+    "serial",
+    "matplotlib",
+    "h5py",
+    "flask",
+    "yaml",
+    "attr",
+    "docutils",
+    "keras",
+    "sklearn",
+    "tensorflow",
+    "pytest",
+    "requests",
+    "packaging",
+    "attrs",
+    "typing_extensions",
+    "qdarktheme",
+    "importlib_metadata",
+    "qtawesome",
+]
+known_qt = "PySide6"
+known_plotting = "pyqtgraph"
+known_acconeer = "acconeer"
+sections = [
+    "FUTURE",
+    "STDLIB",
+    "THIRDPARTY",
+    "QT",
+    "PLOTTING",
+    "ACCONEER",
+    "FIRSTPARTY",
+    "LOCALFOLDER",
+]
+skip = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    "env",
+    "venv",
+    "stash",
+    ".tox",
+    ".nox",
+    ".mypy_cache",
+    ".pytest_cache",
+    "get-pip.py",
+]
+profile = "black"
+
 [tool.mypy]
 check_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_untyped_decorators = true
 no_implicit_optional = true
+no_incremental = true
 show_error_codes = true
 warn_return_any = true
 warn_unused_ignores = true
@@ -26,6 +86,13 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = [
     "h5py.*",
+    "platformdirs.*",
+    "pyqtgraph.*",
+    "PySide6.*",
     "pytest.*",
+    "qdarktheme.*",
+    "qtawesome.*",
+    "scipy.*",
+    "serial.*",
 ]
 ignore_missing_imports = true

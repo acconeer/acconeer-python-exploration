@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import logging
 import time
-from typing import Any, Optional, Union
+from typing import Any, Optional, Tuple, Type, Union
+
+import attrs
 
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
@@ -11,11 +14,19 @@ from acconeer.exptool.a121._core.entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.utils import unextend
+from acconeer.exptool.a121._core.utils import (
+    create_extended_structure,
+    iterate_extended_structure,
+    unextend,
+    unwrap_ticks,
+)
 
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
 from .recorder import Recorder
+
+
+log = logging.getLogger(__name__)
 
 
 class ClientError(Exception):
@@ -24,14 +35,15 @@ class ClientError(Exception):
 
 class AgnosticClient:
     _link: BufferedLink
-    _protocol: CommunicationProtocol
+    _protocol: Type[CommunicationProtocol]
     _server_info: Optional[ServerInfo]
     _session_config: Optional[SessionConfig]
     _metadata: Optional[list[dict[int, Metadata]]]
     _session_is_started: bool
     _recorder: Optional[Recorder]
+    _tick_unwrapper: TickUnwrapper
 
-    def __init__(self, link: BufferedLink, protocol: CommunicationProtocol) -> None:
+    def __init__(self, link: BufferedLink, protocol: Type[CommunicationProtocol]) -> None:
         self._link = link
         self._protocol = protocol
         self._server_info = None
@@ -39,6 +51,7 @@ class AgnosticClient:
         self._session_is_started = False
         self._metadata = None
         self._recorder = None
+        self._tick_unwrapper = TickUnwrapper()
 
     def _assert_connected(self):
         if not self.connected:
@@ -67,7 +80,13 @@ class AgnosticClient:
 
         self._link.send(self._protocol.get_system_info_command())
         sys_response = self._link.recv_until(self._protocol.end_sequence)
-        self._server_info = self._protocol.get_system_info_response(sys_response, sensor_infos)
+        self._server_info, sensor = self._protocol.get_system_info_response(
+            sys_response, sensor_infos
+        )
+
+        if sensor != "a121":
+            self._link.disconnect()
+            raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
 
     def setup_session(
         self,
@@ -87,6 +106,9 @@ class AgnosticClient:
         """
         if not self.connected:
             self.connect()
+
+        if self.session_is_started:
+            raise ClientError("Session is currently running, can't setup.")
 
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
@@ -115,6 +137,9 @@ class AgnosticClient:
         :raises: ``ClientError`` if ``Client``'s  session is not set up.
         """
         self._assert_session_setup()
+
+        if self.session_is_started:
+            raise ClientError("Session is already started.")
 
         if recorder is not None:
             self._recorder = recorder
@@ -149,6 +174,8 @@ class AgnosticClient:
         payload = self._link.recv(payload_size)
         extended_results = self._protocol.get_next_payload(payload, partial_results)
 
+        extended_results = self._tick_unwrapper.unwrap_ticks(extended_results)
+
         if self._recorder is not None:
             self._recorder._sample(extended_results)
 
@@ -167,16 +194,20 @@ class AgnosticClient:
         """
         self._assert_session_started()
 
+        recorder_result = None
         if self._recorder is not None:
-            return self._recorder._stop()
+            recorder_result = self._recorder._stop()
+            self._recorder = None
 
         self._link.send(self._protocol.stop_streaming_command())
         reponse_bytes = self._drain_buffer()
         self._protocol.stop_streaming_response(reponse_bytes)
         self._session_is_started = False
+        self._tick_unwrapper = TickUnwrapper()
+        return recorder_result
 
     def _drain_buffer(
-        self, timeout_s: float = 1.0
+        self, timeout_s: float = 3.0
     ) -> bytes:  # TODO: Make `timeout_s` session-dependant
         """Drains data in the buffer. Returning the first bytes that are not data packets."""
         start = time.time()
@@ -192,6 +223,8 @@ class AgnosticClient:
                 _ = self._link.recv(payload_size)
             except Exception:
                 return next_header
+            else:
+                log.debug("Threw away get_next package when draining buffer")
         raise ClientError("Client timed out when waiting for 'stop'-response.")
 
     def disconnect(self) -> None:
@@ -199,6 +232,8 @@ class AgnosticClient:
 
         :raises: ``ClientError`` if ``Client`` is not connected.
         """
+        # TODO: Make sure this cleans up corner-cases (like lost connection)
+        #       to not hog resources.
         self._assert_connected()
 
         if self.session_is_started:
@@ -256,3 +291,22 @@ class AgnosticClient:
         self._assert_session_setup()
         assert self._metadata is not None  # Should never happen if session is setup
         return self._metadata
+
+
+class TickUnwrapper:
+    """Wraps unwrap_ticks to be applied over extended results"""
+
+    def __init__(self) -> None:
+        self.next_minimum_tick: Optional[int] = None
+
+    def unwrap_ticks(self, extended_results: list[dict[int, Result]]) -> list[dict[int, Result]]:
+        result_items = list(iterate_extended_structure(extended_results))
+        ticks = [result.tick for _, _, result in result_items]
+        unwrapped_ticks, self.next_minimum_tick = unwrap_ticks(ticks, self.next_minimum_tick)
+
+        def f(result_item: Tuple[int, int, Result], updated_tick: int) -> Tuple[int, int, Result]:
+            group_index, sensor_id, result = result_item
+            updated_result = attrs.evolve(result, tick=updated_tick)
+            return (group_index, sensor_id, updated_result)
+
+        return create_extended_structure(map(f, result_items, unwrapped_ticks))

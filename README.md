@@ -57,7 +57,7 @@ Tested on:
 
 * Python 3 (developed and tested on 3.7, 3.8 and 3.9)
 * Windows 10
-* Ubuntu 18.04 and 20.04
+* Ubuntu 20.04
 
 ### Setup
 
@@ -72,6 +72,17 @@ python -m pip install --upgrade acconeer-exptool[app]
 The Exploration Tool application uses PySide6.
 If you have other versions of PyQt/PySide installed, it may cause conflicts.
 If this is the case for you, we recommend using virtual environments to separate the two installations.
+
+To install on OS:s not supporting PySide6, install only the algo package:
+```
+python -m pip install --upgrade acconeer-exptool[algo]
+```
+Note: You will not be able to run the Exploration Tool Application when installing only the algo package
+
+To install the latest version on master, download or clone the repository. Run the following command in the directory:
+```
+python -m pip install --upgrade .[app]
+```
 
 #### Windows COM port drivers
 
@@ -108,7 +119,7 @@ with the following content:
 ```
 SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="601c", MODE:="0666"
 ```
-This method is confirmed to work for **Ubuntu 18.04 and 20.04**.
+This method is confirmed to work for **Ubuntu 20.04**.
 
 ## Application
 

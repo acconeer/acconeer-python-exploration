@@ -1,4 +1,7 @@
 """This is a script that checks whether version-strings in the docs are up to date"""
+
+from __future__ import annotations
+
 import configparser
 import re
 from pathlib import Path
@@ -29,7 +32,7 @@ def get_matches_in_file(pattern: str, path: Path) -> Dict[str, List[str]]:
     """
     matches = {}
 
-    for lineno, line in enumerate(path.read_text().split("\n"), start=1):
+    for lineno, line in enumerate(path.read_text(encoding="utf8").split("\n"), start=1):
         line_matches = re.findall(pattern=pattern, string=line)
         if line_matches != []:
             matches[f"{path}:{lineno}"] = line_matches

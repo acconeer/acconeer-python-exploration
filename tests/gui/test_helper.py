@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from acconeer.exptool.app.elements import helper
+from acconeer.exptool.app.old.elements import helper
 
 
 @pytest.fixture

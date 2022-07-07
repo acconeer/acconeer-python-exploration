@@ -27,6 +27,10 @@ class TestAnEmptyStackedResults:
                     sweep_data_length=0,
                     subsweep_data_offset=np.array([0]),
                     subsweep_data_length=np.array([0]),
+                    calibration_temperature=0,
+                    tick_period=0,
+                    base_step_length_m=0,
+                    max_sweep_rate=0,
                 ),
             ),
         )
@@ -60,6 +64,10 @@ class TestStackedResultWithASingleFrame:
                 sweep_data_length=2,
                 subsweep_data_offset=np.array([0, 1]),
                 subsweep_data_length=np.array([1, 1]),
+                calibration_temperature=0,
+                tick_period=0,
+                base_step_length_m=0,
+                max_sweep_rate=0,
             ),
         )
 
@@ -136,6 +144,10 @@ class TestStackedResultWithMultipleFrames:
                 sweep_data_length=2,
                 subsweep_data_offset=np.array([0, 1]),
                 subsweep_data_length=np.array([1, 1]),
+                calibration_temperature=0,
+                tick_period=0,
+                base_step_length_m=0,
+                max_sweep_rate=0,
             ),
         )
 

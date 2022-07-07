@@ -47,7 +47,7 @@ class Parser(argparse.ArgumentParser):
         test_group.add_argument(
             "--integration-args",
             nargs=argparse.REMAINDER,
-            default=["--mock"],
+            default=["a111", "--mock"],
         )
         test_group.add_argument(
             "--pytest-args",
@@ -69,9 +69,11 @@ def lint(session):
         BLACK_SPEC,
         ISORT_SPEC,
         "flake8>=4,<5",
+        "flake8-future-annotations",
         "flake8-mutable",
         "flake8-quotes",
         "flake8-tidy-imports",
+        "packaging",
     )
     session.run("python", "tools/check_permissions.py")
     session.run("python", "tools/check_whitespace.py")
@@ -104,6 +106,7 @@ def mypy(session):
 
     session.install("mypy")
     session.run("python", "-m", "mypy", "-p", "acconeer.exptool.a121")
+    session.run("python", "-m", "mypy", "-p", "acconeer.exptool.app.new")
     session.run("python", "-m", "mypy", "tests/unit/a121")
 
 
@@ -184,11 +187,24 @@ def test(session):
         )
 
     if "integration" in args.test_groups:
-        pytest_commands.extend(
-            [
-                ["-p", "no:pytest-qt", "tests/integration", *args.integration_args],
-            ]
-        )
+        real_args = [arg for arg in args.integration_args if arg not in {"a111", "a121"}]
+        if "a111" in args.integration_args:
+            pytest_commands.extend(
+                [
+                    ["-p", "no:pytest-qt", "tests/integration/a111", *real_args],
+                ]
+            )
+        elif "a121" in args.integration_args:
+            pytest_commands.extend(
+                [
+                    ["-p", "no:pytest-qt", "tests/integration/a121", *real_args],
+                ]
+            )
+        else:
+            session.error(
+                "The 'integration' session needs to be passed"
+                + "either 'a121' or 'a111' in its '--integration-args'"
+            )
 
     if "app" in args.test_groups:
         install_deps |= {

@@ -25,20 +25,28 @@ class Processor:
 
         self.f = sensor_config.update_rate
         self.depths = et.a111.get_range_depths(sensor_config, session_info)
+        self.norm_depths = self.depths / self.depths[-1]  # normalize by max value
 
         self.update_processing_config(processing_config)
 
     def update_processing_config(self, processing_config):
-        self.depth_leak_sample = processing_config.depth_leak_sample
-        self.depth_leak_end = processing_config.depth_leak_end
-        self.leak_max_amplitude = processing_config.leak_max_amplitude
+
+        start = self.session_info["range_start_m"]
+        step = self.session_info["step_length_m"]
+
+        # Test if we should deal with direct leakage
+        if start > processing_config.depth_leak_end:
+            self.depth_leak_sample = 0
+            self.depth_leak_end = 0
+        else:
+            self.depth_leak_sample = processing_config.depth_leak_sample
+            self.depth_leak_end = processing_config.depth_leak_end
+
         self.detector_queue_target_length = processing_config.detector_queue_target_length
         self.weight_threshold = processing_config.weight_threshold
         self.weight_ratio_limit = processing_config.weight_ratio_limit
         self.distance_difference_limit = processing_config.distance_difference_limit
 
-        start = self.session_info["range_start_m"]
-        step = self.session_info["step_length_m"]
         self.leak_sample_index = int(round((self.depth_leak_sample - start) / step))
         self.leak_end_index = int(round((self.depth_leak_end - start) / step))
         self.leak_estimate_depths = np.array(
@@ -63,7 +71,7 @@ class Processor:
             and self.leak_sample_index < len(sweep)
         )
         if valid_leak_setup:
-            leak_amplitude = min(self.leak_max_amplitude, sweep[self.leak_sample_index])
+            leak_amplitude = sweep[self.leak_sample_index]
             a_leak = max(leak_amplitude - ENVELOPE_BACKGROUND_LEVEL, 0)
             leak_step = a_leak / (self.leak_end_index - self.leak_sample_index)
             leak_start = self.leak_end_index * leak_step + ENVELOPE_BACKGROUND_LEVEL
@@ -84,7 +92,7 @@ class Processor:
         weight = (
             np.fmin(samples_above_bg / ENVELOPE_BACKGROUND_LEVEL, 1)
             * samples_above_bg
-            * self.depths
+            * self.norm_depths
         )
 
         weight_sum = np.sum(weight)
@@ -137,7 +145,7 @@ class Processor:
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
-    VERSION = 2
+    VERSION = 3
 
     depth_leak_sample = et.configbase.FloatParameter(
         label="Leak sample position",
@@ -161,20 +169,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         updateable=True,
         order=1,
         help="Worst case distance from the sensor for the end of leak reflections",
-    )
-
-    leak_max_amplitude = et.configbase.FloatParameter(
-        label="Max leak amplitude",
-        default_value=2000,
-        limits=(100, 10000),
-        logscale=True,
-        decimals=0,
-        updateable=True,
-        order=2,
-        help=(
-            "The largest expected amplitude at the leak sample position when there is "
-            "no object above the sensor"
-        ),
     )
 
     detector_queue_target_length = et.configbase.IntParameter(
@@ -219,7 +213,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
     distance_difference_limit = et.configbase.FloatParameter(
         label="Distance limit",
-        default_value=0.1,
+        default_value=0.2,
         limits=(0.01, 0.5),
         logscale=True,
         decimals=3,
@@ -264,16 +258,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         if not sensor_config.noise_level_normalization:
             alerts["sensor"].append(
                 et.configbase.Error("noise_level_normalization", "Must be set")
-            )
-
-        if (
-            self.depth_leak_sample < sensor_config.range_start
-            or self.depth_leak_sample > sensor_config.range_end
-        ):
-            alerts["sensor"].append(
-                et.configbase.Error(
-                    "range_interval", "Leak sample position outside the range interval"
-                )
             )
 
         return alerts

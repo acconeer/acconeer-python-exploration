@@ -6,7 +6,7 @@ import pytest
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, SensorInfo
-from acconeer.exptool.a121._core.peripherals.h5_record import H5PY_STR_DTYPE
+from acconeer.exptool.a121._core.peripherals.h5_record import _H5PY_STR_DTYPE
 
 
 @pytest.fixture
@@ -40,6 +40,7 @@ def ref_server_info():
             2: SensorInfo(connected=True),
             3: SensorInfo(connected=True),
         },
+        hardware_name="xy123",
     )
 
 
@@ -113,6 +114,10 @@ def ref_metadata(ref_sweep_data_length, ref_frame_data_length):
         sweep_data_length=ref_sweep_data_length,
         subsweep_data_length=np.array([ref_sweep_data_length]),
         subsweep_data_offset=np.array([0]),
+        calibration_temperature=10,
+        tick_period=50,
+        base_step_length_m=0.0025,
+        max_sweep_rate=1000.0,
     )
 
 
@@ -142,26 +147,28 @@ def ref_record_file(
 ):
     with h5py.File(tmp_file_path, mode="x") as f:
         f.create_dataset(
-            "lib_version", data=ref_lib_version, dtype=H5PY_STR_DTYPE, track_times=False
+            "lib_version", data=ref_lib_version, dtype=_H5PY_STR_DTYPE, track_times=False
         )
-        f.create_dataset("timestamp", data=ref_timestamp, dtype=H5PY_STR_DTYPE, track_times=False)
-        f.create_dataset("uuid", data=ref_uuid, dtype=H5PY_STR_DTYPE, track_times=False)
+        f.create_dataset("timestamp", data=ref_timestamp, dtype=_H5PY_STR_DTYPE, track_times=False)
+        f.create_dataset("uuid", data=ref_uuid, dtype=_H5PY_STR_DTYPE, track_times=False)
 
         server_info_data = ref_server_info.to_json()
         f.create_dataset(
-            "server_info", data=server_info_data, dtype=H5PY_STR_DTYPE, track_times=False
+            "server_info", data=server_info_data, dtype=_H5PY_STR_DTYPE, track_times=False
         )
 
         client_info_data = ref_client_info.to_json()
         f.create_dataset(
-            "client_info", data=client_info_data, dtype=H5PY_STR_DTYPE, track_times=False
+            "client_info", data=client_info_data, dtype=_H5PY_STR_DTYPE, track_times=False
         )
+
+        f.create_dataset("generation", data="a121", dtype=_H5PY_STR_DTYPE, track_times=False)
 
         session_config_data = ref_session_config.to_json()
         f.create_dataset(
             "session/session_config",
             data=session_config_data,
-            dtype=H5PY_STR_DTYPE,
+            dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
 

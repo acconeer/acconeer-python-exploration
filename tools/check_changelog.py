@@ -1,8 +1,13 @@
 """This script checks whether CHANGELOG refers to the same version as the current git tag."""
+
+from __future__ import annotations
+
 import re
 import subprocess
 from pathlib import Path
 from typing import Optional
+
+from packaging.version import Version
 
 
 def utf8_subprocess_output(*args: str):
@@ -47,6 +52,9 @@ def main():
 
     is_current_commit_tagged = most_recent_tag_commit_sha == current_commit_sha
     if not is_current_commit_tagged:
+        exit(0)
+
+    if Version(most_recent_tag).is_prerelease:
         exit(0)
 
     print(f"Current commit ({current_commit_sha[:7]}) is tagged ({most_recent_tag}).")

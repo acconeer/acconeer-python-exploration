@@ -4,6 +4,9 @@ import json
 from typing import Any, Optional
 
 import attrs
+import packaging.version
+
+from acconeer.exptool.a121._core.utils import parse_rss_version
 
 
 @attrs.frozen(kw_only=True)
@@ -34,12 +37,18 @@ class ServerInfo:
     sensor_count: int = attrs.field()
     ticks_per_second: int = attrs.field()
     sensor_infos: dict[int, SensorInfo] = attrs.field()
+    hardware_name: Optional[str] = attrs.field(default=None)
+
+    @property
+    def parsed_rss_version(self) -> packaging.version.Version:
+        return parse_rss_version(self.rss_version)
 
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)
 
     @classmethod
     def from_dict(cls, d: dict) -> ServerInfo:
+        d = d.copy()
         d["sensor_infos"] = {
             int(sensor_id): SensorInfo.from_dict(sensor_info_dict)
             for sensor_id, sensor_info_dict in d["sensor_infos"].items()

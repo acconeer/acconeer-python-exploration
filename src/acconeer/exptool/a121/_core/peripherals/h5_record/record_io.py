@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from acconeer.exptool.a121._core.entities import PersistentRecord, Record
+from acconeer.exptool.a121._core.peripherals.im_record import InMemoryRecord
 
 from .record import H5Record
 from .recorder import H5Recorder
@@ -42,7 +43,8 @@ def load_record(path_or_file: PathOrH5File) -> Record:
     :returns: A :class:`Record` with the content of the given file
     """
 
-    raise NotImplementedError
+    with open_record(path_or_file) as h5_record:
+        return InMemoryRecord.from_record(h5_record)
 
 
 def save_record(path_or_file: PathOrH5File, record: Record) -> None:

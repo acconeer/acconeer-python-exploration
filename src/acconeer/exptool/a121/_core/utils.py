@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import json
+import re
 from typing import (
     Any,
     Callable,
@@ -14,6 +15,8 @@ from typing import (
     Union,
     overload,
 )
+
+import packaging.version
 
 
 T = TypeVar("T")
@@ -237,9 +240,131 @@ def iterate_extended_structure(
             yield (group_id, sensor_id, elem)
 
 
+def create_extended_structure(items: Iterator[Tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:
+    structure: list[dict[int, ValueT]] = []
+    current_group_index: Optional[int] = None
+    current_group: Optional[dict[int, ValueT]] = None
+
+    for group_index, sensor_id, value in items:
+        if current_group_index is None:
+            if group_index != 0:
+                raise ValueError
+
+            current_group_index = 0
+            current_group = {}
+            structure.append(current_group)
+        elif group_index != current_group_index:
+            if group_index != current_group_index + 1:
+                raise ValueError
+
+            current_group_index += 1
+            current_group = {}
+            structure.append(current_group)
+
+        assert current_group is not None
+        if sensor_id in current_group:
+            raise ValueError
+
+        current_group[sensor_id] = value
+
+    return structure
+
+
 class EntityJSONEncoder(json.JSONEncoder):
     def default(self, obj: Any) -> Any:
         if isinstance(obj, enum.Enum):
             return obj.name
 
         return json.JSONEncoder.default(self, obj)
+
+
+def parse_rss_version(rss_version: str) -> packaging.version.Version:
+    pattern = (
+        r"a121-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)"
+        r"(?:-(?P<pre_phase>rc)(?P<pre_number>\d+))?"
+        r"(?:-(?P<dev_number>\d+)-(?P<dev_commit>g\w+))?"
+        r"(?:-(dirty))?"
+    )
+    match = re.fullmatch(pattern, rss_version)
+    if not match:
+        raise ValueError("Not a valid RSS version")
+
+    groups = match.groupdict()
+
+    is_prerelease = groups["pre_number"] is not None
+    is_devrelease = groups["dev_number"] is not None
+
+    release_segment = ""
+    pre_segment = ""
+    dev_segment = ""
+
+    if is_devrelease:
+        dev_segment = f".dev{groups['dev_number']}+{groups['dev_commit']}"
+
+        if is_prerelease:
+            groups["pre_number"] = int(groups["pre_number"]) + 1
+        else:
+            groups["micro"] = int(groups["micro"]) + 1
+
+    if is_prerelease:
+        pre_segment = f"{groups['pre_phase']}{groups['pre_number']}"
+
+    release_segment = f"{groups['major']}.{groups['minor']}.{groups['micro']}"
+
+    version = release_segment + pre_segment + dev_segment
+    return packaging.version.Version(version)
+
+
+def unwrap_ticks(
+    ticks: list[int], minimum_tick: Optional[int], limit: int = 2**32
+) -> Tuple[list[int], Optional[int]]:
+    """Unwraps a sequence of ticks belonging to a extended result
+
+    The server tick (attached to every produced Result) wraps at 2^32. Thus, if the raw tick is
+    used for evaluating the time between two results, it will be incorrect if a wrap has occurred
+    between them. Therefore, it has to be accounted for by "unwrapping".
+
+    Wrapping can occur between the results in an extended result, and that the results are not
+    necessarily ordered by the tick. This means that we have to look at all the ticks produced in
+    the extended result at the same time.
+
+    For example:
+
+    Let's say the wrap happens at limit = 100, and that we have an extended result of two elements
+    with ticks 10 and 90. Since it's more likely that 10 has wrapped than not, we assume it's
+    actually after 90, i.e., 110.
+
+    Now, let's also consider that the previous maximum unwrapped tick was 195, which is now the
+    'minimum tick'. From this, we know that the ticks have wrapped before and can account for that,
+    resulting in the final unwrapped ticks of 310 and 290.
+    """
+
+    if len(ticks) == 0:
+        return [], None
+
+    if any(tick < 0 or tick >= limit for tick in ticks):
+        raise ValueError("Tick value out of bounds")
+
+    if (max(ticks) - min(ticks)) > limit // 2:
+        ticks = [tick + limit if tick < limit // 2 else tick for tick in ticks]
+
+    if minimum_tick is not None:
+        num_wraps = max((minimum_tick - tick - 1) // limit + 1 for tick in ticks)
+        ticks = [num_wraps * limit + tick for tick in ticks]
+
+    return ticks, max(ticks)
+
+
+def pretty_dict_line_strs(d: dict[str, Any], indent: int = 2, width: int = 24) -> list[str]:
+    lines = []
+    for k, v in d.items():
+        if isinstance(v, enum.Enum):
+            v = v.name
+
+        lines.append(f"{'':<{indent}}{k + ' ':.<{width}} {v}")
+
+    return lines
+
+
+def indent_strs(strs: list[str], level: int) -> list[str]:
+    return ["  " * level + s for s in strs]

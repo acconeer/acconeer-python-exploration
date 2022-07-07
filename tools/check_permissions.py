@@ -1,6 +1,5 @@
 import configparser
 import fnmatch
-import os
 import subprocess
 import sys
 
@@ -23,17 +22,17 @@ def main():
     overrides = dict(overrides)
 
     p = subprocess.run(
-        ["git", "ls-files"],
+        ["git", "ls-files", "--stage"],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         check=True,
     )
 
-    filenames = p.stdout.decode().splitlines()
+    lines = p.stdout.decode().splitlines()
     failed = False
-    for filename in filenames:
-        info = os.stat(filename)
-        mode = oct(info.st_mode)[-3:]
+    for line in lines:
+        git_mode, _, _, filename = line.split()
+        mode = git_mode[-3:]
 
         try:
             expected_mode = next(m for p, m in overrides.items() if fnmatch.fnmatch(filename, p))

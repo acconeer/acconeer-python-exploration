@@ -5,7 +5,7 @@ from typing import Any, Optional, Tuple, Union
 
 import attrs
 import numpy as np
-from typing_extensions import Literal, TypedDict
+from typing_extensions import Literal, NotRequired, TypedDict
 
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
@@ -43,7 +43,7 @@ class SystemInfo(TypedDict):
     sensor: str
     sensor_count: int
     ticks_per_second: int
-    hw: str
+    hw: NotRequired[Optional[str]]
 
 
 class GetSystemInfoResponse(ValidResponse):
@@ -64,6 +64,9 @@ class MetadataResponse(TypedDict):
     sweep_data_length: int
     subsweep_data_offset: list[int]
     subsweep_data_length: list[int]
+    calibration_temperature: int
+    base_step_length_m: float
+    max_sweep_rate: float
 
 
 class SetupResponse(ValidResponse):
@@ -125,17 +128,21 @@ class ExplorationProtocol(CommunicationProtocol):
     @classmethod
     def get_system_info_response(
         cls, bytes_: bytes, sensor_infos: dict[int, SensorInfo]
-    ) -> ServerInfo:
+    ) -> Tuple[ServerInfo, str]:
         response: GetSystemInfoResponse = json.loads(bytes_)
         cls.check_status(response, expected="ok")
 
         try:
             system_info = response["system_info"]
-            return ServerInfo(
-                rss_version=system_info["rss_version"],
-                sensor_count=system_info["sensor_count"],
-                ticks_per_second=system_info["ticks_per_second"],
-                sensor_infos=sensor_infos,
+            return (
+                ServerInfo(
+                    rss_version=system_info["rss_version"],
+                    sensor_count=system_info["sensor_count"],
+                    ticks_per_second=system_info["ticks_per_second"],
+                    sensor_infos=sensor_infos,
+                    hardware_name=system_info.get("hw"),
+                ),
+                system_info["sensor"],
             )
         except KeyError as ke:
             raise ExplorationProtocolError(
@@ -161,8 +168,11 @@ class ExplorationProtocol(CommunicationProtocol):
         }
 
     @classmethod
-    def setup_command(cls, session_config: SessionConfig) -> bytes:
+    def _setup_command_preprocessing(cls, session_config: SessionConfig) -> dict:
         result = session_config.to_dict()
+
+        if session_config.update_rate is None:
+            del result["update_rate"]
 
         # Exploration server is not interested in this.
         result.pop("extended")
@@ -179,6 +189,11 @@ class ExplorationProtocol(CommunicationProtocol):
         )
 
         result["cmd"] = "setup"
+        return result
+
+    @classmethod
+    def setup_command(cls, session_config: SessionConfig) -> bytes:
+        result = cls._setup_command_preprocessing(session_config)
         result["groups"] = cls._translate_groups_representation(result["groups"])
         return (
             json.dumps(
@@ -265,7 +280,7 @@ class ExplorationProtocol(CommunicationProtocol):
             # Bugs may arise where meta-data is unaligned with configs.
             result.append(
                 {
-                    sensor_id: cls._metadata_from_dict(metadata_dict)
+                    sensor_id: cls._create_metadata(metadata_dict, response["tick_period"])
                     for metadata_dict, sensor_id in zip(metadata_group, config_group.keys())
                 }
             )
@@ -273,12 +288,16 @@ class ExplorationProtocol(CommunicationProtocol):
         return result
 
     @classmethod
-    def _metadata_from_dict(cls, metadata_dict: MetadataResponse) -> Metadata:
+    def _create_metadata(cls, metadata_dict: MetadataResponse, tick_period: int) -> Metadata:
         return Metadata(
             frame_data_length=metadata_dict["frame_data_length"],
             sweep_data_length=metadata_dict["sweep_data_length"],
             subsweep_data_offset=np.array(metadata_dict["subsweep_data_offset"]),
             subsweep_data_length=np.array(metadata_dict["subsweep_data_length"]),
+            calibration_temperature=metadata_dict["calibration_temperature"],
+            tick_period=tick_period,
+            base_step_length_m=metadata_dict["base_step_length_m"],
+            max_sweep_rate=metadata_dict["max_sweep_rate"],
         )
 
     @classmethod
@@ -360,8 +379,9 @@ class ExplorationProtocol(CommunicationProtocol):
                 end = start + metadata.frame_data_length * 4  # 4 = sizeof(int_16_complex)
 
                 raw_frame_data = bytes_[start:end]
+                assert len(raw_frame_data) == end - start
                 np_frame = np.frombuffer(raw_frame_data, dtype=INT_16_COMPLEX)
                 resized_frame = np.resize(np_frame, metadata.frame_shape)
                 partial_group[sensor_id] = attrs.evolve(partial_result, frame=resized_frame)
-                start += end
+                start = end
         return partial_results

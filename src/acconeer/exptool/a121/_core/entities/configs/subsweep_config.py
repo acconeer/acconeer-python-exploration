@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+import warnings
+from typing import Any, Optional
 
 import attrs
 
@@ -10,9 +11,11 @@ from acconeer.exptool.a121._core.utils import (
     convert_validate_int,
     is_divisor_of,
     is_multiple_of,
+    pretty_dict_line_strs,
 )
 
 from .config_enums import PRF, Profile
+from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
 SPARSE_IQ_PPC = 24
@@ -34,6 +37,7 @@ class SubsweepConfig:
     _hwaas: int
     _receiver_gain: int
     _enable_tx: bool
+    _enable_loopback: bool
     _phase_enhancement: bool
     _prf: PRF
 
@@ -47,6 +51,7 @@ class SubsweepConfig:
         hwaas: int = 8,
         receiver_gain: int = 16,
         enable_tx: bool = True,
+        enable_loopback: bool = False,
         phase_enhancement: bool = False,
         prf: PRF = PRF.PRF_13_0_MHz,
     ) -> None:
@@ -58,6 +63,7 @@ class SubsweepConfig:
             hwaas=hwaas,
             receiver_gain=receiver_gain,
             enable_tx=enable_tx,
+            enable_loopback=enable_loopback,
             phase_enhancement=phase_enhancement,
             prf=prf,
         )
@@ -68,14 +74,54 @@ class SubsweepConfig:
         self.hwaas = hwaas
         self.receiver_gain = receiver_gain
         self.enable_tx = enable_tx
+        self.enable_loopback = enable_loopback
         self.phase_enhancement = phase_enhancement
         self.prf = prf
+
+    def _collect_validation_results(self) -> list[ValidationResult]:
+        validation_results: list[ValidationResult] = []
+
+        if self.enable_loopback and self.profile == Profile.PROFILE_2:
+            validation_results.extend(
+                [
+                    ValidationError(
+                        self, "enable_loopback", "Enable loopback is incompatible with Profile 2."
+                    ),
+                    ValidationError(
+                        self, "profile", "Enable loopback is incompatible with Profile 2."
+                    ),
+                ]
+            )
+
+        if self.prf == PRF.PRF_19_5_MHz:
+            FORBIDDEN_PROFILES = [Profile.PROFILE_3, Profile.PROFILE_4, Profile.PROFILE_5]
+
+            if self.profile in FORBIDDEN_PROFILES:
+                validation_results.extend(
+                    [
+                        ValidationError(
+                            self, "prf", "19.5 MHz PRF is only compatible with profile 1 and 2."
+                        ),
+                        ValidationError(
+                            self,
+                            "profile",
+                            f"Profile {self.profile.value} is not supported with 19.5 MHz PRF.",
+                        ),
+                    ]
+                )
+
+        return validation_results
 
     def validate(self) -> None:
         """Performs self-validation
 
-        :raises ValueError: If anything is invalid.
+        :raises ValidationError: If anything is invalid.
         """
+        for validation_result in self._collect_validation_results():
+            try:
+                raise validation_result
+            except ValidationWarning as vw:
+                warnings.warn(vw.message)
 
     @property
     def start_point(self) -> int:
@@ -193,6 +239,18 @@ class SubsweepConfig:
         self._enable_tx = bool(value)
 
     @property
+    def enable_loopback(self) -> bool:
+        """Enable or disable loopback
+
+        Note, loopback can't be enabled together with profile 2.
+        """
+        return self._enable_loopback
+
+    @enable_loopback.setter
+    def enable_loopback(self, value: bool) -> None:
+        self._enable_loopback = bool(value)
+
+    @property
     def phase_enhancement(self) -> bool:
         """Enable or disable phase enhancement
 
@@ -235,3 +293,13 @@ class SubsweepConfig:
     @classmethod
     def from_json(cls, json_str: str) -> SubsweepConfig:
         return cls.from_dict(json.loads(json_str))
+
+    def _pretty_str_lines(self, index: Optional[int] = None) -> list[str]:
+        lines = []
+        index_str = "" if index is None else f" @ index {index}"
+        lines.append(f"{type(self).__name__}{index_str}:")
+        lines.extend(pretty_dict_line_strs(self.to_dict()))
+        return lines
+
+    def __str__(self) -> str:
+        return "\n".join(self._pretty_str_lines())

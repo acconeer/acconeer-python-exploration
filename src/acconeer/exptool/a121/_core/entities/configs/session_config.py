@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import Any, Optional, Union
 
 from acconeer.exptool.a121._core import utils
 
 from .sensor_config import SensorConfig
+from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
 class SessionConfig:
@@ -132,25 +134,38 @@ class SessionConfig:
         if self.extended:
             raise RuntimeError("This operation requires SessionConfig not to be extended.")
 
-    def validate(self) -> None:
-        """Performs self-validation and validation of its sensor configs
-
-        :raises ValueError: If anything is invalid.
-        """
-
+    def _collect_validation_results(self) -> list[ValidationResult]:
+        validation_results = []
         for group in self._groups:
             for _, sensor_config in group.items():
-                sensor_config.validate()
+                validation_results.extend(sensor_config._collect_validation_results())
 
         if self.update_rate is not None:
             for group_id, sensor_id, sensor_config in utils.iterate_extended_structure(
                 self._groups
             ):
+                error_msg = (
+                    f"Sensor config in group {group_id} with sensor id {sensor_id} "
+                    + "has a set `frame_rate`. This is not allowed."
+                )
                 if sensor_config.frame_rate is not None:
-                    raise ValueError(
-                        f"Sensor config in group {group_id} with sensor id {sensor_id} "
-                        + " has a set `frame_rate`. This is not allowed."
+                    validation_results.append(ValidationError(self, "update_rate", error_msg))
+                    validation_results.append(
+                        ValidationError(sensor_config, "frame_rate", error_msg)
                     )
+
+        return validation_results
+
+    def validate(self) -> None:
+        """Performs self-validation and validation of its sensor configs
+
+        :raises ValidationError: If anything is invalid.
+        """
+        for validation_result in self._collect_validation_results():
+            try:
+                raise validation_result
+            except ValidationWarning as vw:
+                warnings.warn(vw.message)
 
     @property
     def sensor_id(self) -> int:
@@ -177,12 +192,7 @@ class SessionConfig:
         return sensor_config
 
     def __eq__(self, other: Any) -> bool:
-        return (
-            type(self) == type(other)
-            and self.extended == other.extended
-            and self.update_rate == other.update_rate
-            and self._groups == other._groups
-        )
+        return type(self) == type(other) and self.to_dict() == other.to_dict()
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"groups": [], "extended": self.extended}
@@ -194,8 +204,7 @@ class SessionConfig:
                 }
             )
 
-        if self._update_rate is not None:
-            d["update_rate"] = self._update_rate
+        d["update_rate"] = self._update_rate
         return d
 
     @classmethod
@@ -233,6 +242,24 @@ class SessionConfig:
             )
 
         return cls.from_dict(session_config_dict)
+
+    def __str__(self) -> str:
+        lines = []
+
+        lines.append(f"{type(self).__name__}:")
+
+        d = self.to_dict()
+        del d["groups"]
+        lines.extend(utils.pretty_dict_line_strs(d))
+
+        lines.append("  groups:")
+        for group_idx, group_dict in enumerate(self.groups):
+            lines.append(f"    group {group_idx}:")
+            for sensor_id, sensor_config in group_dict.items():
+                sc_lines = sensor_config._pretty_str_lines(sensor_id=sensor_id)
+                lines.extend(utils.indent_strs(sc_lines, 3))
+
+        return "\n".join(lines)
 
 
 def _unsqueeze_groups(

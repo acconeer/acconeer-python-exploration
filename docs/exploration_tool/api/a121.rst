@@ -3,10 +3,6 @@ API reference - A121
 
 This page provides an auto-generated summary of Acconeer Exploration Tool's A121 API.
 
-.. warning::
-
-    The ``acconeer.exptool.a121`` package is currently an unstable API and may change at any time.
-
 Configurations
 --------------
 
@@ -121,3 +117,29 @@ Open/load/save functions
 .. autofunction:: acconeer.exptool.a121.save_record
 
 .. autofunction:: acconeer.exptool.a121.save_record_to_h5
+
+Algo
+----
+
+.. warning::
+
+    The ``acconeer.exptool.a121.algo`` package is currently an unstable API and may change at any time.
+
+Distance (under development)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.Processor
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorConfig
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorContext
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorResult
+    :members:
+    :undoc-members:

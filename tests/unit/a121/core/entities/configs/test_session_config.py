@@ -110,7 +110,11 @@ def test_sensor_config_property():
 
 def test_to_dict():
     default_session_config = a121.SessionConfig(a121.SensorConfig())
-    expected_dict = {"groups": [{1: a121.SensorConfig().to_dict()}], "extended": False}
+    expected_dict = {
+        "groups": [{1: a121.SensorConfig().to_dict()}],
+        "extended": False,
+        "update_rate": None,
+    }
 
     assert expected_dict == default_session_config.to_dict()
 
@@ -173,5 +177,5 @@ def test_update_rate_in_session_config_and_frame_rate_in_any_sensor_config_is_di
     config = a121.SessionConfig(sensor_configs)
     config.update_rate = 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(a121.ValidationError):
         config.validate()

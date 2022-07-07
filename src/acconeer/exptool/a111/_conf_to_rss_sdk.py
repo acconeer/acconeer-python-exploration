@@ -33,7 +33,7 @@ def config_to_rss_usage(self, config):
         "range_interval": None,  # Not needed since we have range_start & range_length
         "range_end": None,  # --||--
         "mode": None,  # Not needed since we know what mode we are using
-        "sampling_mode": None,
+        "sampling_mode": "acc_service_{service}_sampling_mode_set",
     }
 
     # The exploration tool variables are not as the RSS c-api expects. Hence we need

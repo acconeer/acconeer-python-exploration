@@ -10,6 +10,7 @@ from acconeer.exptool.a121._core import utils
 
 from .config_enums import PRF, IdleState, Profile
 from .subsweep_config import SubsweepConfig
+from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
 T = TypeVar("T")
@@ -88,6 +89,7 @@ class SensorConfig:
     _sweep_rate: Optional[float]
     _frame_rate: Optional[float]
     _continuous_sweep_mode: bool
+    _double_buffering: bool
     _inter_frame_idle_state: IdleState
     _inter_sweep_idle_state: IdleState
 
@@ -98,6 +100,7 @@ class SensorConfig:
     hwaas = SubsweepProxyProperty[int](SubsweepConfig.hwaas)
     receiver_gain = SubsweepProxyProperty[int](SubsweepConfig.receiver_gain)
     enable_tx = SubsweepProxyProperty[bool](SubsweepConfig.enable_tx)
+    enable_loopback = SubsweepProxyProperty[bool](SubsweepConfig.enable_loopback)
     phase_enhancement = SubsweepProxyProperty[bool](SubsweepConfig.phase_enhancement)
     prf = SubsweepProxyProperty[PRF](SubsweepConfig.prf)
 
@@ -110,6 +113,7 @@ class SensorConfig:
         sweep_rate: Optional[float] = None,
         frame_rate: Optional[float] = None,
         continuous_sweep_mode: bool = False,
+        double_buffering: bool = False,
         inter_frame_idle_state: IdleState = IdleState.DEEP_SLEEP,
         inter_sweep_idle_state: IdleState = IdleState.READY,
         start_point: Optional[int] = None,
@@ -119,6 +123,7 @@ class SensorConfig:
         hwaas: Optional[int] = None,
         receiver_gain: Optional[int] = None,
         enable_tx: Optional[bool] = None,
+        enable_loopback: Optional[bool] = None,
         phase_enhancement: Optional[bool] = None,
         prf: Optional[PRF] = None,
     ) -> None:
@@ -137,6 +142,7 @@ class SensorConfig:
             and hwaas is None
             and receiver_gain is None
             and enable_tx is None
+            and enable_loopback is None
             and phase_enhancement is None
             and prf is None
         )
@@ -160,6 +166,7 @@ class SensorConfig:
         self.sweep_rate = sweep_rate
         self.frame_rate = frame_rate
         self.continuous_sweep_mode = continuous_sweep_mode
+        self.double_buffering = double_buffering
         self.inter_frame_idle_state = inter_frame_idle_state
         self.inter_sweep_idle_state = inter_sweep_idle_state
 
@@ -179,6 +186,8 @@ class SensorConfig:
             self.receiver_gain = receiver_gain
         if enable_tx is not None:
             self.enable_tx = enable_tx
+        if enable_loopback is not None:
+            self.enable_loopback = enable_loopback
         if phase_enhancement is not None:
             self.phase_enhancement = phase_enhancement
         if prf is not None:
@@ -211,17 +220,14 @@ class SensorConfig:
         return len(self.subsweeps)
 
     def __eq__(self, other: Any) -> bool:
-        return (
-            type(self) == type(other)
-            and self.sweeps_per_frame == other.sweeps_per_frame
-            and self.subsweeps == other.subsweeps
-        )
+        return type(self) == type(other) and self.to_dict() == other.to_dict()
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "sweep_rate": self.sweep_rate,
             "frame_rate": self.frame_rate,
             "continuous_sweep_mode": self.continuous_sweep_mode,
+            "double_buffering": self.double_buffering,
             "inter_frame_idle_state": self.inter_frame_idle_state,
             "inter_sweep_idle_state": self.inter_sweep_idle_state,
             "sweeps_per_frame": self.sweeps_per_frame,
@@ -244,65 +250,132 @@ class SensorConfig:
     def validate(self) -> None:
         """Performs self-validation and validation of its subsweep configs
 
-        :raises ValueError: If anything is invalid.
+        :raises ValidationError: If anything is invalid.
         """
-        # TODO: ValueErrors are the wrong Exception type sub-validators.
-        self._validate_continuous_sweep_mode()
-        self._validate_idle_states()
-        self._validate_sweep_and_frame_rate()
-        self._validate_required_buffer_usage()
+        for validation_result in self._collect_validation_results():
+            try:
+                raise validation_result
+            except ValidationWarning as vw:
+                warnings.warn(vw.message)
 
-        for subsweep_config in self.subsweeps:
-            subsweep_config.validate()
+    def _collect_validation_results(self) -> list[ValidationResult]:
+        sensor_config_validate_results = (
+            self._validate_continuous_sweep_mode()
+            + self._validate_idle_states()
+            + self._validate_sweep_and_frame_rate()
+            + self._validate_required_buffer_usage()
+        )
+        subsweep_config_validate_results = []
+        for subsweep in self.subsweeps:
+            subsweep_config_validate_results.extend(subsweep._collect_validation_results())
+        return sensor_config_validate_results + subsweep_config_validate_results
 
-    def _validate_continuous_sweep_mode(self) -> None:
-        if self.continuous_sweep_mode:
-            if self.frame_rate is not None:
-                raise ValueError("Frame rate must unset (`None`) to use continuous sweep mode.")
+    def _validate_continuous_sweep_mode(self) -> list[ValidationResult]:
+        if not self.continuous_sweep_mode:
+            return []
 
-            if self.sweep_rate is None:
-                raise ValueError("Sweep rate must set (`> 0`) to use continuous sweep mode.")
+        validation_results: list[ValidationResult] = []
 
-            if self.inter_frame_idle_state != self.inter_sweep_idle_state:
-                raise ValueError("Idles states must be equal to use continuous sweep mode.")
+        if self.frame_rate is not None:
+            validation_results.append(
+                ValidationError(
+                    self,
+                    "frame_rate",
+                    "Frame rate must unset (`None`) to use continuous sweep mode.",
+                )
+            )
+        if self.sweep_rate is None:
+            validation_results.append(
+                ValidationError(
+                    self, "sweep_rate", "Sweep rate must be set to use continuous sweep mode."
+                )
+            )
+        if self.inter_frame_idle_state != self.inter_sweep_idle_state:
+            validation_results.extend(
+                ValidationError(
+                    self,
+                    idle_state,
+                    "Inter sweep/frame idle states must be equal to use continuous sweep mode.",
+                )
+                for idle_state in ["inter_frame_idle_state", "inter_sweep_idle_state"]
+            )
+        return validation_results
 
-    def _validate_idle_states(self) -> None:
+    def _validate_idle_states(self) -> list[ValidationResult]:
         if not (
             self.inter_frame_idle_state.is_deeper_than(self.inter_sweep_idle_state)
             or self.inter_frame_idle_state == self.inter_sweep_idle_state
         ):
-            raise ValueError(
-                "Inter frame idle state needs to be deeper or the same as inter sweep idle state"
-            )
+            return [
+                ValidationError(
+                    self,
+                    idle_state,
+                    "Inter frame idle state needs to be deeper "
+                    + "or the same as inter sweep idle state",
+                )
+                for idle_state in ["inter_frame_idle_state", "inter_sweep_idle_state"]
+            ]
+        return []
 
-    def _validate_sweep_and_frame_rate(self) -> None:
+    def _validate_sweep_and_frame_rate(self) -> list[ValidationResult]:
+        validation_results: list[ValidationResult] = []
+
         if self.sweep_rate is not None and self.frame_rate is not None:
             seconds_needed_per_frame = self.sweeps_per_frame / self.sweep_rate
 
             if self.frame_rate > 1 / seconds_needed_per_frame:
-                raise ValueError(
-                    "The frame rate is set faster than what the sweep rate allows."
-                    + f"Frame rate: {self.frame_rate} Hz\n"
-                    + "Sweep rate / sweeps per frame: "
-                    + f"{self.sweep_rate / self.sweeps_per_frame} Hz"
+                validation_results.append(
+                    ValidationError(
+                        self,
+                        "frame_rate",
+                        "The frame rate is set faster than what the sweep rate allows."
+                        + f"Frame rate: {self.frame_rate} Hz\n"
+                        + "Sweep rate / sweeps per frame: "
+                        + f"{self.sweep_rate / self.sweeps_per_frame} Hz",
+                    )
                 )
 
             if np.isclose(self.frame_rate, 1 / seconds_needed_per_frame):
-                warnings.warn(
-                    "Frame rate is approximately equal to SPF / Sweep rate. "
-                    + "Use contiuous sweep mode instead."
+                validation_results.extend(
+                    ValidationWarning(
+                        self,
+                        field,
+                        "Frame rate is approximately equal to SPF / Sweep rate. "
+                        + "Use continuous sweep mode instead.",
+                    )
+                    for field in ["sweep_rate", "frame_rate", "sweeps_per_frame"]
                 )
+        return validation_results
 
-    def _validate_required_buffer_usage(self) -> None:
-        BUFFER_SIZE = 4095
+    def _validate_required_buffer_usage(self) -> list[ValidationResult]:
+        BUFFER_SIZE = 4096
+        ERROR_MSG = "This config would have required buffer size {}, but the max is {}"
 
+        buffer_size_available = (
+            (BUFFER_SIZE // 2) - 1 if self.double_buffering else BUFFER_SIZE - 1
+        )
         total_num_points = sum(subsweep_config.num_points for subsweep_config in self.subsweeps)
         required_buffer_size = total_num_points * self.sweeps_per_frame
-        if required_buffer_size > BUFFER_SIZE:
-            raise ValueError(
-                "This config would have required buffer size "
-                + f"{required_buffer_size}, but the max is {BUFFER_SIZE}"
+
+        validation_results: list[ValidationResult] = []
+
+        if required_buffer_size > buffer_size_available:
+            validation_results.append(
+                ValidationError(
+                    self,
+                    "sweeps_per_frame",
+                    ERROR_MSG.format(required_buffer_size, buffer_size_available),
+                ),
             )
+            validation_results.extend(
+                ValidationError(
+                    subsweep_config,
+                    "num_points",
+                    ERROR_MSG.format(required_buffer_size, buffer_size_available),
+                )
+                for subsweep_config in self.subsweeps
+            )
+        return validation_results
 
     @property
     def sweeps_per_frame(self) -> int:
@@ -378,6 +451,21 @@ class SensorConfig:
         self._continuous_sweep_mode = bool(value)
 
     @property
+    def double_buffering(self) -> bool:
+        """Double buffering
+
+        If enabled, the sensor buffer will be split in two halves reducing the
+        maximum number of samples. A frame can be read while sampling is done into the
+        other buffer.
+        """
+
+        return self._double_buffering
+
+    @double_buffering.setter
+    def double_buffering(self, value: bool) -> None:
+        self._double_buffering = bool(value)
+
+    @property
     def inter_frame_idle_state(self) -> IdleState:
         """Inter frame idle state
 
@@ -410,3 +498,23 @@ class SensorConfig:
     @inter_sweep_idle_state.setter
     def inter_sweep_idle_state(self, value: IdleState) -> None:
         self._inter_sweep_idle_state = IdleState(value)
+
+    def _pretty_str_lines(self, sensor_id: Optional[int] = None) -> list[str]:
+        lines = []
+
+        id_str = "" if sensor_id is None else f" @ sensor {sensor_id}"
+        lines.append(f"{type(self).__name__}{id_str}:")
+
+        d = self.to_dict()
+        del d["subsweeps"]
+        lines.extend(utils.pretty_dict_line_strs(d))
+
+        lines.append("  subsweeps:")
+        for i, subsweep in enumerate(self.subsweeps):
+            ss_lines = subsweep._pretty_str_lines(index=i)
+            lines.extend(utils.indent_strs(ss_lines, 2))
+
+        return lines
+
+    def __str__(self) -> str:
+        return "\n".join(self._pretty_str_lines())

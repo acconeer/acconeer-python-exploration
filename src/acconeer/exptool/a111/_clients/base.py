@@ -41,6 +41,9 @@ class BaseClient(abc.ABC):
 
         if not info.get("mock"):
             try:
+                sensor = info.get("sensor")
+                if sensor and sensor != "a111":
+                    raise ClientError(f"Wrong sensor version, expected a111 but got {sensor}")
                 log.info("reported version: {}".format(info["version_str"]))
 
                 if info["strict_version"] < version.parse(SDK_VERSION):

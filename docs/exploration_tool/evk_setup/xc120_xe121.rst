@@ -1,0 +1,56 @@
+Setting up your XC120 + XE121
+=============================
+
+Flashing
+--------
+Start by downloading the latest ``acc_exploration_server_a121.bin`` from our `developer page <https://developer.acconeer.com/>`_.
+
+Flash XC120 using the Exploration Tool Application
+
+or by using the following command::
+
+   python -m acconeer.exptool.flash -i acc_exploration_server_a121.bin
+
+Windows USB drivers
+-------------------
+
+For enhanced stability and performance on Windows, we strongly recommend using the WinUSB driver to communicate with the XC120.
+In order to do so, follow the steps below.
+
+Download Zadig from their `website <https://zadig.akeo.ie/>`_.
+We recommend version 2.7 or newer.
+
+With the XC120 plugged in, run the Zadig application.
+
+Under *Options*, select *List All Devices*:
+
+.. figure:: /_static/zadig/zadig-1.png
+   :align: center
+   :width: 80%
+
+|
+
+Find the *XC120 Exploration Server* in the dropdown. Make sure *WinUSB* is selected as the driver to replace with. Now it should look like this:
+
+.. figure:: /_static/zadig/zadig-2.png
+   :align: center
+   :width: 80%
+
+|
+
+Click *Replace Driver*. The process could take a minute. Once it's done, it should look like this:
+
+.. figure:: /_static/zadig/zadig-3.png
+   :align: center
+   :width: 80%
+
+|
+
+All done! Now you can close Zadig and run the XC120 with the WinUSB driver.
+In the app, select the XC120 like this:
+
+.. figure:: /_static/zadig/usb-in-app.png
+   :align: center
+   :width: 80%
+
+|

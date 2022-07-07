@@ -3,6 +3,7 @@
 import enum
 import json
 
+import packaging.version
 import pytest
 
 from acconeer.exptool.a121._core import utils
@@ -130,6 +131,26 @@ def test_unextend_bad_argument():
         utils.unextend(argument)
 
 
+def test_create_extended_structure():
+    structure = [{2: "foo", 1: "bar"}, {1: "baz"}]
+    items = utils.iterate_extended_structure(structure)
+    recreated_structure = utils.create_extended_structure(items)
+
+    assert [list(d.items()) for d in recreated_structure] == [list(d.items()) for d in structure]
+
+    # Catch that we must start with group index 0
+    with pytest.raises(ValueError):
+        utils.create_extended_structure([(1, 0, "foo")])
+
+    # Catch that we can't skip a group index
+    with pytest.raises(ValueError):
+        utils.create_extended_structure([(0, 0, "foo"), (2, 0, "bar")])
+
+    # Catch duplicate sensor id in a group
+    with pytest.raises(ValueError):
+        utils.create_extended_structure([(0, 0, "foo"), (0, 0, "bar")])
+
+
 def test_entity_json_encoder():
     SomeEnum = enum.Enum("SomeEnum", ["FOO", "BAR"])
     assert SomeEnum.FOO.value == 1
@@ -147,3 +168,63 @@ def test_entity_json_encoder():
     assert actual == expected
     for k, expected_v in expected.items():
         assert type(actual[k]) is type(expected_v)
+
+
+@pytest.mark.parametrize(
+    ("raw", "version"),
+    [
+        ("a121-v1.2.3", "1.2.3"),
+        ("a121-v1.2.3-rc4", "1.2.3rc4"),
+        ("a121-v1.2.3-123-g0e03503be1", "1.2.4.dev123+g0e03503be1"),
+        ("a121-v1.2.3-rc4-123-g0e03503be1", "1.2.3rc5.dev123+g0e03503be1"),
+    ],
+)
+def test_parse_rss_version(raw, version):
+    assert utils.parse_rss_version(raw) == packaging.version.Version(version)
+
+
+def test_rss_version_order():
+    correctly_ordered_versions = [
+        "a121-v1.2.3",
+        "a121-v1.2.3-1-g123",
+        "a121-v1.2.3-2-g123",
+        "a121-v1.2.4-rc1",
+        "a121-v1.2.4-rc1-1-g123",
+        "a121-v1.2.4-rc1-2-g123",
+        "a121-v1.2.4-rc2",
+        "a121-v1.2.4-rc2-1-g123",
+        "a121-v1.2.4",
+    ]
+    correctly_ordered_versions = [utils.parse_rss_version(s) for s in correctly_ordered_versions]
+    assert correctly_ordered_versions == sorted(correctly_ordered_versions)
+
+
+@pytest.mark.parametrize(
+    ("ticks", "minimum_tick", "expected_ticks"),
+    [
+        ([0], None, [0]),
+        ([99], None, [99]),
+        ([40, 60], None, [40, 60]),
+        ([90, 0], None, [90, 100]),
+        ([90, 10], None, [90, 110]),
+        ([10], 0, [10]),
+        ([10], 209, [210]),
+        ([10], 210, [210]),
+        ([10], 211, [310]),
+        ([10, 90], 185, [210, 190]),
+        ([10, 90], 195, [310, 290]),
+    ],
+)
+def test_unwrap_ticks_normal_cases(ticks, minimum_tick, expected_ticks):
+    expected = (expected_ticks, max(expected_ticks))
+    assert utils.unwrap_ticks(ticks, minimum_tick, limit=100) == expected
+
+
+def test_unwrap_ticks_special_cases():
+    assert utils.unwrap_ticks([], None) == ([], None)
+
+    with pytest.raises(Exception):
+        utils.unwrap_ticks([-1], None, limit=100)
+
+    with pytest.raises(Exception):
+        utils.unwrap_ticks([100], None, limit=100)
