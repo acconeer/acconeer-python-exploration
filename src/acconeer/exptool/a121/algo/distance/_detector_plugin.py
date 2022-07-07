@@ -588,11 +588,14 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="Threshold sensitivity",
                 decimals=2,
                 limits=(0, 1),
+                show_limit_values=False,
             ),
             "signal_quality": pidgets.FloatSliderParameterWidgetFactory(
                 name_label_text="Signal quality",
                 decimals=1,
                 limits=(-2, 38),
+                show_limit_values=False,
+                limit_texts=("Less power", "Higher quality"),
             ),
             "cfar_one_sided": pidgets.CheckboxParameterWidgetFactory(
                 name_label_text="CFAR one sided",
