@@ -9,6 +9,9 @@ The Acconeer offer consists of two parts, hardware and software, as illustrated 
 
     The Acconeer offer.
 
+This document site is currently being upgraded with the addition of our new A121 component, so please have some patience until we have completed this.
+See the :ref:`handbook` for more information on A111 vs A121.
+
 The A111 sensor is the core of the hardware offer and is available in modules and in evaluation kits. The purpose of the evaluation kit is to provide a platform to get acquainted with the pulsed coherent radar and to start use case evaluation. The sensor evaluation kits are based on Raspberry Pi, which is a well-known and available platform which also allows you to connected other types of sensors. The module is an integration of the A111 and a microcontroller unit (MCU) and has its own evaluation kit. Just as the sensor evaluation kit it can be used to get familiar with the pulsed coherent radar technology and get started with use case development. It can also be included as a single unit in your product to decrease your development cost and decrease time to market.
 
 :numref:`fig_system_structure` outlines the software structure, platform for running it, and communication interfaces. The software for controlling the A111 sensor and retrieving data from it is called Radar System Software (RSS) and provides output at two levels:

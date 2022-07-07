@@ -4,6 +4,9 @@ Exploration Tool
 These pages covers information related to *Exploration Tool*,
 such as API and file format reference.
 
+The Exploration Tool application runs on Windows and Linux and is the primary way to explore our radar technology and evaluation kits.
+It is freely downloaded and installed from `GitHub <https://github.com/acconeer/acconeer-python-exploration>`__.
+
 .. toctree::
    :caption: Exploration Tool
    :maxdepth: 1
