@@ -1,12 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Spinnaker&display=swap');
+
 @media only screen and (max-width: 768px) {
     figure img {
         width: initial !important;
     }
 }
 
-.math {
-    text-align: left;
+:root {
+    --pst-color-primary: 27, 77, 100;
+    --pst-color-active-navigation: 27, 77, 100;
+    --pst-color-link: 45, 145, 169;
+    --sd-color-primary: #1b4d64;
+    --sd-color-secondary: #2d91a9;
+    --pst-font-family-heading: "Spinnaker", var(--pst-font-family-base);
 }
-.eqno {
-    float: right;
+
+h1, h2 {
+    font-weight: bold;
+    color: #1b4d64;
+}
+
+.center {
+    text-align: center;
+}
+
+.sd-card-footer {
+    border: none;
+    padding-top: 0;
+    padding-bottom: 1rem;
 }

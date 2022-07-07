@@ -50,7 +50,7 @@ On the bottom plot, you can see the history of the amplitude measurements over t
 You may try objects of different sizes, shapes and materials to see how and if the radar response changes.
 When using flat objects, experiment with rotation of the flat surface; radar reflects off flat surfaces just like visible light in a mirror and at a certain rotation of the surface you will see the signal vanishing completely!
 
-To see the impact of the pulse duration on peak spread, stop the scan by clicking **Stop** and change the **Profile** to a higher or lower number and start the scan again (for more details, see the :ref:`Sensor introduction <sensor-introduction-pofiles>`).
+To see the impact of the pulse duration on peak spread, stop the scan by clicking **Stop** and change the **Profile** to a higher or lower number and start the scan again (for more details, see the :ref:`Sensor introduction <handbook-a111-profiles>`).
 
 .. _background-data:
 

@@ -1,44 +1,94 @@
-Acconeer Exploration Tool docs
-==============================
-
-Welcome to the Acconeer Exploration Tool documentation!
-
-Table of contents
-=================
+Acconeer documentation pages
+============================
 
 .. toctree::
-   :maxdepth: 1
+   :hidden:
 
-   sensor_introduction
-   gui/index
-   file_format_ref
-   faq
-   changelog
-   migration_v3_to_v4
+   getting_started/index
+   handbook/index
+   exploration_tool/index
 
-.. toctree::
-   :caption: API reference
-   :maxdepth: 1
+.. grid:: 1 2 2 2
+   :gutter: 4
 
-   A111 <api_ref>
-   A121 <api_ref_a121>
+   .. grid-item-card::
 
-.. toctree::
-   :maxdepth: 1
-   :glob:
-   :caption: Setting up your EVK
+      .. rst-class:: center
 
-   XC120 + XE121 (A121) <evk_setup/xc120_xe121>
-   XM112 <evk_setup/xm112>
-   XM122 <evk_setup/xm122>
-   XM132 <evk_setup/xm132>
-   Raspberry Pi (A111) <evk_setup/raspberry_a111>
+      :octicon:`rocket;5em;sd-text-secondary;`
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Services and detectors
+      New to Acconeer radar technology?
+      The *Getting started* page helps you get up and running to explore the next sense!
 
-   services/index
-   processing/index
+      +++
+
+      .. button-ref:: getting_started/index
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Getting started**
+
+   .. grid-item-card::
+
+      .. rst-class:: center
+
+      :octicon:`mortar-board;5em;sd-text-secondary;`
+
+      Already up and running and want to learn more?
+      The *Handbook* provides in-depth information on a wide range of topics.
+
+      +++
+
+      .. button-ref:: handbook/index
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Handbook**
+
+   .. grid-item-card::
+
+      .. rst-class:: center
+
+      :octicon:`tools;5em;sd-text-secondary;`
+
+      The *Exploration Tool* page covers information related to that project,
+      such as API and file format reference.
+
+      +++
+
+      .. button-ref:: exploration_tool/index
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Exploration Tool**
+
+   .. grid-item-card::
+
+      .. rst-class:: center
+
+      :octicon:`archive;5em;sd-text-secondary;`
+
+      Looking for software downloads and additional resources?
+      Head over to the developer site.
+
+      +++
+
+      .. button-link:: https://developer.acconeer.com
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :ref-type: myst
+
+         **Developer site**
 
 :doc:`disclaimer`

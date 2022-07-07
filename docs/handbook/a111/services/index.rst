@@ -3,7 +3,7 @@
 Services
 ========
 
-The Acconeer A1 sensor can be used in different modes depending on use case. There are currently four such services optimized for different purposes.
+The Acconeer A111 sensor can be used in different modes depending on use case. There are currently four such services optimized for different purposes.
 
 +------------+----------------------------------------+
 | Service    | Typical use cases                      |
