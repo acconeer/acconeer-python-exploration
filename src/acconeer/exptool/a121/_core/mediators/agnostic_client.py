@@ -216,12 +216,17 @@ class AgnosticClient:
             recorder_result = self._recorder._stop()
             self._recorder = None
 
-        self._link.send(self._protocol.stop_streaming_command())
-        reponse_bytes = self._drain_buffer(self._link.timeout + 1)
-        self._protocol.stop_streaming_response(reponse_bytes)
-        self._link.timeout = self._default_link_timeout
-        self._session_is_started = False
-        self._tick_unwrapper = TickUnwrapper()
+        try:
+            self._link.send(self._protocol.stop_streaming_command())
+            reponse_bytes = self._drain_buffer(self._link.timeout + 1)
+            self._protocol.stop_streaming_response(reponse_bytes)
+        except Exception:
+            raise
+        finally:
+            self._link.timeout = self._default_link_timeout
+            self._session_is_started = False
+            self._tick_unwrapper = TickUnwrapper()
+
         return recorder_result
 
     def _drain_buffer(
