@@ -182,12 +182,18 @@ class AppModel(QObject):
         self._port_updater.start()
 
     def stop(self) -> None:
+
         WAIT_FOR_UNLOAD_TIMEOUT = 1.0
 
         self.load_plugin(None)
+        if self.connection_state in [ConnectionState.CONNECTING, ConnectionState.CONNECTED]:
+            self.disconnect_client()
 
         wait_start_time = time.time()
-        while self.plugin_state != PluginState.UNLOADED:  # TODO: Do this better
+        while (
+            self.plugin_state != PluginState.UNLOADED
+            and self.connection_state != ConnectionState.DISCONNECTED
+        ):  # TODO: Do this better
             QApplication.processEvents()
 
             if (time.time() - wait_start_time) > WAIT_FOR_UNLOAD_TIMEOUT:
