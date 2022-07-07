@@ -7,6 +7,7 @@
 "evk_setup/xm112.rst" "exploration_tool/evk_setup/xm112.rst"
 "evk_setup/xm122.rst" "exploration_tool/evk_setup/xm122.rst"
 "evk_setup/xm132.rst" "exploration_tool/evk_setup/xm132.rst"
+"evk_setup/xc120_xe121.rst" "exploration_tool/evk_setup/xc120_xe121.rst"
 "faq.rst" "exploration_tool/faq.rst"
 "file_format_ref.rst" "exploration_tool/file_format_ref.rst"
 "gui/index.rst" "exploration_tool/gui/index.rst"
