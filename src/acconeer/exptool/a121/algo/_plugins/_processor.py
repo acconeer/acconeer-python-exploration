@@ -495,6 +495,8 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
                 app_model.backend_plugin_state.metadata,
             )
 
+        self.session_config_editor.update_available_sensor_list(app_model._a121_server_info)
+
     @classmethod
     @abc.abstractmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:

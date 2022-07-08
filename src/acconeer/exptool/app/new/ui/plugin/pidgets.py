@@ -438,24 +438,49 @@ class ComboboxParameterWidget(ParameterWidget, Generic[T]):
     def __init__(self, factory: ComboboxParameterWidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self.__combobox = _PidgetComboBox(self._body_widget)
-        self._body_layout.addWidget(self.__combobox)
+        self._combobox = _PidgetComboBox(self._body_widget)
+        self._body_layout.addWidget(self._combobox)
 
         for displayed_text, user_data in factory.items:
-            self.__combobox.addItem(displayed_text, user_data)
+            self._combobox.addItem(displayed_text, user_data)
 
-        self.__combobox.currentIndexChanged.connect(self.__emit_data_of_combobox_item)
+        self._combobox.currentIndexChanged.connect(self.__emit_data_of_combobox_item)
 
     def __emit_data_of_combobox_item(self, index: int) -> None:
-        data = self.__combobox.itemData(index)
+        data = self._combobox.itemData(index)
         self.sig_parameter_changed.emit(data)
 
     def set_parameter(self, param: Any) -> None:
         with QtCore.QSignalBlocker(self):
-            index = self.__combobox.findData(param)
+            index = self._combobox.findData(param)
             if index == -1:
                 raise ValueError(f"Data item {param} could not be found in {self}.")
-            self.__combobox.setCurrentIndex(index)
+            self._combobox.setCurrentIndex(index)
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class UpdateableComboboxParameterWidgetFactory(ComboboxParameterWidgetFactory, Generic[T]):
+    def create(self, parent: QWidget) -> UpdateableComboboxParameterWidget:
+        return UpdateableComboboxParameterWidget(self, parent)
+
+
+class UpdateableComboboxParameterWidget(ComboboxParameterWidget, Generic[T]):
+    def __init__(self, factory: UpdateableComboboxParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+    def update_items(self, items: list[tuple[str, T]]) -> None:
+        self._combobox.clear()
+
+        for displayed_text, user_data in items:
+            self._combobox.addItem(displayed_text, user_data)
+
+    def set_parameter(self, param: Any) -> None:
+        try:
+            super().set_parameter(param)
+        except ValueError:
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
 
 
 @attrs.frozen(kw_only=True, slots=False)

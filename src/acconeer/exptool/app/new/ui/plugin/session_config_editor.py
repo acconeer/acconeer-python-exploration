@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 class SessionConfigEditor(QWidget):
     _session_config: Optional[a121.SessionConfig]
     _all_pidgets: list[pidgets.ParameterWidget]
+    _server_info: Optional[a121.ServerInfo]
 
     sig_update = Signal(object)
 
@@ -45,6 +46,10 @@ class SessionConfigEditor(QWidget):
         a121.PRF.PRF_6_5_MHz: "6.5 MHz",
     }
     SESSION_CONFIG_FACTORIES: PidgetFactoryMapping = {
+        "sensor_id": pidgets.UpdateableComboboxParameterWidgetFactory(
+            name_label_text="Sensor:",
+            items=[],
+        ),
         "update_rate": pidgets.OptionalFloatParameterWidgetFactory(
             name_label_text="Update rate:",
             limits=(0.1, 1e4),
@@ -52,7 +57,7 @@ class SessionConfigEditor(QWidget):
             init_set_value=10.0,
             suffix="Hz",
             checkbox_label_text="Limit",
-        )
+        ),
     }
     SENSOR_CONFIG_FACTORIES: PidgetFactoryMapping = {
         "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
@@ -132,6 +137,8 @@ class SessionConfigEditor(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
+
+        self._server_info = None
 
         self._session_config = None
         self._all_pidgets = []
@@ -280,6 +287,7 @@ class SessionConfigEditor(QWidget):
             return
 
         self._session_config_pidgets["update_rate"].set_parameter(self._session_config.update_rate)
+        self._session_config_pidgets["sensor_id"].set_parameter(self._session_config.sensor_id)
 
         sensor_config = self._session_config.sensor_config
         self._sensor_config_pidgets["sweeps_per_frame"].set_parameter(
@@ -312,3 +320,23 @@ class SessionConfigEditor(QWidget):
             subsweep_config.phase_enhancement
         )
         self._subsweep_config_pidgets["prf"].set_parameter(subsweep_config.prf)
+
+    def update_available_sensor_list(self, server_info: Optional[a121.ServerInfo]) -> None:
+        if server_info is None:
+            return
+
+        if self._server_info != server_info:
+            self._server_info = server_info
+            self._session_config_pidgets["sensor_id"].update_items(
+                self._make_connected_sensor_list(server_info)
+            )
+            self._update_ui()
+
+    def _make_connected_sensor_list(self, server_info: a121.ServerInfo) -> list[tuple[str, int]]:
+        connected_sensors: list[tuple[str, int]] = []
+
+        for k, v in server_info.sensor_infos.items():
+            if v.connected:
+                connected_sensors.append((str(k), k))
+
+        return connected_sensors
