@@ -13,7 +13,13 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoConfigBase
 
-from ._aggregator import Aggregator, AggregatorConfig, PeakSortingMethod, ProcessorSpec
+from ._aggregator import (
+    Aggregator,
+    AggregatorConfig,
+    AggregatorContext,
+    PeakSortingMethod,
+    ProcessorSpec,
+)
 from ._processors import (
     DEFAULT_CFAR_ONE_SIDED,
     DEFAULT_FIXED_THRESHOLD_VALUE,
@@ -26,6 +32,7 @@ from ._processors import (
     ProcessorResult,
     ThresholdMethod,
     calculate_abs_noise_std,
+    calculate_offset,
 )
 
 
@@ -59,6 +66,7 @@ Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
 
 @attrs.mutable(kw_only=True)
 class DetectorContext:
+    offset_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_thresholds: Optional[List[npt.NDArray[np.float_]]] = attrs.field(default=None)
@@ -179,7 +187,8 @@ class Detector:
         aggregator = Aggregator(
             session_config=self.session_config,
             extended_metadata=extended_metadata,
-            aggregator_config=AggregatorConfig(),
+            config=AggregatorConfig(),
+            context=AggregatorContext(),
             specs=spec,
         )
 
@@ -211,7 +220,8 @@ class Detector:
         aggregator = Aggregator(
             session_config=self.session_config,
             extended_metadata=extended_metadata,
-            aggregator_config=AggregatorConfig(),
+            config=AggregatorConfig(),
+            context=AggregatorContext(),
             specs=specs,
         )
 
@@ -258,6 +268,30 @@ class Detector:
                 abs_noise_std_in_spec.append(calculate_abs_noise_std(subframe))
             abs_noise_std.append(np.array(abs_noise_std_in_spec))
         self.context.abs_noise_std = abs_noise_std
+
+    def calibrate_offset(self) -> None:
+        self._validate_ready_for_calibration()
+
+        sensor_config = a121.SensorConfig(
+            start_point=-30,
+            num_points=50,
+            step_length=1,
+            profile=a121.Profile.PROFILE_1,
+            hwaas=64,
+            sweeps_per_frame=1,
+            enable_loopback=True,
+            phase_enhancement=True,
+        )
+
+        session_config = a121.SessionConfig({self.sensor_id: sensor_config})
+        self.client.setup_session(session_config)
+        self.client.start_session()
+        result = self.client.get_next()
+        self.client.stop_session()
+
+        assert isinstance(result, a121.Result)
+
+        self.context.offset_m = calculate_offset(result, sensor_config)
 
     @classmethod
     def get_detector_status(
@@ -364,18 +398,21 @@ class Detector:
 
         if not skip_calibration:
             self.calibrate_noise()
+            self.calibrate_offset()
 
         specs = self._add_context_to_processor_spec(self.processor_specs)
         extended_metadata = self.client.setup_session(self.session_config)
         assert isinstance(extended_metadata, list)
-
+        assert self.context.offset_m is not None
         aggregator_config = AggregatorConfig(
             peak_sorting_method=self.detector_config.peaksorting_method
         )
+        aggregator_context = AggregatorContext(offset_m=self.context.offset_m)
         self.aggregator = Aggregator(
             session_config=self.session_config,
             extended_metadata=extended_metadata,
-            aggregator_config=aggregator_config,
+            config=aggregator_config,
+            context=aggregator_context,
             specs=specs,
         )
 
@@ -918,7 +955,7 @@ def _record_algo_data(
                 dtype=a121._H5PY_STR_DTYPE,
                 track_times=False,
             )
-        elif isinstance(v, np.ndarray):
+        elif isinstance(v, np.ndarray) or isinstance(v, float):
             context_group.create_dataset(k, data=v, track_times=False)
         else:
             raise RuntimeError(f"Unexpected {DetectorContext.__name__} field type '{type(v)}'")
@@ -948,6 +985,7 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, Detect
         raise Exception(f"Unknown field(s) in stored context: {unknown_keys}")
 
     field_map = {
+        "offset_m": None,
         "direct_leakage": None,
         "phase_jitter_comp_reference": None,
         "recorded_threshold_session_config_used": a121.SessionConfig.from_json,

@@ -174,7 +174,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
         ) * self.metadata.base_step_length_m
 
-        (self.b, self.a) = self._get_distance_filter_coeffs(self.profile, self.step_length)
+        (self.b, self.a) = self.get_distance_filter_coeffs(self.profile, self.step_length)
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
@@ -369,7 +369,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.threshold = self._update_threshold(abs_sweep)
 
         found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
-        (estimated_distances, estimated_amplitudes) = self._interpolate_peaks(
+        (estimated_distances, estimated_amplitudes) = self.interpolate_peaks(
             abs_sweep,
             found_peaks_idx,
             self.start_point_cropped,
@@ -429,7 +429,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         ...
 
     @classmethod
-    def _get_distance_filter_coeffs(cls, profile: a121.Profile, step_length: int) -> Any:
+    def get_distance_filter_coeffs(cls, profile: a121.Profile, step_length: int) -> Any:
         wnc = cls.APPROX_BASE_STEP_LENGTH_M * step_length / cls.ENVELOPE_FWHM_M[profile]
         return butter(N=2, Wn=wnc)
 
@@ -517,7 +517,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return found_peaks
 
     @staticmethod
-    def _interpolate_peaks(
+    def interpolate_peaks(
         abs_sweep: npt.NDArray[np.float_],
         peak_idxs: list[int],
         start_point: int,
@@ -549,3 +549,31 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
 def calculate_abs_noise_std(subframe: npt.NDArray[np.complex_]) -> float:
     return float(np.std(np.abs(subframe)))
+
+
+def calculate_offset(result: a121.Result, config: a121.SensorConfig) -> float:
+
+    # Intercept and offset term of offset compensation.
+    OFFSET_COMPENSATION_COEFFS = {
+        a121.Profile.PROFILE_1: (0.7144381, 0.01057812),
+        a121.Profile.PROFILE_2: (0.49220892, 0.00193627),
+        a121.Profile.PROFILE_3: (0.55348759, 0.00252287),
+        a121.Profile.PROFILE_4: (6.10352993e-01, 2.30125790e-04),
+        a121.Profile.PROFILE_5: (0.66277198, -0.00539498),
+    }
+
+    (B, A) = Processor.get_distance_filter_coeffs(config.profile, config.step_length)
+    sweep = np.squeeze(result.frame, axis=0)
+    abs_sweep = np.abs(filtfilt(B, A, sweep))
+    peak_idx = [int(np.argmax(abs_sweep))]
+
+    (estimated_dist, _) = Processor.interpolate_peaks(
+        abs_sweep=abs_sweep,
+        peak_idxs=peak_idx,
+        start_point=config.start_point,
+        step_length=config.step_length,
+        step_length_m=Processor.APPROX_BASE_STEP_LENGTH_M,
+    )
+
+    p = OFFSET_COMPENSATION_COEFFS[config.profile]
+    return p[0] * estimated_dist[0] + p[1]

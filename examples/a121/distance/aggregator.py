@@ -102,7 +102,7 @@ def main():
     aggregator = Aggregator(
         session_config=session_config,
         extended_metadata=extended_metadata,
-        aggregator_config=aggregator_config,
+        config=aggregator_config,
         specs=processor_specs,
     )
 
