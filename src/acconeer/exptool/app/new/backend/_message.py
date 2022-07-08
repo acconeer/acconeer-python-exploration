@@ -22,6 +22,7 @@ class Message:  # Should not be instantiated
 @attrs.frozen(kw_only=True, slots=False)
 class ConnectionStateMessage(Message):
     state: ConnectionState = attrs.field()
+    warning: Optional[str] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True, slots=False)

@@ -7,9 +7,11 @@ import platform
 
 import qtawesome as qta
 
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QStackedWidget,
@@ -114,6 +116,12 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.layout().addWidget(self.stacked)
 
         self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))
+
+        self.warning_label = QLabel(self)
+        self.warning_label.setPixmap(qta.icon("fa.warning", color="red").pixmap(QSize(16, 16)))
+        self.layout().addWidget(self.warning_label)
+        self.warning_label.hide()
+
         self.layout().addStretch(1)
 
     def _on_interface_dd_change(self) -> None:
@@ -133,6 +141,12 @@ class ClientConnectionWidget(AppModelAwareWidget):
 
         self.interface_dd.setCurrentIndex(interface_index)
         self.stacked.setCurrentIndex(interface_index)
+
+        if app_model.connection_warning:
+            self.warning_label.setToolTip(app_model.connection_warning)
+            self.warning_label.show()
+        else:
+            self.warning_label.hide()
 
 
 class GenerationSelection(QComboBox):

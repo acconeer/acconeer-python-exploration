@@ -6,6 +6,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Optional, Type, TypeVar
 
+import packaging.version
+
 from acconeer.exptool import a121
 from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 from acconeer.exptool.app.new._exceptions import HandledException
@@ -82,7 +84,17 @@ class Model:
         if self.backend_plugin is not None:
             self.backend_plugin.attach_client(client=self.client)
 
-        self.task_callback(ConnectionStateMessage(state=ConnectionState.CONNECTED))
+        ver = packaging.version.Version(a121.SDK_VERSION)
+        if self.client.server_info.parsed_rss_version > ver:
+            connection_warning = "New server version - please upgrade client"
+        elif self.client.server_info.parsed_rss_version < ver:
+            connection_warning = "Old server version - please upgrade server"
+        else:
+            connection_warning = None
+
+        self.task_callback(
+            ConnectionStateMessage(state=ConnectionState.CONNECTED, warning=connection_warning)
+        )
         self.task_callback(GeneralMessage(name="server_info", data=self.client.server_info))
 
     @is_task

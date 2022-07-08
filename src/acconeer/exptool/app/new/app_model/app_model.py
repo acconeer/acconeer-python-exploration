@@ -141,6 +141,7 @@ class AppModel(QObject):
     backend_plugin_state: Any
 
     connection_state: ConnectionState
+    connection_warning: Optional[str]
     connection_interface: ConnectionInterface
     plugin_state: PluginState
     socket_connection_ip: str
@@ -169,6 +170,7 @@ class AppModel(QObject):
         self.backend_plugin_state = None
 
         self.connection_state = ConnectionState.DISCONNECTED
+        self.connection_warning = None
         self.connection_interface = ConnectionInterface.SERIAL
         self.plugin_state = PluginState.UNLOADED
         self.socket_connection_ip = ""
@@ -275,6 +277,7 @@ class AppModel(QObject):
         if isinstance(message, ConnectionStateMessage):
             log.debug("Got backend connection state message")
             self.connection_state = message.state
+            self.connection_warning = message.warning
             self.broadcast()
         elif isinstance(message, PluginStateMessage):
             log.debug("Got backend plugin state message")
@@ -465,11 +468,13 @@ class AppModel(QObject):
             on_error=on_error,
         )
         self.connection_state = ConnectionState.CONNECTING
+        self.connection_warning = None
         self.broadcast()
 
     def disconnect_client(self) -> None:
         self._put_backend_task("disconnect_client", {})
         self.connection_state = ConnectionState.DISCONNECTING
+        self.connection_warning = None
         self._a121_server_info = None
         self.broadcast()
 
