@@ -45,3 +45,6 @@ stash/
 
 # mypy
 .mypy_cache/
+
+# git
+*.orig
