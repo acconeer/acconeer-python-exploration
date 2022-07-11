@@ -60,11 +60,10 @@ class _FlashDialog(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle("Flash tool")
-        self.setMinimumWidth(350)
+        self.setMinimumWidth(250)
 
         vbox = QVBoxLayout(self)
         vbox.setAlignment(Qt.AlignCenter)
-        vbox.setSizeConstraint(QVBoxLayout.SetMinimumSize)
 
         self.loading = QLabel()
         self.loading.setAlignment(Qt.AlignCenter)

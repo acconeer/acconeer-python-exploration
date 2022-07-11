@@ -26,7 +26,7 @@ class _ConnectAndDisconnectButton(QPushButton):
 
         self.app_model = app_model
 
-        self.setFixedWidth(100)
+        self.setFixedWidth(120)
 
         app_model.sig_notify.connect(self._on_app_model_update)
 
