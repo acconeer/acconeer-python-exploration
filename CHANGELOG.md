@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.0.2
+
+### Fixed
+- Fix client timeout when auto-detecting port
+
 ## v5.0.1
 
 ### Added

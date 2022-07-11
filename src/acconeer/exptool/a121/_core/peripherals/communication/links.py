@@ -20,6 +20,14 @@ class NullLink(BufferedLink):
     def connect(self) -> None:
         raise self.ERROR
 
+    @property
+    def timeout(self) -> float:
+        raise self.ERROR
+
+    @timeout.setter
+    def timeout(self, timeout: float) -> None:
+        raise self.ERROR
+
     def recv(self, num_bytes: int) -> bytes:
         raise self.ERROR
 

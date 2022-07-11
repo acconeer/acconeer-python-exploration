@@ -48,8 +48,6 @@ class AgnosticClient:
 
     def __init__(self, link: BufferedLink, protocol: Type[CommunicationProtocol]) -> None:
         self._link = link
-        self._default_link_timeout = self._link.timeout
-        self._link_timeout = self._default_link_timeout
         self._protocol = protocol
         self._server_info = None
         self._session_config = None
@@ -77,6 +75,8 @@ class AgnosticClient:
 
         :raises: Exception if the host cannot be connected to.
         """
+        self._default_link_timeout = self._link.timeout
+        self._link_timeout = self._default_link_timeout
         self._link.connect()
 
         self._link.send(self._protocol.get_sensor_info_command())
