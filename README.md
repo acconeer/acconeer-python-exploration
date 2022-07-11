@@ -44,10 +44,11 @@ Additional documentation is available at [docs.acconeer.com](https://docs.accone
 
 ## Setting up your evaluation kit
 
-* [Raspberry Pi (XC111+XR111 or XC112+XR112)](https://docs.acconeer.com/en/latest/evk_setup/raspberry.html)
-* [XM112](https://docs.acconeer.com/en/latest/evk_setup/xm112.html)
-* [XM122](https://docs.acconeer.com/en/latest/evk_setup/xm122.html)
-* [XM132](https://docs.acconeer.com/en/latest/evk_setup/xm132.html)
+* [XC120 + XE121 (A121)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xc120_xe121.html)
+* [Raspberry Pi (A111 on XC111+XR111 or XC112+XR112)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/raspberry_a111.html)
+* [XM112](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm112.html)
+* [XM122](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm122.html)
+* [XM132](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm132.html)
 
 For general help on getting started head over to the [Acconeer developer page](https://developer.acconeer.com/). There you will find both a getting started guide and a video showing you how to set up your evaluation kit. There you will also find the SDK download.
 
