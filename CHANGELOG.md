@@ -1,5 +1,18 @@
 # Changelog
 
+## v5.0.1
+
+### Added
+- Add *.orig to .gitignore
+- Add A121 EVK setup to readme
+
+### Changed
+- Bump A111 SDK version to 2.12.0
+
+### Fixed
+- Make clean up after stop session more stable
+- Set link timeout depending on server update rate and sweep rate
+
 ## v5.0.0
 
 This major release provides initial support for the A121, with a new
