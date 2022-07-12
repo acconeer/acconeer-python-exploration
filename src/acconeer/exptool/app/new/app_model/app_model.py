@@ -349,11 +349,25 @@ class AppModel(QObject):
         tagged_ports: list[Tuple[str, Optional[str]]],
         usb_devices: Optional[list[USBDevice]],
     ) -> None:
+        tagged_ports_map = dict(tagged_ports)
+        if self.connection_state is not ConnectionState.DISCONNECTED and (
+            (
+                self.connection_interface == ConnectionInterface.SERIAL
+                and self.serial_connection_port not in tagged_ports_map.keys()
+            )
+            or (
+                self.connection_interface == ConnectionInterface.USB
+                and usb_devices
+                and self.usb_connection_device not in usb_devices
+            )
+        ):
+            self.disconnect_client()
         self.serial_connection_port, recognized = self._select_new_serial_port(
             dict(self.available_tagged_ports),
-            dict(tagged_ports),
+            tagged_ports_map,
             self.serial_connection_port,
         )
+
         self.available_tagged_ports = tagged_ports
         connect = False
 
@@ -415,7 +429,7 @@ class AppModel(QObject):
 
     def _select_new_usb_device(
         self,
-        new_ports: list[str],
+        new_ports: list[USBDevice],
         current_port: Optional[USBDevice],
     ) -> Tuple[Optional[USBDevice], bool]:
         if self.connection_state != ConnectionState.DISCONNECTED:
