@@ -586,7 +586,12 @@ class Detector:
 
             has_neighbour = (False, transition_m < config.end_m)
             extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile, step_length, breakpoints, has_neighbour, config
+                profile=profile,
+                step_length=step_length,
+                base_bpts=breakpoints,
+                has_neighbour=has_neighbour,
+                config=config,
+                is_close_range_measurement=True,
             )
 
             plans[MeasurementType.CLOSE_RANGE] = [
@@ -619,7 +624,12 @@ class Detector:
 
             has_neighbour = (len(plans) != 0, min_dist_m[config.max_profile] < end_m)
             extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile_to_be_used, step_length, breakpoints, has_neighbour, config
+                profile=profile_to_be_used,
+                step_length=step_length,
+                base_bpts=breakpoints,
+                has_neighbour=has_neighbour,
+                config=config,
+                is_close_range_measurement=False,
             )
 
             far_subgroup_plans.append(
@@ -646,7 +656,12 @@ class Detector:
 
             has_neighbour = (len(plans) != 0 or len(far_subgroup_plans) != 0, False)
             extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile, step_length, breakpoints, has_neighbour, config
+                profile=profile,
+                step_length=step_length,
+                base_bpts=breakpoints,
+                has_neighbour=has_neighbour,
+                config=config,
+                is_close_range_measurement=False,
             )
 
             far_subgroup_plans.append(
@@ -715,6 +730,7 @@ class Detector:
         base_bpts: list[int],
         has_neighbour: Tuple[bool, bool],
         config: DetectorConfig,
+        is_close_range_measurement: bool,
     ) -> list[int]:
         """
         Add points to segment edges based on their position.
@@ -733,7 +749,7 @@ class Detector:
         if has_neighbour[1]:
             right_margin += margin_p
 
-        if config.threshold_method == ThresholdMethod.CFAR:
+        if config.threshold_method == ThresholdMethod.CFAR and not is_close_range_measurement:
             cfar_margin = Processor.calc_cfar_margin(profile, step_length) * step_length
             left_margin += cfar_margin
             right_margin += cfar_margin
