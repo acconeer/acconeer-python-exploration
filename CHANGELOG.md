@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.0.3
+
+### Fixed
+- Fix version parsing for a111. Version string "a111-vx.x.x" is now
+  handled properly.
+
 ## v5.0.2
 
 ### Fixed

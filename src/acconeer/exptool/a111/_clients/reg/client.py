@@ -773,8 +773,6 @@ def decode_version_buffer(version: bytearray) -> dict:
     try:
         version_str = version.decode("ascii").strip()
         assert len(version_str) > 1
-        assert version_str.startswith("v")
-        version_str = version_str[1:]
     except (UnicodeDecodeError, AssertionError):
         return {}
 

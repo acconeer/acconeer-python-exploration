@@ -508,7 +508,7 @@ class SocketClient(BaseClient):
 
         msg = self._protocol.get_version()
         if msg:
-            startstr = "server version v"
+            startstr = "server version "
             if not msg.startswith(startstr):
                 log.warning("server version unknown")
                 return info
@@ -521,7 +521,7 @@ class SocketClient(BaseClient):
         else:
             self._protocol = JsonProtocolExplorationServer(self._link, self.squeeze)
             system_info = self._protocol.get_system_info()
-            info.update(decode_version_str(system_info["rss_version"][1:]))
+            info.update(decode_version_str(system_info["rss_version"]))
             info["sensor"] = system_info["sensor"]
             info["board_sensor_count"] = system_info["sensor_count"]
             info["hw"] = system_info["hw"]
