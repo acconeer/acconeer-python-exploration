@@ -7,6 +7,7 @@ import platform
 import webbrowser
 from typing import Optional
 
+import pyperclip
 import qtawesome as qta
 
 from PySide6 import QtCore, QtGui
@@ -54,10 +55,23 @@ class ExceptionWidget(QMessageBox):
 
         if traceback_str:
             self.setDetailedText(traceback_str)
+            copy_button = QPushButton(self)
+            copy_button.setText("Copy details")
+            self.addButton(copy_button, QMessageBox.ButtonRole.ActionRole)
+            copy_button.clicked.disconnect()
+            copy_button.clicked.connect(self._on_copy_clicked)
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
         self.setFixedWidth(500)
+
+    def _on_copy_clicked(self) -> None:
+        detailed_text = self.detailedText()
+        if detailed_text:
+            pyperclip.copy(detailed_text)
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        self.close()
 
 
 class VerticalSeparator(QWidget):
