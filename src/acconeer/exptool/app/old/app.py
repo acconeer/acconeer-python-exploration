@@ -1846,7 +1846,7 @@ class GUI(QMainWindow):
                 if self.calibration_ui_state.auto_apply:
                     self.apply_current_calibration()
 
-                self.refresh_pidgets()
+                self.refresh_calibration_pidgets()
         else:
             print("Thread data not implemented!")
             print(message_type, message, data)
