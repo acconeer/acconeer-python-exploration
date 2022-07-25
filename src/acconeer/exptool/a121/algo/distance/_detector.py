@@ -478,7 +478,7 @@ class Detector:
             profile = a121.Profile.PROFILE_1
             step_length = cls._limit_step_length(profile, config.max_step_length)
             breakpoints = cls._m_to_points([config.start_m, transition_m], step_length)
-            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality)
+            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality, step_length)
 
             has_neighbour = (False, transition_m < config.end_m)
             extended_breakpoints = cls._add_margin_to_breakpoints(
@@ -509,7 +509,9 @@ class Detector:
             end_m = min(config.end_m, min_dist_m[config.max_profile])
             step_length = cls._limit_step_length(profile_to_be_used, config.max_step_length)
             breakpoints = cls._m_to_points([far_range_start_m, end_m], step_length)
-            hwaas = cls._calculate_hwaas(profile_to_be_used, breakpoints, config.signal_quality)
+            hwaas = cls._calculate_hwaas(
+                profile_to_be_used, breakpoints, config.signal_quality, step_length
+            )
 
             has_neighbour = (len(plans) != 0, min_dist_m[config.max_profile] < end_m)
             extended_breakpoints = cls._add_margin_to_breakpoints(
@@ -536,7 +538,7 @@ class Detector:
             profile = config.max_profile
             step_length = cls._limit_step_length(config.max_profile, config.max_step_length)
             breakpoints = cls._m_to_points(breakpoints_m, step_length)
-            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality)
+            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality, step_length)
 
             has_neighbour = (len(plans) != 0 or len(far_subgroup_plans) != 0, False)
             extended_breakpoints = cls._add_margin_to_breakpoints(
@@ -574,16 +576,32 @@ class Detector:
 
     @classmethod
     def _calculate_hwaas(
-        cls, profile: a121.Profile, breakpoints: list[int], signal_quality: float
+        cls, profile: a121.Profile, breakpoints: list[int], signal_quality: float, step_length: int
     ) -> list[int]:
         rlg_per_hwaas = cls.RLG_PER_HWAAS_MAP[profile]
         hwaas = []
         for idx in range(len(breakpoints) - 1):
+            processing_gain = cls._calc_processing_gain(profile, step_length)
             subsweep_end_point_m = Processor.APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1]
-            rlg = signal_quality + 40 * np.log10(subsweep_end_point_m)
+            rlg = signal_quality + 40 * np.log10(subsweep_end_point_m) - np.log10(processing_gain)
             hwaas_in_subsweep = int(10 ** ((rlg - rlg_per_hwaas) / 10))
             hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
         return hwaas
+
+    @staticmethod
+    def _calc_processing_gain(profile: a121.Profile, step_length: int) -> float:
+        envelope_base_length_m = Processor.ENVELOPE_FWHM_M[profile] * 2  # approx envelope width
+        num_points_in_envelope = int(
+            envelope_base_length_m / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
+        )
+        mid_point = num_points_in_envelope // 2
+        pulse = np.concatenate(
+            (
+                np.linspace(0, 1, mid_point),
+                np.linspace(1, 0, num_points_in_envelope - mid_point),
+            )
+        )
+        return float(np.sum(pulse**2))
 
     @classmethod
     def _add_margin_to_breakpoints(
