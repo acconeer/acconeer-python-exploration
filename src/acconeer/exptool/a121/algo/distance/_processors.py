@@ -33,6 +33,11 @@ class ProcessorMode(AlgoParamEnum):
 
 
 class ThresholdMethod(AlgoParamEnum):
+    """Threshold methods.
+    ``CFAR`` Constant False Alarm Rate.
+    ``FIXED`` Fixed threshold.
+    ``RECORDED`` Recorded threshold."""
+
     CFAR = enum.auto()
     FIXED = enum.auto()
     RECORDED = enum.auto()

@@ -21,6 +21,11 @@ from acconeer.exptool.a121.algo.distance._processors import (
 
 
 class PeakSortingMethod(AlgoParamEnum):
+    """Peak sorting methods.
+    ``CLOSEST`` sort according to distance.
+    ``STRONGEST`` sort according to amplitude
+    ``HIGHEST_RCS`` sort according to RCS."""
+
     CLOSEST = enum.auto()
     STRONGEST = enum.auto()
     HIGHEST_RCS = enum.auto()

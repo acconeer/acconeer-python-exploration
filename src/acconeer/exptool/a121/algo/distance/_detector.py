@@ -85,23 +85,47 @@ class DetectorContext:
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.2)
+    """Start point of measurement interval in meters."""
+
     end_m: float = attrs.field(default=1.0)
+    """End point of measurement interval in meters."""
+
     max_step_length: Optional[int] = attrs.field(default=None)  # TODO: Check validity
+    """Used to limit step length. If no argument is provided, the step length is automatically
+    calculated based on the profile."""
+
     max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
+    """Specifies the longest allowed profile. If no argument is provided, the highest possible
+    profile without interference of direct leakage is used to maximize SNR."""
+
     signal_quality: float = attrs.field(default=18.0)
+    """Signal quality. High quality equals higher HWAAS and better SNR but increase power
+    consumption."""
+
     threshold_method: ThresholdMethod = attrs.field(
         default=ThresholdMethod.CFAR,
         converter=ThresholdMethod,
     )
+    """Threshold method"""
+
     peaksorting_method: PeakSortingMethod = attrs.field(
         default=PeakSortingMethod.STRONGEST,
         converter=PeakSortingMethod,
     )
+    """Sorting method of estimated distances."""
 
     num_frames_in_recorded_threshold: int = attrs.field(default=20)
+    """Number of frames used when calibrating threshold."""
+
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
+    """Value of fixed threshold."""
+
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
+    """Sensitivity of threshold. High sensitivity equals low detection threshold, low sensitivity
+    equals high detection threshold."""
+
     cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
+    """Use one sided CFAR threshold."""
 
 
 @attrs.frozen(kw_only=True)
@@ -112,6 +136,12 @@ class DetectorResult:
 
 
 class Detector:
+    """Distance detector
+    :param client: Client
+    :param sensor_id: Sensor id
+    :param detector_config: Detector configuration
+    :param context: Detector context
+    """
 
     MIN_DIST_M = 0.0
     MAX_DIST_M = 17.0
