@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 import qtawesome as qta
 
+from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QPushButton, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
@@ -25,17 +27,39 @@ class RecordingWidget(QWidget):
         self.layout().addWidget(SaveFileButton(app_model, self))
 
 
-class LoadFileButton(QPushButton):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+class FileButton(QPushButton):
+    def __init__(
+        self,
+        app_model: AppModel,
+        text: str,
+        icon: QtGui.QIcon,
+        shortcut: Optional[str],
+        parent: QWidget,
+    ) -> None:
         super().__init__(parent)
 
         self.app_model = app_model
 
-        self.setText("Load from file")
-        self.setIcon(qta.icon("fa.folder-open", color=BUTTON_ICON_COLOR))
+        self.setText(text)
+        self.setIcon(icon)
+
+        if shortcut is not None:
+            self.setShortcut(shortcut)
 
         self.clicked.connect(self._on_click)
 
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+
+
+class LoadFileButton(FileButton):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(
+            app_model,
+            "Load from file",
+            qta.icon("fa.folder-open", color=BUTTON_ICON_COLOR),
+            "ctrl+o",
+            parent,
+        )
         app_model.sig_notify.connect(self._on_app_model_update)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
@@ -55,17 +79,15 @@ class LoadFileButton(QPushButton):
         self.app_model.load_from_file(Path(filename))
 
 
-class SaveFileButton(QPushButton):
+class SaveFileButton(FileButton):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.app_model = app_model
-
-        self.setText("Save to file")
-        self.setIcon(qta.icon("mdi.content-save", color=BUTTON_ICON_COLOR))
-
-        self.clicked.connect(self._on_click)
-
+        super().__init__(
+            app_model,
+            "Save to file",
+            qta.icon("mdi.content-save", color=BUTTON_ICON_COLOR),
+            "ctrl+s",
+            parent,
+        )
         app_model.sig_notify.connect(self._on_app_model_update)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:

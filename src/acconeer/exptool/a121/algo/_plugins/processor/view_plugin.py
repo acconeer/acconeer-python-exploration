@@ -62,6 +62,9 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
         self.stop_button.clicked.connect(self._send_stop_requests)
         self.defaults_button.clicked.connect(self._send_defaults_request)
 
+        self.start_button.setShortcut("space")
+        self.stop_button.setShortcut("space")
+
         button_group = GridGroupBox("Controls", parent=self.view_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)

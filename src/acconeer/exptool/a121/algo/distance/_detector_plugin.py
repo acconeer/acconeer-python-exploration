@@ -489,12 +489,15 @@ class ViewPlugin(DetectorViewPluginBase):
             "Start measurement",
             self.view_widget,
         )
+        self.start_button.setShortcut("space")
         self.start_button.clicked.connect(self._send_start_request)
+
         self.stop_button = QPushButton(
             qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
             "Stop",
             self.view_widget,
         )
+        self.stop_button.setShortcut("space")
         self.stop_button.clicked.connect(self._send_stop_request)
 
         self.record_threshold_button = QPushButton(
