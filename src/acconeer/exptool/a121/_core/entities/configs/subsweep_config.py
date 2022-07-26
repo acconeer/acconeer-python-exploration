@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 import json
+import typing as t
 import warnings
-from typing import Any, Optional
 
 import attrs
 
 from acconeer.exptool.a121._core.utils import (
     EntityJSONEncoder,
-    convert_validate_int,
+    convert_value,
     is_divisor_of,
     is_multiple_of,
     pretty_dict_line_strs,
@@ -23,8 +23,28 @@ from .validation_error import ValidationError, ValidationResult, ValidationWarni
 
 SPARSE_IQ_PPC = 24
 
+# The `converter` argument to `attrs.field` influences the signature of `__init__`
+# - (https://www.attrs.org/en/stable/api.html#converters)
+# This is mirrored in LSPs and the docs.
+#
+# `convert_value` is a generic function which needs to be specialiced to `int`s for use here
+# Plain `Profile` / `PRF` functions as converters in runtime, but no type is in
+# the signature of `__init__`.
 
-@attrs.define(init=False)
+
+def int_converter(value: int) -> int:
+    return convert_value(value, factory=int)
+
+
+def profile_converter(profile: Profile) -> Profile:
+    return Profile(profile)
+
+
+def prf_converter(prf: PRF) -> PRF:
+    return PRF(prf)
+
+
+@attrs.mutable(kw_only=True)
 class SubsweepConfig:
     """Subsweep configuration
 
@@ -33,53 +53,49 @@ class SubsweepConfig:
     Normally used as a part of the :attr:`SensorConfig`.
     """
 
-    _start_point: int
-    _num_points: int
-    _step_length: int
-    _profile: Profile
-    _hwaas: int
-    _receiver_gain: int
-    _enable_tx: bool
-    _enable_loopback: bool
-    _phase_enhancement: bool
-    _prf: PRF
-
-    def __init__(
-        self,
-        *,
-        start_point: int = 80,
-        num_points: int = 160,
-        step_length: int = 1,
-        profile: Profile = Profile.PROFILE_3,
-        hwaas: int = 8,
-        receiver_gain: int = 16,
-        enable_tx: bool = True,
-        enable_loopback: bool = False,
-        phase_enhancement: bool = False,
-        prf: PRF = PRF.PRF_13_0_MHz,
-    ) -> None:
-        self.__attrs_init__(  # type: ignore[attr-defined]
-            start_point=start_point,
-            num_points=num_points,
-            step_length=step_length,
-            profile=profile,
-            hwaas=hwaas,
-            receiver_gain=receiver_gain,
-            enable_tx=enable_tx,
-            enable_loopback=enable_loopback,
-            phase_enhancement=phase_enhancement,
-            prf=prf,
-        )
-        self.start_point = start_point
-        self.num_points = num_points
-        self.step_length = step_length
-        self.profile = profile
-        self.hwaas = hwaas
-        self.receiver_gain = receiver_gain
-        self.enable_tx = enable_tx
-        self.enable_loopback = enable_loopback
-        self.phase_enhancement = phase_enhancement
-        self.prf = prf
+    _start_point: int = attrs.field(
+        default=80,
+        converter=int_converter,
+    )
+    _num_points: int = attrs.field(
+        default=160,
+        converter=int_converter,
+        validator=[attrs.validators.ge(1)],
+    )
+    _step_length: int = attrs.field(
+        default=1,
+        converter=int_converter,
+    )
+    _profile: Profile = attrs.field(
+        default=Profile.PROFILE_3,
+        converter=profile_converter,
+    )
+    _hwaas: int = attrs.field(
+        default=8,
+        converter=int_converter,
+        validator=[attrs.validators.ge(1), attrs.validators.le(511)],
+    )
+    _receiver_gain: int = attrs.field(
+        default=16,
+        converter=int_converter,
+        validator=[attrs.validators.ge(0), attrs.validators.le(23)],
+    )
+    _enable_tx: bool = attrs.field(
+        default=True,
+        converter=bool,
+    )
+    _enable_loopback: bool = attrs.field(
+        default=False,
+        converter=bool,
+    )
+    _phase_enhancement: bool = attrs.field(
+        default=False,
+        converter=bool,
+    )
+    _prf: PRF = attrs.field(
+        default=PRF.PRF_13_0_MHz,
+        converter=prf_converter,
+    )
 
     def _collect_validation_results(self) -> list[ValidationResult]:
         validation_results: list[ValidationResult] = []
@@ -138,7 +154,7 @@ class SubsweepConfig:
 
     @start_point.setter
     def start_point(self, value: int) -> None:
-        self._start_point = convert_validate_int(value)
+        self._start_point = value
 
     @property
     def num_points(self) -> int:
@@ -151,7 +167,7 @@ class SubsweepConfig:
 
     @num_points.setter
     def num_points(self, value: int) -> None:
-        self._num_points = convert_validate_int(value, min_value=1)
+        self._num_points = value
 
     @property
     def step_length(self) -> int:
@@ -167,14 +183,14 @@ class SubsweepConfig:
 
     @step_length.setter
     def step_length(self, value: int) -> None:
-        step_length = convert_validate_int(value)
+        self._step_length = value
 
+    @_step_length.validator
+    def _(self, _: attrs.Attribute, step_length: int) -> None:
         if not (
             is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
         ):
             raise ValueError(f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}")
-
-        self._step_length = step_length
 
     @property
     def profile(self) -> Profile:
@@ -191,7 +207,7 @@ class SubsweepConfig:
 
     @profile.setter
     def profile(self, value: Profile) -> None:
-        self._profile = Profile(value)
+        self._profile = value
 
     @property
     def hwaas(self) -> int:
@@ -209,7 +225,7 @@ class SubsweepConfig:
 
     @hwaas.setter
     def hwaas(self, value: int) -> None:
-        self._hwaas = convert_validate_int(value, min_value=1, max_value=511)
+        self._hwaas = value
 
     @property
     def receiver_gain(self) -> int:
@@ -225,7 +241,7 @@ class SubsweepConfig:
 
     @receiver_gain.setter
     def receiver_gain(self, value: int) -> None:
-        self._receiver_gain = convert_validate_int(value, min_value=0, max_value=23)
+        self._receiver_gain = value
 
     @property
     def enable_tx(self) -> bool:
@@ -239,7 +255,7 @@ class SubsweepConfig:
 
     @enable_tx.setter
     def enable_tx(self, value: bool) -> None:
-        self._enable_tx = bool(value)
+        self._enable_tx = value
 
     @property
     def enable_loopback(self) -> bool:
@@ -251,7 +267,7 @@ class SubsweepConfig:
 
     @enable_loopback.setter
     def enable_loopback(self, value: bool) -> None:
-        self._enable_loopback = bool(value)
+        self._enable_loopback = value
 
     @property
     def phase_enhancement(self) -> bool:
@@ -268,7 +284,7 @@ class SubsweepConfig:
 
     @phase_enhancement.setter
     def phase_enhancement(self, value: bool) -> None:
-        self._phase_enhancement = bool(value)
+        self._phase_enhancement = value
 
     @property
     def prf(self) -> PRF:
@@ -283,7 +299,7 @@ class SubsweepConfig:
     def prf(self, value: PRF) -> None:
         self._prf = PRF(value)
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, t.Any]:
         return {k.strip("_"): v for k, v in attrs.asdict(self).items()}
 
     @classmethod
@@ -297,7 +313,7 @@ class SubsweepConfig:
     def from_json(cls, json_str: str) -> SubsweepConfig:
         return cls.from_dict(json.loads(json_str))
 
-    def _pretty_str_lines(self, index: Optional[int] = None) -> list[str]:
+    def _pretty_str_lines(self, index: t.Optional[int] = None) -> list[str]:
         lines = []
         index_str = "" if index is None else f" @ index {index}"
         lines.append(f"{type(self).__name__}{index_str}:")

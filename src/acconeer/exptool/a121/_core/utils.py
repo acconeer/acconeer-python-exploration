@@ -114,7 +114,7 @@ def unextend(structure: list[dict[int, T]]) -> T:
         raise ValueError(f"Could not unextend the structure {structure}") from e
 
 
-def _convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
+def convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
     try:
         # May raise ValueError if e.g. "value" is a non-int string
         converted_value = factory(value)
@@ -167,7 +167,7 @@ def convert_validate_int(
     :raises: TypeError if value is a string or a float with decimals
     :raises: ValueError if value does not agree with max_value and min_value
     """
-    int_value = _convert_value(value, factory=int)
+    int_value = convert_value(value, factory=int)
     _check_bounds(int_value, lower_bound=min_value, upper_bound=max_value, inclusive=True)
     return int_value
 
@@ -190,7 +190,7 @@ def validate_float(
     :raises: TypeError if value cannot be converted to a float.
     :raises: ValueError if value does not agree with max_value and min_value
     """
-    float_value = _convert_value(value, factory=float)
+    float_value = convert_value(value, factory=float)
     _check_bounds(float_value, lower_bound=min_value, upper_bound=max_value, inclusive=inclusive)
     return float_value
 

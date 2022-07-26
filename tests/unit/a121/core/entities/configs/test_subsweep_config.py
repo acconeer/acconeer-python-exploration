@@ -158,3 +158,16 @@ def test_bad_prf_and_profile_combination(profile):
     conf = a121.SubsweepConfig(profile=profile, prf=a121.PRF.PRF_19_5_MHz)
     with pytest.raises(a121.ValidationError):
         conf.validate()
+
+
+def test_validation_is_run_on_set():
+    conf = a121.SubsweepConfig()
+    conf.hwaas = 1.0  # type: ignore[assignment]
+
+    with pytest.raises(TypeError):
+        conf.hwaas = "1"  # type: ignore[assignment]
+
+    assert conf.hwaas != "1"
+
+    with pytest.raises(ValueError):
+        conf.hwaas = -1
