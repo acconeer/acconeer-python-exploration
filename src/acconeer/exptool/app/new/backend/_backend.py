@@ -5,9 +5,10 @@ import multiprocessing as mp
 import queue
 import traceback
 import uuid
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import attrs
+from typing_extensions import Literal
 
 from ._message import GeneralMessage, Message
 from ._model import Model
