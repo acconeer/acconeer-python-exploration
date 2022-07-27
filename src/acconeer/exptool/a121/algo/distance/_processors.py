@@ -316,7 +316,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     def _calc_cfar_window_length(cls, profile: a121.Profile, step_length: int) -> int:
         window_length_m = cls.ENVELOPE_FWHM_M[profile] * cls.CFAR_WINDOW_LENGTH_ADJUSTMENT
         step_length_m = step_length * cls.APPROX_BASE_STEP_LENGTH_M
-        return int(window_length_m / step_length_m)
+        return max([1, int(window_length_m / step_length_m)])
 
     @classmethod
     def _calc_cfar_guard_half_length(cls, profile: a121.Profile, step_length: int) -> int:
