@@ -482,7 +482,11 @@ class Detector:
 
         far_subgroup_plans = []
         far_range_start_m = np.max([config.start_m, transition_m])
-        if config.max_profile is not a121.Profile.PROFILE_1 and far_range_start_m < config.end_m:
+        if (
+            config.max_profile is not a121.Profile.PROFILE_1
+            and config.start_m < min_dist_m[config.max_profile]
+            and far_range_start_m < config.end_m
+        ):
             min_dists_m = np.array(list(min_dist_m.values()))
             min_dists_profiles = np.array(list(min_dist_m.keys()))
             (viable_profile_idx,) = np.where(min_dists_m <= far_range_start_m)
@@ -508,8 +512,9 @@ class Detector:
             )
 
         if min_dist_m[config.max_profile] < config.end_m:
+            subsweep_start_m = max([config.start_m, min_dist_m[config.max_profile]])
             breakpoints_m = np.linspace(
-                min_dist_m[config.max_profile],
+                subsweep_start_m,
                 config.end_m,
                 cls.NUM_SUBSWEEPS_IN_SENSOR_CONFIG + 1 - len(far_subgroup_plans),
             ).tolist()
