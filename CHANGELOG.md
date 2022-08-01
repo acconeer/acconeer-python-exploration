@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.0.4
+
+### Added
+- Support for "simple" A121 records to the `convert_to_csv` utility.
+- Sensor id selection to the new A121 application.
+
 ## v5.0.3
 
 ### Fixed
