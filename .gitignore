@@ -28,6 +28,7 @@ docs/_build
 *.h5
 *.npy
 *.npz
+*.pickle
 
 # LaTeX
 *.aux
