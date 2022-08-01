@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
-    QScrollArea,
     QSplitter,
     QStatusBar,
     QVBoxLayout,
@@ -24,6 +23,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool.app.new.app_model import AppModel
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
+from .decorators import ScrollAreaDecorator, TopAlignDecorator
 from .flash_widget import FlashButton
 from .misc import ConnectionHint, ExceptionWidget, VerticalSeparator
 from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelection
@@ -90,7 +90,13 @@ class WorkingArea(QSplitter):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
 
-        left_area = LeftArea(app_model, self)
+        left_area = ScrollAreaDecorator(
+            TopAlignDecorator(
+                PluginSelection(app_model, self),
+            )
+        )
+        left_area.setMinimumWidth(250)
+        left_area.setMaximumWidth(350)
         self.layout().addWidget(left_area)
         self.layout().setStretchFactor(left_area, 0)
 
@@ -98,59 +104,15 @@ class WorkingArea(QSplitter):
         self.layout().addWidget(plot_plugin_area)
         self.layout().setStretchFactor(plot_plugin_area, 1)
 
-        right_area = RightArea(app_model, self)
+        right_area = ScrollAreaDecorator(
+            TopAlignDecorator(
+                PluginControlArea(app_model, self),
+            )
+        )
+        right_area.setMinimumWidth(350)
+        right_area.setMaximumWidth(400)
         self.layout().addWidget(right_area)
         self.layout().setStretchFactor(right_area, 0)
-
-
-class LeftArea(QScrollArea):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.setWidgetResizable(True)
-        self.setFrameShape(QFrame.NoFrame)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.horizontalScrollBar().setEnabled(False)
-
-        self.setMinimumWidth(250)
-        self.setMaximumWidth(350)
-
-        self.setWidget(LeftAreaContent(app_model, self))
-
-
-class LeftAreaContent(QWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.setLayout(QVBoxLayout(self))
-
-        self.layout().addWidget(PluginSelection(app_model, self))
-
-        self.layout().addStretch(1)
-
-
-class RightArea(QScrollArea):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.setWidgetResizable(True)
-        self.setFrameShape(QFrame.NoFrame)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        self.horizontalScrollBar().setEnabled(False)
-
-        self.setMinimumWidth(350)
-        self.setMaximumWidth(400)
-
-        self.setWidget(RightAreaContent(app_model, self))
-
-
-class RightAreaContent(QWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.setLayout(QVBoxLayout(self))
-
-        self.layout().addWidget(PluginControlArea(app_model, self))
 
 
 class UpdateRateLabel(QLabel):
