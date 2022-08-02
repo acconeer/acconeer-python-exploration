@@ -32,10 +32,10 @@ from acconeer.exptool.app.new.storage import get_temp_h5_path
 from acconeer.exptool.app.new.ui.plugin import (
     AttrsConfigEditor,
     GridGroupBox,
-    MetadataView,
     PerfCalcView,
     PidgetFactoryMapping,
     SessionConfigEditor,
+    SmartMetadataView,
 )
 
 from ._a121 import A121BackendPluginBase, A121PlotPluginBase, A121ViewPluginBase
@@ -414,7 +414,7 @@ class ProcessorViewPluginBase(Generic[ConfigT], A121ViewPluginBase):
 
         self.layout.addWidget(button_group)
 
-        self.metadata_view = MetadataView(self.view_widget)
+        self.metadata_view = SmartMetadataView(self.view_widget)
         self.layout.addWidget(self.metadata_view)
 
         self.perf_calc_view = PerfCalcView(self.view_widget)
