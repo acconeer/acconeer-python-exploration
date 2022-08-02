@@ -133,15 +133,17 @@ class SessionConfigEditor(QWidget):
         self._session_config_pidgets["sensor_id"].set_parameter(self._session_config.sensor_id)
 
     def update_available_sensor_list(self, server_info: Optional[a121.ServerInfo]) -> None:
-        if server_info is None:
+        if self._server_info == server_info:
             return
 
-        if self._server_info != server_info:
-            self._server_info = server_info
+        self._server_info = server_info
+        if server_info is None:
+            self._session_config_pidgets["sensor_id"].update_items([])
+        else:
             self._session_config_pidgets["sensor_id"].update_items(
                 self._make_connected_sensor_list(server_info)
             )
-            self._update_ui()
+        self._update_ui()
 
     def _make_connected_sensor_list(self, server_info: a121.ServerInfo) -> list[tuple[str, int]]:
         connected_sensors: list[tuple[str, int]] = []
