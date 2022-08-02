@@ -1,4 +1,5 @@
 import argparse
+import platform
 
 import serial
 
@@ -33,7 +34,7 @@ def find_flash_port(port=None):
         if pinfo[1]
     ]
 
-    if len(detected_ports) == 0:
+    if len(detected_ports) == 0 and platform.system().lower() == "windows":
         detected_ports = et.utils.get_usb_devices()
 
     if len(detected_ports) == 0:
