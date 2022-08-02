@@ -12,7 +12,7 @@ from acconeer.exptool.a121 import algo
 from acconeer.exptool.app.new import GeneralMessage
 
 from ._null_app_model import NullAppModel
-from ._processor import ProcessorPlotPluginBase
+from .processor import ProcessorPlotPluginBase
 
 
 def processor_main(
