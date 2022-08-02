@@ -240,6 +240,15 @@ def iterate_extended_structure(
             yield (group_id, sensor_id, elem)
 
 
+def extended_structure_entry_count(structure: list[dict[int, Any]]) -> int:
+    """Traverses the extended structure and returns a count of all its entries
+
+    :returns: number of entries
+    """
+
+    return sum(len(group) for group in structure)
+
+
 def create_extended_structure(items: Iterator[Tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:
     structure: list[dict[int, ValueT]] = []
     current_group_index: Optional[int] = None
