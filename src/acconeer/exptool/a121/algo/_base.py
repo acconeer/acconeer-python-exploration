@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import enum
 import json
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 import attrs
 
@@ -11,34 +11,38 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core.utils import EntityJSONEncoder
 
 
+InputT = TypeVar("InputT", a121.Result, List[Dict[int, a121.Result]])
+MetadataT = TypeVar("MetadataT", a121.Metadata, List[Dict[int, a121.Metadata]])
 ConfigT = TypeVar("ConfigT", bound="AlgoConfigBase")
 ParamEnumT = TypeVar("ParamEnumT", bound="AlgoParamEnum")
 ResultT = TypeVar("ResultT")
 
 
-# TODO: Here we assume that the processor handles a single config entry, but that assumption
-# cannot be made in general. Maybe we need different variants?
-
-
-class ProcessorBase(abc.ABC, Generic[ConfigT, ResultT]):
+class GenericProcessorBase(abc.ABC, Generic[InputT, ConfigT, ResultT, MetadataT]):
     def __init__(
         self,
         *,
         sensor_config: a121.SensorConfig,
-        metadata: a121.Metadata,
+        metadata: MetadataT,
         processor_config: ConfigT,
     ) -> None:
         self.sensor_config = sensor_config
-        self.metadata = metadata
+        self.metadata: MetadataT = metadata
         self.processor_config = processor_config
 
     @abc.abstractmethod
-    def process(self, result: a121.Result) -> ResultT:
+    def process(self, result: InputT) -> ResultT:
         ...
 
     @abc.abstractmethod
     def update_config(self, config: ConfigT) -> None:
         ...
+
+
+ProcessorBase = GenericProcessorBase[a121.Result, ConfigT, ResultT, a121.Metadata]
+ExtendedProcessorBase = GenericProcessorBase[
+    List[Dict[int, a121.Result]], ConfigT, ResultT, List[Dict[int, a121.Metadata]]
+]
 
 
 class AlgoConfigBase:
