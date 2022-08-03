@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import Generic, Type, TypeVar
+from typing import Generic, Type
 
 import qtawesome as qta
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo._base import ConfigT
 from acconeer.exptool.a121.algo._plugins._a121 import A121ViewPluginBase
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
@@ -29,11 +29,6 @@ from acconeer.exptool.app.new.ui.plugin import (
 
 from .backend_plugin import ProcessorBackendPluginSharedState
 
-
-ConfigT = TypeVar("ConfigT", bound=AlgoConfigBase)
-ProcessorT = TypeVar("ProcessorT", bound=ProcessorBase)
-ResultT = TypeVar("ResultT")
-StateT = TypeVar("StateT")
 
 log = logging.getLogger(__name__)
 
