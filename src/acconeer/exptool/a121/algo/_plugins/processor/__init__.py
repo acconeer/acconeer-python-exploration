@@ -4,5 +4,9 @@ from .backend_plugin import (
     ProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
 )
-from .plot_plugin import ProcessorPlotPluginBase
+from .plot_plugin import (
+    ExtendedProcessorPlotPluginBase,
+    GenericProcessorPlotPluginBase,
+    ProcessorPlotPluginBase,
+)
 from .view_plugin import ProcessorViewPluginBase
