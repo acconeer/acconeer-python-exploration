@@ -23,7 +23,7 @@ from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGener
 from acconeer.exptool.app.new.ui.plugin import PidgetFactoryMapping, pidgets
 
 
-class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, Processor]):
+class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
     @classmethod
     def get_processor_cls(cls) -> Type[Processor]:
         return Processor

@@ -33,7 +33,7 @@ from ._processor import (
 log = logging.getLogger(__name__)
 
 
-class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, Processor]):
+class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
     @classmethod
     def get_processor_cls(cls) -> Type[Processor]:
         return Processor
