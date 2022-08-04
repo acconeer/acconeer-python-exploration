@@ -1,0 +1,6 @@
+To support a new platform through this script, simply add a new PlatformInstaller-subclass and register(!) it.
+The package that defines a new installer also needs to be imported, which can be done in src/acconeer/exptool/setup/platforms/__init__.py
+
+See ./ubuntu_20_04.py for an example.
+
+The rest will be handled automatically.

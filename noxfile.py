@@ -107,6 +107,7 @@ def mypy(session):
     session.install("mypy")
     session.run("python", "-m", "mypy", "-p", "acconeer.exptool.a121")
     session.run("python", "-m", "mypy", "-p", "acconeer.exptool.app.new")
+    session.run("python", "-m", "mypy", "-p", "acconeer.exptool.setup")
     session.run("python", "-m", "mypy", "tests/unit/a121")
 
 
