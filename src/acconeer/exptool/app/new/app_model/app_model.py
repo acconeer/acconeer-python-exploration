@@ -352,10 +352,12 @@ class AppModel(QObject):
             self.serial_connection_port,
         )
         self.available_tagged_ports = tagged_ports
+        connect = False
 
         if recognized:
             self.set_connection_interface(ConnectionInterface.SERIAL)
             self.send_status_message(f"Recognized serial port: {self.serial_connection_port}")
+            connect = True
 
         if usb_devices is not None:
             self.usb_connection_device, recognized = self._select_new_usb_device(
@@ -368,8 +370,15 @@ class AppModel(QObject):
                 assert self.usb_connection_device is not None
                 self.set_connection_interface(ConnectionInterface.USB)
                 self.send_status_message(f"Recognized USB device: {self.usb_connection_device}")
+                connect = True
+
+        if connect:
+            self._autoconnect()
 
         self.broadcast()
+
+    def _autoconnect(self) -> None:
+        self.connect_client(auto=True)
 
     def _select_new_serial_port(
         self,
@@ -385,7 +394,7 @@ class AppModel(QObject):
 
             for port, tag in new_ports.items():
                 if tag:
-                    return port, False
+                    return port, (current_port is None)
 
             return port, False
 
@@ -417,7 +426,7 @@ class AppModel(QObject):
 
         return current_port, False
 
-    def connect_client(self) -> None:
+    def connect_client(self, auto: bool = False) -> None:
         if self.connection_interface == ConnectionInterface.SOCKET:
             client_info = a121.ClientInfo(ip_address=self.socket_connection_ip)
         elif self.connection_interface == ConnectionInterface.SERIAL:
@@ -429,10 +438,14 @@ class AppModel(QObject):
 
         log.debug(f"Connecting client with {client_info}")
 
+        on_error = self.emit_error
+        if auto:
+            on_error = self._failed_autoconnect
+
         self._put_backend_task(
             "connect_client",
             {"client_info": client_info},
-            on_error=self.emit_error,
+            on_error=on_error,
         )
         self.connection_state = ConnectionState.CONNECTING
         self.broadcast()
@@ -455,6 +468,11 @@ class AppModel(QObject):
                 and self.usb_connection_device is not None
             )
         )
+
+    def _failed_autoconnect(
+        self, exception: Exception, traceback_format_exc: Optional[str] = None
+    ) -> None:
+        self.send_status_message('<p style="color: #FD5200;"><b>Failed to autoconnect</b></p>')
 
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
         self.connection_interface = connection_interface
