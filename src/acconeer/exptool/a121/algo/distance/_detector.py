@@ -42,6 +42,7 @@ class DetailedStatus(enum.Enum):
     CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH = enum.auto()
     RECORDED_THRESHOLD_MISSING = enum.auto()
     RECORDED_THRESHOLD_CONFIG_MISMATCH = enum.auto()
+    INVALID_DETECTOR_CONFIG_RANGE = enum.auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -99,14 +100,15 @@ class DetectorResult:
 
 class Detector:
 
-    MAX_MEAS_DIST_M = {
+    MIN_DIST_M = 0.0
+    MAX_DIST_M = 17.0
+    MAX_MEASURABLE_DIST_M = {
         a121.PRF.PRF_19_5_MHz: 3.1,
         a121.PRF.PRF_13_0_MHz: 7.0,
         a121.PRF.PRF_8_7_MHz: 12.7,
         a121.PRF.PRF_6_5_MHz: 18.5,
     }
-
-    MIN_DIST_M = {
+    MIN_LEAKAGE_FREE_DIST_M = {
         a121.Profile.PROFILE_1: 0.10,
         a121.Profile.PROFILE_2: 0.28,
         a121.Profile.PROFILE_3: 0.56,
@@ -234,6 +236,15 @@ class Detector:
     def get_detector_status(
         cls, config: DetectorConfig, context: DetectorContext
     ) -> DetectorStatus:
+
+        if not cls._valid_detector_config_range(config=config):
+            return DetectorStatus(
+                detector_state=DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE,
+                ready_to_calibrate_close_range=False,
+                ready_to_record_threshold=False,
+                ready_to_start=False,
+            )
+
         (
             session_config,
             _,
@@ -276,6 +287,10 @@ class Detector:
             ready_to_start=(detector_state == DetailedStatus.OK),
         )
 
+    @classmethod
+    def _valid_detector_config_range(cls, config: DetectorConfig) -> bool:
+        return config.start_m < cls.MIN_DIST_M or cls.MAX_DIST_M < config.end_m
+
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
         has_dl = context.direct_leakage is not None
@@ -314,38 +329,39 @@ class Detector:
         if self.started:
             raise RuntimeError("Already started")
 
-        self._ensure_detector_is_calibrated()
-        self._ensure_matching_session_config()
+        status = self.get_detector_status(self.detector_config, self.context)
 
-        specs = self._add_context_to_processor_spec(self.processor_specs)
-        extended_metadata = self.client.setup_session(self.session_config)
-        assert isinstance(extended_metadata, list)
+        if status.ready_to_start:
 
-        aggregator_config = AggregatorConfig(
-            peak_sorting_method=self.detector_config.peaksorting_method
-        )
-        self.aggregator = Aggregator(
-            session_config=self.session_config,
-            extended_metadata=extended_metadata,
-            aggregator_config=aggregator_config,
-            specs=specs,
-        )
+            specs = self._add_context_to_processor_spec(self.processor_specs)
+            extended_metadata = self.client.setup_session(self.session_config)
+            assert isinstance(extended_metadata, list)
 
-        if recorder is not None:
-            if isinstance(recorder, a121.H5Recorder):
-                algo_group = recorder.require_algo_group("distance_detector")
-                _record_algo_data(
-                    algo_group,
-                    self.sensor_id,
-                    self.detector_config,
-                    self.context,
-                )
-            else:
-                # Should never happen as we currently only have the H5Recorder
-                warnings.warn("Will not save algo data")
+            aggregator_config = AggregatorConfig(
+                peak_sorting_method=self.detector_config.peaksorting_method
+            )
+            self.aggregator = Aggregator(
+                session_config=self.session_config,
+                extended_metadata=extended_metadata,
+                aggregator_config=aggregator_config,
+                specs=specs,
+            )
 
-        self.client.start_session(recorder)
-        self.started = True
+            if recorder is not None:
+                if isinstance(recorder, a121.H5Recorder):
+                    algo_group = recorder.require_algo_group("distance_detector")
+                    _record_algo_data(
+                        algo_group,
+                        self.sensor_id,
+                        self.detector_config,
+                        self.context,
+                    )
+                else:
+                    # Should never happen as we currently only have the H5Recorder
+                    warnings.warn("Will not save algo data")
+
+            self.client.start_session(recorder)
+            self.started = True
 
     def get_next(self) -> DetectorResult:
         if not self.started:
@@ -546,7 +562,7 @@ class Detector:
     @classmethod
     def _add_to_min_dist_m(cls, config: DetectorConfig) -> Dict[a121.Profile, float]:
         min_dist_m = {}
-        for profile, min_dist in cls.MIN_DIST_M.items():
+        for profile, min_dist in cls.MIN_LEAKAGE_FREE_DIST_M.items():
             min_dist_m[profile] = min_dist
             if config.threshold_method == ThresholdMethod.CFAR:
                 step_length = cls._limit_step_length(profile, config.max_step_length)
@@ -691,7 +707,7 @@ class Detector:
 
     @classmethod
     def _select_prf(cls, breakpoint: int, profile: a121.Profile) -> a121.PRF:
-        max_meas_dist_m = copy.copy(cls.MAX_MEAS_DIST_M)
+        max_meas_dist_m = copy.copy(cls.MAX_MEASURABLE_DIST_M)
 
         if (
             a121.PRF.PRF_19_5_MHz in max_meas_dist_m
@@ -808,41 +824,6 @@ class Detector:
             else:
                 updated_specs.append(spec)
         return updated_specs
-
-    def _ensure_detector_is_calibrated(self) -> None:
-        """
-        Checks if required calibration has been performed
-
-        Calibration is requred in the following two cases:
-        1. Close range measurement requires direct leakage, phase jitter compensation
-        and recorded threshold calibration
-        2. Recorded threshold requires recorded threshold calibration to be performed
-        """
-
-        if self._has_close_range_measurement(self.detector_config):
-            if not (
-                self._close_range_calibrated(self.context)
-                and self._recorded_threshold_calibrated(self.context)
-            ):
-                raise ValueError("Detector not calibrated.")
-
-        if self._has_recorded_threshold_mode(
-            self.detector_config
-        ) and not self._recorded_threshold_calibrated(self.context):
-            raise ValueError("Detector not calibrated.")
-
-    def _ensure_matching_session_config(self) -> None:
-        """
-        Check if session config matches session config used during calibration
-        """
-
-        if self._has_close_range_measurement(self.detector_config):
-            if self.context.close_range_session_config_used != self.session_config:
-                raise ValueError("Session config does not match config used during calibration")
-
-        if self._has_recorded_threshold_mode(self.detector_config):
-            if self.context.recorded_threshold_session_config_used != self.session_config:
-                raise ValueError("Session config does not match config used during calibration")
 
 
 def _record_algo_data(

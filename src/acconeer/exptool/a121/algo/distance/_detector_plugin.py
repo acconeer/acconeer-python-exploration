@@ -460,6 +460,14 @@ class ViewPlugin(DetectorViewPluginBase):
             "Configuration does not match configuration"
             + " used during recorded threshold calibration. Please rerun calibration."
         ),
+        DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE: (
+            "Invalid detector config. Valid measurement"
+            + " range is "
+            + str(Detector.MIN_DIST_M)
+            + "-"
+            + str(Detector.MAX_DIST_M)
+            + "m."
+        ),
     }
 
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
