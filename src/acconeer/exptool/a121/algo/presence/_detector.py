@@ -40,6 +40,14 @@ class DetectorResult:
 class Detector:
     APPROX_BASE_STEP_LENGTH_M = 2.5e-3
 
+    MIN_DIST_M = {
+        a121.Profile.PROFILE_1: None,
+        a121.Profile.PROFILE_2: 0.28,
+        a121.Profile.PROFILE_3: 0.56,
+        a121.Profile.PROFILE_4: 0.76,
+        a121.Profile.PROFILE_5: 1.28,
+    }
+
     def __init__(
         self,
         *,
@@ -94,6 +102,10 @@ class Detector:
     def _get_sensor_config(cls, detector_config: DetectorConfig) -> a121.SensorConfig:
         step_length = 24
         start_point = int(np.floor(detector_config.start_m / cls.APPROX_BASE_STEP_LENGTH_M))
+        viable_profiles = [
+            k for k, v in cls.MIN_DIST_M.items() if v is None or v <= detector_config.start_m
+        ]
+        profile = viable_profiles[-1]
         num_point = int(
             np.ceil(
                 (detector_config.end_m - detector_config.start_m)
@@ -101,6 +113,7 @@ class Detector:
             )
         )
         return a121.SensorConfig(
+            profile=profile,
             start_point=start_point,
             num_points=num_point,
             step_length=step_length,
