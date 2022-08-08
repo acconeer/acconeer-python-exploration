@@ -30,6 +30,7 @@ from ._core import (
     ValidationError,
     ValidationResult,
     ValidationWarning,
+    complex_array_to_int16_complex,
     iterate_extended_structure,
     load_record,
     open_record,

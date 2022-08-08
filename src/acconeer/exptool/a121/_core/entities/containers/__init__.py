@@ -7,4 +7,8 @@ from .record import PersistentRecord, Record
 from .result import Result, ResultContext
 from .server_info import SensorInfo, ServerInfo
 from .stacked_results import StackedResults
-from .utils import get_subsweeps_from_frame, int16_complex_array_to_complex
+from .utils import (
+    complex_array_to_int16_complex,
+    get_subsweeps_from_frame,
+    int16_complex_array_to_complex,
+)

@@ -120,6 +120,12 @@ Open/load/save functions
 
 .. autofunction:: acconeer.exptool.a121.save_record_to_h5
 
+Utility functions
+-----------------
+.. autofunction:: acconeer.exptool.a121.complex_array_to_int16_complex
+
+.. autofunction:: acconeer.exptool.a121.iterate_extended_structure
+
 Algo
 ----
 

@@ -8,6 +8,8 @@ from typing import TypeVar
 import numpy as np
 import numpy.typing as npt
 
+from acconeer.exptool.a121._core.entities.dtypes import INT_16_COMPLEX
+
 from .metadata import Metadata
 
 
@@ -32,3 +34,14 @@ def int16_complex_array_to_complex(array: npt.NDArray) -> npt.NDArray[np.complex
     real = array["real"].astype("float")
     imaginary = array["imag"].astype("float")
     return real + 1.0j * imaginary  # type: ignore[no-any-return]
+
+
+def complex_array_to_int16_complex(array: npt.NDArray[np.complex_]) -> npt.NDArray:
+    """Converts an array with plain complex dtype (non-structured)
+    into an array with dtype = INT_16_COMPLEX
+    (structured with parts "real" and "imag") using `numpy.round`.
+    """
+    struct_array = np.empty([array.size], dtype=INT_16_COMPLEX)
+    struct_array["real"] = np.round(array.real)
+    struct_array["imag"] = np.round(array.imag)
+    return struct_array
