@@ -588,6 +588,12 @@ class ViewPlugin(DetectorViewPluginBase):
                 suffix=" m",
                 decimals=3,
             ),
+            "step_length": pidgets.OptionalIntParameterWidgetFactory(
+                name_label_text="Step length",
+                checkbox_label_text="Override",
+                limits=(1, None),
+                init_set_value=24,
+            ),
             "detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
                 name_label_text="Detection threshold",
                 decimals=2,

@@ -6,21 +6,36 @@ from typing import Any, Optional, Tuple
 import attrs
 import h5py
 import numpy as np
+from attr import Attribute
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121.algo import AlgoConfigBase
 
 from ._processors import Processor, ProcessorConfig, ProcessorExtraResult
+
+
+SPARSE_IQ_PPC = 24
 
 
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=1.0)
     end_m: float = attrs.field(default=2.0)
+    step_length: Optional[int] = attrs.field(default=None)
     detection_threshold: float = attrs.field(default=1.5)
     frame_rate: float = attrs.field(default=10.0)
     sweeps_per_frame: int = attrs.field(default=16)
     hwaas: int = attrs.field(default=32)
+
+    @step_length.validator
+    def _validate_step_length(self, attrs: Attribute, step_length: int) -> None:
+        if step_length is not None:
+            if not (
+                is_divisor_of(SPARSE_IQ_PPC, step_length)
+                or is_multiple_of(SPARSE_IQ_PPC, step_length)
+            ):
+                raise ValueError(f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}")
 
 
 @attrs.frozen(kw_only=True)
@@ -38,8 +53,6 @@ class DetectorResult:
 
 
 class Detector:
-    APPROX_BASE_STEP_LENGTH_M = 2.5e-3
-
     MIN_DIST_M = {
         a121.Profile.PROFILE_1: None,
         a121.Profile.PROFILE_2: 0.28,
@@ -100,16 +113,22 @@ class Detector:
 
     @classmethod
     def _get_sensor_config(cls, detector_config: DetectorConfig) -> a121.SensorConfig:
-        step_length = 24
-        start_point = int(np.floor(detector_config.start_m / cls.APPROX_BASE_STEP_LENGTH_M))
+        start_point = int(np.floor(detector_config.start_m / Processor.APPROX_BASE_STEP_LENGTH_M))
         viable_profiles = [
             k for k, v in cls.MIN_DIST_M.items() if v is None or v <= detector_config.start_m
         ]
         profile = viable_profiles[-1]
+
+        if detector_config.step_length is not None:
+            step_length = detector_config.step_length
+        else:
+            fwhm_p = Processor.ENVELOPE_FWHM_M[profile] / Processor.APPROX_BASE_STEP_LENGTH_M
+            step_length = int((fwhm_p // SPARSE_IQ_PPC) * SPARSE_IQ_PPC)
+
         num_point = int(
             np.ceil(
                 (detector_config.end_m - detector_config.start_m)
-                / (step_length * cls.APPROX_BASE_STEP_LENGTH_M)
+                / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
             )
         )
         return a121.SensorConfig(
