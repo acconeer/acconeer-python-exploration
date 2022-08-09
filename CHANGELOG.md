@@ -1,5 +1,15 @@
 # Changelog
 
+## v5.1.0
+
+### Changed
+- A121 distance detector: Account for processing gain when calculating
+  HWAAS.
+
+### Fixed
+- Fix sensor selection bug on disconnect.
+- Only detect USB devices on Windows.
+
 ## v5.0.4
 
 ### Added
