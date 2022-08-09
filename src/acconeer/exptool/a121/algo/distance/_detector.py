@@ -234,7 +234,6 @@ class Detector:
     def get_detector_status(
         cls, config: DetectorConfig, context: DetectorContext
     ) -> DetectorStatus:
-
         if not cls._valid_detector_config_range(config=config):
             return DetectorStatus(
                 detector_state=DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE,
@@ -287,7 +286,7 @@ class Detector:
 
     @classmethod
     def _valid_detector_config_range(cls, config: DetectorConfig) -> bool:
-        return config.start_m < cls.MIN_DIST_M or cls.MAX_DIST_M < config.end_m
+        return cls.MIN_DIST_M < config.start_m and config.end_m < cls.MAX_DIST_M
 
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
