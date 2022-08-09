@@ -98,7 +98,7 @@ class DetectorConfig(AlgoConfigBase):
     """Specifies the longest allowed profile. If no argument is provided, the highest possible
     profile without interference of direct leakage is used to maximize SNR."""
 
-    signal_quality: float = attrs.field(default=18.0)
+    signal_quality: float = attrs.field(default=15.0)
     """Signal quality. High quality equals higher HWAAS and better SNR but increase power
     consumption."""
 
@@ -164,7 +164,8 @@ class Detector:
     NUM_SUBSWEEPS_IN_SENSOR_CONFIG = 4
 
     MAX_HWAAS = 511
-    MIN_HWAAS = 4
+    MIN_HWAAS = 1
+    HWAAS_MIN_DISTANCE = 1.0
     RLG_PER_HWAAS_MAP = {
         a121.Profile.PROFILE_1: 11.3,
         a121.Profile.PROFILE_2: 13.7,
@@ -709,7 +710,10 @@ class Detector:
         hwaas = []
         for idx in range(len(breakpoints) - 1):
             processing_gain = cls._calc_processing_gain(profile, step_length)
-            subsweep_end_point_m = Processor.APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1]
+            subsweep_end_point_m = max(
+                Processor.APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
+                cls.HWAAS_MIN_DISTANCE,
+            )
             rlg = signal_quality + 40 * np.log10(subsweep_end_point_m) - np.log10(processing_gain)
             hwaas_in_subsweep = int(10 ** ((rlg - rlg_per_hwaas) / 10))
             hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
