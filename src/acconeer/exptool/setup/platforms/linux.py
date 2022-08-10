@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import os
 
-from acconeer.exptool.setup.base import PlatformInstall, RequireFileContentStep, ShellCommandStep
+from acconeer.exptool.setup.base import (
+    PlatformInstall,
+    RequireFileContentStep,
+    ShellCommandStep,
+    utils,
+)
 
 
 @PlatformInstall.register
@@ -13,10 +18,16 @@ class Linux(PlatformInstall):
     )
 
     def __init__(self) -> None:
-        super().__init__()
-        self.add_steps(
-            ShellCommandStep(f"sudo usermod -a -G dialout {os.environ.get('USER')}".split()),
-            RequireFileContentStep(self.UDEV_RULE_FILE, self.UDEV_RULE, sudo=True),
+        super().__init__(
+            utils.WithDescription(
+                "> Setup up permissions needed for UART communication "
+                + "by adding the current user to the 'dialout' group.",
+                ShellCommandStep(f"sudo usermod -a -G dialout {os.environ.get('USER')}".split()),
+            ),
+            utils.WithDescription(
+                "> Create an udev rule for SPI communication with XM112.",
+                RequireFileContentStep(self.UDEV_RULE_FILE, self.UDEV_RULE, sudo=True),
+            ),
         )
 
     @classmethod

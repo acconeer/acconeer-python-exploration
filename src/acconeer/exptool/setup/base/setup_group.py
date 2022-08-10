@@ -6,8 +6,8 @@ from .setup_step import SetupStep
 class SetupGroup(SetupStep):
     """Composite SetupStep"""
 
-    def __init__(self) -> None:
-        self.__steps: list[SetupStep] = []
+    def __init__(self, *steps: SetupStep) -> None:
+        self.__steps: list[SetupStep] = list(steps)
 
     def add_steps(self, *steps: SetupStep) -> None:
         self.__steps.extend(steps)
