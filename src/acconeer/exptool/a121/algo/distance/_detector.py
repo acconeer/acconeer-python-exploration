@@ -34,7 +34,7 @@ from ._processors import (
     ProcessorMode,
     ProcessorResult,
     ThresholdMethod,
-    calculate_abs_noise_std,
+    calculate_bg_noise_std,
     calculate_offset,
 )
 
@@ -281,8 +281,12 @@ class Detector:
         session_config = copy.deepcopy(self.session_config)
 
         for group in session_config.groups:
+            group[self.sensor_id].sweeps_per_frame = 1
             for subsweep in group[self.sensor_id].subsweeps:
                 subsweep.enable_tx = False
+                subsweep.step_length = 1
+                subsweep.start_point = 0
+                subsweep.num_points = 500
 
         extended_metadata = self.client.setup_session(session_config)
         assert isinstance(extended_metadata, list)
@@ -292,15 +296,19 @@ class Detector:
         assert isinstance(extended_result, list)
         self.client.stop_session()
 
-        abs_noise_std = []
+        bg_noise_std = []
         for spec in self.processor_specs:
-            abs_noise_std_in_spec = []
+            bg_noise_std_in_subsweep = []
             result = extended_result[spec.group_index][spec.sensor_id]
-            for subsweep_index in spec.subsweep_indexes:
-                subframe = result.subframes[subsweep_index]
-                abs_noise_std_in_spec.append(calculate_abs_noise_std(subframe))
-            abs_noise_std.append(np.array(abs_noise_std_in_spec))
-        self.context.abs_noise_std = abs_noise_std
+            sensor_config = session_config.groups[spec.group_index][spec.sensor_id]
+            subsweep_configs = sensor_config.subsweeps
+            for idx in spec.subsweep_indexes:
+                if not subsweep_configs[idx].enable_loopback:
+                    subframe = result.subframes[idx]
+                    subsweep_std = calculate_bg_noise_std(subframe, subsweep_configs[idx])
+                    bg_noise_std_in_subsweep.append(subsweep_std)
+            bg_noise_std.append(np.array(bg_noise_std_in_subsweep))
+        self.context.abs_noise_std = bg_noise_std
 
     def calibrate_offset(self) -> None:
         self._validate_ready_for_calibration()

@@ -555,8 +555,20 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         )
 
 
-def calculate_abs_noise_std(subframe: npt.NDArray[np.complex_]) -> float:
-    return float(np.std(np.abs(subframe)))
+def calculate_bg_noise_std(
+    subframe: npt.NDArray[np.complex_], subsweep_config: a121.SubsweepConfig
+) -> float:
+    profile = subsweep_config.profile
+    step_length = subsweep_config.step_length
+    (B, A) = Processor.get_distance_filter_coeffs(profile, step_length)
+    filt_margin = Processor.distance_filter_edge_margin(profile, step_length)
+
+    sweep = subframe.squeeze(axis=0)
+    filtered_sweep = filtfilt(B, A, sweep)
+    abs_sweep = np.abs(filtered_sweep)
+    abs_sweep = abs_sweep[filt_margin:-filt_margin]
+
+    return float(np.std(np.abs(abs_sweep)))
 
 
 def calculate_offset(result: a121.Result, config: a121.SensorConfig) -> float:
