@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import enum
 from typing import Any, List, Optional, Tuple
 
@@ -65,8 +66,9 @@ class ProcessorConfig(AlgoConfigBase):
 class ProcessorContext:
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_ref: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    abs_noise_std: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(default=None)
+    bg_noise_std: Optional[List[float]] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -84,7 +86,8 @@ class ProcessorExtraResult:
 class ProcessorResult:
     estimated_distances: Optional[list[float]] = attrs.field(default=None)
     estimated_amplitudes: Optional[list[float]] = attrs.field(default=None)
-    recorded_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    recorded_threshold_noise_std: Optional[list[np.float_]] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
@@ -115,6 +118,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     CFAR_GUARD_LENGTH_ADJUSTMENT = 4
     CFAR_WINDOW_LENGTH_ADJUSTMENT = 0.25
+
+    # Standard deviation of angle in direct leakage over multiple sensor restarts.
+    PHASE_JITTER_RESTART_STD = 0.05
 
     CLOSE_RANGE_LOOPBACK_IDX = 0
     CLOSE_RANGE_DIST_IDX = 1
@@ -174,7 +180,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.start_point_cropped = self.start_point + self.filt_margin * self.step_length
         self.num_points_cropped = self.num_points - 2 * self.filt_margin
 
-        self.cropped_subweeps_breakpoints = self._get_cropped_subsweep_breakpoints(
+        self.subsweep_bpts = self._get_subsweep_breakpoints(
             range_subsweep_configs, self.filt_margin
         )
 
@@ -230,25 +236,25 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return sum(c.num_points for c in subsweep_configs)
 
     @classmethod
-    def _get_cropped_subsweep_breakpoints(
+    def _get_subsweep_breakpoints(
         cls, subsweep_configs: list[a121.SubsweepConfig], filt_margin: int
     ) -> list[int]:
-        """Return the breakpoints between subsweeps of the cropped sweep.
+        """Calculate the subsweep breakpoints of the full sweep(including filter margins).
 
         The breakpoints are calculated as the cumulative sum of the number of points in each
-        subsweep. Then, the cropped breakpoints are formed by adding filt_margin to the front
+        subsweep. Then, the breakpoints are formed by adding filt_margin to the front
         of the list and subtracted from the last element in the list.
         """
 
         num_points_in_subsweeps = [
             subsweep_config.num_points for subsweep_config in subsweep_configs
         ]
-        breakpoints_cropped = [
+        bpts = [
             sum(num_points_in_subsweeps[: idx + 1]) for idx in range(len(num_points_in_subsweeps))
         ]
-        breakpoints_cropped.insert(0, filt_margin)
-        breakpoints_cropped[-1] -= filt_margin
-        return breakpoints_cropped
+        bpts.insert(0, filt_margin)
+        bpts[-1] -= filt_margin
+        return bpts
 
     @classmethod
     def _validate_range_configs(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
@@ -293,6 +299,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         frame = np.concatenate(range_subframes, axis=1)
         if self.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
             lb_angle = np.angle(result.subframes[self.CLOSE_RANGE_LOOPBACK_IDX]).astype(float)
+            if (
+                self.processor_config.processor_mode
+                == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
+            ):
+                lb_angle += self.PHASE_JITTER_RESTART_STD / (self.threshold_sensitivity + 1e-10)
+
             if self.processor_mode != ProcessorMode.LEAKAGE_CALIBRATION:
                 frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
 
@@ -330,24 +342,22 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def _init_process_distance_estimation(self) -> None:
         if self.threshold_method == ThresholdMethod.RECORDED:
-            if self.context.recorded_threshold is None:
-                raise ValueError("Missing recorded threshold in context")
-            else:
-                self.threshold = self.context.recorded_threshold
+            if (
+                self.context.recorded_threshold_mean_sweep is None
+                or self.context.recorded_threshold_noise_std is None
+            ):
+                raise ValueError("Missing recorded threshold inputs in context")
         elif self.threshold_method == ThresholdMethod.FIXED:
             self.threshold = np.full(
                 self.num_points_cropped, self.processor_config.fixed_threshold_value
             )
         elif self.threshold_method == ThresholdMethod.CFAR:
             self.cfar_abs_noise = np.zeros(shape=self.num_points_cropped)
-            if self.context.abs_noise_std is not None:
-                for idx, abs_noise_std in enumerate(self.context.abs_noise_std):
+            if self.context.bg_noise_std is not None:
+                for idx, tx_off_noise_std in enumerate(self.context.bg_noise_std):
                     self.cfar_abs_noise[
-                        self.cropped_subweeps_breakpoints[idx] : self.cropped_subweeps_breakpoints[
-                            idx + 1
-                        ]
-                    ] = abs_noise_std
-
+                        self.subsweep_bpts[idx] : self.subsweep_bpts[idx + 1]
+                    ] = tx_off_noise_std
             self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
             self.cfar_one_sided = self.processor_config.cfar_one_sided
             window_length = self._calc_cfar_window_length(self.profile, self.step_length)
@@ -424,14 +434,36 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 * self.sc_bg_num_sweeps
                 / (self.sc_bg_num_sweeps - 1)
             )
-            threshold = mean_sweep + sc_bg_sweep_std * 1.0 / (self.threshold_sensitivity + 1e-10)
+
+            assert self.context.bg_noise_std is not None
+            recorded_threshold_noise_std = []
+            for idx, tx_off_noise_std in enumerate(self.context.bg_noise_std):
+                # Subtract filt_margin from breakpoint to transform from full to cropped sweep
+                subsweep_slice = slice(
+                    self.subsweep_bpts[idx] - self.filt_margin,
+                    self.subsweep_bpts[idx + 1] - self.filt_margin,
+                    1,
+                )
+                # Clamp negative values to zero as the variable is in square root below.
+                sigma_square_diff = np.clip(
+                    sc_bg_sweep_std[subsweep_slice] ** 2 - tx_off_noise_std**2,
+                    a_min=0,
+                    a_max=None,
+                )
+                recorded_threshold_noise_std.append(
+                    np.mean(np.sqrt(sigma_square_diff) / mean_sweep[subsweep_slice])
+                )
         else:
-            threshold = None
+            recorded_threshold_noise_std = None
 
         self.sc_bg_num_sweeps += 1
 
         extra_result = ProcessorExtraResult(abs_sweep=abs_sweep)
-        return ProcessorResult(extra_result=extra_result, recorded_threshold=threshold)
+        return ProcessorResult(
+            extra_result=extra_result,
+            recorded_threshold_mean_sweep=mean_sweep,
+            recorded_threshold_noise_std=recorded_threshold_noise_std,
+        )
 
     def update_config(self, config: ProcessorConfig) -> None:
         ...
@@ -453,9 +485,31 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         elif self.threshold_method == ThresholdMethod.FIXED:
             return self.threshold
         elif self.threshold_method == ThresholdMethod.RECORDED:
-            return self.threshold
+            return self._update_recorded_threshold(
+                self.context, self.subsweep_bpts, self.threshold_sensitivity, self.filt_margin
+            )
         else:
             raise RuntimeError
+
+    @staticmethod
+    def _update_recorded_threshold(
+        context: ProcessorContext, bpts: list[int], alpha: float, filt_margin: int
+    ) -> npt.NDArray[np.float_]:
+        assert context.recorded_threshold_mean_sweep is not None
+        assert context.recorded_threshold_noise_std is not None
+        assert context.bg_noise_std is not None
+        threshold = copy.deepcopy(context.recorded_threshold_mean_sweep)
+
+        for idx, (std_tx_off, std_recorded_threshold) in enumerate(
+            zip(context.bg_noise_std, context.recorded_threshold_noise_std)
+        ):
+            # Subtract filt_margin from breakpoint to transform from full to cropped sweep
+            subsweep_slice = slice(bpts[idx] - filt_margin, bpts[idx + 1] - filt_margin)
+            threshold[subsweep_slice] += np.sqrt(
+                (std_tx_off**2 + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2)
+                / (alpha + 1e-10)
+            )
+        return threshold
 
     @staticmethod
     def _calculate_cfar_threshold(

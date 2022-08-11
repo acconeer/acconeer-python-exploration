@@ -72,8 +72,11 @@ class DetectorContext:
     offset_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    recorded_thresholds: Optional[List[npt.NDArray[np.float_]]] = attrs.field(default=None)
-    abs_noise_std: Optional[List[npt.NDArray[np.float_]]] = attrs.field(default=None)
+    recorded_thresholds_mean_sweep: Optional[List[npt.NDArray[np.float_]]] = attrs.field(
+        default=None
+    )
+    recorded_thresholds_noise_std: Optional[List[List[np.float_]]] = attrs.field(default=None)
+    bg_noise_std: Optional[List[List[float]]] = attrs.field(default=None)
     recorded_threshold_session_config_used: Optional[a121.SessionConfig] = attrs.field(
         default=None
     )
@@ -236,7 +239,8 @@ class Detector:
         assert processor_result.phase_jitter_comp_reference is not None
         self.context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
         self.context.close_range_session_config_used = self.session_config
-        self.context.recorded_thresholds = None
+        self.context.recorded_thresholds_mean_sweep = None
+        self.context.recorded_thresholds_noise_std = None
 
     def record_threshold(self) -> None:
         self._validate_ready_for_calibration()
@@ -246,6 +250,9 @@ class Detector:
         specs_updated = self._update_processor_mode(
             self.processor_specs, ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
         )
+
+        self.calibrate_noise()
+
         specs = self._add_context_to_processor_spec(specs_updated)
 
         extended_metadata = self.client.setup_session(self.session_config)
@@ -269,14 +276,31 @@ class Detector:
 
         assert aggregator_result is not None
 
-        self.context.recorded_thresholds = []
+        self.context.recorded_thresholds_mean_sweep = []
+        self.context.recorded_thresholds_noise_std = []
         for processor_result in aggregator_result.processor_results:
-            threshold = processor_result.recorded_threshold
-            assert threshold is not None  # Since we know what mode the processor is running in
-            self.context.recorded_thresholds.append(threshold)
+            # Since we know what mode the processor is running in
+            assert processor_result.recorded_threshold_mean_sweep is not None
+            assert processor_result.recorded_threshold_noise_std is not None
+            self.context.recorded_thresholds_mean_sweep.append(
+                processor_result.recorded_threshold_mean_sweep
+            )
+            self.context.recorded_thresholds_noise_std.append(
+                processor_result.recorded_threshold_noise_std
+            )
         self.context.recorded_threshold_session_config_used = self.session_config
 
     def calibrate_noise(self) -> None:
+        """Estimates the standard deviation of the noise in each subsweep by setting enable_tx to
+        False and collecting data, used to calculate the deviation.
+
+        The calibration procedure can be done at any time as it is performed with Tx off, and is
+        not effected by objects in front of the sensor.
+
+        This function is called from the start() in the case of CFAR and Fixed threshold and from
+        record_threshold() in the case of Recorded threshold. The reason for calling from
+        record_threshold() is that it is used when calculating the threshold.
+        """
         self._validate_ready_for_calibration()
 
         session_config = copy.deepcopy(self.session_config)
@@ -287,6 +311,8 @@ class Detector:
                 subsweep.enable_tx = False
                 subsweep.step_length = 1
                 subsweep.start_point = 0
+                # Set num_points to a high number to get sufficient number of data points to
+                # estimate the standard deviation.
                 subsweep.num_points = 500
 
         extended_metadata = self.client.setup_session(session_config)
@@ -308,8 +334,8 @@ class Detector:
                     subframe = result.subframes[idx]
                     subsweep_std = calculate_bg_noise_std(subframe, subsweep_configs[idx])
                     bg_noise_std_in_subsweep.append(subsweep_std)
-            bg_noise_std.append(np.array(bg_noise_std_in_subsweep))
-        self.context.abs_noise_std = bg_noise_std
+            bg_noise_std.append(bg_noise_std_in_subsweep)
+        self.context.bg_noise_std = bg_noise_std
 
     def calibrate_offset(self) -> None:
         self._validate_ready_for_calibration()
@@ -405,7 +431,10 @@ class Detector:
 
     @staticmethod
     def _recorded_threshold_calibrated(context: DetectorContext) -> bool:
-        return context.recorded_thresholds is not None
+        return (
+            context.recorded_thresholds_mean_sweep is not None
+            and context.recorded_thresholds_noise_std is not None
+        )
 
     @classmethod
     def _has_close_range_measurement(self, config: DetectorConfig) -> bool:
@@ -529,6 +558,7 @@ class Detector:
                     processor_config=ProcessorConfig(
                         threshold_method=ThresholdMethod.RECORDED,
                         measurement_type=MeasurementType.CLOSE_RANGE,
+                        threshold_sensitivity=config.threshold_sensitivity,
                     ),
                     group_index=group_index,
                     sensor_id=sensor_id,
@@ -716,7 +746,7 @@ class Detector:
             )
             rlg = signal_quality + 40 * np.log10(subsweep_end_point_m) - np.log10(processing_gain)
             hwaas_in_subsweep = int(10 ** ((rlg - rlg_per_hwaas) / 10))
-            hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
+            hwaas.append(np.max(hwaas_in_subsweep, 0))
         return hwaas
 
     @staticmethod
@@ -920,9 +950,13 @@ class Detector:
         ERR_MESSAGE_CLOSE_RANGE_ERR = "Close range calibration not performed"
         ERR_MESSAGE_RECORDED = "Recorded threshold calibration not performed"
 
+        assert self.context.bg_noise_std is not None
+
         updated_specs: List[ProcessorSpec] = []
 
-        for idx, spec in enumerate(processor_specs):
+        for idx, (spec, bg_noise_std) in enumerate(
+            zip(processor_specs, self.context.bg_noise_std)
+        ):
 
             if (
                 spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE
@@ -933,12 +967,15 @@ class Detector:
 
                 if (
                     not self._recorded_threshold_calibrated(self.context)
-                    or self.context.recorded_thresholds is None
+                    or self.context.recorded_thresholds_mean_sweep is None
+                    or self.context.recorded_thresholds_noise_std is None
                 ):
                     raise Exception(ERR_MESSAGE_RECORDED)
 
                 context = ProcessorContext(
-                    recorded_threshold=self.context.recorded_thresholds[idx],
+                    recorded_threshold_mean_sweep=self.context.recorded_thresholds_mean_sweep[idx],
+                    recorded_threshold_noise_std=self.context.recorded_thresholds_noise_std[idx],
+                    bg_noise_std=bg_noise_std,
                     direct_leakage=self.context.direct_leakage,
                     phase_jitter_comp_ref=self.context.phase_jitter_comp_reference,
                 )
@@ -952,6 +989,7 @@ class Detector:
                     raise Exception(ERR_MESSAGE_CLOSE_RANGE_ERR)
 
                 context = ProcessorContext(
+                    bg_noise_std=bg_noise_std,
                     direct_leakage=self.context.direct_leakage,
                     phase_jitter_comp_ref=self.context.phase_jitter_comp_reference,
                 )
@@ -962,11 +1000,16 @@ class Detector:
                 and self._recorded_threshold_calibrated(self.context)
                 and self.context.recorded_threshold_session_config_used == self.session_config
             ):
-                if self.context.recorded_thresholds is None:
+                if (
+                    self.context.recorded_thresholds_mean_sweep is None
+                    or self.context.recorded_thresholds_noise_std is None
+                ):
                     raise Exception(ERR_MESSAGE_RECORDED)
 
                 context = ProcessorContext(
-                    recorded_threshold=self.context.recorded_thresholds[idx]
+                    recorded_threshold_mean_sweep=self.context.recorded_thresholds_mean_sweep[idx],
+                    recorded_threshold_noise_std=self.context.recorded_thresholds_noise_std[idx],
+                    bg_noise_std=bg_noise_std,
                 )
                 updated_specs.append(attrs.evolve(spec, processor_context=context))
             elif (
@@ -974,10 +1017,10 @@ class Detector:
                 and spec.processor_config.processor_mode
                 == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
             ):
-                updated_specs.append(attrs.evolve(spec, processor_context=ProcessorContext()))
+                context = ProcessorContext(bg_noise_std=bg_noise_std)
+                updated_specs.append(attrs.evolve(spec, processor_context=context))
             else:
-                assert self.context.abs_noise_std is not None
-                context = ProcessorContext(abs_noise_std=self.context.abs_noise_std[idx])
+                context = ProcessorContext(bg_noise_std=bg_noise_std)
                 updated_specs.append(attrs.evolve(spec, processor_context=context))
         return updated_specs
 
@@ -1003,7 +1046,11 @@ def _record_algo_data(
     context_group = algo_group.create_group("context")
 
     for k, v in attrs.asdict(context).items():
-        if k in ["recorded_thresholds", "abs_noise_std"]:
+        if k in [
+            "recorded_thresholds_mean_sweep",
+            "recorded_thresholds_noise_std",
+            "bg_noise_std",
+        ]:
             continue
 
         if v is None:
@@ -1016,22 +1063,32 @@ def _record_algo_data(
                 dtype=a121._H5PY_STR_DTYPE,
                 track_times=False,
             )
-        elif isinstance(v, np.ndarray) or isinstance(v, float):
+        elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
             context_group.create_dataset(k, data=v, track_times=False)
         else:
             raise RuntimeError(f"Unexpected {DetectorContext.__name__} field type '{type(v)}'")
 
-    if context.recorded_thresholds is not None:
-        recorded_thresholds_group = context_group.create_group("recorded_thresholds")
+    if context.recorded_thresholds_mean_sweep is not None:
+        recorded_thresholds_mean_sweep_group = context_group.create_group(
+            "recorded_thresholds_mean_sweep"
+        )
 
-        for i, v in enumerate(context.recorded_thresholds):
-            recorded_thresholds_group.create_dataset(f"index_{i}", data=v, track_times=False)
+        for i, v in enumerate(context.recorded_thresholds_mean_sweep):
+            recorded_thresholds_mean_sweep_group.create_dataset(
+                f"index_{i}", data=v, track_times=False
+            )
 
-    if context.abs_noise_std is not None:
-        abs_noise_std_group = context_group.create_group("abs_noise_std")
+    if context.recorded_thresholds_noise_std is not None:
+        recorded_thresholds_std_group = context_group.create_group("recorded_thresholds_noise_std")
 
-        for i, v in enumerate(context.abs_noise_std):
-            abs_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
+        for i, v in enumerate(context.recorded_thresholds_noise_std):
+            recorded_thresholds_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+    if context.bg_noise_std is not None:
+        bg_noise_std_group = context_group.create_group("bg_noise_std")
+
+        for i, v in enumerate(context.bg_noise_std):
+            bg_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, DetectorContext]:
@@ -1060,13 +1117,17 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, Detect
 
         context_dict[k] = func(v) if func else v
 
-    if "recorded_thresholds" in context_group:
-        recorded_thresholds = _get_group_items(context_group["recorded_thresholds"])
-        context_dict["recorded_thresholds"] = recorded_thresholds
+    if "recorded_thresholds_mean_sweep" in context_group:
+        mean_sweeps = _get_group_items(context_group["recorded_thresholds_mean_sweep"])
+        context_dict["recorded_thresholds_mean_sweep"] = mean_sweeps
 
-    if "abs_noise_std" in context_group:
-        abs_noise_std = _get_group_items(context_group["abs_noise_std"])
-        context_dict["abs_noise_std"] = abs_noise_std
+    if "recorded_thresholds_noise_std" in context_group:
+        noise_stds = _get_group_items(context_group["recorded_thresholds_noise_std"])
+        context_dict["recorded_thresholds_noise_std"] = noise_stds
+
+    if "bg_noise_std" in context_group:
+        bg_noise_std = _get_group_items(context_group["bg_noise_std"])
+        context_dict["bg_noise_std"] = bg_noise_std
 
     context = DetectorContext(**context_dict)
 
