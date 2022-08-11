@@ -3,11 +3,11 @@ from __future__ import annotations
 import abc
 from typing import Dict, List, Optional, Type
 
-from .setup_step import SetupStep
+from .setup_group import SetupGroup
 
 
-class PlatformInstall(SetupStep):
-    """Base class and registry for composite SetupSteps, PlatformInstalls"""
+class PlatformInstall(SetupGroup):
+    """Base class and registry for platform install scripts"""
 
     __registry: Dict[str, Type[PlatformInstall]] = {}
 
@@ -38,6 +38,7 @@ class PlatformInstall(SetupStep):
     @classmethod
     def register(cls, subclass: Type[PlatformInstall]) -> Type[PlatformInstall]:
         """Registers a subclass"""
-        assert issubclass(subclass, cls)
+        if not issubclass(subclass, cls):
+            raise TypeError(f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}.")
         cls.__registry[subclass.get_key()] = subclass
         return subclass

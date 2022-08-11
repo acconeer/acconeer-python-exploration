@@ -19,6 +19,8 @@ def main():
         exit(1)
 
     if not args.silent:
+        print(f"Setting up {selected_platform!r} will do the following:")
+        print()
         setupper.report()
 
         if not prompts.yn_prompt("Proceed?"):
