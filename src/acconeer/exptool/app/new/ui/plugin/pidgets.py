@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import Criticality
 
 
@@ -434,11 +435,11 @@ class ComboboxParameterWidgetFactory(ParameterWidgetFactory, Generic[T]):
     items: list[tuple[str, T]]
 
     def create(self, parent: QWidget) -> ComboboxParameterWidget[T]:
-        return ComboboxParameterWidget[T](self, parent)
+        return ComboboxParameterWidget(self, parent)
 
 
 class ComboboxParameterWidget(ParameterWidget, Generic[T]):
-    def __init__(self, factory: ComboboxParameterWidgetFactory, parent: QWidget) -> None:
+    def __init__(self, factory: ComboboxParameterWidgetFactory[T], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self._combobox = _PidgetComboBox(self._body_widget)
@@ -462,13 +463,15 @@ class ComboboxParameterWidget(ParameterWidget, Generic[T]):
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class UpdateableComboboxParameterWidgetFactory(ComboboxParameterWidgetFactory, Generic[T]):
-    def create(self, parent: QWidget) -> UpdateableComboboxParameterWidget:
+class UpdateableComboboxParameterWidgetFactory(ComboboxParameterWidgetFactory[T]):
+    def create(self, parent: QWidget) -> UpdateableComboboxParameterWidget[T]:
         return UpdateableComboboxParameterWidget(self, parent)
 
 
-class UpdateableComboboxParameterWidget(ComboboxParameterWidget, Generic[T]):
-    def __init__(self, factory: UpdateableComboboxParameterWidgetFactory, parent: QWidget) -> None:
+class UpdateableComboboxParameterWidget(ComboboxParameterWidget[T]):
+    def __init__(
+        self, factory: UpdateableComboboxParameterWidgetFactory[T], parent: QWidget
+    ) -> None:
         super().__init__(factory, parent)
 
     def update_items(self, items: list[tuple[str, T]]) -> None:
@@ -486,6 +489,41 @@ class UpdateableComboboxParameterWidget(ComboboxParameterWidget, Generic[T]):
         except ValueError:
             self.setEnabled(False)
         else:
+            self.setEnabled(True)
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class SensorIdParameterWidgetFactory(UpdateableComboboxParameterWidgetFactory[int]):
+    name_label_text: str = attrs.field(default="Sensor:")
+
+    def create(self, parent: QWidget) -> SensorIdParameterWidget:
+        return SensorIdParameterWidget(self, parent)
+
+
+class SensorIdParameterWidget(UpdateableComboboxParameterWidget[int]):
+    _server_info: Optional[a121.ServerInfo]
+
+    def __init__(self, factory: SensorIdParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+        self._server_info = None
+
+    def update_available_sensor_list(self, server_info: Optional[a121.ServerInfo]) -> None:
+        if server_info == self._server_info:
+            return
+
+        self._server_info = server_info
+
+        if server_info is None:
+            self.update_items([])
+            self.setEnabled(False)
+        else:
+            self.update_items(
+                [
+                    (str(sensor_id), sensor_id)
+                    for sensor_id, sensor_info in server_info.sensor_infos.items()
+                    if sensor_info.connected
+                ]
+            )
             self.setEnabled(True)
 
 
