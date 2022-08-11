@@ -2,6 +2,12 @@
 
 ## v5.1.0
 
+### Added
+- Platform-specific setup scripts
+- A121 distance detector: Distance offset calibration
+- A121 distance detector: Noise calibration
+- A121 presence detector: Settings for profile and step length
+
 ### Changed
 - A121 distance detector: Account for processing gain when calculating
   HWAAS.
