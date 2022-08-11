@@ -20,7 +20,7 @@ class ClientInfo:
 
     @classmethod
     def from_dict(cls, d: dict) -> ClientInfo:
-        if d["usb_device"]:
+        if d.get("usb_device") is not None:
             d = d.copy()
             d["usb_device"] = USBDevice.from_dict(d["usb_device"])
         return cls(**d)
