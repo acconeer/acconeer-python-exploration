@@ -33,11 +33,11 @@ class ProcessorConfig(AlgoConfigBase):
     ``FAR_RANGE`` corresponds to approximate 10 cm - 30 cm.
     ``CLOSE_AND_FAR_RANGE`` gives two detection outputs, one for each range."""
 
-    sensitivity_close: float = attrs.field(default=2.5)
+    sensitivity_close: float = attrs.field(default=1.9)
     """Sensitivity for close range detection. High sensitivity equals low detection threshold,
     low sensitivity equals high detection threshold."""
 
-    sensitivity_far: float = attrs.field(default=1.4)
+    sensitivity_far: float = attrs.field(default=2.0)
     """Sensitivity for far range detection. High sensitivity equals low detection threshold,
     low sensitivity equals high detection threshold."""
 
@@ -361,10 +361,10 @@ def get_sensor_config() -> a121.SensorConfig:
         double_buffering=True,
         inter_sweep_idle_state=a121.IdleState.READY,
         inter_frame_idle_state=a121.IdleState.READY,
-        num_points=4,
+        num_points=5,
         profile=Profile.PROFILE_1,
         receiver_gain=0,
-        hwaas=20,
+        hwaas=40,
         start_point=14,
         step_length=12,
     )
