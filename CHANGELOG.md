@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Platform setup script that is ran with `python -m acconeer.exptool.setup`.
+
 ## v5.1.0
 
 ### Added

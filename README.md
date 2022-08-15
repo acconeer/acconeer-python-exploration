@@ -86,7 +86,17 @@ See information about your specific module at
 
 #### Linux setup
 
-See [docs.acconeer.com](https://docs.acconeer.com/en/latest/exploration_tool/installation_and_setup.html#linux-setup).
+After installing the `acconeer-exptool` package, you can run
+
+```
+python -m acconeer.exptool.setup
+```
+> *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
+
+which interactively configures your machine and downloads needed dependencies.
+This is done in order for your machine to work at its best with Exploration tool.
+`acconeer.exptool.setup` performs the steps described in the
+[Linux setup section on docs.acconeer.com](https://docs.acconeer.com/en/latest/exploration_tool/installation_and_setup.html#linux-setup).
 
 
 ## Application

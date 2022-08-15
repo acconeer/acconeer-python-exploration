@@ -12,7 +12,7 @@ from typing import List
 class SetupStep(abc.ABC):
     @abc.abstractmethod
     def report(self) -> None:
-        """Prints a summary of what this platform setup will do.
+        """Prints a summary of what this setup step will do.
 
         This method will be called before `install()` to let the user
         abort.
@@ -21,7 +21,7 @@ class SetupStep(abc.ABC):
 
     @abc.abstractmethod
     def run(self) -> bool:
-        """Performs the setup-steps
+        """Performs the setup steps
 
         :returns: if the step ran successfully.
         """
