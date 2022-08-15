@@ -43,6 +43,7 @@ from acconeer.exptool.app.new.ui.plugin import (
     GridGroupBox,
     PidgetFactoryMapping,
     pidgets,
+    utils,
 )
 
 from ._detector import Detector, DetectorConfig, DetectorResult, _load_algo_data
@@ -108,6 +109,11 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState()
+        self.broadcast(sync=True)
+
+    @is_task
+    def update_sensor_id(self, *, sensor_id: int) -> None:
+        self.shared_state.sensor_id = sensor_id
         self.broadcast(sync=True)
 
     @property
@@ -571,6 +577,16 @@ class ViewPlugin(DetectorViewPluginBase):
         button_group.layout().addWidget(self.defaults_button, 1, 0, 1, -1)
         self.view_layout.addWidget(button_group)
 
+        sensor_selection_group = utils.VerticalGroupBox(
+            "Sensor selection", parent=self.view_widget
+        )
+        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+            parent=sensor_selection_group
+        )
+        self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
+        sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
+        self.view_layout.addWidget(sensor_selection_group)
+
         self.config_editor = AttrsConfigEditor[DetectorConfig](
             title="Detector parameters",
             factory_mapping=self._get_pidget_mapping(),
@@ -623,6 +639,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
+        self.sensor_id_pidget.update_available_sensor_list(app_model._a121_server_info)
 
         if state is None:
             self.start_button.setEnabled(False)
@@ -631,6 +648,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
+            self.sensor_id_pidget.set_parameter(None)
 
             return
 
@@ -640,6 +658,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
+        self.sensor_id_pidget.set_parameter(state.sensor_id)
 
         ready_for_session = (
             app_model.plugin_state == PluginState.LOADED_IDLE
@@ -674,6 +693,9 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _send_defaults_request(self) -> None:
         self.app_model.put_backend_plugin_task("restore_defaults")
+
+    def _on_sensor_id_update(self, sensor_id: int) -> None:
+        self.app_model.put_backend_plugin_task("update_sensor_id", {"sensor_id": sensor_id})
 
     # TODO: move to detector base (?)
     def teardown(self) -> None:
