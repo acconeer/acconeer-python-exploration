@@ -532,6 +532,21 @@ class EnvelopeServiceConfig(_MURCapable, BaseDenseServiceConfig):
         default_value=0.7,
         limits=(0.0, 1.0),
         order=500,
+        help=r"""
+            The time smoothing factor for Envelope sweeps. With the running average factor
+            larger than zero, consecutive sweeps are averaged using an exponential window
+            function. A runnning average factor of 0.0 corresponds to no time filtering of
+            sweeps and close to 1.0 results in more filtering.
+
+            Envelope sweep number :math:`s` returned by RSS, :math:`E_s(r)`, is calculated from
+            the measured sweep, :math:`e_s(r)`, according to
+
+            .. math::
+
+               E_s(r) = \text{RAF} \cdot E_{s-1}(r) + (1 - \text{RAF}) \cdot e_{s}(r),
+
+            where RAF is the running average factor.
+        """,
     )
 
     def check(self):
