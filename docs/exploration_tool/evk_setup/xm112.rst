@@ -5,6 +5,9 @@ Setting up your XM112
 
 .. include:: find_serial_port.rst
 
+.. include:: windows_com_port_drivers.rst
+- XM112: `FTDI <https://ftdichip.com/drivers/vcp-drivers/>`_
+
 Flashing
 --------
 

@@ -9,6 +9,9 @@ For detailed instructions, visit our `developer page <https://developer.acconeer
 
 **Note that the XM132 has two serial ports. Usually, the first port is the one to use.**
 
+.. include:: windows_com_port_drivers.rst
+- XM132: `Silicon Labs <https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers>`_
+
 Flashing
 --------
 

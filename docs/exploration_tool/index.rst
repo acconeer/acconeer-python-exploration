@@ -13,6 +13,7 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    :hidden:
 
    Overview <self>
+   installation_and_setup
    gui/index
    file_format_ref
    faq

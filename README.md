@@ -68,63 +68,26 @@ Tested on:
 
 #### Installing the `acconeer-exptool` package
 
-**NEW:** Install from PyPI:
+Install from PyPI:
 ```
 python -m pip install --upgrade acconeer-exptool[app]
 ```
 > *Depending on your environment, you might have to replace `python` with `python3` or `py`.*
 
-The Exploration Tool application uses PySide6.
-If you have other versions of PyQt/PySide installed, it may cause conflicts.
-If this is the case for you, we recommend using virtual environments to separate the two installations.
-
-To install on OS:s not supporting PySide6, install only the algo package:
-```
-python -m pip install --upgrade acconeer-exptool[algo]
-```
-Note: You will not be able to run the Exploration Tool Application when installing only the algo package
-
-To install the latest version on master, download or clone the repository. Run the following command in the directory:
-```
-python -m pip install --upgrade .[app]
-```
+For other options, have a look at
+[docs.acconeer.com](https://docs.acconeer.com/en/latest/exploration_tool/installation_and_setup.html).
 
 #### Windows COM port drivers
 
-If no COM port is recognized when plugging in a module, you might need to install a driver:
+If no COM port is recognized when plugging in a module, you might need to install a driver.
+See information about your specific module at
+[docs.acconeer.com](https://docs.acconeer.com/en/latest/exploration_tool/installation_and_setup.html#windows-setup)
 
-* XM112, XM122: [FTDI](https://ftdichip.com/drivers/vcp-drivers/)
-* XM132: [Silicon Labs](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)
 
-#### Linux dependencies
+#### Linux setup
 
-To run the application on Ubuntu 20.04, `libxcb-xinerama0-dev` needs to be installed:
-```
-sudo apt update
-sudo apt install -y libxcb-xinerama0-dev
-```
+See [docs.acconeer.com](https://docs.acconeer.com/en/latest/exploration_tool/installation_and_setup.html#linux-setup).
 
-#### Connecting to a module through UART on Linux
-
-If you are running Linux together with an XM112, XM122, or XM132 module through UART, you probably need permission to access the serial port. Access is obtained by adding yourself to the dialout group:
-```
-sudo usermod -a -G dialout $USER
-```
-Reboot for the changes to take effect.
-
-Note: If you have ModemManager installed and running it might try to connect to the module, which has proven to cause problems. If you are having issues, try disabling the ModemManager service.
-
-#### Connecting to an XM112 through SPI on Linux
-
-If you are using Linux together with an XM112, you probably need permission to access the SPI bridge USB device. Either run the scripts with `sudo` or create an udev rule as follows. Create and edit:
-```
-sudo nano /etc/udev/rules.d/50-ft4222.rules
-```
-with the following content:
-```
-SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="601c", MODE:="0666"
-```
-This method is confirmed to work for **Ubuntu 20.04**.
 
 ## Application
 

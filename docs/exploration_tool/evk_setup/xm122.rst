@@ -7,6 +7,9 @@ For detailed instructions, visit our `developer page <https://developer.acconeer
 
 .. include:: find_serial_port.rst
 
+.. include:: windows_com_port_drivers.rst
+- XM122: `FTDI <https://ftdichip.com/drivers/vcp-drivers/>`_
+
 Flashing
 --------
 
