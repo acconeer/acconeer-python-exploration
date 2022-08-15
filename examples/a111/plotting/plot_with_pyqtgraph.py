@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import numpy as np
 
 from PySide6 import QtGui, QtWidgets

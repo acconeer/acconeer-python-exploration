@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 """Internal tool for updating the register map YAML file
 
 Requirements: PyYAML and oyaml

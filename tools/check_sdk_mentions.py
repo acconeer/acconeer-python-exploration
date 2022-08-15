@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 """This is a script that checks whether version-strings in the docs are up to date"""
 
 from __future__ import annotations

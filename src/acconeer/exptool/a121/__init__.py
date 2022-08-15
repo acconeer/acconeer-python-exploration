@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
     _H5PY_STR_DTYPE,

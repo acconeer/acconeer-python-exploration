@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 """ Tool dfu/flash devices with bootloader firmware """
 
 import logging

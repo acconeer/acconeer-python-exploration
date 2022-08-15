@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from ._bootloader_tool import BootloaderTool
 from ._meta import (
     ACCONEER_XC120_BOARD_PROTOCOL_PID,

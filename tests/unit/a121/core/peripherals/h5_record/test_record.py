@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 """
 These test doesn't look like much, but the tested member
 (ref_lib_version, ref_server_info, etc.) have taken a

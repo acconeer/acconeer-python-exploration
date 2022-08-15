@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 # my_algorithm_module.py
 
 from enum import Enum

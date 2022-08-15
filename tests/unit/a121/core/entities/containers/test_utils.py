@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import numpy as np
 
 from acconeer.exptool.a121._core.entities.containers import Metadata, utils

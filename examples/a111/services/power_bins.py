@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import pyqtgraph as pg
 
 import acconeer.exptool as et

@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from .communication import Client, ExplorationProtocol, ServerError, get_exploration_protocol
 from .h5_record import (
     _H5PY_STR_DTYPE,

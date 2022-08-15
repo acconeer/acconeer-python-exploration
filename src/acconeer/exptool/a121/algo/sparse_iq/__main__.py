@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from acconeer.exptool.a121.algo._plugins import processor_main
 
 from . import Processor, ProcessorConfig, get_sensor_config

@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import acconeer.exptool.a111.algo.breathing._meta as breathing_meta
 import acconeer.exptool.a111.algo.button_press._meta as button_press_meta
 import acconeer.exptool.a111.algo.button_press_sparse._meta as button_press_sparse_meta

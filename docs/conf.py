@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 project = "acconeer-python-exploration"
 copyright = "2019 - 2022, Acconeer AB"
 author = "Acconeer AB"

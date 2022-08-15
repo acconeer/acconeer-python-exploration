@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from __future__ import annotations
 
 from acconeer.exptool.a121._core.entities import PersistentRecord, Record

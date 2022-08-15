@@ -32,7 +32,7 @@ def update_copyright_year(file_content, copyright_line_nbr, current_year, copyri
     """
 
     if copyright_line_nbr is None:
-        copyright_statement = [copyright_pattern[0] + "\n"] + [copyright_pattern[1] + "\n"]
+        copyright_statement = [copyright_pattern[0] + "\n"] + [copyright_pattern[1] + "\n\n"]
         file_content = copyright_statement + file_content
     else:
         copyright_line = file_content[copyright_line_nbr]

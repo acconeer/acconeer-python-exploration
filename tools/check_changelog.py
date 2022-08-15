@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 """This script checks whether CHANGELOG refers to the same version as the current git tag."""
 
 from __future__ import annotations

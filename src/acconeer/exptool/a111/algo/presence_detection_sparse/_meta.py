@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 from acconeer.exptool.a111.algo.utils import multi_sensor_pg_updater, multi_sensor_processor
 

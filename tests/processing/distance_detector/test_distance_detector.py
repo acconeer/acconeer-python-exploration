@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import tempfile
 from contextlib import nullcontext as does_not_raise
 from enum import Enum

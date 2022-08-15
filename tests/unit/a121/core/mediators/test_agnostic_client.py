@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from unittest.mock import DEFAULT, Mock, call
 
 import numpy as np

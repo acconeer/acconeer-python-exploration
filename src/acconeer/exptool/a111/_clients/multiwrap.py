@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import numpy as np
 
 from acconeer.exptool.a111._clients.base import BaseClient, ClientError

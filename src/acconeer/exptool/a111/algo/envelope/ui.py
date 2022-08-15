@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from PySide6 import QtGui
 
 import pyqtgraph as pg

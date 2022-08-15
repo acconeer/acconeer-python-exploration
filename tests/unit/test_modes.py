@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import pytest
 
 from acconeer.exptool.a111 import Mode, get_mode

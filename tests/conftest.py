@@ -1,3 +1,7 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--uart",

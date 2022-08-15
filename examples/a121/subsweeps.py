@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 import acconeer.exptool as et
 from acconeer.exptool import a121
 

@@ -1,3 +1,7 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
+
 def config_to_rss_usage(self, config):
     # This table is used to translate names used by exploration tool, such as
     # 'tx_disable' to an RSS c-api equivalent. For example, 'acc_service_tx_disable_set' yields

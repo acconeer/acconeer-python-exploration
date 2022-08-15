@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from .entities import (
     INT_16_COMPLEX,
     PRF,

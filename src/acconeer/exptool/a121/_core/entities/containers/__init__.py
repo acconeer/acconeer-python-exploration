@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from .client_info import ClientInfo
 from .metadata import Metadata
 from .record import PersistentRecord, Record

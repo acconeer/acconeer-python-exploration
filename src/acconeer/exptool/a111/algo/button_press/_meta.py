@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from acconeer.exptool.a111.algo import ModuleFamily, ModuleInfo
 
 from ._processor import ProcessingConfiguration, Processor, get_sensor_config

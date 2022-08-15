@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 from PySide6.QtWidgets import QTextEdit
 
 from acconeer.exptool.app.new.app_model import AppModel

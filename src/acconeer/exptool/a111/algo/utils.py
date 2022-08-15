@@ -1,3 +1,7 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
+
 class PassthroughProcessor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         pass

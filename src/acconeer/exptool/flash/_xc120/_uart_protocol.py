@@ -1,3 +1,6 @@
+# Copyright (c) Acconeer AB, 2022
+# All rights reserved
+
 """
 This file handles the lower layer of the UART protocol.
 """
