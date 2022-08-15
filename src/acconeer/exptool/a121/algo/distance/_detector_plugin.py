@@ -62,6 +62,7 @@ log = logging.getLogger(__name__)
 
 @attrs.mutable(kw_only=True)
 class SharedState:
+    sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
     context: DetectorContext = attrs.field(factory=DetectorContext)
     replaying: bool = attrs.field(default=False)
@@ -209,7 +210,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self._detector_instance = Detector(
             client=self._client,
-            sensor_id=1,
+            sensor_id=self.shared_state.sensor_id,
             detector_config=self.shared_state.config,
             context=self.shared_state.context,
         )
@@ -316,7 +317,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         try:
             self._detector_instance = Detector(
                 client=self._client,
-                sensor_id=1,
+                sensor_id=self.shared_state.sensor_id,
                 detector_config=self.shared_state.config,
                 context=self.shared_state.context,
             )
@@ -345,7 +346,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         try:
             self._detector_instance = Detector(
                 client=self._client,
-                sensor_id=1,
+                sensor_id=self.shared_state.sensor_id,
                 detector_config=self.shared_state.config,
                 context=self.shared_state.context,
             )
