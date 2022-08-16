@@ -66,7 +66,9 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         self.defaults_button.clicked.connect(self._send_defaults_request)
 
         self.start_button.setShortcut("space")
+        self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
         self.stop_button.setShortcut("space")
+        self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
 
         button_group = GridGroupBox("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)

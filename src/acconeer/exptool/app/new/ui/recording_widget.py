@@ -45,6 +45,7 @@ class FileButton(QPushButton):
 
         if shortcut is not None:
             self.setShortcut(shortcut)
+            self.setToolTip(f"Shortcut: {shortcut}")
 
         self.clicked.connect(self._on_click)
 
@@ -57,7 +58,7 @@ class LoadFileButton(FileButton):
             app_model,
             "Load from file",
             qta.icon("fa.folder-open", color=BUTTON_ICON_COLOR),
-            "ctrl+o",
+            "Ctrl+o",
             parent,
         )
         app_model.sig_notify.connect(self._on_app_model_update)
@@ -85,7 +86,7 @@ class SaveFileButton(FileButton):
             app_model,
             "Save to file",
             qta.icon("mdi.content-save", color=BUTTON_ICON_COLOR),
-            "ctrl+s",
+            "Ctrl+s",
             parent,
         )
         app_model.sig_notify.connect(self._on_app_model_update)

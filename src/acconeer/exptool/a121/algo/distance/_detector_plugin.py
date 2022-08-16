@@ -532,6 +532,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.sticky_widget,
         )
         self.start_button.setShortcut("space")
+        self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
         self.start_button.clicked.connect(self._send_start_request)
 
         self.stop_button = QPushButton(
@@ -540,6 +541,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.sticky_widget,
         )
         self.stop_button.setShortcut("space")
+        self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
         self.stop_button.clicked.connect(self._send_stop_request)
 
         self.record_threshold_button = QPushButton(
