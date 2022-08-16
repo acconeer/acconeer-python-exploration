@@ -9,7 +9,8 @@ from PySide6 import QtCore
 from PySide6.QtWidgets import QGridLayout, QGroupBox, QLabel, QLineEdit, QStackedLayout, QWidget
 
 from acconeer.exptool import a121
-from acconeer.exptool.app.new.ui.plugin.utils import VerticalGroupBox
+
+from .utils import VerticalGroupBox
 
 
 _WIDGET_WIDTH = 125

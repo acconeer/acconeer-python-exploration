@@ -19,7 +19,8 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
-from acconeer.exptool.app.new.ui.plugin.utils import VerticalGroupBox
+
+from .utils import VerticalGroupBox
 
 
 _WIDGET_WIDTH = 125

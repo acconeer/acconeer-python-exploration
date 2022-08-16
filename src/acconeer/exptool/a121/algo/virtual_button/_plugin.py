@@ -23,7 +23,7 @@ from acconeer.exptool.a121.algo.virtual_button import (
     get_sensor_config,
 )
 from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGeneration
-from acconeer.exptool.app.new.ui.plugin import PidgetFactoryMapping, pidgets
+from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):

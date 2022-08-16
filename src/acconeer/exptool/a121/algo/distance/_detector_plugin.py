@@ -38,7 +38,7 @@ from acconeer.exptool.app.new import (
     get_temp_h5_path,
     is_task,
 )
-from acconeer.exptool.app.new.ui.plugin import (
+from acconeer.exptool.app.new.ui.plugin_components import (
     AttrsConfigEditor,
     GridGroupBox,
     PidgetFactoryMapping,

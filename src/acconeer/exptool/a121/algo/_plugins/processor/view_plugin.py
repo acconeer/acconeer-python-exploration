@@ -21,7 +21,7 @@ from acconeer.exptool.app.new import (
     GeneralMessage,
     PluginState,
 )
-from acconeer.exptool.app.new.ui.plugin import (
+from acconeer.exptool.app.new.ui.plugin_components import (
     AttrsConfigEditor,
     GridGroupBox,
     PidgetFactoryMapping,

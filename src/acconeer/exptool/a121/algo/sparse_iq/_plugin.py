@@ -22,7 +22,7 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorViewPluginBase,
 )
 from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGeneration
-from acconeer.exptool.app.new.ui.plugin import PidgetFactoryMapping, pidgets
+from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 from ._processor import (
     AmplitudeMethod,
