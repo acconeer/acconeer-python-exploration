@@ -472,10 +472,13 @@ class UpdateableComboboxParameterWidget(ComboboxParameterWidget, Generic[T]):
         super().__init__(factory, parent)
 
     def update_items(self, items: list[tuple[str, T]]) -> None:
-        self._combobox.clear()
+        with QtCore.QSignalBlocker(
+            self
+        ):  # Does not take into account when selected item is removed
+            self._combobox.clear()
 
-        for displayed_text, user_data in items:
-            self._combobox.addItem(displayed_text, user_data)
+            for displayed_text, user_data in items:
+                self._combobox.addItem(displayed_text, user_data)
 
     def set_parameter(self, param: Any) -> None:
         try:
