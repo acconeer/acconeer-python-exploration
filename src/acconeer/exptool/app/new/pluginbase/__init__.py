@@ -2,4 +2,5 @@
 # All rights reserved
 
 from .plot_plugin_base import PlotPluginBase
+from .plugin_spec_base import PluginSpecBase
 from .view_plugin_base import ViewPluginBase

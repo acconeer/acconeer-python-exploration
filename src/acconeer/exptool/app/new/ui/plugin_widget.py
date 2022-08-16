@@ -27,14 +27,14 @@ import pyqtgraph as pg
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new._enums import PluginFamily
-from acconeer.exptool.app.new.app_model import AppModel, Plugin
-from acconeer.exptool.app.new.pluginbase import PlotPluginBase, ViewPluginBase
+from acconeer.exptool.app.new.app_model import AppModel, PluginSpec
+from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase, ViewPluginBase
 
 
 class PluginSelectionButton(QPushButton):
-    plugin: Plugin
+    plugin: PluginSpec
 
-    def __init__(self, plugin: Plugin, parent: QWidget) -> None:
+    def __init__(self, plugin: PluginSpecBase, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.plugin = plugin
@@ -90,6 +90,7 @@ class PluginSelection(QWidget):
         self.button_group.buttonClicked.connect(self._on_load_click)
 
         for plugin in app_model.plugins:
+            assert isinstance(plugin, PluginSpecBase)
             group_box = group_boxes[plugin.family]
             group_box.setHidden(False)
 
@@ -117,7 +118,7 @@ class PluginSelection(QWidget):
         self.app_model.load_plugin(None)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        plugin: Optional[Plugin] = app_model.plugin
+        plugin: Optional[PluginSpec] = app_model.plugin
 
         if plugin is None:
             self.button_group.setExclusive(False)
@@ -158,7 +159,10 @@ class PluginPlotArea(QFrame):
         self.startTimer(int(1000 / self._FPS))
 
         app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
-        self._on_app_model_load_plugin(app_model.plugin)
+        if isinstance(app_model.plugin, PluginSpecBase):
+            self._on_app_model_load_plugin(app_model.plugin)
+        elif app_model.plugin is not None:
+            raise RuntimeError(f"{type(app_model.plugin)} is not a PluginSpecBase.")
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         if self.plot_plugin is None:
@@ -166,7 +170,7 @@ class PluginPlotArea(QFrame):
 
         self.plot_plugin.draw()
 
-    def _on_app_model_load_plugin(self, plugin: Optional[Plugin]) -> None:
+    def _on_app_model_load_plugin(self, plugin: Optional[PluginSpecBase]) -> None:
         if self.plot_plugin is not None:
             # TODO: teardown
             self.plot_plugin = None
@@ -178,7 +182,7 @@ class PluginPlotArea(QFrame):
 
         if plugin is not None:
             self.child_widget = pg.GraphicsLayoutWidget(self)
-            self.plot_plugin = plugin.plot_plugin(  # type: ignore[call-arg, assignment]
+            self.plot_plugin = plugin.create_plot_plugin(
                 app_model=self.app_model,
                 plot_layout=self.child_widget.ci,
             )
@@ -223,9 +227,13 @@ class PluginControlArea(QWidget):
         self.layout().setSpacing(0)
 
         app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
-        self._on_app_model_load_plugin(app_model.plugin)
 
-    def _on_app_model_load_plugin(self, plugin: Optional[Plugin]) -> None:
+        if isinstance(app_model.plugin, PluginSpecBase):
+            self._on_app_model_load_plugin(app_model.plugin)
+        elif app_model.plugin is not None:
+            raise RuntimeError(f"{type(app_model.plugin)} is not a PluginSpecBase.")
+
+    def _on_app_model_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
         if self.view_plugin is not None:
             # TODO: teardown
             self.view_plugin = None
@@ -235,9 +243,9 @@ class PluginControlArea(QWidget):
             self.child_widget.deleteLater()
             self.child_widget = None
 
-        if plugin is not None:
+        if plugin_spec is not None:
             self.child_widget = QWidget(self)
-            self.view_plugin = plugin.view_plugin(  # type: ignore[call-arg, assignment]
+            self.view_plugin = plugin_spec.create_view_plugin(
                 app_model=self.app_model,
                 view_widget=self.child_widget,
             )

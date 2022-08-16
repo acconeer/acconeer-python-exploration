@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Type
+from typing import Callable, Type
 
 import numpy as np
+
+from PySide6.QtWidgets import QWidget
 
 import pyqtgraph as pg
 
@@ -22,7 +24,13 @@ from acconeer.exptool.a121.algo.virtual_button import (
     ProcessorResult,
     get_sensor_config,
 )
-from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGeneration
+from acconeer.exptool.app.new import (
+    AppModel,
+    Message,
+    PluginFamily,
+    PluginGeneration,
+    PluginSpecBase,
+)
 from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 
@@ -145,13 +153,25 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         return detection_history_plot
 
 
-VIRTUAL_BUTTON_PLUGIN = Plugin(
+class PluginSpec(PluginSpecBase):
+    def create_backend_plugin(
+        self, callback: Callable[[Message], None], key: str
+    ) -> BackendPlugin:
+        return BackendPlugin(callback=callback, key=key)
+
+    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
+        return ViewPlugin(app_model=app_model, view_widget=view_widget)
+
+    def create_plot_plugin(
+        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
+    ) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+
+
+VIRTUAL_BUTTON_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="virtual_button",
     title="Virtual button",
     description=None,
     family=PluginFamily.EXAMPLE_APP,
-    backend_plugin=BackendPlugin,
-    plot_plugin=PlotPlugin,
-    view_plugin=ViewPlugin,
 )

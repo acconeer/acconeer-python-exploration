@@ -30,9 +30,9 @@ from acconeer.exptool.app.new import (
     GeneralMessage,
     HandledException,
     Message,
-    Plugin,
     PluginFamily,
     PluginGeneration,
+    PluginSpecBase,
     PluginState,
     PluginStateMessage,
     get_temp_h5_path,
@@ -704,13 +704,25 @@ class ViewPlugin(DetectorViewPluginBase):
         self.view_layout.deleteLater()
 
 
-PRESENCE_DETECTOR_PLUGIN = Plugin(
+class PluginSpec(PluginSpecBase):
+    def create_backend_plugin(
+        self, callback: Callable[[Message], None], key: str
+    ) -> BackendPlugin:
+        return BackendPlugin(callback=callback, key=key)
+
+    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
+        return ViewPlugin(app_model=app_model, view_widget=view_widget)
+
+    def create_plot_plugin(
+        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
+    ) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+
+
+PRESENCE_DETECTOR_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="presence_detector",
     title="Presence detector",
     # description="",
     family=PluginFamily.DETECTOR,
-    backend_plugin=BackendPlugin,
-    plot_plugin=PlotPlugin,
-    view_plugin=ViewPlugin,
 )

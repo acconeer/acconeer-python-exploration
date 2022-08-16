@@ -12,5 +12,5 @@ from .plot_plugin import (
     GenericProcessorPlotPluginBase,
     ProcessorPlotPluginBase,
 )
-from .plugin import ProcessorPlugin
+from .plugin import ProcessorPluginSpec
 from .view_plugin import ProcessorViewPluginBase

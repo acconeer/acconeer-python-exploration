@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from .app_model import Plugin
+from .app_model import PluginSpec
 
 
-def load_default_plugins() -> list[Plugin]:
+def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a121.algo.distance._detector_plugin import DISTANCE_DETECTOR_PLUGIN
     from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
     from acconeer.exptool.a121.algo.sparse_iq._plugin import SPARSE_IQ_PLUGIN

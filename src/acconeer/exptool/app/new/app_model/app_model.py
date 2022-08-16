@@ -8,19 +8,20 @@ import queue
 import shutil
 import time
 from pathlib import Path
-from typing import Any, Callable, Optional, Tuple, Type
+from typing import Any, Callable, Optional, Tuple
 from uuid import UUID
 
-import attrs
+from typing_extensions import Protocol
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
+
+import pyqtgraph as pg
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new._enums import (
     ConnectionInterface,
     ConnectionState,
-    PluginFamily,
     PluginGeneration,
     PluginState,
 )
@@ -48,18 +49,27 @@ from .rate_calc import RateCalculator
 log = logging.getLogger(__name__)
 
 
-# TODO: dependency-invert this.
-# TODO: Make an actual abstract factory.
-@attrs.frozen(kw_only=True)
-class Plugin:
-    generation: PluginGeneration = attrs.field()
-    key: str = attrs.field()
-    title: str = attrs.field()
-    description: Optional[str] = attrs.field(default=None)
-    family: PluginFamily = attrs.field()
-    backend_plugin: Type[BackendPlugin] = attrs.field()
-    plot_plugin: Type[PlotPluginInterface] = attrs.field()
-    view_plugin: Type[ViewPluginInterface] = attrs.field()
+class PluginSpec(Protocol):
+    """Defines what AppModel needs to know about a plugin.
+
+    Implementations are free to add additional fields.
+    """
+
+    key: str
+    generation: PluginGeneration
+
+    def create_backend_plugin(
+        self, callback: Callable[[Message], None], key: str
+    ) -> BackendPlugin:
+        ...
+
+    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPluginInterface:
+        ...
+
+    def create_plot_plugin(
+        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
+    ) -> PlotPluginInterface:
+        ...
 
 
 class _BackendListeningThread(QThread):
@@ -98,8 +108,8 @@ class AppModel(QObject):
     sig_status_message = Signal(object)
     sig_update_rate = Signal(float, float)
 
-    plugins: list[Plugin]
-    plugin: Optional[Plugin]
+    plugins: list[PluginSpec]
+    plugin: Optional[PluginSpec]
 
     backend_plugin_state: Any
 
@@ -114,7 +124,7 @@ class AppModel(QObject):
     available_usb_devices: list[USBDevice]
     saveable_file: Optional[Path]
 
-    def __init__(self, backend: Backend, plugins: list[Plugin]) -> None:
+    def __init__(self, backend: Backend, plugins: list[PluginSpec]) -> None:
         super().__init__()
         self._backend = backend
         self._listener = _BackendListeningThread(self._backend, self)
@@ -479,7 +489,7 @@ class AppModel(QObject):
         self.plugin_state = state
         self.broadcast()
 
-    def load_plugin(self, plugin: Optional[Plugin]) -> None:
+    def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
         if plugin == self.plugin:
             return
 
@@ -493,7 +503,7 @@ class AppModel(QObject):
         else:
             self._put_backend_task(
                 "load_plugin",
-                {"plugin": plugin.backend_plugin, "key": plugin.key},
+                {"plugin": plugin.create_backend_plugin, "key": plugin.key},
                 on_error=self.emit_error,
             )
 
@@ -546,7 +556,7 @@ class AppModel(QObject):
         self.plugin_state = PluginState.LOADED_STARTING
         self.broadcast()
 
-    def _find_plugin(self, find_key: Optional[str]) -> Plugin:  # TODO: Also find by generation
+    def _find_plugin(self, find_key: Optional[str]) -> PluginSpec:  # TODO: Also find by generation
         if find_key is None:
             raise Exception
 

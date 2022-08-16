@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Tuple, Type
+from typing import Callable, Tuple, Type
 
 import numpy as np
 import numpy.typing as npt
 
 from PySide6.QtGui import QTransform
+from PySide6.QtWidgets import QWidget
 
 import pyqtgraph as pg
 
@@ -19,9 +20,10 @@ from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
     ProcessorPlotPluginBase,
+    ProcessorPluginSpec,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.app.new import AppModel, Plugin, PluginFamily, PluginGeneration
+from acconeer.exptool.app.new import AppModel, Message, PluginFamily, PluginGeneration
 from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 from ._processor import (
@@ -175,13 +177,25 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         return plot, im
 
 
-SPARSE_IQ_PLUGIN = Plugin(
+class PluginSpec(ProcessorPluginSpec):
+    def create_backend_plugin(
+        self, callback: Callable[[Message], None], key: str
+    ) -> BackendPlugin:
+        return BackendPlugin(callback=callback, key=key)
+
+    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
+        return ViewPlugin(app_model=app_model, view_widget=view_widget)
+
+    def create_plot_plugin(
+        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
+    ) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+
+
+SPARSE_IQ_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="sparse_iq",
     title="Sparse IQ",
     description="Basic usage of the sparse IQ service.",
     family=PluginFamily.SERVICE,
-    backend_plugin=BackendPlugin,
-    plot_plugin=PlotPlugin,
-    view_plugin=ViewPlugin,
 )
