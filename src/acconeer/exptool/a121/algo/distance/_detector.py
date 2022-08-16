@@ -152,7 +152,7 @@ class Detector:
         a121.PRF.PRF_6_5_MHz: 18.5,
     }
     MIN_LEAKAGE_FREE_DIST_M = {
-        a121.Profile.PROFILE_1: 0.10,
+        a121.Profile.PROFILE_1: 0.12,
         a121.Profile.PROFILE_2: 0.28,
         a121.Profile.PROFILE_3: 0.56,
         a121.Profile.PROFILE_4: 0.76,
