@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import abc
 import logging
 import queue
 import shutil
@@ -15,9 +14,7 @@ from uuid import UUID
 import attrs
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
-from PySide6.QtWidgets import QApplication, QWidget
-
-import pyqtgraph as pg
+from PySide6.QtWidgets import QApplication
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new._enums import (
@@ -43,6 +40,7 @@ from acconeer.exptool.app.new.backend import (
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
+from .plugin_protocols import PlotPluginInterface, ViewPluginInterface
 from .port_updater import PortUpdater
 from .rate_calc import RateCalculator
 
@@ -50,43 +48,8 @@ from .rate_calc import RateCalculator
 log = logging.getLogger(__name__)
 
 
-class AppModelAwarePlugin:
-    def __init__(self, app_model: AppModel) -> None:
-        app_model.sig_notify.connect(self.on_app_model_update)
-
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        pass
-
-
-class PlotPlugin(AppModelAwarePlugin, abc.ABC):
-    def __init__(self, app_model: AppModel, plot_layout: pg.GraphicsLayout) -> None:
-        super().__init__(app_model=app_model)
-        self.plot_layout = plot_layout
-
-        app_model.sig_message_plot_plugin.connect(self.handle_message)
-
-    @abc.abstractmethod
-    def handle_message(self, message: GeneralMessage) -> None:
-        pass
-
-    @abc.abstractmethod
-    def draw(self) -> None:
-        pass
-
-
-class ViewPlugin(AppModelAwarePlugin, abc.ABC):
-    def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
-        super().__init__(app_model=app_model)
-        self.app_model = app_model
-        self.view_widget = view_widget
-
-        app_model.sig_message_view_plugin.connect(self.handle_message)
-
-    @abc.abstractmethod
-    def handle_message(self, message: GeneralMessage) -> None:
-        pass
-
-
+# TODO: dependency-invert this.
+# TODO: Make an actual abstract factory.
 @attrs.frozen(kw_only=True)
 class Plugin:
     generation: PluginGeneration = attrs.field()
@@ -95,8 +58,8 @@ class Plugin:
     description: Optional[str] = attrs.field(default=None)
     family: PluginFamily = attrs.field()
     backend_plugin: Type[BackendPlugin] = attrs.field()
-    plot_plugin: Type[PlotPlugin] = attrs.field()
-    view_plugin: Type[ViewPlugin] = attrs.field()
+    plot_plugin: Type[PlotPluginInterface] = attrs.field()
+    view_plugin: Type[ViewPluginInterface] = attrs.field()
 
 
 class _BackendListeningThread(QThread):

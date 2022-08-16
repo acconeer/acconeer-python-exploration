@@ -13,8 +13,8 @@ from acconeer.exptool.app.new import (
     AppModel,
     BackendPlugin,
     GeneralMessage,
-    PlotPlugin,
-    ViewPlugin,
+    PlotPluginBase,
+    ViewPluginBase,
 )
 
 
@@ -28,11 +28,11 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     pass
 
 
-class A121ViewPluginBase(ViewPlugin):
+class A121ViewPluginBase(ViewPluginBase):
     pass
 
 
-class A121PlotPluginBase(PlotPlugin):
+class A121PlotPluginBase(PlotPluginBase):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
         self._is_setup = False

@@ -27,7 +27,8 @@ import pyqtgraph as pg
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new._enums import PluginFamily
-from acconeer.exptool.app.new.app_model import AppModel, PlotPlugin, Plugin, ViewPlugin
+from acconeer.exptool.app.new.app_model import AppModel, Plugin
+from acconeer.exptool.app.new.pluginbase import PlotPluginBase, ViewPluginBase
 
 
 class PluginSelectionButton(QPushButton):
@@ -144,7 +145,7 @@ class PluginPlotArea(QFrame):
         self.app_model = app_model
 
         self.child_widget: Optional[QWidget] = None
-        self.plot_plugin: Optional[PlotPlugin] = None
+        self.plot_plugin: Optional[PlotPluginBase] = None
 
         self.setObjectName("PluginPlotArea")
         self.setStyleSheet("QFrame#PluginPlotArea {background: #fff; border: 0;}")
@@ -177,7 +178,7 @@ class PluginPlotArea(QFrame):
 
         if plugin is not None:
             self.child_widget = pg.GraphicsLayoutWidget(self)
-            self.plot_plugin = plugin.plot_plugin(
+            self.plot_plugin = plugin.plot_plugin(  # type: ignore[call-arg, assignment]
                 app_model=self.app_model,
                 plot_layout=self.child_widget.ci,
             )
@@ -215,7 +216,7 @@ class PluginControlArea(QWidget):
         self.app_model = app_model
 
         self.child_widget: Optional[QWidget] = None
-        self.view_plugin: Optional[ViewPlugin] = None
+        self.view_plugin: Optional[ViewPluginBase] = None
 
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -236,7 +237,7 @@ class PluginControlArea(QWidget):
 
         if plugin is not None:
             self.child_widget = QWidget(self)
-            self.view_plugin = plugin.view_plugin(
+            self.view_plugin = plugin.view_plugin(  # type: ignore[call-arg, assignment]
                 app_model=self.app_model,
                 view_widget=self.child_widget,
             )

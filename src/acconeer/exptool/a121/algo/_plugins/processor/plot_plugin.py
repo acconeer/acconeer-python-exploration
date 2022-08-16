@@ -18,7 +18,7 @@ from acconeer.exptool.app.new import AppModel, GeneralMessage
 log = logging.getLogger(__name__)
 
 
-class GenericProcessorPlotPluginBase(Generic[ResultT, MetadataT], A121PlotPluginBase):
+class GenericProcessorPlotPluginBase(A121PlotPluginBase, Generic[ResultT, MetadataT]):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
 
