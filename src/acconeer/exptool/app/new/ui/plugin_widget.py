@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import importlib.resources
-from typing import Optional
+import logging
+from typing import Any, Optional
 
 import qtawesome as qta
 
@@ -28,7 +29,10 @@ import pyqtgraph as pg
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new._enums import PluginFamily
 from acconeer.exptool.app.new.app_model import AppModel, PluginSpec
-from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase, ViewPluginBase
+from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
+
+
+log = logging.getLogger(__name__)
 
 
 class PluginSelectionButton(QPushButton):
@@ -137,6 +141,27 @@ class PluginSelection(QWidget):
         self.setEnabled(app_model.plugin_state.is_steady)
 
 
+class PlotPlaceholder(QWidget):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+
+        self.setLayout(QHBoxLayout(self))
+
+        self.layout().addStretch(1)
+
+        icon_widget = qta.IconWidget()
+        icon_widget.setIconSize(QtCore.QSize(36, 36))
+        icon_widget.setIcon(qta.icon("ph.arrow-left-bold", color="#4d5157"))
+        self.layout().addWidget(icon_widget)
+
+        label = QLabel("Select a module to begin", self)
+        label.setStyleSheet("font-size: 20px;")
+        label.setAlignment(QtCore.Qt.AlignCenter)
+        self.layout().addWidget(label)
+
+        self.layout().addStretch(1)
+
+
 class PluginPlotArea(QFrame):
     _FPS = 60
 
@@ -145,7 +170,7 @@ class PluginPlotArea(QFrame):
 
         self.app_model = app_model
 
-        self.child_widget: Optional[QWidget] = None
+        self.child_widget = PlotPlaceholder()
         self.plot_plugin: Optional[PlotPluginBase] = None
 
         self.setObjectName("PluginPlotArea")
@@ -171,92 +196,27 @@ class PluginPlotArea(QFrame):
         self.plot_plugin.draw()
 
     def _on_app_model_load_plugin(self, plugin: Optional[PluginSpecBase]) -> None:
-        if self.plot_plugin is not None:
-            # TODO: teardown
-            self.plot_plugin = None
+        log.debug(
+            f"{self.__class__.__name__} is going to replace its plot_plugin "
+            + f"({self.plot_plugin.__class__.__name__}) in favour of {plugin}"
+        )
+        self.plot_plugin = None
+        self.child_widget.deleteLater()
 
-        if self.child_widget is not None:
-            self.layout().removeWidget(self.child_widget)
-            self.child_widget.deleteLater()
-            self.child_widget = None
-
-        if plugin is not None:
-            self.child_widget = pg.GraphicsLayoutWidget(self)
+        if plugin is None:
+            self.child_widget = PlotPlaceholder()
+        else:
+            self.child_widget = pg.GraphicsLayoutWidget()
             self.plot_plugin = plugin.create_plot_plugin(
                 app_model=self.app_model,
                 plot_layout=self.child_widget.ci,
             )
-        else:
-            self.child_widget = PlotPlaceholder(self.app_model, self)
-
-        self.layout().addWidget(self.child_widget)
-
-
-class PlotPlaceholder(QWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.setLayout(QHBoxLayout(self))
-
-        self.layout().addStretch(1)
-
-        icon_widget = qta.IconWidget()
-        icon_widget.setIconSize(QtCore.QSize(36, 36))
-        icon_widget.setIcon(qta.icon("ph.arrow-left-bold", color="#4d5157"))
-        self.layout().addWidget(icon_widget)
-
-        label = QLabel("Select a module to begin", self)
-        label.setStyleSheet("font-size: 20px;")
-        label.setAlignment(QtCore.Qt.AlignCenter)
-        self.layout().addWidget(label)
-
-        self.layout().addStretch(1)
-
-
-class PluginControlArea(QWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.app_model = app_model
-
-        self.child_widget: Optional[QWidget] = None
-        self.view_plugin: Optional[ViewPluginBase] = None
-
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
-
-        app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
-
-        if isinstance(app_model.plugin, PluginSpecBase):
-            self._on_app_model_load_plugin(app_model.plugin)
-        elif app_model.plugin is not None:
-            raise RuntimeError(f"{type(app_model.plugin)} is not a PluginSpecBase.")
-
-    def _on_app_model_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
-        if self.view_plugin is not None:
-            # TODO: teardown
-            self.view_plugin = None
-
-        if self.child_widget is not None:
-            self.layout().removeWidget(self.child_widget)
-            self.child_widget.deleteLater()
-            self.child_widget = None
-
-        if plugin_spec is not None:
-            self.child_widget = QWidget(self)
-            self.view_plugin = plugin_spec.create_view_plugin(
-                app_model=self.app_model,
-                view_widget=self.child_widget,
-            )
-        else:
-            self.child_widget = ControlPlaceholder(self.app_model, self)
 
         self.layout().addWidget(self.child_widget)
 
 
 class ControlPlaceholder(QWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setLayout(QGridLayout(self))
@@ -271,3 +231,43 @@ class ControlPlaceholder(QWidget):
         icon.setGraphicsEffect(effect)
 
         self.layout().addWidget(icon)
+
+
+class PluginControlArea(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.app_model = app_model
+        self.app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
+
+        self.child_widget: QWidget = ControlPlaceholder()
+        self.view_plugin: Optional[Any] = None
+
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(0)
+        self.layout().addWidget(self.child_widget)
+
+        if isinstance(app_model.plugin, PluginSpecBase):
+            self._on_app_model_load_plugin(app_model.plugin)
+        elif app_model.plugin is not None:
+            raise RuntimeError(f"{type(app_model.plugin)} is not a PluginSpecBase.")
+
+    def _on_app_model_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
+        log.debug(
+            f"{self.__class__.__name__} is going to replace its view_plugin"
+            + f"({self.view_plugin.__class__.__name__}) in favour of {plugin_spec}"
+        )
+        self.view_plugin = None
+        self.child_widget.deleteLater()
+
+        if plugin_spec is None:
+            self.child_widget = ControlPlaceholder()
+        else:
+            self.child_widget = QWidget()
+            self.view_plugin = plugin_spec.create_view_plugin(
+                app_model=self.app_model,
+                view_widget=self.child_widget,
+            )
+
+        self.layout().addWidget(self.child_widget)

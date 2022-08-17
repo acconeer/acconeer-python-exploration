@@ -489,34 +489,42 @@ class AppModel(QObject):
         self.plugin_state = state
         self.broadcast()
 
+    def _unload_current_plugin(self) -> None:
+        log.debug("AppModel is unloading its current plugin")
+        self.sig_load_plugin.emit(None)
+        self._update_saveable_file(None)
+        self.backend_plugin_state = None
+        if self.plugin is not None:
+            self.plugin_state = PluginState.UNLOADING
+
+        self.broadcast()
+
+        self._put_backend_task("unload_plugin", {}, on_error=self.emit_error)
+
+    def _load_plugin_cache(self, generation: PluginGeneration, key: str) -> None:
+        config_path = self._get_plugin_config_path(generation, key)
+        try:
+            data = config_path.read_bytes()
+        except Exception:
+            pass
+        else:
+            self.put_backend_plugin_task("deserialize", {"data": data})
+
     def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
+        log.debug(f"AppModel is loading the plugin {plugin}")
         if plugin == self.plugin:
             return
 
-        self._update_saveable_file(None)
-        self.backend_plugin_state = None
+        self._unload_current_plugin()
 
-        if plugin is None:
-            self._put_backend_task("unload_plugin", {}, on_error=self.emit_error)
-            if self.plugin is not None:
-                self.plugin_state = PluginState.UNLOADING
-        else:
+        if plugin is not None:
             self._put_backend_task(
                 "load_plugin",
                 {"plugin": plugin.create_backend_plugin, "key": plugin.key},
                 on_error=self.emit_error,
             )
-
-            config_path = self._get_plugin_config_path(plugin.generation, plugin.key)
-            try:
-                data = config_path.read_bytes()
-            except Exception:
-                pass
-            else:
-                self.put_backend_plugin_task("deserialize", {"data": data})
-
-            if self.plugin is not None:
-                self.plugin_state = PluginState.LOADING
+            self._load_plugin_cache(plugin.generation, plugin.key)
+            self.plugin_state = PluginState.LOADING
 
         self.sig_load_plugin.emit(plugin)
         self.plugin = plugin

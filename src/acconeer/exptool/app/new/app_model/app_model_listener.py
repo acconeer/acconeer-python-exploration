@@ -22,3 +22,7 @@ class AppModelListener:
         i.e. when `AppModel.broadcast` is invoked.
         """
         pass
+
+    def stop_listening(self) -> None:
+        """Stops listening to AppModel"""
+        self.__app_model.sig_notify.disconnect(self.on_app_model_update)

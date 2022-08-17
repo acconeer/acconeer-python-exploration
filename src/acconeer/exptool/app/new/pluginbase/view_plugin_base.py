@@ -7,15 +7,18 @@ import abc
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from acconeer.exptool.app.new.app_model import AppModel, AppModelListener, ViewPluginInterface
+from acconeer.exptool.app.new.app_model import AppModel, ViewPluginInterface
 from acconeer.exptool.app.new.backend import GeneralMessage
 from acconeer.exptool.app.new.ui import utils
 
+from .ui_plugin_base import UiPluginBase
 
-class ViewPluginBase(AppModelListener, abc.ABC, ViewPluginInterface):
+
+class ViewPluginBase(UiPluginBase, abc.ABC, ViewPluginInterface):
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model)
-        app_model.sig_message_view_plugin.connect(self.handle_message)
+        self.__app_model = app_model
+        self.__app_model.sig_message_view_plugin.connect(self.handle_message)
 
         self.__view_widget = view_widget
         self.__view_widget.setLayout(QVBoxLayout())
@@ -32,6 +35,10 @@ class ViewPluginBase(AppModelListener, abc.ABC, ViewPluginInterface):
                 )
             )
         )
+
+    def stop_listening(self) -> None:
+        super().stop_listening()
+        self.__app_model.sig_message_view_plugin.disconnect(self.handle_message)
 
     @property
     def sticky_widget(self) -> QWidget:
