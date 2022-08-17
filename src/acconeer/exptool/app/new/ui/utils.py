@@ -1,5 +1,8 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
+from __future__ import annotations
+
+from typing import Optional
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget
@@ -26,5 +29,12 @@ class TopAlignDecorator(QWidget):
         layout = QVBoxLayout(self)
         self.setLayout(layout)
 
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(decoratee)
         layout.addStretch(1)
+
+
+class HorizontalSeparator(QFrame):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setFrameShape(QFrame.HLine)

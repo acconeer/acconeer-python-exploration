@@ -544,23 +544,22 @@ class ViewPlugin(DetectorViewPluginBase):
         super().__init__(app_model=app_model, view_widget=view_widget)
         self.app_model = app_model
 
-        self.view_layout = QVBoxLayout(self.view_widget)
-        self.view_layout.setContentsMargins(0, 0, 0, 0)
-        self.view_widget.setLayout(self.view_layout)
-
-        # TODO: Fix parents
+        sticky_layout = QVBoxLayout()
+        sticky_layout.setContentsMargins(0, 0, 0, 0)
+        scrolly_layout = QVBoxLayout()
+        scrolly_layout.setContentsMargins(0, 0, 0, 0)
 
         self.start_button = QPushButton(
             qta.icon("fa5s.play-circle", color=BUTTON_ICON_COLOR),
             "Start measurement",
-            self.view_widget,
+            self.sticky_widget,
         )
         self.start_button.setShortcut("space")
         self.start_button.clicked.connect(self._send_start_request)
         self.stop_button = QPushButton(
             qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
             "Stop",
-            self.view_widget,
+            self.sticky_widget,
         )
         self.stop_button.setShortcut("space")
         self.stop_button.clicked.connect(self._send_stop_request)
@@ -568,35 +567,37 @@ class ViewPlugin(DetectorViewPluginBase):
         self.defaults_button = QPushButton(
             qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
             "Reset settings and calibrations",
-            self.view_widget,
+            self.sticky_widget,
         )
         self.defaults_button.clicked.connect(self._send_defaults_request)
 
-        button_group = GridGroupBox("Controls", parent=self.view_widget)
+        button_group = GridGroupBox("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
         button_group.layout().addWidget(self.defaults_button, 1, 0, 1, -1)
-        self.view_layout.addWidget(button_group)
+
+        sticky_layout.addWidget(button_group)
 
         sensor_selection_group = utils.VerticalGroupBox(
-            "Sensor selection", parent=self.view_widget
+            "Sensor selection", parent=self.scrolly_widget
         )
         self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
-        self.view_layout.addWidget(sensor_selection_group)
+        scrolly_layout.addWidget(sensor_selection_group)
 
         self.config_editor = AttrsConfigEditor[DetectorConfig](
             title="Detector parameters",
             factory_mapping=self._get_pidget_mapping(),
-            parent=self.view_widget,
+            parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)
-        self.view_layout.addWidget(self.config_editor)
+        scrolly_layout.addWidget(self.config_editor)
 
-        self.view_layout.addStretch(1)
+        self.sticky_widget.setLayout(sticky_layout)
+        self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
     def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
@@ -698,10 +699,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         self.app_model.put_backend_plugin_task("update_sensor_id", {"sensor_id": sensor_id})
-
-    # TODO: move to detector base (?)
-    def teardown(self) -> None:
-        self.view_layout.deleteLater()
 
 
 class PluginSpec(PluginSpecBase):

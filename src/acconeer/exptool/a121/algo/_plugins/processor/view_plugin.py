@@ -40,24 +40,26 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
         self.app_model = app_model
-        self.layout = QVBoxLayout(self.view_widget)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.view_widget.setLayout(self.layout)
+
+        sticky_layout = QVBoxLayout()
+        sticky_layout.setContentsMargins(0, 0, 0, 0)
+        scrolly_layout = QVBoxLayout()
+        scrolly_layout.setContentsMargins(0, 0, 0, 0)
 
         self.start_button = QPushButton(
             qta.icon("fa5s.play-circle", color=BUTTON_ICON_COLOR),
             "Start measurement",
-            self.view_widget,
+            self.sticky_widget,
         )
         self.stop_button = QPushButton(
             qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
             "Stop",
-            self.view_widget,
+            self.sticky_widget,
         )
         self.defaults_button = QPushButton(
             qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
             "Restore default settings",
-            self.view_widget,
+            self.sticky_widget,
         )
         self.start_button.clicked.connect(self._send_start_requests)
         self.stop_button.clicked.connect(self._send_stop_requests)
@@ -66,30 +68,32 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         self.start_button.setShortcut("space")
         self.stop_button.setShortcut("space")
 
-        button_group = GridGroupBox("Controls", parent=self.view_widget)
+        button_group = GridGroupBox("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
         button_group.layout().addWidget(self.defaults_button, 1, 0, 1, 2)
+        sticky_layout.addWidget(button_group)
 
-        self.layout.addWidget(button_group)
+        self.metadata_view = SmartMetadataView(parent=self.scrolly_widget)
+        scrolly_layout.addWidget(self.metadata_view)
 
-        self.metadata_view = SmartMetadataView(self.view_widget)
-        self.layout.addWidget(self.metadata_view)
+        self.perf_calc_view = SmartPerfCalcView(parent=self.scrolly_widget)
+        scrolly_layout.addWidget(self.perf_calc_view)
 
-        self.perf_calc_view = SmartPerfCalcView(self.view_widget)
-        self.layout.addWidget(self.perf_calc_view)
-
-        self.session_config_editor = SessionConfigEditor(self.view_widget)
-        self.session_config_editor.sig_update.connect(self._on_session_config_update)
         self.processor_config_editor = AttrsConfigEditor[ConfigT](
             title="Processor parameters",
             factory_mapping=self.get_pidget_mapping(),
-            parent=self.view_widget,
+            parent=self.scrolly_widget,
         )
         self.processor_config_editor.sig_update.connect(self._on_processor_config_update)
-        self.layout.addWidget(self.processor_config_editor)
-        self.layout.addWidget(self.session_config_editor)
-        self.layout.addStretch()
+        scrolly_layout.addWidget(self.processor_config_editor)
+
+        self.session_config_editor = SessionConfigEditor(self.scrolly_widget)
+        self.session_config_editor.sig_update.connect(self._on_session_config_update)
+        scrolly_layout.addWidget(self.session_config_editor)
+
+        self.sticky_widget.setLayout(sticky_layout)
+        self.scrolly_widget.setLayout(scrolly_layout)
 
     def _on_session_config_update(self, session_config: a121.SessionConfig) -> None:
         self.app_model.put_backend_plugin_task(
@@ -111,9 +115,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
 
     def _send_defaults_request(self) -> None:
         self.app_model.put_backend_plugin_task("restore_defaults")
-
-    def teardown(self) -> None:
-        self.layout.deleteLater()
 
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":

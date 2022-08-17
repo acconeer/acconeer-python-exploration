@@ -23,11 +23,11 @@ from PySide6.QtWidgets import (
 from acconeer.exptool.app.new.app_model import AppModel
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
-from .decorators import ScrollAreaDecorator, TopAlignDecorator
 from .flash_widget import FlashButton
 from .misc import ConnectionHint, ExceptionWidget, VerticalSeparator
 from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelection
 from .recording_widget import RecordingWidget
+from .utils import ScrollAreaDecorator, TopAlignDecorator
 
 
 class MainWindow(QMainWindow):
@@ -104,13 +104,9 @@ class WorkingArea(QSplitter):
         self.layout().addWidget(plot_plugin_area)
         self.layout().setStretchFactor(plot_plugin_area, 1)
 
-        right_area = ScrollAreaDecorator(
-            TopAlignDecorator(
-                PluginControlArea(app_model, self),
-            )
-        )
-        right_area.setMinimumWidth(350)
-        right_area.setMaximumWidth(400)
+        right_area = PluginControlArea(app_model, self)
+        right_area.setMinimumWidth(400)
+        right_area.setMaximumWidth(450)
         self.layout().addWidget(right_area)
         self.layout().setStretchFactor(right_area, 0)
 
