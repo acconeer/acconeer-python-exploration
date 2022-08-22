@@ -659,6 +659,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
         self.sensor_id_pidget.set_parameter(state.sensor_id)
+        self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
         ready_for_session = (
             app_model.plugin_state == PluginState.LOADED_IDLE
