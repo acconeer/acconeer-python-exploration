@@ -69,6 +69,7 @@ class ProcessorContext:
     recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(default=None)
     bg_noise_std: Optional[List[float]] = attrs.field(default=None)
+    reference_temperature: Optional[int] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -124,6 +125,18 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     CLOSE_RANGE_LOOPBACK_IDX = 0
     CLOSE_RANGE_DIST_IDX = 1
+
+    # Parameter of signal temperature model.
+    SIGNAL_TEMPERATURE_MODEL_PARAMETER = {
+        a121.Profile.PROFILE_1: 67.0,
+        a121.Profile.PROFILE_2: 85.0,
+        a121.Profile.PROFILE_3: 86.0,
+        a121.Profile.PROFILE_4: 99.0,
+        a121.Profile.PROFILE_5: 104.0,
+    }
+
+    # Slope and interception of linear noise temperature model.
+    NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
 
     def __init__(
         self,
@@ -314,7 +327,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         abs_sweep = abs_sweep[self.filt_margin : -self.filt_margin]
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
-            return self._process_distance_estimation(abs_sweep)
+            return self._process_distance_estimation(abs_sweep, result.temperature)
         elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
             return ProcessorResult(
                 phase_jitter_comp_reference=lb_angle,
@@ -383,8 +396,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             profile, step_length
         ) + cls._calc_cfar_guard_half_length(profile, step_length)
 
-    def _process_distance_estimation(self, abs_sweep: npt.NDArray[np.float_]) -> ProcessorResult:
-        self.threshold = self._update_threshold(abs_sweep)
+    def _process_distance_estimation(
+        self, abs_sweep: npt.NDArray[np.float_], temperature: int
+    ) -> ProcessorResult:
+        self.threshold = self._update_threshold(abs_sweep, temperature)
 
         found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
         (estimated_distances, estimated_amplitudes) = self.interpolate_peaks(
@@ -473,7 +488,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         wnc = cls.APPROX_BASE_STEP_LENGTH_M * step_length / cls.ENVELOPE_FWHM_M[profile]
         return butter(N=2, Wn=wnc)
 
-    def _update_threshold(self, abs_sweep: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
+    def _update_threshold(
+        self, abs_sweep: npt.NDArray[np.float_], temperature: int
+    ) -> npt.NDArray[np.float_]:
         if self.threshold_method == ThresholdMethod.CFAR:
             return self._calculate_cfar_threshold(
                 abs_sweep,
@@ -485,20 +502,49 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         elif self.threshold_method == ThresholdMethod.FIXED:
             return self.threshold
         elif self.threshold_method == ThresholdMethod.RECORDED:
+            assert self.context.reference_temperature is not None
+            assert self.context.bg_noise_std is not None
+            (
+                signal_adjustment_factor,
+                noise_adjustment_factor,
+            ) = self._calc_temperature_adjustments(
+                temperature_diff=temperature - self.context.reference_temperature,
+                profile=self.profile,
+            )
             return self._update_recorded_threshold(
-                self.context, self.subsweep_bpts, self.threshold_sensitivity, self.filt_margin
+                self.context,
+                self.subsweep_bpts,
+                self.threshold_sensitivity,
+                self.filt_margin,
+                signal_adjustment_factor,
+                noise_adjustment_factor,
             )
         else:
             raise RuntimeError
 
-    @staticmethod
+    @classmethod
     def _update_recorded_threshold(
-        context: ProcessorContext, bpts: list[int], alpha: float, filt_margin: int
+        cls,
+        context: ProcessorContext,
+        bpts: list[int],
+        alpha: float,
+        filt_margin: int,
+        signal_adjustment_factor: float,
+        noise_adjustment_factor: float,
     ) -> npt.NDArray[np.float_]:
+        """Updates the recorded threshold to account for temperature effects.
+
+        The threshold is constructed by adding a number of standard deviations of the background
+        noise(tx off) and the signal noise(calculated during calibration) to the mean sweep. The
+        mean sweep is adjusted by a factor and the background noise is adjusted before fed to this
+        method to account for the temperature effect.
+        """
+
         assert context.recorded_threshold_mean_sweep is not None
         assert context.recorded_threshold_noise_std is not None
         assert context.bg_noise_std is not None
-        threshold = copy.deepcopy(context.recorded_threshold_mean_sweep)
+
+        threshold = copy.deepcopy(context.recorded_threshold_mean_sweep) / signal_adjustment_factor
 
         for idx, (std_tx_off, std_recorded_threshold) in enumerate(
             zip(context.bg_noise_std, context.recorded_threshold_noise_std)
@@ -506,9 +552,13 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             # Subtract filt_margin from breakpoint to transform from full to cropped sweep
             subsweep_slice = slice(bpts[idx] - filt_margin, bpts[idx + 1] - filt_margin)
             threshold[subsweep_slice] += np.sqrt(
-                (std_tx_off**2 + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2)
+                (
+                    noise_adjustment_factor * std_tx_off**2
+                    + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2
+                )
                 / (alpha + 1e-10)
             )
+
         return threshold
 
     @staticmethod
@@ -535,6 +585,29 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         threshold += abs_noise_std
         threshold *= 1.0 / (alpha + 1e-10)
         return threshold
+
+    @classmethod
+    def _calc_temperature_adjustments(
+        cls, temperature_diff: int, profile: a121.Profile
+    ) -> Tuple[float, float]:
+        """Calculate temperature compensation for mean sweep and background noise(tx off) standard
+        deviation, used in _update_recorded_threshold.
+
+        The signal adjustment model is follows 2 ** (temperature_diff / model_parameter), where
+        model_parameter reflects the temperature difference relative the reference temperature,
+        required for the amplitude to double/halve.
+
+        The noise adjustment is a liner function of the temperature difference, calibrated using
+        noise-normalized data generalize to different sensor configurations.
+        """
+        signal_adjustment_factor = 2 ** (
+            temperature_diff / cls.SIGNAL_TEMPERATURE_MODEL_PARAMETER[profile]
+        )
+        noise_adjustment_factor = (
+            cls.NOISE_TEMPERATURE_MODEL_PARAMETER[0] * temperature_diff
+            + cls.NOISE_TEMPERATURE_MODEL_PARAMETER[1]
+        )
+        return (signal_adjustment_factor, noise_adjustment_factor)
 
     @staticmethod
     def _find_peaks(

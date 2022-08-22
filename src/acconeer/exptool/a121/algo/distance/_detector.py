@@ -81,6 +81,7 @@ class DetectorContext:
         default=None
     )
     close_range_session_config_used: Optional[a121.SessionConfig] = attrs.field(default=None)
+    reference_temperature: Optional[int] = attrs.field(default=None)
 
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
 
@@ -275,6 +276,10 @@ class Detector:
         self.client.stop_session()
 
         assert aggregator_result is not None
+
+        assert isinstance(extended_result, list)
+        # Grab value from first group as it is the same for all.
+        self.context.reference_temperature = extended_result[0][self.sensor_id].temperature
 
         self.context.recorded_thresholds_mean_sweep = []
         self.context.recorded_thresholds_noise_std = []
@@ -978,6 +983,7 @@ class Detector:
                     bg_noise_std=bg_noise_std,
                     direct_leakage=self.context.direct_leakage,
                     phase_jitter_comp_ref=self.context.phase_jitter_comp_reference,
+                    reference_temperature=self.context.reference_temperature,
                 )
                 updated_specs.append(attrs.evolve(spec, processor_context=context))
             elif (
@@ -1010,6 +1016,7 @@ class Detector:
                     recorded_threshold_mean_sweep=self.context.recorded_thresholds_mean_sweep[idx],
                     recorded_threshold_noise_std=self.context.recorded_thresholds_noise_std[idx],
                     bg_noise_std=bg_noise_std,
+                    reference_temperature=self.context.reference_temperature,
                 )
                 updated_specs.append(attrs.evolve(spec, processor_context=context))
             elif (
@@ -1105,6 +1112,7 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, Detect
     field_map = {
         "offset_m": None,
         "direct_leakage": None,
+        "reference_temperature": None,
         "phase_jitter_comp_reference": None,
         "recorded_threshold_session_config_used": a121.SessionConfig.from_json,
         "close_range_session_config_used": a121.SessionConfig.from_json,
