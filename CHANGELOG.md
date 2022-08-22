@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### Added
+### v5.2.0
 - Platform setup script that is ran with `python -m acconeer.exptool.setup`.
 - Sensor selection for Presence- and Distance detector.
 
