@@ -117,7 +117,7 @@ class DetectorConfig(AlgoConfigBase):
     )
     """Sorting method of estimated distances."""
 
-    num_frames_in_recorded_threshold: int = attrs.field(default=20)
+    num_frames_in_recorded_threshold: int = attrs.field(default=100)
     """Number of frames used when calibrating threshold."""
 
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
