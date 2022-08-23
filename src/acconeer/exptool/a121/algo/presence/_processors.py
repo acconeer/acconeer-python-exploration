@@ -18,13 +18,16 @@ from acconeer.exptool.a121.algo._utils import get_distances_m
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoConfigBase):
-    detection_threshold: float = attrs.field(default=1.5)
-    intra_frame_weight: float = attrs.field(default=0.6)
+    intra_enable: bool = attrs.field(default=True)
+    inter_enable: bool = attrs.field(default=True)
+    intra_detection_threshold: float = attrs.field(default=1.3)
+    inter_detection_threshold: float = attrs.field(default=1)
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
+    inter_output_time_const: float = attrs.field(default=5)
     intra_frame_time_const: float = attrs.field(default=0.15)
-    output_time_const: float = attrs.field(default=0.5)
+    intra_output_time_const: float = attrs.field(default=0.5)
     history_length_s: int = attrs.field(default=5)
 
 
@@ -35,20 +38,21 @@ class ProcessorExtraResult:
     """
 
     frame: npt.NDArray[np.complex_] = attrs.field()
-    mean_sweep: npt.NDArray[np.float_] = attrs.field()
+    abs_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     fast_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     slow_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     lp_noise: npt.NDArray[np.float_] = attrs.field()
     inter: npt.NDArray[np.float_] = attrs.field()
     intra: npt.NDArray[np.float_] = attrs.field()
-    depthwise_presence: npt.NDArray[np.float_] = attrs.field()
     presence_distance_index: int = attrs.field()
-    presence_history: npt.NDArray[np.float_] = attrs.field()
+    inter_presence_history: npt.NDArray[np.float_] = attrs.field()
+    intra_presence_history: npt.NDArray[np.float_] = attrs.field()
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    presence_score: float = attrs.field()
+    intra_presence_score: float = attrs.field()
+    inter_presence_score: float = attrs.field()
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
     extra_result: ProcessorExtraResult = attrs.field()
@@ -122,23 +126,29 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.lp_intra_dev = np.zeros(self.num_distances)
         self.lp_noise = np.zeros(self.num_distances)
 
-        self.presence_score = 0
+        self.intra_presence_score = 0
+        self.inter_presence_score = 0
         self.presence_distance_index = 0
         self.presence_distance = 0
 
-        self.presence_history = np.zeros(int(round(self.f * processor_config.history_length_s)))
+        history_length_n = int(round(self.f * processor_config.history_length_s))
+        self.intra_presence_history = np.zeros(history_length_n)
+        self.inter_presence_history = np.zeros(history_length_n)
         self.update_index = 0
 
-        self.threshold = processor_config.detection_threshold
-        self.intra_weight = processor_config.intra_frame_weight
-        self.inter_weight = 1.0 - self.intra_weight
+        self.intra_enable = processor_config.intra_enable
+        self.intra_threshold = processor_config.intra_detection_threshold
+
+        self.inter_enable = processor_config.inter_enable
+        self.inter_threshold = processor_config.inter_detection_threshold
 
         self.update_config(processor_config)
 
     def update_config(self, processor_config: ProcessorConfig) -> None:
-        self.threshold = processor_config.detection_threshold
-        self.intra_weight = processor_config.intra_frame_weight
-        self.inter_weight = 1.0 - self.intra_weight
+        self.intra_enable = processor_config.intra_enable
+        self.inter_enable = processor_config.inter_enable
+        self.intra_threshold = processor_config.intra_detection_threshold
+        self.inter_threshold = processor_config.inter_detection_threshold
 
         self.fast_sf = self._cutoff_to_sf(processor_config.inter_frame_fast_cutoff, self.f)
         self.slow_sf = self._cutoff_to_sf(processor_config.inter_frame_slow_cutoff, self.f)
@@ -146,7 +156,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             processor_config.inter_frame_deviation_time_const, self.f
         )
         self.intra_sf = self._tc_to_sf(processor_config.intra_frame_time_const, self.f)
-        self.output_sf = self._tc_to_sf(processor_config.output_time_const, self.f)
+        self.intra_output_sf = self._tc_to_sf(processor_config.intra_output_time_const, self.f)
+        self.inter_output_sf = self._tc_to_sf(processor_config.inter_output_time_const, self.f)
 
     @staticmethod
     def _cutoff_to_sf(fc: float, fs: float) -> float:
@@ -234,15 +245,24 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         intra = self._depth_filter(norm_lp_intra_dev, self.depth_filter_length)
 
+        intra_presence_distance_index = int(np.argmax(intra))
+        intra_presence_distance = self.distances[intra_presence_distance_index]
+
+        self.intra_presence_score = (
+            self.intra_output_sf * self.intra_presence_score
+            + (1.0 - self.intra_output_sf) * intra[intra_presence_distance_index]
+        )
+
         # Inter-frame part
 
-        mean_sweep = np.abs(frame.mean(axis=0))
+        mean_sweep = frame.mean(axis=0)
+        abs_mean_sweep = np.abs(mean_sweep)
 
         sf = self._dynamic_sf(self.fast_sf, self.update_index)
-        self.fast_lp_mean_sweep = sf * self.fast_lp_mean_sweep + (1.0 - sf) * mean_sweep
+        self.fast_lp_mean_sweep = sf * self.fast_lp_mean_sweep + (1.0 - sf) * abs_mean_sweep
 
         sf = self._dynamic_sf(self.slow_sf, self.update_index)
-        self.slow_lp_mean_sweep = sf * self.slow_lp_mean_sweep + (1.0 - sf) * mean_sweep
+        self.slow_lp_mean_sweep = sf * self.slow_lp_mean_sweep + (1.0 - sf) * abs_mean_sweep
 
         inter_dev = np.abs(self.fast_lp_mean_sweep - self.slow_lp_mean_sweep)
         sf = self._dynamic_sf(self.inter_dev_sf, self.update_index)
@@ -259,42 +279,52 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         inter = self._depth_filter(norm_lp_dev, self.depth_filter_length)
 
-        # Detector output
+        inter_presence_distance_index = int(np.argmax(inter))
+        inter_presence_distance = self.distances[inter_presence_distance_index]
 
-        depthwise_presence = self.inter_weight * inter + self.intra_weight * intra
+        sf = self._dynamic_sf(self.inter_output_sf, self.update_index)
+        self.inter_presence_score = (
+            sf * self.inter_presence_score + (1.0 - sf) * inter[inter_presence_distance_index]
+        )
 
-        max_depthwise_presence = np.max(depthwise_presence)
+        # Presence distance - intra presence distance is prioritized due to faster reaction time
 
-        sf = self._dynamic_sf(self.output_sf, self.update_index)
-        self.presence_score = sf * self.presence_score + (1.0 - sf) * max_depthwise_presence
-
-        presence_detected = self.presence_score > self.threshold
+        if self.intra_presence_score > self.intra_threshold and self.intra_enable:
+            presence_detected = True
+            self.presence_distance_index = intra_presence_distance_index
+            self.presence_distance = intra_presence_distance
+        elif self.inter_presence_score > self.inter_threshold and self.inter_enable:
+            presence_detected = True
+            self.presence_distance_index = inter_presence_distance_index
+            self.presence_distance = inter_presence_distance
+        else:
+            presence_detected = False
 
         # TODO: self.presence_history will be removed in the future
-        self.presence_history = np.roll(self.presence_history, -1)
-        self.presence_history[-1] = self.presence_score
+        self.intra_presence_history = np.roll(self.intra_presence_history, -1)
+        self.intra_presence_history[-1] = self.intra_presence_score
 
-        if max_depthwise_presence > self.threshold:
-            self.presence_distance_index = int(np.argmax(depthwise_presence))
-            self.presence_distance = self.distances[self.presence_distance_index]
+        self.inter_presence_history = np.roll(self.inter_presence_history, -1)
+        self.inter_presence_history[-1] = self.inter_presence_score
 
         self.update_index += 1
 
         extra_result = ProcessorExtraResult(
             frame=frame,
-            mean_sweep=mean_sweep,
+            abs_mean_sweep=abs_mean_sweep,
             fast_lp_mean_sweep=self.fast_lp_mean_sweep,
             slow_lp_mean_sweep=self.slow_lp_mean_sweep,
             lp_noise=self.lp_noise,
-            inter=inter * self.inter_weight,
-            intra=intra * self.intra_weight,
-            depthwise_presence=depthwise_presence,
+            inter=inter,
+            intra=intra,
             presence_distance_index=self.presence_distance_index,
-            presence_history=self.presence_history,
+            intra_presence_history=self.intra_presence_history,
+            inter_presence_history=self.inter_presence_history,
         )
 
         return ProcessorResult(
-            presence_score=self.presence_score,
+            intra_presence_score=self.intra_presence_score,
+            inter_presence_score=self.inter_presence_score,
             presence_detected=presence_detected,
             presence_distance=self.presence_distance,
             extra_result=extra_result,

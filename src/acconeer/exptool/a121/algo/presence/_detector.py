@@ -26,10 +26,13 @@ class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=1.0)
     end_m: float = attrs.field(default=2.0)
     step_length: Optional[int] = attrs.field(default=None)
-    detection_threshold: float = attrs.field(default=1.5)
     frame_rate: float = attrs.field(default=10.0)
     sweeps_per_frame: int = attrs.field(default=16)
     hwaas: int = attrs.field(default=32)
+    intra_enable: bool = attrs.field(default=True)
+    intra_detection_threshold: float = attrs.field(default=1.3)
+    inter_enable: bool = attrs.field(default=True)
+    inter_detection_threshold: float = attrs.field(default=1)
 
     @step_length.validator
     def _validate_step_length(self, attrs: Attribute, step_length: int) -> None:
@@ -43,16 +46,12 @@ class DetectorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
-    presence_score: float = attrs.field()
+    intra_presence_score: float = attrs.field()
+    inter_presence_score: float = attrs.field()
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
     processor_extra_result: ProcessorExtraResult = attrs.field()
     service_result: a121.Result = attrs.field()
-
-    def __str__(self) -> str:
-        s = "Presence! " if self.presence_detected else "No presence. "
-        s += f"Score {self.presence_score:.3f} at {self.presence_distance:.3f} m "
-        return s
 
 
 class Detector:
@@ -152,7 +151,10 @@ class Detector:
     @classmethod
     def _get_processor_config(cls, detector_config: DetectorConfig) -> ProcessorConfig:
         return ProcessorConfig(
-            detection_threshold=detector_config.detection_threshold,
+            intra_enable=detector_config.intra_enable,
+            intra_detection_threshold=detector_config.intra_detection_threshold,
+            inter_enable=detector_config.inter_enable,
+            inter_detection_threshold=detector_config.inter_detection_threshold,
         )
 
     def get_next(self) -> DetectorResult:
@@ -166,7 +168,8 @@ class Detector:
         processor_result = self.processor.process(result)
 
         return DetectorResult(
-            presence_score=processor_result.presence_score,
+            intra_presence_score=processor_result.intra_presence_score,
+            inter_presence_score=processor_result.inter_presence_score,
             presence_distance=processor_result.presence_distance,
             presence_detected=processor_result.presence_detected,
             processor_extra_result=processor_result.extra_result,

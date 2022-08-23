@@ -7,6 +7,7 @@ import numpy as np
 
 # Added here to force pyqtgraph to choose PySide
 import PySide6  # noqa: F401
+from PySide6 import QtCore
 
 import pyqtgraph as pg
 
@@ -40,7 +41,13 @@ def main():
 
     while not interrupt_handler.got_signal:
         detector_result = detector.get_next()
-        print(detector_result)
+        s = "Presence! " if detector_result.presence_detected else "No presence. "
+        s += (
+            f"Intra presence score {detector_result.intra_presence_score:.3f}, "
+            f"inter presence score {detector_result.inter_presence_score:.3f}, "
+            f"presence at {detector_result.presence_distance:.3f} m"
+        )
+        print(s)
         try:
             pg_process.put_data(detector_result)
         except et.PGProccessDiedException:
@@ -71,43 +78,13 @@ class PGUpdater:
     def setup(self, win):
         win.setWindowTitle("Acconeer presence detection example")
 
-        self.limit_lines = []
-        dashed_pen = pg.mkPen("k", width=2.5)  # , style=QtCore.Qt.DashLine
-
-        # Amplitude plot
-
-        self.ampl_plot = win.addPlot(
-            row=0,
-            col=0,
-            title="Amplitude, sweeps (orange), mean sweep (blue)",
-        )
-
-        self.ampl_plot.setMenuEnabled(False)
-        self.ampl_plot.setMouseEnabled(x=False, y=False)
-        self.ampl_plot.hideButtons()
-        self.ampl_plot.showGrid(x=True, y=True)
-        self.ampl_plot.setLabel("bottom", "Distance (m)")
-        self.ampl_plot.setLabel("left", "Amplitude")
-
-        self.ampl_plot.setYRange(0, 2**16)
-
-        self.frame_scatter = pg.ScatterPlotItem(
-            size=10,
-            brush=et.utils.pg_brush_cycler(1),
-        )
-        self.mean_sweep_scatter = pg.ScatterPlotItem(
-            size=10,
-            brush=et.utils.pg_brush_cycler(0),
-        )
-
-        self.ampl_plot.addItem(self.frame_scatter)
-        self.ampl_plot.addItem(self.mean_sweep_scatter)
-        self.frame_smooth_limits = et.utils.SmoothLimits(self.detector_config.frame_rate)
+        self.intra_limit_lines = []
+        self.inter_limit_lines = []
 
         # Noise estimation plot
 
         self.noise_plot = win.addPlot(
-            row=1,
+            row=0,
             col=0,
             title="Noise",
         )
@@ -123,20 +100,22 @@ class PGUpdater:
 
         # Depthwise presence plot
 
-        self.move_plot = win.addPlot(
-            row=2,
-            col=0,
-            title="Depthwise presence",
-        )
+        self.move_plot = pg.PlotItem(title="Depthwise presence")
         self.move_plot.setMenuEnabled(False)
         self.move_plot.setMouseEnabled(x=False, y=False)
         self.move_plot.hideButtons()
         self.move_plot.showGrid(x=True, y=True)
         self.move_plot.setLabel("bottom", "Distance (m)")
         self.move_plot.setLabel("left", "Norm. ampl.")
-        zero_curve = self.move_plot.plot(self.distances, np.zeros_like(self.distances))
-        self.inter_curve = self.move_plot.plot()
-        self.total_curve = self.move_plot.plot()
+        self.move_plot.setXRange(self.distances[0], self.distances[-1])
+        self.intra_curve = self.move_plot.plot(pen=et.utils.pg_pen_cycler(1))
+        if not self.detector_config.intra_enable:
+            self.intra_curve.hide()
+
+        self.inter_curve = self.move_plot.plot(pen=et.utils.pg_pen_cycler(0))
+        if not self.detector_config.inter_enable:
+            self.inter_curve.hide()
+
         self.move_smooth_max = et.utils.SmoothMax(
             self.detector_config.frame_rate,
             tau_decay=1.0,
@@ -146,41 +125,6 @@ class PGUpdater:
         self.move_depth_line = pg.InfiniteLine(pen=pg.mkPen("k", width=1.5))
         self.move_depth_line.hide()
         self.move_plot.addItem(self.move_depth_line)
-        limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
-        self.move_plot.addItem(limit_line)
-        self.limit_lines.append(limit_line)
-
-        fbi = pg.FillBetweenItem(
-            zero_curve,
-            self.inter_curve,
-            brush=et.utils.pg_brush_cycler(0),
-        )
-        self.move_plot.addItem(fbi)
-
-        fbi = pg.FillBetweenItem(
-            self.inter_curve,
-            self.total_curve,
-            brush=et.utils.pg_brush_cycler(1),
-        )
-        self.move_plot.addItem(fbi)
-
-        # Presence history plot
-
-        self.move_hist_plot = pg.PlotItem(title="Presence history")
-        self.move_hist_plot.setMenuEnabled(False)
-        self.move_hist_plot.setMouseEnabled(x=False, y=False)
-        self.move_hist_plot.hideButtons()
-        self.move_hist_plot.showGrid(x=True, y=True)
-        self.move_hist_plot.setLabel("bottom", "Time (s)")
-        self.move_hist_plot.setLabel("left", "Score")
-        self.move_hist_plot.setXRange(-self.history_length_s, 0)
-        self.history_smooth_max = et.utils.SmoothMax(self.detector_config.frame_rate)
-        self.move_hist_plot.setYRange(0, 10)
-
-        self.move_hist_curve = self.move_hist_plot.plot(pen=et.utils.pg_pen_cycler())
-        limit_line = pg.InfiniteLine(angle=0, pen=dashed_pen)
-        self.move_hist_plot.addItem(limit_line)
-        self.limit_lines.append(limit_line)
 
         self.present_html_format = (
             '<div style="text-align: center">'
@@ -202,13 +146,76 @@ class PGUpdater:
             anchor=(0.5, 0),
         )
 
-        self.move_hist_plot.addItem(self.present_text_item)
-        self.move_hist_plot.addItem(self.not_present_text_item)
+        self.move_plot.addItem(self.present_text_item)
+        self.move_plot.addItem(self.not_present_text_item)
         self.present_text_item.hide()
         self.not_present_text_item.hide()
 
-        for line in self.limit_lines:
-            line.setPos(self.detector_config.detection_threshold)
+        # Intra presence history plot
+
+        self.intra_hist_plot = win.addPlot(
+            row=1,
+            col=0,
+            title="Intra presence history (fast motions)",
+        )
+        self.intra_hist_plot.setMenuEnabled(False)
+        self.intra_hist_plot.setMouseEnabled(x=False, y=False)
+        self.intra_hist_plot.hideButtons()
+        self.intra_hist_plot.showGrid(x=True, y=True)
+        self.intra_hist_plot.setLabel("bottom", "Time (s)")
+        self.intra_hist_plot.setLabel("left", "Score")
+        self.intra_hist_plot.setXRange(-self.history_length_s, 0)
+        self.intra_history_smooth_max = et.utils.SmoothMax(self.detector_config.frame_rate)
+        self.intra_hist_plot.setYRange(0, 10)
+        if not self.detector_config.intra_enable:
+            intra_color = et.utils.color_cycler(1)
+            intra_color = f"{intra_color}50"
+            intra_dashed_pen = pg.mkPen(intra_color, width=2.5, style=QtCore.Qt.DashLine)
+            intra_pen = pg.mkPen(intra_color, width=2)
+        else:
+            intra_dashed_pen = et.utils.pg_pen_cycler(1, width=2.5, style="--")
+            intra_pen = et.utils.pg_pen_cycler(1)
+
+        self.intra_hist_curve = self.intra_hist_plot.plot(pen=intra_pen)
+        limit_line = pg.InfiniteLine(angle=0, pen=intra_dashed_pen)
+        self.intra_hist_plot.addItem(limit_line)
+        self.intra_limit_lines.append(limit_line)
+
+        for line in self.intra_limit_lines:
+            line.setPos(self.detector_config.intra_detection_threshold)
+
+        # Inter presence history plot
+
+        self.inter_hist_plot = win.addPlot(
+            row=1,
+            col=1,
+            title="Inter presence history (slow motions)",
+        )
+        self.inter_hist_plot.setMenuEnabled(False)
+        self.inter_hist_plot.setMouseEnabled(x=False, y=False)
+        self.inter_hist_plot.hideButtons()
+        self.inter_hist_plot.showGrid(x=True, y=True)
+        self.inter_hist_plot.setLabel("bottom", "Time (s)")
+        self.inter_hist_plot.setLabel("left", "Score")
+        self.inter_hist_plot.setXRange(-self.history_length_s, 0)
+        self.inter_history_smooth_max = et.utils.SmoothMax(self.detector_config.frame_rate)
+        self.inter_hist_plot.setYRange(0, 10)
+        if not self.detector_config.inter_enable:
+            inter_color = et.utils.color_cycler(0)
+            inter_color = f"{inter_color}50"
+            inter_dashed_pen = pg.mkPen(inter_color, width=2.5, style=QtCore.Qt.DashLine)
+            inter_pen = pg.mkPen(inter_color, width=2)
+        else:
+            inter_pen = et.utils.pg_pen_cycler(0)
+            inter_dashed_pen = et.utils.pg_pen_cycler(0, width=2.5, style="--")
+
+        self.inter_hist_curve = self.inter_hist_plot.plot(pen=inter_pen)
+        limit_line = pg.InfiniteLine(angle=0, pen=inter_dashed_pen)
+        self.inter_hist_plot.addItem(limit_line)
+        self.inter_limit_lines.append(limit_line)
+
+        for line in self.inter_limit_lines:
+            line.setPos(self.detector_config.inter_detection_threshold)
 
         # Sector plot
 
@@ -230,47 +237,40 @@ class PGUpdater:
 
         self.sectors.reverse()
 
-        sublayout = win.addLayout(row=3, col=0)
+        sublayout = win.addLayout(row=2, col=0, colspan=2)
         sublayout.layout.setColumnStretchFactor(0, 2)
-        sublayout.addItem(self.move_hist_plot, col=0)
-        sublayout.addItem(self.sector_plot, col=1)
+        sublayout.addItem(self.move_plot, row=0, col=0)
+        sublayout.addItem(self.sector_plot, row=0, col=1)
 
         self.setup_is_done = True
 
     def update(self, data):
-        amplitudes = np.abs(data.processor_extra_result.frame)
-        self.frame_scatter.setData(
-            np.tile(self.distances, self.detector_config.sweeps_per_frame),
-            amplitudes.flatten(),
-        )
-
-        self.mean_sweep_scatter.setData(self.distances, data.processor_extra_result.mean_sweep)
-        self.ampl_plot.setYRange(*self.frame_smooth_limits.update(amplitudes))
-
         noise = data.processor_extra_result.lp_noise
         self.noise_curve.setData(self.distances, noise)
         self.noise_plot.setYRange(0, self.noise_smooth_max.update(noise))
 
         movement_x = data.presence_distance
 
-        move_ys = data.processor_extra_result.depthwise_presence
         self.inter_curve.setData(self.distances, data.processor_extra_result.inter)
-        self.total_curve.setData(self.distances, move_ys)
-        m = self.move_smooth_max.update(np.max(move_ys))
-        m = max(m, 2 * self.detector_config.detection_threshold)
+        self.intra_curve.setData(self.distances, data.processor_extra_result.intra)
+        m = self.move_smooth_max.update(
+            np.max(
+                np.maximum(data.processor_extra_result.inter, data.processor_extra_result.intra)
+            )
+        )
+        m = max(
+            m,
+            2
+            * np.maximum(
+                self.detector_config.intra_detection_threshold,
+                self.detector_config.inter_detection_threshold,
+            ),
+        )
         self.move_plot.setYRange(0, m)
         self.move_depth_line.setPos(movement_x)
         self.move_depth_line.setVisible(bool(data.presence_detected))
 
-        move_hist_ys = data.processor_extra_result.presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
-
-        m_hist = max(np.max(move_hist_ys), self.detector_config.detection_threshold * 1.05)
-        m_hist = self.history_smooth_max.update(m_hist)
-
-        self.move_hist_plot.setYRange(0, m_hist)
-        self.move_hist_curve.setData(move_hist_xs, move_hist_ys)
-        self.set_present_text_y_pos(m_hist)
+        self.set_present_text_y_pos(m)
 
         if data.presence_detected:
             present_text = "Presence detected at {:.0f} cm".format(movement_x * 100)
@@ -283,6 +283,34 @@ class PGUpdater:
             self.present_text_item.hide()
             self.not_present_text_item.show()
 
+        # Intra presence
+
+        move_hist_ys = data.processor_extra_result.intra_presence_history
+        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+
+        m_hist = max(
+            float(np.max(move_hist_ys)), self.detector_config.intra_detection_threshold * 1.05
+        )
+        m_hist = self.intra_history_smooth_max.update(m_hist)
+
+        self.intra_hist_plot.setYRange(0, m_hist)
+        self.intra_hist_curve.setData(move_hist_xs, move_hist_ys)
+
+        # Inter presence
+
+        move_hist_ys = data.processor_extra_result.inter_presence_history
+        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+
+        m_hist = max(
+            float(np.max(move_hist_ys)), self.detector_config.inter_detection_threshold * 1.05
+        )
+        m_hist = self.inter_history_smooth_max.update(m_hist)
+
+        self.inter_hist_plot.setYRange(0, m_hist)
+        self.inter_hist_curve.setData(move_hist_xs, move_hist_ys)
+
+        # Sector
+
         brush = et.utils.pg_brush_cycler(0)
         for sector in self.sectors:
             sector.setBrush(brush)
@@ -294,8 +322,9 @@ class PGUpdater:
             self.sectors[index].setBrush(et.utils.pg_brush_cycler(1))
 
     def set_present_text_y_pos(self, y):
-        self.present_text_item.setPos(-self.history_length_s / 2, 0.95 * y)
-        self.not_present_text_item.setPos(-self.history_length_s / 2, 0.95 * y)
+        x_pos = self.distances[0] + (self.distances[-1] - self.distances[0]) / 2
+        self.present_text_item.setPos(x_pos, 0.95 * y)
+        self.not_present_text_item.setPos(x_pos, 0.95 * y)
 
 
 if __name__ == "__main__":
