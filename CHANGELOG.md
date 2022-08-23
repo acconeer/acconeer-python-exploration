@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## v5.2.1
+
+### Fixed
+- Cache-related bug that made Distance Detector unusable.
 
 ### v5.2.0
 - Platform setup script that is ran with `python -m acconeer.exptool.setup`.
