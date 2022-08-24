@@ -46,3 +46,4 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    :hidden:
 
    A111 <algo/a111/index>
+   A121 <algo/a121/index>
