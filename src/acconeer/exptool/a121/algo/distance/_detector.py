@@ -368,7 +368,7 @@ class Detector:
 
     @classmethod
     def get_detector_status(
-        cls, config: DetectorConfig, context: DetectorContext
+        cls, config: DetectorConfig, context: DetectorContext, sensor_id: int
     ) -> DetectorStatus:
         if not cls._valid_detector_config_range(config=config):
             return DetectorStatus(
@@ -381,7 +381,7 @@ class Detector:
         (
             session_config,
             _,
-        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=sensor_id)
 
         ready_to_record_threshold = False
         if cls._has_close_range_measurement(config):
@@ -467,7 +467,7 @@ class Detector:
         if self.started:
             raise RuntimeError("Already started")
 
-        status = self.get_detector_status(self.detector_config, self.context)
+        status = self.get_detector_status(self.detector_config, self.context, self.sensor_id)
 
         if not status.ready_to_start:
             raise RuntimeError("Not ready to start")

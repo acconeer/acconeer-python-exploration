@@ -699,7 +699,9 @@ class ViewPlugin(DetectorViewPluginBase):
         self.sensor_id_pidget.set_parameter(state.sensor_id)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
-        detector_status = Detector.get_detector_status(state.config, state.context)
+        detector_status = Detector.get_detector_status(
+            state.config, state.context, state.sensor_id
+        )
 
         self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
 
