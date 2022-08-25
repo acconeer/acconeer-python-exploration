@@ -18,7 +18,7 @@ from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorB
 
 DEFAULT_SC_BG_NUM_STD_DEV = 6.0
 DEFAULT_FIXED_THRESHOLD_VALUE = 100.0
-DEFAULT_THRESHOLD_SENSITIVITY = 0.25
+DEFAULT_THRESHOLD_SENSITIVITY = 0.5
 DEFAULT_CFAR_ONE_SIDED = False
 
 
@@ -205,7 +205,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
-        self.threshold_sensitivity = self.processor_config.threshold_sensitivity
+        self.num_stds_in_threshold = self._sensitivity_to_standard_deviations(
+            self.processor_config.threshold_sensitivity
+        )
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             self._init_process_distance_estimation()
@@ -215,6 +217,18 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self._init_recorded_threshold_calibration()
         else:
             raise RuntimeError
+
+    @staticmethod
+    def _sensitivity_to_standard_deviations(sensitivity: float) -> float:
+        """Convert sensitivity to standard deviations used by recorded threshold and CFAR.
+
+        0 sensitivity corresponds to 15 standard deviations. 1 sensitivity corresponds to 2
+        standard deviations.
+        """
+        if sensitivity < 0.0 or 1.0 < sensitivity:
+            raise ValueError("Sensitivity outside of valid interval(0.0 <= Sensitivity <= 1.0).")
+
+        return 15.0 - 13 * sensitivity
 
     @classmethod
     def _get_subsweep_configs(
@@ -316,7 +330,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 self.processor_config.processor_mode
                 == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
             ):
-                lb_angle += self.PHASE_JITTER_RESTART_STD / (self.threshold_sensitivity + 1e-10)
+                lb_angle += self.PHASE_JITTER_RESTART_STD * self.num_stds_in_threshold
 
             if self.processor_mode != ProcessorMode.LEAKAGE_CALIBRATION:
                 frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
@@ -495,7 +509,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             return self._calculate_cfar_threshold(
                 abs_sweep,
                 self.idx_cfar_pts,
-                self.threshold_sensitivity,
+                self.num_stds_in_threshold,
                 self.cfar_one_sided,
                 self.cfar_abs_noise,
             )
@@ -514,7 +528,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             return self._update_recorded_threshold(
                 self.context,
                 self.subsweep_bpts,
-                self.threshold_sensitivity,
+                self.num_stds_in_threshold,
                 self.filt_margin,
                 signal_adjustment_factor,
                 noise_adjustment_factor,
@@ -527,7 +541,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         cls,
         context: ProcessorContext,
         bpts: list[int],
-        alpha: float,
+        num_stds: float,
         filt_margin: int,
         signal_adjustment_factor: float,
         noise_adjustment_factor: float,
@@ -551,12 +565,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         ):
             # Subtract filt_margin from breakpoint to transform from full to cropped sweep
             subsweep_slice = slice(bpts[idx] - filt_margin, bpts[idx + 1] - filt_margin)
-            threshold[subsweep_slice] += np.sqrt(
-                (
-                    noise_adjustment_factor * std_tx_off**2
-                    + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2
+            threshold[subsweep_slice] += (
+                np.sqrt(
+                    (
+                        noise_adjustment_factor * std_tx_off**2
+                        + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2
+                    )
                 )
-                / (alpha + 1e-10)
+                * num_stds
             )
 
         return threshold
@@ -565,7 +581,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     def _calculate_cfar_threshold(
         abs_sweep: npt.NDArray[np.float_],
         idx_cfar_pts: npt.NDArray[np.int_],
-        alpha: float,
+        num_stds: float,
         one_side: bool,
         abs_noise_std: npt.NDArray,
     ) -> npt.NDArray[np.float_]:
@@ -583,7 +599,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             threshold[idx] = np.mean(np.take(abs_sweep, take_indexes))
 
         threshold += abs_noise_std
-        threshold *= 1.0 / (alpha + 1e-10)
+        threshold *= num_stds
         return threshold
 
     @classmethod
