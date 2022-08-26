@@ -190,6 +190,7 @@ class _FlashPopup(QDialog):
     def _flash(self) -> None:
         flash_port = find_flash_port(self.flash_port)
 
+        # TODO: disable autoconnect when flashing
         self.flash_dialog.flash(self.bin_file, flash_port)
 
     def _on_interface_dd_change(self) -> None:

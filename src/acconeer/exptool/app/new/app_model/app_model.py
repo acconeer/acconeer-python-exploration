@@ -123,6 +123,7 @@ class AppModel(QObject):
     usb_connection_device: Optional[USBDevice]
     available_usb_devices: list[USBDevice]
     saveable_file: Optional[Path]
+    autoconnect_enabled: bool
 
     def __init__(self, backend: Backend, plugins: list[PluginSpec]) -> None:
         super().__init__()
@@ -152,6 +153,7 @@ class AppModel(QObject):
         self.available_tagged_ports = []
         self.available_usb_devices = []
         self.saveable_file = None
+        self.autoconnect_enabled = False
 
         self.rate_calc = RateCalculator()
 
@@ -365,7 +367,7 @@ class AppModel(QObject):
                 self.send_status_message(f"Recognized USB device: {self.usb_connection_device}")
                 connect = True
 
-        if connect:
+        if connect and self.autoconnect_enabled:
             self._autoconnect()
 
         self.broadcast()
@@ -487,6 +489,10 @@ class AppModel(QObject):
 
     def set_plugin_state(self, state: PluginState) -> None:
         self.plugin_state = state
+        self.broadcast()
+
+    def set_autoconnect_enabled(self, autoconnect_enabled: bool) -> None:
+        self.autoconnect_enabled = autoconnect_enabled
         self.broadcast()
 
     def _unload_current_plugin(self) -> None:
