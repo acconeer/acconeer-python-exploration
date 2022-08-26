@@ -711,6 +711,9 @@ class ViewPlugin(DetectorViewPluginBase):
             "inter_enable": pidgets.CheckboxParameterWidgetFactory(
                 name_label_text="Enable slow motion detection"
             ),
+            "inter_phase_boost": pidgets.CheckboxParameterWidgetFactory(
+                name_label_text="Enable phase boost"
+            ),
             "inter_detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
                 name_label_text="Inter detection threshold",
                 decimals=2,

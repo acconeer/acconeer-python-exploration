@@ -22,6 +22,7 @@ class ProcessorConfig(AlgoConfigBase):
     inter_enable: bool = attrs.field(default=True)
     intra_detection_threshold: float = attrs.field(default=1.3)
     inter_detection_threshold: float = attrs.field(default=1)
+    inter_phase_boost: bool = attrs.field(default=False)
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
@@ -73,6 +74,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     }
 
     APPROX_BASE_STEP_LENGTH_M = 2.5e-3
+    MAX_AMPLITUDE_WEIGHT = 15
 
     def __init__(
         self,
@@ -119,6 +121,13 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         nd = self.noise_est_diff_order
         self.noise_norm_factor = np.sqrt(np.sum(np.square(binom(nd, np.arange(nd + 1)))))
+
+        self.lp_mean_sweep_for_abs = np.zeros(self.num_distances, dtype=np.complex_)
+        self.lp_mean_sweep_for_phase = np.zeros(self.num_distances, dtype=np.complex_)
+        self.mean_sweep_tc = 5
+        self.mean_sweep_sf = self._tc_to_sf(self.mean_sweep_tc, self.f)
+        self.lp_phase_shift = np.zeros(self.num_distances)
+        self.inter_phase_boost = self.processor_config.inter_phase_boost
 
         self.fast_lp_mean_sweep = np.zeros(self.num_distances)
         self.slow_lp_mean_sweep = np.zeros(self.num_distances)
@@ -216,6 +225,49 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             a = np.pad(a, pad_width, "constant")
             return np.correlate(a, b, mode="same")[pad_width:-pad_width]
 
+    @staticmethod
+    def _calculate_phase_shift(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray[np.float_]:
+        phase_a = np.angle(a)
+        phase_b = np.angle(b)
+        phases_unwrapped = np.unwrap([phase_a, phase_b], axis=0)
+        phase_shift = np.abs(phases_unwrapped[0, :] - phases_unwrapped[1, :])
+
+        return phase_shift  # type: ignore[no-any-return]
+
+    def _calculate_phase_and_amp_weight(self, mean_sweep: npt.NDArray) -> np.float_:
+        """
+        Calculation of a weight factor based on phase shift and amplitude.
+        The phase shift between the mean sweep and a lp-filtered mean sweep is
+        calculated to amplify slow motions.
+        The amplitude of the mean sweep is multiplied with the phase shift to reduce
+        noise amplification.
+        Before multiplication with the phase shift, the amplitude is truncated to reduce
+        side effects from very strong reflective objects.
+        """
+
+        phase_shift = self._calculate_phase_shift(self.lp_mean_sweep_for_phase, mean_sweep)
+        sf = self._dynamic_sf(self.inter_dev_sf, self.update_index)
+        self.lp_phase_shift = sf * self.lp_phase_shift + (1.0 - sf) * phase_shift
+
+        self.lp_mean_sweep_for_abs = sf * self.lp_mean_sweep_for_abs + (1.0 - sf) * mean_sweep
+        abs_lp_mean_sweep = np.abs(self.lp_mean_sweep_for_abs)
+
+        norm_abs_mean_sweep = np.divide(
+            abs_lp_mean_sweep,
+            self.lp_noise,
+            out=np.zeros_like(abs_lp_mean_sweep),
+            where=(self.lp_noise > 1.0),
+        )
+
+        norm_abs_mean_sweep *= np.sqrt(self.sweeps_per_frame)
+
+        # Truncate if amplitude is too strong
+        norm_abs_mean_sweep = np.minimum(
+            norm_abs_mean_sweep, np.ones(norm_abs_mean_sweep.shape[0]) * self.MAX_AMPLITUDE_WEIGHT
+        )
+
+        return self.lp_phase_shift * norm_abs_mean_sweep  # type: ignore[no-any-return]
+
     def process(self, result: a121.Result) -> ProcessorResult:
         frame = result.subframes[self.subsweep_index]
 
@@ -278,6 +330,22 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         norm_lp_dev *= np.sqrt(self.sweeps_per_frame)
 
         inter = self._depth_filter(norm_lp_dev, self.depth_filter_length)
+
+        # Phase and amplitude weighting of inter-frame part
+
+        if self.inter_phase_boost:
+            if self.update_index == 0:
+                self.lp_mean_sweep_for_phase = mean_sweep
+
+            phase_and_amp_weight = self._calculate_phase_and_amp_weight(mean_sweep)
+
+            inter = inter * phase_and_amp_weight
+
+            sf = self._dynamic_sf(self.mean_sweep_sf, self.update_index)
+            self.lp_mean_sweep_for_phase = (
+                self.mean_sweep_sf * self.lp_mean_sweep_for_phase
+                + (1.0 - self.mean_sweep_sf) * mean_sweep
+            )
 
         inter_presence_distance_index = int(np.argmax(inter))
         inter_presence_distance = self.distances[inter_presence_distance_index]

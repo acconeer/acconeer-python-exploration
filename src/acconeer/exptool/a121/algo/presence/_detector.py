@@ -33,6 +33,7 @@ class DetectorConfig(AlgoConfigBase):
     intra_detection_threshold: float = attrs.field(default=1.3)
     inter_enable: bool = attrs.field(default=True)
     inter_detection_threshold: float = attrs.field(default=1)
+    inter_phase_boost: bool = attrs.field(default=False)
 
     @step_length.validator
     def _validate_step_length(self, attrs: Attribute, step_length: int) -> None:
@@ -155,6 +156,7 @@ class Detector:
             intra_detection_threshold=detector_config.intra_detection_threshold,
             inter_enable=detector_config.inter_enable,
             inter_detection_threshold=detector_config.inter_detection_threshold,
+            inter_phase_boost=detector_config.inter_phase_boost,
         )
 
     def get_next(self) -> DetectorResult:
