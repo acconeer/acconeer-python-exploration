@@ -227,6 +227,7 @@ class ExploreSerialLink(SerialLink):
         self._ser = serial.Serial(
             timeout=self._SERIAL_PACKET_TIMEOUT,
             write_timeout=self._SERIAL_WRITE_TIMEOUT,
+            exclusive=True,
         )
         self._ser.baudrate = self._baudrate
         self._ser.port = self._port
