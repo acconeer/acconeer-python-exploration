@@ -125,8 +125,13 @@ class Detector:
         if detector_config.step_length is not None:
             step_length = detector_config.step_length
         else:
+            # Calculate biggest possible step length based on the fwhm of the set profile
+            # Achieve detection on the complete range with minimum number of sampling points
             fwhm_p = Processor.ENVELOPE_FWHM_M[profile] / Processor.APPROX_BASE_STEP_LENGTH_M
-            step_length = int((fwhm_p // SPARSE_IQ_PPC) * SPARSE_IQ_PPC)
+            if fwhm_p < SPARSE_IQ_PPC:
+                step_length = SPARSE_IQ_PPC // int(np.ceil(SPARSE_IQ_PPC / fwhm_p))
+            else:
+                step_length = int((fwhm_p // SPARSE_IQ_PPC) * SPARSE_IQ_PPC)
 
         num_point = int(
             np.ceil(
