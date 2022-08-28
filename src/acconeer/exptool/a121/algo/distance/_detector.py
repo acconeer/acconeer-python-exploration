@@ -163,8 +163,7 @@ class Detector:
         a121.Profile.PROFILE_5: 1.28,
     }
     MIN_NUM_POINTS_IN_ENVELOPE_FWHM_SPAN = 4.0
-    VALID_STEP_LENGTHS_IN_COARSE = [1, 2, 3, 4, 6, 8, 12, 24]
-    NUM_POINTS_IN_COARSE = 24
+    VALID_STEP_LENGTHS = [1, 2, 3, 4, 6, 8, 12, 24]
     NUM_SUBSWEEPS_IN_SENSOR_CONFIG = 4
 
     MAX_HWAAS = 511
@@ -809,18 +808,30 @@ class Detector:
 
     @classmethod
     def _limit_step_length(cls, profile: a121.Profile, user_limit: Optional[int]) -> int:
+        """
+        Calculates step length based on user defined step length and selected profile.
+
+        The step length must yield minimum MIN_NUM_POINTS_IN_ENVELOPE_FWHM_SPAN number of points
+        in the span of the FWHM of the envelope.
+
+        If the step length is <24, return the valid step length(defined by
+        VALID_STEP_LENGTHS) that is closest to, but not longer than the limit.
+
+        If the limit is 24<=, return the multiple of 24 that is
+        closest, but not longer than the limit.
+        """
+
         fwhm_p = Processor.ENVELOPE_FWHM_M[profile] / Processor.APPROX_BASE_STEP_LENGTH_M
         limit = int(fwhm_p / cls.MIN_NUM_POINTS_IN_ENVELOPE_FWHM_SPAN)
 
         if user_limit is not None:
             limit = min(user_limit, limit)
 
-        if limit < cls.NUM_POINTS_IN_COARSE:
-            # TODO: Pick the longest, but not longer than limit
-            idx_closest = np.argmin(np.abs(np.array(cls.VALID_STEP_LENGTHS_IN_COARSE) - limit))
-            return cls.VALID_STEP_LENGTHS_IN_COARSE[idx_closest]
+        if limit < cls.VALID_STEP_LENGTHS[-1]:
+            idx_closest = np.sum(np.array(cls.VALID_STEP_LENGTHS) <= limit) - 1
+            return int(cls.VALID_STEP_LENGTHS[idx_closest])
         else:
-            return (limit // cls.NUM_POINTS_IN_COARSE) * cls.NUM_POINTS_IN_COARSE
+            return int((limit // cls.VALID_STEP_LENGTHS[-1]) * cls.VALID_STEP_LENGTHS[-1])
 
     @classmethod
     def _close_subsweep_group_plans_to_sensor_config(
