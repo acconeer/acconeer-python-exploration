@@ -941,19 +941,8 @@ class Detector:
         self, processor_specs: list[ProcessorSpec]
     ) -> list[ProcessorSpec]:
         """
-        Add context to ProcessorSpec object, based on the corresponding processor config.
-
-        1. Close range measurement and distance estimation -> Recorded threshold, direct
-        leakage and phase jitter compensation reference.
-        2. Close range measurement and recorded threshold calibration -> Direct leakage and
-        phase jitter compensation reference.
-        3. Far range measurement and recorded threshold -> Recorded threshold.
-
-        If not one of these cases, add the unaltered processor specification.
+        Create and add processor context to processor specification.
         """
-
-        ERR_MESSAGE_CLOSE_RANGE_ERR = "Close range calibration not performed"
-        ERR_MESSAGE_RECORDED = "Recorded threshold calibration not performed"
 
         assert self.context.bg_noise_std is not None
 
@@ -962,73 +951,38 @@ class Detector:
         for idx, (spec, bg_noise_std) in enumerate(
             zip(processor_specs, self.context.bg_noise_std)
         ):
+            if (
+                self.context.recorded_thresholds_mean_sweep is not None
+                or self.context.recorded_thresholds_noise_std is not None
+            ):
+                assert self.context.recorded_thresholds_mean_sweep is not None
+                assert self.context.recorded_thresholds_noise_std is not None
+                recorded_thresholds_mean_sweep = self.context.recorded_thresholds_mean_sweep[idx]
+                recorded_threshold_noise_std = self.context.recorded_thresholds_noise_std[idx]
+            else:
+                recorded_thresholds_mean_sweep = None
+                recorded_threshold_noise_std = None
 
             if (
-                spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE
-                and spec.processor_config.processor_mode == ProcessorMode.DISTANCE_ESTIMATION
+                self.context.direct_leakage is not None
+                or self.context.phase_jitter_comp_reference is not None
             ):
-                if not self._close_range_calibrated(self.context):
-                    raise Exception(ERR_MESSAGE_CLOSE_RANGE_ERR)
-
-                if (
-                    not self._recorded_threshold_calibrated(self.context)
-                    or self.context.recorded_thresholds_mean_sweep is None
-                    or self.context.recorded_thresholds_noise_std is None
-                ):
-                    raise Exception(ERR_MESSAGE_RECORDED)
-
-                context = ProcessorContext(
-                    recorded_threshold_mean_sweep=self.context.recorded_thresholds_mean_sweep[idx],
-                    recorded_threshold_noise_std=self.context.recorded_thresholds_noise_std[idx],
-                    bg_noise_std=bg_noise_std,
-                    direct_leakage=self.context.direct_leakage,
-                    phase_jitter_comp_ref=self.context.phase_jitter_comp_reference,
-                    reference_temperature=self.context.reference_temperature,
-                )
-                updated_specs.append(attrs.evolve(spec, processor_context=context))
-            elif (
-                spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE
-                and spec.processor_config.processor_mode
-                == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
-            ):
-                if not self._close_range_calibrated(self.context):
-                    raise Exception(ERR_MESSAGE_CLOSE_RANGE_ERR)
-
-                context = ProcessorContext(
-                    bg_noise_std=bg_noise_std,
-                    direct_leakage=self.context.direct_leakage,
-                    phase_jitter_comp_ref=self.context.phase_jitter_comp_reference,
-                )
-                updated_specs.append(attrs.evolve(spec, processor_context=context))
-            elif (
-                spec.processor_config.measurement_type == MeasurementType.FAR_RANGE
-                and spec.processor_config.threshold_method == ThresholdMethod.RECORDED
-                and self._recorded_threshold_calibrated(self.context)
-                and self.context.recorded_threshold_session_config_used == self.session_config
-            ):
-                if (
-                    self.context.recorded_thresholds_mean_sweep is None
-                    or self.context.recorded_thresholds_noise_std is None
-                ):
-                    raise Exception(ERR_MESSAGE_RECORDED)
-
-                context = ProcessorContext(
-                    recorded_threshold_mean_sweep=self.context.recorded_thresholds_mean_sweep[idx],
-                    recorded_threshold_noise_std=self.context.recorded_thresholds_noise_std[idx],
-                    bg_noise_std=bg_noise_std,
-                    reference_temperature=self.context.reference_temperature,
-                )
-                updated_specs.append(attrs.evolve(spec, processor_context=context))
-            elif (
-                spec.processor_config.measurement_type == MeasurementType.FAR_RANGE
-                and spec.processor_config.processor_mode
-                == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
-            ):
-                context = ProcessorContext(bg_noise_std=bg_noise_std)
-                updated_specs.append(attrs.evolve(spec, processor_context=context))
+                direct_leakage = self.context.direct_leakage
+                phase_jitter_comp_ref = self.context.phase_jitter_comp_reference
             else:
-                context = ProcessorContext(bg_noise_std=bg_noise_std)
-                updated_specs.append(attrs.evolve(spec, processor_context=context))
+                direct_leakage = None
+                phase_jitter_comp_ref = None
+
+            context = ProcessorContext(
+                recorded_threshold_mean_sweep=recorded_thresholds_mean_sweep,
+                recorded_threshold_noise_std=recorded_threshold_noise_std,
+                bg_noise_std=bg_noise_std,
+                direct_leakage=direct_leakage,
+                phase_jitter_comp_ref=phase_jitter_comp_ref,
+                reference_temperature=self.context.reference_temperature,
+            )
+            updated_specs.append(attrs.evolve(spec, processor_context=context))
+
         return updated_specs
 
 
