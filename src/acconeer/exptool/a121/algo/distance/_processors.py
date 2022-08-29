@@ -711,7 +711,7 @@ def calculate_bg_noise_std(
     abs_sweep = np.abs(filtered_sweep)
     abs_sweep = abs_sweep[filt_margin:-filt_margin]
 
-    return float(np.std(np.abs(abs_sweep)))
+    return float(np.sqrt(np.mean(np.square(abs_sweep))))
 
 
 def calculate_offset(result: a121.Result, config: a121.SensorConfig) -> float:

@@ -169,13 +169,6 @@ class Detector:
     MAX_HWAAS = 511
     MIN_HWAAS = 1
     HWAAS_MIN_DISTANCE = 1.0
-    RLG_PER_HWAAS_MAP = {
-        a121.Profile.PROFILE_1: 11.3,
-        a121.Profile.PROFILE_2: 13.7,
-        a121.Profile.PROFILE_3: 19.0,
-        a121.Profile.PROFILE_4: 20.5,
-        a121.Profile.PROFILE_5: 21.6,
-    }
 
     session_config: a121.SessionConfig
     processor_specs: List[ProcessorSpec]
@@ -331,7 +324,7 @@ class Detector:
         for spec in self.processor_specs:
             bg_noise_std_in_subsweep = []
             result = extended_result[spec.group_index][spec.sensor_id]
-            sensor_config = session_config.groups[spec.group_index][spec.sensor_id]
+            sensor_config = self.session_config.groups[spec.group_index][spec.sensor_id]
             subsweep_configs = sensor_config.subsweeps
             for idx in spec.subsweep_indexes:
                 if not subsweep_configs[idx].enable_loopback:
@@ -807,10 +800,10 @@ class Detector:
     def _calculate_hwaas(
         cls, profile: a121.Profile, breakpoints: list[int], signal_quality: float, step_length: int
     ) -> list[int]:
-        rlg_per_hwaas = cls.RLG_PER_HWAAS_MAP[profile]
+        rlg_per_hwaas = Aggregator.RLG_PER_HWAAS_MAP[profile]
         hwaas = []
         for idx in range(len(breakpoints) - 1):
-            processing_gain = cls._calc_processing_gain(profile, step_length)
+            processing_gain = Aggregator.calc_processing_gain(profile, step_length)
             subsweep_end_point_m = max(
                 Processor.APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
                 cls.HWAAS_MIN_DISTANCE,
@@ -819,21 +812,6 @@ class Detector:
             hwaas_in_subsweep = int(10 ** ((rlg - rlg_per_hwaas) / 10))
             hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
         return hwaas
-
-    @staticmethod
-    def _calc_processing_gain(profile: a121.Profile, step_length: int) -> float:
-        envelope_base_length_m = Processor.ENVELOPE_FWHM_M[profile] * 2  # approx envelope width
-        num_points_in_envelope = int(
-            envelope_base_length_m / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
-        )
-        mid_point = num_points_in_envelope // 2
-        pulse = np.concatenate(
-            (
-                np.linspace(0, 1, mid_point),
-                np.linspace(1, 0, num_points_in_envelope - mid_point),
-            )
-        )
-        return float(np.sum(pulse**2))
 
     @classmethod
     def _add_margin_to_breakpoints(
