@@ -180,6 +180,7 @@ class PluginPlotArea(QFrame):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
+        self.layout().addWidget(self.child_widget)
 
         self.startTimer(int(1000 / self._FPS))
 
