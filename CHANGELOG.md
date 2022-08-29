@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.2.2
+
+### Removed
+- Temporally disable auto-connect functionality because it introduced issues
+  related to flashing
+
 ## v5.2.1
 
 ### Fixed
