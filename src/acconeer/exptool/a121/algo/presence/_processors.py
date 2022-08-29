@@ -23,6 +23,7 @@ class ProcessorConfig(AlgoConfigBase):
     intra_detection_threshold: float = attrs.field(default=1.3)
     inter_detection_threshold: float = attrs.field(default=1)
     inter_phase_boost: bool = attrs.field(default=False)
+    inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
@@ -128,6 +129,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.mean_sweep_sf = self._tc_to_sf(self.mean_sweep_tc, self.f)
         self.lp_phase_shift = np.zeros(self.num_distances)
         self.inter_phase_boost = self.processor_config.inter_phase_boost
+
+        self.inter_frame_presence_timeout = processor_config.inter_frame_presence_timeout
+        self.previous_presence_score = 0
+        self.negative_count = 0
 
         self.fast_lp_mean_sweep = np.zeros(self.num_distances)
         self.slow_lp_mean_sweep = np.zeros(self.num_distances)
@@ -268,6 +273,50 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         return self.lp_phase_shift * norm_abs_mean_sweep  # type: ignore[no-any-return]
 
+    def _inter_presence_score_scaling(self) -> None:
+        """
+        Scaling of self.inter_presence_score for faster decline when loosing detection.
+        Start exponential scaling after self.inter_frame_presence_timeout seconds.
+        """
+
+        if self.inter_frame_presence_timeout is None:
+            raise ValueError("inter_frame_presence_timeout must be set")
+
+        scaling_factor = (
+            np.exp(
+                np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)
+                / self.inter_frame_presence_timeout
+                - 1
+            )
+            + 1
+            - np.exp(-1)
+        )
+        self.inter_presence_score /= scaling_factor
+
+    def _mean_sweep_sf_scaling(self) -> None:
+        """
+        Scaling of self.mean_sweep_sf for faster adaptation to the environment when
+        loosing detection.
+        Start exponential scaling after self.inter_frame_presence_timeout seconds.
+        """
+
+        if self.inter_frame_presence_timeout is None:
+            raise ValueError("inter_frame_presence_timeout must be set")
+
+        scaling_factor = (
+            np.exp(
+                np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)
+                / self.inter_frame_presence_timeout
+                * self.mean_sweep_tc
+                - 1
+            )
+            + 1
+            - np.exp(-1)
+        )
+        self.mean_sweep_sf = self._tc_to_sf(
+            np.maximum(0, self.mean_sweep_tc / scaling_factor), self.f
+        )
+
     def process(self, result: a121.Result) -> ProcessorResult:
         frame = result.subframes[self.subsweep_index]
 
@@ -354,6 +403,21 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.inter_presence_score = (
             sf * self.inter_presence_score + (1.0 - sf) * inter[inter_presence_distance_index]
         )
+
+        # Inter-frame presence timeout
+
+        if self.inter_frame_presence_timeout:
+            delta = self.inter_presence_score - self.previous_presence_score
+
+            if delta < 0:
+                self.negative_count += 1
+            else:
+                self.negative_count = 0
+
+            self._inter_presence_score_scaling()
+            self._mean_sweep_sf_scaling()
+
+            self.previous_presence_score = self.inter_presence_score
 
         # Presence distance - intra presence distance is prioritized due to faster reaction time
 

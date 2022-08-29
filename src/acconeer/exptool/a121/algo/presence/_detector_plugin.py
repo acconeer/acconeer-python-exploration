@@ -719,6 +719,13 @@ class ViewPlugin(DetectorViewPluginBase):
                 decimals=2,
                 limits=(0, 5),
             ),
+            "inter_frame_presence_timeout": pidgets.OptionalIntParameterWidgetFactory(
+                name_label_text="Presence timeout",
+                checkbox_label_text="Enable",
+                suffix=" s",
+                limits=(1, 30),
+                init_set_value=5,
+            ),
         }
 
     def on_app_model_update(self, app_model: AppModel) -> None:
