@@ -5,3 +5,4 @@ A121 algorithms
    :maxdepth: 1
 
    presence_detection
+   distance_detection

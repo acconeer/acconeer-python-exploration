@@ -129,7 +129,9 @@ class DetectorConfig(AlgoConfigBase):
     equals high detection threshold."""
 
     cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
-    """Use one sided CFAR threshold."""
+    """Use one sided CFAR threshold. Instead of determining the CFAR threshold from sweep
+    amplitudes from distances both closer and a farther, use only closer. Helpful e.g. for fluid
+    level in small tanks, where many multipath signal can apprear just after the main peak."""
 
 
 @attrs.frozen(kw_only=True)
@@ -205,6 +207,12 @@ class Detector:
             raise ValueError("Session config not defined")
 
     def calibrate_close_range(self) -> None:
+        """Calibrates the close range measurement parameters used when subtracting the direct
+        leakage from the measured signal.
+
+        The parameters calibrated are the direct leakage and a phase reference, used to reduce
+        the amount of phase jitter, with the purpose of reducing the residual.
+        """
         self._validate_ready_for_calibration()
 
         close_range_spec = self._filter_close_range_spec(self.processor_specs)
@@ -236,6 +244,8 @@ class Detector:
         self.context.recorded_thresholds_noise_std = None
 
     def record_threshold(self) -> None:
+        """Calibrates the parameters used when forming the recorded threshold."""
+
         self._validate_ready_for_calibration()
 
         # TODO: Ignore/override threshold method while recording threshold
@@ -335,6 +345,8 @@ class Detector:
         self.context.bg_noise_std = bg_noise_std
 
     def calibrate_offset(self) -> None:
+        """Estimates sensor offset error based on loopback measurement."""
+
         self._validate_ready_for_calibration()
 
         sensor_config = a121.SensorConfig(
@@ -362,6 +374,8 @@ class Detector:
     def get_detector_status(
         cls, config: DetectorConfig, context: DetectorContext, sensor_id: int
     ) -> DetectorStatus:
+        """Returns the detector status along with the detector state."""
+
         if not cls._valid_detector_config_range(config=config):
             return DetectorStatus(
                 detector_state=DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE,
@@ -456,6 +470,8 @@ class Detector:
     def start(
         self, recorder: Optional[a121.Recorder] = None, skip_calibration: bool = False
     ) -> None:
+        """Method for setting up measurement session."""
+
         if self.started:
             raise RuntimeError("Already started")
 
@@ -501,6 +517,7 @@ class Detector:
         self.started = True
 
     def get_next(self) -> DetectorResult:
+        """Called from host to get next measurement."""
         if not self.started:
             raise RuntimeError("Not started")
 
@@ -518,6 +535,8 @@ class Detector:
         )
 
     def update_config(self, config: DetectorConfig) -> None:
+        """Updates the session config and processor specification based on the detector
+        configuration."""
         (
             self.session_config,
             self.processor_specs,
@@ -526,6 +545,7 @@ class Detector:
         )
 
     def stop(self) -> Any:
+        """Stops the measurement session."""
         if not self.started:
             raise RuntimeError("Already stopped")
 
