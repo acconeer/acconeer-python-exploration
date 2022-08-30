@@ -25,6 +25,11 @@ Python related
 
    This error may occur when there are non-ASCII characters in the path.
 
+#) Dropdown menu is out of position
+
+   This is a known issue on for Qt when running Wayland display server. The issue is fixed for Qt verison >= 6.4.0.
+   (See related issue: https://bugreports.qt.io/browse/QTBUG-85297)
+
 Sensor related
 --------------
 
