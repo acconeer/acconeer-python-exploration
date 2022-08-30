@@ -54,15 +54,22 @@ log = logging.getLogger(__name__)
 
 
 @attrs.mutable(kw_only=True)
+class PlotConfig:
+    number_of_zones: Optional[int] = attrs.field(default=None)
+
+
+@attrs.mutable(kw_only=True)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
+    plot_config: PlotConfig = attrs.field(factory=PlotConfig)
     replaying: bool = attrs.field(default=False)
 
 
 @attrs.frozen(kw_only=True)
 class Save:
     config: DetectorConfig = attrs.field()
+    plot_config: PlotConfig = attrs.field()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
@@ -94,11 +101,16 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             log.warning("Could not load pickled - not the correct type")
             return
 
+        if not isinstance(obj.plot_config, PlotConfig):
+            log.warning("Could not load pickled - not the correct type")
+            return
+
         self.shared_state.config = obj.config
+        self.shared_state.plot_config = obj.plot_config
         self.broadcast(sync=True)
 
     def _serialize(self) -> bytes:
-        obj = Save(config=self.shared_state.config)
+        obj = Save(config=self.shared_state.config, plot_config=self.shared_state.plot_config)
         return pickle.dumps(obj, protocol=4)
 
     def broadcast(self, sync: bool = False) -> None:
@@ -115,6 +127,11 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def update_sensor_id(self, *, sensor_id: int) -> None:
         self.shared_state.sensor_id = sensor_id
+        self.broadcast(sync=True)
+
+    @is_task
+    def update_plot_config(self, *, config: PlotConfig) -> None:
+        self.shared_state.plot_config = config
         self.broadcast(sync=True)
 
     @property
@@ -222,6 +239,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 kwargs=dict(
                     detector_config=self.shared_state.config,
                     sensor_config=Detector._get_sensor_config(self.shared_state.config),
+                    plot_config=self.shared_state.plot_config,
                 ),
                 recipient="plot_plugin",
             )
@@ -300,7 +318,12 @@ class PlotPlugin(DetectorPlotPluginBase):
         assert isinstance(message.data, DetectorResult)
         self.update(message.data)
 
-    def setup(self, detector_config: DetectorConfig, sensor_config: a121.SensorConfig) -> None:
+    def setup(
+        self,
+        detector_config: DetectorConfig,
+        sensor_config: a121.SensorConfig,
+        plot_config: PlotConfig,
+    ) -> None:
         self.detector_config = detector_config
         self.distances = np.linspace(
             detector_config.start_m, detector_config.end_m, sensor_config.num_points
@@ -308,11 +331,15 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         self.history_length_s = 10
 
-        max_num_of_sectors = max(6, self.distances.size // 3)
-        self.sector_size = max(1, -(-self.distances.size // max_num_of_sectors))
-        self.num_sectors = -(-self.distances.size // self.sector_size)
-        self.sector_offset = (self.num_sectors * self.sector_size - self.distances.size) // 2
+        if plot_config.number_of_zones:
+            self.num_sectors = min(plot_config.number_of_zones, self.distances.size)
+            self.sector_size = max(1, -(-self.distances.size // self.num_sectors))
+        else:
+            max_num_of_sectors = max(6, self.distances.size // 3)
+            self.sector_size = max(1, -(-self.distances.size // max_num_of_sectors))
+            self.num_sectors = -(-self.distances.size // self.sector_size)
 
+        self.sector_offset = (self.num_sectors * self.sector_size - self.distances.size) // 2
         win = self.plot_layout
 
         self.intra_limit_lines = []
@@ -622,6 +649,21 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
+        self.plot_config_editor = AttrsConfigEditor[PlotConfig](
+            title="Plot parameters",
+            factory_mapping={
+                "number_of_zones": pidgets.OptionalIntParameterWidgetFactory(
+                    name_label_text="Detection zones",
+                    checkbox_label_text="Override",
+                    limits=(1, 10),
+                    init_set_value=3,
+                )
+            },
+            parent=self.scrolly_widget,
+        )
+        self.plot_config_editor.sig_update.connect(self._on_plot_config_update)
+        scrolly_layout.addWidget(self.plot_config_editor)
+
         self.sticky_widget.setLayout(sticky_layout)
         self.scrolly_widget.setLayout(scrolly_layout)
 
@@ -687,6 +729,8 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
+            self.plot_config_editor.set_data(None)
+            self.plot_config_editor.setEnabled(False)
             self.sensor_id_pidget.set_parameter(None)
 
             return
@@ -697,6 +741,8 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
+        self.plot_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.plot_config_editor.set_data(state.plot_config)
         self.sensor_id_pidget.set_parameter(state.sensor_id)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
@@ -711,6 +757,9 @@ class ViewPlugin(DetectorViewPluginBase):
     # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
         self.app_model.put_backend_plugin_task("update_config", {"config": config})
+
+    def _on_plot_config_update(self, config: PlotConfig) -> None:
+        self.app_model.put_backend_plugin_task("update_plot_config", {"config": config})
 
     # TODO: move to detector base (?)
     def handle_message(self, message: GeneralMessage) -> None:
