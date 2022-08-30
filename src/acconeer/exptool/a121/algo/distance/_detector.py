@@ -606,115 +606,48 @@ class Detector:
         """
         Create dictionary containing group plans for close and far range measurements.
 
-        Constants used:
-        - MIN_DIST_M defines the shortest distance possible to measure free of leakage.
-
-        Outline of logic:
-        - If the start is closer than the transition point, a close range subsweep plan is added.
-        - If the end is further away than the transition point, far range subsweep plans are added.
-        - max_profile is used in the far range region to achive high SNR and low power consumption.
-        - A shorter profile is used between the transition point and the MIN_DIST_M of max_profile.
+        - Close range measurement: Add Subsweep group if the user defined starting point is
+        effected by the direct leakage.
+        - Transition region: Add group plans to bridge the gap between the start of the far range
+        measurement region(either end of close range region or user defined start_m) and the
+        shortest measurable distance with max_profile, free from direct leakage interference.
+        - Add group plan with max_profile. Increase HWAAS as a function of distance to maintain
+        SNR throughout the sweep.
         """
-
-        min_dist_m = cls._add_to_min_dist_m(config)
-        transition_m = list(min_dist_m.values())[0]
-
         plans = {}
 
-        if config.start_m < transition_m:
-            profile = a121.Profile.PROFILE_1
-            step_length = cls._limit_step_length(profile, config.max_step_length)
-            breakpoints = cls._m_to_points([config.start_m, transition_m], step_length)
-            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality, step_length)
+        # Determine shortest direct leakage free distance per profile
+        min_dist_m = cls._calc_leakage_free_min_dist(config)
 
-            has_neighbour = (False, transition_m < config.end_m)
-            extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile=profile,
-                step_length=step_length,
-                base_bpts=breakpoints,
-                has_neighbour=has_neighbour,
-                config=config,
-                is_close_range_measurement=True,
+        close_range_transition_m = min_dist_m[a121.Profile.PROFILE_1]
+
+        # Add close range group plan if applicable
+        if config.start_m < close_range_transition_m:
+            plans[MeasurementType.CLOSE_RANGE] = cls._get_close_range_group_plan(
+                close_range_transition_m, config
             )
 
-            plans[MeasurementType.CLOSE_RANGE] = [
-                SubsweepGroupPlan(
-                    step_length=step_length,
-                    breakpoints=extended_breakpoints,
-                    profile=profile,
-                    hwaas=hwaas,
-                )
-            ]
+        # Define transition group plans
+        transition_subgroup_plans = cls._get_transition_group_plans(
+            config, min_dist_m, MeasurementType.CLOSE_RANGE in plans
+        )
 
-        far_subgroup_plans = []
-        far_range_start_m = np.max([config.start_m, transition_m])
-        if (
-            config.max_profile is not a121.Profile.PROFILE_1
-            and config.start_m < min_dist_m[config.max_profile]
-            and far_range_start_m < config.end_m
-        ):
-            min_dists_m = np.array(list(min_dist_m.values()))
-            min_dists_profiles = np.array(list(min_dist_m.keys()))
-            (viable_profile_idx,) = np.where(min_dists_m <= far_range_start_m)
-            profile_to_be_used = min_dists_profiles[viable_profile_idx[-1]]
+        # The number of available subsweeps in the group with max profile.
+        num_remaining_subsweeps = cls.NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
+            transition_subgroup_plans
+        )
 
-            end_m = min(config.end_m, min_dist_m[config.max_profile])
-            step_length = cls._limit_step_length(profile_to_be_used, config.max_step_length)
-            breakpoints = cls._m_to_points([far_range_start_m, end_m], step_length)
-            hwaas = cls._calculate_hwaas(
-                profile_to_be_used, breakpoints, config.signal_quality, step_length
-            )
+        # No neighbours if no close range measurement or transition groups defined.
+        has_neighbouring_subsweep = (
+            MeasurementType.CLOSE_RANGE in plans or len(transition_subgroup_plans) != 0
+        )
 
-            has_neighbour = (len(plans) != 0, min_dist_m[config.max_profile] < end_m)
-            extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile=profile_to_be_used,
-                step_length=step_length,
-                base_bpts=breakpoints,
-                has_neighbour=has_neighbour,
-                config=config,
-                is_close_range_measurement=False,
-            )
+        # Define group plans with max profile
+        max_profile_subgroup_plans = cls._get_max_profile_group_plans(
+            config, min_dist_m, has_neighbouring_subsweep, num_remaining_subsweeps
+        )
 
-            far_subgroup_plans.append(
-                SubsweepGroupPlan(
-                    step_length=step_length,
-                    breakpoints=extended_breakpoints,
-                    profile=profile_to_be_used,
-                    hwaas=hwaas,
-                )
-            )
-
-        if min_dist_m[config.max_profile] < config.end_m:
-            subsweep_start_m = max([config.start_m, min_dist_m[config.max_profile]])
-            breakpoints_m = np.linspace(
-                subsweep_start_m,
-                config.end_m,
-                cls.NUM_SUBSWEEPS_IN_SENSOR_CONFIG + 1 - len(far_subgroup_plans),
-            ).tolist()
-
-            profile = config.max_profile
-            step_length = cls._limit_step_length(config.max_profile, config.max_step_length)
-            breakpoints = cls._m_to_points(breakpoints_m, step_length)
-            hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality, step_length)
-
-            has_neighbour = (len(plans) != 0 or len(far_subgroup_plans) != 0, False)
-            extended_breakpoints = cls._add_margin_to_breakpoints(
-                profile=profile,
-                step_length=step_length,
-                base_bpts=breakpoints,
-                has_neighbour=has_neighbour,
-                config=config,
-                is_close_range_measurement=False,
-            )
-
-            far_subgroup_plans.append(
-                SubsweepGroupPlan(
-                    step_length=step_length,
-                    breakpoints=extended_breakpoints,
-                    profile=profile,
-                    hwaas=hwaas,
-                )
-            )
+        far_subgroup_plans = transition_subgroup_plans + max_profile_subgroup_plans
 
         if len(far_subgroup_plans) != 0:
             plans[MeasurementType.FAR_RANGE] = far_subgroup_plans
@@ -722,7 +655,133 @@ class Detector:
         return plans
 
     @classmethod
-    def _add_to_min_dist_m(cls, config: DetectorConfig) -> Dict[a121.Profile, float]:
+    def _get_close_range_group_plan(
+        cls, transition_m: float, config: DetectorConfig
+    ) -> list[SubsweepGroupPlan]:
+        """Define the group plan for close range measurements.
+
+        The close range measurement always use profile 1 to minimize direct leakage region.
+        """
+        profile = a121.Profile.PROFILE_1
+        # No left neighbour as this is the first subsweep when close range measurement is
+        # applicable.
+        has_neighbour = (False, transition_m < config.end_m)
+        return [
+            cls._create_group_plan(
+                profile, config, [config.start_m, transition_m], has_neighbour, True
+            )
+        ]
+
+    @classmethod
+    def _get_transition_group_plans(
+        cls,
+        config: DetectorConfig,
+        min_dist_m: Dict[a121.Profile, float],
+        has_close_range_measurement: bool,
+    ) -> list[SubsweepGroupPlan]:
+        """Define the transition segment group plans.
+
+        The purpose of the transition group is to bridge the gap between the start point of the
+        far measurement region and the point where max_profile can be used without interference
+        of direct leakage.
+
+        The transition region can consist of maximum two subsweeps, where the first utilize profile
+        1 and the second profile 3. Whether both, one or none is used depends on the user provided
+        detector config.
+        """
+        transition_profiles = [
+            profile
+            for profile in [a121.Profile.PROFILE_1, a121.Profile.PROFILE_3]
+            if profile.value < config.max_profile.value
+        ]
+        transition_profiles.append(config.max_profile)
+
+        transition_subgroup_plans = []
+
+        for i in range(len(transition_profiles) - 1):
+            profile = transition_profiles[i]
+            next_profile = transition_profiles[i + 1]
+
+            if config.start_m < min_dist_m[next_profile] and min_dist_m[profile] < config.end_m:
+                start_m = max(min_dist_m[profile], config.start_m)
+                end_m = min(config.end_m, min_dist_m[next_profile])
+                has_neighbour = (has_close_range_measurement, min_dist_m[next_profile] < end_m)
+
+                transition_subgroup_plans.append(
+                    cls._create_group_plan(profile, config, [start_m, end_m], has_neighbour, False)
+                )
+
+        return transition_subgroup_plans
+
+    @classmethod
+    def _get_max_profile_group_plans(
+        cls,
+        config: DetectorConfig,
+        min_dist_m: Dict[a121.Profile, float],
+        has_neighbouring_subsweep: bool,
+        num_remaining_subsweeps: int,
+    ) -> list[SubsweepGroupPlan]:
+        """Define far range group plans with max_profile
+
+        Divide the measurement range from the shortest leakage free distance of max_profile to
+        the end point into equidistance segments and assign HWAAS according to the radar equation
+        to maintain SNR throughout the sweep.
+        """
+
+        if min_dist_m[config.max_profile] < config.end_m:
+            subsweep_start_m = max([config.start_m, min_dist_m[config.max_profile]])
+            breakpoints_m = np.linspace(
+                subsweep_start_m,
+                config.end_m,
+                num_remaining_subsweeps + 1,
+            ).tolist()
+
+            return [
+                cls._create_group_plan(
+                    config.max_profile,
+                    config,
+                    breakpoints_m,
+                    (has_neighbouring_subsweep, False),
+                    False,
+                )
+            ]
+        else:
+            return []
+
+    @classmethod
+    def _create_group_plan(
+        cls,
+        profile: a121.Profile,
+        config: DetectorConfig,
+        breakpoints_m: list[float],
+        has_neighbour: Tuple[bool, bool],
+        is_close_range_measurement: bool,
+    ) -> SubsweepGroupPlan:
+        """Creates a group plan."""
+        step_length = cls._limit_step_length(profile, config.max_step_length)
+        breakpoints = cls._m_to_points(breakpoints_m, step_length)
+        hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality, step_length)
+
+        extended_breakpoints = cls._add_margin_to_breakpoints(
+            profile=profile,
+            step_length=step_length,
+            base_bpts=breakpoints,
+            has_neighbour=has_neighbour,
+            config=config,
+            is_close_range_measurement=is_close_range_measurement,
+        )
+
+        return SubsweepGroupPlan(
+            step_length=step_length,
+            breakpoints=extended_breakpoints,
+            profile=profile,
+            hwaas=hwaas,
+        )
+
+    @classmethod
+    def _calc_leakage_free_min_dist(cls, config: DetectorConfig) -> Dict[a121.Profile, float]:
+        """This function calculates the shortest leakage free distance per profile, for all profiles
+        up to max_profile"""
         min_dist_m = {}
         for profile, min_dist in cls.MIN_LEAKAGE_FREE_DIST_M.items():
             min_dist_m[profile] = min_dist
@@ -734,6 +793,11 @@ class Detector:
                     * Processor.APPROX_BASE_STEP_LENGTH_M
                 )
                 min_dist_m[profile] += cfar_margin_m
+
+            if profile == config.max_profile:
+                # All profiles up to max_profile has been added. Break and return result.
+                break
+
         return min_dist_m
 
     @classmethod
