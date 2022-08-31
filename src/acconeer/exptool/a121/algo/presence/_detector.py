@@ -32,26 +32,75 @@ def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=1.0)
+    """Start point of measurement interval in meters."""
+
     end_m: float = attrs.field(default=2.0)
+    """End point of measurement interval in meters."""
+
     profile: Optional[a121.Profile] = attrs.field(
         default=None, converter=optional_profile_converter
     )
+    """
+    Sets the profile. If no argument is provided, the highest possible
+    profile without interference of direct leakage is used to maximize SNR.
+    """
+
     step_length: Optional[int] = attrs.field(default=None)
+    """
+    Step length in points. If no argument is provided, the step length is automatically
+    calculated based on the profile.
+    """
+
     frame_rate: float = attrs.field(default=10.0)
+    """Frame rate in Hz."""
+
     sweeps_per_frame: int = attrs.field(default=16)
+    """Number of sweeps per frame."""
+
     hwaas: int = attrs.field(default=32)
+    """Number of HWAAS."""
+
     intra_enable: bool = attrs.field(default=True)
+    """Enables the intra-frame presence detection."""
+
     intra_detection_threshold: float = attrs.field(default=1.3)
+    """Detection threshold for the intra-frame presence detection."""
+
     intra_frame_time_const: float = attrs.field(default=0.15)
+    """Time constant for the dephwise filtering in the intra-frame part."""
+
     intra_output_time_const: float = attrs.field(default=0.5)
+    """Time constant for the output in the intra-frame part."""
+
     inter_enable: bool = attrs.field(default=True)
+    """Enables the inter-frame presence detection."""
+
     inter_detection_threshold: float = attrs.field(default=1)
+    """Detection threshold for the inter-frame presence detection."""
+
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)
+    """
+    Cutoff frequency of the low pass filter for the fast filtered absolute sweep mean.
+    No filtering is applied if the cutoff is set over half the frame rate (Nyquist limit).
+    """
+
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
+    """Cutoff frequency of the low pass filter for the slow filtered absolute sweep mean."""
+
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
+    """Time constant of the low pass filter for the inter-frame deviation between fast and slow."""
+
     inter_output_time_const: float = attrs.field(default=5)
+    """Time constant for the output in the inter-frame part."""
+
     inter_phase_boost: bool = attrs.field(default=False)
+    """Enables the inter-frame phase boost. Used to increase slow motion detection."""
+
     inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
+    """
+    Number of seconds the inter-frame presence score needs to decrease before exponential
+    scaling starts for faster decline.
+    """
 
     @step_length.validator
     def _validate_step_length(self, attrs: Attribute, step_length: int) -> None:
