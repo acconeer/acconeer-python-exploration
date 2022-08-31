@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- A111: Unclear-ness in the Calibration management section.
+  Users are now able see if calibrations are used by the processor or not.
+
 ## v5.2.2
 
 ### Removed

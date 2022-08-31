@@ -10,7 +10,7 @@ from argparse import SUPPRESS, ArgumentParser
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtWidgets import QCheckBox, QLineEdit, QPushButton
+from PySide6.QtWidgets import QCheckBox, QLabel, QLineEdit, QPushButton
 
 
 class LoadState(enum.Enum):
@@ -72,6 +72,12 @@ class ExptoolArgumentParser(ArgumentParser):
         )
 
 
+class CalibrationStatus(enum.Enum):
+    NONE = enum.auto()
+    BUFFERED = enum.auto()
+    IN_PROCESSOR = enum.auto()
+
+
 class CalibrationUiState:
     """
     Presenter object that modifies the semi-passive view that is
@@ -83,7 +89,8 @@ class CalibrationUiState:
         load_btn: Optional[QPushButton] = None,
         save_btn: Optional[QPushButton] = None,
         clear_btn: Optional[QPushButton] = None,
-        status_text: Optional[QLineEdit] = None,
+        source_text: Optional[QLineEdit] = None,
+        status_label: Optional[QLabel] = None,
         auto_apply_cb: Optional[QCheckBox] = None,
         apply_btn: Optional[QPushButton] = None,
     ):
@@ -91,16 +98,41 @@ class CalibrationUiState:
         self._modified: bool = False
         self._auto_apply: bool = False
         self._scan_is_running: bool = False  # Will be updated from GUI
+        self._calibration_status: CalibrationStatus = CalibrationStatus.NONE
 
         self._load_btn = load_btn
         self._save_btn = save_btn
         self._clear_btn = clear_btn
-        self._status_text = status_text
+        self._source_text = source_text
+        self._status_label = status_label
         self._auto_apply_cb = auto_apply_cb
         self._apply_btn = apply_btn
         self._update_ui_elements()
 
-    def get_display_tooltip_text(self):
+    def get_status_tooltip_text(self):
+        return "<br>".join(
+            [
+                "<i>None</i>:",
+                "No calibration has been made.",
+                "",
+                "<i>Buffered</i>:",
+                "A calibration has been made but it is not used.",
+                "",
+                "<i>Used in processor</i>:",
+                "A calibration is/will be used.",
+            ]
+        )
+
+    def get_displayed_status_text(self):
+        TEXT_MAP = {
+            CalibrationStatus.NONE: "None",
+            CalibrationStatus.BUFFERED: "Buffered",
+            CalibrationStatus.IN_PROCESSOR: "Used in processor",
+        }
+
+        return f"<i>{TEXT_MAP[self.calibration_status]}</i>"
+
+    def get_source_tooltip_text(self):
         """Produces a nice tooltip from the `self.source` field"""
         if self.source is None:
             return "No calibration loaded. Load from file or start a measurement to get one."
@@ -111,9 +143,9 @@ class CalibrationUiState:
             filename = self.source
             return f"Calibration is loaded from {filename}"
 
-    def get_display_text(self):
+    def get_displayed_source_text(self):
         """
-        What should be displayed in the "Calibration status" field. Should be one of
+        What should be displayed in the "Calibration source" field. Should be one of
             1. <file_name>[*]
             2. Session[*]
             3. <empty string>, which makes the placeholder text show in case of a QLineEdit.
@@ -143,6 +175,7 @@ class CalibrationUiState:
     def clear(self):
         self.source = None
         self.modified = False
+        self.calibration_status = CalibrationStatus.NONE
 
     def save(self, save_destination):
         self.source = save_destination
@@ -151,6 +184,12 @@ class CalibrationUiState:
     def load(self, source):
         self.source = source
         self.modified = False
+        self.calibration_status = CalibrationStatus.IN_PROCESSOR
+
+    def buffer(self, source):
+        self.source = source
+        self.modified = True
+        self.calibration_status = CalibrationStatus.BUFFERED
 
     def _update_ui_elements(self):
         if self._load_btn:
@@ -162,14 +201,17 @@ class CalibrationUiState:
         if self._clear_btn:
             self._clear_btn.setEnabled(self.clear_button_enabled)
 
-        if self._status_text:
-            self._status_text.setText(self.get_display_text())
-            self._status_text.setToolTip(self.get_display_tooltip_text())
+        if self._source_text:
+            self._source_text.setText(self.get_displayed_source_text())
+            self._source_text.setToolTip(self.get_source_tooltip_text())
             if self.is_display_text_italic:
-                self._status_text.setStyleSheet("QLineEdit { font: italic }")
+                self._source_text.setStyleSheet("QLineEdit { font: italic }")
             else:
-                self._status_text.setStyleSheet("")
+                self._source_text.setStyleSheet("")
 
+        if self._status_label:
+            self._status_label.setText(self.get_displayed_status_text())
+            self._status_label.setToolTip(self.get_status_tooltip_text())
         if self._auto_apply_cb:
             self._auto_apply_cb.setChecked(self._auto_apply)
 
@@ -192,6 +234,15 @@ class CalibrationUiState:
     @modified.setter
     def modified(self, value):
         self._modified = value
+        self._update_ui_elements()
+
+    @property
+    def calibration_status(self):
+        return self._calibration_status
+
+    @calibration_status.setter
+    def calibration_status(self, value):
+        self._calibration_status = value
         self._update_ui_elements()
 
     @property
@@ -221,7 +272,11 @@ class CalibrationUiState:
     @property
     def apply_button_enabled(self):
         """The apply button should only work in a "LIVE" scenario."""
-        return self._has_source and self._scan_is_running
+        return (
+            self._has_source
+            and self._scan_is_running
+            and self.calibration_status is not CalibrationStatus.IN_PROCESSOR
+        )
 
     @property
     def auto_apply(self):

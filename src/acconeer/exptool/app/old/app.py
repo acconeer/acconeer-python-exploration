@@ -28,7 +28,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFrame,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMainWindow,
@@ -47,7 +46,13 @@ from acconeer.exptool.app import resources
 import platformdirs
 
 from . import data_processing
-from .elements.helper import CalibrationUiState, Count, ExptoolArgumentParser, LoadState
+from .elements.helper import (
+    CalibrationStatus,
+    CalibrationUiState,
+    Count,
+    ExptoolArgumentParser,
+    LoadState,
+)
 from .elements.modules import (
     MODULE_INFOS,
     MODULE_KEY_TO_MODULE_INFO_MAP,
@@ -167,7 +172,8 @@ class GUI(QMainWindow):
             load_btn=self.buttons["load_calibration"],
             save_btn=self.buttons["save_calibration"],
             clear_btn=self.buttons["clear_calibration"],
-            status_text=self.textboxes["calibration_status"],
+            source_text=self.textboxes["calibration_source"],
+            status_label=self.labels["calibration_status"],
             auto_apply_cb=self.checkboxes["calibration_auto_apply"],
             apply_btn=self.buttons["apply_calibration"],
         )
@@ -221,6 +227,7 @@ class GUI(QMainWindow):
             "libver": (f"Lib {et.__version__.split('+')[0]}",),
             "unsupported_mode": ("Mode not supported by this module",),
             "protocol": ("Protocol",),
+            "calibration_status": ("",),
         }
 
         self.labels = {}
@@ -240,7 +247,7 @@ class GUI(QMainWindow):
             "host": ("192.168.1.100", True),
             "sweep_buffer": ("1000", True),
             "stored_frames": ("0", False),
-            "calibration_status": ("", True),
+            "calibration_source": ("", True),
         }
 
         self.textboxes = {}
@@ -249,7 +256,7 @@ class GUI(QMainWindow):
             self.textboxes[key].setText(text)
             self.textboxes[key].setEnabled(enabled)
 
-        calibration_textbox = self.textboxes["calibration_status"]
+        calibration_textbox = self.textboxes["calibration_source"]
         calibration_textbox.setReadOnly(True)
         calibration_textbox.setPlaceholderText("No calibration")
 
@@ -893,22 +900,23 @@ class GUI(QMainWindow):
         )
         self.main_sublayout.addWidget(self.calibration_config_section, 9, 0)
 
-        calibration_status_sublayout = QHBoxLayout()
-        calibration_status_sublayout.addWidget(QLabel("Calibration status:"))
-        calibration_status_sublayout.addWidget(self.textboxes["calibration_status"])
-        self.calibration_config_section.grid.addLayout(calibration_status_sublayout, 1, 0, 1, 2)
+        self.calibration_config_section.grid.addWidget(QLabel("Calibration source:"), 1, 0)
+        self.calibration_config_section.grid.addWidget(self.textboxes["calibration_source"], 1, 1)
 
-        self.calibration_config_section.grid.addWidget(self.buttons["load_calibration"], 2, 0)
-        self.calibration_config_section.grid.addWidget(self.buttons["save_calibration"], 2, 1)
+        self.calibration_config_section.grid.addWidget(QLabel("Calibration status:"), 2, 0)
+        self.calibration_config_section.grid.addWidget(self.labels["calibration_status"], 2, 1)
+
+        self.calibration_config_section.grid.addWidget(self.buttons["load_calibration"], 3, 0)
+        self.calibration_config_section.grid.addWidget(self.buttons["save_calibration"], 3, 1)
         self.calibration_config_section.grid.addWidget(
-            self.buttons["clear_calibration"], 3, 0, 1, 2
+            self.buttons["clear_calibration"], 4, 0, 1, 2
         )
-        self.calibration_config_section.grid.addWidget(self.buttons["apply_calibration"], 4, 0)
+        self.calibration_config_section.grid.addWidget(self.buttons["apply_calibration"], 5, 0)
         self.calibration_config_section.grid.addWidget(
-            self.checkboxes["calibration_auto_apply"], 4, 1
+            self.checkboxes["calibration_auto_apply"], 5, 1
         )
 
-        self.main_sublayout.setRowStretch(11, 1)
+        self.main_sublayout.setRowStretch(12, 1)
 
     def init_panel_scroll_area(self):
         self.panel_scroll_area = QtWidgets.QScrollArea()
@@ -1087,6 +1095,7 @@ class GUI(QMainWindow):
         )
         if can_update_processors_calibration:
             processor.update_calibration(None)
+            self.calibration_ui_state.calibration_status = CalibrationStatus.NONE
 
         self.refresh_pidgets()
 
@@ -1101,6 +1110,7 @@ class GUI(QMainWindow):
 
         if isinstance(self.radar.external, self.current_module_info.processor):
             self.radar.external.update_calibration(self.calibration)
+            self.calibration_ui_state.calibration_status = CalibrationStatus.IN_PROCESSOR
 
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
@@ -1840,8 +1850,7 @@ class GUI(QMainWindow):
                     configuration=calibration_config,
                     calibration=self.calibration,
                 )
-                self.calibration_ui_state.source = "Session"
-                self.calibration_ui_state.modified = True
+                self.calibration_ui_state.buffer("Session")
 
                 if self.calibration_ui_state.auto_apply:
                     self.apply_current_calibration()
