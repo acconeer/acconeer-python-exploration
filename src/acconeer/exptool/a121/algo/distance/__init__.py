@@ -17,4 +17,5 @@ from ._processors import (
     ProcessorMode,
     ProcessorResult,
     ThresholdMethod,
+    calculate_bg_noise_std,
 )
