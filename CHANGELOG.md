@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v5.2.3
 
 ### Fixed
 - A111: Unclear-ness in the Calibration management section.
