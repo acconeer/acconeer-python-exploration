@@ -88,7 +88,7 @@ class DetectorContext:
 
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
-    start_m: float = attrs.field(default=0.2)
+    start_m: float = attrs.field(default=0.25)
     """Start point of measurement interval in meters."""
 
     end_m: float = attrs.field(default=1.0)
