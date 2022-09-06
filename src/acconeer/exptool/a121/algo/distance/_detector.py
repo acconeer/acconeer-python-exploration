@@ -91,7 +91,7 @@ class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.25)
     """Start point of measurement interval in meters."""
 
-    end_m: float = attrs.field(default=1.0)
+    end_m: float = attrs.field(default=3.0)
     """End point of measurement interval in meters."""
 
     max_step_length: Optional[int] = attrs.field(default=None)  # TODO: Check validity
@@ -113,7 +113,7 @@ class DetectorConfig(AlgoConfigBase):
     """Threshold method"""
 
     peaksorting_method: PeakSortingMethod = attrs.field(
-        default=PeakSortingMethod.STRONGEST,
+        default=PeakSortingMethod.HIGHEST_RCS,
         converter=PeakSortingMethod,
     )
     """Sorting method of estimated distances."""

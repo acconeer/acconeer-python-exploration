@@ -228,7 +228,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if sensitivity < 0.0 or 1.0 < sensitivity:
             raise ValueError("Sensitivity outside of valid interval(0.0 <= Sensitivity <= 1.0).")
 
-        return 15.0 - 13 * sensitivity
+        return 8.0 - 7.0 * sensitivity
 
     @classmethod
     def _get_subsweep_configs(
