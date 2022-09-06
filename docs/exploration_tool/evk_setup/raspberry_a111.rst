@@ -38,6 +38,13 @@ This can be done by e.g.::
 
    sudo sh -c 'echo "dtoverlay=spi0-1cs,cs0_pin=8" >> /boot/config.txt'
 
+If you use a 64-bit version of the Raspberry Pi OS, then the following must be done
+to install support for 32-bit binaries::
+
+   sudo dpkg --add-architecture armhf
+   sudo apt update
+   sudo apt install libc6:armhf libgpiod2:armhf
+
 Reboot to the let the changes take effect.
 
 Running the exploration server application
