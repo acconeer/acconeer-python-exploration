@@ -646,7 +646,6 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="Peak sorting method",
                 enum_type=PeakSortingMethod,
                 label_mapping={
-                    PeakSortingMethod.STRONGEST: "Strongest",
                     PeakSortingMethod.CLOSEST: "Closest",
                     PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
                 },

@@ -24,11 +24,9 @@ from acconeer.exptool.a121.algo.distance._processors import (
 class PeakSortingMethod(AlgoParamEnum):
     """Peak sorting methods.
     ``CLOSEST`` sort according to distance.
-    ``STRONGEST`` sort according to amplitude
     ``HIGHEST_RCS`` sort according to RCS."""
 
     CLOSEST = enum.auto()
-    STRONGEST = enum.auto()
     HIGHEST_RCS = enum.auto()
 
 
@@ -43,7 +41,7 @@ class ProcessorSpec:
 
 @attrs.mutable(kw_only=True)
 class AggregatorConfig:
-    peak_sorting_method: PeakSortingMethod = attrs.field(default=PeakSortingMethod.STRONGEST)
+    peak_sorting_method: PeakSortingMethod = attrs.field(default=PeakSortingMethod.HIGHEST_RCS)
 
 
 @attrs.frozen(kw_only=True)
@@ -222,8 +220,6 @@ class Aggregator:
     ) -> npt.NDArray[np.float_]:
         if method == PeakSortingMethod.CLOSEST:
             quantity_to_sort = dists
-        elif method == PeakSortingMethod.STRONGEST:
-            quantity_to_sort = -ampls
         elif method == PeakSortingMethod.HIGHEST_RCS:
             quantity_to_sort = -rcs
         else:
