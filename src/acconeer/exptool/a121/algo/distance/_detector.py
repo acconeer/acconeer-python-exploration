@@ -696,7 +696,7 @@ class Detector:
         ]
         transition_profiles.append(config.max_profile)
 
-        transition_subgroup_plans = []
+        transition_subgroup_plans: list = []
 
         for i in range(len(transition_profiles) - 1):
             profile = transition_profiles[i]
@@ -705,7 +705,10 @@ class Detector:
             if config.start_m < min_dist_m[next_profile] and min_dist_m[profile] < config.end_m:
                 start_m = max(min_dist_m[profile], config.start_m)
                 end_m = min(config.end_m, min_dist_m[next_profile])
-                has_neighbour = (has_close_range_measurement, min_dist_m[next_profile] < end_m)
+                has_neighbour = (
+                    has_close_range_measurement or len(transition_subgroup_plans) != 0,
+                    min_dist_m[next_profile] < end_m,
+                )
 
                 transition_subgroup_plans.append(
                     cls._create_group_plan(profile, config, [start_m, end_m], has_neighbour, False)
