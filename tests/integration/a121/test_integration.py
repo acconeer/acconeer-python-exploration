@@ -8,8 +8,11 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils
 
 
+CLIENT_KWARGS = dict(ip_address="localhost")
+
+
 def test_can_connect():
-    with a121.Client(ip_address="localhost") as client:
+    with a121.Client(**CLIENT_KWARGS) as client:
         assert client.connected
 
 
@@ -43,7 +46,7 @@ class TestMockExplorationServerDataParsing:
     )
     def test_sweep(self, config: a121.SessionConfig, expected_sweep):
         assert config.extended
-        with a121.Client(ip_address="localhost") as client:
+        with a121.Client(**CLIENT_KWARGS) as client:
             client.setup_session(config)
 
             client.start_session()

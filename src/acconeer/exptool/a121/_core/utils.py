@@ -22,7 +22,9 @@ from typing import (
 import packaging.version
 
 
+S = TypeVar("S")
 T = TypeVar("T")
+U = TypeVar("U")
 
 KeyT = TypeVar("KeyT")
 ValueT = TypeVar("ValueT")
@@ -228,6 +230,27 @@ def map_over_extended_structure(
 
     """
     return [{k: func(v) for k, v in d.items()} for d in structure]
+
+
+def zip3_extended_structures(
+    structure_a: list[dict[int, S]],
+    structure_b: list[dict[int, T]],
+    structure_c: list[dict[int, U]],
+) -> list[dict[int, Tuple[S, T, U]]]:
+    res = []
+    try:
+        for group_id, sensor_id, value in iterate_extended_structure(structure_a):
+            res.append(
+                (
+                    group_id,
+                    sensor_id,
+                    (value, structure_b[group_id][sensor_id], structure_c[group_id][sensor_id]),
+                ),
+            )
+    except (KeyError, IndexError):
+        raise ValueError("Structure of arguments are not the same.")
+
+    return create_extended_structure(iter(res))
 
 
 def iterate_extended_structure(

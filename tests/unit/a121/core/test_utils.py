@@ -231,3 +231,23 @@ def test_unwrap_ticks_special_cases():
 
     with pytest.raises(Exception):
         utils.unwrap_ticks([100], None, limit=100)
+
+
+@pytest.mark.parametrize(
+    ("structures", "expected"),
+    [(([{1: "a"}], [{1: "b"}], [{1: "c"}]), [{1: ("a", "b", "c")}])],  # structures  # expected
+)
+def test_zip3_extended_structures(structures, expected):
+    assert utils.zip3_extended_structures(*structures) == expected
+
+
+@pytest.mark.parametrize(
+    "structures",
+    [
+        ([{1: "a"}], [{1: "b"}], [{2: "c"}]),
+        ([{1: "a", 2: "a"}], [{1: "b", 2: "b"}], [{2: "c", 2: "c"}]),
+    ],
+)
+def test_zip3_extended_structures_with_bad_arguments(structures):
+    with pytest.raises(ValueError):
+        utils.zip3_extended_structures(*structures)

@@ -2,4 +2,5 @@
 # All rights reserved
 
 from ._factory import get_exploration_protocol
-from ._latest import ExplorationProtocol, ExplorationProtocolError, ServerError
+from ._latest import ExplorationProtocol, ExplorationProtocolError
+from .server_error import ServerError
