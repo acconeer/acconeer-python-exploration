@@ -1,3 +1,5 @@
+.. _a121_algorithms:
+
 A121 algorithms
 ===============
 
