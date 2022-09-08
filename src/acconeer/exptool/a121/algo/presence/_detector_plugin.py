@@ -708,6 +708,19 @@ class ViewPlugin(DetectorViewPluginBase):
                 decimals=2,
                 limits=(0, 5),
             ),
+            "intra_frame_time_const": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Intra time constant",
+                suffix=" s",
+                decimals=2,
+                limits=(0, 1),
+            ),
+            "intra_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Intra output time constant",
+                suffix=" s",
+                decimals=2,
+                limits=(0.01, 20),
+                log_scale=True,
+            ),
             "inter_enable": pidgets.CheckboxParameterWidgetFactory(
                 name_label_text="Enable slow motion detection"
             ),
@@ -718,6 +731,34 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="Inter detection threshold",
                 decimals=2,
                 limits=(0, 5),
+            ),
+            "inter_frame_fast_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Inter fast cutoff freq.",
+                suffix=" Hz",
+                decimals=2,
+                limits=(1, 50),
+                log_scale=True,
+            ),
+            "inter_frame_slow_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Inter slow cutoff freq.",
+                suffix=" Hz",
+                decimals=2,
+                limits=(0.01, 1),
+                log_scale=True,
+            ),
+            "inter_frame_deviation_time_const": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Inter time constant",
+                suffix=" s",
+                decimals=2,
+                limits=(0.01, 20),
+                log_scale=True,
+            ),
+            "inter_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Inter output time constant",
+                suffix=" s",
+                decimals=2,
+                limits=(0.01, 20),
+                log_scale=True,
             ),
             "inter_frame_presence_timeout": pidgets.OptionalIntParameterWidgetFactory(
                 name_label_text="Presence timeout",

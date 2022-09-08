@@ -31,8 +31,14 @@ class DetectorConfig(AlgoConfigBase):
     hwaas: int = attrs.field(default=32)
     intra_enable: bool = attrs.field(default=True)
     intra_detection_threshold: float = attrs.field(default=1.3)
+    intra_frame_time_const: float = attrs.field(default=0.15)
+    intra_output_time_const: float = attrs.field(default=0.5)
     inter_enable: bool = attrs.field(default=True)
     inter_detection_threshold: float = attrs.field(default=1)
+    inter_frame_fast_cutoff: float = attrs.field(default=20.0)
+    inter_frame_slow_cutoff: float = attrs.field(default=0.2)
+    inter_frame_deviation_time_const: float = attrs.field(default=0.5)
+    inter_output_time_const: float = attrs.field(default=5)
     inter_phase_boost: bool = attrs.field(default=False)
     inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
 
@@ -155,8 +161,14 @@ class Detector:
         return ProcessorConfig(
             intra_enable=detector_config.intra_enable,
             intra_detection_threshold=detector_config.intra_detection_threshold,
+            intra_frame_time_const=detector_config.intra_frame_time_const,
+            intra_output_time_const=detector_config.intra_output_time_const,
             inter_enable=detector_config.inter_enable,
             inter_detection_threshold=detector_config.inter_detection_threshold,
+            inter_frame_fast_cutoff=detector_config.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=detector_config.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=detector_config.inter_frame_deviation_time_const,
+            inter_output_time_const=detector_config.inter_output_time_const,
             inter_phase_boost=detector_config.inter_phase_boost,
             inter_frame_presence_timeout=detector_config.inter_frame_presence_timeout,
         )
