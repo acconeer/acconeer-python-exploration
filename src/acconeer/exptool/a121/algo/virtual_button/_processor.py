@@ -353,7 +353,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         raise NotImplementedError
 
 
-def get_sensor_config() -> a121.SensorConfig:
+def get_near_sensor_config() -> a121.SensorConfig:
     return a121.SensorConfig(
         sweeps_per_frame=16,
         sweep_rate=320,
@@ -367,4 +367,33 @@ def get_sensor_config() -> a121.SensorConfig:
         hwaas=40,
         start_point=14,
         step_length=12,
+    )
+
+
+def get_near_and_far_sensor_config() -> a121.SensorConfig:
+    return a121.SensorConfig(
+        sweeps_per_frame=16,
+        sweep_rate=320,
+        continuous_sweep_mode=True,
+        double_buffering=True,
+        inter_sweep_idle_state=a121.IdleState.READY,
+        inter_frame_idle_state=a121.IdleState.READY,
+        subsweeps=[
+            a121.SubsweepConfig(
+                start_point=14,
+                num_points=5,
+                step_length=12,
+                profile=Profile.PROFILE_1,
+                hwaas=40,
+                receiver_gain=0,
+            ),
+            a121.SubsweepConfig(
+                start_point=64,
+                num_points=4,
+                step_length=24,
+                profile=Profile.PROFILE_3,
+                hwaas=60,
+                receiver_gain=5,
+            ),
+        ],
     )

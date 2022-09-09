@@ -6,5 +6,5 @@ from ._processor import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
-    get_sensor_config,
+    get_near_sensor_config,
 )

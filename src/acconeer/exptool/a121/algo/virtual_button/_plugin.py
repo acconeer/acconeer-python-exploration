@@ -22,7 +22,7 @@ from acconeer.exptool.a121.algo.virtual_button import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
-    get_sensor_config,
+    get_near_sensor_config,
 )
 from acconeer.exptool.app.new import (
     AppModel,
@@ -45,7 +45,7 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
 
     @classmethod
     def get_default_sensor_config(cls) -> a121.SensorConfig:
-        return get_sensor_config()
+        return get_near_sensor_config()
 
 
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
