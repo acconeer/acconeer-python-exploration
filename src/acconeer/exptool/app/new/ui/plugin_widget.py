@@ -145,21 +145,38 @@ class PlotPlaceholder(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.setLayout(QHBoxLayout(self))
-
+        self.setLayout(QVBoxLayout(self))
         self.layout().addStretch(1)
+        self.layout().addLayout(self._select_module_text())
+        self.layout().addWidget(self._teaser_text())
+        self.layout().addStretch(1)
+
+    def _select_module_text(self):
+        h_box = QHBoxLayout()
+        h_box.addStretch(1)
 
         icon_widget = qta.IconWidget()
         icon_widget.setIconSize(QtCore.QSize(36, 36))
         icon_widget.setIcon(qta.icon("ph.arrow-left-bold", color="#4d5157"))
-        self.layout().addWidget(icon_widget)
 
         label = QLabel("Select a module to begin", self)
         label.setStyleSheet("font-size: 20px;")
         label.setAlignment(QtCore.Qt.AlignCenter)
-        self.layout().addWidget(label)
 
-        self.layout().addStretch(1)
+        h_box.addWidget(icon_widget)
+        h_box.addWidget(label)
+        h_box.addStretch(1)
+
+        return h_box
+
+    def _teaser_text(self):
+        teaser_label = QLabel(
+            "More detectors and example applications will\nbe released continuously.", self
+        )
+        teaser_label.setStyleSheet("font-size: 16px;")
+        teaser_label.setAlignment(QtCore.Qt.AlignCenter)
+
+        return teaser_label
 
 
 class PluginPlotArea(QFrame):
