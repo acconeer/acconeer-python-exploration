@@ -1,7 +1,7 @@
 .. _handbook-a121-spf:
 
-Sweeps and frames
-=================
+Frames, sweeps and subsweeps
+============================
 
 The sparse IQ service may be configured to perform several *sweeps* at a time in a so-called *frame*.
 Thus, every *frame* received from the sensor consists of a number of *sweeps*.
@@ -42,6 +42,32 @@ or by letting the sensor itself trigger on a periodic timer.
 
 ..
     TODO: See :ref:`sec:timing` for a detailed description of the timing in a frame.
+
+Subsweeps
+---------
+The purpose of the subsweeps is to offer more flexibility when configuring the sparse IQ service.
+As the name implies, a subsweep represent a sub-region in the overall sweep.
+Each subsweep can be configured independently of other subsweeps, e.g. two subsweeps can be configured with overlapping range and different profiles.
+
+The concept is utilized in the :doc:`Distance detector</exploration_tool/algo/a121/distance_detection>`, where the measured range is split into subsweeps, each configured with increasing HWAAS and Profiles, to maintain SNR throughout the sweep, as the signal strength decrease with the distance.
+
+Measurement execution order
+---------------------------
+As previously discussed, a frame consists of one or more sweeps, which in turn can be divided into multiple subsweeps.
+The execution order is as follows:
+
+- The points are measured along the distances defined by *start point*, *num points* and *step length*.
+- If subsweeps are utilized, they are measured in the order defined by the sensor configuration.
+- After the measurement of the sweep (potentially containing subsweeps) is completed, the next sweep is measured.
+- This is repeated until *sweeps per frame* sweeps have been measured
+- Lastly the frame is formed by stacking the sweeps.
+
+The following example illustrates the concept:
+
+Assume a sensor configuration with three subsweeps and two sweeps per frame.
+Firstly, points are measured according to the distances specified by the first subsweep, followed by the measurements according to the second and third subsweep.
+Next, a second sweep is performed with the same subsweep configuration.
+Lastly, the two sweeps, containing three subsweeps, are stacked to form the frame.
 
 Limitations
 -----------
