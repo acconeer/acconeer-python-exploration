@@ -668,9 +668,6 @@ class ViewPlugin(DetectorViewPluginBase):
                 show_limit_values=False,
                 limit_texts=("Less power", "Higher quality"),
             ),
-            "cfar_one_sided": pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="CFAR one sided",
-            ),
         }
 
     def on_app_model_update(self, app_model: AppModel) -> None:

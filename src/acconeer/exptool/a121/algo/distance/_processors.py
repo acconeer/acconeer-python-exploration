@@ -19,7 +19,6 @@ from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorB
 DEFAULT_SC_BG_NUM_STD_DEV = 6.0
 DEFAULT_FIXED_THRESHOLD_VALUE = 100.0
 DEFAULT_THRESHOLD_SENSITIVITY = 0.5
-DEFAULT_CFAR_ONE_SIDED = False
 
 
 class MeasurementType(AlgoParamEnum):
@@ -59,7 +58,6 @@ class ProcessorConfig(AlgoConfigBase):
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
     cfar_guard_length_m: Optional[float] = attrs.field(default=None)
     cfar_window_length_m: Optional[float] = attrs.field(default=None)
-    cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
 
 
 @attrs.frozen(kw_only=True)
@@ -386,7 +384,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                         self.subsweep_bpts[idx] : self.subsweep_bpts[idx + 1]
                     ] = tx_off_noise_std
             self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
-            self.cfar_one_sided = self.processor_config.cfar_one_sided
             window_length = self._calc_cfar_window_length(self.profile, self.step_length)
             guard_half_length = self._calc_cfar_guard_half_length(self.profile, self.step_length)
             self.idx_cfar_pts = guard_half_length + np.arange(window_length)
@@ -510,7 +507,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 abs_sweep,
                 self.idx_cfar_pts,
                 self.num_stds_in_threshold,
-                self.cfar_one_sided,
                 self.cfar_abs_noise,
             )
         elif self.threshold_method == ThresholdMethod.FIXED:
@@ -582,17 +578,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         abs_sweep: npt.NDArray[np.float_],
         idx_cfar_pts: npt.NDArray[np.int_],
         num_stds: float,
-        one_side: bool,
         abs_noise_std: npt.NDArray,
     ) -> npt.NDArray[np.float_]:
         threshold = np.full(abs_sweep.shape, np.nan)
         start_idx = int(np.max(idx_cfar_pts))
-        if one_side:
-            take_relative_indexes = -idx_cfar_pts
-            end_idx = abs_sweep.size
-        else:
-            take_relative_indexes = np.concatenate((-idx_cfar_pts, +idx_cfar_pts), axis=0)
-            end_idx = abs_sweep.size - start_idx
+        take_relative_indexes = np.concatenate((-idx_cfar_pts, +idx_cfar_pts), axis=0)
+        end_idx = abs_sweep.size - start_idx
 
         for idx in np.arange(start_idx, end_idx):
             take_indexes = idx + take_relative_indexes

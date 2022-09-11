@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+- A121: One-sided CFAR.
+  The concept is not valid with the close range measurement strategy.
+
 ## v5.2.3
 
 ### Fixed

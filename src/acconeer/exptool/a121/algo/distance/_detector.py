@@ -24,7 +24,6 @@ from ._aggregator import (
     ProcessorSpec,
 )
 from ._processors import (
-    DEFAULT_CFAR_ONE_SIDED,
     DEFAULT_FIXED_THRESHOLD_VALUE,
     DEFAULT_THRESHOLD_SENSITIVITY,
     MeasurementType,
@@ -127,11 +126,6 @@ class DetectorConfig(AlgoConfigBase):
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
     """Sensitivity of threshold. High sensitivity equals low detection threshold, low sensitivity
     equals high detection threshold."""
-
-    cfar_one_sided: bool = attrs.field(default=DEFAULT_CFAR_ONE_SIDED)
-    """Use one sided CFAR threshold. Instead of determining the CFAR threshold from sweep
-    amplitudes from distances both closer and a farther, use only closer. Helpful e.g. for fluid
-    level in small tanks, where many multipath signal can apprear just after the main peak."""
 
 
 @attrs.frozen(kw_only=True)
@@ -597,7 +591,6 @@ class Detector:
                 threshold_method=config.threshold_method,
                 fixed_threshold_value=config.fixed_threshold_value,
                 threshold_sensitivity=config.threshold_sensitivity,
-                cfar_one_sided=config.cfar_one_sided,
             )
 
             for subsweep_indexes in processor_specs_subsweep_indexes:

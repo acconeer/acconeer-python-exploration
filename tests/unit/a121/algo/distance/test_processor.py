@@ -195,13 +195,11 @@ def test_calculate_cfar_threshold():
     abs_sweep[4:6] = 2
     idx_cfar_pts = 2 + np.arange(0, 3)
     num_stds = 1
-    one_sided = False
 
     actual_threshold = distance.Processor._calculate_cfar_threshold(
         abs_sweep=abs_sweep,
         idx_cfar_pts=idx_cfar_pts,
         num_stds=num_stds,
-        one_side=one_sided,
         abs_noise_std=np.array([0.0]),
     )
     actual_threshold = actual_threshold[~np.isnan(actual_threshold)]
