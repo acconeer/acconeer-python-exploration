@@ -9,6 +9,9 @@
 ### Fixed
 - Metadata view spacing issue
 
+### Added
+- A121: Phase tracking example app.
+
 ## v5.2.3
 
 ### Fixed
