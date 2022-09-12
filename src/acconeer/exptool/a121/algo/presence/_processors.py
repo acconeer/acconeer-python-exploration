@@ -23,6 +23,7 @@ class ProcessorConfig(AlgoConfigBase):
     intra_detection_threshold: float = attrs.field(default=1.3)
     inter_detection_threshold: float = attrs.field(default=1)
     inter_phase_boost: bool = attrs.field(default=False)
+    phase_adaptivity_tc: float = attrs.field(default=5)
     inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
@@ -125,7 +126,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         self.lp_mean_sweep_for_abs = np.zeros(self.num_distances, dtype=np.complex_)
         self.lp_mean_sweep_for_phase = np.zeros(self.num_distances, dtype=np.complex_)
-        self.mean_sweep_tc = 5
+        self.mean_sweep_tc = self.processor_config.phase_adaptivity_tc
         self.mean_sweep_sf = self._tc_to_sf(self.mean_sweep_tc, self.f)
         self.lp_phase_shift = np.zeros(self.num_distances)
         self.inter_phase_boost = self.processor_config.inter_phase_boost
@@ -173,8 +174,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.intra_output_sf = self._tc_to_sf(processor_config.intra_output_time_const, self.f)
         self.inter_output_sf = self._tc_to_sf(processor_config.inter_output_time_const, self.f)
 
-        self.inter_phase_boost = self.processor_config.inter_phase_boost
         self.inter_frame_presence_timeout = self.processor_config.inter_frame_presence_timeout
+        self.inter_phase_boost = self.processor_config.inter_phase_boost
+        self.mean_sweep_tc = processor_config.phase_adaptivity_tc
+        self.mean_sweep_sf = self._tc_to_sf(self.mean_sweep_tc, self.f)
 
     @staticmethod
     def _cutoff_to_sf(fc: float, fs: float) -> float:
