@@ -173,6 +173,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.intra_output_sf = self._tc_to_sf(processor_config.intra_output_time_const, self.f)
         self.inter_output_sf = self._tc_to_sf(processor_config.inter_output_time_const, self.f)
 
+        self.inter_phase_boost = self.processor_config.inter_phase_boost
+        self.inter_frame_presence_timeout = self.processor_config.inter_frame_presence_timeout
+
     @staticmethod
     def _cutoff_to_sf(fc: float, fs: float) -> float:
         """Cutoff frequency to smoothing factor conversion"""
