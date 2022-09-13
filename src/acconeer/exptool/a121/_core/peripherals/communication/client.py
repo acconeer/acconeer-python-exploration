@@ -18,7 +18,7 @@ from acconeer.exptool.a121._core.mediators import (
 )
 from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
-from .exploration_protocol import ExplorationProtocol, get_exploration_protocol
+from .exploration_protocol import ExplorationProtocol, get_exploration_protocol, messages
 from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink, NullLink, NullLinkError
 
 
@@ -68,8 +68,6 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
         link = AdaptedSerialLink(
             port=client_info.serial_port,
         )
-        if client_info.override_baudrate is not None:
-            link.baudrate = client_info.override_baudrate
 
         return link
 
@@ -148,6 +146,16 @@ class Client(AgnosticClient):
         return self._client_info
 
     def connect(self) -> None:
+        # This function extends ``AgnosticClient.connect`` by adding a prologue and epilogue.
+        # Prologue:
+        # 1. If no ``__init__``-arguments was passed (ip_address, serial_port, etc.), tries
+        #    to autodetermine a SERIAL or USB link by looking at serial ports, usb devices, etc..
+        #
+        # runs ``AgnosticClient.connect``
+        #
+        # Epilogue:
+        # 1. Handles a hot-swap of protocol based on the (now) connected server's version.
+        # 2. if applicable: sets the overriden baudrate
         try:
             super().connect()
         except NullLinkError:
@@ -156,11 +164,46 @@ class Client(AgnosticClient):
             super().connect()
 
         if not self._protocol_overridden:
-            if issubclass(self._protocol, ExplorationProtocol):
-                try:
-                    new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
-                except Exception:
-                    self.disconnect()
-                    raise
-                else:
-                    self._protocol = new_protocol
+            self._update_protocol_based_on_servers_rss_version()
+
+        self._override_baudrate_if_applicable()
+
+    def _update_protocol_based_on_servers_rss_version(self) -> None:
+        if issubclass(self._protocol, ExplorationProtocol):
+            try:
+                new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+            except Exception:
+                self.disconnect()
+                raise
+            else:
+                self._protocol = new_protocol
+
+    def _override_baudrate_if_applicable(self) -> None:
+        DEFAULT_BAUDRATE = 115200
+        overridden_baudrate = self.client_info.override_baudrate
+        max_baudrate = self.server_info.max_baudrate
+
+        if (
+            overridden_baudrate is None
+            or overridden_baudrate == DEFAULT_BAUDRATE
+            or not isinstance(self._link, AdaptedSerialLink)
+        ):
+            return
+
+        if max_baudrate is None and overridden_baudrate is not None:
+            self.disconnect()
+            raise ClientError("Server does not support changing baudrate")
+
+        if (
+            max_baudrate is not None
+            and overridden_baudrate is not None
+            and overridden_baudrate > max_baudrate
+        ):
+            raise ClientError(f"Cannot set a baudrate higher than {max_baudrate}")
+
+        self._link.send(self._protocol.set_baudrate_command(overridden_baudrate))
+
+        self._apply_messages_until_message_type_encountered(messages.SetBaudrateResponse)
+        self._baudrate_ack_received = False
+
+        self._link.baudrate = overridden_baudrate

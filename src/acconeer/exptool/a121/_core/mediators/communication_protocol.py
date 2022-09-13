@@ -41,6 +41,10 @@ class CommunicationProtocol(Protocol):
         ...
 
     @classmethod
+    def set_baudrate_command(cls, baudrate: int) -> bytes:
+        ...
+
+    @classmethod
     def parse_message(cls, header: dict[str, Any], payload: bytes) -> Message:
         """Parses any supported Message given a header and a payload"""
         ...

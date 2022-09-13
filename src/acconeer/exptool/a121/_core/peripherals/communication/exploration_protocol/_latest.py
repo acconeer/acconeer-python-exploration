@@ -35,6 +35,7 @@ class ExplorationProtocol(CommunicationProtocol):
     @classmethod
     def parse_message(cls, header: dict[str, Any], payload: bytes) -> Message:
         PARSERS = [
+            messages.SetBaudrateResponse.parse,
             messages.ErroneousMessage.parse,
             messages.LogMessage.parse,
             messages.ResultMessage.parse,
@@ -68,8 +69,12 @@ class ExplorationProtocol(CommunicationProtocol):
         return b'{"cmd":"start_streaming"}\n'
 
     @classmethod
-    def stop_streaming_command(cls):
+    def stop_streaming_command(cls) -> bytes:
         return b'{"cmd":"stop_streaming"}\n'
+
+    @classmethod
+    def set_baudrate_command(cls, baudrate: int) -> bytes:
+        return b'{"cmd":"set_uart_baudrate","baudrate":' + str(baudrate).encode("ascii") + b"}\n"
 
     @classmethod
     def setup_command(cls, session_config: SessionConfig) -> bytes:

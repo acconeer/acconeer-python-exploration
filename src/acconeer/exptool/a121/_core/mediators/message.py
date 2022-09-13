@@ -16,6 +16,7 @@ class SystemInfoDict(te.TypedDict):
     sensor_count: int
     ticks_per_second: int
     hw: te.NotRequired[t.Optional[str]]
+    max_baudrate: te.NotRequired[int]
 
 
 class AgnosticClientFriends(te.Protocol):

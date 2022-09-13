@@ -21,6 +21,7 @@ def reference_dict(reference_sensor_info):
         "ticks_per_second": 100,
         "sensor_infos": {1: reference_sensor_info.to_dict()},
         "hardware_name": "xy123",
+        "max_baudrate": None,
     }
 
 
@@ -32,6 +33,7 @@ def reference_obj(reference_dict, reference_sensor_info):
         ticks_per_second=reference_dict["ticks_per_second"],
         sensor_infos={1: reference_sensor_info},
         hardware_name=reference_dict["hardware_name"],
+        max_baudrate=None,
     )
 
 

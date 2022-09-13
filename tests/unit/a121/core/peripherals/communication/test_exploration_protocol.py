@@ -19,6 +19,7 @@ class TestLatestExplorationProtocolCommands:
             (ExplorationProtocol.setup_command, dict(session_config=a121.SessionConfig())),
             (ExplorationProtocol.start_streaming_command, {}),
             (ExplorationProtocol.stop_streaming_command, {}),
+            (ExplorationProtocol.set_baudrate_command, dict(baudrate=0)),
         ],
     )
     def test_all_command_functions_end_with_linebreak(self, function, kwargs):
@@ -35,6 +36,12 @@ class TestLatestExplorationProtocolCommands:
 
     def test_stop_streaming_command(self):
         assert ExplorationProtocol.stop_streaming_command() == b'{"cmd":"stop_streaming"}\n'
+
+    def test_set_baudrate_command(self):
+        assert (
+            ExplorationProtocol.set_baudrate_command(0)
+            == b'{"cmd":"set_uart_baudrate","baudrate":0}\n'
+        )
 
     @pytest.mark.parametrize("update_rate", [20, None])
     def test_setup_command(self, update_rate):

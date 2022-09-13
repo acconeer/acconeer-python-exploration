@@ -99,6 +99,31 @@ class AgnosticClient(AgnosticClientFriends):
             resp = self._protocol.parse_message(header, payload)
             yield resp
 
+    def _assert_deadline_not_reached(self, deadline: Optional[float]) -> None:
+        if deadline is not None and time.time() > deadline:
+            raise ClientError("Client timed out.")
+
+    def _apply_messages_until_message_type_encountered(
+        self, message_type: Type[Message], timeout_s: Optional[float] = None
+    ) -> None:
+        """Retrieves and applies messages until a message of type ``message_type`` is encountered.
+
+        :param message_type: a subclass of ``Message``
+        :param timeout_s: Limit the time spent in this function
+        :raises ClientError:
+            if timeout_s is set and that amount of time has elapsed
+            without predicate evaluating to True
+        """
+        deadline = None if (timeout_s is None) else time.time() + timeout_s
+
+        for message in self._message_stream:
+            message.apply(self)
+
+            if type(message) == message_type:
+                return
+
+            self._assert_deadline_not_reached(deadline)
+
     def _apply_messages_until(
         self, predicate: Callable[[], bool], timeout_s: Optional[float] = None
     ) -> None:
@@ -124,13 +149,14 @@ class AgnosticClient(AgnosticClientFriends):
 
             if predicate():
                 return
-            if deadline is not None and time.time() > deadline:
-                raise ClientError("Client timed out.")
+
+            self._assert_deadline_not_reached(deadline)
 
     def connect(self) -> None:
         """Connects to the specified host.
 
         :raises: Exception if the host cannot be connected to.
+        :raises: ClientError if server has wrong sensor generation (e.g. "a111")
         """
         self._default_link_timeout = self._link.timeout
         self._link_timeout = self._default_link_timeout
@@ -329,6 +355,7 @@ class AgnosticClient(AgnosticClientFriends):
             ticks_per_second=self._system_info["ticks_per_second"],
             hardware_name=self._system_info.get("hw", None),
             sensor_infos=self._sensor_infos,
+            max_baudrate=self._system_info.get("max_baudrate"),
         )
 
     @property
