@@ -528,7 +528,7 @@ class SensorIdParameterWidget(UpdateableComboboxParameterWidget[int]):
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class EnumParameterWidgetFactory(ComboboxParameterWidgetFactory, Generic[EnumT]):
+class EnumParameterWidgetFactory(ComboboxParameterWidgetFactory[EnumT]):
     enum_type: Type[EnumT] = attrs.field()
     label_mapping: dict[EnumT, str] = attrs.field()
 
@@ -554,6 +554,51 @@ class EnumParameterWidgetFactory(ComboboxParameterWidgetFactory, Generic[EnumT])
 class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
     def __init__(self, factory: EnumParameterWidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class OptionalEnumParameterWidgetFactory(
+    OptionalParameterWidgetFactory, EnumParameterWidgetFactory
+):
+    def create(self, parent: QWidget) -> OptionalEnumParameterWidget:
+        return OptionalEnumParameterWidget(self, parent)
+
+
+class OptionalEnumParameterWidget(OptionalParameterWidget):
+    def __init__(self, factory: OptionalEnumParameterWidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self._combobox = _PidgetComboBox(self._body_widget)
+        self._body_layout.addWidget(self._combobox)
+
+        for displayed_text, user_data in factory.items:
+            self._combobox.addItem(displayed_text, user_data)
+
+        self._none_checkbox.stateChanged.connect(self.__emit_data_of_combobox_or_none)
+        self._none_checkbox.stateChanged.connect(self.__enable_combobox_if_checked)
+        self._combobox.currentIndexChanged.connect(self.__emit_data_of_combobox_or_none)
+
+    def __emit_data_of_combobox_or_none(self) -> None:
+        if self._none_checkbox.isChecked():
+            data = self._combobox.currentData()
+            self.sig_parameter_changed.emit(data)
+        else:
+            self.sig_parameter_changed.emit(None)
+
+    def __enable_combobox_if_checked(self) -> None:
+        self._combobox.setEnabled(self._none_checkbox.isChecked())
+
+    def set_parameter(self, value: Any) -> None:
+        super().set_parameter(value)
+        if value is not None:
+            self.set_enum_parameter(value)
+
+    def set_enum_parameter(self, param: Any) -> None:
+        with QtCore.QSignalBlocker(self):
+            index = self._combobox.findData(param)
+            if index == -1:
+                raise ValueError(f"Data item {param} could not be found in {self}.")
+            self._combobox.setCurrentIndex(index)
 
 
 _WIDGET_WIDTH = 125
