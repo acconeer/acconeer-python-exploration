@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QLabel,
     QLineEdit,
-    QStackedLayout,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -30,7 +29,9 @@ class SmartMetadataView(QWidget):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self._layout = QStackedLayout()
+        self._layout = QVBoxLayout()
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(0)
         self.setLayout(self._layout)
 
         self._metadata_view = MetadataView(self)
@@ -43,10 +44,12 @@ class SmartMetadataView(QWidget):
         metadata: Optional[Union[a121.Metadata, list[dict[int, a121.Metadata]]]] = None,
     ) -> None:
         if isinstance(metadata, list):
-            self._layout.setCurrentIndex(1)
+            self._metadata_view.setHidden(True)
+            self._extended_metadata_view.setHidden(False)
             self._extended_metadata_view.update(metadata)
         else:
-            self._layout.setCurrentIndex(0)
+            self._metadata_view.setHidden(False)
+            self._extended_metadata_view.setHidden(True)
             self._metadata_view.update(metadata)
 
 
