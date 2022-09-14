@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import pickle
 import queue
 import shutil
 import time
@@ -301,7 +302,7 @@ class AppModel(QObject):
 
     @classmethod
     def _handle_backend_serialized(
-        cls, *, generation: PluginGeneration, key: str, data: Optional[bytes]
+        cls, *, generation: PluginGeneration, key: str, data: Optional[dict]
     ) -> None:
         path = cls._get_plugin_config_path(generation, key)
 
@@ -309,7 +310,8 @@ class AppModel(QObject):
             path.unlink(missing_ok=True)
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(data)
+            serialized_data = pickle.dumps(data, protocol=4)
+            path.write_bytes(serialized_data)
 
     def _update_saveable_file(self, path: Optional[Path]) -> None:
         if self.saveable_file is not None:
@@ -511,10 +513,11 @@ class AppModel(QObject):
         config_path = self._get_plugin_config_path(generation, key)
         try:
             data = config_path.read_bytes()
+            cache = pickle.loads(data)
         except Exception:
             pass
         else:
-            self.put_backend_plugin_task("deserialize", {"data": data})
+            self.put_backend_plugin_task("_from_cache", {"data": cache})
 
     def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
         log.debug(f"AppModel is loading the plugin {plugin}")

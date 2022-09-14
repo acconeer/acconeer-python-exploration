@@ -5,9 +5,8 @@ from __future__ import annotations
 
 import abc
 import logging
-import pickle
 from pathlib import Path
-from typing import Callable, Dict, Generic, List, Optional, Type
+from typing import Any, Callable, Dict, Generic, List, Optional, Type
 
 import attrs
 import h5py
@@ -15,6 +14,7 @@ import h5py
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
 from acconeer.exptool.a121.algo._base import (
+    AlgoConfigBase,
     ConfigT,
     GenericProcessorBase,
     InputT,
@@ -60,9 +60,22 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT, MetadataT]):
 
 
 @attrs.frozen(kw_only=True)
-class ProcessorSave(Generic[ConfigT]):
+class ProcessorSave(Generic[ConfigT], AlgoConfigBase):
     session_config: a121.SessionConfig = attrs.field()
     processor_config: ConfigT = attrs.field()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "session_config": self.session_config.to_dict(),
+            "processor_config": self.processor_config.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls: type[ProcessorSave], obj: dict[str, Any]) -> ProcessorSave:
+        return ProcessorSave(
+            session_config=a121.SessionConfig.from_dict(obj["session_config"]),
+            processor_config=AlgoConfigBase.from_dict(obj["processor_config"]),
+        )
 
 
 class GenericProcessorBackendPluginBase(
@@ -90,31 +103,17 @@ class GenericProcessorBackendPluginBase(
         self.restore_defaults()
 
     @is_task
-    def deserialize(self, *, data: bytes) -> None:
-        try:
-            obj = pickle.loads(data)
-        except Exception:
-            log.warning("Could not load pickled - pickle.loads() failed")
-            return
-
-        if not isinstance(obj, ProcessorSave):
-            log.warning("Could not load pickled - not the correct type")
-            return
-
-        if not isinstance(obj.processor_config, self.get_processor_config_cls()):
-            log.warning("Could not load pickled - not the correct type")
-            return
-
+    def _from_cache(self, *, data: dict) -> None:
+        obj = ProcessorSave.from_dict(data)
         self.shared_state.session_config = obj.session_config
         self.shared_state.processor_config = obj.processor_config
         self.broadcast(sync=True)
 
-    def _serialize(self) -> bytes:
-        obj = ProcessorSave(
+    def _to_cache(self) -> dict:
+        return ProcessorSave(
             session_config=self.shared_state.session_config,
             processor_config=self.shared_state.processor_config,
-        )
-        return pickle.dumps(obj, protocol=4)
+        ).to_dict()
 
     def broadcast(self, sync: bool = False) -> None:
         super().broadcast()
@@ -154,7 +153,7 @@ class GenericProcessorBackendPluginBase(
                 kwargs={
                     "generation": PluginGeneration.A121,
                     "key": self.key,
-                    "data": self._serialize(),
+                    "data": self._to_cache(),
                 },
             )
         )

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import pickle
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -18,6 +17,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo._base import AlgoConfigBase
 from acconeer.exptool.a121.algo._plugins import (
     DetectorBackendPluginBase,
     DetectorPlotPluginBase,
@@ -70,9 +70,19 @@ class SharedState:
 
 
 @attrs.frozen(kw_only=True)
-class Save:
+class Save(AlgoConfigBase):
     config: DetectorConfig = attrs.field()
     context: DetectorContext = attrs.field()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"config": self.config.to_dict(), "context": self.context.to_dict()}
+
+    @classmethod
+    def from_dict(cls: type[Save], obj: dict[str, Any]) -> Save:
+        return Save(
+            config=DetectorConfig.from_dict(obj["config"]),
+            context=DetectorContext.from_dict(obj["context"]),
+        )
 
 
 def serialized_attrs_instance_has_diverged(attrs_instance: Any) -> bool:
@@ -119,40 +129,17 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.restore_defaults()
 
     @is_task
-    def deserialize(self, *, data: bytes) -> None:
-        try:
-            obj = pickle.loads(data)
-        except Exception:
-            log.warning("Could not load pickled - pickle.loads() failed")
-            return
-
-        if not isinstance(obj, Save):
-            log.warning("Could not load pickled - not the correct type")
-            return
-
-        type_matches = [
-            isinstance(obj.config, DetectorConfig),
-            isinstance(obj.context, DetectorContext),
-        ]
-        if not all(type_matches):
-            log.warning("Could not load pickled - not the correct type")
-            return
-
-        if serialized_attrs_instance_has_diverged(obj):
-            log.warning("Could not load pickled - cached config is uncompatible.")
-            return
-
+    def _from_cache(self, *, data: dict) -> None:
+        obj = Save.from_dict(data)
         self.shared_state.config = obj.config
         self.shared_state.context = obj.context
-
         self.broadcast(sync=True)
 
-    def _serialize(self) -> bytes:
-        obj = Save(
+    def _to_cache(self) -> dict:
+        return Save(
             config=self.shared_state.config,
             context=self.shared_state.context,
-        )
-        return pickle.dumps(obj, protocol=4)
+        ).to_dict()
 
     def broadcast(self, sync: bool = False) -> None:
         super().broadcast()
@@ -202,7 +189,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 kwargs={
                     "generation": PluginGeneration.A121,
                     "key": self.key,
-                    "data": self._serialize(),
+                    "data": self._to_cache(),
                 },
             )
         )

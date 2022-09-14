@@ -67,7 +67,7 @@ Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
 
 
 @attrs.mutable(kw_only=True)
-class DetectorContext:
+class DetectorContext(AlgoConfigBase):
     offset_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)

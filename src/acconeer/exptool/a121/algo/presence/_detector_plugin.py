@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import pickle
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -19,6 +18,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo._base import AlgoConfigBase
 from acconeer.exptool.a121.algo._plugins import (
     DetectorBackendPluginBase,
     DetectorPlotPluginBase,
@@ -54,7 +54,7 @@ log = logging.getLogger(__name__)
 
 
 @attrs.mutable(kw_only=True)
-class PlotConfig:
+class PlotConfig(AlgoConfigBase):
     number_of_zones: Optional[int] = attrs.field(default=None)
 
 
@@ -67,9 +67,19 @@ class SharedState:
 
 
 @attrs.frozen(kw_only=True)
-class Save:
+class Save(AlgoConfigBase):
     config: DetectorConfig = attrs.field()
     plot_config: PlotConfig = attrs.field()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"config": self.config.to_dict(), "plot_config": self.plot_config.to_dict()}
+
+    @classmethod
+    def from_dict(cls: type[Save], obj: dict[str, Any]) -> Save:
+        return Save(
+            config=DetectorConfig.from_dict(obj["config"]),
+            plot_config=PlotConfig.from_dict(obj["plot_config"]),
+        )
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
@@ -86,32 +96,17 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.restore_defaults()
 
     @is_task
-    def deserialize(self, *, data: bytes) -> None:
-        try:
-            obj = pickle.loads(data)
-        except Exception:
-            log.warning("Could not load pickled - pickle.loads() failed")
-            return
-
-        if not isinstance(obj, Save):
-            log.warning("Could not load pickled - not the correct type")
-            return
-
-        if not isinstance(obj.config, DetectorConfig):
-            log.warning("Could not load pickled - not the correct type")
-            return
-
-        if not isinstance(obj.plot_config, PlotConfig):
-            log.warning("Could not load pickled - not the correct type")
-            return
-
+    def _from_cache(self, *, data: dict) -> None:
+        obj = Save.from_dict(data)
         self.shared_state.config = obj.config
         self.shared_state.plot_config = obj.plot_config
         self.broadcast(sync=True)
 
-    def _serialize(self) -> bytes:
-        obj = Save(config=self.shared_state.config, plot_config=self.shared_state.plot_config)
-        return pickle.dumps(obj, protocol=4)
+    def _to_cache(self) -> dict:
+        return Save(
+            config=self.shared_state.config,
+            plot_config=self.shared_state.plot_config,
+        ).to_dict()
 
     def broadcast(self, sync: bool = False) -> None:
         super().broadcast()
@@ -166,7 +161,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 kwargs={
                     "generation": PluginGeneration.A121,
                     "key": self.key,
-                    "data": self._serialize(),
+                    "data": self._to_cache(),
                 },
             )
         )

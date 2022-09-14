@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- A121: Convert config/context classes to dict before pickle
 
 ### Removed
 - A121: One-sided CFAR.

@@ -53,7 +53,7 @@ class AlgoConfigBase:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls: type[ConfigT], d: dict) -> ConfigT:
+    def from_dict(cls: type[ConfigT], d: dict[str, Any]) -> ConfigT:
         return cls(**d)
 
     def to_json(self) -> str:
