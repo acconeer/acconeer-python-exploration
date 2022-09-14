@@ -3,6 +3,9 @@
 ## Unreleased
 - A121: Convert config/context classes to dict before pickle
 
+### Added
+- A121: Possibility to specify baudrate in the App
+
 ### Removed
 - A121: One-sided CFAR.
   The concept is not valid with the close range measurement strategy.

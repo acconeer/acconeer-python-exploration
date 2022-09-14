@@ -8,6 +8,7 @@ import platform
 import qtawesome as qta
 
 from PySide6.QtCore import QSize
+from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -87,6 +88,38 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
 
 
+class _SerialConnectionWidget(AppModelAwareWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(app_model, parent)
+        self.app_model = app_model
+
+        self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        self.baudrate_line_edit = QLineEdit(self)
+        self.baudrate_line_edit.setPlaceholderText("default: 115200")
+        self.baudrate_line_edit.setValidator(QIntValidator())
+        self.baudrate_line_edit.textChanged.connect(self._on_line_edit_changed)
+        self.baudrate_line_edit.setFixedWidth(125)
+
+        self.layout().addWidget(SerialPortComboBox(app_model, self))
+        self.layout().addWidget(QLabel("Baudrate:"))
+        self.layout().addWidget(self.baudrate_line_edit)
+
+    def _on_line_edit_changed(self) -> None:
+        baudrate_text = self.baudrate_line_edit.text()
+        baudrate = None if baudrate_text == "" else int(baudrate_text)
+        self.app_model.set_overridden_baudrate(baudrate)
+
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        if app_model.overridden_baudrate is None:
+            self.baudrate_line_edit.setText("")
+            self.baudrate_line_edit.setStyleSheet("* {font: italic}")
+        else:
+            self.baudrate_line_edit.setText(str(app_model.overridden_baudrate))
+            self.baudrate_line_edit.setStyleSheet("* {}")
+
+
 class ClientConnectionWidget(AppModelAwareWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(app_model, parent)
@@ -110,7 +143,7 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.stacked = QStackedWidget(self)
         self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
         self.stacked.addWidget(_SocketConnectionWidget(app_model, self.stacked))
-        self.stacked.addWidget(SerialPortComboBox(app_model, self.stacked))
+        self.stacked.addWidget(_SerialConnectionWidget(app_model, self.stacked))
         if platform.system().lower() == "windows":
             self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
         self.layout().addWidget(self.stacked)

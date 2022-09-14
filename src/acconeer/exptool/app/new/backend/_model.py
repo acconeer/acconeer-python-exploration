@@ -79,7 +79,7 @@ class Model:
         except Exception as exc:
             self.client = None
             self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
-            raise HandledException("Failed to connect") from exc
+            raise HandledException(f"Failed to connect:\n{exc.args[0]}") from exc
 
         if self.backend_plugin is not None:
             self.backend_plugin.attach_client(client=self.client)

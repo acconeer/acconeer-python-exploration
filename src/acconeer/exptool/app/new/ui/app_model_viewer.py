@@ -46,6 +46,7 @@ class AppModelViewer(QTextEdit):
                     f"PluginState:            {app_model.plugin_state}",
                     f"socket_connection_ip:   {app_model.socket_connection_ip}",
                     f"serial_connection_port: {app_model.serial_connection_port}",
+                    f"overridden_baudrate:    {app_model.overridden_baudrate}",
                     "",
                     "backend_plugin_state:",
                     *self._stringify_backend_state(app_model.backend_plugin_state),

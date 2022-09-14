@@ -123,6 +123,8 @@ class AppModel(QObject):
     available_tagged_ports: list[Tuple[str, Optional[str]]]
     usb_connection_device: Optional[USBDevice]
     available_usb_devices: list[USBDevice]
+    overridden_baudrate: Optional[int]
+
     saveable_file: Optional[Path]
     autoconnect_enabled: bool
 
@@ -153,6 +155,8 @@ class AppModel(QObject):
         self.usb_connection_device = None
         self.available_tagged_ports = []
         self.available_usb_devices = []
+        self.overridden_baudrate = None
+
         self.saveable_file = None
         self.autoconnect_enabled = False
 
@@ -427,7 +431,9 @@ class AppModel(QObject):
         if self.connection_interface == ConnectionInterface.SOCKET:
             client_info = a121.ClientInfo(ip_address=self.socket_connection_ip)
         elif self.connection_interface == ConnectionInterface.SERIAL:
-            client_info = a121.ClientInfo(serial_port=self.serial_connection_port)
+            client_info = a121.ClientInfo(
+                serial_port=self.serial_connection_port, override_baudrate=self.overridden_baudrate
+            )
         elif self.connection_interface == ConnectionInterface.USB:
             client_info = a121.ClientInfo(usb_device=self.usb_connection_device)
         else:
@@ -495,6 +501,10 @@ class AppModel(QObject):
 
     def set_autoconnect_enabled(self, autoconnect_enabled: bool) -> None:
         self.autoconnect_enabled = autoconnect_enabled
+        self.broadcast()
+
+    def set_overridden_baudrate(self, overridden_baudrate: Optional[int]) -> None:
+        self.overridden_baudrate = overridden_baudrate
         self.broadcast()
 
     def _unload_current_plugin(self) -> None:
