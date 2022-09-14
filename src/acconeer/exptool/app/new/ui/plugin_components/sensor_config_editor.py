@@ -14,7 +14,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
-from .range_help_view import RangeHelpView
+from .subsweep_config_editor import SubsweepConfigEditor
 from .types import PidgetFactoryMapping
 from .utils import VerticalGroupBox
 
@@ -86,46 +86,6 @@ class SensorConfigEditor(QWidget):
             name_label_text="Enable double buffering",
         ),
     }
-    SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
-        "start_point": pidgets.IntParameterWidgetFactory(
-            name_label_text="Start point:",
-        ),
-        "num_points": pidgets.IntParameterWidgetFactory(
-            name_label_text="Number of points:",
-            limits=(1, 4095),
-        ),
-        "step_length": pidgets.IntParameterWidgetFactory(
-            name_label_text="Step length:",
-            limits=(1, None),
-        ),
-        "hwaas": pidgets.IntParameterWidgetFactory(
-            name_label_text="HWAAS:",
-            limits=(1, 511),
-        ),
-        "receiver_gain": pidgets.IntParameterWidgetFactory(
-            name_label_text="Receiver gain:",
-            limits=(0, 23),
-        ),
-        "profile": pidgets.EnumParameterWidgetFactory(
-            enum_type=a121.Profile,
-            name_label_text="Profile:",
-            label_mapping=PROFILE_LABEL_MAP,
-        ),
-        "prf": pidgets.EnumParameterWidgetFactory(
-            enum_type=a121.PRF,
-            name_label_text="PRF:",
-            label_mapping=PRF_LABEL_MAP,
-        ),
-        "enable_tx": pidgets.CheckboxParameterWidgetFactory(
-            name_label_text="Enable transmitter",
-        ),
-        "enable_loopback": pidgets.CheckboxParameterWidgetFactory(
-            name_label_text="Enable loopback",
-        ),
-        "phase_enhancement": pidgets.CheckboxParameterWidgetFactory(
-            name_label_text="Phase enhancement",
-        ),
-    }
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
@@ -136,8 +96,6 @@ class SensorConfigEditor(QWidget):
 
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
-
-        # Sensor pidgets
 
         self.sensor_group_box = VerticalGroupBox("Sensor parameters", parent=self)
         self.sensor_group_box.layout().setSpacing(self.SPACING)
@@ -155,28 +113,9 @@ class SensorConfigEditor(QWidget):
             self._all_pidgets.append(pidget)
             self._sensor_config_pidgets[aspect] = pidget
 
-        # Subsweeps pidgets
-
-        self.subsweep_group_box = VerticalGroupBox(
-            "Subsweep-specific parameters", parent=self.sensor_group_box
-        )
-        self.subsweep_group_box.layout().setSpacing(self.SPACING)
-        self.sensor_group_box.layout().addWidget(self.subsweep_group_box)
-
-        self.range_help_view = RangeHelpView(self.subsweep_group_box)
-        self.subsweep_group_box.layout().addWidget(self.range_help_view)
-
-        self._subsweep_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
-        for aspect, factory in self.SUBSWEEP_CONFIG_FACTORIES.items():
-            pidget = factory.create(self.subsweep_group_box)
-            self.subsweep_group_box.layout().addWidget(pidget)
-
-            pidget.sig_parameter_changed.connect(
-                partial(self._update_subsweep_config_aspect, aspect)
-            )
-
-            self._all_pidgets.append(pidget)
-            self._subsweep_config_pidgets[aspect] = pidget
+        self._subsweep_config_editor = SubsweepConfigEditor(self)
+        self._subsweep_config_editor.sig_update.connect(self._broadcast)
+        self.sensor_group_box.layout().addWidget(self._subsweep_config_editor)
 
     def _update_ui(self) -> None:
         if self._sensor_config is None:
@@ -198,28 +137,14 @@ class SensorConfigEditor(QWidget):
             self._sensor_config.inter_sweep_idle_state
         )
 
-        subsweep_config = self._sensor_config.subsweep
-        self._subsweep_config_pidgets["start_point"].set_parameter(subsweep_config.start_point)
-        self._subsweep_config_pidgets["num_points"].set_parameter(subsweep_config.num_points)
-        self._subsweep_config_pidgets["step_length"].set_parameter(subsweep_config.step_length)
-        self._subsweep_config_pidgets["profile"].set_parameter(subsweep_config.profile)
-        self._subsweep_config_pidgets["hwaas"].set_parameter(subsweep_config.hwaas)
-        self._subsweep_config_pidgets["receiver_gain"].set_parameter(subsweep_config.receiver_gain)
-        self._subsweep_config_pidgets["enable_tx"].set_parameter(subsweep_config.enable_tx)
-        self._subsweep_config_pidgets["enable_loopback"].set_parameter(
-            subsweep_config.enable_loopback
-        )
-        self._subsweep_config_pidgets["phase_enhancement"].set_parameter(
-            subsweep_config.phase_enhancement
-        )
-        self._subsweep_config_pidgets["prf"].set_parameter(subsweep_config.prf)
-
     def set_data(self, sensor_config: Optional[a121.SensorConfig]) -> None:
         self._sensor_config = sensor_config
-        self.range_help_view.update(sensor_config.subsweep if sensor_config else None)
+        if sensor_config is not None:
+            self._subsweep_config_editor.set_data(sensor_config.subsweep)
 
     def sync(self) -> None:
         self._update_ui()
+        self._subsweep_config_editor.sync()
 
     def _broadcast(self) -> None:
         self.sig_update.emit(self._sensor_config)
@@ -237,8 +162,6 @@ class SensorConfigEditor(QWidget):
             return
         if result.source is self._sensor_config:
             pidget_map = self._sensor_config_pidgets
-        elif result.source is self._sensor_config.subsweep:
-            pidget_map = self._subsweep_config_pidgets
         else:
             return
 
@@ -252,19 +175,6 @@ class SensorConfigEditor(QWidget):
             setattr(self._sensor_config, aspect, value)
         except Exception as e:
             self._sensor_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
-        else:
-            self._handle_validation_results(self._sensor_config._collect_validation_results())
-
-        self._broadcast()
-
-    def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
-        if self._sensor_config is None:
-            raise TypeError("SensorConfig is None")
-
-        try:
-            setattr(self._sensor_config.subsweep, aspect, value)
-        except Exception as e:
-            self._subsweep_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
         else:
             self._handle_validation_results(self._sensor_config._collect_validation_results())
 

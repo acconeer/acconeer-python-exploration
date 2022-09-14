@@ -67,6 +67,7 @@ class SessionConfigEditor(QWidget):
         self._session_config = session_config
         if session_config is not None:
             self._sensor_config_editor.set_data(session_config.sensor_config)
+            self.sync()
 
     def sync(self) -> None:
         self._update_ui()
