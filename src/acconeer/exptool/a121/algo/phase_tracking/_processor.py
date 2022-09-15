@@ -15,7 +15,7 @@ from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoConfigBase):
-    threshold: Optional[float] = attrs.field(default=20.0)
+    threshold: Optional[float] = attrs.field(default=50.0)
 
 
 @attrs.frozen(kw_only=True)
