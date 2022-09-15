@@ -398,8 +398,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
             sf = self._dynamic_sf(self.mean_sweep_sf, self.update_index)
             self.lp_mean_sweep_for_phase = (
-                self.mean_sweep_sf * self.lp_mean_sweep_for_phase
-                + (1.0 - self.mean_sweep_sf) * mean_sweep
+                sf * self.lp_mean_sweep_for_phase + (1.0 - sf) * mean_sweep
             )
 
         inter_presence_distance_index = int(np.argmax(inter))
