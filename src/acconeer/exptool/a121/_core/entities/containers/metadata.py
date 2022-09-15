@@ -10,7 +10,7 @@ import attrs
 import numpy as np
 import numpy.typing as npt
 
-from .common import attrs_ndarray_eq
+from acconeer.exptool.a121._core.utils import attrs_ndarray_eq
 
 
 @attrs.frozen(kw_only=True)

@@ -7,7 +7,8 @@ import attrs
 import numpy as np
 import numpy.typing as npt
 
-from .common import attrs_ndarray_eq
+from acconeer.exptool.a121._core.utils import attrs_ndarray_eq
+
 from .result import Result, ResultContext
 from .utils import get_subsweeps_from_frame, int16_complex_array_to_complex
 

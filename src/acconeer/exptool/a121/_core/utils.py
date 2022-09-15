@@ -19,6 +19,8 @@ from typing import (
     overload,
 )
 
+import attrs
+import numpy as np
 import packaging.version
 
 
@@ -409,3 +411,6 @@ def pretty_dict_line_strs(d: dict[str, Any], indent: int = 2, width: int = 24) -
 
 def indent_strs(strs: list[str], level: int) -> list[str]:
     return ["  " * level + s for s in strs]
+
+
+attrs_ndarray_eq = attrs.cmp_using(eq=np.array_equal)  # type: ignore[call-arg]
