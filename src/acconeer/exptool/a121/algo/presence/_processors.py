@@ -288,14 +288,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if self.inter_frame_presence_timeout is None:
             raise ValueError("inter_frame_presence_timeout must be set")
 
-        scaling_factor = (
-            np.exp(
-                np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)
-                / self.inter_frame_presence_timeout
-                - 1
-            )
-            + 1
-            - np.exp(-1)
+        scaling_factor = np.exp(
+            np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)
+            / (self.inter_frame_presence_timeout * self.f)
         )
         self.inter_presence_score /= scaling_factor
 
@@ -309,19 +304,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if self.inter_frame_presence_timeout is None:
             raise ValueError("inter_frame_presence_timeout must be set")
 
-        scaling_factor = (
-            np.exp(
-                np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)
-                / self.inter_frame_presence_timeout
-                * self.mean_sweep_tc
-                - 1
-            )
-            + 1
-            - np.exp(-1)
+        scaling_factor = np.exp(
+            np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)
+            * self.mean_sweep_tc
+            / self.inter_frame_presence_timeout
         )
-        self.mean_sweep_sf = self._tc_to_sf(
-            np.maximum(0, self.mean_sweep_tc / scaling_factor), self.f
-        )
+        self.mean_sweep_sf = self._tc_to_sf(self.mean_sweep_tc / scaling_factor, self.f)
 
     def process(self, result: a121.Result) -> ProcessorResult:
         frame = result.subframes[self.subsweep_index]
