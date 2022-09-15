@@ -8,6 +8,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorBase
 
 
@@ -26,10 +27,10 @@ class ProcessorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    frame: npt.NDArray[np.complex_]
-    distance_velocity_map: npt.NDArray[np.float_]
-    amplitudes: npt.NDArray[np.float_]
-    phases: npt.NDArray[np.float_]
+    frame: npt.NDArray[np.complex_] = attrs.field(eq=utils.attrs_ndarray_eq)
+    distance_velocity_map: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_eq)
+    amplitudes: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_eq)
+    phases: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_eq)
 
 
 class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
