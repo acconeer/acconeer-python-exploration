@@ -857,6 +857,6 @@ PRESENCE_DETECTOR_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="presence_detector",
     title="Presence detector",
-    # description="",
+    description="Detect human presence.",
     family=PluginFamily.DETECTOR,
 )
