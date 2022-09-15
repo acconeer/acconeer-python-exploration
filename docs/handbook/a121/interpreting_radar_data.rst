@@ -1,3 +1,5 @@
+.. _interpreting_radar_data:
+
 Interpreting radar data
 =======================
 
