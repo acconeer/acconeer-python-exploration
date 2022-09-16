@@ -1,0 +1,107 @@
+digraph {
+  pad=0.1
+  ranksep=0.3
+  nodesep=0.3
+  bgcolor="#ffffff00"
+  fontname=sans
+  fontsize=12
+  style=rounded
+  node [fontname=sans, fontsize=12, shape=record, style=rounded]
+
+  subgraph cluster {
+    style=invis
+
+    subgraph cluster_inter {
+        label="Inter-frame\npresence"
+        style=rounded
+
+        abs_sweep_mean -> {fast_lpf, slow_lpf} -> fast_slow_dev -> abs_dev -> inter_lpf -> inter_norm -> inter_depth_filter
+        inter_depth_filter -> {inter_out_argmax, phase_boost}
+        phase_boost -> inter_out_max -> inter_lp_out -> timeout -> timeout_scaling -> inter_threshold
+
+        {rank = same; inter_threshold; inter_out_argmax}
+    }
+
+    subgraph cluster_intra {
+        label="Intra-frame\npresence"
+        style=rounded
+
+        sweep_dev -> abs_dev_intra -> intra_lpf -> intra_norm -> intra_depth_filter
+        intra_depth_filter -> intra_out_argmax
+        intra_depth_filter -> intra_out_max -> intra_lp_out -> intra_threshold
+    }
+
+    subgraph cluster_noise {
+        label="Noise estimation\ndepthwise"
+        style=rounded
+
+        noise_diff -> noise_dev
+        noise_dev -> noise_comp -> noise_lpf
+    }
+
+    subgraph cluster_phase_boost {
+        label="Inter-frame phase boost\ndepthwise"
+        style=rounded
+
+        {for_phase_lpf, phase_mean} -> phase_shift
+        for_amp_lpf -> amp_mean -> amp_norm -> amp_trunc
+        {amp_trunc, phase_shift} -> phase_boost_weight -> phase_boost
+
+        {rank = same; for_phase_lpf; for_amp_lpf}
+    }
+  }
+
+  in -> {abs_sweep_mean, sweep_dev, noise_diff, for_phase_lpf, phase_mean, for_amp_lpf}
+  {inter_threshold, intra_threshold} -> presence
+  {inter_out_argmax, intra_out_argmax} -> distance
+
+  {presence, distance} -> out
+  noise_lpf -> {amp_norm, intra_norm, inter_norm}
+
+  in [shape=Mdiamond, label="Input frame"]
+
+  abs_sweep_mean [label="Absolute mean\nover sweeps"]
+  fast_lpf [label="Fast LPF"]
+  slow_lpf [label="Slow LPF"]
+  fast_slow_dev [label="Difference"]
+  abs_dev [label="Absolute\nvalue"]
+  inter_lpf [label="LPF"]
+  inter_norm [label="Noise\nnormalization"]
+  inter_depth_filter [label="Depth filter"]
+  inter_out_max [label="max\nover depths"]
+  inter_lp_out [label="LPF"]
+  timeout [label="Compare against\nprevious score"]
+  timeout_scaling [label="Timeout scaling"]
+  inter_threshold [label="Compare\nagainst\nthreshold"]
+  inter_out_argmax [label="argmax\nover\ndepths"]
+
+  sweep_dev [label="Deviation\nover sweeps"]
+  abs_dev_intra [label="Absolute\nvalue"]
+  intra_lpf [label="LPF"]
+  intra_norm [label="Noise\nnormalization"]
+  intra_depth_filter [label="Depth filter"]
+  intra_out_max [label="max\nover\ndepths"]
+  intra_lp_out [label="LPF"]
+  intra_threshold [label="Compare against\nthreshold"]
+  intra_out_argmax [label="argmax\nover\ndepths"]
+
+  noise_diff [label="Differentiate\nover sweeps\n3 times"]
+  noise_dev [label="Absolute\ndeviation"]
+  noise_comp [label="Compensate\nfor\ndifferentiation"]
+  noise_lpf [label="LPF"]
+
+  phase_mean [label="Mean\nphase\nover\nsweeps"]
+  phase_shift [label="Phase\nshift"]
+  for_phase_lpf [label="LPF"]
+  for_amp_lpf [label="LPF"]
+  amp_mean [label="Mean amplitude\nover sweeps"]
+  amp_norm [label="Noise\nnormalization"]
+  amp_trunc [label="Truncate values"]
+  phase_boost_weight [label="Multiplication"]
+  phase_boost [label="Phase\nboost\nweighting"]
+
+  presence [label="Combine presence\ndetection"]
+  distance [label="Combine distance\nestimate"]
+
+  out [shape=Msquare, label="Output"]
+}

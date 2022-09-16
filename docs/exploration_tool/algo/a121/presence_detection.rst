@@ -363,6 +363,12 @@ With scale factor :math:`C_\tau`, the time constant, :math:`\tau_\text{scaled}`,
 .. math::
    \tau_\text{scaled} = \frac{\tau_\text{for_phase}}{C_\tau}
 
+Graphical overview
+^^^^^^^^^^^^^^^^^^
+
+.. graphviz:: /_graphs/a121_presence_detection.dot
+   :align: center
+
 .. _smoothing-factors:
 
 Calculating smoothing factors
