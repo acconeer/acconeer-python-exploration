@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoParamEnum
+from acconeer.exptool.a121.algo import APPROX_BASE_STEP_LENGTH_M, ENVELOPE_FWHM_M, AlgoParamEnum
 from acconeer.exptool.a121.algo.distance._processors import (
     MeasurementType,
     Processor,
@@ -172,7 +172,7 @@ class Aggregator:
         location of the estimated distances"""
 
         start_points = [subsweep.start_point for subsweep in subsweeps]
-        bpts_m = np.array(start_points) * Processor.APPROX_BASE_STEP_LENGTH_M
+        bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
 
         stds = []
         hwaas = []
@@ -273,9 +273,9 @@ class Aggregator:
         """
         Approximates the processing gain of the matched filter.
         """
-        envelope_base_length_m = Processor.ENVELOPE_FWHM_M[profile] * 2  # approx envelope width
+        envelope_base_length_m = ENVELOPE_FWHM_M[profile] * 2  # approx envelope width
         num_points_in_envelope = (
-            int(envelope_base_length_m / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)) + 2
+            int(envelope_base_length_m / (step_length * APPROX_BASE_STEP_LENGTH_M)) + 2
         )
         mid_point = num_points_in_envelope // 2
         pulse = np.concatenate(

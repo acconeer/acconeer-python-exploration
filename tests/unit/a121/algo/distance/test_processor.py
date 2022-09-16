@@ -6,7 +6,13 @@ import numpy.testing as npt
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import distance
+from acconeer.exptool.a121.algo import (
+    distance,
+    find_peaks,
+    get_distance_filter_coeffs,
+    get_distance_filter_edge_margin,
+    interpolate_peaks,
+)
 
 
 def test_get_subsweep_configs():
@@ -113,7 +119,7 @@ def test_apply_phase_jitter_compensation():
 
 
 def test_get_distance_filter_coeffs():
-    (actual_B, actual_A) = distance.Processor.get_distance_filter_coeffs(a121.Profile.PROFILE_1, 1)
+    (actual_B, actual_A) = get_distance_filter_coeffs(a121.Profile.PROFILE_1, 1)
 
     assert actual_B[0] == pytest.approx(0.00844269, 0.01)
     assert actual_B[1] == pytest.approx(0.01688539, 0.01)
@@ -123,7 +129,7 @@ def test_get_distance_filter_coeffs():
     assert actual_A[1] == pytest.approx(-1.72377617, 0.01)
     assert actual_A[2] == pytest.approx(0.75754694, 0.01)
 
-    (actual_B, actual_A) = distance.Processor.get_distance_filter_coeffs(a121.Profile.PROFILE_5, 6)
+    (actual_B, actual_A) = get_distance_filter_coeffs(a121.Profile.PROFILE_5, 6)
     assert actual_B[0] == pytest.approx(0.00490303, 0.01)
     assert actual_B[1] == pytest.approx(0.00980607, 0.01)
     assert actual_B[2] == pytest.approx(0.00490303, 0.01)
@@ -136,7 +142,7 @@ def test_get_distance_filter_coeffs():
 def test_find_peaks():
     abs_sweep = np.array([1, 2, 3, 2, 1, 1, 1, 1, 1, 2, 3, 2, 1, 1, 1])
     threshold = np.ones_like(abs_sweep)
-    actual_found_peaks = distance.Processor._find_peaks(abs_sweep=abs_sweep, threshold=threshold)
+    actual_found_peaks = find_peaks(abs_sweep=abs_sweep, threshold=threshold)
 
     assert actual_found_peaks[0] == 2
     assert actual_found_peaks[1] == 10
@@ -149,7 +155,7 @@ def test_interpolate_peaks():
     step_length = 1
     step_length_m = 0.0025
 
-    (actual_est_dists, actual_est_ampls) = distance.Processor.interpolate_peaks(
+    (actual_est_dists, actual_est_ampls) = interpolate_peaks(
         abs_sweep=abs_sweep,
         peak_idxs=peak_idxs,
         start_point=start_point,
@@ -166,7 +172,7 @@ def test_interpolate_peaks():
     step_length = 1
     step_length_m = 0.0025
 
-    (actual_est_dists, actual_est_ampls) = distance.Processor.interpolate_peaks(
+    (actual_est_dists, actual_est_ampls) = interpolate_peaks(
         abs_sweep=abs_sweep,
         peak_idxs=peak_idxs,
         start_point=start_point,
@@ -182,7 +188,7 @@ def test_distance_filter_edge_margin():
     profile = a121.Profile.PROFILE_3
     step_length = 4
 
-    actual_filter_edge_margin = distance.Processor.distance_filter_edge_margin(
+    actual_filter_edge_margin = get_distance_filter_edge_margin(
         profile=profile, step_length=step_length
     )
 

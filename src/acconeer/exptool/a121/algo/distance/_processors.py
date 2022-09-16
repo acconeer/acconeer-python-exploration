@@ -5,15 +5,26 @@ from __future__ import annotations
 
 import copy
 import enum
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional
 
 import attrs
 import numpy as np
 import numpy.typing as npt
-from scipy.signal import butter, filtfilt
+from scipy.signal import filtfilt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorBase
+from acconeer.exptool.a121.algo import (
+    APPROX_BASE_STEP_LENGTH_M,
+    ENVELOPE_FWHM_M,
+    AlgoConfigBase,
+    AlgoParamEnum,
+    ProcessorBase,
+    find_peaks,
+    get_distance_filter_coeffs,
+    get_distance_filter_edge_margin,
+    get_temperature_adjustment_factors,
+    interpolate_peaks,
+)
 
 
 DEFAULT_SC_BG_NUM_STD_DEV = 6.0
@@ -105,16 +116,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     :param context: Context
     """
 
-    ENVELOPE_FWHM_M = {
-        a121.Profile.PROFILE_1: 0.04,
-        a121.Profile.PROFILE_2: 0.07,
-        a121.Profile.PROFILE_3: 0.14,
-        a121.Profile.PROFILE_4: 0.19,
-        a121.Profile.PROFILE_5: 0.32,
-    }
-
-    APPROX_BASE_STEP_LENGTH_M = 2.5e-3
-
     CFAR_GUARD_LENGTH_ADJUSTMENT = 4
     CFAR_WINDOW_LENGTH_ADJUSTMENT = 0.25
 
@@ -123,18 +124,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     CLOSE_RANGE_LOOPBACK_IDX = 0
     CLOSE_RANGE_DIST_IDX = 1
-
-    # Parameter of signal temperature model.
-    SIGNAL_TEMPERATURE_MODEL_PARAMETER = {
-        a121.Profile.PROFILE_1: 67.0,
-        a121.Profile.PROFILE_2: 85.0,
-        a121.Profile.PROFILE_3: 86.0,
-        a121.Profile.PROFILE_4: 99.0,
-        a121.Profile.PROFILE_5: 104.0,
-    }
-
-    # Slope and interception of linear noise temperature model.
-    NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
 
     def __init__(
         self,
@@ -180,14 +169,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         self.profile = self._get_profile(range_subsweep_configs)
         self.step_length = self._get_step_length(range_subsweep_configs)
-        self.approx_step_length_m = self.step_length * self.APPROX_BASE_STEP_LENGTH_M
+        self.approx_step_length_m = self.step_length * APPROX_BASE_STEP_LENGTH_M
         self.start_point = self._get_start_point(range_subsweep_configs)
         self.num_points = self._get_num_points(range_subsweep_configs)
 
         self.base_step_length_m = self.metadata.base_step_length_m
         self.step_length_m = self.step_length * self.base_step_length_m
 
-        self.filt_margin = self.distance_filter_edge_margin(self.profile, self.step_length)
+        self.filt_margin = get_distance_filter_edge_margin(self.profile, self.step_length)
         self.start_point_cropped = self.start_point + self.filt_margin * self.step_length
         self.num_points_cropped = self.num_points - 2 * self.filt_margin
 
@@ -199,7 +188,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
         ) * self.metadata.base_step_length_m
 
-        (self.b, self.a) = self.get_distance_filter_coeffs(self.profile, self.step_length)
+        (self.b, self.a) = get_distance_filter_coeffs(self.profile, self.step_length)
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
@@ -390,14 +379,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     @classmethod
     def _calc_cfar_window_length(cls, profile: a121.Profile, step_length: int) -> int:
-        window_length_m = cls.ENVELOPE_FWHM_M[profile] * cls.CFAR_WINDOW_LENGTH_ADJUSTMENT
-        step_length_m = step_length * cls.APPROX_BASE_STEP_LENGTH_M
+        window_length_m = ENVELOPE_FWHM_M[profile] * cls.CFAR_WINDOW_LENGTH_ADJUSTMENT
+        step_length_m = step_length * APPROX_BASE_STEP_LENGTH_M
         return max([1, int(window_length_m / step_length_m)])
 
     @classmethod
     def _calc_cfar_guard_half_length(cls, profile: a121.Profile, step_length: int) -> int:
-        guard_length_m = cls.ENVELOPE_FWHM_M[profile] * cls.CFAR_GUARD_LENGTH_ADJUSTMENT
-        step_length_m = step_length * cls.APPROX_BASE_STEP_LENGTH_M
+        guard_length_m = ENVELOPE_FWHM_M[profile] * cls.CFAR_GUARD_LENGTH_ADJUSTMENT
+        step_length_m = step_length * APPROX_BASE_STEP_LENGTH_M
         guard_half_length_m = guard_length_m / 2
         return int(guard_half_length_m / step_length_m)
 
@@ -412,8 +401,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     ) -> ProcessorResult:
         self.threshold = self._update_threshold(abs_sweep, temperature)
 
-        found_peaks_idx = self._find_peaks(abs_sweep, self.threshold)
-        (estimated_distances, estimated_amplitudes) = self.interpolate_peaks(
+        found_peaks_idx = find_peaks(abs_sweep, self.threshold)
+        (estimated_distances, estimated_amplitudes) = interpolate_peaks(
             abs_sweep,
             found_peaks_idx,
             self.start_point_cropped,
@@ -494,11 +483,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     def update_config(self, config: ProcessorConfig) -> None:
         ...
 
-    @classmethod
-    def get_distance_filter_coeffs(cls, profile: a121.Profile, step_length: int) -> Any:
-        wnc = cls.APPROX_BASE_STEP_LENGTH_M * step_length / cls.ENVELOPE_FWHM_M[profile]
-        return butter(N=2, Wn=wnc)
-
     def _update_threshold(
         self, abs_sweep: npt.NDArray[np.float_], temperature: int
     ) -> npt.NDArray[np.float_]:
@@ -517,7 +501,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             (
                 signal_adjustment_factor,
                 noise_adjustment_factor,
-            ) = self._calc_temperature_adjustments(
+            ) = get_temperature_adjustment_factors(
                 temperature_diff=temperature - self.context.reference_temperature,
                 profile=self.profile,
             )
@@ -593,109 +577,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         threshold *= num_stds
         return threshold
 
-    @classmethod
-    def _calc_temperature_adjustments(
-        cls, temperature_diff: int, profile: a121.Profile
-    ) -> Tuple[float, float]:
-        """Calculate temperature compensation for mean sweep and background noise(tx off) standard
-        deviation, used in _update_recorded_threshold.
-
-        The signal adjustment model is follows 2 ** (temperature_diff / model_parameter), where
-        model_parameter reflects the temperature difference relative the reference temperature,
-        required for the amplitude to double/halve.
-
-        The noise adjustment is a liner function of the temperature difference, calibrated using
-        noise-normalized data generalize to different sensor configurations.
-        """
-        signal_adjustment_factor = 2 ** (
-            temperature_diff / cls.SIGNAL_TEMPERATURE_MODEL_PARAMETER[profile]
-        )
-        noise_adjustment_factor = (
-            cls.NOISE_TEMPERATURE_MODEL_PARAMETER[0] * temperature_diff
-            + cls.NOISE_TEMPERATURE_MODEL_PARAMETER[1]
-        )
-        return (signal_adjustment_factor, noise_adjustment_factor)
-
-    @staticmethod
-    def _find_peaks(
-        abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.float_]
-    ) -> list[int]:
-        if threshold is None:
-            raise ValueError
-        found_peaks = []
-        d = 1
-        N = len(abs_sweep)
-        while d < (N - 1):
-            if np.isnan(threshold[d - 1]):
-                d += 1
-                continue
-            if np.isnan(threshold[d + 1]):
-                break
-            if abs_sweep[d] <= threshold[d]:
-                d += 2
-                continue
-            if abs_sweep[d - 1] <= threshold[d - 1]:
-                d += 1
-                continue
-            if abs_sweep[d - 1] >= abs_sweep[d]:
-                d += 1
-                continue
-            d_upper = d + 1
-            while True:
-                if (d_upper) >= (N - 1):
-                    break
-                if np.isnan(threshold[d_upper]):
-                    break
-                if abs_sweep[d_upper] <= threshold[d_upper]:
-                    break
-                if abs_sweep[d_upper] > abs_sweep[d]:
-                    break
-                elif abs_sweep[d_upper] < abs_sweep[d]:
-                    found_peaks.append(int(np.argmax(abs_sweep[d:d_upper]) + d))
-                    break
-                else:
-                    d_upper += 1
-            d = d_upper
-        return found_peaks
-
-    @staticmethod
-    def interpolate_peaks(
-        abs_sweep: npt.NDArray[np.float_],
-        peak_idxs: list[int],
-        start_point: int,
-        step_length: int,
-        step_length_m: float,
-    ) -> Tuple[list[float], list[float]]:
-        estimated_distances = []
-        estimated_amplitudes = []
-        for peak_idx in peak_idxs:
-            # (https://math.stackexchange.com/questions/680646/get-polynomial-function-from-3-points)
-            x = np.arange(peak_idx - 1, peak_idx + 2, 1)
-            y = abs_sweep[peak_idx - 1 : peak_idx + 2]
-            a = (x[0] * (y[2] - y[1]) + x[1] * (y[0] - y[2]) + x[2] * (y[1] - y[0])) / (
-                (x[0] - x[1]) * (x[0] - x[2]) * (x[1] - x[2])
-            )
-            b = (y[1] - y[0]) / (x[1] - x[0]) - a * (x[0] + x[1])
-            c = y[0] - a * x[0] ** 2 - b * x[0]
-            peak_loc = -b / (2 * a)
-            estimated_distances.append((start_point + peak_loc * step_length) * step_length_m)
-            estimated_amplitudes.append(a * peak_loc**2 + b * peak_loc + c)
-        return estimated_distances, estimated_amplitudes
-
-    @classmethod
-    def distance_filter_edge_margin(cls, profile: a121.Profile, step_length: int) -> int:
-        return int(
-            np.ceil(cls.ENVELOPE_FWHM_M[profile] / (cls.APPROX_BASE_STEP_LENGTH_M * step_length))
-        )
-
 
 def calculate_bg_noise_std(
     subframe: npt.NDArray[np.complex_], subsweep_config: a121.SubsweepConfig
 ) -> float:
     profile = subsweep_config.profile
     step_length = subsweep_config.step_length
-    (B, A) = Processor.get_distance_filter_coeffs(profile, step_length)
-    filt_margin = Processor.distance_filter_edge_margin(profile, step_length)
+    (B, A) = get_distance_filter_coeffs(profile, step_length)
+    filt_margin = get_distance_filter_edge_margin(profile, step_length)
 
     sweep = subframe.squeeze(axis=0)
     filtered_sweep = filtfilt(B, A, sweep)
@@ -716,17 +605,17 @@ def calculate_offset(result: a121.Result, config: a121.SensorConfig) -> float:
         a121.Profile.PROFILE_5: (0.66277198, -0.00539498),
     }
 
-    (B, A) = Processor.get_distance_filter_coeffs(config.profile, config.step_length)
+    (B, A) = get_distance_filter_coeffs(config.profile, config.step_length)
     sweep = np.squeeze(result.frame, axis=0)
     abs_sweep = np.abs(filtfilt(B, A, sweep))
     peak_idx = [int(np.argmax(abs_sweep))]
 
-    (estimated_dist, _) = Processor.interpolate_peaks(
+    (estimated_dist, _) = interpolate_peaks(
         abs_sweep=abs_sweep,
         peak_idxs=peak_idx,
         start_point=config.start_point,
         step_length=config.step_length,
-        step_length_m=Processor.APPROX_BASE_STEP_LENGTH_M,
+        step_length_m=APPROX_BASE_STEP_LENGTH_M,
     )
 
     p = OFFSET_COMPENSATION_COEFFS[config.profile]

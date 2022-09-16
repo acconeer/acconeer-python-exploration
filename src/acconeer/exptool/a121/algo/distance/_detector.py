@@ -15,7 +15,12 @@ import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo import AlgoConfigBase
+from acconeer.exptool.a121.algo import (
+    APPROX_BASE_STEP_LENGTH_M,
+    ENVELOPE_FWHM_M,
+    AlgoConfigBase,
+    get_distance_filter_edge_margin,
+)
 
 from ._aggregator import (
     Aggregator,
@@ -881,7 +886,7 @@ class Detector:
                 cfar_margin_m = (
                     Processor.calc_cfar_margin(profile, step_length)
                     * step_length
-                    * Processor.APPROX_BASE_STEP_LENGTH_M
+                    * APPROX_BASE_STEP_LENGTH_M
                 )
                 min_dist_m[profile] += cfar_margin_m
 
@@ -900,7 +905,7 @@ class Detector:
         for idx in range(len(breakpoints) - 1):
             processing_gain = Aggregator.calc_processing_gain(profile, step_length)
             subsweep_end_point_m = max(
-                Processor.APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
+                APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
                 cls.HWAAS_MIN_DISTANCE,
             )
             rlg = signal_quality + 40 * np.log10(subsweep_end_point_m) - np.log10(processing_gain)
@@ -925,7 +930,7 @@ class Detector:
         2. Add an additional margin to segments with neighbouring segments for segment overlap
         """
 
-        margin_p = Processor.distance_filter_edge_margin(profile, step_length) * step_length
+        margin_p = get_distance_filter_edge_margin(profile, step_length) * step_length
         left_margin = margin_p
         right_margin = margin_p
 
@@ -961,7 +966,7 @@ class Detector:
         closest, but not longer than the limit.
         """
 
-        fwhm_p = Processor.ENVELOPE_FWHM_M[profile] / Processor.APPROX_BASE_STEP_LENGTH_M
+        fwhm_p = ENVELOPE_FWHM_M[profile] / APPROX_BASE_STEP_LENGTH_M
         limit = int(fwhm_p / cls.MIN_NUM_POINTS_IN_ENVELOPE_FWHM_SPAN)
 
         if user_limit is not None:
@@ -1050,7 +1055,7 @@ class Detector:
         ):
             del max_meas_dist_m[a121.PRF.PRF_19_5_MHz]
 
-        breakpoint_m = breakpoint * Processor.APPROX_BASE_STEP_LENGTH_M
+        breakpoint_m = breakpoint * APPROX_BASE_STEP_LENGTH_M
         viable_prfs = [
             prf for prf, max_dist_m in max_meas_dist_m.items() if breakpoint_m < max_dist_m
         ]
@@ -1059,8 +1064,8 @@ class Detector:
     @classmethod
     def _m_to_points(cls, breakpoints_m: list[float], step_length: int) -> list[int]:
         bpts_m = np.array(breakpoints_m)
-        start_point = int(bpts_m[0] / Processor.APPROX_BASE_STEP_LENGTH_M)
-        num_steps = (bpts_m[-1] - bpts_m[0]) / (Processor.APPROX_BASE_STEP_LENGTH_M)
+        start_point = int(bpts_m[0] / APPROX_BASE_STEP_LENGTH_M)
+        num_steps = (bpts_m[-1] - bpts_m[0]) / (APPROX_BASE_STEP_LENGTH_M)
         bpts = num_steps / (bpts_m[-1] - bpts_m[0]) * (bpts_m - bpts_m[0]) + start_point
         return [(bpt // step_length) * step_length for bpt in bpts]
 
