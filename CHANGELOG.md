@@ -16,12 +16,18 @@
 
 ### Added
 - A121: Phase tracking example app.
+- A121 presence detector: inter-frame phase boost
+- A121 presence detector: inter-frame timeout
 
 ## v5.2.3
 
 ### Fixed
 - A111: Unclear-ness in the Calibration management section.
   Users are now able see if calibrations are used by the processor or not.
+- A121 presence detector: Fix step_length bug when using profile 1.
+
+### Added
+- A121 presence detector: Separate output for inter- and intra-frame parts.
 
 ## v5.2.2
 
