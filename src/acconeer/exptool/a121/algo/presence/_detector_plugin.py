@@ -675,6 +675,18 @@ class ViewPlugin(DetectorViewPluginBase):
                 suffix=" m",
                 decimals=3,
             ),
+            "profile": pidgets.OptionalEnumParameterWidgetFactory(
+                name_label_text="Profile",
+                checkbox_label_text="Override",
+                enum_type=a121.Profile,
+                label_mapping={
+                    a121.Profile.PROFILE_1: "1 (shortest)",
+                    a121.Profile.PROFILE_2: "2",
+                    a121.Profile.PROFILE_3: "3",
+                    a121.Profile.PROFILE_4: "4",
+                    a121.Profile.PROFILE_5: "5 (longest)",
+                },
+            ),
             "step_length": pidgets.OptionalIntParameterWidgetFactory(
                 name_label_text="Step length",
                 checkbox_label_text="Override",

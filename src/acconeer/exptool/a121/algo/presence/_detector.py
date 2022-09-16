@@ -12,6 +12,7 @@ import numpy as np
 from attr import Attribute
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core.entities.configs.config_enums import Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121.algo import AlgoConfigBase
 
@@ -21,10 +22,20 @@ from ._processors import Processor, ProcessorConfig, ProcessorExtraResult
 SPARSE_IQ_PPC = 24
 
 
+def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
+    if profile is None:
+        return None
+
+    return Profile(profile)
+
+
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=1.0)
     end_m: float = attrs.field(default=2.0)
+    profile: Optional[a121.Profile] = attrs.field(
+        default=None, converter=optional_profile_converter
+    )
     step_length: Optional[int] = attrs.field(default=None)
     frame_rate: float = attrs.field(default=10.0)
     sweeps_per_frame: int = attrs.field(default=16)
@@ -124,10 +135,13 @@ class Detector:
     @classmethod
     def _get_sensor_config(cls, detector_config: DetectorConfig) -> a121.SensorConfig:
         start_point = int(np.floor(detector_config.start_m / Processor.APPROX_BASE_STEP_LENGTH_M))
-        viable_profiles = [
-            k for k, v in cls.MIN_DIST_M.items() if v is None or v <= detector_config.start_m
-        ]
-        profile = viable_profiles[-1]
+        if detector_config.profile is not None:
+            profile = detector_config.profile
+        else:
+            viable_profiles = [
+                k for k, v in cls.MIN_DIST_M.items() if v is None or v <= detector_config.start_m
+            ]
+            profile = viable_profiles[-1]
 
         if detector_config.step_length is not None:
             step_length = detector_config.step_length
