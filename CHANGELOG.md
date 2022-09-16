@@ -9,6 +9,7 @@
 
 ### Fixed
 - Metadata view spacing issue
+- A121: Double buffering added to sensor config editor in app
 
 ### Added
 - A121: Phase tracking example app.

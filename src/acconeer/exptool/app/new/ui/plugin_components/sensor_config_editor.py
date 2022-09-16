@@ -82,6 +82,9 @@ class SensorConfigEditor(QWidget):
         "continuous_sweep_mode": pidgets.CheckboxParameterWidgetFactory(
             name_label_text="Continuous sweep mode",
         ),
+        "double_buffering": pidgets.CheckboxParameterWidgetFactory(
+            name_label_text="Enable double buffering",
+        ),
     }
     SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
         "start_point": pidgets.IntParameterWidgetFactory(
