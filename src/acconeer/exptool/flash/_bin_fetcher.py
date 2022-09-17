@@ -25,7 +25,15 @@ COOKIE_DIR = ET_DIR / CODENAME / "cookies"
 COOKIE_FILEPATH = COOKIE_DIR / "developer_page.pickle"
 REQUEST_URL = "https://developer.acconeer.com/log-in/"
 REFERER_URL = "https://developer.acconeer.com"
+ACC_DEV_LICENSE_URL = "https://developer.acconeer.com/software-license-agreement/"
 
+BIN_FETCH_PROMPT = (
+    "To fetch the latest image you need to log into your Acconeer Developer account.\n\n"
+    "If you don't have an account you can create one here:\n"
+    "https://developer.acconeer.com/create-account/ \n\n"
+    "Lost your password? Recover it here:\n"
+    "https://developer.acconeer.com/recover-password/"
+)
 
 log = logging.getLogger(__name__)
 
@@ -115,11 +123,7 @@ def download(
     page: requests.Response,
     path: str,
     device: str,
-    acc_tc: bool = False,
-) -> Optional[str]:
-
-    if acc_tc is False:
-        return None
+) -> Tuple[str, str]:
 
     device = device.lower().replace(" ", "_")
     soup = BeautifulSoup(page.content, "html.parser")
@@ -136,6 +140,8 @@ def download(
 
     _, params = cgi.parse_header(r.headers["Content-Disposition"])
     filename = params["filename"]
+
+    version = _get_version(filename)
 
     filepath = os.path.join(path, filename)
 
@@ -163,4 +169,13 @@ def download(
 
         os.remove(filepath)
 
-    return dst_path
+    return dst_path, version
+
+
+def _get_version(bin_file: Optional[str]) -> str:
+    version = "n/a"
+
+    if bin_file is not None:
+        version = Path(bin_file).stem
+
+    return version
