@@ -84,6 +84,92 @@ class DetectorContext(AlgoConfigBase):
 
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
 
+    def to_h5(self, group: h5py.Group) -> None:
+        for k, v in attrs.asdict(self).items():
+            if k in [
+                "recorded_thresholds_mean_sweep",
+                "recorded_thresholds_noise_std",
+                "bg_noise_std",
+            ]:
+                continue
+
+            if v is None:
+                continue
+
+            if isinstance(v, a121.SessionConfig):
+                group.create_dataset(
+                    k,
+                    data=v.to_json(),
+                    dtype=a121._H5PY_STR_DTYPE,
+                    track_times=False,
+                )
+            elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
+                group.create_dataset(k, data=v, track_times=False)
+            else:
+                raise RuntimeError(f"Unexpected {type(self).__name__} field type '{type(v)}'")
+
+        if self.recorded_thresholds_mean_sweep is not None:
+            recorded_thresholds_mean_sweep_group = group.create_group(
+                "recorded_thresholds_mean_sweep"
+            )
+
+            for i, v in enumerate(self.recorded_thresholds_mean_sweep):
+                recorded_thresholds_mean_sweep_group.create_dataset(
+                    f"index_{i}", data=v, track_times=False
+                )
+
+        if self.recorded_thresholds_noise_std is not None:
+            recorded_thresholds_std_group = group.create_group("recorded_thresholds_noise_std")
+
+            for i, v in enumerate(self.recorded_thresholds_noise_std):
+                recorded_thresholds_std_group.create_dataset(
+                    f"index_{i}", data=v, track_times=False
+                )
+
+        if self.bg_noise_std is not None:
+            bg_noise_std_group = group.create_group("bg_noise_std")
+
+            for i, v in enumerate(self.bg_noise_std):
+                bg_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+    @classmethod
+    def from_h5(cls, group: h5py.Group) -> DetectorContext:
+        context_dict = {}
+
+        unknown_keys = set(group.keys()) - set(attrs.fields_dict(DetectorContext).keys())
+        if unknown_keys:
+            raise Exception(f"Unknown field(s) in stored context: {unknown_keys}")
+
+        field_map = {
+            "offset_m": None,
+            "direct_leakage": None,
+            "reference_temperature": None,
+            "phase_jitter_comp_reference": None,
+            "recorded_threshold_session_config_used": a121.SessionConfig.from_json,
+            "close_range_session_config_used": a121.SessionConfig.from_json,
+        }
+        for k, func in field_map.items():
+            try:
+                v = group[k][()]
+            except KeyError:
+                continue
+
+            context_dict[k] = func(v) if func else v
+
+        if "recorded_thresholds_mean_sweep" in group:
+            mean_sweeps = _get_group_items(group["recorded_thresholds_mean_sweep"])
+            context_dict["recorded_thresholds_mean_sweep"] = mean_sweeps
+
+        if "recorded_thresholds_noise_std" in group:
+            noise_stds = _get_group_items(group["recorded_thresholds_noise_std"])
+            context_dict["recorded_thresholds_noise_std"] = noise_stds
+
+        if "bg_noise_std" in group:
+            bg_noise_std = _get_group_items(group["bg_noise_std"])
+            context_dict["bg_noise_std"] = bg_noise_std
+
+        return DetectorContext(**context_dict)
+
 
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
@@ -1074,93 +1160,15 @@ def _record_algo_data(
     )
 
     context_group = algo_group.create_group("context")
-
-    for k, v in attrs.asdict(context).items():
-        if k in [
-            "recorded_thresholds_mean_sweep",
-            "recorded_thresholds_noise_std",
-            "bg_noise_std",
-        ]:
-            continue
-
-        if v is None:
-            continue
-
-        if isinstance(v, a121.SessionConfig):
-            context_group.create_dataset(
-                k,
-                data=v.to_json(),
-                dtype=a121._H5PY_STR_DTYPE,
-                track_times=False,
-            )
-        elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
-            context_group.create_dataset(k, data=v, track_times=False)
-        else:
-            raise RuntimeError(f"Unexpected {DetectorContext.__name__} field type '{type(v)}'")
-
-    if context.recorded_thresholds_mean_sweep is not None:
-        recorded_thresholds_mean_sweep_group = context_group.create_group(
-            "recorded_thresholds_mean_sweep"
-        )
-
-        for i, v in enumerate(context.recorded_thresholds_mean_sweep):
-            recorded_thresholds_mean_sweep_group.create_dataset(
-                f"index_{i}", data=v, track_times=False
-            )
-
-    if context.recorded_thresholds_noise_std is not None:
-        recorded_thresholds_std_group = context_group.create_group("recorded_thresholds_noise_std")
-
-        for i, v in enumerate(context.recorded_thresholds_noise_std):
-            recorded_thresholds_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
-
-    if context.bg_noise_std is not None:
-        bg_noise_std_group = context_group.create_group("bg_noise_std")
-
-        for i, v in enumerate(context.bg_noise_std):
-            bg_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
+    context.to_h5(context_group)
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, DetectorContext]:
     sensor_id = algo_group["sensor_id"][()]
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
 
-    context_dict = {}
     context_group = algo_group["context"]
-
-    unknown_keys = set(context_group.keys()) - set(attrs.fields_dict(DetectorContext).keys())
-    if unknown_keys:
-        raise Exception(f"Unknown field(s) in stored context: {unknown_keys}")
-
-    field_map = {
-        "offset_m": None,
-        "direct_leakage": None,
-        "reference_temperature": None,
-        "phase_jitter_comp_reference": None,
-        "recorded_threshold_session_config_used": a121.SessionConfig.from_json,
-        "close_range_session_config_used": a121.SessionConfig.from_json,
-    }
-    for k, func in field_map.items():
-        try:
-            v = context_group[k][()]
-        except KeyError:
-            continue
-
-        context_dict[k] = func(v) if func else v
-
-    if "recorded_thresholds_mean_sweep" in context_group:
-        mean_sweeps = _get_group_items(context_group["recorded_thresholds_mean_sweep"])
-        context_dict["recorded_thresholds_mean_sweep"] = mean_sweeps
-
-    if "recorded_thresholds_noise_std" in context_group:
-        noise_stds = _get_group_items(context_group["recorded_thresholds_noise_std"])
-        context_dict["recorded_thresholds_noise_std"] = noise_stds
-
-    if "bg_noise_std" in context_group:
-        bg_noise_std = _get_group_items(context_group["bg_noise_std"])
-        context_dict["bg_noise_std"] = bg_noise_std
-
-    context = DetectorContext(**context_dict)
+    context = DetectorContext.from_h5(context_group)
 
     return sensor_id, config, context
 
