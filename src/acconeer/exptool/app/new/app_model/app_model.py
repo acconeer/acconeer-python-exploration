@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-import pickle
 import queue
 import shutil
 import time
@@ -39,7 +38,7 @@ from acconeer.exptool.app.new.backend import (
     PluginStateMessage,
     StatusMessage,
 )
-from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
+from acconeer.exptool.app.new.storage import remove_temp_dir
 from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
 from .plugin_protocols import PlotPluginInterface, ViewPluginInterface
@@ -290,9 +289,6 @@ class AppModel(QObject):
         if message.name == "server_info":
             self._a121_server_info = message.data
             self.broadcast()
-        elif message.name == "serialized":
-            assert message.kwargs is not None
-            self._handle_backend_serialized(**message.kwargs)
         elif message.name == "saveable_file":
             assert message.data is None or isinstance(message.data, Path)
             self._update_saveable_file(message.data)
@@ -304,29 +300,12 @@ class AppModel(QObject):
         else:
             raise RuntimeError(f"Got unknown general message '{message.name}'")
 
-    @classmethod
-    def _handle_backend_serialized(
-        cls, *, generation: PluginGeneration, key: str, data: Optional[dict]
-    ) -> None:
-        path = cls._get_plugin_config_path(generation, key)
-
-        if data is None:
-            path.unlink(missing_ok=True)
-        else:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            serialized_data = pickle.dumps(data, protocol=4)
-            path.write_bytes(serialized_data)
-
     def _update_saveable_file(self, path: Optional[Path]) -> None:
         if self.saveable_file is not None:
             self.saveable_file.unlink(missing_ok=True)
 
         self.saveable_file = path
         self.broadcast()
-
-    @classmethod
-    def _get_plugin_config_path(cls, generation: PluginGeneration, key: str) -> Path:
-        return (get_config_dir() / "plugin" / generation.value / key).with_suffix(".pickle")
 
     def _handle_port_update(
         self,
@@ -519,16 +498,6 @@ class AppModel(QObject):
 
         self._put_backend_task("unload_plugin", {}, on_error=self.emit_error)
 
-    def _load_plugin_cache(self, generation: PluginGeneration, key: str) -> None:
-        config_path = self._get_plugin_config_path(generation, key)
-        try:
-            data = config_path.read_bytes()
-            cache = pickle.loads(data)
-        except Exception:
-            pass
-        else:
-            self.put_backend_plugin_task("_from_cache", {"data": cache})
-
     def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
         log.debug(f"AppModel is loading the plugin {plugin}")
         if plugin == self.plugin:
@@ -539,10 +508,13 @@ class AppModel(QObject):
         if plugin is not None:
             self._put_backend_task(
                 "load_plugin",
-                {"plugin": plugin.create_backend_plugin, "key": plugin.key},
+                {
+                    "plugin_factory": plugin.create_backend_plugin,
+                    "key": plugin.key,
+                },
                 on_error=self.emit_error,
             )
-            self._load_plugin_cache(plugin.generation, plugin.key)
+            self.put_backend_plugin_task("load_from_cache", {})
             self.plugin_state = PluginState.LOADING
 
         self.sig_load_plugin.emit(plugin)

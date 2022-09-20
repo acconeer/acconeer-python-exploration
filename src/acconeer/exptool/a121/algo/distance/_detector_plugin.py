@@ -17,7 +17,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo._base import AlgoConfigBase
+from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
     DetectorBackendPluginBase,
     DetectorPlotPluginBase,
@@ -69,22 +69,6 @@ class SharedState:
     replaying: bool = attrs.field(default=False)
 
 
-@attrs.frozen(kw_only=True)
-class Save(AlgoConfigBase):
-    config: DetectorConfig = attrs.field()
-    context: DetectorContext = attrs.field()
-
-    def to_dict(self) -> dict[str, Any]:
-        return {"config": self.config.to_dict(), "context": self.context.to_dict()}
-
-    @classmethod
-    def from_dict(cls: type[Save], obj: dict[str, Any]) -> Save:
-        return Save(
-            config=DetectorConfig.from_dict(obj["config"]),
-            context=DetectorContext.from_dict(obj["context"]),
-        )
-
-
 def serialized_attrs_instance_has_diverged(attrs_instance: Any) -> bool:
     """Checks (recursively) if a de-serialized attrs-instances contains
     all attributes defined its respective class definition.
@@ -116,8 +100,10 @@ def serialized_attrs_instance_has_diverged(attrs_instance: Any) -> bool:
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
-    def __init__(self, callback: Callable[[Message], None], key: str) -> None:
-        super().__init__(callback=callback, key=key)
+    def __init__(
+        self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
+    ) -> None:
+        super().__init__(callback=callback, generation=generation, key=key)
 
         self._started: bool = False
         self._live_client: Optional[a121.Client] = None
@@ -129,17 +115,15 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.restore_defaults()
 
     @is_task
-    def _from_cache(self, *, data: dict) -> None:
-        obj = Save.from_dict(data)
-        self.shared_state.config = obj.config
-        self.shared_state.context = obj.context
-        self.broadcast(sync=True)
+    def load_from_cache(self) -> None:
+        try:
+            with self.h5_cache_file() as f:
+                self.shared_state.config = DetectorConfig.from_json(f["config"][()])
+                self.shared_state.context = DetectorContext.from_h5(f["context"])
+        except FileNotFoundError:
+            pass
 
-    def _to_cache(self) -> dict:
-        return Save(
-            config=self.shared_state.config,
-            context=self.shared_state.context,
-        ).to_dict()
+        self.broadcast(sync=True)
 
     def broadcast(self, sync: bool = False) -> None:
         super().broadcast()
@@ -183,16 +167,14 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.broadcast()
 
     def teardown(self) -> None:
-        self.callback(
-            GeneralMessage(
-                name="serialized",
-                kwargs={
-                    "generation": PluginGeneration.A121,
-                    "key": self.key,
-                    "data": self._to_cache(),
-                },
-            )
-        )
+        try:
+            with self.h5_cache_file(write=True) as f:
+                _create_h5_string_dataset(f, "config", self.shared_state.config.to_json())
+                context_group = f.create_group("context")
+                self.shared_state.context.to_h5(context_group)
+        except Exception:
+            log.warning("Detector could not write to cache")
+
         self.detach_client()
 
     @is_task
@@ -746,7 +728,7 @@ class PluginSpec(PluginSpecBase):
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
     ) -> BackendPlugin:
-        return BackendPlugin(callback, key)
+        return BackendPlugin(callback, generation=self.generation, key=key)
 
     def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
         return ViewPlugin(app_model=app_model, view_widget=view_widget)

@@ -4,7 +4,13 @@
 from __future__ import annotations
 
 import abc
+from contextlib import contextmanager
 from typing import Any, Callable, Generic, Optional, TypeVar
+
+import h5py
+
+from acconeer.exptool.app.new import PluginGeneration
+from acconeer.exptool.app.new.storage import get_config_dir
 
 from ._message import BackendPluginStateMessage, Message, StatusMessage
 
@@ -15,9 +21,27 @@ StateT = TypeVar("StateT")
 class BackendPlugin(abc.ABC, Generic[StateT]):
     shared_state: StateT
 
-    def __init__(self, callback: Callable[[Message], None], key: str) -> None:
+    def __init__(
+        self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
+    ) -> None:
         self.callback = callback
         self.key = key
+        self.generation = generation
+
+    @contextmanager
+    def h5_cache_file(self, write=False):
+        file_mode = "w" if write else "r"
+        file_path = (get_config_dir() / "plugin" / self.generation.value / self.key).with_suffix(
+            ".h5"
+        )
+
+        h5_file = h5py.File(file_path, file_mode)
+        yield h5_file
+        h5_file.close()
+
+    @abc.abstractmethod
+    def load_from_cache(self) -> None:
+        pass
 
     @abc.abstractmethod
     def idle(self) -> bool:

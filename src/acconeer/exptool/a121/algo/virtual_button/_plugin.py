@@ -157,7 +157,7 @@ class PluginSpec(PluginSpecBase):
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
     ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, key=key)
+        return BackendPlugin(callback=callback, generation=self.generation, key=key)
 
     def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
         return ViewPlugin(app_model=app_model, view_widget=view_widget)

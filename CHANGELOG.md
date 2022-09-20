@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- A121: Convert cache from pickle to h5
+
 ## v5.2.4
 
 ### Added

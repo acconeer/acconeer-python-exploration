@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Optional, Type, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 import packaging.version
 
@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 
 
 T = TypeVar("T")
+MessageHandler = Callable[[Message], None]
+BackendPluginFactory = Callable[[MessageHandler, str], BackendPlugin]
 
 
 def is_task(func: T) -> T:
@@ -115,16 +117,16 @@ class Model:
         self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
 
     @is_task
-    def load_plugin(self, *, plugin: Type[BackendPlugin], key: str) -> None:
+    def load_plugin(self, *, plugin_factory: BackendPluginFactory, key: str) -> None:
         if self.backend_plugin is not None:
             self.unload_plugin(send_callback=False)
 
-        self.backend_plugin = plugin(callback=self.task_callback, key=key)
-        log.info(f"{plugin.__name__} was loaded.")
+        self.backend_plugin = plugin_factory(self.task_callback, key)
+        log.info(f"{plugin_factory.__name__} was loaded.")
 
         if self.client is not None and self.client.connected:
             self.backend_plugin.attach_client(client=self.client)
-            log.debug(f"{plugin.__name__} was attached a Client")
+            log.debug(f"{plugin_factory.__name__} was attached a Client")
 
         self.task_callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 

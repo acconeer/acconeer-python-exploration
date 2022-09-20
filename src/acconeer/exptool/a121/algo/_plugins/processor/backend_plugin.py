@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, Generic, List, Optional, Type
+from typing import Callable, Dict, Generic, List, Optional, Type
 
 import attrs
 import h5py
@@ -15,7 +15,6 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._base import (
-    AlgoConfigBase,
     ConfigT,
     GenericProcessorBase,
     InputT,
@@ -60,25 +59,6 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT, MetadataT]):
             return True
 
 
-@attrs.frozen(kw_only=True)
-class ProcessorSave(Generic[ConfigT], AlgoConfigBase):
-    session_config: a121.SessionConfig = attrs.field()
-    processor_config: ConfigT = attrs.field()
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "session_config": self.session_config.to_dict(),
-            "processor_config": self.processor_config.to_dict(),
-        }
-
-    @classmethod
-    def from_dict(cls: type[ProcessorSave], obj: dict[str, Any]) -> ProcessorSave:
-        return ProcessorSave(
-            session_config=a121.SessionConfig.from_dict(obj["session_config"]),
-            processor_config=AlgoConfigBase.from_dict(obj["processor_config"]),
-        )
-
-
 class GenericProcessorBackendPluginBase(
     Generic[InputT, ConfigT, ResultT, MetadataT],
     A121BackendPluginBase[ProcessorBackendPluginSharedState[ConfigT, MetadataT]],
@@ -91,8 +71,10 @@ class GenericProcessorBackendPluginBase(
     _opened_record: Optional[a121.H5Record]
     _replaying_client: Optional[a121._ReplayingClient]
 
-    def __init__(self, callback: Callable[[Message], None], key: str):
-        super().__init__(callback=callback, key=key)
+    def __init__(
+        self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
+    ):
+        super().__init__(callback=callback, generation=generation, key=key)
         self._processor_instance = None
         self._live_client = None
         self._recorder = None
@@ -100,21 +82,22 @@ class GenericProcessorBackendPluginBase(
         self._replaying_client = None
         self._opened_file = None
         self._opened_record = None
-
         self.restore_defaults()
 
     @is_task
-    def _from_cache(self, *, data: dict) -> None:
-        obj = ProcessorSave.from_dict(data)
-        self.shared_state.session_config = obj.session_config
-        self.shared_state.processor_config = obj.processor_config
-        self.broadcast(sync=True)
+    def load_from_cache(self) -> None:
+        try:
+            with self.h5_cache_file() as f:
+                self.shared_state.session_config = a121.SessionConfig.from_json(
+                    f["session_config"][()]
+                )
+                self.shared_state.processor_config = self.get_processor_config_cls().from_json(
+                    f["processor_config"][()]
+                )
+        except FileNotFoundError:
+            pass
 
-    def _to_cache(self) -> dict:
-        return ProcessorSave(
-            session_config=self.shared_state.session_config,
-            processor_config=self.shared_state.processor_config,
-        ).to_dict()
+        self.broadcast(sync=True)
 
     def broadcast(self, sync: bool = False) -> None:
         super().broadcast()
@@ -148,16 +131,17 @@ class GenericProcessorBackendPluginBase(
         self._live_client = None
 
     def teardown(self) -> None:
-        self.callback(
-            GeneralMessage(
-                name="serialized",
-                kwargs={
-                    "generation": PluginGeneration.A121,
-                    "key": self.key,
-                    "data": self._to_cache(),
-                },
-            )
-        )
+        try:
+            with self.h5_cache_file(write=True) as f:
+                _create_h5_string_dataset(
+                    f, "session_config", self.shared_state.session_config.to_json()
+                )
+                _create_h5_string_dataset(
+                    f, "processor_config", self.shared_state.processor_config.to_json()
+                )
+        except Exception:
+            log.warning("Processor could not write to cache")
+
         self.detach_client()
 
     @is_task
