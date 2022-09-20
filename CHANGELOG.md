@@ -1,23 +1,21 @@
 # Changelog
 
-## Unreleased
-- A121: Convert config/context classes to dict before pickle
+## v5.2.4
 
 ### Added
 - A121: Possibility to specify baudrate in the App
+- A121: Phase tracking example app.
+- A121 presence detector: inter-frame phase boost
+- A121 presence detector: inter-frame timeout
 
 ### Removed
 - A121: One-sided CFAR.
   The concept is not valid with the close range measurement strategy.
 
 ### Fixed
+- A121: Convert config/context classes to dict before pickle
 - Metadata view spacing issue
 - A121: Double buffering added to sensor config editor in app
-
-### Added
-- A121: Phase tracking example app.
-- A121 presence detector: inter-frame phase boost
-- A121 presence detector: inter-frame timeout
 
 ## v5.2.3
 

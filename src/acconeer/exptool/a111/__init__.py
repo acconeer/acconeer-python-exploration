@@ -1,7 +1,7 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
-SDK_VERSION = "2.12.0"
+SDK_VERSION = "2.13.0"
 
 from . import recording
 from ._clients import Client, Link, Protocol
