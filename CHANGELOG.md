@@ -54,6 +54,7 @@
 - Backend CPU load in status bar.
 - Add warning in the App if an unflashed device is connected
 - Notify user for new library versions
+- Support for multiple subsweep configs in view
 
 ### Changed
 - Design of status bar.

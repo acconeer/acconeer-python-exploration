@@ -90,7 +90,9 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         self.processor_config_editor.sig_update.connect(self._on_processor_config_update)
         scrolly_layout.addWidget(self.processor_config_editor)
 
-        self.session_config_editor = SessionConfigEditor(self.scrolly_widget)
+        self.session_config_editor = SessionConfigEditor(
+            self.supports_multiple_subsweeps(), self.scrolly_widget
+        )
         self.session_config_editor.sig_update.connect(self._on_session_config_update)
         scrolly_layout.addWidget(self.session_config_editor)
 
@@ -160,6 +162,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
         self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.session_config_editor.update_available_sensor_list(app_model._a121_server_info)
+
+    @classmethod
+    def supports_multiple_subsweeps(self) -> bool:
+        return False
 
     @classmethod
     @abc.abstractmethod

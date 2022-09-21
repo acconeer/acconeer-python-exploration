@@ -8,7 +8,7 @@ from functools import partial
 from typing import Any, Mapping, Optional
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QTabWidget, QToolButton, QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
@@ -26,6 +26,7 @@ class SensorConfigEditor(QWidget):
     sig_update = Signal(object)
 
     _sensor_config: Optional[a121.SensorConfig]
+    _subsweep_config_editors: list[SubsweepConfigEditor]
 
     _all_pidgets: list[pidgets.ParameterWidget]
 
@@ -87,12 +88,15 @@ class SensorConfigEditor(QWidget):
         ),
     }
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, supports_multiple_subsweeps: bool = False, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent=parent)
 
         self._all_pidgets = []
 
         self._sensor_config = None
+        self._subsweep_config_editors = []
 
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -113,9 +117,70 @@ class SensorConfigEditor(QWidget):
             self._all_pidgets.append(pidget)
             self._sensor_config_pidgets[aspect] = pidget
 
-        self._subsweep_config_editor = SubsweepConfigEditor(self)
-        self._subsweep_config_editor.sig_update.connect(self._broadcast)
-        self.sensor_group_box.layout().addWidget(self._subsweep_config_editor)
+        self.subsweep_group_box = VerticalGroupBox("Subsweep parameters", parent=self)
+        self.subsweep_group_box.layout().setSpacing(self.SPACING)
+        self.layout().addWidget(self.subsweep_group_box)
+
+        self._tab_widget = QTabWidget(self)
+        self._tab_widget.setStyleSheet("QTabWidget::pane { padding: 5px;}")
+        self.subsweep_group_box.layout().addWidget(self._tab_widget)
+
+        if supports_multiple_subsweeps:
+            self._tab_widget.setTabsClosable(True)
+            self._tab_widget.tabCloseRequested.connect(self._remove_subsweep_config)
+
+            self._plus_button = QToolButton(self)
+            self._plus_button.setText("+")
+            self.layout().addWidget(self._plus_button)
+            self._plus_button.clicked.connect(self._add_subsweep_config)
+            self._tab_widget.setCornerWidget(self._plus_button)
+            self._tab_widget.cornerWidget().setMinimumSize(self._plus_button.sizeHint())
+
+    def _add_subsweep_config(self) -> None:
+        if self._sensor_config is None:
+            return
+        if self._tab_widget.count() > 3:
+            return
+        subsweep_config = a121.SubsweepConfig()
+        self._sensor_config._subsweeps.append(subsweep_config)
+        self._broadcast()
+        subsweep_config_editor = self._add_subsweep_config_editor()
+        subsweep_config_editor.set_data(subsweep_config)
+        subsweep_config_editor.sync()
+
+    def _add_tabs(self, tabs_needed: int) -> None:
+        while self._tab_widget.count() < tabs_needed:
+            self._add_subsweep_config_editor()
+
+    def _add_subsweep_config_editor(self) -> SubsweepConfigEditor:
+        subsweep_config_editor = SubsweepConfigEditor(self)
+        self._subsweep_config_editors.append(subsweep_config_editor)
+        subsweep_config_editor.sig_update.connect(self._broadcast)
+        self._tab_widget.addTab(subsweep_config_editor, str(len(self._subsweep_config_editors)))
+        self._update_tab_labels()
+        return subsweep_config_editor
+
+    def _remove_subsweep_config(self, idx: int) -> None:
+        if self._sensor_config is None:
+            return
+        if self._tab_widget.count() < 2:
+            return
+        self._sensor_config.subsweeps.pop(idx)
+        self._broadcast()
+        self._remove_subsweep_config_editor(idx)
+
+    def _remove_tabs(self, tabs_needed: int) -> None:
+        while self._tab_widget.count() > tabs_needed:
+            self._remove_subsweep_config_editor(0)
+
+    def _remove_subsweep_config_editor(self, idx: int) -> None:
+        self._tab_widget.removeTab(idx)
+        self._subsweep_config_editors.pop(idx)
+        self._update_tab_labels()
+
+    def _update_tab_labels(self) -> None:
+        for tab_idx in range(self._tab_widget.count()):
+            self._tab_widget.setTabText(tab_idx, f"{tab_idx + 1}      ")
 
     def _update_ui(self) -> None:
         if self._sensor_config is None:
@@ -142,13 +207,19 @@ class SensorConfigEditor(QWidget):
 
     def set_data(self, sensor_config: Optional[a121.SensorConfig]) -> None:
         self._sensor_config = sensor_config
-        if sensor_config is not None:
-            self._subsweep_config_editor.set_data(sensor_config.subsweep)
-            self._handle_validation_results(sensor_config._collect_validation_results())
+        if sensor_config is None:
+            return
+        tabs_needed = len(sensor_config.subsweeps)
+        self._remove_tabs(tabs_needed)
+        self._add_tabs(tabs_needed)
+        for i, subsweep in enumerate(sensor_config.subsweeps):
+            self._subsweep_config_editors[i].set_data(subsweep)
+        self._handle_validation_results(sensor_config._collect_validation_results())
 
     def sync(self) -> None:
         self._update_ui()
-        self._subsweep_config_editor.sync()
+        for subsweep_config_editor in self._subsweep_config_editors:
+            subsweep_config_editor.sync()
 
     def _broadcast(self) -> None:
         self.sig_update.emit(self._sensor_config)

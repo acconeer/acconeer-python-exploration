@@ -16,7 +16,6 @@ from acconeer.exptool.a121._core import Criticality
 from . import pidgets
 from .range_help_view import RangeHelpView
 from .types import PidgetFactoryMapping
-from .utils import VerticalGroupBox
 
 
 log = logging.getLogger(__name__)
@@ -99,17 +98,13 @@ class SubsweepConfigEditor(QWidget):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
 
-        self.subsweep_group_box = VerticalGroupBox("Subsweep parameters", parent=self)
-        self.subsweep_group_box.layout().setSpacing(self.SPACING)
-        self.layout().addWidget(self.subsweep_group_box)
-
-        self.range_help_view = RangeHelpView(self.subsweep_group_box)
-        self.subsweep_group_box.layout().addWidget(self.range_help_view)
+        self.range_help_view = RangeHelpView(self)
+        self.layout().addWidget(self.range_help_view)
 
         self._subsweep_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
         for aspect, factory in self.SUBSWEEP_CONFIG_FACTORIES.items():
-            pidget = factory.create(self.subsweep_group_box)
-            self.subsweep_group_box.layout().addWidget(pidget)
+            pidget = factory.create(self)
+            self.layout().addWidget(pidget)
 
             pidget.sig_parameter_changed.connect(
                 partial(self._update_subsweep_config_aspect, aspect)

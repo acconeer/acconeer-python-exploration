@@ -30,7 +30,9 @@ class SessionConfigEditor(QWidget):
 
     SPACING = 15
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, supports_multiple_subsweeps: bool = False, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent=parent)
 
         self._server_info = None
@@ -59,7 +61,7 @@ class SessionConfigEditor(QWidget):
         self._update_rate_pidget.sig_parameter_changed.connect(self._update_update_rate)
         self.session_group_box.layout().addWidget(self._update_rate_pidget)
 
-        self._sensor_config_editor = SensorConfigEditor(self)
+        self._sensor_config_editor = SensorConfigEditor(supports_multiple_subsweeps, self)
         self._sensor_config_editor.sig_update.connect(self._broadcast)
         self.layout().addWidget(self._sensor_config_editor)
 
