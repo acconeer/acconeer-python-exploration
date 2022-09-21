@@ -14,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import AlgoConfigBase
 
 from ._aggregator import (
@@ -97,12 +98,7 @@ class DetectorContext(AlgoConfigBase):
                 continue
 
             if isinstance(v, a121.SessionConfig):
-                group.create_dataset(
-                    k,
-                    data=v.to_json(),
-                    dtype=a121._H5PY_STR_DTYPE,
-                    track_times=False,
-                )
+                _create_h5_string_dataset(group, k, v.to_json())
             elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
                 group.create_dataset(k, data=v, track_times=False)
             else:
@@ -1152,12 +1148,7 @@ def _record_algo_data(
         data=sensor_id,
         track_times=False,
     )
-    algo_group.create_dataset(
-        "detector_config",
-        data=detector_config.to_json(),
-        dtype=a121._H5PY_STR_DTYPE,
-        track_times=False,
-    )
+    _create_h5_string_dataset(algo_group, "detector_config", detector_config.to_json())
 
     context_group = algo_group.create_group("context")
     context.to_h5(context_group)

@@ -14,6 +14,7 @@ from attr import Attribute
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
+from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import AlgoConfigBase
 
 from ._processors import Processor, ProcessorConfig, ProcessorExtraResult
@@ -279,12 +280,7 @@ def _record_algo_data(
         data=sensor_id,
         track_times=False,
     )
-    algo_group.create_dataset(
-        "detector_config",
-        data=detector_config.to_json(),
-        dtype=a121._H5PY_STR_DTYPE,
-        track_times=False,
-    )
+    _create_h5_string_dataset(algo_group, "detector_config", detector_config.to_json())
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig]:

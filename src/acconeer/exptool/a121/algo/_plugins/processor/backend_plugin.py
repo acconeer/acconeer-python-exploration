@@ -13,6 +13,7 @@ import h5py
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
+from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._base import (
     AlgoConfigBase,
     ConfigT,
@@ -227,11 +228,8 @@ class GenericProcessorBackendPluginBase(
             algo_group = self._recorder.require_algo_group(self.key)  # noqa: F841
 
             # TODO: break out saving (?)
-            algo_group.create_dataset(
-                "processor_config",
-                data=self.shared_state.processor_config.to_json(),
-                dtype=a121._H5PY_STR_DTYPE,
-                track_times=False,
+            _create_h5_string_dataset(
+                algo_group, "processor_config", self.shared_state.processor_config.to_json()
             )
         else:
             self._recorder = None
