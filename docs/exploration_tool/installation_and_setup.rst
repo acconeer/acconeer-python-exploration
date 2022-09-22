@@ -88,3 +88,10 @@ To run the application on Ubuntu 20.04, ``libxcb-xinerama0-dev`` needs to be ins
 
     sudo apt update
     sudo apt install -y libxcb-xinerama0-dev
+
+Launching the application
+--------------------------
+
+After installing the Exploration Tool, it is launched with::
+
+    python -m acconeer.exptool.app
