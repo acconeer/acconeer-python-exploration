@@ -9,6 +9,7 @@ from ._enums import (
     PluginState,
 )
 from ._exceptions import HandledException
+from ._version_checker import check_package_outdated, get_latest_changelog
 from .app import main
 from .app_model import AppModel
 from .backend import (
