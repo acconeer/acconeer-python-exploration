@@ -3,7 +3,60 @@
 
 from __future__ import annotations
 
+import importlib
+import logging
+import typing as t
+
+import attrs
+import typing_extensions as te
+
+from ._enums import PluginFamily
 from .app_model import PluginSpec
+
+
+_REGISTERED_PLUGINS: t.List[PluginSpec] = []
+_LOG = logging.getLogger(__name__)
+
+
+def register_plugin(plugin: PluginSpec) -> None:
+    """Registers a plugin, to be used in the Exploration Tool App.
+
+    :param plugin: A plugin
+    """
+    try:
+        plugin = attrs.evolve(plugin, family=PluginFamily.EXTERNAL_PLUGIN)  # type: ignore[misc]
+    except Exception:
+        _LOG.error(f"Plugin {type(plugin).__name__!r} needs to be an instance of PluginSpecBase")
+    finally:
+        _REGISTERED_PLUGINS.append(plugin)
+
+
+def get_registered_plugins() -> list[PluginSpec]:
+    return _REGISTERED_PLUGINS
+
+
+@te.runtime_checkable
+class ThirdPartyPluginModule(te.Protocol):
+    def register(self) -> None:
+        # "self" refers to the module, i.e. is of type "ModuleType"
+        ...
+
+
+def import_and_register_plugin_module(module_name: str) -> None:
+    imported_module = importlib.import_module(name=module_name)
+
+    if not isinstance(imported_module, ThirdPartyPluginModule):
+        raise ValueError(
+            f"Module specified by {module_name!r} does not have a 'register' function."
+        )
+
+    try:
+        imported_module.register()
+    except TypeError:
+        raise TypeError(
+            f"Function 'register' in {module_name!r} has the wrong signature. "
+            + "'register' should have no parameters (should look like this: 'def register(): ...')"
+        ) from None
 
 
 def load_default_plugins() -> list[PluginSpec]:
@@ -45,3 +98,7 @@ def load_default_plugins() -> list[PluginSpec]:
         SPEED_DETECTOR_PLUGIN,
         WASTE_LEVEL_PLUGIN,
     ]
+
+
+def load_plugins() -> list[PluginSpec]:
+    return load_default_plugins() + get_registered_plugins()

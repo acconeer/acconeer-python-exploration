@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from ._enums import (
@@ -21,6 +21,7 @@ from .backend import (
     PluginStateMessage,
     is_task,
 )
+from .plugin_loader import register_plugin
 from .pluginbase import (
     PgPlotPlugin,
     PlotPluginBase,

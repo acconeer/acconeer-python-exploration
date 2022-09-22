@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from enum import Enum, auto
@@ -66,6 +66,7 @@ class PluginFamily(Enum):
     DETECTOR = "Detectors"
     REF_APP = "Reference apps"
     EXAMPLE_APP = "Example apps"
+    EXTERNAL_PLUGIN = "External Plugins"
 
 
 class PluginGeneration(Enum):

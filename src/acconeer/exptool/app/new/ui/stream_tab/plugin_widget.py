@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -135,6 +135,14 @@ class PluginPresetPlaceholder(QWidget):
 
 
 class PluginSelection(QWidget):
+    PLUGIN_FAMILY_ORDER = [
+        PluginFamily.EXTERNAL_PLUGIN,
+        PluginFamily.SERVICE,
+        PluginFamily.DETECTOR,
+        PluginFamily.REF_APP,
+        PluginFamily.EXAMPLE_APP,
+    ]
+
     def __init__(
         self, app_model: AppModel, plugins: list[PluginSpecBase], parent: QWidget
     ) -> None:
@@ -149,7 +157,7 @@ class PluginSelection(QWidget):
         self.layout().setSpacing(11)
 
         group_boxes = {}
-        for family in PluginFamily:
+        for family in self.PLUGIN_FAMILY_ORDER:
             group_box = QGroupBox(self)
             group_box.setTitle(family.value)
             group_box.setHidden(True)

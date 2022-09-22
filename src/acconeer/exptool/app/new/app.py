@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import ctypes
@@ -19,7 +19,7 @@ from acconeer.exptool.utils import config_logging
 from ._argument_parser import ExptoolArgumentParser
 from .app_model import AppModel
 from .backend import Backend
-from .plugin_loader import load_default_plugins
+from .plugin_loader import import_and_register_plugin_module, load_plugins
 from .storage import remove_config_dir, remove_temp_dir
 from .ui import AppModelViewer, MainWindow
 
@@ -48,10 +48,14 @@ def main() -> None:
     app.setStyleSheet(qdarktheme.load_stylesheet("light"))
     app.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
+    if args.plugin_modules is not None:
+        for plugin_module_name in args.plugin_modules:
+            import_and_register_plugin_module(plugin_module_name)
+
     backend = Backend()
     backend.start()
 
-    model = AppModel(backend, load_default_plugins())
+    model = AppModel(backend, load_plugins())
     model.start()
 
     app.aboutToQuit.connect(model.stop)
