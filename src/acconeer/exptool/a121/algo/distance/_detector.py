@@ -554,7 +554,7 @@ class Detector:
         status = self.get_detector_status(self.detector_config, self.context, self.sensor_id)
 
         if not status.ready_to_start:
-            raise RuntimeError("Not ready to start")
+            raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
 
         if not skip_calibration:
             self.calibrate_noise()
