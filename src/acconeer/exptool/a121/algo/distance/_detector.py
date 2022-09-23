@@ -504,7 +504,7 @@ class Detector:
 
     @classmethod
     def _valid_detector_config_range(cls, config: DetectorConfig) -> bool:
-        return cls.MIN_DIST_M < config.start_m and config.end_m < cls.MAX_DIST_M
+        return cls.MIN_DIST_M <= config.start_m and config.end_m <= cls.MAX_DIST_M
 
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
