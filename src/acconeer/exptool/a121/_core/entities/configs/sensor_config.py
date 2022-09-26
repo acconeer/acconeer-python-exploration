@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import warnings
-from typing import Any, Optional, TypeVar
+from typing import Any, Iterator, Optional, Type, TypeVar, Union, overload
 
 import numpy as np
 
@@ -18,6 +19,11 @@ from .validation_error import ValidationError, ValidationResult, ValidationWarni
 
 T = TypeVar("T")
 
+_TOO_MANY_SUBSWEEPS_ERROR_FORMAT = (
+    "SensorConfig has too many subsweeps "
+    + 'to use accessor "{}". Number of subsweeps needs to be 1.'
+)
+
 
 class SubsweepProxyProperty(utils.ProxyProperty[T]):
     def __init__(self, prop: Any) -> None:
@@ -25,6 +31,40 @@ class SubsweepProxyProperty(utils.ProxyProperty[T]):
             accessor=lambda sensor_config: sensor_config.subsweep,
             prop=prop,
         )
+
+    @contextlib.contextmanager
+    def _more_helpful_accessor_errors(self) -> Iterator[None]:
+        try:
+            yield
+        except AttributeError:
+            # this should only be None if "property" isn't used as a decorator
+            # "fget" is the function that gets decorated with "@property"
+            # while "fset" is the function that gets decorated with "@<property name>.setter"
+            assert self._property.fget is not None
+
+            raise AttributeError(
+                _TOO_MANY_SUBSWEEPS_ERROR_FORMAT.format(self._property.fget.__name__)
+            ) from None
+
+    @overload
+    def __get__(self, obj: None, objtype: Optional[Type] = ...) -> utils.ProxyProperty[T]:
+        ...
+
+    @overload
+    def __get__(self, obj: Any, objtype: Optional[Type] = ...) -> T:
+        ...
+
+    def __get__(
+        self,
+        obj: Optional[Any],
+        objtype: Optional[Type] = None,
+    ) -> Union[T, utils.ProxyProperty[T]]:
+        with self._more_helpful_accessor_errors():
+            return super().__get__(obj, objtype)
+
+    def __set__(self, obj: Any, value: T) -> None:
+        with self._more_helpful_accessor_errors():
+            return super().__set__(obj, value)
 
 
 class SensorConfig:
@@ -196,18 +236,15 @@ class SensorConfig:
         if prf is not None:
             self.prf = prf
 
-    def _assert_single_subsweep(self) -> None:
-        if self.num_subsweeps != 1:
-            raise AttributeError("num_subsweeps is != 1.")
-
     @property
     def subsweep(self) -> SubsweepConfig:
         """Retrieves the sole ``SubsweepConfig``
 
-        :raises AttributeError: If ``num_subsweeps`` != 1
+        :raises AttributeError: If ``num_subsweeps`` > 1
         """
+        if self.num_subsweeps > 1:
+            raise AttributeError(_TOO_MANY_SUBSWEEPS_ERROR_FORMAT.format("subsweep"))
 
-        self._assert_single_subsweep()
         return self.subsweeps[0]
 
     @property

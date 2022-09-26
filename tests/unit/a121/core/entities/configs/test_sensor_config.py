@@ -361,3 +361,32 @@ def test_config_that_require_too_much_buffer_space_raises_error_upon_validate(
 
     with pytest.raises(a121.ValidationError):
         config.validate()
+
+
+@pytest.mark.parametrize(
+    "proxy_parameter_name",
+    [
+        "start_point",
+        "num_points",
+        "step_length",
+        "profile",
+        "hwaas",
+        "receiver_gain",
+        "enable_tx",
+        "enable_loopback",
+        "phase_enhancement",
+        "prf",
+    ],
+)
+def test_proxy_parameter_name_is_mentioned_in_too_many_subsweeps_error(proxy_parameter_name):
+    try:
+        config = a121.SensorConfig(num_subsweeps=2)
+        _ = getattr(config, proxy_parameter_name)
+    except AttributeError as ae:
+        (error_message,) = ae.args
+        if proxy_parameter_name not in error_message:
+            pytest.fail(
+                f"{proxy_parameter_name!r} was not mentioned in the error: {error_message!r}"
+            )
+    else:
+        assert False
