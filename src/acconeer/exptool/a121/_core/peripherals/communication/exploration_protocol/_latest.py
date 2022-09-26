@@ -25,6 +25,7 @@ class ExplorationProtocol(CommunicationProtocol):
         PRF.PRF_13_0_MHz: "13_0_MHz",
         PRF.PRF_8_7_MHz: "8_7_MHz",
         PRF.PRF_6_5_MHz: "6_5_MHz",
+        PRF.PRF_5_2_MHz: "5_2_MHz",
     }
     IDLE_STATE_MAPPING = {
         IdleState.DEEP_SLEEP: "deep_sleep",

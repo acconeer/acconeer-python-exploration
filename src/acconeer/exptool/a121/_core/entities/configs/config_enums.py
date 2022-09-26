@@ -70,6 +70,7 @@ class PRF(Enum):
     PRF_13_0_MHZ      13.0 MHz  7.0 m 11.5 m
     PRF_8_7_MHZ        8.7 MHz 12.7 m 17.3 m
     PRF_6_5_MHZ        6.5 MHz 18.5 m 23.1 m
+    PRF_5_2_MHZ        5.2 MHz 24.2 m 28.8 m
     ================= ======== ====== ======
 
     .. [*] 19.5MHz is only available for profile 1.
@@ -79,6 +80,7 @@ class PRF(Enum):
     PRF_13_0_MHz = 13000000
     PRF_8_7_MHz = 8700000
     PRF_6_5_MHz = 6500000
+    PRF_5_2_MHz = 5200000
 
     @property
     def frequency(self) -> int:

@@ -7,10 +7,11 @@ from typing import Optional
 
 from acconeer.exptool.a121._core.entities import SensorCalibration, SessionConfig
 
-from ._latest import ExplorationProtocol, ExplorationProtocolError
+from ._latest import ExplorationProtocolError
+from ._no_5_2_mhz import ExplorationProtocol_No_5_2MHz_PRF
 
 
-class ExplorationProtocol_NoCalibrationReuse(ExplorationProtocol):
+class ExplorationProtocol_NoCalibrationReuse(ExplorationProtocol_No_5_2MHz_PRF):
     @classmethod
     def setup_command(
         cls,

@@ -7,6 +7,9 @@
 - A121: Vibration: Peak detection
 - A121: Plugin configuration presets
 
+### Changed
+- Forbid setting up with 5.2HMz PRF if the connected server cannot handle that.
+
 ### Fixed
 - A121 presence: Fix depth filter length so it never is bigger than
   the number of points

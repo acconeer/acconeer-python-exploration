@@ -8,6 +8,7 @@ from typing import Optional, Type
 from packaging.version import Version
 
 from ._latest import ExplorationProtocol, ExplorationProtocolError
+from ._no_5_2_mhz import ExplorationProtocol_No_5_2MHz_PRF
 from ._no_calibration_reuse import ExplorationProtocol_NoCalibrationReuse
 
 
@@ -20,5 +21,8 @@ def get_exploration_protocol(rss_version: Optional[Version] = None) -> Type[Expl
 
     if rss_version < Version("0.4.3.dev280"):
         return ExplorationProtocol_NoCalibrationReuse
+
+    if rss_version < Version("0.4.3.dev310"):
+        return ExplorationProtocol_No_5_2MHz_PRF
 
     return ExplorationProtocol

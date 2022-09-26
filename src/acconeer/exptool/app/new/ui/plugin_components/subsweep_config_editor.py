@@ -41,6 +41,7 @@ class SubsweepConfigEditor(QWidget):
         a121.PRF.PRF_13_0_MHz: "13.0 MHz",
         a121.PRF.PRF_8_7_MHz: "8.7 MHz",
         a121.PRF.PRF_6_5_MHz: "6.5 MHz",
+        a121.PRF.PRF_5_2_MHz: "5.2 MHz",
     }
     SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
         "start_point": pidgets.IntParameterWidgetFactory(

@@ -11,6 +11,7 @@ import pytest
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol import (
     ExplorationProtocol,
+    ExplorationProtocol_No_5_2MHz_PRF,
     ExplorationProtocol_NoCalibrationReuse,
     get_exploration_protocol,
 )
@@ -132,7 +133,9 @@ class TestExplorationProtocolFactory:
         [
             ("a121-v0.4.1", ExplorationProtocol_NoCalibrationReuse),
             ("a121-v0.4.2-279-gebaf6243f0", ExplorationProtocol_NoCalibrationReuse),
-            ("a121-v0.4.2-280-ge201249eb0", ExplorationProtocol),
+            ("a121-v0.4.2-280-ge201249eb0", ExplorationProtocol_No_5_2MHz_PRF),
+            ("a121-v0.4.2-309-ge39f6c5857", ExplorationProtocol_No_5_2MHz_PRF),
+            ("a121-v0.4.2-310-g3a75155701", ExplorationProtocol),
             ("a121-v0.5.0", ExplorationProtocol),
             ("a121-v0.6.0", ExplorationProtocol),
         ],
