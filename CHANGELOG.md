@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- A121 presence detector: set prf based on range
+
 ### Add
 - Update rate to distance detector.
 

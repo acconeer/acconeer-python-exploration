@@ -15,7 +15,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo import AlgoConfigBase
+from acconeer.exptool.a121.algo import AlgoConfigBase, select_prf
 
 from ._processors import Processor, ProcessorConfig, ProcessorExtraResult
 
@@ -210,11 +210,13 @@ class Detector:
                 / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
             )
         )
+        end_point = start_point + (num_point - 1) * step_length
         return a121.SensorConfig(
             profile=profile,
             start_point=start_point,
             num_points=num_point,
             step_length=step_length,
+            prf=select_prf(end_point, profile),
             hwaas=detector_config.hwaas,
             sweeps_per_frame=detector_config.sweeps_per_frame,
             frame_rate=detector_config.frame_rate,
