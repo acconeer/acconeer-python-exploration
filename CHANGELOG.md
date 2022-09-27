@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## v5.2.5
+
+### Fixed
+- Pin version of PySide6 to avoid bug with overriding builtin enum in Python 3.9
 
 ### Changed
 - A121: Convert cache from pickle to h5
