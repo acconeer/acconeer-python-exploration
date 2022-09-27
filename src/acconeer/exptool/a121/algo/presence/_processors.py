@@ -35,6 +35,11 @@ class ProcessorConfig(AlgoConfigBase):
 
 
 @attrs.frozen(kw_only=True)
+class ProcessorContext:
+    estimated_frame_rate: Optional[float] = attrs.field(default=None)
+
+
+@attrs.frozen(kw_only=True)
 class ProcessorExtraResult:
     """
     Contains information for visualization in ET.
@@ -85,12 +90,16 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
         subsweep_index: Optional[int] = None,
+        context: Optional[ProcessorContext] = None,
     ) -> None:
         if subsweep_index is None:
             if len(sensor_config.subsweeps) > 1:
                 raise ValueError("Multiple subsweeps are not supported")
 
             subsweep_index = 0
+
+        if context is None:
+            context = ProcessorContext()
 
         self.sensor_config = sensor_config
         self.metadata = metadata
@@ -103,7 +112,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.sweeps_per_frame = self.sensor_config.sweeps_per_frame
         self.distances, _ = get_distances_m(self.sensor_config, metadata)
         self.num_distances = self.distances.size
-        self.f = self.sensor_config.frame_rate
+        if context.estimated_frame_rate is not None:
+            self.f = context.estimated_frame_rate
+        else:
+            self.f = self.sensor_config.frame_rate
 
         points_per_pulse = self.ENVELOPE_FWHM_M[sensor_config.profile] / (
             self.APPROX_BASE_STEP_LENGTH_M * sensor_config.step_length

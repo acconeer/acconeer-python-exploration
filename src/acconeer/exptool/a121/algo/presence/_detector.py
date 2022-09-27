@@ -12,12 +12,13 @@ import numpy as np
 from attr import Attribute
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core.entities import Result
 from acconeer.exptool.a121._core.entities.configs.config_enums import Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import AlgoConfigBase, select_prf
 
-from ._processors import Processor, ProcessorConfig, ProcessorExtraResult
+from ._processors import Processor, ProcessorConfig, ProcessorContext, ProcessorExtraResult
 
 
 SPARSE_IQ_PPC = 24
@@ -145,17 +146,52 @@ class Detector:
 
         self.started = False
 
+    def _estimate_frame_rate(self) -> float:
+        delta_times = np.full(2, np.nan)
+
+        self.client.setup_session(self.session_config)
+        self.client.start_session()
+
+        for i in range(4):
+            result = self.client.get_next()
+            assert isinstance(result, Result)
+
+            if i < 2:
+                last_time = result.tick_time
+                continue
+
+            time = result.tick_time
+            delta = time - last_time
+            last_time = time
+            delta_times = np.roll(delta_times, -1)
+            delta_times[-1] = delta
+
+        self.client.stop_session()
+
+        return float(1.0 / np.nanmean(delta_times))
+
     def start(self, recorder: Optional[a121.Recorder] = None) -> None:
         if self.started:
             raise RuntimeError("Already started")
 
         sensor_config = self._get_sensor_config(self.detector_config)
-        session_config = a121.SessionConfig(
+        self.session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,
         )
 
-        metadata = self.client.setup_session(session_config)
+        estimated_frame_rate = self._estimate_frame_rate()
+        # Add estimated frame rate to context if it differs more than 10% from the set frame rate
+        if (
+            np.abs(self.detector_config.frame_rate - estimated_frame_rate)
+            / self.detector_config.frame_rate
+            > 0.1
+        ):
+            context = ProcessorContext(estimated_frame_rate=estimated_frame_rate)
+        else:
+            context = ProcessorContext(estimated_frame_rate=None)
+
+        metadata = self.client.setup_session(self.session_config)
         assert isinstance(metadata, a121.Metadata)
 
         processor_config = self._get_processor_config(self.detector_config)
@@ -164,6 +200,7 @@ class Detector:
             sensor_config=sensor_config,
             metadata=metadata,
             processor_config=processor_config,
+            context=context,
         )
 
         if recorder is not None:
