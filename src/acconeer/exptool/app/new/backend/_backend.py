@@ -8,6 +8,7 @@ import multiprocessing as mp
 import queue
 import traceback
 import uuid
+from multiprocessing.synchronize import Event as mp_EventType  # NOTE! this is not mp.Event.
 from typing import Any, Dict, Optional, Tuple, Union
 
 import attrs
@@ -91,7 +92,7 @@ class Backend:
 def process_program(
     recv_queue: mp.Queue[ToBackendQueueItem],
     send_queue: mp.Queue[FromBackendQueueItem],
-    stop_event: mp._EventType,
+    stop_event: mp_EventType,
 ) -> None:
     try:
         model = Model(task_callback=send_queue.put)
