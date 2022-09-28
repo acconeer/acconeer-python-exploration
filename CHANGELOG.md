@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.2.6
+
+### Fixed
+- Replace addDataItem() with addItem(). This function was removed in pyqtgraph
+  0.13.0
 ## v5.2.5
 
 ### Fixed

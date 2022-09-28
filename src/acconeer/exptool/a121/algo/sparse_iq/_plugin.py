@@ -83,13 +83,13 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
 
         self.ampl_plot = self._create_amplitude_plot(self.plot_layout)
         self.ampl_curve = self._create_amplitude_curve(0, self.distances_m)
-        self.ampl_plot.addDataItem(self.ampl_curve)
+        self.ampl_plot.addItem(self.ampl_curve)
 
         self.plot_layout.nextRow()
 
         self.phase_plot = self._create_phase_plot(self.plot_layout)
         self.phase_curve = self._create_phase_curve(0)
-        self.phase_plot.addDataItem(self.phase_curve)
+        self.phase_plot.addItem(self.phase_curve)
 
         self.plot_layout.nextRow()
 
