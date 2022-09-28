@@ -592,6 +592,9 @@ class OptionalEnumParameterWidget(OptionalParameterWidget):
         super().set_parameter(value)
         if value is not None:
             self.set_enum_parameter(value)
+            self._combobox.setEnabled(True)
+        else:
+            self._combobox.setEnabled(False)
 
     def set_enum_parameter(self, param: Any) -> None:
         with QtCore.QSignalBlocker(self):
