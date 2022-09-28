@@ -393,7 +393,7 @@ def pg_setup_polar_plot(plot, max_r=1):
     plot.setYRange(-s * max_r, s * max_r)
 
     for i, r in enumerate(np.linspace(0, max_r, 5)[1:]):
-        circle = pg.QtGui.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
+        circle = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
         circle.setPen(pg.mkPen("k" if i == 3 else 0.5))
         plot.addItem(circle)
 

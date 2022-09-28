@@ -228,7 +228,7 @@ class PGUpdater:
         pen = pg.mkPen("k", width=1)
         span_deg = 25
         for r in np.flip(np.arange(self.num_sectors) + 1):
-            sector = pg.QtGui.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
+            sector = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
             sector.setStartAngle(-16 * span_deg)
             sector.setSpanAngle(16 * span_deg * 2)
             sector.setPen(pen)
