@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v5.2.7
 
 ### Fixed
 - QGraphicsEllipseItem was moved from QtGui to QtWidgets.
