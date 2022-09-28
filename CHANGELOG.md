@@ -1,10 +1,12 @@
 # Changelog
 
-## unreleased
+## Unreleased
 
 ### Fixed
 - QGraphicsEllipseItem was moved from QtGui to QtWidgets.
 - Make sure to set correct sensor id when playing back recorded data.
+- Bug that made SessionConfigEditor overwrite changes made by the user
+  (unless the user was really fast).
 
 ## v5.2.6
 
