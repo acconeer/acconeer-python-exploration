@@ -4,6 +4,7 @@
 
 ### Fixed
 - QGraphicsEllipseItem was moved from QtGui to QtWidgets.
+- Make sure to set correct sensor id when playing back recorded data.
 
 ## v5.2.6
 

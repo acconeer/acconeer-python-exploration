@@ -206,6 +206,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         _, config, context = _load_algo_data(algo_group)
         self.shared_state.config = config
         self.shared_state.context = context
+        self.shared_state.sensor_id = r.sensor_id
 
     @is_task
     def start_session(self, *, with_recorder: bool = True) -> None:
