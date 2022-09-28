@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any, Tuple
 
 import numpy as np
@@ -27,6 +28,13 @@ SIGNAL_TEMPERATURE_MODEL_PARAMETER = {
     a121.Profile.PROFILE_3: 86.0,
     a121.Profile.PROFILE_4: 99.0,
     a121.Profile.PROFILE_5: 104.0,
+}
+# Largest measurable distance per PRF.
+MAX_MEASURABLE_DIST_M = {
+    a121.PRF.PRF_19_5_MHz: 3.1,
+    a121.PRF.PRF_13_0_MHz: 7.0,
+    a121.PRF.PRF_8_7_MHz: 12.7,
+    a121.PRF.PRF_6_5_MHz: 18.5,
 }
 # Slope and interception of linear noise temperature model.
 NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
@@ -182,3 +190,23 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
     get_distance_filter_coeffs.
     """
     return int(np.ceil(ENVELOPE_FWHM_M[profile] / (APPROX_BASE_STEP_LENGTH_M * step_length)))
+
+
+def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
+    """Calculates the highest possible PRF for the given breakpoint.
+
+    ::param breakpoint: Distance in the unit of points.
+    ::param profile: Profile.
+    """
+    max_meas_dist_m = copy.copy(MAX_MEASURABLE_DIST_M)
+
+    if (
+        a121.PRF.PRF_19_5_MHz in max_meas_dist_m
+        and profile != a121.Profile.PROFILE_1
+        and profile != a121.Profile.PROFILE_2
+    ):
+        del max_meas_dist_m[a121.PRF.PRF_19_5_MHz]
+
+    breakpoint_m = breakpoint * APPROX_BASE_STEP_LENGTH_M
+    viable_prfs = [prf for prf, max_dist_m in max_meas_dist_m.items() if breakpoint_m < max_dist_m]
+    return sorted(viable_prfs, key=lambda prf: prf.frequency)[-1]

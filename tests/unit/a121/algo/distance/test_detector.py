@@ -2,7 +2,7 @@
 # All rights reserved
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import distance
+from acconeer.exptool.a121.algo import distance, select_prf
 
 
 def test_update_processor_mode():
@@ -49,7 +49,7 @@ def test_select_prf():
     breakpoint = 600
     profile = a121.Profile.PROFILE_3
 
-    actual_PRF = distance.Detector._select_prf(breakpoint=breakpoint, profile=profile)
+    actual_PRF = select_prf(breakpoint=breakpoint, profile=profile)
 
     assert actual_PRF == a121.PRF.PRF_13_0_MHz
 
