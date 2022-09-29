@@ -53,7 +53,7 @@ so the 210° corresponds to ~ 1.5 mm.
 
 As evident from the example above, even the smallest movements change the phase and thus move the signal in the complex plane.
 This is utilized in for example the *presence detector*, which can detect the presence of humans and animals from their breathing motion.
-It can also be used to detect a change in signal very close to the sensor, creating a "virtual button".
+It can also be used to detect a change in signal very close to the sensor, creating a "touchless button".
 
 .. _fig_a121_data_range_doppler:
 .. figure:: /_static/handbook/a121/data_range_doppler.png

@@ -9,7 +9,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo.virtual_button import (
+from acconeer.exptool.a121.algo.touchless_button import (
     Processor,
     ProcessorConfig,
     ProcessorResult,

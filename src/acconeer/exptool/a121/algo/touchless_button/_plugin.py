@@ -20,7 +20,7 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorPluginPreset,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.a121.algo.virtual_button import (
+from acconeer.exptool.a121.algo.touchless_button import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
@@ -192,21 +192,21 @@ class PluginSpec(PluginSpecBase):
         return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
 
 
-VIRTUAL_BUTTON_PLUGIN = PluginSpec(
+TOUCHLESS_BUTTON_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
-    key="virtual_button",
-    title="Virtual button",
+    key="touchless_button",
+    title="Touchless button",
     description="Detect tap/wave motion and register as button press.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[
         PluginPresetBase(
             name="Close Range",
-            description="Close range virtual button",
+            description="Close range",
             preset_id=PluginPresetId.CLOSE_RANGE,
         ),
         PluginPresetBase(
             name="Close and far range",
-            description="Close and far range virtual button",
+            description="Close and far range",
             preset_id=PluginPresetId.CLOSE_AND_FAR_RANGE,
         ),
     ],

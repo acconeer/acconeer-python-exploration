@@ -63,7 +63,7 @@ class ProcessorResult:
 
 
 class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
-    """Virtual Button processor
+    """Touchless Button processor
 
     :param sensor_config: Sensor configuration
     :param metadata: Metadata yielded by the sensor config
