@@ -31,6 +31,7 @@ from ._core import (
     ValidationResult,
     ValidationWarning,
     complex_array_to_int16_complex,
+    int16_complex_array_to_complex,
     iterate_extended_structure,
     load_record,
     open_record,

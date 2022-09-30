@@ -22,6 +22,7 @@ from .entities import (
     ValidationResult,
     ValidationWarning,
     complex_array_to_int16_complex,
+    int16_complex_array_to_complex,
 )
 from .mediators import ClientError, Recorder
 from .peripherals import (

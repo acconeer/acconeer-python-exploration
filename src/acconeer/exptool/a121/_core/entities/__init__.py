@@ -24,5 +24,6 @@ from .containers import (
     ServerInfo,
     StackedResults,
     complex_array_to_int16_complex,
+    int16_complex_array_to_complex,
 )
 from .dtypes import INT_16_COMPLEX
