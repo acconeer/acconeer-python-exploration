@@ -41,7 +41,7 @@ def complex_array_to_int16_complex(array: npt.NDArray[np.complex_]) -> npt.NDArr
     into an array with dtype = INT_16_COMPLEX
     (structured with parts "real" and "imag") using `numpy.round`.
     """
-    struct_array = np.empty([array.size], dtype=INT_16_COMPLEX)
+    struct_array = np.empty(array.shape, dtype=INT_16_COMPLEX)
     struct_array["real"] = np.round(array.real)
     struct_array["imag"] = np.round(array.imag)
     return struct_array
