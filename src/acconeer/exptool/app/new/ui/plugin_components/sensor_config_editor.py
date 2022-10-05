@@ -141,6 +141,7 @@ class SensorConfigEditor(QWidget):
         self._sensor_config = sensor_config
         if sensor_config is not None:
             self._subsweep_config_editor.set_data(sensor_config.subsweep)
+            self._handle_validation_results(sensor_config._collect_validation_results())
 
     def sync(self) -> None:
         self._update_ui()
@@ -150,22 +151,20 @@ class SensorConfigEditor(QWidget):
         self.sig_update.emit(self._sensor_config)
 
     def _handle_validation_results(self, results: list[a121.ValidationResult]) -> None:
-        if results == []:
-            for pidget in self._all_pidgets:
-                pidget.set_note_text("")
-        else:
-            for result in results:
-                self._handle_validation_result(result)
+        for pidget in self._all_pidgets:
+            pidget.set_note_text("")
+
+        for result in results:
+            self._handle_validation_result(result)
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> None:
         if result.aspect is None or self._sensor_config is None:
             return
-        if result.source is self._sensor_config:
-            pidget_map = self._sensor_config_pidgets
-        else:
-            return
 
-        pidget_map[result.aspect].set_note_text(result.message, result.criticality)
+        if result.source == self._sensor_config:
+            self._sensor_config_pidgets[result.aspect].set_note_text(
+                result.message, result.criticality
+            )
 
     def _update_sensor_config_aspect(self, aspect: str, value: Any) -> None:
         if self._sensor_config is None:

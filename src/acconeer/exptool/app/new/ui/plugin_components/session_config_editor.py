@@ -67,6 +67,7 @@ class SessionConfigEditor(QWidget):
         self._session_config = session_config
         if session_config is not None:
             self._sensor_config_editor.set_data(session_config.sensor_config)
+            self._handle_validation_results(session_config._collect_validation_results())
 
     def sync(self) -> None:
         self._update_ui()
@@ -79,10 +80,8 @@ class SessionConfigEditor(QWidget):
         self.sig_update.emit(self._session_config)
 
     def _handle_validation_results(self, results: list[a121.ValidationResult]) -> None:
-        if results == []:
-            self._update_rate_pidget.set_note_text(None)
-            self._sensor_id_pidget.set_note_text(None)
-            return
+        self._update_rate_pidget.set_note_text(None)
+        self._sensor_id_pidget.set_note_text(None)
 
         for result in results:
             self._handle_validation_result(result)
