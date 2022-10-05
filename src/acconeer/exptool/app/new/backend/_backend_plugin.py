@@ -30,11 +30,14 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
 
     @contextmanager
     def h5_cache_file(self, write=False):
-        file_mode = "w" if write else "r"
         file_path = (get_config_dir() / "plugin" / self.generation.value / self.key).with_suffix(
             ".h5"
         )
 
+        if write:
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        file_mode = "w" if write else "r"
         h5_file = h5py.File(file_path, file_mode)
         yield h5_file
         h5_file.close()
