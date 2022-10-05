@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.2.8
+
+### Fixed
+- Fix bug where no folder was created when caching
+
+### Add
+- int16_complex_array_to_complex utility function to `a121`-package
+
 ## v5.2.7
 
 ### Fixed
