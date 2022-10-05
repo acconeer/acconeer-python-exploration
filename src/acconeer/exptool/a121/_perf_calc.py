@@ -58,13 +58,16 @@ class _PerformanceCalc:
 
     @property
     def frame_rate(self) -> float:
+        max_rate = self.sweep_rate / self.spf
+
         if self.session_config.update_rate is not None:
-            return self.session_config.update_rate
+            rate = self.session_config.update_rate
+        elif self.sensor_config.frame_rate is not None:
+            rate = self.sensor_config.frame_rate
+        else:
+            rate = max_rate
 
-        if self.sensor_config.frame_rate is not None:
-            return self.sensor_config.frame_rate
-
-        return self.sweep_rate / self.spf
+        return min(rate, max_rate)
 
     @property
     def frame_period(self) -> float:
