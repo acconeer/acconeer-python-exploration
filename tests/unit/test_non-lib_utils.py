@@ -16,7 +16,7 @@ sys.path.append(path.as_posix())
 from convert_to_csv import A111RecordTableConverter  # noqa: E402
 
 
-@pytest.mark.parametrize("test_file", (HERE / ".." / "processing").glob("**/input.h5"))
+@pytest.mark.parametrize("test_file", (HERE / ".." / "processing" / "a111").glob("**/input.h5"))
 def test_csv_conversion_is_exact(test_file):
     # The idea is to test the csv conversion corresponds exactly to the data file.
     # Aimed to catch rounding errors and flipped cols/rows.

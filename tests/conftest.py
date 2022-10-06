@@ -1,6 +1,8 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
+import pytest
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -28,6 +30,13 @@ def pytest_addoption(parser):
         "--mock",
         dest="mock",
         action="store_true",
+    )
+
+    parser.addoption(
+        "--update-outputs",
+        dest="update_outputs",
+        action="store_true",
+        help="Update output files.",
     )
 
 
@@ -61,3 +70,8 @@ def pytest_generate_tests(metafunc):
             params.append(("mock",))
 
         metafunc.parametrize(FIXTURE_NAME, params, indirect=True, ids=ids_fun)
+
+
+@pytest.fixture(scope="session")
+def should_update_outputs(request):
+    return request.config.getoption("--update-outputs") is True
