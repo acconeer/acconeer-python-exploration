@@ -79,6 +79,7 @@ class ProcessorContext:
     recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(default=None)
     bg_noise_std: Optional[List[float]] = attrs.field(default=None)
     reference_temperature: Optional[int] = attrs.field(default=None)
+    loopback_peak_location_m: Optional[float] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -377,6 +378,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             guard_half_length = self._calc_cfar_guard_half_length(self.profile, self.step_length)
             self.idx_cfar_pts = guard_half_length + np.arange(window_length)
 
+        if self.context.loopback_peak_location_m is not None:
+            self.offset_m = calculate_offset(self.context.loopback_peak_location_m, self.profile)
+        else:
+            self.offset_m = 0.0
+
     @classmethod
     def _calc_cfar_window_length(cls, profile: a121.Profile, step_length: int) -> int:
         window_length_m = ENVELOPE_FWHM_M[profile] * cls.CFAR_WINDOW_LENGTH_ADJUSTMENT
@@ -421,6 +427,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             extra_result = ProcessorExtraResult(
                 abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
             )
+
+        estimated_distances = [dist - self.offset_m for dist in estimated_distances]
         return ProcessorResult(
             estimated_distances=estimated_distances,
             estimated_amplitudes=estimated_amplitudes,
@@ -594,7 +602,7 @@ def calculate_bg_noise_std(
     return float(np.sqrt(np.mean(np.square(abs_sweep))))
 
 
-def calculate_offset(result: a121.Result, config: a121.SensorConfig) -> float:
+def calculate_offset(peak_location: float, profile: a121.Profile) -> float:
 
     # Intercept and offset term of offset compensation.
     OFFSET_COMPENSATION_COEFFS = {
@@ -605,6 +613,11 @@ def calculate_offset(result: a121.Result, config: a121.SensorConfig) -> float:
         a121.Profile.PROFILE_5: (0.66277198, -0.00539498),
     }
 
+    p = OFFSET_COMPENSATION_COEFFS[profile]
+    return p[0] * peak_location + p[1]
+
+
+def calculate_loopback_peak_location(result: a121.Result, config: a121.SensorConfig) -> float:
     (B, A) = get_distance_filter_coeffs(config.profile, config.step_length)
     sweep = np.squeeze(result.frame, axis=0)
     abs_sweep = np.abs(filtfilt(B, A, sweep))
@@ -618,5 +631,4 @@ def calculate_offset(result: a121.Result, config: a121.SensorConfig) -> float:
         step_length_m=APPROX_BASE_STEP_LENGTH_M,
     )
 
-    p = OFFSET_COMPENSATION_COEFFS[config.profile]
-    return p[0] * estimated_dist[0] + p[1]
+    return estimated_dist[0]

@@ -4,6 +4,7 @@
 
 ### Fixed
 - A121 presence detector: set prf based on range
+- A121 distance detector: offset compensation bugfix
 
 ### Add
 - Update rate to distance detector.

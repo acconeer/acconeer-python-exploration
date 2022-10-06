@@ -45,11 +45,6 @@ class AggregatorConfig:
 
 
 @attrs.frozen(kw_only=True)
-class AggregatorContext:
-    offset_m: float = attrs.field(default=0.0)
-
-
-@attrs.frozen(kw_only=True)
 class AggregatorResult:
     processor_results: list[ProcessorResult] = attrs.field()
     estimated_distances: npt.NDArray[np.float_] = attrs.field()
@@ -79,11 +74,9 @@ class Aggregator:
         session_config: a121.SessionConfig,
         extended_metadata: list[dict[int, a121.Metadata]],
         config: AggregatorConfig,
-        context: AggregatorContext,
         specs: list[ProcessorSpec],
     ):
         self.config = config
-        self.context = context
         self.specs = specs
 
         self.processors: list[Processor] = []
@@ -155,7 +148,7 @@ class Aggregator:
         dists_sorted = self._sort_peaks(
             dists_merged, ampls_merged, rcs_merged, self.config.peak_sorting_method
         )
-        dists_sorted -= self.context.offset_m
+
         return AggregatorResult(
             processor_results=processors_result,
             estimated_distances=dists_sorted,

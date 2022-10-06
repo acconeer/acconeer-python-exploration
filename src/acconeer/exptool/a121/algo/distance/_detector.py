@@ -23,13 +23,7 @@ from acconeer.exptool.a121.algo import (
     select_prf,
 )
 
-from ._aggregator import (
-    Aggregator,
-    AggregatorConfig,
-    AggregatorContext,
-    PeakSortingMethod,
-    ProcessorSpec,
-)
+from ._aggregator import Aggregator, AggregatorConfig, PeakSortingMethod, ProcessorSpec
 from ._processors import (
     DEFAULT_FIXED_THRESHOLD_VALUE,
     DEFAULT_THRESHOLD_SENSITIVITY,
@@ -41,7 +35,7 @@ from ._processors import (
     ProcessorResult,
     ThresholdMethod,
     calculate_bg_noise_std,
-    calculate_offset,
+    calculate_loopback_peak_location,
 )
 
 
@@ -75,7 +69,7 @@ Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
 
 @attrs.mutable(kw_only=True)
 class DetectorContext(AlgoConfigBase):
-    offset_m: Optional[float] = attrs.field(default=None)
+    loopback_peak_location_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_thresholds_mean_sweep: Optional[List[npt.NDArray[np.float_]]] = attrs.field(
@@ -143,7 +137,7 @@ class DetectorContext(AlgoConfigBase):
             raise Exception(f"Unknown field(s) in stored context: {unknown_keys}")
 
         field_map = {
-            "offset_m": None,
+            "loopback_peak_location_m": None,
             "direct_leakage": None,
             "reference_temperature": None,
             "phase_jitter_comp_reference": None,
@@ -305,7 +299,6 @@ class Detector:
             session_config=self.session_config,
             extended_metadata=extended_metadata,
             config=AggregatorConfig(),
-            context=AggregatorContext(),
             specs=spec,
         )
 
@@ -344,7 +337,6 @@ class Detector:
             session_config=self.session_config,
             extended_metadata=extended_metadata,
             config=AggregatorConfig(),
-            context=AggregatorContext(),
             specs=specs,
         )
 
@@ -447,7 +439,9 @@ class Detector:
 
         assert isinstance(result, a121.Result)
 
-        self.context.offset_m = calculate_offset(result, sensor_config)
+        self.context.loopback_peak_location_m = calculate_loopback_peak_location(
+            result, sensor_config
+        )
 
     @classmethod
     def get_detector_status(
@@ -566,16 +560,14 @@ class Detector:
         specs = self._add_context_to_processor_spec(self.processor_specs)
         extended_metadata = self.client.setup_session(self.session_config)
         assert isinstance(extended_metadata, list)
-        assert self.context.offset_m is not None
+        assert self.context.loopback_peak_location_m is not None
         aggregator_config = AggregatorConfig(
             peak_sorting_method=self.detector_config.peaksorting_method
         )
-        aggregator_context = AggregatorContext(offset_m=self.context.offset_m)
         self.aggregator = Aggregator(
             session_config=self.session_config,
             extended_metadata=extended_metadata,
             config=aggregator_config,
-            context=aggregator_context,
             specs=specs,
         )
 
@@ -1120,6 +1112,7 @@ class Detector:
                 direct_leakage=direct_leakage,
                 phase_jitter_comp_ref=phase_jitter_comp_ref,
                 reference_temperature=self.context.reference_temperature,
+                loopback_peak_location_m=self.context.loopback_peak_location_m,
             )
             updated_specs.append(attrs.evolve(spec, processor_context=context))
 
