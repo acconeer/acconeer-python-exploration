@@ -1,12 +1,11 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
-import json
 
 import numpy as np
 import pytest
 
-from acconeer.exptool.a121.algo.sparse_iq import ProcessorResult, _serializers
+from acconeer.exptool.a121.algo.sparse_iq import ProcessorResult
 
 
 class TestSparseIqProcessorResult:
@@ -33,10 +32,4 @@ class TestSparseIqProcessorResult:
             distance_velocity_map=np.arange(99, dtype=float),
             amplitudes=np.arange(19, dtype=float),
             phases=np.arange(19, dtype=float),
-        )
-
-    def test_results_to_from_json_equality(self, result: ProcessorResult) -> None:
-        assert result == json.loads(
-            json.dumps(result, cls=_serializers.ProcessorResultJSONEncoder),
-            cls=_serializers.ProcessorResultJSONDecoder,
         )
