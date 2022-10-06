@@ -215,6 +215,9 @@ class DetectorConfig(AlgoConfigBase):
     """Sensitivity of threshold. High sensitivity equals low detection threshold, low sensitivity
     equals high detection threshold."""
 
+    update_rate: Optional[float] = attrs.field(default=None)
+    """Sets the detector update rate."""
+
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
@@ -685,7 +688,10 @@ class Detector:
                     )
                 )
 
-        return (a121.SessionConfig(groups, extended=True), processor_specs)
+        return (
+            a121.SessionConfig(groups, extended=True, update_rate=config.update_rate),
+            processor_specs,
+        )
 
     @classmethod
     def _create_group_plans(

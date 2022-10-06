@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Add
+- Update rate to distance detector.
+
 ## v5.2.8
 
 ### Fixed

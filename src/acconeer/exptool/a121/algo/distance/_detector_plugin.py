@@ -638,6 +638,12 @@ class ViewPlugin(DetectorViewPluginBase):
                 show_limit_values=False,
                 limit_texts=("Less power", "Higher quality"),
             ),
+            "update_rate": pidgets.OptionalFloatParameterWidgetFactory(
+                name_label_text="Update rate",
+                checkbox_label_text="Set",
+                limits=(1, None),
+                init_set_value=20,
+            ),
         }
 
     def on_app_model_update(self, app_model: AppModel) -> None:
