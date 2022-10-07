@@ -11,7 +11,7 @@ import pytest
 
 from acconeer.exptool import a121
 
-from . import resources, sparse_iq_test
+from . import presence_test, resources, sparse_iq_test
 from .misc import AlgorithmFactory, AlgorithmResult, H5ResultSerializer
 
 
@@ -41,6 +41,12 @@ def input_path(resource_name: str) -> Path:
             sparse_iq_test.SparseIqResultH5Serializer,
             sparse_iq_test.result_comparator,
             "input.h5",
+        ),
+        (
+            presence_test.presence_default,
+            presence_test.PresenceResultH5Serializer,
+            presence_test.result_comparator,
+            "input-frame_rate_10Hz-sweeps_per_frame_4.h5",
         ),
     ],
 )
