@@ -1,5 +1,5 @@
-Differences from A111
-=====================
+Differences between A121 and A111
+=================================
 
 If you're new to Acconeer products and haven't used the A111 before, skip this section.
 
