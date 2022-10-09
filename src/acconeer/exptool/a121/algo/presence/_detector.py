@@ -63,19 +63,25 @@ class DetectorConfig(AlgoConfigBase):
     """Number of HWAAS."""
 
     intra_enable: bool = attrs.field(default=True)
-    """Enables the intra-frame presence detection."""
+    """
+    Enables the intra-frame presence detection used for detecting
+    faster movements inside frames.
+    """
 
     intra_detection_threshold: float = attrs.field(default=1.3)
     """Detection threshold for the intra-frame presence detection."""
 
     intra_frame_time_const: float = attrs.field(default=0.15)
-    """Time constant for the dephwise filtering in the intra-frame part."""
+    """Time constant for the depthwise filtering in the intra-frame part."""
 
     intra_output_time_const: float = attrs.field(default=0.5)
     """Time constant for the output in the intra-frame part."""
 
     inter_enable: bool = attrs.field(default=True)
-    """Enables the inter-frame presence detection."""
+    """
+    Enables the inter-frame presence detection used for detecting
+    slower movements between frames
+    """
 
     inter_detection_threshold: float = attrs.field(default=1)
     """Detection threshold for the inter-frame presence detection."""
@@ -117,9 +123,17 @@ class DetectorConfig(AlgoConfigBase):
 @attrs.frozen(kw_only=True)
 class DetectorResult:
     intra_presence_score: float = attrs.field()
+    """A measure of the amount of fast motion detected."""
+
     inter_presence_score: float = attrs.field()
+    """A measure of the amount of slow motion detected"""
+
     presence_distance: float = attrs.field()
+    """The distance, in meters, to the detected object"""
+
     presence_detected: bool = attrs.field()
+    """True if presence was detected, False otherwise"""
+
     processor_extra_result: ProcessorExtraResult = attrs.field()
     service_result: a121.Result = attrs.field()
 
