@@ -113,13 +113,18 @@ class SubsweepConfig:
             )
 
         if self.prf == PRF.PRF_19_5_MHz:
-            FORBIDDEN_PROFILES = [Profile.PROFILE_3, Profile.PROFILE_4, Profile.PROFILE_5]
+            FORBIDDEN_PROFILES = [
+                Profile.PROFILE_2,
+                Profile.PROFILE_3,
+                Profile.PROFILE_4,
+                Profile.PROFILE_5,
+            ]
 
             if self.profile in FORBIDDEN_PROFILES:
                 validation_results.extend(
                     [
                         ValidationError(
-                            self, "prf", "19.5 MHz PRF is only compatible with profile 1 and 2."
+                            self, "prf", "19.5 MHz PRF is only compatible with profile 1."
                         ),
                         ValidationError(
                             self,

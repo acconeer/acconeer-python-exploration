@@ -72,7 +72,7 @@ class PRF(Enum):
     PRF_6_5_MHZ        6.5 MHz 18.5 m 23.1 m
     ================= ======== ====== ======
 
-    .. [*] 19.5MHz is only available for profile 1 and 2.
+    .. [*] 19.5MHz is only available for profile 1.
     """
 
     PRF_19_5_MHz = 19500000
