@@ -1,0 +1,95 @@
+File format reference - A121
+============================
+
+This page explains the format of A121 data files saved from Exploration Tool using the application or :ref:`recorders in the API <api_a121_recorders>`.
+A121 records are currently only stored in HDF5 (``.h5``).
+
+.. tip::
+   We recommend loading and saving records using the :ref:`built in functions <api_a121_open_load_save>` in the ``acconeer.exptool.a121`` module.
+
+Examples of loading
+-------------------
+
+Some minimal examples of loading the session config from a data file:
+
+Using :func:`acconeer.exptool.a121.load_record` (recommended):
+
+.. code-block:: python
+
+   from acconeer.exptool import a121
+   record = a121.load_record("data.h5")
+   print(record.session_config)
+   # SessionConfig:
+   #   extended ............... False
+   #   ...
+
+Using ``h5py``:
+
+.. code-block:: python
+
+   import json
+   import h5py
+   with h5py.File("data.h5") as f:
+      print(json.loads(f["session/session_config"][()]))
+   # {'groups': [{'1': {'sweep_rate': None,
+   #     'frame_rate': None,
+   #     ...
+
+HDF5 structure
+--------------
+
+``client_info``
+   JSON string representation of :class:`~acconeer.exptool.a121.ClientInfo`.
+
+``generation``
+   String containing the *sensor generation*, i.e., "a121".
+
+``lib_version``
+   String containing the Exploration Tool version used to record.
+
+``server_info``
+   JSON string representation of :class:`~acconeer.exptool.a121.ServerInfo`.
+
+``session/``
+   HDF5 group containing all data related to the recorded session.
+
+   ``group_X/entry_Y/``
+      HDF5 group for entry *Y* in configuration group *X*. *X* and *Y* are integers starting from 0.
+
+      ``result/``
+         HDF5 group with a dataset for every field in the :class:`~acconeer.exptool.a121.Result`.
+
+         Results are "stacked" to form the datasets.
+         For example, the boolean scalar :attr:`~acconeer.exptool.a121.Result.data_saturated` becomes a 1D boolean array.
+
+         ``frame``
+            3D array with dimensions (frame, sweep, distance) of the **original** complex data from the session.
+
+            The data type is a structured type with fields ``real`` and ``imag``, both 16 bit signed integers (``int16``).
+
+            .. note::
+               Not the same type as :attr:`~acconeer.exptool.a121.Result.frame`.
+
+         ``data_saturated``
+            1D boolean array with dimension (frame) of the :attr:`~acconeer.exptool.a121.Result.data_saturated` flags.
+
+         ``...``
+            See fields in :class:`~acconeer.exptool.a121.Result`.
+
+      ``metadata``
+         JSON string representation of :class:`~acconeer.exptool.a121.Metadata`.
+
+      ``sensor_id``
+         Integer representing the sensor ID.
+
+         .. note::
+            Within a group, the sensor ID is unique for every entry.
+
+   ``session_config``
+      JSON string representation of :class:`~acconeer.exptool.a121.SessionConfig`.
+
+``timestamp``
+   String containing an ISO 8601 formatted timestamp at the time of creating the :class:`~acconeer.exptool.a121.H5Recorder`.
+
+``uuid``
+   String containing a randomly generated `version 4 UUID <https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)>`__.

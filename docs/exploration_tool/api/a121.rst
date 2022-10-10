@@ -87,6 +87,8 @@ Client
 Recording
 ---------
 
+.. _api_a121_recorders:
+
 Recorders
 ^^^^^^^^^
 
@@ -108,6 +110,8 @@ Records
 .. autoclass:: acconeer.exptool.a121.StackedResults
     :members:
     :undoc-members:
+
+.. _api_a121_open_load_save:
 
 Open/load/save functions
 ^^^^^^^^^^^^^^^^^^^^^^^^

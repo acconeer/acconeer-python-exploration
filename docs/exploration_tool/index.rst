@@ -33,6 +33,7 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    :hidden:
 
    A111 <file_format_ref/a111>
+   A121 <file_format_ref/a121>
 
 .. toctree::
    :maxdepth: 1
