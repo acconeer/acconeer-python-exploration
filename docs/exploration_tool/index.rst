@@ -15,7 +15,6 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    Overview <self>
    installation_and_setup
    gui/index
-   file_format_ref
    faq
    changelog
    migration_v3_to_v4
@@ -27,6 +26,13 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
 
    A111 <api/a111>
    A121 <api/a121>
+
+.. toctree::
+   :caption: File format reference
+   :maxdepth: 1
+   :hidden:
+
+   A111 <file_format_ref/a111>
 
 .. toctree::
    :maxdepth: 1
