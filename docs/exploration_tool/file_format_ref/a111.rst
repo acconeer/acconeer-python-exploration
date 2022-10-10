@@ -1,7 +1,7 @@
 File format reference - A111
 ============================
 
-This page explains the format of data files saved from Exploration Tool using the GUI or recording module.
+This page explains the format of A111 data files saved from Exploration Tool using the GUI or recording module.
 
 The data files store a ``Record``, a simple key-value store containing the fields shown further down.
 Either HDF5 ``.h5`` or NumPy ``.npz`` can be used to save it,
@@ -9,12 +9,12 @@ although HDF5 is preferred due to its wider compatibility across systems and lan
 
 We recommend loading and saving records using the ``load`` and ``save`` functions in the ``acconeer.exptool.a111.recording`` module.
 These functions take care of packing and unpacking the ``Record`` fields on save and load respectively.
-See `utils/load_record.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/utils/load_record.py>`__
+See `examples/a111/load_record.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a111/load_record.py>`__
 for an example of loading data,
-and `examples/record_data/barebones.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/record_data/barebones.py>`__
+and `examples/a111/record_data/barebones.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a111/record_data/barebones.py>`__
 for saving data.
 
-For an example of how to load HDF5 records in Matlab, see `utils/load_record_h5.m <https://github.com/acconeer/acconeer-python-exploration/blob/master/utils/load_record_h5.m>`__.
+For an example of how to load HDF5 records in Matlab, see `examples/a111/load_record_h5.m <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a111/load_record_h5.m>`__.
 
 Examples of loading
 -------------------
