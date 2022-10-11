@@ -7,6 +7,12 @@ A121 records are currently only stored in HDF5 (``.h5``).
 .. tip::
    We recommend loading and saving records using the :ref:`built in functions <api_a121_open_load_save>` in the ``acconeer.exptool.a121`` module.
 
+See `examples/a121/load_record.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a121/load_record.py>`__
+for an example of loading data,
+and `examples/a121/record_data/barebones.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a121/record_data/barebones.py>`__
+for saving data.
+For an example of how to load HDF5 records in Matlab, see `examples/a121/load_record_h5.m <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a121/load_record_h5.m>`__.
+
 Examples of loading
 -------------------
 
@@ -59,8 +65,10 @@ HDF5 structure
       ``result/``
          HDF5 group with a dataset for every field in the :class:`~acconeer.exptool.a121.Result`.
 
-         Results are "stacked" to form the datasets.
-         For example, the boolean scalar :attr:`~acconeer.exptool.a121.Result.data_saturated` becomes a 1D boolean array.
+         Results are "stacked" into :class:`~acconeer.exptool.a121.StackedResults` to form the datasets.
+         For example, the boolean scalar (single value) :attr:`~acconeer.exptool.a121.Result.data_saturated` becomes a 1D boolean array.
+         In a :class:`~acconeer.exptool.a121.Record`, these can be accessed via
+         :attr:`~acconeer.exptool.a121.Record.stacked_results`.
 
          ``frame``
             3D array with dimensions (frame, sweep, distance) of the **original** complex data from the session.
