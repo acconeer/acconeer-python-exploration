@@ -5,6 +5,7 @@
 ### Fixed
 - A121 presence detector: set prf based on range
 - A121 distance detector: offset compensation bugfix
+- A121 distance detector: fixed numpy warning due to mean of empty slice
 
 ### Add
 - Update rate to distance detector.

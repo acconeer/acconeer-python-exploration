@@ -196,12 +196,17 @@ class Aggregator:
 
         peak_cluster_idxs = np.where(min_peak_to_peak_dist < np.diff(distances_sorted))[0] + 1
         distances_merged = [
-            np.mean(cluster) for cluster in np.split(distances_sorted, peak_cluster_idxs)
+            np.mean(cluster) if dists.size != 0 else np.nan
+            for cluster in np.split(distances_sorted, peak_cluster_idxs)
         ]
         amplitudes_merged = [
-            np.mean(cluster) for cluster in np.split(amplitudes_sorted, peak_cluster_idxs)
+            np.mean(cluster) if dists.size != 0 else np.nan
+            for cluster in np.split(amplitudes_sorted, peak_cluster_idxs)
         ]
-        rcs_merged = [np.mean(cluster) for cluster in np.split(rcs_sorted, peak_cluster_idxs)]
+        rcs_merged = [
+            np.mean(cluster) if dists.size != 0 else np.nan
+            for cluster in np.split(rcs_sorted, peak_cluster_idxs)
+        ]
         return (np.array(distances_merged), np.array(amplitudes_merged), np.array(rcs_merged))
 
     @staticmethod
