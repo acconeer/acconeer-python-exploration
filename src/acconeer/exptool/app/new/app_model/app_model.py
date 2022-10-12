@@ -196,6 +196,9 @@ class AppModel(QObject):
     def broadcast(self) -> None:
         self.sig_notify.emit(self)
 
+    def broadcast_backend_state(self) -> None:
+        self.sig_backend_state_changed.emit(self.backend_plugin_state)
+
     def emit_error(self, exception: Exception, traceback_format_exc: Optional[str] = None) -> None:
         log.debug("Emitting error")
         self.sig_error.emit(exception, traceback_format_exc)
@@ -263,6 +266,7 @@ class AppModel(QObject):
         elif isinstance(message, BackendPluginStateMessage):
             log.debug("Got backend plugin state message")
             self.backend_plugin_state = message.state
+            self.broadcast_backend_state()
             self.broadcast()
         elif isinstance(message, StatusMessage):
             self.send_status_message(message.status)

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import Generic, Type
+from typing import Generic, Optional, Type
 
 import qtawesome as qta
 
@@ -127,6 +127,28 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         else:
             raise RuntimeError("Unknown message")
 
+    def on_backend_state_update(
+        self, backend_plugin_state: Optional[ProcessorBackendPluginSharedState]
+    ) -> None:
+        if backend_plugin_state is None:
+            self.session_config_editor.set_data(None)
+            self.processor_config_editor.set_data(None)
+            self.metadata_view.update(None)
+            self.perf_calc_view.update()
+        else:
+            assert isinstance(backend_plugin_state, ProcessorBackendPluginSharedState)
+            assert isinstance(
+                backend_plugin_state.processor_config, self.get_processor_config_cls()
+            )
+
+            self.session_config_editor.set_data(backend_plugin_state.session_config)
+            self.processor_config_editor.set_data(backend_plugin_state.processor_config)
+            self.metadata_view.update(backend_plugin_state.metadata)
+            self.perf_calc_view.update(
+                backend_plugin_state.session_config,
+                backend_plugin_state.metadata,
+            )
+
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.processor_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
@@ -137,26 +159,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
         self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-
-        if app_model.backend_plugin_state is None:
-            self.session_config_editor.set_data(None)
-            self.processor_config_editor.set_data(None)
-            self.metadata_view.update(None)
-            self.perf_calc_view.update()
-        else:
-            assert isinstance(app_model.backend_plugin_state, ProcessorBackendPluginSharedState)
-            assert isinstance(
-                app_model.backend_plugin_state.processor_config, self.get_processor_config_cls()
-            )
-
-            self.session_config_editor.set_data(app_model.backend_plugin_state.session_config)
-            self.processor_config_editor.set_data(app_model.backend_plugin_state.processor_config)
-            self.metadata_view.update(app_model.backend_plugin_state.metadata)
-            self.perf_calc_view.update(
-                app_model.backend_plugin_state.session_config,
-                app_model.backend_plugin_state.metadata,
-            )
-
         self.session_config_editor.update_available_sensor_list(app_model._a121_server_info)
 
     @classmethod
