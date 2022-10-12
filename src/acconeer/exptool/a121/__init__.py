@@ -37,6 +37,8 @@ from ._core import (
     open_record,
     save_record,
     save_record_to_h5,
+    zip3_extended_structures,
+    zip_extended_structures,
 )
 from ._core_ext import _ReplayingClient, _StopReplay
 from ._perf_calc import _PerformanceCalc

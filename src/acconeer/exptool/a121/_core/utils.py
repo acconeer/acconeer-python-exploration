@@ -234,11 +234,59 @@ def map_over_extended_structure(
     return [{k: func(v) for k, v in d.items()} for d in structure]
 
 
+def zip_extended_structures(
+    structure_a: list[dict[int, S]],
+    structure_b: list[dict[int, T]],
+) -> list[dict[int, Tuple[S, T]]]:
+    """Zip structures according to group id and sensor id.
+
+    Typical use case is reordering extended structures before iterating.
+
+    Example:
+
+        structure_a = [{1: a_1, 2: a_2}, {1: a_3}]
+
+        structure_b = [{1: b_1, 2: b_2}, {1: b_3}]
+
+        result: [{1: (a_1, b_1), 2: (a_2, b_2)}, 1: {(a_3, b_3)}]
+
+    """
+    res = []
+    try:
+        for group_id, sensor_id, value in iterate_extended_structure(structure_a):
+            res.append(
+                (
+                    group_id,
+                    sensor_id,
+                    (value, structure_b[group_id][sensor_id]),
+                ),
+            )
+    except (KeyError, IndexError):
+        raise ValueError("Structure of arguments are not the same.")
+
+    return create_extended_structure(iter(res))
+
+
 def zip3_extended_structures(
     structure_a: list[dict[int, S]],
     structure_b: list[dict[int, T]],
     structure_c: list[dict[int, U]],
 ) -> list[dict[int, Tuple[S, T, U]]]:
+    """Zip structures according to group id and sensor id.
+
+    Typical use case is reordering extended structures before iterating.
+
+    Example:
+
+        structure_a = [{1: a_1, 2: a_2}, {1: a_3}]
+
+        structure_b = [{1: b_1, 2: b_2}, {1: b_3}]
+
+        structure_c = [{1: c_1, 2: c_2}, {1: c_3}]
+
+        result: [{1: (a_1, b_1, c_1), 2: (a_2, b_2, c_2)}, {1: (a_3, b_3, c_3)}]
+
+    """
     res = []
     try:
         for group_id, sensor_id, value in iterate_extended_structure(structure_a):
