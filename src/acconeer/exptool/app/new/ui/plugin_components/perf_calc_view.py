@@ -95,7 +95,9 @@ class PerfCalcView(QGroupBox):
         if session_config is None or metadata is None:
             raise ValueError
 
-        pc = a121._PerformanceCalc(session_config, metadata)
+        pc = a121._SensorPerformanceCalc(
+            session_config.sensor_config, metadata, session_config.update_rate
+        )
 
         self.average_current.setText(f"{pc.average_current * 1e3:.0f} mA")
 

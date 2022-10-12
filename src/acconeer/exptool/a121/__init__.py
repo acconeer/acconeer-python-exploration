@@ -41,4 +41,4 @@ from ._core import (
     zip_extended_structures,
 )
 from ._core_ext import _ReplayingClient, _StopReplay
-from ._perf_calc import _PerformanceCalc
+from ._perf_calc import _SensorPerformanceCalc, _SessionPerformanceCalc

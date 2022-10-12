@@ -7,23 +7,61 @@ from typing import Optional
 
 import attrs
 
+from acconeer.exptool.a121._core.utils import zip_extended_structures
+
 from ._core import IdleState, Metadata, SensorConfig, SessionConfig
 
 
 @attrs.frozen
-class _PerformanceCalc:
+class _SessionPerformanceCalc:
+    session_config: SessionConfig = attrs.field()
+    extended_metadata: Optional[list[dict[int, Metadata]]] = attrs.field()
+
+    @property
+    def update_duration(self) -> float:
+        if self.extended_metadata is None:
+            raise ValueError("Metadata is None")
+
+        extended_structures = zip_extended_structures(
+            self.session_config.groups, self.extended_metadata
+        )
+
+        update_duration = 0.0
+
+        for extended_structure in extended_structures:
+            update_duration += max(
+                _SensorPerformanceCalc(
+                    sensor_config, metadata, self.session_config.update_rate
+                ).frame_active_duration
+                for sensor_config, metadata in extended_structure.values()
+            )
+
+        return update_duration
+
+    @property
+    def update_rate(self) -> float:
+        if self.session_config.update_rate is not None:
+            return self.session_config.update_rate
+        elif (
+            not self.session_config.extended
+            and self.session_config.sensor_config.frame_rate is not None
+        ):
+            return self.session_config.sensor_config.frame_rate
+        else:
+            return 1.0 / self.update_duration
+
+
+@attrs.frozen
+class _SensorPerformanceCalc:
     """Calculates performance metrics from config and metadata
 
     The figures are preliminary, approximate, and not guaranteed. Based on conservative
     measurements taken in room temperature.
     """
 
-    session_config: SessionConfig = attrs.field()
+    sensor_config: SensorConfig = attrs.field()
     metadata: Optional[Metadata] = attrs.field()
-
-    @property
-    def sensor_config(self) -> SensorConfig:
-        return self.session_config.sensor_config
+    update_rate: Optional[float] = attrs.field()
 
     @property
     def spf(self) -> int:
@@ -60,8 +98,8 @@ class _PerformanceCalc:
     def frame_rate(self) -> float:
         max_rate = self.sweep_rate / self.spf
 
-        if self.session_config.update_rate is not None:
-            rate = self.session_config.update_rate
+        if self.update_rate is not None:
+            rate = self.update_rate
         elif self.sensor_config.frame_rate is not None:
             rate = self.sensor_config.frame_rate
         else:

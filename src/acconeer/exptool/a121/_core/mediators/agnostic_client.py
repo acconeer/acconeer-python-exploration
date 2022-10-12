@@ -25,7 +25,7 @@ from acconeer.exptool.a121._core.utils import (
     unextend,
     unwrap_ticks,
 )
-from acconeer.exptool.a121._perf_calc import _PerformanceCalc
+from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
@@ -202,15 +202,6 @@ class AgnosticClient(AgnosticClientFriends):
 
         config.validate()
 
-        pc = _PerformanceCalc(config, None)
-
-        try:
-            # Increase timeout if update rate is very low, otherwise keep default
-            self._link_timeout = max(1.1 * (1 / pc.frame_rate) + 0.5, self._link.timeout)
-        except Exception:
-            self._link_timeout = self._default_link_timeout
-
-        self._link.timeout = self._link_timeout
         self._link.send(self._protocol.setup_command(config))
 
         self._session_config = config
@@ -219,6 +210,17 @@ class AgnosticClient(AgnosticClientFriends):
         self._apply_messages_until(lambda: self._metadata is not None)
 
         assert self._metadata is not None
+
+        pc = _SessionPerformanceCalc(config, self._metadata)
+
+        try:
+            # Increase timeout if update rate is very low, otherwise keep default
+            self._link_timeout = max(1.5 * (1 / pc.update_rate) + 1.0, self._link.timeout)
+        except Exception:
+            self._link_timeout = self._default_link_timeout
+
+        self._link.timeout = self._link_timeout
+
         if self.session_config.extended:
             return self._metadata
         else:
