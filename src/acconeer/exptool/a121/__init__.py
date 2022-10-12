@@ -33,6 +33,7 @@ from ._core import (
     complex_array_to_int16_complex,
     int16_complex_array_to_complex,
     iterate_extended_structure,
+    iterate_extended_structure_values,
     load_record,
     open_record,
     save_record,
@@ -42,3 +43,4 @@ from ._core import (
 )
 from ._core_ext import _ReplayingClient, _StopReplay
 from ._perf_calc import _SensorPerformanceCalc, _SessionPerformanceCalc
+from ._rate_calc import _RateCalculator, _RateStats

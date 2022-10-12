@@ -130,6 +130,8 @@ Utility functions
 
 .. autofunction:: acconeer.exptool.a121.iterate_extended_structure
 
+.. autofunction:: acconeer.exptool.a121.iterate_extended_structure_values
+
 .. autofunction:: acconeer.exptool.a121.zip_extended_structures
 
 .. autofunction:: acconeer.exptool.a121.zip3_extended_structures

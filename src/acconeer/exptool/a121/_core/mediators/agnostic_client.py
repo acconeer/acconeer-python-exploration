@@ -26,6 +26,7 @@ from acconeer.exptool.a121._core.utils import (
     unwrap_ticks,
 )
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
+from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
@@ -47,6 +48,7 @@ class AgnosticClient(AgnosticClientFriends):
     _protocol: Type[CommunicationProtocol]
     _recorder: Optional[Recorder]
     _tick_unwrapper: TickUnwrapper
+    _rate_stats_calc: Optional[_RateCalculator]
 
     # Message friend fields
     _session_config: Optional[SessionConfig]
@@ -63,6 +65,7 @@ class AgnosticClient(AgnosticClientFriends):
         self._recorder = None
         self._tick_unwrapper = TickUnwrapper()
         self._message_stream = iter([])
+        self._rate_stats_calc = None
 
         self._session_config = None
         self._session_is_started = False
@@ -254,6 +257,9 @@ class AgnosticClient(AgnosticClientFriends):
         self._link.send(self._protocol.start_streaming_command())
         self._apply_messages_until(lambda: self.session_is_started)
 
+        assert self._metadata is not None
+        self._rate_stats_calc = _RateCalculator(self.session_config, self._metadata)
+
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         """Gets results from the server.
 
@@ -270,6 +276,9 @@ class AgnosticClient(AgnosticClientFriends):
 
         if self._recorder is not None:
             self._recorder._sample(extended_results)
+
+        assert self._rate_stats_calc is not None
+        self._rate_stats_calc.update(extended_results)
 
         if self.session_config.extended:
             return extended_results
@@ -304,6 +313,8 @@ class AgnosticClient(AgnosticClientFriends):
         else:
             recorder_result = self._recorder._stop()
             self._recorder = None
+
+        self._rate_stats_calc = None
 
         return recorder_result
 
@@ -380,6 +391,12 @@ class AgnosticClient(AgnosticClientFriends):
         self._assert_session_setup()
         assert self._metadata is not None  # Should never happen if session is setup
         return self._metadata
+
+    @property
+    def _rate_stats(self) -> _RateStats:
+        self._assert_session_started()
+        assert self._rate_stats_calc is not None
+        return self._rate_stats_calc.stats
 
 
 class TickUnwrapper:

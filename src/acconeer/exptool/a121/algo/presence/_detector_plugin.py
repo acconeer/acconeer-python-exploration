@@ -257,7 +257,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self._started = False
             self.broadcast()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            self.callback(GeneralMessage(name="result_tick_time", data=None))
+            self.callback(GeneralMessage(name="rate_stats", data=None))
 
     def _get_next(self) -> None:
         if not self._started:
@@ -279,9 +279,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
             raise HandledException("Failed to get_next") from exc
 
-        self.callback(
-            GeneralMessage(name="result_tick_time", data=result.service_result.tick_time)
-        )
+        assert self._client is not None
+        self.callback(GeneralMessage(name="rate_stats", data=self._client._rate_stats))
 
         self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 

@@ -37,4 +37,9 @@ from .peripherals import (
     save_record,
     save_record_to_h5,
 )
-from .utils import iterate_extended_structure, zip3_extended_structures, zip_extended_structures
+from .utils import (
+    iterate_extended_structure,
+    iterate_extended_structure_values,
+    zip3_extended_structures,
+    zip_extended_structures,
+)

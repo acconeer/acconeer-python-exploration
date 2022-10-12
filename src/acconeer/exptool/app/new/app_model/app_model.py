@@ -43,7 +43,6 @@ from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
 from .plugin_protocols import PlotPluginInterface, ViewPluginInterface
 from .port_updater import PortUpdater
-from .rate_calc import RateCalculator
 
 
 log = logging.getLogger(__name__)
@@ -106,7 +105,7 @@ class AppModel(QObject):
     sig_message_plot_plugin = Signal(object)
     sig_message_view_plugin = Signal(object)
     sig_status_message = Signal(object)
-    sig_update_rate = Signal(float, float)
+    sig_rate_stats = Signal(float, bool, float, bool)
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]
@@ -158,8 +157,6 @@ class AppModel(QObject):
 
         self.saveable_file = None
         self.autoconnect_enabled = False
-
-        self.rate_calc = RateCalculator()
 
     def start(self) -> None:
         self._listener.start()
@@ -292,11 +289,19 @@ class AppModel(QObject):
         elif message.name == "saveable_file":
             assert message.data is None or isinstance(message.data, Path)
             self._update_saveable_file(message.data)
-        elif message.name == "result_tick_time":
-            update_time = message.data
+        elif message.name == "rate_stats":
+            stats = message.data
+            if stats is None:
+                stats = a121._RateStats()
+            else:
+                assert isinstance(stats, a121._RateStats)
 
-            rate, jitter = self.rate_calc.update(update_time)
-            self.sig_update_rate.emit(rate, jitter)
+            self.sig_rate_stats.emit(
+                stats.rate,
+                stats.rate_warning,
+                stats.jitter,
+                stats.jitter_warning,
+            )
         else:
             raise RuntimeError(f"Got unknown general message '{message.name}'")
 

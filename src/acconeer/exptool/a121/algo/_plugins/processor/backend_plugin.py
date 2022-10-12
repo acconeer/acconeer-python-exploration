@@ -282,7 +282,7 @@ class GenericProcessorBackendPluginBase(
             self.shared_state.metadata = None
             self.broadcast()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            self.callback(GeneralMessage(name="result_tick_time", data=None))
+            self.callback(GeneralMessage(name="rate_stats", data=None))
 
     @abc.abstractmethod
     def _get_next(self) -> None:
@@ -354,7 +354,7 @@ class ProcessorBackendPluginBase(
             self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
 
         processor_result = self._processor_instance.process(result)
-        self.callback(GeneralMessage(name="result_tick_time", data=result.tick_time))
+        self.callback(GeneralMessage(name="rate_stats", data=self._client._rate_stats))
         self.callback(GeneralMessage(name="plot", data=processor_result, recipient="plot_plugin"))
 
 
@@ -402,9 +402,7 @@ class ExtendedProcessorBackendPluginBase(
         if any(result.frame_delayed for result in list_of_results):
             self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
 
+        self.callback(GeneralMessage(name="rate_stats", data=self._client._rate_stats))
+
         processor_result = self._processor_instance.process(results)
-        if list_of_results != []:
-            self.callback(
-                GeneralMessage(name="result_tick_time", data=list_of_results[0].tick_time)
-            )
         self.callback(GeneralMessage(name="plot", data=processor_result, recipient="plot_plugin"))

@@ -111,7 +111,7 @@ class WorkingArea(QSplitter):
         self.layout().setStretchFactor(right_area, 0)
 
 
-class UpdateRateLabel(QLabel):
+class RateStatsLabel(QLabel):
     _FPS: int = 60
 
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
@@ -120,11 +120,13 @@ class UpdateRateLabel(QLabel):
         self.setToolTip("Reported update rate / jitter")
 
         self.rate = np.nan
+        self.rate_warning = False
         self.jitter = np.nan
+        self.jitter_warning = False
 
         self.startTimer(int(1000 / self._FPS))
 
-        app_model.sig_update_rate.connect(self._on_app_model_update_rate)
+        app_model.sig_rate_stats.connect(self._on_app_model_rate_stats)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         if np.isnan(self.rate) or np.isnan(self.jitter):
@@ -132,14 +134,30 @@ class UpdateRateLabel(QLabel):
             text = "- Hz / - ms"
         else:
             css = ""
-            text = f"{self.rate:>6.1f} Hz / {self.jitter * 1e3:5.1f} ms"
+
+            WARNING_STYLE = "color: #FD5200;"
+            rate_style = WARNING_STYLE if self.rate_warning else ""
+            jitter_style = WARNING_STYLE if self.jitter_warning else ""
+            text = (
+                f'<span style="{rate_style}">{self.rate:>6.1f} Hz</span>'
+                " / "
+                f'<span style="{jitter_style}">{self.jitter * 1e3:5.1f} ms</span>'
+            )
 
         self.setStyleSheet(css)
         self.setText(text)
 
-    def _on_app_model_update_rate(self, rate: float, jitter: float) -> None:
+    def _on_app_model_rate_stats(
+        self,
+        rate: float,
+        rate_warning: bool,
+        jitter: float,
+        jitter_warning: bool,
+    ) -> None:
         self.rate = rate
+        self.rate_warning = rate_warning
         self.jitter = jitter
+        self.jitter_warning = jitter_warning
 
 
 class StatusBar(QStatusBar):
@@ -157,7 +175,7 @@ class StatusBar(QStatusBar):
         self.message_widget = QLabel(self)
         self.addWidget(self.message_widget)
 
-        self.addPermanentWidget(UpdateRateLabel(app_model, self))
+        self.addPermanentWidget(RateStatsLabel(app_model, self))
 
         self.rss_version_label = QLabel(self)
         self.addPermanentWidget(self.rss_version_label)
