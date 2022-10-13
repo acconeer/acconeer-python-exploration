@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import enum
+import itertools
 import json
 import re
 from typing import (
@@ -316,6 +317,22 @@ def iterate_extended_structure(
             yield (group_id, sensor_id, elem)
 
 
+def iterate_extended_structure_as_entry_list(
+    structure: list[dict[int, ValueT]]
+) -> Iterator[Tuple[int, int, ValueT]]:
+    """Iterates over the elements of the extended structure.
+
+    Note: this differs from ``iterate_extended_structure`` as it returns the
+    ``entry_idx`` instead of the sensor id of a given entry.
+
+    :returns: Iterator of (<group idx>, <entry idx>, <element>)
+    """
+
+    for group_idx, group in enumerate(structure):
+        for entry_idx, elem in enumerate(group.values()):
+            yield (group_idx, entry_idx, elem)
+
+
 def extended_structure_entry_count(structure: list[dict[int, Any]]) -> int:
     """Traverses the extended structure and returns a count of all its entries
 
@@ -329,6 +346,30 @@ def iterate_extended_structure_values(structure: list[dict[int, ValueT]]) -> Ite
     """Iterates like `iterate_extended_structure` but throws away group id and sensor id."""
     for _, _, value in iterate_extended_structure(structure):
         yield value
+
+
+def extended_structure_shape(structure: list[dict[int, Any]]) -> list[set[int]]:
+    return [set(group.keys()) for group in structure]
+
+
+def transpose_extended_structures(
+    structures: list[list[dict[int, ValueT]]]
+) -> list[dict[int, list[ValueT]]]:
+    """'Transposes' a list of extended structures to create an extended structure of lists"""
+    shapes = [extended_structure_shape(s) for s in structures]
+    if not all(shape == shapes[0] for shape in shapes):
+        raise ValueError("All extended structures needs to have the same structure.")
+
+    product: list[dict[int, list[ValueT]]] = map_over_extended_structure(
+        lambda _: list(), structures[0]
+    )
+
+    for group_idx, sensor_id, value in itertools.chain(
+        *[iterate_extended_structure(es) for es in structures]
+    ):
+        product[group_idx][sensor_id].append(value)
+
+    return product
 
 
 def create_extended_structure(items: Iterator[Tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:

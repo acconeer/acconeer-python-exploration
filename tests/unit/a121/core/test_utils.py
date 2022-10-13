@@ -251,3 +251,29 @@ def test_zip3_extended_structures(structures, expected):
 def test_zip3_extended_structures_with_bad_arguments(structures):
     with pytest.raises(ValueError):
         utils.zip3_extended_structures(*structures)
+
+
+def test_transpose_extended_structures():
+    structures = [
+        [{1: "a"}, {2: "x"}],
+        [{1: "b"}, {2: "y"}],
+        [{1: "c"}, {2: "z"}],
+    ]
+    expected = [
+        {1: ["a", "b", "c"]},
+        {2: ["x", "y", "z"]},
+    ]
+    assert utils.transpose_extended_structures(structures) == expected
+
+
+def test_transpose_extended_structures_all_structures_needs_to_have_same_structure():
+    structures = [
+        [{1: "a"}],
+        [],
+    ]
+    with pytest.raises(ValueError):
+        _ = utils.transpose_extended_structures(structures)
+
+
+def test_extended_structure_shape():
+    assert utils.extended_structure_shape([{1: "a", 2: "b"}, {3: "c"}]) == [{1, 2}, {3}]
