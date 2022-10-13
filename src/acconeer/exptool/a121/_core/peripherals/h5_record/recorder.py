@@ -13,6 +13,7 @@ import h5py
 import importlib_metadata
 import numpy as np
 
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
     ClientInfo,
@@ -49,18 +50,24 @@ class H5Recorder(Recorder):
     file: h5py.File
     owns_file: bool
     _num_frames: int
+    chunk_size: int
+    chunk_buffer: list[list[dict[int, Result]]]
 
     def __init__(
         self,
         path_or_file: PathOrH5File,
         mode: str = "x",
         *,
+        _chunk_size: int = 512,
         _lib_version: Optional[str] = None,
         _timestamp: Optional[str] = None,
         _uuid: Optional[str] = None,
     ) -> None:
         self.file, self.owns_file = h5_file_factory(path_or_file, h5_file_mode=mode)
         self.path = Path(self.file.filename) if self.owns_file else None
+        self.chunk_size = _chunk_size
+        self.chunk_buffer = []
+        self._num_frames = 0
 
         if _lib_version is None:
             _lib_version = importlib_metadata.version("acconeer-exptool")
@@ -70,8 +77,6 @@ class H5Recorder(Recorder):
 
         if _uuid is None:
             _uuid = get_uuid()
-
-        self._num_frames = 0
 
         self.file.create_dataset(
             "uuid",
@@ -145,15 +150,34 @@ class H5Recorder(Recorder):
                 result_group = entry_group.create_group("result")
                 self._create_result_datasets(result_group, metadata)
 
-    def _sample(self, extended_result: list[dict[int, Result]]) -> None:
-        for group_index, result_group_dict in enumerate(extended_result):
-            for entry_id, result in enumerate(result_group_dict.values()):
-                result_group = self.file[f"session/group_{group_index}/entry_{entry_id}/result"]
-                self._write_result(result_group, self._num_frames, result)
+    def _write_chunk_buffer_to_file(self, start_idx: int) -> int:
+        """Saves the contents of ``self.chunk_buffer`` to file.
 
-        self._num_frames += 1
+        :returns: the number of extended results saved.
+        """
+
+        for group_idx, entry_idx, results in utils.iterate_extended_structure_as_entry_list(
+            utils.transpose_extended_structures(self.chunk_buffer)
+        ):
+            self._write_results(
+                g=self.file[f"session/group_{group_idx}/entry_{entry_idx}/result"],
+                start_index=start_idx,
+                results=results,
+            ),
+
+        return len(self.chunk_buffer)
+
+    def _sample(self, extended_result: list[dict[int, Result]]) -> None:
+        self.chunk_buffer.append(extended_result)
+
+        if len(self.chunk_buffer) == self.chunk_size:
+            self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
+            self.chunk_buffer = []
 
     def _stop(self) -> Any:
+        self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
+        self.chunk_buffer = []
+
         if self.owns_file:
             self.file.close()
 
@@ -205,7 +229,7 @@ class H5Recorder(Recorder):
         )
 
     @staticmethod
-    def _write_result(g: h5py.Group, index: int, result: Result) -> None:
+    def _write_results(g: h5py.Group, start_index: int, results: list[Result]) -> None:
         """Extends the Dataset to the appropriate (new) size with .resize,
         and then copies the data over
         """
@@ -218,14 +242,16 @@ class H5Recorder(Recorder):
             "frame",
         ]
         for dataset_name in datasets_to_extend:
-            g[dataset_name].resize(size=index + 1, axis=0)
+            g[dataset_name].resize(size=start_index + len(results), axis=0)
 
-        g["data_saturated"][index] = result.data_saturated
-        g["frame_delayed"][index] = result.frame_delayed
-        g["calibration_needed"][index] = result.calibration_needed
-        g["temperature"][index] = result.temperature
-        g["tick"][index] = result.tick
-        g["frame"][index] = result._frame
+        dataset_slice = slice(start_index, start_index + len(results))
+
+        g["data_saturated"][dataset_slice] = [result.data_saturated for result in results]
+        g["frame_delayed"][dataset_slice] = [result.frame_delayed for result in results]
+        g["calibration_needed"][dataset_slice] = [result.calibration_needed for result in results]
+        g["temperature"][dataset_slice] = [result.temperature for result in results]
+        g["tick"][dataset_slice] = [result.tick for result in results]
+        g["frame"][dataset_slice] = [result._frame for result in results]
 
     def require_algo_group(self, key: str) -> h5py.Group:
         group = self.file.require_group("algo")
