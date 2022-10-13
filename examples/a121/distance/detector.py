@@ -99,6 +99,8 @@ class PGUpdater:
         feat_kw = dict(pen=pen, **symbol_kw)
         self.dist_history_curve = self.dist_history_plot.plot(**feat_kw)
 
+        self.distance_hist_smooth_lim = et.utils.SmoothLimits()
+
     def update(self, result: DetectorResult):
         self.distance_history.pop(0)
         self.distance_history.append(result.distances[0])
@@ -113,7 +115,12 @@ class PGUpdater:
             self.threshold_curves[idx].setData(
                 processor_result.extra_result.distances_m[valid_threshold_idx], threshold
             )
-        self.dist_history_curve.setData(self.distance_history)
+        if np.any(~np.isnan(self.distance_history)):
+            self.dist_history_curve.setData(self.distance_history)
+            lims = self.distance_hist_smooth_lim.update(self.distance_history)
+            self.dist_history_plot.setYRange(lims[0], lims[1])
+        else:
+            self.dist_history_curve.setData([])
 
 
 if __name__ == "__main__":
