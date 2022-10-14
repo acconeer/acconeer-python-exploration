@@ -7,8 +7,9 @@
 - A121 distance detector: offset compensation bugfix
 - A121 distance detector: fixed numpy warning due to mean of empty slice
 
-### Add
+### Added
 - Update rate to distance detector.
+- Rate/jitter warnings in status bar.
 
 ## v5.2.8
 
