@@ -218,7 +218,7 @@ class AgnosticClient(AgnosticClientFriends):
 
         try:
             # Increase timeout if update rate is very low, otherwise keep default
-            self._link_timeout = max(1.5 * (1 / pc.update_rate) + 1.0, self._link.timeout)
+            self._link_timeout = max(1.5 * (1 / pc.update_rate) + 1.0, self._default_link_timeout)
         except Exception:
             self._link_timeout = self._default_link_timeout
 
