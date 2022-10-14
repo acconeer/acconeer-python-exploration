@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased
+## v5.2.9
 
 ### Fixed
 - A121 presence detector: set prf based on range
 - A121 presence detector: fix number of points calculation to include end range
 - A121 distance detector: offset compensation bugfix
 - A121 distance detector: fixed numpy warning due to mean of empty slice
+- Pin PySide6 to 6.3.1 to avoid incompatible versions
 
 ### Added
 - Update rate to distance detector.
