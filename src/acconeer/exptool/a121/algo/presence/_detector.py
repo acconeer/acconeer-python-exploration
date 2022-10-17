@@ -260,6 +260,7 @@ class Detector:
                 (detector_config.end_m - detector_config.start_m)
                 / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
             )
+            + 1
         )
         end_point = start_point + (num_point - 1) * step_length
         return a121.SensorConfig(
