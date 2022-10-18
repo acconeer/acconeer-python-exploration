@@ -18,6 +18,7 @@ from acconeer.exptool.a121 import (
     ServerInfo,
     SessionConfig,
 )
+from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
 
 class _StopReplay(Exception):
@@ -25,6 +26,8 @@ class _StopReplay(Exception):
 
 
 class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
+    _rate_stats_calc: Optional[_RateCalculator]
+
     def __init__(self, record: Record):
         self._record = record
         self._is_started: bool = False
@@ -32,6 +35,7 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
             Union[Iterator[Result], Iterator[list[dict[int, Result]]]]
         ] = None
         self._origin_time: Optional[float] = None
+        self._rate_stats_calc = None
 
     def connect(self) -> None:
         pass
@@ -66,6 +70,13 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
         self._is_started = True
         self._origin_time = None
 
+        if self.session_config.extended:
+            self._rate_stats_calc = _RateCalculator(self.session_config, self._record.metadata)
+        else:
+            self._rate_stats_calc = _RateCalculator(
+                self.session_config, self._record.extended_metadata
+            )
+
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         if not self.session_is_setup:
             raise ClientError("Session is not set up.")
@@ -92,6 +103,9 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
 
         if delta < 0:
             time.sleep(-delta)
+
+        assert self._rate_stats_calc is not None
+        self._rate_stats_calc.update(result)
 
         return result
 
@@ -129,3 +143,9 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
     @property
     def extended_metadata(self) -> list[dict[int, Metadata]]:
         return self._record.extended_metadata
+
+    @property
+    def _rate_stats(self) -> _RateStats:
+        self._assert_session_started()
+        assert self._rate_stats_calc is not None
+        return self._rate_stats_calc.stats
