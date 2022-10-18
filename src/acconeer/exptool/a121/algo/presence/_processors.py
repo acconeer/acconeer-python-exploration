@@ -436,6 +436,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self.presence_distance = inter_presence_distance
         else:
             presence_detected = False
+            self.presence_distance = 0
 
         # TODO: self.presence_history will be removed in the future
         self.intra_presence_history = np.roll(self.intra_presence_history, -1)
