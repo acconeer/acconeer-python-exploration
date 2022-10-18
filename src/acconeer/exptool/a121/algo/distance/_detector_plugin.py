@@ -632,7 +632,7 @@ class ViewPlugin(DetectorViewPluginBase):
             "signal_quality": pidgets.FloatSliderParameterWidgetFactory(
                 name_label_text="Signal quality",
                 decimals=1,
-                limits=(0, 25),
+                limits=(-10, 35),
                 show_limit_values=False,
                 limit_texts=("Less power", "Higher quality"),
             ),

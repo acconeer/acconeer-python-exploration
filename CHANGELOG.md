@@ -13,6 +13,9 @@
 - Update rate to distance detector.
 - Rate/jitter warnings in status bar.
 
+### Changed
+- A121 distance detector: increase signal quality span
+
 ## v5.2.8
 
 ### Fixed
