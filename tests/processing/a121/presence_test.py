@@ -27,3 +27,24 @@ def presence_default(record: a121.H5Record) -> presence.Processor:
         processor_config=presence.ProcessorConfig(),
         metadata=utils.unextend(record.extended_metadata),
     )
+
+
+def presence_timeout_3s(record: a121.H5Record) -> presence.Processor:
+    processor_config = presence.ProcessorConfig()
+    processor_config.inter_frame_presence_timeout = 3
+    return presence.Processor(
+        sensor_config=record.session_config.sensor_config,
+        processor_config=processor_config,
+        metadata=utils.unextend(record.extended_metadata),
+    )
+
+
+def presence_timeout_2s_phase_boost(record: a121.H5Record) -> presence.Processor:
+    processor_config = presence.ProcessorConfig()
+    processor_config.inter_frame_presence_timeout = 2
+    processor_config.inter_phase_boost = True
+    return presence.Processor(
+        sensor_config=record.session_config.sensor_config,
+        processor_config=processor_config,
+        metadata=utils.unextend(record.extended_metadata),
+    )

@@ -49,6 +49,24 @@ def input_path(resource_name: str) -> Path:
             "input-frame_rate_10Hz-sweeps_per_frame_4.h5",
         ),
         (
+            presence_test.presence_default,
+            presence_test.PresenceResultH5Serializer,
+            presence_test.result_comparator,
+            "input-presence-default_114frames.h5",
+        ),
+        (
+            presence_test.presence_timeout_3s,
+            presence_test.PresenceResultH5Serializer,
+            presence_test.result_comparator,
+            "input-presence-presence_timeout3s.h5",
+        ),
+        (
+            presence_test.presence_timeout_2s_phase_boost,
+            presence_test.PresenceResultH5Serializer,
+            presence_test.result_comparator,
+            "input-presence-0p35m_phase_boost.h5",
+        ),
+        (
             distance_test.distance_default,
             distance_test.DistanceResultH5Serializer,
             distance_test.result_comparator,
