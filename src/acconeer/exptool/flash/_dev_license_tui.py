@@ -92,20 +92,17 @@ class DevLicenseTuiDialog(App):
         paragraphs = "\n\n".join(self.license.get_content())
         return "".join([*license_header, *paragraphs])
 
-    def handle_button_pressed(self, message: ButtonPressed) -> None:
+    async def handle_button_pressed(self, message: ButtonPressed) -> None:
         assert isinstance(message.sender, Button)
-        self.exec_button_logic(message.sender.name)
+        await self.save_user_consent_and_exit(message.sender.name)
 
-    def exec_button_logic(self, button_name: str) -> None:
-        self.log(f"exec button {button_name}")
+    async def save_user_consent_and_exit(self, button_name: str) -> None:
         if button_name == "accept":
             DevLicenseTuiDialog.accepted = True
-            self.close_messages_no_wait()
-            self.close_messages_no_wait()
+            await self.close_messages()
         elif button_name == "reject":
             DevLicenseTuiDialog.accepted = False
-            self.close_messages_no_wait()
-            self.close_messages_no_wait()
+            await self.close_messages()
 
     async def on_key(self, event: events.Key) -> None:
         if event.key == "ctrl+i":
@@ -126,4 +123,4 @@ class DevLicenseTuiDialog(App):
         elif event.key == "enter":
             if self.tab_index != -1:
                 selected_button = self.tab_order[self.tab_index]
-                self.exec_button_logic(selected_button.name)
+                await self.save_user_consent_and_exit(selected_button.name)
