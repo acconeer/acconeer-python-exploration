@@ -33,7 +33,7 @@ You can copy-paste the example below and name it something nice; like ``my_algor
 .. literalinclude:: docs_my_algorithm_module.py
     :language: python
     :linenos:
-    :emphasize-lines: 11, 25, 60, 81, 124-134
+    :emphasize-lines: 14, 28, 63, 84, 127-137
 
 The ``ModuleInfo`` is what is sent to the App.
 If your ``my_algorithm_module.py`` file defines a valid ``ModuleInfo``, the App
