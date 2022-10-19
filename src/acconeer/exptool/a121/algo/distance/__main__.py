@@ -19,7 +19,7 @@ detector_config = DetectorConfig(start_m=0.2, end_m=1)
 
 detector = Detector(
     client=client,
-    sensor_id=args.sensor,
+    sensor_ids=[args.sensor],
     detector_config=detector_config,
 )
 

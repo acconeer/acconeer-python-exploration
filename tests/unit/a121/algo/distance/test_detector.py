@@ -12,7 +12,6 @@ def test_update_processor_mode():
             processor_mode=distance.ProcessorMode.DISTANCE_ESTIMATION
         ),
         group_index=1,
-        sensor_id=1,
         subsweep_indexes=[0],
     )
     processor_specs = [processor_spec, processor_spec]

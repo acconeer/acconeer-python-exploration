@@ -190,7 +190,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self._detector_instance = Detector(
             client=self._client,
-            sensor_id=self.shared_state.sensor_id,
+            sensor_ids=[self.shared_state.sensor_id],
             detector_config=self.shared_state.config,
             context=self.shared_state.context,
         )
@@ -295,7 +295,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         try:
             self._detector_instance = Detector(
                 client=self._client,
-                sensor_id=self.shared_state.sensor_id,
+                sensor_ids=[self.shared_state.sensor_id],
                 detector_config=self.shared_state.config,
                 context=self.shared_state.context,
             )
@@ -305,7 +305,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         finally:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
-        self.shared_state.context = self._detector_instance.context
+        self.shared_state.context = self._detector_instance.multi_sensor_context
         self.broadcast()
 
 
@@ -368,7 +368,10 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.sweep_smooth_max = et.utils.SmoothMax()
         self.distance_hist_smooth_lim = et.utils.SmoothLimits()
 
-    def update(self, result: DetectorResult) -> None:
+    def update(self, multi_sensor_result: dict[int, DetectorResult]) -> None:
+        # Get the first element as the plugin only supports single sensor operation.
+        (result,) = list(multi_sensor_result.values())
+
         assert result.distances is not None
 
         self.distance_history.pop(0)
@@ -599,7 +602,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
         detector_status = Detector.get_detector_status(
-            state.config, state.context, state.sensor_id
+            state.config, state.context, [state.sensor_id]
         )
 
         self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
@@ -608,7 +611,6 @@ class ViewPlugin(DetectorViewPluginBase):
             app_model.plugin_state == PluginState.LOADED_IDLE
             and app_model.connection_state == ConnectionState.CONNECTED
         )
-
         self.calibrate_detector_button.setEnabled(ready_for_session)
         self.start_button.setEnabled(ready_for_session and detector_status.ready_to_start)
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)

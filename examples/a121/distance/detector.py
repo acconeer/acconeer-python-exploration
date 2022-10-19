@@ -12,12 +12,10 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo.distance import (
-    Detector,
-    DetectorConfig,
-    DetectorResult,
-    ThresholdMethod,
-)
+from acconeer.exptool.a121.algo.distance import Detector, DetectorConfig, ThresholdMethod
+
+
+SENSOR_ID = 1
 
 
 def main():
@@ -33,7 +31,7 @@ def main():
         max_step_length=12,
         threshold_method=ThresholdMethod.RECORDED,
     )
-    detector = Detector(client=client, sensor_id=1, detector_config=detector_config)
+    detector = Detector(client=client, sensor_ids=[SENSOR_ID], detector_config=detector_config)
 
     detector.calibrate_detector()
 
@@ -99,7 +97,9 @@ class PGUpdater:
 
         self.distance_hist_smooth_lim = et.utils.SmoothLimits()
 
-    def update(self, result: DetectorResult):
+    def update(self, multi_sensor_result):
+        # Get the first element as the example only supports single sensor operation.
+        result = multi_sensor_result[SENSOR_ID]
         self.distance_history.pop(0)
         self.distance_history.append(result.distances[0])
 

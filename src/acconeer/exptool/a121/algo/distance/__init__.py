@@ -8,7 +8,7 @@ from ._aggregator import (
     PeakSortingMethod,
     ProcessorSpec,
 )
-from ._detector import Detector, DetectorConfig, DetectorResult
+from ._detector import DetailedStatus, Detector, DetectorConfig, DetectorContext, DetectorResult
 from ._processors import (
     MeasurementType,
     Processor,

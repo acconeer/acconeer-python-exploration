@@ -34,7 +34,6 @@ class PeakSortingMethod(AlgoParamEnum):
 class ProcessorSpec:
     processor_config: ProcessorConfig = attrs.field()
     group_index: int = attrs.field()
-    sensor_id: int = attrs.field()
     subsweep_indexes: list[int] = attrs.field()
     processor_context: Optional[ProcessorContext] = attrs.field(default=None)
 
@@ -75,15 +74,17 @@ class Aggregator:
         extended_metadata: list[dict[int, a121.Metadata]],
         config: AggregatorConfig,
         specs: list[ProcessorSpec],
+        sensor_id: int,
     ):
         self.config = config
         self.specs = specs
+        self.sensor_id = sensor_id
 
         self.processors: list[Processor] = []
 
         for spec in specs:
-            metadata = extended_metadata[spec.group_index][spec.sensor_id]
-            sensor_config = session_config.groups[spec.group_index][spec.sensor_id]
+            metadata = extended_metadata[spec.group_index][self.sensor_id]
+            sensor_config = session_config.groups[spec.group_index][self.sensor_id]
 
             processor = Processor(
                 sensor_config=sensor_config,
@@ -101,7 +102,7 @@ class Aggregator:
         rcs: npt.NDArray[np.float_] = np.array([])
 
         for spec, processor in zip(self.specs, self.processors):
-            processor_result = processor.process(extended_result[spec.group_index][spec.sensor_id])
+            processor_result = processor.process(extended_result[spec.group_index][self.sensor_id])
             processors_result.append(processor_result)
             if processor_result.estimated_distances is not None:
                 assert spec.processor_context is not None

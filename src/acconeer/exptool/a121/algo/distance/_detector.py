@@ -47,6 +47,7 @@ class DetectorStatus:
 
 class DetailedStatus(enum.Enum):
     OK = enum.auto()
+    SENSOR_IDS_NOT_UNIQUE = enum.auto()
     CALIBRATION_MISSING = enum.auto()
     CONFIG_MISMATCH = enum.auto()
     INVALID_DETECTOR_CONFIG_RANGE = enum.auto()
@@ -65,6 +66,28 @@ Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
 
 @attrs.mutable(kw_only=True)
 class DetectorContext(AlgoConfigBase):
+    single_sensor_contexts: Dict[int, SingleSensorContext] = attrs.field(default=None)
+    _GROUP_NAME = "sensor_id_"
+
+    def to_h5(self, group: h5py.Group) -> None:
+        if self.single_sensor_contexts is not None:
+            for sensor_id, context in self.single_sensor_contexts.items():
+                context.to_h5(group.create_group(self._GROUP_NAME + str(sensor_id)))
+
+    @classmethod
+    def from_h5(cls, group: h5py.Group) -> DetectorContext:
+        context_dict = {}
+
+        for key in group.keys():
+            if cls._GROUP_NAME in key:
+                sensor_id = int(key.split("_")[-1])
+                context_dict[sensor_id] = SingleSensorContext.from_h5(group[key])
+
+        return DetectorContext(single_sensor_contexts=context_dict)
+
+
+@attrs.mutable(kw_only=True)
+class SingleSensorContext(AlgoConfigBase):
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
@@ -124,10 +147,10 @@ class DetectorContext(AlgoConfigBase):
                 bg_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
     @classmethod
-    def from_h5(cls, group: h5py.Group) -> DetectorContext:
+    def from_h5(cls, group: h5py.Group) -> SingleSensorContext:
         context_dict = {}
 
-        unknown_keys = set(group.keys()) - set(attrs.fields_dict(DetectorContext).keys())
+        unknown_keys = set(group.keys()) - set(attrs.fields_dict(SingleSensorContext).keys())
         if unknown_keys:
             raise Exception(f"Unknown field(s) in stored context: {unknown_keys}")
 
@@ -158,7 +181,7 @@ class DetectorContext(AlgoConfigBase):
             bg_noise_std = _get_group_items(group["bg_noise_std"])
             context_dict["bg_noise_std"] = bg_noise_std
 
-        return DetectorContext(**context_dict)
+        return SingleSensorContext(**context_dict)
 
 
 @attrs.mutable(kw_only=True)
@@ -241,25 +264,29 @@ class Detector:
 
     session_config: a121.SessionConfig
     processor_specs: List[ProcessorSpec]
-    context: DetectorContext
+    multi_sensor_context: DetectorContext
 
     def __init__(
         self,
         *,
         client: a121.Client,
-        sensor_id: int,
+        sensor_ids: list[int],
         detector_config: DetectorConfig,
         context: Optional[DetectorContext] = None,
     ) -> None:
         self.client = client
-        self.sensor_id = sensor_id
+        self.sensor_ids = sensor_ids
         self.detector_config = detector_config
         self.started = False
 
-        if context is None:
-            self.context = DetectorContext()
+        if context is None or not bool(context.single_sensor_contexts):
+            self.multi_sensor_context = DetectorContext(
+                single_sensor_contexts={
+                    sensor_id: SingleSensorContext() for sensor_id in self.sensor_ids
+                }
+            )
         else:
-            self.context = context
+            self.multi_sensor_context = context
 
         self.aggregator: Optional[Aggregator] = None
 
@@ -287,10 +314,11 @@ class Detector:
 
         if self._has_close_range_measurement(
             self.detector_config
-        ) or self._has_recorded_threshold_mode(self.detector_config):
+        ) or self._has_recorded_threshold_mode(self.detector_config, self.sensor_ids):
             self._record_threshold()
 
-        self.context.session_config_used_during_calibration = self.session_config
+        for context in self.multi_sensor_context.single_sensor_contexts.values():
+            context.session_config_used_during_calibration = self.session_config
 
     def _calibrate_close_range(self) -> None:
         """Calibrates the close range measurement parameters used when subtracting the direct
@@ -307,24 +335,31 @@ class Detector:
         extended_metadata = self.client.setup_session(self.session_config)
         assert isinstance(extended_metadata, list)
 
-        aggregator = Aggregator(
-            session_config=self.session_config,
-            extended_metadata=extended_metadata,
-            config=AggregatorConfig(),
-            specs=spec,
-        )
+        aggregators = {
+            sensor_id: Aggregator(
+                session_config=self.session_config,
+                extended_metadata=extended_metadata,
+                config=AggregatorConfig(),
+                specs=spec,
+                sensor_id=sensor_id,
+            )
+            for sensor_id in self.sensor_ids
+        }
 
         self.client.start_session()
         extended_result = self.client.get_next()
         assert isinstance(extended_result, list)
-        aggregator_result = aggregator.process(extended_result=extended_result)
         self.client.stop_session()
-        (processor_result,) = aggregator_result.processor_results
-        self.context.direct_leakage = processor_result.direct_leakage
-        assert processor_result.phase_jitter_comp_reference is not None
-        self.context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
-        self.context.recorded_thresholds_mean_sweep = None
-        self.context.recorded_thresholds_noise_std = None
+
+        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+            aggregator_result = aggregators[sensor_id].process(extended_result=extended_result)
+            (processor_result,) = aggregator_result.processor_results
+            assert processor_result.phase_jitter_comp_reference is not None
+
+            context.direct_leakage = processor_result.direct_leakage
+            context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
+            context.recorded_thresholds_mean_sweep = None
+            context.recorded_thresholds_noise_std = None
 
     def _record_threshold(self) -> None:
         """Calibrates the parameters used when forming the recorded threshold."""
@@ -339,40 +374,47 @@ class Detector:
 
         extended_metadata = self.client.setup_session(self.session_config)
         assert isinstance(extended_metadata, list)
+        aggregators = {
+            sensor_id: Aggregator(
+                session_config=self.session_config,
+                extended_metadata=extended_metadata,
+                config=AggregatorConfig(),
+                specs=specs[sensor_id],
+                sensor_id=sensor_id,
+            )
+            for sensor_id in self.sensor_ids
+        }
 
-        aggregator = Aggregator(
-            session_config=self.session_config,
-            extended_metadata=extended_metadata,
-            config=AggregatorConfig(),
-            specs=specs,
-        )
-
-        aggregator_result = None
         self.client.start_session()
+        aggregators_result = {}
         for _ in range(self.detector_config.num_frames_in_recorded_threshold):
             extended_result = self.client.get_next()
             assert isinstance(extended_result, list)
-            aggregator_result = aggregator.process(extended_result=extended_result)
+            aggregators_result = {
+                sensor_id: aggregators[sensor_id].process(extended_result=extended_result)
+                for sensor_id in self.sensor_ids
+            }
         self.client.stop_session()
 
-        assert aggregator_result is not None
-
         assert isinstance(extended_result, list)
-        # Grab value from first group as it is the same for all.
-        self.context.reference_temperature = extended_result[0][self.sensor_id].temperature
 
-        self.context.recorded_thresholds_mean_sweep = []
-        self.context.recorded_thresholds_noise_std = []
-        for processor_result in aggregator_result.processor_results:
-            # Since we know what mode the processor is running in
-            assert processor_result.recorded_threshold_mean_sweep is not None
-            assert processor_result.recorded_threshold_noise_std is not None
-            self.context.recorded_thresholds_mean_sweep.append(
-                processor_result.recorded_threshold_mean_sweep
-            )
-            self.context.recorded_thresholds_noise_std.append(
-                processor_result.recorded_threshold_noise_std
-            )
+        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+            recorded_thresholds_mean_sweep = []
+            recorded_thresholds_noise_std = []
+            for processor_result in aggregators_result[sensor_id].processor_results:
+                # Since we know what mode the processor is running in
+                assert processor_result.recorded_threshold_mean_sweep is not None
+                assert processor_result.recorded_threshold_noise_std is not None
+
+                recorded_thresholds_mean_sweep.append(
+                    processor_result.recorded_threshold_mean_sweep
+                )
+                recorded_thresholds_noise_std.append(processor_result.recorded_threshold_noise_std)
+
+            context.recorded_thresholds_mean_sweep = recorded_thresholds_mean_sweep
+            context.recorded_thresholds_noise_std = recorded_thresholds_noise_std
+            # Grab temperature from first group as it is the same for all.
+            context.reference_temperature = extended_result[0][sensor_id].temperature
 
     def _calibrate_noise(self) -> None:
         """Estimates the standard deviation of the noise in each subsweep by setting enable_tx to
@@ -388,15 +430,16 @@ class Detector:
 
         session_config = copy.deepcopy(self.session_config)
 
-        for group in session_config.groups:
-            group[self.sensor_id].sweeps_per_frame = 1
-            for subsweep in group[self.sensor_id].subsweeps:
-                subsweep.enable_tx = False
-                subsweep.step_length = 1
-                subsweep.start_point = 0
-                # Set num_points to a high number to get sufficient number of data points to
-                # estimate the standard deviation.
-                subsweep.num_points = 500
+        for sensor_id in self.sensor_ids:
+            for group in session_config.groups:
+                group[sensor_id].sweeps_per_frame = 1
+                for subsweep in group[sensor_id].subsweeps:
+                    subsweep.enable_tx = False
+                    subsweep.step_length = 1
+                    subsweep.start_point = 0
+                    # Set num_points to a high number to get sufficient number of data points to
+                    # estimate the standard deviation.
+                    subsweep.num_points = 500
 
         extended_metadata = self.client.setup_session(session_config)
         assert isinstance(extended_metadata, list)
@@ -406,19 +449,20 @@ class Detector:
         assert isinstance(extended_result, list)
         self.client.stop_session()
 
-        bg_noise_std = []
-        for spec in self.processor_specs:
-            bg_noise_std_in_subsweep = []
-            result = extended_result[spec.group_index][spec.sensor_id]
-            sensor_config = self.session_config.groups[spec.group_index][spec.sensor_id]
-            subsweep_configs = sensor_config.subsweeps
-            for idx in spec.subsweep_indexes:
-                if not subsweep_configs[idx].enable_loopback:
-                    subframe = result.subframes[idx]
-                    subsweep_std = calculate_bg_noise_std(subframe, subsweep_configs[idx])
-                    bg_noise_std_in_subsweep.append(subsweep_std)
-            bg_noise_std.append(bg_noise_std_in_subsweep)
-        self.context.bg_noise_std = bg_noise_std
+        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+            bg_noise_one_sensor = []
+            for spec in self.processor_specs:
+                result = extended_result[spec.group_index][sensor_id]
+                sensor_config = self.session_config.groups[spec.group_index][sensor_id]
+                subsweep_configs = sensor_config.subsweeps
+                bg_noise_std_in_subsweep = []
+                for idx in spec.subsweep_indexes:
+                    if not subsweep_configs[idx].enable_loopback:
+                        subframe = result.subframes[idx]
+                        subsweep_std = calculate_bg_noise_std(subframe, subsweep_configs[idx])
+                        bg_noise_std_in_subsweep.append(subsweep_std)
+                bg_noise_one_sensor.append(bg_noise_std_in_subsweep)
+            context.bg_noise_std = bg_noise_one_sensor
 
     def _calibrate_offset(self) -> None:
         """Estimates sensor offset error based on loopback measurement."""
@@ -436,21 +480,27 @@ class Detector:
             phase_enhancement=True,
         )
 
-        session_config = a121.SessionConfig({self.sensor_id: sensor_config})
+        session_config = a121.SessionConfig(
+            {sensor_id: sensor_config for sensor_id in self.sensor_ids}, extended=True
+        )
         self.client.setup_session(session_config)
         self.client.start_session()
-        result = self.client.get_next()
+        extended_result = self.client.get_next()
         self.client.stop_session()
 
-        assert isinstance(result, a121.Result)
+        assert isinstance(extended_result, list)
 
-        self.context.loopback_peak_location_m = calculate_loopback_peak_location(
-            result, sensor_config
-        )
+        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+            context.loopback_peak_location_m = calculate_loopback_peak_location(
+                extended_result[0][sensor_id], sensor_config
+            )
 
     @classmethod
     def get_detector_status(
-        cls, config: DetectorConfig, context: DetectorContext, sensor_id: int
+        cls,
+        config: DetectorConfig,
+        context: DetectorContext,
+        sensor_ids: list[int],
     ) -> DetectorStatus:
         """Returns the detector status along with the detector state."""
 
@@ -460,16 +510,34 @@ class Detector:
                 ready_to_start=False,
             )
 
-        (
-            session_config,
-            _,
-        ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=sensor_id)
+        if len(sensor_ids) != len(set(sensor_ids)):
+            return DetectorStatus(
+                detector_state=DetailedStatus.SENSOR_IDS_NOT_UNIQUE,
+                ready_to_start=False,
+            )
+
+        (session_config, _,) = cls._detector_to_session_config_and_processor_specs(
+            config=config, sensor_ids=sensor_ids
+        )
 
         # Offset calibration is always performed as a part of the detector calibration process.
         # Use this as indication whether detector calibration has been performed.
-        if context.loopback_peak_location_m is None:
+        calibration_missing = np.any(
+            [
+                context.loopback_peak_location_m is None
+                for context in context.single_sensor_contexts.values()
+            ]
+        )
+        config_mismatch = np.any(
+            [
+                context.session_config_used_during_calibration != session_config
+                for context in context.single_sensor_contexts.values()
+            ]
+        )
+
+        if calibration_missing:
             detector_state = DetailedStatus.CALIBRATION_MISSING
-        elif session_config != context.session_config_used_during_calibration:
+        elif config_mismatch:
             detector_state = DetailedStatus.CONFIG_MISMATCH
         else:
             detector_state = DetailedStatus.OK
@@ -484,38 +552,59 @@ class Detector:
         return cls.MIN_DIST_M <= config.start_m and config.end_m <= cls.MAX_DIST_M
 
     @staticmethod
-    def _close_range_calibrated(context: DetectorContext) -> bool:
-        has_dl = context.direct_leakage is not None
-        has_pjcr = context.phase_jitter_comp_reference is not None
+    def _close_range_calibrated(multi_sensor_context: DetectorContext) -> bool:
+        has_dl = np.all(
+            [
+                context.direct_leakage is not None
+                for context in multi_sensor_context.single_sensor_contexts.values()
+            ]
+        )
+        has_pjcr = np.all(
+            [
+                context.phase_jitter_comp_reference is not None
+                for context in multi_sensor_context.single_sensor_contexts.values()
+            ]
+        )
 
         if has_dl != has_pjcr:
             raise RuntimeError
 
-        return has_dl and has_pjcr
+        return bool(has_dl and has_pjcr)
 
     @staticmethod
-    def _recorded_threshold_calibrated(context: DetectorContext) -> bool:
-        return (
-            context.recorded_thresholds_mean_sweep is not None
-            and context.recorded_thresholds_noise_std is not None
+    def _recorded_threshold_calibrated(multi_sensor_context: DetectorContext) -> bool:
+        mean_sweep_calibrated = np.all(
+            [
+                context.recorded_thresholds_mean_sweep is not None
+                for context in multi_sensor_context.single_sensor_contexts.values()
+            ]
         )
+
+        std_calibrated = np.all(
+            [
+                context.recorded_thresholds_noise_std is not None
+                for context in multi_sensor_context.single_sensor_contexts.values()
+            ]
+        )
+
+        return bool(mean_sweep_calibrated and std_calibrated)
 
     @classmethod
     def _has_close_range_measurement(self, config: DetectorConfig) -> bool:
+        # sensor_ids=[1] as the detector is running the same config for all sensors.
         (
             _,
             specs,
-        ) = self._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+        ) = self._detector_to_session_config_and_processor_specs(config=config, sensor_ids=[1])
         return MeasurementType.CLOSE_RANGE in [
             spec.processor_config.measurement_type for spec in specs
         ]
 
     @classmethod
-    def _has_recorded_threshold_mode(self, config: DetectorConfig) -> bool:
-        (
-            _,
-            processor_specs,
-        ) = self._detector_to_session_config_and_processor_specs(config=config, sensor_id=1)
+    def _has_recorded_threshold_mode(self, config: DetectorConfig, sensor_ids: list[int]) -> bool:
+        (_, processor_specs,) = self._detector_to_session_config_and_processor_specs(
+            config=config, sensor_ids=sensor_ids
+        )
         return ThresholdMethod.RECORDED in [
             spec.processor_config.threshold_method for spec in processor_specs
         ]
@@ -528,33 +617,43 @@ class Detector:
         if self.started:
             raise RuntimeError("Already started")
 
-        status = self.get_detector_status(self.detector_config, self.context, self.sensor_id)
+        status = self.get_detector_status(
+            self.detector_config, self.multi_sensor_context, self.sensor_ids
+        )
 
         if not status.ready_to_start:
             raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
-
         specs = self._add_context_to_processor_spec(self.processor_specs)
         extended_metadata = self.client.setup_session(self.session_config)
         assert isinstance(extended_metadata, list)
-        assert self.context.loopback_peak_location_m is not None
+        assert np.all(
+            [
+                context.loopback_peak_location_m is not None
+                for context in self.multi_sensor_context.single_sensor_contexts.values()
+            ]
+        )
         aggregator_config = AggregatorConfig(
             peak_sorting_method=self.detector_config.peaksorting_method
         )
-        self.aggregator = Aggregator(
-            session_config=self.session_config,
-            extended_metadata=extended_metadata,
-            config=aggregator_config,
-            specs=specs,
-        )
+        self.aggregators = {
+            sensor_id: Aggregator(
+                session_config=self.session_config,
+                extended_metadata=extended_metadata,
+                config=aggregator_config,
+                specs=specs[sensor_id],
+                sensor_id=sensor_id,
+            )
+            for sensor_id in self.sensor_ids
+        }
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
                 algo_group = recorder.require_algo_group("distance_detector")
                 _record_algo_data(
                     algo_group,
-                    self.sensor_id,
+                    self.sensor_ids,
                     self.detector_config,
-                    self.context,
+                    self.multi_sensor_context,
                 )
             else:
                 # Should never happen as we currently only have the H5Recorder
@@ -563,23 +662,31 @@ class Detector:
         self.client.start_session(recorder)
         self.started = True
 
-    def get_next(self) -> DetectorResult:
+    def get_next(self) -> Dict[int, DetectorResult]:
         """Called from host to get next measurement."""
         if not self.started:
             raise RuntimeError("Not started")
 
-        assert self.aggregator is not None
+        assert self.aggregators is not None
 
         extended_result = self.client.get_next()
         assert isinstance(extended_result, list)
 
-        aggregator_result = self.aggregator.process(extended_result=extended_result)
+        aggregator_results = {
+            sensor_id: self.aggregators[sensor_id].process(extended_result=extended_result)
+            for sensor_id in self.sensor_ids
+        }
 
-        return DetectorResult(
-            distances=aggregator_result.estimated_distances,
-            processor_results=aggregator_result.processor_results,
-            service_extended_result=aggregator_result.service_extended_result,
-        )
+        result = {
+            sensor_id: DetectorResult(
+                distances=aggregator_results[sensor_id].estimated_distances,
+                processor_results=aggregator_results[sensor_id].processor_results,
+                service_extended_result=aggregator_results[sensor_id].service_extended_result,
+            )
+            for sensor_id in self.sensor_ids
+        }
+
+        return result
 
     def update_config(self, config: DetectorConfig) -> None:
         """Updates the session config and processor specification based on the detector
@@ -588,7 +695,7 @@ class Detector:
             self.session_config,
             self.processor_specs,
         ) = self._detector_to_session_config_and_processor_specs(
-            config=config, sensor_id=self.sensor_id
+            config=config, sensor_ids=self.sensor_ids
         )
 
     def stop(self) -> Any:
@@ -604,7 +711,7 @@ class Detector:
 
     @classmethod
     def _detector_to_session_config_and_processor_specs(
-        cls, config: DetectorConfig, sensor_id: int
+        cls, config: DetectorConfig, sensor_ids: list[int]
     ) -> Tuple[a121.SessionConfig, list[ProcessorSpec]]:
         processor_specs = []
         groups = []
@@ -616,7 +723,7 @@ class Detector:
             sensor_config = cls._close_subsweep_group_plans_to_sensor_config(
                 plans[MeasurementType.CLOSE_RANGE]
             )
-            groups.append({sensor_id: sensor_config})
+            groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
             processor_specs.append(
                 ProcessorSpec(
                     processor_config=ProcessorConfig(
@@ -625,7 +732,6 @@ class Detector:
                         threshold_sensitivity=config.threshold_sensitivity,
                     ),
                     group_index=group_index,
-                    sensor_id=sensor_id,
                     subsweep_indexes=[0, 1],
                 )
             )
@@ -638,7 +744,7 @@ class Detector:
             ) = cls._far_subsweep_group_plans_to_sensor_config_and_subsweep_indexes(
                 plans[MeasurementType.FAR_RANGE]
             )
-            groups.append({sensor_id: sensor_config})
+            groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
 
             processor_config = ProcessorConfig(
                 threshold_method=config.threshold_method,
@@ -651,7 +757,6 @@ class Detector:
                     ProcessorSpec(
                         processor_config=processor_config,
                         group_index=group_index,
-                        sensor_id=sensor_id,
                         subsweep_indexes=subsweep_indexes,
                     )
                 )
@@ -1047,63 +1152,71 @@ class Detector:
 
     def _add_context_to_processor_spec(
         self, processor_specs: list[ProcessorSpec]
-    ) -> list[ProcessorSpec]:
+    ) -> dict[int, list[ProcessorSpec]]:
         """
         Create and add processor context to processor specification.
         """
 
-        assert self.context.bg_noise_std is not None
+        updated_specs_all_sensors = {}
+        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+            assert context.bg_noise_std is not None
+            updated_specs: List[ProcessorSpec] = []
+            for idx, (spec, bg_noise_std) in enumerate(zip(processor_specs, context.bg_noise_std)):
+                if (
+                    context.recorded_thresholds_mean_sweep is not None
+                    or context.recorded_thresholds_noise_std is not None
+                ):
+                    assert context.recorded_thresholds_mean_sweep is not None
+                    assert context.recorded_thresholds_noise_std is not None
+                    recorded_thresholds_mean_sweep = context.recorded_thresholds_mean_sweep[idx]
+                    recorded_threshold_noise_std = context.recorded_thresholds_noise_std[idx]
+                else:
+                    recorded_thresholds_mean_sweep = None
+                    recorded_threshold_noise_std = None
 
-        updated_specs: List[ProcessorSpec] = []
+                if (
+                    context.direct_leakage is not None
+                    or context.phase_jitter_comp_reference is not None
+                ):
+                    direct_leakage = context.direct_leakage
+                    phase_jitter_comp_ref = context.phase_jitter_comp_reference
+                else:
+                    direct_leakage = None
+                    phase_jitter_comp_ref = None
 
-        for idx, (spec, bg_noise_std) in enumerate(
-            zip(processor_specs, self.context.bg_noise_std)
-        ):
-            if (
-                self.context.recorded_thresholds_mean_sweep is not None
-                or self.context.recorded_thresholds_noise_std is not None
-            ):
-                assert self.context.recorded_thresholds_mean_sweep is not None
-                assert self.context.recorded_thresholds_noise_std is not None
-                recorded_thresholds_mean_sweep = self.context.recorded_thresholds_mean_sweep[idx]
-                recorded_threshold_noise_std = self.context.recorded_thresholds_noise_std[idx]
-            else:
-                recorded_thresholds_mean_sweep = None
-                recorded_threshold_noise_std = None
+                if context.loopback_peak_location_m is not None:
+                    loopback_peak_location_m = context.loopback_peak_location_m
+                else:
+                    loopback_peak_location_m = None
 
-            if (
-                self.context.direct_leakage is not None
-                or self.context.phase_jitter_comp_reference is not None
-            ):
-                direct_leakage = self.context.direct_leakage
-                phase_jitter_comp_ref = self.context.phase_jitter_comp_reference
-            else:
-                direct_leakage = None
-                phase_jitter_comp_ref = None
+                if context.reference_temperature is not None:
+                    reference_temperature = context.reference_temperature
+                else:
+                    reference_temperature = None
 
-            context = ProcessorContext(
-                recorded_threshold_mean_sweep=recorded_thresholds_mean_sweep,
-                recorded_threshold_noise_std=recorded_threshold_noise_std,
-                bg_noise_std=bg_noise_std,
-                direct_leakage=direct_leakage,
-                phase_jitter_comp_ref=phase_jitter_comp_ref,
-                reference_temperature=self.context.reference_temperature,
-                loopback_peak_location_m=self.context.loopback_peak_location_m,
-            )
-            updated_specs.append(attrs.evolve(spec, processor_context=context))
-
-        return updated_specs
+                processor_context = ProcessorContext(
+                    recorded_threshold_mean_sweep=recorded_thresholds_mean_sweep,
+                    recorded_threshold_noise_std=recorded_threshold_noise_std,
+                    bg_noise_std=bg_noise_std,
+                    direct_leakage=direct_leakage,
+                    phase_jitter_comp_ref=phase_jitter_comp_ref,
+                    reference_temperature=reference_temperature,
+                    loopback_peak_location_m=loopback_peak_location_m,
+                )
+                updated_specs.append(attrs.evolve(spec, processor_context=processor_context))
+            updated_specs_all_sensors[sensor_id] = updated_specs
+        return updated_specs_all_sensors
 
 
 def _record_algo_data(
     algo_group: h5py.Group,
-    sensor_id: int,
+    sensor_ids: list[int],
     detector_config: DetectorConfig,
     context: DetectorContext,
 ) -> None:
     algo_group.create_dataset(
-        "sensor_id",
-        data=sensor_id,
+        "sensor_ids",
+        data=sensor_ids,
         track_times=False,
     )
     _create_h5_string_dataset(algo_group, "detector_config", detector_config.to_json())
@@ -1112,8 +1225,10 @@ def _record_algo_data(
     context.to_h5(context_group)
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig, DetectorContext]:
-    sensor_id = algo_group["sensor_id"][()]
+def _load_algo_data(
+    algo_group: h5py.Group,
+) -> Tuple[int, DetectorConfig, DetectorContext]:
+    sensor_id = algo_group["sensor_ids"][()]
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
 
     context_group = algo_group["context"]
