@@ -49,6 +49,7 @@ class DetectorStatus:
 
 class DetailedStatus(enum.Enum):
     OK = enum.auto()
+    NOISE_CALIBRATION_MISSING = enum.auto()
     CLOSE_RANGE_CALIBRATION_MISSING = enum.auto()
     CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH = enum.auto()
     RECORDED_THRESHOLD_MISSING = enum.auto()
@@ -81,6 +82,7 @@ class DetectorContext(AlgoConfigBase):
         default=None
     )
     close_range_session_config_used: Optional[a121.SessionConfig] = attrs.field(default=None)
+    noise_calibration_session_config_used: Optional[a121.SessionConfig] = attrs.field(default=None)
     reference_temperature: Optional[int] = attrs.field(default=None)
 
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
@@ -143,6 +145,7 @@ class DetectorContext(AlgoConfigBase):
             "phase_jitter_comp_reference": None,
             "recorded_threshold_session_config_used": a121.SessionConfig.from_json,
             "close_range_session_config_used": a121.SessionConfig.from_json,
+            "noise_calibration_session_config_used": a121.SessionConfig.from_json,
         }
         for k, func in field_map.items():
             try:
@@ -326,8 +329,6 @@ class Detector:
             self.processor_specs, ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
         )
 
-        self.calibrate_noise()
-
         specs = self._add_context_to_processor_spec(specs_updated)
 
         extended_metadata = self.client.setup_session(self.session_config)
@@ -414,6 +415,7 @@ class Detector:
                     bg_noise_std_in_subsweep.append(subsweep_std)
             bg_noise_std.append(bg_noise_std_in_subsweep)
         self.context.bg_noise_std = bg_noise_std
+        self.context.noise_calibration_session_config_used = self.session_config
 
     def calibrate_offset(self) -> None:
         """Estimates sensor offset error based on loopback measurement."""
@@ -461,9 +463,11 @@ class Detector:
             session_config,
             _,
         ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=sensor_id)
-
         ready_to_record_threshold = False
-        if cls._has_close_range_measurement(config):
+        ready_to_calibrate_close_range = False
+        if session_config != context.noise_calibration_session_config_used:
+            detector_state = DetailedStatus.NOISE_CALIBRATION_MISSING
+        elif cls._has_close_range_measurement(config):
             ready_to_calibrate_close_range = True
             if cls._close_range_calibrated(context):
                 if session_config != context.close_range_session_config_used:
@@ -479,7 +483,6 @@ class Detector:
             else:
                 detector_state = DetailedStatus.CLOSE_RANGE_CALIBRATION_MISSING
         else:
-            ready_to_calibrate_close_range = False
             if cls._has_recorded_threshold_mode(config):
                 ready_to_record_threshold = True
                 if cls._recorded_threshold_calibrated(context):
@@ -554,7 +557,6 @@ class Detector:
             raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
 
         if not skip_calibration:
-            self.calibrate_noise()
             self.calibrate_offset()
 
         specs = self._add_context_to_processor_spec(self.processor_specs)

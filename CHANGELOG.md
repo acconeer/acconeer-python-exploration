@@ -15,6 +15,7 @@
 
 ### Changed
 - A121 distance detector: increase signal quality span
+- A121 distance detector: perform noise calibration standalone.
 
 ## v5.2.8
 
