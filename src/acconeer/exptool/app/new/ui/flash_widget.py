@@ -427,7 +427,7 @@ class _FlashPopup(QDialog):
 
     def _reset_download_version(self) -> None:
         self.downloaded_version_label.setEnabled(False)
-        self.downloaded_version_label.setPlaceholderText("<Downloaded bin file version N/A>")
+        self.downloaded_version_label.setText("<Downloaded bin file version>")
 
 
 class FlashButton(QPushButton):
