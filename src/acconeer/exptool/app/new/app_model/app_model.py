@@ -128,6 +128,7 @@ class AppModel(QObject):
 
     saveable_file: Optional[Path]
     autoconnect_enabled: bool
+    recording_enabled: bool
 
     def __init__(self, backend: Backend, plugins: list[PluginSpec]) -> None:
         super().__init__()
@@ -160,6 +161,8 @@ class AppModel(QObject):
 
         self.saveable_file = None
         self.autoconnect_enabled = False
+
+        self.recording_enabled = True
 
     def start(self) -> None:
         self._listener.start()
@@ -546,6 +549,10 @@ class AppModel(QObject):
 
     def set_overridden_baudrate(self, overridden_baudrate: Optional[int]) -> None:
         self.overridden_baudrate = overridden_baudrate
+        self.broadcast()
+
+    def set_recording_enabled(self, recording_enabled: bool) -> None:
+        self.recording_enabled = recording_enabled
         self.broadcast()
 
     def _unload_current_plugin(self) -> None:

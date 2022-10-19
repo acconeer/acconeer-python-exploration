@@ -197,6 +197,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             detector_config=self.shared_state.config,
         )
 
+        self.callback(GeneralMessage(name="saveable_file", data=None))
         if with_recorder:
             self._recorder = a121.H5Recorder(get_temp_h5_path())
         else:
@@ -823,7 +824,11 @@ class ViewPlugin(DetectorViewPluginBase):
 
     # TODO: move to detector base (?)
     def _send_start_request(self) -> None:
-        self.app_model.put_backend_plugin_task("start_session", on_error=self.app_model.emit_error)
+        self.app_model.put_backend_plugin_task(
+            "start_session",
+            {"with_recorder": self.app_model.recording_enabled},
+            on_error=self.app_model.emit_error,
+        )
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     # TODO: move to detector base (?)

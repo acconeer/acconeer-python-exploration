@@ -9,7 +9,7 @@ from typing import Optional
 import qtawesome as qta
 
 from PySide6 import QtCore, QtGui
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QCheckBox, QFileDialog, QHBoxLayout, QPushButton, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
 
@@ -25,6 +25,31 @@ class RecordingWidget(QWidget):
 
         self.layout().addWidget(LoadFileButton(app_model, self))
         self.layout().addWidget(SaveFileButton(app_model, self))
+        self.layout().addWidget(RecordingCheckbox(app_model, self))
+
+
+class RecordingCheckbox(QCheckBox):
+    def __init__(
+        self,
+        app_model: AppModel,
+        parent: QWidget,
+    ) -> None:
+        super().__init__("Enable recording", parent)
+
+        self.app_model = app_model
+        app_model.sig_notify.connect(self._on_app_model_update)
+
+        self.setToolTip("Enables recording of session to file")
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+
+        self.stateChanged.connect(self._on_state_changed)
+
+    def _on_state_changed(self) -> None:
+        self.app_model.set_recording_enabled(self.isChecked())
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        self.setChecked(app_model.recording_enabled)
+        self.setEnabled(app_model.plugin_state.is_steady)
 
 
 class FileButton(QPushButton):

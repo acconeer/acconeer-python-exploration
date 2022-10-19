@@ -110,7 +110,11 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         )
 
     def _send_start_requests(self) -> None:
-        self.app_model.put_backend_plugin_task("start_session", on_error=self.app_model.emit_error)
+        self.app_model.put_backend_plugin_task(
+            "start_session",
+            {"with_recorder": self.app_model.recording_enabled},
+            on_error=self.app_model.emit_error,
+        )
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_stop_requests(self) -> None:
