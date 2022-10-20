@@ -43,6 +43,7 @@ known_third_party = [
     "importlib_metadata",
     "qtawesome",
     "pyperclip",
+    "psutil",
 ]
 known_qt = "PySide6"
 known_plotting = "pyqtgraph"
@@ -88,6 +89,7 @@ warn_unused_ignores = true
 module = [
     "h5py.*",
     "platformdirs.*",
+    "psutil.*",
     "pyperclip.*",
     "pyqtgraph.*",
     "PySide6.*",

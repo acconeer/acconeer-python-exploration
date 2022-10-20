@@ -160,6 +160,23 @@ class RateStatsLabel(QLabel):
         self.jitter_warning = jitter_warning
 
 
+class BackendCPUPercentLabel(QLabel):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setToolTip("Client process CPU load")
+
+        app_model.sig_backend_cpu_percent.connect(self._on_app_model_backend_cpu_percent)
+
+        self._on_app_model_backend_cpu_percent(0)
+
+    def _on_app_model_backend_cpu_percent(self, cpu_percent: int) -> None:
+        self.setText(f"CPU: {str(cpu_percent):0>3}%")
+
+        css = "color: #FD5200;" if cpu_percent >= 85 else ""
+        self.setStyleSheet(css)
+
+
 class StatusBar(QStatusBar):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
@@ -176,6 +193,7 @@ class StatusBar(QStatusBar):
         self.addWidget(self.message_widget)
 
         self.addPermanentWidget(RateStatsLabel(app_model, self))
+        self.addPermanentWidget(BackendCPUPercentLabel(app_model, self))
 
         self.rss_version_label = QLabel(self)
         self.addPermanentWidget(self.rss_version_label)

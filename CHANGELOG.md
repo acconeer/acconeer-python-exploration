@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Backend CPU load in status bar.
+
 ## v5.2.9
 
 ### Fixed

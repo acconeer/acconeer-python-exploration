@@ -106,6 +106,7 @@ class AppModel(QObject):
     sig_message_view_plugin = Signal(object)
     sig_status_message = Signal(object)
     sig_rate_stats = Signal(float, bool, float, bool)
+    sig_backend_cpu_percent = Signal(int)
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]
@@ -302,6 +303,8 @@ class AppModel(QObject):
                 stats.jitter,
                 stats.jitter_warning,
             )
+        elif message.name == "cpu_percent":
+            self.sig_backend_cpu_percent.emit(message.data)
         else:
             raise RuntimeError(f"Got unknown general message '{message.name}'")
 

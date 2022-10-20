@@ -6,12 +6,14 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 import queue
+import time
 import traceback
 import uuid
 from multiprocessing.synchronize import Event as mp_EventType  # NOTE! this is not mp.Event.
 from typing import Any, Dict, Optional, Tuple, Union
 
 import attrs
+import psutil
 from typing_extensions import Literal
 
 from ._message import GeneralMessage, Message
@@ -94,16 +96,38 @@ def process_program(
     send_queue: mp.Queue[FromBackendQueueItem],
     stop_event: mp_EventType,
 ) -> None:
+    MAX_POLL_INTERVAL = 0.5
+
+    process = psutil.Process()
+    process.cpu_percent()
+    last_cpu_msg_time = time.time()
+
     try:
         model = Model(task_callback=send_queue.put)
         model_wants_to_idle = False
 
         while not stop_event.is_set():
+            now = time.time()
+            if now - last_cpu_msg_time > MAX_POLL_INTERVAL:
+                last_cpu_msg_time = now
+                cpu_percent = round(process.cpu_percent())
+                send_queue.put(
+                    GeneralMessage(
+                        name="cpu_percent",
+                        data=cpu_percent,
+                    )
+                )
+
             msg = None
 
             if not model_wants_to_idle:
                 log.debug("Backend is waiting patiently for a new command ...")
-                msg = recv_queue.get()
+
+                try:
+                    msg = recv_queue.get(timeout=MAX_POLL_INTERVAL)
+                except queue.Empty:
+                    continue
+
                 log.debug(f"Backend received the command: {msg}")
             else:
                 try:
