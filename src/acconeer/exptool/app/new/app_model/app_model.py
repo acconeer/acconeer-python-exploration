@@ -315,6 +315,17 @@ class AppModel(QObject):
         self.saveable_file = path
         self.broadcast()
 
+    def _is_serial_device_unflashed(self, serial_port: Optional[str]) -> bool:
+        for port, tag in self.available_tagged_ports:
+            if port == serial_port and tag and "unflashed" in tag.lower():
+                return True
+        return False
+
+    def _is_usb_device_unflashed(self, usb_device: Optional[USBDevice]) -> bool:
+        if usb_device and "unflashed" in usb_device.name.lower():
+            return True
+        return False
+
     def _handle_port_update(
         self,
         tagged_ports: list[Tuple[str, Optional[str]]],
@@ -344,8 +355,14 @@ class AppModel(QObject):
 
         if recognized:
             self.set_connection_interface(ConnectionInterface.SERIAL)
-            self.send_status_message(f"Recognized serial port: {self.serial_connection_port}")
-            connect = True
+            if self._is_serial_device_unflashed(self.serial_connection_port):
+                connect = False
+                self.send_warning_message(
+                    f"Found unflashed device at serial port: {self.serial_connection_port}"
+                )
+            else:
+                connect = True
+                self.send_status_message(f"Recognized serial port: {self.serial_connection_port}")
 
         if usb_devices is not None:
             self.usb_connection_device, recognized = self._select_new_usb_device(
@@ -357,8 +374,16 @@ class AppModel(QObject):
             if recognized:
                 assert self.usb_connection_device is not None
                 self.set_connection_interface(ConnectionInterface.USB)
-                self.send_status_message(f"Recognized USB device: {self.usb_connection_device}")
-                connect = True
+                if self._is_usb_device_unflashed(self.usb_connection_device):
+                    connect = False
+                    self.send_warning_message(
+                        f"Found unflashed USB device: {self.usb_connection_device}"
+                    )
+                else:
+                    connect = True
+                    self.send_status_message(
+                        f"Recognized USB device: {self.usb_connection_device}"
+                    )
 
         if connect and self.autoconnect_enabled:
             self._autoconnect()
@@ -454,17 +479,19 @@ class AppModel(QObject):
             or (
                 self.connection_interface == ConnectionInterface.SERIAL
                 and self.serial_connection_port is not None
+                and not self._is_serial_device_unflashed(self.serial_connection_port)
             )
             or (
                 self.connection_interface == ConnectionInterface.USB
                 and self.usb_connection_device is not None
+                and not self._is_usb_device_unflashed(self.usb_connection_device)
             )
         )
 
     def _failed_autoconnect(
         self, exception: Exception, traceback_format_exc: Optional[str] = None
     ) -> None:
-        self.send_status_message('<p style="color: #FD5200;"><b>Failed to autoconnect</b></p>')
+        self.send_warning_message("Failed to autoconnect")
 
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
         self.connection_interface = connection_interface
@@ -578,3 +605,6 @@ class AppModel(QObject):
 
     def send_status_message(self, message: Optional[str]) -> None:
         self.sig_status_message.emit(message)
+
+    def send_warning_message(self, message: Optional[str]) -> None:
+        self.sig_status_message.emit(f'<p style="color: #FD5200;"><b>{message}</b></p>')

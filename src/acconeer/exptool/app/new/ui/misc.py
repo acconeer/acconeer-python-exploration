@@ -188,4 +188,7 @@ class ConnectionHint(QWidget):
         if tag is None:
             return False
 
+        if "unflashed" in tag.lower():
+            return False
+
         return "xc120" in tag.lower()

@@ -62,8 +62,8 @@ class USBDevice:
 
 
 _USB_IDS = [  # (vid, pid, 'model number')
-    (0x0483, 0xA41D, "XC120"),
-    (0x0483, 0xA42C, "XC120"),
+    (0x0483, 0xA41D, "Unflashed XC120"),
+    (0x0483, 0xA42C, "Unflashed XC120"),
     (0x0483, 0xA42D, "XC120"),
 ]
 
@@ -130,7 +130,7 @@ def tag_serial_ports_objects(port_infos):
 
     port_tag_tuples = []
 
-    for _, port_object in enumerate(port_infos):
+    for port_object in port_infos:
         desc = port_object.product or port_object.description
 
         match = re.search(PRODUCT_REGEX, desc)
@@ -156,6 +156,8 @@ def tag_serial_ports_objects(port_infos):
             else:  # pyserial <= 3.4
                 # Add "?" to both to indicate that it could be either.
                 port_tag_tuples.append((port_object, f"{match.group().upper()} (?)"))
+        elif "Bootloader" in desc:
+            port_tag_tuples.append((port_object, f"Unflashed {match.group()}"))
         else:
             port_tag_tuples.append((port_object, match.group()))
 
@@ -238,18 +240,14 @@ def get_usb_devices():
     all_usb_devices = winusbpy.list_usb_devices(deviceinterface=True, present=True)
 
     for name, path in all_usb_devices.items():
-        found = False
         pattern = r"(.*)#vid_(?P<vid>\w+)&pid_(?P<pid>\w+)(.*)"
         match = re.fullmatch(pattern, path)
         groups = match.groupdict()
         v = int(f"0x{groups['vid']}", 16)
         p = int(f"0x{groups['pid']}", 16)
-        for vid, pid, _ in _USB_IDS:
+        for vid, pid, model_name in _USB_IDS:
             if v == vid and p == pid:
-                found = True
-
-        if found:
-            usb_devices.append(USBDevice(vid=v, pid=p, serial=None, name=name))
+                usb_devices.append(USBDevice(vid=v, pid=p, serial=None, name=model_name))
 
     return usb_devices
 

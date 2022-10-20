@@ -4,6 +4,7 @@
 
 ### Fixed
 - Serial port tagging for XE123, XE124, XE125 modules
+- Disable connect button for an unflashed XC120 device
 
 ### Added
 - Backend CPU load in status bar.
