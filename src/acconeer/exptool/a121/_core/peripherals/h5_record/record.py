@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 import re
+import warnings
 from typing import Callable, Iterator, Tuple, TypeVar
 
 import h5py
+import importlib_metadata
 import numpy as np
+from packaging.version import Version
 
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
@@ -36,6 +39,19 @@ class H5Record(PersistentRecord):
 
     def __init__(self, file: h5py.File) -> None:
         self.file = file
+
+        try:
+            version_of_record = Version(self.lib_version)
+        except KeyError:
+            pass
+        else:
+            installed_version = Version(importlib_metadata.version("acconeer-exptool"))
+            if installed_version < version_of_record:
+                warnings.warn(
+                    f"The loaded file {str(self.file.name)!r} was recorded "
+                    + f"with a newer version of Exploration Tool ({version_of_record}) "
+                    + f"than is installed ({installed_version})."
+                )
 
     @property
     def client_info(self) -> ClientInfo:
