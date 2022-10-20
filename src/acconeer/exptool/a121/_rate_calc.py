@@ -66,9 +66,8 @@ class _RateCalculator:
         rate = 1.0 / np.nanmean(self.time_fifo)
         jitter = np.nanstd(self.time_fifo)
 
-        rate_warning = False
-        if self.sensor_config.frame_rate is not None:
-            rate_warning |= result.frame_delayed
+        rate_warning = result.frame_delayed
+
         if self.session_config.update_rate is not None:
             limit = self.metadata.tick_period * 1.01 + 10
             rate_warning |= np.nanmean(self.tick_fifo) > limit
