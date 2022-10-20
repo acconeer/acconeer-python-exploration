@@ -35,6 +35,7 @@ class ExplorationProtocol(CommunicationProtocol):
     @classmethod
     def parse_message(cls, header: dict[str, Any], payload: bytes) -> Message:
         PARSERS = [
+            messages.EmptyResultMessage.parse,
             messages.SetBaudrateResponse.parse,
             messages.ErroneousMessage.parse,
             messages.LogMessage.parse,

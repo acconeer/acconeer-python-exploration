@@ -31,6 +31,26 @@ class ResultMessageHeader(te.TypedDict):
 
 
 @attrs.frozen
+class EmptyResultMessage(Message):
+    """
+    This message can come from the server if it somehow starts streaming
+    after being stopped.
+    """
+
+    def apply(self, client: AgnosticClientFriends) -> None:
+        raise RuntimeError("Received an empty Result from Server.")
+
+    @classmethod
+    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> EmptyResultMessage:
+        head = t.cast(ResultMessageHeader, header)
+
+        if head.get("payload_size") == 0 and head.get("result_info") == []:
+            return EmptyResultMessage()
+        else:
+            raise ParseError
+
+
+@attrs.frozen
 class ResultMessage(Message):
     grouped_result_infos: list[list[ResultInfoDict]]
     frame_blob: bytes

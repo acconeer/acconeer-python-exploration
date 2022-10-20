@@ -63,6 +63,9 @@ class TestAConnectedClient:
     def test_can_access_server_info(self, client):
         _ = client.server_info
 
+    def test_the_server_info_is_not_none(self, client):
+        assert client.server_info is not None
+
     def test_reports_correct_statuses(self, client):
         assert client.connected
         assert not client.session_is_setup
@@ -101,6 +104,11 @@ class TestASetupClient:
         _ = client.server_info
         _ = client.session_config
         _ = client.extended_metadata
+
+    def test_no_data_structures_are_none(self, client):
+        assert client.server_info is not None
+        assert client.session_config is not None
+        assert client.extended_metadata is not None
 
     def test_cannot_get_next(self, client):
         with pytest.raises(a121.ClientError):
@@ -160,8 +168,8 @@ class TestAStartedClient:
         assert not client.session_is_started
 
 
-class TestAStoppedClient(TestASetupClient):
-    """A stopped client should have the same behaviour as a setup client."""
+class TestAStoppedClient(TestAConnectedClient):
+    """A stopped client should have the same behaviour as a newly connected client."""
 
     @pytest.fixture
     def client(self):
@@ -169,6 +177,37 @@ class TestAStoppedClient(TestASetupClient):
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
+            yield c
+
+
+class TestAStoppedAndSetupClient(TestASetupClient):
+    """A stopped client that was later setup
+    should have the same behaviour as a setup client.
+    """
+
+    @pytest.fixture
+    def client(self):
+        with a121.Client(**CLIENT_KWARGS) as c:
+            c.setup_session(a121.SessionConfig())
+            c.start_session()
+            c.stop_session()
+            c.setup_session(a121.SessionConfig())
+            yield c
+
+
+class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
+    """A client that has been started twice
+    should have the same behaviour as client that has been started once.
+    """
+
+    @pytest.fixture
+    def client(self):
+        with a121.Client(**CLIENT_KWARGS) as c:
+            c.setup_session(a121.SessionConfig())
+            c.start_session()
+            c.stop_session()
+            c.setup_session(a121.SessionConfig())
+            c.start_session()
             yield c
 
 
