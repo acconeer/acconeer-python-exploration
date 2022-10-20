@@ -141,21 +141,21 @@ def tag_serial_ports_objects(port_infos):
                     break
             else:
                 port_tag_tuples.append((port_object, None))
-        elif "xe132" in match.group().lower():
+        elif match.group().lower() in ["xe123", "xe124", "xe125", "xe132"]:
             if version.parse(serial.__version__) >= version.parse("3.5"):
-                # Special handling of xe132 with pyserial >= 3.5
+                # Special handling of cp2105 modules with with pyserial >= 3.5
                 interface = port_object.interface
 
                 if interface and "enhanced" in interface.lower():
                     # Add the "enhanced" interface
-                    port_tag_tuples.append((port_object, "XE132"))
+                    port_tag_tuples.append((port_object, f"{match.group().upper()}"))
                 else:
                     # Add the "standard" interface but don't tag it
                     port_tag_tuples.append((port_object, None))
 
             else:  # pyserial <= 3.4
                 # Add "?" to both to indicate that it could be either.
-                port_tag_tuples.append((port_object, "XE132 (?)"))
+                port_tag_tuples.append((port_object, f"{match.group().upper()} (?)"))
         else:
             port_tag_tuples.append((port_object, match.group()))
 

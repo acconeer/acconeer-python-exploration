@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- Serial port tagging for XE123, XE124, XE125 modules
+
 ### Added
 - Backend CPU load in status bar.
 
