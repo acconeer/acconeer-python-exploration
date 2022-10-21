@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import abc
 import platform
 import webbrowser
 from typing import Optional
@@ -139,11 +140,14 @@ class USBDeviceComboBox(QComboBox):
             self.setCurrentIndex(index)
 
 
-class ConnectionHint(QWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+class UserHint(QWidget):
+    def __init__(
+        self, app_model: AppModel, parent: QWidget, hint: str, how_to_fix_url: str
+    ) -> None:
         super().__init__(parent)
         app_model.sig_notify.connect(self._on_app_model_update)
 
+        self._how_to_fix_url = how_to_fix_url
         self.setLayout(QHBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
 
@@ -152,7 +156,7 @@ class ConnectionHint(QWidget):
         self.layout().addWidget(self.icon)
 
         self.label = QLabel(self)
-        self.label.setText("You may experience stability issues")
+        self.label.setText(hint)
         self.layout().addWidget(self.label)
 
         self.button = QPushButton(self)
@@ -168,8 +172,22 @@ class ConnectionHint(QWidget):
         self.button.setHidden(hide)
 
     def _on_click(self) -> None:
-        url = r"https://docs.acconeer.com/en/latest/evk_setup/xc120_xe121.html"
-        webbrowser.open_new_tab(url)
+        webbrowser.open_new_tab(self._how_to_fix_url)
+
+    @staticmethod
+    @abc.abstractmethod
+    def _should_show(app_model: AppModel) -> bool:
+        pass
+
+
+class ConnectionHint(UserHint):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(
+            app_model,
+            parent,
+            "You may experience stability issues",
+            r"https://docs.acconeer.com/en/latest/evk_setup/xc120_xe121.html",
+        )
 
     @staticmethod
     def _should_show(app_model: AppModel) -> bool:
@@ -192,3 +210,25 @@ class ConnectionHint(QWidget):
             return False
 
         return "xc120" in tag.lower()
+
+
+class UnflashedDeviceHint(UserHint):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(
+            app_model,
+            parent,
+            "You have an unflashed device connected",
+            r"https://docs.acconeer.com/en/latest/evk_setup/xc120_xe121.html",
+        )
+
+    @staticmethod
+    def _should_show(app_model: AppModel) -> bool:
+        for port, tag in app_model.available_tagged_ports:
+            if tag and "unflashed" in tag.lower():
+                return True
+
+        for usb_device in app_model.available_usb_devices:
+            if "unflashed" in usb_device.name.lower():
+                return True
+
+        return False
