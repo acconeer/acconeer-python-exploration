@@ -10,6 +10,9 @@
 - Backend CPU load in status bar.
 - Add warning in the App if an unflashed device is connected
 
+### Changed
+- Design of status bar.
+
 ## v5.2.9
 
 ### Fixed

@@ -113,37 +113,27 @@ class WorkingArea(QSplitter):
 
 
 class RateStatsLabel(QLabel):
-    _FPS: int = 60
+    _FPS: int = 10
 
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setToolTip("Reported update rate / jitter")
+        self.setToolTip("Reported update rate")
 
         self.rate = np.nan
         self.rate_warning = False
-        self.jitter = np.nan
-        self.jitter_warning = False
 
         self.startTimer(int(1000 / self._FPS))
 
         app_model.sig_rate_stats.connect(self._on_app_model_rate_stats)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        if np.isnan(self.rate) or np.isnan(self.jitter):
+        if np.isnan(self.rate):
             css = "color: #888;"
-            text = "- Hz / - ms"
+            text = "     - Hz"
         else:
-            css = ""
-
-            WARNING_STYLE = "color: #FD5200;"
-            rate_style = WARNING_STYLE if self.rate_warning else ""
-            jitter_style = WARNING_STYLE if self.jitter_warning else ""
-            text = (
-                f'<span style="{rate_style}">{self.rate:>6.1f} Hz</span>'
-                " / "
-                f'<span style="{jitter_style}">{self.jitter * 1e3:5.1f} ms</span>'
-            )
+            css = "color: #FD5200;" if self.rate_warning else ""
+            text = f"{self.rate:>6.1f} Hz"
 
         self.setStyleSheet(css)
         self.setText(text)
@@ -157,6 +147,41 @@ class RateStatsLabel(QLabel):
     ) -> None:
         self.rate = rate
         self.rate_warning = rate_warning
+
+
+class JitterStatsLabel(QLabel):
+    _FPS: int = 10
+
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setToolTip("Reported jitter")
+
+        self.jitter = np.nan
+        self.jitter_warning = False
+
+        self.startTimer(int(1000 / self._FPS))
+
+        app_model.sig_rate_stats.connect(self._on_app_model_rate_stats)
+
+    def timerEvent(self, event: QtCore.QTimerEvent) -> None:
+        if np.isnan(self.jitter):
+            css = "color: #888;"
+            text = "    - ms"
+        else:
+            css = "color: #FD5200;" if self.jitter_warning else ""
+            text = f"{self.jitter * 1e3:5.1f} ms"
+
+        self.setStyleSheet(css)
+        self.setText(text)
+
+    def _on_app_model_rate_stats(
+        self,
+        rate: float,
+        rate_warning: bool,
+        jitter: float,
+        jitter_warning: bool,
+    ) -> None:
         self.jitter = jitter
         self.jitter_warning = jitter_warning
 
@@ -172,7 +197,7 @@ class BackendCPUPercentLabel(QLabel):
         self._on_app_model_backend_cpu_percent(0)
 
     def _on_app_model_backend_cpu_percent(self, cpu_percent: int) -> None:
-        self.setText(f"CPU: {str(cpu_percent):0>3}%")
+        self.setText(f"CPU: {cpu_percent:3}%")
 
         css = "color: #FD5200;" if cpu_percent >= 85 else ""
         self.setStyleSheet(css)
@@ -194,6 +219,7 @@ class StatusBar(QStatusBar):
         self.addWidget(self.message_widget)
 
         self.addPermanentWidget(RateStatsLabel(app_model, self))
+        self.addPermanentWidget(JitterStatsLabel(app_model, self))
         self.addPermanentWidget(BackendCPUPercentLabel(app_model, self))
 
         self.rss_version_label = QLabel(self)
@@ -202,6 +228,15 @@ class StatusBar(QStatusBar):
         et_version = importlib_metadata.version("acconeer-exptool")
         et_version_text = f"ET: {et_version}"
         self.addPermanentWidget(QLabel(et_version_text, self))
+
+        font_families = [
+            "Consolas",  # Windows
+            "Droid Sans Mono",  # Ubuntu
+            "DejaVu Sans Mono",  # Ubuntu, backup
+            "SF Mono",  # Mac
+        ]
+        font_family = ", ".join(f'"{ff}"' for ff in font_families)
+        self.setStyleSheet(f"font-family: {font_family};")
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         if app_model.rss_version is None:
