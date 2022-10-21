@@ -96,6 +96,7 @@ module = [
     "pytest.*",
     "qdarktheme.*",
     "qtawesome.*",
+    "requests.*",
     "scipy.*",
     "serial.*",
 ]

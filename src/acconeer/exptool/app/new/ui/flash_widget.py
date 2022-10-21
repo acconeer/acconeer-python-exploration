@@ -14,8 +14,8 @@ from typing import Optional, Tuple
 
 import qtawesome as qta
 import serial
-from requests import Response, Session  # type: ignore[import]
-from requests.cookies import RequestsCookieJar  # type: ignore[import]
+from requests import Response, Session
+from requests.cookies import RequestsCookieJar
 
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QCloseEvent, QMovie, QTextCursor
