@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import abc
-import logging
 from pathlib import Path
 from typing import Callable, Dict, Generic, List, Optional, Type
 
@@ -23,6 +22,7 @@ from acconeer.exptool.a121.algo._base import (
 )
 from acconeer.exptool.a121.algo._plugins._a121 import A121BackendPluginBase
 from acconeer.exptool.app.new import (
+    BackendLogger,
     GeneralMessage,
     HandledException,
     Message,
@@ -32,9 +32,6 @@ from acconeer.exptool.app.new import (
     is_task,
 )
 from acconeer.exptool.app.new.storage import get_temp_h5_path
-
-
-log = logging.getLogger(__name__)
 
 
 CALIBRATION_NEEDED_MESSAGE = "Calibration needed - restart"
@@ -82,6 +79,7 @@ class GenericProcessorBackendPluginBase(
         self._replaying_client = None
         self._opened_file = None
         self._opened_record = None
+        self._log = BackendLogger.getLogger(__name__)
         self.restore_defaults()
 
     @is_task
@@ -140,7 +138,7 @@ class GenericProcessorBackendPluginBase(
                     f, "processor_config", self.shared_state.processor_config.to_json()
                 )
         except Exception:
-            log.warning("Processor could not write to cache")
+            self._log.warning("Processor could not write to cache")
 
         self.detach_client()
 
@@ -178,7 +176,7 @@ class GenericProcessorBackendPluginBase(
                 algo_group["processor_config"][()]
             )
         except Exception:
-            log.warning(f"Could not load '{self.key}' from file")
+            self._log.warning(f"Could not load '{self.key}' from file")
 
     @is_task
     def update_session_config(self, *, session_config: a121.SessionConfig) -> None:

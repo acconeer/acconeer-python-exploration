@@ -34,6 +34,7 @@ from acconeer.exptool.app.new.backend import (
     ClosedTask,
     ConnectionStateMessage,
     GeneralMessage,
+    LogMessage,
     Message,
     PluginStateMessage,
     StatusMessage,
@@ -271,6 +272,16 @@ class AppModel(QObject):
             self.broadcast()
         elif isinstance(message, StatusMessage):
             self.send_status_message(message.status)
+        elif isinstance(message, LogMessage):
+            module_logger = logging.getLogger(message.module_name)
+            loglevel_to_logfunc = {
+                "CRITICAL": module_logger.critical,
+                "ERROR": module_logger.error,
+                "WARNING": module_logger.warning,
+                "INFO": module_logger.info,
+                "DEBUG": module_logger.debug,
+            }
+            loglevel_to_logfunc[message.log_level](message.log_string)
         elif isinstance(message, GeneralMessage):
             if message.recipient is not None:
                 if message.recipient == "plot_plugin":

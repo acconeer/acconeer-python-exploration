@@ -28,6 +28,7 @@ from acconeer.exptool.a121.algo._plugins import (
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
+    BackendLogger,
     ConnectionState,
     GeneralMessage,
     HandledException,
@@ -49,9 +50,6 @@ from acconeer.exptool.app.new.ui.plugin_components import (
 )
 
 from ._detector import Detector, DetectorConfig, DetectorResult, _load_algo_data
-
-
-log = logging.getLogger(__name__)
 
 
 @attrs.mutable(kw_only=True)
@@ -79,6 +77,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self._recorder: Optional[a121.H5Recorder] = None
         self._opened_record: Optional[a121.H5Record] = None
         self._detector_instance: Optional[Detector] = None
+        self._log = BackendLogger.getLogger(__name__)
 
         self.restore_defaults()
 
@@ -147,7 +146,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                     f, "plot_config", self.shared_state.plot_config.to_json()
                 )
         except Exception:
-            log.warning("Detector could not write to cache")
+            self._log.warning("Detector could not write to cache")
 
         self.detach_client()
 
@@ -572,6 +571,7 @@ class ViewPlugin(DetectorViewPluginBase):
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
         self.app_model = app_model
+        self._log = logging.getLogger(__name__)
 
         sticky_layout = QVBoxLayout()
         sticky_layout.setContentsMargins(0, 0, 0, 0)
@@ -806,7 +806,7 @@ class ViewPlugin(DetectorViewPluginBase):
     # TODO: move to detector base (?)
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
-            log.debug(f"{type(self).__name__} syncing")
+            self._log.debug(f"{type(self).__name__} syncing")
 
             self.config_editor.sync()
         else:

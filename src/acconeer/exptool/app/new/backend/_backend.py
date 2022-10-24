@@ -16,6 +16,7 @@ import attrs
 import psutil
 from typing_extensions import Literal
 
+from ._backend_logger import BackendLogger
 from ._message import GeneralMessage, Message
 from ._model import Model
 
@@ -103,6 +104,8 @@ def process_program(
     last_cpu_msg_time = time.time()
 
     try:
+        BackendLogger.set_callback(send_queue.put)
+        process_log = BackendLogger.getLogger(__name__)
         model = Model(task_callback=send_queue.put)
         model_wants_to_idle = False
 
@@ -121,18 +124,16 @@ def process_program(
             msg = None
 
             if not model_wants_to_idle:
-                log.debug("Backend is waiting patiently for a new command ...")
-
                 try:
                     msg = recv_queue.get(timeout=MAX_POLL_INTERVAL)
                 except queue.Empty:
                     continue
 
-                log.debug(f"Backend received the command: {msg}")
+                process_log.debug(f"Backend received the command: {msg}")
             else:
                 try:
                     msg = recv_queue.get_nowait()
-                    log.debug(f"Backend received the command: {msg}")
+                    process_log.debug(f"Backend received the command: {msg}")
                 except queue.Empty:
                     pass
 

@@ -41,6 +41,13 @@ class StatusMessage(Message):
 
 
 @attrs.frozen(kw_only=True, slots=False)
+class LogMessage(Message):
+    module_name: str = attrs.field()
+    log_level: str = attrs.field()
+    log_string: str = attrs.field()
+
+
+@attrs.frozen(kw_only=True, slots=False)
 class GeneralMessage(Message):
     name: str = attrs.field()
     recipient: Optional[RecipientLiteral] = attrs.field(default=None)
