@@ -19,6 +19,7 @@ from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     Result,
+    SensorCalibration,
     ServerInfo,
     SessionConfig,
 )
@@ -110,6 +111,8 @@ class H5Recorder(Recorder):
         extended_metadata: list[dict[int, Metadata]],
         server_info: ServerInfo,
         session_config: SessionConfig,
+        calibrations: Optional[dict[int, SensorCalibration]],
+        calibrations_provided: Optional[dict[int, bool]],
     ) -> None:
         self.file.create_dataset(
             "client_info",
@@ -149,6 +152,31 @@ class H5Recorder(Recorder):
 
                 result_group = entry_group.create_group("result")
                 self._create_result_datasets(result_group, metadata)
+
+        if calibrations and not calibrations_provided:
+            raise ValueError(
+                "'calibrations_provided' must be provided if 'calibrations' is provided"
+            )
+        elif not calibrations and calibrations_provided:
+            raise ValueError(
+                "'calibrations' must be provided if 'calibrations_provided' is provided"
+            )
+        elif calibrations and calibrations_provided:
+            calibrations_group = session_group.create_group("calibrations")
+            for sensor_id, calibration in calibrations.items():
+                sensor_calibration_group = calibrations_group.create_group(f"sensor_{sensor_id}")
+                sensor_calibration_group.create_dataset(
+                    "temperature", data=calibration.temperature, track_times=False
+                )
+                sensor_calibration_group.create_dataset(
+                    "data",
+                    data=calibration.data,
+                    dtype=_H5PY_STR_DTYPE,
+                    track_times=False,
+                )
+                sensor_calibration_group.create_dataset(
+                    "provided", data=calibrations_provided[sensor_id], track_times=False
+                )
 
     def _write_chunk_buffer_to_file(self, start_idx: int) -> int:
         """Saves the contents of ``self.chunk_buffer`` to file.

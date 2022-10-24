@@ -95,6 +95,10 @@ class TestASetupClient:
             c.setup_session(a121.SessionConfig())
             yield c
 
+    @pytest.fixture
+    def tmp_h5_file_path(self, tmp_path):
+        return tmp_path / "record.h5"
+
     def test_reports_correct_statuses(self, client):
         assert client.connected
         assert client.session_is_setup
@@ -122,6 +126,132 @@ class TestASetupClient:
             )
         )
         assert old_metadata != client.extended_metadata
+
+    def test_calibrations_after_setup(self, client):
+        calibrations = client.calibrations
+        assert calibrations
+
+        for group in client.session_config.groups:
+            for sensor_id in group:
+                assert calibrations.get(sensor_id)
+
+    def test_multiple_calibrations_after_setup(self):
+        with a121.Client(**CLIENT_KWARGS) as c:
+            c.setup_session(
+                a121.SessionConfig(
+                    [
+                        {2: a121.SensorConfig()},
+                        {3: a121.SensorConfig()},
+                    ]
+                )
+            )
+
+            calibrations = c.calibrations
+            assert 1 not in calibrations
+            assert 2 in calibrations
+            assert 3 in calibrations
+            assert 4 not in calibrations
+
+    def test_recording_calibration(self, client, tmp_h5_file_path):
+        setup_calibrations = client.calibrations
+        assert setup_calibrations
+
+        client.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
+        [client.get_next() for _ in range(5)]
+        client.stop_session()
+
+        record = a121.load_record(tmp_h5_file_path)
+        for sensor_id in setup_calibrations:
+            assert sensor_id in record.calibrations
+            assert setup_calibrations[sensor_id].data == record.calibrations[sensor_id].data
+            assert (
+                setup_calibrations[sensor_id].temperature
+                == record.calibrations[sensor_id].temperature
+            )
+            assert not record.calibrations_provided[sensor_id]
+
+    def test_not_calibrations_provided(self, client):
+        calibrations_provided = client.calibrations_provided
+
+        for _, provided in calibrations_provided.items():
+            assert not provided
+
+    def test_multiple_calibrations_provided_after_setup(self, client):
+        calibrations = client.calibrations
+        assert calibrations
+
+        calibration = calibrations.get(1)
+        assert calibration
+
+        client.setup_session(
+            a121.SessionConfig(
+                [
+                    {1: a121.SensorConfig()},
+                    {2: a121.SensorConfig()},
+                    {3: a121.SensorConfig()},
+                    {4: a121.SensorConfig()},
+                ]
+            ),
+            {
+                1: calibration,
+                3: calibration,
+            },
+        )
+
+        calibrations_provided = client.calibrations_provided
+        assert 1 in calibrations_provided
+        assert 2 in calibrations_provided
+        assert 3 in calibrations_provided
+        assert 4 in calibrations_provided
+
+        assert calibrations_provided[1]
+        assert not calibrations_provided[2]
+        assert calibrations_provided[3]
+        assert not calibrations_provided[4]
+
+    def test_recording_with_calibration_provided(self, client, tmp_h5_file_path):
+        calibrations = client.calibrations
+        assert calibrations
+
+        calibration = calibrations.get(1)
+        assert calibration
+
+        client.setup_session(
+            a121.SessionConfig(
+                [
+                    {1: a121.SensorConfig()},
+                    {2: a121.SensorConfig()},
+                    {3: a121.SensorConfig()},
+                    {4: a121.SensorConfig()},
+                ]
+            ),
+            {
+                2: calibration,
+                4: calibration,
+            },
+        )
+
+        client.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
+        [client.get_next() for _ in range(5)]
+        client.stop_session()
+
+        record = a121.load_record(tmp_h5_file_path)
+        assert 2 in record.calibrations
+        assert 4 in record.calibrations
+
+        setup_calibrations = client.calibrations
+        for sensor_id in setup_calibrations:
+            assert sensor_id in record.calibrations
+            assert setup_calibrations[sensor_id].data == record.calibrations[sensor_id].data
+            assert (
+                setup_calibrations[sensor_id].temperature
+                == record.calibrations[sensor_id].temperature
+            )
+
+        assert not record.calibrations_provided[1]
+        assert record.calibrations_provided[2]
+        assert not record.calibrations_provided[3]
+        assert record.calibrations_provided[4]
 
 
 class TestAStartedClient:

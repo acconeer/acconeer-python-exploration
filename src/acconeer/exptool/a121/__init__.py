@@ -20,6 +20,7 @@ from ._core import (
     Record,
     Recorder,
     Result,
+    SensorCalibration,
     SensorConfig,
     SensorInfo,
     ServerError,

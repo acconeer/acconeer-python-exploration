@@ -14,6 +14,7 @@ from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     Result,
+    SensorCalibration,
     SensorConfig,
     SensorInfo,
     ServerInfo,
@@ -54,6 +55,8 @@ class AgnosticClient(AgnosticClientFriends):
     _session_config: Optional[SessionConfig]
     _session_is_started: bool
     _metadata: Optional[list[dict[int, Metadata]]]
+    _sensor_calibrations: Optional[dict[int, SensorCalibration]]
+    _calibration_provided: dict[int, bool]
     _sensor_infos: dict[int, SensorInfo]
     _system_info: Optional[SystemInfoDict]
     _result_queue: list[list[dict[int, Result]]]
@@ -70,6 +73,8 @@ class AgnosticClient(AgnosticClientFriends):
         self._session_config = None
         self._session_is_started = False
         self._metadata = None
+        self._sensor_calibrations = None
+        self._calibration_provided = {}
         self._sensor_infos = {}
         self._system_info = None
         self._result_queue = []
@@ -181,12 +186,14 @@ class AgnosticClient(AgnosticClientFriends):
     def setup_session(
         self,
         config: Union[SensorConfig, SessionConfig],
+        calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
         """Sets up the session specified by ``config``.
 
         If the Client is not already connected, it will connect before setting up the session.
 
         :param config: The session to set up.
+        :param calibrations: An optional dict with :class:`SensorCalibration` for the session.
         :raises:
             ``ValueError`` if the config is invalid.
 
@@ -205,7 +212,14 @@ class AgnosticClient(AgnosticClientFriends):
 
         config.validate()
 
-        self._link.send(self._protocol.setup_command(config))
+        self._calibration_provided = {}
+        for _, sensor_id, _ in iterate_extended_structure(config.groups):
+            if calibrations:
+                self._calibration_provided[sensor_id] = sensor_id in calibrations
+            else:
+                self._calibration_provided[sensor_id] = False
+
+        self._link.send(self._protocol.setup_command(config, calibrations))
 
         self._session_config = config
 
@@ -250,6 +264,8 @@ class AgnosticClient(AgnosticClientFriends):
                 extended_metadata=self.extended_metadata,
                 server_info=self.server_info,
                 session_config=self.session_config,
+                calibrations=self.calibrations,
+                calibrations_provided=self.calibrations_provided,
             )
 
         self._link.timeout = self._link_timeout
@@ -391,6 +407,48 @@ class AgnosticClient(AgnosticClientFriends):
         self._assert_session_setup()
         assert self._metadata is not None  # Should never happen if session is setup
         return self._metadata
+
+    @property
+    def calibrations(self) -> dict[int, SensorCalibration]:
+        """
+        Returns a dict with a :class:`SensorCalibration` per used
+        sensor for the current session:
+
+        For example, if session_setup was called with
+
+        .. code-block:: python
+
+            client.setup_session(
+                SessionConfig({1: SensorConfig(), 3: SensorConfig()}),
+            )
+
+        this attribute will return {1: SensorCalibration(...), 3: SensorCalibration(...)}
+        """
+
+        self._assert_session_setup()
+
+        if not self._sensor_calibrations:
+            raise ClientError("Server did not provide calibration")
+
+        return self._sensor_calibrations
+
+    @property
+    def calibrations_provided(self) -> dict[int, bool]:
+        """
+        Returns whether a calibration was provided for each sensor in
+        setup_session. For example, if setup_session was called with
+
+        .. code-block:: python
+
+            client.setup_session(
+                SessionConfig({1: SensorConfig(), 2: SensorConfig()}),
+                calibrations={2: SensorCalibration(...)},
+            )
+
+        this attribute will return ``{1: False, 2: True}``
+        """
+
+        return self._calibration_provided
 
     @property
     def _rate_stats(self) -> _RateStats:

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 from acconeer.exptool.a121 import (
@@ -14,6 +15,7 @@ from acconeer.exptool.a121 import (
     Record,
     Recorder,
     Result,
+    SensorCalibration,
     SensorConfig,
     ServerInfo,
     SessionConfig,
@@ -43,7 +45,11 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
     def setup_session(
         self,
         config: Union[SensorConfig, SessionConfig],
+        calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
+        if calibrations:
+            warnings.warn(f"{type(self).__name__} can not use calibrations")
+
         if not self.connected:
             self.connect()
 

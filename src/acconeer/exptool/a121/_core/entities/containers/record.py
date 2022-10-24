@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Iterator
+from typing import Any, Iterator, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -15,6 +15,7 @@ from acconeer.exptool.a121._core.entities.configs import SessionConfig
 from .client_info import ClientInfo
 from .metadata import Metadata
 from .result import Result
+from .sensor_calibration import SensorCalibration
 from .server_info import ServerInfo
 from .stacked_results import StackedResults
 
@@ -132,6 +133,16 @@ class Record(abc.ABC):
     @abc.abstractmethod
     def uuid(self) -> str:
         """UUID"""
+
+    @property
+    @abc.abstractmethod
+    def calibrations(self) -> Optional[dict[int, SensorCalibration]]:
+        """The calibrations in the record"""
+
+    @property
+    @abc.abstractmethod
+    def calibrations_provided(self) -> dict[int, bool]:
+        """The calibrations provided in the record"""
 
 
 class PersistentRecord(Record):

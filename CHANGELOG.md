@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Add SensorCalibration to session
+
 ## v5.3.0
 
 ### Fixed

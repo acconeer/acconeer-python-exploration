@@ -16,6 +16,7 @@ from acconeer.exptool.a121._core.entities import (
     PersistentRecord,
     Result,
     ResultContext,
+    SensorCalibration,
     ServerInfo,
     SessionConfig,
     StackedResults,
@@ -23,6 +24,10 @@ from acconeer.exptool.a121._core.entities import (
 
 
 T = TypeVar("T")
+
+
+class H5RecordException(Exception):
+    pass
 
 
 class H5Record(PersistentRecord):
@@ -158,3 +163,46 @@ class H5Record(PersistentRecord):
             raise KeyError
 
         return group
+
+    def _get_calibrations_group(self) -> h5py.Group:
+        session_group = self.file["session"]
+
+        if "calibrations" in session_group.keys():
+            return session_group["calibrations"]
+        raise H5RecordException("No calibration in h5 file")
+
+    def _iterate_calibrations(self) -> Iterator[Tuple[int, h5py.Group]]:
+        """Iterates over "Calibration" items in this record.
+
+        :returns: An iterable of <sensor_id>, <"CalibrationGroup">
+        """
+        calibrations_group = self._get_calibrations_group()
+        for sensor_group_name, group in calibrations_group.items():
+            m = re.fullmatch(r"sensor_(\d+)", sensor_group_name)
+
+            if not m:
+                continue
+
+            sensor_id = int(m.group(1))
+            yield (sensor_id, group)
+
+    @property
+    def calibrations(self) -> dict[int, SensorCalibration]:
+        sensor_calibrations_dict = {}
+        for sensor_id, group in self._iterate_calibrations():
+            sensor_calibrations_dict[sensor_id] = SensorCalibration.from_dict(
+                {
+                    "temperature": group["temperature"][()],
+                    "data": group["data"][()].decode("utf-8"),
+                }
+            )
+
+        return sensor_calibrations_dict
+
+    @property
+    def calibrations_provided(self) -> dict[int, bool]:
+        calibration_provided = {}
+        for sensor_id, group in self._iterate_calibrations():
+            calibration_provided[sensor_id] = group["provided"][()] > 0
+
+        return calibration_provided

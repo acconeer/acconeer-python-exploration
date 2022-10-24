@@ -61,6 +61,8 @@ def test_sample_whole_record(tmp_path, ref_record):
         extended_metadata=ref_record.extended_metadata,
         server_info=ref_record.server_info,
         session_config=ref_record.session_config,
+        calibrations=ref_record.calibrations,
+        calibrations_provided=ref_record.calibrations_provided,
     )
 
     for extended_results in ref_record.extended_results:

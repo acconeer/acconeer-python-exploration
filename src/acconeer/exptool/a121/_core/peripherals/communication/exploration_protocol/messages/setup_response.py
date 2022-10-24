@@ -8,10 +8,15 @@ import attrs
 import numpy as np
 import typing_extensions as te
 
-from acconeer.exptool.a121._core.entities import Metadata
+from acconeer.exptool.a121._core.entities import Metadata, SensorCalibration
 from acconeer.exptool.a121._core.mediators import AgnosticClientFriends, Message
 
 from .parse_error import ParseError
+
+
+class SensorCalibrationDict(te.TypedDict):
+    temperature: int
+    data: str
 
 
 class MetadataDict(te.TypedDict):
@@ -27,11 +32,13 @@ class MetadataDict(te.TypedDict):
 class SetupResponseHeader(te.TypedDict):
     tick_period: int
     metadata: list[list[MetadataDict]]
+    sensor_calibrations: t.Optional[dict[int, SensorCalibrationDict]]
 
 
 @attrs.frozen
 class SetupResponse(Message):
     grouped_metadatas: list[list[Metadata]]
+    sensor_calibrations: t.Optional[dict[int, SensorCalibration]]
 
     def apply(self, client: AgnosticClientFriends) -> None:
         if client._session_config is None:
@@ -46,6 +53,7 @@ class SetupResponse(Message):
                 self.grouped_metadatas, client._session_config.groups
             )
         ]
+        client._sensor_calibrations = self.sensor_calibrations
 
     @classmethod
     def parse(cls, header: dict[str, t.Any], payload: bytes) -> SetupResponse:
@@ -53,24 +61,35 @@ class SetupResponse(Message):
 
         try:
             metadata_groups = header["metadata"]
+            calibration_info_list = header.get("calibration_info")
 
-            return cls(
+            metadata = [
                 [
-                    [
-                        Metadata(
-                            frame_data_length=metadata_dict["frame_data_length"],
-                            sweep_data_length=metadata_dict["sweep_data_length"],
-                            subsweep_data_offset=np.array(metadata_dict["subsweep_data_offset"]),
-                            subsweep_data_length=np.array(metadata_dict["subsweep_data_length"]),
-                            calibration_temperature=metadata_dict["calibration_temperature"],
-                            base_step_length_m=metadata_dict["base_step_length_m"],
-                            max_sweep_rate=metadata_dict["max_sweep_rate"],
-                            tick_period=header["tick_period"],
-                        )
-                        for metadata_dict in metadata_group
-                    ]
-                    for metadata_group in metadata_groups
+                    Metadata(
+                        frame_data_length=metadata_dict["frame_data_length"],
+                        sweep_data_length=metadata_dict["sweep_data_length"],
+                        subsweep_data_offset=np.array(metadata_dict["subsweep_data_offset"]),
+                        subsweep_data_length=np.array(metadata_dict["subsweep_data_length"]),
+                        calibration_temperature=metadata_dict["calibration_temperature"],
+                        base_step_length_m=metadata_dict["base_step_length_m"],
+                        max_sweep_rate=metadata_dict["max_sweep_rate"],
+                        tick_period=header["tick_period"],
+                    )
+                    for metadata_dict in metadata_group
                 ]
-            )
+                for metadata_group in metadata_groups
+            ]
+
+            sensor_calibrations = None
+            if calibration_info_list:
+                sensor_calibrations = {
+                    calibration_info_dict["sensor_id"]: SensorCalibration(
+                        temperature=calibration_info_dict["temperature"],
+                        data=calibration_info_dict["data"],
+                    )
+                    for calibration_info_dict in calibration_info_list
+                }
+            return cls(metadata, sensor_calibrations)
+
         except KeyError as ke:
             raise ParseError from ke

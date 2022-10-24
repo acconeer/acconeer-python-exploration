@@ -12,6 +12,7 @@ from .entities import (
     Profile,
     Record,
     Result,
+    SensorCalibration,
     SensorConfig,
     SensorInfo,
     ServerInfo,

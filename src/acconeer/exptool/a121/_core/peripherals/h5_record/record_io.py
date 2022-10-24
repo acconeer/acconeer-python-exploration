@@ -66,6 +66,8 @@ def save_record_to_h5(path_or_file: PathOrH5File, record: Record) -> None:
         extended_metadata=record.extended_metadata,
         server_info=record.server_info,
         session_config=record.session_config,
+        calibrations=record.calibrations,
+        calibrations_provided=record.calibrations_provided,
     )
 
     for extended_result in record.extended_results:

@@ -6,7 +6,11 @@ import json
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.peripherals import ExplorationProtocol, get_exploration_protocol
+from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol import (
+    ExplorationProtocol,
+    ExplorationProtocol_0_4_1,
+    get_exploration_protocol,
+)
 from acconeer.exptool.a121._core.utils import parse_rss_version
 
 
@@ -121,9 +125,8 @@ class TestExplorationProtocolFactory:
     @pytest.mark.parametrize(
         ("rss_version", "expected_protocol"),
         [
-            ("a121-v0.2.0-1-g123", ExplorationProtocol),
-            ("a121-v0.4.0-rc1", ExplorationProtocol),
-            ("a121-v0.4.0", ExplorationProtocol),
+            ("a121-v0.4.1", ExplorationProtocol_0_4_1),
+            ("a121-v0.4.1-1-g123", ExplorationProtocol),
         ],
     )
     def test_get_exploration_protocol_compatible_versions(self, rss_version, expected_protocol):

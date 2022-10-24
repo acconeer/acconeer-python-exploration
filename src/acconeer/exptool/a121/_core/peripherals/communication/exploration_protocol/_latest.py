@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Optional
 
-from acconeer.exptool.a121._core.entities import PRF, IdleState, SessionConfig
+from acconeer.exptool.a121._core.entities import PRF, IdleState, SensorCalibration, SessionConfig
 from acconeer.exptool.a121._core.mediators import CommunicationProtocol, Message
 from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
@@ -78,9 +78,19 @@ class ExplorationProtocol(CommunicationProtocol):
         return b'{"cmd":"set_uart_baudrate","baudrate":' + str(baudrate).encode("ascii") + b"}\n"
 
     @classmethod
-    def setup_command(cls, session_config: SessionConfig) -> bytes:
+    def setup_command(
+        cls,
+        session_config: SessionConfig,
+        calibrations: Optional[dict[int, SensorCalibration]] = None,
+    ) -> bytes:
         result = cls._setup_command_preprocessing(session_config)
         result["groups"] = cls._translate_groups_representation(result["groups"])
+        if calibrations:
+            result["calibration_info"] = []
+            for sensor_id, calibration in calibrations.items():
+                result["calibration_info"].append(
+                    {"sensor_id": sensor_id, "data": calibration.data}
+                )
         return (
             json.dumps(
                 result,

@@ -168,12 +168,32 @@ def ref_record_file(
         f.create_dataset("generation", data="a121", dtype=_H5PY_STR_DTYPE, track_times=False)
 
         session_config_data = ref_session_config.to_json()
-        f.create_dataset(
-            "session/session_config",
+        session_group = f.create_group("session")
+        session_group.create_dataset(
+            "session_config",
             data=session_config_data,
             dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
+
+        calibrations_group = session_group.create_group("calibrations")
+        for group_id, group in enumerate(ref_structure):
+            for entry_id, sensor_id in enumerate(group):
+                sensor_group_name = f"sensor_{sensor_id}"
+                if sensor_group_name not in calibrations_group.keys():
+                    sensor_calibration_group = calibrations_group.create_group(sensor_group_name)
+                    sensor_calibration_group.create_dataset(
+                        "temperature", data=15, track_times=False
+                    )
+                    sensor_calibration_group.create_dataset(
+                        "data",
+                        data="01234567890abcdef",
+                        dtype=_H5PY_STR_DTYPE,
+                        track_times=False,
+                    )
+                    sensor_calibration_group.create_dataset(
+                        "provided", data=False, track_times=False
+                    )
 
         zero_array = np.zeros(ref_num_frames, dtype=int)
         false_array = np.zeros(ref_num_frames, dtype=bool)
@@ -181,7 +201,7 @@ def ref_record_file(
 
         for group_id, group in enumerate(ref_structure):
             for entry_id, sensor_id in enumerate(group):
-                entry_group = f.create_group(f"session/group_{group_id}/entry_{entry_id}")
+                entry_group = session_group.create_group(f"group_{group_id}/entry_{entry_id}")
                 entry_group.create_dataset("metadata", data=ref_metadata.to_json())
                 entry_group.create_dataset("sensor_id", data=sensor_id)
 

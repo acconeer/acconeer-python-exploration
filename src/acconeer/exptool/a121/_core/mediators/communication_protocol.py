@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from typing_extensions import Protocol
 
-from acconeer.exptool.a121._core.entities import SessionConfig
+from acconeer.exptool.a121._core.entities import SensorCalibration, SessionConfig
 
 from .message import Message
 
@@ -26,7 +26,11 @@ class CommunicationProtocol(Protocol):
         ...
 
     @classmethod
-    def setup_command(cls, session_config: SessionConfig) -> bytes:
+    def setup_command(
+        cls,
+        session_config: SessionConfig,
+        calibrations: Optional[dict[int, SensorCalibration]] = None,
+    ) -> bytes:
         """The `setup` command."""
         ...
 

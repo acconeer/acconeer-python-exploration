@@ -20,6 +20,7 @@ from .containers import (
     Record,
     Result,
     ResultContext,
+    SensorCalibration,
     SensorInfo,
     ServerInfo,
     StackedResults,

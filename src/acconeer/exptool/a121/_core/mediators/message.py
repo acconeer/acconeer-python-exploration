@@ -7,7 +7,13 @@ import typing as t
 
 import typing_extensions as te
 
-from acconeer.exptool.a121._core.entities import Metadata, Result, SensorInfo, SessionConfig
+from acconeer.exptool.a121._core.entities import (
+    Metadata,
+    Result,
+    SensorCalibration,
+    SensorInfo,
+    SessionConfig,
+)
 
 
 class SystemInfoDict(te.TypedDict):
@@ -23,6 +29,7 @@ class AgnosticClientFriends(te.Protocol):
     _session_config: t.Optional[SessionConfig]
     _session_is_started: bool
     _metadata: t.Optional[list[dict[int, Metadata]]]
+    _sensor_calibrations: t.Optional[dict[int, SensorCalibration]]
     _sensor_infos: t.Dict[int, SensorInfo]
     _system_info: t.Optional[SystemInfoDict]
     _result_queue: t.List[list[dict[int, Result]]]

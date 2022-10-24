@@ -8,6 +8,7 @@ from typing import Optional, Type
 from packaging.version import Version
 
 from ._latest import ExplorationProtocol, ExplorationProtocolError
+from ._v0_4_1 import ExplorationProtocol_0_4_1
 
 
 def get_exploration_protocol(rss_version: Optional[Version] = None) -> Type[ExplorationProtocol]:
@@ -16,5 +17,8 @@ def get_exploration_protocol(rss_version: Optional[Version] = None) -> Type[Expl
 
     if rss_version <= Version("0.2.0"):
         raise ExplorationProtocolError("Unsupported RSS version")
+
+    if rss_version == Version("0.4.1"):
+        return ExplorationProtocol_0_4_1
 
     return ExplorationProtocol

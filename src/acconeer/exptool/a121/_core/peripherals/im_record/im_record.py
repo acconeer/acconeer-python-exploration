@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Iterator
+from typing import Iterator, Optional
 
 import attrs
 
@@ -13,10 +13,15 @@ from acconeer.exptool.a121._core.entities import (
     Metadata,
     Record,
     Result,
+    SensorCalibration,
     ServerInfo,
     SessionConfig,
     StackedResults,
 )
+
+
+class InMemoryRecordException(Exception):
+    pass
 
 
 @attrs.frozen(kw_only=True)
@@ -30,6 +35,8 @@ class InMemoryRecord(Record):
     _session_config: SessionConfig = attrs.field()
     _timestamp: str = attrs.field()
     _uuid: str = attrs.field()
+    _calibrations: Optional[dict[int, SensorCalibration]] = attrs.field()
+    _calibrations_provided: dict[int, bool] = attrs.field()
 
     @property
     def client_info(self) -> ClientInfo:
@@ -84,6 +91,16 @@ class InMemoryRecord(Record):
     def uuid(self) -> str:
         return self._uuid
 
+    @property
+    def calibrations(self) -> dict[int, SensorCalibration]:
+        if not self._calibrations:
+            raise InMemoryRecordException("No calibration in record")
+        return self._calibrations
+
+    @property
+    def calibrations_provided(self) -> dict[int, bool]:
+        return self._calibrations_provided
+
     @classmethod
     def from_record(cls, record: Record) -> InMemoryRecord:
         return cls(
@@ -96,4 +113,6 @@ class InMemoryRecord(Record):
             session_config=record.session_config,
             timestamp=record.timestamp,
             uuid=record.uuid,
+            calibrations=record.calibrations,
+            calibrations_provided=record.calibrations_provided,
         )
