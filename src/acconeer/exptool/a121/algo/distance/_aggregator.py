@@ -47,6 +47,7 @@ class AggregatorConfig:
 class AggregatorResult:
     processor_results: list[ProcessorResult] = attrs.field()
     estimated_distances: npt.NDArray[np.float_] = attrs.field()
+    estimated_rcs: npt.NDArray[np.float_] = attrs.field()
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
 
 
@@ -146,13 +147,14 @@ class Aggregator:
         (dists_merged, ampls_merged, rcs_merged) = self._merge_peaks(
             self.MIN_PEAK_DIST_M, dists, ampls, rcs
         )
-        dists_sorted = self._sort_peaks(
+        (dists_sorted, rcs_sorted) = self._sort_peaks(
             dists_merged, ampls_merged, rcs_merged, self.config.peak_sorting_method
         )
 
         return AggregatorResult(
             processor_results=processors_result,
             estimated_distances=dists_sorted,
+            estimated_rcs=rcs_sorted,
             service_extended_result=extended_result,
         )
 
@@ -219,14 +221,17 @@ class Aggregator:
         ampls: npt.NDArray[np.float_],
         rcs: npt.NDArray[np.float_],
         method: PeakSortingMethod,
-    ) -> npt.NDArray[np.float_]:
+    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
         if method == PeakSortingMethod.CLOSEST:
             quantity_to_sort = dists
         elif method == PeakSortingMethod.HIGHEST_RCS:
             quantity_to_sort = -rcs
         else:
             raise ValueError("Unknown peak sorting method")
-        return np.array([dists[i] for i in quantity_to_sort.argsort()])
+        return (
+            np.array([dists[i] for i in quantity_to_sort.argsort()]),
+            np.array([rcs[i] for i in quantity_to_sort.argsort()]),
+        )
 
     @classmethod
     def _get_rcs_of_peaks(
