@@ -280,7 +280,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 
     @is_task
-    def calibrate_noise(self) -> None:
+    def calibrate_detector(self) -> None:
         if self._started:
             raise RuntimeError
 
@@ -299,67 +299,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 detector_config=self.shared_state.config,
                 context=self.shared_state.context,
             )
-            self._detector_instance.calibrate_noise()
+            self._detector_instance.calibrate_detector()
         except Exception as exc:
-            raise HandledException("Failed to calibrate noise") from exc
-        finally:
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-
-        self.shared_state.context = self._detector_instance.context
-        self.broadcast()
-
-    @is_task
-    def record_threshold(self) -> None:
-        if self._started:
-            raise RuntimeError
-
-        if self._client is None:
-            raise RuntimeError
-
-        if not self._client.connected:
-            raise RuntimeError
-
-        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
-
-        try:
-            self._detector_instance = Detector(
-                client=self._client,
-                sensor_id=self.shared_state.sensor_id,
-                detector_config=self.shared_state.config,
-                context=self.shared_state.context,
-            )
-            self._detector_instance.record_threshold()
-        except Exception as exc:
-            raise HandledException("Failed to record threshold") from exc
-        finally:
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-
-        self.shared_state.context = self._detector_instance.context
-        self.broadcast()
-
-    @is_task
-    def calibrate_close_range(self) -> None:
-        if self._started:
-            raise RuntimeError
-
-        if self._client is None:
-            raise RuntimeError
-
-        if not self._client.connected:
-            raise RuntimeError
-
-        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
-
-        try:
-            self._detector_instance = Detector(
-                client=self._client,
-                sensor_id=self.shared_state.sensor_id,
-                detector_config=self.shared_state.config,
-                context=self.shared_state.context,
-            )
-            self._detector_instance.calibrate_close_range()
-        except Exception as exc:
-            raise HandledException("Failed to calibrate close range") from exc
+            raise HandledException("Failed to calibrate detector") from exc
         finally:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
@@ -463,16 +405,10 @@ class ViewPlugin(DetectorViewPluginBase):
 
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
-        DetailedStatus.NOISE_CALIBRATION_MISSING: "Run noise calibration.",
-        DetailedStatus.CLOSE_RANGE_CALIBRATION_MISSING: "Run close range calibration.",
-        DetailedStatus.CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH: (
-            "Configuration does not match"
-            + " configuration used during close range calibration. Please rerun calibration."
-        ),
-        DetailedStatus.RECORDED_THRESHOLD_MISSING: "Run recorded threshold calibration.",
-        DetailedStatus.RECORDED_THRESHOLD_CONFIG_MISMATCH: (
-            "Configuration does not match configuration"
-            + " used during recorded threshold calibration. Please rerun calibration."
+        DetailedStatus.CALIBRATION_MISSING: "Run detector calibration.",
+        DetailedStatus.CONFIG_MISMATCH: (
+            "Current configuration does not match the configuration "
+            + "used during detector calibration. Run detector calibration."
         ),
         DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE: (
             "Invalid detector config. Valid measurement"
@@ -512,26 +448,12 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
         self.stop_button.clicked.connect(self._send_stop_request)
 
-        self.calibrate_noise_button = QPushButton(
+        self.calibrate_detector_button = QPushButton(
             qta.icon("fa.circle", color=BUTTON_ICON_COLOR),
-            "Calibrate noise",
+            "Calibrate detector",
             self.sticky_widget,
         )
-        self.calibrate_noise_button.clicked.connect(self._on_calibrate_noise)
-
-        self.record_threshold_button = QPushButton(
-            qta.icon("fa.video-camera", color=BUTTON_ICON_COLOR),
-            "Record threshold",
-            self.sticky_widget,
-        )
-        self.record_threshold_button.clicked.connect(self._on_record_threshold)
-
-        self.close_range_calibration_button = QPushButton(
-            qta.icon("mdi.adjust", color=BUTTON_ICON_COLOR),
-            "Calibrate close range",
-            self.sticky_widget,
-        )
-        self.close_range_calibration_button.clicked.connect(self._on_close_range_calibration)
+        self.calibrate_detector_button.clicked.connect(self._on_calibrate_detector)
 
         self.defaults_button = QPushButton(
             qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
@@ -546,9 +468,7 @@ class ViewPlugin(DetectorViewPluginBase):
         button_group = GridGroupBox("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
-        button_group.layout().addWidget(self.calibrate_noise_button, 1, 0, 1, -1)
-        button_group.layout().addWidget(self.close_range_calibration_button, 2, 0)
-        button_group.layout().addWidget(self.record_threshold_button, 2, 1)
+        button_group.layout().addWidget(self.calibrate_detector_button, 1, 0, 1, -1)
         button_group.layout().addWidget(self.defaults_button, 3, 0, 1, -1)
         button_group.layout().addWidget(self.message_box, 4, 0, 1, -1)
 
@@ -658,9 +578,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
         if state is None:
             self.start_button.setEnabled(False)
-            self.calibrate_noise_button.setEnabled(False)
-            self.close_range_calibration_button.setEnabled(False)
-            self.record_threshold_button.setEnabled(False)
+            self.calibrate_detector_button.setEnabled(False)
             self.stop_button.setEnabled(False)
             self.defaults_button.setEnabled(False)
 
@@ -691,13 +609,7 @@ class ViewPlugin(DetectorViewPluginBase):
             and app_model.connection_state == ConnectionState.CONNECTED
         )
 
-        self.calibrate_noise_button.setEnabled(ready_for_session)
-        self.close_range_calibration_button.setEnabled(
-            ready_for_session and detector_status.ready_to_calibrate_close_range
-        )
-        self.record_threshold_button.setEnabled(
-            ready_for_session and detector_status.ready_to_record_threshold
-        )
+        self.calibrate_detector_button.setEnabled(ready_for_session)
         self.start_button.setEnabled(ready_for_session and detector_status.ready_to_start)
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
@@ -727,16 +639,8 @@ class ViewPlugin(DetectorViewPluginBase):
         self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
-    def _on_calibrate_noise(self) -> None:
-        self.app_model.put_backend_plugin_task("calibrate_noise")
-        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
-
-    def _on_record_threshold(self) -> None:
-        self.app_model.put_backend_plugin_task("record_threshold")
-        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
-
-    def _on_close_range_calibration(self) -> None:
-        self.app_model.put_backend_plugin_task("calibrate_close_range")
+    def _on_calibrate_detector(self) -> None:
+        self.app_model.put_backend_plugin_task("calibrate_detector")
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_defaults_request(self) -> None:

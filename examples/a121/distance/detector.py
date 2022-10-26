@@ -35,9 +35,7 @@ def main():
     )
     detector = Detector(client=client, sensor_id=1, detector_config=detector_config)
 
-    detector.calibrate_close_range()
-
-    detector.record_threshold()
+    detector.calibrate_detector()
 
     detector.start()
 

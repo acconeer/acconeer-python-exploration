@@ -42,18 +42,13 @@ from ._processors import (
 @attrs.frozen(kw_only=True)
 class DetectorStatus:
     detector_state: DetailedStatus
-    ready_to_calibrate_close_range: bool
-    ready_to_record_threshold: bool
     ready_to_start: bool
 
 
 class DetailedStatus(enum.Enum):
     OK = enum.auto()
-    NOISE_CALIBRATION_MISSING = enum.auto()
-    CLOSE_RANGE_CALIBRATION_MISSING = enum.auto()
-    CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH = enum.auto()
-    RECORDED_THRESHOLD_MISSING = enum.auto()
-    RECORDED_THRESHOLD_CONFIG_MISMATCH = enum.auto()
+    CALIBRATION_MISSING = enum.auto()
+    CONFIG_MISMATCH = enum.auto()
     INVALID_DETECTOR_CONFIG_RANGE = enum.auto()
 
 
@@ -78,11 +73,9 @@ class DetectorContext(AlgoConfigBase):
     )
     recorded_thresholds_noise_std: Optional[List[List[np.float_]]] = attrs.field(default=None)
     bg_noise_std: Optional[List[List[float]]] = attrs.field(default=None)
-    recorded_threshold_session_config_used: Optional[a121.SessionConfig] = attrs.field(
+    session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
         default=None
     )
-    close_range_session_config_used: Optional[a121.SessionConfig] = attrs.field(default=None)
-    noise_calibration_session_config_used: Optional[a121.SessionConfig] = attrs.field(default=None)
     reference_temperature: Optional[int] = attrs.field(default=None)
 
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
@@ -143,9 +136,7 @@ class DetectorContext(AlgoConfigBase):
             "direct_leakage": None,
             "reference_temperature": None,
             "phase_jitter_comp_reference": None,
-            "recorded_threshold_session_config_used": a121.SessionConfig.from_json,
-            "close_range_session_config_used": a121.SessionConfig.from_json,
-            "noise_calibration_session_config_used": a121.SessionConfig.from_json,
+            "session_config_used_during_calibration": a121.SessionConfig.from_json,
         }
         for k, func in field_map.items():
             try:
@@ -282,14 +273,32 @@ class Detector:
         if self.session_config is None:
             raise ValueError("Session config not defined")
 
-    def calibrate_close_range(self) -> None:
+    def calibrate_detector(self) -> None:
+        """Run the required detector calibration routines, based on the detector config."""
+
+        self._validate_ready_for_calibration()
+
+        self._calibrate_offset()
+
+        self._calibrate_noise()
+
+        if self._has_close_range_measurement(self.detector_config):
+            self._calibrate_close_range()
+
+        if self._has_close_range_measurement(
+            self.detector_config
+        ) or self._has_recorded_threshold_mode(self.detector_config):
+            self._record_threshold()
+
+        self.context.session_config_used_during_calibration = self.session_config
+
+    def _calibrate_close_range(self) -> None:
         """Calibrates the close range measurement parameters used when subtracting the direct
         leakage from the measured signal.
 
         The parameters calibrated are the direct leakage and a phase reference, used to reduce
         the amount of phase jitter, with the purpose of reducing the residual.
         """
-        self._validate_ready_for_calibration()
 
         close_range_spec = self._filter_close_range_spec(self.processor_specs)
         spec = self._update_processor_mode(close_range_spec, ProcessorMode.LEAKAGE_CALIBRATION)
@@ -314,14 +323,11 @@ class Detector:
         self.context.direct_leakage = processor_result.direct_leakage
         assert processor_result.phase_jitter_comp_reference is not None
         self.context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
-        self.context.close_range_session_config_used = self.session_config
         self.context.recorded_thresholds_mean_sweep = None
         self.context.recorded_thresholds_noise_std = None
 
-    def record_threshold(self) -> None:
+    def _record_threshold(self) -> None:
         """Calibrates the parameters used when forming the recorded threshold."""
-
-        self._validate_ready_for_calibration()
 
         # TODO: Ignore/override threshold method while recording threshold
 
@@ -367,9 +373,8 @@ class Detector:
             self.context.recorded_thresholds_noise_std.append(
                 processor_result.recorded_threshold_noise_std
             )
-        self.context.recorded_threshold_session_config_used = self.session_config
 
-    def calibrate_noise(self) -> None:
+    def _calibrate_noise(self) -> None:
         """Estimates the standard deviation of the noise in each subsweep by setting enable_tx to
         False and collecting data, used to calculate the deviation.
 
@@ -380,7 +385,6 @@ class Detector:
         record_threshold() in the case of Recorded threshold. The reason for calling from
         record_threshold() is that it is used when calculating the threshold.
         """
-        self._validate_ready_for_calibration()
 
         session_config = copy.deepcopy(self.session_config)
 
@@ -415,9 +419,8 @@ class Detector:
                     bg_noise_std_in_subsweep.append(subsweep_std)
             bg_noise_std.append(bg_noise_std_in_subsweep)
         self.context.bg_noise_std = bg_noise_std
-        self.context.noise_calibration_session_config_used = self.session_config
 
-    def calibrate_offset(self) -> None:
+    def _calibrate_offset(self) -> None:
         """Estimates sensor offset error based on loopback measurement."""
 
         self._validate_ready_for_calibration()
@@ -454,8 +457,6 @@ class Detector:
         if not cls._valid_detector_config_range(config=config):
             return DetectorStatus(
                 detector_state=DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE,
-                ready_to_calibrate_close_range=False,
-                ready_to_record_threshold=False,
                 ready_to_start=False,
             )
 
@@ -463,42 +464,18 @@ class Detector:
             session_config,
             _,
         ) = cls._detector_to_session_config_and_processor_specs(config=config, sensor_id=sensor_id)
-        ready_to_record_threshold = False
-        ready_to_calibrate_close_range = False
-        if session_config != context.noise_calibration_session_config_used:
-            detector_state = DetailedStatus.NOISE_CALIBRATION_MISSING
-        elif cls._has_close_range_measurement(config):
-            ready_to_calibrate_close_range = True
-            if cls._close_range_calibrated(context):
-                if session_config != context.close_range_session_config_used:
-                    detector_state = DetailedStatus.CLOSE_RANGE_CALIBRATION_CONFIG_MISMATCH
-                elif not cls._recorded_threshold_calibrated(context):
-                    detector_state = DetailedStatus.RECORDED_THRESHOLD_MISSING
-                    ready_to_record_threshold = True
-                elif session_config != context.recorded_threshold_session_config_used:
-                    detector_state = DetailedStatus.RECORDED_THRESHOLD_CONFIG_MISMATCH
-                else:
-                    detector_state = DetailedStatus.OK
-                    ready_to_record_threshold = True
-            else:
-                detector_state = DetailedStatus.CLOSE_RANGE_CALIBRATION_MISSING
+
+        # Offset calibration is always performed as a part of the detector calibration process.
+        # Use this as indication whether detector calibration has been performed.
+        if context.loopback_peak_location_m is None:
+            detector_state = DetailedStatus.CALIBRATION_MISSING
+        elif session_config != context.session_config_used_during_calibration:
+            detector_state = DetailedStatus.CONFIG_MISMATCH
         else:
-            if cls._has_recorded_threshold_mode(config):
-                ready_to_record_threshold = True
-                if cls._recorded_threshold_calibrated(context):
-                    if session_config != context.recorded_threshold_session_config_used:
-                        detector_state = DetailedStatus.RECORDED_THRESHOLD_CONFIG_MISMATCH
-                    else:
-                        detector_state = DetailedStatus.OK
-                else:
-                    detector_state = DetailedStatus.RECORDED_THRESHOLD_MISSING
-            else:
-                detector_state = DetailedStatus.OK
+            detector_state = DetailedStatus.OK
 
         return DetectorStatus(
             detector_state=detector_state,
-            ready_to_calibrate_close_range=ready_to_calibrate_close_range,
-            ready_to_record_threshold=ready_to_record_threshold,
             ready_to_start=(detector_state == DetailedStatus.OK),
         )
 
@@ -555,9 +532,6 @@ class Detector:
 
         if not status.ready_to_start:
             raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
-
-        if not skip_calibration:
-            self.calibrate_offset()
 
         specs = self._add_context_to_processor_spec(self.processor_specs)
         extended_metadata = self.client.setup_session(self.session_config)

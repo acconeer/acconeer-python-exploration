@@ -13,6 +13,7 @@
 
 ### Changed
 - Design of status bar.
+- A121 distance: Aggregate calibration methods into one function
 
 ## v5.2.9
 
