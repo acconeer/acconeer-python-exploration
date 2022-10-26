@@ -69,36 +69,6 @@ class SharedState:
     replaying: bool = attrs.field(default=False)
 
 
-def serialized_attrs_instance_has_diverged(attrs_instance: Any) -> bool:
-    """Checks (recursively) if a de-serialized attrs-instances contains
-    all attributes defined its respective class definition.
-
-    :param attrs_config:
-        An instance of an attrs-class, that possibly contains other attrs-instances.
-    :returns: True if any attrs-instance have diverged from its class, False otherwise
-    """
-    # TODO: Should end up in the `Config` ABC
-    attrs_class = type(attrs_instance)
-    if not attrs.has(attrs_class):
-        raise TypeError(f"Cannot check object of type {attrs_class!r}. It's not an attrs-class.")
-
-    for attribute in attrs_instance.__attrs_attrs__:
-        try:
-            value = getattr(attrs_instance, attribute.name)
-
-            if attrs.has(type(value)) and serialized_attrs_instance_has_diverged(value):
-                return True
-        except AttributeError:
-            log.info(
-                f"Serialized object of type {attrs_class.__name__!r} "
-                + "seems to have converged from its definition."
-            )
-            log.info(f"Should contain the attribute {attribute.name!r} but did not.")
-            return True
-
-    return False
-
-
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
