@@ -107,6 +107,7 @@ class AppModel(QObject):
     sig_status_message = Signal(object)
     sig_rate_stats = Signal(float, bool, float, bool)
     sig_backend_cpu_percent = Signal(int)
+    sig_backend_state_changed = Signal(object)
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]
