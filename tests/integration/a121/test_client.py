@@ -168,8 +168,8 @@ class TestAStartedClient:
         assert not client.session_is_started
 
 
-class TestAStoppedClient(TestAConnectedClient):
-    """A stopped client should have the same behaviour as a newly connected client."""
+class TestAStoppedClient(TestASetupClient):
+    """A stopped client should have the same behaviour as it had when first set up"""
 
     @pytest.fixture
     def client(self):

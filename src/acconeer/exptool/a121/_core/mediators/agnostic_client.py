@@ -315,7 +315,6 @@ class AgnosticClient(AgnosticClientFriends):
             self._recorder = None
 
         self._rate_stats_calc = None
-        self._metadata = None  # TODO: Remove this line when RS-6945 is done.
 
         return recorder_result
 
