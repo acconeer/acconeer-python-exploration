@@ -560,6 +560,7 @@ class AppModel(QObject):
         self.sig_load_plugin.emit(plugin)
         self.plugin = plugin
         self.broadcast()
+        self.broadcast_backend_state()
 
     def save_to_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} saving to file '{path}'")
