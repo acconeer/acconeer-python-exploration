@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoConfigBase, ProcessorBase
 
 
 @attrs.mutable(kw_only=True)
@@ -99,7 +99,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 self.estimated_distance = 0.0
 
             delta_angle = np.angle(sweep[peak_loc_p] * np.conj(self.prev_sweep[peak_loc_p]))
-            delta_dist = self.base_step_length_m * delta_angle / (2 * np.pi) * self.M_TO_MM
+            delta_dist = PERCEIVED_WAVELENGTH * delta_angle / (2 * np.pi) * self.M_TO_MM
             self.estimated_distance += delta_dist
 
             assert self.estimated_distance is not None

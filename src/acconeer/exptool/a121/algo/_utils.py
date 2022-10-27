@@ -39,6 +39,11 @@ MAX_MEASURABLE_DIST_M = {
 # Slope and interception of linear noise temperature model.
 NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
 
+SPEED_OF_LIGHT = 299792458
+RADIO_FREQUENCY = 60.5e9
+WAVELENGTH = SPEED_OF_LIGHT / RADIO_FREQUENCY
+PERCEIVED_WAVELENGTH = WAVELENGTH / 2
+
 
 def get_distances_m(
     config: a121.SensorConfig,

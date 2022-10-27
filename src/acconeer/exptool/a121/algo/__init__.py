@@ -12,6 +12,7 @@ from ._utils import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
     NOISE_TEMPERATURE_MODEL_PARAMETER,
+    PERCEIVED_WAVELENGTH,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
     find_peaks,
     get_approx_fft_vels,
