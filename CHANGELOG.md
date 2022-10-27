@@ -17,6 +17,10 @@
 - Design of status bar.
 - A121 distance: Aggregate calibration methods into one function
 
+### Removed
+- Proximity power from regmap
+
+
 ## v5.2.9
 
 ### Fixed

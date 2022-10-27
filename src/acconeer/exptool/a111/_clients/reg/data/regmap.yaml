@@ -329,12 +329,6 @@ iq_depth_lpf_ratio_value:
   type: int32
   scale: 1000000
   category: config
-iq_proximity_power:
-  modes:
-  - iq
-  address: 67
-  type: boolean
-  category: config
 sparse_sweeps_per_frame:
   modes:
   - sparse
@@ -539,13 +533,6 @@ missed_data:
   address: 161
   access: r
   type: boolean
-  category: result_info
-proximity_power:
-  modes:
-  - iq
-  address: 162
-  access: r
-  type: uint16
   category: result_info
 data_quality_warning:
   modes:
