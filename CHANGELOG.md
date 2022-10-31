@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v5.3.0
 
 ### Fixed
 - Serial port tagging for XE123, XE124, XE125 modules
@@ -8,8 +8,10 @@
 - Silent backend logging on Windows
 
 ### Added
+- Ability to download and flash latest binary for XC120
 - Backend CPU load in status bar.
 - Add warning in the App if an unflashed device is connected
+- Notify user for new library versions
 
 ### Changed
 - Design of status bar.
