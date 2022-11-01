@@ -200,8 +200,8 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
 def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
     """Calculates the highest possible PRF for the given breakpoint.
 
-    ::param breakpoint: Distance in the unit of points.
-    ::param profile: Profile.
+    :param breakpoint: Distance in the unit of points.
+    :param profile: Profile.
     """
     max_meas_dist_m = copy.copy(MAX_MEASURABLE_DIST_M)
 
