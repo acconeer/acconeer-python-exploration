@@ -48,6 +48,7 @@ class DetectorStatus:
 class DetailedStatus(enum.Enum):
     OK = enum.auto()
     SENSOR_IDS_NOT_UNIQUE = enum.auto()
+    CONTEXT_MISSING = enum.auto()
     CALIBRATION_MISSING = enum.auto()
     CONFIG_MISMATCH = enum.auto()
     INVALID_DETECTOR_CONFIG_RANGE = enum.auto()
@@ -513,6 +514,12 @@ class Detector:
         if len(sensor_ids) != len(set(sensor_ids)):
             return DetectorStatus(
                 detector_state=DetailedStatus.SENSOR_IDS_NOT_UNIQUE,
+                ready_to_start=False,
+            )
+
+        if context.single_sensor_contexts is None:
+            return DetectorStatus(
+                detector_state=DetailedStatus.CONTEXT_MISSING,
                 ready_to_start=False,
             )
 

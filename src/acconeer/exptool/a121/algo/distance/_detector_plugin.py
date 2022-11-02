@@ -411,6 +411,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
+        DetailedStatus.CONTEXT_MISSING: "Run detector calibration.",
         DetailedStatus.CALIBRATION_MISSING: "Run detector calibration.",
         DetailedStatus.CONFIG_MISMATCH: (
             "Current configuration does not match the configuration "
