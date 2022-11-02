@@ -3,9 +3,9 @@
 Interpreting radar data
 =======================
 
-The data produced by the A121 sparse IQ service is conceptually similar to that of the A1 R2 IQ service.
+The data produced by the A121 sparse IQ service is conceptually similar to that of the A111 IQ service.
 Every sweep is a vector of complex values corresponding to an amplitude and phase of the reflected pulses in the configured range.
-However, unlike the R2 IQ service, the different points should be regarded as independent as no filter is applied.
+However, unlike the A111 IQ service, the different points should be regarded as independent as no filter is applied.
 
 For any given frame, we let :math:`z(s, d)` be the complex IQ value (point) for a sweep :math:`s` and a distance point :math:`d`.
 
@@ -51,7 +51,7 @@ A full phase rotation of 360° translates to
 :math:`\lambda_\text{RF}/2 \approx 2.5 \text{mm}`,
 so the 210° corresponds to ~ 1.5 mm.
 
-As evident from the example above, even the smallest movements change the phase and thus moves the signal in the complex plane.
+As evident from the example above, even the smallest movements change the phase and thus move the signal in the complex plane.
 This is utilized in for example the *presence detector*, which can detect the presence of humans and animals from their breathing motion.
 It can also be used to detect a change in signal very close to the sensor, creating a "virtual button".
 

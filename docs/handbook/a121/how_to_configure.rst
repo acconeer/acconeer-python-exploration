@@ -10,7 +10,7 @@ Start by asking yourself the following questions related to your application:
 - Do we need to distinguish multiple objects? If so, how close could they be?
 - Do we need to measure distance to objects? If so, what trueness is needed?
 - If objects move, how fast could they go?
-- Do we need to measure motions of objects? If so, what speeds?
+- Do we need to measure motions of objects? If so, at what speeds?
 - With what rate do we need to obtain a result?
 - What are our requirements on overall power consumption?
 - What is the farthest distance from the sensor that an object may appear which could result in range ambiguities?
@@ -36,7 +36,7 @@ Having these questions and answers in mind, we go though the parameters in order
 - From here, the **start point** and **number of points** can be set.
   Just make sure the points cover :math:`r_\text{near}` to :math:`r_\text{far}`.
   Due to the pulse length (profile), the start and end points doesn't necessarily have to pass :math:`r_\text{near}` and :math:`r_\text{far}`.
-  Again, see figure~\ref{fig:optimal_range_config} for an example of this.
+  Again, see :numref:`fig_a121_optimal_range_config` for an example of this.
   However, keep in mind that distance measurements typically cannot be done in the very edge of the range, so you might have to extend it outside :math:`r_\text{near}` and :math:`r_\text{far}` anyways.
 - Set the PRF such that the resulting maximum unambiguous range (MUR) extends beyond the farthest distance an object may appear.
   Keep it as high as possible since a higher PRF is more power and time efficient overall.
