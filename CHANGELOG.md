@@ -9,6 +9,7 @@
 
 ### Added
 - App taskbar icon on Windows
+- Bilateration application
 
 ### Changed
 - A121 presence detector: Add support for setting inter frame idle state

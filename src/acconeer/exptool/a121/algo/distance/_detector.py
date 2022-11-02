@@ -637,7 +637,12 @@ class Detector:
             spec.processor_config.threshold_method for spec in processor_specs
         ]
 
-    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
+    def start(
+        self,
+        recorder: Optional[a121.Recorder] = None,
+        *,
+        _algo_group: Optional[h5py.Group] = None,
+    ) -> None:
         """Method for setting up measurement session."""
 
         if self.started:
@@ -678,9 +683,11 @@ class Detector:
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
-                algo_group = recorder.require_algo_group("distance_detector")
+                if _algo_group is None:
+                    _algo_group = recorder.require_algo_group("distance_detector")
+
                 _record_algo_data(
-                    algo_group,
+                    _algo_group,
                     self.sensor_ids,
                     self.detector_config,
                     self.context,
