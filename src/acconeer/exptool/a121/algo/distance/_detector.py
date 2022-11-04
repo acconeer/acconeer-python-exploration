@@ -227,7 +227,7 @@ class DetectorConfig(AlgoConfigBase):
     """Sensitivity of threshold. High sensitivity equals low detection threshold, low sensitivity
     equals high detection threshold."""
 
-    update_rate: Optional[float] = attrs.field(default=None)
+    update_rate: Optional[float] = attrs.field(default=50.0)
     """Sets the detector update rate."""
 
 
