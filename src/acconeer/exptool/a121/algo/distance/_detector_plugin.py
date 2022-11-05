@@ -375,7 +375,10 @@ class PlotPlugin(DetectorPlotPluginBase):
         assert result.distances is not None
 
         self.distance_history.pop(0)
-        self.distance_history.append(result.distances[0])
+        if len(result.distances) != 0:
+            self.distance_history.append(result.distances[0])
+        else:
+            self.distance_history.append(np.nan)
 
         max_val_in_plot = 0
         for idx, processor_result in enumerate(result.processor_results):

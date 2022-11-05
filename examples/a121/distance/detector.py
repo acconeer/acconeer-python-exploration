@@ -101,7 +101,10 @@ class PGUpdater:
         # Get the first element as the example only supports single sensor operation.
         result = multi_sensor_result[SENSOR_ID]
         self.distance_history.pop(0)
-        self.distance_history.append(result.distances[0])
+        if len(result.distances) != 0:
+            self.distance_history.append(result.distances[0])
+        else:
+            self.distance_history.append(np.nan)
 
         for idx, processor_result in enumerate(result.processor_results):
             threshold = processor_result.extra_result.used_threshold
