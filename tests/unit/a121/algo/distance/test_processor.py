@@ -192,7 +192,7 @@ def test_distance_filter_edge_margin():
         profile=profile, step_length=step_length
     )
 
-    assert actual_filter_edge_margin == 15
+    assert actual_filter_edge_margin == 14
 
 
 def test_calculate_cfar_threshold():

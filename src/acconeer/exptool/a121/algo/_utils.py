@@ -194,7 +194,7 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
     distance filtering, using the filter coefficients supplied by the function
     get_distance_filter_coeffs.
     """
-    return int(np.ceil(ENVELOPE_FWHM_M[profile] / (APPROX_BASE_STEP_LENGTH_M * step_length)))
+    return int(_safe_ceil(ENVELOPE_FWHM_M[profile] / (APPROX_BASE_STEP_LENGTH_M * step_length)))
 
 
 def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
@@ -211,3 +211,11 @@ def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
     breakpoint_m = breakpoint * APPROX_BASE_STEP_LENGTH_M
     viable_prfs = [prf for prf, max_dist_m in max_meas_dist_m.items() if breakpoint_m < max_dist_m]
     return sorted(viable_prfs, key=lambda prf: prf.frequency)[-1]
+
+
+def _safe_ceil(x: float) -> float:
+    """Perform safe ceil.
+
+    Implementation of ceil function, compatible with float representation in C.
+    """
+    return float(f"{x:.16g}")
