@@ -5,6 +5,9 @@
 ### Added
 - Add SensorCalibration to session
 
+### Changed
+- A121 distance detector. Optimize CFAR calculation.
+
 ## v5.3.0
 
 ### Fixed

@@ -374,9 +374,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                         self.subsweep_bpts[idx] : self.subsweep_bpts[idx + 1]
                     ] = tx_off_noise_std
             self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
-            window_length = self._calc_cfar_window_length(self.profile, self.step_length)
-            guard_half_length = self._calc_cfar_guard_half_length(self.profile, self.step_length)
-            self.idx_cfar_pts = guard_half_length + np.arange(window_length)
+            self.window_length = self._calc_cfar_window_length(self.profile, self.step_length)
+            self.guard_half_length = self._calc_cfar_guard_half_length(
+                self.profile, self.step_length
+            )
 
         if self.context.loopback_peak_location_m is not None:
             self.offset_m = calculate_offset(self.context.loopback_peak_location_m, self.profile)
@@ -497,7 +498,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if self.threshold_method == ThresholdMethod.CFAR:
             return self._calculate_cfar_threshold(
                 abs_sweep,
-                self.idx_cfar_pts,
+                self.window_length,
+                self.guard_half_length,
                 self.num_stds_in_threshold,
                 self.cfar_abs_noise,
             )
@@ -568,18 +570,32 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     @staticmethod
     def _calculate_cfar_threshold(
         abs_sweep: npt.NDArray[np.float_],
-        idx_cfar_pts: npt.NDArray[np.int_],
+        window_length: float,
+        guard_half_length: float,
         num_stds: float,
         abs_noise_std: npt.NDArray,
     ) -> npt.NDArray[np.float_]:
-        threshold = np.full(abs_sweep.shape, np.nan)
-        start_idx = int(np.max(idx_cfar_pts))
-        take_relative_indexes = np.concatenate((-idx_cfar_pts, +idx_cfar_pts), axis=0)
-        end_idx = abs_sweep.size - start_idx
+        """Calculate CFAR threshold.
 
-        for idx in np.arange(start_idx, end_idx):
-            take_indexes = idx + take_relative_indexes
-            threshold[idx] = np.mean(np.take(abs_sweep, take_indexes))
+        Each point of the threshold is formed by using data from neighbouring segments of the
+        sweep.
+
+        The distance between a point and the start of the neighbouring segment is determined by
+        the guard half length. The width of the segment by the window length.
+
+        For each point, the threshold is calculated as the average of the points located in the
+        segments to the left and to the right.
+        """
+
+        threshold = np.full(abs_sweep.shape, np.nan)
+        margin = window_length + guard_half_length
+        sweep_len_without_margins = abs_sweep.shape[0] - 2 * margin
+
+        filt_abs_sweep = np.convolve(abs_sweep, np.ones(window_length), "valid") / window_length
+        threshold[margin:-margin] = (
+            filt_abs_sweep[:sweep_len_without_margins]
+            + filt_abs_sweep[-sweep_len_without_margins:]
+        ) / 2
 
         threshold += abs_noise_std
         threshold *= num_stds

@@ -199,12 +199,14 @@ def test_calculate_cfar_threshold():
 
     abs_sweep = np.ones(30)
     abs_sweep[4:6] = 2
-    idx_cfar_pts = 2 + np.arange(0, 3)
+    window_length = 3
+    guard_half_length = 1
     num_stds = 1
 
     actual_threshold = distance.Processor._calculate_cfar_threshold(
         abs_sweep=abs_sweep,
-        idx_cfar_pts=idx_cfar_pts,
+        window_length=window_length,
+        guard_half_length=guard_half_length,
         num_stds=num_stds,
         abs_noise_std=np.array([0.0]),
     )
