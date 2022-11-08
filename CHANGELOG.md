@@ -8,6 +8,10 @@
 ### Changed
 - A121 distance detector. Optimize CFAR calculation.
 
+### Fixed
+- A121 distance detector: Fix bug in CFAR calculation where num_stds was
+  applied to full threshold.
+
 ## v5.3.0
 
 ### Fixed

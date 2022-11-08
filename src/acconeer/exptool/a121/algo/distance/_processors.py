@@ -597,8 +597,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             + filt_abs_sweep[-sweep_len_without_margins:]
         ) / 2
 
-        threshold += abs_noise_std
-        threshold *= num_stds
+        threshold += abs_noise_std * num_stds
         return threshold
 
 
