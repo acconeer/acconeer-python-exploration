@@ -10,3 +10,4 @@ A121 algorithms
    distance_detection
    phase_tracking
    vibration
+   bilateration
