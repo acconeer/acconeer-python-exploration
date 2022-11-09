@@ -16,7 +16,7 @@ from acconeer.exptool.a121._core.entities import Result
 from acconeer.exptool.a121._core.entities.configs.config_enums import Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo import AlgoConfigBase, select_prf
+from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, select_prf
 
 from ._processors import Processor, ProcessorConfig, ProcessorContext, ProcessorExtraResult
 
@@ -141,10 +141,10 @@ class DetectorResult:
 class Detector:
     MIN_DIST_M = {
         a121.Profile.PROFILE_1: None,
-        a121.Profile.PROFILE_2: 0.28,
-        a121.Profile.PROFILE_3: 0.56,
-        a121.Profile.PROFILE_4: 0.76,
-        a121.Profile.PROFILE_5: 1.28,
+        a121.Profile.PROFILE_2: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_2],
+        a121.Profile.PROFILE_3: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_3],
+        a121.Profile.PROFILE_4: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_4],
+        a121.Profile.PROFILE_5: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_5],
     }
 
     def __init__(

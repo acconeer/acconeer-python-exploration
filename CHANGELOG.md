@@ -12,6 +12,7 @@
 - A121 distance detector. Optimize CFAR calculation.
 - Use built-in function to display markdown and thereby remove dependency to
   Markdown
+- A121 presence detector: Change minimum start distance for profiles
 
 ### Fixed
 - A121 distance detector: Fix bug in CFAR calculation where num_stds was
