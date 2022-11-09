@@ -411,6 +411,39 @@ class EntityJSONEncoder(json.JSONEncoder):
 
 
 def parse_rss_version(rss_version: str) -> packaging.version.Version:
+    """Takes an RSS version string and returns a corresponding Version
+
+    The RSS version string is on a 'git describe'-like format:
+
+        a121-vA.B.C<-rcD><-E-gF>
+
+    where
+
+        A: major, B: minor, C: micro,
+        D: release candidate,
+        E: additional commits since tag, F: commit SHA
+
+    The concept of 'additional commits since tag' (E) doesn't have an
+    equivalent in packaging.version.Version. Instead, when E is present,
+    the smallest version part (D if present, otherwise C) is bumped and
+    E is presented as a development prerelease.
+
+    The commit SHA (F), if present, is translated to a 'local segment'.
+
+    Examples:
+
+        "a121-v1.2.3" ->
+            Version("1.2.3")
+        "a121-v1.2.3-rc4" ->
+            Version("1.2.3rc4")
+        "a121-v1.2.3-123-g0e03503be1" ->
+            Version("1.2.4.dev123+g0e03503be1")
+        "a121-v1.2.3-rc4-123-g0e03503be1" ->
+            Version("1.2.3rc5.dev123+g0e03503be1")
+
+    Read more: https://packaging.pypa.io/en/latest/version.html
+    """
+
     pattern = (
         r"a121-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)"
         r"(?:-(?P<pre_phase>rc)(?P<pre_number>\d+))?"
