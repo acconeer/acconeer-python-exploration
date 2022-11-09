@@ -7,8 +7,6 @@ from typing import Optional, Tuple
 
 import requests
 
-import markdown
-
 
 def check_package_outdated(name: str, current_version: str) -> Tuple[bool, Optional[str]]:
 
@@ -34,6 +32,6 @@ def get_latest_changelog() -> str:
             "https://raw.githubusercontent.com/"
             "acconeer/acconeer-python-exploration/master/CHANGELOG.md"
         )
-        return str(markdown.markdown(cl.content.decode()))
+        return str(cl.content.decode())
     except Exception:
-        return str(markdown.markdown("### No changelog available at this time"))
+        return str("### No changelog available at this time")

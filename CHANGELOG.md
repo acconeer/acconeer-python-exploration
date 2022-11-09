@@ -7,6 +7,8 @@
 
 ### Changed
 - A121 distance detector. Optimize CFAR calculation.
+- Use built-in function to display markdown and thereby remove dependency to
+  Markdown
 
 ### Fixed
 - A121 distance detector: Fix bug in CFAR calculation where num_stds was

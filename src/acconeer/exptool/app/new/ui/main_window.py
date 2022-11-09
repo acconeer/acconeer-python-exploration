@@ -352,7 +352,7 @@ class ChangelogWindow(QMainWindow):
 
     def set_text(self, text: str) -> None:
         document = QTextDocument()
-        document.setHtml(text)
+        document.setMarkdown(text)
         self.text_browser.setDocument(document)
 
     def set_center(self, main_window):
