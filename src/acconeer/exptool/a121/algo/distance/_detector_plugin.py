@@ -310,6 +310,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
 
 class PlotPlugin(DetectorPlotPluginBase):
+
+    _DISTANCE_HISTORY_PLOT_HALF_SPAN = 0.2
+
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
 
@@ -401,8 +404,11 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         if np.any(~np.isnan(self.distance_history)):
             self.dist_history_curve.setData(self.distance_history)
+            distance_span = distances_m[-1] - distances_m[0]
             lims = self.distance_hist_smooth_lim.update(self.distance_history)
-            self.dist_history_plot.setYRange(lims[0], lims[1])
+            lower_lim = max(0.0, lims[0] - distance_span * self._DISTANCE_HISTORY_PLOT_HALF_SPAN)
+            upper_lim = lims[1] + distance_span * self._DISTANCE_HISTORY_PLOT_HALF_SPAN
+            self.dist_history_plot.setYRange(lower_lim, upper_lim)
         else:
             self.dist_history_curve.setData([])
 
