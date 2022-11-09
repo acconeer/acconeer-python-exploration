@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import getpass
 import logging
-import platform
 import tempfile
 import time
 from typing import Optional
@@ -108,8 +107,7 @@ def find_flash_port(port=None, do_log=True):
         if pinfo[1]
     ]
 
-    if len(detected_ports) == 0 and platform.system().lower() == "windows":
-        detected_ports = et.utils.get_usb_devices()
+    detected_ports = et.utils.get_usb_devices()
 
     if len(detected_ports) == 0:
         if do_log:

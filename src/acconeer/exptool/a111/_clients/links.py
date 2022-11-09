@@ -13,6 +13,7 @@ from time import sleep, time
 
 import serial
 
+from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
 from acconeer.exptool.a111._clients.base import ClientError
 
 
@@ -20,7 +21,6 @@ try:
     from acconeer.exptool._winusbcdc.usb_cdc import ComPort
 except ImportError:
     ComPort = None
-
 
 log = logging.getLogger(__name__)
 
@@ -297,12 +297,16 @@ class USBLink(BaseLink):
         pass
 
     def connect(self):
+        # First try 'ComPort', will be set if platorm == windows
+        port_type = ComPort
         if ComPort is None:
-            raise ImportError("WinUsbPy only works on Windows platform")
+            # Fallback to  'PyUsbCdc', will be used if platform != windows
+            port_type = PyUsbCdc
+
         if self._vid and self._pid:
-            self._port = ComPort(vid=self._vid, pid=self._pid, start=False)
+            self._port = port_type(vid=self._vid, pid=self._pid, start=False)
         elif self._name:
-            self._port = ComPort(name=self._name, start=False)
+            self._port = port_type(name=self._name, start=False)
         else:
             raise LinkError("Either vid and pid or name is needed to connect")
 

@@ -15,9 +15,16 @@ from acconeer.exptool.setup.base import (
 
 @PlatformInstall.register
 class Linux(PlatformInstall):
-    UDEV_RULE_FILE = "/etc/udev/rules.d/50-ft4222.rules"
-    UDEV_RULE = (
+    FT4222_UDEV_RULE_FILE = "/etc/udev/rules.d/50-ft4222.rules"
+    FT4222_UDEV_RULE = (
         'SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="601c", MODE:="0666"\n'
+    )
+
+    XC120_UDEV_RULE_FILE = "/etc/udev/rules.d/50-xc120.rules"
+    XC120_UDEV_RULE = (
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a41d", MODE:="0666"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42c", MODE:="0666"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42d", MODE:="0666"\n'
     )
 
     def __init__(self) -> None:
@@ -29,7 +36,13 @@ class Linux(PlatformInstall):
             ),
             utils.WithDescription(
                 "> Create an udev rule for SPI communication with XM112.",
-                RequireFileContentStep(self.UDEV_RULE_FILE, self.UDEV_RULE, sudo=True),
+                RequireFileContentStep(
+                    self.FT4222_UDEV_RULE_FILE, self.FT4222_UDEV_RULE, sudo=True
+                ),
+            ),
+            utils.WithDescription(
+                "> Create an udev rule for USB communication with XC120.",
+                RequireFileContentStep(self.XC120_UDEV_RULE_FILE, self.XC120_UDEV_RULE, sudo=True),
             ),
         )
 

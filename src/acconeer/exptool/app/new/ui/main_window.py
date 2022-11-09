@@ -35,6 +35,7 @@ from .misc import (
     BUTTON_ICON_COLOR,
     ConnectionHint,
     ExceptionWidget,
+    InaccessibleDeviceHint,
     UnflashedDeviceHint,
     VerticalSeparator,
 )
@@ -93,6 +94,7 @@ class TopBar(QFrame):
         self.layout().addWidget(FlashButton(app_model, self))
         self.layout().addWidget(ConnectionHint(app_model, self))
         self.layout().addWidget(UnflashedDeviceHint(app_model, self))
+        self.layout().addWidget(InaccessibleDeviceHint(app_model, self))
         self.layout().addStretch(1)
         self.layout().addWidget(RecordingWidget(app_model, self))
 

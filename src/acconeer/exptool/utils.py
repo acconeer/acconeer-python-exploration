@@ -35,6 +35,8 @@ try:
 except ImportError:
     WinUsbPy = None
 
+from acconeer.exptool._pyusb.pyusbcomm import PyUsbComm
+
 
 @attrs.frozen(kw_only=True)
 class USBDevice:
@@ -159,7 +161,7 @@ def tag_serial_ports_objects(port_infos):
         elif "Bootloader" in desc:
             port_tag_tuples.append((port_object, f"Unflashed {match.group()}"))
         else:
-            port_tag_tuples.append((port_object, match.group()))
+            port_tag_tuples.append((port_object, f"{match.group()}"))
 
     return port_tag_tuples
 
@@ -230,24 +232,38 @@ def autodetect_serial_port():
     sys.exit()
 
 
-def get_usb_devices():
+def get_usb_devices(only_accessible=False):
     usb_devices = []
 
-    if WinUsbPy is None:
-        raise ImportError("USB ports only supported for Windows")
+    if WinUsbPy is not None:
+        winusbpy = WinUsbPy()
+        all_usb_devices = winusbpy.list_usb_devices(deviceinterface=True, present=True)
 
-    winusbpy = WinUsbPy()
-    all_usb_devices = winusbpy.list_usb_devices(deviceinterface=True, present=True)
+        for name, path in all_usb_devices.items():
+            pattern = r"(.*)#vid_(?P<vid>\w+)&pid_(?P<pid>\w+)(.*)"
+            match = re.fullmatch(pattern, path)
+            groups = match.groupdict()
+            v = int(f"0x{groups['vid']}", 16)
+            p = int(f"0x{groups['pid']}", 16)
+            for vid, pid, model_name in _USB_IDS:
+                if v == vid and p == pid:
+                    usb_devices.append(USBDevice(vid=v, pid=p, serial=None, name=model_name))
+    else:
+        pyusbcomm = PyUsbComm()
+        for device_vid, device_pid in pyusbcomm.iterate_devices():
+            for vid, pid, model_name in _USB_IDS:
+                if device_vid == vid and device_pid == pid:
+                    device_name = model_name
+                    accessible = pyusbcomm.is_accessible(vid, pid)
+                    if not accessible:
+                        device_name = f"{device_name} (inaccessible)"
 
-    for name, path in all_usb_devices.items():
-        pattern = r"(.*)#vid_(?P<vid>\w+)&pid_(?P<pid>\w+)(.*)"
-        match = re.fullmatch(pattern, path)
-        groups = match.groupdict()
-        v = int(f"0x{groups['vid']}", 16)
-        p = int(f"0x{groups['pid']}", 16)
-        for vid, pid, model_name in _USB_IDS:
-            if v == vid and p == pid:
-                usb_devices.append(USBDevice(vid=v, pid=p, serial=None, name=model_name))
+                    if only_accessible and not accessible:
+                        continue
+
+                    usb_devices.append(
+                        USBDevice(vid=device_vid, pid=device_pid, serial=None, name=device_name)
+                    )
 
     return usb_devices
 

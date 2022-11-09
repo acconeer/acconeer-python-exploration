@@ -223,12 +223,40 @@ class UnflashedDeviceHint(UserHint):
 
     @staticmethod
     def _should_show(app_model: AppModel) -> bool:
+        if app_model.connection_interface not in [
+            ConnectionInterface.SERIAL,
+            ConnectionInterface.USB,
+        ]:
+            return False
+
         for port, tag in app_model.available_tagged_ports:
             if tag and "unflashed" in tag.lower():
                 return True
 
         for usb_device in app_model.available_usb_devices:
             if "unflashed" in usb_device.name.lower():
+                return True
+
+        return False
+
+
+class InaccessibleDeviceHint(UserHint):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(
+            app_model,
+            parent,
+            "A connected USB device is inaccessible, check USB permissions or use Serial Port",
+            r"https://docs.acconeer.com/en/latest/exploration_tool/"
+            "installation_and_setup.html#linux-setup",
+        )
+
+    @staticmethod
+    def _should_show(app_model: AppModel) -> bool:
+        if app_model.connection_interface != ConnectionInterface.USB:
+            return False
+
+        for usb_device in app_model.available_usb_devices:
+            if "inaccessible" in usb_device.name.lower():
                 return True
 
         return False

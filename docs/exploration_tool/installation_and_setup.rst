@@ -68,6 +68,21 @@ Reboot for the changes to take effect.
 .. note::
    If you have ``ModemManager`` installed and running it might try to connect to the module, which has proven to cause problems. If you are having issues, try disabling the ``ModemManager`` service.
 
+USB permissions
+"""""""""""""""
+
+If you are using Linux together with an XC120, the USB communication is preferred over serial port communication. To be able to access the USB device. Either run the scripts with ``sudo`` or create an `udev` rule as follows. Create and edit::
+
+    sudo nano /etc/udev/rules.d/50-xc120.rules
+
+with the following content::
+
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a41d", MODE:="0666"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42c", MODE:="0666"
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42d", MODE:="0666"
+
+This method is confirmed to work for ***Ubuntu 20.04**.
+
 SPI permissions
 """""""""""""""
 

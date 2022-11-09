@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import platform
-
 import qtawesome as qta
 
 from PySide6.QtCore import QSize
@@ -134,9 +132,7 @@ class ClientConnectionWidget(AppModelAwareWidget):
 
         self.interface_dd.addItem("Socket", userData=ConnectionInterface.SOCKET)
         self.interface_dd.addItem("Serial", userData=ConnectionInterface.SERIAL)
-
-        if platform.system().lower() == "windows":
-            self.interface_dd.addItem("USB", userData=ConnectionInterface.USB)
+        self.interface_dd.addItem("USB", userData=ConnectionInterface.USB)
 
         self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
 
@@ -144,8 +140,7 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
         self.stacked.addWidget(_SocketConnectionWidget(app_model, self.stacked))
         self.stacked.addWidget(_SerialConnectionWidget(app_model, self.stacked))
-        if platform.system().lower() == "windows":
-            self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
+        self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
         self.layout().addWidget(self.stacked)
 
         self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))

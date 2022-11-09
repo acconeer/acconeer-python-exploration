@@ -6,7 +6,6 @@ from __future__ import annotations
 import importlib
 import logging
 import os
-import platform
 import traceback
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -193,16 +192,14 @@ class _FlashPopup(QDialog):
 
         self.interface_dd = QComboBox(self)
         self.interface_dd.addItem("Serial", userData=ConnectionInterface.SERIAL)
-        if platform.system().lower() == "windows":
-            self.interface_dd.addItem("USB", userData=ConnectionInterface.USB)
+        self.interface_dd.addItem("USB", userData=ConnectionInterface.USB)
 
         self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
 
         self.stacked = QStackedWidget(self)
         self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
         self.stacked.addWidget(SerialPortComboBox(app_model, self.stacked))
-        if platform.system().lower() == "windows":
-            self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
+        self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
 
         self.flash_button = QPushButton("Flash", self)
         self.flash_button.clicked.connect(self._flash)

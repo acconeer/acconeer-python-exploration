@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Use USB communication when possible in linux
+
 ## v5.3.1
 
 ### Fixed

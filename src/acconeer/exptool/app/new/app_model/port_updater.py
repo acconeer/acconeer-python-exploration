@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import platform
 from typing import TYPE_CHECKING, Any
 
 from PySide6.QtCore import QObject, QThread, QTimerEvent, Signal, Slot
@@ -29,11 +28,7 @@ class PortUpdater(QObject):
 
         def timerEvent(self, event: QTimerEvent) -> None:
             tagged_serial_ports = get_tagged_serial_ports()  # type: ignore[name-defined]
-
-            if platform.system().lower() == "windows":
-                usb_devices = get_usb_devices()  # type: ignore[name-defined]
-            else:
-                usb_devices = None
+            usb_devices = get_usb_devices()  # type: ignore[name-defined]
 
             self.sig_update.emit(tagged_serial_ports, usb_devices)
 

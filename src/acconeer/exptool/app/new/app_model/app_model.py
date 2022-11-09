@@ -342,6 +342,11 @@ class AppModel(QObject):
             return True
         return False
 
+    def _is_usb_device_inaccessible(self, usb_device: Optional[USBDevice]) -> bool:
+        if usb_device and "inaccessible" in usb_device.name.lower():
+            return True
+        return False
+
     def _handle_port_update(
         self,
         tagged_ports: list[Tuple[str, Optional[str]]],
@@ -394,6 +399,11 @@ class AppModel(QObject):
                     connect = False
                     self.send_warning_message(
                         f"Found unflashed USB device: {self.usb_connection_device}"
+                    )
+                elif self._is_usb_device_inaccessible(self.usb_connection_device):
+                    connect = False
+                    self.send_warning_message(
+                        f"Found inaccessible USB device: {self.usb_connection_device}"
                     )
                 else:
                     connect = True
@@ -501,6 +511,7 @@ class AppModel(QObject):
                 self.connection_interface == ConnectionInterface.USB
                 and self.usb_connection_device is not None
                 and not self._is_usb_device_unflashed(self.usb_connection_device)
+                and not self._is_usb_device_inaccessible(self.usb_connection_device)
             )
         )
 

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import platform
 from typing import Optional, Type, Union
 
 import attrs
@@ -47,8 +46,7 @@ def determine_serial_port(serial_port: Optional[str]) -> str:
 
 def determine_usb_device(usb_device: Optional[USBDevice]) -> USBDevice:
     if usb_device is None:
-        usb_devices = et.utils.get_usb_devices()
-
+        usb_devices = et.utils.get_usb_devices(only_accessible=True)
         if not usb_devices:
             raise ClientError("No USB devices detected. Cannot auto detect.")
         elif len(usb_devices) > 1:
@@ -84,16 +82,16 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
 
 
 def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
-    if platform.system().lower() == "windows":
-        try:
-            client_info = attrs.evolve(
-                client_info,
-                usb_device=determine_usb_device(client_info.usb_device),
-            )
+    try:
+        client_info = attrs.evolve(
+            client_info,
+            usb_device=determine_usb_device(client_info.usb_device),
+        )
 
-            return client_info
-        except ClientError:
-            pass
+        return client_info
+    except ClientError:
+        pass
+
     try:
         client_info = attrs.evolve(
             client_info,

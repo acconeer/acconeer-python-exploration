@@ -18,7 +18,9 @@ class Ubuntu_20_04(Linux):
                 + "to run the Exploration tool app.",
                 SetupGroup(
                     ShellCommandStep("sudo apt update".split()),
-                    ShellCommandStep("sudo apt install -y libxcb-xinerama0-dev".split()),
+                    ShellCommandStep(
+                        "sudo apt install -y libxcb-xinerama0-dev libusb-1.0-0".split()
+                    ),
                 ),
             ),
         )
