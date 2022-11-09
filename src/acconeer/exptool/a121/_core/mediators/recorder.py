@@ -26,7 +26,7 @@ class Recorder(Protocol):
         server_info: ServerInfo,
         session_config: SessionConfig,
         calibrations: Optional[dict[int, SensorCalibration]],
-        calibrations_provided: dict[int, bool],
+        calibrations_provided: Optional[dict[int, bool]],
     ) -> None:
         ...
 

@@ -153,15 +153,12 @@ class H5Recorder(Recorder):
                 result_group = entry_group.create_group("result")
                 self._create_result_datasets(result_group, metadata)
 
-        if calibrations and not calibrations_provided:
+        if (calibrations is None) != (calibrations_provided is None):
             raise ValueError(
                 "'calibrations_provided' must be provided if 'calibrations' is provided"
             )
-        elif not calibrations and calibrations_provided:
-            raise ValueError(
-                "'calibrations' must be provided if 'calibrations_provided' is provided"
-            )
-        elif calibrations and calibrations_provided:
+
+        if calibrations is not None and calibrations_provided is not None:
             calibrations_group = session_group.create_group("calibrations")
             for sensor_id, calibration in calibrations.items():
                 sensor_calibration_group = calibrations_group.create_group(f"sensor_{sensor_id}")

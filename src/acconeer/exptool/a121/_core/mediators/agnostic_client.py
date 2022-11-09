@@ -258,14 +258,21 @@ class AgnosticClient(AgnosticClientFriends):
             raise ClientError("Session is already started.")
 
         if recorder is not None:
+            calibrations_provided = self.calibrations_provided
+            try:
+                calibrations = self.calibrations
+            except ClientError:
+                calibrations = None
+                calibrations_provided = None
+
             self._recorder = recorder
             self._recorder._start(
                 client_info=self.client_info,
                 extended_metadata=self.extended_metadata,
                 server_info=self.server_info,
                 session_config=self.session_config,
-                calibrations=self.calibrations,
-                calibrations_provided=self.calibrations_provided,
+                calibrations=calibrations,
+                calibrations_provided=calibrations_provided,
             )
 
         self._link.timeout = self._link_timeout
