@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- Make sure to have qtpy>=2.3.0
+
 ### Added
 - Add SensorCalibration to session
 

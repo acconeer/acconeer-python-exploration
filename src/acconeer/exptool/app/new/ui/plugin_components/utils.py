@@ -12,18 +12,18 @@ class VerticalGroupBox(QGroupBox):
     def __init__(self, title: str, parent: Optional[QWidget]) -> None:
         super().__init__(parent=parent)
         self.setTitle(title)
-        self.setLayout(QVBoxLayout(parent=self))
+        self.setLayout(QVBoxLayout(self))
 
 
 class HorizontalGroupBox(QGroupBox):
     def __init__(self, title: str, parent: Optional[QWidget]) -> None:
         super().__init__(parent=parent)
         self.setTitle(title)
-        self.setLayout(QHBoxLayout(parent=self))
+        self.setLayout(QHBoxLayout(self))
 
 
 class GridGroupBox(QGroupBox):
     def __init__(self, title: str, parent: Optional[QWidget]) -> None:
         super().__init__(parent=parent)
         self.setTitle(title)
-        self.setLayout(QGridLayout(parent=self))
+        self.setLayout(QGridLayout(self))
