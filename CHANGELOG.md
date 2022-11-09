@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v5.3.1
 
 ### Fixed
 - Make sure to have qtpy>=2.3.0
