@@ -621,11 +621,11 @@ def calculate_offset(peak_location: float, profile: a121.Profile) -> float:
 
     # Intercept and offset term of offset compensation.
     OFFSET_COMPENSATION_COEFFS = {
-        a121.Profile.PROFILE_1: (0.7144381, 0.01057812),
-        a121.Profile.PROFILE_2: (0.49220892, 0.00193627),
-        a121.Profile.PROFILE_3: (0.55348759, 0.00252287),
-        a121.Profile.PROFILE_4: (6.10352993e-01, 2.30125790e-04),
-        a121.Profile.PROFILE_5: (0.66277198, -0.00539498),
+        a121.Profile.PROFILE_1: (0.76520069, 0.01146756),
+        a121.Profile.PROFILE_2: (0.88898859, 0.02202941),
+        a121.Profile.PROFILE_3: (0.92195011, 0.01356246),
+        a121.Profile.PROFILE_4: (0.90674059, 0.01593211),
+        a121.Profile.PROFILE_5: (1.08015653, 0.00390931),
     }
 
     p = OFFSET_COMPENSATION_COEFFS[profile]
