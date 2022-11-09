@@ -18,7 +18,7 @@ def get_exploration_protocol(rss_version: Optional[Version] = None) -> Type[Expl
     if rss_version <= Version("0.2.0"):
         raise ExplorationProtocolError("Unsupported RSS version")
 
-    if rss_version == Version("0.4.1"):
+    if rss_version < Version("0.4.3.dev280"):
         return ExplorationProtocol_0_4_1
 
     return ExplorationProtocol
