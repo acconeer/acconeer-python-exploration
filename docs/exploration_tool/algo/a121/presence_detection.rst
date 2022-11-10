@@ -40,17 +40,17 @@ The shortest start range needed for the different profiles can be found in :numr
    +=========+=============+
    | 1       | 0 m         |
    +---------+-------------+
-   | 2       | 0.29 m      |
+   | 2       | 0.14 m      |
    +---------+-------------+
-   | 3       | 0.57 m      |
+   | 3       | 0.28 m      |
    +---------+-------------+
-   | 4       | 0.77 m      |
+   | 4       | 0.38 m      |
    +---------+-------------+
-   | 5       | 1.29 m      |
+   | 5       | 0.64 m      |
    +---------+-------------+
 
 .. note::
-   To maximize SNR in long range detections, the start range needs to be set greater than 1.28 m.
+   To maximize SNR in long range detections, the start range needs to be set to at least 0.64 m.
 
 For each profile a half power pulse width can be calculated based on the pulse length. We choose the
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.step_length`
