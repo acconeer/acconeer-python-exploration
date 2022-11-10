@@ -140,39 +140,11 @@ class USBDeviceComboBox(QComboBox):
             self.setCurrentIndex(index)
 
 
-class UserHint(QWidget):
-    def __init__(
-        self, app_model: AppModel, parent: QWidget, hint: str, how_to_fix_url: str
-    ) -> None:
-        super().__init__(parent)
-        app_model.sig_notify.connect(self._on_app_model_update)
-
-        self._how_to_fix_url = how_to_fix_url
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-
-        self.icon = qta.IconWidget()
-        self.icon.setIcon(qta.icon("fa.warning", color="#ff9e00"))
-        self.layout().addWidget(self.icon)
-
-        self.label = QLabel(self)
-        self.label.setText(hint)
-        self.layout().addWidget(self.label)
-
-        self.button = QPushButton(self)
-        self.button.setIcon(qta.icon("fa5s.external-link-alt", color=BUTTON_ICON_COLOR))
-        self.button.setText("How to fix")
-        self.button.clicked.connect(self._on_click)
-        self.layout().addWidget(self.button)
-
-    def _on_app_model_update(self, app_model: AppModel) -> None:
-        hide = not self._should_show(app_model)
-        self.icon.setHidden(hide)
-        self.label.setHidden(hide)
-        self.button.setHidden(hide)
-
-    def _on_click(self) -> None:
-        webbrowser.open_new_tab(self._how_to_fix_url)
+class HintObject:
+    def __init__(self, warning: str, tooltip: str, how_to_fix_url):
+        self.warning = warning
+        self.tooltip = tooltip
+        self.how_to_fix_url = how_to_fix_url
 
     @staticmethod
     @abc.abstractmethod
@@ -180,12 +152,63 @@ class UserHint(QWidget):
         pass
 
 
-class ConnectionHint(UserHint):
+class UserHintWidget(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+        app_model.sig_notify.connect(self._on_app_model_update)
+
+        self.hints = []
+        self._how_to_fix_url = None
+
+        self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        self.icon = qta.IconWidget()
+        self.icon.setHidden(True)
+        self.icon.setIcon(qta.icon("fa.warning", color="#ff9e00"))
+        self.layout().addWidget(self.icon)
+
+        self.label = QLabel(self)
+        self.label.setHidden(True)
+        self.layout().addWidget(self.label)
+
+        self.button = QPushButton(self)
+        self.button.setIcon(qta.icon("fa5s.external-link-alt", color=BUTTON_ICON_COLOR))
+        self.button.setText("How to fix")
+        self.button.clicked.connect(self._on_click)
+        self.button.setHidden(True)
+        self.layout().addWidget(self.button)
+
+    def add_hint(self, hint: HintObject):
+        self.hints.append(hint)
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        for hint in self.hints:
+            if hint._should_show(app_model):
+                self.label.setText(hint.warning)
+                self.label.setToolTip(hint.tooltip)
+                self.icon.setToolTip(hint.tooltip)
+                self._how_to_fix_url = hint.how_to_fix_url
+                self.icon.setHidden(False)
+                self.label.setHidden(False)
+                if self._how_to_fix_url is not None:
+                    self.button.setHidden(False)
+                return
+
+        self.icon.setHidden(True)
+        self.label.setHidden(True)
+        self.button.setHidden(True)
+
+    def _on_click(self) -> None:
+        if self._how_to_fix_url is not None:
+            webbrowser.open_new_tab(self._how_to_fix_url)
+
+
+class ConnectionHint(HintObject):
+    def __init__(self) -> None:
         super().__init__(
-            app_model,
-            parent,
-            "You may experience stability issues",
+            "Stability warning",
+            "You may experience stability issues due to windows serial port driver",
             r"https://docs.acconeer.com/en/latest/evk_setup/xc120_xe121.html",
         )
 
@@ -194,30 +217,26 @@ class ConnectionHint(UserHint):
         if platform.system().lower() != "windows":
             return False
 
-        if app_model.connection_interface != ConnectionInterface.SERIAL:
-            return False
+        if (
+            app_model.serial_connection_port is not None
+            and app_model.connection_interface == ConnectionInterface.SERIAL
+        ):
+            tag = dict(app_model.available_tagged_ports).get(
+                app_model.serial_connection_port, None
+            )
+            if tag is not None:
+                if "unflashed" in tag.lower():
+                    return False
+                return "xc120" in tag.lower()
 
-        port = app_model.serial_connection_port
-        if port is None:
-            return False
-
-        tag = dict(app_model.available_tagged_ports).get(port, None)
-
-        if tag is None:
-            return False
-
-        if "unflashed" in tag.lower():
-            return False
-
-        return "xc120" in tag.lower()
+        return False
 
 
-class UnflashedDeviceHint(UserHint):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+class UnflashedDeviceHint(HintObject):
+    def __init__(self) -> None:
         super().__init__(
-            app_model,
-            parent,
-            "You have an unflashed device connected",
+            "Unflashed device",
+            "The device needs to be flashed with exploration server firmware",
             r"https://docs.acconeer.com/en/latest/evk_setup/xc120_xe121.html",
         )
 
@@ -229,34 +248,60 @@ class UnflashedDeviceHint(UserHint):
         ]:
             return False
 
-        for port, tag in app_model.available_tagged_ports:
-            if tag and "unflashed" in tag.lower():
+        if (
+            app_model.serial_connection_port is not None
+            and app_model.connection_interface == ConnectionInterface.SERIAL
+        ):
+            tag = dict(app_model.available_tagged_ports).get(
+                app_model.serial_connection_port, None
+            )
+            if tag is not None and "unflashed" in tag.lower():
                 return True
 
-        for usb_device in app_model.available_usb_devices:
-            if "unflashed" in usb_device.name.lower():
+        if (
+            app_model.usb_connection_device is not None
+            and app_model.connection_interface == ConnectionInterface.USB
+        ):
+            if "unflashed" in app_model.usb_connection_device.name.lower():
                 return True
 
         return False
 
 
-class InaccessibleDeviceHint(UserHint):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+class InaccessibleDeviceHint(HintObject):
+    def __init__(self) -> None:
         super().__init__(
-            app_model,
-            parent,
-            "A connected USB device is inaccessible, check USB permissions or use Serial Port",
+            "Device permissions",
+            "The USB device permissions needs to be setup, "
+            "update USB permissions or use Serial Port",
             r"https://docs.acconeer.com/en/latest/exploration_tool/"
             "installation_and_setup.html#linux-setup",
         )
 
     @staticmethod
     def _should_show(app_model: AppModel) -> bool:
-        if app_model.connection_interface != ConnectionInterface.USB:
-            return False
-
-        for usb_device in app_model.available_usb_devices:
-            if "inaccessible" in usb_device.name.lower():
+        if (
+            app_model.usb_connection_device is not None
+            and app_model.connection_interface == ConnectionInterface.USB
+        ):
+            if "inaccessible" in app_model.usb_connection_device.name.lower():
                 return True
 
         return False
+
+
+class HintWidget(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+        self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        hint_widget = UserHintWidget(app_model, self)
+        self.layout().addWidget(hint_widget)
+
+        # Prioritized hint order:
+        # The first will have priority over the second
+        # The second will have priority over the third...
+        hint_widget.add_hint(InaccessibleDeviceHint())
+        hint_widget.add_hint(UnflashedDeviceHint())
+        hint_widget.add_hint(ConnectionHint())

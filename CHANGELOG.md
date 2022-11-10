@@ -5,6 +5,9 @@
 ### Changed
 - Use USB communication when possible in linux
 
+### Fixed
+- Fix App hints widget
+
 ## v5.3.1
 
 ### Fixed
