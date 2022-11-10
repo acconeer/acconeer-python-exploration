@@ -4,6 +4,7 @@
 
 ### Changed
 - Use USB communication when possible in linux
+- Simplify USB device selection in client
 
 ### Fixed
 - Fix App hints widget

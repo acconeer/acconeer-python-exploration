@@ -9,6 +9,8 @@ client = a121.Client(
     # ip_address="<ip address of host (like a RPi). E.g. 192.168.XXX.YYY>",
     # or
     # serial_port="<serial port of module. E.g. COM3 or /dev/ttyUSBx for Window/Linux>",
+    # or
+    # usb_device=True,
 )
 
 # Establishes a connection to the server running on the sensor.

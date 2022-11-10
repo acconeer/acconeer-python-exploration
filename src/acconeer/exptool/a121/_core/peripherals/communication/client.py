@@ -44,15 +44,19 @@ def determine_serial_port(serial_port: Optional[str]) -> str:
         return serial_port
 
 
+def _get_one_usb_device(only_accessible=False):
+    usb_devices = et.utils.get_usb_devices(only_accessible=only_accessible)
+    if not usb_devices:
+        raise ClientError("No USB devices detected. Cannot auto detect.")
+    elif len(usb_devices) > 1:
+        raise ClientError("There are multiple devices detected. Specify one:\n" + usb_devices)
+    else:
+        return usb_devices[0]
+
+
 def determine_usb_device(usb_device: Optional[USBDevice]) -> USBDevice:
     if usb_device is None:
-        usb_devices = et.utils.get_usb_devices(only_accessible=True)
-        if not usb_devices:
-            raise ClientError("No USB devices detected. Cannot auto detect.")
-        elif len(usb_devices) > 1:
-            raise ClientError("There are multiple devices detected. Specify one:\n" + usb_devices)
-        else:
-            return usb_devices[0]
+        return _get_one_usb_device(only_accessible=True)
     else:
         return usb_device
 
@@ -110,7 +114,7 @@ class Client(AgnosticClient):
         self,
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, et.utils.USBDevice]] = None,
+        usb_device: Optional[Union[str, bool, et.utils.USBDevice]] = None,
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ):
@@ -119,6 +123,12 @@ class Client(AgnosticClient):
 
         if isinstance(usb_device, str):
             raise NotImplementedError("Selecting device by serial number not supported")
+
+        if isinstance(usb_device, bool):
+            if usb_device:
+                usb_device = _get_one_usb_device()
+            else:
+                raise ValueError("usb_device=False is not valid")
 
         protocol: Type[CommunicationProtocol] = ExplorationProtocol
         self._protocol_overridden = False
