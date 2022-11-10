@@ -16,6 +16,7 @@
 ### Fixed
 - A121 distance detector: Fix bug in CFAR calculation where num_stds was
   applied to full threshold.
+- A121 algo utils: remove prf 19.5 MHz for profile 2 in select_prf
 
 ## v5.3.0
 

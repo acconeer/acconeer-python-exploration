@@ -205,11 +205,7 @@ def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
     """
     max_meas_dist_m = copy.copy(MAX_MEASURABLE_DIST_M)
 
-    if (
-        a121.PRF.PRF_19_5_MHz in max_meas_dist_m
-        and profile != a121.Profile.PROFILE_1
-        and profile != a121.Profile.PROFILE_2
-    ):
+    if a121.PRF.PRF_19_5_MHz in max_meas_dist_m and profile != a121.Profile.PROFILE_1:
         del max_meas_dist_m[a121.PRF.PRF_19_5_MHz]
 
     breakpoint_m = breakpoint * APPROX_BASE_STEP_LENGTH_M
