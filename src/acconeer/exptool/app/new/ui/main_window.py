@@ -142,7 +142,7 @@ class RateStatsLabel(QLabel):
             css = "color: #FD5200;" if self.rate_warning else ""
             text = f"{self.rate:>6.1f} Hz"
 
-        self.setStyleSheet(css)
+        self.setStyleSheet(f"QWidget{{{css}}}")
         self.setText(text)
 
     def _on_app_model_rate_stats(
@@ -179,7 +179,7 @@ class JitterStatsLabel(QLabel):
             css = "color: #FD5200;" if self.jitter_warning else ""
             text = f"{self.jitter * 1e3:5.1f} ms"
 
-        self.setStyleSheet(css)
+        self.setStyleSheet(f"QWidget{{{css}}}")
         self.setText(text)
 
     def _on_app_model_rate_stats(
@@ -207,7 +207,7 @@ class BackendCPUPercentLabel(QLabel):
         self.setText(f"CPU: {cpu_percent:3}%")
 
         css = "color: #FD5200;" if cpu_percent >= 85 else ""
-        self.setStyleSheet(css)
+        self.setStyleSheet(f"QWidget{{{css}}}")
 
 
 class RSSVersionLabel(QLabel):
@@ -260,12 +260,11 @@ class VersionLabel(QWidget):
             if version_outdated:
                 self.changelog = get_latest_changelog()
                 self.setStyleSheet(
-                    "QWidget{background-color: %s ; color: #e2e2e2}"
-                    "QToolTip{ background-color: #e2e2e2 ; color: #4d5157}" % BUTTON_ICON_COLOR
+                    f"QWidget{{background-color: {BUTTON_ICON_COLOR}; color: #e2e2e2}}"
                 )
 
                 self.setToolTip(
-                    "There is a new software version available!\n "
+                    "There is a new software version available!\n"
                     f"The latest version is: {latest_v}. \n"
                     "Click to view changelog."
                 )
@@ -329,7 +328,7 @@ class StatusBar(QStatusBar):
             "SF Mono",  # Mac
         ]
         font_family = ", ".join(f'"{ff}"' for ff in font_families)
-        self.setStyleSheet(f"font-family: {font_family};")
+        self.setStyleSheet(f"QWidget{{font-family: {font_family};}}")
 
     def _on_app_model_status_message(self, message: Optional[str]) -> None:
         self.message_timer.stop()
