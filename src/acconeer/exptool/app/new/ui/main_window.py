@@ -210,6 +210,32 @@ class BackendCPUPercentLabel(QLabel):
         self.setStyleSheet(css)
 
 
+class RSSVersionLabel(QLabel):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        app_model.sig_notify.connect(self._on_app_model_update)
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        if app_model.rss_version is None:
+            css = "color: #888;"
+            text = "RSS: <not connected>"
+            tooltip = ""
+        else:
+            text = f"RSS: {app_model.rss_version}"
+
+            if app_model.connection_warning:
+                css = "background-color: #D78100; color: #e2e2e2;"
+                tooltip = app_model.connection_warning
+            else:
+                css = ""
+                tooltip = ""
+
+        self.setToolTip(tooltip)
+        self.setStyleSheet(f"QWidget{{{css}}}")
+        self.setText(text)
+
+
 class VersionLabel(QWidget):
     sig_version_outdated = QtCore.Signal()
 
@@ -280,7 +306,6 @@ class StatusBar(QStatusBar):
 
         self.parent = parent
 
-        app_model.sig_notify.connect(self._on_app_model_update)
         app_model.sig_status_message.connect(self._on_app_model_status_message)
 
         self.message_timer = QtCore.QTimer(self)
@@ -294,10 +319,7 @@ class StatusBar(QStatusBar):
         self.addPermanentWidget(RateStatsLabel(app_model, self))
         self.addPermanentWidget(JitterStatsLabel(app_model, self))
         self.addPermanentWidget(BackendCPUPercentLabel(app_model, self))
-
-        self.rss_version_label = QLabel(self)
-        self.addPermanentWidget(self.rss_version_label)
-
+        self.addPermanentWidget(RSSVersionLabel(app_model, self))
         self.addPermanentWidget(VersionLabel(app_model, self))
 
         font_families = [
@@ -308,17 +330,6 @@ class StatusBar(QStatusBar):
         ]
         font_family = ", ".join(f'"{ff}"' for ff in font_families)
         self.setStyleSheet(f"font-family: {font_family};")
-
-    def _on_app_model_update(self, app_model: AppModel) -> None:
-        if app_model.rss_version is None:
-            css = "color: #888;"
-            text = "RSS: <not connected>"
-        else:
-            css = ""
-            text = f"RSS: {app_model.rss_version}"
-
-        self.rss_version_label.setStyleSheet(css)
-        self.rss_version_label.setText(text)
 
     def _on_app_model_status_message(self, message: Optional[str]) -> None:
         self.message_timer.stop()
