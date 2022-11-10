@@ -130,6 +130,9 @@ class SensorConfigEditor(QWidget):
         self._sensor_config_pidgets["continuous_sweep_mode"].set_parameter(
             self._sensor_config.continuous_sweep_mode
         )
+        self._sensor_config_pidgets["double_buffering"].set_parameter(
+            self._sensor_config.double_buffering
+        )
         self._sensor_config_pidgets["inter_frame_idle_state"].set_parameter(
             self._sensor_config.inter_frame_idle_state
         )
