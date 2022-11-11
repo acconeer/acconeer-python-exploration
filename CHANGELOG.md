@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## v5.4.0
+
+### Added
+- Vibration measurement application
 
 ### Changed
 - Use USB communication when possible in linux
