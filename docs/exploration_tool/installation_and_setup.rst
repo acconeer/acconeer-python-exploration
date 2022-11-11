@@ -99,10 +99,17 @@ This method is confirmed to work for ***Ubuntu 20.04**.
 Ubuntu 20.04
 """"""""""""
 
-To run the application on Ubuntu 20.04, ``libxcb-xinerama0-dev`` needs to be installed::
+To run the application on Ubuntu 20.04, ``libxcb-xinerama0-dev`` and ``libusb-1.0-0`` needs to be installed::
 
     sudo apt update
-    sudo apt install -y libxcb-xinerama0-dev
+    sudo apt install -y libxcb-xinerama0-dev libusb-1.0-0
+
+Udev needs to be informed that rules have changed if changes have been made in ``/etc/udev/rules/``::
+
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+
+An USB device have to be disconnected and reconnected before the udev permissions are updated.
 
 Launching the application
 --------------------------

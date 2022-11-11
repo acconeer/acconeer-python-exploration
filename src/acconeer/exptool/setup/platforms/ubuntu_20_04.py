@@ -14,13 +14,20 @@ class Ubuntu_20_04(Linux):
         super().__init__()
         self.add_steps(
             utils.WithDescription(
-                '> Download a dependency via "apt" that is required '
+                '> Download dependencies via "apt" that are required '
                 + "to run the Exploration tool app.",
                 SetupGroup(
                     ShellCommandStep("sudo apt update".split()),
                     ShellCommandStep(
                         "sudo apt install -y libxcb-xinerama0-dev libusb-1.0-0".split()
                     ),
+                ),
+            ),
+            utils.WithDescription(
+                "> Trigger udev to update the permission rules.",
+                SetupGroup(
+                    ShellCommandStep("sudo udevadm control --reload-rules".split()),
+                    ShellCommandStep("sudo udevadm trigger".split()),
                 ),
             ),
         )
