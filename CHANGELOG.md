@@ -5,6 +5,9 @@
 ### Added
 - App taskbar icon on Windows
 
+### Changed
+- A121 presence detector: Add support for setting inter frame idle state
+
 ### Fixed
 - A121 recorder crashing when stopping due to empty chunk buffer
 

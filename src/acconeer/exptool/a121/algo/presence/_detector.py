@@ -13,7 +13,7 @@ from attr import Attribute
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import Result
-from acconeer.exptool.a121._core.entities.configs.config_enums import Profile
+from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, select_prf
@@ -29,6 +29,10 @@ def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
         return None
 
     return Profile(profile)
+
+
+def idle_state_converter(idle_state: IdleState) -> IdleState:
+    return IdleState(idle_state)
 
 
 @attrs.mutable(kw_only=True)
@@ -61,6 +65,11 @@ class DetectorConfig(AlgoConfigBase):
 
     hwaas: int = attrs.field(default=32)
     """Number of HWAAS."""
+
+    inter_frame_idle_state: a121.IdleState = attrs.field(
+        default=a121.IdleState.DEEP_SLEEP, converter=idle_state_converter
+    )
+    """Sets the inter frame idle state."""
 
     intra_enable: bool = attrs.field(default=True)
     """
@@ -272,6 +281,7 @@ class Detector:
             hwaas=detector_config.hwaas,
             sweeps_per_frame=detector_config.sweeps_per_frame,
             frame_rate=detector_config.frame_rate,
+            inter_frame_idle_state=detector_config.inter_frame_idle_state,
         )
 
     @classmethod

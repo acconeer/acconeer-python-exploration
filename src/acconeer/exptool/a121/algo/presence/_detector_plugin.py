@@ -691,6 +691,15 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="HWAAS",
                 limits=(1, 511),
             ),
+            "inter_frame_idle_state": pidgets.EnumParameterWidgetFactory(
+                enum_type=a121.IdleState,
+                name_label_text="Inter frame idle state",
+                label_mapping={
+                    a121.IdleState.DEEP_SLEEP: "Deep sleep",
+                    a121.IdleState.SLEEP: "Sleep",
+                    a121.IdleState.READY: "Ready",
+                },
+            ),
             "intra_enable": pidgets.CheckboxParameterWidgetFactory(
                 name_label_text="Enable fast motion detection"
             ),
