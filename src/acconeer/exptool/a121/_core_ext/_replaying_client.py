@@ -77,11 +77,11 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
         self._origin_time = None
 
         if self.session_config.extended:
-            self._rate_stats_calc = _RateCalculator(self.session_config, self._record.metadata)
-        else:
             self._rate_stats_calc = _RateCalculator(
                 self.session_config, self._record.extended_metadata
             )
+        else:
+            self._rate_stats_calc = _RateCalculator(self.session_config, self._record.metadata)
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         if not self.session_is_setup:
