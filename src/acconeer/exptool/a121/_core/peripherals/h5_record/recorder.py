@@ -181,6 +181,9 @@ class H5Recorder(Recorder):
         :returns: the number of extended results saved.
         """
 
+        if len(self.chunk_buffer) == 0:
+            return 0
+
         for group_idx, entry_idx, results in utils.iterate_extended_structure_as_entry_list(
             utils.transpose_extended_structures(self.chunk_buffer)
         ):

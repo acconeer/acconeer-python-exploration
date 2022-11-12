@@ -5,6 +5,9 @@
 ### Added
 - App taskbar icon on Windows
 
+### Fixed
+- A121 recorder crashing when stopping due to empty chunk buffer
+
 ## v5.4.0
 
 ### Added

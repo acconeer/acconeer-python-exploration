@@ -3,6 +3,7 @@
 
 import h5py
 import importlib_metadata
+import pytest
 
 from acconeer.exptool import a121
 
@@ -47,13 +48,15 @@ def test_init_defaults_with_file_object(tmp_file_path):
         assert f["generation"][()].decode() == "a121"
 
 
-def test_sample_whole_record(tmp_path, ref_record):
+@pytest.mark.parametrize("chunk_size", [1, 512])
+def test_sample_whole_record(tmp_path, ref_record, chunk_size):
     filename = tmp_path / "empty.h5"
     recorder = a121.H5Recorder(
         filename,
         _lib_version=ref_record.lib_version,
         _timestamp=ref_record.timestamp,
         _uuid=ref_record.uuid,
+        _chunk_size=chunk_size,
     )
 
     recorder._start(
