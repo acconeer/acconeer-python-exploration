@@ -48,7 +48,7 @@ def test_init_defaults_with_file_object(tmp_file_path):
         assert f["generation"][()].decode() == "a121"
 
 
-@pytest.mark.parametrize("chunk_size", [1, 512])
+@pytest.mark.parametrize("chunk_size", [None, 1, 512])
 def test_sample_whole_record(tmp_path, ref_record, chunk_size):
     filename = tmp_path / "empty.h5"
     recorder = a121.H5Recorder(

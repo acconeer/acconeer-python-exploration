@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime
 import os
 from pathlib import Path
+from time import time
 from typing import Any, Optional, TypeVar
 from uuid import uuid4
 
@@ -47,19 +48,23 @@ def get_uuid() -> str:
 
 
 class H5Recorder(Recorder):
+    _AUTO_CHUNK_MAX_SIZE = 512
+    _AUTO_CHUNK_MAX_TIME = 1.0
+
     path: Optional[os.PathLike]
     file: h5py.File
     owns_file: bool
     _num_frames: int
-    chunk_size: int
+    chunk_size: Optional[int]
     chunk_buffer: list[list[dict[int, Result]]]
+    _last_write_time: float
 
     def __init__(
         self,
         path_or_file: PathOrH5File,
         mode: str = "x",
         *,
-        _chunk_size: int = 512,
+        _chunk_size: Optional[int] = None,
         _lib_version: Optional[str] = None,
         _timestamp: Optional[str] = None,
         _uuid: Optional[str] = None,
@@ -69,6 +74,7 @@ class H5Recorder(Recorder):
         self.chunk_size = _chunk_size
         self.chunk_buffer = []
         self._num_frames = 0
+        self._last_write_time = 0.0
 
         if _lib_version is None:
             _lib_version = importlib_metadata.version("acconeer-exptool")
@@ -175,6 +181,8 @@ class H5Recorder(Recorder):
                     "provided", data=calibrations_provided[sensor_id], track_times=False
                 )
 
+        self._last_write_time = time()
+
     def _write_chunk_buffer_to_file(self, start_idx: int) -> int:
         """Saves the contents of ``self.chunk_buffer`` to file.
 
@@ -198,9 +206,17 @@ class H5Recorder(Recorder):
     def _sample(self, extended_result: list[dict[int, Result]]) -> None:
         self.chunk_buffer.append(extended_result)
 
-        if len(self.chunk_buffer) == self.chunk_size:
+        if self.chunk_size is None:
+            reached_size_limit = len(self.chunk_buffer) >= self._AUTO_CHUNK_MAX_SIZE
+            reached_time_limit = (time() - self._last_write_time) >= self._AUTO_CHUNK_MAX_TIME
+            write = reached_size_limit or reached_time_limit
+        else:
+            write = len(self.chunk_buffer) == self.chunk_size
+
+        if write:
             self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
             self.chunk_buffer = []
+            self._last_write_time = time()
 
     def _stop(self) -> Any:
         self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
