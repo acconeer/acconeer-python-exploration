@@ -266,6 +266,11 @@ def test_transpose_extended_structures():
     assert utils.transpose_extended_structures(structures) == expected
 
 
+def test_transpose_extended_structures_empty():
+    with pytest.raises(ValueError):
+        _ = utils.transpose_extended_structures([])
+
+
 def test_transpose_extended_structures_all_structures_needs_to_have_same_structure():
     structures = [
         [{1: "a"}],

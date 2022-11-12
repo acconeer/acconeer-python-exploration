@@ -356,6 +356,10 @@ def transpose_extended_structures(
     structures: list[list[dict[int, ValueT]]]
 ) -> list[dict[int, list[ValueT]]]:
     """'Transposes' a list of extended structures to create an extended structure of lists"""
+
+    if not structures:
+        raise ValueError("'structures' cannot be empty")
+
     shapes = [extended_structure_shape(s) for s in structures]
     if not all(shape == shapes[0] for shape in shapes):
         raise ValueError("All extended structures needs to have the same structure.")
