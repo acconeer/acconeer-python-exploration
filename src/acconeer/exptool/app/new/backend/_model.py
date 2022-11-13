@@ -85,8 +85,8 @@ class Model:
             msg = "Failed to connect"
 
             try:
-                msg += f":\n{exc.args[0]}"
-            except IndexError:
+                msg += f":\n{exc}"
+            except Exception:
                 pass
 
             raise HandledException(msg)

@@ -9,6 +9,7 @@ import time
 from typing import Any, Callable, Iterator, Optional, Tuple, Type, Union
 
 import attrs
+from serial.serialutil import SerialException
 
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
@@ -168,7 +169,26 @@ class AgnosticClient(AgnosticClientFriends):
         """
         self._default_link_timeout = self._link.timeout
         self._link_timeout = self._default_link_timeout
-        self._link.connect()
+
+        try:
+            self._link.connect()
+        except SerialException as exc:
+            if "Permission denied" in str(exc):
+                text = "\n".join(
+                    [
+                        str(exc),
+                        "",
+                        "You are probably missing permissions to access the serial port.",
+                        "",
+                        "Run the setup script to fix it:",
+                        "$ python -m acconeer.exptool.setup",
+                        "",
+                        "Reboot for the changes to take effect.",
+                    ]
+                )
+                raise ClientError(text) from exc
+            else:
+                raise
 
         self._message_stream = self._get_message_stream()
 
