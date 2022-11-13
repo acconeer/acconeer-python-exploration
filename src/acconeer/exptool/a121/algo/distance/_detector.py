@@ -101,11 +101,11 @@ class SingleSensorContext(AlgoConfigBase):
         default=None
     )
     reference_temperature: Optional[int] = attrs.field(default=None)
-
+    sensor_calibration: Optional[a121.SensorCalibration] = attrs.field(default=None)
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
 
     def to_h5(self, group: h5py.Group) -> None:
-        for k, v in attrs.asdict(self).items():
+        for k, v in attrs.asdict(self, recurse=False).items():
             if k in [
                 "recorded_thresholds_mean_sweep",
                 "recorded_thresholds_noise_std",
@@ -118,10 +118,15 @@ class SingleSensorContext(AlgoConfigBase):
 
             if isinstance(v, a121.SessionConfig):
                 _create_h5_string_dataset(group, k, v.to_json())
+            elif isinstance(v, a121.SensorCalibration):
+                sensor_calibration_group = group.create_group("sensor_calibration")
+                v.to_h5(sensor_calibration_group)
             elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
                 group.create_dataset(k, data=v, track_times=False)
             else:
-                raise RuntimeError(f"Unexpected {type(self).__name__} field type '{type(v)}'")
+                raise RuntimeError(
+                    f"Unexpected {type(self).__name__} field '{k}' of type '{type(v)}'"
+                )
 
         if self.recorded_thresholds_mean_sweep is not None:
             recorded_thresholds_mean_sweep_group = group.create_group(
@@ -181,6 +186,11 @@ class SingleSensorContext(AlgoConfigBase):
         if "bg_noise_std" in group:
             bg_noise_std = _get_group_items(group["bg_noise_std"])
             context_dict["bg_noise_std"] = bg_noise_std
+
+        if "sensor_calibration" in group:
+            context_dict["sensor_calibration"] = a121.SensorCalibration.from_h5(
+                group["sensor_calibration"]
+            )
 
         return SingleSensorContext(**context_dict)
 
@@ -363,6 +373,8 @@ class Detector:
             context.recorded_thresholds_mean_sweep = None
             context.recorded_thresholds_noise_std = None
 
+            context.sensor_calibration = self.client.calibrations[sensor_id]
+
     def _record_threshold(self) -> None:
         """Calibrates the parameters used when forming the recorded threshold."""
 
@@ -497,6 +509,14 @@ class Detector:
                 extended_result[0][sensor_id], sensor_config
             )
 
+    @staticmethod
+    def _get_sensor_calibrations(context: DetectorContext) -> dict[int, a121.SensorCalibration]:
+        return {
+            sensor_id: single_context.sensor_calibration
+            for sensor_id, single_context in context.single_sensor_contexts.items()
+            if single_context.sensor_calibration is not None
+        }
+
     @classmethod
     def get_detector_status(
         cls,
@@ -617,9 +637,7 @@ class Detector:
             spec.processor_config.threshold_method for spec in processor_specs
         ]
 
-    def start(
-        self, recorder: Optional[a121.Recorder] = None, skip_calibration: bool = False
-    ) -> None:
+    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
         """Method for setting up measurement session."""
 
         if self.started:
@@ -630,7 +648,13 @@ class Detector:
         if not status.ready_to_start:
             raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
         specs = self._add_context_to_processor_spec(self.processor_specs)
-        extended_metadata = self.client.setup_session(self.session_config)
+
+        sensor_calibration = self._get_sensor_calibrations(self.context)
+
+        extended_metadata = self.client.setup_session(
+            self.session_config, calibrations=sensor_calibration
+        )
+
         assert isinstance(extended_metadata, list)
         assert np.all(
             [

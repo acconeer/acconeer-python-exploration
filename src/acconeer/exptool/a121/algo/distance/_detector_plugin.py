@@ -201,9 +201,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self._recorder = None
 
         try:
-            self._detector_instance.start(
-                self._recorder, skip_calibration=self.shared_state.replaying
-            )
+            self._detector_instance.start(self._recorder)
         except Exception as exc:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not start") from exc
