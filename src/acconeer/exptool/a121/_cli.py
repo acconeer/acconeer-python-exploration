@@ -26,6 +26,8 @@ class ExampleArgumentParser(ArgumentParser):
             "--usb-device",
             dest="usb_device",
             metavar="serial_number",
+            nargs="?",
+            const=True,
         )
 
         verbosity_group = self.add_mutually_exclusive_group(required=False)
