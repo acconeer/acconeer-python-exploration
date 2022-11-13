@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- App taskbar icon on Windows
+
 ## v5.4.0
 
 ### Added

@@ -1,7 +1,9 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
+import ctypes
 import importlib.resources
+import platform
 import sys
 
 import qdarktheme
@@ -32,6 +34,9 @@ def main():
         remove_temp_dir()
         print("Config purged")
         sys.exit(0)
+
+    if platform.system().lower() == "windows":
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("acconeer.exptool")
 
     backend = Backend()
     backend.start()
