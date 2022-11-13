@@ -266,7 +266,7 @@ class Detector:
 
     session_config: a121.SessionConfig
     processor_specs: List[ProcessorSpec]
-    multi_sensor_context: DetectorContext
+    context: DetectorContext
 
     def __init__(
         self,
@@ -282,13 +282,13 @@ class Detector:
         self.started = False
 
         if context is None or not bool(context.single_sensor_contexts):
-            self.multi_sensor_context = DetectorContext(
+            self.context = DetectorContext(
                 single_sensor_contexts={
                     sensor_id: SingleSensorContext() for sensor_id in self.sensor_ids
                 }
             )
         else:
-            self.multi_sensor_context = context
+            self.context = context
 
         self.aggregator: Optional[Aggregator] = None
 
@@ -319,7 +319,7 @@ class Detector:
         ) or self._has_recorded_threshold_mode(self.detector_config, self.sensor_ids):
             self._record_threshold()
 
-        for context in self.multi_sensor_context.single_sensor_contexts.values():
+        for context in self.context.single_sensor_contexts.values():
             context.session_config_used_during_calibration = self.session_config
 
     def _calibrate_close_range(self) -> None:
@@ -353,7 +353,7 @@ class Detector:
         assert isinstance(extended_result, list)
         self.client.stop_session()
 
-        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+        for sensor_id, context in self.context.single_sensor_contexts.items():
             aggregator_result = aggregators[sensor_id].process(extended_result=extended_result)
             (processor_result,) = aggregator_result.processor_results
             assert processor_result.phase_jitter_comp_reference is not None
@@ -400,7 +400,7 @@ class Detector:
 
         assert isinstance(extended_result, list)
 
-        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+        for sensor_id, context in self.context.single_sensor_contexts.items():
             recorded_thresholds_mean_sweep = []
             recorded_thresholds_noise_std = []
             for processor_result in aggregators_result[sensor_id].processor_results:
@@ -451,7 +451,7 @@ class Detector:
         assert isinstance(extended_result, list)
         self.client.stop_session()
 
-        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+        for sensor_id, context in self.context.single_sensor_contexts.items():
             bg_noise_one_sensor = []
             for spec in self.processor_specs:
                 result = extended_result[spec.group_index][sensor_id]
@@ -492,7 +492,7 @@ class Detector:
 
         assert isinstance(extended_result, list)
 
-        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+        for sensor_id, context in self.context.single_sensor_contexts.items():
             context.loopback_peak_location_m = calculate_loopback_peak_location(
                 extended_result[0][sensor_id], sensor_config
             )
@@ -560,17 +560,17 @@ class Detector:
         return cls.MIN_DIST_M <= config.start_m and config.end_m <= cls.MAX_DIST_M
 
     @staticmethod
-    def _close_range_calibrated(multi_sensor_context: DetectorContext) -> bool:
+    def _close_range_calibrated(context: DetectorContext) -> bool:
         has_dl = np.all(
             [
                 context.direct_leakage is not None
-                for context in multi_sensor_context.single_sensor_contexts.values()
+                for context in context.single_sensor_contexts.values()
             ]
         )
         has_pjcr = np.all(
             [
                 context.phase_jitter_comp_reference is not None
-                for context in multi_sensor_context.single_sensor_contexts.values()
+                for context in context.single_sensor_contexts.values()
             ]
         )
 
@@ -580,18 +580,18 @@ class Detector:
         return bool(has_dl and has_pjcr)
 
     @staticmethod
-    def _recorded_threshold_calibrated(multi_sensor_context: DetectorContext) -> bool:
+    def _recorded_threshold_calibrated(context: DetectorContext) -> bool:
         mean_sweep_calibrated = np.all(
             [
                 context.recorded_thresholds_mean_sweep is not None
-                for context in multi_sensor_context.single_sensor_contexts.values()
+                for context in context.single_sensor_contexts.values()
             ]
         )
 
         std_calibrated = np.all(
             [
                 context.recorded_thresholds_noise_std is not None
-                for context in multi_sensor_context.single_sensor_contexts.values()
+                for context in context.single_sensor_contexts.values()
             ]
         )
 
@@ -625,9 +625,7 @@ class Detector:
         if self.started:
             raise RuntimeError("Already started")
 
-        status = self.get_detector_status(
-            self.detector_config, self.multi_sensor_context, self.sensor_ids
-        )
+        status = self.get_detector_status(self.detector_config, self.context, self.sensor_ids)
 
         if not status.ready_to_start:
             raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
@@ -637,7 +635,7 @@ class Detector:
         assert np.all(
             [
                 context.loopback_peak_location_m is not None
-                for context in self.multi_sensor_context.single_sensor_contexts.values()
+                for context in self.context.single_sensor_contexts.values()
             ]
         )
         aggregator_config = AggregatorConfig(
@@ -661,7 +659,7 @@ class Detector:
                     algo_group,
                     self.sensor_ids,
                     self.detector_config,
-                    self.multi_sensor_context,
+                    self.context,
                 )
             else:
                 # Should never happen as we currently only have the H5Recorder
@@ -1167,7 +1165,7 @@ class Detector:
         """
 
         updated_specs_all_sensors = {}
-        for sensor_id, context in self.multi_sensor_context.single_sensor_contexts.items():
+        for sensor_id, context in self.context.single_sensor_contexts.items():
             assert context.bg_noise_std is not None
             updated_specs: List[ProcessorSpec] = []
             for idx, (spec, bg_noise_std) in enumerate(zip(processor_specs, context.bg_noise_std)):

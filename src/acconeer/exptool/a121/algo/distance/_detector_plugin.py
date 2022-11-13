@@ -305,7 +305,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         finally:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
-        self.shared_state.context = self._detector_instance.multi_sensor_context
+        self.shared_state.context = self._detector_instance.context
         self.broadcast()
 
 
