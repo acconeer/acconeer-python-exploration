@@ -12,6 +12,7 @@ from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     Record,
+    RecordException,
     Result,
     SensorCalibration,
     ServerInfo,
@@ -36,7 +37,7 @@ class InMemoryRecord(Record):
     _timestamp: str = attrs.field()
     _uuid: str = attrs.field()
     _calibrations: Optional[dict[int, SensorCalibration]] = attrs.field()
-    _calibrations_provided: dict[int, bool] = attrs.field()
+    _calibrations_provided: Optional[dict[int, bool]] = attrs.field()
 
     @property
     def client_info(self) -> ClientInfo:
@@ -93,16 +94,25 @@ class InMemoryRecord(Record):
 
     @property
     def calibrations(self) -> dict[int, SensorCalibration]:
-        if not self._calibrations:
+        if self._calibrations is None:
             raise InMemoryRecordException("No calibration in record")
         return self._calibrations
 
     @property
     def calibrations_provided(self) -> dict[int, bool]:
+        if self._calibrations_provided is None:
+            raise InMemoryRecordException("No calibration in record")
         return self._calibrations_provided
 
     @classmethod
     def from_record(cls, record: Record) -> InMemoryRecord:
+        try:
+            calibrations = record.calibrations
+            calibrations_provided = record.calibrations_provided
+        except RecordException:
+            calibrations = None
+            calibrations_provided = None
+
         return cls(
             client_info=record.client_info,
             extended_metadata=record.extended_metadata,
@@ -113,6 +123,6 @@ class InMemoryRecord(Record):
             session_config=record.session_config,
             timestamp=record.timestamp,
             uuid=record.uuid,
-            calibrations=record.calibrations,
-            calibrations_provided=record.calibrations_provided,
+            calibrations=calibrations,
+            calibrations_provided=calibrations_provided,
         )

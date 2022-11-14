@@ -18,6 +18,7 @@ from .containers import (
     Metadata,
     PersistentRecord,
     Record,
+    RecordException,
     Result,
     ResultContext,
     SensorCalibration,

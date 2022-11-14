@@ -14,6 +14,7 @@ from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
     PersistentRecord,
+    RecordException,
     Result,
     ResultContext,
     SensorCalibration,
@@ -26,7 +27,7 @@ from acconeer.exptool.a121._core.entities import (
 T = TypeVar("T")
 
 
-class H5RecordException(Exception):
+class H5RecordException(RecordException):
     pass
 
 
@@ -196,8 +197,8 @@ class H5Record(PersistentRecord):
 
     @property
     def calibrations_provided(self) -> dict[int, bool]:
-        calibration_provided = {}
+        calibrations_provided = {}
         for sensor_id, group in self._iterate_calibrations():
-            calibration_provided[sensor_id] = group["provided"][()] > 0
+            calibrations_provided[sensor_id] = group["provided"][()] > 0
 
-        return calibration_provided
+        return calibrations_provided

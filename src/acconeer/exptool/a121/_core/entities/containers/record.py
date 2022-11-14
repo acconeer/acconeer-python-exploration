@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator
 
 import numpy as np
 import numpy.typing as npt
@@ -18,6 +18,10 @@ from .result import Result
 from .sensor_calibration import SensorCalibration
 from .server_info import ServerInfo
 from .stacked_results import StackedResults
+
+
+class RecordException(Exception):
+    pass
 
 
 class Record(abc.ABC):
@@ -136,7 +140,7 @@ class Record(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def calibrations(self) -> Optional[dict[int, SensorCalibration]]:
+    def calibrations(self) -> dict[int, SensorCalibration]:
         """The calibrations in the record"""
 
     @property

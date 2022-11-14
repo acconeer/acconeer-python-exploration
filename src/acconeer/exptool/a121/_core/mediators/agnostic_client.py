@@ -57,7 +57,7 @@ class AgnosticClient(AgnosticClientFriends):
     _session_is_started: bool
     _metadata: Optional[list[dict[int, Metadata]]]
     _sensor_calibrations: Optional[dict[int, SensorCalibration]]
-    _calibration_provided: dict[int, bool]
+    _calibrations_provided: dict[int, bool]
     _sensor_infos: dict[int, SensorInfo]
     _system_info: Optional[SystemInfoDict]
     _result_queue: list[list[dict[int, Result]]]
@@ -75,7 +75,7 @@ class AgnosticClient(AgnosticClientFriends):
         self._session_is_started = False
         self._metadata = None
         self._sensor_calibrations = None
-        self._calibration_provided = {}
+        self._calibrations_provided = {}
         self._sensor_infos = {}
         self._system_info = None
         self._result_queue = []
@@ -232,12 +232,12 @@ class AgnosticClient(AgnosticClientFriends):
 
         config.validate()
 
-        self._calibration_provided = {}
+        self._calibrations_provided = {}
         for _, sensor_id, _ in iterate_extended_structure(config.groups):
             if calibrations:
-                self._calibration_provided[sensor_id] = sensor_id in calibrations
+                self._calibrations_provided[sensor_id] = sensor_id in calibrations
             else:
-                self._calibration_provided[sensor_id] = False
+                self._calibrations_provided[sensor_id] = False
 
         self._link.send(self._protocol.setup_command(config, calibrations))
 
@@ -475,7 +475,7 @@ class AgnosticClient(AgnosticClientFriends):
         this attribute will return ``{1: False, 2: True}``
         """
 
-        return self._calibration_provided
+        return self._calibrations_provided
 
     @property
     def _rate_stats(self) -> _RateStats:

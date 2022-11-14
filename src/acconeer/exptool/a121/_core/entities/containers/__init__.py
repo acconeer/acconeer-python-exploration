@@ -3,7 +3,7 @@
 
 from .client_info import ClientInfo
 from .metadata import Metadata
-from .record import PersistentRecord, Record
+from .record import PersistentRecord, Record, RecordException
 from .result import Result, ResultContext
 from .sensor_calibration import SensorCalibration
 from .server_info import SensorInfo, ServerInfo
