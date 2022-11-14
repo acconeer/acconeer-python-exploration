@@ -55,8 +55,8 @@ class H5Recorder(Recorder):
     file: h5py.File
     owns_file: bool
     _num_frames: int
-    chunk_size: Optional[int]
-    chunk_buffer: list[list[dict[int, Result]]]
+    _chunk_size: Optional[int]
+    _chunk_buffer: list[list[dict[int, Result]]]
     _last_write_time: float
 
     def __init__(
@@ -71,8 +71,8 @@ class H5Recorder(Recorder):
     ) -> None:
         self.file, self.owns_file = h5_file_factory(path_or_file, h5_file_mode=mode)
         self.path = Path(self.file.filename) if self.owns_file else None
-        self.chunk_size = _chunk_size
-        self.chunk_buffer = []
+        self._chunk_size = _chunk_size
+        self._chunk_buffer = []
         self._num_frames = 0
         self._last_write_time = 0.0
 
@@ -189,11 +189,11 @@ class H5Recorder(Recorder):
         :returns: the number of extended results saved.
         """
 
-        if len(self.chunk_buffer) == 0:
+        if len(self._chunk_buffer) == 0:
             return 0
 
         for group_idx, entry_idx, results in utils.iterate_extended_structure_as_entry_list(
-            utils.transpose_extended_structures(self.chunk_buffer)
+            utils.transpose_extended_structures(self._chunk_buffer)
         ):
             self._write_results(
                 g=self.file[f"session/group_{group_idx}/entry_{entry_idx}/result"],
@@ -201,26 +201,26 @@ class H5Recorder(Recorder):
                 results=results,
             ),
 
-        return len(self.chunk_buffer)
+        return len(self._chunk_buffer)
 
     def _sample(self, extended_result: list[dict[int, Result]]) -> None:
-        self.chunk_buffer.append(extended_result)
+        self._chunk_buffer.append(extended_result)
 
-        if self.chunk_size is None:
-            reached_size_limit = len(self.chunk_buffer) >= self._AUTO_CHUNK_MAX_SIZE
+        if self._chunk_size is None:
+            reached_size_limit = len(self._chunk_buffer) >= self._AUTO_CHUNK_MAX_SIZE
             reached_time_limit = (time() - self._last_write_time) >= self._AUTO_CHUNK_MAX_TIME
             write = reached_size_limit or reached_time_limit
         else:
-            write = len(self.chunk_buffer) == self.chunk_size
+            write = len(self._chunk_buffer) == self._chunk_size
 
         if write:
             self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
-            self.chunk_buffer = []
+            self._chunk_buffer = []
             self._last_write_time = time()
 
     def _stop(self) -> Any:
         self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
-        self.chunk_buffer = []
+        self._chunk_buffer = []
 
         if self.owns_file:
             self.file.close()
