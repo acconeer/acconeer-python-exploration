@@ -48,12 +48,39 @@ def get_uuid() -> str:
 
 
 class H5Recorder(Recorder):
+    """Recorder writing directly to an HDF5 file
+
+    :param path_or_file:
+        If a path-like object, by default (depending on ``mode`` below) an HDF5 file is created at
+        that path. When stopping, the file is closed.
+
+        If an ``h5py.File``, that file is used as-is. In this case, the file is not closed when
+        stopping.
+    :param mode:
+        The file mode to use if a path-like object was given for ``path_or_file``. Default value is
+        'x', meaning that we open for exclusive creation, failing if the file already exists.
+    :param _chunk_size:
+        If given, data will be written to file every ``_chunk_size`` samples.
+
+        If not given, data will be written at least every 512:th sample, or at least once per
+        second, whichever comes first.
+
+        Setting a small chunk size (e.g. 1) may degrade performance for high sample rates.
+
+        Internal parameter, subject to change.
+    """
+
     _AUTO_CHUNK_MAX_SIZE = 512
     _AUTO_CHUNK_MAX_TIME = 1.0
 
     path: Optional[os.PathLike]
+    """The file path, if a path-like object was given for ``path_or_file``."""
     file: h5py.File
+    """The ``h5py.File``."""
     owns_file: bool
+    """Whether :class:`H5Recorder` opened and owns the file, i.e., if a path-like object was given
+    for ``path_or_file``. If it does, the file is closed when stopping.
+    """
     _num_frames: int
     _chunk_size: Optional[int]
     _chunk_buffer: list[list[dict[int, Result]]]
@@ -298,6 +325,11 @@ class H5Recorder(Recorder):
         g["frame"][dataset_slice] = [result._frame for result in results]
 
     def require_algo_group(self, key: str) -> h5py.Group:
+        """Creates/gets the ``algo`` group with a given ``key``.
+
+        :raises: Exception if the key does not match the file content
+        """
+
         group = self.file.require_group("algo")
 
         if "key" in group:
