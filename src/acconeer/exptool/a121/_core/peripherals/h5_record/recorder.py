@@ -195,15 +195,9 @@ class H5Recorder(Recorder):
             calibrations_group = session_group.create_group("calibrations")
             for sensor_id, calibration in calibrations.items():
                 sensor_calibration_group = calibrations_group.create_group(f"sensor_{sensor_id}")
-                sensor_calibration_group.create_dataset(
-                    "temperature", data=calibration.temperature, track_times=False
-                )
-                sensor_calibration_group.create_dataset(
-                    "data",
-                    data=calibration.data,
-                    dtype=_H5PY_STR_DTYPE,
-                    track_times=False,
-                )
+
+                calibration.to_h5(sensor_calibration_group)
+
                 sensor_calibration_group.create_dataset(
                     "provided", data=calibrations_provided[sensor_id], track_times=False
                 )

@@ -190,12 +190,7 @@ class H5Record(PersistentRecord):
     def calibrations(self) -> dict[int, SensorCalibration]:
         sensor_calibrations_dict = {}
         for sensor_id, group in self._iterate_calibrations():
-            sensor_calibrations_dict[sensor_id] = SensorCalibration.from_dict(
-                {
-                    "temperature": group["temperature"][()],
-                    "data": group["data"][()].decode("utf-8"),
-                }
-            )
+            sensor_calibrations_dict[sensor_id] = SensorCalibration.from_h5(group)
 
         return sensor_calibrations_dict
 
