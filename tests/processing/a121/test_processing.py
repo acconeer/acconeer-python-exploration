@@ -52,7 +52,7 @@ def input_path(resource_name: str) -> Path:
             presence_test.presence_default,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
-            "input-presence-default_114frames.h5",
+            "input-presence-default.h5",
         ),
         (
             presence_test.presence_timeout_3s,
