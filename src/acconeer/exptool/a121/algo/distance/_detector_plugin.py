@@ -61,7 +61,7 @@ from ._detector import (
 
 @attrs.mutable(kw_only=True)
 class SharedState:
-    sensor_id: int = attrs.field(default=1)
+    sensor_ids: list[int] = attrs.field(factory=lambda: [1])
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
     context: DetectorContext = attrs.field(factory=DetectorContext)
     replaying: bool = attrs.field(default=False)
@@ -131,8 +131,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.broadcast()
 
     @is_task
-    def update_sensor_id(self, *, sensor_id: int) -> None:
-        self.shared_state.sensor_id = sensor_id
+    def update_sensor_ids(self, *, sensor_ids: list[int]) -> None:
+        self.shared_state.sensor_ids = sensor_ids
         self.broadcast()
 
     def teardown(self) -> None:
@@ -175,7 +175,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         _, config, context = _load_algo_data(algo_group)
         self.shared_state.config = config
         self.shared_state.context = context
-        self.shared_state.sensor_id = r.sensor_id
+        self.shared_state.sensor_ids = list(next(iter(r.session_config.groups)).keys())
 
     @is_task
     def start_session(self, *, with_recorder: bool = True) -> None:
@@ -190,7 +190,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self._detector_instance = Detector(
             client=self._client,
-            sensor_ids=[self.shared_state.sensor_id],
+            sensor_ids=self.shared_state.sensor_ids,
             detector_config=self.shared_state.config,
             context=self.shared_state.context,
         )
@@ -295,7 +295,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         try:
             self._detector_instance = Detector(
                 client=self._client,
-                sensor_ids=[self.shared_state.sensor_id],
+                sensor_ids=self.shared_state.sensor_ids,
                 detector_config=self.shared_state.config,
                 context=self.shared_state.context,
             )
@@ -608,11 +608,13 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
-        self.sensor_id_pidget.set_parameter(state.sensor_id)
+
+        (sensor_id,) = state.sensor_ids
+        self.sensor_id_pidget.set_parameter(sensor_id)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
         detector_status = Detector.get_detector_status(
-            state.config, state.context, [state.sensor_id]
+            state.config, state.context, state.sensor_ids
         )
 
         self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
@@ -626,7 +628,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
-        self.app_model.put_backend_plugin_task("update_sensor_id", {"sensor_id": sensor_id})
+        self.app_model.put_backend_plugin_task("update_sensor_ids", {"sensor_ids": [sensor_id]})
 
     # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
