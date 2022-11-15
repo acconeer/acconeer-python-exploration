@@ -114,7 +114,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.fft_plot = self.plot_layout.addPlot(col=0, row=1)
         self.fft_plot.setMenuEnabled(False)
         self.fft_plot.showGrid(x=True, y=True)
-        self.fft_plot.setLabel("left", "Power (db)")
+        self.fft_plot.setLabel("left", "Power (dB)")
         self.fft_plot.setLabel("bottom", "Frequency (Hz)")
         self.fft_plot.addItem(pg.PlotDataItem())
         self.fft_curve = self.fft_plot.plot(**feat_kw)
