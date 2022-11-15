@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import platform
 import webbrowser
-from typing import Optional
+from typing import List, Optional
 
 import pyperclip
 import qtawesome as qta
@@ -141,7 +141,7 @@ class USBDeviceComboBox(QComboBox):
 
 
 class HintObject:
-    def __init__(self, warning: str, tooltip: str, how_to_fix_url):
+    def __init__(self, warning: str, tooltip: str, how_to_fix_url: str) -> None:
         self.warning = warning
         self.tooltip = tooltip
         self.how_to_fix_url = how_to_fix_url
@@ -157,8 +157,8 @@ class UserHintWidget(QWidget):
         super().__init__(parent)
         app_model.sig_notify.connect(self._on_app_model_update)
 
-        self.hints = []
-        self._how_to_fix_url = None
+        self._hints: List[HintObject] = []
+        self._how_to_fix_url: Optional[str] = None
 
         self.setLayout(QHBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -179,11 +179,11 @@ class UserHintWidget(QWidget):
         self.button.setHidden(True)
         self.layout().addWidget(self.button)
 
-    def add_hint(self, hint: HintObject):
-        self.hints.append(hint)
+    def add_hint(self, hint: HintObject) -> None:
+        self._hints.append(hint)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        for hint in self.hints:
+        for hint in self._hints:
             if hint._should_show(app_model):
                 self.label.setText(hint.warning)
                 self.label.setToolTip(hint.tooltip)

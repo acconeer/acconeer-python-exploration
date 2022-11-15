@@ -570,8 +570,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     @staticmethod
     def _calculate_cfar_threshold(
         abs_sweep: npt.NDArray[np.float_],
-        window_length: float,
-        guard_half_length: float,
+        window_length: int,
+        guard_half_length: int,
         num_stds: float,
         abs_noise_std: npt.NDArray,
     ) -> npt.NDArray[np.float_]:

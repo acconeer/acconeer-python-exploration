@@ -3,7 +3,6 @@
 
 import ctypes
 import importlib.resources
-import platform
 import sys
 
 import qdarktheme
@@ -35,7 +34,7 @@ def main():
         print("Config purged")
         sys.exit(0)
 
-    if platform.system().lower() == "windows":
+    if sys.platform == "win32" or sys.platform == "cygwin":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("acconeer.exptool")
 
     backend = Backend()

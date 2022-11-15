@@ -278,7 +278,7 @@ class AgnosticClient(AgnosticClientFriends):
             raise ClientError("Session is already started.")
 
         if recorder is not None:
-            calibrations_provided = self.calibrations_provided
+            calibrations_provided: Optional[dict[int, bool]] = self.calibrations_provided
             try:
                 calibrations = self.calibrations
             except ClientError:
