@@ -11,6 +11,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool._bs_process import BSProccessDiedException, BSProcess  # type: ignore[import]
 from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121.algo._base import ConfigT, InputT, MetadataT, ResultT
 from acconeer.exptool.app.new import GeneralMessage
@@ -25,6 +26,7 @@ def processor_main(
     processor_config_cls: Type[ConfigT],
     plot_plugin: Type[GenericProcessorPlotPluginBase[ResultT, MetadataT]],
     sensor_config_getter: Callable[[], a121.SensorConfig],
+    _blinkstick_updater_cls: Optional[Any] = None,
 ) -> None:
     parser = a121.ExampleArgumentParser()
     parser.add_argument("--sensor", type=int, default=1)
@@ -55,6 +57,13 @@ def processor_main(
     pg_process = et.PGProcess(pg_updater)  # type: ignore[attr-defined]
     pg_process.start()
 
+    if _blinkstick_updater_cls is None:
+        bs_process = None
+    else:
+        bs_updater = _blinkstick_updater_cls()
+        bs_process = BSProcess(bs_updater)
+        bs_process.start()
+
     client.start_session()
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
@@ -67,11 +76,19 @@ def processor_main(
 
         try:
             pg_process.put_data(processor_result)
-        except et.PGProccessDiedException:  # type: ignore[attr-defined]
+
+            if bs_process is not None:
+                bs_process.put_data(processor_result)
+        except (et.PGProccessDiedException, BSProccessDiedException):  # type: ignore[attr-defined]
             break
 
     print("Disconnecting...")
+
     pg_process.close()
+
+    if bs_process is not None:
+        bs_process.close()
+
     client.disconnect()
 
 
