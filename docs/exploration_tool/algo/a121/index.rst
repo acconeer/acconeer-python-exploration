@@ -9,3 +9,4 @@ A121 algorithms
    presence_detection
    distance_detection
    phase_tracking
+   vibration

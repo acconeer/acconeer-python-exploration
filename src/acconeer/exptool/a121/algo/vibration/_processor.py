@@ -16,7 +16,10 @@ from acconeer.exptool.a121.algo import APPROX_BASE_STEP_LENGTH_M, AlgoConfigBase
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoConfigBase):
     time_series_length: int = attrs.field(default=512)
+    """Length of time series."""
+
     lp_coeff: float = attrs.field(default=0.75)
+    """Specify filter coefficient of exponential filter."""
 
 
 @attrs.frozen(kw_only=True)
