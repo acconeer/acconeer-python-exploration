@@ -11,6 +11,7 @@
 ### Fixed
 - A121 recorder crashing when stopping due to empty chunk buffer
 - A121 recorder can't load recording without calibration
+- Flash port not detected correctly
 
 ## v5.4.0
 

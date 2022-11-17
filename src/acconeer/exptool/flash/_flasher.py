@@ -107,7 +107,8 @@ def find_flash_port(port=None, do_log=True):
         if pinfo[1]
     ]
 
-    detected_ports = et.utils.get_usb_devices()
+    if len(detected_ports) == 0:
+        detected_ports = et.utils.get_usb_devices()
 
     if len(detected_ports) == 0:
         if do_log:
