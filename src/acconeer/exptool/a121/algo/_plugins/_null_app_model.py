@@ -19,3 +19,5 @@ class NullAppModel(AppModel):
     def __init__(self) -> None:
         self.sig_notify = self._NullSignal()
         self.sig_message_plot_plugin = self._NullSignal()
+        self.sig_backend_state_changed = self._NullSignal()
+        self.sig_load_plugin = self._NullSignal()
