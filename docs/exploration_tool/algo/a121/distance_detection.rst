@@ -54,7 +54,7 @@ Recorded threshold
     In situations where stationary objects are present, the background signal is not flat. To isolate objects of interest, the threshold is based on measurements of the static environment. The first step is to collect multiple sweeps, from which the mean sweep and standard deviation is calculated.
     Secondly, the threshold is formed by adding a number of standard deviations (the number is determined by the parameter :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorConfig.threshold_sensitivity`) to the mean sweep.
 Constant False Alarm Rate (CFAR) threshold(default)
-    A final method to construct a threshold for a certain distance is to use the signal from neighbouring distances of  the same sweep. This requires that the object gives rise to a single strong peak, such as a water surface and not, for example, the level in a large waste container. The main advantage is that the memory consumption is minimal.
+    A final method to construct a threshold for a certain distance is to use the signal from neighbouring distances of the same sweep. This requires that the object gives rise to a single strong peak, such as a water surface and not, for example, the level in a large waste container. The main advantage is that the memory consumption is minimal.
 
 Peak sorting
 ------------
@@ -65,20 +65,41 @@ Closest
     This method returns the closest peak.
 Highest RCS(default)
     This method returns the peak corresponding with the highest radar cross section according to the radar equation.
+    Note, the calculated RCS is an approximation of the actual RCS and is known to be less accurate at close distances.
 
-Close range measurement
------------------------
+Detector calibration
+--------------------
 
-Measuring the distance to objects close to the sensor is challenging due to the presence of strong direct leakage.
-One way to get around this is to characterize the leakage component and then subtract it from each measurement to isolate the signal of interest.
+For optimal performance, the detector performs a number of calibration steps.
+The following section outlines the purpose and process of each step.
+Note, which of the following calibration procedures to perform is determined by the user provided
+detector config. For instance, the close range measurement is only performed when measuring close
+to the sensor.
 
-The first step in doing this is to calibrate the direct leakage by calling the detector method :attr:`~acconeer.exptool.a121.algo.distance._detector.Detector.calibrate_close_range`.
-In Exploration Tool, this is done by pressing *Calibrate close range*. Note, it is important that the sensor is installed in its intended geometry and
-that there is no obstruction in front of the sensor while performing the close range calibration as the goal is to isolate and characterize the direct leakage.
+To trigger the calibration process in the Exploration Tool gui, simply press the button labeled "Calibrate
+detector". If you are running the detector from a script, the calibration is performed by calling
+the method :attr:`~acconeer.exptool.a121.algo.distance._detector.Detector.calibrate_detector`.
 
-Next, the recorded threshold is calibrated by calling the detector method :attr:`~acconeer.exptool.a121.algo.distance._detector.Detector.calibrate_recorded_threshold` or pressing *Record threshold* in the GUI. The reason for using recorded
-threshold with close range measurement is to get more robust performance of the detector as the resulting sweep after subtracting the direct leakage will have some
-residuals due to noise. This could trigger false detections when running CFAR or Fixed threshold, while in the case of recorded threshold, the magnitude of the residuals will be reflected in the threshold.
+Noise level estimation
+    The noise level is estimated by disabling of the transmitting antenna and just sample the background noise with the receiving antenna.
+
+Offset compensation
+    The purpose of the offset compensation is to improve the distance trueness(average error) of the distance detector.
+    The compensation utilize the loopback measurement, where the pulse is measured electronically on the chip, without transmitting it into the air.
+    The location of the peak amplitude is correlated with the distance error and used to correct the distance raw estimate.
+
+Close range measurement calibration
+    Measuring the distance to objects close to the sensor is challenging due to the presence of strong direct leakage.
+    One way to get around this is to characterize the leakage component and then subtract it from each measurement to isolate the signal component.
+    This is exactly what the close range calibration does.
+    While performing the calibration, it is important that the sensor is installed in its intended geometry and that there is no object in front of the sensor as this would interfer with the direct leakage.
+
+    Note, this calibration is only performed if close range measurement is active, given by the configured starting point.
+
+Recorded threshold
+    The recorded threshold is also recorded as a part of the detector calibration.
+    Note, this calibration is only performed if the detector is configured to used recorded threshold or if close range measurement is active, where recorded threshold is used.
+
 
 Temperature compensation
 ------------------------
