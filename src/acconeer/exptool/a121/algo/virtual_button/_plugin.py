@@ -172,6 +172,6 @@ VIRTUAL_BUTTON_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="virtual_button",
     title="Virtual button",
-    description=None,
+    description="Detect tap/wave motion and register as button press.",
     family=PluginFamily.EXAMPLE_APP,
 )
