@@ -9,11 +9,6 @@ import usb.core
 from usb.util import CTRL_RECIPIENT_INTERFACE, CTRL_TYPE_CLASS
 
 
-DEFAULT_TIMEOUT = 2
-USB_PACKET_TIMEOUT_MS = 10
-USB_CDC_CMD_SEND_BREAK = 0x23
-
-
 class UsbPortError(Exception):
     pass
 
@@ -48,10 +43,15 @@ class PyUsbComm:
 
 
 class PyUsbCdc:
+
+    USB_CDC_CMD_SEND_BREAK = 0x23
+    USB_MESSAGE_TIMEOUT = 2
+    USB_MESSAGE_TIMEOUT_MS = 1000 * USB_MESSAGE_TIMEOUT
+    USB_PACKET_TIMEOUT_MS = 200
+
     def __init__(self, name=None, vid=None, pid=None, start=True):
         self.vid = vid
         self.pid = pid
-        self._timeout = DEFAULT_TIMEOUT
         self._dev = None
         self._cdc_data_out_ep = None
         self._cdc_data_in_ep = None
@@ -92,17 +92,6 @@ class PyUsbCdc:
 
         return True
 
-    @property
-    def timeout(self):
-        return self._timeout
-
-    def settimeout(self, timeout):
-        self._timeout = timeout
-
-    @timeout.setter
-    def timeout(self, timeout):
-        self.settimeout(timeout)
-
     def read(self, size=None):
         if not self.is_open:
             raise UsbPortError("Port is not open")
@@ -110,35 +99,34 @@ class PyUsbCdc:
         rx = [self._rxremaining]
         length = len(self._rxremaining)
         self._rxremaining = b""
-        end_timeout = time.time() + (self.timeout or 0.2)
+        end_timeout = time.time() + self.USB_MESSAGE_TIMEOUT
         if size:
             while length < size:
-                c = self._dev.read(
-                    self._cdc_data_in_ep.bEndpointAddress, self._cdc_data_in_ep.wMaxPacketSize
-                )
-                if c is not None and len(c):
-                    rx.append(c)
-                    length += len(c)
-                if time.time() > end_timeout:
-                    break
-        else:
-            while True:
-                c = None
                 try:
                     c = self._dev.read(
                         self._cdc_data_in_ep.bEndpointAddress,
                         self._cdc_data_in_ep.wMaxPacketSize,
-                        timeout=USB_PACKET_TIMEOUT_MS,
+                        timeout=self.USB_PACKET_TIMEOUT_MS,
                     )
                 except usb.core.USBTimeoutError:
                     pass
                 if c is not None and len(c):
                     rx.append(c)
                     length += len(c)
-                else:
-                    break
                 if time.time() > end_timeout:
                     break
+        else:
+            c = None
+            try:
+                c = self._dev.read(
+                    self._cdc_data_in_ep.bEndpointAddress,
+                    self._cdc_data_in_ep.wMaxPacketSize,
+                    timeout=self.USB_MESSAGE_TIMEOUT_MS,
+                )
+            except usb.core.USBTimeoutError:
+                pass
+            if c is not None and len(c):
+                rx.append(c)
         chunk = b"".join(rx)
         if size and len(chunk) >= size:
             if self._rxremaining:
@@ -161,7 +149,7 @@ class PyUsbCdc:
             raise UsbPortError("Port is not open")
         self._dev.ctrl_transfer(
             CTRL_TYPE_CLASS | CTRL_RECIPIENT_INTERFACE,
-            USB_CDC_CMD_SEND_BREAK,
+            self.USB_CDC_CMD_SEND_BREAK,
             wValue=0xFFFF,
             wIndex=0,
         )

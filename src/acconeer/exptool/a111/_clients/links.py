@@ -283,15 +283,12 @@ class ExploreSerialLink(SerialLink):
 
 
 class USBLink(BaseLink):
-    _USB_PACKET_TIMEOUT = 0.01
-
     def __init__(self, vid=None, pid=None, serial=None, name=None):
         super().__init__()
         self._vid = vid
         self._pid = pid
         self._serial = serial
         self._name = name
-        self._port_timeout = self._USB_PACKET_TIMEOUT
 
     def _update_timeout(self):
         pass
@@ -315,7 +312,6 @@ class USBLink(BaseLink):
                 f"Unable to connect to port (vid={self._vid}, pid={self._pid}, name={self._name})"
             )
 
-        self._port.timeout = self._port_timeout
         self._buf = bytearray()
         self.send_break()
 

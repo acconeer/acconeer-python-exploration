@@ -93,7 +93,7 @@ class ComPort:
         self.databits = 8
         self.maximum_packet_size = 0
 
-        self._timeout = 2
+        self.timeout = 0.01
 
         self.is_open = False
         if start:
@@ -136,47 +136,6 @@ class ComPort:
     def in_waiting(self):
         return False
 
-    @property
-    def timeout(self):
-        return self._timeout
-
-    def settimeout(self, timeout):
-        self._timeout = timeout
-        if self.is_open:
-            self.device.set_timeout(self._ep_in, timeout)
-
-    @timeout.setter
-    def timeout(self, timeout):
-        self.settimeout(timeout)
-
-    def readinto(self, buf):
-        if not self.is_open:
-            return None
-        orig_size = len(buf)
-        read = 0
-        if self._rxremaining:
-            l = len(self._rxremaining)
-            read = min(l, orig_size)
-            buf[0:read] = self._rxremaining[0:read]
-            self._rxremaining = self._rxremaining[read:]
-        end_timeout = time.time() + (self.timeout or 0.2)
-        self.device.set_timeout(self._ep_in, 2)
-        while read < orig_size:
-            remaining = orig_size - read
-            c = self.device.read(self._ep_in, min(remaining, 1024 * 4))
-            if c is not None and len(c):
-                if len(c) > remaining:
-                    end_timeout += 0.2
-                    buf[read:] = c[0:remaining]
-                    self._rxremaining = c[remaining:]
-                    return orig_size
-                else:
-                    buf[read:] = c
-                read += len(c)
-            if time.time() > end_timeout:
-                break
-        return read
-
     def read(self, size=None):
         if not self.is_open:
             return None
@@ -210,27 +169,6 @@ class ComPort:
                 self._rxremaining = chunk[size:]
             chunk = chunk[0:size]
         return chunk
-
-    def readline(self, size=64 * 1024):
-        if not self.is_open:
-            return None
-        rx = [self._rxremaining]
-        length = len(self._rxremaining)
-        self._rxremaining = b""
-        end_timeout = time.time() + self.timeout
-        self.device.set_timeout(self._ep_in, 0.2)
-        while b"\n" not in rx[-1]:  # 10 == b'\n'
-            c = self.device.read(self._ep_in, size - length)
-            if c is not None and len(c):
-                end_timeout += 0.2
-                length += len(c)
-                rx.append(c)
-            if time.time() > end_timeout:
-                break
-        line = b"".join(rx)
-        i = line.find(b"\n") + 1
-        self._rxremaining = line[i:]
-        return line[0:i]
 
     def write(self, data):
         if not self.is_open:
