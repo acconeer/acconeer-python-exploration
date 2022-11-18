@@ -67,8 +67,6 @@ class ProcessorConfig(AlgoConfigBase):
     )
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
-    cfar_guard_length_m: Optional[float] = attrs.field(default=None)
-    cfar_window_length_m: Optional[float] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
