@@ -20,6 +20,10 @@ extensions = [
     "notfound.extension",
 ]
 
+suppress_warnings = [
+    "ref.python",  # https://github.com/sphinx-doc/sphinx/issues/4961
+]
+
 autodoc_member_order = "bysource"
 
 autodoc_typehints_format = "short"
