@@ -38,16 +38,16 @@ The measurement range is split up into multiple subsweeps to allow for optimizat
 The profile, HWAAS and step length are automatically assigned per subsweep, based on the detector config.
 
 - A shorter profile is selected at the start of the measurement range to minimize the interference with direct leakage, followed by longer profiles to gain SNR.
-  The longest profile used can be limited by setting the parameter :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorConfig.max_profile`.
+  The longest profile used can be limited by setting the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.max_profile`.
   If no profile is specified, the subsweeps will be configured to transfer to the longest profile(without interference from direct leakage) as quickly as possible to maximize SNR.
   Longer profiles yield a higher SNR at a given power consumtion level, while shorter profiles gives better depth resolution.
 
-- The step length can also be limited by setting the parameter :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorConfig.max_step_length`.
+- The step length can also be limited by setting the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.max_step_length`.
   If no value is supplied, the step length is automatically configured to appropriate size, maintaining good depth resolution while minimizing power consumption.
   Note, the algorithm interpolates between the measured points to maintain good resolution, even with a more coarse step length.
 
 - HWAAS is assigned to each subsweep in order to maintain SNR throughout the measured range as the signal strength decrease with the distance between the sensor and the measured target.
-  The target SNR level is adjusted using the parameter :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorConfig.signal_quality`.
+  The target SNR level is adjusted using the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.signal_quality`.
   Note, higher signal quality will increase power consumption and measurement time.
 
 In the Exploration Tool GUI, the subsweeps can be seen as slightly overlapping lines.
@@ -65,7 +65,7 @@ Recorded threshold
     In situations where stationary objects are present, the background signal is not flat.
     To isolate objects of interest, the threshold is based on measurements of the static environment.
     The first step is to collect multiple sweeps, from which the mean sweep and standard deviation is calculated.
-    Secondly, the threshold is formed by adding a number of standard deviations (the number is determined by the parameter :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorConfig.threshold_sensitivity`) to the mean sweep.
+    Secondly, the threshold is formed by adding a number of standard deviations (the number is determined by the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity`) to the mean sweep.
 Constant False Alarm Rate (CFAR) threshold(default)
     A final method to construct a threshold for a certain distance is to use the signal from neighbouring distances of the same sweep.
     This requires that the object gives rise to a single strong peak, such as a water surface and not, for example, the level in a large waste container.
@@ -97,7 +97,7 @@ to the sensor.
 To trigger the calibration process in the Exploration Tool gui, simply press the button labeled "Calibrate
 detector".
 If you are running the detector from a script, the calibration is performed by calling
-the method :attr:`~acconeer.exptool.a121.algo.distance._detector.Detector.calibrate_detector`.
+the method :attr:`~acconeer.exptool.a121.algo.distance.Detector.calibrate_detector`.
 
 Noise level estimation
     The noise level is estimated by disabling of the transmitting antenna and just sample the background noise with the receiving antenna.
@@ -130,5 +130,13 @@ Note, the effectiveness of the compensation is limited when measuring in the clo
 Configuration parameters
 ------------------------
 
-.. autoclass:: acconeer.exptool.a121.algo.distance._detector.DetectorConfig
+.. autoclass:: acconeer.exptool.a121.algo.distance.DetectorConfig
    :members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.ThresholdMethod
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.PeakSortingMethod
+    :members:
+    :undoc-members:
