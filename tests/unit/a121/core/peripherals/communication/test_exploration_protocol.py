@@ -129,6 +129,7 @@ class TestExplorationProtocolFactory:
             ("a121-v0.4.2-279-gebaf6243f0", ExplorationProtocol_0_4_1),
             ("a121-v0.4.2-280-ge201249eb0", ExplorationProtocol),
             ("a121-v0.5.0", ExplorationProtocol),
+            ("a121-v0.6.0", ExplorationProtocol),
         ],
     )
     def test_get_exploration_protocol_compatible_versions(self, rss_version, expected_protocol):

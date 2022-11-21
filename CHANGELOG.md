@@ -1,15 +1,23 @@
 # Changelog
 
-## Unreleaed
+## v5.5.0
 
 ### Added
 - A121: Calibration reuse example
+- A121: Bilateration application
+- Toggle to enable/disable recording
+
+### Changed
+- A121: Target RSS version v0.6.0
+- A121 distance detector: Minor improvements
+
+### Fixed
+- USB connection issues
 
 ## v5.4.1
 
 ### Added
 - App taskbar icon on Windows
-- Bilateration application
 
 ### Changed
 - A121 presence detector: Add support for setting inter frame idle state
