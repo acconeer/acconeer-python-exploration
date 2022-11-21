@@ -162,8 +162,8 @@ class Processor:
 
     def _pair_distances(
         self,
-        kf_result_sensor_1: t.List[_KalmanFilterResult],
-        kf_result_sensor_2: t.List[_KalmanFilterResult],
+        kf_result_left_sensor: t.List[_KalmanFilterResult],
+        kf_result_right_sensor: t.List[_KalmanFilterResult],
         sensor_spacing: float,
     ) -> t.Tuple[t.List[Point], t.List[ObjectWithoutCounterpart]]:
         """Pair distance from each sensor to form points.
@@ -175,13 +175,20 @@ class Processor:
         Each pair is used to form a point, for which the distance and angle is calculated, along
         with its cartesian coordinates.
         Distances without a pair is regarded as an object without a counterpart.
+
+        The bilateration function expects the distance estimate from the left sensor as the first
+        argmument. If the value from the right sensor is fed as the first element, the sign of the
+        angle needs to be flipped.
         """
-        if len(kf_result_sensor_1) <= len(kf_result_sensor_2):
-            shorter_result = kf_result_sensor_1
-            longer_result = kf_result_sensor_2
+        if len(kf_result_left_sensor) <= len(kf_result_right_sensor):
+            shorter_result = kf_result_left_sensor
+            longer_result = kf_result_right_sensor
+            flip_angle = False
         else:
-            shorter_result = kf_result_sensor_2
-            longer_result = kf_result_sensor_1
+            shorter_result = kf_result_right_sensor
+            longer_result = kf_result_left_sensor
+            flip_angle = True
+
         shorter_result_item_has_pair = [False] * len(shorter_result)
         longer_result_item_has_pair = [False] * len(longer_result)
         distances_longer_result = np.array([kf_result.distance for kf_result in longer_result])
@@ -192,9 +199,14 @@ class Processor:
             # Add as a pair, if the distance is within the expected range(plus a small margin).
             if np.abs(kf_shorter.distance - distances_longer_result[idx_closest]) < sensor_spacing:
                 distance = (kf_shorter.distance + distances_longer_result[idx_closest]) / 2
+
                 angle = self._estimate_angle(
                     kf_shorter.distance, distances_longer_result[idx_closest], sensor_spacing
                 )
+
+                if flip_angle:
+                    angle = -angle
+
                 points.append(
                     Point(
                         angle=angle,
@@ -310,11 +322,18 @@ class Processor:
         return kfs
 
     @staticmethod
-    def _estimate_angle(r1, r2, d):
-        if d < np.abs(r1 - r2):
+    def _estimate_angle(left_sensor, right_sensor, sensor_spacing):
+        """Calculates the angle to an object given two distance values. The first argument should
+        reflect the value at the left sensor(left from the perspective of the sensor, facing
+        forward). The second argument should reflect the value of the right sensor."""
+        if sensor_spacing < np.abs(left_sensor - right_sensor):
             return np.nan
-        x0 = r1**2 - r2**2
-        x1 = np.sqrt(2 * d**2 * (r1**2 + r2**2) - (r1**2 - r2**2) ** 2 - d**4 / 2)
+        x0 = left_sensor**2 - right_sensor**2
+        x1 = np.sqrt(
+            2 * sensor_spacing**2 * (left_sensor**2 + right_sensor**2)
+            - (left_sensor**2 - right_sensor**2) ** 2
+            - sensor_spacing**4 / 2
+        )
         return np.arctan(x0 / x1)
 
     @staticmethod
