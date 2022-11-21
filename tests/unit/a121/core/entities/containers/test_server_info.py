@@ -53,3 +53,26 @@ def test_from_to_json(reference_obj):
 
 def test_parsed_rss_version(reference_obj):
     assert reference_obj.parsed_rss_version == packaging.version.Version("2.3.4")
+
+
+def test_sensor_info_str(reference_sensor_info):
+    assert str(reference_sensor_info).splitlines() == [
+        "SensorInfo:",
+        "  connected .............. True",
+        "  serial ................. None",
+    ]
+
+
+def test_server_info_str(reference_obj):
+    assert str(reference_obj).splitlines() == [
+        "ServerInfo:",
+        "  rss_version ............ a121-v2.3.4",
+        "  sensor_count ........... 1",
+        "  ticks_per_second ....... 100",
+        "  hardware_name .......... xy123",
+        "  max_baudrate ........... None",
+        "  sensor_infos:",
+        "    SensorInfo @ slot 1:",
+        "      connected .............. True",
+        "      serial ................. None",
+    ]

@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 import attrs
 
+from acconeer.exptool.a121._core.utils import pretty_dict_line_strs
 from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
 
@@ -34,3 +35,11 @@ class ClientInfo:
     @classmethod
     def from_json(cls, json_str: str) -> ClientInfo:
         return cls.from_dict(json.loads(json_str))
+
+    def __str__(self) -> str:
+        return "\n".join(
+            [
+                f"{type(self).__name__}",
+                *pretty_dict_line_strs(self.to_dict()),
+            ]
+        )
