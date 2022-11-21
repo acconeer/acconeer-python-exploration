@@ -1,4 +1,3 @@
-import itertools
 from ctypes import *
 from ctypes.wintypes import *
 
@@ -251,24 +250,3 @@ def get_setupapi_functions(setupapi):
     setupapi_dict["restypes"] = setupapi_restypes
     setupapi_dict["argtypes"] = setupapi_argtypes
     return setupapi_dict
-
-
-def is_device(name, vid, pid, path):
-    path = path.lower()
-    if name and name.lower() == path.lower():
-        return True
-    if vid and pid:
-        if isinstance(vid, int):
-            vid = [vid]
-        if isinstance(vid, str):
-            vid = [int(vid, 0)]
-        if isinstance(pid, int):
-            pid = [pid]
-        if isinstance(vid, str):
-            pid = [int(pid, 0)]
-
-        for v, p in itertools.product(vid, pid):
-            if "vid_%04x&pid_%04x" % (v, p) in path:
-                return True
-    else:
-        return False

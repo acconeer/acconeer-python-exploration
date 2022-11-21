@@ -43,14 +43,6 @@ from .winusbpy import WinUsbPy
 
 
 CDC_CMDS = {
-    "SEND_ENCAPSULATED_COMMAND": 0x00,
-    "GET_ENCAPSULATED_RESPONSE": 0x01,
-    "SET_COMM_FEATURE": 0x02,
-    "GET_COMM_FEATURE": 0x03,
-    "CLEAR_COMM_FEATURE": 0x04,
-    "SET_LINE_CODING": 0x20,
-    "GET_LINE_CODING": 0x21,
-    "SET_CONTROL_LINE_STATE": 0x22,
     "SEND_BREAK": 0x23,  # wValue is break time
 }
 
@@ -72,47 +64,48 @@ log = config_log()
 
 
 class ComPort:
-    def __init__(self, name=None, vid=None, pid=None, start=True):
-        self.name = name
+    def __init__(self, serial=None, vid=None, pid=None, start=True):
+        self.serial = serial
         self.vid = vid
         self.pid = pid
-        if not name and not (vid and pid):
-            raise AttributeError(
-                "Must provide friendly name _or_ vid & pid of device to connect to"
-            )
-        if name and (vid or pid):
-            raise AttributeError(
-                "Must provide friendly name _or_ vid & pid of device to connect to"
-            )
 
-        self.device = None
+        if not (vid and pid):
+            raise AttributeError("Must provide vid & pid of device to connect to")
+
+        self.winusbpy = WinUsbPy()
         self._rxremaining = b""
-        self.baudrate = 9600
-        self.parity = 0
-        self.stopbits = 1
-        self.databits = 8
         self.maximum_packet_size = 0
-
         self.timeout = 0.01
-
         self.is_open = False
         if start:
             self.open()
 
     def open(self):
         # Control interface
-        api = self._select_device(self.name, self.vid, self.pid)
-        if not api:
+        device_list = self.winusbpy.find_all_devices()
+        device_path = None
+        for device in device_list:
+            if self.vid == device["vid"] and self.pid == device["pid"]:
+                if self.serial is not None:
+                    if self.serial == device["serial"]:
+                        device_path = device["path"]
+                        break
+                else:
+                    device_path = device["path"]
+                    break
+        if device_path is None:
             return False
 
-        # interface_descriptor = api.query_interface_settings(0)
-        # pipe_info_list = map(api.query_pipe, range(interface_descriptor.b_num_endpoints))
+        if not self.winusbpy.init_winusb_device(device_path):
+            return False
 
         # Data Interface
-        api.change_interface(0)
-        interface2_descriptor = api.query_interface_settings(0)
+        self.winusbpy.change_interface(0)
+        interface2_descriptor = self.winusbpy.query_interface_settings(0)
 
-        pipe_info_list = map(api.query_pipe, range(interface2_descriptor.b_num_endpoints))
+        pipe_info_list = map(
+            self.winusbpy.query_pipe, range(interface2_descriptor.b_num_endpoints)
+        )
         for item in pipe_info_list:
             if item.pipe_id & 0x80:
                 self._ep_in = item.pipe_id
@@ -122,19 +115,11 @@ class ComPort:
                 min(item.maximum_packet_size, self.maximum_packet_size) or item.maximum_packet_size
             )
 
-        self.device = api  # type: WinUsbPy
-
         self.is_open = True
 
-        self.setControlLineState(True, True)
-        self.setLineCoding()
-        self.device.set_timeout(self._ep_in, self.timeout)
+        self.winusbpy.set_timeout(self._ep_in, self.timeout)
         self.reset_input_buffer()
         return True
-
-    @property
-    def in_waiting(self):
-        return False
 
     def read(self, size=None):
         if not self.is_open:
@@ -145,7 +130,7 @@ class ComPort:
         end_timeout = time.time() + (self.timeout or 0.2)
         if size:
             while length < size:
-                c = self.device.read(self._ep_in, size - length)
+                c = self.winusby.read(self._ep_in, size - length)
                 if c is not None and len(c):
                     rx.append(c)
                     length += len(c)
@@ -153,7 +138,7 @@ class ComPort:
                     break
         else:
             while True:
-                c = self.device.read(self._ep_in, self.maximum_packet_size)
+                c = self.winusbpy.read(self._ep_in, self.maximum_packet_size)
                 if c is not None and len(c):
                     rx.append(c)
                     length += len(c)
@@ -174,7 +159,7 @@ class ComPort:
         if not self.is_open:
             return None
         try:
-            ret = self.device.write(self._ep_out, data)
+            ret = self.winusbpy.write(self._ep_out, data)
         except Exception as e:
             log.warning("USB Error on write {}".format(e))
             return
@@ -206,139 +191,13 @@ class ComPort:
 
         buff = None
 
-        wlen = self.device.control_transfer(pkt, buff)
+        wlen = self.winusbpy.control_transfer(pkt, buff)
         log.debug("Send break, {}b sent".format(wlen))
-
-    def setControlLineState(self, RTS=None, DTR=None):
-        if not self.is_open:
-            return None
-        ctrlstate = (2 if RTS else 0) + (1 if DTR else 0)
-
-        txdir = 0  # 0:OUT, 1:IN
-        req_type = 1  # 0:std, 1:class, 2:vendor
-        # 0:device, 1:interface, 2:endpoint, 3:other
-        recipient = 1
-        req_type = (txdir << 7) + (req_type << 5) + recipient
-
-        pkt = UsbSetupPacket(
-            request_type=req_type,
-            request=CDC_CMDS["SET_CONTROL_LINE_STATE"],
-            value=ctrlstate,
-            index=0x00,
-            length=0x00,
-        )
-        # buff = [0xc0, 0x12, 0x00, 0x00, 0x00, 0x00, 0x08]
-        buff = None
-
-        wlen = self.device.control_transfer(pkt, buff)
-        log.debug("Linecoding set, {}b sent".format(wlen))
-
-    def setLineCoding(self, baudrate=None, parity=None, databits=None, stopbits=None):
-        if not self.is_open:
-            return None
-        sbits = {1: 0, 1.5: 1, 2: 2}
-        dbits = {5, 6, 7, 8, 16}
-        pmodes = {0, 1, 2, 3, 4}
-        brates = {
-            300,
-            600,
-            1200,
-            2400,
-            4800,
-            9600,
-            14400,
-            19200,
-            28800,
-            38400,
-            57600,
-            115200,
-            230400,
-        }
-
-        if stopbits is not None:
-            if stopbits not in sbits.keys():
-                valid = ", ".join(str(k) for k in sorted(sbits.keys()))
-                raise ValueError("Valid stopbits are " + valid)
-            self.stopbits = stopbits
-
-        if databits is not None:
-            if databits not in dbits:
-                valid = ", ".join(str(d) for d in sorted(dbits))
-                raise ValueError("Valid databits are " + valid)
-            self.databits = databits
-
-        if parity is not None:
-            if parity not in pmodes:
-                valid = ", ".join(str(pm) for pm in sorted(pmodes))
-                raise ValueError("Valid parity modes are " + valid)
-            self.parity = parity
-
-        if baudrate is not None:
-            if baudrate not in brates:
-                brs = sorted(brates)
-                dif = [abs(br - baudrate) for br in brs]
-                best = brs[dif.index(min(dif))]
-                raise ValueError("Invalid baudrates, nearest valid is {}".format(best))
-            self.baudrate = baudrate
-
-        linecode = [
-            self.baudrate & 0xFF,
-            (self.baudrate >> 8) & 0xFF,
-            (self.baudrate >> 16) & 0xFF,
-            (self.baudrate >> 24) & 0xFF,
-            sbits[self.stopbits],
-            self.parity,
-            self.databits,
-        ]
-
-        txdir = 0  # 0:OUT, 1:IN
-        req_type = 1  # 0:std, 1:class, 2:vendor
-        recipient = 1  # 0:device, 1:interface, 2:endpoint, 3:other
-        req_type = (txdir << 7) + (req_type << 5) + recipient
-
-        pkt = UsbSetupPacket(
-            request_type=req_type,
-            request=CDC_CMDS["SET_LINE_CODING"],
-            value=0x0000,
-            index=0x00,
-            length=len(linecode),
-        )
-        # buff = [0xc0, 0x12, 0x00, 0x00, 0x00, 0x00, 0x08]
-        buff = linecode
-
-        wlen = self.device.control_transfer(pkt, buff)
-        # req_type, CDC_CMDS["SET_LINE_CODING"],
-        # data_or_wLength=linecode)
-        log.debug("Linecoding set, {}b sent".format(wlen))
-
-    # def getLineCoding(self):
-    #     txdir = 1           # 0:OUT, 1:IN
-    #     req_type = 1        # 0:std, 1:class, 2:vendor
-    #     recipient = 1       # 0:device, 1:interface, 2:endpoint, 3:other
-    #     req_type = (txdir << 7) + (req_type << 5) + recipient
-    #
-    #     buf = self.device.ctrl_transfer(bmRequestType=req_type,
-    #                                     bRequest=CDC_CMDS["GET_LINE_CODING"],
-    #                                     wValue=0,
-    #                                     wIndex=0,
-    #                                     data_or_wLength=255,
-    #                                     )
-    #     self.baudrate = buf[0] + (buf[1] << 8) + \
-    #         (buf[2] << 16) + (buf[3] << 24)
-    #     self.stopbits = 1 + (buf[4] / 2.0)
-    #     self.parity = buf[5]
-    #     self.databits = buf[6]
-    #     print("LINE CODING:")
-    #     print("  {0} baud, parity mode {1}".format(self.baudrate, self.parity))
-    #     print(
-    #         "  {0} data bits, {1} stop bits".format(
-    #             self.databits,
-    #             self.stopbits))
 
     def disconnect(self):
         if not self.is_open:
             return None
-        self.device.close_winusb_device()
+        self.winusbpy.close_winusb_device()
         self.is_open = False
 
     def __del__(self):
@@ -346,33 +205,15 @@ class ComPort:
 
     def reset_input_buffer(self):
         if self.is_open:
-            self.device.flush(self._ep_in)
+            self.winusbpy.flush(self._ep_in)
             while self.read():
                 pass
         self._rxremaining = b""
 
-    def reset_output_buffer(self):
-        pass
-
     def flush(self):
         if not self.is_open:
             return None
-        self.device.flush(self._ep_in)
+        self.winusbpy.flush(self._ep_in)
 
     def close(self):
         self.disconnect()
-
-    def _select_device(self, name, vid, pid):
-        api = WinUsbPy()
-        devices = api.list_usb_devices(
-            deviceinterface=True, present=True, vid=vid, pid=pid, name=name
-        )
-
-        if not devices:
-            log.warning("No devices detected")
-            return None
-
-        if not api.init_winusb_device(name, vid, pid):
-            return None
-
-        return api

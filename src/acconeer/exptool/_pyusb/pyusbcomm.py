@@ -23,7 +23,12 @@ class PyUsbComm:
     def iterate_devices(self):
         dev = usb.core.find(find_all=True)
         for cfg in dev:
-            yield (cfg.idVendor, cfg.idProduct)
+            serial_number = None
+            try:
+                serial_number = cfg.serial_number
+            except ValueError:
+                pass
+            yield (cfg.idVendor, cfg.idProduct, serial_number)
 
     def is_accessible(self, vid, pid):
         vid_pid_str = f"{vid:04x}:{pid:04x}"
@@ -49,7 +54,8 @@ class PyUsbCdc:
     USB_MESSAGE_TIMEOUT_MS = 1000 * USB_MESSAGE_TIMEOUT
     USB_PACKET_TIMEOUT_MS = 200
 
-    def __init__(self, name=None, vid=None, pid=None, start=True):
+    def __init__(self, vid=None, pid=None, serial=None, start=True):
+        self.serial = serial
         self.vid = vid
         self.pid = pid
         self._dev = None
@@ -58,9 +64,6 @@ class PyUsbCdc:
         self.is_open = False
         self._rxremaining = b""
 
-        if name:
-            raise AttributeError("PyUsbCdc can only be accessed with vid & pid")
-
         if not (vid and pid):
             raise AttributeError("Must provide vid & pid of device to connect to")
 
@@ -68,7 +71,20 @@ class PyUsbCdc:
             self.open()
 
     def open(self):
-        self._dev = usb.core.find(idVendor=self.vid, idProduct=self.pid)
+        def match(dev):
+            if self.vid == dev.idVendor and self.pid == dev.idProduct:
+                if self.serial is not None:
+                    try:
+                        serial_number = dev.serial_number
+                    except ValueError:
+                        pass
+                    if serial_number and serial_number == self.serial:
+                        return True
+                else:
+                    return True
+            return False
+
+        self._dev = usb.core.find(custom_match=match)
 
         # Detach kernel driver
         try:

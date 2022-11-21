@@ -1,5 +1,5 @@
 import ctypes
-import struct
+import re
 from ctypes import (
     byref,
     c_byte,
@@ -15,13 +15,8 @@ from ctypes.wintypes import DWORD
 
 from .winusb import WinUSBApi
 from .winusbclasses import (
-    DIGCF_ALLCLASSES,
-    DIGCF_DEFAULT,
     DIGCF_DEVICE_INTERFACE,
     DIGCF_PRESENT,
-    DIGCF_PROFILE,
-    ERROR_IO_INCOMPLETE,
-    ERROR_IO_PENDING,
     FILE_ATTRIBUTE_NORMAL,
     FILE_FLAG_OVERLAPPED,
     FILE_SHARE_READ,
@@ -31,7 +26,6 @@ from .winusbclasses import (
     GUID,
     INVALID_HANDLE_VALUE,
     OPEN_EXISTING,
-    Overlapped,
     PipeInfo,
     SpDeviceInterfaceData,
     SpDeviceInterfaceDetailData,
@@ -39,87 +33,45 @@ from .winusbclasses import (
     UsbInterfaceDescriptor,
 )
 from .winusbutils import (
-    SPDRP_FRIENDLYNAME,
     Close_Handle,
     CreateFile,
     GetLastError,
     SetupDiEnumDeviceInterfaces,
     SetupDiGetClassDevs,
     SetupDiGetDeviceInterfaceDetail,
-    SetupDiGetDeviceRegistryProperty,
     WinUsb_ControlTransfer,
     WinUsb_FlushPipe,
     WinUsb_Free,
     WinUsb_GetAssociatedInterface,
-    WinUsb_GetOverlappedResult,
     WinUsb_Initialize,
-    WinUsb_QueryDeviceInformation,
     WinUsb_QueryInterfaceSettings,
     WinUsb_QueryPipe,
     WinUsb_ReadPipe,
     WinUsb_SetPipePolicy,
     WinUsb_WritePipe,
-    is_device,
 )
-
-
-def is_64bit():
-    return struct.calcsize("P") * 8 == 64
 
 
 class WinUsbPy(object):
     def __init__(self):
         self.api = WinUSBApi()
         byte_array = c_byte * 8
-        self.usb_device_guid = GUID(
-            0xA5DCBF10, 0x6530, 0x11D2, byte_array(0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED)
-        )
         self.usb_winusb_guid = GUID(
             0xDEE824EF, 0x729B, 0x4A0E, byte_array(0x9C, 0x14, 0xB7, 0x11, 0x7D, 0x33, 0xA8, 0x17)
-        )
-        self.usb_composite_guid = GUID(
-            0x36FC9E60, 0xC465, 0x11CF, byte_array(0x80, 0x56, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00)
         )
         self.handle_file = INVALID_HANDLE_VALUE
         self.handle_winusb = [c_void_p()]
         self._index = -1
-        self.device_paths = {}  # type: dict
 
-    def list_usb_devices(
-        self,
-        default=False,
-        present=False,
-        allclasses=False,
-        profile=False,
-        deviceinterface=False,
-        vid=None,
-        pid=None,
-        name=None,
-    ):
-        self.device_paths = {}
-        value = 0x00000000
-        try:
-            if default:
-                value |= DIGCF_DEFAULT
-            if present:
-                value |= DIGCF_PRESENT
-            if allclasses:
-                value |= DIGCF_ALLCLASSES
-            if profile:
-                value |= DIGCF_PROFILE
-            if deviceinterface:
-                value |= DIGCF_DEVICE_INTERFACE
-
-        except KeyError:
-            if value == 0x00000000:
-                value = 0x00000010
-            pass
-
-        flags = DWORD(value)
+    def find_all_devices(self):
+        device_path_list = []
         self.handle = self.api.exec_function_setupapi(
-            SetupDiGetClassDevs, byref(self.usb_winusb_guid), None, None, flags
+            SetupDiGetClassDevs,
+            byref(self.usb_winusb_guid),
+            None,
+            None,
+            DWORD(DIGCF_PRESENT | DIGCF_DEVICE_INTERFACE),
         )
-
         sp_device_interface_data = SpDeviceInterfaceData()
         sp_device_interface_data.cb_size = sizeof(sp_device_interface_data)
         sp_device_interface_detail_data = SpDeviceInterfaceDetailData()
@@ -169,56 +121,32 @@ class WinUsbPy(object):
             if path is None:
                 raise ctypes.WinError()
 
-            if vid is not None and pid is not None:
-                if is_device(name, vid, pid, path):
-                    self.device_paths[path] = path
-                    return self.device_paths
-            else:
+            pattern = r"(.*)#vid_(?P<vid>\w+)&pid_(?P<pid>\w+)(&mi_.*)?#(?P<serial>.*)#(.*)"
+            match = re.fullmatch(pattern, path)
+            groups = match.groupdict()
+            vid = int(f"0x{groups['vid']}", 16)
+            pid = int(f"0x{groups['pid']}", 16)
+            serial_number = groups["serial"]
+            if "&" in serial_number:
+                serial_number = None
 
-                # friendly name
-                uname = path
-                buff_friendly_name = ctypes.create_unicode_buffer(250)
-                if self.api.exec_function_setupapi(
-                    SetupDiGetDeviceRegistryProperty,
-                    self.handle,
-                    byref(sp_device_info_data),
-                    SPDRP_FRIENDLYNAME,
-                    None,
-                    ctypes.byref(buff_friendly_name),
-                    ctypes.sizeof(buff_friendly_name) - 1,
-                    None,
-                ):
+            device_path_list.append(
+                {
+                    "vid": vid,
+                    "pid": pid,
+                    "serial": serial_number,
+                    "path": path,
+                }
+            )
 
-                    uname = buff_friendly_name.value
-                # else:
-                #     err = self.get_last_error_code()
-                #     # print(ctypes.WinError())
-                self.device_paths[uname] = path
-                if name is not None and uname == name:
-                    return self.device_paths
             i += 1
             member_index = DWORD(i)
-            required_size = c_ulong(0)
+            required_size = DWORD(0)
             resize(sp_device_interface_detail_data, sizeof(SpDeviceInterfaceDetailData))
-        return self.device_paths
 
-    def find_device(self, path):
-        return is_device(self._name, self._vid, self._pid, path)
+        return device_path_list
 
-    def init_winusb_device(self, name, vid, pid):
-        self._vid = vid
-        self._pid = pid
-        self._name = name
-        path = None
-        try:
-            for name, p in self.device_paths.items():
-                if self.find_device(name) or self.find_device(p):
-                    path = p
-                    break
-
-        except IndexError:
-            return False
-
+    def init_winusb_device(self, path):
         if path is None:
             return False
 
@@ -261,22 +189,6 @@ class WinUsbPy(object):
 
     def get_last_error_code(self):
         return self.api.exec_function_kernel32(GetLastError)
-
-    def query_device_info(self, query=1):
-        info_type = c_ulong(query)
-        buff = (c_void_p * 1)()
-        buff_length = c_ulong(sizeof(c_void_p))
-        result = self.api.exec_function_winusb(
-            WinUsb_QueryDeviceInformation,
-            self.handle_winusb[self._index],
-            info_type,
-            byref(buff_length),
-            buff,
-        )
-        if result != 0:
-            return buff[0]
-        else:
-            return -1
 
     def query_interface_settings(self, index):
         if self._index != -1:
@@ -409,53 +321,3 @@ class WinUsbPy(object):
             WinUsb_FlushPipe, self.handle_winusb[self._index], c_ubyte(pipe_id)
         )
         return result
-
-    def _overlapped_read_do(self, pipe_id):
-        self.olread_ol.Internal = 0
-        self.olread_ol.InternalHigh = 0
-        self.olread_ol.Offset = 0
-        self.olread_ol.OffsetHigh = 0
-        self.olread_ol.Pointer = 0
-        self.olread_ol.hEvent = 0
-        result = self.api.exec_function_winusb(
-            WinUsb_ReadPipe,
-            self.handle_winusb[self._index],
-            c_ubyte(pipe_id),
-            self.olread_buf,
-            c_ulong(self.olread_buflen),
-            byref(c_ulong(0)),
-            byref(self.olread_ol),
-        )
-        if result != 0:
-            return True
-        else:
-            return False
-
-    def overlapped_read_init(self, pipe_id, length_buffer):
-        self.olread_ol = Overlapped()
-        self.olread_buf = create_string_buffer(length_buffer)
-        self.olread_buflen = length_buffer
-        return self._overlapped_read_do(pipe_id)
-
-    def overlapped_read(self, pipe_id):
-        """keep on reading overlapped, return bytearray, empty if nothing to read, None if err"""
-        rl = c_ulong(0)
-        result = self.api.exec_function_winusb(
-            WinUsb_GetOverlappedResult,
-            self.handle_winusb[self._index],
-            byref(self.olread_ol),
-            byref(rl),
-            False,
-        )
-        if result == 0:
-            if (
-                self.get_last_error_code() == ERROR_IO_PENDING
-                or self.get_last_error_code() == ERROR_IO_INCOMPLETE
-            ):
-                return ""
-            else:
-                return None
-        else:
-            ret = str(self.olread_buf[0 : rl.value])
-            self._overlapped_read_do(pipe_id)
-            return ret

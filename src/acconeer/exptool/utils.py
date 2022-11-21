@@ -60,7 +60,8 @@ class USBDevice:
         return cls.from_dict(json.loads(json_str))
 
     def __str__(self) -> str:
-        return self.name
+        serial_str = "?" if self.serial is None else self.serial
+        return f"{self.name}: serial={serial_str}, VID=0x{self.vid:04x}, PID=0x{self.pid:04x}"
 
 
 _USB_IDS = [  # (vid, pid, 'model number')
@@ -237,35 +238,51 @@ def get_usb_devices(only_accessible=False):
 
     if WinUsbPy is not None:
         winusbpy = WinUsbPy()
-        all_usb_devices = winusbpy.list_usb_devices(deviceinterface=True, present=True)
-
-        for name, path in all_usb_devices.items():
-            pattern = r"(.*)#vid_(?P<vid>\w+)&pid_(?P<pid>\w+)(.*)"
-            match = re.fullmatch(pattern, path)
-            groups = match.groupdict()
-            v = int(f"0x{groups['vid']}", 16)
-            p = int(f"0x{groups['pid']}", 16)
+        device_list = winusbpy.find_all_devices()
+        for device in device_list:
+            device_vid = device["vid"]
+            device_pid = device["pid"]
+            serial_number = device["serial"]
             for vid, pid, model_name in _USB_IDS:
-                if v == vid and p == pid:
-                    usb_devices.append(USBDevice(vid=v, pid=p, serial=None, name=model_name))
+                if device_vid == vid and device_pid == pid:
+                    if serial_number is not None:
+                        model_name = f"{model_name} ({serial_number})"
+                    usb_devices.append(
+                        USBDevice(
+                            vid=device_vid, pid=device_pid, serial=serial_number, name=model_name
+                        )
+                    )
     else:
         pyusbcomm = PyUsbComm()
-        for device_vid, device_pid in pyusbcomm.iterate_devices():
+        for device_vid, device_pid, serial_number in pyusbcomm.iterate_devices():
             for vid, pid, model_name in _USB_IDS:
                 if device_vid == vid and device_pid == pid:
                     device_name = model_name
                     accessible = pyusbcomm.is_accessible(vid, pid)
                     if not accessible:
                         device_name = f"{device_name} (inaccessible)"
+                    elif serial_number is not None:
+                        device_name = f"{device_name} ({serial_number})"
 
                     if only_accessible and not accessible:
                         continue
 
                     usb_devices.append(
-                        USBDevice(vid=device_vid, pid=device_pid, serial=None, name=device_name)
+                        USBDevice(
+                            vid=device_vid, pid=device_pid, serial=serial_number, name=device_name
+                        )
                     )
 
     return usb_devices
+
+
+def get_usb_device_by_serial(serial, only_accessible=False):
+    usb_devices = get_usb_devices(only_accessible=only_accessible)
+    if serial is not None:
+        for device in usb_devices:
+            if serial == device.serial:
+                return device
+    raise ValueError(f"Could not find usb device with serial number '{serial}'")
 
 
 def color_cycler(i=0):

@@ -283,12 +283,11 @@ class ExploreSerialLink(SerialLink):
 
 
 class USBLink(BaseLink):
-    def __init__(self, vid=None, pid=None, serial=None, name=None):
+    def __init__(self, vid=None, pid=None, serial=None):
         super().__init__()
         self._vid = vid
         self._pid = pid
         self._serial = serial
-        self._name = name
 
     def _update_timeout(self):
         pass
@@ -301,16 +300,12 @@ class USBLink(BaseLink):
             port_type = PyUsbCdc
 
         if self._vid and self._pid:
-            self._port = port_type(vid=self._vid, pid=self._pid, start=False)
-        elif self._name:
-            self._port = port_type(name=self._name, start=False)
+            self._port = port_type(vid=self._vid, pid=self._pid, serial=self._serial, start=False)
         else:
-            raise LinkError("Either vid and pid or name is needed to connect")
+            raise LinkError("Must have vid and pid for usb device")
 
         if not self._port.open():
-            raise LinkError(
-                f"Unable to connect to port (vid={self._vid}, pid={self._pid}, name={self._name})"
-            )
+            raise LinkError(f"Unable to connect to port (vid={self._vid}, pid={self._pid}")
 
         self._buf = bytearray()
         self.send_break()

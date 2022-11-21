@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Make it possible to select USB device with serial number
+
 ### Fixed
 - A121 presence: Fix depth filter length so it never is bigger than
   the number of points

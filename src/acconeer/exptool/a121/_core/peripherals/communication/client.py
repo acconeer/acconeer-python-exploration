@@ -49,7 +49,8 @@ def _get_one_usb_device(only_accessible=False):
     if not usb_devices:
         raise ClientError("No USB devices detected. Cannot auto detect.")
     elif len(usb_devices) > 1:
-        raise ClientError("There are multiple devices detected. Specify one:\n" + usb_devices)
+        devices_string = "".join([f" - {dev}\n" for dev in usb_devices])
+        raise ClientError("There are multiple devices detected. Specify one:\n" + devices_string)
     else:
         return usb_devices[0]
 
@@ -77,7 +78,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
         link = AdaptedUSBLink(
             vid=client_info.usb_device.vid,
             pid=client_info.usb_device.pid,
-            name=client_info.usb_device.name,
+            serial=client_info.usb_device.serial,
         )
 
         return link
@@ -122,7 +123,7 @@ class Client(AgnosticClient):
             raise ValueError("Only one connection can be selected")
 
         if isinstance(usb_device, str):
-            raise NotImplementedError("Selecting device by serial number not supported")
+            usb_device = et.utils.get_usb_device_by_serial(usb_device, only_accessible=False)
 
         if isinstance(usb_device, bool):
             if usb_device:
