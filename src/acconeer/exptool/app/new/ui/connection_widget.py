@@ -78,11 +78,17 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         self.ip_line_edit = QLineEdit(self)
         self.ip_line_edit.setPlaceholderText("<IP address>")
         self.ip_line_edit.editingFinished.connect(self._on_line_edit)
+        self.ip_line_edit.returnPressed.connect(self._on_return_pressed)
         self.ip_line_edit.setMinimumWidth(125)
         self.layout().addWidget(self.ip_line_edit)
 
     def _on_line_edit(self) -> None:
         self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
+
+    def _on_return_pressed(self) -> None:
+        self._on_line_edit()
+        if self.app_model.connection_state == ConnectionState.DISCONNECTED:
+            self.app_model.connect_client()
 
 
 class _SerialConnectionWidget(AppModelAwareWidget):
