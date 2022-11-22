@@ -146,6 +146,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.config.max_profile = a121.Profile.PROFILE_1
         self.shared_state.config.threshold_sensitivity = 0.7
         self.shared_state.config.signal_quality = 25.0
+        self.shared_state.config.update_rate = 20.0
         self.broadcast(sync=True)
 
     @property

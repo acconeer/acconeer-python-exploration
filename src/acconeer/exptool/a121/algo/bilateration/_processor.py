@@ -338,7 +338,7 @@ class Processor:
 
     @staticmethod
     def _sensitivity_to_min_num_updates_for_tracking(sensitivity: float) -> int:
-        return int(5 + (1 - sensitivity) * 20)
+        return int(2 + (1 - sensitivity) * 20)
 
 
 class _KalmanFilter:
