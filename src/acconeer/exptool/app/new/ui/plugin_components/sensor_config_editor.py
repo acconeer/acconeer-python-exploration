@@ -36,19 +36,6 @@ class SensorConfigEditor(QWidget):
         a121.IdleState.SLEEP: "Sleep",
         a121.IdleState.DEEP_SLEEP: "Deep sleep",
     }
-    PROFILE_LABEL_MAP = {
-        a121.Profile.PROFILE_1: "1 (shortest)",
-        a121.Profile.PROFILE_2: "2",
-        a121.Profile.PROFILE_3: "3",
-        a121.Profile.PROFILE_4: "4",
-        a121.Profile.PROFILE_5: "5 (longest)",
-    }
-    PRF_LABEL_MAP = {
-        a121.PRF.PRF_19_5_MHz: "19.5 MHz",
-        a121.PRF.PRF_13_0_MHz: "13.0 MHz",
-        a121.PRF.PRF_8_7_MHz: "8.7 MHz",
-        a121.PRF.PRF_6_5_MHz: "6.5 MHz",
-    }
     SENSOR_CONFIG_FACTORIES: PidgetFactoryMapping = {
         "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
             name_label_text="Sweeps per frame:",

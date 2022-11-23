@@ -29,11 +29,6 @@ class SubsweepConfigEditor(QWidget):
     _all_pidgets: list[pidgets.ParameterWidget]
 
     SPACING = 15
-    IDLE_STATE_LABEL_MAP = {
-        a121.IdleState.READY: "Ready",
-        a121.IdleState.SLEEP: "Sleep",
-        a121.IdleState.DEEP_SLEEP: "Deep sleep",
-    }
     PROFILE_LABEL_MAP = {
         a121.Profile.PROFILE_1: "1 (shortest)",
         a121.Profile.PROFILE_2: "2",
