@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.5.1
+
+### Fixed
+ - Make sure to use correct flash port interface on Linux
+
 ## v5.5.0
 
 ### Added

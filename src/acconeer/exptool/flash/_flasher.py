@@ -99,16 +99,18 @@ def flash_image(image_path, flash_port):
         raise ValueError("Flash port is None")
 
 
-def find_flash_port(port=None, do_log=True):
+def find_flash_port(port=None, do_log=True, use_serial=False):
     flash_port = None
-    detected_ports = [
-        pinfo
-        for pinfo in et.utils.tag_serial_ports_objects(serial.tools.list_ports.comports())
-        if pinfo[1]
-    ]
 
-    if len(detected_ports) == 0:
+    if not use_serial:
         detected_ports = et.utils.get_usb_devices()
+
+    if use_serial or len(detected_ports) == 0:
+        detected_ports = [
+            pinfo
+            for pinfo in et.utils.tag_serial_ports_objects(serial.tools.list_ports.comports())
+            if pinfo[1]
+        ]
 
     if len(detected_ports) == 0:
         if do_log:

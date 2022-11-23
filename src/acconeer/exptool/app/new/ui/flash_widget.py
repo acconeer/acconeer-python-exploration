@@ -345,7 +345,9 @@ class _FlashPopup(QDialog):
         self.adjustSize()
 
     def _flash(self) -> None:
-        flash_port = find_flash_port(self.flash_port, do_log=False)
+        flash_port = find_flash_port(
+            self.flash_port, do_log=False, use_serial=not isinstance(self.flash_port, USBDevice)
+        )
 
         # TODO: disable autoconnect when flashing
         self.flash_dialog.flash(self.bin_file, flash_port)
