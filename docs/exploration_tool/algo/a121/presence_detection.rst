@@ -299,16 +299,27 @@ Both the intra-frame deviation, :math:`\bar{s}_\text{intra_dev}(f, d)`, and the 
 Depth filtering
 ^^^^^^^^^^^^^^^
 
-If we choose profile and step length in a way that the reflection spans several depth points, we apply a small depth filter with lengt :math:`n` on both the noise normalized intra-frame deviation,
-and the noise normalized inter-frame deviation as:
+If we choose profile and step length in a way that the reflection spans several depth points, we apply a depth filter with length :math:`n` on both the noise normalized intra-frame deviation,
+and the noise normalized inter-frame deviation. If the depth filter length is odd we have:
 
 .. math::
-   z(f, d) = \frac{1}{n} \sum_{i=-1}^{1} \bar{s}(f, d + i)
+   n' = \frac{n - 1}{2}
+
+.. math::
+   z(f, d) = \frac{1}{2n' + 1} \sum_{i=-n'}^{n'} \bar{s}(f, d + i)
+
+and if the depth filter length is even we have:
+
+.. math::
+   n' = \frac{n}{2}
+
+.. math::
+   z(f, d) = \frac{1}{2n'} \sum_{i=-n'}^{n' - 1} \bar{s}(f, d + i)
 
 where the signal :math:`\bar{s}` is zero-padded, i.e.:
 
 .. math::
-   \bar{s}(f, d) = 0 \text{ for } d < 1 \text{ and } d > N_d
+   \bar{s}(f, d) = 0 \text{ for } d < 1 \text{ or } d > N_d
 
 Output and distance estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
