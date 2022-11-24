@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- A121 presence: Fix depth filter length so it never is bigger than
+  the number of points
+
 ## v5.5.1
 
 ### Fixed

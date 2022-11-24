@@ -121,6 +121,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self.APPROX_BASE_STEP_LENGTH_M * sensor_config.step_length
         )
         self.depth_filter_length = max(int(round(points_per_pulse)), 1)
+        self.depth_filter_length = min(self.depth_filter_length, self.num_distances)
 
         # Fixed parameters
         self.noise_est_diff_order = 3
@@ -241,12 +242,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     def _depth_filter(a: npt.NDArray, depth_filter_length: int) -> npt.NDArray[np.float_]:
         b = np.ones(depth_filter_length) / depth_filter_length
 
-        if a.size >= b.size:
-            return np.correlate(a, b, mode="same")
-        else:
-            pad_width = int(np.ceil((b.size - a.size) / 2))
-            a = np.pad(a, pad_width, "constant")
-            return np.correlate(a, b, mode="same")[pad_width:-pad_width]
+        return np.correlate(a, b, mode="same")
 
     @staticmethod
     def _calculate_phase_shift(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray[np.float_]:
