@@ -11,7 +11,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool._bs_process import BSProccessDiedException, BSProcess  # type: ignore[import]
+from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException  # type: ignore[import]
 from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121.algo._base import ConfigT, InputT, MetadataT, ResultT
 from acconeer.exptool.app.new import GeneralMessage
@@ -61,7 +61,7 @@ def processor_main(
         bs_process = None
     else:
         bs_updater = _blinkstick_updater_cls()
-        bs_process = BSProcess(bs_updater)
+        bs_process = BSThread(bs_updater)
         bs_process.start()
 
     client.start_session()
@@ -79,7 +79,7 @@ def processor_main(
 
             if bs_process is not None:
                 bs_process.put_data(processor_result)
-        except (et.PGProccessDiedException, BSProccessDiedException):  # type: ignore[attr-defined]
+        except (et.PGProccessDiedException, BSThreadDiedException):  # type: ignore[attr-defined]
             break
 
     print("Disconnecting...")

@@ -1,20 +1,19 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
-import multiprocessing as mp
 import queue
-import signal
 import time
+from threading import Event, Thread
 
 
-class BSProccessDiedException(Exception):
+class BSThreadDiedException(Exception):
     pass
 
 
-class BSProcess:
+class BSThread:
     def __init__(self, updater):
-        self._queue = mp.Queue()
-        self._exit_event = mp.Event()
+        self._queue = queue.Queue()
+        self._exit_event = Event()
 
         args = (
             self._queue,
@@ -22,42 +21,36 @@ class BSProcess:
             updater,
         )
 
-        self._process = mp.Process(target=_bs_process_program, args=args, daemon=True)
+        self._thread = Thread(target=_bs_thread_program, args=args, daemon=True)
 
     def start(self):
-        self._process.start()
+        self._thread.start()
 
     def put_data(self, data):
-        if self._exit_event.is_set() or self._process.exitcode is not None:
+        if self._exit_event.is_set() is True or self._thread.is_alive() is False:
             self.close()
-            raise BSProccessDiedException
+            raise BSThreadDiedException
 
         try:
             self._queue.put(data)
         except BrokenPipeError:
             self.close()
-            raise BSProccessDiedException
+            raise BSThreadDiedException
 
     def close(self):
-        if self._process.exitcode is None:
+        if self._thread.is_alive() is True:
             self._exit_event.set()
-            self._process.join(1)
+            self._thread.join(1)
 
-        if self._process.exitcode is None:
-            self._process.terminate()
-            self._process.join(1)
-
-        if self._process.exitcode is None:
+        if self._thread.is_alive() is True:
             raise RuntimeError
 
 
-def _bs_process_program(q, exit_event, updater):
+def _bs_thread_program(q, exit_event, updater):
     try:
         from blinkstick import blinkstick
     except ImportError:
         pass
-
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     FIND_ATTEMPT_INTERVAL = 0.5
     UPDATE_INTERVAL = 1 / 30
@@ -129,8 +122,8 @@ class _ExampleBSUpdater:
 
 if __name__ == "__main__":
     bs_updater = _ExampleBSUpdater()
-    bs_process = BSProcess(bs_updater)
-    bs_process.start()
+    bs_thread = BSThread(bs_updater)
+    bs_thread.start()
 
     t0 = time.time()
     t = 0
@@ -139,10 +132,10 @@ if __name__ == "__main__":
         y = t % 1.0 > 0.5
 
         try:
-            bs_process.put_data(y)
-        except BSProccessDiedException:
+            bs_thread.put_data(y)
+        except BSThreadDiedException:
             exit()
 
         time.sleep(0.01)
 
-    bs_process.close()
+    bs_thread.close()
