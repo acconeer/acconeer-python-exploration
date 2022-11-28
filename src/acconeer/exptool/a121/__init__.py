@@ -19,6 +19,7 @@ from ._core import (
     Profile,
     Record,
     Recorder,
+    RecordError,
     Result,
     SensorCalibration,
     SensorConfig,

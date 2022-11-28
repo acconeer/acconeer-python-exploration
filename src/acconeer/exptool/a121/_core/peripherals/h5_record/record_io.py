@@ -11,6 +11,10 @@ from .recorder import H5Recorder
 from .utils import PathOrH5File, h5_file_factory
 
 
+class RecordError(Exception):
+    """Error in record handling"""
+
+
 def open_record(path_or_file: PathOrH5File) -> PersistentRecord:
     """Open a record from file
 
@@ -34,6 +38,18 @@ def open_record(path_or_file: PathOrH5File) -> PersistentRecord:
     """
 
     file, _ = h5_file_factory(path_or_file, h5_file_mode="r")
+
+    record_exc = RecordError(
+        f"The file '{path_or_file}' is not an A121 record, try a111.recording.load instead"
+    )
+    try:
+        generation = bytes(file["generation"][()]).decode()
+
+        if generation != "a121":
+            raise record_exc
+    except Exception:
+        raise record_exc
+
     return H5Record(file)
 
 

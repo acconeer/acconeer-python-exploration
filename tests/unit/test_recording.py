@@ -4,11 +4,13 @@
 from pathlib import Path
 
 import attr
+import h5py
 import numpy as np
 import pytest
 
 from acconeer.exptool import a111
 from acconeer.exptool.a111._clients.mock.client import MockClient
+from acconeer.exptool.a121._core.peripherals.h5_record import _H5PY_STR_DTYPE
 
 
 @pytest.fixture
@@ -103,3 +105,24 @@ def test_packing_mode(tmp_path, mode):
     restored = a111.recording.unpack(packed)
 
     assert restored.mode == mode
+
+
+@pytest.fixture
+def ref_record_file_a121(tmp_path):
+    tmp_h5_path = tmp_path.with_suffix(".h5")
+
+    file = h5py.File(tmp_h5_path, "x")
+    file.create_dataset(
+        "generation",
+        data="a121",
+        dtype=_H5PY_STR_DTYPE,
+        track_times=False,
+    )
+    file.close()
+
+    return tmp_h5_path
+
+
+def test_open_record_a121(ref_record_file_a121):
+    with pytest.raises(Exception):
+        a111.recording.load(ref_record_file_a121)

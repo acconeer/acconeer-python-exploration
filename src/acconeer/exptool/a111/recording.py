@@ -259,6 +259,10 @@ def load_h5(filename: Union[str, Path]) -> Record:
     filename = str(filename)
 
     with h5py.File(filename, "r") as f:
+        if "generation" in f:
+            raise Exception(
+                f"The file '{filename}' is not an A111 record, try a121.load_record instead"
+            )
         packed = {k: v[()] for k, v in f.items()}
 
     for k, v in packed.items():
