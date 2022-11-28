@@ -370,6 +370,10 @@ def get_near_sensor_config() -> a121.SensorConfig:
     )
 
 
+def get_near_processor_config() -> ProcessorConfig:
+    return ProcessorConfig(measurement_type=MeasurementType.CLOSE_RANGE)
+
+
 def get_near_and_far_sensor_config() -> a121.SensorConfig:
     return a121.SensorConfig(
         sweeps_per_frame=16,
@@ -397,3 +401,7 @@ def get_near_and_far_sensor_config() -> a121.SensorConfig:
             ),
         ],
     )
+
+
+def get_near_and_far_processor_config() -> ProcessorConfig:
+    return ProcessorConfig(measurement_type=MeasurementType.CLOSE_AND_FAR_RANGE)

@@ -5,6 +5,7 @@
 ### Added
 - Make it possible to select USB device with serial number
 - A121: Vibration: Peak detection
+- A121: Plugin configuration presets
 
 ### Fixed
 - A121 presence: Fix depth filter length so it never is bigger than

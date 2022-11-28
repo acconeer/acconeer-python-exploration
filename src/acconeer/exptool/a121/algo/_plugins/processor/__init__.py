@@ -6,6 +6,7 @@ from .backend_plugin import (
     GenericProcessorBackendPluginBase,
     ProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
+    ProcessorPluginPreset,
 )
 from .plot_plugin import (
     ExtendedProcessorPlotPluginBase,

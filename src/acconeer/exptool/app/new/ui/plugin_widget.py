@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import importlib.resources
 import logging
+from enum import Enum
+from functools import partial
 from typing import Any, Optional
 
 import qtawesome as qta
@@ -28,8 +30,11 @@ import pyqtgraph as pg
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new._enums import PluginFamily
-from acconeer.exptool.app.new.app_model import AppModel, PluginSpec
+from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
+
+from .plugin_components.utils import VerticalGroupBox
+from .utils import HorizontalSeparator, ScrollAreaDecorator, TopAlignDecorator
 
 
 log = logging.getLogger(__name__)
@@ -67,6 +72,59 @@ class PluginSelectionButtonGroup(QButtonGroup):
         assert isinstance(buttons, list)
         assert all(isinstance(e, PluginSelectionButton) for e in buttons)
         return buttons
+
+
+class PluginPresetButton(QPushButton):
+    def __init__(self, plugin_preset: PluginPresetSpec, default: bool, parent: QWidget) -> None:
+        super().__init__(parent)
+        if default:
+            self.setText(f"{plugin_preset.name} (default)")
+        else:
+            self.setText(plugin_preset.name)
+        if plugin_preset.description is not None:
+            self.setToolTip(plugin_preset.description)
+        self.setStyleSheet("text-align: left; font-weight: bold;")
+
+
+class PluginPresetPlaceholder(QWidget):
+    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+
+        app_model.sig_load_plugin.connect(self._on_load_plugin)
+
+        self.app_model = app_model
+        self.setLayout(QVBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().setSpacing(11)
+        self.group_box = VerticalGroupBox("Preset Configurations", self)
+        self.layout().addWidget(self.group_box)
+        self.preset_buttons_widget: Optional[QWidget] = None
+
+    def _clear(self) -> None:
+        if self.preset_buttons_widget is not None:
+            self.preset_buttons_widget.deleteLater()
+            self.preset_buttons_widget = None
+
+    def _on_preset_click(self, preset_id: Enum) -> None:
+        self.app_model.set_plugin_preset(preset_id)
+
+    def _on_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
+        self._clear()
+        if plugin_spec is not None and plugin_spec.presets is not None:
+            self.preset_buttons_widget = QWidget(self.group_box)
+            self.preset_buttons_widget.setLayout(QVBoxLayout(self.preset_buttons_widget))
+            self.preset_buttons_widget.layout().setContentsMargins(0, 0, 0, 0)
+            self.group_box.layout().addWidget(self.preset_buttons_widget)
+
+            for preset in plugin_spec.presets:
+                default_preset = (
+                    len(plugin_spec.presets) > 1
+                    and preset.preset_id == plugin_spec.default_preset_id
+                    and preset.name.lower() != "default"
+                )
+                button = PluginPresetButton(preset, default_preset, self)
+                self.preset_buttons_widget.layout().addWidget(button)
+                button.clicked.connect(partial(self._on_preset_click, preset.preset_id))
 
 
 class PluginSelection(QWidget):
@@ -115,6 +173,8 @@ class PluginSelection(QWidget):
         self.layout().addWidget(self.unload_button)
 
     def _on_load_click(self) -> None:
+        self.layout().addStretch(1)
+
         plugin = self.button_group.checkedButton().plugin
         self.app_model.load_plugin(plugin)
 
@@ -139,6 +199,17 @@ class PluginSelection(QWidget):
         self.unload_button.setEnabled(plugin is not None)
 
         self.setEnabled(app_model.plugin_state.is_steady)
+
+
+class PluginSelectionArea(QWidget):
+    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.setLayout(QVBoxLayout(self))
+        self.layout().addWidget(
+            ScrollAreaDecorator(TopAlignDecorator(PluginSelection(app_model, self)))
+        )
+        self.layout().addWidget(HorizontalSeparator())
+        self.layout().addWidget(PluginPresetPlaceholder(app_model, self))
 
 
 class PlotPlaceholder(QWidget):

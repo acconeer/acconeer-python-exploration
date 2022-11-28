@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum, auto
 from typing import Callable, Type
 
 import numpy as np
@@ -16,12 +17,14 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
     ProcessorPlotPluginBase,
+    ProcessorPluginPreset,
     ProcessorViewPluginBase,
 )
 from acconeer.exptool.a121.algo.virtual_button import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
+    get_near_processor_config,
     get_near_sensor_config,
 )
 from acconeer.exptool.app.new import (
@@ -29,12 +32,25 @@ from acconeer.exptool.app.new import (
     Message,
     PluginFamily,
     PluginGeneration,
+    PluginPresetBase,
     PluginSpecBase,
 )
 from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 
+class PluginPresetId(Enum):
+    DEFAULT = auto()
+
+
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
+
+    PLUGIN_PRESETS = {
+        PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_near_sensor_config()),
+            processor_config=get_near_processor_config(),
+        ),
+    }
+
     @classmethod
     def get_processor_cls(cls) -> Type[Processor]:
         return Processor
@@ -174,4 +190,8 @@ VIRTUAL_BUTTON_PLUGIN = PluginSpec(
     title="Virtual button",
     description="Detect tap/wave motion and register as button press.",
     family=PluginFamily.EXAMPLE_APP,
+    presets=[
+        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+    ],
+    default_preset_id=PluginPresetId.DEFAULT,
 )

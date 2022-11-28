@@ -62,6 +62,10 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
     def teardown(self) -> None:
         pass
 
+    @abc.abstractmethod
+    def set_preset(self, preset_id: int) -> None:
+        pass
+
     def broadcast(self) -> None:
         self.callback(BackendPluginStateMessage(state=self.shared_state))
 

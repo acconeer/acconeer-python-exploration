@@ -7,8 +7,9 @@ import logging
 import queue
 import shutil
 import time
+from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 from uuid import UUID
 
 from typing_extensions import Protocol
@@ -49,6 +50,17 @@ from .port_updater import PortUpdater
 log = logging.getLogger(__name__)
 
 
+class PluginPresetSpec(Protocol):
+    """Defines what AppModel needs to know about a plugin preset.
+
+    Implementations are free to add additional fields.
+    """
+
+    name: str
+    description: Optional[str]
+    preset_id: Optional[Enum]
+
+
 class PluginSpec(Protocol):
     """Defines what AppModel needs to know about a plugin.
 
@@ -57,6 +69,8 @@ class PluginSpec(Protocol):
 
     key: str
     generation: PluginGeneration
+    presets: List[PluginPresetSpec]
+    default_preset_id: Enum
 
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
@@ -590,6 +604,16 @@ class AppModel(QObject):
         self.plugin = plugin
         self.broadcast()
         self.broadcast_backend_state()
+
+    def set_plugin_preset(self, preset_id: Enum) -> None:
+        self._put_backend_task(
+            "set_preset",
+            {
+                "preset_id": preset_id.value,
+            },
+            plugin=True,
+            on_error=self.emit_error,
+        )
 
     def save_to_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} saving to file '{path}'")

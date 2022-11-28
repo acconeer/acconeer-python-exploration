@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 from pathlib import Path
-from typing import Callable, Dict, Generic, List, Optional, Type
+from typing import Callable, Dict, Generic, List, Mapping, Optional, Type
 
 import attrs
 import h5py
@@ -40,6 +40,12 @@ FRAME_DELAYED_MESSAGE = "Frame delayed"
 
 
 @attrs.mutable(kw_only=True)
+class ProcessorPluginPreset(Generic[ConfigT]):
+    session_config: a121.SessionConfig = attrs.field()
+    processor_config: ConfigT = attrs.field()
+
+
+@attrs.mutable(kw_only=True)
 class ProcessorBackendPluginSharedState(Generic[ConfigT, MetadataT]):
     session_config: a121.SessionConfig = attrs.field()
     processor_config: ConfigT = attrs.field()
@@ -67,6 +73,8 @@ class GenericProcessorBackendPluginBase(
     _opened_file: Optional[h5py.File]
     _opened_record: Optional[a121.H5Record]
     _replaying_client: Optional[a121._ReplayingClient]
+
+    PLUGIN_PRESETS: Mapping[int, Callable[[], ProcessorPluginPreset]] = {}
 
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
@@ -320,6 +328,14 @@ class ProcessorBackendPluginBase(
             processor_config=self.get_processor_config_cls()(),
         )
 
+        self.broadcast(sync=True)
+
+    @is_task
+    def set_preset(self, preset_id: int) -> None:
+        preset_config = self.PLUGIN_PRESETS[preset_id]
+        processor_preset = preset_config()
+        self.shared_state.session_config = processor_preset.session_config
+        self.shared_state.processor_config = processor_preset.processor_config
         self.broadcast(sync=True)
 
     def _get_next(self) -> None:

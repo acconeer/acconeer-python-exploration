@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from enum import Enum, auto
 from typing import Callable, Type
 
 import numpy as np
@@ -16,6 +17,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
     ProcessorPlotPluginBase,
+    ProcessorPluginPreset,
     ProcessorViewPluginBase,
 )
 from acconeer.exptool.a121.algo._utils import get_distances_m
@@ -30,12 +32,25 @@ from acconeer.exptool.app.new import (
     Message,
     PluginFamily,
     PluginGeneration,
+    PluginPresetBase,
     PluginSpecBase,
 )
 from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 
+class PluginPresetId(Enum):
+    DEFAULT = auto()
+
+
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
+
+    PLUGIN_PRESETS = {
+        PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_sensor_config()),
+            processor_config=BackendPlugin.get_processor_config_cls()(),
+        ),
+    }
+
     @classmethod
     def get_processor_cls(cls) -> Type[Processor]:
         return Processor
@@ -184,4 +199,8 @@ PHASE_TRACKING_PLUGIN = PluginSpec(
     title="Phase tracking",
     description="Track target with micrometer precision.",
     family=PluginFamily.EXAMPLE_APP,
+    presets=[
+        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+    ],
+    default_preset_id=PluginPresetId.DEFAULT,
 )

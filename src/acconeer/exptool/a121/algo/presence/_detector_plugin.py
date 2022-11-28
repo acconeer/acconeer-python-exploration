@@ -4,8 +4,9 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Mapping, Optional
 
 import attrs
 import numpy as np
@@ -35,6 +36,7 @@ from acconeer.exptool.app.new import (
     Message,
     PluginFamily,
     PluginGeneration,
+    PluginPresetBase,
     PluginSpecBase,
     PluginState,
     PluginStateMessage,
@@ -65,7 +67,16 @@ class SharedState:
     replaying: bool = attrs.field(default=False)
 
 
+class PluginPresetId(Enum):
+    DEFAULT = auto()
+
+
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+
+    PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
+        PluginPresetId.DEFAULT.value: lambda: DetectorConfig()
+    }
+
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
     ) -> None:
@@ -149,6 +160,12 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             self._log.warning("Detector could not write to cache")
 
         self.detach_client()
+
+    @is_task
+    def set_preset(self, preset_id: int) -> None:
+        preset_config = self.PLUGIN_PRESETS[preset_id]
+        self.shared_state.config = preset_config()
+        self.broadcast(sync=True)
 
     @is_task
     def load_from_file(self, *, path: Path) -> None:
@@ -864,4 +881,8 @@ PRESENCE_DETECTOR_PLUGIN = PluginSpec(
     title="Presence detector",
     description="Detect human presence.",
     family=PluginFamily.DETECTOR,
+    presets=[
+        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+    ],
+    default_preset_id=PluginPresetId.DEFAULT,
 )

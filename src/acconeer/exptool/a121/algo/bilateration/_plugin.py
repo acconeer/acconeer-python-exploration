@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 import logging
-import typing as t
+from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Dict, Mapping, Optional
 
 import attrs
 import numpy as np
@@ -43,6 +43,7 @@ from acconeer.exptool.app.new import (
     Message,
     PluginFamily,
     PluginGeneration,
+    PluginPresetBase,
     PluginSpecBase,
     PluginState,
     PluginStateMessage,
@@ -57,6 +58,7 @@ from acconeer.exptool.app.new.ui.plugin_components import (
     pidgets,
 )
 
+from ._configs import get_default_detector_config
 from ._processor import Processor, ProcessorConfig, ProcessorResult
 
 
@@ -102,7 +104,25 @@ def serialized_attrs_instance_has_diverged(attrs_instance: Any) -> bool:
     return False
 
 
+class PluginPresetId(Enum):
+    DEFAULT = auto()
+
+
+@attrs.mutable(kw_only=True)
+class BilaterationPreset:
+    detector_config: DetectorConfig = attrs.field()
+    bilateration_config: ProcessorConfig = attrs.field()
+
+
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+
+    PLUGIN_PRESETS: Mapping[int, BilaterationPreset] = {
+        PluginPresetId.DEFAULT.value: BilaterationPreset(
+            detector_config=get_default_detector_config(),
+            bilateration_config=ProcessorConfig(),
+        )
+    }
+
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
     ) -> None:
@@ -139,14 +159,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     @is_task
     def restore_defaults(self) -> None:
-        self.shared_state = SharedState()
-
-        # Override default with values suitable for the bilateration case.
-        self.shared_state.config.end_m = 1.0
-        self.shared_state.config.max_profile = a121.Profile.PROFILE_1
-        self.shared_state.config.threshold_sensitivity = 0.7
-        self.shared_state.config.signal_quality = 25.0
-        self.shared_state.config.update_rate = 20.0
+        self.shared_state = SharedState(config=get_default_detector_config())
         self.broadcast(sync=True)
 
     @property
@@ -183,6 +196,13 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def update_sensor_ids(self, *, sensor_ids: list[int]) -> None:
         self.shared_state.sensor_ids = sensor_ids
         self.broadcast()
+
+    @is_task
+    def set_preset(self, preset_id: int) -> None:
+        preset_config = self.PLUGIN_PRESETS[preset_id]
+        self.shared_state.config = preset_config.detector_config
+        self.shared_state.bilateration_config = preset_config.bilateration_config
+        self.broadcast(sync=True)
 
     def teardown(self) -> None:
         try:
@@ -472,7 +492,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         ]
 
     def update(
-        self, *, detector_result: t.Dict[int, DetectorResult], processor_result: ProcessorResult
+        self, *, detector_result: Dict[int, DetectorResult], processor_result: ProcessorResult
     ) -> None:
         # Plot sweep data from both distance detectors.
         max_val = 0.0
@@ -845,4 +865,8 @@ BILATERATION_PLUGIN = PluginSpec(
     title="Bilateration",
     description="Use two sensors to estimate distance and angle.",
     family=PluginFamily.EXAMPLE_APP,
+    presets=[
+        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+    ],
+    default_preset_id=PluginPresetId.DEFAULT,
 )

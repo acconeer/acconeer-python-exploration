@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Optional
+from enum import Enum
+from typing import Callable, List, Optional
 
 import attrs
 
@@ -13,7 +14,7 @@ from PySide6.QtWidgets import QWidget
 import pyqtgraph as pg
 
 from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration
-from acconeer.exptool.app.new.app_model import AppModel, PluginSpec
+from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.backend import BackendPlugin, Message
 
 from .plot_plugin_base import PlotPluginBase
@@ -27,6 +28,8 @@ class PluginSpecBase(abc.ABC, PluginSpec):
     title: str = attrs.field()
     description: Optional[str] = attrs.field(default=None)
     family: PluginFamily = attrs.field()
+    presets: List[PluginPresetSpec] = attrs.field()
+    default_preset_id: Enum = attrs.field()
 
     @abc.abstractmethod
     def create_backend_plugin(

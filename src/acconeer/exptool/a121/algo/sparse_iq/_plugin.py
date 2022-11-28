@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum, auto
 from typing import Callable, Tuple, Type
 
 import numpy as np
@@ -20,10 +21,17 @@ from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
     ProcessorPlotPluginBase,
+    ProcessorPluginPreset,
     ProcessorPluginSpec,
     ProcessorViewPluginBase,
 )
-from acconeer.exptool.app.new import AppModel, Message, PluginFamily, PluginGeneration
+from acconeer.exptool.app.new import (
+    AppModel,
+    Message,
+    PluginFamily,
+    PluginGeneration,
+    PluginPresetBase,
+)
 from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 from ._processor import (
@@ -38,7 +46,19 @@ from ._processor import (
 log = logging.getLogger(__name__)
 
 
+class PluginPresetId(Enum):
+    DEFAULT = auto()
+
+
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
+
+    PLUGIN_PRESETS = {
+        PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_sensor_config()),
+            processor_config=BackendPlugin.get_processor_config_cls()(),
+        ),
+    }
+
     @classmethod
     def get_processor_cls(cls) -> Type[Processor]:
         return Processor
@@ -198,4 +218,8 @@ SPARSE_IQ_PLUGIN = PluginSpec(
     title="Sparse IQ",
     description="Basic usage of the sparse IQ service.",
     family=PluginFamily.SERVICE,
+    presets=[
+        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+    ],
+    default_preset_id=PluginPresetId.DEFAULT,
 )

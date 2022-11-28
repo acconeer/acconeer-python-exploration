@@ -12,10 +12,9 @@ from acconeer.exptool.app.new.app_model import AppModel
 from .connection_widget import ClientConnectionWidget, GenerationSelection
 from .flash_widget import FlashButton
 from .misc import ExceptionWidget, HintWidget, VerticalSeparator
-from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelection
+from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelectionArea
 from .recording_widget import RecordingWidget
 from .status_bar import StatusBar
-from .utils import ScrollAreaDecorator, TopAlignDecorator
 
 
 class MainWindow(QMainWindow):
@@ -79,11 +78,7 @@ class WorkingArea(QSplitter):
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
 
-        left_area = ScrollAreaDecorator(
-            TopAlignDecorator(
-                PluginSelection(app_model, self),
-            )
-        )
+        left_area = PluginSelectionArea(app_model, self)
         left_area.setMinimumWidth(250)
         left_area.setMaximumWidth(350)
         self.layout().addWidget(left_area)

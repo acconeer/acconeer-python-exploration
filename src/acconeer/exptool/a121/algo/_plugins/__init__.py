@@ -6,6 +6,7 @@ from ._processor_main import processor_main
 from .processor import (
     ProcessorBackendPluginBase,
     ProcessorPlotPluginBase,
+    ProcessorPluginPreset,
     ProcessorPluginSpec,
     ProcessorViewPluginBase,
 )
