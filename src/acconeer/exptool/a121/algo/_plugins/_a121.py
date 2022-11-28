@@ -41,6 +41,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     _opened_record: Optional[a121.H5Record]
     _started: bool = False
     _recorder: Optional[a121.H5Recorder] = None
+    _frame_count: int
 
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
@@ -49,6 +50,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         self._live_client = None
         self._replaying_client = None
         self._opened_record = None
+        self._frame_count = 0
 
     @is_task
     def load_from_file(self, *, path: Path) -> None:
@@ -165,9 +167,11 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
                 self._recorder = None
 
             self._started = False
+            self._frame_count = 0
             self.broadcast()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             self.callback(GeneralMessage(name="rate_stats", data=None))
+            self.callback(GeneralMessage(name="frame_count", data=None))
 
         if self._opened_record:
             self._opened_record.close()

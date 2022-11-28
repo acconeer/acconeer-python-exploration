@@ -29,6 +29,27 @@ from acconeer.exptool.app.new.app_model import AppModel
 from .misc import BUTTON_ICON_COLOR
 
 
+class FrameCountLabel(QLabel):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setToolTip("Number of received frames")
+
+        app_model.sig_frame_count.connect(self._on_app_model_frame_count)
+        self._on_app_model_frame_count(None)
+
+    def _on_app_model_frame_count(self, frame_count: Optional[int]) -> None:
+        if frame_count is None:
+            css = "color: #888;"
+            text = "Frames: -    "
+        else:
+            css = ""
+            text = f"Frames: {frame_count:5}"
+
+        self.setStyleSheet(f"QWidget{{{css}}}")
+        self.setText(text)
+
+
 class RateStatsLabel(QLabel):
     _FPS: int = 10
 
@@ -225,6 +246,7 @@ class StatusBar(QStatusBar):
         self.message_widget = QLabel(self)
         self.addWidget(self.message_widget)
 
+        self.addPermanentWidget(FrameCountLabel(app_model, self))
         self.addPermanentWidget(RateStatsLabel(app_model, self))
         self.addPermanentWidget(JitterStatsLabel(app_model, self))
         self.addPermanentWidget(BackendCPUPercentLabel(app_model, self))

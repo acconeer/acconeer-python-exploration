@@ -226,6 +226,8 @@ class ProcessorBackendPluginBase(
         result = self.client.get_next()
         assert isinstance(result, a121.Result)  # TODO: fix
 
+        self._frame_count += 1
+
         if result.data_saturated:
             self.send_status_message(self._format_warning(DATA_SATURATED_MESSAGE))
 
@@ -237,4 +239,5 @@ class ProcessorBackendPluginBase(
 
         processor_result = self._processor_instance.process(result)
         self.callback(GeneralMessage(name="rate_stats", data=self.client._rate_stats))
+        self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
         self.callback(GeneralMessage(name="plot", data=processor_result, recipient="plot_plugin"))
