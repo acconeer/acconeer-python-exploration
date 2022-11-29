@@ -10,7 +10,7 @@ from acconeer.exptool.a121.algo.sparse_iq import ProcessorResult
 
 class TestSparseIqProcessorResult:
     @pytest.fixture
-    def result(self):
+    def result(self) -> ProcessorResult:
         return ProcessorResult(
             frame=np.arange(20, dtype=float) + 1j * np.arange(20, dtype=float),
             distance_velocity_map=np.arange(100, dtype=float),

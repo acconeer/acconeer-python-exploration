@@ -1,7 +1,10 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
+from __future__ import annotations
+
 import json
+from typing import Any, Callable, Optional, Union
 
 import pytest
 
@@ -26,29 +29,31 @@ class TestLatestExplorationProtocolCommands:
             (ExplorationProtocol.set_baudrate_command, dict(baudrate=0)),
         ],
     )
-    def test_all_command_functions_end_with_linebreak(self, function, kwargs):
+    def test_all_command_functions_end_with_linebreak(
+        self, function: Callable, kwargs: Any
+    ) -> None:
         assert function(**kwargs).endswith(b"\n")
 
-    def test_get_system_info_command(self):
+    def test_get_system_info_command(self) -> None:
         assert ExplorationProtocol.get_system_info_command() == b'{"cmd":"get_system_info"}\n'
 
-    def test_get_sensor_info_command(self):
+    def test_get_sensor_info_command(self) -> None:
         assert ExplorationProtocol.get_sensor_info_command() == b'{"cmd":"get_sensor_info"}\n'
 
-    def test_start_streaming_command(self):
+    def test_start_streaming_command(self) -> None:
         assert ExplorationProtocol.start_streaming_command() == b'{"cmd":"start_streaming"}\n'
 
-    def test_stop_streaming_command(self):
+    def test_stop_streaming_command(self) -> None:
         assert ExplorationProtocol.stop_streaming_command() == b'{"cmd":"stop_streaming"}\n'
 
-    def test_set_baudrate_command(self):
+    def test_set_baudrate_command(self) -> None:
         assert (
             ExplorationProtocol.set_baudrate_command(0)
             == b'{"cmd":"set_uart_baudrate","baudrate":0}\n'
         )
 
     @pytest.mark.parametrize("update_rate", [20, None])
-    def test_setup_command(self, update_rate):
+    def test_setup_command(self, update_rate: Optional[Union[float, int]]) -> None:
         # This explicitly sets all fields in order to guard against changes of defaults.
         config = a121.SessionConfig(
             [
@@ -116,7 +121,7 @@ class TestLatestExplorationProtocolCommands:
         }
 
         if update_rate is not None:
-            expected_dict["update_rate"] = update_rate
+            expected_dict["update_rate"] = update_rate  # type: ignore[assignment]
 
         assert json.loads(ExplorationProtocol.setup_command(config)) == expected_dict
 
@@ -132,14 +137,18 @@ class TestExplorationProtocolFactory:
             ("a121-v0.6.0", ExplorationProtocol),
         ],
     )
-    def test_get_exploration_protocol_compatible_versions(self, rss_version, expected_protocol):
+    def test_get_exploration_protocol_compatible_versions(
+        self,
+        rss_version: str,
+        expected_protocol: Union[ExplorationProtocol, ExplorationProtocol_0_4_1],
+    ) -> None:
         assert get_exploration_protocol(parse_rss_version(rss_version)) == expected_protocol
 
     @pytest.mark.parametrize(
         "rss_version",
         ["a121-v0.2.0"],
     )
-    def test_get_exploration_protocol_incompatible_versions(self, rss_version):
+    def test_get_exploration_protocol_incompatible_versions(self, rss_version: str) -> None:
         assert get_exploration_protocol() == ExplorationProtocol
 
         with pytest.raises(Exception):

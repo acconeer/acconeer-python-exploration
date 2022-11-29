@@ -72,7 +72,7 @@ class ExtendedMetadataView(QWidget):
         group_box.layout().addWidget(self._tab_widget)
         self._represent_none()
 
-    def _represent_none(self):
+    def _represent_none(self) -> None:
         self._tab_widget.clear()
         self._add_needed_tabs(1)
 

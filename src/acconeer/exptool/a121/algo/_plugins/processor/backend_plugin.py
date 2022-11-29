@@ -47,7 +47,7 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT, MetadataT]):
     metadata: Optional[MetadataT] = attrs.field(default=None)
 
     @property
-    def ready(self):
+    def ready(self) -> bool:
         try:
             self.session_config.validate()
         except a121.ValidationError:

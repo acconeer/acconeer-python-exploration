@@ -322,7 +322,9 @@ class Processor:
         return kfs
 
     @staticmethod
-    def _estimate_angle(left_sensor, right_sensor, sensor_spacing):
+    def _estimate_angle(
+        left_sensor: float, right_sensor: float, sensor_spacing: float
+    ) -> float | t.Any:
         """Calculates the angle to an object given two distance values. The first argument should
         reflect the value at the left sensor(left from the perspective of the sensor, facing
         forward). The second argument should reflect the value of the right sensor."""
@@ -349,13 +351,13 @@ class _KalmanFilter:
 
     def __init__(
         self,
-        dt,
-        process_noise_gain_sensitivity,
-        init_state,
-        sensor_position,
-        min_num_updates_valid_estimate,
-    ):
-        self.A = np.matrix([[1, dt], [0, 1]])
+        dt: float,
+        process_noise_gain_sensitivity: float,
+        init_state: float,
+        sensor_position: str,
+        min_num_updates_valid_estimate: int,
+    ) -> None:
+        self.A = np.matrix([[1.0, dt], [0.0, 1.0]])
         self.H = np.matrix([[1, 0]])
         process_noise_gain = self._sensitivity_to_gain(process_noise_gain_sensitivity)
         # Random acceleration process noise.
@@ -366,7 +368,7 @@ class _KalmanFilter:
         )
         self.R = self._MEASUREMENT_NOISE_STD**2
         self.P = np.eye(self.A.shape[1])
-        self.x = np.matrix([[init_state], [0]])
+        self.x = np.matrix([[init_state], [0.0]])
         self.min_num_updates_valid_estimate = min_num_updates_valid_estimate
         self.dead_reckoning_count = 0
         self.num_updates = 0

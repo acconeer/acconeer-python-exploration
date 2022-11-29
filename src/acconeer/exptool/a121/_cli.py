@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 
 class ExampleArgumentParser(ArgumentParser):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         server_group = self.add_mutually_exclusive_group(required=False)

@@ -15,7 +15,7 @@ from acconeer.exptool.a121.algo import (
 )
 
 
-def test_get_subsweep_configs():
+def test_get_subsweep_configs() -> None:
     sensor_config = a121.SensorConfig(
         subsweeps=[
             a121.SubsweepConfig(profile=a121.Profile.PROFILE_1),
@@ -30,7 +30,7 @@ def test_get_subsweep_configs():
     assert actual == expected
 
 
-def test_get_profile():
+def test_get_profile() -> None:
     actual = distance.Processor._get_profile(
         [
             a121.SubsweepConfig(profile=a121.Profile.PROFILE_2),
@@ -49,7 +49,7 @@ def test_get_profile():
         )
 
 
-def test_get_start_point():
+def test_get_start_point() -> None:
     actual = distance.Processor._get_start_point(
         [
             a121.SubsweepConfig(start_point=100),
@@ -59,7 +59,7 @@ def test_get_start_point():
     assert actual == 100
 
 
-def test_get_num_points():
+def test_get_num_points() -> None:
     actual = distance.Processor._get_num_points(
         [
             a121.SubsweepConfig(num_points=100),
@@ -69,7 +69,7 @@ def test_get_num_points():
     assert actual == 250
 
 
-def test_validate_range():
+def test_validate_range() -> None:
     distance.Processor._validate_range(
         [
             a121.SubsweepConfig(
@@ -102,7 +102,7 @@ def test_validate_range():
         )
 
 
-def test_apply_phase_jitter_compensation():
+def test_apply_phase_jitter_compensation() -> None:
     frame = np.array([0 + 0, 1 + 1j, 2 + 2j, 3 + 3j])
     context = distance.ProcessorContext(
         direct_leakage=frame, phase_jitter_comp_ref=np.array([0.0])
@@ -118,7 +118,7 @@ def test_apply_phase_jitter_compensation():
     assert actual_adjuster_frame[3] == 6.0 + 0.0j
 
 
-def test_get_distance_filter_coeffs():
+def test_get_distance_filter_coeffs() -> None:
     (actual_B, actual_A) = get_distance_filter_coeffs(a121.Profile.PROFILE_1, 1)
 
     assert actual_B[0] == pytest.approx(0.00844269, 0.01)
@@ -139,7 +139,7 @@ def test_get_distance_filter_coeffs():
     assert actual_A[2] == pytest.approx(0.81199778, 0.01)
 
 
-def test_find_peaks():
+def test_find_peaks() -> None:
     abs_sweep = np.array([1, 2, 3, 2, 1, 1, 1, 1, 1, 2, 3, 2, 1, 1, 1])
     threshold = np.ones_like(abs_sweep)
     actual_found_peaks = find_peaks(abs_sweep=abs_sweep, threshold=threshold)
@@ -148,7 +148,7 @@ def test_find_peaks():
     assert actual_found_peaks[1] == 10
 
 
-def test_interpolate_peaks():
+def test_interpolate_peaks() -> None:
     abs_sweep = np.array([1, 2, 3, 2, 1])
     peak_idxs = [2]
     start_point = 0
@@ -184,7 +184,7 @@ def test_interpolate_peaks():
     assert actual_est_ampls[0] == pytest.approx(3.25, 0.01)
 
 
-def test_distance_filter_edge_margin():
+def test_distance_filter_edge_margin() -> None:
     profile = a121.Profile.PROFILE_3
     step_length = 4
 
@@ -195,7 +195,7 @@ def test_distance_filter_edge_margin():
     assert actual_filter_edge_margin == 14
 
 
-def test_calculate_cfar_threshold():
+def test_calculate_cfar_threshold() -> None:
 
     abs_sweep = np.ones(30)
     abs_sweep[4:6] = 2
@@ -240,7 +240,7 @@ def test_calculate_cfar_threshold():
     npt.assert_almost_equal(actual_threshold, threshold, decimal=4)
 
 
-def test_calc_cfar_guard_half_length():
+def test_calc_cfar_guard_half_length() -> None:
     profile = a121.Profile.PROFILE_3
     step_length = 4
     actual_guard_half_length = distance.Processor._calc_cfar_guard_half_length(
@@ -249,7 +249,7 @@ def test_calc_cfar_guard_half_length():
     assert actual_guard_half_length == 28
 
 
-def test_calc_cfar_window_length():
+def test_calc_cfar_window_length() -> None:
     profile = a121.Profile.PROFILE_3
     step_length = 2
     actual_margin = distance.Processor._calc_cfar_window_length(

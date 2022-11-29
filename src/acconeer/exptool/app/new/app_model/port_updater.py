@@ -18,12 +18,12 @@ class PortUpdater(QObject):
     class Worker(QObject):
         sig_update = Signal(object, object)
 
-        @Slot()
-        def start(self):
+        @Slot()  # type: ignore[misc]
+        def start(self) -> None:
             self.timer_id = self.startTimer(500)
 
-        @Slot()
-        def stop(self):
+        @Slot()  # type: ignore[misc]
+        def stop(self) -> None:
             self.killTimer(self.timer_id)
 
         def timerEvent(self, event: QTimerEvent) -> None:

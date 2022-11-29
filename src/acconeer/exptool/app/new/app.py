@@ -23,7 +23,7 @@ from .storage import remove_config_dir, remove_temp_dir
 from .ui import AppModelViewer, MainWindow
 
 
-def main():
+def main() -> None:
     parser = ExptoolArgumentParser()
     args = parser.parse_args()
     config_logging(args)

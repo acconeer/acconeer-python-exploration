@@ -1,7 +1,10 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
+from typing import Any
 
 import numpy as np
+
+from ._processor import ProcessorResult
 
 
 class Easing:
@@ -9,19 +12,19 @@ class Easing:
         self.tc = tc
         self.y = y0
 
-    def update(self, x, dt):
+    def update(self, x: float, dt: float) -> float:
         d = x - self.y
         self.y += d * (1.0 - np.exp(-(dt / self.tc)))
         return self.y
 
 
 class BlinkstickUpdater:
-    def __init__(self):
+    def __init__(self) -> None:
         self.e_close = Easing()
         self.e_far = Easing()
         self.last_t = -1
 
-    def update(self, data, data_index, t, stick):
+    def update(self, data: ProcessorResult, data_index: int, t: int, stick: Any) -> None:
         dt = t - self.last_t
         self.last_t = t
 

@@ -32,7 +32,7 @@ from .utils import PathOrH5File, h5_file_factory
 T = TypeVar("T")
 
 
-def get_h5py_str_dtype():
+def get_h5py_str_dtype() -> Any:
     return h5py.special_dtype(vlen=str)
 
 
@@ -220,7 +220,7 @@ class H5Recorder(Recorder):
                 g=self.file[f"session/group_{group_idx}/entry_{entry_idx}/result"],
                 start_index=start_idx,
                 results=results,
-            ),
+            )
 
         return len(self._chunk_buffer)
 

@@ -2,6 +2,7 @@
 # All rights reserved
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from acconeer.exptool import a121
@@ -9,7 +10,7 @@ from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, ResultContext
 
 
 @pytest.fixture
-def good_metadata():
+def good_metadata() -> a121.Metadata:
     return a121.Metadata(
         frame_data_length=15,
         sweep_data_length=5,
@@ -23,7 +24,7 @@ def good_metadata():
 
 
 @pytest.fixture
-def good_context(good_metadata):
+def good_context(good_metadata: a121.Metadata) -> ResultContext:
     return ResultContext(
         metadata=good_metadata,
         ticks_per_second=80,
@@ -31,7 +32,7 @@ def good_context(good_metadata):
 
 
 @pytest.fixture
-def good_raw_frame():
+def good_raw_frame() -> npt.NDArray:
     return np.array(
         [
             [(0, 0), (1, -1), (2, -2), (3, -3), (4, -4)],
@@ -43,7 +44,7 @@ def good_raw_frame():
 
 
 @pytest.fixture
-def good_result(good_context, good_raw_frame):
+def good_result(good_context: ResultContext, good_raw_frame: npt.NDArray) -> a121.Result:
     return a121.Result(
         data_saturated=False,
         frame_delayed=False,
@@ -55,7 +56,7 @@ def good_result(good_context, good_raw_frame):
     )
 
 
-def test_frame_complex_conversion(good_result):
+def test_frame_complex_conversion(good_result: a121.Result) -> None:
     expected_converted_frame = np.array(
         [
             [(0 - 0j), (1 - 1j), (2 - 2j), (3 - 3j), (4 - 4j)],
@@ -69,7 +70,7 @@ def test_frame_complex_conversion(good_result):
     assert np.array_equal(good_result.frame, expected_converted_frame)
 
 
-def test_subframes(good_result):
+def test_subframes(good_result: a121.Result) -> None:
     expected_subframes = [
         np.array(
             [
@@ -96,5 +97,5 @@ def test_subframes(good_result):
         assert np.array_equal(actual, expected)
 
 
-def test_tick_time(good_result):
+def test_tick_time(good_result: a121.Result) -> None:
     assert np.isclose(good_result.tick_time, 1.5)

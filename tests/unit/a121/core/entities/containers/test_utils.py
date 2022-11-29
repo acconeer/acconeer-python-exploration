@@ -6,7 +6,7 @@ import numpy as np
 from acconeer.exptool.a121._core.entities.containers import Metadata, utils
 
 
-def test_get_subsweeps_from_frame():
+def test_get_subsweeps_from_frame() -> None:
     metadata = Metadata(
         frame_data_length=8,
         sweep_data_length=4,

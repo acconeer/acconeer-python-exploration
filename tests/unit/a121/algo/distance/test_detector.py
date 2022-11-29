@@ -5,7 +5,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import distance, select_prf
 
 
-def test_update_processor_mode():
+def test_update_processor_mode() -> None:
 
     processor_spec = distance.ProcessorSpec(
         processor_config=distance.ProcessorConfig(
@@ -31,7 +31,7 @@ def test_update_processor_mode():
         )
 
 
-def test_m_to_points():
+def test_m_to_points() -> None:
     breakpoints_m = [0.5, 1.0, 1.5]
     step_length = 4
 
@@ -44,7 +44,7 @@ def test_m_to_points():
     assert actual_points[2] == 600
 
 
-def test_select_prf():
+def test_select_prf() -> None:
     breakpoint = 600
     profile = a121.Profile.PROFILE_3
 
@@ -53,7 +53,7 @@ def test_select_prf():
     assert actual_PRF == a121.PRF.PRF_13_0_MHz
 
 
-def test_limit_step_length():
+def test_limit_step_length() -> None:
     profile = a121.Profile.PROFILE_3
     user_limit = 2
 

@@ -52,7 +52,7 @@ class TwoSensorIdsEditor(QWidget):
             else:
                 raise ValueError("Length of sensor list is not equal to two.")
 
-    def sync(self):
+    def sync(self) -> None:
         if self.sensor_ids is not None:
             self._sensor_id_pidget_1.set_parameter(self.sensor_ids[0])
             self._sensor_id_pidget_2.set_parameter(self.sensor_ids[1])

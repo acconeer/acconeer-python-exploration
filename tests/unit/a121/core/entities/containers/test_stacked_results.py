@@ -15,7 +15,7 @@ from acconeer.exptool.a121._core.entities import (
 
 class TestAnEmptyStackedResults:
     @pytest.fixture
-    def stacked_results(self):
+    def stacked_results(self) -> StackedResults:
         return StackedResults(
             calibration_needed=np.array([]),
             data_saturated=np.array([]),
@@ -38,28 +38,28 @@ class TestAnEmptyStackedResults:
             ),
         )
 
-    def test_has_a_frame_with_3_dimensions(self, stacked_results):
+    def test_has_a_frame_with_3_dimensions(self, stacked_results: StackedResults) -> None:
         assert stacked_results.frame.ndim == 3
 
-    def test_has_subframes_3_dimensions(self, stacked_results):
+    def test_has_subframes_3_dimensions(self, stacked_results: StackedResults) -> None:
         for subframe in stacked_results.subframes:
             assert subframe.ndim == 3
 
-    def test_should_return_an_empty_frame(self, stacked_results):
+    def test_should_return_an_empty_frame(self, stacked_results: StackedResults) -> None:
         assert stacked_results.frame.size == 0
 
-    def test_should_return_empty_subframes(self, stacked_results):
+    def test_should_return_empty_subframes(self, stacked_results: StackedResults) -> None:
         for subframe in stacked_results.subframes:
             assert subframe.size == 0
 
-    def test_is_not_indexable(self, stacked_results):
+    def test_is_not_indexable(self, stacked_results: StackedResults) -> None:
         with pytest.raises(IndexError):
             _ = stacked_results[0]
 
 
 class TestStackedResultWithASingleFrame:
     @pytest.fixture
-    def context(self):
+    def context(self) -> ResultContext:
         return ResultContext(
             ticks_per_second=1,
             metadata=Metadata(
@@ -75,7 +75,7 @@ class TestStackedResultWithASingleFrame:
         )
 
     @pytest.fixture
-    def result(self, context):
+    def result(self, context: ResultContext) -> Result:
         return Result(
             calibration_needed=False,
             data_saturated=False,
@@ -87,7 +87,7 @@ class TestStackedResultWithASingleFrame:
         )
 
     @pytest.fixture
-    def stacked_results(self, context):
+    def stacked_results(self, context: ResultContext) -> StackedResults:
         return StackedResults(
             calibration_needed=np.array([False]),
             data_saturated=np.array([False]),
@@ -98,14 +98,14 @@ class TestStackedResultWithASingleFrame:
             context=context,
         )
 
-    def test_has_a_frame_with_3_dimensions(self, stacked_results):
+    def test_has_a_frame_with_3_dimensions(self, stacked_results: StackedResults) -> None:
         assert stacked_results.frame.ndim == 3
 
-    def test_has_subframes_3_dimensions(self, stacked_results):
+    def test_has_subframes_3_dimensions(self, stacked_results: StackedResults) -> None:
         for subframe in stacked_results.subframes:
             assert subframe.ndim == 3
 
-    def test_has_correct_subsweeps(self, stacked_results):
+    def test_has_correct_subsweeps(self, stacked_results: StackedResults) -> None:
         subframe1, subframe2 = stacked_results.subframes
 
         expected_subframe1 = np.array(
@@ -122,7 +122,7 @@ class TestStackedResultWithASingleFrame:
         np.testing.assert_array_equal(expected_subframe1, subframe1)
         np.testing.assert_array_equal(expected_subframe2, subframe2)
 
-    def test_frame_is_converted_to_complex_type(self, stacked_results):
+    def test_frame_is_converted_to_complex_type(self, stacked_results: StackedResults) -> None:
         expected = np.array(
             [
                 [[1 + 1j, 2 + 2j]],
@@ -130,16 +130,18 @@ class TestStackedResultWithASingleFrame:
         )
         np.testing.assert_array_equal(stacked_results.frame, expected)
 
-    def test_is_indexable_and_returns_a_result(self, stacked_results, result):
+    def test_is_indexable_and_returns_a_result(
+        self, stacked_results: StackedResults, result: Result
+    ) -> None:
         assert stacked_results[0] == result
 
-    def test_reports_the_number_of_results_in_len(self, stacked_results):
+    def test_reports_the_number_of_results_in_len(self, stacked_results: StackedResults) -> None:
         assert len(stacked_results) == 1
 
 
 class TestStackedResultWithMultipleFrames:
     @pytest.fixture
-    def context(self):
+    def context(self) -> ResultContext:
         return ResultContext(
             ticks_per_second=1,
             metadata=Metadata(
@@ -155,7 +157,7 @@ class TestStackedResultWithMultipleFrames:
         )
 
     @pytest.fixture
-    def result1(self, context):
+    def result1(self, context: ResultContext) -> Result:
         return Result(
             calibration_needed=False,
             data_saturated=False,
@@ -167,7 +169,7 @@ class TestStackedResultWithMultipleFrames:
         )
 
     @pytest.fixture
-    def result2(self, context):
+    def result2(self, context: ResultContext) -> Result:
         return Result(
             calibration_needed=False,
             data_saturated=False,
@@ -179,7 +181,7 @@ class TestStackedResultWithMultipleFrames:
         )
 
     @pytest.fixture
-    def stacked_results(self, context):
+    def stacked_results(self, context: ResultContext) -> StackedResults:
         return StackedResults(
             calibration_needed=np.array([False] * 2),
             data_saturated=np.array([False] * 2),
@@ -200,14 +202,14 @@ class TestStackedResultWithMultipleFrames:
             context=context,
         )
 
-    def test_has_a_frame_with_3_dimensions(self, stacked_results):
+    def test_has_a_frame_with_3_dimensions(self, stacked_results: StackedResults) -> None:
         assert stacked_results.frame.ndim == 3
 
-    def test_has_subframes_3_dimensions(self, stacked_results):
+    def test_has_subframes_3_dimensions(self, stacked_results: StackedResults) -> None:
         for subframe in stacked_results.subframes:
             assert subframe.ndim == 3
 
-    def test_frame_is_converted_correctly(self, stacked_results):
+    def test_frame_is_converted_correctly(self, stacked_results: StackedResults) -> None:
         expected = np.array(
             [
                 [[1 + 1j, 2 + 2j]],
@@ -217,7 +219,7 @@ class TestStackedResultWithMultipleFrames:
 
         np.testing.assert_array_equal(stacked_results.frame, expected)
 
-    def test_has_correct_subsweeps(self, stacked_results):
+    def test_has_correct_subsweeps(self, stacked_results: StackedResults) -> None:
         subframe1, subframe2 = stacked_results.subframes
 
         expected_subframe1 = np.array(
@@ -235,9 +237,11 @@ class TestStackedResultWithMultipleFrames:
         np.testing.assert_array_equal(expected_subframe1, subframe1)
         np.testing.assert_array_equal(expected_subframe2, subframe2)
 
-    def test_is_indexable_and_returns_correct_result(self, stacked_results, result1, result2):
+    def test_is_indexable_and_returns_correct_result(
+        self, stacked_results: StackedResults, result1: Result, result2: Result
+    ) -> None:
         assert stacked_results[0] == result1
         assert stacked_results[1] == result2
 
-    def test_reports_the_number_of_results_in_len(self, stacked_results):
+    def test_reports_the_number_of_results_in_len(self, stacked_results: StackedResults) -> None:
         assert len(stacked_results) == 2

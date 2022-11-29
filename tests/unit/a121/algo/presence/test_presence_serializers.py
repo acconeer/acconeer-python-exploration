@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import typing as t
+from pathlib import Path
 
 import h5py
 import pytest
@@ -21,7 +22,7 @@ def proper_subsets_minus_empty_set(
 
 
 @pytest.fixture
-def result():
+def result() -> ProcessorResult:
     return ProcessorResult(
         intra_presence_score=0.1,
         inter_presence_score=0.2,
@@ -33,7 +34,7 @@ def result():
 
 class TestPresenceResultListH5Serializer:
     @pytest.fixture
-    def tmp_h5_file(self, tmp_path):
+    def tmp_h5_file(self, tmp_path: Path) -> h5py.File:
         tmp_file_path = tmp_path / "test.h5"
 
         with h5py.File(tmp_file_path, "a") as f:
@@ -54,11 +55,11 @@ class TestPresenceResultListH5Serializer:
     )
     def test_results_to_from_h5_equality(
         self,
-        result,
-        tmp_h5_file,
-        fields,
-        allow_missing_fields,
-    ):
+        result: ProcessorResult,
+        tmp_h5_file: h5py.File,
+        fields: t.Sequence[str],
+        allow_missing_fields: bool,
+    ) -> None:
 
         results = [result for _ in range(10)]
         ser = _serializers.ProcessorResultListH5Serializer(

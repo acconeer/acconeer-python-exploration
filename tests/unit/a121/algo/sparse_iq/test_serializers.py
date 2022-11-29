@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import typing as t
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -22,7 +23,7 @@ def proper_subsets_minus_empty_set(
 
 
 @pytest.fixture
-def result():
+def result() -> ProcessorResult:
     return ProcessorResult(
         frame=np.arange(20, dtype=float) + 1j * np.arange(20, dtype=float),
         distance_velocity_map=np.arange(100, dtype=float),
@@ -43,7 +44,12 @@ class TestSparseIqResultJSONSerializer:
         ],
         ids=str,
     )
-    def test_results_to_from_json_equality(self, result, fields, allow_missing_fields):
+    def test_results_to_from_json_equality(
+        self,
+        result: ProcessorResult,
+        fields: t.Sequence[str],
+        allow_missing_fields: bool,
+    ) -> None:
         ser = _serializers.ProcessorResultJSONSerializer(
             fields=fields, allow_missing_fields=allow_missing_fields
         )
@@ -55,7 +61,7 @@ class TestSparseIqResultJSONSerializer:
 
 class TestSparseIqResultListH5Serializer:
     @pytest.fixture
-    def tmp_h5_file(self, tmp_path):
+    def tmp_h5_file(self, tmp_path: Path) -> h5py.File:
         tmp_file_path = tmp_path / "test.h5"
 
         with h5py.File(tmp_file_path, "a") as f:
@@ -76,11 +82,11 @@ class TestSparseIqResultListH5Serializer:
     )
     def test_results_to_from_h5_equality(
         self,
-        result,
-        tmp_h5_file,
-        fields,
-        allow_missing_fields,
-    ):
+        result: ProcessorResult,
+        tmp_h5_file: h5py.File,
+        fields: t.Sequence[str],
+        allow_missing_fields: bool,
+    ) -> None:
 
         results = [result for _ in range(10)]
         ser = _serializers.ProcessorResultListH5Serializer(

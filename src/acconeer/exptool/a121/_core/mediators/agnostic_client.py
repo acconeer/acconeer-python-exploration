@@ -80,16 +80,16 @@ class AgnosticClient(AgnosticClientFriends):
         self._system_info = None
         self._result_queue = []
 
-    def _assert_connected(self):
+    def _assert_connected(self) -> None:
         if not self.connected:
             raise ClientError("Client is not connected.")
 
-    def _assert_session_setup(self):
+    def _assert_session_setup(self) -> None:
         self._assert_connected()
         if not self.session_is_setup:
             raise ClientError("Session is not set up.")
 
-    def _assert_session_started(self):
+    def _assert_session_started(self) -> None:
         self._assert_session_setup()
         if not self.session_is_started:
             raise ClientError("Session is not started.")
@@ -376,11 +376,11 @@ class AgnosticClient(AgnosticClientFriends):
         self._metadata = None
         self._link.disconnect()
 
-    def __enter__(self):
+    def __enter__(self) -> AgnosticClient:
         self.connect()
         return self
 
-    def __exit__(self, type_, value, traceback):
+    def __exit__(self, *_: Any) -> None:
         self.disconnect()
 
     @property

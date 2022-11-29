@@ -9,7 +9,7 @@ from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol 
 
 class TestResultMessage:
     @pytest.fixture
-    def valid_server_message(self):
+    def valid_server_message(self) -> dict:
         return {
             "status": "ok",
             "result_info": [
@@ -27,14 +27,16 @@ class TestResultMessage:
         }
 
     @pytest.fixture
-    def server_payload(self):
+    def server_payload(self) -> bytes:
         return bytes([0, 0, 1, 1])
 
     @pytest.fixture
-    def invalid_server_message(self):
+    def invalid_server_message(self) -> dict:
         return {"status": "ok"}
 
-    def test_parse(self, valid_server_message, server_payload, invalid_server_message):
+    def test_parse(
+        self, valid_server_message: dict, server_payload: bytes, invalid_server_message: dict
+    ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_message, server_payload))
             == messages.ResultMessage
@@ -44,5 +46,5 @@ class TestResultMessage:
         with pytest.raises(messages.ParseError):
             messages.ResultMessage.parse(invalid_server_message, server_payload)
 
-    def test_apply(self):
+    def test_apply(self) -> None:
         pytest.skip("Hard to unit test. Relies on system tests for correctness.")

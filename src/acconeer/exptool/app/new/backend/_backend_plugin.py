@@ -29,7 +29,7 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         self.generation = generation
 
     @contextmanager
-    def h5_cache_file(self, write=False):
+    def h5_cache_file(self, write: bool = False) -> h5py.File:
         file_path = (get_config_dir() / "plugin" / self.generation.value / self.key).with_suffix(
             ".h5"
         )

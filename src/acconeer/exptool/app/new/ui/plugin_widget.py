@@ -114,11 +114,11 @@ class PluginSelection(QWidget):
         self.unload_button.clicked.connect(self._on_unload_click)
         self.layout().addWidget(self.unload_button)
 
-    def _on_load_click(self):
+    def _on_load_click(self) -> None:
         plugin = self.button_group.checkedButton().plugin
         self.app_model.load_plugin(plugin)
 
-    def _on_unload_click(self):
+    def _on_unload_click(self) -> None:
         self.app_model.load_plugin(None)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
@@ -151,7 +151,7 @@ class PlotPlaceholder(QWidget):
         self.layout().addWidget(self._teaser_text())
         self.layout().addStretch(1)
 
-    def _select_module_text(self):
+    def _select_module_text(self) -> QHBoxLayout:
         h_box = QHBoxLayout()
         h_box.addStretch(1)
 
@@ -169,7 +169,7 @@ class PlotPlaceholder(QWidget):
 
         return h_box
 
-    def _teaser_text(self):
+    def _teaser_text(self) -> QLabel:
         teaser_label = QLabel(
             "More detectors and example applications will\nbe released continuously.", self
         )

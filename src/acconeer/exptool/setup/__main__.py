@@ -6,7 +6,7 @@ from .base import PlatformInstall, SetupStep, utils
 from .cli import SetupArgumentParser, prompts
 
 
-def main():
+def main() -> None:
     args = SetupArgumentParser().parse_args()
 
     selected_platform = args.platform or prompts.get_selection_from_user(

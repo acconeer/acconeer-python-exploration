@@ -11,7 +11,7 @@ import numpy as np
 import qtawesome as qta
 
 from PySide6 import QtCore
-from PySide6.QtGui import QPainter, QTextDocument
+from PySide6.QtGui import QPainter, QPaintEvent, QTextDocument
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -202,7 +202,7 @@ class VersionLabel(QWidget):
         if self.changelog is not None:
             self.cl_window.setVisible(not self.cl_window.isVisible())
 
-    def paintEvent(self, pe):
+    def paintEvent(self, pe: QPaintEvent) -> None:
         o = QStyleOption()
         o.initFrom(self)
         p = QPainter(self)
@@ -254,7 +254,7 @@ class StatusBar(QStatusBar):
 
 
 class ChangelogWindow(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget = None) -> None:
         super().__init__()
 
         self.setWindowTitle("Changelog")
@@ -268,7 +268,7 @@ class ChangelogWindow(QMainWindow):
         document.setMarkdown(text)
         self.text_browser.setDocument(document)
 
-    def set_center(self, main_window):
+    def set_center(self, main_window: QMainWindow) -> None:
         fg = self.frameGeometry()
         fg.moveCenter(main_window.geometry().center())
         self.move(fg.topLeft())

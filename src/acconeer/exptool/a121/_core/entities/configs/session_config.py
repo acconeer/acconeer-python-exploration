@@ -133,7 +133,7 @@ class SessionConfig:
         else:
             self._update_rate = utils.validate_float(value, min_value=0.0, inclusive=False)
 
-    def _assert_not_extended(self):
+    def _assert_not_extended(self) -> None:
         if self.extended:
             raise RuntimeError("This operation requires SessionConfig not to be extended.")
 
@@ -292,7 +292,7 @@ def _unsqueeze_groups(
     raise ValueError
 
 
-def _validate_groups_structure(groups):
+def _validate_groups_structure(groups: list[dict[int, SensorConfig]]) -> None:
     if len(groups) < 1:
         raise ValueError
 

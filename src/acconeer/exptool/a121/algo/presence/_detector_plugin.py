@@ -562,7 +562,7 @@ class PlotPlugin(DetectorPlotPluginBase):
             ) // self.sector_size
             self.sectors[index].setBrush(et.utils.pg_brush_cycler(1))
 
-    def set_present_text_y_pos(self, y):
+    def set_present_text_y_pos(self, y: float) -> None:
         x_pos = self.distances[0] + (self.distances[-1] - self.distances[0]) / 2
         self.present_text_item.setPos(x_pos, 0.95 * y)
         self.not_present_text_item.setPos(x_pos, 0.95 * y)

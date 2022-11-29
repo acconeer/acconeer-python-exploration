@@ -1,6 +1,11 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional
+
 import h5py
 import importlib_metadata
 import pytest
@@ -8,7 +13,7 @@ import pytest
 from acconeer.exptool import a121
 
 
-def assert_record_equals(record_a, record_b):
+def assert_record_equals(record_a: a121.Record, record_b: a121.Record) -> None:
     attrs = [
         "extended_metadata",
         "extended_results",
@@ -29,7 +34,7 @@ def assert_record_equals(record_a, record_b):
         assert attr_a == attr_b, f".{attr} differs:\n{attr_a},\n{attr_b}"
 
 
-def test_init_defaults_with_path(tmp_file_path):
+def test_init_defaults_with_path(tmp_file_path: Path) -> None:
     recorder = a121.H5Recorder(tmp_file_path)
     assert recorder.owns_file is True
     assert recorder.path == tmp_file_path
@@ -39,7 +44,7 @@ def test_init_defaults_with_path(tmp_file_path):
         assert f["generation"][()].decode() == "a121"
 
 
-def test_init_defaults_with_file_object(tmp_file_path):
+def test_init_defaults_with_file_object(tmp_file_path: Path) -> None:
     with h5py.File(tmp_file_path, "x") as f:
         recorder = a121.H5Recorder(f)
         assert recorder.owns_file is False
@@ -49,7 +54,9 @@ def test_init_defaults_with_file_object(tmp_file_path):
 
 
 @pytest.mark.parametrize("chunk_size", [None, 1, 512])
-def test_sample_whole_record(tmp_path, ref_record, chunk_size):
+def test_sample_whole_record(
+    tmp_path: Path, ref_record: a121.Record, chunk_size: Optional[int]
+) -> None:
     filename = tmp_path / "empty.h5"
     recorder = a121.H5Recorder(
         filename,

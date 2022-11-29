@@ -1,6 +1,6 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
-
+from unittest.mock import Mock
 
 import pytest
 
@@ -10,14 +10,14 @@ from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol 
 
 class TestStartStreamingResponse:
     @pytest.fixture
-    def valid_server_response(self):
+    def valid_server_response(self) -> dict:
         return {"status": "start", "payload_size": 0, "message": "Start streaming."}
 
     @pytest.fixture
-    def invalid_server_response(self):
+    def invalid_server_response(self) -> dict:
         return {"status": "ok"}
 
-    def test_parse(self, valid_server_response, invalid_server_response):
+    def test_parse(self, valid_server_response: dict, invalid_server_response: dict) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
             == messages.StartStreamingResponse
@@ -27,7 +27,7 @@ class TestStartStreamingResponse:
         with pytest.raises(messages.ParseError):
             messages.StartStreamingResponse.parse(invalid_server_response, bytes())
 
-    def test_apply(self, valid_server_response, mock_client):
+    def test_apply(self, valid_server_response: dict, mock_client: Mock) -> None:
         mock_client._session_is_started = False
         resp = messages.StartStreamingResponse.parse(valid_server_response, bytes())
         resp.apply(mock_client)

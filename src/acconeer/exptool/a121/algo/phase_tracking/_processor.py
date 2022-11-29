@@ -67,8 +67,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         self.estimated_distance = None
 
-        self.distance_history = np.array([])
-        self.time_history = np.array([])
+        self.distance_history: npt.NDArray[np.float_] = np.array([])
+        self.time_history: npt.NDArray[np.float_] = np.array([])
 
     def process(self, result: a121.Result) -> ProcessorResult:
 

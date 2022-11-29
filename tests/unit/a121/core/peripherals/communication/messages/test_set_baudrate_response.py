@@ -10,14 +10,14 @@ from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol 
 
 class TestSetBaudrateResponse:
     @pytest.fixture
-    def valid_server_response(self):
+    def valid_server_response(self) -> dict:
         return {"status": "ok", "payload_size": 0, "message": "set baudrate"}
 
     @pytest.fixture
-    def invalid_server_response(self):
+    def invalid_server_response(self) -> dict:
         return {"status": "ok"}
 
-    def test_parse(self, valid_server_response, invalid_server_response):
+    def test_parse(self, valid_server_response: dict, invalid_server_response: dict) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
             == messages.SetBaudrateResponse
@@ -27,5 +27,5 @@ class TestSetBaudrateResponse:
         with pytest.raises(messages.ParseError):
             messages.SetBaudrateResponse.parse(invalid_server_response, bytes())
 
-    def test_apply(self):
+    def test_apply(self) -> None:
         pytest.skip("SetBaudrateResponse has a NO-OP apply")

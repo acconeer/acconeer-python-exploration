@@ -111,7 +111,7 @@ class _FlashDialog(QDialog):
 
         self.setLayout(vbox)
 
-    def flash(self, bin_file, flash_port):
+    def flash(self, bin_file: str, flash_port: serial.tools.list_ports.ListPortInfo) -> None:
         self.flash_thread = _FlashThread(bin_file, flash_port)
         self.flash_thread.started.connect(self._flash_start)
         self.flash_thread.finished.connect(self.flash_thread.deleteLater)
@@ -156,7 +156,7 @@ class _FlashPopup(QDialog):
         self.setWindowTitle("Flash tool")
         self.setMinimumWidth(550)
 
-        self.bin_file = None
+        self.bin_file: Optional[str] = None
 
         self.authenticating = False
         self.downloading_firmware = False
@@ -348,6 +348,8 @@ class _FlashPopup(QDialog):
         flash_port = find_flash_port(
             self.flash_port, do_log=False, use_serial=not isinstance(self.flash_port, USBDevice)
         )
+
+        assert self.bin_file is not None
 
         # TODO: disable autoconnect when flashing
         self.flash_dialog.flash(self.bin_file, flash_port)

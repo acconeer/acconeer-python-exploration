@@ -44,7 +44,7 @@ def determine_serial_port(serial_port: Optional[str]) -> str:
         return serial_port
 
 
-def _get_one_usb_device(only_accessible=False):
+def _get_one_usb_device(only_accessible: bool = False) -> USBDevice:
     usb_devices = et.utils.get_usb_devices(only_accessible=only_accessible)
     if not usb_devices:
         raise ClientError("No USB devices detected. Cannot auto detect.")

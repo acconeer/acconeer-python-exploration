@@ -44,7 +44,7 @@ FromBackendQueueItem = Union[Message, ClosedTask]
 
 
 class Backend:
-    def __init__(self):
+    def __init__(self) -> None:
         self._recv_queue: mp.Queue[FromBackendQueueItem] = mp.Queue()
         self._send_queue: mp.Queue[ToBackendQueueItem] = mp.Queue()
         self._stop_event = mp.Event()
@@ -58,11 +58,11 @@ class Backend:
             daemon=True,
         )
 
-    def start(self):
+    def start(self) -> None:
         log.debug("Backend starting ...")
         self._process.start()
 
-    def stop(self):
+    def stop(self) -> None:
         log.debug("Backend stopping ...")
         self._stop_event.set()
         self._send(("stop", None))

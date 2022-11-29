@@ -1,10 +1,15 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
 
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Iterator, cast
 from uuid import uuid4
 
 import h5py
 import numpy as np
+import numpy.typing as npt
 import pytest
 
 from acconeer.exptool import a121
@@ -13,27 +18,27 @@ from acconeer.exptool.a121._core.peripherals.h5_record import _H5PY_STR_DTYPE
 
 
 @pytest.fixture
-def tmp_file_path(tmp_path):
+def tmp_file_path(tmp_path: Path) -> Path:
     return tmp_path / str(uuid4())
 
 
 @pytest.fixture
-def ref_lib_version():
+def ref_lib_version() -> str:
     return "0.1.2"
 
 
 @pytest.fixture
-def ref_timestamp():
+def ref_timestamp() -> str:
     return "2022-03-14T15:00:00"
 
 
 @pytest.fixture
-def ref_uuid():
+def ref_uuid() -> str:
     return "b0ca48f7-0bcf-4160-965a-9a865a8fc989"
 
 
 @pytest.fixture
-def ref_server_info():
+def ref_server_info() -> a121.ServerInfo:
     return a121.ServerInfo(
         rss_version="0.2.4",
         sensor_count=3,
@@ -48,7 +53,7 @@ def ref_server_info():
 
 
 @pytest.fixture
-def ref_client_info():
+def ref_client_info() -> a121.ClientInfo:
     return a121.ClientInfo(
         ip_address="address",
         serial_port="serial_port",
@@ -57,7 +62,7 @@ def ref_client_info():
 
 
 @pytest.fixture
-def ref_session_config():
+def ref_session_config() -> a121.SessionConfig:
     return a121.SessionConfig(a121.SensorConfig())
 
 
@@ -68,33 +73,35 @@ def ref_session_config():
         [{1, 2}, {3, 4}, {1, 2, 3, 4, 5}],
     ]
 )
-def ref_structure(request):
-    return request.param
+def ref_structure(request: pytest.FixtureRequest) -> Iterator[Iterator[int]]:
+    return cast(Iterator[Iterator[int]], request.param)
 
 
 @pytest.fixture(params=range(1, 4, 2))
-def ref_num_frames(request):
+def ref_num_frames(request: pytest.FixtureRequest) -> int:
     """This is a parametrized fixture.
     Dependent fixtures will also be parameterized as a result
     """
-    return request.param
+    return cast(int, request.param)
 
 
 @pytest.fixture(params=range(1, 4, 2))
-def ref_sweep_data_length(request):
+def ref_sweep_data_length(request: pytest.FixtureRequest) -> int:
     """This is a parametrized fixture.
     Dependent fixtures will also be parameterized as a result
     """
-    return request.param
+    return cast(int, request.param)
 
 
 @pytest.fixture
-def ref_frame_data_length(ref_num_frames, ref_sweep_data_length):
+def ref_frame_data_length(ref_num_frames: int, ref_sweep_data_length: int) -> int:
     return ref_num_frames * ref_sweep_data_length
 
 
 @pytest.fixture
-def ref_frame_raw(ref_sweep_data_length, ref_frame_data_length, ref_num_frames):
+def ref_frame_raw(
+    ref_sweep_data_length: int, ref_frame_data_length: int, ref_num_frames: int
+) -> npt.NDArray:
     array = np.arange(ref_frame_data_length)
     array = array.astype(dtype=INT_16_COMPLEX)
 
@@ -105,12 +112,12 @@ def ref_frame_raw(ref_sweep_data_length, ref_frame_data_length, ref_num_frames):
 
 
 @pytest.fixture
-def ref_frame(ref_frame_raw):
-    return ref_frame_raw["real"] + 1j * ref_frame_raw["imag"]
+def ref_frame(ref_frame_raw: npt.NDArray) -> npt.NDArray[np.complex_]:
+    return cast(npt.NDArray[np.complex_], ref_frame_raw["real"] + 1j * ref_frame_raw["imag"])
 
 
 @pytest.fixture
-def ref_metadata(ref_sweep_data_length, ref_frame_data_length):
+def ref_metadata(ref_sweep_data_length: int, ref_frame_data_length: int) -> a121.Metadata:
     # Note: This is metadata for a no-subsweep frame
     return a121.Metadata(
         frame_data_length=ref_frame_data_length,
@@ -125,7 +132,7 @@ def ref_metadata(ref_sweep_data_length, ref_frame_data_length):
 
 
 @pytest.fixture
-def ref_data(ref_frame_raw, ref_num_frames):
+def ref_data(ref_frame_raw: npt.NDArray[np.int_], ref_num_frames: int) -> npt.NDArray:
     data_frames = np.stack((ref_frame_raw,) * ref_num_frames)
 
     # sanity check
@@ -136,18 +143,18 @@ def ref_data(ref_frame_raw, ref_num_frames):
 
 @pytest.fixture
 def ref_record_file(
-    ref_lib_version,
-    ref_timestamp,
-    ref_uuid,
-    ref_server_info,
-    ref_client_info,
-    ref_metadata,
-    ref_session_config,
-    ref_structure,
-    ref_num_frames,
-    ref_data,
-    tmp_file_path,
-):
+    ref_lib_version: str,
+    ref_timestamp: str,
+    ref_uuid: str,
+    ref_server_info: a121.ServerInfo,
+    ref_client_info: a121.ClientInfo,
+    ref_metadata: a121.Metadata,
+    ref_session_config: a121.SessionConfig,
+    ref_structure: Iterator[Iterator[int]],
+    ref_num_frames: int,
+    ref_data: npt.NDArray[np.int_],
+    tmp_file_path: Path,
+) -> Path:
     with h5py.File(tmp_file_path, mode="x") as f:
         f.create_dataset(
             "lib_version", data=ref_lib_version, dtype=_H5PY_STR_DTYPE, track_times=False
@@ -217,6 +224,6 @@ def ref_record_file(
 
 
 @pytest.fixture
-def ref_record(ref_record_file):
+def ref_record(ref_record_file: Path) -> Iterator[a121.Record]:
     with a121.open_record(ref_record_file) as record:
         yield record

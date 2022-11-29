@@ -24,7 +24,7 @@ class ValidationResult(Exception):
     def __attrs_post_init__(self) -> None:
         super(Exception, self).__init__(self.source, self.aspect, self.message, self.criticality)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.message
 
 

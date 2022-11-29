@@ -17,6 +17,7 @@ BLACK_SPEC = "black>=22.3.0"
 ISORT_SPEC = "isort==5.6.3"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
+PYTEST_SPEC = "pytest==7.2"
 
 SPHINX_SOURCE_DIR = "docs"
 SPHINX_OUTPUT_DIR = "docs/_build"
@@ -108,7 +109,7 @@ def mypy(session):
     else:
         session.install(".")
 
-    session.install("mypy")
+    session.install("mypy", PYTEST_SPEC)
     session.run("python", "-m", "mypy", "-p", "acconeer.exptool.a121")
     session.run("python", "-m", "mypy", "-p", "acconeer.exptool.app.new")
     session.run("python", "-m", "mypy", "-p", "acconeer.exptool.setup")
