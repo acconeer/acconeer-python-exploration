@@ -43,6 +43,7 @@ The *Handbook* provides in-depth information on a wide range of topics.
    a121/signal_strength
    a121/config_params
    a121/how_to_configure
+   a121/timing
    a121/detectors
 
 .. raw:: latex
