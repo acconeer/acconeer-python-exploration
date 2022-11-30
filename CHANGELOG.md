@@ -9,6 +9,7 @@
 - A121 presence: Fix depth filter length so it never is bigger than
   the number of points
 - Correct downloading of new firmware by adapting to new developer site
+- Flasher: Enable DFU from detached usb device with PyUsbCdc
 
 ## v5.5.1
 

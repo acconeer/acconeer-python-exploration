@@ -10,6 +10,7 @@ import serial
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
+from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
 from acconeer.exptool.flash._xc120._bootloader_comm import BLCommunication
 from acconeer.exptool.flash._xc120._meta import (
     ACCONEER_VID,
@@ -171,12 +172,16 @@ class BootloaderTool:
                     BootloaderTool._try_open_port(exploration_server_port)
                     ser = serial.Serial(exploration_server_port, exclusive=True)
                 else:
-                    if ComPort is None:
-                        raise ImportError("WinUsbPy only works on Windows platform")
-                    ser = ComPort(
-                        vid=exploration_server_usb_device.vid,
-                        pid=exploration_server_usb_device.pid,
-                    )
+                    if ComPort is not None:
+                        ser = ComPort(
+                            vid=exploration_server_usb_device.vid,
+                            pid=exploration_server_usb_device.pid,
+                        )
+                    else:
+                        ser = PyUsbCdc(
+                            vid=exploration_server_usb_device.vid,
+                            pid=exploration_server_usb_device.pid,
+                        )
                 ser.send_break()
                 time.sleep(0.1)
                 ser.write(bytes('{ "cmd": "stop_application" }\n', "utf-8"))
