@@ -267,7 +267,6 @@ def main():
                         bin_path, version = download(
                             session=session,
                             cookies=cookies,
-                            page=page,
                             path=tmp_dir,
                             device=device,
                         )

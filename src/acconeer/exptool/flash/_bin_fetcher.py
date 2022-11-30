@@ -25,7 +25,7 @@ COOKIE_DIR = ET_DIR / CODENAME / "cookies"
 COOKIE_FILEPATH = COOKIE_DIR / "developer_page.pickle"
 REQUEST_URL = "https://developer.acconeer.com/log-in/"
 REFERER_URL = "https://developer.acconeer.com"
-ACC_DEV_LICENSE_URL = "https://developer.acconeer.com/software-license-agreement/"
+ACC_DEV_AJAX_URL = "https://developer.acconeer.com/wp-admin/admin-ajax.php"
 
 BIN_FETCH_PROMPT = (
     "To fetch the latest image you need to log into your Acconeer Developer account.\n\n"
@@ -120,23 +120,30 @@ def is_redirected_to_login_page(response: requests.Response) -> bool:
 def download(
     session: requests.Session,
     cookies: dict,
-    page: requests.Response,
     path: str,
     device: str,
 ) -> Tuple[str, str]:
 
-    device = device.lower().replace(" ", "_")
-    soup = BeautifulSoup(page.content, "html.parser")
+    # Get the actual device name (i.e. remove "Unflashed " if present)
+    device = device.split(" ")[-1].lower()
+
+    # Get correct device slug
+    slug = "xe121" if device == "xc120" else device
+
+    data = f"action=ajax_file_tabs&slug={slug}"
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    request = session.post(url=ACC_DEV_AJAX_URL, data=data, cookies=cookies, headers=headers)
+
+    soup = BeautifulSoup(request.content, "html.parser")
     form = soup.select_one('form[action*="{}"]'.format(device))
     zip_url = form.get("action")
 
-    download_value = form.select_one('[type="submit"]').get("value")
-
     log.debug("File to download: {}".format(zip_url))
 
-    tc = {"tc_accepted": "1", "tc_submit": download_value}
+    tc = "tc_accepted=1"
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-    r = session.post(zip_url, data=tc, allow_redirects=False, cookies=cookies.get_dict())
+    r = session.post(zip_url, data=tc, allow_redirects=False, cookies=cookies, headers=headers)
 
     _, params = cgi.parse_header(r.headers["Content-Disposition"])
     filename = params["filename"]

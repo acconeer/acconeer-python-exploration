@@ -673,7 +673,6 @@ class BinDownloadThread(QThread):
                     temp_file, version = download(
                         session=self.session,
                         cookies=self.cookies,
-                        page=self.response,
                         path=temp_dir,
                         device=self.device,
                     )
