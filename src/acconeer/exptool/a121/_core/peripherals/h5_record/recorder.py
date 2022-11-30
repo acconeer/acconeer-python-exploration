@@ -254,6 +254,7 @@ class H5Recorder(Recorder):
             maxshape=(None,),
             dtype=bool,
             track_times=False,
+            compression="gzip",
         )
         g.create_dataset(
             "frame_delayed",
@@ -261,6 +262,7 @@ class H5Recorder(Recorder):
             maxshape=(None,),
             dtype=bool,
             track_times=False,
+            compression="gzip",
         )
         g.create_dataset(
             "calibration_needed",
@@ -268,6 +270,7 @@ class H5Recorder(Recorder):
             maxshape=(None,),
             dtype=bool,
             track_times=False,
+            compression="gzip",
         )
         g.create_dataset(
             "temperature",
@@ -275,6 +278,7 @@ class H5Recorder(Recorder):
             maxshape=(None,),
             dtype=int,
             track_times=False,
+            compression="gzip",
         )
 
         g.create_dataset(
@@ -283,6 +287,7 @@ class H5Recorder(Recorder):
             maxshape=(None,),
             dtype=np.dtype("int64"),
             track_times=False,
+            compression="gzip",
         )
 
         g.create_dataset(
@@ -291,6 +296,7 @@ class H5Recorder(Recorder):
             maxshape=(None, *metadata.frame_shape),
             dtype=INT_16_COMPLEX,
             track_times=False,
+            compression="gzip",
         )
 
     @staticmethod
