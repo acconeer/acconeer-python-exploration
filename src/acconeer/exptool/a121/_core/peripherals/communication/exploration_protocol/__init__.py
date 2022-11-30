@@ -3,5 +3,5 @@
 
 from ._factory import get_exploration_protocol
 from ._latest import ExplorationProtocol, ExplorationProtocolError
-from ._v0_4_1 import ExplorationProtocol_0_4_1
+from ._no_calibration_reuse import ExplorationProtocol_NoCalibrationReuse
 from .server_error import ServerError

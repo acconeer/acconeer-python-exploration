@@ -10,7 +10,7 @@ from acconeer.exptool.a121._core.entities import SensorCalibration, SessionConfi
 from ._latest import ExplorationProtocol, ExplorationProtocolError
 
 
-class ExplorationProtocol_0_4_1(ExplorationProtocol):
+class ExplorationProtocol_NoCalibrationReuse(ExplorationProtocol):
     @classmethod
     def setup_command(
         cls,
@@ -18,5 +18,8 @@ class ExplorationProtocol_0_4_1(ExplorationProtocol):
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> bytes:
         if calibrations:
-            raise ExplorationProtocolError("Calibrations are not supported for v0.4.1")
+            raise ExplorationProtocolError(
+                "Connected Exploration server does not support "
+                + "calibration reuse (passing 'calibrations')"
+            )
         return super().setup_command(session_config, None)
