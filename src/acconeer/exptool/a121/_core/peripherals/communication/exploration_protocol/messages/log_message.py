@@ -7,6 +7,7 @@ import typing as t
 import attrs
 import typing_extensions as te
 
+from acconeer.exptool.a121._core.entities import ServerLogMessage
 from acconeer.exptool.a121._core.mediators import AgnosticClientFriends, Message
 
 from .parse_error import ParseError
@@ -30,14 +31,22 @@ class LogMessageHeader(te.TypedDict):
 
 @attrs.frozen
 class LogMessage(Message):
+    message: ServerLogMessage
+
     def apply(self, client: AgnosticClientFriends) -> None:
-        pass
+        client._log_queue.append(self.message)
 
     @classmethod
     def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> LogMessage:
         t.cast(LogMessageHeader, header)
 
         if header["status"] == "log":
-            return cls()
-
+            return cls(
+                ServerLogMessage(
+                    level=header["level"],
+                    timestamp=header["timestamp"],
+                    module=header["module"],
+                    log=header["log"],
+                )
+            )
         raise ParseError

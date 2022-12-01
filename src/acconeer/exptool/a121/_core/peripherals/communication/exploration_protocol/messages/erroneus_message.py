@@ -25,7 +25,11 @@ class ErroneousMessage(Message):
     message: str
 
     def apply(self, client: AgnosticClientFriends) -> None:
-        raise ServerError(self.message)
+        last_error = ""
+        for log in client._log_queue:
+            if log.level == "ERROR" and "exploration_server" not in log.module:
+                last_error = f" ({log.log})"
+        raise ServerError(f"{self.message}{last_error}")
 
     @classmethod
     def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> ErroneousMessage:

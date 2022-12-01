@@ -19,6 +19,7 @@ from acconeer.exptool.a121._core.entities import (
     SensorConfig,
     SensorInfo,
     ServerInfo,
+    ServerLogMessage,
     SessionConfig,
 )
 from acconeer.exptool.a121._core.utils import (
@@ -62,6 +63,7 @@ class AgnosticClient(AgnosticClientFriends):
     _system_info: Optional[SystemInfoDict]
     _result_queue: list[list[dict[int, Result]]]
     _message_stream: Iterator[Message]
+    _log_queue: list[ServerLogMessage]
 
     def __init__(self, link: BufferedLink, protocol: Type[CommunicationProtocol]) -> None:
         self._link = link
@@ -79,6 +81,7 @@ class AgnosticClient(AgnosticClientFriends):
         self._sensor_infos = {}
         self._system_info = None
         self._result_queue = []
+        self._log_queue = []
 
     def _assert_connected(self) -> None:
         if not self.connected:
@@ -361,6 +364,7 @@ class AgnosticClient(AgnosticClientFriends):
             self._recorder = None
 
         self._rate_stats_calc = None
+        self._log_queue.clear()
 
         return recorder_result
 
@@ -377,6 +381,7 @@ class AgnosticClient(AgnosticClientFriends):
         self._sensor_infos = {}
         self._message_stream = iter([])
         self._metadata = None
+        self._log_queue.clear()
         self._link.disconnect()
 
     def __enter__(self) -> AgnosticClient:

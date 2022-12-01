@@ -12,6 +12,7 @@ from acconeer.exptool.a121._core.entities import (
     Result,
     SensorCalibration,
     SensorInfo,
+    ServerLogMessage,
     SessionConfig,
 )
 
@@ -33,6 +34,7 @@ class AgnosticClientFriends(te.Protocol):
     _sensor_infos: t.Dict[int, SensorInfo]
     _system_info: t.Optional[SystemInfoDict]
     _result_queue: t.List[list[dict[int, Result]]]
+    _log_queue: t.List[ServerLogMessage]
 
 
 class Message(abc.ABC):
