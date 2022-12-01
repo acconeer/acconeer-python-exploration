@@ -251,8 +251,11 @@ class AgnosticClient(AgnosticClientFriends):
         pc = _SessionPerformanceCalc(config, self._metadata)
 
         try:
+            # Use max of the calculate duration and update/frame rate to guarantee sufficient
+            # timeout.
+            timeout_duration = max(pc.update_duration, 1 / pc.update_rate)
             # Increase timeout if update rate is very low, otherwise keep default
-            self._link_timeout = max(1.5 * (1 / pc.update_rate) + 1.0, self._default_link_timeout)
+            self._link_timeout = max(1.5 * timeout_duration + 1.0, self._default_link_timeout)
         except Exception:
             self._link_timeout = self._default_link_timeout
 
