@@ -124,8 +124,7 @@ def download(
     device: str,
 ) -> Tuple[str, str]:
 
-    # Get the actual device name (i.e. remove "Unflashed " if present)
-    device = device.split(" ")[-1].lower()
+    device = device.lower()
 
     # Get correct device slug
     slug = "xe121" if device == "xc120" else device

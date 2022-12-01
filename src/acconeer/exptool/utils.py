@@ -44,6 +44,8 @@ class USBDevice:
     pid: int
     serial: Optional[str] = None
     name: str
+    accessible: bool = True
+    unflashed: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)
@@ -59,15 +61,26 @@ class USBDevice:
     def from_json(cls, json_str: str) -> USBDevice:
         return cls.from_dict(json.loads(json_str))
 
+    def display_name(self) -> str:
+        if not self.accessible:
+            display_name = f"{self.name} (inaccessible)"
+        elif self.unflashed:
+            display_name = f"Unflashed {self.name}"
+        elif self.serial is not None:
+            display_name = f"{self.name} ({self.serial})"
+        else:
+            display_name = f"{self.name}"
+        return display_name
+
     def __str__(self) -> str:
         serial_str = "?" if self.serial is None else self.serial
         return f"{self.name}: serial={serial_str}, VID=0x{self.vid:04x}, PID=0x{self.pid:04x}"
 
 
-_USB_IDS = [  # (vid, pid, 'model number')
-    (0x0483, 0xA41D, "Unflashed XC120"),
-    (0x0483, 0xA42C, "Unflashed XC120"),
-    (0x0483, 0xA42D, "XC120"),
+_USB_IDS = [  # (vid, pid, 'model number', 'Unflashed')
+    (0x0483, 0xA41D, "XC120", True),
+    (0x0483, 0xA42C, "XC120", True),
+    (0x0483, 0xA42D, "XC120", False),
 ]
 
 
@@ -138,7 +151,7 @@ def tag_serial_ports_objects(port_infos):
 
         match = re.search(PRODUCT_REGEX, desc)
         if match is None:
-            for vid, pid, model_number in _USB_IDS:
+            for vid, pid, model_number, _ in _USB_IDS:
                 if port_object.vid == vid and port_object.pid == pid:
                     port_tag_tuples.append((port_object, model_number))
                     break
@@ -243,33 +256,35 @@ def get_usb_devices(only_accessible=False):
             device_vid = device["vid"]
             device_pid = device["pid"]
             serial_number = device["serial"]
-            for vid, pid, model_name in _USB_IDS:
+            for vid, pid, model_name, unflashed in _USB_IDS:
                 if device_vid == vid and device_pid == pid:
-                    if serial_number is not None:
-                        model_name = f"{model_name} ({serial_number})"
                     usb_devices.append(
                         USBDevice(
-                            vid=device_vid, pid=device_pid, serial=serial_number, name=model_name
+                            vid=device_vid,
+                            pid=device_pid,
+                            serial=serial_number,
+                            name=model_name,
+                            unflashed=unflashed,
                         )
                     )
     else:
         pyusbcomm = PyUsbComm()
         for device_vid, device_pid, serial_number in pyusbcomm.iterate_devices():
-            for vid, pid, model_name in _USB_IDS:
+            for vid, pid, model_name, unflashed in _USB_IDS:
                 if device_vid == vid and device_pid == pid:
                     device_name = model_name
                     accessible = pyusbcomm.is_accessible(vid, pid)
-                    if not accessible:
-                        device_name = f"{device_name} (inaccessible)"
-                    elif serial_number is not None:
-                        device_name = f"{device_name} ({serial_number})"
-
                     if only_accessible and not accessible:
                         continue
 
                     usb_devices.append(
                         USBDevice(
-                            vid=device_vid, pid=device_pid, serial=serial_number, name=device_name
+                            vid=device_vid,
+                            pid=device_pid,
+                            serial=serial_number,
+                            name=device_name,
+                            accessible=accessible,
+                            unflashed=unflashed,
                         )
                     )
 

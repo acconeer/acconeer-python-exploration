@@ -134,7 +134,7 @@ class USBDeviceComboBox(QComboBox):
             if usb_devices != view_ports:
                 self.clear()
                 for usb_device in usb_devices:
-                    self.addItem(usb_device.name, usb_device)
+                    self.addItem(usb_device.display_name(), usb_device)
 
             index = self.findData(app_model.usb_connection_device)
             self.setCurrentIndex(index)
@@ -261,9 +261,9 @@ class UnflashedDeviceHint(HintObject):
         if (
             app_model.usb_connection_device is not None
             and app_model.connection_interface == ConnectionInterface.USB
+            and app_model.usb_connection_device.unflashed
         ):
-            if "unflashed" in app_model.usb_connection_device.name.lower():
-                return True
+            return True
 
         return False
 
@@ -283,9 +283,9 @@ class InaccessibleDeviceHint(HintObject):
         if (
             app_model.usb_connection_device is not None
             and app_model.connection_interface == ConnectionInterface.USB
+            and not not app_model.usb_connection_device.accessible
         ):
-            if "inaccessible" in app_model.usb_connection_device.name.lower():
-                return True
+            return True
 
         return False
 

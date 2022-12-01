@@ -22,7 +22,14 @@ def client_info_dict() -> dict:
     return {
         "ip_address": "addr",
         "serial_port": "port",
-        "usb_device": {"vid": 0x4CC0, "pid": 0xAEE3, "serial": None, "name": "name"},
+        "usb_device": {
+            "vid": 0x4CC0,
+            "pid": 0xAEE3,
+            "serial": None,
+            "name": "name",
+            "accessible": True,
+            "unflashed": False,
+        },
         "override_baudrate": 0,
     }
 
@@ -69,3 +76,29 @@ def test_from_dict_extra_kwarg(client_info_dict: dict) -> None:
 
 def test_to_from_json_equality(client_info: ClientInfo) -> None:
     assert client_info == ClientInfo.from_json(client_info.to_json())
+
+
+def test_usb_device_display_name() -> None:
+    usb_name = "DEV_NAME"
+    usb_serial = "123456"
+
+    usb_device = USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name=usb_name)
+    assert usb_device.display_name() == usb_name
+
+    usb_device = USBDevice(vid=0x4CC0, pid=0xAEE3, serial=usb_serial, name=usb_name)
+    assert usb_device.display_name() == f"{usb_name} ({usb_serial})"
+
+    usb_device = USBDevice(
+        vid=0x4CC0, pid=0xAEE3, serial=usb_serial, name=usb_name, unflashed=True
+    )
+    assert usb_device.display_name() == f"Unflashed {usb_name}"
+
+    usb_device = USBDevice(
+        vid=0x4CC0, pid=0xAEE3, serial=usb_serial, name=usb_name, accessible=False
+    )
+    assert usb_device.display_name() == f"{usb_name} (inaccessible)"
+
+    usb_device = USBDevice(
+        vid=0x4CC0, pid=0xAEE3, serial=usb_serial, name=usb_name, unflashed=True, accessible=False
+    )
+    assert usb_device.display_name() == f"{usb_name} (inaccessible)"

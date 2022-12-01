@@ -341,12 +341,12 @@ class AppModel(QObject):
         return False
 
     def _is_usb_device_unflashed(self, usb_device: Optional[USBDevice]) -> bool:
-        if usb_device and "unflashed" in usb_device.name.lower():
+        if usb_device and usb_device.unflashed:
             return True
         return False
 
     def _is_usb_device_inaccessible(self, usb_device: Optional[USBDevice]) -> bool:
-        if usb_device and "inaccessible" in usb_device.name.lower():
+        if usb_device and not usb_device.accessible:
             return True
         return False
 
