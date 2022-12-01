@@ -47,6 +47,7 @@ class DetectorStatus:
 
 class DetailedStatus(enum.Enum):
     OK = enum.auto()
+    END_LESSER_THAN_START = enum.auto()
     SENSOR_IDS_NOT_UNIQUE = enum.auto()
     CONTEXT_MISSING = enum.auto()
     CALIBRATION_MISSING = enum.auto()
@@ -529,6 +530,12 @@ class Detector:
         if not cls._valid_detector_config_range(config=config):
             return DetectorStatus(
                 detector_state=DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE,
+                ready_to_start=False,
+            )
+
+        if config.end_m < config.start_m:
+            return DetectorStatus(
+                detector_state=DetailedStatus.END_LESSER_THAN_START,
                 ready_to_start=False,
             )
 

@@ -416,6 +416,8 @@ class ViewPlugin(DetectorViewPluginBase):
 
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
+        DetailedStatus.END_LESSER_THAN_START: "'Range end' point must be greater than 'Range "
+        + "start'.",
         DetailedStatus.CONTEXT_MISSING: "Run detector calibration.",
         DetailedStatus.CALIBRATION_MISSING: "Run detector calibration.",
         DetailedStatus.CONFIG_MISMATCH: (
