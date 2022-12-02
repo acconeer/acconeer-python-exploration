@@ -67,6 +67,7 @@ class SubsweepProxyProperty(utils.ProxyProperty[T]):
             return super().__set__(obj, value)
 
 
+@utils.no_dynamic_member_creation
 class SensorConfig:
     """Sensor configuration
 

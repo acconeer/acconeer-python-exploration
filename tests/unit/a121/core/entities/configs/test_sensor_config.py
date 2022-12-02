@@ -390,3 +390,12 @@ def test_proxy_parameter_name_is_mentioned_in_too_many_subsweeps_error(proxy_par
             )
     else:
         assert False
+
+
+def test_invalid_attribute():
+    config = a121.SensorConfig(num_subsweeps=2)
+
+    with pytest.raises(AttributeError, match="Invalid attribute*"):
+        config.sweep_per_frame = 16
+
+    config.sweeps_per_frame = 16

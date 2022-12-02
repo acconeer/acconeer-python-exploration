@@ -7,6 +7,7 @@ import enum
 import itertools
 import json
 import re
+from functools import wraps
 from typing import (
     Any,
     Callable,
@@ -543,3 +544,32 @@ attrs_ndarray_eq = attrs.cmp_using(eq=np.array_equal)  # type: ignore[call-arg]
 attrs_ndarray_isclose = attrs.cmp_using(
     eq=lambda a, b: bool(np.isclose(a, b).all())
 )  # type: ignore[call-arg]
+
+
+def no_dynamic_member_creation(cls: Type[T]) -> Type[T]:
+    """
+    Class annotation that prevents setting any attributes that does not exist
+    after the object have been created (the __init__ function have executed).
+    """
+
+    def setattr_wrapper(func):  # type: ignore
+        @wraps(func)
+        def setattr(self, key, value):  # type: ignore
+            if hasattr(self, "__frozen") and not hasattr(self, key):
+                raise AttributeError(f'Invalid attribute "{key}" for {self!r}')
+            else:
+                func(self, key, value)
+
+        return setattr
+
+    def init_wrapper(func):  # type: ignore
+        @wraps(func)
+        def init(self, *args, **kwargs):  # type: ignore
+            func(self, *args, **kwargs)
+            self.__frozen = True
+
+        return init
+
+    cls.__setattr__ = setattr_wrapper(cls.__setattr__)  # type: ignore
+    cls.__init__ = init_wrapper(cls.__init__)  # type: ignore
+    return cls

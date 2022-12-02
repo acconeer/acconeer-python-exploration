@@ -188,3 +188,11 @@ def test_update_rate_in_session_config_and_frame_rate_in_any_sensor_config_is_di
 
     with pytest.raises(a121.ValidationError):
         config.validate()
+
+
+def test_invalid_attribute():
+    config = a121.SessionConfig()
+    config.update_rate = 10
+
+    with pytest.raises(AttributeError, match="Invalid attribute*"):
+        config.update_ratee = 10

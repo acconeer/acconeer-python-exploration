@@ -13,6 +13,7 @@ from .sensor_config import SensorConfig
 from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
+@utils.no_dynamic_member_creation
 class SessionConfig:
     """Session configuration
 
