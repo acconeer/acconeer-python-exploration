@@ -56,14 +56,8 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
             "Stop",
             self.sticky_widget,
         )
-        self.defaults_button = QPushButton(
-            qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
-            "Restore default settings",
-            self.sticky_widget,
-        )
         self.start_button.clicked.connect(self._send_start_requests)
         self.stop_button.clicked.connect(self._send_stop_requests)
-        self.defaults_button.clicked.connect(self._send_defaults_request)
 
         self.start_button.setShortcut("space")
         self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
@@ -73,7 +67,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         button_group = GridGroupBox("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
-        button_group.layout().addWidget(self.defaults_button, 1, 0, 1, 2)
         sticky_layout.addWidget(button_group)
 
         self.metadata_view = SmartMetadataView(parent=self.scrolly_widget)
@@ -121,9 +114,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
-    def _send_defaults_request(self) -> None:
-        self.app_model.put_backend_plugin_task("restore_defaults")
-
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
             log.debug(f"{type(self).__name__} syncing")
@@ -164,7 +154,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
             and app_model.backend_plugin_state.ready
         )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
-        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.session_config_editor.update_available_sensor_list(app_model._a121_server_info)
 
     @classmethod
