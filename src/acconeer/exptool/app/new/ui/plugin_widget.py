@@ -166,20 +166,11 @@ class PluginSelection(QWidget):
                 label.setWordWrap(True)
                 group_box.layout().addWidget(label)
 
-        self.unload_button = QPushButton("Deselect", self)
-        self.unload_button.setStyleSheet("text-align: left;")
-        self.unload_button.setFlat(True)
-        self.unload_button.clicked.connect(self._on_unload_click)
-        self.layout().addWidget(self.unload_button)
-
     def _on_load_click(self) -> None:
         self.layout().addStretch(1)
 
         plugin = self.button_group.checkedButton().plugin
         self.app_model.load_plugin(plugin)
-
-    def _on_unload_click(self) -> None:
-        self.app_model.load_plugin(None)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         plugin: Optional[PluginSpec] = app_model.plugin
@@ -195,8 +186,6 @@ class PluginSelection(QWidget):
             buttons = self.button_group.buttons()
             button = next(b for b in buttons if b.plugin == plugin)
             button.setChecked(True)
-
-        self.unload_button.setEnabled(plugin is not None)
 
         self.setEnabled(app_model.plugin_state.is_steady)
 
