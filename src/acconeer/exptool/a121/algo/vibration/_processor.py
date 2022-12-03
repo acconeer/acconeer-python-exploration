@@ -21,6 +21,9 @@ class ProcessorConfig(AlgoConfigBase):
     lp_coeff: float = attrs.field(default=0.75)
     """Specify filter coefficient of exponential filter."""
 
+    sensitivity: float = attrs.field(default=10.0)
+    """Specify threshold sensitivity."""
+
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
@@ -33,9 +36,16 @@ class ProcessorResult:
     lp_z_abs_db: npt.NDArray[np.float_]
     freqs: npt.NDArray[np.float_]
     max_amplitude: float
+    max_psd_ampl: float
+    max_psd_ampl_freq: float
 
 
 class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+
+    _OVER_SAMPLING_FACTOR = 2
+    _WINDOW_BASE_LENGTH = 10
+    _HALF_GUARD_BASE_LENGTH = 5
+
     def __init__(
         self,
         *,
@@ -60,12 +70,17 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         self.spf = sensor_config.sweeps_per_frame
         self.lp_coeffs = processor_config.lp_coeff
+        self.sensitivity = processor_config.sensitivity
+        self.time_series_length = processor_config.time_series_length
 
         self.time_series = np.zeros(shape=processor_config.time_series_length)
         self.freq = np.fft.rfftfreq(
-            processor_config.time_series_length, 1 / sensor_config.sweep_rate
+            self._OVER_SAMPLING_FACTOR * processor_config.time_series_length,
+            1 / sensor_config.sweep_rate,
         )[1:]
         self.lp_z_abs_db = np.zeros_like(self.freq)
+        self.window_length = self._WINDOW_BASE_LENGTH * self._OVER_SAMPLING_FACTOR
+        self.half_guard_length = self._HALF_GUARD_BASE_LENGTH * self._OVER_SAMPLING_FACTOR
 
     def process(self, result: a121.Result) -> ProcessorResult:
 
@@ -75,7 +90,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.time_series[-self.spf :] = new_data_segment
         self.time_series = np.unwrap(self.time_series)
 
-        z_abs = np.abs(np.fft.rfft(self.time_series - np.mean(self.time_series)))[1:]
+        z_abs = np.abs(
+            np.fft.rfft(
+                self.time_series - np.mean(self.time_series),
+                n=self.time_series_length * self._OVER_SAMPLING_FACTOR,
+            )
+        )[1:]
         z_abs_db = 20 * np.log10(z_abs)
         self.lp_z_abs_db = self.lp_z_abs_db * self.lp_coeffs + z_abs_db * (1 - self.lp_coeffs)
 
@@ -85,12 +105,45 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         max_amplitude = float(np.max(np.abs(result.frame)))
 
+        threshold = self._calculate_cfar_threshold(
+            self.lp_z_abs_db, self.sensitivity, self.window_length, self.half_guard_length
+        )
+        # Find index of values over threshold
+        idx_over_threshold = np.where(threshold < self.lp_z_abs_db)[0]
+        if idx_over_threshold.shape[0] != 0:
+            psd_ampls_over_threshold = self.lp_z_abs_db[idx_over_threshold]
+            max_psd_ampl = np.max(psd_ampls_over_threshold)
+            max_psd_ampl_freq = self.freq[idx_over_threshold[np.argmax(psd_ampls_over_threshold)]]
+        else:
+            max_psd_ampl = None
+            max_psd_ampl_freq = None
+
         return ProcessorResult(
             time_series=presented_time_series,
             lp_z_abs_db=self.lp_z_abs_db,
             freqs=self.freq,
             max_amplitude=max_amplitude,
+            max_psd_ampl=max_psd_ampl,
+            max_psd_ampl_freq=max_psd_ampl_freq,
         )
+
+    @staticmethod
+    def _calculate_cfar_threshold(
+        psd: npt.NDArray[np.float_],
+        sensitivity: float,
+        window_length: int,
+        half_guard_length: int,
+    ) -> npt.NDArray[np.float_]:
+        threshold = np.full(psd.shape, np.nan)
+        margin = window_length + half_guard_length
+        length_after_filtering = psd.shape[0] - 2 * margin
+
+        filt_psd = np.convolve(psd, np.ones(window_length), "valid") / window_length
+        threshold[margin:-margin] = (
+            filt_psd[:length_after_filtering] + filt_psd[-length_after_filtering:]
+        ) / 2 + sensitivity
+
+        return threshold
 
     def update_config(self, config: ProcessorConfig) -> None:
         ...

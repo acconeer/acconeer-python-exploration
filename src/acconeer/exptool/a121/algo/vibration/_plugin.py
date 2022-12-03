@@ -64,6 +64,12 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
                 limits=(0, 1),
                 decimals=2,
             ),
+            "sensitivity": pidgets.FloatSliderParameterWidgetFactory(
+                name_label_text="Threshold sensitivity",
+                suffix="dB",
+                limits=(0, 30),
+                decimals=1,
+            ),
         }
 
     @classmethod
@@ -81,9 +87,10 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
 
         pen = et.utils.pg_pen_cycler(0)
         brush = et.utils.pg_brush_cycler(0)
+        brush_dot = et.utils.pg_brush_cycler(1)
         symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
         feat_kw = dict(pen=pen, **symbol_kw)
-        symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush, symbolPen="k")
+        symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
 
         # precense plot
         self.precense_plot = pg.PlotItem()
@@ -117,7 +124,17 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.fft_plot.setLabel("left", "Power (dB)")
         self.fft_plot.setLabel("bottom", "Frequency (Hz)")
         self.fft_plot.addItem(pg.PlotDataItem())
-        self.fft_curve = self.fft_plot.plot(**feat_kw)
+        self.fft_curve = [
+            self.fft_plot.plot(**feat_kw),
+            self.fft_plot.plot(**dict(pen=pen, **symbol_dot_kw)),
+        ]
+
+        self.text_item = pg.TextItem(
+            fill=pg.mkColor(0xFF, 0x7F, 0x0E, 200),
+            anchor=(0.5, 0),
+        )
+        self.text_item.hide()
+        self.fft_plot.addItem(self.text_item)
 
         self.smooth_max_fft = et.utils.SmoothMax()
 
@@ -127,6 +144,8 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         z_abs_db = processor_result.lp_z_abs_db
         freqs = processor_result.freqs
         max_amplitude = processor_result.max_amplitude
+        max_psd_ampl = processor_result.max_psd_ampl
+        max_psd_ampl_freq = processor_result.max_psd_ampl_freq
 
         self.precense_curve.setData([self.meas_dist_m], [max_amplitude])
         lim = self.smooth_max_precense.update(max_amplitude)
@@ -136,9 +155,24 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         lim = self.smooth_lim_time_series.update(time_series)
         self.time_series_plot.setYRange(lim[0], lim[1])
 
-        self.fft_curve.setData(freqs, z_abs_db)
+        self.fft_curve[0].setData(freqs, z_abs_db)
         lim = self.smooth_max_fft.update(np.max(z_abs_db))
         self.fft_plot.setYRange(0, lim)
+
+        if max_psd_ampl_freq is not None:
+            self.fft_curve[1].setData([max_psd_ampl_freq], [max_psd_ampl])
+            # Place text box centered at the top of the plotting window.
+            self.text_item.setPos(max(freqs) / 2, lim * 0.95)
+            html_format = (
+                '<div style="text-align: center">'
+                '<span style="color: #FFFFFF;font-size:15pt;">'
+                "{}</span></div>".format("Detected Frequency: " + str(int(max_psd_ampl_freq)))
+            )
+            self.text_item.setHtml(html_format)
+            self.text_item.show()
+        else:
+            self.fft_curve[1].setData([], [])
+            self.text_item.hide()
 
 
 class PluginSpec(PluginSpecBase):
