@@ -24,8 +24,10 @@ from acconeer.exptool.a121.algo.virtual_button import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
-    get_near_processor_config,
-    get_near_sensor_config,
+    get_close_and_far_processor_config,
+    get_close_and_far_sensor_config,
+    get_close_processor_config,
+    get_close_sensor_config,
 )
 from acconeer.exptool.app.new import (
     AppModel,
@@ -39,15 +41,20 @@ from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, 
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    CLOSE_RANGE = auto()
+    CLOSE_AND_FAR_RANGE = auto()
 
 
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
 
     PLUGIN_PRESETS = {
-        PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
-            session_config=a121.SessionConfig(get_near_sensor_config()),
-            processor_config=get_near_processor_config(),
+        PluginPresetId.CLOSE_RANGE.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_close_sensor_config()),
+            processor_config=get_close_processor_config(),
+        ),
+        PluginPresetId.CLOSE_AND_FAR_RANGE.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_close_and_far_sensor_config()),
+            processor_config=get_close_and_far_processor_config(),
         ),
     }
 
@@ -61,7 +68,7 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
 
     @classmethod
     def get_default_sensor_config(cls) -> a121.SensorConfig:
-        return get_near_sensor_config()
+        return get_close_sensor_config()
 
 
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
@@ -191,7 +198,16 @@ VIRTUAL_BUTTON_PLUGIN = PluginSpec(
     description="Detect tap/wave motion and register as button press.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(
+            name="Close Range",
+            description="Close range virtual button",
+            preset_id=PluginPresetId.CLOSE_RANGE,
+        ),
+        PluginPresetBase(
+            name="Close and far range",
+            description="Close and far range virtual button",
+            preset_id=PluginPresetId.CLOSE_AND_FAR_RANGE,
+        ),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.CLOSE_RANGE,
 )
