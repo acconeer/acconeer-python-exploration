@@ -358,21 +358,20 @@ class _FlashPopup(QDialog):
         self.app_model.set_connection_interface(self.interface_dd.currentData())
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        interface_index = 0
         if app_model.connection_interface in [ConnectionInterface.SERIAL, ConnectionInterface.USB]:
             interface_index = self.interface_dd.findData(app_model.connection_interface)
             if interface_index == -1:
                 raise RuntimeError
 
-        self.interface_dd.setCurrentIndex(interface_index)
-        self.stacked.setCurrentIndex(interface_index)
+            self.interface_dd.setCurrentIndex(interface_index)
+            self.stacked.setCurrentIndex(interface_index)
 
-        enable_select = (
-            find_flash_port(do_log=False) is not None
-            and not self.authenticating
-            and not self.downloading_firmware
-        )
-        self.get_latest_button.setEnabled(enable_select)
+            enable_select = (
+                find_flash_port(do_log=False) is not None
+                and not self.authenticating
+                and not self.downloading_firmware
+            )
+            self.get_latest_button.setEnabled(enable_select)
 
         self._draw()
 
@@ -383,7 +382,7 @@ class _FlashPopup(QDialog):
 
     def exec(self) -> None:
         if self.app_model.connection_interface == ConnectionInterface.SOCKET:
-            self.app_model.set_connection_interface(ConnectionInterface.SERIAL)
+            self.app_model.set_connection_interface(ConnectionInterface.USB)
 
         super().exec()
 
