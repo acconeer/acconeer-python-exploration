@@ -283,7 +283,7 @@ class InaccessibleDeviceHint(HintObject):
         if (
             app_model.usb_connection_device is not None
             and app_model.connection_interface == ConnectionInterface.USB
-            and not not app_model.usb_connection_device.accessible
+            and not app_model.usb_connection_device.accessible
         ):
             return True
 
