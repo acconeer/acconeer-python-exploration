@@ -537,6 +537,12 @@ class AppModel(QObject):
     ) -> None:
         self.send_warning_message("Failed to autoconnect")
 
+    def set_port_updates_pause(self, pause: bool) -> None:
+        if pause:
+            self._port_updater.pause()
+        else:
+            self._port_updater.resume()
+
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
         self.connection_interface = connection_interface
         self.broadcast()

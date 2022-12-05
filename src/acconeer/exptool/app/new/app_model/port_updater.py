@@ -41,13 +41,23 @@ class PortUpdater(QObject):
         self.thread.finished.connect(self.worker.stop)
         self.worker.sig_update.connect(self._on_update)
         self.worker.moveToThread(self.thread)
+        self.signalling = False
 
     def start(self) -> None:
         self.thread.start()
+        self.signalling = True
 
     def stop(self) -> None:
         self.thread.quit()
         self.thread.wait()
+        self.signalling = False
+
+    def pause(self) -> None:
+        self.signalling = False
+
+    def resume(self) -> None:
+        self.signalling = True
 
     def _on_update(self, serial: Any, usb: Any) -> None:
-        self.sig_update.emit(serial, usb)
+        if self.signalling:
+            self.sig_update.emit(serial, usb)

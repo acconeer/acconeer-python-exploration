@@ -84,6 +84,8 @@ class _FlashThread(QThread):
 
 
 class _FlashDialog(QDialog):
+    flash_done = Signal()
+
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
@@ -134,9 +136,11 @@ class _FlashDialog(QDialog):
         self._flashing = False
 
     def _flash_done(self) -> None:
+        self.flash_done.emit()
         self.flash_label.setText("Flashing done!")
 
     def _flash_failed(self, exception: Exception, traceback_str: Optional[str]) -> None:
+        self.flash_done.emit()
         self.flash_label.setText("Flashing failed!")
         ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
 
@@ -235,6 +239,7 @@ class _FlashPopup(QDialog):
         self.browse_file_dialog.setNameFilter("Bin files (*.bin)")
 
         self.flash_dialog = _FlashDialog(self)
+        self.flash_dialog.flash_done.connect(self._flash_done)
 
         app_model.sig_notify.connect(self._on_app_model_update)
 
@@ -351,8 +356,11 @@ class _FlashPopup(QDialog):
 
         assert self.bin_file is not None
 
-        # TODO: disable autoconnect when flashing
+        self.app_model.set_port_updates_pause(True)
         self.flash_dialog.flash(self.bin_file, flash_port)
+
+    def _flash_done(self) -> None:
+        self.app_model.set_port_updates_pause(False)
 
     def _on_interface_dd_change(self) -> None:
         self.app_model.set_connection_interface(self.interface_dd.currentData())
