@@ -8,3 +8,4 @@
 
 ### Fixed
 - Unplugging of USB device not detected
+- Sync default sensor with connected sensors

@@ -57,6 +57,14 @@ class ServerInfo:
     def parsed_rss_version(self) -> packaging.version.Version:
         return utils.parse_rss_version(self.rss_version)
 
+    @property
+    def connected_sensors(self) -> list[int]:
+        return [
+            sensor_id
+            for sensor_id, sensor_info in self.sensor_infos.items()
+            if sensor_info.connected
+        ]
+
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)
 

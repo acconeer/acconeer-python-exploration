@@ -88,12 +88,23 @@ class GenericProcessorBackendPluginBase(
         except FileNotFoundError:
             pass
 
+        self._sync_sensor_ids()
         self.broadcast(sync=True)
 
     @is_task
     @abc.abstractmethod
     def restore_defaults(self) -> None:
         pass
+
+    def _sync_sensor_ids(self) -> None:
+        if self.client is not None:
+            sensor_ids = self.client.server_info.connected_sensors
+
+            if (
+                len(sensor_ids) > 0
+                and self.shared_state.session_config.sensor_id not in sensor_ids
+            ):
+                self.shared_state.session_config.sensor_id = sensor_ids[0]
 
     def teardown(self) -> None:
         try:

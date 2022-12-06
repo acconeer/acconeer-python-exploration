@@ -107,8 +107,13 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
 
         return self._live_client
 
+    @abc.abstractmethod
+    def _sync_sensor_ids(self) -> None:
+        pass
+
     def attach_client(self, *, client: a121.Client) -> None:
         self._live_client = client
+        self._sync_sensor_ids()
 
     def detach_client(self) -> None:
         self._live_client = None

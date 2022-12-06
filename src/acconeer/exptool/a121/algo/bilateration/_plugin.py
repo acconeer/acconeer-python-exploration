@@ -142,12 +142,21 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         except FileNotFoundError:
             pass
 
+        self._sync_sensor_ids()
         self.broadcast(sync=True)
 
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState(config=get_default_detector_config())
         self.broadcast(sync=True)
+
+    def _sync_sensor_ids(self) -> None:
+        if self.client is not None:
+            sensor_ids = self.client.server_info.connected_sensors
+
+            for i in range(len(self.shared_state.sensor_ids)):
+                if len(sensor_ids) > 0 and self.shared_state.sensor_ids[i] not in sensor_ids:
+                    self.shared_state.sensor_ids[i] = sensor_ids[0]
 
     @is_task
     def update_config(self, *, config: DetectorConfig) -> None:

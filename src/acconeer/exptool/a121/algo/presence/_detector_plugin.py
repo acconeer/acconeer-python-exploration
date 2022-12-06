@@ -92,6 +92,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         except FileNotFoundError:
             pass
 
+        self._sync_sensor_ids()
         self.broadcast(sync=True)
 
     @is_task
@@ -108,6 +109,13 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def update_plot_config(self, *, config: PlotConfig) -> None:
         self.shared_state.plot_config = config
         self.broadcast(sync=True)
+
+    def _sync_sensor_ids(self) -> None:
+        if self.client is not None:
+            sensor_ids = self.client.server_info.connected_sensors
+
+            if len(sensor_ids) > 0 and self.shared_state.sensor_id not in sensor_ids:
+                self.shared_state.sensor_id = sensor_ids[0]
 
     @is_task
     def update_config(self, *, config: DetectorConfig) -> None:
