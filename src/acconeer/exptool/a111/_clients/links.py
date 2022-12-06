@@ -90,6 +90,7 @@ class SocketLink(BaseLink):
         try:
             self._sock.connect((self._host, self._PORT))
         except OSError as e:
+            self._sock.close()
             self._sock = None
             raise LinkError("failed to connect") from e
 
