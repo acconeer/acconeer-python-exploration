@@ -128,6 +128,20 @@ class DetectorConfig(AlgoConfigBase):
             ):
                 raise ValueError(f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}")
 
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if self.sweeps_per_frame <= Processor.NOISE_ESTIMATION_DIFF_ORDER:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "sweeps_per_frame",
+                    f"Must be greater than {Processor.NOISE_ESTIMATION_DIFF_ORDER}",
+                )
+            )
+
+        return validation_results
+
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:

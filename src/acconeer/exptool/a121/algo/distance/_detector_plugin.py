@@ -32,6 +32,7 @@ from acconeer.exptool.app.new import (
     GridGroupBox,
     HandledException,
     Message,
+    MiscErrorView,
     PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
@@ -384,6 +385,9 @@ class ViewPlugin(DetectorViewPluginBase):
 
         sticky_layout.addWidget(button_group)
 
+        self.misc_error_view = MiscErrorView(self.scrolly_widget)
+        scrolly_layout.addWidget(self.misc_error_view)
+
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
         self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
             parent=sensor_selection_group
@@ -479,6 +483,16 @@ class ViewPlugin(DetectorViewPluginBase):
                 init_set_value=20,
             ),
         }
+
+    def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
+        if backend_plugin_state is not None and backend_plugin_state.config is not None:
+            results = backend_plugin_state.config._collect_validation_results()
+
+            not_handled = self.config_editor.handle_validation_results(results)
+
+            not_handled = self.misc_error_view.handle_validation_results(not_handled)
+
+            assert not_handled == []
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state

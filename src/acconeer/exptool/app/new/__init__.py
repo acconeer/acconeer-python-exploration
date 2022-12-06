@@ -27,6 +27,7 @@ from .ui import (
     AttrsConfigEditor,
     GridGroupBox,
     HorizontalGroupBox,
+    MiscErrorView,
     PidgetFactoryMapping,
     SessionConfigEditor,
     SmartMetadataView,

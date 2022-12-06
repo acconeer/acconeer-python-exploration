@@ -12,10 +12,10 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._base import (
-    ConfigT,
     GenericProcessorBase,
     InputT,
     MetadataT,
+    ProcessorConfigT,
     ResultT,
 )
 from acconeer.exptool.a121.algo._plugins._a121 import A121BackendPluginBase
@@ -34,15 +34,15 @@ FRAME_DELAYED_MESSAGE = "Frame delayed"
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorPluginPreset(Generic[ConfigT]):
+class ProcessorPluginPreset(Generic[ProcessorConfigT]):
     session_config: a121.SessionConfig = attrs.field()
-    processor_config: ConfigT = attrs.field()
+    processor_config: ProcessorConfigT = attrs.field()
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorBackendPluginSharedState(Generic[ConfigT, MetadataT]):
+class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT, MetadataT]):
     session_config: a121.SessionConfig = attrs.field()
-    processor_config: ConfigT = attrs.field()
+    processor_config: ProcessorConfigT = attrs.field()
     replaying: bool = attrs.field(default=False)
     metadata: Optional[MetadataT] = attrs.field(default=None)
 
@@ -50,6 +50,7 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT, MetadataT]):
     def ready(self) -> bool:
         try:
             self.session_config.validate()
+            self.processor_config.validate(self.session_config)
         except a121.ValidationError:
             return False
         else:
@@ -57,10 +58,12 @@ class ProcessorBackendPluginSharedState(Generic[ConfigT, MetadataT]):
 
 
 class GenericProcessorBackendPluginBase(
-    Generic[InputT, ConfigT, ResultT, MetadataT],
-    A121BackendPluginBase[ProcessorBackendPluginSharedState[ConfigT, MetadataT]],
+    Generic[InputT, ProcessorConfigT, ResultT, MetadataT],
+    A121BackendPluginBase[ProcessorBackendPluginSharedState[ProcessorConfigT, MetadataT]],
 ):
-    _processor_instance: Optional[GenericProcessorBase[InputT, ConfigT, ResultT, MetadataT]]
+    _processor_instance: Optional[
+        GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT]
+    ]
     _recorder: Optional[a121.H5Recorder]
     _started: bool
 
@@ -138,7 +141,7 @@ class GenericProcessorBackendPluginBase(
         self.broadcast()
 
     @is_task
-    def update_processor_config(self, *, processor_config: ConfigT) -> None:
+    def update_processor_config(self, *, processor_config: ProcessorConfigT) -> None:
         self.shared_state.processor_config = processor_config
         self.broadcast()
 
@@ -186,12 +189,14 @@ class GenericProcessorBackendPluginBase(
 
     @classmethod
     @abc.abstractmethod
-    def get_processor_cls(cls) -> Type[GenericProcessorBase[InputT, ConfigT, ResultT, MetadataT]]:
+    def get_processor_cls(
+        cls,
+    ) -> Type[GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT]]:
         pass
 
     @classmethod
     @abc.abstractmethod
-    def get_processor_config_cls(cls) -> Type[ConfigT]:
+    def get_processor_config_cls(cls) -> Type[ProcessorConfigT]:
         pass
 
     @classmethod
@@ -205,7 +210,7 @@ class GenericProcessorBackendPluginBase(
 
 
 class ProcessorBackendPluginBase(
-    GenericProcessorBackendPluginBase[a121.Result, ConfigT, ResultT, a121.Metadata]
+    GenericProcessorBackendPluginBase[a121.Result, ProcessorConfigT, ResultT, a121.Metadata]
 ):
     def _validate_session_config(self, session_config: a121.SessionConfig) -> None:
         if session_config.extended:

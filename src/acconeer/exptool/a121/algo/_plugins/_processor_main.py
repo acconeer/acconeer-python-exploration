@@ -13,7 +13,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException  # type: ignore[import]
 from acconeer.exptool.a121 import algo
-from acconeer.exptool.a121.algo._base import ConfigT, InputT, MetadataT, ResultT
+from acconeer.exptool.a121.algo._base import InputT, MetadataT, ProcessorConfigT, ResultT
 from acconeer.exptool.app.new import GeneralMessage
 
 from ._null_app_model import NullAppModel
@@ -22,8 +22,8 @@ from .processor import GenericProcessorPlotPluginBase
 
 def processor_main(
     *,
-    processor_cls: Type[algo.GenericProcessorBase[InputT, ConfigT, ResultT, MetadataT]],
-    processor_config_cls: Type[ConfigT],
+    processor_cls: Type[algo.GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT]],
+    processor_config_cls: Type[ProcessorConfigT],
     plot_plugin: Type[GenericProcessorPlotPluginBase[ResultT, MetadataT]],
     sensor_config_getter: Callable[[], a121.SensorConfig],
     _blinkstick_updater_cls: Optional[Any] = None,

@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QWidget
 
 import pyqtgraph as pg
 
-from acconeer.exptool.a121.algo._base import ConfigT, InputT, MetadataT, ResultT
+from acconeer.exptool.a121.algo._base import InputT, MetadataT, ProcessorConfigT, ResultT
 from acconeer.exptool.app.new import AppModel, Message, PluginSpecBase
 
 from .backend_plugin import GenericProcessorBackendPluginBase
@@ -21,17 +21,19 @@ from .view_plugin import ProcessorViewPluginBase
 
 
 @attrs.frozen(kw_only=True)
-class ProcessorPluginSpec(PluginSpecBase, abc.ABC, Generic[InputT, ConfigT, ResultT, MetadataT]):
+class ProcessorPluginSpec(
+    PluginSpecBase, abc.ABC, Generic[InputT, ProcessorConfigT, ResultT, MetadataT]
+):
     @abc.abstractmethod
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
-    ) -> GenericProcessorBackendPluginBase[InputT, ConfigT, ResultT, MetadataT]:
+    ) -> GenericProcessorBackendPluginBase[InputT, ProcessorConfigT, ResultT, MetadataT]:
         pass
 
     @abc.abstractmethod
     def create_view_plugin(
         self, app_model: AppModel, view_widget: QWidget
-    ) -> ProcessorViewPluginBase[ConfigT]:
+    ) -> ProcessorViewPluginBase[ProcessorConfigT]:
         pass
 
     @abc.abstractmethod

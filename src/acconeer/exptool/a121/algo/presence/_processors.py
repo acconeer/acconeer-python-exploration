@@ -12,12 +12,12 @@ from numpy import cos, pi, sqrt, square
 from scipy.special import binom
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo import AlgoProcessorConfigBase, ProcessorBase
 from acconeer.exptool.a121.algo._utils import get_distances_m
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig(AlgoConfigBase):
+class ProcessorConfig(AlgoProcessorConfigBase):
     intra_enable: bool = attrs.field(default=True)
     inter_enable: bool = attrs.field(default=True)
     intra_detection_threshold: float = attrs.field(default=1.3)
@@ -32,6 +32,40 @@ class ProcessorConfig(AlgoConfigBase):
     intra_frame_time_const: float = attrs.field(default=0.15)
     intra_output_time_const: float = attrs.field(default=0.5)
     history_length_s: int = attrs.field(default=5)
+
+    def _collect_validation_results(
+        self, config: a121.SessionConfig
+    ) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if len(config.sensor_config.subsweeps) > 1:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "subsweeps",
+                    "Multiple subsweeps are not supported",
+                )
+            )
+
+        if config.sensor_config.frame_rate is None:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "frame_rate",
+                    "Must be set",
+                )
+            )
+
+        if config.sensor_config.sweeps_per_frame <= Processor.NOISE_ESTIMATION_DIFF_ORDER:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "sweeps_per_frame",
+                    f"Must be greater than {Processor.NOISE_ESTIMATION_DIFF_ORDER}",
+                )
+            )
+
+        return validation_results
 
 
 @attrs.frozen(kw_only=True)
@@ -82,6 +116,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     APPROX_BASE_STEP_LENGTH_M = 2.5e-3
     MAX_AMPLITUDE_WEIGHT = 15
+    NOISE_ESTIMATION_DIFF_ORDER = 3
 
     def __init__(
         self,
@@ -93,9 +128,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         context: Optional[ProcessorContext] = None,
     ) -> None:
         if subsweep_index is None:
-            if len(sensor_config.subsweeps) > 1:
-                raise ValueError("Multiple subsweeps are not supported")
-
             subsweep_index = 0
 
         if context is None:
@@ -106,8 +138,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.processor_config = processor_config
         self.subsweep_index = subsweep_index
 
-        if self.sensor_config.frame_rate is None:
-            raise ValueError("Frame rate must be set")
+        self.processor_config.validate(self.sensor_config)
+
+        # Should never happen, checked in validate
+        assert self.sensor_config.frame_rate is not None
 
         self.sweeps_per_frame = self.sensor_config.sweeps_per_frame
         self.distances, _ = get_distances_m(self.sensor_config, metadata)
@@ -124,13 +158,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.depth_filter_length = min(self.depth_filter_length, self.num_distances)
 
         # Fixed parameters
-        self.noise_est_diff_order = 3
+        self.noise_est_diff_order = self.NOISE_ESTIMATION_DIFF_ORDER
         noise_tc = 10.0
-
-        if self.sweeps_per_frame <= self.noise_est_diff_order:
-            raise ValueError(
-                f"Number of sweeps per frame must be greater than {self.noise_est_diff_order}"
-            )
 
         self.noise_sf = self._tc_to_sf(noise_tc, self.f)
 

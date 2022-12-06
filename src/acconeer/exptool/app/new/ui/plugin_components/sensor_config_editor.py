@@ -249,7 +249,6 @@ class SensorConfigEditor(QWidget):
         self._add_tabs(tabs_needed)
         for i, subsweep in enumerate(sensor_config.subsweeps):
             self._subsweep_config_editors[i].set_data(subsweep)
-        self._handle_validation_results(sensor_config._collect_validation_results())
 
     def sync(self) -> None:
         self._update_ui()
@@ -259,21 +258,38 @@ class SensorConfigEditor(QWidget):
     def _broadcast(self) -> None:
         self.sig_update.emit(self._sensor_config)
 
-    def _handle_validation_results(self, results: list[a121.ValidationResult]) -> None:
+    def handle_validation_results(
+        self, results: list[a121.ValidationResult]
+    ) -> list[a121.ValidationResult]:
         for pidget in self._all_pidgets:
             pidget.set_note_text("")
 
-        for result in results:
-            self._handle_validation_result(result)
+        unhandled_results: list[a121.ValidationResult] = []
 
-    def _handle_validation_result(self, result: a121.ValidationResult) -> None:
+        for result in results:
+            if not self._handle_validation_result(result):
+                unhandled_results.append(result)
+
+        for subsweep_config_editor in self._subsweep_config_editors:
+            unhandled_results = subsweep_config_editor.handle_validation_results(unhandled_results)
+
+        return unhandled_results
+
+    def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if result.aspect is None or self._sensor_config is None:
-            return
+            return False
+
+        result_handled = False
 
         if result.source == self._sensor_config:
-            self._sensor_config_pidgets[result.aspect].set_note_text(
-                result.message, result.criticality
-            )
+            for pidget in self._sensor_config_pidgets:
+                if result.aspect == pidget:
+                    self._sensor_config_pidgets[result.aspect].set_note_text(
+                        result.message, result.criticality
+                    )
+                    result_handled = True
+
+        return result_handled
 
     def _update_sensor_config_aspect(self, aspect: str, value: Any) -> None:
         if self._sensor_config is None:
@@ -283,7 +299,5 @@ class SensorConfigEditor(QWidget):
             setattr(self._sensor_config, aspect, value)
         except Exception as e:
             self._sensor_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
-        else:
-            self._handle_validation_results(self._sensor_config._collect_validation_results())
 
         self._broadcast()

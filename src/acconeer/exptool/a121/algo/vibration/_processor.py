@@ -10,11 +10,15 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import APPROX_BASE_STEP_LENGTH_M, AlgoConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo import (
+    APPROX_BASE_STEP_LENGTH_M,
+    AlgoProcessorConfigBase,
+    ProcessorBase,
+)
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig(AlgoConfigBase):
+class ProcessorConfig(AlgoProcessorConfigBase):
     time_series_length: int = attrs.field(default=512)
     """Length of time series."""
 
@@ -23,6 +27,49 @@ class ProcessorConfig(AlgoConfigBase):
 
     sensitivity: float = attrs.field(default=10.0)
     """Specify threshold sensitivity."""
+
+    def _collect_validation_results(
+        self, config: a121.SessionConfig
+    ) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if config.sensor_config.sweep_rate is None:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "sweep_rate",
+                    "Must be set",
+                )
+            )
+
+        if config.sensor_config.num_points != 1:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config.subsweep,
+                    "num_points",
+                    "Must be set to 1",
+                )
+            )
+
+        if not config.sensor_config.double_buffering:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "double_buffering",
+                    "Must be enabled",
+                )
+            )
+
+        if not config.sensor_config.continuous_sweep_mode:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "continuous_sweep_mode",
+                    "Must be enabled",
+                )
+            )
+
+        return validation_results
 
 
 @attrs.frozen(kw_only=True)
@@ -56,17 +103,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         context: Optional[ProcessorContext] = None,
     ) -> None:
 
-        if sensor_config.sweep_rate is None:
-            raise ValueError("Sweep rate must be set.")
+        processor_config.validate(sensor_config)
 
-        if sensor_config.continuous_sweep_mode is False:
-            raise ValueError("Continuous sweep mode must be enabled.")
-
-        if sensor_config.double_buffering is False:
-            raise ValueError("Double buffer mode must be enabled.")
-
-        if sensor_config.num_points != 1:
-            raise ValueError("Number of points must be set to 1.")
+        # Should never happen, checked in validate
+        assert sensor_config.sweep_rate is not None
 
         self.spf = sensor_config.sweeps_per_frame
         self.lp_coeffs = processor_config.lp_coeff

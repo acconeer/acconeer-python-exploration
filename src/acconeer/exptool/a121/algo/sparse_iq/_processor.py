@@ -9,7 +9,7 @@ import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils
-from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorBase
+from acconeer.exptool.a121.algo import AlgoParamEnum, AlgoProcessorConfigBase, ProcessorBase
 
 
 class AmplitudeMethod(AlgoParamEnum):
@@ -19,10 +19,15 @@ class AmplitudeMethod(AlgoParamEnum):
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig(AlgoConfigBase):
+class ProcessorConfig(AlgoProcessorConfigBase):
     amplitude_method: AmplitudeMethod = attrs.field(
         default=AmplitudeMethod.COHERENT, converter=AmplitudeMethod
     )
+
+    def _collect_validation_results(
+        self, config: a121.SessionConfig
+    ) -> list[a121.ValidationResult]:
+        return []
 
 
 @attrs.frozen(kw_only=True)
@@ -42,6 +47,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         processor_config: ProcessorConfig,
     ) -> None:
         self.processor_config = processor_config
+        self.processor_config.validate(sensor_config)
         spf = sensor_config.sweeps_per_frame
         self.window = np.hanning(spf)[:, None]
         self.window /= np.sum(self.window)

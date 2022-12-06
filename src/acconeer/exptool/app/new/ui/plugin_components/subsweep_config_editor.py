@@ -153,9 +153,6 @@ class SubsweepConfigEditor(QWidget):
         self.range_help_view.update(subsweep_config)
         self._subsweep_config = subsweep_config
 
-        if subsweep_config is not None:
-            self._handle_validation_results(subsweep_config._collect_validation_results())
-
     def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
         if self._subsweep_config is None:
             raise TypeError("SubsweepConfig is None")
@@ -164,26 +161,36 @@ class SubsweepConfigEditor(QWidget):
             setattr(self._subsweep_config, aspect, value)
         except Exception as e:
             self._subsweep_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
-        else:
-            self._handle_validation_results(self._subsweep_config._collect_validation_results())
 
         self._broadcast()
 
-    def _handle_validation_results(self, results: list[a121.ValidationResult]) -> None:
+    def handle_validation_results(
+        self, results: list[a121.ValidationResult]
+    ) -> list[a121.ValidationResult]:
         for pidget in self._all_pidgets:
             pidget.set_note_text("")
 
-        for result in results:
-            self._handle_validation_result(result)
+        unhandled_results: list[a121.ValidationResult] = []
 
-    def _handle_validation_result(self, result: a121.ValidationResult) -> None:
+        for result in results:
+            if not self._handle_validation_result(result):
+                unhandled_results.append(result)
+
+        return unhandled_results
+
+    def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if result.aspect is None or self._subsweep_config is None:
-            return
+            return False
+
+        result_handled = False
 
         if result.source == self._subsweep_config:
             self._subsweep_config_pidgets[result.aspect].set_note_text(
                 result.message, result.criticality
             )
+            result_handled = True
+
+        return result_handled
 
     def _broadcast(self) -> None:
         self.sig_update.emit(self._subsweep_config)

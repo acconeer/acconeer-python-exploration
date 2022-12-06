@@ -9,6 +9,7 @@ from .plugin_components import (
     AttrsConfigEditor,
     GridGroupBox,
     HorizontalGroupBox,
+    MiscErrorView,
     PidgetFactoryMapping,
     SessionConfigEditor,
     SmartMetadataView,

@@ -2,8 +2,10 @@
 # All rights reserved
 
 from ._base import (
+    AlgoBase,
     AlgoConfigBase,
     AlgoParamEnum,
+    AlgoProcessorConfigBase,
     ExtendedProcessorBase,
     GenericProcessorBase,
     ProcessorBase,

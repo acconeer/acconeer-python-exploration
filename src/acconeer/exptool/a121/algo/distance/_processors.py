@@ -16,8 +16,8 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
-    AlgoConfigBase,
     AlgoParamEnum,
+    AlgoProcessorConfigBase,
     ProcessorBase,
     find_peaks,
     get_distance_filter_coeffs,
@@ -55,7 +55,7 @@ class ThresholdMethod(AlgoParamEnum):
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig(AlgoConfigBase):
+class ProcessorConfig(AlgoProcessorConfigBase):
     processor_mode: ProcessorMode = attrs.field(
         default=ProcessorMode.DISTANCE_ESTIMATION, converter=ProcessorMode
     )
@@ -67,6 +67,11 @@ class ProcessorConfig(AlgoConfigBase):
     )
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
+
+    def _collect_validation_results(
+        self, config: Optional[a121.SessionConfig]
+    ) -> list[a121.ValidationResult]:
+        return []
 
 
 @attrs.frozen(kw_only=True)
@@ -166,6 +171,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.processor_config = processor_config
         self.context = context
 
+        self.processor_config.validate(self.sensor_config)
         self.profile = self._get_profile(range_subsweep_configs)
         self.step_length = self._get_step_length(range_subsweep_configs)
         self.approx_step_length_m = self.step_length * APPROX_BASE_STEP_LENGTH_M

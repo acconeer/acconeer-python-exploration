@@ -10,12 +10,46 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoProcessorConfigBase, ProcessorBase
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig(AlgoConfigBase):
+class ProcessorConfig(AlgoProcessorConfigBase):
     threshold: Optional[float] = attrs.field(default=50.0)
+
+    def _collect_validation_results(
+        self, config: a121.SessionConfig
+    ) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if config.sensor_config.sweep_rate is None:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "sweep_rate",
+                    "Must be set",
+                )
+            )
+
+        if not config.sensor_config.double_buffering:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "double_buffering",
+                    "Must be enabled",
+                )
+            )
+
+        if not config.sensor_config.continuous_sweep_mode:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "continuous_sweep_mode",
+                    "Must be enabled",
+                )
+            )
+
+        return validation_results
 
 
 @attrs.frozen(kw_only=True)
@@ -51,14 +85,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         context: Optional[ProcessorContext] = None,
     ) -> None:
 
-        if sensor_config.sweep_rate is None:
-            raise ValueError("Sweep rate must be set.")
+        processor_config.validate(sensor_config)
 
-        if sensor_config.continuous_sweep_mode is False:
-            raise ValueError("Continuous sweep mode must be enabled.")
-
-        if sensor_config.double_buffering is False:
-            raise ValueError("Double buffer mode must be enabled.")
+        # Should never happen, checked in validate
+        assert sensor_config.sweep_rate is not None
 
         self.start_point = sensor_config.start_point
         self.step_length = sensor_config.step_length

@@ -11,6 +11,7 @@ import attrs
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from .pidgets import ParameterWidget
@@ -46,6 +47,20 @@ class AttrsConfigEditor(QWidget, Generic[T]):
 
             self._pidget_mapping[aspect] = pidget
 
+    def handle_validation_results(
+        self, results: list[a121.ValidationResult]
+    ) -> list[a121.ValidationResult]:
+        for _, pidget in self._pidget_mapping.items():
+            pidget.set_note_text("")
+
+        unhandled_results: list[a121.ValidationResult] = []
+
+        for result in results:
+            if not self._handle_validation_result(result):
+                unhandled_results.append(result)
+
+        return unhandled_results
+
     def set_data(self, config: Optional[T]) -> None:
         self._config = config
 
@@ -57,6 +72,22 @@ class AttrsConfigEditor(QWidget, Generic[T]):
 
     def _broadcast(self) -> None:
         self.sig_update.emit(self._config)
+
+    def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
+        if result.aspect is None:
+            return False
+
+        result_handled = False
+
+        if result.source == self._config:
+            for aspect, pidget in self._pidget_mapping.items():
+                if result.aspect == aspect:
+                    self._pidget_mapping[result.aspect].set_note_text(
+                        result.message, result.criticality
+                    )
+                    result_handled = True
+
+        return result_handled
 
     def _update_pidgets(self) -> None:
         if self._config is None:

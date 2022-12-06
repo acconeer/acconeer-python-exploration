@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoConfigBase
+from acconeer.exptool.a121.algo import AlgoProcessorConfigBase
 from acconeer.exptool.a121.algo.distance import DetectorResult
 
 
@@ -49,7 +49,7 @@ class ProcessorResult:
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig(AlgoConfigBase):
+class ProcessorConfig(AlgoProcessorConfigBase):
     sensor_spacing_m: float = attrs.field(default=0.1)
     """Distance between the two sensors (m) in the intended installation."""
     max_anticipated_velocity_mps: float = attrs.field(default=2.0)
@@ -61,6 +61,22 @@ class ProcessorConfig(AlgoConfigBase):
     sensitivity: float = attrs.field(default=0.5)
     """Specify the sensitivity of the Kalman filter. A higher value yields a more responsive
     filter. A lower value yields a more robust filter."""
+
+    def _collect_validation_results(
+        self, config: a121.SessionConfig
+    ) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if config.update_rate is None:
+            validation_results.append(
+                a121.ValidationError(
+                    config,
+                    "update_rate",
+                    "Must be set",
+                )
+            )
+
+        return validation_results
 
 
 class Processor:
@@ -83,8 +99,8 @@ class Processor:
     ):
         if len(sensor_ids) != 2:
             raise ValueError("Number of sensor ids must equal two.")
-        if session_config.update_rate is None:
-            raise ValueError("Update rate not provided.")
+        processor_config.validate(session_config)
+        assert session_config.update_rate is not None  # Should never happen, checked in validate
         self.update_rate = session_config.update_rate
         self.sensor_spacing_m = processor_config.sensor_spacing_m
         self.process_noise_gain_sensitivity = processor_config.sensitivity

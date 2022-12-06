@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoConfigBase, AlgoParamEnum, ProcessorBase
+from acconeer.exptool.a121.algo import AlgoParamEnum, AlgoProcessorConfigBase, ProcessorBase
 
 
 class MeasurementType(AlgoParamEnum):
@@ -21,7 +21,7 @@ class MeasurementType(AlgoParamEnum):
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorConfig(AlgoConfigBase):
+class ProcessorConfig(AlgoProcessorConfigBase):
 
     measurement_type: MeasurementType = attrs.field(
         default=MeasurementType.CLOSE_RANGE,
@@ -55,6 +55,22 @@ class ProcessorConfig(AlgoConfigBase):
     """Interval between calibrations in seconds. When reached a new calibration is made.
     Should not be set lower than the longest estimated continuous detection event."""
 
+    def _collect_validation_results(
+        self, config: a121.SessionConfig
+    ) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if config.sensor_config.num_subsweeps > 2:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "num_subsweeps",
+                    "Number of subsweeps must be maximum 2",
+                )
+            )
+
+        return validation_results
+
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
@@ -81,6 +97,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self._sensor_config = sensor_config
         self._metadata = metadata
         self._processor_config = processor_config
+
+        self._processor_config.validate(self._sensor_config)
 
         self._sweeps_per_frame = sensor_config.sweeps_per_frame
 

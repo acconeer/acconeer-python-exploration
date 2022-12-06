@@ -12,7 +12,7 @@ import qtawesome as qta
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo._base import ConfigT
+from acconeer.exptool.a121.algo._base import ProcessorConfigT
 from acconeer.exptool.a121.algo._plugins._a121 import A121ViewPluginBase
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
@@ -20,6 +20,7 @@ from acconeer.exptool.app.new import (
     AttrsConfigEditor,
     GeneralMessage,
     GridGroupBox,
+    MiscErrorView,
     PidgetFactoryMapping,
     PluginState,
     SessionConfigEditor,
@@ -33,7 +34,7 @@ from .backend_plugin import ProcessorBackendPluginSharedState
 log = logging.getLogger(__name__)
 
 
-class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
+class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
 
@@ -71,13 +72,16 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         self.perf_calc_view = SmartPerfCalcView(parent=self.scrolly_widget)
         scrolly_layout.addWidget(self.perf_calc_view)
 
-        self.processor_config_editor = AttrsConfigEditor[ConfigT](
+        self.processor_config_editor = AttrsConfigEditor[ProcessorConfigT](
             title="Processor parameters",
             factory_mapping=self.get_pidget_mapping(),
             parent=self.scrolly_widget,
         )
         self.processor_config_editor.sig_update.connect(self._on_processor_config_update)
         scrolly_layout.addWidget(self.processor_config_editor)
+
+        self.misc_error_view = MiscErrorView(self.scrolly_widget)
+        scrolly_layout.addWidget(self.misc_error_view)
 
         self.session_config_editor = SessionConfigEditor(
             self.supports_multiple_subsweeps(), self.scrolly_widget
@@ -93,7 +97,7 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
             "update_session_config", {"session_config": session_config}
         )
 
-    def _on_processor_config_update(self, processor_config: ConfigT) -> None:
+    def _on_processor_config_update(self, processor_config: ProcessorConfigT) -> None:
         self.app_model.put_backend_plugin_task(
             "update_processor_config", {"processor_config": processor_config}
         )
@@ -129,6 +133,22 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
                 backend_plugin_state.metadata,
             )
 
+            if backend_plugin_state.processor_config is not None:
+                results = (
+                    backend_plugin_state.processor_config._collect_validation_results(
+                        backend_plugin_state.session_config
+                    )
+                    + backend_plugin_state.session_config._collect_validation_results()
+                )
+
+                not_handled = self.session_config_editor.handle_validation_results(results)
+
+                not_handled = self.processor_config_editor.handle_validation_results(not_handled)
+
+                not_handled = self.misc_error_view.handle_validation_results(not_handled)
+
+                assert not_handled == []
+
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.processor_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
@@ -151,5 +171,5 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
 
     @classmethod
     @abc.abstractmethod
-    def get_processor_config_cls(cls) -> Type[ConfigT]:
+    def get_processor_config_cls(cls) -> Type[ProcessorConfigT]:
         pass

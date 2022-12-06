@@ -18,6 +18,7 @@ from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
+    AlgoBase,
     AlgoConfigBase,
     get_distance_filter_edge_margin,
     select_prf,
@@ -67,7 +68,7 @@ Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
 
 
 @attrs.mutable(kw_only=True)
-class DetectorContext(AlgoConfigBase):
+class DetectorContext(AlgoBase):
     single_sensor_contexts: Dict[int, SingleSensorContext] = attrs.field(default=None)
     _GROUP_NAME = "sensor_id_"
 
@@ -96,7 +97,7 @@ class DetectorContext(AlgoConfigBase):
 
 
 @attrs.mutable(kw_only=True)
-class SingleSensorContext(AlgoConfigBase):
+class SingleSensorContext(AlgoBase):
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
@@ -247,6 +248,28 @@ class DetectorConfig(AlgoConfigBase):
 
     update_rate: Optional[float] = attrs.field(default=50.0)
     """Sets the detector update rate."""
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if self.end_m < self.start_m:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "start_m",
+                    "Must be smaller than 'Range end'",
+                )
+            )
+
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "end_m",
+                    "Must be greater than 'Range start'",
+                )
+            )
+
+        return validation_results
 
 
 @attrs.frozen(kw_only=True)

@@ -73,7 +73,6 @@ class SessionConfigEditor(QWidget):
         self._session_config = session_config
         if session_config is not None:
             self._sensor_config_editor.set_data(session_config.sensor_config)
-            self._handle_validation_results(session_config._collect_validation_results())
 
     def sync(self) -> None:
         self._update_ui()
@@ -85,23 +84,38 @@ class SessionConfigEditor(QWidget):
     def _broadcast(self) -> None:
         self.sig_update.emit(self._session_config)
 
-    def _handle_validation_results(self, results: list[a121.ValidationResult]) -> None:
+    def handle_validation_results(
+        self, results: list[a121.ValidationResult]
+    ) -> list[a121.ValidationResult]:
         self._update_rate_pidget.set_note_text(None)
         self._sensor_id_pidget.set_note_text(None)
 
-        for result in results:
-            self._handle_validation_result(result)
+        unhandled_results: list[a121.ValidationResult] = []
 
-    def _handle_validation_result(self, result: a121.ValidationResult) -> None:
+        for result in results:
+            if not self._handle_validation_result(result):
+                unhandled_results.append(result)
+
+        unhandled_results = self._sensor_config_editor.handle_validation_results(unhandled_results)
+
+        return unhandled_results
+
+    def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if self._session_config is None:
             raise RuntimeError(
                 "SessionConfigEditor's config is None while ValidationResults are being handled."
             )
 
+        result_handled = False
+
         if result.aspect == "update_rate":
             self._update_rate_pidget.set_note_text(result.message, result.criticality)
+            result_handled = True
         elif result.aspect == "sensor_id":
             self._sensor_id_pidget.set_note_text(result.message, result.criticality)
+            result_handled = True
+
+        return result_handled
 
     def _update_update_rate(self, value: Any) -> None:
         if self._session_config is None:
@@ -111,8 +125,6 @@ class SessionConfigEditor(QWidget):
             self._session_config.update_rate = value
         except Exception as e:
             self._update_rate_pidget.set_note_text(e.args[0], Criticality.ERROR)
-        else:
-            self._handle_validation_results(self._session_config._collect_validation_results())
 
         self._broadcast()
 
@@ -124,8 +136,6 @@ class SessionConfigEditor(QWidget):
             self._session_config.sensor_id = value
         except Exception as e:
             self._sensor_id_pidget.set_note_text(e.args[0], Criticality.ERROR)
-        else:
-            self._handle_validation_results(self._session_config._collect_validation_results())
 
         self._broadcast()
 
