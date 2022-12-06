@@ -11,6 +11,7 @@ from serial.serialutil import SerialException
 from serial.tools import list_ports
 
 from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
+from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
 from acconeer.exptool.flash._xc120._bootloader_comm import BLCommunication
 from acconeer.exptool.flash._xc120._meta import (
     ACCONEER_VID,
@@ -37,6 +38,7 @@ class ImageFlasher:
     def __init__(self, port):
         self._port = port
         self._comm = None
+        self._progress_callback = None
 
     def __enter__(self):
         return self
@@ -55,6 +57,9 @@ class ImageFlasher:
             self._comm.stop()
             self._comm.reset()
             self._comm.close()
+
+    def set_progress_callback(self, progress_callback):
+        self._progress_callback = progress_callback
 
     def erase_image(self, erase_size):
         """erase image"""
@@ -78,8 +83,12 @@ class ImageFlasher:
             log.debug(
                 f"\r-Flashing: Writing {chunk_size} bytes to offset {offset}                ",
             )
+            if self._progress_callback is not None:
+                self._progress_callback(int(100 * offset / image_size))
             self._comm.image_write_block(offset, chunk_array)
             offset += chunk_size
+        if self._progress_callback is not None:
+            self._progress_callback(100, True)
 
         print("Flashed Image:")
         print(f" - Name:    {self._comm.get_app_sw_name()}")
@@ -93,7 +102,7 @@ class ImageFlasher:
             self.flash_image_bytearray(image_data)
 
 
-class BootloaderTool:
+class BootloaderTool(DeviceFlasherBase):
 
     """Class to handle dfu/flash of devices with bootloader firmware"""
 
@@ -246,21 +255,17 @@ class BootloaderTool:
         return False
 
     @staticmethod
-    def flash(device_port, image_path, image_version="", force=False):
+    def flash(device_port, device_name, image_path, progress_callback=None):
         """Flash an firmware image to the device"""
-        if (
-            not image_version
-            or force
-            or BootloaderTool._upgrade_needed(device_port, image_version)
-        ):
-            BootloaderTool.enter_dfu(device_port)
-            dfu_port = BootloaderTool._find_port(
-                ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port
-            )
-            BootloaderTool._try_open_port(dfu_port)
-            with ImageFlasher(dfu_port) as image_flasher:
-                image_flasher.connect()
-                image_flasher.flash_image_file(image_path)
+        BootloaderTool.enter_dfu(device_port)
+        dfu_port = BootloaderTool._find_port(
+            ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port
+        )
+        BootloaderTool._try_open_port(dfu_port)
+        with ImageFlasher(dfu_port) as image_flasher:
+            image_flasher.connect()
+            image_flasher.set_progress_callback(progress_callback)
+            image_flasher.flash_image_file(image_path)
 
     @staticmethod
     def erase(device_port):

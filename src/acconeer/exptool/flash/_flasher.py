@@ -20,7 +20,11 @@ from acconeer.exptool.flash._bin_fetcher import (
     login,
     save_cookies,
 )
-from acconeer.exptool.flash._products import PRODUCT_NAME_TO_FLASH_MAP, PRODUCT_PID_TO_FLASH_MAP
+from acconeer.exptool.flash._products import (
+    EVK_TO_PRODUCT_MAP,
+    PRODUCT_NAME_TO_FLASH_MAP,
+    PRODUCT_PID_TO_FLASH_MAP,
+)
 
 from ._dev_license import DevLicense
 from ._dev_license_tui import DevLicenseTuiDialog
@@ -60,19 +64,32 @@ def _query_yes_no(question: str, default: str = "yes") -> bool:
             print("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 
-def flash_image(image_path, flash_device):
+def flasher_progress_callback(progress, end=False):
+    print(f"\rProgress: [{progress}/100]", end="", flush=True)
+    if end:
+        print()
+
+
+def flash_image(image_path, flash_device, device_name=None, progress_callback=None):
     if flash_device:
-        serial_device_name = flash_device.name.upper() if flash_device.name is not None else ""
+        serial_device_name = device_name or flash_device.name
+        if serial_device_name is None:
+            raise ValueError("Unknown device type")
+        serial_device_name = serial_device_name.upper()
         if (
             isinstance(flash_device, et.utils.USBDevice)
             and flash_device.pid in PRODUCT_PID_TO_FLASH_MAP.keys()
         ):
-            PRODUCT_PID_TO_FLASH_MAP[flash_device.pid].flash(flash_device, image_path)
+            PRODUCT_PID_TO_FLASH_MAP[flash_device.pid].flash(
+                flash_device, serial_device_name, image_path, progress_callback
+            )
         elif (
             isinstance(flash_device, et.utils.SerialDevice)
             and serial_device_name in PRODUCT_NAME_TO_FLASH_MAP.keys()
         ):
-            PRODUCT_NAME_TO_FLASH_MAP[serial_device_name].flash(flash_device, image_path)
+            PRODUCT_NAME_TO_FLASH_MAP[serial_device_name].flash(
+                flash_device, serial_device_name, image_path, progress_callback
+            )
         else:
             raise NotImplementedError(f"No flash support device {str(flash_device)}")
     else:
@@ -142,6 +159,21 @@ def get_flash_device_from_args(args, verbose=False):
     return flash_device
 
 
+def get_flash_known_devices():
+    known_devices = []
+    for _, item in EVK_TO_PRODUCT_MAP.items():
+        if item not in known_devices:
+            known_devices.append(item)
+    return known_devices
+
+
+def get_flash_download_name(device, device_name):
+    name = device_name or device.name
+    if name in EVK_TO_PRODUCT_MAP.keys():
+        return EVK_TO_PRODUCT_MAP[name]
+    raise ValueError(f"Unknown device {name}")
+
+
 def fetch_and_flash(args):
     try:
         flash_device = get_flash_device_from_args(args)
@@ -194,20 +226,26 @@ def fetch_and_flash(args):
             license_accepted = DevLicenseTuiDialog.get_accept()
 
             if license_accepted:
+                device_name = get_flash_download_name(flash_device, args.device)
                 try:
-                    print("Downloading image file... ", end="", flush=True)
+                    print(f"Downloading {device_name} image file... ", end="", flush=True)
                     bin_path, version = download(
                         session=session,
                         cookies=cookies,
                         path=tmp_dir,
-                        device=flash_device.name,
+                        device=device_name,
                     )
                     print(f"[OK] (version: {version})")
 
                     try:
                         if _query_yes_no("Proceed to flashing you device?"):
                             print("Flashing...")
-                            flash_image(bin_path, flash_device)
+                            flash_image(
+                                bin_path,
+                                flash_device,
+                                device_name=device_name,
+                                progress_callback=flasher_progress_callback,
+                            )
                     except ValueError:
                         print("No devices found, try connecting a device before flashing.")
                 except Exception as e:
@@ -239,7 +277,8 @@ def main():
         "-d",
         dest="device",
         help="Device type. Only used if device type can't be autodetected.",
-        choices=["XC120"],
+        type=str.upper,
+        choices=["XC120", "XE125", "XM125"],
     )
     subparser.add_argument(
         "--serial-number",
@@ -315,7 +354,12 @@ def main():
             fetch_and_flash(args)
         elif args.image:
             flash_device = get_flash_device_from_args(args, verbose=True)
-            flash_image(args.image, flash_device)
+            flash_image(
+                args.image,
+                flash_device,
+                device_name=args.device,
+                progress_callback=flasher_progress_callback,
+            )
         elif not args.clear:
             print("No image file selected!\n")
             parser.print_help()

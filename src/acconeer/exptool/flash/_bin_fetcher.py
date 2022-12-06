@@ -135,6 +135,8 @@ def download(
 
     soup = BeautifulSoup(request.content, "html.parser")
     form = soup.select_one('form[action*="{}"]'.format(device))
+    if form is None:
+        raise Exception(f"No image found for device '{device}'")
     zip_url = form.get("action")
 
     log.debug("File to download: {}".format(zip_url))

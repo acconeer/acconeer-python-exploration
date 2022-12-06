@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
+from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 from acconeer.exptool.flash import (  # type: ignore[import]
@@ -46,6 +47,8 @@ from acconeer.exptool.flash import (  # type: ignore[import]
     flash_image,
     get_content,
     get_cookies,
+    get_flash_download_name,
+    get_flash_known_devices,
     login,
     save_cookies,
 )
@@ -67,18 +70,25 @@ class _FlashThread(QThread):
     flash_failed = Signal(Exception, str)
     flash_done = Signal()
 
-    def __init__(self, bin_file: str, flash_device: CommDevice) -> None:
+    def __init__(
+        self, bin_file: str, flash_device: CommDevice, device_name: Optional[str]
+    ) -> None:
         super().__init__()
         self.bin_file = bin_file
         self.flash_device = flash_device
+        self.device_name = device_name
 
     def run(self) -> None:
         try:
-            flash_image(self.bin_file, self.flash_device)
+            flash_image(
+                self.bin_file,
+                self.flash_device,
+                device_name=self.device_name,
+            )
             self.flash_done.emit()
         except Exception as e:
             log.error(str(e))
-            self.flash_failed.emit(e, traceback.format_exc())
+            self.flash_failed.emit(HandledException(e), traceback.format_exc())
 
 
 class _FlashDialog(QDialog):
@@ -111,8 +121,8 @@ class _FlashDialog(QDialog):
 
         self.setLayout(vbox)
 
-    def flash(self, bin_file: str, flash_device: CommDevice) -> None:
-        self.flash_thread = _FlashThread(bin_file, flash_device)
+    def flash(self, bin_file: str, flash_device: CommDevice, device_name: Optional[str]) -> None:
+        self.flash_thread = _FlashThread(bin_file, flash_device, device_name)
         self.flash_thread.started.connect(self._flash_start)
         self.flash_thread.finished.connect(self.flash_thread.deleteLater)
         self.flash_thread.finished.connect(self._flash_stop)
@@ -198,6 +208,11 @@ class _FlashPopup(QDialog):
 
         self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
 
+        self.device_selection = QComboBox(self)
+        self.device_selection.setEnabled(False)
+        self.device_name_selection = None
+        self.device_selection.currentIndexChanged.connect(self._on_device_selection_change)
+
         self.stacked = QStackedWidget(self)
         self.stacked.setStyleSheet("QStackedWidget {background-color: transparent;}")
         self.stacked.addWidget(SerialPortComboBox(app_model, self.stacked))
@@ -222,8 +237,9 @@ class _FlashPopup(QDialog):
         layout.addWidget(self.file_label,               0,   3,   1,     9)    # noqa: E241
         layout.addWidget(self.get_latest_button,        1,   0,   1,     3)    # noqa: E241
         layout.addWidget(self.downloaded_version_label, 1,   3,   1,     9)    # noqa: E241
-        layout.addWidget(self.interface_dd,             2,   0,   1,     6)    # noqa: E241
-        layout.addWidget(self.stacked,                  2,   6,   1,     6)    # noqa: E241
+        layout.addWidget(self.interface_dd,             2,   0,   1,     3)    # noqa: E241
+        layout.addWidget(self.stacked,                  2,   3,   1,     6)    # noqa: E241
+        layout.addWidget(self.device_selection,         2,   9,   1,     3)    # noqa: E241
         layout.addWidget(self.flash_button,             3,   0,   1,    12)    # noqa: E241
         layout.addWidget(self.logged_in_label,          4,   0,   1,     8)    # noqa: E241
         layout.addWidget(self.logout_button,            4,   8,   1,     4)    # noqa: E241
@@ -248,6 +264,13 @@ class _FlashPopup(QDialog):
         if self.app_model.connection_interface == ConnectionInterface.USB:
             return self.app_model.usb_connection_device
         return None
+
+    @property
+    def device_name(self) -> Optional[str]:
+        if not self.device_selection.isEnabled():
+            return None
+        else:
+            return self.device_name_selection
 
     def _get_latest_bin_file(self) -> None:
         self.auth_thread = _AuthThread(dev_license=self.dev_license)
@@ -295,10 +318,11 @@ class _FlashPopup(QDialog):
 
         license_agreement_dialog = LicenseAgreementDialog(self.dev_license, self)
         license_accepted = license_agreement_dialog.exec()
+        device_download_name = get_flash_download_name(self.flash_device, self.device_name)
 
         if license_accepted:
             self.download_thread = BinDownloadThread(
-                self._get_device_name(), cookies, content[1], content[2]
+                device_download_name, cookies, content[1], content[2]
             )
 
             self.download_thread.started.connect(self._download_start)
@@ -351,13 +375,16 @@ class _FlashPopup(QDialog):
         assert self.bin_file is not None
 
         self.app_model.set_port_updates_pause(True)
-        self.flash_dialog.flash(self.bin_file, self.flash_device)
+        self.flash_dialog.flash(self.bin_file, self.flash_device, self.device_name)
 
     def _flash_done(self) -> None:
         self.app_model.set_port_updates_pause(False)
 
     def _on_interface_dd_change(self) -> None:
         self.app_model.set_connection_interface(self.interface_dd.currentData())
+
+    def _on_device_selection_change(self) -> None:
+        self.device_name_selection = self.device_selection.currentText()
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         if app_model.connection_interface in [ConnectionInterface.SERIAL, ConnectionInterface.USB]:
@@ -368,8 +395,25 @@ class _FlashPopup(QDialog):
             self.interface_dd.setCurrentIndex(interface_index)
             self.stacked.setCurrentIndex(interface_index)
 
+            current_index = self.device_selection.currentIndex()
+            if self.flash_device is None or (
+                self.flash_device is not None and self.flash_device.name is not None
+            ):
+                self.device_selection.clear()
+                self.device_selection.setEnabled(False)
+            else:
+                self.device_selection.clear()
+                for dev in get_flash_known_devices():
+                    self.device_selection.addItem(dev)
+                self.device_selection.setEnabled(True)
+                if current_index >= 0:
+                    self.device_selection.setCurrentIndex(current_index)
+
             enable_select = not self.authenticating and not self.downloading_firmware
             self.get_latest_button.setEnabled(enable_select)
+        else:
+            self.device_selection.clear()
+            self.device_selection.setEnabled(False)
 
         self._draw()
 
@@ -388,12 +432,6 @@ class _FlashPopup(QDialog):
             self.app_model.set_connection_interface(ConnectionInterface.USB)
 
         super().exec()
-
-    def _get_device_name(self) -> Optional[str]:
-        if self.flash_device is not None:
-            return str(self.flash_device.name)
-
-        return None
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.authenticating:
