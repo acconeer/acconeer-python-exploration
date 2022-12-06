@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v5.6.0
 
 ### Added
 - Make it possible to select USB device with serial number
