@@ -69,6 +69,7 @@ log = logging.getLogger(__name__)
 class _FlashThread(QThread):
     flash_failed = Signal(Exception, str)
     flash_done = Signal()
+    flash_progress = Signal(int)
 
     def __init__(
         self, bin_file: str, flash_device: CommDevice, device_name: Optional[str]
@@ -79,11 +80,18 @@ class _FlashThread(QThread):
         self.device_name = device_name
 
     def run(self) -> None:
+        def progress_callback(progress: int, end: bool = False) -> None:
+            if end:
+                self.flash_progress.emit(100)
+            else:
+                self.flash_progress.emit(progress)
+
         try:
             flash_image(
                 self.bin_file,
                 self.flash_device,
                 device_name=self.device_name,
+                progress_callback=progress_callback,
             )
             self.flash_done.emit()
         except Exception as e:
@@ -119,6 +127,11 @@ class _FlashDialog(QDialog):
         self.flash_label.setAlignment(Qt.AlignCenter)
         vbox.addWidget(self.flash_label)
 
+        self.ok_button = QPushButton(self)
+        self.ok_button.setText("OK")
+        self.ok_button.setHidden(True)
+        self.ok_button.clicked.connect(self._on_ok_click)
+        vbox.addWidget(self.ok_button)
         self.setLayout(vbox)
 
     def flash(self, bin_file: str, flash_device: CommDevice, device_name: Optional[str]) -> None:
@@ -128,6 +141,7 @@ class _FlashDialog(QDialog):
         self.flash_thread.finished.connect(self._flash_stop)
         self.flash_thread.flash_done.connect(self._flash_done)
         self.flash_thread.flash_failed.connect(self._flash_failed)
+        self.flash_thread.flash_progress.connect(self._flash_progress)
 
         self.flash_thread.start()
         self._flashing = True
@@ -136,6 +150,7 @@ class _FlashDialog(QDialog):
     def _flash_start(self) -> None:
         self.flash_label.setText("Flashing...")
         self.loading.show()
+        self.ok_button.setHidden(True)
         self.flash_movie.start()
 
     def _flash_stop(self) -> None:
@@ -143,14 +158,23 @@ class _FlashDialog(QDialog):
         self.loading.hide()
         self._flashing = False
 
+    def _flash_progress(self, progress: int) -> None:
+        if self._flashing:
+            self.flash_label.setText(f"Flashing... {progress}%")
+
     def _flash_done(self) -> None:
         self.flash_done.emit()
         self.flash_label.setText("Flashing done!")
+        self.ok_button.setHidden(False)
 
     def _flash_failed(self, exception: Exception, traceback_str: Optional[str]) -> None:
         self.flash_done.emit()
         self.flash_label.setText("Flashing failed!")
         ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
+        self.ok_button.setHidden(False)
+
+    def _on_ok_click(self) -> None:
+        self.close()
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self._flashing:
