@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 import acconeer.exptool.a111.algo.breathing._meta as breathing_meta
@@ -11,6 +11,7 @@ import acconeer.exptool.a111.algo.obstacle_detection._meta as obstacle_detection
 import acconeer.exptool.a111.algo.parking._meta as parking_meta
 import acconeer.exptool.a111.algo.phase_tracking._meta as phase_tracking_meta
 import acconeer.exptool.a111.algo.power_bins._meta as power_bins_meta
+import acconeer.exptool.a111.algo.presence_detect_human_only._meta as presence_detect_human_only
 import acconeer.exptool.a111.algo.presence_detection_sparse._meta as presence_detection_sparse_meta
 import acconeer.exptool.a111.algo.sleep_breathing._meta as sleep_breathing_meta
 import acconeer.exptool.a111.algo.sparse._meta as sparse_meta
@@ -40,6 +41,7 @@ MODULE_INFOS = [
     parking_meta.module_info,
     wave_sparse_meta.module_info,
     tank_level_short.module_info,
+    presence_detect_human_only.module_info,
 ]
 
 MODULE_KEY_TO_MODULE_INFO_MAP = {mi.key: mi for mi in MODULE_INFOS}
