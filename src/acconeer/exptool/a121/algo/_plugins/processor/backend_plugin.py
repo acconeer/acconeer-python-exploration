@@ -105,12 +105,6 @@ class GenericProcessorBackendPluginBase(
 
         self.broadcast(sync=True)
 
-    def broadcast(self, sync: bool = False) -> None:
-        super().broadcast()
-
-        if sync:
-            self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
-
     @is_task
     @abc.abstractmethod
     def restore_defaults(self) -> None:

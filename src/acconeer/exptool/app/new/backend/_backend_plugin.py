@@ -12,7 +12,7 @@ import h5py
 from acconeer.exptool.app.new import PluginGeneration
 from acconeer.exptool.app.new.storage import get_config_dir
 
-from ._message import BackendPluginStateMessage, Message, StatusMessage
+from ._message import BackendPluginStateMessage, GeneralMessage, Message, StatusMessage
 
 
 StateT = TypeVar("StateT")
@@ -66,8 +66,11 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
     def set_preset(self, preset_id: int) -> None:
         pass
 
-    def broadcast(self) -> None:
+    def broadcast(self, sync: bool = False) -> None:
         self.callback(BackendPluginStateMessage(state=self.shared_state))
+
+        if sync:
+            self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
 
     def send_status_message(self, message: Optional[str]) -> None:
         self.callback(StatusMessage(status=message))

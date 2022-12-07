@@ -103,12 +103,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.broadcast(sync=True)
 
-    def broadcast(self, sync: bool = False) -> None:
-        super().broadcast()
-
-        if sync:
-            self.callback(GeneralMessage(name="sync", recipient="view_plugin"))
-
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState()
