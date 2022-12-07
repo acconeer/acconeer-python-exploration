@@ -37,17 +37,6 @@ def main() -> None:
     if sys.platform == "win32" or sys.platform == "cygwin":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("acconeer.exptool")
 
-    backend = Backend()
-    backend.start()
-
-    model = AppModel(backend, load_default_plugins())
-    model.start()
-
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOption("leftButtonPan", False)
-    pg.setConfigOptions(antialias=True)
-
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
     )
@@ -59,6 +48,17 @@ def main() -> None:
 
     app.setStyleSheet(qdarktheme.load_stylesheet("light"))
     app.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+
+    backend = Backend()
+    backend.start()
+
+    model = AppModel(backend, load_default_plugins())
+    model.start()
+
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOption("leftButtonPan", False)
+    pg.setConfigOptions(antialias=True)
 
     with importlib.resources.path(resources, "icon.png") as path:
         app.setWindowIcon(_pixmap_to_icon(QtGui.QPixmap(str(path))))
