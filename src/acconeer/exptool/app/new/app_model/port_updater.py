@@ -9,7 +9,7 @@ from PySide6.QtCore import QObject, QThread, QTimerEvent, Signal, Slot
 
 
 if not TYPE_CHECKING:
-    from acconeer.exptool.utils import get_tagged_serial_ports, get_usb_devices
+    from acconeer.exptool.utils import get_serial_devices, get_usb_devices
 
 
 class PortUpdater(QObject):
@@ -27,10 +27,10 @@ class PortUpdater(QObject):
             self.killTimer(self.timer_id)
 
         def timerEvent(self, event: QTimerEvent) -> None:
-            tagged_serial_ports = get_tagged_serial_ports()  # type: ignore[name-defined]
+            serial_devices = get_serial_devices()  # type: ignore[name-defined]
             usb_devices = get_usb_devices()  # type: ignore[name-defined]
 
-            self.sig_update.emit(tagged_serial_ports, usb_devices)
+            self.sig_update.emit(serial_devices, usb_devices)
 
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)

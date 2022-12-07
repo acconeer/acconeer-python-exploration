@@ -11,7 +11,7 @@ Flash XC120 using the Exploration Tool Application::
 
 or by using the following command::
 
-   python -m acconeer.exptool.flash -i acc_exploration_server_a121.bin
+   python -m acconeer.exptool.flash flash -d XC120 -i acc_exploration_server_a121.bin
 
 Windows USB drivers
 -------------------

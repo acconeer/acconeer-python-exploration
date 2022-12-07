@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import abc
 import json
 import logging
 import operator
@@ -12,7 +13,7 @@ import struct
 import sys
 import time
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import attrs
 import numpy as np
@@ -39,27 +40,60 @@ from acconeer.exptool._pyusb.pyusbcomm import PyUsbComm
 
 
 @attrs.frozen(kw_only=True)
-class USBDevice:
-    vid: int
-    pid: int
+class CommDevice(abc.ABC):
+    name: Optional[str] = None
     serial: Optional[str] = None
-    name: str
-    accessible: bool = True
     unflashed: bool = False
+    recognized: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> USBDevice:
+    def from_dict(cls, d: dict) -> CommDevice:
         return cls(**d)
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> USBDevice:
+    def from_json(cls, json_str: str) -> CommDevice:
         return cls.from_dict(json.loads(json_str))
+
+    @abc.abstractmethod
+    def display_name(self) -> str:
+        pass
+
+
+@attrs.frozen(kw_only=True)
+class SerialDevice(CommDevice):
+    port: str
+
+    def display_name(self) -> str:
+        if self.name is not None:
+            dev_name = f"{self.name} {self.port}"
+        else:
+            dev_name = f"{self.port}"
+
+        if self.unflashed:
+            display_name = f"Unflashed {dev_name}"
+        elif self.serial is not None:
+            display_name = f"{dev_name} ({self.serial})"
+        else:
+            display_name = dev_name
+        return display_name
+
+    def __str__(self) -> str:
+        name_str = "" if self.name is None else f"{self.name}: "
+        serial_str = "?" if self.serial is None else self.serial
+        return f"{name_str}port={self.port} serial={serial_str}"
+
+
+@attrs.frozen(kw_only=True)
+class USBDevice(CommDevice):
+    vid: int
+    pid: int
+    accessible: bool = True
 
     def display_name(self) -> str:
         if not self.accessible:
@@ -74,7 +108,9 @@ class USBDevice:
 
     def __str__(self) -> str:
         serial_str = "?" if self.serial is None else self.serial
-        return f"{self.name}: serial={serial_str}, VID=0x{self.vid:04x}, PID=0x{self.pid:04x}"
+        return (
+            f"{self.name}: USB_VID=0x{self.vid:04x}, USB_PID=0x{self.pid:04x} serial={serial_str}"
+        )
 
 
 _USB_IDS = [  # (vid, pid, 'model number', 'Unflashed')
@@ -141,6 +177,71 @@ def set_loglevel(level):
     log.setLevel(level)
 
 
+def serial_device_from_port_object(port_object):
+
+    # Return USB serial port if existing in _USB_IDS
+    for vid, pid, model_number, unflashed in _USB_IDS:
+        if port_object.vid == vid and port_object.pid == pid:
+            return SerialDevice(
+                name=model_number,
+                port=port_object.device,
+                serial=port_object.serial_number,
+                unflashed=unflashed,
+                recognized=True,
+            )
+
+    # Find serial portTryReturn USB serial port if existing in _USB_IDS
+    device_port = port_object.device
+    device_name = None
+    device_serial_number = port_object.serial_number
+    device_unflashed = False
+    device_recognized = False
+
+    PRODUCT_REGEX = r"[X][A-Z]\d{3}"
+    desc = port_object.product or port_object.description
+    match = re.search(PRODUCT_REGEX, desc)
+
+    if match is None:
+        pass
+    elif match.group().lower() in ["xe123", "xe124", "xe125", "xe132"]:
+        if version.parse(serial.__version__) >= version.parse("3.5"):
+            # Special handling of cp2105 modules with with pyserial >= 3.5
+            interface = port_object.interface
+
+            if interface and "enhanced" in interface.lower():
+                # Add the "enhanced" interface
+                device_name = match.group().upper()
+                device_recognized = True
+
+        else:  # pyserial <= 3.4
+            # Add "?" to both to indicate that it could be either.
+            device_name = f"{match.group().upper()} (?)"
+    else:
+        device_recognized = True
+        device_name = f"{match.group().upper()}"
+
+    if desc is not None and "Bootloader" in desc:
+        device_unflashed = True
+
+    return SerialDevice(
+        name=device_name,
+        port=device_port,
+        serial=device_serial_number,
+        unflashed=device_unflashed,
+        recognized=device_recognized,
+    )
+
+
+def get_serial_devices() -> List[SerialDevice]:
+    serial_devices = []
+
+    port_objects = serial.tools.list_ports.comports()
+    for port_object in port_objects:
+        serial_devices.append(serial_device_from_port_object(port_object))
+
+    return serial_devices
+
+
 def tag_serial_ports_objects(port_infos):
     PRODUCT_REGEX = r"[X][A-Z]\d{3}"
 
@@ -200,7 +301,11 @@ def tag_serial_ports(port_infos):
 
 
 def get_tagged_serial_ports():
-    return tag_serial_ports(serial.tools.list_ports.comports())
+    tagged_serial_ports = []
+    serial_devices = get_serial_devices()
+    for serial_device in serial_devices:
+        tagged_serial_ports.append((serial_device.port, serial_device.name))
+    return tagged_serial_ports
 
 
 def autodetect_serial_port():
@@ -265,6 +370,7 @@ def get_usb_devices(only_accessible=False):
                             serial=serial_number,
                             name=model_name,
                             unflashed=unflashed,
+                            recognized=True,
                         )
                     )
     else:
@@ -285,6 +391,7 @@ def get_usb_devices(only_accessible=False):
                             name=device_name,
                             accessible=accessible,
                             unflashed=unflashed,
+                            recognized=True,
                         )
                     )
 

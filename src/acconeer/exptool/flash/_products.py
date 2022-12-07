@@ -9,8 +9,12 @@ from acconeer.exptool.flash._xc120 import (
 )
 
 
-PRODUCT_FLASH_MAP = {
+PRODUCT_PID_TO_FLASH_MAP = {
     ACCONEER_XC120_BOARD_PROTOCOL_PID: BootloaderTool,
     ACCONEER_XC120_BOOTLOADER_PID: BootloaderTool,
     ACCONEER_XC120_EXPLORATION_SERVER_PID: BootloaderTool,
+}
+
+PRODUCT_NAME_TO_FLASH_MAP = {
+    "XC120": BootloaderTool,
 }

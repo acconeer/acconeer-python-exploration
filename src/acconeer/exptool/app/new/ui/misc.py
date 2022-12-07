@@ -95,22 +95,20 @@ class SerialPortComboBox(QComboBox):
         self.currentTextChanged.connect(self._on_change)
 
     def _on_change(self) -> None:
-        self.app_model.set_serial_connection_port(self.currentData())
+        self.app_model.set_serial_connection_device(self.currentData())
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        tagged_ports = app_model.available_tagged_ports
+        serial_devices = app_model.available_serial_devices
 
-        ports = [port for port, _ in tagged_ports]
         view_ports = [self.itemData(i) for i in range(self.count())]
 
         with QtCore.QSignalBlocker(self):
-            if ports != view_ports:
+            if serial_devices != view_ports:
                 self.clear()
-                for port, tag in tagged_ports:
-                    label = port if tag is None else f"{port} ({tag})"
-                    self.addItem(label, port)
+                for serial_device in serial_devices:
+                    self.addItem(serial_device.display_name(), serial_device)
 
-            index = self.findData(app_model.serial_connection_port)
+            index = self.findData(app_model.serial_connection_device)
             self.setCurrentIndex(index)
 
             self.setEnabled(self.count() > 0)
@@ -127,7 +125,7 @@ class USBDeviceComboBox(QComboBox):
         self.setMinimumWidth(175)
 
     def _on_change(self) -> None:
-        self.app_model.set_usb_connection_port(self.currentData())
+        self.app_model.set_usb_connection_device(self.currentData())
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         usb_devices = app_model.available_usb_devices
@@ -226,16 +224,13 @@ class ConnectionHint(HintObject):
             return False
 
         if (
-            app_model.serial_connection_port is not None
+            app_model.serial_connection_device is not None
             and app_model.connection_interface == ConnectionInterface.SERIAL
         ):
-            tag = dict(app_model.available_tagged_ports).get(
-                app_model.serial_connection_port, None
-            )
-            if tag is not None:
-                if "unflashed" in tag.lower():
+            if app_model.serial_connection_device.name is not None:
+                if app_model.serial_connection_device.unflashed:
                     return False
-                return "xc120" in tag.lower()
+                return "xc120" in app_model.serial_connection_device.name
 
         return False
 
@@ -257,14 +252,11 @@ class UnflashedDeviceHint(HintObject):
             return False
 
         if (
-            app_model.serial_connection_port is not None
+            app_model.serial_connection_device is not None
             and app_model.connection_interface == ConnectionInterface.SERIAL
+            and app_model.serial_connection_device.unflashed
         ):
-            tag = dict(app_model.available_tagged_ports).get(
-                app_model.serial_connection_port, None
-            )
-            if tag is not None and "unflashed" in tag.lower():
-                return True
+            return True
 
         if (
             app_model.usb_connection_device is not None

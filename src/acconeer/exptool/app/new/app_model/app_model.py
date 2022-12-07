@@ -42,7 +42,7 @@ from acconeer.exptool.app.new.backend import (
     StatusMessage,
 )
 from acconeer.exptool.app.new.storage import remove_temp_dir
-from acconeer.exptool.utils import USBDevice  # type: ignore[import]
+from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice  # type: ignore[import]
 
 from .plugin_protocols import PlotPluginInterface, ViewPluginInterface
 from .port_updater import PortUpdater
@@ -118,7 +118,7 @@ class _BackendListeningThread(QThread):
 class _Config:
     connection_interface: ConnectionInterface = ConnectionInterface.SERIAL
     socket_connection_ip: str = ""
-    serial_connection_port: Optional[str] = None
+    serial_connection_device: Optional[SerialDevice] = None
     usb_connection_device: Optional[USBDevice] = None
     overridden_baudrate: Optional[int] = None
     autoconnect_enabled: bool = False
@@ -144,8 +144,8 @@ class AppModel(QObject):
     connection_state: ConnectionState
     connection_warning: Optional[str]
     plugin_state: PluginState
-    available_tagged_ports: list[Tuple[str, Optional[str]]]
-    available_usb_devices: list[USBDevice]
+    available_serial_devices: List[SerialDevice]
+    available_usb_devices: List[USBDevice]
 
     saveable_file: Optional[Path]
 
@@ -172,7 +172,8 @@ class AppModel(QObject):
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_warning = None
         self.plugin_state = PluginState.UNLOADED
-        self.available_tagged_ports = []
+
+        self.available_serial_devices = []
         self.available_usb_devices = []
 
         self.saveable_file = None
@@ -347,10 +348,9 @@ class AppModel(QObject):
         self.saveable_file = path
         self.broadcast()
 
-    def _is_serial_device_unflashed(self, serial_port: Optional[str]) -> bool:
-        for port, tag in self.available_tagged_ports:
-            if port == serial_port and tag and "unflashed" in tag.lower():
-                return True
+    def _is_serial_device_unflashed(self, serial_device: Optional[SerialDevice]) -> bool:
+        if serial_device and serial_device.unflashed:
+            return True
         return False
 
     def _is_usb_device_unflashed(self, usb_device: Optional[USBDevice]) -> bool:
@@ -365,14 +365,13 @@ class AppModel(QObject):
 
     def _handle_port_update(
         self,
-        tagged_ports: list[Tuple[str, Optional[str]]],
-        usb_devices: Optional[list[USBDevice]],
+        serial_devices: list[SerialDevice],
+        usb_devices: list[USBDevice],
     ) -> None:
-        tagged_ports_map = dict(tagged_ports)
         if self.connection_state is not ConnectionState.DISCONNECTED and (
             (
                 self._config.connection_interface == ConnectionInterface.SERIAL
-                and self._config.serial_connection_port not in tagged_ports_map.keys()
+                and self._config.serial_connection_device not in serial_devices
             )
             or (
                 self._config.connection_interface == ConnectionInterface.USB
@@ -381,31 +380,32 @@ class AppModel(QObject):
             )
         ):
             self.disconnect_client()
-        self._config.serial_connection_port, recognized = self._select_new_serial_port(
-            dict(self.available_tagged_ports),
-            tagged_ports_map,
-            self._config.serial_connection_port,
+        self._config.serial_connection_device, recognized = self._select_new_device(
+            self.available_serial_devices,
+            serial_devices,
+            self._config.serial_connection_device,
         )
 
-        self.available_tagged_ports = tagged_ports
+        self.available_serial_devices = serial_devices
         connect = False
 
         if recognized:
             self.set_connection_interface(ConnectionInterface.SERIAL)
-            if self._is_serial_device_unflashed(self._config.serial_connection_port):
+            if self._is_serial_device_unflashed(self._config.serial_connection_device):
                 connect = False
                 self.send_warning_message(
-                    f"Found unflashed device at serial port: {self._config.serial_connection_port}"
+                    "Found unflashed device at serial port:"
+                    f" {self._config.serial_connection_device}"
                 )
             else:
                 connect = True
                 self.send_status_message(
-                    f"Recognized serial port: {self._config.serial_connection_port}"
+                    f"Recognized serial port: {self._config.serial_connection_device}"
                 )
 
         if usb_devices is not None:
-            self._config.usb_connection_device, recognized = self._select_new_usb_device(
-                usb_devices, self._config.usb_connection_device
+            self._config.usb_connection_device, recognized = self._select_new_device(
+                self.available_usb_devices, usb_devices, self._config.usb_connection_device
             )
 
             self.available_usb_devices = usb_devices
@@ -437,58 +437,37 @@ class AppModel(QObject):
     def _autoconnect(self) -> None:
         self.connect_client(auto=True)
 
-    def _select_new_serial_port(
+    def _select_new_device(
         self,
-        old_ports: dict[str, Optional[str]],
-        new_ports: dict[str, Optional[str]],
-        current_port: Optional[str],
-    ) -> Tuple[Optional[str], bool]:
+        old_devices: list[CommDevice],
+        new_devices: list[CommDevice],
+        current_port: Optional[CommDevice],
+    ) -> Tuple[Optional[CommDevice], bool]:
         if self.connection_state != ConnectionState.DISCONNECTED:
             return current_port, False
 
-        if current_port not in new_ports:  # Then find a new suitable port
-            port = None
-
-            for port, tag in new_ports.items():
-                if tag:
-                    return port, (current_port is None)
-
-            return port, False
-
-        # If we already have a tagged port, keep it
-        if new_ports[current_port]:
-            return current_port, False
-
-        # If a tagged port was added, select it
-        added_ports = {k: v for k, v in new_ports.items() if k not in old_ports}
-        for port, tag in added_ports.items():
-            if tag:
-                return port, True
-
-        return current_port, False
-
-    def _select_new_usb_device(
-        self,
-        new_ports: list[USBDevice],
-        current_port: Optional[USBDevice],
-    ) -> Tuple[Optional[USBDevice], bool]:
-        if self.connection_state != ConnectionState.DISCONNECTED:
-            return current_port, False
-
-        if not new_ports:
+        if not new_devices:
             return None, False
 
-        if current_port not in new_ports:
-            return new_ports[0], True
+        added_devices = [dev for dev in new_devices if dev not in old_devices]
+        for device in added_devices:
+            if device.recognized:
+                return device, True
+
+        if current_port not in new_devices:
+            return new_devices[0], True
 
         return current_port, False
 
     def connect_client(self, auto: bool = False) -> None:
         if self._config.connection_interface == ConnectionInterface.SOCKET:
             client_info = a121.ClientInfo(ip_address=self._config.socket_connection_ip)
-        elif self._config.connection_interface == ConnectionInterface.SERIAL:
+        elif (
+            self._config.connection_interface == ConnectionInterface.SERIAL
+            and self._config.serial_connection_device is not None
+        ):
             client_info = a121.ClientInfo(
-                serial_port=self._config.serial_connection_port,
+                serial_port=self._config.serial_connection_device.port,
                 override_baudrate=self._config.overridden_baudrate,
             )
         elif self._config.connection_interface == ConnectionInterface.USB:
@@ -523,8 +502,8 @@ class AppModel(QObject):
             (self._config.connection_interface == ConnectionInterface.SOCKET)
             or (
                 self._config.connection_interface == ConnectionInterface.SERIAL
-                and self._config.serial_connection_port is not None
-                and not self._is_serial_device_unflashed(self._config.serial_connection_port)
+                and self._config.serial_connection_device is not None
+                and not self._is_serial_device_unflashed(self._config.serial_connection_device)
             )
             or (
                 self._config.connection_interface == ConnectionInterface.USB
@@ -554,8 +533,8 @@ class AppModel(QObject):
         return self._config.socket_connection_ip
 
     @property
-    def serial_connection_port(self) -> Optional[str]:
-        return self._config.serial_connection_port
+    def serial_connection_device(self) -> Optional[SerialDevice]:
+        return self._config.serial_connection_device
 
     @property
     def usb_connection_device(self) -> Optional[USBDevice]:
@@ -581,12 +560,12 @@ class AppModel(QObject):
         self._config.socket_connection_ip = ip
         self.broadcast()
 
-    def set_serial_connection_port(self, port: Optional[str]) -> None:
-        self._config.serial_connection_port = port
+    def set_serial_connection_device(self, device: Optional[SerialDevice]) -> None:
+        self._config.serial_connection_device = device
         self.broadcast()
 
-    def set_usb_connection_port(self, port: Optional[str]) -> None:
-        self._config.usb_connection_device = port
+    def set_usb_connection_device(self, device: Optional[USBDevice]) -> None:
+        self._config.usb_connection_device = device
         self.broadcast()
 
     def set_plugin_state(self, state: PluginState) -> None:

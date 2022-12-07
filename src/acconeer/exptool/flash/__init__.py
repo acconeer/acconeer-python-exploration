@@ -12,4 +12,4 @@ from ._bin_fetcher import (
     save_cookies,
 )
 from ._dev_license import DevLicense
-from ._flasher import find_flash_port, flash_image
+from ._flasher import flash_image

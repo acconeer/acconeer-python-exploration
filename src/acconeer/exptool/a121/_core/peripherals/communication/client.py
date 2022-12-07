@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Type, Union
+from typing import List, Optional, Type, Union
 
 import attrs
 
@@ -15,31 +15,29 @@ from acconeer.exptool.a121._core.mediators import (
     ClientError,
     CommunicationProtocol,
 )
-from acconeer.exptool.utils import USBDevice  # type: ignore[import]
+from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
 
 from .exploration_protocol import ExplorationProtocol, get_exploration_protocol, messages
 from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink, NullLink, NullLinkError
 
 
-def determine_serial_port(serial_port: Optional[str]) -> str:
-    if serial_port is None:
-        tagged_ports = et.utils.get_tagged_serial_ports()
-        A121_TAGS = ["XC120"]
-        hopefully_a_single_tagged_port = [port for port, tag in tagged_ports if tag in A121_TAGS]
-        try:
-            (port,) = hopefully_a_single_tagged_port
-            return str(port)
-        except ValueError:
-            if hopefully_a_single_tagged_port == []:
-                raise ClientError("No serial devices detected. Cannot auto detect.")
-            else:
-                port_list = "\n".join(
-                    [f"* {port} ({tag})" for port, tag in hopefully_a_single_tagged_port]
-                )
+def _get_one_serial_device() -> SerialDevice:
+    acconeer_serial_devices: List[SerialDevice] = [
+        device for device in et.utils.get_serial_devices() if device.name is not None
+    ]
 
-                raise ClientError(
-                    "There are multiple devices detected. Specify one:\n" + port_list
-                )
+    if not acconeer_serial_devices:
+        raise ClientError("No serial devices detected. Cannot auto detect.")
+    elif len(acconeer_serial_devices) > 1:
+        devices_string = "".join([f" - {dev}\n" for dev in acconeer_serial_devices])
+        raise ClientError("There are multiple devices detected. Specify one:\n" + devices_string)
+    else:
+        return acconeer_serial_devices[0]
+
+
+def determine_serial_device(serial_port: Optional[str]) -> str:
+    if serial_port is None:
+        return str(_get_one_serial_device().port)
     else:
         return serial_port
 
@@ -87,6 +85,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
 
 
 def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
+    error_message = ""
     try:
         client_info = attrs.evolve(
             client_info,
@@ -94,17 +93,20 @@ def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
         )
 
         return client_info
-    except ClientError:
+    except ClientError as exc:
+        error_message += f"\nUSB: {str(exc)}"
         pass
 
     try:
         client_info = attrs.evolve(
             client_info,
-            serial_port=determine_serial_port(client_info.serial_port),
+            serial_port=determine_serial_device(client_info.serial_port),
         )
         return client_info
-    except ClientError:
-        raise ClientError("No devices detected. Cannot auto detect.")
+    except ClientError as exc:
+        error_message += f"\nSerial: {str(exc)}"
+
+    raise ClientError(f"Cannot auto detect:{error_message}")
 
 
 class Client(AgnosticClient):

@@ -12,7 +12,6 @@ from tempfile import TemporaryDirectory
 from typing import Optional, Tuple
 
 import qtawesome as qta
-import serial
 from requests import Response, Session
 from requests.cookies import RequestsCookieJar
 
@@ -44,14 +43,13 @@ from acconeer.exptool.flash import (  # type: ignore[import]
     DevLicense,
     clear_cookies,
     download,
-    find_flash_port,
     flash_image,
     get_content,
     get_cookies,
     login,
     save_cookies,
 )
-from acconeer.exptool.utils import USBDevice  # type: ignore[import]
+from acconeer.exptool.utils import CommDevice  # type: ignore[import]
 
 from .misc import BUTTON_ICON_COLOR, SerialPortComboBox, USBDeviceComboBox
 
@@ -69,14 +67,14 @@ class _FlashThread(QThread):
     flash_failed = Signal(Exception, str)
     flash_done = Signal()
 
-    def __init__(self, bin_file: str, flash_port: serial.tools.list_ports.ListPortInfo) -> None:
+    def __init__(self, bin_file: str, flash_device: CommDevice) -> None:
         super().__init__()
         self.bin_file = bin_file
-        self.flash_port = flash_port
+        self.flash_device = flash_device
 
     def run(self) -> None:
         try:
-            flash_image(self.bin_file, self.flash_port)
+            flash_image(self.bin_file, self.flash_device)
             self.flash_done.emit()
         except Exception as e:
             log.error(str(e))
@@ -113,8 +111,8 @@ class _FlashDialog(QDialog):
 
         self.setLayout(vbox)
 
-    def flash(self, bin_file: str, flash_port: serial.tools.list_ports.ListPortInfo) -> None:
-        self.flash_thread = _FlashThread(bin_file, flash_port)
+    def flash(self, bin_file: str, flash_device: CommDevice) -> None:
+        self.flash_thread = _FlashThread(bin_file, flash_device)
         self.flash_thread.started.connect(self._flash_start)
         self.flash_thread.finished.connect(self.flash_thread.deleteLater)
         self.flash_thread.finished.connect(self._flash_stop)
@@ -244,9 +242,9 @@ class _FlashPopup(QDialog):
         app_model.sig_notify.connect(self._on_app_model_update)
 
     @property
-    def flash_port(self) -> Optional[str]:
+    def flash_device(self) -> Optional[CommDevice]:
         if self.app_model.connection_interface == ConnectionInterface.SERIAL:
-            return self.app_model.serial_connection_port
+            return self.app_model.serial_connection_device
         if self.app_model.connection_interface == ConnectionInterface.USB:
             return self.app_model.usb_connection_device
         return None
@@ -350,14 +348,10 @@ class _FlashPopup(QDialog):
         self.adjustSize()
 
     def _flash(self) -> None:
-        flash_port = find_flash_port(
-            self.flash_port, do_log=False, use_serial=not isinstance(self.flash_port, USBDevice)
-        )
-
         assert self.bin_file is not None
 
         self.app_model.set_port_updates_pause(True)
-        self.flash_dialog.flash(self.bin_file, flash_port)
+        self.flash_dialog.flash(self.bin_file, self.flash_device)
 
     def _flash_done(self) -> None:
         self.app_model.set_port_updates_pause(False)
@@ -374,11 +368,7 @@ class _FlashPopup(QDialog):
             self.interface_dd.setCurrentIndex(interface_index)
             self.stacked.setCurrentIndex(interface_index)
 
-            enable_select = (
-                find_flash_port(do_log=False) is not None
-                and not self.authenticating
-                and not self.downloading_firmware
-            )
+            enable_select = not self.authenticating and not self.downloading_firmware
             self.get_latest_button.setEnabled(enable_select)
 
         self._draw()
@@ -386,7 +376,12 @@ class _FlashPopup(QDialog):
     def _draw(self) -> None:
         self.file_label.setText(self.bin_file if self.bin_file else "")
         self.file_label.setEnabled(self.bin_file is not None)
-        self.flash_button.setEnabled(self.flash_port is not None and self.bin_file is not None)
+        self.flash_button.setEnabled(
+            not self.authenticating
+            and not self.downloading_firmware
+            and self.flash_device is not None
+            and self.bin_file is not None
+        )
 
     def exec(self) -> None:
         if self.app_model.connection_interface == ConnectionInterface.SOCKET:
@@ -394,14 +389,9 @@ class _FlashPopup(QDialog):
 
         super().exec()
 
-    def _get_device_name(self) -> str | None:
-        flash_port = find_flash_port()
-
-        if flash_port is not None:
-            if isinstance(flash_port, USBDevice):
-                return str(flash_port.name)
-            else:
-                return str(flash_port.product)
+    def _get_device_name(self) -> Optional[str]:
+        if self.flash_device is not None:
+            return str(self.flash_device.name)
 
         return None
 
