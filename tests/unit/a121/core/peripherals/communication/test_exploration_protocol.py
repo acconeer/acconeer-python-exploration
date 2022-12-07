@@ -143,7 +143,7 @@ class TestExplorationProtocolFactory:
     def test_get_exploration_protocol_compatible_versions(
         self,
         rss_version: str,
-        expected_protocol: Union[ExplorationProtocol, ExplorationProtocol_0_4_1],
+        expected_protocol: ExplorationProtocol,
     ) -> None:
         assert get_exploration_protocol(parse_rss_version(rss_version)) == expected_protocol
 
