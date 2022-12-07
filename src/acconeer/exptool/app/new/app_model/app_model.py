@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional, Tuple
 from uuid import UUID
 
+import attrs
 from typing_extensions import Protocol
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
@@ -113,6 +114,17 @@ class _BackendListeningThread(QThread):
         log.debug("Backend listening thread stopping...")
 
 
+@attrs.mutable(kw_only=True)
+class _Config:
+    connection_interface: ConnectionInterface = ConnectionInterface.SERIAL
+    socket_connection_ip: str = ""
+    serial_connection_port: Optional[str] = None
+    usb_connection_device: Optional[USBDevice] = None
+    overridden_baudrate: Optional[int] = None
+    autoconnect_enabled: bool = False
+    recording_enabled: bool = True
+
+
 class AppModel(QObject):
     sig_notify = Signal(object)
     sig_error = Signal(Exception, object)
@@ -131,18 +143,11 @@ class AppModel(QObject):
 
     connection_state: ConnectionState
     connection_warning: Optional[str]
-    connection_interface: ConnectionInterface
     plugin_state: PluginState
-    socket_connection_ip: str
-    serial_connection_port: Optional[str]
     available_tagged_ports: list[Tuple[str, Optional[str]]]
-    usb_connection_device: Optional[USBDevice]
     available_usb_devices: list[USBDevice]
-    overridden_baudrate: Optional[int]
 
     saveable_file: Optional[Path]
-    autoconnect_enabled: bool
-    recording_enabled: bool
 
     def __init__(self, backend: Backend, plugins: list[PluginSpec]) -> None:
         super().__init__()
@@ -157,6 +162,8 @@ class AppModel(QObject):
 
         self._a121_server_info: Optional[a121.ServerInfo] = None
 
+        self._config = _Config()
+
         self.plugins = plugins
         self.plugin = None
 
@@ -164,19 +171,11 @@ class AppModel(QObject):
 
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_warning = None
-        self.connection_interface = ConnectionInterface.SERIAL
         self.plugin_state = PluginState.UNLOADED
-        self.socket_connection_ip = ""
-        self.serial_connection_port = None
-        self.usb_connection_device = None
         self.available_tagged_ports = []
         self.available_usb_devices = []
-        self.overridden_baudrate = None
 
         self.saveable_file = None
-        self.autoconnect_enabled = False
-
-        self.recording_enabled = True
 
     def start(self) -> None:
         self._listener.start()
@@ -372,20 +371,20 @@ class AppModel(QObject):
         tagged_ports_map = dict(tagged_ports)
         if self.connection_state is not ConnectionState.DISCONNECTED and (
             (
-                self.connection_interface == ConnectionInterface.SERIAL
-                and self.serial_connection_port not in tagged_ports_map.keys()
+                self._config.connection_interface == ConnectionInterface.SERIAL
+                and self._config.serial_connection_port not in tagged_ports_map.keys()
             )
             or (
-                self.connection_interface == ConnectionInterface.USB
+                self._config.connection_interface == ConnectionInterface.USB
                 and usb_devices
-                and self.usb_connection_device not in usb_devices
+                and self._config.usb_connection_device not in usb_devices
             )
         ):
             self.disconnect_client()
-        self.serial_connection_port, recognized = self._select_new_serial_port(
+        self._config.serial_connection_port, recognized = self._select_new_serial_port(
             dict(self.available_tagged_ports),
             tagged_ports_map,
-            self.serial_connection_port,
+            self._config.serial_connection_port,
         )
 
         self.available_tagged_ports = tagged_ports
@@ -393,42 +392,44 @@ class AppModel(QObject):
 
         if recognized:
             self.set_connection_interface(ConnectionInterface.SERIAL)
-            if self._is_serial_device_unflashed(self.serial_connection_port):
+            if self._is_serial_device_unflashed(self._config.serial_connection_port):
                 connect = False
                 self.send_warning_message(
-                    f"Found unflashed device at serial port: {self.serial_connection_port}"
+                    f"Found unflashed device at serial port: {self._config.serial_connection_port}"
                 )
             else:
                 connect = True
-                self.send_status_message(f"Recognized serial port: {self.serial_connection_port}")
+                self.send_status_message(
+                    f"Recognized serial port: {self._config.serial_connection_port}"
+                )
 
         if usb_devices is not None:
-            self.usb_connection_device, recognized = self._select_new_usb_device(
-                usb_devices, self.usb_connection_device
+            self._config.usb_connection_device, recognized = self._select_new_usb_device(
+                usb_devices, self._config.usb_connection_device
             )
 
             self.available_usb_devices = usb_devices
 
             if recognized:
-                assert self.usb_connection_device is not None
+                assert self._config.usb_connection_device is not None
                 self.set_connection_interface(ConnectionInterface.USB)
-                if self._is_usb_device_unflashed(self.usb_connection_device):
+                if self._is_usb_device_unflashed(self._config.usb_connection_device):
                     connect = False
                     self.send_warning_message(
-                        f"Found unflashed USB device: {self.usb_connection_device}"
+                        f"Found unflashed USB device: {self._config.usb_connection_device}"
                     )
-                elif self._is_usb_device_inaccessible(self.usb_connection_device):
+                elif self._is_usb_device_inaccessible(self._config.usb_connection_device):
                     connect = False
                     self.send_warning_message(
-                        f"Found inaccessible USB device: {self.usb_connection_device}"
+                        f"Found inaccessible USB device: {self._config.usb_connection_device}"
                     )
                 else:
                     connect = True
                     self.send_status_message(
-                        f"Recognized USB device: {self.usb_connection_device}"
+                        f"Recognized USB device: {self._config.usb_connection_device}"
                     )
 
-        if connect and self.autoconnect_enabled:
+        if connect and self._config.autoconnect_enabled:
             self._autoconnect()
 
         self.broadcast()
@@ -483,14 +484,15 @@ class AppModel(QObject):
         return current_port, False
 
     def connect_client(self, auto: bool = False) -> None:
-        if self.connection_interface == ConnectionInterface.SOCKET:
-            client_info = a121.ClientInfo(ip_address=self.socket_connection_ip)
-        elif self.connection_interface == ConnectionInterface.SERIAL:
+        if self._config.connection_interface == ConnectionInterface.SOCKET:
+            client_info = a121.ClientInfo(ip_address=self._config.socket_connection_ip)
+        elif self._config.connection_interface == ConnectionInterface.SERIAL:
             client_info = a121.ClientInfo(
-                serial_port=self.serial_connection_port, override_baudrate=self.overridden_baudrate
+                serial_port=self._config.serial_connection_port,
+                override_baudrate=self._config.overridden_baudrate,
             )
-        elif self.connection_interface == ConnectionInterface.USB:
-            client_info = a121.ClientInfo(usb_device=self.usb_connection_device)
+        elif self._config.connection_interface == ConnectionInterface.USB:
+            client_info = a121.ClientInfo(usb_device=self._config.usb_connection_device)
         else:
             raise RuntimeError
 
@@ -518,17 +520,17 @@ class AppModel(QObject):
 
     def is_connect_ready(self) -> bool:
         return (
-            (self.connection_interface == ConnectionInterface.SOCKET)
+            (self._config.connection_interface == ConnectionInterface.SOCKET)
             or (
-                self.connection_interface == ConnectionInterface.SERIAL
-                and self.serial_connection_port is not None
-                and not self._is_serial_device_unflashed(self.serial_connection_port)
+                self._config.connection_interface == ConnectionInterface.SERIAL
+                and self._config.serial_connection_port is not None
+                and not self._is_serial_device_unflashed(self._config.serial_connection_port)
             )
             or (
-                self.connection_interface == ConnectionInterface.USB
-                and self.usb_connection_device is not None
-                and not self._is_usb_device_unflashed(self.usb_connection_device)
-                and not self._is_usb_device_inaccessible(self.usb_connection_device)
+                self._config.connection_interface == ConnectionInterface.USB
+                and self._config.usb_connection_device is not None
+                and not self._is_usb_device_unflashed(self._config.usb_connection_device)
+                and not self._is_usb_device_inaccessible(self._config.usb_connection_device)
             )
         )
 
@@ -543,20 +545,48 @@ class AppModel(QObject):
         else:
             self._port_updater.resume()
 
+    @property
+    def connection_interface(self) -> ConnectionInterface:
+        return self._config.connection_interface
+
+    @property
+    def socket_connection_ip(self) -> str:
+        return self._config.socket_connection_ip
+
+    @property
+    def serial_connection_port(self) -> Optional[str]:
+        return self._config.serial_connection_port
+
+    @property
+    def usb_connection_device(self) -> Optional[USBDevice]:
+        return self._config.usb_connection_device
+
+    @property
+    def autoconnect_enabled(self) -> bool:
+        return self._config.autoconnect_enabled
+
+    @property
+    def overridden_baudrate(self) -> Optional[int]:
+        return self._config.overridden_baudrate
+
+    @property
+    def recording_enabled(self) -> bool:
+        return self._config.recording_enabled
+
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
-        self.connection_interface = connection_interface
+        self._config.connection_interface = connection_interface
         self.broadcast()
 
     def set_socket_connection_ip(self, ip: str) -> None:
-        self.socket_connection_ip = ip
+        self._config.socket_connection_ip = ip
         self.broadcast()
 
     def set_serial_connection_port(self, port: Optional[str]) -> None:
-        self.serial_connection_port = port
+        self._config.serial_connection_port = port
         self.broadcast()
 
     def set_usb_connection_port(self, port: Optional[str]) -> None:
-        self.usb_connection_device = port
+        self._config.usb_connection_device = port
         self.broadcast()
 
     def set_plugin_state(self, state: PluginState) -> None:
@@ -564,15 +594,15 @@ class AppModel(QObject):
         self.broadcast()
 
     def set_autoconnect_enabled(self, autoconnect_enabled: bool) -> None:
-        self.autoconnect_enabled = autoconnect_enabled
+        self._config.autoconnect_enabled = autoconnect_enabled
         self.broadcast()
 
     def set_overridden_baudrate(self, overridden_baudrate: Optional[int]) -> None:
-        self.overridden_baudrate = overridden_baudrate
+        self._config.overridden_baudrate = overridden_baudrate
         self.broadcast()
 
     def set_recording_enabled(self, recording_enabled: bool) -> None:
-        self.recording_enabled = recording_enabled
+        self._config.recording_enabled = recording_enabled
         self.broadcast()
 
     def _unload_current_plugin(self) -> None:
