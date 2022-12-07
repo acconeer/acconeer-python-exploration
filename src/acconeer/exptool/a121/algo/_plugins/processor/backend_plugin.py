@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 from pathlib import Path
-from typing import Callable, Dict, Generic, List, Mapping, Optional, Type
+from typing import Callable, Generic, Mapping, Optional, Type
 
 import attrs
 import h5py
@@ -369,54 +369,4 @@ class ProcessorBackendPluginBase(
 
         processor_result = self._processor_instance.process(result)
         self.callback(GeneralMessage(name="rate_stats", data=self._client._rate_stats))
-        self.callback(GeneralMessage(name="plot", data=processor_result, recipient="plot_plugin"))
-
-
-class ExtendedProcessorBackendPluginBase(
-    GenericProcessorBackendPluginBase[
-        List[Dict[int, a121.Result]], ConfigT, ResultT, List[Dict[int, a121.Metadata]]
-    ]
-):
-    @is_task
-    def restore_defaults(self) -> None:
-        self.shared_state = ProcessorBackendPluginSharedState(
-            session_config=a121.SessionConfig(self.get_default_sensor_config(), extended=True),
-            processor_config=self.get_processor_config_cls()(),
-        )
-
-        self.broadcast(sync=True)
-
-    def _get_next(self) -> None:
-        if self._client is None:
-            raise RuntimeError("Client is not attached. Can not 'get_next'.")
-        if self._processor_instance is None:
-            raise RuntimeError("Processor is None. 'start' needs to be called before 'get_next'")
-
-        try:
-            results = self._client.get_next()
-            assert isinstance(results, list)  # TODO: fix
-        except a121._StopReplay:
-            self.stop_session()
-            return
-        except Exception as exc:
-            try:
-                self.stop_session()
-            except Exception:
-                pass
-
-            raise HandledException("Failed to get_next") from exc
-
-        list_of_results = list(_core.utils.iterate_extended_structure_values(results))
-        if any(result.data_saturated for result in list_of_results):
-            self.send_status_message(self._format_warning(DATA_SATURATED_MESSAGE))
-
-        if any(result.calibration_needed for result in list_of_results):
-            self.send_status_message(self._format_warning(CALIBRATION_NEEDED_MESSAGE))
-
-        if any(result.frame_delayed for result in list_of_results):
-            self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
-
-        self.callback(GeneralMessage(name="rate_stats", data=self._client._rate_stats))
-
-        processor_result = self._processor_instance.process(results)
         self.callback(GeneralMessage(name="plot", data=processor_result, recipient="plot_plugin"))
