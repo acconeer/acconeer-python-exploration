@@ -38,6 +38,7 @@ class SubsweepConfigEditor(QWidget):
     }
     PRF_LABEL_MAP = {
         a121.PRF.PRF_19_5_MHz: "19.5 MHz",
+        a121.PRF.PRF_15_6_MHz: "15.6 MHz",
         a121.PRF.PRF_13_0_MHz: "13.0 MHz",
         a121.PRF.PRF_8_7_MHz: "8.7 MHz",
         a121.PRF.PRF_6_5_MHz: "6.5 MHz",

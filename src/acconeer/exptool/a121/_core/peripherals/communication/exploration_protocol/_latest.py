@@ -22,6 +22,7 @@ class ExplorationProtocol(CommunicationProtocol):
 
     PRF_MAPPING = {
         PRF.PRF_19_5_MHz: "19_5_MHz",
+        PRF.PRF_15_6_MHz: "15_6_MHz",
         PRF.PRF_13_0_MHz: "13_0_MHz",
         PRF.PRF_8_7_MHz: "8_7_MHz",
         PRF.PRF_6_5_MHz: "6_5_MHz",

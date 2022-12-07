@@ -50,7 +50,7 @@ def test_select_prf() -> None:
 
     actual_PRF = select_prf(breakpoint=breakpoint, profile=profile)
 
-    assert actual_PRF == a121.PRF.PRF_13_0_MHz
+    assert actual_PRF == a121.PRF.PRF_15_6_MHz
 
 
 def test_limit_step_length() -> None:

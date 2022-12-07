@@ -32,6 +32,7 @@ SIGNAL_TEMPERATURE_MODEL_PARAMETER = {
 # Largest measurable distance per PRF.
 MAX_MEASURABLE_DIST_M = {
     a121.PRF.PRF_19_5_MHz: 3.1,
+    a121.PRF.PRF_15_6_MHz: 5.8,
     a121.PRF.PRF_13_0_MHz: 7.0,
     a121.PRF.PRF_8_7_MHz: 12.7,
     a121.PRF.PRF_6_5_MHz: 18.5,

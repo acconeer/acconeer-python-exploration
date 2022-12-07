@@ -57,3 +57,9 @@ class TestMockExplorationServerDataParsing:
             for _, _, value in utils.iterate_extended_structure(result):
                 for sweep in value.frame:
                     np.testing.assert_equal(sweep, expected_sweep)
+
+
+@pytest.mark.parametrize("prf", set(a121.PRF))
+def test_setup_with_all_prfs(prf: a121.PRF) -> None:
+    with a121.Client(**CLIENT_KWARGS) as client:
+        client.setup_session(a121.SensorConfig(prf=prf, profile=a121.Profile.PROFILE_1))
