@@ -117,6 +117,7 @@ _USB_IDS = [  # (vid, pid, 'model number', 'Unflashed')
     (0x0483, 0xA41D, "XC120", True),
     (0x0483, 0xA42C, "XC120", True),
     (0x0483, 0xA42D, "XC120", False),
+    (0x0483, 0xA449, "XC120", False),
 ]
 
 

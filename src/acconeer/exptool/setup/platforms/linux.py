@@ -25,6 +25,7 @@ class Linux(PlatformInstall):
         'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a41d", MODE:="0666"\n'
         'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42c", MODE:="0666"\n'
         'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42d", MODE:="0666"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a449", MODE:="0666"\n'
     )
 
     def __init__(self) -> None:
