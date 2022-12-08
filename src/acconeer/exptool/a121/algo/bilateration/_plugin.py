@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from pathlib import Path
 from typing import Any, Callable, Dict, Mapping, Optional
 
 import attrs
@@ -47,7 +46,6 @@ from acconeer.exptool.app.new import (
     PluginSpecBase,
     PluginState,
     PluginStateMessage,
-    get_temp_h5_path,
     is_task,
 )
 from acconeer.exptool.app.new.ui.plugin_components import (
@@ -128,11 +126,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key)
 
-        self._started: bool = False
-        self._live_client: Optional[a121.Client] = None
-        self._replaying_client: Optional[a121._ReplayingClient] = None
-        self._recorder: Optional[a121.H5Recorder] = None
-        self._opened_record: Optional[a121.H5Record] = None
         self._detector_instance: Optional[Detector] = None
 
         self.restore_defaults()
@@ -155,26 +148,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def restore_defaults(self) -> None:
         self.shared_state = SharedState(config=get_default_detector_config())
         self.broadcast(sync=True)
-
-    @property
-    def _client(self) -> Optional[a121.Client]:
-        if self._replaying_client is not None:
-            return self._replaying_client
-
-        return self._live_client
-
-    def idle(self) -> bool:
-        if self._started:
-            self._get_next()
-            return True
-        else:
-            return False
-
-    def attach_client(self, *, client: Any) -> None:
-        self._live_client = client
-
-    def detach_client(self) -> None:
-        self._live_client = None
 
     @is_task
     def update_config(self, *, config: DetectorConfig) -> None:
@@ -212,80 +185,37 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.detach_client()
 
-    @is_task
-    def load_from_file(self, *, path: Path) -> None:
-        try:
-            self._load_from_file_setup(path=path)
-        except Exception as exc:
-            self._opened_record = None
-            self._replaying_client = None
-            self.shared_state.replaying = False
-
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            raise HandledException("Could not load from file") from exc
-
-        self.shared_state.replaying = True
-
-        self.start_session(with_recorder=False)
-
-        self.send_status_message(f"<b>Replaying from {path.name}</b>")
-        self.broadcast(sync=True)
-
-    def _load_from_file_setup(self, *, path: Path) -> None:
-        r = a121.open_record(path)
-        assert isinstance(r, a121.H5Record)
-        self._opened_record = r
-        self._replaying_client = a121._ReplayingClient(self._opened_record)
-
-        algo_group = self._opened_record.get_algo_group(self.key)
+    def load_from_record_setup(self, *, record: a121.H5Record) -> None:
+        algo_group = record.get_algo_group(self.key)
         _, config, context = _load_algo_data(algo_group)
         self.shared_state.config = config
         self.shared_state.context = context
-        self.shared_state.sensor_ids = list(next(iter(r.session_config.groups)).keys())
+        self.shared_state.sensor_ids = list(next(iter(record.session_config.groups)).keys())
 
-    @is_task
-    def start_session(self, *, with_recorder: bool = True) -> None:
-        if self._started:
-            raise RuntimeError
-
-        if self._client is None:
-            raise RuntimeError
-
-        if not self._client.connected:
-            raise RuntimeError
-
+    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+        assert self.client
         self._detector_instance = Detector(
-            client=self._client,
+            client=self.client,
             sensor_ids=self.shared_state.sensor_ids,
             detector_config=self.shared_state.config,
             context=self.shared_state.context,
         )
 
-        if with_recorder:
-            self._recorder = a121.H5Recorder(get_temp_h5_path())
-            algo_group = self._recorder.require_algo_group("bilateration")
+        if recorder:
+            algo_group = recorder.require_algo_group("bilateration")
         else:
-            self._recorder = None
             algo_group = None
 
-        try:
-            self._detector_instance.start(
-                self._recorder,
-                _algo_group=algo_group,
-            )
-        except Exception as exc:
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            raise HandledException("Could not start") from exc
+        self._detector_instance.start(
+            recorder,
+            _algo_group=algo_group,
+        )
 
         self._processor_instance = Processor(
             session_config=self._detector_instance.session_config,
             processor_config=self.shared_state.bilateration_config,
             sensor_ids=self.shared_state.sensor_ids,
         )
-
-        self._started = True
-
-        self.broadcast()
 
         self.callback(
             GeneralMessage(
@@ -298,65 +228,21 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 recipient="plot_plugin",
             )
         )
-        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
-    @is_task
-    def stop_session(self) -> None:
-        if not self._started:
-            raise RuntimeError
-
+    def end_session(self) -> None:
         if self._detector_instance is None:
             raise RuntimeError
+        self._detector_instance.stop()
 
-        try:
-            self._detector_instance.stop()
-        except Exception as exc:
-            raise HandledException("Failure when stopping session") from exc
-        finally:
-            if self._recorder is not None:
-                assert self._recorder.path is not None
-                path = Path(self._recorder.path)
-                self.callback(GeneralMessage(name="saveable_file", data=path))
-                self._recorder = None
-
-            if self.shared_state.replaying:
-                assert self._opened_record is not None
-                self._opened_record.close()
-
-                self._opened_record = None
-                self._replaying_client = None
-
-                self.shared_state.replaying = False
-
-            self._started = False
-            self.broadcast()
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            self.callback(GeneralMessage(name="rate_stats", data=None))
-
-    def _get_next(self) -> None:
-        if not self._started:
-            raise RuntimeError
-
+    def get_next(self) -> None:
         if self._detector_instance is None:
             raise RuntimeError
-
-        try:
-            detector_result = self._detector_instance.get_next()
-        except a121._StopReplay:
-            self.stop_session()
-            return
-        except Exception as exc:
-            try:
-                self.stop_session()
-            except Exception:
-                pass
-
-            raise HandledException("Failed to get_next") from exc
+        detector_result = self._detector_instance.get_next()
 
         processor_result = self._processor_instance.process(result=detector_result)
 
-        assert self._client is not None
-        self.callback(GeneralMessage(name="rate_stats", data=self._client._rate_stats))
+        assert self.client is not None
+        self.callback(GeneralMessage(name="rate_stats", data=self.client._rate_stats))
 
         self.callback(
             GeneralMessage(
@@ -371,17 +257,17 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if self._started:
             raise RuntimeError
 
-        if self._client is None:
+        if self.client is None:
             raise RuntimeError
 
-        if not self._client.connected:
+        if not self.client.connected:
             raise RuntimeError
 
         self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
         try:
             self._detector_instance = Detector(
-                client=self._client,
+                client=self.client,
                 sensor_ids=self.shared_state.sensor_ids,
                 detector_config=self.shared_state.config,
                 context=None,

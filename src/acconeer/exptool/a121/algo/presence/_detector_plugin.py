@@ -5,8 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from pathlib import Path
-from typing import Any, Callable, Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 import attrs
 import numpy as np
@@ -32,15 +31,12 @@ from acconeer.exptool.app.new import (
     BackendLogger,
     ConnectionState,
     GeneralMessage,
-    HandledException,
     Message,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
-    PluginStateMessage,
-    get_temp_h5_path,
     is_task,
 )
 from acconeer.exptool.app.new.ui.plugin_components import (
@@ -64,7 +60,6 @@ class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
     plot_config: PlotConfig = attrs.field(factory=PlotConfig)
-    replaying: bool = attrs.field(default=False)
 
 
 class PluginPresetId(Enum):
@@ -82,11 +77,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key)
 
-        self._started: bool = False
-        self._live_client: Optional[a121.Client] = None
-        self._replaying_client: Optional[a121._ReplayingClient] = None
         self._recorder: Optional[a121.H5Recorder] = None
-        self._opened_record: Optional[a121.H5Record] = None
         self._detector_instance: Optional[Detector] = None
         self._log = BackendLogger.getLogger(__name__)
 
@@ -118,26 +109,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.plot_config = config
         self.broadcast(sync=True)
 
-    @property
-    def _client(self) -> Optional[a121.Client]:
-        if self._replaying_client is not None:
-            return self._replaying_client
-
-        return self._live_client
-
-    def idle(self) -> bool:
-        if self._started:
-            self._get_next()
-            return True
-        else:
-            return False
-
-    def attach_client(self, *, client: Any) -> None:
-        self._live_client = client
-
-    def detach_client(self) -> None:
-        self._live_client = None
-
     @is_task
     def update_config(self, *, config: DetectorConfig) -> None:
         self.shared_state.config = config
@@ -161,69 +132,20 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.config = preset_config()
         self.broadcast(sync=True)
 
-    @is_task
-    def load_from_file(self, *, path: Path) -> None:
-        try:
-            self._load_from_file_setup(path=path)
-        except Exception as exc:
-            self._opened_record = None
-            self._replaying_client = None
-            self.shared_state.replaying = False
-
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            raise HandledException("Could not load from file") from exc
-
-        self.start_session(with_recorder=False)
-
-        self.shared_state.replaying = True
-
-        self.send_status_message(f"<b>Replaying from {path.name}</b>")
-        self.broadcast(sync=True)
-
-    def _load_from_file_setup(self, *, path: Path) -> None:
-        r = a121.open_record(path)
-        assert isinstance(r, a121.H5Record)
-        self._opened_record = r
-        self._replaying_client = a121._ReplayingClient(self._opened_record)
-
-        algo_group = self._opened_record.get_algo_group(self.key)
+    def load_from_record_setup(self, *, record: a121.H5Record) -> None:
+        algo_group = record.get_algo_group(self.key)
         _, config = _load_algo_data(algo_group)
         self.shared_state.config = config
-        self.shared_state.sensor_id = r.sensor_id
+        self.shared_state.sensor_id = record.sensor_id
 
-    @is_task
-    def start_session(self, *, with_recorder: bool = True) -> None:
-        if self._started:
-            raise RuntimeError
-
-        if self._client is None:
-            raise RuntimeError
-
-        if not self._client.connected:
-            raise RuntimeError
-
+    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+        assert self.client
         self._detector_instance = Detector(
-            client=self._client,
+            client=self.client,
             sensor_id=self.shared_state.sensor_id,
             detector_config=self.shared_state.config,
         )
-
-        self.callback(GeneralMessage(name="saveable_file", data=None))
-        if with_recorder:
-            self._recorder = a121.H5Recorder(get_temp_h5_path())
-        else:
-            self._recorder = None
-
-        try:
-            self._detector_instance.start(self._recorder)
-        except Exception as exc:
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            raise HandledException("Could not start") from exc
-
-        self._started = True
-
-        self.broadcast()
-
+        self._detector_instance.start(recorder)
         self.callback(
             GeneralMessage(
                 name="setup",
@@ -235,63 +157,19 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 recipient="plot_plugin",
             )
         )
-        self.callback(PluginStateMessage(state=PluginState.LOADED_BUSY))
 
-    @is_task
-    def stop_session(self) -> None:
-        if not self._started:
-            raise RuntimeError
-
+    def end_session(self) -> None:
         if self._detector_instance is None:
             raise RuntimeError
+        self._detector_instance.stop()
 
-        try:
-            self._detector_instance.stop()
-        except Exception as exc:
-            raise HandledException("Failure when stopping session") from exc
-        finally:
-            if self._recorder is not None:
-                assert self._recorder.path is not None
-                path = Path(self._recorder.path)
-                self.callback(GeneralMessage(name="saveable_file", data=path))
-                self._recorder = None
-
-            if self.shared_state.replaying:
-                assert self._opened_record is not None
-                self._opened_record.close()
-
-                self._opened_record = None
-                self._replaying_client = None
-
-                self.shared_state.replaying = False
-
-            self._started = False
-            self.broadcast()
-            self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            self.callback(GeneralMessage(name="rate_stats", data=None))
-
-    def _get_next(self) -> None:
-        if not self._started:
-            raise RuntimeError
-
+    def get_next(self) -> None:
+        assert self.client
         if self._detector_instance is None:
             raise RuntimeError
+        result = self._detector_instance.get_next()
 
-        try:
-            result = self._detector_instance.get_next()
-        except a121._StopReplay:
-            self.stop_session()
-            return
-        except Exception as exc:
-            try:
-                self.stop_session()
-            except Exception:
-                pass
-
-            raise HandledException("Failed to get_next") from exc
-
-        assert self._client is not None
-        self.callback(GeneralMessage(name="rate_stats", data=self._client._rate_stats))
+        self.callback(GeneralMessage(name="rate_stats", data=self.client._rate_stats))
 
         self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 
