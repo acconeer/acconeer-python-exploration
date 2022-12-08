@@ -5,14 +5,17 @@ from __future__ import annotations
 
 import qtawesome as qta
 
-from PySide6.QtGui import QIntValidator
+from PySide6 import QtCore
+from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (
     QComboBox,
+    QDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QStackedWidget,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -109,29 +112,85 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         self.setLayout(QHBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
 
+        self.layout().addWidget(SerialPortComboBox(app_model, self))
+
+
+class _ConnectSettingsButton(QPushButton):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent, flat=True)
+        self.app_model = app_model
+
+        self.setIcon(qta.icon("fa5s.cog", color=BUTTON_ICON_COLOR))
+        self.setToolTip("Advanced settings")
+
+        self.settings_dialog = _ConnectSettingsDialog(app_model, self)
+
+        app_model.sig_notify.connect(self._on_app_model_update)
+        self.clicked.connect(self._on_click)
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        self.setEnabled(app_model.connection_state == ConnectionState.DISCONNECTED)
+
+    def _on_click(self) -> None:
+        self.settings_dialog.exec()
+
+
+class _ConnectSettingsBaudrate(QWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.app_model = app_model
+        app_model.sig_notify.connect(self._on_app_model_update)
+
         self.baudrate_line_edit = QLineEdit(self)
+        validator = QRegularExpressionValidator(self)
+        # Empty string or integer
+        validator.setRegularExpression(QtCore.QRegularExpression("(^[0-9]+$|^$)"))
+        self.baudrate_line_edit.setValidator(validator)
         self.baudrate_line_edit.setPlaceholderText("auto")
-        self.baudrate_line_edit.setValidator(QIntValidator())
+        self.baudrate_line_edit.textEdited.connect(self._on_text_edit)
         self.baudrate_line_edit.editingFinished.connect(self._on_line_edit)
         self.baudrate_line_edit.setFixedWidth(125)
 
-        self.layout().addWidget(SerialPortComboBox(app_model, self))
-        self.layout().addWidget(QLabel("Baudrate:"))
-        self.layout().addWidget(self.baudrate_line_edit)
+        layout = QHBoxLayout()
+        layout.addWidget(QLabel("Baudrate:"))
+        layout.addWidget(self.baudrate_line_edit)
+
+        self.setLayout(layout)
+        self.setToolTip("Override default baudrate of serial device")
+
+    def _on_text_edit(self) -> None:
+        if not self.baudrate_line_edit.text():
+            self.baudrate_line_edit.setStyleSheet("* {font: italic}")
+        else:
+            self.baudrate_line_edit.setStyleSheet("* {}")
 
     def _on_line_edit(self) -> None:
         baudrate_text = self.baudrate_line_edit.text()
         baudrate = None if baudrate_text == "" else int(baudrate_text)
         self.app_model.set_overridden_baudrate(baudrate)
 
-    def on_app_model_update(self, app_model: AppModel) -> None:
+    def _on_app_model_update(self, app_model: AppModel) -> None:
         if not self.baudrate_line_edit.isModified():
             if app_model.overridden_baudrate is None:
                 self.baudrate_line_edit.setText("")
-                self.baudrate_line_edit.setStyleSheet("* {font: italic}")
             else:
                 self.baudrate_line_edit.setText(str(app_model.overridden_baudrate))
-                self.baudrate_line_edit.setStyleSheet("* {}")
+            self._on_text_edit()
+
+
+class _ConnectSettingsDialog(QDialog):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.app_model = app_model
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(_ConnectSettingsBaudrate(app_model, self))
+
+        self.setWindowTitle("Advanced settings")
+        self.setMinimumWidth(300)
+        self.setLayout(layout)
 
 
 class _SimulatedConnectionWidget(AppModelAwareWidget):
@@ -171,6 +230,7 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.stacked.addWidget(_SimulatedConnectionWidget(app_model, self.stacked))
         self.layout().addWidget(self.stacked)
 
+        self.layout().addWidget(_ConnectSettingsButton(app_model, self))
         self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))
 
         self.layout().addStretch(1)

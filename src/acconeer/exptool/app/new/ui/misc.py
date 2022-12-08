@@ -94,6 +94,7 @@ class CommDeviceComboBox(QComboBox):
         self.app_model = app_model
         app_model.sig_notify.connect(self._on_app_model_update)
         self.currentTextChanged.connect(self._on_change)
+        self.setMinimumWidth(175)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         devices = self._get_available_devices()
@@ -146,10 +147,6 @@ class SerialPortComboBox(CommDeviceComboBox):
 
 
 class USBDeviceComboBox(CommDeviceComboBox):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(app_model, parent)
-        self.setMinimumWidth(175)
-
     def _on_change(self) -> None:
         self.app_model.set_usb_connection_device(self.currentData())
 
