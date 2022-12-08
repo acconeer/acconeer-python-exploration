@@ -113,6 +113,10 @@ class SerialPortComboBox(QComboBox):
             index = self.findData(app_model.serial_connection_port)
             self.setCurrentIndex(index)
 
+            self.setEnabled(self.count() > 0)
+            if self.count() == 0:
+                self.addItem("No device available")
+
 
 class USBDeviceComboBox(QComboBox):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
@@ -138,6 +142,10 @@ class USBDeviceComboBox(QComboBox):
 
             index = self.findData(app_model.usb_connection_device)
             self.setCurrentIndex(index)
+
+            self.setEnabled(self.count() > 0)
+            if self.count() == 0:
+                self.addItem("No device available")
 
 
 class HintObject:
