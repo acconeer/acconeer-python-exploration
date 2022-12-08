@@ -70,7 +70,6 @@ class GenericProcessorBackendPluginBase(
     _processor_instance: Optional[GenericProcessorBase[InputT, ConfigT, ResultT, MetadataT]]
     _recorder: Optional[a121.H5Recorder]
     _started: bool
-    _opened_file: Optional[h5py.File]
     _opened_record: Optional[a121.H5Record]
     _replaying_client: Optional[a121._ReplayingClient]
 
@@ -85,7 +84,6 @@ class GenericProcessorBackendPluginBase(
         self._recorder = None
         self._started = False
         self._replaying_client = None
-        self._opened_file = None
         self._opened_record = None
         self._log = BackendLogger.getLogger(__name__)
         self.restore_defaults()
@@ -149,7 +147,6 @@ class GenericProcessorBackendPluginBase(
         try:
             self._load_from_file_setup(path=path)
         except Exception as exc:
-            self._opened_file = None
             self._opened_record = None
             self._replaying_client = None
             self.shared_state.replaying = False
@@ -165,8 +162,7 @@ class GenericProcessorBackendPluginBase(
         self.broadcast(sync=True)
 
     def _load_from_file_setup(self, *, path: Path) -> None:
-        self._opened_file = h5py.File(path, mode="r")
-        self._opened_record = a121.H5Record(self._opened_file)
+        self._opened_record = a121.H5Record(h5py.File(path, mode="r"))
         self._replaying_client = a121._ReplayingClient(self._opened_record)
 
         self.shared_state.session_config = self._opened_record.session_config
@@ -271,7 +267,6 @@ class GenericProcessorBackendPluginBase(
                 assert self._opened_record is not None
                 self._opened_record.close()
 
-                self._opened_file = None
                 self._opened_record = None
                 self._replaying_client = None
 
