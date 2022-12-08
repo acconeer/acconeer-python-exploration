@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import queue
 import shutil
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Union
 from uuid import UUID
 
 import attrs
@@ -41,7 +42,7 @@ from acconeer.exptool.app.new.backend import (
     PluginStateMessage,
     StatusMessage,
 )
-from acconeer.exptool.app.new.storage import remove_temp_dir
+from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice  # type: ignore[import]
 
 from .plugin_protocols import PlotPluginInterface, ViewPluginInterface
@@ -114,15 +115,74 @@ class _BackendListeningThread(QThread):
         log.debug("Backend listening thread stopping...")
 
 
+def _to_usbdevice(obj: Union[dict, USBDevice]) -> Optional[USBDevice]:
+    if isinstance(obj, dict):
+        return USBDevice.from_dict(obj)
+    return obj
+
+
+def _to_serialdevice(obj: Union[dict, SerialDevice]) -> Optional[SerialDevice]:
+    if isinstance(obj, dict):
+        return SerialDevice.from_dict(obj)
+    return obj
+
+
 @attrs.mutable(kw_only=True)
-class _Config:
-    connection_interface: ConnectionInterface = ConnectionInterface.SERIAL
-    socket_connection_ip: str = ""
-    serial_connection_device: Optional[SerialDevice] = None
-    usb_connection_device: Optional[USBDevice] = None
-    overridden_baudrate: Optional[int] = None
-    autoconnect_enabled: bool = False
-    recording_enabled: bool = True
+class _PersistentState:
+    _FILE_NAME = "app_model_state.json"
+    _ENUMS = {
+        "ConnectionInterface": ConnectionInterface,
+    }
+
+    class Encoder(json.JSONEncoder):
+        def default(self, obj: Any) -> Any:
+            if type(obj) in _PersistentState._ENUMS.values():
+                # An enum existing in _ENUMS will be transformed to:
+                # {"__enum__": "RegisteredEnum.MEMBER"}
+                return {"__enum__": str(obj)}
+            return json.JSONEncoder.default(self, obj)
+
+    @staticmethod
+    def _to_enum(d: dict) -> Any:
+        if "__enum__" in d:
+            # Transform the dict {"__enum__": "RegisteredEnum.MEMBER"}
+            # to the enum RegisteredEnum.MEMBER
+            name, member = d["__enum__"].split(".")
+            return getattr(_PersistentState._ENUMS[name], member)
+        return d
+
+    connection_interface: ConnectionInterface = attrs.field(default=ConnectionInterface.SERIAL)
+    socket_connection_ip: str = attrs.field(default="")
+    serial_connection_device: Optional[SerialDevice] = attrs.field(
+        default=None, converter=_to_serialdevice
+    )
+    usb_connection_device: Optional[USBDevice] = attrs.field(default=None, converter=_to_usbdevice)
+    overridden_baudrate: Optional[int] = attrs.field(default=None)
+    autoconnect_enabled: bool = attrs.field(default=False)
+    recording_enabled: bool = attrs.field(default=True)
+
+    def to_dict(self) -> dict[str, Any]:
+        return attrs.asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> _PersistentState:
+        return cls(**d)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), cls=self.Encoder)
+
+    @classmethod
+    def from_json(cls, json_str: str) -> _PersistentState:
+        return cls.from_dict(json.loads(json_str, object_hook=_PersistentState._to_enum))
+
+    @classmethod
+    def from_config_file(cls) -> _PersistentState:
+        return cls.from_json((get_config_dir() / cls._FILE_NAME).read_text(encoding="utf-8"))
+
+    def to_config_file(self) -> None:
+        (get_config_dir() / _PersistentState._FILE_NAME).write_text(
+            self.to_json(), encoding="utf-8"
+        )
 
 
 class AppModel(QObject):
@@ -163,7 +223,12 @@ class AppModel(QObject):
 
         self._a121_server_info: Optional[a121.ServerInfo] = None
 
-        self._config = _Config()
+        try:
+            self._persistent_state = _PersistentState.from_config_file()
+        except Exception as exc:
+            if not isinstance(exc, FileNotFoundError):
+                log.error("Config file loading failed, using defaults")
+            self._persistent_state = _PersistentState()
 
         self.plugins = plugins
         self.plugin = None
@@ -173,7 +238,8 @@ class AppModel(QObject):
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_warning = None
         self.plugin_state = PluginState.UNLOADED
-
+        self._serial_connection_device = None
+        self._usb_connection_device = None
         self.available_serial_devices = []
         self.available_usb_devices = []
 
@@ -186,6 +252,11 @@ class AppModel(QObject):
     def stop(self) -> None:
 
         WAIT_FOR_UNLOAD_TIMEOUT = 1.0
+
+        try:
+            self._persistent_state.to_config_file()
+        except Exception:
+            log.error("Config saving failed")
 
         self.load_plugin(None)
         if self.connection_state in [ConnectionState.CONNECTING, ConnectionState.CONNECTED]:
@@ -383,13 +454,14 @@ class AppModel(QObject):
         ):
             self.disconnect_client()
 
-        self._config.serial_connection_device, recognized = self._select_new_device(
+        serial_connection_device, recognized = self._select_new_device(
             self.available_serial_devices,
             serial_devices,
-            self.serial_connection_device,
+            self._persistent_state.serial_connection_device,
         )
-
+        self.set_serial_connection_device(serial_connection_device)
         self.available_serial_devices = serial_devices
+
         connect = False
 
         if recognized:
@@ -405,31 +477,28 @@ class AppModel(QObject):
                     f"Recognized serial port: {self.serial_connection_device}"
                 )
 
-        if usb_devices is not None:
-            self._config.usb_connection_device, recognized = self._select_new_device(
-                self.available_usb_devices, usb_devices, self.usb_connection_device
-            )
+        usb_connection_device, recognized = self._select_new_device(
+            self.available_usb_devices,
+            usb_devices,
+            self._persistent_state.usb_connection_device,
+        )
+        self.set_usb_connection_device(usb_connection_device)
+        self.available_usb_devices = usb_devices
 
-            self.available_usb_devices = usb_devices
-
-            if recognized:
-                assert self.usb_connection_device is not None
-                self.set_connection_interface(ConnectionInterface.USB)
-                if self._is_usb_device_unflashed(self.usb_connection_device):
-                    connect = False
-                    self.send_warning_message(
-                        f"Found unflashed USB device: {self.usb_connection_device}"
-                    )
-                elif self._is_usb_device_inaccessible(self.usb_connection_device):
-                    connect = False
-                    self.send_warning_message(
-                        f"Found inaccessible USB device: {self.usb_connection_device}"
-                    )
-                else:
-                    connect = True
-                    self.send_status_message(
-                        f"Recognized USB device: {self.usb_connection_device}"
-                    )
+        if recognized:
+            assert usb_connection_device is not None
+            self.set_connection_interface(ConnectionInterface.USB)
+            if self._is_usb_device_unflashed(usb_connection_device):
+                connect = False
+                self.send_warning_message(f"Found unflashed USB device: {usb_connection_device}")
+            elif self._is_usb_device_inaccessible(usb_connection_device):
+                connect = False
+                self.send_warning_message(
+                    f"Found inaccessible USB device: {usb_connection_device}"
+                )
+            else:
+                connect = True
+                self.send_status_message(f"Recognized USB device: {usb_connection_device}")
 
         if connect and self.autoconnect_enabled:
             self._autoconnect()
@@ -452,6 +521,12 @@ class AppModel(QObject):
             return None, False
 
         added_devices = [dev for dev in new_devices if dev not in old_devices]
+
+        # This can happen in the first port update when the current device is
+        # restored from persistent state
+        if current_port in added_devices:
+            return current_port, False
+
         for device in added_devices:
             if device.recognized:
                 return device, True
@@ -542,46 +617,48 @@ class AppModel(QObject):
 
     @property
     def connection_interface(self) -> ConnectionInterface:
-        return self._config.connection_interface
+        return self._persistent_state.connection_interface
 
     @property
     def socket_connection_ip(self) -> str:
-        return self._config.socket_connection_ip
+        return self._persistent_state.socket_connection_ip
 
     @property
     def serial_connection_device(self) -> Optional[SerialDevice]:
-        return self._config.serial_connection_device
+        return self._serial_connection_device
 
     @property
     def usb_connection_device(self) -> Optional[USBDevice]:
-        return self._config.usb_connection_device
+        return self._usb_connection_device
 
     @property
     def autoconnect_enabled(self) -> bool:
-        return self._config.autoconnect_enabled
+        return self._persistent_state.autoconnect_enabled
 
     @property
     def overridden_baudrate(self) -> Optional[int]:
-        return self._config.overridden_baudrate
+        return self._persistent_state.overridden_baudrate
 
     @property
     def recording_enabled(self) -> bool:
-        return self._config.recording_enabled
+        return self._persistent_state.recording_enabled
 
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
-        self._config.connection_interface = connection_interface
+        self._persistent_state.connection_interface = connection_interface
         self.broadcast()
 
     def set_socket_connection_ip(self, ip: str) -> None:
-        self._config.socket_connection_ip = ip
+        self._persistent_state.socket_connection_ip = ip
         self.broadcast()
 
     def set_serial_connection_device(self, device: Optional[SerialDevice]) -> None:
-        self._config.serial_connection_device = device
+        self._serial_connection_device = device
+        self._persistent_state.serial_connection_device = device
         self.broadcast()
 
     def set_usb_connection_device(self, device: Optional[USBDevice]) -> None:
-        self._config.usb_connection_device = device
+        self._usb_connection_device = device
+        self._persistent_state.usb_connection_device = device
         self.broadcast()
 
     def set_plugin_state(self, state: PluginState) -> None:
@@ -589,15 +666,15 @@ class AppModel(QObject):
         self.broadcast()
 
     def set_autoconnect_enabled(self, autoconnect_enabled: bool) -> None:
-        self._config.autoconnect_enabled = autoconnect_enabled
+        self._persistent_state.autoconnect_enabled = autoconnect_enabled
         self.broadcast()
 
     def set_overridden_baudrate(self, overridden_baudrate: Optional[int]) -> None:
-        self._config.overridden_baudrate = overridden_baudrate
+        self._persistent_state.overridden_baudrate = overridden_baudrate
         self.broadcast()
 
     def set_recording_enabled(self, recording_enabled: bool) -> None:
-        self._config.recording_enabled = recording_enabled
+        self._persistent_state.recording_enabled = recording_enabled
         self.broadcast()
 
     def _unload_current_plugin(self) -> None:
