@@ -100,7 +100,7 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
 
         self.baudrate_line_edit = QLineEdit(self)
-        self.baudrate_line_edit.setPlaceholderText("default: 115200")
+        self.baudrate_line_edit.setPlaceholderText("auto")
         self.baudrate_line_edit.setValidator(QIntValidator())
         self.baudrate_line_edit.textChanged.connect(self._on_line_edit_changed)
         self.baudrate_line_edit.setFixedWidth(125)

@@ -177,7 +177,7 @@ class Client(AgnosticClient):
         if not self._protocol_overridden:
             self._update_protocol_based_on_servers_rss_version()
 
-        self._override_baudrate_if_applicable()
+        self._update_baudrate()
 
     def _update_protocol_based_on_servers_rss_version(self) -> None:
         if issubclass(self._protocol, ExplorationProtocol):
@@ -189,32 +189,32 @@ class Client(AgnosticClient):
             else:
                 self._protocol = new_protocol
 
-    def _override_baudrate_if_applicable(self) -> None:
+    def _update_baudrate(self) -> None:
+        # Only Change baudrate for AdaptedSerialLink
+        if not isinstance(self._link, AdaptedSerialLink):
+            return
+
         DEFAULT_BAUDRATE = 115200
         overridden_baudrate = self.client_info.override_baudrate
         max_baudrate = self.server_info.max_baudrate
+        baudrate_to_use = self.server_info.max_baudrate or DEFAULT_BAUDRATE
 
-        if (
-            overridden_baudrate is None
-            or overridden_baudrate == DEFAULT_BAUDRATE
-            or not isinstance(self._link, AdaptedSerialLink)
-        ):
+        # Override baudrate?
+        if overridden_baudrate is not None and max_baudrate is not None:
+            # Valid Baudrate?
+            if overridden_baudrate > max_baudrate:
+                raise ClientError(f"Cannot set a baudrate higher than {max_baudrate}")
+            elif overridden_baudrate < DEFAULT_BAUDRATE:
+                raise ClientError(f"Cannot set a baudrate lower than {DEFAULT_BAUDRATE}")
+            baudrate_to_use = overridden_baudrate
+
+        # Do not change baudrate if DEFAULT_BAUDRATE
+        if baudrate_to_use == DEFAULT_BAUDRATE:
             return
 
-        if max_baudrate is None and overridden_baudrate is not None:
-            self.disconnect()
-            raise ClientError("Server does not support changing baudrate")
-
-        if (
-            max_baudrate is not None
-            and overridden_baudrate is not None
-            and overridden_baudrate > max_baudrate
-        ):
-            raise ClientError(f"Cannot set a baudrate higher than {max_baudrate}")
-
-        self._link.send(self._protocol.set_baudrate_command(overridden_baudrate))
+        self._link.send(self._protocol.set_baudrate_command(baudrate_to_use))
 
         self._apply_messages_until_message_type_encountered(messages.SetBaudrateResponse)
         self._baudrate_ack_received = False
 
-        self._link.baudrate = overridden_baudrate
+        self._link.baudrate = baudrate_to_use
