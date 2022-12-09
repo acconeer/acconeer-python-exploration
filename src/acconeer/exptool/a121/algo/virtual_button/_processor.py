@@ -336,7 +336,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def _update_cfar_buffer(self) -> None:
         self._cfar_ref_buf = np.roll(self._cfar_ref_buf, -self._sweeps_per_frame, axis=0)
-        self._cfar_ref_buf[-self._sweeps_per_frame - 1 : -1, :] = self._cfar_guard_buf
+        self._cfar_ref_buf[-self._sweeps_per_frame :, :] = self._cfar_guard_buf
         self._frames_since_last_cal = 0
 
     @staticmethod
