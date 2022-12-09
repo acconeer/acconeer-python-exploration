@@ -45,9 +45,31 @@ def get_first_match_in_string(pattern: str, string: str, *, group: int = 0) -> O
     return None if (match is None) else match.group(group)
 
 
+def get_number_of_matches_in_string(pattern: str, string: str) -> int:
+    match = re.findall(pattern, string)
+
+    return len(match)
+
+
 def main():
     VERSION_PATTERN = r"v?\d+\.\d+\.\d+"
     FILE_PATH = "CHANGELOG.md"
+    UNRELEASED_FILE_PATH = "UNRELEASED_CHANGELOG.md"
+    status = True
+
+    changelog = Path(FILE_PATH)
+    unreleased_changelog = Path(UNRELEASED_FILE_PATH)
+
+    if get_number_of_matches_in_string(r"## Unreleased", changelog.read_text()) > 0:
+        print("Changelog contains illegal 'Unreleased' headline")
+        status = False
+
+    if (
+        get_number_of_matches_in_string(r"## " + VERSION_PATTERN, unreleased_changelog.read_text())
+        > 0
+    ):
+        print("Unreleased contains illegal version tag headline")
+        status = False
 
     most_recent_tag = get_most_recent_git_tag()
     most_recent_tag_commit_sha = get_commit_sha_of_git_tag(most_recent_tag)
@@ -55,24 +77,30 @@ def main():
 
     is_current_commit_tagged = most_recent_tag_commit_sha == current_commit_sha
     if not is_current_commit_tagged:
-        exit(0)
+        exit(0 if status else 1)
 
     if Version(most_recent_tag).is_prerelease:
-        exit(0)
+        exit(0 if status else 1)
 
     print(f"Current commit ({current_commit_sha[:7]}) is tagged ({most_recent_tag}).")
 
-    changelog = Path(FILE_PATH)
     first_match = get_first_match_in_string(VERSION_PATTERN, changelog.read_text())
     print(f'Found "{first_match}" in {FILE_PATH}', end=" ... ")
 
     is_exact_match = first_match == most_recent_tag
     if is_exact_match:
         print(f"Which matches {most_recent_tag} exactly.")
-        exit(0)
     else:
         print(f'Which does not match "{most_recent_tag}".')
-        exit(1)
+        status = False
+
+    empty_unreleased_changelog = "# Unreleased Changelog\n\n## Unreleased\n"
+
+    if unreleased_changelog.read_text() != empty_unreleased_changelog:
+        print("Unreleased changelog is not cleared")
+        status = False
+
+    exit(0 if status else 1)
 
 
 if __name__ == "__main__":
