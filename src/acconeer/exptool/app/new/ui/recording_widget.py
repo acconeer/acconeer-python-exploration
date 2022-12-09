@@ -59,6 +59,7 @@ class FileButton(QPushButton):
         text: str,
         icon: QtGui.QIcon,
         shortcut: Optional[str],
+        tooltip: Optional[str],
         parent: QWidget,
     ) -> None:
         super().__init__(parent)
@@ -70,7 +71,11 @@ class FileButton(QPushButton):
 
         if shortcut is not None:
             self.setShortcut(shortcut)
-            self.setToolTip(f"Shortcut: {shortcut}")
+            newline = "\n"
+            tooltip = f"{tooltip or ''}{newline if tooltip else ''}Shortcut: {shortcut}"
+
+        if tooltip is not None:
+            self.setToolTip(tooltip)
 
         self.clicked.connect(self._on_click)
 
@@ -84,6 +89,7 @@ class LoadFileButton(FileButton):
             "Load from file",
             qta.icon("fa.folder-open", color=BUTTON_ICON_COLOR),
             "Ctrl+o",
+            "Load a previously recorded and saved session and play it back",
             parent,
         )
         app_model.sig_notify.connect(self._on_app_model_update)
@@ -112,6 +118,7 @@ class SaveFileButton(FileButton):
             "Save to file",
             qta.icon("mdi.content-save", color=BUTTON_ICON_COLOR),
             "Ctrl+s",
+            "Save the current session",
             parent,
         )
         app_model.sig_notify.connect(self._on_app_model_update)
