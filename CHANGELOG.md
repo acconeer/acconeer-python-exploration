@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Unplugging of USB device not detected
+
 ## v5.6.0
 
 ### Added

@@ -375,7 +375,6 @@ class AppModel(QObject):
             )
             or (
                 self._config.connection_interface == ConnectionInterface.USB
-                and usb_devices
                 and self._config.usb_connection_device not in usb_devices
             )
         ):
