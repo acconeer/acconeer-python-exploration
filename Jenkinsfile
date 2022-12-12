@@ -1,5 +1,5 @@
 gerritReview labels: [Verified: 0], message: "Test started: ${env.BUILD_URL}"
-@Library('sw-jenkins-library@b303b82fe823acd2ef8d0f77498e87a4773aa8ea') _
+@Library('sw-jenkins-library@f8abd2e69ceef2d37e8ab7f1fbc294e34ac04670') _
 
 pipeline {
     options { buildDiscarder(logRotator(daysToKeepStr: '14', numToKeepStr: '20')) }
