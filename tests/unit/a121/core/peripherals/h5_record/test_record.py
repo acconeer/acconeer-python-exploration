@@ -41,7 +41,7 @@ def test_session_config(ref_record: a121.Record, ref_session_config: a121.Sessio
 
 def test_extended_metadata(ref_record: a121.Record, ref_metadata: a121.Metadata) -> None:
     for group in ref_record.extended_metadata:
-        for sensor_id, metadata in group.items():
+        for _sensor_id, metadata in group.items():
             assert metadata == ref_metadata
 
 
@@ -62,7 +62,7 @@ def test_extended_results(
 ) -> None:
     for measurement in ref_record.extended_results:
         for group in measurement:
-            for sensor_id, result in group.items():
+            for _sensor_id, result in group.items():
                 np.testing.assert_array_equal(result._frame, ref_frame_raw)
                 np.testing.assert_array_equal(result.frame, ref_frame)
 

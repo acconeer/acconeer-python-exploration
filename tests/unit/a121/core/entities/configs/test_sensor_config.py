@@ -389,7 +389,7 @@ def test_proxy_parameter_name_is_mentioned_in_too_many_subsweeps_error(proxy_par
                 f"{proxy_parameter_name!r} was not mentioned in the error: {error_message!r}"
             )
     else:
-        assert False
+        raise AssertionError
 
 
 def test_invalid_attribute():

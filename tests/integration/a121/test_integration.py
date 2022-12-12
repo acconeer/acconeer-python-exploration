@@ -54,6 +54,6 @@ class TestMockExplorationServerDataParsing:
             client.stop_session()
 
             assert isinstance(result, list)
-            for _, _, result in utils.iterate_extended_structure(result):
-                for sweep in result.frame:
+            for _, _, value in utils.iterate_extended_structure(result):
+                for sweep in value.frame:
                     np.testing.assert_equal(sweep, expected_sweep)

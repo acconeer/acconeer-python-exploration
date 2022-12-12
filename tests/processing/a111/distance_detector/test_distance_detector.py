@@ -115,7 +115,7 @@ def get_calibration(parameter_set=None):
         output = processor.process(data.squeeze(0), data_info[0])
         if "new_calibration" in output:
             return output["new_calibration"]
-    assert False
+    raise AssertionError
 
 
 def save_output(file, output):

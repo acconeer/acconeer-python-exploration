@@ -114,7 +114,7 @@ def save_output(file, output):
                 ) from te
 
 
-def compare_dicts(expected, actual, keys={}, exact=False) -> bool:
+def compare_dicts(expected, actual, keys=None, exact=False) -> bool:
     if not keys:
         keys = expected.keys()
         assert expected.keys() == actual.keys()

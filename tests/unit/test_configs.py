@@ -9,7 +9,9 @@ from acconeer.exptool import a111
 
 
 def test_mode_to_config_map():
-    set(a111.Mode.__members__) == set(a111._configs.MODE_TO_CONFIG_CLASS_MAP.keys())
+    assert set(a111.Mode.__members__) == set(
+        member.name for member in a111._configs.MODE_TO_CONFIG_CLASS_MAP
+    )
 
 
 def test_value_get_set():

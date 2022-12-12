@@ -184,8 +184,8 @@ def ref_record_file(
         )
 
         calibrations_group = session_group.create_group("calibrations")
-        for group_id, group in enumerate(ref_structure):
-            for entry_id, sensor_id in enumerate(group):
+        for group in ref_structure:
+            for sensor_id in group:
                 sensor_group_name = f"sensor_{sensor_id}"
                 if sensor_group_name not in calibrations_group.keys():
                     sensor_calibration_group = calibrations_group.create_group(sensor_group_name)
