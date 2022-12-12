@@ -13,7 +13,7 @@ from acconeer.exptool.a121.algo.virtual_button import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
-    get_near_sensor_config,
+    get_close_sensor_config,
 )
 
 
@@ -26,7 +26,7 @@ def main():
 
     processor_config = ProcessorConfig()
 
-    sensor_config = get_near_sensor_config()
+    sensor_config = get_close_sensor_config()
 
     metadata = client.setup_session(sensor_config)
     client.start_session()
