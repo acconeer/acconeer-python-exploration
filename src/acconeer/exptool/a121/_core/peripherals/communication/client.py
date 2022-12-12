@@ -3,18 +3,29 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, Union
+from typing import Any, List, Optional, Type, Union
 
 import attrs
 
 import acconeer.exptool as et
-from acconeer.exptool.a121._core.entities import ClientInfo
+from acconeer.exptool.a121._core.entities import (
+    ClientInfo,
+    Metadata,
+    Result,
+    SensorCalibration,
+    SensorConfig,
+    ServerInfo,
+    SessionConfig,
+)
 from acconeer.exptool.a121._core.mediators import (
     AgnosticClient,
     BufferedLink,
+    ClientBase,
     ClientError,
     CommunicationProtocol,
+    Recorder,
 )
+from acconeer.exptool.a121._rate_calc import _RateStats
 from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
 
 from .exploration_protocol import ExplorationProtocol, get_exploration_protocol, messages
@@ -109,9 +120,9 @@ def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
     raise ClientError(f"Cannot auto detect:{error_message}")
 
 
-class Client(AgnosticClient):
+class Client(ClientBase):
     _protocol_overridden: bool
-    _client_info: ClientInfo
+    _real_client: ClientBase
 
     def __init__(
         self,
@@ -140,21 +151,16 @@ class Client(AgnosticClient):
             protocol = _override_protocol
             self._protocol_overridden = True
 
-        self._client_info = ClientInfo(
+        client_info = ClientInfo(
             ip_address=ip_address,
             override_baudrate=override_baudrate,
             serial_port=serial_port,
             usb_device=usb_device,
         )
 
-        super().__init__(
-            link=link_factory(self._client_info),
-            protocol=protocol,
+        self._real_client = AgnosticClient(
+            client_info=client_info, link=link_factory(client_info), protocol=protocol
         )
-
-    @property
-    def client_info(self) -> ClientInfo:
-        return self._client_info
 
     def connect(self) -> None:
         # This function extends ``AgnosticClient.connect`` by adding a prologue and epilogue.
@@ -167,31 +173,47 @@ class Client(AgnosticClient):
         # Epilogue:
         # 1. Handles a hot-swap of protocol based on the (now) connected server's version.
         # 2. if applicable: sets the overriden baudrate
-        try:
-            super().connect()
-        except NullLinkError:
-            self._client_info = autodetermine_client_link(self._client_info)
-            self._link = link_factory(self.client_info)
-            super().connect()
+        if isinstance(self._real_client, AgnosticClient):
+            try:
+                self._real_client.connect()
+            except NullLinkError:
+                self._real_client._client_info = autodetermine_client_link(
+                    self._real_client._client_info
+                )
+                self._real_client._link = link_factory(self._real_client.client_info)
+                self._real_client.connect()
 
-        if not self._protocol_overridden:
-            self._update_protocol_based_on_servers_rss_version()
+            if not self._protocol_overridden:
+                self._update_protocol_based_on_servers_rss_version()
 
-        self._update_baudrate()
+                self._update_baudrate()
+        else:
+            raise ClientError("Unknown client type")
+
+    def __enter__(self) -> Client:
+        self._real_client.connect()
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self._real_client.disconnect()
 
     def _update_protocol_based_on_servers_rss_version(self) -> None:
-        if issubclass(self._protocol, ExplorationProtocol):
-            try:
-                new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
-            except Exception:
-                self.disconnect()
-                raise
-            else:
-                self._protocol = new_protocol
+        if isinstance(self._real_client, AgnosticClient):
+            if issubclass(self._real_client._protocol, ExplorationProtocol):
+                try:
+                    new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+                except Exception:
+                    self.disconnect()
+                    raise
+                else:
+                    self._real_client._protocol = new_protocol
 
     def _update_baudrate(self) -> None:
+        if not isinstance(self._real_client, AgnosticClient):
+            return
+
         # Only Change baudrate for AdaptedSerialLink
-        if not isinstance(self._link, AdaptedSerialLink):
+        if not isinstance(self._real_client._link, AdaptedSerialLink):
             return
 
         DEFAULT_BAUDRATE = 115200
@@ -212,9 +234,73 @@ class Client(AgnosticClient):
         if baudrate_to_use == DEFAULT_BAUDRATE:
             return
 
-        self._link.send(self._protocol.set_baudrate_command(baudrate_to_use))
+        if isinstance(self._real_client, AgnosticClient):
+            self._real_client._link.send(
+                self._real_client._protocol.set_baudrate_command(baudrate_to_use)
+            )
 
-        self._apply_messages_until_message_type_encountered(messages.SetBaudrateResponse)
-        self._baudrate_ack_received = False
+            self._real_client._apply_messages_until_message_type_encountered(
+                messages.SetBaudrateResponse
+            )
+            self._baudrate_ack_received = False
 
-        self._link.baudrate = baudrate_to_use
+            self._real_client._link.baudrate = baudrate_to_use
+
+    def setup_session(
+        self,
+        config: Union[SensorConfig, SessionConfig],
+        calibrations: Optional[dict[int, SensorCalibration]] = None,
+    ) -> Union[Metadata, list[dict[int, Metadata]]]:
+        return self._real_client.setup_session(config, calibrations)
+
+    def start_session(self, recorder: Optional[Recorder] = None) -> None:
+        self._real_client.start_session(recorder)
+
+    def get_next(self) -> Union[Result, list[dict[int, Result]]]:
+        return self._real_client.get_next()
+
+    def stop_session(self) -> Any:
+        return self._real_client.stop_session()
+
+    def disconnect(self) -> None:
+        self._real_client.disconnect()
+
+    @property
+    def connected(self) -> bool:
+        return self._real_client.connected
+
+    @property
+    def session_is_setup(self) -> bool:
+        return self._real_client.session_is_setup
+
+    @property
+    def session_is_started(self) -> bool:
+        return self._real_client.session_is_started
+
+    @property
+    def server_info(self) -> ServerInfo:
+        return self._real_client.server_info
+
+    @property
+    def client_info(self) -> ClientInfo:
+        return self._real_client.client_info
+
+    @property
+    def session_config(self) -> SessionConfig:
+        return self._real_client.session_config
+
+    @property
+    def extended_metadata(self) -> list[dict[int, Metadata]]:
+        return self._real_client.extended_metadata
+
+    @property
+    def calibrations(self) -> dict[int, SensorCalibration]:
+        return self._real_client.calibrations
+
+    @property
+    def calibrations_provided(self) -> dict[int, bool]:
+        return self._real_client.calibrations_provided
+
+    @property
+    def _rate_stats(self) -> _RateStats:
+        return self._real_client._rate_stats

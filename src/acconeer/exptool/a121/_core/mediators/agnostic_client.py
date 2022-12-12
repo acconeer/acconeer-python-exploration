@@ -42,6 +42,7 @@ log = logging.getLogger(__name__)
 
 
 class AgnosticClient(AgnosticClientFriends, ClientBase):
+    _client_info: ClientInfo
     _link: BufferedLink
     _default_link_timeout: float
     _link_timeout: float
@@ -62,7 +63,10 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
     _message_stream: Iterator[Message]
     _log_queue: list[ServerLogMessage]
 
-    def __init__(self, link: BufferedLink, protocol: Type[CommunicationProtocol]) -> None:
+    def __init__(
+        self, client_info: ClientInfo, link: BufferedLink, protocol: Type[CommunicationProtocol]
+    ) -> None:
+        self._client_info = client_info
         self._link = link
         self._protocol = protocol
         self._recorder = None
@@ -338,13 +342,6 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
         self._log_queue.clear()
         self._link.disconnect()
 
-    def __enter__(self) -> AgnosticClient:
-        self.connect()
-        return self
-
-    def __exit__(self, *_: Any) -> None:
-        self.disconnect()
-
     @property
     def connected(self) -> bool:
         return self._sensor_infos != {} and self._system_info is not None
@@ -373,7 +370,7 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
 
     @property
     def client_info(self) -> ClientInfo:
-        return ClientInfo()
+        return self._client_info
 
     @property
     def session_config(self) -> SessionConfig:
