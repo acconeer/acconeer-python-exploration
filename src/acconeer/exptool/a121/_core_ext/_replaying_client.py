@@ -7,7 +7,7 @@ import time
 from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 from acconeer.exptool.a121 import (
-    Client,
+    ClientBase,
     ClientError,
     ClientInfo,
     Metadata,
@@ -26,7 +26,7 @@ class _StopReplay(Exception):
     pass
 
 
-class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
+class _ReplayingClient(ClientBase):
     _rate_stats_calc: Optional[_RateCalculator]
 
     def __init__(self, record: Record):
@@ -37,6 +37,20 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
         ] = None
         self._origin_time: Optional[float] = None
         self._rate_stats_calc = None
+
+    def _assert_connected(self) -> None:
+        if not self.connected:
+            raise ClientError("Client is not connected.")
+
+    def _assert_session_setup(self) -> None:
+        self._assert_connected()
+        if not self.session_is_setup:
+            raise ClientError("Session is not set up.")
+
+    def _assert_session_started(self) -> None:
+        self._assert_session_setup()
+        if not self.session_is_started:
+            raise ClientError("Session is not started.")
 
     def connect(self) -> None:
         pass
@@ -145,6 +159,14 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
     @property
     def extended_metadata(self) -> list[dict[int, Metadata]]:
         return self._record.extended_metadata
+
+    @property
+    def calibrations(self) -> dict[int, SensorCalibration]:
+        return self._record.calibrations
+
+    @property
+    def calibrations_provided(self) -> dict[int, bool]:
+        return self._record.calibrations_provided
 
     @property
     def _rate_stats(self) -> _RateStats:

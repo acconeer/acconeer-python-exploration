@@ -31,6 +31,7 @@ from acconeer.exptool.a121._core.utils import (
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
+from .client_base import ClientBase, ClientError
 from .communication_protocol import CommunicationProtocol
 from .link import BufferedLink
 from .message import AgnosticClientFriends, Message, SystemInfoDict
@@ -40,11 +41,7 @@ from .recorder import Recorder
 log = logging.getLogger(__name__)
 
 
-class ClientError(Exception):
-    pass
-
-
-class AgnosticClient(AgnosticClientFriends):
+class AgnosticClient(AgnosticClientFriends, ClientBase):
     _link: BufferedLink
     _default_link_timeout: float
     _link_timeout: float
@@ -165,11 +162,6 @@ class AgnosticClient(AgnosticClientFriends):
             self._assert_deadline_not_reached(deadline)
 
     def connect(self) -> None:
-        """Connects to the specified host.
-
-        :raises: Exception if the host cannot be connected to.
-        :raises: ClientError if server has wrong sensor generation (e.g. "a111")
-        """
         self._default_link_timeout = self._link.timeout
         self._link_timeout = self._default_link_timeout
 
@@ -211,19 +203,6 @@ class AgnosticClient(AgnosticClientFriends):
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
-        """Sets up the session specified by ``config``.
-
-        If the Client is not already connected, it will connect before setting up the session.
-
-        :param config: The session to set up.
-        :param calibrations: An optional dict with :class:`SensorCalibration` for the session.
-        :raises:
-            ``ValueError`` if the config is invalid.
-
-        :returns:
-            ``Metadata`` if ``config.extended is False``,
-            ``list[dict[int, Metadata]]`` otherwise.
-        """
         if not self.connected:
             self.connect()
 
@@ -270,14 +249,6 @@ class AgnosticClient(AgnosticClientFriends):
             return unextend(self._metadata)
 
     def start_session(self, recorder: Optional[Recorder] = None) -> None:
-        """Starts the already set up session.
-
-        After this call, the server starts streaming data to the client.
-
-        :param recorder:
-            An optional ``Recorder``, which samples every ``get_next()``
-        :raises: ``ClientError`` if ``Client``'s  session is not set up.
-        """
         self._assert_session_setup()
 
         if self.session_is_started:
@@ -310,14 +281,6 @@ class AgnosticClient(AgnosticClientFriends):
         self._rate_stats_calc = _RateCalculator(self.session_config, self._metadata)
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
-        """Gets results from the server.
-
-        :returns:
-            A ``Result`` if the setup ``SessionConfig.extended is False``,
-            ``list[dict[int, Result]]`` otherwise.
-        :raises:
-            ``ClientError`` if ``Client``'s session is not started.
-        """
         self._assert_session_started()
 
         self._apply_messages_until(lambda: len(self._result_queue) > 0)
@@ -335,13 +298,6 @@ class AgnosticClient(AgnosticClientFriends):
             return unextend(extended_results)
 
     def stop_session(self) -> Any:
-        """Stops an on-going session
-
-        :returns:
-            The return value of the passed ``Recorder.stop()`` passed in ``start_session``.
-        :raises:
-            ``ClientError`` if ``Client``'s session is not started.
-        """
         self._assert_session_started()
 
         self._link.send(self._protocol.stop_streaming_command())
@@ -369,8 +325,6 @@ class AgnosticClient(AgnosticClientFriends):
         return recorder_result
 
     def disconnect(self) -> None:
-        """Disconnects the client from the host."""
-
         # TODO: Make sure this cleans up corner-cases (like lost connection)
         #       to not hog resources.
 
@@ -393,23 +347,18 @@ class AgnosticClient(AgnosticClientFriends):
 
     @property
     def connected(self) -> bool:
-        """Whether this Client is connected."""
-
         return self._sensor_infos != {} and self._system_info is not None
 
     @property
     def session_is_setup(self) -> bool:
-        """Whether this Client has a session set up."""
         return self._metadata is not None
 
     @property
     def session_is_started(self) -> bool:
-        """Whether this Client's session is started."""
         return self._session_is_started
 
     @property
     def server_info(self) -> ServerInfo:
-        """The ``ServerInfo``."""
         self._assert_connected()
 
         assert self._system_info is not None  # Should never happend if client is connected
@@ -424,42 +373,22 @@ class AgnosticClient(AgnosticClientFriends):
 
     @property
     def client_info(self) -> ClientInfo:
-        """The ``ClientInfo``."""
         return ClientInfo()
 
     @property
     def session_config(self) -> SessionConfig:
-        """The :class:`SessionConfig` for the current session"""
-
         self._assert_session_setup()
         assert self._session_config is not None  # Should never happen if session is setup
         return self._session_config
 
     @property
     def extended_metadata(self) -> list[dict[int, Metadata]]:
-        """The extended :class:`Metadata` for the current session"""
-
         self._assert_session_setup()
         assert self._metadata is not None  # Should never happen if session is setup
         return self._metadata
 
     @property
     def calibrations(self) -> dict[int, SensorCalibration]:
-        """
-        Returns a dict with a :class:`SensorCalibration` per used
-        sensor for the current session:
-
-        For example, if session_setup was called with
-
-        .. code-block:: python
-
-            client.setup_session(
-                SessionConfig({1: SensorConfig(), 3: SensorConfig()}),
-            )
-
-        this attribute will return {1: SensorCalibration(...), 3: SensorCalibration(...)}
-        """
-
         self._assert_session_setup()
 
         if not self._sensor_calibrations:
@@ -469,20 +398,6 @@ class AgnosticClient(AgnosticClientFriends):
 
     @property
     def calibrations_provided(self) -> dict[int, bool]:
-        """
-        Returns whether a calibration was provided for each sensor in
-        setup_session. For example, if setup_session was called with
-
-        .. code-block:: python
-
-            client.setup_session(
-                SessionConfig({1: SensorConfig(), 2: SensorConfig()}),
-                calibrations={2: SensorCalibration(...)},
-            )
-
-        this attribute will return ``{1: False, 2: True}``
-        """
-
         return self._calibrations_provided
 
     @property

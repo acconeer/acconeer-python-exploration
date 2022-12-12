@@ -101,7 +101,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             return False
 
     @property
-    def client(self) -> Optional[a121.Client]:
+    def client(self) -> Optional[a121.ClientBase]:
         if self._replaying_client is not None:
             return self._replaying_client
 

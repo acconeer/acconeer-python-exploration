@@ -25,7 +25,7 @@ from .entities import (
     complex_array_to_int16_complex,
     int16_complex_array_to_complex,
 )
-from .mediators import ClientError, Recorder
+from .mediators import ClientBase, ClientError, Recorder
 from .peripherals import (
     _H5PY_STR_DTYPE,
     Client,

@@ -159,7 +159,7 @@ class Detector:
     def __init__(
         self,
         *,
-        client: a121.Client,
+        client: a121.ClientBase,
         sensor_id: int,
         detector_config: DetectorConfig,
     ) -> None:

@@ -8,6 +8,7 @@ from ._core import (
     _H5PY_STR_DTYPE,
     PRF,
     Client,
+    ClientBase,
     ClientError,
     ClientInfo,
     H5Record,
