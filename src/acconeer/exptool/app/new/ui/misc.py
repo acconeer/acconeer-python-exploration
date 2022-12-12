@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool.app.new._enums import ConnectionInterface
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel
+from acconeer.exptool.utils import CommDevice  # type: ignore[import]
 
 
 BUTTON_ICON_COLOR = "#0081db"
@@ -87,63 +88,76 @@ class VerticalSeparator(QWidget):
         self.layout().addWidget(frame)
 
 
-class SerialPortComboBox(QComboBox):
+class CommDeviceComboBox(QComboBox):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
         self.app_model = app_model
         app_model.sig_notify.connect(self._on_app_model_update)
         self.currentTextChanged.connect(self._on_change)
 
-    def _on_change(self) -> None:
-        self.app_model.set_serial_connection_device(self.currentData())
-
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        serial_devices = app_model.available_serial_devices
+        devices = self._get_available_devices()
 
         view_ports = [self.itemData(i) for i in range(self.count())]
 
         with QtCore.QSignalBlocker(self):
-            if serial_devices != view_ports:
+            if devices != view_ports:
                 self.clear()
-                for serial_device in serial_devices:
-                    self.addItem(serial_device.display_name(), serial_device)
+                for device in devices:
+                    self.addItem(device.display_name(), device)
 
-            index = self.findData(app_model.serial_connection_device)
+            current_device = self._get_current_device()
+
+            # QComboBox.findData can't be used since since it doesn't
+            # always match different but content wise identical objects.
+            index = -1
+            for i in range(self.count()):
+                if self.itemData(i) == current_device:
+                    index = i
+                    break
             self.setCurrentIndex(index)
 
             self.setEnabled(self.count() > 0)
             if self.count() == 0:
                 self.addItem("No device available")
 
+    @abc.abstractmethod
+    def _on_change(self) -> None:
+        pass
 
-class USBDeviceComboBox(QComboBox):
+    @abc.abstractmethod
+    def _get_available_devices(self) -> List[CommDevice]:
+        pass
+
+    @abc.abstractmethod
+    def _get_current_device(self) -> Optional[CommDevice]:
+        pass
+
+
+class SerialPortComboBox(CommDeviceComboBox):
+    def _on_change(self) -> None:
+        self.app_model.set_serial_connection_device(self.currentData())
+
+    def _get_available_devices(self) -> List[CommDevice]:
+        return self.app_model.available_serial_devices
+
+    def _get_current_device(self) -> Optional[CommDevice]:
+        return self.app_model.serial_connection_device
+
+
+class USBDeviceComboBox(CommDeviceComboBox):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-        self.app_model = app_model
-        app_model.sig_notify.connect(self._on_app_model_update)
-        self.currentTextChanged.connect(self._on_change)
+        super().__init__(app_model, parent)
         self.setMinimumWidth(175)
 
     def _on_change(self) -> None:
         self.app_model.set_usb_connection_device(self.currentData())
 
-    def _on_app_model_update(self, app_model: AppModel) -> None:
-        usb_devices = app_model.available_usb_devices
+    def _get_available_devices(self) -> List[CommDevice]:
+        return self.app_model.available_usb_devices
 
-        view_ports = [self.itemData(i) for i in range(self.count())]
-
-        with QtCore.QSignalBlocker(self):
-            if usb_devices != view_ports:
-                self.clear()
-                for usb_device in usb_devices:
-                    self.addItem(usb_device.display_name(), usb_device)
-
-            index = self.findData(app_model.usb_connection_device)
-            self.setCurrentIndex(index)
-
-            self.setEnabled(self.count() > 0)
-            if self.count() == 0:
-                self.addItem("No device available")
+    def _get_current_device(self) -> Optional[CommDevice]:
+        return self.app_model.usb_connection_device
 
 
 class HintObject:
