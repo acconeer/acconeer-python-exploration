@@ -39,6 +39,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     M_TO_MM = 1000
     TIME_HORIZON_S = 5.0
+    LP_COEFF = 0.75
 
     def __init__(
         self,
@@ -49,6 +50,16 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         subsweep_indexes: Optional[list[int]] = None,
         context: Optional[ProcessorContext] = None,
     ) -> None:
+
+        if sensor_config.sweep_rate is None:
+            raise ValueError("Sweep rate must be set.")
+
+        if sensor_config.continuous_sweep_mode is False:
+            raise ValueError("Continuous sweep mode must be enabled.")
+
+        if sensor_config.double_buffering is False:
+            raise ValueError("Double buffer mode must be enabled.")
+
         self.start_point = sensor_config.start_point
         self.step_length = sensor_config.step_length
         self.num_points = sensor_config.num_points
@@ -56,32 +67,26 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.base_step_length_m = metadata.base_step_length_m
 
         self.prev_peak_loc_m = None
-        self.prev_sweep = np.full(self.num_points, np.nan)
 
         self.lp_abs_sweep = np.full(self.num_points, np.nan)
-        self.lp_coeff = 0.95
 
         self.sweep_index = 0
 
         self.threshold = processor_config.threshold
 
-        self.estimated_distance = None
-
+        self.max_num_points_to_plot = int(sensor_config.sweep_rate * self.TIME_HORIZON_S)
         self.distance_history: npt.NDArray[np.float_] = np.array([])
-        self.time_history: npt.NDArray[np.float_] = np.array([])
 
     def process(self, result: a121.Result) -> ProcessorResult:
 
         frame = result.frame
-        sweep = frame.mean(axis=0)
-        abs_sweep = np.abs(sweep)
+        abs_sweep = np.mean(np.abs(frame), axis=0)
 
         # initialize filter variables if first sweep
         if self.sweep_index == 0:
-            self.prev_sweep = sweep
             self.lp_abs_sweep = abs_sweep
 
-        self.lp_abs_sweep = self.lp_abs_sweep * self.lp_coeff + abs_sweep * (1 - self.lp_coeff)
+        self.lp_abs_sweep = self.lp_abs_sweep * self.LP_COEFF + abs_sweep * (1 - self.LP_COEFF)
 
         if self.threshold < np.max(self.lp_abs_sweep):
             peak_loc_p = np.argmax(self.lp_abs_sweep)
@@ -92,42 +97,45 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             if self.prev_peak_loc_m is None:
                 self.prev_peak_loc_m = peak_loc_m
 
-            # Reset estimate if this is the first amplitude above the threshold(estimated_distance
-            # is None) or distance between the current and previous peak location is large,
-            # indicating new object with greater peak.
-            if self.estimated_distance is None or 0.1 < np.abs(peak_loc_m - self.prev_peak_loc_m):
-                self.estimated_distance = 0.0
+            # Reset estimate if this is the first amplitude above the threshold(length of
+            # distance_history is 0) or distance between the current and previous peak location
+            # is large, indicating new object with greater peak.
+            if self.distance_history.shape[0] == 0 or 0.1 < np.abs(
+                peak_loc_m - self.prev_peak_loc_m
+            ):
+                self.distance_history = np.array([0.0])
 
-            delta_angle = np.angle(sweep[peak_loc_p] * np.conj(self.prev_sweep[peak_loc_p]))
-            delta_dist = PERCEIVED_WAVELENGTH * delta_angle / (2 * np.pi) * self.M_TO_MM
-            self.estimated_distance += delta_dist
+            delta_angles = np.diff(np.unwrap(np.angle(frame[:, peak_loc_p])))
+            delta_dists = PERCEIVED_WAVELENGTH * delta_angles / (2 * np.pi) * self.M_TO_MM
 
-            assert self.estimated_distance is not None
-            self.distance_history = np.append(self.distance_history, self.estimated_distance)
-            self.time_history = np.append(self.time_history, result.tick_time)
+            # Append the new distances to the previous distances. Offset the new values with
+            # the last value in the existing series for a smooth transition.
+            self.distance_history = np.append(
+                self.distance_history, self.distance_history[-1] + np.cumsum(delta_dists)
+            )
 
             # Extract data in desired plot window.
-            rel_time = self.time_history - self.time_history[-1]
-            plot_idx = np.where(-self.TIME_HORIZON_S < rel_time)
-            rel_time_to_plot = rel_time[plot_idx]
-            distance_to_plot = self.distance_history[plot_idx]
+            distance_to_plot = self.distance_history[-self.max_num_points_to_plot :]
+            time_series_length = distance_to_plot.shape[0]
+            rel_time_to_plot = np.linspace(
+                -self.TIME_HORIZON_S * time_series_length / self.max_num_points_to_plot,
+                0,
+                time_series_length,
+            )
         else:
             # Reset variables as no peak is detected.
             peak_loc_m = None
-            rel_time_to_plot = None
-            distance_to_plot = None
+            distance_to_plot = np.array([])
             self.prev_peak_loc_m = None
-            self.estimated_distance = None
-            self.time_history = np.array([])
+            rel_time_to_plot = np.array([])
             self.distance_history = np.array([])
 
         self.sweep_index += 1
-        self.prev_sweep = sweep
         self.prev_peak_loc_m = peak_loc_m
 
         return ProcessorResult(
             lp_abs_sweep=self.lp_abs_sweep,
-            angle_sweep=np.angle(sweep),
+            angle_sweep=np.angle(np.mean(frame, axis=0)),
             threshold=self.threshold,
             rel_time_stamps=rel_time_to_plot,
             distance_history=distance_to_plot,
@@ -147,4 +155,10 @@ def get_sensor_config() -> a121.SensorConfig:
         receiver_gain=10,
         hwaas=4,
         phase_enhancement=True,
+        continuous_sweep_mode=True,
+        sweeps_per_frame=25,
+        sweep_rate=500,
+        double_buffering=True,
+        inter_sweep_idle_state=a121.IdleState.READY,
+        inter_frame_idle_state=a121.IdleState.READY,
     )
