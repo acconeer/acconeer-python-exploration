@@ -559,14 +559,14 @@ class Detector:
         # Use this as indication whether detector calibration has been performed.
         calibration_missing = np.any(
             [
-                context.loopback_peak_location_m is None
-                for context in context.single_sensor_contexts.values()
+                ctx.loopback_peak_location_m is None
+                for ctx in context.single_sensor_contexts.values()
             ]
         )
         config_mismatch = np.any(
             [
-                context.session_config_used_during_calibration != session_config
-                for context in context.single_sensor_contexts.values()
+                ctx.session_config_used_during_calibration != session_config
+                for ctx in context.single_sensor_contexts.values()
             ]
         )
 
@@ -589,15 +589,12 @@ class Detector:
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
         has_dl = np.all(
-            [
-                context.direct_leakage is not None
-                for context in context.single_sensor_contexts.values()
-            ]
+            [ctx.direct_leakage is not None for ctx in context.single_sensor_contexts.values()]
         )
         has_pjcr = np.all(
             [
-                context.phase_jitter_comp_reference is not None
-                for context in context.single_sensor_contexts.values()
+                ctx.phase_jitter_comp_reference is not None
+                for ctx in context.single_sensor_contexts.values()
             ]
         )
 
@@ -610,15 +607,15 @@ class Detector:
     def _recorded_threshold_calibrated(context: DetectorContext) -> bool:
         mean_sweep_calibrated = np.all(
             [
-                context.recorded_thresholds_mean_sweep is not None
-                for context in context.single_sensor_contexts.values()
+                ctx.recorded_thresholds_mean_sweep is not None
+                for ctx in context.single_sensor_contexts.values()
             ]
         )
 
         std_calibrated = np.all(
             [
-                context.recorded_thresholds_noise_std is not None
-                for context in context.single_sensor_contexts.values()
+                ctx.recorded_thresholds_noise_std is not None
+                for ctx in context.single_sensor_contexts.values()
             ]
         )
 
