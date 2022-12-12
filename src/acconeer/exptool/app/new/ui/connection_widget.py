@@ -8,6 +8,7 @@ import qtawesome as qta
 from PySide6 import QtCore
 from PySide6.QtGui import QRegularExpressionValidator
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QDialog,
     QHBoxLayout,
@@ -184,13 +185,25 @@ class _ConnectSettingsDialog(QDialog):
         super().__init__(parent)
 
         self.app_model = app_model
+        app_model.sig_notify.connect(self._on_app_model_update)
+
+        self.auto_connect_check_box = QCheckBox("Auto-connect", self)
+        self.auto_connect_check_box.setToolTip("Enables auto-connect of device")
+        self.auto_connect_check_box.stateChanged.connect(self._auto_connect_on_state_changed)
 
         layout = QVBoxLayout(self)
         layout.addWidget(_ConnectSettingsBaudrate(app_model, self))
+        layout.addWidget(self.auto_connect_check_box)
 
         self.setWindowTitle("Advanced settings")
         self.setMinimumWidth(300)
         self.setLayout(layout)
+
+    def _auto_connect_on_state_changed(self) -> None:
+        self.app_model.set_autoconnect_enabled(self.auto_connect_check_box.isChecked())
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        self.auto_connect_check_box.setChecked(app_model.autoconnect_enabled)
 
 
 class _SimulatedConnectionWidget(AppModelAwareWidget):

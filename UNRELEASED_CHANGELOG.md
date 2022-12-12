@@ -7,6 +7,7 @@
 - A121: Validation of processor config
 - Save app settings to file
 - Add advanced settings dialog
+- Add auto-connect setting, found under advanced settings
 
 ### Changed
 - Rename Virutal button to Touchless button

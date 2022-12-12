@@ -454,6 +454,11 @@ class AppModel(QObject):
         ):
             self.disconnect_client()
 
+        first_update = len(self.available_usb_devices + self.available_serial_devices) == 0 and (
+            self._persistent_state.usb_connection_device
+            or self._persistent_state.serial_connection_device
+        )
+
         serial_connection_device, recognized = self._select_new_device(
             self.available_serial_devices,
             serial_devices,
@@ -500,7 +505,11 @@ class AppModel(QObject):
                 connect = True
                 self.send_status_message(f"Recognized USB device: {usb_connection_device}")
 
-        if connect and self.autoconnect_enabled:
+        if (
+            (connect or first_update)
+            and self.connection_state == ConnectionState.DISCONNECTED
+            and self.autoconnect_enabled
+        ):
             self._autoconnect()
 
         self.broadcast()
