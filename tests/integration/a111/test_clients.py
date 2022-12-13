@@ -227,7 +227,7 @@ def test_repetition_mode(setup):
     def measure(config):
         client.start_session(config, check_config=False)
         client.get_next()
-        t0 = time.time()
+        t0 = time.monotonic()
 
         missed = False
         n = 5
@@ -237,7 +237,7 @@ def test_repetition_mode(setup):
             if info["missed_data"]:
                 missed = True
 
-        t1 = time.time()
+        t1 = time.monotonic()
         client.stop_session()
         dt = (t1 - t0) / n
         return (dt, missed)

@@ -101,7 +101,7 @@ def process_program(
 
     process = psutil.Process()
     process.cpu_percent()
-    last_cpu_msg_time = time.time()
+    last_cpu_msg_time = time.monotonic()
 
     try:
         BackendLogger.set_callback(send_queue.put)
@@ -110,7 +110,7 @@ def process_program(
         model_wants_to_idle = False
 
         while not stop_event.is_set():
-            now = time.time()
+            now = time.monotonic()
             if now - last_cpu_msg_time > MAX_POLL_INTERVAL:
                 last_cpu_msg_time = now
                 cpu_percent = round(process.cpu_percent())

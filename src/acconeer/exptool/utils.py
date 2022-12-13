@@ -451,7 +451,7 @@ class SmoothMax:
         m = max(np.nanmax(data), 1e-12)
 
         if self.fixed_dt is None:
-            now = time.time()
+            now = time.perf_counter()
             dt = now - self.last_t
             self.last_t = now
         else:
@@ -489,7 +489,7 @@ class SmoothLimits:
         data_lims = (np.nanmin(data), np.nanmax(data))
 
         if self.fixed_dt is None:
-            now = time.time()
+            now = time.perf_counter()
             dt = now - self.last_t
             self.last_t = now
         else:
@@ -618,7 +618,7 @@ class FreqCounter:
             None
         """
 
-        now = time.time()
+        now = time.perf_counter()
 
         if self.last_t is None:
             self.last_t = now

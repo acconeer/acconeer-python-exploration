@@ -115,7 +115,7 @@ class PyUsbCdc:
         rx = [self._rxremaining]
         length = len(self._rxremaining)
         self._rxremaining = b""
-        end_timeout = time.time() + self.USB_MESSAGE_TIMEOUT
+        end_timeout = time.monotonic() + self.USB_MESSAGE_TIMEOUT
         if size:
             while length < size:
                 try:
@@ -129,7 +129,7 @@ class PyUsbCdc:
                 if c is not None and len(c):
                     rx.append(c)
                     length += len(c)
-                if time.time() > end_timeout:
+                if time.monotonic() > end_timeout:
                     break
         else:
             c = None

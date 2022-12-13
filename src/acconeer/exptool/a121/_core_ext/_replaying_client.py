@@ -96,7 +96,7 @@ class _ReplayingClient(Client):  # TODO: Add a Client ABC/Protocol
         else:
             some_result = next(iter(next(iter(result)).values()))
 
-        now = time.time() - some_result.tick_time
+        now = time.monotonic() - some_result.tick_time
 
         if self._origin_time is None:
             self._origin_time = now

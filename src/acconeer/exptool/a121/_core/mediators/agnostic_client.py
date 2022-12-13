@@ -112,7 +112,7 @@ class AgnosticClient(AgnosticClientFriends):
             yield resp
 
     def _assert_deadline_not_reached(self, deadline: Optional[float]) -> None:
-        if deadline is not None and time.time() > deadline:
+        if deadline is not None and time.monotonic() > deadline:
             raise ClientError("Client timed out.")
 
     def _apply_messages_until_message_type_encountered(
@@ -126,7 +126,7 @@ class AgnosticClient(AgnosticClientFriends):
             if timeout_s is set and that amount of time has elapsed
             without predicate evaluating to True
         """
-        deadline = None if (timeout_s is None) else time.time() + timeout_s
+        deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
 
         for message in self._message_stream:
             message.apply(self)
@@ -150,7 +150,7 @@ class AgnosticClient(AgnosticClientFriends):
         if predicate():
             return
 
-        deadline = None if (timeout_s is None) else time.time() + timeout_s
+        deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
 
         for message in self._message_stream:
             # OBS! When iterating self._message_stream, each message is "consumed" from the stream.

@@ -70,7 +70,7 @@ def _bs_thread_program(q, exit_event, updater):
             data_index += 1
 
         if stick is None:
-            now = time.time()
+            now = time.perf_counter()
 
             if (now - last_find_attempt_time) > FIND_ATTEMPT_INTERVAL:
                 last_find_attempt_time = now
@@ -85,7 +85,7 @@ def _bs_thread_program(q, exit_event, updater):
         if stick is None:
             continue
 
-        now = time.time()
+        now = time.perf_counter()
 
         if (now - last_update_time) < UPDATE_INTERVAL:
             continue
@@ -125,10 +125,10 @@ if __name__ == "__main__":
     bs_thread = BSThread(bs_updater)
     bs_thread.start()
 
-    t0 = time.time()
+    t0 = time.monotonic()
     t = 0
     while t < 5:
-        t = time.time() - t0
+        t = time.monotonic() - t0
         y = t % 1.0 > 0.5
 
         try:

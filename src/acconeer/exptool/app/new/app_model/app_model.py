@@ -191,14 +191,14 @@ class AppModel(QObject):
         if self.connection_state in [ConnectionState.CONNECTING, ConnectionState.CONNECTED]:
             self.disconnect_client()
 
-        wait_start_time = time.time()
+        wait_start_time = time.monotonic()
         while (
             self.plugin_state != PluginState.UNLOADED
             and self.connection_state != ConnectionState.DISCONNECTED
         ):  # TODO: Do this better
             QApplication.processEvents()
 
-            if (time.time() - wait_start_time) > WAIT_FOR_UNLOAD_TIMEOUT:
+            if (time.monotonic() - wait_start_time) > WAIT_FOR_UNLOAD_TIMEOUT:
                 log.error("Plugin not unloaded on stop")
                 break
 

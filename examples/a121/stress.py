@@ -146,14 +146,14 @@ def _stress_session(
     client.start_session()
 
     n = 0
-    last_pause = time.time()
+    last_pause = time.monotonic()
 
     while True:
         client.get_next()
 
         n += 1
 
-        now = time.time()
+        now = time.monotonic()
         if pause_interval is not None and (now - last_pause) > pause_interval:
             last_pause = now
             assert pause_time is not None
@@ -178,7 +178,7 @@ def _stress_session(
 
 
 def print_status(s: str) -> None:
-    now = time.time()
+    now = time.monotonic()
     last_time = getattr(print_status, "last_time", -1)
     dt = now - last_time
 

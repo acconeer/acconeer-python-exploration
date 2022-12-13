@@ -127,14 +127,14 @@ class ComPort:
         rx = [self._rxremaining]
         length = len(self._rxremaining)
         self._rxremaining = b""
-        end_timeout = time.time() + (self.timeout or 0.2)
+        end_timeout = time.monotonic() + (self.timeout or 0.2)
         if size:
             while length < size:
                 c = self.winusby.read(self._ep_in, size - length)
                 if c is not None and len(c):
                     rx.append(c)
                     length += len(c)
-                if time.time() > end_timeout:
+                if time.monotonic() > end_timeout:
                     break
         else:
             while True:
@@ -144,7 +144,7 @@ class ComPort:
                     length += len(c)
                 else:
                     break
-                if time.time() > end_timeout:
+                if time.monotonic() > end_timeout:
                     break
         chunk = b"".join(rx)
         if size and len(chunk) >= size:
