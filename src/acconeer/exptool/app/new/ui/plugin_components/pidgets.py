@@ -517,13 +517,7 @@ class SensorIdParameterWidget(UpdateableComboboxParameterWidget[int]):
             self.update_items([])
             self.setEnabled(False)
         else:
-            self.update_items(
-                [
-                    (str(sensor_id), sensor_id)
-                    for sensor_id, sensor_info in server_info.sensor_infos.items()
-                    if sensor_info.connected
-                ]
-            )
+            self.update_items([(str(i), i) for i in server_info.connected_sensors])
             self.setEnabled(True)
 
 
