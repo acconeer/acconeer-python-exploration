@@ -18,7 +18,6 @@ from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
     AttrsConfigEditor,
-    ConnectionState,
     GeneralMessage,
     GridGroupBox,
     PidgetFactoryMapping,
@@ -146,11 +145,11 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.processor_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+
         self.start_button.setEnabled(
-            app_model.plugin_state == PluginState.LOADED_IDLE
-            and app_model.connection_state == ConnectionState.CONNECTED
-            and app_model.backend_plugin_state.ready
+            app_model.is_ready_for_session() and app_model.backend_plugin_state.ready
         )
+
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
         self.session_config_editor.update_available_sensor_list(app_model._a121_server_info)
 

@@ -515,6 +515,21 @@ class AppModel(QObject):
             )
         )
 
+    def is_ready_for_session(self) -> bool:
+        """
+        Returns True if the plugin is ready for a new session.
+        Additional conditions can be added in respective plugin.
+        """
+        return (
+            self.plugin_state == PluginState.LOADED_IDLE
+            and self.connection_state == ConnectionState.CONNECTED
+            and self._a121_server_info is not None
+            and any(
+                sensor_info.connected
+                for _, sensor_info in self._a121_server_info.sensor_infos.items()
+            )
+        )
+
     def _failed_autoconnect(
         self, exception: Exception, traceback_format_exc: Optional[str] = None
     ) -> None:

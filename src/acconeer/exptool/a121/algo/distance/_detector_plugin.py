@@ -28,7 +28,6 @@ from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
     BackendLogger,
-    ConnectionState,
     GeneralMessage,
     GridGroupBox,
     HandledException,
@@ -516,10 +515,8 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
 
-        ready_for_session = (
-            app_model.plugin_state == PluginState.LOADED_IDLE
-            and app_model.connection_state == ConnectionState.CONNECTED
-        )
+        ready_for_session = app_model.is_ready_for_session()
+
         self.calibrate_detector_button.setEnabled(ready_for_session)
         self.start_button.setEnabled(ready_for_session and detector_status.ready_to_start)
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)

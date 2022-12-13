@@ -30,7 +30,6 @@ from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
     BackendLogger,
-    ConnectionState,
     GeneralMessage,
     GridGroupBox,
     Message,
@@ -693,12 +692,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.sensor_id_pidget.set_parameter(state.sensor_id)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
-        ready_for_session = (
-            app_model.plugin_state == PluginState.LOADED_IDLE
-            and app_model.connection_state == ConnectionState.CONNECTED
-        )
-
-        self.start_button.setEnabled(ready_for_session)
+        self.start_button.setEnabled(app_model.is_ready_for_session())
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     # TODO: move to detector base (?)
