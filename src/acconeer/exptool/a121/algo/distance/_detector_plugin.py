@@ -196,7 +196,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 client=self.client,
                 sensor_ids=self.shared_state.sensor_ids,
                 detector_config=self.shared_state.config,
-                context=self.shared_state.context,
+                context=None,
             )
             self._detector_instance.calibrate_detector()
         except Exception as exc:
