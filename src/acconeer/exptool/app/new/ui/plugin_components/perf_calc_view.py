@@ -62,7 +62,11 @@ class PerfCalcView(QGroupBox):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setTitle("Performance calculations")
+        self.setTitle("Performance estimates")
+        self.setToolTip(
+            "These performance estimates are based on calculations \
+            and conservative measurements in room temperature."
+        )
 
         layout = QGridLayout(self)
         self.setLayout(layout)
