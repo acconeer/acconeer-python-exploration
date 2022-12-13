@@ -57,6 +57,12 @@ class _ConnectAndDisconnectButton(QPushButton):
             ConnectionState.CONNECTED: "fa5s.unlink",
             ConnectionState.DISCONNECTING: "fa5s.unlink",
         }
+        TOOLTIPS = {
+            ConnectionState.DISCONNECTED: "Connect to device using specified interface",
+            ConnectionState.CONNECTING: "Connecting...",
+            ConnectionState.CONNECTED: "Disconnect the device",
+            ConnectionState.DISCONNECTING: "Disconnecting...",
+        }
 
         self.setText(TEXTS[app_model.connection_state])
         self.setEnabled(
@@ -65,6 +71,7 @@ class _ConnectAndDisconnectButton(QPushButton):
             and app_model.is_connect_ready()
         )
         self.setIcon(qta.icon(ICONS[app_model.connection_state], color=BUTTON_ICON_COLOR))
+        self.setToolTip(TOOLTIPS[app_model.connection_state])
 
 
 class _SocketConnectionWidget(AppModelAwareWidget):
