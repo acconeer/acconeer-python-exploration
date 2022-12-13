@@ -30,12 +30,13 @@ from acconeer.exptool.a121.algo.phase_tracking import (
 from acconeer.exptool.app.new import (
     AppModel,
     Message,
+    PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
     PluginSpecBase,
+    pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 
 class PluginPresetId(Enum):

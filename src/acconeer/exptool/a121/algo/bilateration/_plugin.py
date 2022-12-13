@@ -36,23 +36,21 @@ from acconeer.exptool.a121.algo.distance._detector import _load_algo_data
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
+    AttrsConfigEditor,
     ConnectionState,
     GeneralMessage,
+    GridGroupBox,
     HandledException,
     Message,
+    PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
     PluginStateMessage,
-    is_task,
-)
-from acconeer.exptool.app.new.ui.plugin_components import (
-    AttrsConfigEditor,
-    GridGroupBox,
-    PidgetFactoryMapping,
     TwoSensorIdsEditor,
+    is_task,
     pidgets,
 )
 

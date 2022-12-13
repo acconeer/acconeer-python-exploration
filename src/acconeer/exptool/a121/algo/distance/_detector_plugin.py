@@ -26,25 +26,23 @@ from acconeer.exptool.a121.algo._plugins import (
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
+    AttrsConfigEditor,
     BackendLogger,
     ConnectionState,
     GeneralMessage,
+    GridGroupBox,
     HandledException,
     Message,
+    PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
     PluginStateMessage,
+    VerticalGroupBox,
     is_task,
-)
-from acconeer.exptool.app.new.ui.plugin_components import (
-    AttrsConfigEditor,
-    GridGroupBox,
-    PidgetFactoryMapping,
     pidgets,
-    utils,
 )
 
 from ._detector import (
@@ -388,9 +386,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
         sticky_layout.addWidget(button_group)
 
-        sensor_selection_group = utils.VerticalGroupBox(
-            "Sensor selection", parent=self.scrolly_widget
-        )
+        sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
         self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )

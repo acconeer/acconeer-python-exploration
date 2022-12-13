@@ -28,11 +28,12 @@ from acconeer.exptool.a121.algo._plugins import (
 from acconeer.exptool.app.new import (
     AppModel,
     Message,
+    PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
+    pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
 
 from ._processor import (
     AmplitudeMethod,

@@ -17,14 +17,12 @@ from acconeer.exptool.a121.algo._plugins._a121 import A121ViewPluginBase
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
+    AttrsConfigEditor,
     ConnectionState,
     GeneralMessage,
-    PluginState,
-)
-from acconeer.exptool.app.new.ui.plugin_components import (
-    AttrsConfigEditor,
     GridGroupBox,
     PidgetFactoryMapping,
+    PluginState,
     SessionConfigEditor,
     SmartMetadataView,
     SmartPerfCalcView,
