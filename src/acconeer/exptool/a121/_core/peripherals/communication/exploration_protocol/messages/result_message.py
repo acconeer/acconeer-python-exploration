@@ -10,8 +10,14 @@ import numpy as np
 import numpy.typing as npt
 import typing_extensions as te
 
-from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, Metadata, Result, ResultContext
-from acconeer.exptool.a121._core.mediators import AgnosticClientFriends, Message
+from acconeer.exptool.a121._core.entities import (
+    INT_16_COMPLEX,
+    Metadata,
+    Result,
+    ResultContext,
+    SensorConfig,
+)
+from acconeer.exptool.a121._core.peripherals.communication.message import Message
 from acconeer.exptool.a121._core.utils import map_over_extended_structure, zip3_extended_structures
 
 from .parse_error import ParseError
@@ -37,9 +43,6 @@ class EmptyResultMessage(Message):
     after being stopped.
     """
 
-    def apply(self, client: AgnosticClientFriends) -> None:
-        raise RuntimeError("Received an empty Result from Server.")
-
     @classmethod
     def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> EmptyResultMessage:
         head = t.cast(ResultMessageHeader, header)
@@ -54,38 +57,6 @@ class EmptyResultMessage(Message):
 class ResultMessage(Message):
     grouped_result_infos: list[list[ResultInfoDict]]
     frame_blob: bytes
-
-    def apply(self, client: AgnosticClientFriends) -> None:
-        if client._metadata is None:
-            raise RuntimeError(f"{client} has no metadata")
-
-        if client._system_info is None:
-            raise RuntimeError(f"{client} has no system info")
-
-        if client._session_config is None:
-            raise RuntimeError(f"{client} has no session config")
-
-        tps = client._system_info["ticks_per_second"]
-        metadata = client._metadata
-        config_groups = client._session_config.groups
-
-        extended_frames = self._divide_frame_blob(self.frame_blob, metadata)
-        extended_contexts = map_over_extended_structure(
-            functools.partial(self._create_result_context, ticks_per_second=tps), metadata
-        )
-        extended_result_infos = [
-            {
-                sensor_id: result_info
-                for result_info, sensor_id in zip(result_info_group, config_group.keys())
-            }
-            for result_info_group, config_group in zip(self.grouped_result_infos, config_groups)
-        ]
-
-        extended_results = map_over_extended_structure(
-            self._create_result,
-            zip3_extended_structures(extended_result_infos, extended_frames, extended_contexts),
-        )
-        client._result_queue.append(extended_results)
 
     @staticmethod
     def _create_result_context(metadata: Metadata, ticks_per_second: int) -> ResultContext:
@@ -140,3 +111,29 @@ class ResultMessage(Message):
             return cls(header["result_info"], payload)
         except KeyError as ke:
             raise ParseError from ke
+
+    def get_extended_results(
+        self,
+        tps: int,
+        metadata: list[dict[int, Metadata]],
+        config_groups: list[dict[int, SensorConfig]],
+    ) -> list[dict[int, Result]]:
+
+        extended_frames = self._divide_frame_blob(self.frame_blob, metadata)
+        extended_contexts = map_over_extended_structure(
+            functools.partial(self._create_result_context, ticks_per_second=tps), metadata
+        )
+        extended_result_infos = [
+            {
+                sensor_id: result_info
+                for result_info, sensor_id in zip(result_info_group, config_group.keys())
+            }
+            for result_info_group, config_group in zip(self.grouped_result_infos, config_groups)
+        ]
+
+        extended_results = map_over_extended_structure(
+            self._create_result,
+            zip3_extended_structures(extended_result_infos, extended_frames, extended_contexts),
+        )
+
+        return extended_results

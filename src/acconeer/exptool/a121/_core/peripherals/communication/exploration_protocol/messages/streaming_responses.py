@@ -6,7 +6,7 @@ import typing as t
 
 import typing_extensions as te
 
-from acconeer.exptool.a121._core.mediators import AgnosticClientFriends, Message
+from acconeer.exptool.a121._core.peripherals.communication.message import Message
 
 from .parse_error import ParseError
 
@@ -20,12 +20,6 @@ class StopStreamingResponseHeader(te.TypedDict):
 
 
 class StartStreamingResponse(Message):
-    def apply(self, client: AgnosticClientFriends) -> None:
-        if client._session_is_started:
-            raise RuntimeError("Client received a start response when already started.")
-        else:
-            client._session_is_started = True
-
     @classmethod
     def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> StartStreamingResponse:
         t.cast(StartStreamingResponseHeader, header)
@@ -37,12 +31,6 @@ class StartStreamingResponse(Message):
 
 
 class StopStreamingResponse(Message):
-    def apply(self, client: AgnosticClientFriends) -> None:
-        if client._session_is_started:
-            client._session_is_started = False
-        else:
-            raise RuntimeError("Client received a stop response when already stopped.")
-
     @classmethod
     def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> StopStreamingResponse:
         t.cast(StopStreamingResponseHeader, header)

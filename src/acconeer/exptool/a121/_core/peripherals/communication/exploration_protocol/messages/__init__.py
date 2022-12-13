@@ -9,4 +9,4 @@ from .sensor_info_response import SensorInfoResponse
 from .set_baudrate_response import SetBaudrateResponse
 from .setup_response import SetupResponse
 from .streaming_responses import StartStreamingResponse, StopStreamingResponse
-from .system_info_respose import SystemInfoResponse
+from .system_info_response import SystemInfoResponse

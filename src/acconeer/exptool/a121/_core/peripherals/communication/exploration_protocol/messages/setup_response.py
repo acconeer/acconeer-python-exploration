@@ -9,7 +9,7 @@ import numpy as np
 import typing_extensions as te
 
 from acconeer.exptool.a121._core.entities import Metadata, SensorCalibration
-from acconeer.exptool.a121._core.mediators import AgnosticClientFriends, Message
+from acconeer.exptool.a121._core.peripherals.communication.message import Message
 
 from .parse_error import ParseError
 
@@ -39,21 +39,6 @@ class SetupResponseHeader(te.TypedDict):
 class SetupResponse(Message):
     grouped_metadatas: list[list[Metadata]]
     sensor_calibrations: t.Optional[dict[int, SensorCalibration]]
-
-    def apply(self, client: AgnosticClientFriends) -> None:
-        if client._session_config is None:
-            raise RuntimeError(f"{client} does not have a session config.")
-
-        client._metadata = [
-            {
-                sensor_id: metadata
-                for metadata, sensor_id in zip(metadata_group, config_group.keys())
-            }
-            for metadata_group, config_group in zip(
-                self.grouped_metadatas, client._session_config.groups
-            )
-        ]
-        client._sensor_calibrations = self.sensor_calibrations
 
     @classmethod
     def parse(cls, header: dict[str, t.Any], payload: bytes) -> SetupResponse:

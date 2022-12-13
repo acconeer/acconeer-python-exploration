@@ -1,6 +1,5 @@
 # Copyright (c) Acconeer AB, 2022
 # All rights reserved
-from unittest.mock import Mock
 
 import pytest
 
@@ -26,8 +25,3 @@ class TestStopStreamingResponse:
 
         with pytest.raises(messages.ParseError):
             messages.StopStreamingResponse.parse(invalid_server_response, bytes())
-
-    def test_apply(self, valid_server_response: dict, mock_client: Mock) -> None:
-        resp = messages.StopStreamingResponse.parse(valid_server_response, bytes())
-        resp.apply(mock_client)
-        assert not mock_client._session_is_started

@@ -7,7 +7,7 @@ import typing as t
 import attrs
 import typing_extensions as te
 
-from acconeer.exptool.a121._core.mediators import AgnosticClientFriends, Message
+from acconeer.exptool.a121._core.peripherals.communication.message import Message
 
 from .parse_error import ParseError
 
@@ -19,9 +19,6 @@ class SetBaudrateResponseHeader(te.TypedDict):
 
 @attrs.frozen
 class SetBaudrateResponse(Message):
-    def apply(self, client: AgnosticClientFriends) -> None:
-        pass
-
     @classmethod
     def parse(cls, header: dict[str, t.Any], payload: bytes) -> SetBaudrateResponse:
         t.cast(SetBaudrateResponseHeader, header)

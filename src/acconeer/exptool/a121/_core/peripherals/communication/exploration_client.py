@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Callable, Iterator, Optional, Tuple, Type, Union
+from typing import Any, Iterator, Optional, Tuple, Type, Union
 
 import attrs
 from serial.serialutil import SerialException
@@ -22,6 +22,7 @@ from acconeer.exptool.a121._core.entities import (
     ServerLogMessage,
     SessionConfig,
 )
+from acconeer.exptool.a121._core.mediators import ClientBase, ClientError, Recorder
 from acconeer.exptool.a121._core.utils import (
     create_extended_structure,
     iterate_extended_structure,
@@ -31,27 +32,32 @@ from acconeer.exptool.a121._core.utils import (
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
-from .client_base import ClientBase, ClientError
 from .communication_protocol import CommunicationProtocol
-from .link import BufferedLink
-from .message import AgnosticClientFriends, Message, SystemInfoDict
-from .recorder import Recorder
+from .exploration_protocol import (
+    ExplorationProtocol,
+    ServerError,
+    get_exploration_protocol,
+    messages,
+)
+from .exploration_protocol.messages.system_info_response import SystemInfoDict
+from .links import AdaptedSerialLink, BufferedLink, NullLinkError
+from .message import Message, MessageT
+from .utils import autodetermine_client_link, link_factory
 
 
 log = logging.getLogger(__name__)
 
 
-class AgnosticClient(AgnosticClientFriends, ClientBase):
+class ExplorationClient(ClientBase):
     _client_info: ClientInfo
     _link: BufferedLink
     _default_link_timeout: float
     _link_timeout: float
     _protocol: Type[CommunicationProtocol]
+    _protocol_overridden: bool
     _recorder: Optional[Recorder]
     _tick_unwrapper: TickUnwrapper
     _rate_stats_calc: Optional[_RateCalculator]
-
-    # Message friend fields
     _session_config: Optional[SessionConfig]
     _session_is_started: bool
     _metadata: Optional[list[dict[int, Metadata]]]
@@ -64,11 +70,12 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
     _log_queue: list[ServerLogMessage]
 
     def __init__(
-        self, client_info: ClientInfo, link: BufferedLink, protocol: Type[CommunicationProtocol]
+        self,
+        client_info: ClientInfo,
+        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> None:
         self._client_info = client_info
-        self._link = link
-        self._protocol = protocol
+        self._link = link_factory(self.client_info)
         self._recorder = None
         self._tick_unwrapper = TickUnwrapper()
         self._message_stream = iter([])
@@ -81,8 +88,14 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
         self._calibrations_provided = {}
         self._sensor_infos = {}
         self._system_info = None
-        self._result_queue = []
         self._log_queue = []
+
+        self._protocol: Type[CommunicationProtocol] = ExplorationProtocol
+        self._protocol_overridden = False
+
+        if _override_protocol is not None:
+            self._protocol = _override_protocol
+            self._protocol_overridden = True
 
     def _assert_connected(self) -> None:
         if not self.connected:
@@ -117,8 +130,8 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
             raise ClientError("Client timed out.")
 
     def _apply_messages_until_message_type_encountered(
-        self, message_type: Type[Message], timeout_s: Optional[float] = None
-    ) -> None:
+        self, message_type: Type[MessageT], timeout_s: Optional[float] = None
+    ) -> MessageT:
         """Retrieves and applies messages until a message of type ``message_type`` is encountered.
 
         :param message_type: a subclass of ``Message``
@@ -129,43 +142,28 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
         """
         deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
 
+        if message_type in [messages.ErroneousMessage, messages.EmptyResultMessage]:
+            raise ClientError("Cannot wait for error messages")
+
         for message in self._message_stream:
-            message.apply(self)
+            if type(message) == messages.LogMessage:
+                self._log_queue.append(message.message)
+            elif type(message) == messages.EmptyResultMessage:
+                raise RuntimeError("Received an empty Result from Server.")
+            elif type(message) == messages.ErroneousMessage:
+                last_error = ""
+                for log in self._log_queue:
+                    if log.level == "ERROR" and "exploration_server" not in log.module:
+                        last_error = f" ({log.log})"
+                raise ServerError(f"{message}{last_error}")
 
             if type(message) == message_type:
-                return
+                return message
 
             self._assert_deadline_not_reached(deadline)
+        raise ClientError("No message received")
 
-    def _apply_messages_until(
-        self, predicate: Callable[[], bool], timeout_s: Optional[float] = None
-    ) -> None:
-        """Retrieves and applies messages until `predicate` evaluates to True
-
-        :param predicate: The stop condition
-        :param timeout_s: Limit the time spent in this function
-        :raises ClientError:
-            if timeout_s is set and that amount of time has elapsed
-            without predicate evaluating to True
-        """
-        if predicate():
-            return
-
-        deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
-
-        for message in self._message_stream:
-            # OBS! When iterating self._message_stream, each message is "consumed" from the stream.
-            #      I.e. there is no way to get it back outside this loop.
-            #      This means that we always should ".apply" unless
-            #      we have a really good reason not to.
-            message.apply(self)
-
-            if predicate():
-                return
-
-            self._assert_deadline_not_reached(deadline)
-
-    def connect(self) -> None:
+    def _connect_link(self) -> None:
         self._default_link_timeout = self._link.timeout
         self._link_timeout = self._default_link_timeout
 
@@ -192,15 +190,73 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
         self._message_stream = self._get_message_stream()
 
         self._link.send(self._protocol.get_system_info_command())
-        self._apply_messages_until(lambda: self._system_info is not None)
+        system_info_response = self._apply_messages_until_message_type_encountered(
+            messages.SystemInfoResponse
+        )
+        self._system_info = system_info_response.system_info
 
         self._link.send(self._protocol.get_sensor_info_command())
-        self._apply_messages_until(lambda: self._sensor_infos != {})
+        sensor_info_response = self._apply_messages_until_message_type_encountered(
+            messages.SensorInfoResponse
+        )
+        self._sensor_infos = sensor_info_response.sensor_infos
 
         sensor = self._system_info.get("sensor") if self._system_info else None
         if sensor != "a121":
             self._link.disconnect()
             raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
+
+        if not self._protocol_overridden:
+            self._update_protocol_based_on_servers_rss_version()
+
+        self._update_baudrate()
+
+    def _update_protocol_based_on_servers_rss_version(self) -> None:
+        try:
+            new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+        except Exception:
+            self.disconnect()
+            raise
+        else:
+            self._protocol = new_protocol
+
+    def _update_baudrate(self) -> None:
+        # Only Change baudrate for AdaptedSerialLink
+        if not isinstance(self._link, AdaptedSerialLink):
+            return
+
+        DEFAULT_BAUDRATE = 115200
+        overridden_baudrate = self.client_info.override_baudrate
+        max_baudrate = self.server_info.max_baudrate
+        baudrate_to_use = self.server_info.max_baudrate or DEFAULT_BAUDRATE
+
+        # Override baudrate?
+        if overridden_baudrate is not None and max_baudrate is not None:
+            # Valid Baudrate?
+            if overridden_baudrate > max_baudrate:
+                raise ClientError(f"Cannot set a baudrate higher than {max_baudrate}")
+            elif overridden_baudrate < DEFAULT_BAUDRATE:
+                raise ClientError(f"Cannot set a baudrate lower than {DEFAULT_BAUDRATE}")
+            baudrate_to_use = overridden_baudrate
+
+        # Do not change baudrate if DEFAULT_BAUDRATE
+        if baudrate_to_use == DEFAULT_BAUDRATE:
+            return
+
+        self._link.send(self._protocol.set_baudrate_command(baudrate_to_use))
+
+        self._apply_messages_until_message_type_encountered(messages.SetBaudrateResponse)
+        self._baudrate_ack_received = False
+
+        self._link.baudrate = baudrate_to_use
+
+    def connect(self) -> None:
+        try:
+            self._connect_link()
+        except NullLinkError:
+            self._client_info = autodetermine_client_link(self.client_info)
+            self._link = link_factory(self.client_info)
+            self._connect_link()
 
     def setup_session(
         self,
@@ -229,11 +285,17 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
 
         self._session_config = config
 
-        self._metadata = None
-        self._apply_messages_until(lambda: self._metadata is not None)
-
-        assert self._metadata is not None
-
+        message = self._apply_messages_until_message_type_encountered(messages.SetupResponse)
+        self._metadata = [
+            {
+                sensor_id: metadata
+                for metadata, sensor_id in zip(metadata_group, config_group.keys())
+            }
+            for metadata_group, config_group in zip(
+                message.grouped_metadatas, self._session_config.groups
+            )
+        ]
+        self._sensor_calibrations = message.sensor_calibrations
         pc = _SessionPerformanceCalc(config, self._metadata)
 
         try:
@@ -279,7 +341,8 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
         self._link.timeout = self._link_timeout
 
         self._link.send(self._protocol.start_streaming_command())
-        self._apply_messages_until(lambda: self.session_is_started)
+        self._apply_messages_until_message_type_encountered(messages.StartStreamingResponse)
+        self._session_is_started = True
 
         assert self._metadata is not None
         self._rate_stats_calc = _RateCalculator(self.session_config, self._metadata)
@@ -287,8 +350,24 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         self._assert_session_started()
 
-        self._apply_messages_until(lambda: len(self._result_queue) > 0)
-        extended_results = self._result_queue.pop(0)
+        result_message = self._apply_messages_until_message_type_encountered(
+            messages.ResultMessage
+        )
+
+        if self._metadata is None:
+            raise RuntimeError(f"{self} has no metadata")
+
+        if self._system_info is None:
+            raise RuntimeError(f"{self} has no system info")
+
+        if self._session_config is None:
+            raise RuntimeError(f"{self} has no session config")
+
+        extended_results = result_message.get_extended_results(
+            tps=self._system_info["ticks_per_second"],
+            metadata=self._metadata,
+            config_groups=self._session_config.groups,
+        )
 
         if self._recorder is not None:
             self._recorder._sample(extended_results)
@@ -307,15 +386,15 @@ class AgnosticClient(AgnosticClientFriends, ClientBase):
         self._link.send(self._protocol.stop_streaming_command())
 
         try:
-            self._apply_messages_until(
-                lambda: not self.session_is_started, timeout_s=self._link.timeout + 1
+            self._apply_messages_until_message_type_encountered(
+                messages.StopStreamingResponse, timeout_s=self._link.timeout + 1
             )
+            self._session_is_started = False
         except Exception:
             raise
         finally:
             self._link.timeout = self._default_link_timeout
             self._tick_unwrapper = TickUnwrapper()
-            self._result_queue = []  # results that are recv:ed post stop_session are discarded
 
         if self._recorder is None:
             recorder_result = None
