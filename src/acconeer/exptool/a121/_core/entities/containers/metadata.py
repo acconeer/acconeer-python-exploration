@@ -20,29 +20,54 @@ class Metadata:
     Represents a superset of the RSS ``processing_metadata``.
     """
 
-    frame_data_length: int = attrs.field()
-    """Number of elements in the frame"""
+    _frame_data_length: int = attrs.field()
+    _sweep_data_length: int = attrs.field()
+    _subsweep_data_offset: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
+    _subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
+    _calibration_temperature: int = attrs.field()
+    _tick_period: int = attrs.field()
+    _base_step_length_m: float = attrs.field()
+    _max_sweep_rate: float = attrs.field()
 
-    sweep_data_length: int = attrs.field()
-    """Number of elements in the sweep"""
+    @property
+    def frame_data_length(self) -> int:
+        """Number of elements in the frame"""
+        return self._frame_data_length
 
-    subsweep_data_offset: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
-    """Offset to the subsweeps data"""
+    @property
+    def sweep_data_length(self) -> int:
+        """Number of elements in the sweep"""
+        return self._sweep_data_length
 
-    subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
-    """Number of elements in the subsweeps"""
+    @property
+    def subsweep_data_offset(self) -> npt.NDArray:
+        """Offset to the subsweeps data"""
+        return self._subsweep_data_offset
 
-    calibration_temperature: int = attrs.field()
-    """Temperature during calibration"""
+    @property
+    def subsweep_data_length(self) -> npt.NDArray:
+        """Number of elements in the subsweeps"""
+        return self._subsweep_data_length
 
-    tick_period: int = attrs.field()
-    """Target tick period if update rate is set, otherwise 0"""
+    @property
+    def calibration_temperature(self) -> int:
+        """Temperature during calibration"""
+        return self._calibration_temperature
 
-    base_step_length_m: float = attrs.field()
-    """Base step length in meter"""
+    @property
+    def tick_period(self) -> int:
+        """Target tick period if update rate is set, otherwise 0"""
+        return self._tick_period
 
-    max_sweep_rate: float = attrs.field()
-    """Maximum sweep rate that the sensor can provide for the given configuration"""
+    @property
+    def base_step_length_m(self) -> float:
+        """Base step length in meter"""
+        return self._base_step_length_m
+
+    @property
+    def max_sweep_rate(self) -> float:
+        """Maximum sweep rate that the sensor can provide for the given configuration"""
+        return self._max_sweep_rate
 
     @property
     def frame_shape(self) -> Tuple[int, int]:
@@ -52,7 +77,9 @@ class Metadata:
         return (num_sweeps, self.sweep_data_length)
 
     def to_dict(self) -> dict[str, Any]:
-        return attrs.asdict(self)
+        raw_dict = attrs.asdict(self)
+        # Remove preceding underscores to be able to recreate the class in from_dict
+        return {k[1:] if k.startswith("_") else k: v for k, v in raw_dict.items()}
 
     @classmethod
     def from_dict(cls, d: dict) -> Metadata:
