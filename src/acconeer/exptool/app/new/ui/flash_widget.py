@@ -499,6 +499,7 @@ class FlashButton(QPushButton):
         self.setFixedWidth(100)
         self.setText("Flash")
         self.setIcon(qta.icon("mdi.flash", color=BUTTON_ICON_COLOR))
+        self.setToolTip("Flash the device with a bin file")
 
         app_model.sig_notify.connect(self._on_app_model_update)
         self.pop_up = _FlashPopup(app_model, self)
