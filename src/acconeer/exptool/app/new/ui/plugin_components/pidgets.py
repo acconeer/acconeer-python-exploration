@@ -42,6 +42,7 @@ EnumT = TypeVar("EnumT", bound=Enum)
 @attrs.frozen(kw_only=True, slots=False)
 class ParameterWidgetFactory(abc.ABC):
     name_label_text: str
+    name_label_tooltip: Optional[str] = None
     note_label_text: Optional[str] = None
 
     @abc.abstractmethod
@@ -68,6 +69,8 @@ class ParameterWidget(QWidget):
         self.layout().addWidget(self._body_widget)
 
         self.__label_widget = QLabel(factory.name_label_text, parent=self._body_widget)
+        if factory.name_label_tooltip is not None:
+            self.__label_widget.setToolTip(factory.name_label_tooltip)
 
         self._body_layout = self._create_body_layout(self.__label_widget)
         self._body_widget.setLayout(self._body_layout)
