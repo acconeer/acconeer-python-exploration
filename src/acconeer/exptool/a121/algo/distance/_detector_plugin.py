@@ -559,7 +559,9 @@ class ViewPlugin(DetectorViewPluginBase):
         self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def _on_calibrate_detector(self) -> None:
-        self.app_model.put_backend_plugin_task("calibrate_detector")
+        self.app_model.put_backend_plugin_task(
+            "calibrate_detector", on_error=self.app_model.emit_error
+        )
         self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_defaults_request(self) -> None:
