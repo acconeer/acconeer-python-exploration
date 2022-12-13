@@ -462,7 +462,9 @@ class AppModel(QObject):
         return current_port, False
 
     def connect_client(self, auto: bool = False) -> None:
-        if self._config.connection_interface == ConnectionInterface.SOCKET:
+        if self._config.connection_interface == ConnectionInterface.SIMULATED:
+            client_info = a121.ClientInfo(mock=True)
+        elif self._config.connection_interface == ConnectionInterface.SOCKET:
             client_info = a121.ClientInfo(ip_address=self._config.socket_connection_ip)
         elif (
             self._config.connection_interface == ConnectionInterface.SERIAL
@@ -502,6 +504,7 @@ class AppModel(QObject):
     def is_connect_ready(self) -> bool:
         return (
             (self._config.connection_interface == ConnectionInterface.SOCKET)
+            or (self._config.connection_interface == ConnectionInterface.SIMULATED)
             or (
                 self._config.connection_interface == ConnectionInterface.SERIAL
                 and self._config.serial_connection_device is not None

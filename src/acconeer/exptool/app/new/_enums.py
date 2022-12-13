@@ -15,6 +15,7 @@ class ConnectionInterface(Enum):
     SERIAL = auto()
     SOCKET = auto()
     USB = auto()
+    SIMULATED = auto()
 
 
 class PluginState(Enum):

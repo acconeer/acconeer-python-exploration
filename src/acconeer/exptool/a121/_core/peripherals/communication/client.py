@@ -20,6 +20,7 @@ from acconeer.exptool.a121._rate_calc import _RateStats
 
 from .communication_protocol import CommunicationProtocol
 from .exploration_client import ExplorationClient
+from .mock_client import MockClient
 from .utils import get_one_usb_device
 
 
@@ -32,32 +33,42 @@ class Client(ClientBase):
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool, et.utils.USBDevice]] = None,
+        mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ):
-        if len([e for e in [ip_address, serial_port, usb_device] if e is not None]) > 1:
+        if len([e for e in [ip_address, serial_port, usb_device, mock] if e is not None]) > 1:
             raise ValueError("Only one connection can be selected")
 
-        if isinstance(usb_device, str):
-            usb_device = et.utils.get_usb_device_by_serial(usb_device, only_accessible=False)
-
-        if isinstance(usb_device, bool):
-            if usb_device:
-                usb_device = get_one_usb_device()
+        if mock is not None:
+            if mock:
+                client_info = ClientInfo(
+                    mock=mock,
+                )
+                self._real_client = MockClient(client_info=client_info)
             else:
-                raise ValueError("usb_device=False is not valid")
+                raise ValueError("mock=False is not valid")
+        else:
+            if isinstance(usb_device, str):
+                usb_device = et.utils.get_usb_device_by_serial(usb_device, only_accessible=False)
 
-        client_info = ClientInfo(
-            ip_address=ip_address,
-            override_baudrate=override_baudrate,
-            serial_port=serial_port,
-            usb_device=usb_device,
-        )
+            if isinstance(usb_device, bool):
+                if usb_device:
+                    usb_device = get_one_usb_device()
+                else:
+                    raise ValueError("usb_device=False is not valid")
 
-        self._real_client = ExplorationClient(
-            client_info=client_info,
-            _override_protocol=_override_protocol,
-        )
+            client_info = ClientInfo(
+                ip_address=ip_address,
+                override_baudrate=override_baudrate,
+                serial_port=serial_port,
+                usb_device=usb_device,
+            )
+
+            self._real_client = ExplorationClient(
+                client_info=client_info,
+                _override_protocol=_override_protocol,
+            )
 
     def connect(self) -> None:
         self._real_client.connect()

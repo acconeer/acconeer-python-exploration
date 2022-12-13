@@ -42,7 +42,7 @@ from .exploration_protocol import (
 from .exploration_protocol.messages.system_info_response import SystemInfoDict
 from .links import AdaptedSerialLink, BufferedLink, NullLinkError
 from .message import Message, MessageT
-from .utils import autodetermine_client_link, link_factory
+from .utils import autodetermine_client_link, get_calibrations_provided, link_factory
 
 
 log = logging.getLogger(__name__)
@@ -274,12 +274,7 @@ class ExplorationClient(ClientBase):
 
         config.validate()
 
-        self._calibrations_provided = {}
-        for _, sensor_id, _ in iterate_extended_structure(config.groups):
-            if calibrations:
-                self._calibrations_provided[sensor_id] = sensor_id in calibrations
-            else:
-                self._calibrations_provided[sensor_id] = False
+        self._calibrations_provided = get_calibrations_provided(config, calibrations)
 
         self._link.send(self._protocol.setup_command(config, calibrations))
 

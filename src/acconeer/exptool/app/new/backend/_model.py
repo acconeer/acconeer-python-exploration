@@ -74,6 +74,7 @@ class Model:
             serial_port=client_info.serial_port,
             usb_device=client_info.usb_device,
             override_baudrate=client_info.override_baudrate,
+            mock=client_info.mock,
         )
 
         try:

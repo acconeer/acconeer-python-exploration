@@ -8,8 +8,9 @@ from typing import List, Optional
 import attrs
 
 import acconeer.exptool as et
-from acconeer.exptool.a121._core.entities import ClientInfo
+from acconeer.exptool.a121._core.entities import ClientInfo, SensorCalibration, SessionConfig
 from acconeer.exptool.a121._core.mediators import BufferedLink, ClientError
+from acconeer.exptool.a121._core.utils import iterate_extended_structure
 from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
 
 from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink, NullLink
@@ -101,3 +102,17 @@ def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
         error_message += f"\nSerial: {str(exc)}"
 
     raise ClientError(f"Cannot auto detect:{error_message}")
+
+
+def get_calibrations_provided(
+    session_config: SessionConfig,
+    calibrations: Optional[dict[int, SensorCalibration]] = None,
+) -> dict[int, bool]:
+    calibrations_provided = {}
+    for _, sensor_id, _ in iterate_extended_structure(session_config.groups):
+        if calibrations:
+            calibrations_provided[sensor_id] = sensor_id in calibrations
+        else:
+            calibrations_provided[sensor_id] = False
+
+    return calibrations_provided

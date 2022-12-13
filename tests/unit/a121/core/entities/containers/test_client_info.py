@@ -14,6 +14,7 @@ def client_info() -> ClientInfo:
         serial_port="port",
         usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
         override_baudrate=0,
+        mock=True,
     )
 
 
@@ -31,6 +32,7 @@ def client_info_dict() -> dict:
             "unflashed": False,
             "recognized": True,
         },
+        "mock": True,
         "override_baudrate": 0,
     }
 
@@ -50,12 +52,14 @@ def test_eq(client_info: ClientInfo) -> None:
         serial_port="port",
         usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
         override_baudrate=0,
+        mock=True,
     )
     assert client_info != ClientInfo(
         ip_address="ddr",
         serial_port="port",
         usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
         override_baudrate=0,
+        mock=True,
     )
 
 

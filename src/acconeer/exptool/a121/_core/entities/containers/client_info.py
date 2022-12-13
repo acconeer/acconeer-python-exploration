@@ -17,6 +17,7 @@ class ClientInfo:
     ip_address: Optional[str] = None
     serial_port: Optional[str] = None
     usb_device: Optional[USBDevice] = None
+    mock: Optional[bool] = None
     override_baudrate: Optional[int] = None
 
     def to_dict(self) -> dict[str, Any]:

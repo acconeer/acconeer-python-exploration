@@ -130,6 +130,14 @@ class _SerialConnectionWidget(AppModelAwareWidget):
             self.baudrate_line_edit.setStyleSheet("* {}")
 
 
+class _SimulatedConnectionWidget(AppModelAwareWidget):
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(app_model, parent)
+        self.app_model = app_model
+        self.setLayout(QHBoxLayout(self))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+
 class ClientConnectionWidget(AppModelAwareWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(app_model, parent)
@@ -140,11 +148,14 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
 
         self.interface_dd = QComboBox(self)
+        self.interface_dd.setMinimumWidth(110)
+
         self.layout().addWidget(self.interface_dd)
 
         self.interface_dd.addItem("Socket", userData=ConnectionInterface.SOCKET)
         self.interface_dd.addItem("Serial", userData=ConnectionInterface.SERIAL)
         self.interface_dd.addItem("USB", userData=ConnectionInterface.USB)
+        self.interface_dd.addItem("Simulated", userData=ConnectionInterface.SIMULATED)
 
         self.interface_dd.currentIndexChanged.connect(self._on_interface_dd_change)
 
@@ -153,6 +164,7 @@ class ClientConnectionWidget(AppModelAwareWidget):
         self.stacked.addWidget(_SocketConnectionWidget(app_model, self.stacked))
         self.stacked.addWidget(_SerialConnectionWidget(app_model, self.stacked))
         self.stacked.addWidget(USBDeviceComboBox(app_model, self.stacked))
+        self.stacked.addWidget(_SimulatedConnectionWidget(app_model, self.stacked))
         self.layout().addWidget(self.stacked)
 
         self.layout().addWidget(_ConnectAndDisconnectButton(app_model, self))
