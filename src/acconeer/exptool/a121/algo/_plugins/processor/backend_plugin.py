@@ -159,8 +159,6 @@ class GenericProcessorBackendPluginBase(
             )
         assert self.client
         metadata = self.client.setup_session(session_config)
-        self.client.start_session(self._recorder)
-
         the_first_sensor_config = next(
             _core.utils.iterate_extended_structure_values(session_config.groups)
         )
@@ -171,6 +169,7 @@ class GenericProcessorBackendPluginBase(
         )
 
         self.shared_state.metadata = metadata  # type: ignore[assignment]
+        self.client.start_session(self._recorder)
 
         self.callback(
             GeneralMessage(

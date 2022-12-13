@@ -213,15 +213,15 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         else:
             algo_group = None
 
-        self._detector_instance.start(
-            recorder,
-            _algo_group=algo_group,
-        )
-
         self._processor_instance = Processor(
             session_config=self._detector_instance.session_config,
             processor_config=self.shared_state.bilateration_config,
             sensor_ids=self.shared_state.sensor_ids,
+        )
+
+        self._detector_instance.start(
+            recorder,
+            _algo_group=algo_group,
         )
 
         self.callback(
