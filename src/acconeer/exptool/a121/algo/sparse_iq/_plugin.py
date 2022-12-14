@@ -81,8 +81,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
                 enum_type=AmplitudeMethod,
                 name_label_text="Amplitude method:",
                 name_label_tooltip=(
-                    "The method used to calculate the amplitude \
-                    from the complex Sparse IQ data"
+                    "The method used to calculate the amplitude from the complex Sparse IQ data"
                 ),
                 label_mapping={
                     AmplitudeMethod.COHERENT: "Coherent",

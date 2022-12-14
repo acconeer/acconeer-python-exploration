@@ -63,9 +63,10 @@ class PerfCalcView(QGroupBox):
         super().__init__(parent)
 
         self.setTitle("Performance estimates")
-        self.setToolTip(
-            "These performance estimates are based on calculations \
-            and conservative measurements in room temperature."
+
+        tooltip = (
+            "The estimate is based on calculations and "
+            "conservative measurements in room temperature."
         )
 
         layout = QGridLayout(self)
@@ -73,7 +74,9 @@ class PerfCalcView(QGroupBox):
 
         self.average_current = PerfCalcValueWidget(self)
         layout.addWidget(self.average_current, 0, 1)
-        layout.addWidget(QLabel("Estimated avg. current", self), 0, 0)
+        average_current_label = QLabel("Estimated avg. current", self)
+        average_current_label.setToolTip(tooltip)
+        layout.addWidget(average_current_label, 0, 0)
 
         self.update(None)
 
