@@ -1,5 +1,16 @@
 # Changelog
 
+## v5.7.0
+
+### Added
+- Separate changelog for unreleased changes
+- Frame count in status bar
+- Support for 15.6HMz PRF
+
+### Fixed
+- Unplugging of USB device not detected
+- Sync default sensor with connected sensors
+
 ## v5.6.0
 
 ### Added
