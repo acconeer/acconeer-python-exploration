@@ -36,7 +36,6 @@ log = logging.getLogger(__name__)
 class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model=app_model, view_widget=view_widget)
-        self.app_model = app_model
 
         sticky_layout = QVBoxLayout()
         sticky_layout.setContentsMargins(0, 0, 0, 0)

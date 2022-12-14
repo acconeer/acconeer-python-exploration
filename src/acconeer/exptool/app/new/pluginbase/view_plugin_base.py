@@ -17,8 +17,8 @@ from .ui_plugin_base import UiPluginBase
 class ViewPluginBase(UiPluginBase, abc.ABC, ViewPluginInterface):
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
         super().__init__(app_model)
-        self.__app_model = app_model
-        self.__app_model.sig_message_view_plugin.connect(self.handle_message)
+        self.app_model = app_model
+        self.app_model.sig_message_view_plugin.connect(self.handle_message)
 
         self.__view_widget = view_widget
         self.__view_widget.setLayout(QVBoxLayout())
@@ -38,7 +38,7 @@ class ViewPluginBase(UiPluginBase, abc.ABC, ViewPluginInterface):
 
     def stop_listening(self) -> None:
         super().stop_listening()
-        self.__app_model.sig_message_view_plugin.disconnect(self.handle_message)
+        self.app_model.sig_message_view_plugin.disconnect(self.handle_message)
 
     @property
     def sticky_widget(self) -> QWidget:
