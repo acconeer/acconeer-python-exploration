@@ -90,9 +90,9 @@ class ImageFlasher:
         if self._progress_callback is not None:
             self._progress_callback(100, True)
 
-        print("Flashed Image:")
-        print(f" - Name:    {self._comm.get_app_sw_name()}")
-        print(f" - Version: {self._comm.get_app_sw_version()}")
+        log.debug("Flashed Image:")
+        log.debug(f" - Name:    {self._comm.get_app_sw_name()}")
+        log.debug(f" - Version: {self._comm.get_app_sw_version()}")
 
     def flash_image_file(self, image_name):
         """flash image file to bootloader board"""
