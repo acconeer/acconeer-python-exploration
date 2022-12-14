@@ -15,8 +15,9 @@ class AppModelViewer(QTextEdit):
         super().__init__()
         app_model.sig_notify.connect(self._update_text)
         self.setFontFamily("monospace")
-        self.setMinimumSize(500, 200)
+        self.setMinimumSize(500, 330)
         self.setReadOnly(True)
+        self.update_count = 0
 
     @staticmethod
     def _stringify_backend_state(backend_state: Optional[Any]) -> list[str]:
@@ -36,6 +37,7 @@ class AppModelViewer(QTextEdit):
         ]
 
     def _update_text(self, app_model: AppModel) -> None:
+        self.update_count += 1
         self.setText(
             "\n".join(
                 [
@@ -51,6 +53,8 @@ class AppModelViewer(QTextEdit):
                     "",
                     "backend_plugin_state:",
                     *self._stringify_backend_state(app_model.backend_plugin_state),
+                    "",
+                    f"Update count:             {self.update_count}",
                 ]
             )
         )
