@@ -176,7 +176,7 @@ def docs_autobuild(session):
 def test(session):
     args = Parser().parse_args(session.posargs)
 
-    install_deps = {"pytest"}
+    install_deps = {PYTEST_SPEC}
     install_extras = set()
     pytest_commands = []
 
