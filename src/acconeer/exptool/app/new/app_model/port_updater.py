@@ -17,6 +17,8 @@ class PortUpdater(QObject):
 
     class Worker(QObject):
         sig_update = Signal(object, object)
+        serial_devices: Any = None
+        usb_devices: Any = None
 
         @Slot()  # type: ignore[misc]
         def start(self) -> None:
@@ -30,7 +32,10 @@ class PortUpdater(QObject):
             serial_devices = get_serial_devices()  # type: ignore[name-defined]
             usb_devices = get_usb_devices()  # type: ignore[name-defined]
 
-            self.sig_update.emit(serial_devices, usb_devices)
+            if self.serial_devices != serial_devices or self.usb_devices != usb_devices:
+                self.serial_devices = serial_devices
+                self.usb_devices = usb_devices
+                self.sig_update.emit(serial_devices, usb_devices)
 
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
