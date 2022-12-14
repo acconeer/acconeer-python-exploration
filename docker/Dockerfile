@@ -2,20 +2,27 @@ FROM ubuntu:20.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update -qq && apt-get install --no-install-recommends -qq \
     git \
     graphviz \
+    latexmk \
+    libasan5 \
     libdbus-1-3 \
     libegl1 \
     libfontconfig1 \
     libgl1-mesa-glx \
+    libtsan0 \
+    libubsan1 \
     libxkbcommon0 \
+    make \
     python3-dev \
     python3-pip \
-    wget \
-    texlive \
+    texlive-fonts-recommended \
     texlive-latex-extra \
-    latexmk \
+    texlive-latex-recommended \
+    texlive-plain-generic \
+    texlive-publishers \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements-dev.txt /tmp/
