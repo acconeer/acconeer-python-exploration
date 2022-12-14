@@ -33,6 +33,7 @@ pipeline {
                 dockerfile {
                     reuseNode true
                     args '--mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip'
+                    dir 'docker'
                 }
             }
             steps {
@@ -57,6 +58,7 @@ pipeline {
                         dockerfile {
                             reuseNode true
                             args '--net=host --privileged --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip'
+                            dir 'docker'
                         }
                     }
                     options {
@@ -76,6 +78,7 @@ pipeline {
                         dockerfile {
                             reuseNode true
                             args '--mount type=volume,src=cachepip,dst=/home/jenkins/.cache/pip'
+                            dir 'docker'
                         }
                     }
                     environment {

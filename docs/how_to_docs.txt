@@ -4,7 +4,7 @@ How to docs
 How to build and run locally::
 
    # Install development requirements
-   python3 -m pip install -r requirements-dev.txt
+   python3 -m pip install -r docker/requirements-dev.txt
 
    # Start Sphinx autobuild through nox (installed with the last command)
    nox -s docs_autobuild
