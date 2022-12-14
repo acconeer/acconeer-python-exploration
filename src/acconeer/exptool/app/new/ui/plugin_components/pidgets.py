@@ -498,6 +498,7 @@ class UpdateableComboboxParameterWidget(ComboboxParameterWidget[T]):
 @attrs.frozen(kw_only=True, slots=False)
 class SensorIdParameterWidgetFactory(UpdateableComboboxParameterWidgetFactory[int]):
     name_label_text: str = attrs.field(default="Sensor:")
+    name_label_tooltip: str = attrs.field(default="The sensor to use in session")
 
     def create(self, parent: QWidget) -> SensorIdParameterWidget:
         return SensorIdParameterWidget(self, parent)

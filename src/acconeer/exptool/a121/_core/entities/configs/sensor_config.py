@@ -528,7 +528,7 @@ class SensorConfig:
     def inter_sweep_idle_state(self) -> IdleState:
         """Inter sweep idle state
 
-        The inter frame idle state is the state the sensor idles in
+        The inter sweep idle state is the state the sensor idles in
         between each sweep in a frame.
 
         See also :class:`.config_enums.IdleState`.

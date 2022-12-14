@@ -39,10 +39,17 @@ class SensorConfigEditor(QWidget):
     SENSOR_CONFIG_FACTORIES: PidgetFactoryMapping = {
         "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
             name_label_text="Sweeps per frame:",
+            name_label_tooltip=(
+                "The number of sweeps that will be captured in each frame (measurement)."
+            ),
             limits=(1, 4095),
         ),
         "sweep_rate": pidgets.OptionalFloatParameterWidgetFactory(
             name_label_text="Sweep rate:",
+            name_label_tooltip=(
+                "The sweep rate for sweeps in a frame (measurement).\n"
+                "If 'Limit' is unchecked, the sweep rate will be as fast as possible."
+            ),
             limits=(1, 1e6),
             decimals=0,
             init_set_value=1000.0,
@@ -51,6 +58,10 @@ class SensorConfigEditor(QWidget):
         ),
         "frame_rate": pidgets.OptionalFloatParameterWidgetFactory(
             name_label_text="Frame rate:",
+            name_label_tooltip=(
+                "Frame rate.\nIf 'Limit' is unchecked, the rate is not limited by the sensor "
+                "but by the rate that the server acknowledge and reads out the frame."
+            ),
             limits=(0.1, 1e4),
             decimals=1,
             init_set_value=10.0,
@@ -60,18 +71,34 @@ class SensorConfigEditor(QWidget):
         "inter_sweep_idle_state": pidgets.EnumParameterWidgetFactory(
             enum_type=a121.IdleState,
             name_label_text="Inter sweep idle state:",
+            name_label_tooltip=(
+                "The inter sweep idle state is the state the sensor idles in "
+                "between each sweep in a frame."
+            ),
             label_mapping=IDLE_STATE_LABEL_MAP,
         ),
         "inter_frame_idle_state": pidgets.EnumParameterWidgetFactory(
             enum_type=a121.IdleState,
             name_label_text="Inter frame idle state:",
+            name_label_tooltip=(
+                "The inter frame idle state is the state the sensor idles in between each frame."
+            ),
             label_mapping=IDLE_STATE_LABEL_MAP,
         ),
         "continuous_sweep_mode": pidgets.CheckboxParameterWidgetFactory(
             name_label_text="Continuous sweep mode",
+            name_label_tooltip=(
+                "In continuous sweep mode the timing will be identical over all sweeps, "
+                "not just the sweeps in a frame."
+            ),
         ),
         "double_buffering": pidgets.CheckboxParameterWidgetFactory(
-            name_label_text="Enable double buffering",
+            name_label_text="Double buffering",
+            name_label_tooltip=(
+                "Double buffering will split the sensor buffer in two halves. "
+                "One half is used to read out the frame while sampling is done "
+                "in the other half."
+            ),
         ),
     }
 

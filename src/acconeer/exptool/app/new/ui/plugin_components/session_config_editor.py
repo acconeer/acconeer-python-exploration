@@ -52,6 +52,10 @@ class SessionConfigEditor(QWidget):
 
         self._update_rate_pidget = pidgets.OptionalFloatParameterWidgetFactory(
             name_label_text="Update rate:",
+            name_label_tooltip=(
+                "Set an update rate limit on the server.\n"
+                "If 'Limit' is unchecked, the server will run as fast as possible."
+            ),
             limits=(0.1, 1e4),
             decimals=1,
             init_set_value=10.0,
