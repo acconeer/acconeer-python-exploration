@@ -18,6 +18,7 @@ ISORT_SPEC = "isort==5.6.3"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 PYTEST_SPEC = "pytest==7.2"
+PYTEST_XDIST_SPEC = "pytest-xdist==3.1.0"
 
 SPHINX_SOURCE_DIR = "docs"
 SPHINX_OUTPUT_DIR = "docs/_build"
@@ -176,7 +177,7 @@ def docs_autobuild(session):
 def test(session):
     args = Parser().parse_args(session.posargs)
 
-    install_deps = {PYTEST_SPEC}
+    install_deps = {PYTEST_SPEC, PYTEST_XDIST_SPEC}
     install_extras = set()
     pytest_commands = []
 
@@ -187,8 +188,8 @@ def test(session):
         install_extras |= {"algo"}
         pytest_commands.extend(
             [
-                ["-p", "no:pytest-qt", "tests/unit"],
-                ["-p", "no:pytest-qt", "tests/processing"],
+                ["-n", "auto", "-p", "no:pytest-qt", "tests/unit"],
+                ["-n", "auto", "-p", "no:pytest-qt", "tests/processing"],
             ]
         )
 
