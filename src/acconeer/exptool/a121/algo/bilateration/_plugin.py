@@ -628,7 +628,6 @@ class ViewPlugin(DetectorViewPluginBase):
         self.start_button.setEnabled(ready_for_session and detector_status.ready_to_start)
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
-    # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
         self.app_model.put_backend_plugin_task("update_config", {"config": config})
 
@@ -638,7 +637,6 @@ class ViewPlugin(DetectorViewPluginBase):
     def _on_sensor_ids_update(self, sensor_ids: list[int]) -> None:
         self.app_model.put_backend_plugin_task("update_sensor_ids", {"sensor_ids": sensor_ids})
 
-    # TODO: move to detector base (?)
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
             log.debug(f"{type(self).__name__} syncing")

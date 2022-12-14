@@ -694,14 +694,12 @@ class ViewPlugin(DetectorViewPluginBase):
         self.start_button.setEnabled(app_model.is_ready_for_session())
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
-    # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
         self.app_model.put_backend_plugin_task("update_config", {"config": config})
 
     def _on_plot_config_update(self, config: PlotConfig) -> None:
         self.app_model.put_backend_plugin_task("update_plot_config", {"config": config})
 
-    # TODO: move to detector base (?)
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
             self._log.debug(f"{type(self).__name__} syncing")

@@ -523,11 +523,9 @@ class ViewPlugin(DetectorViewPluginBase):
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         self.app_model.put_backend_plugin_task("update_sensor_ids", {"sensor_ids": [sensor_id]})
 
-    # TODO: move to detector base (?)
     def _on_config_update(self, config: DetectorConfig) -> None:
         self.app_model.put_backend_plugin_task("update_config", {"config": config})
 
-    # TODO: move to detector base (?)
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
             self._log.debug(f"{type(self).__name__} syncing")
