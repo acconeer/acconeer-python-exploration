@@ -52,8 +52,8 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
             "Stop",
             self.sticky_widget,
         )
-        self.start_button.clicked.connect(self._send_start_requests)
-        self.stop_button.clicked.connect(self._send_stop_requests)
+        self.start_button.clicked.connect(self._send_start_request)
+        self.stop_button.clicked.connect(self._send_stop_request)
 
         self.start_button.setShortcut("space")
         self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
@@ -97,18 +97,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ConfigT]):
         self.app_model.put_backend_plugin_task(
             "update_processor_config", {"processor_config": processor_config}
         )
-
-    def _send_start_requests(self) -> None:
-        self.app_model.put_backend_plugin_task(
-            "start_session",
-            {"with_recorder": self.app_model.recording_enabled},
-            on_error=self.app_model.emit_error,
-        )
-        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
-
-    def _send_stop_requests(self) -> None:
-        self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
-        self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
