@@ -394,7 +394,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor = AttrsConfigEditor[DetectorConfig](
             title="Detector parameters",
-            factory_mapping=self._get_pidget_mapping(),
+            factory_mapping=self.get_pidget_mapping(),
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)
@@ -404,7 +404,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
+    def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
             "start_m": pidgets.FloatParameterWidgetFactory(
                 name_label_text="Range start",

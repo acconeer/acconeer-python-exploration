@@ -29,10 +29,9 @@ from acconeer.exptool.a121.algo.distance import (
     DetectorConfig,
     DetectorContext,
     DetectorResult,
-    PeakSortingMethod,
-    ThresholdMethod,
 )
 from acconeer.exptool.a121.algo.distance._detector import _load_algo_data
+from acconeer.exptool.a121.algo.distance._detector_plugin import ViewPlugin as DistanceViewPlugin
 from acconeer.exptool.app.new import (
     BUTTON_ICON_COLOR,
     AppModel,
@@ -570,79 +569,15 @@ class ViewPlugin(DetectorViewPluginBase):
 
     @classmethod
     def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
-        return {
-            "start_m": pidgets.FloatParameterWidgetFactory(
-                name_label_text="Range start",
-                suffix=" m",
-                decimals=3,
-            ),
-            "end_m": pidgets.FloatParameterWidgetFactory(
-                name_label_text="Range end",
-                suffix=" m",
-                decimals=3,
-            ),
-            "max_step_length": pidgets.OptionalIntParameterWidgetFactory(
-                name_label_text="Max step length",
-                checkbox_label_text="Set",
-                limits=(1, None),
-                init_set_value=12,
-            ),
-            "max_profile": pidgets.EnumParameterWidgetFactory(
-                name_label_text="Max profile",
-                enum_type=a121.Profile,
-                label_mapping={
-                    a121.Profile.PROFILE_1: "1 (shortest)",
-                    a121.Profile.PROFILE_2: "2",
-                    a121.Profile.PROFILE_3: "3",
-                    a121.Profile.PROFILE_4: "4",
-                    a121.Profile.PROFILE_5: "5 (longest)",
-                },
-            ),
-            "num_frames_in_recorded_threshold": pidgets.IntParameterWidgetFactory(
-                name_label_text="Num frames in rec. thr.",
-                limits=(1, None),
-            ),
-            "threshold_method": pidgets.EnumParameterWidgetFactory(
-                name_label_text="Threshold method",
-                enum_type=ThresholdMethod,
-                label_mapping={
-                    ThresholdMethod.CFAR: "CFAR",
-                    ThresholdMethod.FIXED: "Fixed",
-                    ThresholdMethod.RECORDED: "Recorded",
-                },
-            ),
-            "peaksorting_method": pidgets.EnumParameterWidgetFactory(
-                name_label_text="Peak sorting method",
-                enum_type=PeakSortingMethod,
-                label_mapping={
-                    PeakSortingMethod.CLOSEST: "Closest",
-                    PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
-                },
-            ),
-            "fixed_threshold_value": pidgets.FloatParameterWidgetFactory(
-                name_label_text="Fixed threshold value",
-                decimals=1,
-                limits=(0, None),
-            ),
-            "threshold_sensitivity": pidgets.FloatSliderParameterWidgetFactory(
-                name_label_text="Threshold sensitivity",
-                decimals=2,
-                limits=(0, 1),
-                show_limit_values=False,
-            ),
-            "signal_quality": pidgets.FloatSliderParameterWidgetFactory(
-                name_label_text="Signal quality",
-                decimals=1,
-                limits=(-10, 35),
-                show_limit_values=False,
-                limit_texts=("Less power", "Higher quality"),
-            ),
-            "update_rate": pidgets.FloatParameterWidgetFactory(
-                name_label_text="Update rate",
-                decimals=1,
-                limits=(1, None),
-            ),
-        }
+        distance_pidget_mapping = dict(DistanceViewPlugin.get_pidget_mapping())
+
+        # Bilateration requires an update rate, so replace the optional float with a mandatory
+        distance_pidget_mapping["update_rate"] = pidgets.FloatParameterWidgetFactory(
+            name_label_text="Update rate",
+            decimals=1,
+            limits=(1, None),
+        )
+        return distance_pidget_mapping
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
