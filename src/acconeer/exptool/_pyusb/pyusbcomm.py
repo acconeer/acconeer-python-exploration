@@ -172,11 +172,12 @@ class PyUsbCdc:
 
     def disconnect(self):
         if self.is_open:
-            usb.util.dispose_resources(self._dev)
             try:
                 self._dev.attach_kernel_driver(0)
             except usb.core.USBError:
                 pass
+            usb.util.dispose_resources(self._dev)
+            self._dev = None
             self.is_open = False
 
     def __del__(self):
