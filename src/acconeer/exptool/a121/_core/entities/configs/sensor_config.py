@@ -512,7 +512,11 @@ class SensorConfig:
 
         The inter frame idle state is the state the sensor idles in between each frame.
 
-        See also :class:`.config_enums.IdleState`.
+        Idle state `Deep sleep` is the deepest state where as much of the
+        sensor hardware as possible is shut down and idle state `Ready` is
+        the lightest state where most of the sensor hardware is kept on.
+
+        `Deep sleep` is the slowest to transition from while `Ready` is the fastest.
 
         The :attr:`inter_frame_idle_state` of the frame must be deeper or
         the same as the :attr:`inter_sweep_idle_state` .
@@ -531,7 +535,11 @@ class SensorConfig:
         The inter sweep idle state is the state the sensor idles in
         between each sweep in a frame.
 
-        See also :class:`.config_enums.IdleState`.
+        Idle state `Deep sleep` is the deepest state where as much of the
+        sensor hardware as possible is shut down and idle state `Ready` is
+        the lightest state where most of the sensor hardware is kept on.
+
+        `Deep sleep` is the slowest to transition from while `Ready` is the fastest.
         """
 
         return self._inter_sweep_idle_state

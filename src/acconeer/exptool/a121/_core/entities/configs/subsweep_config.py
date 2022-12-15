@@ -295,7 +295,32 @@ class SubsweepConfig:
     def prf(self) -> PRF:
         """Pulse Repetition Frequency (PRF)
 
-        See :class:`PRF` for details.
+        Pulse Repetition Frequency, PRF, is the frequency at which pulses are sent out from
+        the radar system. The measurement time is approximately proportional to the PRF.
+        The higher the PRF, the shorter the measurement time.
+
+        This parameter sets the Maximum Measurable Distance, MMD, that can be achieved. MMD is the
+        maximum value for the end point, i.e., the start point + (number of points * step length).
+        For example, an MMD of 7.0 m means that the range cannot be set further out than 7.0 m.
+
+        It also sets the Maximum Unambiguous Range, MUR, that can be achieved. MUR is the maximum
+        distance at which an object can be located to guarantee that its reflection corresponds to
+        the most recent transmitted pulse. Objects farther away than the MUR may fold into the
+        measured range. For example, with a MUR of 11.5 m, an object at 13.5 m could become
+        visible at 2 m.
+
+        ================= ======== ====== ======
+        PRF Setting            PRF    MMD    MUR
+        ================= ======== ====== ======
+        PRF_19_5_MHZ [*]_ 19.5 MHz  3.1 m  7.7 m
+        PRF_15_6_MHZ      15.6 MHz  5.8 m  9.6 m
+        PRF_13_0_MHZ      13.0 MHz  7.0 m 11.5 m
+        PRF_8_7_MHZ        8.7 MHz 12.7 m 17.3 m
+        PRF_6_5_MHZ        6.5 MHz 18.5 m 23.1 m
+        PRF_5_2_MHZ        5.2 MHz 24.2 m 28.8 m
+        ================= ======== ====== ======
+
+        .. [*] 19.5MHz is only available for profile 1.
         """
 
         return self._prf

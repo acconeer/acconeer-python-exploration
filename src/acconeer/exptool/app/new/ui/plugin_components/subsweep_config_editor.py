@@ -78,7 +78,7 @@ class SubsweepConfigEditor(QWidget):
         "prf": pidgets.EnumParameterWidgetFactory(
             enum_type=a121.PRF,
             name_label_text="PRF:",
-            name_label_tooltip=a121.PRF.__doc__,  # type: ignore[arg-type]
+            name_label_tooltip=a121.SubsweepConfig.prf.__doc__,  # type: ignore[arg-type]
             label_mapping=PRF_LABEL_MAP,
         ),
         "enable_tx": pidgets.CheckboxParameterWidgetFactory(
