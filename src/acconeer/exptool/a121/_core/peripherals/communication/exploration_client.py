@@ -22,7 +22,7 @@ from acconeer.exptool.a121._core.entities import (
     ServerLogMessage,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import ClientBase, ClientError, Recorder
+from acconeer.exptool.a121._core.mediators import ClientError, Recorder
 from acconeer.exptool.a121._core.utils import (
     create_extended_structure,
     iterate_extended_structure,
@@ -30,8 +30,8 @@ from acconeer.exptool.a121._core.utils import (
     unwrap_ticks,
 )
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
-from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
+from .common_client import CommonClient
 from .communication_protocol import CommunicationProtocol
 from .exploration_protocol import (
     ExplorationProtocol,
@@ -48,21 +48,13 @@ from .utils import autodetermine_client_link, get_calibrations_provided, link_fa
 log = logging.getLogger(__name__)
 
 
-class ExplorationClient(ClientBase):
-    _client_info: ClientInfo
+class ExplorationClient(CommonClient):
     _link: BufferedLink
     _default_link_timeout: float
     _link_timeout: float
     _protocol: Type[CommunicationProtocol]
     _protocol_overridden: bool
-    _recorder: Optional[Recorder]
     _tick_unwrapper: TickUnwrapper
-    _rate_stats_calc: Optional[_RateCalculator]
-    _session_config: Optional[SessionConfig]
-    _session_is_started: bool
-    _metadata: Optional[list[dict[int, Metadata]]]
-    _sensor_calibrations: Optional[dict[int, SensorCalibration]]
-    _calibrations_provided: dict[int, bool]
     _sensor_infos: dict[int, SensorInfo]
     _system_info: Optional[SystemInfoDict]
     _result_queue: list[list[dict[int, Result]]]
@@ -74,18 +66,10 @@ class ExplorationClient(ClientBase):
         client_info: ClientInfo,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> None:
-        self._client_info = client_info
+        super().__init__(client_info)
         self._link = link_factory(self.client_info)
-        self._recorder = None
         self._tick_unwrapper = TickUnwrapper()
         self._message_stream = iter([])
-        self._rate_stats_calc = None
-
-        self._session_config = None
-        self._session_is_started = False
-        self._metadata = None
-        self._sensor_calibrations = None
-        self._calibrations_provided = {}
         self._sensor_infos = {}
         self._system_info = None
         self._log_queue = []
@@ -315,32 +299,13 @@ class ExplorationClient(ClientBase):
         if self.session_is_started:
             raise ClientError("Session is already started.")
 
-        if recorder is not None:
-            calibrations_provided: Optional[dict[int, bool]] = self.calibrations_provided
-            try:
-                calibrations = self.calibrations
-            except ClientError:
-                calibrations = None
-                calibrations_provided = None
-
-            self._recorder = recorder
-            self._recorder._start(
-                client_info=self.client_info,
-                extended_metadata=self.extended_metadata,
-                server_info=self.server_info,
-                session_config=self.session_config,
-                calibrations=calibrations,
-                calibrations_provided=calibrations_provided,
-            )
-
-        self._link.timeout = self._link_timeout
-
-        self._link.send(self._protocol.start_streaming_command())
-        self._apply_messages_until_message_type_encountered(messages.StartStreamingResponse)
+        self._recorder_start(recorder)
+        self._create_rate_stats_calc()
         self._session_is_started = True
 
-        assert self._metadata is not None
-        self._rate_stats_calc = _RateCalculator(self.session_config, self._metadata)
+        self._link.timeout = self._link_timeout
+        self._link.send(self._protocol.start_streaming_command())
+        self._apply_messages_until_message_type_encountered(messages.StartStreamingResponse)
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         self._assert_session_started()
@@ -364,16 +329,9 @@ class ExplorationClient(ClientBase):
             config_groups=self._session_config.groups,
         )
 
-        if self._recorder is not None:
-            self._recorder._sample(extended_results)
-
-        assert self._rate_stats_calc is not None
-        self._rate_stats_calc.update(extended_results)
-
-        if self.session_config.extended:
-            return extended_results
-        else:
-            return unextend(extended_results)
+        self._recorder_sample(extended_results)
+        self._update_rate_stats_calc(extended_results)
+        return self._return_results(extended_results)
 
     def stop_session(self) -> Any:
         self._assert_session_started()
@@ -391,12 +349,7 @@ class ExplorationClient(ClientBase):
             self._link.timeout = self._default_link_timeout
             self._tick_unwrapper = TickUnwrapper()
 
-        if self._recorder is None:
-            recorder_result = None
-        else:
-            recorder_result = self._recorder._stop()
-            self._recorder = None
-
+        recorder_result = self._recorder_stop()
         self._rate_stats_calc = None
         self._log_queue.clear()
 
@@ -421,14 +374,6 @@ class ExplorationClient(ClientBase):
         return self._sensor_infos != {} and self._system_info is not None
 
     @property
-    def session_is_setup(self) -> bool:
-        return self._metadata is not None
-
-    @property
-    def session_is_started(self) -> bool:
-        return self._session_is_started
-
-    @property
     def server_info(self) -> ServerInfo:
         self._assert_connected()
 
@@ -441,41 +386,6 @@ class ExplorationClient(ClientBase):
             sensor_infos=self._sensor_infos,
             max_baudrate=self._system_info.get("max_baudrate"),
         )
-
-    @property
-    def client_info(self) -> ClientInfo:
-        return self._client_info
-
-    @property
-    def session_config(self) -> SessionConfig:
-        self._assert_session_setup()
-        assert self._session_config is not None  # Should never happen if session is setup
-        return self._session_config
-
-    @property
-    def extended_metadata(self) -> list[dict[int, Metadata]]:
-        self._assert_session_setup()
-        assert self._metadata is not None  # Should never happen if session is setup
-        return self._metadata
-
-    @property
-    def calibrations(self) -> dict[int, SensorCalibration]:
-        self._assert_session_setup()
-
-        if not self._sensor_calibrations:
-            raise ClientError("Server did not provide calibration")
-
-        return self._sensor_calibrations
-
-    @property
-    def calibrations_provided(self) -> dict[int, bool]:
-        return self._calibrations_provided
-
-    @property
-    def _rate_stats(self) -> _RateStats:
-        self._assert_session_started()
-        assert self._rate_stats_calc is not None
-        return self._rate_stats_calc.stats
 
 
 class TickUnwrapper:

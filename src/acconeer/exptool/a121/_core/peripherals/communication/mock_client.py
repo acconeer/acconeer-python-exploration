@@ -24,14 +24,14 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
     SubsweepConfig,
 )
-from acconeer.exptool.a121._core.mediators import ClientBase, ClientError, Recorder
+from acconeer.exptool.a121._core.mediators import ClientError, Recorder
 from acconeer.exptool.a121._core.utils import unextend
-from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
+from .common_client import CommonClient
 from .utils import get_calibrations_provided
 
 
-class MockClient(ClientBase):
+class MockClient(CommonClient):
 
     TICKS_PER_SECOND = 1000000
     CALIBRATION_TEMPERATURE = 25
@@ -70,40 +70,12 @@ class MockClient(ClientBase):
 
     _client_info: ClientInfo
     _connected: bool
-    _session_is_started: bool
-    _recorder: Optional[Recorder]
-    _metadata: Optional[list[dict[int, Metadata]]]
-    _sensor_calibrations: Optional[dict[int, SensorCalibration]]
-    _session_config: Optional[SessionConfig]
-    _calibrations_provided: dict[int, bool]
-    _rate_stats_calc: Optional[_RateCalculator]
     _start_time: float
 
     def __init__(self, client_info: ClientInfo) -> None:
-        self._calibrations_provided = {}
-        self._client_info = client_info
-        self._connected = False
-        self._metadata = None
-        self._rate_stats_calc = None
-        self._recorder = None
-        self._sensor_calibrations = None
-        self._session_config = None
-        self._session_is_started = False
         self._start_time = time.monotonic()
-
-    def _assert_connected(self) -> None:
-        if not self.connected:
-            raise ClientError("Client is not connected.")
-
-    def _assert_session_setup(self) -> None:
-        self._assert_connected()
-        if not self.session_is_setup:
-            raise ClientError("Session is not set up.")
-
-    def _assert_session_started(self) -> None:
-        self._assert_session_setup()
-        if not self.session_is_started:
-            raise ClientError("Session is not started.")
+        self._connected = False
+        super().__init__(client_info)
 
     @classmethod
     def _sensor_config_to_metadata(
@@ -255,27 +227,9 @@ class MockClient(ClientBase):
         if self.session_is_started:
             raise ClientError("Session is already started.")
 
-        if recorder is not None:
-            calibrations_provided: Optional[dict[int, bool]] = self.calibrations_provided
-            try:
-                calibrations = self.calibrations
-            except ClientError:
-                calibrations = None
-                calibrations_provided = None
-
-            self._recorder = recorder
-            self._recorder._start(
-                client_info=self.client_info,
-                extended_metadata=self.extended_metadata,
-                server_info=self.server_info,
-                session_config=self.session_config,
-                calibrations=calibrations,
-                calibrations_provided=calibrations_provided,
-            )
-
+        self._recorder_start(recorder)
+        self._create_rate_stats_calc()
         self._session_is_started = True
-        assert self._metadata is not None
-        self._rate_stats_calc = _RateCalculator(self.session_config, self._metadata)
         self._start_time = time.monotonic()
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
@@ -289,30 +243,16 @@ class MockClient(ClientBase):
 
         extended_results = self._session_config_to_result(self.session_config)
 
-        if self._recorder is not None:
-            self._recorder._sample(extended_results)
-
-        assert self._rate_stats_calc is not None
-        self._rate_stats_calc.update(extended_results)
-
-        if self.session_config.extended:
-            return extended_results
-        else:
-            return unextend(extended_results)
+        self._recorder_sample(extended_results)
+        self._update_rate_stats_calc(extended_results)
+        return self._return_results(extended_results)
 
     def stop_session(self) -> Any:
         self._assert_session_started()
         self._session_is_started = False
-
-        if self._recorder is None:
-            recorder_result = None
-        else:
-            recorder_result = self._recorder._stop()
-            self._recorder = None
-
         self._rate_stats_calc = None
 
-        return recorder_result
+        return self._recorder_stop()
 
     def disconnect(self) -> None:
         if not self._connected:
@@ -329,49 +269,6 @@ class MockClient(ClientBase):
         return self._connected
 
     @property
-    def session_is_setup(self) -> bool:
-        return self._metadata is not None
-
-    @property
-    def session_is_started(self) -> bool:
-        return self._session_is_started
-
-    @property
     def server_info(self) -> ServerInfo:
         self._assert_connected()
         return self.MOCK_SERVER_INFO
-
-    @property
-    def client_info(self) -> ClientInfo:
-        return self._client_info
-
-    @property
-    def session_config(self) -> SessionConfig:
-        self._assert_session_setup()
-        assert self._session_config is not None  # Should never happen if session is setup
-        return self._session_config
-
-    @property
-    def extended_metadata(self) -> list[dict[int, Metadata]]:
-        self._assert_session_setup()
-        assert self._metadata is not None  # Should never happen if session is setup
-        return self._metadata
-
-    @property
-    def calibrations(self) -> dict[int, SensorCalibration]:
-        self._assert_session_setup()
-
-        if not self._sensor_calibrations:
-            raise ClientError("Server did not provide calibration")
-
-        return self._sensor_calibrations
-
-    @property
-    def calibrations_provided(self) -> dict[int, bool]:
-        return self._calibrations_provided
-
-    @property
-    def _rate_stats(self) -> _RateStats:
-        self._assert_session_started()
-        assert self._rate_stats_calc is not None
-        return self._rate_stats_calc.stats
