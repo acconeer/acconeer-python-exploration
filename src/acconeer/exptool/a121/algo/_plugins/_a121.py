@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             return False
 
     @property
-    def client(self) -> Optional[a121.ClientBase]:
+    def client(self) -> Optional[a121.Client]:
         if self._replaying_client is not None:
             return self._replaying_client
 

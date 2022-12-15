@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -558,7 +558,10 @@ class AppModel(QObject):
                 serial_port=self.serial_connection_device.port,
                 override_baudrate=self.overridden_baudrate,
             )
-        elif self.connection_interface == ConnectionInterface.USB:
+        elif (
+            self.connection_interface == ConnectionInterface.USB
+            and self.usb_connection_device is not None
+        ):
             client_info = a121.ClientInfo(usb_device=self.usb_connection_device)
         else:
             raise RuntimeError

@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import attrs
 
@@ -16,9 +16,26 @@ from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 class ClientInfo:
     ip_address: Optional[str] = None
     serial_port: Optional[str] = None
-    usb_device: Optional[USBDevice] = None
+    usb_device: Optional[Union[str, bool, USBDevice]] = None
     mock: Optional[bool] = None
     override_baudrate: Optional[int] = None
+
+    @classmethod
+    def _from_open(
+        cls,
+        ip_address: Optional[str] = None,
+        serial_port: Optional[str] = None,
+        usb_device: Optional[Union[str, bool, USBDevice]] = None,
+        mock: Optional[bool] = None,
+        override_baudrate: Optional[int] = None,
+    ) -> ClientInfo:
+        return ClientInfo(
+            ip_address=ip_address,
+            serial_port=serial_port,
+            usb_device=usb_device,
+            mock=mock,
+            override_baudrate=override_baudrate,
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)

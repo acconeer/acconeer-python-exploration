@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -69,16 +69,14 @@ class Model:
                 "Model already has a Client. The current Client needs to be disconnected first."
             )
 
-        self.client = a121.Client(
-            ip_address=client_info.ip_address,
-            serial_port=client_info.serial_port,
-            usb_device=client_info.usb_device,
-            override_baudrate=client_info.override_baudrate,
-            mock=client_info.mock,
-        )
-
         try:
-            self.client.connect()
+            self.client = a121.Client.open(
+                ip_address=client_info.ip_address,
+                serial_port=client_info.serial_port,
+                usb_device=client_info.usb_device,
+                override_baudrate=client_info.override_baudrate,
+                mock=client_info.mock,
+            )
         except Exception as exc:
             self.client = None
             self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
@@ -117,7 +115,7 @@ class Model:
             self.backend_plugin.detach_client()
 
         try:
-            self.client.disconnect()
+            self.client.close()
         except Exception:
             pass
 

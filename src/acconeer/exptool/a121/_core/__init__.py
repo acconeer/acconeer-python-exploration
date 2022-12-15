@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from .entities import (
@@ -25,10 +25,11 @@ from .entities import (
     complex_array_to_int16_complex,
     int16_complex_array_to_complex,
 )
-from .mediators import ClientBase, ClientError, Recorder
+from .mediators import Recorder
 from .peripherals import (
     _H5PY_STR_DTYPE,
     Client,
+    ClientError,
     H5Record,
     H5Recorder,
     InMemoryRecord,

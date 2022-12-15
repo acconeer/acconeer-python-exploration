@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import time
 from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 from acconeer.exptool.a121 import (
-    ClientBase,
+    Client,
     ClientError,
     ClientInfo,
     Metadata,
@@ -26,7 +26,7 @@ class _StopReplay(Exception):
     pass
 
 
-class _ReplayingClient(ClientBase):
+class _ReplayingClient(Client):
     _rate_stats_calc: Optional[_RateCalculator]
 
     def __init__(self, record: Record):
@@ -52,7 +52,7 @@ class _ReplayingClient(ClientBase):
         if not self.session_is_started:
             raise ClientError("Session is not started.")
 
-    def connect(self) -> None:
+    def _open(self) -> None:
         pass
 
     def setup_session(
@@ -60,9 +60,6 @@ class _ReplayingClient(ClientBase):
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
-        if not self.connected:
-            self.connect()
-
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
 
@@ -129,7 +126,7 @@ class _ReplayingClient(ClientBase):
         self._result_iterator = None
         self._is_started = False
 
-    def disconnect(self) -> None:
+    def close(self) -> None:
         pass
 
     @property

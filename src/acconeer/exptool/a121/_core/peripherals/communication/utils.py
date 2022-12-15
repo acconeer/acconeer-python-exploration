@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -9,10 +9,11 @@ import attrs
 
 import acconeer.exptool as et
 from acconeer.exptool.a121._core.entities import ClientInfo, SensorCalibration, SessionConfig
-from acconeer.exptool.a121._core.mediators import BufferedLink, ClientError
+from acconeer.exptool.a121._core.mediators import BufferedLink
 from acconeer.exptool.a121._core.utils import iterate_extended_structure
 from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
 
+from .common_client import ClientError
 from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink, NullLink
 
 
@@ -67,11 +68,21 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
 
         return link
 
-    if client_info.usb_device is not None:
+    usb_device = client_info.usb_device
+    if isinstance(usb_device, str):
+        usb_device = et.utils.get_usb_device_by_serial(
+            client_info.usb_device, only_accessible=False
+        )
+    elif isinstance(usb_device, bool):
+        if client_info.usb_device:
+            usb_device = get_one_usb_device()
+        else:
+            raise ValueError("usb_device=False is not valid")
+    if isinstance(usb_device, USBDevice):
         link = AdaptedUSBLink(
-            vid=client_info.usb_device.vid,
-            pid=client_info.usb_device.pid,
-            serial=client_info.usb_device.serial,
+            vid=usb_device.vid,
+            pid=usb_device.pid,
+            serial=usb_device.serial,
         )
 
         return link

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 SDK_VERSION = "0.7.1"
@@ -8,7 +8,6 @@ from ._core import (
     _H5PY_STR_DTYPE,
     PRF,
     Client,
-    ClientBase,
     ClientError,
     ClientInfo,
     H5Record,

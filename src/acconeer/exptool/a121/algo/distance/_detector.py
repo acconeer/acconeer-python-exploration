@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -312,7 +312,7 @@ class Detector:
     def __init__(
         self,
         *,
-        client: a121.ClientBase,
+        client: a121.Client,
         sensor_ids: list[int],
         detector_config: DetectorConfig,
         context: Optional[DetectorContext] = None,

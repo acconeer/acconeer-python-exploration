@@ -1,9 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Any, Optional, Type, Union
+import abc
+from typing import Any, List, Optional, Type, Union
 
 import acconeer.exptool as et
 from acconeer.exptool.a121._core.entities import (
@@ -15,126 +16,231 @@ from acconeer.exptool.a121._core.entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import ClientBase, Recorder
+from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.a121._rate_calc import _RateStats
 
 from .communication_protocol import CommunicationProtocol
-from .exploration_client import ExplorationClient
-from .mock_client import MockClient
-from .utils import get_one_usb_device
 
 
-class Client(ClientBase):
-    _protocol_overridden: bool
-    _real_client: ClientBase
+class ClientError(Exception):
+    pass
 
-    def __init__(
-        self,
+
+class ClientCreationError(Exception):
+    pass
+
+
+class ClientABCWithGoodError(abc.ABC):
+    def __new__(cls, *args: Any, **kwargs: Any) -> ClientABCWithGoodError:
+        try:
+            return super().__new__(cls)  # , *args, **kwargs)
+        except TypeError as te:  # te here is the "Can't instantiate ..."-error
+            raise ClientCreationError("Client cannot be instantiated, use Client.open()") from te
+
+
+class Client(ClientABCWithGoodError):
+
+    __registry: List[Type[Client]] = []
+
+    @classmethod
+    def open(
+        cls,
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool, et.utils.USBDevice]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
-    ):
+    ) -> Client:
+        """
+        Open a new client
+        """
         if len([e for e in [ip_address, serial_port, usb_device, mock] if e is not None]) > 1:
             raise ValueError("Only one connection can be selected")
 
-        if mock is not None:
-            if mock:
-                client_info = ClientInfo(
-                    mock=mock,
+        client = None
+        for subclass in cls.__registry:
+            try:
+                client = subclass.open(
+                    ip_address,
+                    serial_port,
+                    usb_device,
+                    mock,
+                    override_baudrate,
+                    _override_protocol,
                 )
-                self._real_client = MockClient(client_info=client_info)
-            else:
-                raise ValueError("mock=False is not valid")
-        else:
-            if isinstance(usb_device, str):
-                usb_device = et.utils.get_usb_device_by_serial(usb_device, only_accessible=False)
+            except ClientCreationError:
+                pass
 
-            if isinstance(usb_device, bool):
-                if usb_device:
-                    usb_device = get_one_usb_device()
-                else:
-                    raise ValueError("usb_device=False is not valid")
+        if client is not None:
+            client._open()
+            return client
 
-            client_info = ClientInfo(
-                ip_address=ip_address,
-                override_baudrate=override_baudrate,
-                serial_port=serial_port,
-                usb_device=usb_device,
-            )
+        # This should not happen since the current implementation
+        # only has two clients which are mutual exclusive.
+        # * The mock client (mock is not None)
+        # * The exploration client (mock is None)
+        raise ClientCreationError("No client could be created")
 
-            self._real_client = ExplorationClient(
-                client_info=client_info,
-                _override_protocol=_override_protocol,
-            )
+    @classmethod
+    def _register(cls, subclass: Type[Client]) -> Type[Client]:
+        """Registers a subclass"""
+        if not issubclass(subclass, cls):
+            raise TypeError(f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}.")
+        cls.__registry.append(subclass)
+        return subclass
 
-    def connect(self) -> None:
-        self._real_client.connect()
+    @abc.abstractmethod
+    def _open(self) -> None:
+        """Connects to client, called from open"""
+        ...
 
-    def __enter__(self) -> Client:
-        self._real_client.connect()
-        return self
-
-    def __exit__(self, *_: Any) -> None:
-        self._real_client.disconnect()
-
+    @abc.abstractmethod
     def setup_session(
         self,
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
-        return self._real_client.setup_session(config, calibrations)
+        """Sets up the session specified by ``config``.
 
+        :param config: The session to set up.
+        :param calibrations: An optional dict with :class:`SensorCalibration` for the session.
+        :raises:
+            ``ValueError`` if the config is invalid.
+
+        :returns:
+            ``Metadata`` if ``config.extended is False``,
+            ``list[dict[int, Metadata]]`` otherwise.
+        """
+        ...
+
+    @abc.abstractmethod
     def start_session(self, recorder: Optional[Recorder] = None) -> None:
-        self._real_client.start_session(recorder)
+        """Starts the already set up session.
 
+        After this call, the server starts streaming data to the client.
+
+        :param recorder:
+            An optional ``Recorder``, which samples every ``get_next()``
+        :raises: ``ClientError`` if ``Client``'s  session is not set up.
+        """
+        ...
+
+    @abc.abstractmethod
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
-        return self._real_client.get_next()
+        """Gets results from the server.
 
+        :returns:
+            A ``Result`` if the setup ``SessionConfig.extended is False``,
+            ``list[dict[int, Result]]`` otherwise.
+        :raises:
+            ``ClientError`` if ``Client``'s session is not started.
+        """
+        ...
+
+    @abc.abstractmethod
     def stop_session(self) -> Any:
-        return self._real_client.stop_session()
+        """Stops an on-going session
 
-    def disconnect(self) -> None:
-        self._real_client.disconnect()
+        :returns:
+            The return value of the passed ``Recorder.stop()`` passed in ``start_session``.
+        :raises:
+            ``ClientError`` if ``Client``'s session is not started.
+        """
+        ...
+
+    @abc.abstractmethod
+    def close(self) -> None:
+        """Disconnects the client from the host."""
+        ...
 
     @property
+    @abc.abstractmethod
     def connected(self) -> bool:
-        return self._real_client.connected
+        """Whether this Client is connected."""
+        ...
 
     @property
+    @abc.abstractmethod
     def session_is_setup(self) -> bool:
-        return self._real_client.session_is_setup
+        """Whether this Client has a session set up."""
+        ...
 
     @property
+    @abc.abstractmethod
     def session_is_started(self) -> bool:
-        return self._real_client.session_is_started
+        """Whether this Client's session is started."""
+        ...
 
     @property
+    @abc.abstractmethod
     def server_info(self) -> ServerInfo:
-        return self._real_client.server_info
+        """The ``ServerInfo``."""
+        ...
 
     @property
+    @abc.abstractmethod
     def client_info(self) -> ClientInfo:
-        return self._real_client.client_info
+        """The ``ClientInfo``."""
+        ...
 
     @property
+    @abc.abstractmethod
     def session_config(self) -> SessionConfig:
-        return self._real_client.session_config
+        """The :class:`SessionConfig` for the current session"""
+        ...
 
     @property
+    @abc.abstractmethod
     def extended_metadata(self) -> list[dict[int, Metadata]]:
-        return self._real_client.extended_metadata
+        """The extended :class:`Metadata` for the current session"""
+        ...
 
     @property
+    @abc.abstractmethod
     def calibrations(self) -> dict[int, SensorCalibration]:
-        return self._real_client.calibrations
+        """
+        Returns a dict with a :class:`SensorCalibration` per used
+        sensor for the current session:
+
+        For example, if session_setup was called with
+
+        .. code-block:: python
+
+            client.setup_session(
+                SessionConfig({1: SensorConfig(), 3: SensorConfig()}),
+            )
+
+        this attribute will return {1: SensorCalibration(...), 3: SensorCalibration(...)}
+        """
+        ...
 
     @property
+    @abc.abstractmethod
     def calibrations_provided(self) -> dict[int, bool]:
-        return self._real_client.calibrations_provided
+        """
+        Returns whether a calibration was provided for each sensor in
+        setup_session. For example, if setup_session was called with
+
+        .. code-block:: python
+
+            client.setup_session(
+                SessionConfig({1: SensorConfig(), 2: SensorConfig()}),
+                calibrations={2: SensorCalibration(...)},
+            )
+
+        this attribute will return ``{1: False, 2: True}``
+        """
+        ...
 
     @property
+    @abc.abstractmethod
     def _rate_stats(self) -> _RateStats:
-        return self._real_client._rate_stats
+        """Returns the data rate statistict from the client"""
+        ...
+
+    def __enter__(self) -> Client:
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self.close()

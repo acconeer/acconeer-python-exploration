@@ -1,7 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
-from .client import Client
+from .client import Client, ClientError
 from .exploration_client import ExplorationClient
 from .exploration_protocol import (
     ExplorationProtocol,
@@ -11,3 +11,4 @@ from .exploration_protocol import (
 )
 from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink
 from .message import Message, MessageT
+from .mock_client import MockClient

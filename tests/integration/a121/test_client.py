@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -10,28 +10,19 @@ from acconeer.exptool import a121
 CLIENT_KWARGS = dict(ip_address="localhost")
 
 
-class TestAnUnconnectedClient:
+class TestAClosedClient:
     @pytest.fixture
     def client(self):
-        c = a121.Client(**CLIENT_KWARGS)
+        c = a121.Client.open(**CLIENT_KWARGS)
+        c.close()
         yield c
         if c.connected:
-            c.disconnect()
+            c.close()
 
     def test_reports_correct_statuses(self, client):
         assert not client.connected
         assert not client.session_is_setup
         assert not client.session_is_started
-
-    def test_can_connect(self, client):
-        client.connect()
-
-    def test_can_be_setup(self, client):
-        _ = client.setup_session(a121.SessionConfig())
-
-    def test_setup_session_autoconnects(self, client):
-        _ = client.setup_session(a121.SessionConfig())
-        assert client.connected
 
     def test_cannot_be_started(self, client):
         with pytest.raises(a121.ClientError):
@@ -57,7 +48,7 @@ class TestAnUnconnectedClient:
 class TestAConnectedClient:
     @pytest.fixture
     def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             yield c
 
     def test_can_access_server_info(self, client):
@@ -91,7 +82,7 @@ class TestAConnectedClient:
 class TestASetupClient:
     @pytest.fixture
     def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             c.setup_session(a121.SessionConfig())
             yield c
 
@@ -136,7 +127,7 @@ class TestASetupClient:
                 assert calibrations.get(sensor_id)
 
     def test_multiple_calibrations_after_setup(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             c.setup_session(
                 a121.SessionConfig(
                     [
@@ -257,7 +248,7 @@ class TestASetupClient:
 class TestAStartedClient:
     @pytest.fixture
     def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             yield c
@@ -268,7 +259,7 @@ class TestAStartedClient:
 
     @pytest.fixture
     def client_with_recorder(self, tmp_h5_file_path):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
             yield c
@@ -303,7 +294,7 @@ class TestAStoppedClient(TestASetupClient):
 
     @pytest.fixture
     def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -317,7 +308,7 @@ class TestAStoppedAndSetupClient(TestASetupClient):
 
     @pytest.fixture
     def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -332,7 +323,7 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
 
     @pytest.fixture
     def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+        with a121.Client.open(**CLIENT_KWARGS) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -341,18 +332,17 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
             yield c
 
 
-class TestADisconnectedClient(TestAnUnconnectedClient):
+class TestADisconnectedClient(TestAClosedClient):
     """A disconnected client should have the same behaviour as a fresh, unconnected client."""
 
     @pytest.fixture
     def client(self):
-        c = a121.Client(**CLIENT_KWARGS)
-        c.connect()
+        c = a121.Client.open(**CLIENT_KWARGS)
         c.setup_session(a121.SessionConfig())
         c.start_session()
         c.stop_session()
-        c.disconnect()
+        c.close()
 
         yield c
         if c.connected:
-            c.disconnect()
+            c.close()

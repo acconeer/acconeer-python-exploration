@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -12,12 +12,14 @@ from acconeer.exptool.a121._core.entities import (
     SensorCalibration,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import ClientBase, ClientError, Recorder
+from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.a121._core.utils import unextend
 from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
+from .client import Client, ClientError
 
-class CommonClient(ClientBase):
+
+class CommonClient(Client):
     _client_info: ClientInfo
     _calibrations_provided: dict[int, bool]
     _metadata: Optional[list[dict[int, Metadata]]]
