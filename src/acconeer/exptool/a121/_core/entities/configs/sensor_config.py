@@ -340,6 +340,17 @@ class SensorConfig:
                 )
                 for idle_state in ["inter_frame_idle_state", "inter_sweep_idle_state"]
             )
+        if self.sweeps_per_frame == 1:
+            validation_results.append(
+                ValidationWarning(
+                    self,
+                    "continuous_sweep_mode",
+                    (
+                        "Not meaningful with only 1 sweep per frame. A fixed frame rate can be "
+                        "used instead."
+                    ),
+                )
+            )
         return validation_results
 
     def _validate_idle_states(self) -> list[ValidationResult]:
@@ -473,10 +484,31 @@ class SensorConfig:
 
     @property
     def continuous_sweep_mode(self) -> bool:
-        """Continuous sweep mode
+        """Continuous sweep mode (CSM)
 
-        In continuous sweep mode the timing will be identical over all sweeps, not just the sweeps
-        in a frame.
+        With CSM, the sensor timing is set up to generate a continuous
+        stream of sweeps, even if more than one sweep per frame is used.
+        The interval between the last sweep in one frame to the first
+        sweep in the next frame becomes equal to the interval between
+        sweeps within a frame (given by the sweep rate).
+
+        It ensures that:
+
+        'frame rate' = 'sweep rate' / 'sweeps per frame'
+
+        While the frame rate parameter can be set to approximately
+        satisfy this condition, using CSM is more precise.
+
+        If only one sweep per frame is used, CSM has no use since a
+        continuous stream of sweeps is already given (if a fixed frame
+        rate is used).
+
+        The main use for CSM is to allow reading out data at a slower
+        rate than the sweep rate, while maintaining that sweep rate
+        continuously.
+
+        Note that in most cases, double buffering must be enabled to
+        allow high rates without delays.
 
         Constraints:
 

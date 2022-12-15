@@ -88,8 +88,29 @@ class SensorConfigEditor(QWidget):
         "continuous_sweep_mode": pidgets.CheckboxParameterWidgetFactory(
             name_label_text="Continuous sweep mode",
             name_label_tooltip=(
-                "In continuous sweep mode the timing will be identical over all sweeps, "
-                "not just the sweeps in a frame."
+                "<p>With CSM, the sensor timing is set up to generate a continuous "
+                "stream of sweeps, even if more than one sweep per frame is used. "
+                "The interval between the last sweep in one frame to the first "
+                "sweep in the next frame becomes equal to the interval between "
+                "sweeps within a frame (given by the sweep rate).</p>"
+                ""
+                "<p>It ensures that:</p>"
+                ""
+                "<p>'frame rate' = 'sweep rate' / 'sweeps per frame'</p>"
+                ""
+                "While the frame rate parameter can be set to approximately "
+                "satisfy this condition, using CSM is more precise."
+                ""
+                "<p>If only one sweep per frame is used, CSM has no use since a "
+                "continuous stream of sweeps is already given (if a fixed frame "
+                "rate is used).</p>"
+                ""
+                "<p>The main use for CSM is to allow reading out data at a slower "
+                "rate than the sweep rate, while maintaining that sweep rate "
+                "continuously.</p>"
+                ""
+                "<p>Note that in most cases, double buffering must be enabled to "
+                "allow high rates without delays.</p>"
             ),
         ),
         "double_buffering": pidgets.CheckboxParameterWidgetFactory(
