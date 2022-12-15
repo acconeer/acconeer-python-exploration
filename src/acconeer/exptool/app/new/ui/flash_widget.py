@@ -368,6 +368,7 @@ class _FlashPopup(QDialog):
     def _download_done(self, bin_file: str, version: str) -> None:
         self.bin_file = bin_file
         self._set_version(version)
+        self.downloading_firmware = False
         self._draw()
 
     def _download_failed(self, error_msg: str) -> None:
