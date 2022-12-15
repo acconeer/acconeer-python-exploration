@@ -47,41 +47,51 @@ class SubsweepConfigEditor(QWidget):
     SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
         "start_point": pidgets.IntParameterWidgetFactory(
             name_label_text="Start point:",
+            name_label_tooltip=a121.SubsweepConfig.start_point.__doc__,
         ),
         "num_points": pidgets.IntParameterWidgetFactory(
             name_label_text="Number of points:",
+            name_label_tooltip=a121.SubsweepConfig.num_points.__doc__,
             limits=(1, 4095),
         ),
         "step_length": pidgets.IntParameterWidgetFactory(
             name_label_text="Step length:",
+            name_label_tooltip=a121.SubsweepConfig.step_length.__doc__,
             limits=(1, None),
         ),
         "hwaas": pidgets.IntParameterWidgetFactory(
             name_label_text="HWAAS:",
+            name_label_tooltip=a121.SubsweepConfig.hwaas.__doc__,
             limits=(1, 511),
         ),
         "receiver_gain": pidgets.IntParameterWidgetFactory(
             name_label_text="Receiver gain:",
+            name_label_tooltip=a121.SubsweepConfig.receiver_gain.__doc__,
             limits=(0, 23),
         ),
         "profile": pidgets.EnumParameterWidgetFactory(
             enum_type=a121.Profile,
             name_label_text="Profile:",
+            name_label_tooltip=a121.SubsweepConfig.profile.__doc__,  # type: ignore[arg-type]
             label_mapping=PROFILE_LABEL_MAP,
         ),
         "prf": pidgets.EnumParameterWidgetFactory(
             enum_type=a121.PRF,
             name_label_text="PRF:",
+            name_label_tooltip=a121.PRF.__doc__,  # type: ignore[arg-type]
             label_mapping=PRF_LABEL_MAP,
         ),
         "enable_tx": pidgets.CheckboxParameterWidgetFactory(
             name_label_text="Enable transmitter",
+            name_label_tooltip=a121.SubsweepConfig.enable_tx.__doc__,
         ),
         "enable_loopback": pidgets.CheckboxParameterWidgetFactory(
             name_label_text="Enable loopback",
+            name_label_tooltip=a121.SubsweepConfig.enable_loopback.__doc__,
         ),
         "phase_enhancement": pidgets.CheckboxParameterWidgetFactory(
             name_label_text="Phase enhancement",
+            name_label_tooltip=a121.SubsweepConfig.phase_enhancement.__doc__,
         ),
     }
 

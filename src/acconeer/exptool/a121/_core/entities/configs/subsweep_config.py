@@ -180,8 +180,7 @@ class SubsweepConfig:
 
         This sets the number of steps to have between each data point.
 
-        Sampling produces complex (IQ) data points with configurable distance spacing, starting
-        from ~2.5mm.
+        The corresponding distance between each data point is ``step_length`` * 2.5 mm.
         """
 
         return self._step_length
@@ -204,8 +203,6 @@ class SubsweepConfig:
         Each profile consists of a number of settings for the sensor that configures the RX and TX
         paths. Lower profiles have higher depth resolution while higher profiles have higher radar
         loop gain.
-
-        See also :class:`Profile`.
         """
 
         return self._profile
@@ -265,6 +262,9 @@ class SubsweepConfig:
     @property
     def enable_loopback(self) -> bool:
         """Enable or disable loopback
+
+        Enabling loopback will activate an internal route between TX and RX in the sensor.
+        The signal will take this route instead of being transmitted out of the sensor.
 
         Note, loopback can't be enabled together with profile 2.
         """
