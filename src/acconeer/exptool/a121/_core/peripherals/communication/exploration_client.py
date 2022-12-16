@@ -11,7 +11,6 @@ from typing import Any, Iterator, Optional, Tuple, Type, Union
 import attrs
 from serial.serialutil import SerialException
 
-import acconeer.exptool as et
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
@@ -69,7 +68,7 @@ class ExplorationClient(CommonClient):
         cls,
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool, et.utils.USBDevice]] = None,
+        usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,

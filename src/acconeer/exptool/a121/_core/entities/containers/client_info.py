@@ -9,14 +9,13 @@ from typing import Any, Optional, Union
 import attrs
 
 from acconeer.exptool.a121._core.utils import pretty_dict_line_strs
-from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 
 
 @attrs.frozen(kw_only=True)
 class ClientInfo:
     ip_address: Optional[str] = None
     serial_port: Optional[str] = None
-    usb_device: Optional[Union[str, bool, USBDevice]] = None
+    usb_device: Optional[Union[str, bool]] = None
     mock: Optional[bool] = None
     override_baudrate: Optional[int] = None
 
@@ -25,7 +24,7 @@ class ClientInfo:
         cls,
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool, USBDevice]] = None,
+        usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
     ) -> ClientInfo:
@@ -42,9 +41,6 @@ class ClientInfo:
 
     @classmethod
     def from_dict(cls, d: dict) -> ClientInfo:
-        if d.get("usb_device") is not None:
-            d = d.copy()
-            d["usb_device"] = USBDevice.from_dict(d["usb_device"])
         return cls(**d)
 
     def to_json(self) -> str:

@@ -562,7 +562,10 @@ class AppModel(QObject):
             self.connection_interface == ConnectionInterface.USB
             and self.usb_connection_device is not None
         ):
-            client_info = a121.ClientInfo(usb_device=self.usb_connection_device)
+            usb_device = True
+            if self.usb_connection_device.serial is not None:
+                usb_device = self.usb_connection_device.serial
+            client_info = a121.ClientInfo(usb_device=usb_device)
         else:
             raise RuntimeError
 

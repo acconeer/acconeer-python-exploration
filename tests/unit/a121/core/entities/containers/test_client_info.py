@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import pytest
@@ -12,7 +12,7 @@ def client_info() -> ClientInfo:
     return ClientInfo(
         ip_address="addr",
         serial_port="port",
-        usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
+        usb_device=True,
         override_baudrate=0,
         mock=True,
     )
@@ -23,15 +23,7 @@ def client_info_dict() -> dict:
     return {
         "ip_address": "addr",
         "serial_port": "port",
-        "usb_device": {
-            "vid": 0x4CC0,
-            "pid": 0xAEE3,
-            "serial": None,
-            "name": "name",
-            "accessible": True,
-            "unflashed": False,
-            "recognized": True,
-        },
+        "usb_device": True,
         "mock": True,
         "override_baudrate": 0,
     }
@@ -40,9 +32,7 @@ def client_info_dict() -> dict:
 def test_init(client_info: ClientInfo) -> None:
     assert client_info.ip_address == "addr"
     assert client_info.serial_port == "port"
-    assert client_info.usb_device == USBDevice(
-        vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True
-    )
+    assert client_info.usb_device
     assert client_info.override_baudrate == 0
 
 
@@ -50,14 +40,14 @@ def test_eq(client_info: ClientInfo) -> None:
     assert client_info == ClientInfo(
         ip_address="addr",
         serial_port="port",
-        usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
+        usb_device=True,
         override_baudrate=0,
         mock=True,
     )
     assert client_info != ClientInfo(
         ip_address="ddr",
         serial_port="port",
-        usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
+        usb_device=True,
         override_baudrate=0,
         mock=True,
     )

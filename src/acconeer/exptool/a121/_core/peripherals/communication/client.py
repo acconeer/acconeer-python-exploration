@@ -6,7 +6,6 @@ from __future__ import annotations
 import abc
 from typing import Any, List, Optional, Type, Union
 
-import acconeer.exptool as et
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
@@ -47,7 +46,7 @@ class Client(ClientABCWithGoodError):
         cls,
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool, et.utils.USBDevice]] = None,
+        usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,

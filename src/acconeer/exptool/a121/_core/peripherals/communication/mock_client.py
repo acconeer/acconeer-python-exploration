@@ -9,7 +9,6 @@ from typing import Any, Optional, Type, Union
 import numpy as np
 import numpy.typing as npt
 
-import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
@@ -86,7 +85,7 @@ class MockClient(CommonClient):
         cls,
         ip_address: Optional[str] = None,
         serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool, et.utils.USBDevice]] = None,
+        usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
