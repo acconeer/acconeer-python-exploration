@@ -24,7 +24,7 @@ class SessionConfigEditor(QWidget):
     _session_config: Optional[a121.SessionConfig]
     _server_info: Optional[a121.ServerInfo]
 
-    _sensor_id_pidget: pidgets.UpdateableComboboxParameterWidget
+    _sensor_id_pidget: pidgets.SensorIdParameterWidget
 
     sig_update = Signal(object)
 

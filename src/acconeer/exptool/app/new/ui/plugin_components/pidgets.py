@@ -466,37 +466,7 @@ class ComboboxParameterWidget(ParameterWidget, Generic[T]):
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class UpdateableComboboxParameterWidgetFactory(ComboboxParameterWidgetFactory[T]):
-    def create(self, parent: QWidget) -> UpdateableComboboxParameterWidget[T]:
-        return UpdateableComboboxParameterWidget(self, parent)
-
-
-class UpdateableComboboxParameterWidget(ComboboxParameterWidget[T]):
-    def __init__(
-        self, factory: UpdateableComboboxParameterWidgetFactory[T], parent: QWidget
-    ) -> None:
-        super().__init__(factory, parent)
-
-    def update_items(self, items: list[tuple[str, T]]) -> None:
-        with QtCore.QSignalBlocker(
-            self
-        ):  # Does not take into account when selected item is removed
-            self._combobox.clear()
-
-            for displayed_text, user_data in items:
-                self._combobox.addItem(displayed_text, user_data)
-
-    def set_parameter(self, param: Any) -> None:
-        try:
-            super().set_parameter(param)
-        except ValueError:
-            self.setEnabled(False)
-        else:
-            self.setEnabled(True)
-
-
-@attrs.frozen(kw_only=True, slots=False)
-class SensorIdParameterWidgetFactory(UpdateableComboboxParameterWidgetFactory[int]):
+class SensorIdParameterWidgetFactory(ComboboxParameterWidgetFactory[int]):
     name_label_text: str = attrs.field(default="Sensor:")
     name_label_tooltip: str = attrs.field(default="The sensor to use in session")
 
@@ -504,7 +474,7 @@ class SensorIdParameterWidgetFactory(UpdateableComboboxParameterWidgetFactory[in
         return SensorIdParameterWidget(self, parent)
 
 
-class SensorIdParameterWidget(UpdateableComboboxParameterWidget[int]):
+class SensorIdParameterWidget(ComboboxParameterWidget[int]):
     _server_info: Optional[a121.ServerInfo]
 
     def __init__(self, factory: SensorIdParameterWidgetFactory, parent: QWidget) -> None:
@@ -522,6 +492,23 @@ class SensorIdParameterWidget(UpdateableComboboxParameterWidget[int]):
             self.setEnabled(False)
         else:
             self.update_items([(str(i), i) for i in server_info.connected_sensors])
+            self.setEnabled(True)
+
+    def update_items(self, items: list[tuple[str, int]]) -> None:
+        with QtCore.QSignalBlocker(
+            self
+        ):  # Does not take into account when selected item is removed
+            self._combobox.clear()
+
+            for displayed_text, user_data in items:
+                self._combobox.addItem(displayed_text, user_data)
+
+    def set_parameter(self, param: Any) -> None:
+        try:
+            super().set_parameter(param)
+        except ValueError:
+            self.setEnabled(False)
+        else:
             self.setEnabled(True)
 
 
