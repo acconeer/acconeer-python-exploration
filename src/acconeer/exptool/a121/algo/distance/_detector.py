@@ -71,6 +71,13 @@ class DetectorContext(AlgoConfigBase):
     single_sensor_contexts: Dict[int, SingleSensorContext] = attrs.field(default=None)
     _GROUP_NAME = "sensor_id_"
 
+    @property
+    def sensor_ids(self) -> Optional[list[int]]:
+        if self.single_sensor_contexts:
+            return list(self.single_sensor_contexts.keys())
+        else:
+            return None
+
     def to_h5(self, group: h5py.Group) -> None:
         if self.single_sensor_contexts is not None:
             for sensor_id, context in self.single_sensor_contexts.items():

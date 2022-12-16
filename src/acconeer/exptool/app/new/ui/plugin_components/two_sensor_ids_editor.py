@@ -63,6 +63,7 @@ class TwoSensorIdsEditor(QWidget):
     def update_available_sensor_list(self, server_info: t.Optional[a121.ServerInfo]) -> None:
         self._sensor_id_pidget_1.update_available_sensor_list(server_info)
         self._sensor_id_pidget_2.update_available_sensor_list(server_info)
+        self.sync()
 
     def handle_pidget_signal(self, sensor_id: int, sensor_id_position: int) -> None:
         if self.sensor_ids is not None:

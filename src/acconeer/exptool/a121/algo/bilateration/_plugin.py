@@ -136,6 +136,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                     f["bilateration_config"][()]
                 )
                 self.shared_state.context = DetectorContext.from_h5(f["context"])
+                # Update the sensor id list with the one from the last calibration
+                if self.shared_state.context.sensor_ids:
+                    self.shared_state.sensor_ids = self.shared_state.context.sensor_ids
         except FileNotFoundError:
             pass
 
