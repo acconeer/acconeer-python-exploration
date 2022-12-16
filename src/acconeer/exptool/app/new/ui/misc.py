@@ -244,7 +244,7 @@ class ConnectionHint(HintObject):
             if app_model.serial_connection_device.name is not None:
                 if app_model.serial_connection_device.unflashed:
                     return False
-                return "xc120" in app_model.serial_connection_device.name
+                return "xc120" in app_model.serial_connection_device.name.lower()
 
         return False
 
