@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorViewPluginBase,
 )
 from acconeer.exptool.a121.algo.touchless_button import (
+    MeasurementType,
     Processor,
     ProcessorConfig,
     ProcessorResult,
@@ -96,11 +97,24 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
                 suffix="s",
                 limits=(1, None),
             ),
+            "measurement_type": pidgets.EnumParameterWidgetFactory(
+                enum_type=MeasurementType,
+                name_label_text="Range:",
+                label_mapping={
+                    MeasurementType.CLOSE_RANGE: "Close",
+                    MeasurementType.FAR_RANGE: "Far",
+                    MeasurementType.CLOSE_AND_FAR_RANGE: "Close and far",
+                },
+            ),
         }
 
     @classmethod
     def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
         return ProcessorConfig
+
+    @classmethod
+    def supports_multiple_subsweeps(self) -> bool:
+        return True
 
 
 class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
@@ -200,7 +214,7 @@ TOUCHLESS_BUTTON_PLUGIN = PluginSpec(
     family=PluginFamily.EXAMPLE_APP,
     presets=[
         PluginPresetBase(
-            name="Close Range",
+            name="Close range",
             description="Close range",
             preset_id=PluginPresetId.CLOSE_RANGE,
         ),

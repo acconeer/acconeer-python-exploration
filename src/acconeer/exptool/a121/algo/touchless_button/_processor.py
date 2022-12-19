@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -60,12 +60,27 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     ) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
-        if config.sensor_config.num_subsweeps > 2:
+        if (
+            config.sensor_config.num_subsweeps != 2
+            and self.measurement_type is MeasurementType.CLOSE_AND_FAR_RANGE
+        ):
             validation_results.append(
                 a121.ValidationError(
                     config.sensor_config,
                     "num_subsweeps",
-                    "Number of subsweeps must be maximum 2",
+                    'Number of subsweeps must be 2 for range "Close and far"',
+                )
+            )
+
+        if config.sensor_config.num_subsweeps != 1 and (
+            self.measurement_type is MeasurementType.CLOSE_RANGE
+            or self.measurement_type is MeasurementType.FAR_RANGE
+        ):
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "num_subsweeps",
+                    'Number of subsweeps must be 1 for ranges "Close" and "Far"',
                 )
             )
 
