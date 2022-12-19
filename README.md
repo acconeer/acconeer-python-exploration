@@ -174,45 +174,6 @@ Choosing which sensor(s) to be used can be done by adding the argument `--sensor
 
 Scripts can be terminated by pressing Ctrl-C in the terminal.
 
-## Examples
-
-### Basic: `examples/a111/`
-
-The basic scripts contain a lot of comments guiding you through the steps taken in most example scripts. We recommend taking a look at these scripts before working with the others.
-
-- `basic.py` \
-  Basic script for getting data from the radar. **Start here!**
-- `basic_continuous.py` \
-  Basic script for getting data continuously that serves as the base for most other examples.
-
-### Services: `examples/a111/services/`
-
-- `power_bins.py` ([doc](https://docs.acconeer.com/en/latest/services/pb.html)) \
-  Demonstrates the power bins service.
-- `envelope.py` ([doc](https://docs.acconeer.com/en/latest/services/envelope.html)) \
-  Demonstrates the envelope service.
-- `iq.py` ([doc](https://docs.acconeer.com/en/latest/services/iq.html)) \
-  Demonstrates the IQ service.
-- `sparse.py` ([doc](https://docs.acconeer.com/en/latest/services/sparse.html)) \
-  Demonstrates the Sparse service.
-
-### Record data: `examples/a111/record_data/`
-
-- `barebones.py` \
-  A barebones stub that demonstrates how to save sensor data to file.
-- `with_cli.py` \
-  A stub for saving sensor data to file that uses command-line arguments
-  allowing you to set the filename, etc.
-- `long_duration_split_files.py` \
-  A stub that demonstrates how you can split one recording session into multiple files.
-
-### Plotting: `examples/a111/plotting/`
-
-- `plot_with_matplotlib.py` \
-  Example of how to use matplotlib for plotting.
-- `plot_with_pyqtgraph.py` \
-  Example of how to use PyQtGraph for plotting.
-
 ## Disclaimer
 
 Here you find the [disclaimer](https://docs.acconeer.com/en/latest/disclaimer.html).
