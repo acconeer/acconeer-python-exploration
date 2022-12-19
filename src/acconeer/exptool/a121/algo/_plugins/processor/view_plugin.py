@@ -159,7 +159,11 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
 
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
-        self.session_config_editor.update_available_sensor_list(app_model.connected_sensors)
+        if app_model.backend_plugin_state:
+            self.session_config_editor.set_selected_sensor(
+                app_model.backend_plugin_state.session_config.sensor_id,
+                self.app_model.connected_sensors,
+            )
 
     @classmethod
     def supports_multiple_subsweeps(self) -> bool:

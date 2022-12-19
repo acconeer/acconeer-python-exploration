@@ -114,6 +114,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     def attach_client(self, *, client: a121.Client) -> None:
         self._live_client = client
         self._sync_sensor_ids()
+        self.broadcast(True)
 
     def detach_client(self) -> None:
         self._live_client = None

@@ -38,30 +38,16 @@ class TwoSensorIdsEditor(QWidget):
         self._sensor_id_pidget_2.sig_parameter_changed.connect(
             lambda sensor_id: self.handle_pidget_signal(sensor_id, sensor_id_position=1)
         )
-
         self.sensor_ids = None
 
-    def set_data(self, sensor_ids: t.Optional[list[int]]) -> None:
-        if sensor_ids is None:
-            self.sensor_ids = None
-        else:
-            if len(sensor_ids) == 2:
-                self.sensor_ids = sensor_ids
-            else:
-                raise ValueError("Length of sensor list is not equal to two.")
-
-    def sync(self) -> None:
-        if self.sensor_ids is not None:
-            self._sensor_id_pidget_1.set_parameter(self.sensor_ids[0])
-            self._sensor_id_pidget_2.set_parameter(self.sensor_ids[1])
-            self.setEnabled(True)
-        else:
-            self.setEnabled(False)
-
-    def update_available_sensor_list(self, sensor_list: list[int]) -> None:
-        self._sensor_id_pidget_1.update_available_sensor_list(sensor_list)
-        self._sensor_id_pidget_2.update_available_sensor_list(sensor_list)
-        self.sync()
+    def set_selected_sensors(
+        self, sensor_ids: t.Optional[list[int]], sensor_list: list[int]
+    ) -> None:
+        if sensor_ids:
+            assert len(sensor_ids) == 2
+            self.sensor_ids = sensor_ids
+            self._sensor_id_pidget_1.set_selected_sensor(sensor_ids[0], sensor_list)
+            self._sensor_id_pidget_2.set_selected_sensor(sensor_ids[1], sensor_list)
 
     def handle_pidget_signal(self, sensor_id: int, sensor_id_position: int) -> None:
         if self.sensor_ids is not None:

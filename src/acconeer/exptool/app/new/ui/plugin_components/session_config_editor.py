@@ -145,7 +145,6 @@ class SessionConfigEditor(QWidget):
             return
 
         self._update_rate_pidget.set_parameter(self._session_config.update_rate)
-        self._sensor_id_pidget.set_parameter(self._session_config.sensor_id)
 
-    def update_available_sensor_list(self, sensor_list: list[int]) -> None:
-        self._sensor_id_pidget.update_available_sensor_list(sensor_list)
+    def set_selected_sensor(self, sensor_id: Optional[int], sensor_list: list[int]) -> None:
+        self._sensor_id_pidget.set_selected_sensor(sensor_id, sensor_list)

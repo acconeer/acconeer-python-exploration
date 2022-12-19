@@ -679,7 +679,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
-        self.sensor_id_pidget.update_available_sensor_list(app_model.connected_sensors)
 
         if state is None:
             self.start_button.setEnabled(False)
@@ -690,7 +689,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.config_editor.setEnabled(False)
             self.plot_config_editor.set_data(None)
             self.plot_config_editor.setEnabled(False)
-            self.sensor_id_pidget.set_parameter(None)
+            self.sensor_id_pidget.set_selected_sensor(None, [])
 
             return
 
@@ -702,7 +701,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.set_data(state.config)
         self.plot_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.plot_config_editor.set_data(state.plot_config)
-        self.sensor_id_pidget.set_parameter(state.sensor_id)
+        self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
         self.start_button.setEnabled(app_model.is_ready_for_session())

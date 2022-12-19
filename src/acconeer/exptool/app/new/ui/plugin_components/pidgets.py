@@ -480,15 +480,7 @@ class SensorIdParameterWidget(ComboboxParameterWidget[int]):
         super().__init__(factory, parent)
         self._sensor_list = []
 
-    def update_available_sensor_list(self, sensor_list: list[int]) -> None:
-        if sensor_list == self._sensor_list:
-            return
-
-        self._sensor_list = sensor_list
-        self.update_items([(str(i), i) for i in sensor_list])
-        self.setEnabled(bool(sensor_list))
-
-    def update_items(self, items: list[tuple[str, int]]) -> None:
+    def _update_items(self, items: list[tuple[str, int]]) -> None:
         with QtCore.QSignalBlocker(
             self
         ):  # Does not take into account when selected item is removed
@@ -497,9 +489,13 @@ class SensorIdParameterWidget(ComboboxParameterWidget[int]):
             for displayed_text, user_data in items:
                 self._combobox.addItem(displayed_text, user_data)
 
-    def set_parameter(self, param: Any) -> None:
+    def set_selected_sensor(self, sensor_id: Optional[int], sensor_list: list[int]) -> None:
+        if sensor_list != self._sensor_list:
+            self._sensor_list = sensor_list
+            self._update_items([(str(i), i) for i in sensor_list])
+
         try:
-            super().set_parameter(param)
+            super().set_parameter(sensor_id)
         except ValueError:
             self.setEnabled(False)
         else:

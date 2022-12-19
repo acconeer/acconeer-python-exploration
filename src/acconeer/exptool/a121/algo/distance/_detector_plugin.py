@@ -104,6 +104,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         if self.client is not None:
             sensor_ids = self.client.server_info.connected_sensors
 
+            # Try to use the sensor ids from the last calibration
+            if self.shared_state.context.sensor_ids:
+                self.shared_state.sensor_ids = self.shared_state.context.sensor_ids
+
             for i in range(len(self.shared_state.sensor_ids)):
                 if len(sensor_ids) > 0 and self.shared_state.sensor_ids[i] not in sensor_ids:
                     self.shared_state.sensor_ids[i] = sensor_ids[0]
@@ -496,8 +500,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
-        self.sensor_id_pidget.update_available_sensor_list(app_model.connected_sensors)
-
         if state is None:
             self.start_button.setEnabled(False)
             self.calibrate_detector_button.setEnabled(False)
@@ -506,7 +508,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
-            self.sensor_id_pidget.set_parameter(None)
+            self.sensor_id_pidget.set_selected_sensor(None, [])
             self.message_box.setText("")
 
             return
@@ -519,7 +521,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.set_data(state.config)
 
         (sensor_id,) = state.sensor_ids
-        self.sensor_id_pidget.set_parameter(sensor_id)
+        self.sensor_id_pidget.set_selected_sensor(sensor_id, app_model.connected_sensors)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
         detector_status = Detector.get_detector_status(

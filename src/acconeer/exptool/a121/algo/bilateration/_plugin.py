@@ -136,9 +136,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                     f["bilateration_config"][()]
                 )
                 self.shared_state.context = DetectorContext.from_h5(f["context"])
-                # Update the sensor id list with the one from the last calibration
-                if self.shared_state.context.sensor_ids:
-                    self.shared_state.sensor_ids = self.shared_state.context.sensor_ids
         except FileNotFoundError:
             pass
 
@@ -153,6 +150,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def _sync_sensor_ids(self) -> None:
         if self.client is not None:
             sensor_ids = self.client.server_info.connected_sensors
+
+            # Try to use the sensor ids from the last calibration
+            if self.shared_state.context.sensor_ids:
+                self.shared_state.sensor_ids = self.shared_state.context.sensor_ids
 
             for i in range(len(self.shared_state.sensor_ids)):
                 if len(sensor_ids) > 0 and self.shared_state.sensor_ids[i] not in sensor_ids:
@@ -584,7 +585,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
-        self.two_sensor_id_editor.update_available_sensor_list(app_model.connected_sensors)
 
         if state is None:
             self.start_button.setEnabled(False)
@@ -596,7 +596,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.config_editor.setEnabled(False)
             self.bilateration_config_editor.set_data(None)
             self.bilateration_config_editor.setEnabled(False)
-            self.two_sensor_id_editor.set_data(None)
+            self.two_sensor_id_editor.set_selected_sensors(None, [])
             self.message_box.setText("")
 
             return
@@ -611,7 +611,9 @@ class ViewPlugin(DetectorViewPluginBase):
             app_model.plugin_state == PluginState.LOADED_IDLE
         )
         self.bilateration_config_editor.set_data(state.bilateration_config)
-        self.two_sensor_id_editor.set_data(state.sensor_ids)
+        self.two_sensor_id_editor.set_selected_sensors(
+            state.sensor_ids, app_model.connected_sensors
+        )
         self.two_sensor_id_editor.setEnabled(app_model.plugin_state.is_steady)
 
         detector_status = Detector.get_detector_status(
@@ -646,7 +648,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.sync()
             self.bilateration_config_editor.sync()
-            self.two_sensor_id_editor.sync()
         else:
             raise RuntimeError("Unknown message")
 
