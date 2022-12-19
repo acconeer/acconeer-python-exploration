@@ -33,7 +33,8 @@ For an in-depth evaluation, we recommend a full installation as described below.
 
 ## Documentation
 
-Additional documentation is available at [docs.acconeer.com](https://docs.acconeer.com).
+Documentation is available at [docs.acconeer.com](https://docs.acconeer.com),
+where you can also find the [FAQ](https://docs.acconeer.com/en/latest/exploration_tool/faq.html).
 
 ## News
 
@@ -50,7 +51,7 @@ Additional documentation is available at [docs.acconeer.com](https://docs.accone
 * [XM122](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm122.html)
 * [XM132](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm132.html)
 
-For general help on getting started head over to the [Acconeer developer page](https://developer.acconeer.com/). There you will find both a getting started guide and a video showing you how to set up your evaluation kit. There you will also find the SDK download.
+For additional resources, head over to the [Acconeer developer page](https://developer.acconeer.com/). There you will find both a getting started guide and a video showing you how to set up your evaluation kit. There you will also find the SDK download.
 
 ## Setting up your local machine
 
@@ -177,7 +178,3 @@ Scripts can be terminated by pressing Ctrl-C in the terminal.
 ## Disclaimer
 
 Here you find the [disclaimer](https://docs.acconeer.com/en/latest/disclaimer.html).
-
-## FAQ and common issues
-
-See the [FAQ](https://docs.acconeer.com/en/latest/faq.html) on the Acconeer documentation pages.
