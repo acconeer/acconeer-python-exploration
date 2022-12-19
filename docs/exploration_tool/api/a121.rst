@@ -60,6 +60,10 @@ RSS representations
     :members:
     :undoc-members:
 
+.. autoclass:: acconeer.exptool.a121.SensorCalibration
+    :members:
+    :undoc-members:
+
 System info
 ^^^^^^^^^^^
 
