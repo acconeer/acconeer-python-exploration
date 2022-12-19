@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from .configs import (
@@ -16,6 +16,7 @@ from .configs import (
 from .containers import (
     ClientInfo,
     Metadata,
+    MockInfo,
     PersistentRecord,
     Record,
     RecordException,
@@ -23,9 +24,12 @@ from .containers import (
     ResultContext,
     SensorCalibration,
     SensorInfo,
+    SerialInfo,
     ServerInfo,
     ServerLogMessage,
+    SocketInfo,
     StackedResults,
+    USBInfo,
     complex_array_to_int16_complex,
     int16_complex_array_to_complex,
 )

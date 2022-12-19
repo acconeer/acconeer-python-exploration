@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, Dict, Optional, TypeVar
 
 import packaging.version
 
@@ -63,20 +63,14 @@ class Model:
         method(**kwargs)
 
     @is_task
-    def connect_client(self, client_info: a121.ClientInfo) -> None:
+    def connect_client(self, open_client_parameters: Dict) -> None:
         if self.client is not None:
             raise RuntimeError(
                 "Model already has a Client. The current Client needs to be disconnected first."
             )
 
         try:
-            self.client = a121.Client.open(
-                ip_address=client_info.ip_address,
-                serial_port=client_info.serial_port,
-                usb_device=client_info.usb_device,
-                override_baudrate=client_info.override_baudrate,
-                mock=client_info.mock,
-            )
+            self.client = a121.Client.open(**open_client_parameters)
         except Exception as exc:
             self.client = None
             self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))

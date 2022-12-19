@@ -14,6 +14,7 @@ from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
     ClientInfo,
     Metadata,
+    MockInfo,
     Profile,
     Result,
     ResultContext,
@@ -97,12 +98,10 @@ class MockClient(CommonClient):
 
         return cls(client_info=client_info)
 
-    def __init__(self, client_info: ClientInfo = ClientInfo(mock=True)) -> None:
+    def __init__(self, client_info: ClientInfo = ClientInfo(mock=MockInfo())) -> None:
 
         if client_info.mock is None:
             raise ClientCreationError()
-        elif not client_info.mock:
-            raise ValueError("mock=False is not valid")
 
         self._start_time = time.monotonic()
         self._connected = False

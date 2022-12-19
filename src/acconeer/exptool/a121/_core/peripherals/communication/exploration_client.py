@@ -235,8 +235,11 @@ class ExplorationClient(CommonClient):
         if not isinstance(self._link, AdaptedSerialLink):
             return
 
+        if self.client_info.serial is None:
+            return
+
         DEFAULT_BAUDRATE = 115200
-        overridden_baudrate = self.client_info.override_baudrate
+        overridden_baudrate = self.client_info.serial.override_baudrate
         max_baudrate = self.server_info.max_baudrate
         baudrate_to_use = self.server_info.max_baudrate or DEFAULT_BAUDRATE
 
