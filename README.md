@@ -14,7 +14,7 @@ To run the Python exploration scripts, you will need an [evaluation kit](https:/
 This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/)
 **A111-v2.13.0**
 and
-**A121-v0.6.0**.
+**A121-v0.7.1**.
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">
