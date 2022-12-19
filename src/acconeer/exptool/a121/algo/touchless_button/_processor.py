@@ -28,8 +28,8 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         converter=MeasurementType,
     )
     """The measurement type.
-    ``CLOSE_RANGE`` corresponds to a range of approximate 2 cm - 12 cm.
-    ``FAR_RANGE`` corresponds to approximate 10 cm - 30 cm.
+    ``CLOSE_RANGE`` corresponds to a range of approximate 0 cm - 5 cm.
+    ``FAR_RANGE`` corresponds to approximate 0 cm - 24 cm.
     ``CLOSE_AND_FAR_RANGE`` gives two detection outputs, one for each range."""
 
     sensitivity_close: float = attrs.field(default=1.9)

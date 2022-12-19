@@ -14,12 +14,12 @@ def get_close_sensor_config() -> a121.SensorConfig:
         double_buffering=True,
         inter_sweep_idle_state=a121.IdleState.READY,
         inter_frame_idle_state=a121.IdleState.READY,
-        num_points=5,
+        num_points=3,
         profile=a121.Profile.PROFILE_1,
         receiver_gain=0,
         hwaas=40,
-        start_point=14,
-        step_length=12,
+        start_point=0,
+        step_length=6,
     )
 
 
@@ -37,16 +37,16 @@ def get_close_and_far_sensor_config() -> a121.SensorConfig:
         inter_frame_idle_state=a121.IdleState.READY,
         subsweeps=[
             a121.SubsweepConfig(
-                start_point=14,
-                num_points=5,
-                step_length=12,
+                start_point=0,
+                num_points=3,
+                step_length=6,
                 profile=a121.Profile.PROFILE_1,
                 hwaas=40,
                 receiver_gain=0,
             ),
             a121.SubsweepConfig(
-                start_point=64,
-                num_points=4,
+                start_point=0,
+                num_points=3,
                 step_length=24,
                 profile=a121.Profile.PROFILE_3,
                 hwaas=60,
