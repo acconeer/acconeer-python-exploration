@@ -526,11 +526,7 @@ class AppModel(QObject):
         return (
             self.plugin_state == PluginState.LOADED_IDLE
             and self.connection_state == ConnectionState.CONNECTED
-            and self._a121_server_info is not None
-            and any(
-                sensor_info.connected
-                for _, sensor_info in self._a121_server_info.sensor_infos.items()
-            )
+            and bool(self.connected_sensors)
         )
 
     def _failed_autoconnect(
@@ -696,6 +692,10 @@ class AppModel(QObject):
             return None
 
         return self._a121_server_info.rss_version
+
+    @property
+    def connected_sensors(self) -> list[int]:
+        return self._a121_server_info.connected_sensors if self._a121_server_info else []
 
     def send_status_message(self, message: Optional[str]) -> None:
         self.sig_status_message.emit(message)

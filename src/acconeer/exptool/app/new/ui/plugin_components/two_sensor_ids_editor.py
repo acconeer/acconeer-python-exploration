@@ -8,8 +8,6 @@ import typing as t
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
-from acconeer.exptool import a121
-
 from . import pidgets
 
 
@@ -60,9 +58,9 @@ class TwoSensorIdsEditor(QWidget):
         else:
             self.setEnabled(False)
 
-    def update_available_sensor_list(self, server_info: t.Optional[a121.ServerInfo]) -> None:
-        self._sensor_id_pidget_1.update_available_sensor_list(server_info)
-        self._sensor_id_pidget_2.update_available_sensor_list(server_info)
+    def update_available_sensor_list(self, sensor_list: list[int]) -> None:
+        self._sensor_id_pidget_1.update_available_sensor_list(sensor_list)
+        self._sensor_id_pidget_2.update_available_sensor_list(sensor_list)
         self.sync()
 
     def handle_pidget_signal(self, sensor_id: int, sensor_id_position: int) -> None:

@@ -25,7 +25,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import Criticality
 
 
@@ -475,24 +474,19 @@ class SensorIdParameterWidgetFactory(ComboboxParameterWidgetFactory[int]):
 
 
 class SensorIdParameterWidget(ComboboxParameterWidget[int]):
-    _server_info: Optional[a121.ServerInfo]
+    _sensor_list: list[int]
 
     def __init__(self, factory: SensorIdParameterWidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
-        self._server_info = None
+        self._sensor_list = []
 
-    def update_available_sensor_list(self, server_info: Optional[a121.ServerInfo]) -> None:
-        if server_info == self._server_info:
+    def update_available_sensor_list(self, sensor_list: list[int]) -> None:
+        if sensor_list == self._sensor_list:
             return
 
-        self._server_info = server_info
-
-        if server_info is None:
-            self.update_items([])
-            self.setEnabled(False)
-        else:
-            self.update_items([(str(i), i) for i in server_info.connected_sensors])
-            self.setEnabled(True)
+        self._sensor_list = sensor_list
+        self.update_items([(str(i), i) for i in sensor_list])
+        self.setEnabled(bool(sensor_list))
 
     def update_items(self, items: list[tuple[str, int]]) -> None:
         with QtCore.QSignalBlocker(

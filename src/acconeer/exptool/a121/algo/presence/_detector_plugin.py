@@ -679,7 +679,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
-        self.sensor_id_pidget.update_available_sensor_list(app_model._a121_server_info)
+        self.sensor_id_pidget.update_available_sensor_list(app_model.connected_sensors)
 
         if state is None:
             self.start_button.setEnabled(False)
