@@ -125,15 +125,10 @@ class GenericProcessorBackendPluginBase(
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         self.shared_state.session_config = record.session_config
-
-        try:
-            algo_group = record.get_algo_group(self.key)  # noqa: F841
-            # TODO: break out loading (?)
-            self.shared_state.processor_config = self.get_processor_config_cls().from_json(
-                algo_group["processor_config"][()]
-            )
-        except Exception:
-            self._log.warning(f"Could not load '{self.key}' from file")
+        algo_group = record.get_algo_group(self.key)  # noqa: F841
+        self.shared_state.processor_config = self.get_processor_config_cls().from_json(
+            algo_group["processor_config"][()]
+        )
 
     @is_task
     def update_session_config(self, *, session_config: a121.SessionConfig) -> None:
