@@ -2,12 +2,13 @@
 # All rights reserved
 
 import argparse
-from platform import python_version
+import sys
 
 import nox
 
 
-nox.options.sessions = ["lint", "docs", f"test(python='{python_version()}')"]
+py_ver = ".".join(map(str, sys.version_info[:2]))
+nox.options.sessions = ["lint", "docs", f"test(python='{py_ver}')"]
 nox.options.stop_on_first_error = True
 nox.options.reuse_existing_virtualenvs = True
 
