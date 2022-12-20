@@ -93,9 +93,12 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
 
     def _on_return_pressed(self) -> None:
-        self._on_line_edit()
         if self.app_model.connection_state == ConnectionState.DISCONNECTED:
             self.app_model.connect_client()
+
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        if not self.ip_line_edit.isModified():
+            self.ip_line_edit.setText(str(app_model.socket_connection_ip))
 
 
 class _SerialConnectionWidget(AppModelAwareWidget):
@@ -109,25 +112,26 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         self.baudrate_line_edit = QLineEdit(self)
         self.baudrate_line_edit.setPlaceholderText("auto")
         self.baudrate_line_edit.setValidator(QIntValidator())
-        self.baudrate_line_edit.textChanged.connect(self._on_line_edit_changed)
+        self.baudrate_line_edit.editingFinished.connect(self._on_line_edit)
         self.baudrate_line_edit.setFixedWidth(125)
 
         self.layout().addWidget(SerialPortComboBox(app_model, self))
         self.layout().addWidget(QLabel("Baudrate:"))
         self.layout().addWidget(self.baudrate_line_edit)
 
-    def _on_line_edit_changed(self) -> None:
+    def _on_line_edit(self) -> None:
         baudrate_text = self.baudrate_line_edit.text()
         baudrate = None if baudrate_text == "" else int(baudrate_text)
         self.app_model.set_overridden_baudrate(baudrate)
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        if app_model.overridden_baudrate is None:
-            self.baudrate_line_edit.setText("")
-            self.baudrate_line_edit.setStyleSheet("* {font: italic}")
-        else:
-            self.baudrate_line_edit.setText(str(app_model.overridden_baudrate))
-            self.baudrate_line_edit.setStyleSheet("* {}")
+        if not self.baudrate_line_edit.isModified():
+            if app_model.overridden_baudrate is None:
+                self.baudrate_line_edit.setText("")
+                self.baudrate_line_edit.setStyleSheet("* {font: italic}")
+            else:
+                self.baudrate_line_edit.setText(str(app_model.overridden_baudrate))
+                self.baudrate_line_edit.setStyleSheet("* {}")
 
 
 class _SimulatedConnectionWidget(AppModelAwareWidget):
