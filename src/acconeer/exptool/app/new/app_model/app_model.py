@@ -373,19 +373,20 @@ class AppModel(QObject):
     ) -> None:
         if self.connection_state is not ConnectionState.DISCONNECTED and (
             (
-                self._config.connection_interface == ConnectionInterface.SERIAL
-                and self._config.serial_connection_device not in serial_devices
+                self.connection_interface == ConnectionInterface.SERIAL
+                and self.serial_connection_device not in serial_devices
             )
             or (
-                self._config.connection_interface == ConnectionInterface.USB
-                and self._config.usb_connection_device not in usb_devices
+                self.connection_interface == ConnectionInterface.USB
+                and self.usb_connection_device not in usb_devices
             )
         ):
             self.disconnect_client()
+
         self._config.serial_connection_device, recognized = self._select_new_device(
             self.available_serial_devices,
             serial_devices,
-            self._config.serial_connection_device,
+            self.serial_connection_device,
         )
 
         self.available_serial_devices = serial_devices
@@ -393,45 +394,44 @@ class AppModel(QObject):
 
         if recognized:
             self.set_connection_interface(ConnectionInterface.SERIAL)
-            if self._is_serial_device_unflashed(self._config.serial_connection_device):
+            if self._is_serial_device_unflashed(self.serial_connection_device):
                 connect = False
                 self.send_warning_message(
-                    "Found unflashed device at serial port:"
-                    f" {self._config.serial_connection_device}"
+                    f"Found unflashed device at serial port: {self.serial_connection_device}"
                 )
             else:
                 connect = True
                 self.send_status_message(
-                    f"Recognized serial port: {self._config.serial_connection_device}"
+                    f"Recognized serial port: {self.serial_connection_device}"
                 )
 
         if usb_devices is not None:
             self._config.usb_connection_device, recognized = self._select_new_device(
-                self.available_usb_devices, usb_devices, self._config.usb_connection_device
+                self.available_usb_devices, usb_devices, self.usb_connection_device
             )
 
             self.available_usb_devices = usb_devices
 
             if recognized:
-                assert self._config.usb_connection_device is not None
+                assert self.usb_connection_device is not None
                 self.set_connection_interface(ConnectionInterface.USB)
-                if self._is_usb_device_unflashed(self._config.usb_connection_device):
+                if self._is_usb_device_unflashed(self.usb_connection_device):
                     connect = False
                     self.send_warning_message(
-                        f"Found unflashed USB device: {self._config.usb_connection_device}"
+                        f"Found unflashed USB device: {self.usb_connection_device}"
                     )
-                elif self._is_usb_device_inaccessible(self._config.usb_connection_device):
+                elif self._is_usb_device_inaccessible(self.usb_connection_device):
                     connect = False
                     self.send_warning_message(
-                        f"Found inaccessible USB device: {self._config.usb_connection_device}"
+                        f"Found inaccessible USB device: {self.usb_connection_device}"
                     )
                 else:
                     connect = True
                     self.send_status_message(
-                        f"Recognized USB device: {self._config.usb_connection_device}"
+                        f"Recognized USB device: {self.usb_connection_device}"
                     )
 
-        if connect and self._config.autoconnect_enabled:
+        if connect and self.autoconnect_enabled:
             self._autoconnect()
 
         self.broadcast()
@@ -462,20 +462,20 @@ class AppModel(QObject):
         return current_port, False
 
     def connect_client(self, auto: bool = False) -> None:
-        if self._config.connection_interface == ConnectionInterface.SIMULATED:
+        if self.connection_interface == ConnectionInterface.SIMULATED:
             client_info = a121.ClientInfo(mock=True)
-        elif self._config.connection_interface == ConnectionInterface.SOCKET:
-            client_info = a121.ClientInfo(ip_address=self._config.socket_connection_ip)
+        elif self.connection_interface == ConnectionInterface.SOCKET:
+            client_info = a121.ClientInfo(ip_address=self.socket_connection_ip)
         elif (
-            self._config.connection_interface == ConnectionInterface.SERIAL
-            and self._config.serial_connection_device is not None
+            self.connection_interface == ConnectionInterface.SERIAL
+            and self.serial_connection_device is not None
         ):
             client_info = a121.ClientInfo(
-                serial_port=self._config.serial_connection_device.port,
-                override_baudrate=self._config.overridden_baudrate,
+                serial_port=self.serial_connection_device.port,
+                override_baudrate=self.overridden_baudrate,
             )
-        elif self._config.connection_interface == ConnectionInterface.USB:
-            client_info = a121.ClientInfo(usb_device=self._config.usb_connection_device)
+        elif self.connection_interface == ConnectionInterface.USB:
+            client_info = a121.ClientInfo(usb_device=self.usb_connection_device)
         else:
             raise RuntimeError
 
@@ -503,18 +503,18 @@ class AppModel(QObject):
 
     def is_connect_ready(self) -> bool:
         return (
-            (self._config.connection_interface == ConnectionInterface.SOCKET)
-            or (self._config.connection_interface == ConnectionInterface.SIMULATED)
+            (self.connection_interface == ConnectionInterface.SOCKET)
+            or (self.connection_interface == ConnectionInterface.SIMULATED)
             or (
-                self._config.connection_interface == ConnectionInterface.SERIAL
-                and self._config.serial_connection_device is not None
-                and not self._is_serial_device_unflashed(self._config.serial_connection_device)
+                self.connection_interface == ConnectionInterface.SERIAL
+                and self.serial_connection_device is not None
+                and not self._is_serial_device_unflashed(self.serial_connection_device)
             )
             or (
-                self._config.connection_interface == ConnectionInterface.USB
-                and self._config.usb_connection_device is not None
-                and not self._is_usb_device_unflashed(self._config.usb_connection_device)
-                and not self._is_usb_device_inaccessible(self._config.usb_connection_device)
+                self.connection_interface == ConnectionInterface.USB
+                and self.usb_connection_device is not None
+                and not self._is_usb_device_unflashed(self.usb_connection_device)
+                and not self._is_usb_device_inaccessible(self.usb_connection_device)
             )
         )
 
