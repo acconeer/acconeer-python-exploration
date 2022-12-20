@@ -8,6 +8,7 @@ from enum import Enum, auto
 from typing import Callable, Mapping, Optional
 
 import attrs
+import h5py
 import numpy as np
 import qtawesome as qta
 
@@ -83,17 +84,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.restore_defaults()
 
-    @is_task
-    def load_from_cache(self) -> None:
-        try:
-            with self.h5_cache_file() as f:
-                self.shared_state.config = DetectorConfig.from_json(f["config"][()])
-                self.shared_state.context = DetectorContext.from_h5(f["context"])
-        except FileNotFoundError:
-            pass
-
-        self._sync_sensor_ids()
-        self.broadcast(sync=True)
+    def _load_from_cache(self, file: h5py.File) -> None:
+        self.shared_state.config = DetectorConfig.from_json(file["config"][()])
+        self.shared_state.context = DetectorContext.from_h5(file["context"])
 
     @is_task
     def restore_defaults(self) -> None:
@@ -128,16 +121,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.config = preset_config()
         self.broadcast(sync=True)
 
-    def teardown(self) -> None:
-        try:
-            with self.h5_cache_file(write=True) as f:
-                _create_h5_string_dataset(f, "config", self.shared_state.config.to_json())
-                context_group = f.create_group("context")
-                self.shared_state.context.to_h5(context_group)
-        except Exception:
-            self._log.warning("Detector could not write to cache")
-
-        self.detach_client()
+    def save_to_cache(self, file: h5py.File) -> None:
+        _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
+        context_group = file.create_group("context")
+        self.shared_state.context.to_h5(context_group)
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         algo_group = record.get_algo_group(self.key)

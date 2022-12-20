@@ -74,6 +74,21 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         pass
 
+    @is_task
+    def load_from_cache(self) -> None:
+        try:
+            with self.h5_cache_file() as f:
+                self._load_from_cache(f)
+        except FileNotFoundError:
+            pass
+
+        self._sync_sensor_ids()
+        self.broadcast(sync=True)
+
+    @abc.abstractmethod
+    def _load_from_cache(self, file: h5py.File) -> None:
+        pass
+
     @abc.abstractmethod
     def get_next(self) -> None:
         pass
@@ -183,6 +198,19 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             self._opened_record.close()
             self._opened_record = None
             self._replaying_client = None
+
+    def teardown(self) -> None:
+        try:
+            with self.h5_cache_file(write=True) as file:
+                self.save_to_cache(file)
+        except Exception:
+            log.warning("Could not write to cache")
+
+        self.detach_client()
+
+    @abc.abstractmethod
+    def save_to_cache(self, file: h5py.File) -> None:
+        pass
 
 
 class A121ViewPluginBase(ViewPluginBase):

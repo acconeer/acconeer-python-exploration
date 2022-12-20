@@ -7,6 +7,7 @@ import abc
 from typing import Callable, Generic, Mapping, Optional, Type
 
 import attrs
+import h5py
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
@@ -78,21 +79,11 @@ class GenericProcessorBackendPluginBase(
         self._log = BackendLogger.getLogger(__name__)
         self.restore_defaults()
 
-    @is_task
-    def load_from_cache(self) -> None:
-        try:
-            with self.h5_cache_file() as f:
-                self.shared_state.session_config = a121.SessionConfig.from_json(
-                    f["session_config"][()]
-                )
-                self.shared_state.processor_config = self.get_processor_config_cls().from_json(
-                    f["processor_config"][()]
-                )
-        except FileNotFoundError:
-            pass
-
-        self._sync_sensor_ids()
-        self.broadcast(sync=True)
+    def _load_from_cache(self, file: h5py.File) -> None:
+        self.shared_state.session_config = a121.SessionConfig.from_json(file["session_config"][()])
+        self.shared_state.processor_config = self.get_processor_config_cls().from_json(
+            file["processor_config"][()]
+        )
 
     @is_task
     @abc.abstractmethod
@@ -109,19 +100,13 @@ class GenericProcessorBackendPluginBase(
             ):
                 self.shared_state.session_config.sensor_id = sensor_ids[0]
 
-    def teardown(self) -> None:
-        try:
-            with self.h5_cache_file(write=True) as f:
-                _create_h5_string_dataset(
-                    f, "session_config", self.shared_state.session_config.to_json()
-                )
-                _create_h5_string_dataset(
-                    f, "processor_config", self.shared_state.processor_config.to_json()
-                )
-        except Exception:
-            self._log.warning("Processor could not write to cache")
-
-        self.detach_client()
+    def save_to_cache(self, file: h5py.File) -> None:
+        _create_h5_string_dataset(
+            file, "session_config", self.shared_state.session_config.to_json()
+        )
+        _create_h5_string_dataset(
+            file, "processor_config", self.shared_state.processor_config.to_json()
+        )
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         self.shared_state.session_config = record.session_config
