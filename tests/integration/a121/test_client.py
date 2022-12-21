@@ -7,13 +7,16 @@ import pytest
 from acconeer.exptool import a121
 
 
-CLIENT_KWARGS = dict(ip_address="localhost")
+CLIENT_PARAMETRIZE = [
+    dict(ip_address="localhost"),
+    dict(mock=True),
+]
 
 
 class TestAClosedClient:
-    @pytest.fixture
-    def client(self):
-        c = a121.Client.open(**CLIENT_KWARGS)
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        c = a121.Client.open(**request.param)
         c.close()
         yield c
         if c.connected:
@@ -46,9 +49,9 @@ class TestAClosedClient:
 
 
 class TestAConnectedClient:
-    @pytest.fixture
-    def client(self):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        with a121.Client.open(**request.param) as c:
             yield c
 
     def test_can_access_server_info(self, client):
@@ -80,9 +83,9 @@ class TestAConnectedClient:
 
 
 class TestASetupClient:
-    @pytest.fixture
-    def client(self):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        with a121.Client.open(**request.param) as c:
             c.setup_session(a121.SessionConfig())
             yield c
 
@@ -126,22 +129,21 @@ class TestASetupClient:
             for sensor_id in group:
                 assert calibrations.get(sensor_id)
 
-    def test_multiple_calibrations_after_setup(self):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
-            c.setup_session(
-                a121.SessionConfig(
-                    [
-                        {2: a121.SensorConfig()},
-                        {3: a121.SensorConfig()},
-                    ]
-                )
+    def test_multiple_calibrations_after_setup(self, client):
+        client.setup_session(
+            a121.SessionConfig(
+                [
+                    {2: a121.SensorConfig()},
+                    {3: a121.SensorConfig()},
+                ]
             )
+        )
 
-            calibrations = c.calibrations
-            assert 1 not in calibrations
-            assert 2 in calibrations
-            assert 3 in calibrations
-            assert 4 not in calibrations
+        calibrations = client.calibrations
+        assert 1 not in calibrations
+        assert 2 in calibrations
+        assert 3 in calibrations
+        assert 4 not in calibrations
 
     def test_recording_calibration(self, client, tmp_h5_file_path):
         setup_calibrations = client.calibrations
@@ -246,9 +248,9 @@ class TestASetupClient:
 
 
 class TestAStartedClient:
-    @pytest.fixture
-    def client(self):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        with a121.Client.open(**request.param) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             yield c
@@ -257,9 +259,9 @@ class TestAStartedClient:
     def tmp_h5_file_path(self, tmp_path):
         return tmp_path / "record.h5"
 
-    @pytest.fixture
-    def client_with_recorder(self, tmp_h5_file_path):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client_with_recorder(self, request, tmp_h5_file_path):
+        with a121.Client.open(**request.param) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
             yield c
@@ -292,9 +294,9 @@ class TestAStartedClient:
 class TestAStoppedClient(TestASetupClient):
     """A stopped client should have the same behaviour as it had when first set up"""
 
-    @pytest.fixture
-    def client(self):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        with a121.Client.open(**request.param) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -306,9 +308,9 @@ class TestAStoppedAndSetupClient(TestASetupClient):
     should have the same behaviour as a setup client.
     """
 
-    @pytest.fixture
-    def client(self):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        with a121.Client.open(**request.param) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -321,9 +323,9 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
     should have the same behaviour as client that has been started once.
     """
 
-    @pytest.fixture
-    def client(self):
-        with a121.Client.open(**CLIENT_KWARGS) as c:
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        with a121.Client.open(**request.param) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -335,9 +337,9 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
 class TestADisconnectedClient(TestAClosedClient):
     """A disconnected client should have the same behaviour as a fresh, unconnected client."""
 
-    @pytest.fixture
-    def client(self):
-        c = a121.Client.open(**CLIENT_KWARGS)
+    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    def client(self, request):
+        c = a121.Client.open(**request.param)
         c.setup_session(a121.SessionConfig())
         c.start_session()
         c.stop_session()
