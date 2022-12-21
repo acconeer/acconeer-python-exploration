@@ -26,6 +26,7 @@ from acconeer.exptool.a121._core.entities import (
 )
 from acconeer.exptool.a121._core.mediators import ClientError, Recorder
 from acconeer.exptool.a121._core.utils import unextend
+from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
 from .common_client import CommonClient
 from .utils import get_calibrations_provided
@@ -67,14 +68,20 @@ class MockClient(CommonClient):
             5: SensorInfo(connected=True, serial="SN5"),
         },
     )
+    MIN_MOCK_UPDATE_RATE_HZ = 1.0
+    MAX_MOCK_UPDATE_RATE_HZ = 100.0
 
     _client_info: ClientInfo
     _connected: bool
     _start_time: float
+    _mock_update_rate: float
+    _mock_next_data_time: float
 
     def __init__(self, client_info: ClientInfo) -> None:
         self._start_time = time.monotonic()
         self._connected = False
+        self._mock_update_rate = self.MAX_MOCK_UPDATE_RATE_HZ
+        self._mock_next_data_time = 0.0
         super().__init__(client_info)
 
     @classmethod
@@ -215,6 +222,13 @@ class MockClient(CommonClient):
                     temperature=25,
                     data="mocked calibration",
                 )
+        pc = _SessionPerformanceCalc(config, self._metadata)
+        self._mock_update_rate = pc.update_rate
+
+        # Keep the mock update rate between 1Hz and 100Hz to both have a
+        # responsive client (1Hz reaction) and a reasonable cpu load (100Hz data rate)
+        self._mock_update_rate = min(self._mock_update_rate, self.MAX_MOCK_UPDATE_RATE_HZ)
+        self._mock_update_rate = max(self._mock_update_rate, self.MIN_MOCK_UPDATE_RATE_HZ)
 
         if self.session_config.extended:
             return self._metadata
@@ -231,6 +245,7 @@ class MockClient(CommonClient):
         self._create_rate_stats_calc()
         self._session_is_started = True
         self._start_time = time.monotonic()
+        self._mock_next_data_time = self._start_time
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         self._assert_session_started()
@@ -242,6 +257,12 @@ class MockClient(CommonClient):
             raise RuntimeError(f"{self} has no session config")
 
         extended_results = self._session_config_to_result(self.session_config)
+
+        delta = self._mock_next_data_time - time.perf_counter()
+        if delta > 0:
+            time.sleep(delta)
+
+        self._mock_next_data_time += 1 / self._mock_update_rate
 
         self._recorder_sample(extended_results)
         self._update_rate_stats_calc(extended_results)
