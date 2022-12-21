@@ -2,8 +2,8 @@
 # All rights reserved
 
 from . import platforms as _  # noqa: F401
-from .base import PlatformInstall, SetupStep, utils
-from .cli import SetupArgumentParser, prompts
+from .base import PlatformInstall, SetupStep, prompts, utils
+from .cli import SetupArgumentParser
 
 
 def main() -> None:

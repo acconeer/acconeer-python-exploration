@@ -8,6 +8,8 @@ import subprocess
 from pathlib import Path
 from typing import List
 
+from . import prompts
+
 
 class SetupStep(abc.ABC):
     @abc.abstractmethod
@@ -70,7 +72,14 @@ class RequireFileContentStep(ShellCommandStep):
         print(f">>> checking {self.file_path}")
 
         if self.file_path.exists():
-            return self._report_on_content()
+            if self._report_on_content():
+                return True
+            else:
+                if not prompts.yn_prompt(
+                    f"WARNING: File {self.file_path} already exists with different content\n"
+                    "Update existing file?"
+                ):
+                    return True
 
         creation_ok = super().run()
         return creation_ok and self._report_on_content()
@@ -82,9 +91,12 @@ class RequireFileContentStep(ShellCommandStep):
 
         print(f"The contents of {self.file_path} does not match.")
         print()
-        print("Expected:")
-        print(f"    {self.required_content}")
-        print()
         print("Actual:")
-        print(f"    {self.file_path.read_text()}")
+        for line in self.file_path.read_text().split("\n"):
+            print(f"<   {line}")
+        print("Expected:")
+        for line in self.required_content.split("\n"):
+            print(f">   {line}")
+        print()
+
         return False
