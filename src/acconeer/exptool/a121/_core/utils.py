@@ -540,10 +540,8 @@ def indent_strs(strs: list[str], level: int) -> list[str]:
     return ["  " * level + s for s in strs]
 
 
-attrs_ndarray_eq = attrs.cmp_using(eq=np.array_equal)  # type: ignore[call-arg]
-attrs_ndarray_isclose = attrs.cmp_using(
-    eq=lambda a, b: bool(np.isclose(a, b).all())
-)  # type: ignore[call-arg]
+attrs_ndarray_eq = attrs.cmp_using(eq=np.array_equal)
+attrs_ndarray_isclose = attrs.cmp_using(eq=lambda a, b: bool(np.isclose(a, b).all()))
 
 
 def no_dynamic_member_creation(cls: Type[T]) -> Type[T]:
