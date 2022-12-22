@@ -97,11 +97,17 @@ def check_docs_against_sdk_version(sdk_version: str, pattern_for_docs: str):
 def main():
     SEMVER_PATTERN = r"v?(\d+\.\d+\.\d+)"
     INIT_SDK_VERSION_PATTERN = rf'SDK_VERSION\s*=\s*"{SEMVER_PATTERN}"'
+    A111_SEMVER_PATTERN = r"A111-" + SEMVER_PATTERN
+    A121_SEMVER_PATTERN = r"A121-" + SEMVER_PATTERN
 
     a111_init_file = EXPTOOL_ROOT / "src" / "acconeer" / "exptool" / "a111" / "__init__.py"
     a111_sdk_version = get_single_match_in_file(INIT_SDK_VERSION_PATTERN, a111_init_file)
 
-    check_docs_against_sdk_version(a111_sdk_version, pattern_for_docs=SEMVER_PATTERN)
+    a121_init_file = EXPTOOL_ROOT / "src" / "acconeer" / "exptool" / "a121" / "__init__.py"
+    a121_sdk_version = get_single_match_in_file(INIT_SDK_VERSION_PATTERN, a121_init_file)
+
+    check_docs_against_sdk_version(a111_sdk_version, pattern_for_docs=A111_SEMVER_PATTERN)
+    check_docs_against_sdk_version(a121_sdk_version, pattern_for_docs=A121_SEMVER_PATTERN)
 
 
 if __name__ == "__main__":
