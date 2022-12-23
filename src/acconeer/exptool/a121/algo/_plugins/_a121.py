@@ -198,6 +198,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             self._opened_record.close()
             self._opened_record = None
             self._replaying_client = None
+            self._sync_sensor_ids()
 
     def teardown(self) -> None:
         try:
