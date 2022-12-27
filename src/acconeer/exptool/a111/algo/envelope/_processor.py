@@ -57,6 +57,11 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
+        self._session_info = session_info
+
+        if calibration and self._session_info.get("data_length") != len(calibration.background[0]):
+            raise Exception("Invalid calibration. Clear calibration after changing configuration")
+
         self.processing_config = processing_config
 
         self.depths = et.a111.get_range_depths(sensor_config, session_info)
@@ -111,5 +116,10 @@ class Processor:
         return output
 
     def update_calibration(self, new_calibration: EnvelopeCalibration):
+        if new_calibration and self._session_info.get("data_length") != len(
+            new_calibration.background[0]
+        ):
+            raise Exception("Invalid calibration. Clear calibration after changing configuration")
+
         self.calibration = new_calibration
         self.data_index = 0

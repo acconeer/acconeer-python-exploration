@@ -1109,8 +1109,14 @@ class GUI(QMainWindow):
             return
 
         if isinstance(self.radar.external, self.current_module_info.processor):
-            self.radar.external.update_calibration(self.calibration)
-            self.calibration_ui_state.calibration_status = CalibrationStatus.IN_PROCESSOR
+            try:
+                self.radar.external.update_calibration(self.calibration)
+            except Exception as e:
+                traceback.print_exc()
+                msg = "Failed to apply calibration!\n{}".format(self.format_error(e))
+                self.error_message("{}".format(msg))
+            else:
+                self.calibration_ui_state.calibration_status = CalibrationStatus.IN_PROCESSOR
 
     def update_canvas(self, force_update=False):
         module_label = self.module_dd.currentText()
@@ -1217,6 +1223,12 @@ class GUI(QMainWindow):
             self.populate_protocol_dd(NA_DD_ITEM)
 
         self.set_multi_sensors()
+
+    def format_error(self, e):
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
+        return err
 
     def error_message(self, text, info_text=None):
         if self.under_test:
