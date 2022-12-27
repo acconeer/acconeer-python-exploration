@@ -648,7 +648,7 @@ class GUI(QMainWindow):
 
     def advanced_port(self):
         dialog = AdvancedSerialDialog(self.override_baudrate, self)
-        ret = dialog.exec_()
+        ret = dialog.exec()
 
         if ret == QtWidgets.QDialog.Accepted:
             self.override_baudrate = dialog.get_state()
@@ -1249,7 +1249,7 @@ class GUI(QMainWindow):
             detailed_text = traceback.format_exc()
             message_box.setDetailedText(detailed_text)
 
-        message_box.exec_()
+        message_box.exec()
 
     def info_handle(self, info, detailed_info=None, blocking=True):
         msg = QtWidgets.QMessageBox(self.main_widget)
@@ -1260,7 +1260,7 @@ class GUI(QMainWindow):
         msg.setWindowTitle("Info")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         if blocking:
-            msg.exec_()
+            msg.exec()
         else:
             msg.show()
         return msg
@@ -1273,7 +1273,7 @@ class GUI(QMainWindow):
             msg.setDetailedText(detailed_warning)
         msg.setWindowTitle("Warning")
         msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
-        retval = msg.exec_()
+        retval = msg.exec()
         return retval == 1024
 
     def start_scan(self, from_file=False):
@@ -2253,7 +2253,6 @@ def main():
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
     )
-    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     app = QApplication.instance()
     if app is None:
         app = QApplication(sys.argv)
