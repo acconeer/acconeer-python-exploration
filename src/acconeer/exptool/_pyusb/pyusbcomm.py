@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -104,8 +104,6 @@ class PyUsbCdc:
 
         self.is_open = True
 
-        self.reset_input_buffer()
-
         return True
 
     def read(self, size=None):
@@ -159,6 +157,15 @@ class PyUsbCdc:
 
     def reset_input_buffer(self):
         self._rxremaining = b""
+        while True:
+            try:
+                self._dev.read(
+                    self._cdc_data_in_ep.bEndpointAddress,
+                    self._cdc_data_in_ep.wMaxPacketSize,
+                    timeout=self.USB_PACKET_TIMEOUT_MS,
+                )
+            except usb.core.USBTimeoutError:
+                break
 
     def send_break(self, duration=0.25):
         if not self.is_open:
