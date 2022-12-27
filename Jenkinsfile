@@ -35,7 +35,37 @@ try {
                 }
             }
         }
-    }, "Test on hardware": {
+    }, "Mock test": {
+        node('docker') {
+            ws('workspace/exptool') {
+                stage('Setup') {
+                    def scmVars = checkout scm
+                    sh 'git clean -xdf'
+
+                    findBuildAndCopyArtifacts(
+                        projectName: 'sw-main',
+                        revision: "master",
+                        artifactNames: [
+                            "out/internal_stash_binaries_sanitizer_a111.tgz",
+                            "out/internal_stash_binaries_sanitizer_a121.tgz"
+                        ]
+                    )
+                    sh 'mkdir stash'
+                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
+                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
+                }
+                stage('Run integration tests') {
+                    def image = buildDocker(path: 'docker')
+                    image.inside("--hostname ${env.NODE_NAME}" +
+                                " --net=host --privileged" +
+                                " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
+                                sh 'tests/run-a111-mock-integration-tests.sh'
+                                sh 'tests/run-a121-mock-integration-tests.sh'
+                    }
+                }
+            }
+        }
+    }, "XM112 test": {
         node('exploration_tool') {
             ws('workspace/exptool') {
                 stage('Setup') {
@@ -49,15 +79,11 @@ try {
                         artifactNames: [
                             "out/internal_stash_python_libs.tgz",
                             "out/internal_stash_binaries_xm112.tgz",
-                            "out/internal_stash_binaries_sanitizer_a111.tgz",
-                            "out/internal_stash_binaries_sanitizer_a121.tgz"
                         ]
                     )
                     sh 'mkdir stash'
                     sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
                     sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
-                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
-                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
                 }
                 stage ('Flash') {
                     sh '(cd stash && python3 python_libs/test_utils/flash.py)'
@@ -68,9 +94,7 @@ try {
                                 " --net=host --privileged" +
                                 " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
                         lock("${env.NODE_NAME}-xm112") {
-                                sh 'tests/run-a111-mock-integration-tests.sh'
                                 sh 'tests/run-a111-xm112-integration-tests.sh'
-                                sh 'tests/run-a121-mock-integration-tests.sh'
                         }
                     }
                 }
