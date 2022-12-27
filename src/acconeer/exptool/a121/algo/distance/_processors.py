@@ -100,6 +100,7 @@ class ProcessorExtraResult:
 class ProcessorResult:
     estimated_distances: Optional[list[float]] = attrs.field(default=None)
     estimated_rcs: Optional[list[float]] = attrs.field(default=None)
+    near_edge_status: Optional[bool] = attrs.field(default=None)
     recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_threshold_noise_std: Optional[list[np.float_]] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
@@ -431,15 +432,18 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         if self.processor_config.threshold_method == ThresholdMethod.CFAR:
             cfar_margin_slice = slice(self.cfar_margin, -self.cfar_margin)
-            extra_result = ProcessorExtraResult(
-                abs_sweep=abs_sweep[cfar_margin_slice],
-                used_threshold=self.threshold[cfar_margin_slice],
-                distances_m=self.distances_m[cfar_margin_slice],
-            )
+            abs_sweep = abs_sweep[cfar_margin_slice]
+            threshold = self.threshold[cfar_margin_slice]
+            distances_m = self.distances_m[cfar_margin_slice]
         else:
-            extra_result = ProcessorExtraResult(
-                abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
-            )
+            threshold = self.threshold
+            distances_m = self.distances_m
+
+        extra_result = ProcessorExtraResult(
+            abs_sweep=abs_sweep,
+            used_threshold=threshold,
+            distances_m=distances_m,
+        )
 
         # Calculate rcs before applying offset as the offset could push the estimated distance
         # into the next subsweep, resulting in rcs being calculated with wring sensor parameters.
@@ -454,6 +458,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return ProcessorResult(
             estimated_distances=estimated_distances,
             estimated_rcs=esimated_rcs,
+            near_edge_status=self._detect_close_object(abs_sweep, threshold),
             extra_result=extra_result,
         )
 
@@ -674,6 +679,26 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             )
         )
         return float(np.sum(pulse**2))
+
+    @staticmethod
+    def _detect_close_object(
+        abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.float_]
+    ) -> bool:
+        """This function determine if an object is present close to the start point, but
+        not far enough into the measurement interval to result in a distinct peak.
+
+        The detection is done by analyzing the shape of the envelope close to the edge of the
+        measurement interval.
+        """
+
+        # Check that the segment is of sufficient length to perform analysis.
+        if abs_sweep.shape[0] < 6:
+            return False
+
+        if np.sum(abs_sweep[0:3]) >= np.sum(abs_sweep[3:6]) and abs_sweep[0] >= threshold[0]:
+            return True
+        else:
+            return False
 
 
 def calculate_bg_noise_std(

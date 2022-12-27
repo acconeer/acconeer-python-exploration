@@ -22,6 +22,7 @@ DTypeT = t.TypeVar("DTypeT")
 _ALL_RESULT_FIELDS: t.Final = (
     "estimated_distances",
     "estimated_rcs",
+    "near_edge_status",
     "recorded_threshold_mean_sweep",
     "recorded_threshold_noise_std",
     "direct_leakage",
@@ -139,6 +140,19 @@ class ProcessorResultListH5Serializer:
                     track_times=False,
                 )
 
+        if "near_edge_status" in self.fields:
+            try:
+                data = self._stack_optional_arraylike([r.near_edge_status for r in results])
+            except ValueError:
+                pass
+            else:
+                self.group.create_dataset(
+                    "near_edge_status",
+                    dtype=bool,
+                    data=data,
+                    track_times=False,
+                )
+
         if "recorded_threshold_mean_sweep" in self.fields:
             try:
                 data = self._stack_optional_arraylike(
@@ -238,6 +252,7 @@ class ProcessorResultListH5Serializer:
         groups = (
             self.group.get("estimated_distances", PhonySeries([], is_prototype_singleton=False)),
             self.group.get("estimated_rcs", PhonySeries([], is_prototype_singleton=False)),
+            self.group.get("near_edge_status", PhonySeries(None)),
             self.group.get("recorded_threshold_mean_sweep", PhonySeries(None)),
             self.group.get("recorded_threshold_noise_std", PhonySeries(None)),
             self.group.get("direct_leakage", PhonySeries(None)),
@@ -258,6 +273,9 @@ class ProcessorResultListH5Serializer:
                 estimated_rcs=self._replace_if_all_is_nan(
                     est_rcs,
                 ),  # type: ignore[arg-type]
+                near_edge_status=(
+                    self._replace_if_all_is_nan(near_edge_status)  # type: ignore[arg-type]
+                ),
                 recorded_threshold_mean_sweep=(
                     self._replace_if_all_is_nan(rt_mean_sweep)  # type: ignore[arg-type]
                 ),
@@ -273,6 +291,7 @@ class ProcessorResultListH5Serializer:
             for (
                 est_dists,
                 est_rcs,
+                near_edge_status,
                 rt_mean_sweep,
                 rt_noise_std,
                 direct_leakage,

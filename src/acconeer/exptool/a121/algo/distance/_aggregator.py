@@ -47,6 +47,7 @@ class AggregatorResult:
     processor_results: list[ProcessorResult] = attrs.field()
     estimated_distances: npt.NDArray[np.float_] = attrs.field()
     estimated_rcs: npt.NDArray[np.float_] = attrs.field()
+    near_edge_status: Optional[bool] = attrs.field(default=None)
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
 
 
@@ -107,6 +108,7 @@ class Aggregator:
             processor_results=processors_result,
             estimated_distances=dists_sorted,
             estimated_rcs=rcs_sorted,
+            near_edge_status=processors_result[0].near_edge_status,
             service_extended_result=extended_result,
         )
 
