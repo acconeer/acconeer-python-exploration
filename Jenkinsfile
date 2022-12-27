@@ -68,7 +68,9 @@ try {
                                 " --net=host --privileged" +
                                 " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
                         lock("${env.NODE_NAME}-xm112") {
-                                sh 'tests/run-integration-tests.sh'
+                                sh 'tests/run-a111-mock-integration-tests.sh'
+                                sh 'tests/run-a111-xm112-integration-tests.sh'
+                                sh 'tests/run-a121-mock-integration-tests.sh'
                         }
                     }
                 }
