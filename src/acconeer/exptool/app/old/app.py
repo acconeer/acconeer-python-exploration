@@ -1294,6 +1294,8 @@ class GUI(QMainWindow):
         sensor_config = self.save_gui_settings_to_sensor_config()
         calibration_config = self.get_calibration_config()
 
+        apply_calibration = self.calibration is not None and self.calibration_ui_state.auto_apply
+
         params = {
             "sensor_config": sensor_config,
             "data_source": "file" if from_file else "stream",
@@ -1302,7 +1304,7 @@ class GUI(QMainWindow):
             "service_params": processing_config,
             "multi_sensor": self.current_module_info.multi_sensor,
             "rss_version": getattr(self, "rss_version", None),
-            "calibration": self.calibration,
+            "calibration": self.calibration if apply_calibration else None,
         }
 
         self.threaded_scan = Threaded_Scan(params, parent=self)
@@ -1327,6 +1329,9 @@ class GUI(QMainWindow):
 
         if calibration_config:
             calibration_config._state = et.configbase.Config.State.LOADED_READONLY
+
+        if apply_calibration:
+            self.calibration_ui_state.calibration_status = CalibrationStatus.IN_PROCESSOR
 
         self.buttons["connect"].setEnabled(False)
 
@@ -1520,6 +1525,7 @@ class GUI(QMainWindow):
             return
 
     def stop_scan(self):
+        self.calibration_ui_state.calibration_status = CalibrationStatus.BUFFERED
         self.sig_scan.emit("stop", "", None)
 
     def unlock_gui(self):
@@ -1840,6 +1846,7 @@ class GUI(QMainWindow):
             should_update_calibration = (
                 self.current_module_info
                 and self.current_module_info.calibration_mapper is not None
+                and self.calibration is None
             )
             if should_update_calibration:
                 self.calibration = data

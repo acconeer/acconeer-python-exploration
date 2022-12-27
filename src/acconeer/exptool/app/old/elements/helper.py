@@ -184,7 +184,7 @@ class CalibrationUiState:
     def load(self, source):
         self.source = source
         self.modified = False
-        self.calibration_status = CalibrationStatus.IN_PROCESSOR
+        self.calibration_status = CalibrationStatus.BUFFERED
 
     def buffer(self, source):
         self.source = source
