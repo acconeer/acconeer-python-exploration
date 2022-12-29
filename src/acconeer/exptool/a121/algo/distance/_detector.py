@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 from __future__ import annotations
@@ -1046,10 +1046,10 @@ class Detector:
     def _calculate_hwaas(
         cls, profile: a121.Profile, breakpoints: list[int], signal_quality: float, step_length: int
     ) -> list[int]:
-        rlg_per_hwaas = Aggregator.RLG_PER_HWAAS_MAP[profile]
+        rlg_per_hwaas = Processor.RLG_PER_HWAAS_MAP[profile]
         hwaas = []
         for idx in range(len(breakpoints) - 1):
-            processing_gain = Aggregator.calc_processing_gain(profile, step_length)
+            processing_gain = Processor.calc_processing_gain(profile, step_length)
             subsweep_end_point_m = max(
                 APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
                 cls.HWAAS_MIN_DISTANCE,

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def optional_float_arraylike_comp(
 
 _FIELD_COMPARATORS = {
     "estimated_distances": optional_float_arraylike_comp,
-    "estimated_amplitudes": optional_float_arraylike_comp,
+    "estimated_rcs": optional_float_arraylike_comp,
     # ignored: "recorded_threshold_mean_sweep"
     # ignored: "recorded_threshold_noise_std"
     # ignored: "direct_leakage"

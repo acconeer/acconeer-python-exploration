@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def results() -> t.List[ProcessorResult]:
     return [
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
                 np.float_(0.1),
@@ -39,7 +39,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=None,
-            estimated_amplitudes=None,
+            estimated_rcs=None,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[np.float_(0.1)] * 20,
             direct_leakage=np.arange(20, dtype=complex),
@@ -48,7 +48,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
             recorded_threshold_mean_sweep=None,
             recorded_threshold_noise_std=None,
             direct_leakage=np.arange(20, dtype=complex),
@@ -57,7 +57,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
                 np.float_(0.1),
@@ -69,7 +69,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
                 np.float_(0.1),

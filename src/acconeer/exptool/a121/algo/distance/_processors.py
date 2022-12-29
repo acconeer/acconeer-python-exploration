@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 from __future__ import annotations
@@ -99,7 +99,7 @@ class ProcessorExtraResult:
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     estimated_distances: Optional[list[float]] = attrs.field(default=None)
-    estimated_amplitudes: Optional[list[float]] = attrs.field(default=None)
+    estimated_rcs: Optional[list[float]] = attrs.field(default=None)
     recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_threshold_noise_std: Optional[list[np.float_]] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
@@ -128,6 +128,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     CLOSE_RANGE_LOOPBACK_IDX = 0
     CLOSE_RANGE_DIST_IDX = 1
+
+    RLG_PER_HWAAS_MAP = {
+        a121.Profile.PROFILE_1: 11.3,
+        a121.Profile.PROFILE_2: 13.7,
+        a121.Profile.PROFILE_3: 19.0,
+        a121.Profile.PROFILE_4: 20.5,
+        a121.Profile.PROFILE_5: 21.6,
+    }
 
     def __init__(
         self,
@@ -161,10 +169,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self.range_subsweep_indexes = [self.CLOSE_RANGE_DIST_IDX]
         elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
             self.range_subsweep_indexes = subsweep_indexes
-        range_subsweep_configs = self._get_subsweep_configs(
+        self.range_subsweep_configs = self._get_subsweep_configs(
             sensor_config, self.range_subsweep_indexes
         )
-        self._validate_range_configs(range_subsweep_configs)
+        self._validate_range_configs(self.range_subsweep_configs)
 
         self.sensor_config = sensor_config
         self.metadata = metadata
@@ -172,11 +180,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.context = context
 
         self.processor_config.validate(self.sensor_config)
-        self.profile = self._get_profile(range_subsweep_configs)
-        self.step_length = self._get_step_length(range_subsweep_configs)
+        self.profile = self._get_profile(self.range_subsweep_configs)
+        self.step_length = self._get_step_length(self.range_subsweep_configs)
         self.approx_step_length_m = self.step_length * APPROX_BASE_STEP_LENGTH_M
-        self.start_point = self._get_start_point(range_subsweep_configs)
-        self.num_points = self._get_num_points(range_subsweep_configs)
+        self.start_point = self._get_start_point(self.range_subsweep_configs)
+        self.num_points = self._get_num_points(self.range_subsweep_configs)
 
         self.base_step_length_m = self.metadata.base_step_length_m
         self.step_length_m = self.step_length * self.base_step_length_m
@@ -186,7 +194,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.num_points_cropped = self.num_points - 2 * self.filt_margin
 
         self.subsweep_bpts = self._get_subsweep_breakpoints(
-            range_subsweep_configs, self.filt_margin
+            self.range_subsweep_configs, self.filt_margin
         )
 
         self.distances_m = (
@@ -433,10 +441,19 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 abs_sweep=abs_sweep, used_threshold=self.threshold, distances_m=self.distances_m
             )
 
+        # Calculate rcs before applying offset as the offset could push the estimated distance
+        # into the next subsweep, resulting in rcs being calculated with wring sensor parameters.
+        esimated_rcs = self._convert_amplitudes_to_rcs(
+            estimated_amplitudes,
+            estimated_distances,
+            self.range_subsweep_configs,
+            self.context.bg_noise_std,  # type: ignore[arg-type]
+        )
+
         estimated_distances = [dist - self.offset_m for dist in estimated_distances]
         return ProcessorResult(
             estimated_distances=estimated_distances,
-            estimated_amplitudes=estimated_amplitudes,
+            estimated_rcs=esimated_rcs,
             extra_result=extra_result,
         )
 
@@ -603,6 +620,60 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         threshold += abs_noise_std * num_stds
         return threshold
+
+    @classmethod
+    def _convert_amplitudes_to_rcs(
+        cls,
+        amplitudes: list[float],
+        distances: list[float],
+        subsweeps: list[a121.SubsweepConfig],
+        bg_noise_std: list[float],
+    ) -> list[float]:
+
+        # Determine subsweep breakpoints in meters.
+        start_points = [subsweep.start_point for subsweep in subsweeps]
+        bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
+
+        rcs = []
+        # Loop over amplitude/distance pairs.
+        for amplitude, distance in zip(amplitudes, distances):
+
+            subsweep_idx = np.sum(bpts_m < distance) - 1
+
+            # For the current distance, get corresponding sensor parameters and background noise.
+            sigma = bg_noise_std[subsweep_idx]
+            hwaas = subsweeps[subsweep_idx].hwaas
+            profile = subsweeps[subsweep_idx].profile
+            step_length = subsweeps[subsweep_idx].step_length
+
+            # Calculate rcs.
+            processing_gain_db = 10 * np.log10(cls.calc_processing_gain(profile, step_length))
+            s_db = 20 * np.log10(amplitude)
+            n_db = 20 * np.log10(sigma)
+            r_db = 40 * np.log10(distance)
+            rlg_db = cls.RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
+
+            rcs.append(s_db - n_db - rlg_db + r_db - processing_gain_db)
+
+        return rcs
+
+    @staticmethod
+    def calc_processing_gain(profile: a121.Profile, step_length: int) -> float:
+        """
+        Approximates the processing gain of the matched filter.
+        """
+        envelope_base_length_m = ENVELOPE_FWHM_M[profile] * 2  # approx envelope width
+        num_points_in_envelope = (
+            int(envelope_base_length_m / (step_length * APPROX_BASE_STEP_LENGTH_M)) + 2
+        )
+        mid_point = num_points_in_envelope // 2
+        pulse = np.concatenate(
+            (
+                np.linspace(0, 1, mid_point),
+                np.linspace(1, 0, num_points_in_envelope - mid_point),
+            )
+        )
+        return float(np.sum(pulse**2))
 
 
 def calculate_bg_noise_std(

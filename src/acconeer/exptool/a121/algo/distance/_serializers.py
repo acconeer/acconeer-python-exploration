@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ DTypeT = t.TypeVar("DTypeT")
 
 _ALL_RESULT_FIELDS: t.Final = (
     "estimated_distances",
-    "estimated_amplitudes",
+    "estimated_rcs",
     "recorded_threshold_mean_sweep",
     "recorded_threshold_noise_std",
     "direct_leakage",
@@ -126,14 +126,14 @@ class ProcessorResultListH5Serializer:
                     track_times=False,
                 )
 
-        if "estimated_amplitudes" in self.fields:
+        if "estimated_rcs" in self.fields:
             try:
-                data = self._stack_optional_arraylike([r.estimated_amplitudes for r in results])
+                data = self._stack_optional_arraylike([r.estimated_rcs for r in results])
             except ValueError:
                 pass
             else:
                 self.group.create_dataset(
-                    "estimated_amplitudes",
+                    "estimated_rcs",
                     dtype=float,
                     data=data,
                     track_times=False,
@@ -237,7 +237,7 @@ class ProcessorResultListH5Serializer:
 
         groups = (
             self.group.get("estimated_distances", PhonySeries([], is_prototype_singleton=False)),
-            self.group.get("estimated_amplitudes", PhonySeries([], is_prototype_singleton=False)),
+            self.group.get("estimated_rcs", PhonySeries([], is_prototype_singleton=False)),
             self.group.get("recorded_threshold_mean_sweep", PhonySeries(None)),
             self.group.get("recorded_threshold_noise_std", PhonySeries(None)),
             self.group.get("direct_leakage", PhonySeries(None)),
@@ -255,8 +255,8 @@ class ProcessorResultListH5Serializer:
                 estimated_distances=self._replace_if_all_is_nan(
                     est_dists,
                 ),  # type: ignore[arg-type]
-                estimated_amplitudes=self._replace_if_all_is_nan(
-                    est_amps,
+                estimated_rcs=self._replace_if_all_is_nan(
+                    est_rcs,
                 ),  # type: ignore[arg-type]
                 recorded_threshold_mean_sweep=(
                     self._replace_if_all_is_nan(rt_mean_sweep)  # type: ignore[arg-type]
@@ -272,7 +272,7 @@ class ProcessorResultListH5Serializer:
             )
             for (
                 est_dists,
-                est_amps,
+                est_rcs,
                 rt_mean_sweep,
                 rt_noise_std,
                 direct_leakage,
