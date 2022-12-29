@@ -9,4 +9,5 @@ This section provides insight into some more in-depth topics.
    :maxdepth: 1
    :glob:
 
+   csm
    loopback
