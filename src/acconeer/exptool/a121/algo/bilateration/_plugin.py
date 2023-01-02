@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -236,13 +236,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             raise RuntimeError
         detector_result = self._detector_instance.get_next()
 
-        self._frame_count += 1
-
         processor_result = self._processor_instance.process(result=detector_result)
 
         assert self.client is not None
-        self.callback(GeneralMessage(name="rate_stats", data=self.client._rate_stats))
-        self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
         self.callback(
             GeneralMessage(
                 name="plot",

@@ -14,7 +14,6 @@ from acconeer.exptool.a121._core.entities import (
 )
 from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.a121._core.utils import unextend
-from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
 from .client import Client, ClientError
 
@@ -23,7 +22,6 @@ class CommonClient(Client):
     _client_info: ClientInfo
     _calibrations_provided: dict[int, bool]
     _metadata: Optional[list[dict[int, Metadata]]]
-    _rate_stats_calc: Optional[_RateCalculator]
     _recorder: Optional[Recorder]
     _sensor_calibrations: Optional[dict[int, SensorCalibration]]
     _session_config: Optional[SessionConfig]
@@ -47,7 +45,6 @@ class CommonClient(Client):
         self._client_info = client_info
         self._calibrations_provided = {}
         self._metadata = None
-        self._rate_stats_calc = None
         self._recorder = None
         self._sensor_calibrations = None
         self._session_is_started = False
@@ -83,14 +80,6 @@ class CommonClient(Client):
     def _recorder_sample(self, extended_results: list[dict[int, Result]]) -> None:
         if self._recorder is not None:
             self._recorder._sample(extended_results)
-
-    def _create_rate_stats_calc(self) -> None:
-        assert self._metadata is not None
-        self._rate_stats_calc = _RateCalculator(self.session_config, self._metadata)
-
-    def _update_rate_stats_calc(self, extended_results: list[dict[int, Result]]) -> None:
-        assert self._rate_stats_calc is not None
-        self._rate_stats_calc.update(extended_results)
 
     def _return_results(
         self, extended_results: list[dict[int, Result]]
@@ -136,9 +125,3 @@ class CommonClient(Client):
     @property
     def calibrations_provided(self) -> dict[int, bool]:
         return self._calibrations_provided
-
-    @property
-    def _rate_stats(self) -> _RateStats:
-        self._assert_session_started()
-        assert self._rate_stats_calc is not None
-        return self._rate_stats_calc.stats

@@ -16,7 +16,6 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
 )
 from acconeer.exptool.a121._core.mediators import Recorder
-from acconeer.exptool.a121._rate_calc import _RateStats
 
 from .communication_protocol import CommunicationProtocol
 
@@ -230,12 +229,6 @@ class Client(ClientABCWithGoodError):
 
         this attribute will return ``{1: False, 2: True}``
         """
-        ...
-
-    @property
-    @abc.abstractmethod
-    def _rate_stats(self) -> _RateStats:
-        """Returns the data rate statistict from the client"""
         ...
 
     def __enter__(self) -> Client:

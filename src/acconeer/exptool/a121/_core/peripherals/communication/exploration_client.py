@@ -326,7 +326,6 @@ class ExplorationClient(CommonClient):
             raise ClientError("Session is already started.")
 
         self._recorder_start(recorder)
-        self._create_rate_stats_calc()
         self._session_is_started = True
 
         self._link.timeout = self._link_timeout
@@ -358,7 +357,6 @@ class ExplorationClient(CommonClient):
         extended_results = self._tick_unwrapper.unwrap_ticks(extended_results)
 
         self._recorder_sample(extended_results)
-        self._update_rate_stats_calc(extended_results)
         return self._return_results(extended_results)
 
     def stop_session(self) -> Any:
@@ -378,7 +376,6 @@ class ExplorationClient(CommonClient):
             self._tick_unwrapper = TickUnwrapper()
 
         recorder_result = self._recorder_stop()
-        self._rate_stats_calc = None
         self._log_queue.clear()
 
         return recorder_result

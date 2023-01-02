@@ -267,7 +267,6 @@ class MockClient(CommonClient):
             raise ClientError("Session is already started.")
 
         self._recorder_start(recorder)
-        self._create_rate_stats_calc()
         self._session_is_started = True
         self._start_time = time.monotonic()
         self._mock_next_data_time = self._start_time
@@ -290,13 +289,11 @@ class MockClient(CommonClient):
         self._mock_next_data_time += 1 / self._mock_update_rate
 
         self._recorder_sample(extended_results)
-        self._update_rate_stats_calc(extended_results)
         return self._return_results(extended_results)
 
     def stop_session(self) -> Any:
         self._assert_session_started()
         self._session_is_started = False
-        self._rate_stats_calc = None
 
         return self._recorder_stop()
 

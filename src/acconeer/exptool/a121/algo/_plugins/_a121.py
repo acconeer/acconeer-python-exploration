@@ -14,6 +14,7 @@ import pyqtgraph as pg
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new import (
+    ApplicationClient,
     AppModel,
     BackendPlugin,
     GeneralMessage,
@@ -37,11 +38,10 @@ T = TypeVar("T")
 
 class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     _live_client: Optional[a121.Client]
-    _replaying_client: Optional[a121._ReplayingClient]
+    _replaying_client: Optional[a121.Client]
     _opened_record: Optional[a121.H5Record]
     _started: bool = False
     _recorder: Optional[a121.H5Recorder] = None
-    _frame_count: int
 
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
@@ -50,13 +50,12 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         self._live_client = None
         self._replaying_client = None
         self._opened_record = None
-        self._frame_count = 0
 
     @is_task
     def load_from_file(self, *, path: Path) -> None:
         try:
             self._opened_record = a121.H5Record(h5py.File(path, mode="r"))
-            self._replaying_client = a121._ReplayingClient(self._opened_record)
+            replaying_client = a121._ReplayingClient(self._opened_record)
             self.load_from_record_setup(record=self._opened_record)
         except Exception as exc:
             self._opened_record = None
@@ -64,6 +63,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
 
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not load from file") from exc
+
+        self._replaying_client = ApplicationClient.wrap(replaying_client, self.callback)
 
         self.start_session(with_recorder=False)
 
@@ -127,7 +128,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         pass
 
     def attach_client(self, *, client: a121.Client) -> None:
-        self._live_client = client
+        self._live_client = ApplicationClient.wrap(client, self.callback)
         self._sync_sensor_ids()
         self.broadcast(True)
 
@@ -188,11 +189,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
                 self._recorder = None
 
             self._started = False
-            self._frame_count = 0
             self.broadcast()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            self.callback(GeneralMessage(name="rate_stats", data=None))
-            self.callback(GeneralMessage(name="frame_count", data=None))
 
         if self._opened_record:
             self._opened_record.close()

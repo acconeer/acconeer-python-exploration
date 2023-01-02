@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from ._enums import (
@@ -13,6 +13,7 @@ from ._version_checker import check_package_outdated, get_latest_changelog
 from .app import main
 from .app_model import AppModel
 from .backend import (
+    ApplicationClient,
     BackendLogger,
     BackendPlugin,
     GeneralMessage,
