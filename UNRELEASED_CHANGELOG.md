@@ -14,3 +14,4 @@
 - Make sure to sync sensor ids after replaying file
 - A111: Check that calibration background and data length matches, otherwise
   raise an exception
+- Re-add TickUnwrapper

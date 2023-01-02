@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -328,6 +328,8 @@ class ExplorationClient(CommonClient):
             metadata=self._metadata,
             config_groups=self._session_config.groups,
         )
+
+        extended_results = self._tick_unwrapper.unwrap_ticks(extended_results)
 
         self._recorder_sample(extended_results)
         self._update_rate_stats_calc(extended_results)
