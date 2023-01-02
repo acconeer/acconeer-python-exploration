@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Tuple
+from typing import Any, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -48,8 +48,7 @@ PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 
 
 def get_distances_m(
-    config: a121.SensorConfig,
-    metadata: a121.Metadata,
+    config: Union[a121.SensorConfig, a121.SubsweepConfig], metadata: a121.Metadata
 ) -> Tuple[npt.NDArray[np.float_], float]:
     points = np.arange(config.num_points) * config.step_length + config.start_point
     distances_m = points * metadata.base_step_length_m

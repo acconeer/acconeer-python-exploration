@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import numpy.typing as npt
 
 from acconeer.exptool.a121._core import complex_array_to_int16_complex
 
-from ._processor import ProcessorResult
+from ._processor import SubsweepProcessorResult
 
 
 S = t.TypeVar("S")
@@ -52,13 +52,13 @@ def _frame_preprocessing(json_frame: npt.NDArray) -> npt.NDArray[np.complex_]:
     return json_frame[..., 0] + 1j * json_frame[..., 1]  # type: ignore[no-any-return]
 
 
-class ProcessorResultJSONEncoder(json.JSONEncoder):
+class SubsweepProcessorResultJSONEncoder(json.JSONEncoder):
     def __init__(self, *, fields: t.Sequence[str] = _ALL_RESULT_FIELDS, **kwargs: t.Any) -> None:
         super().__init__(**kwargs)
         self.fields = fields
 
     def default(self, o: t.Any) -> t.Any:
-        if isinstance(o, ProcessorResult):
+        if isinstance(o, SubsweepProcessorResult):
             result = o
             full_dict = dict(
                 frame=complex_array_to_int16_complex(result.frame).tolist(),
@@ -71,12 +71,12 @@ class ProcessorResultJSONEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-class ProcessorResultJSONDecoder(json.JSONDecoder):
+class SubsweepProcessorResultJSONDecoder(json.JSONDecoder):
     def __init__(self, *, allow_missing_fields: bool = False, **kwargs: t.Any) -> None:
         super().__init__(object_hook=self.object_hook, **kwargs)
         self.allow_missing_fields = allow_missing_fields
 
-    def object_hook(self, obj: dict) -> ProcessorResult:
+    def object_hook(self, obj: dict) -> SubsweepProcessorResult:
         frame = _frame_preprocessing(_maybe_ndarray(obj.get("frame")))
         dvm = _maybe_ndarray(obj.get("distance_velocity_map"))
         amplitudes = _maybe_ndarray(obj.get("amplitudes"))
@@ -87,7 +87,7 @@ class ProcessorResultJSONDecoder(json.JSONDecoder):
         ):
             raise ValueError(_INCOMPLETE_SERIALIZATION_MSG)
 
-        return ProcessorResult(
+        return SubsweepProcessorResult(
             frame=frame,  # type: ignore[arg-type]
             distance_velocity_map=dvm,  # type: ignore[arg-type]
             amplitudes=amplitudes,  # type: ignore[arg-type]
@@ -95,25 +95,27 @@ class ProcessorResultJSONDecoder(json.JSONDecoder):
         )
 
 
-class ProcessorResultJSONSerializer:
+class SubsweepProcessorResultJSONSerializer:
     def __init__(
         self, fields: t.Sequence = _ALL_RESULT_FIELDS, allow_missing_fields: bool = False
     ) -> None:
         self.fields = fields
         self.allow_missing_fields = allow_missing_fields
 
-    def serialize(self, result: ProcessorResult) -> str:
-        return json.dumps(result, cls=ProcessorResultJSONEncoder, fields=self.fields)
+    def serialize(self, result: SubsweepProcessorResult) -> str:
+        return json.dumps(result, cls=SubsweepProcessorResultJSONEncoder, fields=self.fields)
 
-    def deserialize(self, result: str) -> ProcessorResult:
+    def deserialize(self, result: str) -> SubsweepProcessorResult:
         return json.loads(  # type: ignore[no-any-return]
-            result, cls=ProcessorResultJSONDecoder, allow_missing_fields=self.allow_missing_fields
+            result,
+            cls=SubsweepProcessorResultJSONDecoder,
+            allow_missing_fields=self.allow_missing_fields,
         )
 
 
-class ProcessorResultListH5Serializer:
+class SubsweepProcessorResultListH5Serializer:
     """
-    Reads or writes a SparseIQ ProcessorResult from/to a given h5py.Group
+    Reads or writes a SparseIQ SubsweepProcessorResult from/to a given h5py.Group
     """
 
     def __init__(
@@ -133,7 +135,7 @@ class ProcessorResultListH5Serializer:
         self.fields = fields
         self.allow_missing_fields = allow_missing_fields
 
-    def serialize(self, results: t.List[ProcessorResult]) -> None:
+    def serialize(self, results: t.List[SubsweepProcessorResult]) -> None:
         if "frame" in self.fields:
             self.group.create_dataset(
                 "frame",
@@ -166,7 +168,7 @@ class ProcessorResultListH5Serializer:
                 track_times=False,
             )
 
-    def _deserialize_at_index(self, index: int) -> ProcessorResult:
+    def _deserialize_at_index(self, index: int) -> SubsweepProcessorResult:
         frames = self.group.get("frame", None)
         dvms = self.group.get("distance_velocity_map", None)
         ampss = self.group.get("amplitudes", None)
@@ -182,14 +184,14 @@ class ProcessorResultListH5Serializer:
         amps = None if (ampss is None) else ampss[index]
         phases = None if (phasess is None) else phasess[index]
 
-        return ProcessorResult(
+        return SubsweepProcessorResult(
             frame=frame,  # type: ignore[arg-type]
             distance_velocity_map=dvm,  # type: ignore[arg-type]
             amplitudes=amps,  # type: ignore[arg-type]
             phases=phases,  # type: ignore[arg-type]
         )
 
-    def deserialize(self, _: None) -> t.List[ProcessorResult]:
+    def deserialize(self, _: None) -> t.List[SubsweepProcessorResult]:
         optional_lens = set(
             optional_apply(len)(series)
             for series in [

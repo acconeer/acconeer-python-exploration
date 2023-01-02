@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 
 from acconeer.exptool import a121
 
-from . import distance_test, presence_test, resources, sparse_iq_test
+from . import distance_test, presence_test, resources
 from .misc import AlgorithmFactory, AlgorithmResult, H5ResultSerializer
 
 
@@ -36,12 +36,6 @@ def input_path(resource_name: str) -> Path:
         "resource_name",
     ),
     [
-        (
-            sparse_iq_test.sparse_iq_default,
-            sparse_iq_test.SparseIqResultH5Serializer,
-            sparse_iq_test.result_comparator,
-            "input.h5",
-        ),
         (
             presence_test.presence_default,
             presence_test.PresenceResultH5Serializer,
