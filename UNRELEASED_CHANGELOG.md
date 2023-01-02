@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Sensor config info in distance detector
+
 ### Changed
 - A111: Update calibration behavior
   * No longer automatically applied on start, unless auto-apply is ticked

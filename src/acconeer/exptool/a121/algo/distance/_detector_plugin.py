@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import h5py
 import numpy as np
 import qtawesome as qta
 
-from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QPushButton, QTabWidget, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
 
@@ -45,6 +45,7 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
 
 from ._detector import (
     DetailedStatus,
@@ -303,6 +304,8 @@ class PlotPlugin(DetectorPlotPluginBase):
 
 class ViewPlugin(DetectorViewPluginBase):
 
+    sensor_config_editors: list[SensorConfigEditor]
+
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
         DetailedStatus.END_LESSER_THAN_START: "'Range end' point must be greater than 'Range "
@@ -394,6 +397,22 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
+
+        self.sensor_config_editor_tabs = QTabWidget()
+        self.sensor_config_editor_tabs.setStyleSheet("QTabWidget::pane { padding: 5px;}")
+        self.sensor_config_editors = []
+        self.range_labels = ["Close range", "Far range"]
+
+        for label in self.range_labels:
+            sensor_config_editor = SensorConfigEditor()
+            sensor_config_editor.set_read_only(True)
+            self.sensor_config_editors.append(sensor_config_editor)
+            self.sensor_config_editor_tabs.addTab(sensor_config_editor, label)
+
+        self.collapsible_widget = CollapsibleWidget(
+            "Sensor config info", self.sensor_config_editor_tabs, self.scrolly_widget
+        )
+        scrolly_layout.addWidget(self.collapsible_widget)
 
         self.sticky_widget.setLayout(sticky_layout)
         self.scrolly_widget.setLayout(scrolly_layout)
@@ -502,6 +521,28 @@ class ViewPlugin(DetectorViewPluginBase):
 
         assert isinstance(state, SharedState)
 
+        try:
+            session_config, _ = Detector._detector_to_session_config_and_processor_specs(
+                state.config, state.sensor_ids
+            )
+        except Exception:
+            pass  # Since the session config is read only there is no gain in handling this error
+        else:
+            tab_visible = [False, False]
+            for group in session_config.groups:
+                for _, sensor_config in group.items():
+                    index = 0 if sensor_config.subsweeps[0].enable_loopback else 1
+                    tab_visible[index] = True
+                    sensor_config_editor = self.sensor_config_editors[index]
+                    sensor_config_editor.set_data(sensor_config)
+                    sensor_config_editor.sync()
+
+            for i, sensor_config_editor in enumerate(self.sensor_config_editors):
+                index = self.sensor_config_editor_tabs.indexOf(sensor_config_editor)
+                self.sensor_config_editor_tabs.setTabVisible(index, tab_visible[i])
+
+            self.collapsible_widget.widget = self.sensor_config_editor_tabs
+
         self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
@@ -532,7 +573,6 @@ class ViewPlugin(DetectorViewPluginBase):
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
             self._log.debug(f"{type(self).__name__} syncing")
-
             self.config_editor.sync()
         else:
             raise RuntimeError("Unknown message")
