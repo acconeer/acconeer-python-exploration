@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 """ Tool dfu/flash devices with bootloader firmware """
@@ -15,11 +15,9 @@ from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
 from acconeer.exptool.flash._xc120._bootloader_comm import BLCommunication
 from acconeer.exptool.flash._xc120._meta import (
     ACCONEER_VID,
-    ACCONEER_XC120_BOARD_PROTOCOL_PID,
     ACCONEER_XC120_BOOTLOADER_PID,
     ACCONEER_XC120_EXPLORATION_SERVER_PID,
 )
-from acconeer.exptool.flash._xc120._xcbridge_comm import XCCommunication
 from acconeer.exptool.utils import get_usb_devices
 
 
@@ -35,9 +33,9 @@ log = logging.getLogger(__name__)
 class ImageFlasher:
     """A class that handles image flashing"""
 
-    def __init__(self, port):
-        self._port = port
-        self._comm = None
+    def __init__(self, serial_dev):
+        self._ser = serial_dev
+        self._comm = BLCommunication(self._ser)
         self._progress_callback = None
 
     def __enter__(self):
@@ -46,17 +44,14 @@ class ImageFlasher:
     def __exit__(self, exc_type, exc_value, traceback):
         self.reset_and_close()
 
-    def connect(self):
-        """connect to bootloader board"""
-
-        self._comm = BLCommunication(self._port)
-
     def reset_and_close(self):
         """reset system and close communication channel"""
         if self._comm is not None:
-            self._comm.stop()
             self._comm.reset()
-            self._comm.close()
+
+        if self._ser is not None:
+            self._ser.close()
+            self._ser = None
 
     def set_progress_callback(self, progress_callback):
         self._progress_callback = progress_callback
@@ -133,6 +128,17 @@ class BootloaderTool(DeviceFlasherBase):
             return None
 
     @staticmethod
+    def _find_usb_dfu_device():
+        try:
+            usb_devices = get_usb_devices()
+            for dev in usb_devices:
+                if dev.unflashed:
+                    return dev
+            return None
+        except ImportError:
+            return None
+
+    @staticmethod
     def _try_open_port(device_port):
         retries = 5
         port_ok = False
@@ -150,6 +156,11 @@ class BootloaderTool(DeviceFlasherBase):
             raise ValueError(f"Device port {device_port} cannot be opened")
 
     @staticmethod
+    def _is_usb_dfu_device(device_port):
+        usb_device = BootloaderTool._find_usb_device(device_port)
+        return usb_device is not None and usb_device.unflashed
+
+    @staticmethod
     def enter_dfu(device_port):
         """Function to make the devices enter Bootloader/DFU mode"""
 
@@ -159,15 +170,10 @@ class BootloaderTool(DeviceFlasherBase):
 
         BootloaderTool._try_open_port(cdc_port)
 
-        if cdc_port:
+        if cdc_port is not None or BootloaderTool._is_usb_dfu_device(device_port):
             log.debug("Device already in DFU mode")
         else:
             log.debug("Reset to DFU mode")
-            board_protocol_port = BootloaderTool._find_port(
-                ACCONEER_VID,
-                ACCONEER_XC120_BOARD_PROTOCOL_PID,
-                device_port,
-            )
             exploration_server_port = BootloaderTool._find_port(
                 ACCONEER_VID,
                 ACCONEER_XC120_EXPLORATION_SERVER_PID,
@@ -196,13 +202,6 @@ class BootloaderTool(DeviceFlasherBase):
                 ser.write(bytes('{ "cmd": "stop_application" }\n', "utf-8"))
                 ser.close()
 
-            elif board_protocol_port:
-                BootloaderTool._try_open_port(board_protocol_port)
-                log.debug("Protocol firmware active, enter DFU mode")
-                with XCCommunication(board_protocol_port) as comm:
-                    comm.stop()
-                    comm.dfu_reboot()
-
             else:
                 raise ValueError("Device not found")
 
@@ -216,7 +215,8 @@ class BootloaderTool(DeviceFlasherBase):
                 cdc_port = BootloaderTool._find_port(
                     ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port
                 )
-                if cdc_port:
+                usb_dfu = BootloaderTool._find_usb_dfu_device()
+                if cdc_port is not None or usb_dfu is not None:
                     device_found = True
                     break
                 retries -= 1
@@ -225,45 +225,25 @@ class BootloaderTool(DeviceFlasherBase):
                 raise ValueError("DFU device not found")
 
     @staticmethod
-    def _upgrade_needed(device_port, image_version=""):
-        if BootloaderTool._find_port(
-            ACCONEER_VID, ACCONEER_XC120_EXPLORATION_SERVER_PID, device_port
-        ):
-            # In exploration server mode, always upgrade
-            return True
-
-        if BootloaderTool._find_port(ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port):
-            # Already in DFU mode
-            return True
-
-        if BootloaderTool._find_usb_device(device_port):
-            # In exploration server mode, always upgrade
-            return True
-
-        board_protocol_port = BootloaderTool._find_port(
-            ACCONEER_VID, ACCONEER_XC120_BOARD_PROTOCOL_PID, device_port
-        )
-        if board_protocol_port:
-            # Correct firmware, is the version OK?
-            with XCCommunication(board_protocol_port) as comm:
-                current_version = comm.get_app_sw_version()
-                if image_version != current_version:
-                    # Different version, upgrade needed
-                    return True
-
-        log.info("\nNo upgrade needed\n")
-        return False
-
-    @staticmethod
     def flash(device_port, device_name, image_path, progress_callback=None):
         """Flash an firmware image to the device"""
         BootloaderTool.enter_dfu(device_port)
         dfu_port = BootloaderTool._find_port(
             ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port
         )
-        BootloaderTool._try_open_port(dfu_port)
-        with ImageFlasher(dfu_port) as image_flasher:
-            image_flasher.connect()
+        usb_dfu = BootloaderTool._find_usb_dfu_device()
+        serial_dev = None
+        if dfu_port is not None:
+            serial_dev = serial.Serial(dfu_port, exclusive=True)
+        elif usb_dfu is not None and ComPort is not None:
+            serial_dev = ComPort(
+                vid=usb_dfu.vid,
+                pid=usb_dfu.pid,
+            )
+        else:
+            raise ValueError("Flash failed, device not found")
+
+        with ImageFlasher(serial_dev) as image_flasher:
             image_flasher.set_progress_callback(progress_callback)
             image_flasher.flash_image_file(image_path)
 
@@ -276,5 +256,4 @@ class BootloaderTool(DeviceFlasherBase):
         )
         BootloaderTool._try_open_port(dfu_port)
         with ImageFlasher(dfu_port) as image_flasher:
-            image_flasher.connect()
             image_flasher.erase_image(1024)  # It is enough to erase the header
