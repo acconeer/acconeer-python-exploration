@@ -57,7 +57,6 @@ try {
                 stage('Run integration tests') {
                     def image = buildDocker(path: 'docker')
                     image.inside("--hostname ${env.NODE_NAME}" +
-                                " --net=host --privileged" +
                                 " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
                                 sh 'tests/run-a111-mock-integration-tests.sh'
                                 sh 'tests/run-a121-mock-integration-tests.sh'
@@ -85,16 +84,16 @@ try {
                     sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
                     sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
                 }
-                stage ('Flash') {
-                    sh '(cd stash && python3 python_libs/test_utils/flash.py)'
-                }
-                stage('Run integration tests') {
-                    def image = buildDocker(path: 'docker')
-                    image.inside("--hostname ${env.NODE_NAME}" +
-                                " --net=host --privileged" +
-                                " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
-                        lock("${env.NODE_NAME}-xm112") {
-                                sh 'tests/run-a111-xm112-integration-tests.sh'
+                lock("${env.NODE_NAME}-xm112") {
+                    stage ('Flash') {
+                        sh '(cd stash && python3 python_libs/test_utils/flash.py)'
+                    }
+                    stage('Run integration tests') {
+                        def image = buildDocker(path: 'docker')
+                        image.inside("--hostname ${env.NODE_NAME}" +
+                                     " --net=host --privileged" +
+                                     " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
+                            sh 'tests/run-a111-xm112-integration-tests.sh'
                         }
                     }
                 }
