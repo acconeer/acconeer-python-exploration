@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from acconeer.exptool import a121
 class RangeHelpView(QGroupBox):
     APPROX_BASE_STEP_LENGTH_M = 2.5e-3
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setTitle("Approx. selected range")
