@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -98,6 +98,16 @@ class DetectorContext(AlgoBase):
 
 
 @attrs.mutable(kw_only=True)
+class SingleSensorExtraContext(AlgoBase):
+    offset_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
+    noise_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
+    close_range_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
+    recorded_threshold_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(
+        default=None
+    )
+
+
+@attrs.mutable(kw_only=True)
 class SingleSensorContext(AlgoBase):
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
@@ -112,6 +122,7 @@ class SingleSensorContext(AlgoBase):
     )
     reference_temperature: Optional[int] = attrs.field(default=None)
     sensor_calibration: Optional[a121.SensorCalibration] = attrs.field(default=None)
+    extra_context: SingleSensorExtraContext = attrs.field(factory=SingleSensorExtraContext)
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
 
     def to_h5(self, group: h5py.Group) -> None:
@@ -120,6 +131,10 @@ class SingleSensorContext(AlgoBase):
                 "recorded_thresholds_mean_sweep",
                 "recorded_thresholds_noise_std",
                 "bg_noise_std",
+                "offset_frames",
+                "noise_frames",
+                "close_range_frames",
+                "recorded_threshold_frames",
             ]:
                 continue
 
@@ -162,9 +177,36 @@ class SingleSensorContext(AlgoBase):
             for i, v in enumerate(self.bg_noise_std):
                 bg_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
+        if self.extra_context.offset_frames is not None:
+            offset_frames_group = group.create_group("offset_frames")
+
+            for i, v in enumerate(self.extra_context.offset_frames):
+                offset_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+        if self.extra_context.noise_frames is not None:
+            noise_frames_group = group.create_group("noise_frames")
+
+            for i, v in enumerate(self.extra_context.noise_frames):
+                noise_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+        if self.extra_context.close_range_frames is not None:
+            close_range_frames_group = group.create_group("close_range_frames")
+
+            for i, v in enumerate(self.extra_context.close_range_frames):
+                close_range_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+        if self.extra_context.recorded_threshold_frames is not None:
+            recorded_threshold_frames_group = group.create_group("recorded_threshold_frames")
+
+            for i, v in enumerate(self.extra_context.recorded_threshold_frames):
+                recorded_threshold_frames_group.create_dataset(
+                    f"index_{i}", data=v, track_times=False
+                )
+
     @classmethod
     def from_h5(cls, group: h5py.Group) -> SingleSensorContext:
-        context_dict = {}
+        context_dict: Dict[str, Any] = {}
+        context_dict["extra_context"] = {}
 
         unknown_keys = set(group.keys()) - set(attrs.fields_dict(SingleSensorContext).keys())
         if unknown_keys:
@@ -201,6 +243,22 @@ class SingleSensorContext(AlgoBase):
             context_dict["sensor_calibration"] = a121.SensorCalibration.from_h5(
                 group["sensor_calibration"]
             )
+
+        if "offset_frames" in group:
+            offset_frames = _get_group_items(group["offset_frames"])
+            context_dict["extra_context"]["offset_frames"] = offset_frames
+
+        if "noise_frames" in group:
+            noise_frames = _get_group_items(group["noise_frames"])
+            context_dict["extra_context"]["noise_frames"] = noise_frames
+
+        if "close_range_frames" in group:
+            close_range_frames = _get_group_items(group["close_range_frames"])
+            context_dict["extra_context"]["close_range_frames"] = close_range_frames
+
+        if "recorded_threshold_frames" in group:
+            recorded_threshold_frames = _get_group_items(group["recorded_threshold_frames"])
+            context_dict["extra_context"]["recorded_threshold_frames"] = recorded_threshold_frames
 
         return SingleSensorContext(**context_dict)
 
@@ -407,6 +465,13 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
             context.sensor_calibration = self.client.calibrations[sensor_id]
 
+            if context.extra_context.close_range_frames is None:
+                context.extra_context.close_range_frames = [[] for _ in extended_result]
+
+            for i, res in enumerate(extended_result):
+                result = res[sensor_id]
+                context.extra_context.close_range_frames[i].append(result._frame)
+
     def _record_threshold(self) -> None:
         """Calibrates the parameters used when forming the recorded threshold."""
 
@@ -440,6 +505,14 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 sensor_id: aggregators[sensor_id].process(extended_result=extended_result)
                 for sensor_id in self.sensor_ids
             }
+            for sensor_id, context in self.context.single_sensor_contexts.items():
+
+                if context.extra_context.recorded_threshold_frames is None:
+                    context.extra_context.recorded_threshold_frames = [[] for _ in extended_result]
+
+                for i, res in enumerate(extended_result):
+                    result = res[sensor_id]
+                    context.extra_context.recorded_threshold_frames[i].append(result._frame)
         self.client.stop_session()
 
         assert isinstance(extended_result, list)
@@ -510,6 +583,13 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 bg_noise_one_sensor.append(bg_noise_std_in_subsweep)
             context.bg_noise_std = bg_noise_one_sensor
 
+            if context.extra_context.noise_frames is None:
+                context.extra_context.noise_frames = [[] for _ in extended_result]
+
+            for i, res in enumerate(extended_result):
+                result = res[sensor_id]
+                context.extra_context.noise_frames[i].append(result._frame)
+
     def _calibrate_offset(self) -> None:
         """Estimates sensor offset error based on loopback measurement."""
 
@@ -540,6 +620,13 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             context.loopback_peak_location_m = calculate_loopback_peak_location(
                 extended_result[0][sensor_id], sensor_config
             )
+
+            if context.extra_context.offset_frames is None:
+                context.extra_context.offset_frames = [[] for _ in extended_result]
+
+            for i, res in enumerate(extended_result):
+                result = res[sensor_id]
+                context.extra_context.offset_frames[i].append(result._frame)
 
     @staticmethod
     def _get_sensor_calibrations(context: DetectorContext) -> dict[int, a121.SensorCalibration]:
