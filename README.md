@@ -18,7 +18,7 @@ and
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">
-  <img alt="The application in action" src="https://raw.githubusercontent.com/acconeer/acconeer-python-exploration/0aa884c4a7c17e6f5299e2e57aa1ccc02d3f4c05/docs/_static/gui.png" width=85%>
+  <img alt="The application in action" src="https://raw.githubusercontent.com/acconeer/acconeer-python-exploration/8f633e02abac99ffec6fefec4339d13bc5c18388/docs/_static/gui.png" width=85%>
 </p>
 
 ## Quickstart for Windows
