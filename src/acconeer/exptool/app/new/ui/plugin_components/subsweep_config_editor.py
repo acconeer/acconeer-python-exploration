@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -152,6 +152,10 @@ class SubsweepConfigEditor(QWidget):
     def set_data(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
         self.range_help_view.update(subsweep_config)
         self._subsweep_config = subsweep_config
+
+    def set_read_only(self, read_only: bool) -> None:
+        for pidget in self._all_pidgets:
+            pidget.setEnabled(not read_only)
 
     def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
         if self._subsweep_config is None:

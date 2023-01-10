@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -73,6 +73,11 @@ class SessionConfigEditor(QWidget):
         self._session_config = session_config
         if session_config is not None:
             self._sensor_config_editor.set_data(session_config.sensor_config)
+
+    def set_read_only(self, read_only: bool) -> None:
+        self._sensor_id_pidget.setEnabled(not read_only)
+        self._update_rate_pidget.setEnabled(not read_only)
+        self._sensor_config_editor.set_read_only(read_only)
 
     def sync(self) -> None:
         self._update_ui()

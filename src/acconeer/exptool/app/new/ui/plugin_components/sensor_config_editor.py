@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -29,6 +29,9 @@ class SensorConfigEditor(QWidget):
     _subsweep_config_editors: list[SubsweepConfigEditor]
 
     _all_pidgets: list[pidgets.ParameterWidget]
+
+    _read_only: bool
+    _supports_multiple_subsweeps: bool
 
     SPACING = 15
     IDLE_STATE_LABEL_MAP = {
@@ -133,6 +136,9 @@ class SensorConfigEditor(QWidget):
         self._sensor_config = None
         self._subsweep_config_editors = []
 
+        self._read_only = False
+        self._supports_multiple_subsweeps = supports_multiple_subsweeps
+
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
 
@@ -189,8 +195,9 @@ class SensorConfigEditor(QWidget):
 
     def _add_subsweep_config_editor(self) -> SubsweepConfigEditor:
         subsweep_config_editor = SubsweepConfigEditor(self)
-        self._subsweep_config_editors.append(subsweep_config_editor)
         subsweep_config_editor.sig_update.connect(self._broadcast)
+        subsweep_config_editor.set_read_only(self._read_only)
+        self._subsweep_config_editors.append(subsweep_config_editor)
         self._tab_widget.addTab(subsweep_config_editor, str(len(self._subsweep_config_editors)))
         self._update_tab_labels()
         return subsweep_config_editor
@@ -249,6 +256,19 @@ class SensorConfigEditor(QWidget):
         self._add_tabs(tabs_needed)
         for i, subsweep in enumerate(sensor_config.subsweeps):
             self._subsweep_config_editors[i].set_data(subsweep)
+
+    def set_read_only(self, read_only: bool) -> None:
+        self._read_only = read_only
+
+        for pidget in self._all_pidgets:
+            pidget.setEnabled(not read_only)
+
+        if self._supports_multiple_subsweeps:
+            self._tab_widget.setTabsClosable(not read_only)
+            self._plus_button.setEnabled(not read_only)
+
+        for editor in self._subsweep_config_editors:
+            editor.set_read_only(read_only)
 
     def sync(self) -> None:
         self._update_ui()
