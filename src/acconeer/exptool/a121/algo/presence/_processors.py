@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -84,8 +84,6 @@ class ProcessorExtraResult:
     fast_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     slow_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     lp_noise: npt.NDArray[np.float_] = attrs.field()
-    inter: npt.NDArray[np.float_] = attrs.field()
-    intra: npt.NDArray[np.float_] = attrs.field()
     presence_distance_index: int = attrs.field()
     inter_presence_history: npt.NDArray[np.float_] = attrs.field()
     intra_presence_history: npt.NDArray[np.float_] = attrs.field()
@@ -94,7 +92,9 @@ class ProcessorExtraResult:
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     intra_presence_score: float = attrs.field()
+    intra: npt.NDArray[np.float_] = attrs.field()
     inter_presence_score: float = attrs.field()
+    inter: npt.NDArray[np.float_] = attrs.field()
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
     extra_result: ProcessorExtraResult = attrs.field()
@@ -478,8 +478,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             fast_lp_mean_sweep=self.fast_lp_mean_sweep,
             slow_lp_mean_sweep=self.slow_lp_mean_sweep,
             lp_noise=self.lp_noise,
-            inter=inter,
-            intra=intra,
             presence_distance_index=self.presence_distance_index,
             intra_presence_history=self.intra_presence_history,
             inter_presence_history=self.inter_presence_history,
@@ -487,7 +485,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         return ProcessorResult(
             intra_presence_score=self.intra_presence_score,
+            intra=intra,
             inter_presence_score=self.inter_presence_score,
+            inter=inter,
             presence_detected=presence_detected,
             presence_distance=self.presence_distance,
             extra_result=extra_result,

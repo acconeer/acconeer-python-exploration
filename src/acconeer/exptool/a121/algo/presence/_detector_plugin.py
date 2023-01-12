@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -374,12 +374,10 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         movement_x = data.presence_distance
 
-        self.inter_curve.setData(self.distances, data.processor_extra_result.inter)
-        self.intra_curve.setData(self.distances, data.processor_extra_result.intra)
+        self.inter_curve.setData(self.distances, data.inter_depthwise_scores)
+        self.intra_curve.setData(self.distances, data.intra_depthwise_scores)
         m = self.move_smooth_max.update(
-            np.max(
-                np.maximum(data.processor_extra_result.inter, data.processor_extra_result.intra)
-            )
+            np.max(np.maximum(data.inter_depthwise_scores, data.intra_depthwise_scores))
         )
         m = max(
             m,

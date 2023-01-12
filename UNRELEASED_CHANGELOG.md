@@ -6,6 +6,7 @@
 - Sensor config info in distance detector
 
 ### Changed
+- A121 presence: move inter and intra from extra_result to result
 - A111: Update calibration behavior
   * No longer automatically applied on start, unless auto-apply is ticked
   * Loading calibration will not auto-apply, unless auto-apply is ticked

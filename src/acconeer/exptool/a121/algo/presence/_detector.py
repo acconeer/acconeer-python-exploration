@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from typing import Any, Optional, Tuple
 import attrs
 import h5py
 import numpy as np
+import numpy.typing as npt
 from attr import Attribute
 
 from acconeer.exptool import a121
@@ -148,8 +149,14 @@ class DetectorResult:
     intra_presence_score: float = attrs.field()
     """A measure of the amount of fast motion detected."""
 
+    intra_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
+    """The depthwise presence scores for fast motions"""
+
     inter_presence_score: float = attrs.field()
     """A measure of the amount of slow motion detected"""
+
+    inter_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
+    """The depthwise presence scores for slow motions"""
 
     presence_distance: float = attrs.field()
     """The distance, in meters, to the detected object"""
@@ -327,7 +334,9 @@ class Detector:
 
         return DetectorResult(
             intra_presence_score=processor_result.intra_presence_score,
+            intra_depthwise_scores=processor_result.intra,
             inter_presence_score=processor_result.inter_presence_score,
+            inter_depthwise_scores=processor_result.inter,
             presence_distance=processor_result.presence_distance,
             presence_detected=processor_result.presence_detected,
             processor_extra_result=processor_result.extra_result,
