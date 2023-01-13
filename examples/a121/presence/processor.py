@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -74,7 +74,11 @@ class PGUpdater:
         self.sensor_config = sensor_config
         self.processor_config = processor_config
 
-        self.history_length_s = processor_config.history_length_s
+        self.history_length_s = 5
+        self.history_length_n = int(round(self.history_length_s * sensor_config.frame_rate))
+        self.intra_history = np.zeros(self.history_length_n)
+        self.inter_history = np.zeros(self.history_length_n)
+
         self.distances, _ = get_distances_m(self.sensor_config, metadata)
 
         max_num_of_sectors = max(6, self.distances.size // 3)
@@ -292,29 +296,33 @@ class PGUpdater:
 
         # Intra presence
 
-        move_hist_ys = data.extra_result.intra_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        move_hist_xs = np.linspace(-self.history_length_s, 0, self.history_length_n)
+
+        self.intra_history = np.roll(self.intra_history, -1)
+        self.intra_history[-1] = data.intra_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.processor_config.intra_detection_threshold * 1.05
+            float(np.max(self.intra_history)),
+            self.processor_config.intra_detection_threshold * 1.05,
         )
         m_hist = self.intra_history_smooth_max.update(m_hist)
 
         self.intra_hist_plot.setYRange(0, m_hist)
-        self.intra_hist_curve.setData(move_hist_xs, move_hist_ys)
+        self.intra_hist_curve.setData(move_hist_xs, self.intra_history)
 
         # Inter presence
 
-        move_hist_ys = data.extra_result.inter_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        self.inter_history = np.roll(self.inter_history, -1)
+        self.inter_history[-1] = data.inter_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.processor_config.inter_detection_threshold * 1.05
+            float(np.max(self.inter_history)),
+            self.processor_config.inter_detection_threshold * 1.05,
         )
         m_hist = self.inter_history_smooth_max.update(m_hist)
 
         self.inter_hist_plot.setYRange(0, m_hist)
-        self.inter_hist_curve.setData(move_hist_xs, move_hist_ys)
+        self.inter_hist_curve.setData(move_hist_xs, self.inter_history)
 
         # Sector
 

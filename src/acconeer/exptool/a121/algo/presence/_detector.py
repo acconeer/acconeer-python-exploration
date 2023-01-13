@@ -224,14 +224,14 @@ class Detector:
             extended=False,
         )
 
-        estimated_frame_rate = self._estimate_frame_rate()
+        self.estimated_frame_rate = self._estimate_frame_rate()
         # Add estimated frame rate to context if it differs more than 10% from the set frame rate
         if (
-            np.abs(self.detector_config.frame_rate - estimated_frame_rate)
+            np.abs(self.detector_config.frame_rate - self.estimated_frame_rate)
             / self.detector_config.frame_rate
             > 0.1
         ):
-            context = ProcessorContext(estimated_frame_rate=estimated_frame_rate)
+            context = ProcessorContext(estimated_frame_rate=self.estimated_frame_rate)
         else:
             context = ProcessorContext(estimated_frame_rate=None)
 

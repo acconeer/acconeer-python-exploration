@@ -144,6 +144,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                     detector_config=self.shared_state.config,
                     sensor_config=Detector._get_sensor_config(self.shared_state.config),
                     plot_config=self.shared_state.plot_config,
+                    estimated_frame_rate=self._detector_instance.estimated_frame_rate,
                 ),
                 recipient="plot_plugin",
             )
@@ -184,13 +185,17 @@ class PlotPlugin(DetectorPlotPluginBase):
         detector_config: DetectorConfig,
         sensor_config: a121.SensorConfig,
         plot_config: PlotConfig,
+        estimated_frame_rate: float,
     ) -> None:
         self.detector_config = detector_config
         self.distances = np.linspace(
             detector_config.start_m, detector_config.end_m, sensor_config.num_points
         )
 
-        self.history_length_s = 10
+        self.history_length_s = 5
+        self.history_length_n = int(round(self.history_length_s * estimated_frame_rate))
+        self.intra_history = np.zeros(self.history_length_n)
+        self.inter_history = np.zeros(self.history_length_n)
 
         if plot_config.number_of_zones:
             self.num_sectors = min(plot_config.number_of_zones, self.distances.size)
@@ -406,29 +411,33 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         # Intra presence
 
-        move_hist_ys = data.processor_extra_result.intra_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        move_hist_xs = np.linspace(-self.history_length_s, 0, self.history_length_n)
+
+        self.intra_history = np.roll(self.intra_history, -1)
+        self.intra_history[-1] = data.intra_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.detector_config.intra_detection_threshold * 1.05
+            float(np.max(self.intra_history)),
+            self.detector_config.intra_detection_threshold * 1.05,
         )
         m_hist = self.intra_history_smooth_max.update(m_hist)
 
         self.intra_hist_plot.setYRange(0, m_hist)
-        self.intra_hist_curve.setData(move_hist_xs, move_hist_ys)
+        self.intra_hist_curve.setData(move_hist_xs, self.intra_history)
 
         # Inter presence
 
-        move_hist_ys = data.processor_extra_result.inter_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        self.inter_history = np.roll(self.inter_history, -1)
+        self.inter_history[-1] = data.inter_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.detector_config.inter_detection_threshold * 1.05
+            float(np.max(self.inter_history)),
+            self.detector_config.inter_detection_threshold * 1.05,
         )
         m_hist = self.inter_history_smooth_max.update(m_hist)
 
         self.inter_hist_plot.setYRange(0, m_hist)
-        self.inter_hist_curve.setData(move_hist_xs, move_hist_ys)
+        self.inter_hist_curve.setData(move_hist_xs, self.inter_history)
 
         # Sector
 
