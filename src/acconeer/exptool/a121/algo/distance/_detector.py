@@ -289,7 +289,7 @@ class Detector:
     """
 
     MIN_DIST_M = 0.0
-    MAX_DIST_M = 17.0
+    MAX_DIST_M = 23.0
     MIN_LEAKAGE_FREE_DIST_M = {
         a121.Profile.PROFILE_1: 0.12,
         a121.Profile.PROFILE_2: 0.28,
