@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -49,6 +49,24 @@ ProcessorBase = GenericProcessorBase[a121.Result, ProcessorConfigT, ResultT, a12
 ExtendedProcessorBase = GenericProcessorBase[
     List[Dict[int, a121.Result]], ProcessorConfigT, ResultT, List[Dict[int, a121.Metadata]]
 ]
+
+
+class Controller(abc.ABC, Generic[ConfigT, ResultT]):
+    def __init__(self, *, client: a121.ClientBase, config: ConfigT):
+        self.client = client
+        self.config = config
+
+    @abc.abstractmethod
+    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
+        ...
+
+    @abc.abstractmethod
+    def get_next(self) -> ResultT:
+        ...
+
+    @abc.abstractmethod
+    def stop(self) -> Any:
+        ...
 
 
 class AlgoBase:

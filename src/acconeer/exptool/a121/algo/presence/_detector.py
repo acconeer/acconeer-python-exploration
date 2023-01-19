@@ -17,7 +17,7 @@ from acconeer.exptool.a121._core.entities import Result
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, select_prf
+from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, Controller, select_prf
 
 from ._processors import Processor, ProcessorConfig, ProcessorContext, ProcessorExtraResult
 
@@ -168,7 +168,7 @@ class DetectorResult:
     service_result: a121.Result = attrs.field()
 
 
-class Detector:
+class Detector(Controller[DetectorConfig, DetectorResult]):
     MIN_DIST_M = {
         a121.Profile.PROFILE_1: None,
         a121.Profile.PROFILE_2: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_2],
@@ -184,9 +184,8 @@ class Detector:
         sensor_id: int,
         detector_config: DetectorConfig,
     ) -> None:
-        self.client = client
+        super().__init__(client=client, config=detector_config)
         self.sensor_id = sensor_id
-        self.detector_config = detector_config
 
         self.started = False
 
@@ -218,7 +217,7 @@ class Detector:
         if self.started:
             raise RuntimeError("Already started")
 
-        sensor_config = self._get_sensor_config(self.detector_config)
+        sensor_config = self._get_sensor_config(self.config)
         self.session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,
@@ -227,8 +226,7 @@ class Detector:
         self.estimated_frame_rate = self._estimate_frame_rate()
         # Add estimated frame rate to context if it differs more than 10% from the set frame rate
         if (
-            np.abs(self.detector_config.frame_rate - self.estimated_frame_rate)
-            / self.detector_config.frame_rate
+            np.abs(self.config.frame_rate - self.estimated_frame_rate) / self.config.frame_rate
             > 0.1
         ):
             context = ProcessorContext(estimated_frame_rate=self.estimated_frame_rate)
@@ -238,7 +236,7 @@ class Detector:
         metadata = self.client.setup_session(self.session_config)
         assert isinstance(metadata, a121.Metadata)
 
-        processor_config = self._get_processor_config(self.detector_config)
+        processor_config = self._get_processor_config(self.config)
 
         self.processor = Processor(
             sensor_config=sensor_config,
@@ -253,7 +251,7 @@ class Detector:
                 _record_algo_data(
                     algo_group,
                     self.sensor_id,
-                    self.detector_config,
+                    self.config,
                 )
             else:
                 # Should never happen as we currently only have the H5Recorder
@@ -264,18 +262,18 @@ class Detector:
         self.started = True
 
     @classmethod
-    def _get_sensor_config(cls, detector_config: DetectorConfig) -> a121.SensorConfig:
-        start_point = int(np.floor(detector_config.start_m / Processor.APPROX_BASE_STEP_LENGTH_M))
-        if detector_config.profile is not None:
-            profile = detector_config.profile
+    def _get_sensor_config(cls, config: DetectorConfig) -> a121.SensorConfig:
+        start_point = int(np.floor(config.start_m / Processor.APPROX_BASE_STEP_LENGTH_M))
+        if config.profile is not None:
+            profile = config.profile
         else:
             viable_profiles = [
-                k for k, v in cls.MIN_DIST_M.items() if v is None or v <= detector_config.start_m
+                k for k, v in cls.MIN_DIST_M.items() if v is None or v <= config.start_m
             ]
             profile = viable_profiles[-1]
 
-        if detector_config.step_length is not None:
-            step_length = detector_config.step_length
+        if config.step_length is not None:
+            step_length = config.step_length
         else:
             # Calculate biggest possible step length based on the fwhm of the set profile
             # Achieve detection on the complete range with minimum number of sampling points
@@ -287,7 +285,7 @@ class Detector:
 
         num_point = int(
             np.ceil(
-                (detector_config.end_m - detector_config.start_m)
+                (config.end_m - config.start_m)
                 / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
             )
             + 1
@@ -299,27 +297,27 @@ class Detector:
             num_points=num_point,
             step_length=step_length,
             prf=select_prf(end_point, profile),
-            hwaas=detector_config.hwaas,
-            sweeps_per_frame=detector_config.sweeps_per_frame,
-            frame_rate=detector_config.frame_rate,
-            inter_frame_idle_state=detector_config.inter_frame_idle_state,
+            hwaas=config.hwaas,
+            sweeps_per_frame=config.sweeps_per_frame,
+            frame_rate=config.frame_rate,
+            inter_frame_idle_state=config.inter_frame_idle_state,
         )
 
     @classmethod
-    def _get_processor_config(cls, detector_config: DetectorConfig) -> ProcessorConfig:
+    def _get_processor_config(cls, config: DetectorConfig) -> ProcessorConfig:
         return ProcessorConfig(
-            intra_enable=detector_config.intra_enable,
-            intra_detection_threshold=detector_config.intra_detection_threshold,
-            intra_frame_time_const=detector_config.intra_frame_time_const,
-            intra_output_time_const=detector_config.intra_output_time_const,
-            inter_enable=detector_config.inter_enable,
-            inter_detection_threshold=detector_config.inter_detection_threshold,
-            inter_frame_fast_cutoff=detector_config.inter_frame_fast_cutoff,
-            inter_frame_slow_cutoff=detector_config.inter_frame_slow_cutoff,
-            inter_frame_deviation_time_const=detector_config.inter_frame_deviation_time_const,
-            inter_output_time_const=detector_config.inter_output_time_const,
-            inter_phase_boost=detector_config.inter_phase_boost,
-            inter_frame_presence_timeout=detector_config.inter_frame_presence_timeout,
+            intra_enable=config.intra_enable,
+            intra_detection_threshold=config.intra_detection_threshold,
+            intra_frame_time_const=config.intra_frame_time_const,
+            intra_output_time_const=config.intra_output_time_const,
+            inter_enable=config.inter_enable,
+            inter_detection_threshold=config.inter_detection_threshold,
+            inter_frame_fast_cutoff=config.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=config.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=config.inter_frame_deviation_time_const,
+            inter_output_time_const=config.inter_output_time_const,
+            inter_phase_boost=config.inter_phase_boost,
+            inter_frame_presence_timeout=config.inter_frame_presence_timeout,
         )
 
     def get_next(self) -> DetectorResult:
@@ -360,14 +358,14 @@ class Detector:
 def _record_algo_data(
     algo_group: h5py.Group,
     sensor_id: int,
-    detector_config: DetectorConfig,
+    config: DetectorConfig,
 ) -> None:
     algo_group.create_dataset(
         "sensor_id",
         data=sensor_id,
         track_times=False,
     )
-    _create_h5_string_dataset(algo_group, "detector_config", detector_config.to_json())
+    _create_h5_string_dataset(algo_group, "detector_config", config.to_json())
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig]:

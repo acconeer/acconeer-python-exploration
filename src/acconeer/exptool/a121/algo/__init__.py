@@ -6,6 +6,7 @@ from ._base import (
     AlgoConfigBase,
     AlgoParamEnum,
     AlgoProcessorConfigBase,
+    Controller,
     ExtendedProcessorBase,
     GenericProcessorBase,
     ProcessorBase,

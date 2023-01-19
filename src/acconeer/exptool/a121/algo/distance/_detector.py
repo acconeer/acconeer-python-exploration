@@ -20,6 +20,7 @@ from acconeer.exptool.a121.algo import (
     ENVELOPE_FWHM_M,
     AlgoBase,
     AlgoConfigBase,
+    Controller,
     get_distance_filter_edge_margin,
     select_prf,
 )
@@ -281,7 +282,7 @@ class DetectorResult:
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
 
 
-class Detector:
+class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
     """Distance detector
     :param client: Client
     :param sensor_id: Sensor id
@@ -318,9 +319,8 @@ class Detector:
         detector_config: DetectorConfig,
         context: Optional[DetectorContext] = None,
     ) -> None:
-        self.client = client
+        super().__init__(client=client, config=detector_config)
         self.sensor_ids = sensor_ids
-        self.detector_config = detector_config
         self.started = False
 
         if context is None or not bool(context.single_sensor_contexts):
@@ -334,7 +334,7 @@ class Detector:
 
         self.aggregator: Optional[Aggregator] = None
 
-        self.update_config(self.detector_config)
+        self.update_config(self.config)
 
     def _validate_ready_for_calibration(self) -> None:
         if self.started:
@@ -353,12 +353,12 @@ class Detector:
 
         self._calibrate_noise()
 
-        if self._has_close_range_measurement(self.detector_config):
+        if self._has_close_range_measurement(self.config):
             self._calibrate_close_range()
 
-        if self._has_close_range_measurement(
-            self.detector_config
-        ) or self._has_recorded_threshold_mode(self.detector_config, self.sensor_ids):
+        if self._has_close_range_measurement(self.config) or self._has_recorded_threshold_mode(
+            self.config, self.sensor_ids
+        ):
             self._record_threshold()
 
         for context in self.context.single_sensor_contexts.values():
@@ -433,7 +433,7 @@ class Detector:
 
         self.client.start_session()
         aggregators_result = {}
-        for _ in range(self.detector_config.num_frames_in_recorded_threshold):
+        for _ in range(self.config.num_frames_in_recorded_threshold):
             extended_result = self.client.get_next()
             assert isinstance(extended_result, list)
             aggregators_result = {
@@ -683,7 +683,7 @@ class Detector:
         if self.started:
             raise RuntimeError("Already started")
 
-        status = self.get_detector_status(self.detector_config, self.context, self.sensor_ids)
+        status = self.get_detector_status(self.config, self.context, self.sensor_ids)
 
         if not status.ready_to_start:
             raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
@@ -702,9 +702,7 @@ class Detector:
                 for context in self.context.single_sensor_contexts.values()
             ]
         )
-        aggregator_config = AggregatorConfig(
-            peak_sorting_method=self.detector_config.peaksorting_method
-        )
+        aggregator_config = AggregatorConfig(peak_sorting_method=self.config.peaksorting_method)
         self.aggregators = {
             sensor_id: Aggregator(
                 session_config=self.session_config,
@@ -724,7 +722,7 @@ class Detector:
                 _record_algo_data(
                     _algo_group,
                     self.sensor_ids,
-                    self.detector_config,
+                    self.config,
                     self.context,
                 )
             else:
@@ -1285,7 +1283,7 @@ class Detector:
 def _record_algo_data(
     algo_group: h5py.Group,
     sensor_ids: list[int],
-    detector_config: DetectorConfig,
+    config: DetectorConfig,
     context: DetectorContext,
 ) -> None:
     algo_group.create_dataset(
@@ -1293,7 +1291,7 @@ def _record_algo_data(
         data=sensor_ids,
         track_times=False,
     )
-    _create_h5_string_dataset(algo_group, "detector_config", detector_config.to_json())
+    _create_h5_string_dataset(algo_group, "detector_config", config.to_json())
 
     context_group = algo_group.create_group("context")
     context.to_h5(context_group)
