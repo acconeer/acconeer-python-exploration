@@ -37,6 +37,8 @@ Overview
    *FO* and *SO* are the fixed overheads on frame and sweep level with duration :math:`C_f` and :math:`C_s` respectively.
    :math:`S_{i,j}` are subsweeps.
 
+.. _handbook-a121-timing-sample-dur:
+
 Sample duration
 ---------------
 
