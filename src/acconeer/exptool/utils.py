@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -118,6 +118,7 @@ _USB_IDS = [  # (vid, pid, 'model number', 'Unflashed')
     (0x0483, 0xA42C, "XC120", True),
     (0x0483, 0xA42D, "XC120", False),
     (0x0483, 0xA449, "XC120", False),
+    (0xACC0, 0xE121, "XV12X", False),
 ]
 
 
