@@ -1,5 +1,25 @@
 # Changelog
 
+## v5.8.1
+
+### Added
+- Sensor config info in distance detector
+
+### Changed
+- A121 presence: move inter and intra from extra_result to result
+- A111: Update calibration behavior
+  * No longer automatically applied on start, unless auto-apply is ticked
+  * Loading calibration will not auto-apply, unless auto-apply is ticked
+  * New calibration will not be stored in application if a calibration is
+    already present. Old calibration has to be cleared first
+  * Calibration status is updated to reflect this
+
+### Fixed
+- Make sure to sync sensor ids after replaying file
+- A111: Check that calibration background and data length matches, otherwise
+  raise an exception
+- Re-add TickUnwrapper
+
 ## v5.8.0
 
 ### Added
