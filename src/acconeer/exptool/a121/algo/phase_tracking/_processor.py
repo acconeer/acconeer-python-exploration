@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoProcessorConfig
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
-    threshold: Optional[float] = attrs.field(default=50.0)
+    threshold: Optional[float] = attrs.field(default=25.0)
 
     def _collect_validation_results(
         self, config: a121.SessionConfig
@@ -72,7 +72,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
     prev_peak_loc_m: Optional[float]
 
     M_TO_MM = 1000
-    TIME_HORIZON_S = 5.0
+    TIME_HORIZON_S = 10.0
     LP_COEFF = 0.75
 
     def __init__(
@@ -178,10 +178,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
 def get_sensor_config() -> a121.SensorConfig:
     return a121.SensorConfig(
-        profile=a121.Profile.PROFILE_1,
-        start_point=80,
-        num_points=40,
-        step_length=2,
+        profile=a121.Profile.PROFILE_3,
+        start_point=120,
+        num_points=70,
+        step_length=4,
         receiver_gain=10,
         hwaas=4,
         phase_enhancement=True,
