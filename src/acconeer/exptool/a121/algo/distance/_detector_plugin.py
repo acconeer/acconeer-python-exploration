@@ -47,6 +47,7 @@ from acconeer.exptool.app.new import (
 )
 from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
 
+from ._configs import get_high_accuracy_detector_config
 from ._detector import (
     DetailedStatus,
     Detector,
@@ -68,12 +69,14 @@ class SharedState:
 
 class PluginPresetId(Enum):
     DEFAULT = auto()
+    HIGH_ACCURACY = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: DetectorConfig()
+        PluginPresetId.DEFAULT.value: lambda: DetectorConfig(),
+        PluginPresetId.HIGH_ACCURACY.value: lambda: get_high_accuracy_detector_config(),
     }
 
     def __init__(
@@ -608,7 +611,8 @@ DISTANCE_DETECTOR_PLUGIN = PluginSpec(
     description="Easily measure distance to objects.",
     family=PluginFamily.DETECTOR,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(name="Low power", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(name="High accuracy", preset_id=PluginPresetId.HIGH_ACCURACY),
     ],
     default_preset_id=PluginPresetId.DEFAULT,
 )
