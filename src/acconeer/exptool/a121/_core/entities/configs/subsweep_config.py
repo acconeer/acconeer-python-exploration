@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -313,7 +313,7 @@ class SubsweepConfig:
         PRF Setting            PRF    MMD    MUR
         ================= ======== ====== ======
         PRF_19_5_MHZ [*]_ 19.5 MHz  3.1 m  7.7 m
-        PRF_15_6_MHZ      15.6 MHz  5.8 m  9.6 m
+        PRF_15_6_MHZ      15.6 MHz  5.1 m  9.6 m
         PRF_13_0_MHZ      13.0 MHz  7.0 m 11.5 m
         PRF_8_7_MHZ        8.7 MHz 12.7 m 17.3 m
         PRF_6_5_MHZ        6.5 MHz 18.5 m 23.1 m
