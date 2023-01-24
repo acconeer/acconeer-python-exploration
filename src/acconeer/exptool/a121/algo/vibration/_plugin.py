@@ -113,20 +113,20 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         feat_kw = dict(pen=pen, **symbol_kw)
         symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
 
-        # precense plot
-        self.precense_plot = pg.PlotItem()
-        self.precense_plot.setMenuEnabled(False)
-        self.precense_plot.showGrid(x=False, y=True)
-        self.precense_plot.setLabel("left", "Max amplitude")
-        self.precense_plot.setLabel("bottom", "Distance (m)")
-        self.precense_plot.setXRange(self.meas_dist_m - 0.001, self.meas_dist_m + 0.001)
-        self.precense_curve = self.precense_plot.plot(**dict(pen=pen, **symbol_dot_kw))
+        # presence plot
+        self.presence_plot = pg.PlotItem()
+        self.presence_plot.setMenuEnabled(False)
+        self.presence_plot.showGrid(x=False, y=True)
+        self.presence_plot.setLabel("left", "Max amplitude")
+        self.presence_plot.setLabel("bottom", "Distance (m)")
+        self.presence_plot.setXRange(self.meas_dist_m - 0.001, self.meas_dist_m + 0.001)
+        self.presence_curve = self.presence_plot.plot(**dict(pen=pen, **symbol_dot_kw))
 
-        self.precense_threshold = pg.InfiniteLine(pen=pen, angle=0)
-        self.precense_plot.addItem(self.precense_threshold)
-        self.precense_threshold.show()
+        self.presence_threshold = pg.InfiniteLine(pen=pen, angle=0)
+        self.presence_plot.addItem(self.presence_threshold)
+        self.presence_threshold.show()
 
-        self.smooth_max_precense = et.utils.SmoothMax(tau_decay=10.0)
+        self.smooth_max_presence = et.utils.SmoothMax(tau_decay=10.0)
 
         # sweep and threshold plot
         self.time_series_plot = pg.PlotItem()
@@ -138,7 +138,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
 
         sublayout = self.plot_layout.addLayout(row=0, col=0)
         sublayout.layout.setColumnStretchFactor(1, 5)
-        sublayout.addItem(self.precense_plot, row=0, col=0)
+        sublayout.addItem(self.presence_plot, row=0, col=0)
         sublayout.addItem(self.time_series_plot, row=0, col=1)
 
         self.smooth_lim_time_series = et.utils.SmoothLimits(tau_decay=0.5, tau_grow=0.1)
@@ -174,10 +174,10 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         max_psd_ampl_freq = processor_result.max_psd_ampl_freq
 
         # plot object presence metric.
-        self.precense_curve.setData([self.meas_dist_m], [max_amplitude])
-        self.precense_threshold.setValue(amplitude_threshold)
-        lim = self.smooth_max_precense.update(max_amplitude)
-        self.precense_plot.setYRange(0, max(1000.0, lim))
+        self.presence_curve.setData([self.meas_dist_m], [max_amplitude])
+        self.presence_threshold.setValue(amplitude_threshold)
+        lim = self.smooth_max_presence.update(max_amplitude)
+        self.presence_plot.setYRange(0, max(1000.0, lim))
 
         if processor_result.result_available:
             # plot time series and psd as object is present.
