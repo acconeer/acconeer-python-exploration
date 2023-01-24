@@ -200,7 +200,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
 class PlotPlugin(DetectorPlotPluginBase):
 
-    _DISTANCE_HISTORY_PLOT_HALF_SPAN = 0.2
+    _DISTANCE_HISTORY_SPAN_MARGIN = 0.01
 
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
@@ -258,7 +258,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.dist_history_curve = self.dist_history_plot.plot(**feat_kw)
 
         self.sweep_smooth_max = et.utils.SmoothMax()
-        self.distance_hist_smooth_lim = et.utils.SmoothLimits()
+        self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.5)
 
     def update(self, multi_sensor_result: dict[int, DetectorResult]) -> None:
         # Get the first element as the plugin only supports single sensor operation.
@@ -293,10 +293,9 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         if np.any(~np.isnan(self.distance_history)):
             self.dist_history_curve.setData(self.distance_history)
-            distance_span = distances_m[-1] - distances_m[0]
             lims = self.distance_hist_smooth_lim.update(self.distance_history)
-            lower_lim = max(0.0, lims[0] - distance_span * self._DISTANCE_HISTORY_PLOT_HALF_SPAN)
-            upper_lim = lims[1] + distance_span * self._DISTANCE_HISTORY_PLOT_HALF_SPAN
+            lower_lim = max(0.0, lims[0] - self._DISTANCE_HISTORY_SPAN_MARGIN)
+            upper_lim = lims[1] + self._DISTANCE_HISTORY_SPAN_MARGIN
             self.dist_history_plot.setYRange(lower_lim, upper_lim)
         else:
             self.dist_history_curve.setData([])
