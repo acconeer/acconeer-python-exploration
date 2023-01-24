@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 from __future__ import annotations
@@ -86,6 +86,11 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
                 limits=(0, 30),
                 decimals=1,
             ),
+            "amplitude_threshold": pidgets.FloatParameterWidgetFactory(
+                name_label_text="Minimum amplitude",
+                decimals=0,
+                limits=(0, None),
+            ),
         }
 
     @classmethod
@@ -116,6 +121,10 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.precense_plot.setLabel("bottom", "Distance (m)")
         self.precense_plot.setXRange(self.meas_dist_m - 0.001, self.meas_dist_m + 0.001)
         self.precense_curve = self.precense_plot.plot(**dict(pen=pen, **symbol_dot_kw))
+
+        self.precense_threshold = pg.InfiniteLine(pen=pen, angle=0)
+        self.precense_plot.addItem(self.precense_threshold)
+        self.precense_threshold.show()
 
         self.smooth_max_precense = et.utils.SmoothMax(tau_decay=10.0)
 
@@ -160,35 +169,41 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         z_abs_db = processor_result.lp_z_abs_db
         freqs = processor_result.freqs
         max_amplitude = processor_result.max_amplitude
+        amplitude_threshold = processor_result.amplitude_threshold
         max_psd_ampl = processor_result.max_psd_ampl
         max_psd_ampl_freq = processor_result.max_psd_ampl_freq
 
+        # plot object presence metric.
         self.precense_curve.setData([self.meas_dist_m], [max_amplitude])
+        self.precense_threshold.setValue(amplitude_threshold)
         lim = self.smooth_max_precense.update(max_amplitude)
         self.precense_plot.setYRange(0, max(1000.0, lim))
 
-        self.time_series_curve.setData(time_series)
-        lim = self.smooth_lim_time_series.update(time_series)
-        self.time_series_plot.setYRange(lim[0], lim[1])
+        if processor_result.result_available:
+            # plot time series and psd as object is present.
+            self.time_series_curve.setData(time_series)
+            lim = self.smooth_lim_time_series.update(time_series)
+            self.time_series_plot.setYRange(lim[0], lim[1])
 
-        self.fft_curve[0].setData(freqs, z_abs_db)
-        lim = self.smooth_max_fft.update(np.max(z_abs_db))
-        self.fft_plot.setYRange(0, lim)
+            assert z_abs_db is not None
+            self.fft_curve[0].setData(freqs, z_abs_db)
+            lim = self.smooth_max_fft.update(np.max(z_abs_db))
+            self.fft_plot.setYRange(0, lim)
 
-        if max_psd_ampl_freq is not None:
-            self.fft_curve[1].setData([max_psd_ampl_freq], [max_psd_ampl])
-            # Place text box centered at the top of the plotting window.
-            self.text_item.setPos(max(freqs) / 2, lim * 0.95)
-            html_format = (
-                '<div style="text-align: center">'
-                '<span style="color: #FFFFFF;font-size:15pt;">'
-                "{}</span></div>".format("Detected Frequency: " + str(int(max_psd_ampl_freq)))
-            )
-            self.text_item.setHtml(html_format)
-            self.text_item.show()
-        else:
-            self.fft_curve[1].setData([], [])
-            self.text_item.hide()
+            if max_psd_ampl_freq is not None:
+                self.fft_curve[1].setData([max_psd_ampl_freq], [max_psd_ampl])
+                # Place text box centered at the top of the plotting window.
+                self.text_item.setPos(max(freqs) / 2, lim * 0.95)
+                html_format = (
+                    '<div style="text-align: center">'
+                    '<span style="color: #FFFFFF;font-size:15pt;">'
+                    "{}</span></div>".format("Detected Frequency: " + str(int(max_psd_ampl_freq)))
+                )
+                self.text_item.setHtml(html_format)
+                self.text_item.show()
+            else:
+                self.fft_curve[1].setData([], [])
+                self.text_item.hide()
 
 
 class PluginSpec(PluginSpecBase):

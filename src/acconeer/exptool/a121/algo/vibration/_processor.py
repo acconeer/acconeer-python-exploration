@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 from __future__ import annotations
@@ -19,14 +19,17 @@ from acconeer.exptool.a121.algo import (
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
-    time_series_length: int = attrs.field(default=512)
+    time_series_length: int = attrs.field(default=1024)
     """Length of time series."""
 
-    lp_coeff: float = attrs.field(default=0.75)
+    lp_coeff: float = attrs.field(default=0.95)
     """Specify filter coefficient of exponential filter."""
 
     sensitivity: float = attrs.field(default=10.0)
     """Specify threshold sensitivity."""
+
+    amplitude_threshold: float = attrs.field(default=100.0)
+    """Specify minimum amplitude for calculating vibration."""
 
     def _collect_validation_results(
         self, config: a121.SessionConfig
@@ -79,12 +82,14 @@ class ProcessorContext:
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    time_series: npt.NDArray[np.float_]
-    lp_z_abs_db: npt.NDArray[np.float_]
+    result_available: bool
+    time_series: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    lp_z_abs_db: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     freqs: npt.NDArray[np.float_]
     max_amplitude: float
-    max_psd_ampl: float
-    max_psd_ampl_freq: float
+    amplitude_threshold: float
+    max_psd_ampl: Optional[float] = attrs.field(default=None)
+    max_psd_ampl_freq: Optional[float] = attrs.field(default=None)
 
 
 class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
@@ -112,6 +117,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.lp_coeffs = processor_config.lp_coeff
         self.sensitivity = processor_config.sensitivity
         self.time_series_length = processor_config.time_series_length
+        self.amplitude_threshold = processor_config.amplitude_threshold
 
         self.time_series = np.zeros(shape=processor_config.time_series_length)
         self.freq = np.fft.rfftfreq(
@@ -123,6 +129,16 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.half_guard_length = self._HALF_GUARD_BASE_LENGTH * self._OVER_SAMPLING_FACTOR
 
     def process(self, result: a121.Result) -> ProcessorResult:
+
+        max_amplitude = float(np.max(np.abs(result.frame)))
+
+        if max_amplitude < self.amplitude_threshold:
+            return ProcessorResult(
+                result_available=False,
+                max_amplitude=max_amplitude,
+                amplitude_threshold=self.amplitude_threshold,
+                freqs=self.freq,
+            )
 
         new_data_segment = np.angle(result.frame.squeeze(axis=1))
 
@@ -143,8 +159,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             (self.time_series - np.mean(self.time_series)) * APPROX_BASE_STEP_LENGTH_M * 1000
         )
 
-        max_amplitude = float(np.max(np.abs(result.frame)))
-
         threshold = self._calculate_cfar_threshold(
             self.lp_z_abs_db, self.sensitivity, self.window_length, self.half_guard_length
         )
@@ -159,10 +173,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             max_psd_ampl_freq = None
 
         return ProcessorResult(
+            result_available=True,
             time_series=presented_time_series,
             lp_z_abs_db=self.lp_z_abs_db,
             freqs=self.freq,
             max_amplitude=max_amplitude,
+            amplitude_threshold=self.amplitude_threshold,
             max_psd_ampl=max_psd_ampl,
             max_psd_ampl_freq=max_psd_ampl_freq,
         )
