@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -103,7 +103,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
         self.distances_m, step_length_m = algo.get_distances_m(sensor_config, metadata)
-        vels, vel_res = algo.get_approx_fft_vels(sensor_config)
+        vels, vel_res = algo.get_approx_fft_vels(metadata, sensor_config)
 
         self.ampl_plot = self._create_amplitude_plot(self.plot_layout)
         self.ampl_curve = self._create_amplitude_curve(0, self.distances_m)
