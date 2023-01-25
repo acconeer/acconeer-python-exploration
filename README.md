@@ -178,3 +178,7 @@ Scripts can be terminated by pressing Ctrl-C in the terminal.
 ## Disclaimer
 
 Here you find the [disclaimer](https://docs.acconeer.com/en/latest/disclaimer.html).
+
+## FAQ and common issues
+
+See the [FAQ](https://docs.acconeer.com/en/latest/exploration_tool/faq.html) on the Acconeer documentation pages.
