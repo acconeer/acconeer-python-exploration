@@ -4,6 +4,7 @@
 
 ### Added
 - Sensor config info in distance detector
+- A121 smart presence reference app
 
 ### Changed
 - A121 presence: move inter and intra from extra_result to result

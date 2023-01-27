@@ -213,7 +213,9 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
         return float(1.0 / np.nanmean(delta_times))
 
-    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
+    def start(
+        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+    ) -> None:
         if self.started:
             raise RuntimeError("Already started")
 
@@ -247,9 +249,10 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
-                algo_group = recorder.require_algo_group("presence_detector")
+                if _algo_group is None:
+                    _algo_group = recorder.require_algo_group("presence_detector")
                 _record_algo_data(
-                    algo_group,
+                    _algo_group,
                     self.sensor_id,
                     self.config,
                 )
