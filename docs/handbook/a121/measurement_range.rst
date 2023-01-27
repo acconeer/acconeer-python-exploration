@@ -109,4 +109,4 @@ A number of factors affect the actual real world distance of a given range point
 - Systematic errors due to process, supply voltage, and temperature variations.
 - Reference clock frequency.
 
-Some static offsets an be compensated for by doing a *loopback* measurement of the "zero point".
+Some static offsets can be compensated for by doing a *loopback* measurement of the "zero point".
