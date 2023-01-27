@@ -20,7 +20,6 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo._base import AlgoBase
 from acconeer.exptool.a121.algo._plugins import (
     DetectorBackendPluginBase,
     DetectorPlotPluginBase,
@@ -50,15 +49,9 @@ from ._detector import Detector, DetectorConfig, DetectorResult, _load_algo_data
 
 
 @attrs.mutable(kw_only=True)
-class PlotConfig(AlgoBase):
-    number_of_zones: Optional[int] = attrs.field(default=None)
-
-
-@attrs.mutable(kw_only=True)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
-    plot_config: PlotConfig = attrs.field(factory=PlotConfig)
 
 
 class PluginPresetId(Enum):
@@ -84,7 +77,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def _load_from_cache(self, file: h5py.File) -> None:
         self.shared_state.config = DetectorConfig.from_json(file["config"][()])
-        self.shared_state.plot_config = PlotConfig.from_json(file["plot_config"][()])
 
     @is_task
     def restore_defaults(self) -> None:
@@ -94,11 +86,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def update_sensor_id(self, *, sensor_id: int) -> None:
         self.shared_state.sensor_id = sensor_id
-        self.broadcast(sync=True)
-
-    @is_task
-    def update_plot_config(self, *, config: PlotConfig) -> None:
-        self.shared_state.plot_config = config
         self.broadcast(sync=True)
 
     def _sync_sensor_ids(self) -> None:
@@ -115,7 +102,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def save_to_cache(self, file: h5py.File) -> None:
         _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
-        _create_h5_string_dataset(file, "plot_config", self.shared_state.plot_config.to_json())
 
     @is_task
     def set_preset(self, preset_id: int) -> None:
@@ -143,7 +129,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 kwargs=dict(
                     detector_config=self.shared_state.config,
                     sensor_config=Detector._get_sensor_config(self.shared_state.config),
-                    plot_config=self.shared_state.plot_config,
                     estimated_frame_rate=self._detector_instance.estimated_frame_rate,
                 ),
                 recipient="plot_plugin",
@@ -184,7 +169,6 @@ class PlotPlugin(DetectorPlotPluginBase):
         self,
         detector_config: DetectorConfig,
         sensor_config: a121.SensorConfig,
-        plot_config: PlotConfig,
         estimated_frame_rate: float,
     ) -> None:
         self.detector_config = detector_config
@@ -197,15 +181,6 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.intra_history = np.zeros(self.history_length_n)
         self.inter_history = np.zeros(self.history_length_n)
 
-        if plot_config.number_of_zones:
-            self.num_sectors = min(plot_config.number_of_zones, self.distances.size)
-            self.sector_size = max(1, -(-self.distances.size // self.num_sectors))
-        else:
-            max_num_of_sectors = max(6, self.distances.size // 3)
-            self.sector_size = max(1, -(-self.distances.size // max_num_of_sectors))
-            self.num_sectors = -(-self.distances.size // self.sector_size)
-
-        self.sector_offset = (self.num_sectors * self.sector_size - self.distances.size) // 2
         win = self.plot_layout
 
         self.intra_limit_lines = []
@@ -347,30 +322,9 @@ class PlotPlugin(DetectorPlotPluginBase):
         for line in self.inter_limit_lines:
             line.setPos(self.detector_config.inter_detection_threshold)
 
-        # Sector plot
-
-        self.sector_plot = pg.PlotItem()
-        self.sector_plot.setAspectLocked()
-        self.sector_plot.hideAxis("left")
-        self.sector_plot.hideAxis("bottom")
-        self.sectors = []
-
-        pen = pg.mkPen("k", width=1)
-        span_deg = 25
-        for r in np.flip(np.arange(self.num_sectors) + 1):
-            sector = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
-            sector.setStartAngle(-16 * span_deg)
-            sector.setSpanAngle(16 * span_deg * 2)
-            sector.setPen(pen)
-            self.sector_plot.addItem(sector)
-            self.sectors.append(sector)
-
-        self.sectors.reverse()
-
         sublayout = win.addLayout(row=2, col=0, colspan=2)
         sublayout.layout.setColumnStretchFactor(0, 2)
         sublayout.addItem(self.move_plot, row=0, col=0)
-        sublayout.addItem(self.sector_plot, row=0, col=1)
 
     def update(self, data: DetectorResult) -> None:
         noise = data.processor_extra_result.lp_noise
@@ -439,18 +393,6 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.inter_hist_plot.setYRange(0, m_hist)
         self.inter_hist_curve.setData(move_hist_xs, self.inter_history)
 
-        # Sector
-
-        brush = et.utils.pg_brush_cycler(0)
-        for sector in self.sectors:
-            sector.setBrush(brush)
-
-        if data.presence_detected:
-            index = (
-                data.processor_extra_result.presence_distance_index + self.sector_offset
-            ) // self.sector_size
-            self.sectors[index].setBrush(et.utils.pg_brush_cycler(1))
-
     def set_present_text_y_pos(self, y: float) -> None:
         x_pos = self.distances[0] + (self.distances[-1] - self.distances[0]) / 2
         self.present_text_item.setPos(x_pos, 0.95 * y)
@@ -517,21 +459,6 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
-
-        self.plot_config_editor = AttrsConfigEditor[PlotConfig](
-            title="Plot parameters",
-            factory_mapping={
-                "number_of_zones": pidgets.OptionalIntParameterWidgetFactory(
-                    name_label_text="Detection zones",
-                    checkbox_label_text="Override",
-                    limits=(1, 10),
-                    init_set_value=3,
-                )
-            },
-            parent=self.scrolly_widget,
-        )
-        self.plot_config_editor.sig_update.connect(self._on_plot_config_update)
-        scrolly_layout.addWidget(self.plot_config_editor)
 
         self.sticky_widget.setLayout(sticky_layout)
         self.scrolly_widget.setLayout(scrolly_layout)
@@ -679,8 +606,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
-            self.plot_config_editor.set_data(None)
-            self.plot_config_editor.setEnabled(False)
             self.sensor_id_pidget.set_selected_sensor(None, [])
 
             return
@@ -691,8 +616,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
-        self.plot_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.plot_config_editor.set_data(state.plot_config)
         self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
@@ -701,9 +624,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_config_update(self, config: DetectorConfig) -> None:
         self.app_model.put_backend_plugin_task("update_config", {"config": config})
-
-    def _on_plot_config_update(self, config: PlotConfig) -> None:
-        self.app_model.put_backend_plugin_task("update_plot_config", {"config": config})
 
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
