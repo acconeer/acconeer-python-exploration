@@ -100,6 +100,8 @@ and
     Higher PRF:s have higher RLG/t,
     which are generally more efficient.
 
+.. _handbook-a121-fom-radial-resolution:
+
 Radial resolution
 -----------------
 

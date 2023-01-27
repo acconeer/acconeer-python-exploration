@@ -13,3 +13,4 @@ A121 algorithms
    vibration
    bilateration
    breathing
+   smart_presence

@@ -1,3 +1,5 @@
+.. _exploration_tool-a121-presence_detection:
+
 Presence detection
 ==================
 
