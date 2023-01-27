@@ -150,19 +150,19 @@ class DetectorResult:
     """A measure of the amount of fast motion detected."""
 
     intra_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
-    """The depthwise presence scores for fast motions"""
+    """The depthwise presence scores for fast motions."""
 
     inter_presence_score: float = attrs.field()
-    """A measure of the amount of slow motion detected"""
+    """A measure of the amount of slow motion detected."""
 
     inter_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
-    """The depthwise presence scores for slow motions"""
+    """The depthwise presence scores for slow motions."""
 
     presence_distance: float = attrs.field()
-    """The distance, in meters, to the detected object"""
+    """The distance, in meters, to the detected object."""
 
     presence_detected: bool = attrs.field()
-    """True if presence was detected, False otherwise"""
+    """True if presence was detected, False otherwise."""
 
     processor_extra_result: ProcessorExtraResult = attrs.field()
     service_result: a121.Result = attrs.field()
