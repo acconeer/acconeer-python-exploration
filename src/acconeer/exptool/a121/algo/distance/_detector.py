@@ -1055,7 +1055,7 @@ class Detector:
                 cls.HWAAS_MIN_DISTANCE,
             )
             rlg = signal_quality + 40 * np.log10(subsweep_end_point_m) - np.log10(processing_gain)
-            hwaas_in_subsweep = int(10 ** ((rlg - rlg_per_hwaas) / 10))
+            hwaas_in_subsweep = int(round(10 ** ((rlg - rlg_per_hwaas) / 10)))
             hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
         return hwaas
 
