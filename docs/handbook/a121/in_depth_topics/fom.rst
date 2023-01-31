@@ -99,3 +99,24 @@ and
     RLG/t also depends on :class:`PRF <acconeer.exptool.a121.PRF>`.
     Higher PRF:s have higher RLG/t,
     which are generally more efficient.
+
+Radial resolution
+-----------------
+
+Radial resolution is described by the `full width at half maximum (FWHM) <https://en.wikipedia.org/wiki/Full_width_at_half_maximum>`_ envelope power.
+
+Let
+:math:`x(f, s, d)`
+be a (complex) point
+at a radial distance :math:`d` where the number of distances is :math:`N_d`,
+in a sweep :math:`s` where the number of sweeps per frame is :math:`N_s`,
+in a frame :math:`f` where the number of frames collected is :math:`N_f`.
+
+Then, let the (average) envelope power
+
+.. math::
+    :label:
+
+    y(d) = |\text{mean}_{f,s}(x)|^2
+
+The FWHM of :math:`y` is what describes the radial resolution.
