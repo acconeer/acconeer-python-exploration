@@ -3,7 +3,7 @@
 Figure of Merits
 ================
 
-This page describes and defines Figure of Merits.
+This page describes and defines Figure of Merits (FoM).
 
 Radar loop gain (RLG)
 ---------------------
@@ -173,3 +173,22 @@ The distance linearity is evaluated over two sets of distances:
 
 - Micro: A number of distances within a few wavelengths.
 - Macro: A number of distances over many wavelengths.
+
+Temperature sensing
+-------------------
+
+The accuracy of the built-in temperature sensor is described by the *relative deviation*:
+
+.. math::
+    :label:
+
+    k = \left| \frac{\hat{x} - x}{x} \right|
+
+where :math:`x` is the actual temperature change and :math:`\hat{x}` is the measured temperature change.
+
+The evaluated temperature span is typically the range from -40°C to 105°C.
+
+.. note::
+
+    The built-in temperature sensor is not designed for *absolute* measurements and should therefore not be used for that.
+    For this reason, the absolute accuracy is not described as a FoM.
