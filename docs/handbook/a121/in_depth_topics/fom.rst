@@ -120,3 +120,56 @@ Then, let the (average) envelope power
     y(d) = |\text{mean}_{f,s}(x)|^2
 
 The FWHM of :math:`y` is what describes the radial resolution.
+
+Distance
+--------
+
+Preliminaries
+^^^^^^^^^^^^^
+
+Let :math:`d_{est}(f, d)` be the estimated distance to a target located at distance :math:`d`,
+formed by processing frame :math:`f` in accordance with the steps outline in the
+:doc:`distance detector documentation</exploration_tool/algo/a121/distance_detection>`.
+:math:`f` is a single frame in a set of frames of size :math:`N_f`.
+
+Next, let :math:`e(f, d)=d_{est}(f, d) - d` be the estimation error of a single frame/measurement.
+
+Lastly, form the mean error by averaging over the frames, :math:`\overline{e}(d)=\text{mean}_{f}(e(f,d))`.
+
+:math:`\overline{e}(d)` describes the average error for a single sensor.
+The metrics calculated in the following sections are based on data from a set of sensors.
+To indicate what sensor the mean error is associated with, the subscript :math:`s` is added,
+:math:`\overline{e}(d,s)`.
+
+Accuracy
+^^^^^^^^
+
+The distance estimation accuracy is characterized through the following two sets of metrics:
+
+- Mean error(:math:`\mu`) and standard deviation(:math:`\sigma`).
+- Mean absolute error(:math:`\text{MAE}`).
+
+Mean and standard deviation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The mean error for a set of sensors is given by :math:`\mu=\text{mean}_{d,s}(\overline{e}(d,s))`.
+
+The standard deviation for a set of sensors is given by :math:`\sigma=\text{std}_{d,s}(\overline{e}(d,s))`.
+
+Mean absolute error
+~~~~~~~~~~~~~~~~~~~
+
+The mean absolute error for a set of sensor is given by :math:`\text{MAE}=mean_{d,s}(|\overline{e}(d,s)|)`.
+
+Linearity
+^^^^^^^^^
+
+Linearity refers to the variation in the distance estimate error as a function of the distance to the target.
+
+The distance linearity is characterized through the mean of the standard deviation of the estimation error
+over a number of distances, :math:`\sigma=\text{mean}_{s}(\text{std}_{d}(\overline{e}(d,s)))`.
+
+The distance linearity is evaluated over two sets of distances:
+
+- Micro: A number of distances within a few wavelengths.
+- Macro: A number of distances over many wavelengths.
