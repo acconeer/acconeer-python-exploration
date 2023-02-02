@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -8,10 +8,10 @@ import warnings
 from typing import Callable, Iterator, Tuple, TypeVar
 
 import h5py
-import importlib_metadata
 import numpy as np
 from packaging.version import Version
 
+import acconeer.exptool
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
@@ -25,6 +25,7 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
     StackedResults,
 )
+from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
 
 T = TypeVar("T")
@@ -45,7 +46,7 @@ class H5Record(PersistentRecord):
         except KeyError:
             pass
         else:
-            installed_version = Version(importlib_metadata.version("acconeer-exptool"))
+            installed_version = Version(get_module_version(acconeer.exptool))
             if installed_version < version_of_record:
                 warnings.warn(
                     f"The loaded file {str(self.file.name)!r} was recorded "

@@ -13,6 +13,7 @@ import struct
 import sys
 import time
 from datetime import datetime
+from types import ModuleType
 from typing import Any, List, Optional
 
 import attrs
@@ -407,6 +408,13 @@ def get_usb_device_by_serial(serial, only_accessible=False):
             if serial == device.serial:
                 return device
     raise ValueError(f"Could not find usb device with serial number '{serial}'")
+
+
+def get_module_version(module: ModuleType) -> str:
+    if hasattr(module, "__version__"):
+        return str(module.__version__)
+    else:
+        raise AttributeError(f"Unknown module version for {module.__name__}")
 
 
 def color_cycler(i=0):

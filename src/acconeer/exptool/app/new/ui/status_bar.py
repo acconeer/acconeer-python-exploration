@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -6,7 +6,6 @@ from __future__ import annotations
 import threading
 from typing import Optional
 
-import importlib_metadata
 import numpy as np
 import qtawesome as qta
 
@@ -23,8 +22,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+import acconeer.exptool
 from acconeer.exptool.app.new import check_package_outdated, get_latest_changelog
 from acconeer.exptool.app.new.app_model import AppModel
+from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
 from .misc import BUTTON_ICON_COLOR
 
@@ -179,7 +180,7 @@ class VersionLabel(QWidget):
         h_layout.setContentsMargins(0, 0, 0, 0)
         h_layout.setSpacing(0)
 
-        et_version = importlib_metadata.version("acconeer-exptool")
+        et_version = get_module_version(acconeer.exptool)
         et_version_text = f"ET: {et_version}"
         et_version_label = QLabel(et_version_text, self)
         h_layout.addWidget(et_version_label)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ from typing import Any, Optional, TypeVar
 from uuid import uuid4
 
 import h5py
-import importlib_metadata
 import numpy as np
 
+import acconeer.exptool
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
@@ -25,6 +25,7 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
 )
 from acconeer.exptool.a121._core.mediators import Recorder
+from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
 from .utils import PathOrH5File, h5_file_factory
 
@@ -104,7 +105,7 @@ class H5Recorder(Recorder):
         self._last_write_time = 0.0
 
         if _lib_version is None:
-            _lib_version = importlib_metadata.version("acconeer-exptool")
+            _lib_version = get_module_version(acconeer.exptool)
 
         if _timestamp is None:
             _timestamp = get_timestamp()

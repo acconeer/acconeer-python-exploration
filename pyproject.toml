@@ -40,7 +40,6 @@ known_third_party = [
     "attrs",
     "typing_extensions",
     "qdarktheme",
-    "importlib_metadata",
     "qtawesome",
     "pyperclip",
     "psutil",
