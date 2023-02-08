@@ -48,6 +48,7 @@ from acconeer.exptool.app.new import (
     pidgets,
 )
 
+from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
 from ._ref_app import RefApp, RefAppConfig, RefAppResult, _load_algo_data
 
 
@@ -64,13 +65,17 @@ class SharedState:
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    SHORT_RANGE = auto()
+    MEDIUM_RANGE = auto()
+    LONG_RANGE = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: RefAppConfig()
+        PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
+        PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
+        PluginPresetId.LONG_RANGE.value: lambda: get_long_range_config(),
     }
 
     def __init__(
@@ -566,7 +571,21 @@ SMART_PRESENCE_PLUGIN = PluginSpec(
     description="Split presence detection range into zones.",
     family=PluginFamily.REF_APP,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(
+            name="Short range",
+            description="Short range",
+            preset_id=PluginPresetId.SHORT_RANGE,
+        ),
+        PluginPresetBase(
+            name="Medium range",
+            description="Medium range",
+            preset_id=PluginPresetId.MEDIUM_RANGE,
+        ),
+        PluginPresetBase(
+            name="Long range",
+            description="Long range",
+            preset_id=PluginPresetId.LONG_RANGE,
+        ),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.MEDIUM_RANGE,
 )

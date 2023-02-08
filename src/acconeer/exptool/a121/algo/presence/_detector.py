@@ -37,10 +37,10 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
 
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
-    start_m: float = attrs.field(default=1.0)
+    start_m: float = attrs.field(default=0.3)
     """Start point of measurement interval in meters."""
 
-    end_m: float = attrs.field(default=2.0)
+    end_m: float = attrs.field(default=2.5)
     """End point of measurement interval in meters."""
 
     profile: Optional[a121.Profile] = attrs.field(
@@ -57,7 +57,7 @@ class DetectorConfig(AlgoConfigBase):
     calculated based on the profile.
     """
 
-    frame_rate: float = attrs.field(default=10.0)
+    frame_rate: float = attrs.field(default=12.0)
     """Frame rate in Hz."""
 
     sweeps_per_frame: int = attrs.field(default=16)
@@ -83,7 +83,7 @@ class DetectorConfig(AlgoConfigBase):
     intra_frame_time_const: float = attrs.field(default=0.15)
     """Time constant for the depthwise filtering in the intra-frame part."""
 
-    intra_output_time_const: float = attrs.field(default=0.5)
+    intra_output_time_const: float = attrs.field(default=0.3)
     """Time constant for the output in the intra-frame part."""
 
     inter_enable: bool = attrs.field(default=True)
@@ -95,7 +95,7 @@ class DetectorConfig(AlgoConfigBase):
     inter_detection_threshold: float = attrs.field(default=1)
     """Detection threshold for the inter-frame presence detection."""
 
-    inter_frame_fast_cutoff: float = attrs.field(default=20.0)
+    inter_frame_fast_cutoff: float = attrs.field(default=6.0)
     """
     Cutoff frequency of the low pass filter for the fast filtered absolute sweep mean.
     No filtering is applied if the cutoff is set over half the frame rate (Nyquist limit).
@@ -107,13 +107,13 @@ class DetectorConfig(AlgoConfigBase):
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
     """Time constant of the low pass filter for the inter-frame deviation between fast and slow."""
 
-    inter_output_time_const: float = attrs.field(default=5)
+    inter_output_time_const: float = attrs.field(default=2)
     """Time constant for the output in the inter-frame part."""
 
     inter_phase_boost: bool = attrs.field(default=False)
     """Enables the inter-frame phase boost. Used to increase slow motion detection."""
 
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
+    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
     """
     Number of seconds the inter-frame presence score needs to decrease before exponential
     scaling starts for faster decline.
