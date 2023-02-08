@@ -12,3 +12,4 @@ A121 algorithms
    touchless_button
    vibration
    bilateration
+   breathing
