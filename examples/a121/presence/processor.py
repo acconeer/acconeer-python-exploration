@@ -81,11 +81,6 @@ class PGUpdater:
 
         self.distances, _ = get_distances_m(self.sensor_config, metadata)
 
-        max_num_of_sectors = max(6, self.distances.size // 3)
-        self.sector_size = max(1, -(-self.distances.size // max_num_of_sectors))
-        self.num_sectors = -(-self.distances.size // self.sector_size)
-        self.sector_offset = (self.num_sectors * self.sector_size - self.distances.size) // 2
-
         self.setup_is_done = False
 
     def setup(self, win):
@@ -230,30 +225,9 @@ class PGUpdater:
         for line in self.inter_limit_lines:
             line.setPos(self.processor_config.inter_detection_threshold)
 
-        # Sector plot
-
-        self.sector_plot = pg.PlotItem()
-        self.sector_plot.setAspectLocked()
-        self.sector_plot.hideAxis("left")
-        self.sector_plot.hideAxis("bottom")
-        self.sectors = []
-
-        pen = pg.mkPen("k", width=1)
-        span_deg = 25
-        for r in np.flip(np.arange(self.num_sectors) + 1):
-            sector = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
-            sector.setStartAngle(-16 * span_deg)
-            sector.setSpanAngle(16 * span_deg * 2)
-            sector.setPen(pen)
-            self.sector_plot.addItem(sector)
-            self.sectors.append(sector)
-
-        self.sectors.reverse()
-
         sublayout = win.addLayout(row=2, col=0, colspan=2)
         sublayout.layout.setColumnStretchFactor(0, 2)
         sublayout.addItem(self.move_plot, row=0, col=0)
-        sublayout.addItem(self.sector_plot, row=0, col=1)
 
         self.setup_is_done = True
 
@@ -264,11 +238,9 @@ class PGUpdater:
 
         movement_x = data.presence_distance
 
-        self.inter_curve.setData(self.distances, data.extra_result.inter)
-        self.intra_curve.setData(self.distances, data.extra_result.intra)
-        m = self.move_smooth_max.update(
-            np.max(np.maximum(data.extra_result.inter, data.extra_result.intra))
-        )
+        self.inter_curve.setData(self.distances, data.inter)
+        self.intra_curve.setData(self.distances, data.intra)
+        m = self.move_smooth_max.update(np.max(np.maximum(data.inter, data.intra)))
         m = max(
             m,
             2
@@ -323,18 +295,6 @@ class PGUpdater:
 
         self.inter_hist_plot.setYRange(0, m_hist)
         self.inter_hist_curve.setData(move_hist_xs, self.inter_history)
-
-        # Sector
-
-        brush = et.utils.pg_brush_cycler(0)
-        for sector in self.sectors:
-            sector.setBrush(brush)
-
-        if data.presence_detected:
-            index = (
-                data.extra_result.presence_distance_index + self.sector_offset
-            ) // self.sector_size
-            self.sectors[index].setBrush(et.utils.pg_brush_cycler(1))
 
     def set_present_text_y_pos(self, y):
         x_pos = self.distances[0] + (self.distances[-1] - self.distances[0]) / 2
