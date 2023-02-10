@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 
@@ -25,6 +25,7 @@ class TestSetupResponse:
                         "calibration_temperature": 10,
                         "base_step_length_m": 0.0025,
                         "max_sweep_rate": 1000.0,
+                        "high_speed_mode": True,
                     },
                 ],
             ],

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -34,6 +34,7 @@ class TestAnEmptyStackedResults:
                     tick_period=0,
                     base_step_length_m=0,
                     max_sweep_rate=0,
+                    high_speed_mode=False,
                 ),
             ),
         )
@@ -71,6 +72,7 @@ class TestStackedResultWithASingleFrame:
                 tick_period=0,
                 base_step_length_m=0,
                 max_sweep_rate=0,
+                high_speed_mode=False,
             ),
         )
 
@@ -153,6 +155,7 @@ class TestStackedResultWithMultipleFrames:
                 tick_period=0,
                 base_step_length_m=0,
                 max_sweep_rate=0,
+                high_speed_mode=False,
             ),
         )
 

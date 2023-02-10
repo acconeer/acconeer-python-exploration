@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -18,6 +18,7 @@ def ref_metadata() -> a121.Metadata:
         tick_period=50,
         base_step_length_m=0.0025,
         max_sweep_rate=1000.0,
+        high_speed_mode=True,
     )
 
 
@@ -32,6 +33,7 @@ def ref_metadata_dict() -> dict:
         "tick_period": 50,
         "base_step_length_m": 0.0025,
         "max_sweep_rate": 1000.0,
+        "high_speed_mode": True,
     }
 
 
@@ -44,6 +46,7 @@ def test_init(ref_metadata: a121.Metadata) -> None:
     assert ref_metadata.tick_period == 50
     assert ref_metadata.base_step_length_m == 0.0025
     assert ref_metadata.max_sweep_rate == 1000.0
+    assert ref_metadata.high_speed_mode is True
 
 
 def test_eq(ref_metadata: a121.Metadata) -> None:
@@ -56,6 +59,7 @@ def test_eq(ref_metadata: a121.Metadata) -> None:
         tick_period=50,
         base_step_length_m=0.0025,
         max_sweep_rate=1000.0,
+        high_speed_mode=True,
     )
 
 

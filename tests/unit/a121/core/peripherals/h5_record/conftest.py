@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -128,6 +128,7 @@ def ref_metadata(ref_sweep_data_length: int, ref_frame_data_length: int) -> a121
         tick_period=50,
         base_step_length_m=0.0025,
         max_sweep_rate=1000.0,
+        high_speed_mode=True,
     )
 
 

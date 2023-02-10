@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -102,6 +102,7 @@ class MockClient(CommonClient):
             subsweep_data_length=np.array(subsweep_data_length),
             subsweep_data_offset=np.array(subsweep_data_offset),
             max_sweep_rate=100000,
+            high_speed_mode=True,
             tick_period=tick_period,
             calibration_temperature=cls.CALIBRATION_TEMPERATURE,
             base_step_length_m=cls.BASE_STEP_LENGTH_M,
