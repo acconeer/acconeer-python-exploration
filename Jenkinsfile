@@ -13,22 +13,63 @@ try {
         gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}"
     }
 
-    parallel 'Build and run standalone tests' : {
+    // Meant to catch common (and fast to detect) errors.
+    stage('Lint') {
         node('docker') {
             ws('workspace/exptool') {
-                stage('Build and run standalone tests') {
+                printNodeInfo()
+                checkoutAndCleanup(lfs: false)
+
+                buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                    sh 'python3 -V'
+                    sh 'nox -s lint'
+                }
+            }
+        }
+    }
+
+    parallel 'Build package & documentation' : {
+        node('docker') {
+            ws('workspace/exptool') {
+                stage('Build package & documentation') {
                     printNodeInfo()
                     checkoutAndCleanup(lfs: false)
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh 'python3 -V'
                         sh 'python3 -m build'
-                        sh 'nox --no-error-on-missing-interpreters -s lint docs test -- --test-groups unit integration --docs-builders html latexpdf rediraffecheckdiff'
-                        sh 'nox -s mypy'
+                        sh 'nox -s docs -- --docs-builders html latexpdf rediraffecheckdiff'
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
                     archiveArtifacts artifacts: 'docs/_build/latex/*.pdf', allowEmptyArchive: true
                     stash includes: 'dist/**', name: 'dist'
+                }
+            }
+        }
+    }, "Mypy": {
+        node('docker') {
+            ws('workspace/exptool') {
+                stage('Mypy') {
+                    printNodeInfo()
+                    checkoutAndCleanup(lfs: false)
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                        sh 'python3 -V'
+                        sh 'nox -s mypy'
+                    }
+                }
+            }
+        }
+    }, "Isolated tests": {
+        node('docker') {
+            ws('workspace/exptool') {
+                stage('Isolated tests') {
+                    printNodeInfo()
+                    checkoutAndCleanup(lfs: false)
+
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                        sh 'python3 -V'
+                        sh 'nox --no-error-on-missing-interpreters -s test -- --test-groups unit integration'
+                    }
                 }
             }
         }
