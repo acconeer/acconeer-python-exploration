@@ -3,8 +3,13 @@
 
 from __future__ import annotations
 
+import time
+
+import numpy as np
+
 # Added here to force pyqtgraph to choose PySide
 import PySide6  # noqa: F401
+from PySide6.QtGui import QFont
 
 import pyqtgraph as pg
 
@@ -24,15 +29,8 @@ def main():
     client.connect()
     metadata = client.setup_session(sensor_config)
 
-    processor_config = ProcessorConfig(
-        lp_coeff=0.75,
-        time_series_length=2048,
-        max_freq=3.0,
-        max_movement_in_time_series_m=0.02,
-    )
-
     processor = Processor(
-        sensor_config=sensor_config, processor_config=processor_config, metadata=metadata
+        sensor_config=sensor_config, processor_config=ProcessorConfig(), metadata=metadata
     )
 
     pg_updater = PGUpdater(sensor_config, metadata)
@@ -59,9 +57,8 @@ def main():
 
 class PGUpdater:
 
-    _MAX_FREQ_TO_PLOT = 3.0
-    _FFT_MIN_Y_SCALE = 1.0
     _TIME_SERIES_Y_SCALE_MARGIN_M = 0.0025
+    _DATA_INIT_DURATION = 5.0
 
     def __init__(self, sensor_config: a121.SensorConfig, metadata: a121.Metadata):
         ...
@@ -72,6 +69,9 @@ class PGUpdater:
         brush = et.utils.pg_brush_cycler(0)
         symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
         feat_kws = [dict(pen=pen, **symbol_kw) for pen in pens]
+
+        font = QFont()
+        font.setPixelSize(16.0)
 
         # time series plot
         self.time_series_plot = win.addPlot(row=0, col=0)
@@ -92,6 +92,7 @@ class PGUpdater:
             anchor=(0.5, 0),
             color=pg.mkColor(0xFF, 0xFF, 0xFF, 200),
         )
+        self.time_series_text_item.setFont(font)
         self.time_series_text_item.show()
         self.time_series_plot.addItem(self.time_series_text_item)
 
@@ -114,14 +115,16 @@ class PGUpdater:
             anchor=(0.5, 0),
             color=pg.mkColor(0xFF, 0xFF, 0xFF, 200),
         )
+        self.fft_text_item.setFont(font)
         self.fft_text_item.show()
         self.fft_plot.addItem(self.fft_text_item)
 
-    def update(self, processor_result):
+        self.start_time = time.time()
 
+    def update(self, processor_result):
         time_series = processor_result.time_series
         distance_to_analyze_m = processor_result.distance_to_analyze_m
-        z_abs_lp = processor_result.lp_z_abs
+        z_abs_lp = processor_result.lp_psd
         freqs = processor_result.freqs
         breathing_rate = processor_result.breathing_rate
         fft_peak_location = processor_result.fft_peak_location
@@ -138,13 +141,20 @@ class PGUpdater:
         text_x_pos = self.time_series_plot.getAxis("bottom").range[1] / 2.0
         self.time_series_text_item.setPos(text_x_pos, text_y_pos)
         self.time_series_text_item.setHtml(
-            "Distance being analyzed: " + "{:.1f}".format(distance_to_analyze_m) + " (m)"
+            "Distance being visualized: " + "{:.2f}".format(distance_to_analyze_m) + " (m)"
         )
 
         # fft plot
-        if z_abs_lp is not None:
-            assert freqs is not None
+        if (time.time() - self.start_time) < self._DATA_INIT_DURATION:
+            self.fft_curve.setData(freqs, np.zeros_like(freqs))
+            self.fft_plot.setYRange(0.0, 1.0)
+
+            text_y_pos = self.fft_plot.getAxis("left").range[1] * 0.95
+            text_x_pos = self.fft_plot.getAxis("bottom").range[1] / 2.0
+            self.fft_text_item.setHtml("Acquiring data.")
+        elif freqs is not None:
             assert z_abs_lp is not None
+            assert breathing_rate is not None
             assert fft_peak_location is not None
 
             self.fft_curve.setData(freqs, z_abs_lp)
@@ -152,18 +162,21 @@ class PGUpdater:
             lim = self.fft_smooth_max.update(z_abs_lp)
             self.fft_plot.setYRange(0.0, lim * 1.2)
 
-        # Handle text
-        text_y_pos = self.fft_plot.getAxis("left").range[1] * 0.95
-        text_x_pos = self.fft_plot.getAxis("bottom").range[1] / 2.0
-        self.fft_text_item.setPos(text_x_pos, text_y_pos)
-        if z_abs_lp is None:
-            self.fft_text_item.setHtml("Large movement detected.")
-        elif breathing_rate is not None:
+            text_y_pos = self.fft_plot.getAxis("left").range[1] * 0.95
+            text_x_pos = self.fft_plot.getAxis("bottom").range[1] / 2.0
+
             self.fft_text_item.setHtml(
                 "Breathing rate: " + "{:.1f}".format(breathing_rate) + " per minute"
             )
-        else:
-            self.fft_text_item.setHtml("Waiting for data")
+        self.fft_text_item.setPos(text_x_pos, text_y_pos)
+
+    @staticmethod
+    def _format_string(string_to_display: str) -> str:
+        return (
+            '<div style="text-align: center">'
+            '<span style="color: #FFFFFF;font-size:15pt;">'
+            "{}</span></div>".format(string_to_display)
+        )
 
 
 if __name__ == "__main__":
