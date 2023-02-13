@@ -1,11 +1,23 @@
 import groovy.transform.Field
 @Library('sw-jenkins-library@f8abd2e69ceef2d37e8ab7f1fbc294e34ac04670') _
 
-@Field
-def isolatedTestPythonVersions = ["3.8"]
+enum BuildScope {
+    SANITY, HOURLY, NIGHTLY
+}
 
 @Field
-def integrationTestPythonVersions = ["3.8"]
+def isolatedTestPythonVersionsForBuildScope = [
+    (BuildScope.SANITY)  : ["3.7", "3.9"],
+    (BuildScope.HOURLY)  : ["3.8", "3.10", "3.11"],
+    (BuildScope.NIGHTLY) : ["3.7", "3.8", "3.9", "3.10", "3.11"],
+]
+
+@Field
+def integrationTestPythonVersionsForBuildScope = [
+    (BuildScope.SANITY)  : ["3.7"],
+    (BuildScope.HOURLY)  : ["3.9"],
+    (BuildScope.NIGHTLY) : ["3.7", "3.8", "3.9", "3.10", "3.11"],
+]
 
 
 String dockerArgs(env_map) {
@@ -13,10 +25,47 @@ String dockerArgs(env_map) {
          " --mount type=volume,src=cachepip-${env_map.EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip"
 }
 
+def getCronTriggers(String branchName) {
+    def triggers = []
+
+    if (branchName == 'master') {
+        // Hourly: every hour between 9:00 & 17:00, Monday through Friday
+        // Nightly: every day at 23:00
+        triggers << cron("0 9-17 * * 1-5\n0 23 * * *")
+    }
+
+    return pipelineTriggers(triggers)
+}
+
+BuildScope getBuildScope() {
+    if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()) {
+        // currentBuild was not triggered by a cron timer
+        // => probably triggered by a change
+        // => run sanity scope.
+        return BuildScope.SANITY
+    }
+
+    def hour = new Date()[Calendar.HOUR_OF_DAY]
+
+    if (hour <= 17) {
+        return BuildScope.HOURLY
+    } else {
+        return BuildScope.NIGHTLY
+    }
+}
+
 
 try {
+    // Ensure cron triggers are setup (for periodic jobs)
+    properties([getCronTriggers(env.BRANCH_NAME)])
+
+    def buildScope = getBuildScope()
+
+    def isolatedTestPythonVersions = isolatedTestPythonVersionsForBuildScope[buildScope]
+    def integrationTestPythonVersions = integrationTestPythonVersionsForBuildScope[buildScope]
+
     stage('Report start to Gerrit') {
-        gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}"
+        gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}, Scope: ${buildScope}"
     }
 
     // Meant to catch common (and fast to detect) errors.
