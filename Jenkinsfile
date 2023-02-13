@@ -1,9 +1,12 @@
-@Library('sw-jenkins-library@d4f738452cd3f82f845e4ba508970464a4cb156c') _
+import groovy.transform.Field
+@Library('sw-jenkins-library@f8abd2e69ceef2d37e8ab7f1fbc294e34ac04670') _
 
-def printNodeInfo() {
-    def (String workDir, String uname) = sh (script: 'pwd && uname -a', returnStdout: true).trim().readLines()
-    echo "Running on ${env.NODE_NAME} in directory ${workDir}, uname: ${uname}"
+
+String dockerArgs(env_map) {
+  return "--hostname ${env_map.NODE_NAME}" +
+         " --mount type=volume,src=cachepip-${env_map.EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip"
 }
+
 
 try {
     stage('Report start to Gerrit') {
@@ -15,15 +18,9 @@ try {
             ws('workspace/exptool') {
                 stage('Build and run standalone tests') {
                     printNodeInfo()
-                    def scmVars = checkout scm
-                    sh 'git clean -xdf'
-                    echo "scmVars=${scmVars}"
+                    checkoutAndCleanup(lfs: false)
 
-                    String stageStart = getCurrentTime()
-                    def image = buildDocker(path: 'docker')
-
-                    image.inside("--hostname ${env.NODE_NAME}" +
-                                " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh 'python3 -V'
                         sh 'python3 -m build'
                         sh 'nox --no-error-on-missing-interpreters -s lint docs test -- --test-groups unit integration --docs-builders html latexpdf rediraffecheckdiff'
@@ -39,8 +36,8 @@ try {
         node('docker') {
             ws('workspace/exptool') {
                 stage('Setup') {
-                    def scmVars = checkout scm
-                    sh 'git clean -xdf'
+                    printNodeInfo()
+                    checkoutAndCleanup(lfs: false)
 
                     findBuildAndCopyArtifacts(
                         projectName: 'sw-main',
@@ -55,11 +52,9 @@ try {
                     sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
                 }
                 stage('Run integration tests') {
-                    def image = buildDocker(path: 'docker')
-                    image.inside("--hostname ${env.NODE_NAME}" +
-                                " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
-                                sh 'tests/run-a111-mock-integration-tests.sh'
-                                sh 'tests/run-a121-mock-integration-tests.sh'
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                        sh 'tests/run-a111-mock-integration-tests.sh'
+                        sh 'tests/run-a121-mock-integration-tests.sh'
                     }
                 }
             }
@@ -69,8 +64,7 @@ try {
             ws('workspace/exptool') {
                 stage('Setup') {
                     printNodeInfo()
-                    def scmVars = checkout scm
-                    sh 'git clean -xdf'
+                    checkoutAndCleanup(lfs: false)
 
                     findBuildAndCopyArtifacts(
                         projectName: 'sw-main',
@@ -89,10 +83,7 @@ try {
                         sh '(cd stash && python3 python_libs/test_utils/flash.py)'
                     }
                     stage('Run integration tests') {
-                        def image = buildDocker(path: 'docker')
-                        image.inside("--hostname ${env.NODE_NAME}" +
-                                     " --net=host --privileged" +
-                                     " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
+                        buildDocker(path: 'docker').inside(dockerArgs(env) + " --net=host --privileged") {
                             sh 'tests/run-a111-xm112-integration-tests.sh'
                         }
                     }
@@ -104,11 +95,10 @@ try {
     if (env.TAG_NAME ==~ /v.*/) {
         node('docker') {
             ws('workspace/exptool') {
-                def scmVars = checkout scm
-                sh 'git clean -xdf'
-                def image = buildDocker(path: 'docker')
-                image.inside("--hostname ${env.NODE_NAME}" +
-                            " --mount type=volume,src=cachepip-${EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip") {
+                printNodeInfo()
+                checkoutAndCleanup(lfs: false)
+
+                buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     env.TWINE_NON_INTERACTIVE = '1'
                     stage('Retrieve binaries from build step') {
                         unstash 'dist'
