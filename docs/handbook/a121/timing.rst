@@ -113,7 +113,7 @@ including the time it takes to initialize the measurement is
 where
 :math:`N_d` is the configured number of distances (``num_points``),
 and
-:math:`C_\text{subsweep} \approx 26 \mu\text{s}` is a fixed overhead.
+:math:`C_\text{subsweep} \approx 22 \mu\text{s}` is a fixed overhead.
 
 ..
     Fix μ
@@ -148,9 +148,9 @@ Idle state transition times
     +----------------+------------+---------+---------+
     | From \\ To     | Deep sleep |   Sleep |   Ready |
     +================+============+=========+=========+
-    | **Deep sleep** |       0 us |  585 us |  650 us |
+    | **Deep sleep** |       0 us |  615 us |  670 us |
     +----------------+------------+---------+---------+
-    | **Sleep**      |        N/A |    0 us |   65 us |
+    | **Sleep**      |        N/A |    0 us |   55 us |
     +----------------+------------+---------+---------+
     | **Ready**      |        N/A |     N/A |    0 us |
     +----------------+------------+---------+---------+
