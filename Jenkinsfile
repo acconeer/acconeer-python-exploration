@@ -1,6 +1,8 @@
 import groovy.transform.Field
 @Library('sw-jenkins-library@f8abd2e69ceef2d37e8ab7f1fbc294e34ac04670') _
 
+@Field
+def isolatedTestPythonVersions = ["3.8"]
 
 String dockerArgs(env_map) {
   return "--hostname ${env_map.NODE_NAME}" +
@@ -65,16 +67,18 @@ try {
         }
     }
 
-    parallel_steps['Isolated tests'] = {
-        node('docker') {
-            ws('workspace/exptool') {
-                stage('Isolated tests') {
-                    printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+    isolatedTestPythonVersions.each { pythonVersion ->
+        parallel_steps["Isolated tests (${pythonVersion})"] = {
+            node('docker') {
+                ws('workspace/exptool') {
+                    stage("Isolated tests (${pythonVersion})") {
+                        printNodeInfo()
+                        checkoutAndCleanup(lfs: false)
 
-                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        sh 'python3 -V'
-                        sh 'nox --no-error-on-missing-interpreters -s test -- --test-groups unit integration'
+                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                            sh "python${pythonVersion} -V"
+                            sh "nox -s \"test(python=\'${pythonVersion}\')\" -- --test-groups unit integration"
+                        }
                     }
                 }
             }
