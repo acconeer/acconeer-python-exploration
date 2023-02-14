@@ -4,6 +4,10 @@ import groovy.transform.Field
 @Field
 def isolatedTestPythonVersions = ["3.8"]
 
+@Field
+def integrationTestPythonVersions = ["3.8"]
+
+
 String dockerArgs(env_map) {
   return "--hostname ${env_map.NODE_NAME}" +
          " --mount type=volume,src=cachepip-${env_map.EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip"
@@ -85,61 +89,65 @@ try {
         }
     }
 
-    parallel_steps['Mock test'] = {
-        node('docker') {
-            ws('workspace/exptool') {
-                stage('Setup') {
-                    printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+    integrationTestPythonVersions.each { pythonVersion ->
+        parallel_steps["Mock test (${pythonVersion})"] = {
+            node('docker') {
+                ws('workspace/exptool') {
+                    stage('Setup') {
+                        printNodeInfo()
+                        checkoutAndCleanup(lfs: false)
 
-                    findBuildAndCopyArtifacts(
-                        projectName: 'sw-main',
-                        revision: "master",
-                        artifactNames: [
-                            "out/internal_stash_binaries_sanitizer_a111.tgz",
-                            "out/internal_stash_binaries_sanitizer_a121.tgz"
-                        ]
-                    )
-                    sh 'mkdir stash'
-                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
-                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
-                }
-                stage('Run integration tests') {
-                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        sh 'tests/run-a111-mock-integration-tests.sh'
-                        sh 'tests/run-a121-mock-integration-tests.sh'
+                        findBuildAndCopyArtifacts(
+                            projectName: 'sw-main',
+                            revision: "master",
+                            artifactNames: [
+                                "out/internal_stash_binaries_sanitizer_a111.tgz",
+                                "out/internal_stash_binaries_sanitizer_a121.tgz"
+                            ]
+                        )
+                        sh 'mkdir stash'
+                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
+                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
+                    }
+                    stage('Run integration tests') {
+                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                            sh "tests/run-a111-mock-integration-tests.sh ${pythonVersion}"
+                            sh "tests/run-a121-mock-integration-tests.sh ${pythonVersion}"
+                        }
                     }
                 }
             }
         }
     }
 
-    parallel_steps['XM112 test'] = {
-        node('exploration_tool') {
-            ws('workspace/exptool') {
-                stage('Setup') {
-                    printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+    integrationTestPythonVersions.each { pythonVersion ->
+        parallel_steps["XM112 test (${pythonVersion})"] = {
+            node('exploration_tool') {
+                ws('workspace/exptool') {
+                    stage('Setup') {
+                        printNodeInfo()
+                        checkoutAndCleanup(lfs: false)
 
-                    findBuildAndCopyArtifacts(
-                        projectName: 'sw-main',
-                        revision: "master",
-                        artifactNames: [
-                            "out/internal_stash_python_libs.tgz",
-                            "out/internal_stash_binaries_xm112.tgz",
-                        ]
-                    )
-                    sh 'mkdir stash'
-                    sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
-                    sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
-                }
-                lock("${env.NODE_NAME}-xm112") {
-                    stage ('Flash') {
-                        sh '(cd stash && python3 python_libs/test_utils/flash.py)'
+                        findBuildAndCopyArtifacts(
+                            projectName: 'sw-main',
+                            revision: "master",
+                            artifactNames: [
+                                "out/internal_stash_python_libs.tgz",
+                                "out/internal_stash_binaries_xm112.tgz",
+                            ]
+                        )
+                        sh 'mkdir stash'
+                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
+                        sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
                     }
-                    stage('Run integration tests') {
-                        buildDocker(path: 'docker').inside(dockerArgs(env) + " --net=host --privileged") {
-                            sh 'tests/run-a111-xm112-integration-tests.sh'
+                    lock("${env.NODE_NAME}-xm112") {
+                        stage ('Flash') {
+                            sh '(cd stash && python3 python_libs/test_utils/flash.py)'
+                        }
+                        stage('Run integration tests') {
+                            buildDocker(path: 'docker').inside(dockerArgs(env) + " --net=host --privileged") {
+                                sh "tests/run-a111-xm112-integration-tests.sh ${pythonVersion}"
+                            }
                         }
                     }
                 }
