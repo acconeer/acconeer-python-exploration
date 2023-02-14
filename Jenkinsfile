@@ -28,7 +28,9 @@ try {
         }
     }
 
-    parallel 'Build package & documentation' : {
+    parallel_steps = [:]
+
+    parallel_steps['Build package & documentation'] = {
         node('docker') {
             ws('workspace/exptool') {
                 stage('Build package & documentation') {
@@ -46,7 +48,9 @@ try {
                 }
             }
         }
-    }, "Mypy": {
+    }
+
+    parallel_steps['Mypy'] = {
         node('docker') {
             ws('workspace/exptool') {
                 stage('Mypy') {
@@ -59,7 +63,9 @@ try {
                 }
             }
         }
-    }, "Isolated tests": {
+    }
+
+    parallel_steps['Isolated tests'] = {
         node('docker') {
             ws('workspace/exptool') {
                 stage('Isolated tests') {
@@ -73,7 +79,9 @@ try {
                 }
             }
         }
-    }, "Mock test": {
+    }
+
+    parallel_steps['Mock test'] = {
         node('docker') {
             ws('workspace/exptool') {
                 stage('Setup') {
@@ -100,7 +108,9 @@ try {
                 }
             }
         }
-    }, "XM112 test": {
+    }
+
+    parallel_steps['XM112 test'] = {
         node('exploration_tool') {
             ws('workspace/exptool') {
                 stage('Setup') {
@@ -131,7 +141,11 @@ try {
                 }
             }
         }
-    }, failFast: true
+    }
+
+    parallel_steps['failFast'] = true
+
+    parallel parallel_steps
 
     if (env.TAG_NAME ==~ /v.*/) {
         node('docker') {
