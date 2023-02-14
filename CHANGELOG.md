@@ -1,10 +1,24 @@
 # Changelog
 
+## v5.9.0
+
+### Added
+- A121: Breathing example
+- A121: Bilateration example
+- A121: Support for subsweeps in the Sparse IQ plugin
+- A111: Presence detector human only
+- A121: Smart presence reference app
+
+### Changed
+- Bump A121 SDK version to v0.8.0
+
+### Removed
+- A121: Sector plots in Presence detector example and plugin
+
 ## v5.8.1
 
 ### Added
 - Sensor config info in distance detector
-- A121 smart presence reference app
 
 ### Changed
 - A121 presence: move inter and intra from extra_result to result
