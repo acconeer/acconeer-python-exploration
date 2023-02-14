@@ -113,10 +113,7 @@ including the time it takes to initialize the measurement is
 where
 :math:`N_d` is the configured number of distances (``num_points``),
 and
-:math:`C_\text{subsweep} \approx 22 \mu\text{s}` is a fixed overhead.
-
-..
-    Fix μ
+:math:`C_\text{subsweep}` is a fixed overhead, see section :ref:`sec_fixed_overheads_and_hsm`.
 
 Sweep duration
 --------------
@@ -132,7 +129,7 @@ including all configured subsweeps and transitioning from the configured inter s
 where
 :math:`\tau_{S \rightarrow R}` is the *sweep transition time*,
 and
-:math:`C_s \approx 10 \mu\text{s}` is a fixed overhead.
+:math:`C_s` is a fixed overhead, see section :ref:`sec_fixed_overheads_and_hsm`.
 
 The sweep transition time :math:`\tau_{S \rightarrow R}` is the time required to transition from the configured *inter sweep idle state* to the *ready* state.
 See :numref:`tab_a121_transition_times` below.
@@ -145,15 +142,15 @@ Idle state transition times
     :align: center
     :widths: auto
 
-    +----------------+------------+---------+---------+
-    | From \\ To     | Deep sleep |   Sleep |   Ready |
-    +================+============+=========+=========+
-    | **Deep sleep** |       0 us |  615 us |  670 us |
-    +----------------+------------+---------+---------+
-    | **Sleep**      |        N/A |    0 us |   55 us |
-    +----------------+------------+---------+---------+
-    | **Ready**      |        N/A |     N/A |    0 us |
-    +----------------+------------+---------+---------+
+    +----------------+-----------------------+-------------------------+-------------------------+
+    | From \\ To     | Deep sleep            |                   Sleep |                   Ready |
+    +================+=======================+=========================+=========================+
+    | **Deep sleep** | :math:`0 \mu\text{s}` | :math:`615 \mu\text{s}` | :math:`670 \mu\text{s}` |
+    +----------------+-----------------------+-------------------------+-------------------------+
+    | **Sleep**      |                   N/A |   :math:`0 \mu\text{s}` |  :math:`55 \mu\text{s}` |
+    +----------------+-----------------------+-------------------------+-------------------------+
+    | **Ready**      |                   N/A |                     N/A |   :math:`0 \mu\text{s}` |
+    +----------------+-----------------------+-------------------------+-------------------------+
 
 Sweep period
 ------------
@@ -186,7 +183,7 @@ where
 :math:`\tau_{F \rightarrow S}` is the *frame transition time*,
 :math:`N_s` is the SPF (sweeps per frame),
 and
-:math:`C_f \approx 4 \mu\text{s}` is a fixed overhead.
+:math:`C_f` is a fixed overhead, see section :ref:`sec_fixed_overheads_and_hsm`.
 
 The frame transition time :math:`\tau_{F \rightarrow S}` is the time required to transition from the configured *inter frame idle state* to the *inter sweep idle state* state.
 See :numref:`tab_a121_transition_times` above.
@@ -212,3 +209,34 @@ Thus, the frame period will be larger than the frame duration;
 :math:`T_f > \tau_f`.
 
 If the *frame rate* :math:`f_f` is set, the sensor will continue to idle until :eq:`eq_a121_frame_period` is met.
+
+.. _sec_fixed_overheads_and_hsm:
+
+Fixed overheads and high speed mode (HSM)
+-----------------------------------------
+
+The fixed overheads for subsweep, :math:`C_\text{subsweep}`, sweep, :math:`C_s`, and frame, :math:`C_f`, are dependent on if high speed mode is activated or not.
+High speed mode means that the sensor is configured in a way where it can optimize its measurements to obtain as high sweep rate as possible.
+In order for the sensor to operate in high speed mode, the following configuration constraints apply:
+
+- :attr:`~acconeer.exptool.a121.SensorConfig.continuous_sweep_mode`: False
+- :attr:`~acconeer.exptool.a121.SensorConfig.inter_sweep_idle_state`: READY
+- :attr:`~acconeer.exptool.a121.SensorConfig.num_subsweeps`: 1
+- :attr:`~acconeer.exptool.a121.SubsweepConfig.profile`: 3-5
+
+Note that the default RSS Service configuration comply with these constraints which means that high speed mode is activated by default.
+
+The fixed overheads can be seen in :numref:`tab_a121_fixed_overheads` below.
+
+.. _tab_a121_fixed_overheads:
+.. table:: Approximate fixed overhead times.
+    :align: center
+    :widths: auto
+
+    +------------------+---------------------------+------------------------+-----------------------+
+    | Mode \\ Overhead | :math:`C_\text{subsweep}` | :math:`C_s`            | :math:`C_f`           |
+    +==================+===========================+========================+=======================+
+    | Normal           |    :math:`22 \mu\text{s}` | :math:`10 \mu\text{s}` | :math:`4 \mu\text{s}` |
+    +------------------+---------------------------+------------------------+-----------------------+
+    | High speed       |     :math:`0 \mu\text{s}` |  :math:`0 \mu\text{s}` | :math:`36 \mu\text{s}`|
+    +------------------+---------------------------+------------------------+-----------------------+
