@@ -131,10 +131,7 @@ class SingleSensorContext(AlgoBase):
                 "recorded_thresholds_mean_sweep",
                 "recorded_thresholds_noise_std",
                 "bg_noise_std",
-                "offset_frames",
-                "noise_frames",
-                "close_range_frames",
-                "recorded_threshold_frames",
+                "extra_context",
             ]:
                 continue
 
@@ -177,26 +174,28 @@ class SingleSensorContext(AlgoBase):
             for i, v in enumerate(self.bg_noise_std):
                 bg_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
+        extra_group = group.create_group("extra_context")
+
         if self.extra_context.offset_frames is not None:
-            offset_frames_group = group.create_group("offset_frames")
+            offset_frames_group = extra_group.create_group("offset_frames")
 
             for i, v in enumerate(self.extra_context.offset_frames):
                 offset_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
         if self.extra_context.noise_frames is not None:
-            noise_frames_group = group.create_group("noise_frames")
+            noise_frames_group = extra_group.create_group("noise_frames")
 
             for i, v in enumerate(self.extra_context.noise_frames):
                 noise_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
         if self.extra_context.close_range_frames is not None:
-            close_range_frames_group = group.create_group("close_range_frames")
+            close_range_frames_group = extra_group.create_group("close_range_frames")
 
             for i, v in enumerate(self.extra_context.close_range_frames):
                 close_range_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
         if self.extra_context.recorded_threshold_frames is not None:
-            recorded_threshold_frames_group = group.create_group("recorded_threshold_frames")
+            recorded_threshold_frames_group = extra_group.create_group("recorded_threshold_frames")
 
             for i, v in enumerate(self.extra_context.recorded_threshold_frames):
                 recorded_threshold_frames_group.create_dataset(
@@ -244,21 +243,28 @@ class SingleSensorContext(AlgoBase):
                 group["sensor_calibration"]
             )
 
-        if "offset_frames" in group:
-            offset_frames = _get_group_items(group["offset_frames"])
-            context_dict["extra_context"]["offset_frames"] = offset_frames
+        if "extra_context" in group:
+            extra_group = group["extra_context"]
 
-        if "noise_frames" in group:
-            noise_frames = _get_group_items(group["noise_frames"])
-            context_dict["extra_context"]["noise_frames"] = noise_frames
+            if "offset_frames" in extra_group:
+                offset_frames = _get_group_items(extra_group["offset_frames"])
+                context_dict["extra_context"]["offset_frames"] = offset_frames
 
-        if "close_range_frames" in group:
-            close_range_frames = _get_group_items(group["close_range_frames"])
-            context_dict["extra_context"]["close_range_frames"] = close_range_frames
+            if "noise_frames" in extra_group:
+                noise_frames = _get_group_items(extra_group["noise_frames"])
+                context_dict["extra_context"]["noise_frames"] = noise_frames
 
-        if "recorded_threshold_frames" in group:
-            recorded_threshold_frames = _get_group_items(group["recorded_threshold_frames"])
-            context_dict["extra_context"]["recorded_threshold_frames"] = recorded_threshold_frames
+            if "close_range_frames" in extra_group:
+                close_range_frames = _get_group_items(extra_group["close_range_frames"])
+                context_dict["extra_context"]["close_range_frames"] = close_range_frames
+
+            if "recorded_threshold_frames" in extra_group:
+                recorded_threshold_frames = _get_group_items(
+                    extra_group["recorded_threshold_frames"]
+                )
+                context_dict["extra_context"][
+                    "recorded_threshold_frames"
+                ] = recorded_threshold_frames
 
         return SingleSensorContext(**context_dict)
 
