@@ -95,7 +95,7 @@ def _stack_optional_arraylike(
     lengths = {len(x) for x in sequence if x is not None}
     length = max(lengths)
 
-    data_type = type(sequence[0][0]) if sequence[0] is not None else None
+    data_type = type(sequence[0][0]) if sequence[0] is not None and len(sequence[0]) > 0 else None
     data_type = float if data_type == np.int64 else data_type
 
     return np.stack(
@@ -391,7 +391,7 @@ class DetectorResultListH5Serializer:
             near_data: t.Dict[int, t.List[t.Optional[bool]]] = {}
             for res in results:
                 for sensor_id, detector_result in res.items():
-                    if sensor_id not in data:
+                    if sensor_id not in near_data:
                         near_data[sensor_id] = []
                     near_data[sensor_id].append(detector_result.near_edge_status)
 
