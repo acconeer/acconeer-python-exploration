@@ -3,6 +3,12 @@ Setting up your XC120 + XE121
 
 Flashing
 --------
+
+.. attention::
+
+   To flash and connect to SDK/RSS v0.8.0,
+   Exploration Tool v5.9.0 or newer is required.
+
 Start by downloading the latest ``acc_exploration_server_a121.bin`` from our `developer page <https://developer.acconeer.com/>`_.
 
 Flash XC120 using the Exploration Tool Application::
@@ -13,8 +19,13 @@ or by using the following command::
 
    python -m acconeer.exptool.flash flash -d XC120 -i acc_exploration_server_a121.bin
 
-Windows USB drivers
--------------------
+Windows USB drivers (deprecated)
+--------------------------------
+
+.. attention::
+
+   Manual driver installation is no longer needed from SDK/RSS v0.8.0,
+   but requires Exploration Tool v5.9.0 or newer.
 
 For enhanced stability and performance on Windows, we strongly recommend using the WinUSB driver to communicate with the XC120.
 In order to do so, follow the steps below.
