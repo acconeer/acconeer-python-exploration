@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import argparse
@@ -219,7 +219,6 @@ def test(session):
             PYTEST_MOCK_SPEC,
             "pytest-qt",
             "pytest-timeout",
-            "requests",
         }
         install_extras |= {"app"}
         pytest_commands.extend(
