@@ -93,7 +93,7 @@ class SubsweepConfig:
         converter=bool,
     )
     _prf: PRF = attrs.field(
-        default=PRF.PRF_13_0_MHz,
+        default=PRF.PRF_15_6_MHz,
         converter=prf_converter,
     )
 

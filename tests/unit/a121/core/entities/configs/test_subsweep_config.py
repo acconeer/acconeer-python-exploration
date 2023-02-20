@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import json
@@ -53,7 +53,7 @@ def test_to_dict_defaults() -> None:
         "enable_tx": True,
         "enable_loopback": False,
         "phase_enhancement": False,
-        "prf": a121.PRF.PRF_13_0_MHz,
+        "prf": a121.PRF.PRF_15_6_MHz,
     }
 
     assert subsweep.to_dict() == expected
