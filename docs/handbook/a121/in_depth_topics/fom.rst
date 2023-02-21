@@ -140,7 +140,7 @@ Lastly, form the mean error by averaging over the frames, :math:`\overline{e}(d)
 
 :math:`\overline{e}(d)` describes the average error for a single sensor.
 The metrics calculated in the following sections are based on data from a set of sensors.
-To indicate what sensor the mean error is associated with, the subscript :math:`s` is added,
+To indicate what sensor the mean error is associated with, the argument :math:`s` is added,
 :math:`\overline{e}(d,s)`.
 
 Accuracy
