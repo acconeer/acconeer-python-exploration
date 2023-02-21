@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.9.1
+
+### Changed
+- Change default PRF to 15.6 MHz
+
 ## v5.9.0
 
 ### Added
