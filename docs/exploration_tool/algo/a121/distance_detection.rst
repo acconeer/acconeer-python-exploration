@@ -149,3 +149,8 @@ Configuration parameters
 .. autoclass:: acconeer.exptool.a121.algo.distance.PeakSortingMethod
     :members:
     :undoc-members:
+
+Detector result
+---------------
+.. autoclass:: acconeer.exptool.a121.algo.distance._detector.DetectorResult
+   :members:
