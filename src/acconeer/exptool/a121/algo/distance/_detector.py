@@ -341,11 +341,24 @@ class DetectorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
-    rcs: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     distances: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    """Estimated distances (m), sorted according to the selected peak sorting strategy."""
+
+    rcs: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    """Estimated radar cross section (dBsm) corresponding to the peak amplitude of the
+    estimated distances.
+    """
+
     near_edge_status: Optional[bool] = attrs.field(default=None)
+    """Boolean indicating an object close to the start edge, located outside of the
+    measurement range.
+    """
+
     processor_results: list[ProcessorResult] = attrs.field()
+    """Processing result. Used for visualization in Exploration Tool."""
+
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
+    """Service extended result. Used for visualization in Exploration Tool."""
 
 
 class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
