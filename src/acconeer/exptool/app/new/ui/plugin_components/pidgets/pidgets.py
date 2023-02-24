@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 from enum import Enum
-from typing import Any, Generic, Optional, Tuple, Type, TypeVar
+from typing import Any, Generic, Optional, Tuple, Type, TypeVar, cast
 
 import attrs
 import numpy as np
@@ -111,6 +111,10 @@ class ParameterWidget(QWidget):
     def set_parameter(self, value: Any) -> None:
         pass
 
+    @abc.abstractmethod
+    def get_parameter(self) -> Any:
+        pass
+
 
 @attrs.frozen(kw_only=True, slots=False)
 class IntParameterWidgetFactory(ParameterWidgetFactory):
@@ -138,6 +142,9 @@ class IntParameterWidget(ParameterWidget):
 
         with QtCore.QSignalBlocker(self):
             self.__spin_box.setValue(value)
+
+    def get_parameter(self) -> int:
+        return int(self.__spin_box.value())
 
     def __on_changed(self) -> None:
         self.sig_parameter_changed.emit(self.__spin_box.value())
@@ -171,6 +178,9 @@ class FloatParameterWidget(ParameterWidget):
 
         with QtCore.QSignalBlocker(self):
             self.__spin_box.setValue(value)
+
+    def get_parameter(self) -> float:
+        return float(self.__spin_box.value())
 
     def __on_changed(self) -> None:
         self.sig_parameter_changed.emit(self.__spin_box.value())
@@ -261,6 +271,9 @@ class FloatSliderParameterWidget(ParameterWidget):
             self.__spin_box.setValue(value)
             self.__slider.wrapped_set_value(value)
 
+    def get_parameter(self) -> float:
+        return float(self.__spin_box.value())
+
     def __on_spin_box_changed(self, value: float) -> None:
         with QtCore.QSignalBlocker(self):
             self.__slider.wrapped_set_value(value)
@@ -307,6 +320,10 @@ class OptionalParameterWidget(ParameterWidget):
         with QtCore.QSignalBlocker(self):
             self._none_checkbox.setChecked(value is not None)
 
+    @abc.abstractmethod
+    def get_parameter(self) -> Optional[Any]:
+        pass
+
 
 @attrs.frozen(kw_only=True, slots=False)
 class OptionalIntParameterWidgetFactory(OptionalParameterWidgetFactory, IntParameterWidgetFactory):
@@ -349,6 +366,12 @@ class OptionalIntParameterWidget(OptionalParameterWidget):
             else:
                 self.__spin_box.setValue(value)
                 self.__spin_box.setEnabled(True)
+
+    def get_parameter(self) -> Optional[int]:
+        if not self._none_checkbox.isChecked():
+            return None
+        else:
+            return int(self.__spin_box.value())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -396,6 +419,12 @@ class OptionalFloatParameterWidget(OptionalParameterWidget):
                 self.__spin_box.setValue(value)
                 self.__spin_box.setEnabled(True)
 
+    def get_parameter(self) -> Optional[float]:
+        if not self._none_checkbox.isChecked():
+            return None
+        else:
+            return float(self.__spin_box.value())
+
 
 @attrs.frozen(kw_only=True, slots=False)
 class CheckboxParameterWidgetFactory(ParameterWidgetFactory):
@@ -431,6 +460,9 @@ class CheckboxParameterWidget(ParameterWidget):
         with QtCore.QSignalBlocker(self):
             self.__checkbox.setChecked(bool(param))
 
+    def get_parameter(self) -> bool:
+        return bool(self.__checkbox.isChecked())
+
 
 @attrs.frozen(kw_only=True, slots=False)
 class ComboboxParameterWidgetFactory(ParameterWidgetFactory, Generic[T]):
@@ -462,6 +494,9 @@ class ComboboxParameterWidget(ParameterWidget, Generic[T]):
             if index == -1:
                 raise ValueError(f"Data item {param} could not be found in {self}.")
             self._combobox.setCurrentIndex(index)
+
+    def get_parameter(self) -> T:
+        return cast(T, self._combobox.currentData())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -570,6 +605,12 @@ class OptionalEnumParameterWidget(OptionalParameterWidget):
             self._combobox.setEnabled(True)
         else:
             self._combobox.setEnabled(False)
+
+    def get_parameter(self) -> Optional[Enum]:
+        if not self._none_checkbox.isChecked():
+            return None
+        else:
+            return cast(Enum, self._combobox.currentData())
 
     def set_enum_parameter(self, param: Any) -> None:
         with QtCore.QSignalBlocker(self):
