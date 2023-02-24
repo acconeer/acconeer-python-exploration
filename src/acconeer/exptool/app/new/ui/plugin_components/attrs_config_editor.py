@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Generic, Mapping, Optional, TypeVar
+from typing import Any, Generic, Mapping, Optional, TypeVar, Union, cast
 
 import attrs
 
@@ -14,12 +14,37 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
-from .pidgets import ParameterWidget
-from .types import PidgetFactoryMapping
+from .pidgets import FlatPidgetGroup, ParameterWidget, PidgetGroup
+from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import VerticalGroupBox
 
 
 T = TypeVar("T")
+
+
+def _to_group_factory_mapping(
+    factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping]
+) -> PidgetGroupFactoryMapping:
+    if factory_mapping == {}:
+        return {}
+
+    (first_key, *_) = factory_mapping
+
+    # The casts boils down to "non-transferable" type narrowing
+    # of a Mapping (typically a dict) given its keys.
+    #   In this function, we want to do type narrowing of the parameter type
+    # (rewritten as dict[Union[str, PidgetGroup], ...]). The key will have type
+    # Union[str, PidgetGroup], which can be narrowed to str or PidgetGroup.
+    # This type narrowing is not transferred to the original dict, requiring a cast.
+    if isinstance(first_key, PidgetGroup):
+        return cast(PidgetGroupFactoryMapping, factory_mapping)
+
+    if isinstance(first_key, str):
+        return {FlatPidgetGroup(): cast(PidgetFactoryMapping, factory_mapping)}
+
+    raise RuntimeError(
+        "factory_mapping was neither a PidgetFactoryMappingi nor a PidgetGroupFactoryMapping"
+    )
 
 
 class AttrsConfigEditor(QWidget, Generic[T]):
@@ -28,7 +53,10 @@ class AttrsConfigEditor(QWidget, Generic[T]):
     sig_update = Signal(object)
 
     def __init__(
-        self, title: str, factory_mapping: PidgetFactoryMapping, parent: Optional[QWidget] = None
+        self,
+        title: str,
+        factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent=parent)
         self._config = None
@@ -40,12 +68,15 @@ class AttrsConfigEditor(QWidget, Generic[T]):
 
         self._pidget_mapping: Mapping[str, ParameterWidget] = {}
 
-        for aspect, factory in factory_mapping.items():
-            pidget = factory.create(group_box)
-            pidget.sig_parameter_changed.connect(partial(self._update_config_aspect, aspect))
-            group_box.layout().addWidget(pidget)
+        for pidget_group, factory_mapping in _to_group_factory_mapping(factory_mapping).items():
+            pidgets = []
+            for aspect, factory in factory_mapping.items():
+                pidget = factory.create(group_box)
+                pidget.sig_parameter_changed.connect(partial(self._update_config_aspect, aspect))
+                self._pidget_mapping[aspect] = pidget
+                pidgets.append(pidget)
 
-            self._pidget_mapping[aspect] = pidget
+            group_box.layout().addWidget(pidget_group.get_container(pidgets))
 
     def handle_validation_results(
         self, results: list[a121.ValidationResult]

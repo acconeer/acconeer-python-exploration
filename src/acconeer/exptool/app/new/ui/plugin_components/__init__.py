@@ -10,5 +10,5 @@ from .perf_calc_view import ExtendedPerfCalcView, PerfCalcView, SmartPerfCalcVie
 from .sensor_config_editor import SensorConfigEditor
 from .session_config_editor import SessionConfigEditor
 from .two_sensor_ids_editor import TwoSensorIdsEditor
-from .types import PidgetFactoryMapping
+from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import GridGroupBox, HorizontalGroupBox, VerticalGroupBox

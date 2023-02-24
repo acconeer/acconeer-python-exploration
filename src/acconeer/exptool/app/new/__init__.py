@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from ._enums import (
@@ -29,6 +29,7 @@ from .ui import (
     HorizontalGroupBox,
     MiscErrorView,
     PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     SessionConfigEditor,
     SmartMetadataView,
     SmartPerfCalcView,

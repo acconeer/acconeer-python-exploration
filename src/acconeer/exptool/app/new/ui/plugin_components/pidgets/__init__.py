@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
+from .pidget_groups import CollapsiblePidgetGroup, FlatPidgetGroup, PidgetGroup
 from .pidgets import (
     CheckboxParameterWidget,
     CheckboxParameterWidgetFactory,
