@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Generic, Mapping, Optional, TypeVar, Union, cast
+from typing import Any, Generic, Optional, Sequence, TypeVar, Union, cast
 
 import attrs
 
@@ -14,7 +14,13 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
-from .pidgets import FlatPidgetGroup, ParameterWidget, PidgetGroup
+from .pidgets import (
+    FlatPidgetGroup,
+    ParameterWidget,
+    ParameterWidgetHook,
+    PidgetGroup,
+    PidgetGroupHook,
+)
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import VerticalGroupBox
 
@@ -66,17 +72,27 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         group_box = VerticalGroupBox(title, parent=self)
         self.layout().addWidget(group_box)
 
-        self._pidget_mapping: Mapping[str, ParameterWidget] = {}
+        self._pidget_mapping: dict[str, ParameterWidget] = {}
+        self._pidget_hooks: dict[str, Sequence[ParameterWidgetHook]] = {}
+        self._group_widgets: list[QWidget] = []
+        self._group_hooks: list[Sequence[PidgetGroupHook]] = []
 
         for pidget_group, factory_mapping in _to_group_factory_mapping(factory_mapping).items():
             pidgets = []
             for aspect, factory in factory_mapping.items():
                 pidget = factory.create(group_box)
                 pidget.sig_parameter_changed.connect(partial(self._update_config_aspect, aspect))
+
                 self._pidget_mapping[aspect] = pidget
+                self._pidget_hooks[aspect] = factory.hooks
+
                 pidgets.append(pidget)
 
-            group_box.layout().addWidget(pidget_group.get_container(pidgets))
+            group_widget = pidget_group.get_container(pidgets)
+            group_box.layout().addWidget(group_widget)
+
+            self._group_widgets.append(group_widget)
+            self._group_hooks.append(pidget_group.hooks)
 
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
@@ -94,9 +110,20 @@ class AttrsConfigEditor(QWidget, Generic[T]):
 
     def set_data(self, config: Optional[T]) -> None:
         self._config = config
+        self._run_pidget_hooks()
+
+    def _run_pidget_hooks(self) -> None:
+        for aspect, hooks in self._pidget_hooks.items():
+            for hook in hooks:
+                hook(self._pidget_mapping[aspect], self._pidget_mapping)
+
+        for group_widget, hooks in zip(self._group_widgets, self._group_hooks):
+            for hook in hooks:
+                hook(group_widget, self._pidget_mapping)
 
     def sync(self) -> None:
         self._update_pidgets()
+        self._run_pidget_hooks()
 
     def setEnabled(self, enabled: bool) -> None:
         super().setEnabled(enabled and self._config is not None)

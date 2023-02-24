@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 from enum import Enum
-from typing import Any, Generic, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, Callable, Generic, Mapping, Optional, Sequence, Tuple, Type, TypeVar, cast
 
 import attrs
 import numpy as np
@@ -34,6 +34,7 @@ def widget_wrap_layout(layout: QLayout) -> QWidget:
     return dummy
 
 
+ParameterWidgetHook = Callable[["ParameterWidget", Mapping[str, "ParameterWidget"]], None]
 T = TypeVar("T")
 EnumT = TypeVar("EnumT", bound=Enum)
 
@@ -43,6 +44,7 @@ class ParameterWidgetFactory(abc.ABC):
     name_label_text: str
     name_label_tooltip: Optional[str] = None
     note_label_text: Optional[str] = None
+    hooks: Sequence[ParameterWidgetHook] = attrs.field(factory=tuple)
 
     @abc.abstractmethod
     def create(self, parent: QWidget) -> ParameterWidget:

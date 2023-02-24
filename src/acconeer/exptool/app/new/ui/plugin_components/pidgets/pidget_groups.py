@@ -15,12 +15,18 @@ from acconeer.exptool.app.new.ui.plugin_components.collapsible_widget import Col
 from .pidgets import ParameterWidget
 
 
+PidgetGroupHook = t.Callable[[QWidget, t.Mapping[str, ParameterWidget]], None]
+
+
 @attrs.frozen(kw_only=True, slots=False)
 class PidgetGroup(abc.ABC):
     """The base pidget group."""
 
     _instance_id: uuid.UUID = attrs.field(factory=uuid.uuid4, init=False)
     """Unique ID for each instance. Enables using otherwise equal instances as hash keys"""
+
+    hooks: t.Sequence[PidgetGroupHook] = attrs.field(factory=tuple)
+    """Sequence of hooks for this instance"""
 
     @abc.abstractmethod
     def get_container(self, pidgets: t.Iterable[ParameterWidget]) -> QWidget:
