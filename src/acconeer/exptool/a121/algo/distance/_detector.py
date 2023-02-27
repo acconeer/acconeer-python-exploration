@@ -143,7 +143,7 @@ class SingleSensorContext(AlgoBase):
             elif isinstance(v, a121.SensorCalibration):
                 sensor_calibration_group = group.create_group("sensor_calibration")
                 v.to_h5(sensor_calibration_group)
-            elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
+            elif isinstance(v, (np.ndarray, float, int, np.int64)):
                 group.create_dataset(k, data=v, track_times=False)
             else:
                 raise RuntimeError(
@@ -265,6 +265,8 @@ class SingleSensorContext(AlgoBase):
                 context_dict["extra_context"][
                     "recorded_threshold_frames"
                 ] = recorded_threshold_frames
+
+        context_dict["extra_context"] = SingleSensorExtraContext(**context_dict["extra_context"])
 
         return SingleSensorContext(**context_dict)
 
