@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from typing import Mapping
 
-from .pidgets import ParameterWidgetFactory, PidgetGroup
+from .pidgets import PidgetFactory, PidgetGroup
 
 
-PidgetFactoryMapping = Mapping[str, ParameterWidgetFactory]
+PidgetFactoryMapping = Mapping[str, PidgetFactory]
 PidgetGroupFactoryMapping = Mapping[PidgetGroup, PidgetFactoryMapping]

@@ -14,13 +14,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
-from .pidgets import (
-    FlatPidgetGroup,
-    ParameterWidget,
-    ParameterWidgetHook,
-    PidgetGroup,
-    PidgetGroupHook,
-)
+from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetGroupHook, PidgetHook
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import VerticalGroupBox
 
@@ -72,8 +66,8 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         group_box = VerticalGroupBox(title, parent=self)
         self.layout().addWidget(group_box)
 
-        self._pidget_mapping: dict[str, ParameterWidget] = {}
-        self._pidget_hooks: dict[str, Sequence[ParameterWidgetHook]] = {}
+        self._pidget_mapping: dict[str, Pidget] = {}
+        self._pidget_hooks: dict[str, Sequence[PidgetHook]] = {}
         self._group_widgets: list[QWidget] = []
         self._group_hooks: list[Sequence[PidgetGroupHook]] = []
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -19,10 +19,10 @@ class TwoSensorIdsEditor(QWidget):
     def __init__(self, name_label_texts: list[str]):
         super().__init__()
 
-        self._sensor_id_pidget_1 = pidgets.SensorIdParameterWidgetFactory(
+        self._sensor_id_pidget_1 = pidgets.SensorIdPidgetFactory(
             name_label_text=name_label_texts[0], items=[]
         ).create(self)
-        self._sensor_id_pidget_2 = pidgets.SensorIdParameterWidgetFactory(
+        self._sensor_id_pidget_2 = pidgets.SensorIdPidgetFactory(
             name_label_text=name_label_texts[1], items=[]
         ).create(self)
 

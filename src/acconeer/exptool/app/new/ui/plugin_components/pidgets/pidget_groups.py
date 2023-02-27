@@ -12,10 +12,10 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool.app.new.ui.plugin_components.collapsible_widget import CollapsibleWidget
 
-from .pidgets import ParameterWidget
+from .pidgets import Pidget
 
 
-PidgetGroupHook = t.Callable[[QWidget, t.Mapping[str, ParameterWidget]], None]
+PidgetGroupHook = t.Callable[[QWidget, t.Mapping[str, Pidget]], None]
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -29,7 +29,7 @@ class PidgetGroup(abc.ABC):
     """Sequence of hooks for this instance"""
 
     @abc.abstractmethod
-    def get_container(self, pidgets: t.Iterable[ParameterWidget]) -> QWidget:
+    def get_container(self, pidgets: t.Iterable[Pidget]) -> QWidget:
         """Wraps given pidgets in a container that is specified in each subclass"""
 
 
@@ -37,7 +37,7 @@ class PidgetGroup(abc.ABC):
 class FlatPidgetGroup(PidgetGroup):
     """A pidget group that only groups widgets hierarchically, not visually"""
 
-    def get_container(self, pidgets: t.Iterable[ParameterWidget]) -> QWidget:
+    def get_container(self, pidgets: t.Iterable[Pidget]) -> QWidget:
         return _in_a_vboxed_widget(pidgets)
 
 
@@ -48,7 +48,7 @@ class CollapsiblePidgetGroup(PidgetGroup):
     label: str
     collapsed: bool
 
-    def get_container(self, pidgets: t.Iterable[ParameterWidget]) -> QWidget:
+    def get_container(self, pidgets: t.Iterable[Pidget]) -> QWidget:
         w = CollapsibleWidget(self.label, _in_a_vboxed_widget(pidgets))
         w.set_collapsed(self.collapsed)
         return w

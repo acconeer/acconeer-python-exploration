@@ -77,7 +77,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "amplitude_method": pidgets.EnumParameterWidgetFactory(
+            "amplitude_method": pidgets.EnumPidgetFactory(
                 enum_type=AmplitudeMethod,
                 name_label_text="Amplitude method:",
                 name_label_tooltip=(

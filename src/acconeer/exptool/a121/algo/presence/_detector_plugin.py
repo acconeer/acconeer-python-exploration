@@ -445,7 +445,7 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
-        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
@@ -466,17 +466,17 @@ class ViewPlugin(DetectorViewPluginBase):
     @classmethod
     def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "start_m": pidgets.FloatParameterWidgetFactory(
+            "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range start",
                 suffix=" m",
                 decimals=3,
             ),
-            "end_m": pidgets.FloatParameterWidgetFactory(
+            "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range end",
                 suffix=" m",
                 decimals=3,
             ),
-            "profile": pidgets.OptionalEnumParameterWidgetFactory(
+            "profile": pidgets.OptionalEnumPidgetFactory(
                 name_label_text="Profile",
                 checkbox_label_text="Override",
                 enum_type=a121.Profile,
@@ -488,27 +488,27 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.Profile.PROFILE_5: "5 (longest)",
                 },
             ),
-            "step_length": pidgets.OptionalIntParameterWidgetFactory(
+            "step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Step length",
                 checkbox_label_text="Override",
                 limits=(1, None),
                 init_set_value=24,
             ),
-            "frame_rate": pidgets.FloatParameterWidgetFactory(
+            "frame_rate": pidgets.FloatPidgetFactory(
                 name_label_text="Frame rate",
                 suffix=" Hz",
                 decimals=1,
                 limits=(1, 100),
             ),
-            "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
+            "sweeps_per_frame": pidgets.IntPidgetFactory(
                 name_label_text="Sweeps per frame",
                 limits=(1, 4095),
             ),
-            "hwaas": pidgets.IntParameterWidgetFactory(
+            "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="HWAAS",
                 limits=(1, 511),
             ),
-            "inter_frame_idle_state": pidgets.EnumParameterWidgetFactory(
+            "inter_frame_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
                 name_label_text="Inter frame idle state",
                 label_mapping={
@@ -517,67 +517,67 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.IdleState.READY: "Ready",
                 },
             ),
-            "intra_enable": pidgets.CheckboxParameterWidgetFactory(
+            "intra_enable": pidgets.CheckboxPidgetFactory(
                 name_label_text="Enable fast motion detection"
             ),
-            "intra_detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
+            "intra_detection_threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra detection threshold",
                 decimals=2,
                 limits=(0, 5),
             ),
-            "intra_frame_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "intra_frame_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0, 1),
             ),
-            "intra_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "intra_output_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra output time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_enable": pidgets.CheckboxParameterWidgetFactory(
+            "inter_enable": pidgets.CheckboxPidgetFactory(
                 name_label_text="Enable slow motion detection"
             ),
-            "inter_phase_boost": pidgets.CheckboxParameterWidgetFactory(
+            "inter_phase_boost": pidgets.CheckboxPidgetFactory(
                 name_label_text="Enable phase boost"
             ),
-            "inter_detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_detection_threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter detection threshold",
                 decimals=2,
                 limits=(0, 5),
             ),
-            "inter_frame_fast_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_fast_cutoff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter fast cutoff freq.",
                 suffix=" Hz",
                 decimals=2,
                 limits=(1, 50),
                 log_scale=True,
             ),
-            "inter_frame_slow_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_slow_cutoff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter slow cutoff freq.",
                 suffix=" Hz",
                 decimals=2,
                 limits=(0.01, 1),
                 log_scale=True,
             ),
-            "inter_frame_deviation_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_deviation_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_output_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter output time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_frame_presence_timeout": pidgets.OptionalIntParameterWidgetFactory(
+            "inter_frame_presence_timeout": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Presence timeout",
                 checkbox_label_text="Enable",
                 suffix=" s",

@@ -28,7 +28,7 @@ class SensorConfigEditor(QWidget):
     _sensor_config: Optional[a121.SensorConfig]
     _subsweep_config_editors: list[SubsweepConfigEditor]
 
-    _all_pidgets: list[pidgets.ParameterWidget]
+    _all_pidgets: list[pidgets.Pidget]
 
     _read_only: bool
     _supports_multiple_subsweeps: bool
@@ -40,14 +40,14 @@ class SensorConfigEditor(QWidget):
         a121.IdleState.DEEP_SLEEP: "Deep sleep",
     }
     SENSOR_CONFIG_FACTORIES: PidgetFactoryMapping = {
-        "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
+        "sweeps_per_frame": pidgets.IntPidgetFactory(
             name_label_text="Sweeps per frame:",
             name_label_tooltip=(
                 "The number of sweeps that will be captured in each frame (measurement)."
             ),
             limits=(1, 4095),
         ),
-        "sweep_rate": pidgets.OptionalFloatParameterWidgetFactory(
+        "sweep_rate": pidgets.OptionalFloatPidgetFactory(
             name_label_text="Sweep rate:",
             name_label_tooltip=(
                 "The sweep rate for sweeps in a frame (measurement).\n"
@@ -59,7 +59,7 @@ class SensorConfigEditor(QWidget):
             suffix="Hz",
             checkbox_label_text="Limit",
         ),
-        "frame_rate": pidgets.OptionalFloatParameterWidgetFactory(
+        "frame_rate": pidgets.OptionalFloatPidgetFactory(
             name_label_text="Frame rate:",
             name_label_tooltip=(
                 "Frame rate.\nIf 'Limit' is unchecked, the rate is not limited by the sensor "
@@ -71,7 +71,7 @@ class SensorConfigEditor(QWidget):
             suffix="Hz",
             checkbox_label_text="Limit",
         ),
-        "inter_sweep_idle_state": pidgets.EnumParameterWidgetFactory(
+        "inter_sweep_idle_state": pidgets.EnumPidgetFactory(
             enum_type=a121.IdleState,
             name_label_text="Inter sweep idle state:",
             name_label_tooltip=(
@@ -80,7 +80,7 @@ class SensorConfigEditor(QWidget):
             ),
             label_mapping=IDLE_STATE_LABEL_MAP,
         ),
-        "inter_frame_idle_state": pidgets.EnumParameterWidgetFactory(
+        "inter_frame_idle_state": pidgets.EnumPidgetFactory(
             enum_type=a121.IdleState,
             name_label_text="Inter frame idle state:",
             name_label_tooltip=(
@@ -88,7 +88,7 @@ class SensorConfigEditor(QWidget):
             ),
             label_mapping=IDLE_STATE_LABEL_MAP,
         ),
-        "continuous_sweep_mode": pidgets.CheckboxParameterWidgetFactory(
+        "continuous_sweep_mode": pidgets.CheckboxPidgetFactory(
             name_label_text="Continuous sweep mode",
             name_label_tooltip=(
                 "<p>With CSM, the sensor timing is set up to generate a continuous "
@@ -116,7 +116,7 @@ class SensorConfigEditor(QWidget):
                 "allow high rates without delays.</p>"
             ),
         ),
-        "double_buffering": pidgets.CheckboxParameterWidgetFactory(
+        "double_buffering": pidgets.CheckboxPidgetFactory(
             name_label_text="Double buffering",
             name_label_tooltip=(
                 "Double buffering will split the sensor buffer in two halves. "
@@ -146,7 +146,7 @@ class SensorConfigEditor(QWidget):
         self.sensor_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.sensor_group_box)
 
-        self._sensor_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
+        self._sensor_config_pidgets: Mapping[str, pidgets.Pidget] = {}
         for aspect, factory in self.SENSOR_CONFIG_FACTORIES.items():
             pidget = factory.create(self.sensor_group_box)
             self.sensor_group_box.layout().addWidget(pidget)

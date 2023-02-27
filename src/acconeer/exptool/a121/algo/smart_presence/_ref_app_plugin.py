@@ -438,7 +438,7 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
-        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
@@ -456,7 +456,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.plot_config_editor = AttrsConfigEditor[PlotConfig](
             title="Plot parameters",
             factory_mapping={
-                "show_all_detected_zones": pidgets.CheckboxParameterWidgetFactory(
+                "show_all_detected_zones": pidgets.CheckboxPidgetFactory(
                     name_label_text="Show all detected zones",
                 )
             },
@@ -473,7 +473,7 @@ class ViewPlugin(DetectorViewPluginBase):
         presence_pidget_mapping = dict(PresenceViewPlugin._get_pidget_mapping())
         presence_pidget_mapping.update(
             {
-                "num_zones": pidgets.IntParameterWidgetFactory(
+                "num_zones": pidgets.IntPidgetFactory(
                     name_label_text="Number of zones",
                     limits=(1, None),
                 ),

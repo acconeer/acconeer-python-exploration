@@ -14,20 +14,20 @@ The definitions of these hooks are placed in ``pidget_groups.py`` and
 
 .. code-block:: python
     PidgetGroupHook = t.Callable[
-        ["PidgetGroup", t.Mapping[str, ParameterWidget]], None
+        ["PidgetGroup", t.Mapping[str, Pidget]], None
     ]
-    ParameterWidgetHook = Callable[
-        ["ParameterWidget", Mapping[str, "ParameterWidget"]], None
+    PidgetHook = Callable[
+        ["Pidget", Mapping[str, "Pidget"]], None
     ]
 
 A ``PidgetGroupHook`` is a function that accepts a
-``PidgetGroup`` instance and a ``Mapping[str, ParameterWidget]`` and returns nothing.
+``PidgetGroup`` instance and a ``Mapping[str, Pidget]`` and returns nothing.
 
 The first argument of a ``PidgetGroupHook`` (the ``PidgetGroup`` instance)
 will be the instance the hook is assigned to:
 
 .. code-block:: python
-    def my_hook(pg: PidgetGroup, mapping: Mapping[str, ParameterWidget]) -> None:
+    def my_hook(pg: PidgetGroup, mapping: Mapping[str, Pidget]) -> None:
         print(pg)  # pg will be the "a" variable below
 
     a = PidgetGroup(
@@ -38,24 +38,24 @@ The second argument of a ``PidgetGroupHook`` is the ``PidgetMapping`` kept
 internally in ``AttrsConfigEditor``;
 
 .. code-block:: python
-    def my_hook(pg: PidgetGroup, mapping: Mapping[str, ParameterWidget]) -> None:
+    def my_hook(pg: PidgetGroup, mapping: Mapping[str, Pidget]) -> None:
         print(mapping)
         # mapping will be:
         # {
         #     # Note: these are the actual pidgets!
-        #     "int_parameter": IntParameterWidget()
-        #     "float_parameter": FloatParameterWidget()
+        #     "int_parameter": IntPidget()
+        #     "float_parameter": FloatPidget()
         # }
         #
 
     mapping: PidgetGroupFactoryMapping = {
         PidgetGroup(hooks=(my_hook,)): {
-            "int_parameter": IntParameterWidgetFactory(...),
-            "float_parameter": FloatParameterWidgetFactory(...),
+            "int_parameter": IntPidgetFactory(...),
+            "float_parameter": FloatPidgetFactory(...),
         }
     }
 
-P.S. The functionality is analogous in ``ParameterWidgetHook``!
+P.S. The functionality is analogous in ``PidgetHook``!
 
 
 This means that the hook has access to any pidget in a ``AttrsConfigEditor``,
@@ -68,11 +68,11 @@ import typing as t
 from PySide6.QtWidgets import QWidget
 
 from .pidget_groups import PidgetGroupHook
-from .pidgets import ParameterWidget, ParameterWidgetHook
+from .pidgets import Pidget, PidgetHook
 
 
-PidgetMapping = t.Mapping[str, ParameterWidget]
-GeneralHook = t.Union[ParameterWidgetHook, PidgetGroupHook]
+PidgetMapping = t.Mapping[str, Pidget]
+GeneralHook = t.Union[PidgetHook, PidgetGroupHook]
 
 PidgetMappingPredicate = t.Callable[[PidgetMapping], bool]
 
