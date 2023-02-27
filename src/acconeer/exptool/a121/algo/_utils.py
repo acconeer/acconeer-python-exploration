@@ -36,7 +36,7 @@ MAX_MEASURABLE_DIST_M = {
     a121.PRF.PRF_13_0_MHz: 7.0,
     a121.PRF.PRF_8_7_MHz: 12.7,
     a121.PRF.PRF_6_5_MHz: 18.5,
-    a121.PRF.PRF_5_2_MHz: 28.8,
+    a121.PRF.PRF_5_2_MHz: 24.3,
 }
 # Slope and interception of linear noise temperature model.
 NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
