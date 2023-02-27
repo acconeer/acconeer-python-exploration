@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -327,7 +327,7 @@ class AppModel(QObject):
             kwargs,
             plugin=True,
             on_ok=on_ok,
-            on_error=on_error,
+            on_error=on_error or self.emit_error,
         )
 
     def _handle_backend_closed_task(self, closed_task: ClosedTask) -> None:
