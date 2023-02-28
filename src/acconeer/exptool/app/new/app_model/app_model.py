@@ -417,7 +417,11 @@ class AppModel(QObject):
 
     def _update_saveable_file(self, path: Optional[Path]) -> None:
         if self.saveable_file is not None:
-            self.saveable_file.unlink(missing_ok=True)
+            try:
+                self.saveable_file.unlink()
+            except FileNotFoundError:
+                # If the file we want to remove does not exist, that is fine.
+                pass
 
         self.saveable_file = path
         self.broadcast()
