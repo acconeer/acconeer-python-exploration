@@ -71,49 +71,55 @@ try {
         }
     }
 
-    isolatedTestPythonVersions.each { pythonVersion ->
-        parallel_steps["Isolated tests (${pythonVersion})"] = {
-            node('docker') {
-                ws('workspace/exptool') {
-                    stage("Isolated tests (${pythonVersion})") {
-                        printNodeInfo()
-                        checkoutAndCleanup(lfs: false)
+    parallel_steps["Isolated tests (${isolatedTestPythonVersions})"] = {
+        node('docker') {
+            ws('workspace/exptool') {
+                stage("Isolated tests (${isolatedTestPythonVersions})") {
+                    printNodeInfo()
+                    checkoutAndCleanup(lfs: false)
 
-                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            sh "python${pythonVersion} -V"
-                            sh "nox -s \"test(python=\'${pythonVersion}\')\" -- --test-groups unit integration"
-                        }
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                        isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
+                        List<String> doitTasks = isolatedTestPythonVersions
+                                                    .collect { v -> "test:${v}" }
+
+                        sh "doit -f dodo.py -n ${doitTasks.size()} " + doitTasks.join(' ')
                     }
                 }
             }
         }
     }
 
-    integrationTestPythonVersions.each { pythonVersion ->
-        parallel_steps["Mock test (${pythonVersion})"] = {
-            node('docker') {
-                ws('workspace/exptool') {
-                    stage('Setup') {
-                        printNodeInfo()
-                        checkoutAndCleanup(lfs: false)
+    parallel_steps["Mock test (${integrationTestPythonVersions})"] = {
+        node('docker') {
+            ws('workspace/exptool') {
+                stage('Setup') {
+                    printNodeInfo()
+                    checkoutAndCleanup(lfs: false)
 
-                        findBuildAndCopyArtifacts(
-                            projectName: 'sw-main',
-                            revision: "master",
-                            artifactNames: [
-                                "out/internal_stash_binaries_sanitizer_a111.tgz",
-                                "out/internal_stash_binaries_sanitizer_a121.tgz"
-                            ]
-                        )
-                        sh 'mkdir stash'
-                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
-                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
-                    }
-                    stage('Run integration tests') {
-                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            sh "tests/run-a111-mock-integration-tests.sh ${pythonVersion}"
-                            sh "tests/run-a121-mock-integration-tests.sh ${pythonVersion}"
-                        }
+                    findBuildAndCopyArtifacts(
+                        projectName: 'sw-main',
+                        revision: "master",
+                        artifactNames: [
+                            "out/internal_stash_binaries_sanitizer_a111.tgz",
+                            "out/internal_stash_binaries_sanitizer_a121.tgz"
+                        ]
+                    )
+                    sh 'mkdir stash'
+                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
+                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
+                }
+                stage("Run integration tests (${integrationTestPythonVersions})") {
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                        integrationTestPythonVersions.each { v -> sh "python${v} -V" }
+                        List<String> doitTasksA111 = integrationTestPythonVersions
+                                                        .collect { v -> "integration_test:${v}-a111" }
+                        List<String> doitTasksA121 = integrationTestPythonVersions
+                                                        .collect { v -> "integration_test:${v}-a121" }
+                        // A111 & A121 needs to run sequentially since they use the same python verions
+                        // installing the same package simultaneously on 2 processes is flaky
+                        sh "doit -f dodo.py -n ${doitTasksA111.size()} " + doitTasksA111.join(' ')
+                        sh "doit -f dodo.py -n ${doitTasksA121.size()} " + doitTasksA121.join(' ')
                     }
                 }
             }

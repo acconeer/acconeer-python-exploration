@@ -5,6 +5,7 @@ venv/
 env/
 .tox/
 .nox/
+.doit.db
 
 # build
 dist/
