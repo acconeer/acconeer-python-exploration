@@ -88,6 +88,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.config = RefAppConfig.from_json(file["config"][()])
         self.shared_state.plot_config = PlotConfig.from_json(file["plot_config"][()])
 
+        show_all_detected_zones = self.shared_state.plot_config.show_all_detected_zones
+        self.shared_state.config.show_all_detected_zones = show_all_detected_zones
+
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState()

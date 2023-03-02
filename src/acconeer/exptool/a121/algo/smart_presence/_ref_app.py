@@ -55,6 +55,8 @@ class RefAppConfig(DetectorConfig):
 
     inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
 
+    show_all_detected_zones: bool = attrs.field(default=False)
+
 
 @attrs.frozen(kw_only=True)
 class RefAppResult:
@@ -208,6 +210,6 @@ def _record_algo_data(
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig]:
-    sensor_id = algo_group["ref_app_sensor_id"][()]
+    sensor_id = int(algo_group["ref_app_sensor_id"][()])
     config = RefAppConfig.from_json(algo_group["ref_app_config"][()])
     return sensor_id, config
