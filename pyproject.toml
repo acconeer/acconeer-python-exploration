@@ -75,6 +75,12 @@ skip = [
 profile = "black"
 
 [tool.mypy]
+packages = [
+    "acconeer.exptool.a121",
+    "acconeer.exptool.app.new",
+    "acconeer.exptool.setup",
+    "tests.unit.a121",
+]
 check_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_untyped_decorators = true
