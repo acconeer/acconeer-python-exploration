@@ -15,7 +15,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 BLACK_SPEC = "black==22.12.0"
 ISORT_SPEC = "isort==5.6.3"
-MYPY_SPEC = "mypy==0.991"
+MYPY_SPEC = "mypy==1.0.1"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 PYTEST_SPEC = "pytest==7.2"
