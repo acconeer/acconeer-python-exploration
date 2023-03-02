@@ -104,14 +104,7 @@ def reformat(session):
 
 @nox.session
 def mypy(session):
-    args = Parser().parse_args(session.posargs)
-
-    if args.editable:
-        session.install("-e", ".")
-    else:
-        session.install(".")
-
-    session.install(MYPY_SPEC, PYTEST_SPEC)
+    session.install("-e", ".", MYPY_SPEC, PYTEST_SPEC)
     session.run("python", "-m", "mypy")
 
 
