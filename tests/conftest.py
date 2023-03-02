@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import pytest
@@ -24,6 +24,14 @@ def pytest_addoption(parser):
         dest="socket",
         metavar="socket_args",
         nargs=2,
+    )
+
+    parser.addoption(
+        "--port",
+        dest="port",
+        action="store",
+        default=6110,
+        help="The port Clients should connect to an exploration server on",
     )
 
     parser.addoption(
@@ -75,3 +83,12 @@ def pytest_generate_tests(metafunc):
 @pytest.fixture(scope="session")
 def should_update_outputs(request):
     return request.config.getoption("--update-outputs") is True
+
+
+@pytest.fixture(scope="session")
+def port_from_cli(request):
+    port_argument = request.config.getoption("--port")
+    if port_argument is None:
+        return None
+    port = int(port_argument)
+    return port

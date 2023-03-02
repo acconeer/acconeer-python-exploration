@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import pytest
@@ -11,6 +11,7 @@ from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[impor
 def client_info() -> ClientInfo:
     return ClientInfo(
         ip_address="addr",
+        tcp_port=None,
         serial_port="port",
         usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
         override_baudrate=0,
@@ -22,6 +23,7 @@ def client_info() -> ClientInfo:
 def client_info_dict() -> dict:
     return {
         "ip_address": "addr",
+        "tcp_port": None,
         "serial_port": "port",
         "usb_device": {
             "vid": 0x4CC0,

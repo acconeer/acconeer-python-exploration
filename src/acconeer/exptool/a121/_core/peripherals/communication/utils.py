@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def determine_usb_device(usb_device: Optional[USBDevice]) -> USBDevice:
 def link_factory(client_info: ClientInfo) -> BufferedLink:
 
     if client_info.ip_address is not None:
-        return AdaptedSocketLink(host=client_info.ip_address)
+        return AdaptedSocketLink(host=client_info.ip_address, port=client_info.tcp_port)
 
     if client_info.serial_port is not None:
         link = AdaptedSerialLink(

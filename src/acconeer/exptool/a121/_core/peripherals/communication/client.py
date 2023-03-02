@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ class Client(ClientBase):
     def __init__(
         self,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool, et.utils.USBDevice]] = None,
         mock: Optional[bool] = None,
@@ -60,6 +61,7 @@ class Client(ClientBase):
 
             client_info = ClientInfo(
                 ip_address=ip_address,
+                tcp_port=tcp_port,
                 override_baudrate=override_baudrate,
                 serial_port=serial_port,
                 usb_device=usb_device,
