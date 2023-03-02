@@ -562,18 +562,18 @@ class EnumPidgetFactory(ComboboxPidgetFactory[EnumT]):
 
 
 class EnumPidget(ComboboxPidget[EnumT]):
-    def __init__(self, factory: EnumPidgetFactory, parent: QWidget) -> None:
+    def __init__(self, factory: EnumPidgetFactory[EnumT], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class OptionalEnumPidgetFactory(OptionalPidgetFactory, EnumPidgetFactory):
+class OptionalEnumPidgetFactory(OptionalPidgetFactory, EnumPidgetFactory[EnumT]):
     def create(self, parent: QWidget) -> OptionalEnumPidget:
         return OptionalEnumPidget(self, parent)
 
 
 class OptionalEnumPidget(OptionalPidget):
-    def __init__(self, factory: OptionalEnumPidgetFactory, parent: QWidget) -> None:
+    def __init__(self, factory: OptionalEnumPidgetFactory[EnumT], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self._combobox = _PidgetComboBox(self._body_widget)

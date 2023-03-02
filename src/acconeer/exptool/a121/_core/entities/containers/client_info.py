@@ -25,7 +25,7 @@ class ClientInfo:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> ClientInfo:
+    def from_dict(cls, d: dict[str, Any]) -> ClientInfo:
         if d.get("usb_device") is not None:
             d = d.copy()
             d["usb_device"] = USBDevice.from_dict(d["usb_device"])

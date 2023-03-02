@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 from enum import Enum
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 import attrs
 
@@ -34,7 +34,7 @@ class PluginSpecBase(abc.ABC, PluginSpec):
     @abc.abstractmethod
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
+    ) -> BackendPlugin[Any]:
         pass
 
     @abc.abstractmethod

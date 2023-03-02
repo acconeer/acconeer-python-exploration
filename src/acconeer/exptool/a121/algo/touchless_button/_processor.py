@@ -197,7 +197,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         )
         self._frames_since_last_cal = 0
 
-    def _calc_variance(self, frame: npt.NDArray) -> npt.NDArray:
+    def _calc_variance(self, frame: npt.NDArray[np.complex_]) -> npt.NDArray[np.float_]:
         xn = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
         y = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
 
@@ -223,11 +223,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def _process_single_range(
         self,
-        frame: npt.NDArray,
+        frame: npt.NDArray[np.complex_],
         detection: bool,
         patience: int,
-        detection_depth: npt.NDArray,
-        counts: npt.NDArray,
+        detection_depth: npt.NDArray[np.float_],
+        counts: npt.NDArray[np.int_],
         measurement_type: MeasurementType,
     ) -> bool:
 
@@ -271,9 +271,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def _process_multiple_ranges(
         self,
-        frame: npt.NDArray,
-        detection_depth: npt.NDArray,
-        counts: npt.NDArray,
+        frame: npt.NDArray[np.complex_],
+        detection_depth: npt.NDArray[np.float_],
+        counts: npt.NDArray[np.int_],
     ) -> ProcessorResult:
 
         if detection_depth[counts > 1].size > 0:

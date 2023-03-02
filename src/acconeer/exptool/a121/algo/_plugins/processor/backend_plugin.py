@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ class GenericProcessorBackendPluginBase(
     _recorder: Optional[a121.H5Recorder]
     _started: bool
 
-    PLUGIN_PRESETS: Mapping[int, Callable[[], ProcessorPluginPreset]] = {}
+    PLUGIN_PRESETS: Mapping[int, Callable[[], ProcessorPluginPreset[ProcessorConfigT]]] = {}
 
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str

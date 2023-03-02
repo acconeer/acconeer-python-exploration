@@ -74,7 +74,7 @@ class H5Recorder(Recorder):
     _AUTO_CHUNK_MAX_SIZE = 512
     _AUTO_CHUNK_MAX_TIME = 1.0
 
-    path: Optional[os.PathLike]
+    path: Optional[os.PathLike[Any]]
     """The file path, if a path-like object was given for ``path_or_file``."""
     file: h5py.File
     """The ``h5py.File``."""

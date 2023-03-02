@@ -1,5 +1,8 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
 
 import numpy as np
 import numpy.typing as npt
@@ -33,7 +36,7 @@ def good_context(good_metadata: a121.Metadata) -> ResultContext:
 
 
 @pytest.fixture
-def good_raw_frame() -> npt.NDArray:
+def good_raw_frame() -> npt.NDArray[t.Any]:
     return np.array(
         [
             [(0, 0), (1, -1), (2, -2), (3, -3), (4, -4)],
@@ -45,7 +48,7 @@ def good_raw_frame() -> npt.NDArray:
 
 
 @pytest.fixture
-def good_result(good_context: ResultContext, good_raw_frame: npt.NDArray) -> a121.Result:
+def good_result(good_context: ResultContext, good_raw_frame: npt.NDArray[t.Any]) -> a121.Result:
     return a121.Result(
         data_saturated=False,
         frame_delayed=False,

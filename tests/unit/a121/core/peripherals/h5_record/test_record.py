@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 """
@@ -14,7 +14,7 @@ round-trip through:
 """
 from __future__ import annotations
 
-from typing import Iterator
+from typing import Any, Iterator
 
 import numpy as np
 import numpy.typing as npt
@@ -58,7 +58,7 @@ def test_data_layout(ref_record: a121.H5Record, ref_structure: Iterator[Iterator
 
 
 def test_extended_results(
-    ref_record: a121.Record, ref_frame_raw: npt.NDArray, ref_frame: npt.NDArray[np.complex_]
+    ref_record: a121.Record, ref_frame_raw: npt.NDArray[Any], ref_frame: npt.NDArray[np.complex_]
 ) -> None:
     for measurement in ref_record.extended_results:
         for group in measurement:

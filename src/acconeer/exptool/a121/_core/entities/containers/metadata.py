@@ -22,8 +22,8 @@ class Metadata:
 
     _frame_data_length: int = attrs.field()
     _sweep_data_length: int = attrs.field()
-    _subsweep_data_offset: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
-    _subsweep_data_length: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
+    _subsweep_data_offset: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
+    _subsweep_data_length: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
     _calibration_temperature: int = attrs.field()
     _tick_period: int = attrs.field()
     _base_step_length_m: float = attrs.field()
@@ -41,12 +41,12 @@ class Metadata:
         return self._sweep_data_length
 
     @property
-    def subsweep_data_offset(self) -> npt.NDArray:
+    def subsweep_data_offset(self) -> npt.NDArray[np.int_]:
         """Offset to the subsweeps data"""
         return self._subsweep_data_offset
 
     @property
-    def subsweep_data_length(self) -> npt.NDArray:
+    def subsweep_data_length(self) -> npt.NDArray[np.int_]:
         """Number of elements in the subsweeps"""
         return self._subsweep_data_length
 
@@ -101,7 +101,7 @@ class Metadata:
         return {k[1:] if k.startswith("_") else k: v for k, v in raw_dict.items()}
 
     @classmethod
-    def from_dict(cls, d: dict) -> Metadata:
+    def from_dict(cls, d: dict[str, Any]) -> Metadata:
         return cls(**d)
 
     def to_json(self) -> str:

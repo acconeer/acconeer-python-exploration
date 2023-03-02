@@ -223,7 +223,9 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         return plot, im
 
 
-class PluginSpec(ProcessorPluginSpec):
+class PluginSpec(
+    ProcessorPluginSpec[a121.Result, ProcessorConfig, ProcessorResult, a121.Metadata]
+):
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
     ) -> BackendPlugin:

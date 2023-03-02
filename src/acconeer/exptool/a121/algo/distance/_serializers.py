@@ -53,14 +53,14 @@ class PhonySeries(t.Generic[T]):
         else:
             return copy.copy(self._prototype)
 
-    def __iter__(self) -> PhonySeries:
+    def __iter__(self) -> PhonySeries[T]:
         return self
 
 
 def _stack_optional_arraylike(
-    sequence: t.Sequence[t.Optional[t.Union[t.List, npt.NDArray]]],
+    sequence: t.Sequence[t.Optional[t.Union[t.List[t.Any], npt.NDArray[t.Any]]]],
     dtype: t.Union[t.Type[float], t.Type[complex]] = float,
-) -> npt.NDArray:
+) -> npt.NDArray[t.Any]:
     """
     Tries to create an NDArray from a sequence of Optional ArrayLikes, i.e.
     a sequence that looks something like
@@ -239,7 +239,9 @@ class ProcessorResultListH5Serializer:
         return replacement if np.isnan(x).all() else x
 
     @staticmethod
-    def _direct_leakage_deserialize(x: t.Optional[npt.NDArray]) -> t.Optional[npt.NDArray]:
+    def _direct_leakage_deserialize(
+        x: t.Optional[npt.NDArray[t.Any]],
+    ) -> t.Optional[npt.NDArray[t.Any]]:
         if x is None:
             return None
         elif (x == np.array(-(2**15), dtype=INT_16_COMPLEX)).all():
@@ -344,7 +346,7 @@ class DetectorResultListH5Serializer:
             )
 
         if "rcs" in self.fields:
-            data: t.Dict[int, t.List[t.Optional[npt.NDArray]]] = {}
+            data: t.Dict[int, t.List[t.Optional[npt.NDArray[t.Any]]]] = {}
             for res in results:
                 for sensor_id, detector_result in res.items():
                     if sensor_id not in data:

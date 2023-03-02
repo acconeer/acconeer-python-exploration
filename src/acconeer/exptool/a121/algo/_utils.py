@@ -58,7 +58,7 @@ def get_distances_m(
 
 def get_approx_fft_vels(
     metadata: a121.Metadata, config: a121.SensorConfig
-) -> Tuple[npt.NDArray, float]:
+) -> Tuple[npt.NDArray[np.float_], float]:
     if config.sweep_rate is not None:
         sweep_rate = config.sweep_rate
     else:

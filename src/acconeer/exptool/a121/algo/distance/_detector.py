@@ -1030,7 +1030,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         ]
         transition_profiles.append(config.max_profile)
 
-        transition_subgroup_plans: list = []
+        transition_subgroup_plans: list[SubsweepGroupPlan] = []
 
         for i in range(len(transition_profiles) - 1):
             profile = transition_profiles[i]
@@ -1404,7 +1404,7 @@ def _load_algo_data(
     return sensor_id, config, context
 
 
-def _get_group_items(group: h5py.Group) -> list[npt.NDArray]:
+def _get_group_items(group: h5py.Group) -> list[npt.NDArray[Any]]:
     group_items = []
 
     i = 0

@@ -190,7 +190,7 @@ class SubsweepConfig:
         self._step_length = value
 
     @_step_length.validator
-    def _(self, _: attrs.Attribute, step_length: int) -> None:
+    def _(self, _: t.Any, step_length: int) -> None:
         if not (
             is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
         ):
@@ -333,7 +333,7 @@ class SubsweepConfig:
         return {k.strip("_"): v for k, v in attrs.asdict(self).items()}
 
     @classmethod
-    def from_dict(cls, d: dict) -> SubsweepConfig:
+    def from_dict(cls, d: dict[str, t.Any]) -> SubsweepConfig:
         return SubsweepConfig(**d)
 
     def to_json(self) -> str:

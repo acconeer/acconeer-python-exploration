@@ -10,7 +10,6 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
-from attr import Attribute
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import Result
@@ -121,7 +120,7 @@ class DetectorConfig(AlgoConfigBase):
     """
 
     @step_length.validator
-    def _validate_step_length(self, attrs: Attribute, step_length: int) -> None:
+    def _validate_step_length(self, _: Any, step_length: int) -> None:
         if step_length is not None:
             if not (
                 is_divisor_of(SPARSE_IQ_PPC, step_length)

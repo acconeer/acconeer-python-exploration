@@ -599,7 +599,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         window_length: int,
         guard_half_length: int,
         num_stds: float,
-        abs_noise_std: npt.NDArray,
+        abs_noise_std: npt.NDArray[np.float_],
     ) -> npt.NDArray[np.float_]:
         """Calculate CFAR threshold.
 

@@ -157,8 +157,8 @@ class MockClient(CommonClient):
     @classmethod
     def _sensor_config_to_frame(
         cls, sensor_id: int, sensor_config: SensorConfig, metadata: Metadata
-    ) -> npt.NDArray:
-        frame: npt.NDArray = np.ndarray(
+    ) -> npt.NDArray[Any]:
+        frame: npt.NDArray[Any] = np.ndarray(
             shape=(sensor_config._sweeps_per_frame, metadata.sweep_data_length),
             dtype=INT_16_COMPLEX,
         )

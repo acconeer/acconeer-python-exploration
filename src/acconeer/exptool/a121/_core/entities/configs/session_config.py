@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -224,7 +224,7 @@ class SessionConfig:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> SessionConfig:
+    def from_dict(cls, d: dict[str, Any]) -> SessionConfig:
         d = d.copy()
         d["arg"] = []
         groups_list = d.pop("groups")

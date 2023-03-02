@@ -262,13 +262,17 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return np.mean(np.abs(a), axis=axis) * sqrt(n / (n - ddof))  # type: ignore[no-any-return]
 
     @staticmethod
-    def _depth_filter(a: npt.NDArray, depth_filter_length: int) -> npt.NDArray[np.float_]:
+    def _depth_filter(
+        a: npt.NDArray[np.float_], depth_filter_length: int
+    ) -> npt.NDArray[np.float_]:
         b = np.ones(depth_filter_length) / depth_filter_length
 
         return np.correlate(a, b, mode="same")
 
     @staticmethod
-    def _calculate_phase_shift(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray[np.float_]:
+    def _calculate_phase_shift(
+        a: npt.NDArray[np.complex_], b: npt.NDArray[np.float_]
+    ) -> npt.NDArray[np.float_]:
         phase_a = np.angle(a)
         phase_b = np.angle(b)
         phases_unwrapped = np.unwrap([phase_a, phase_b], axis=0)
@@ -276,7 +280,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         return phase_shift  # type: ignore[no-any-return]
 
-    def _calculate_phase_and_amp_weight(self, mean_sweep: npt.NDArray) -> np.float_:
+    def _calculate_phase_and_amp_weight(self, mean_sweep: npt.NDArray[np.float_]) -> np.float_:
         """
         Calculation of a weight factor based on phase shift and amplitude.
         The phase shift between the mean sweep and a lp-filtered mean sweep is

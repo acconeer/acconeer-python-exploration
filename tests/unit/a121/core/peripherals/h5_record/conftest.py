@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterator, cast
+from typing import Any, Iterator, cast
 from uuid import uuid4
 
 import h5py
@@ -101,18 +101,18 @@ def ref_frame_data_length(ref_num_frames: int, ref_sweep_data_length: int) -> in
 @pytest.fixture
 def ref_frame_raw(
     ref_sweep_data_length: int, ref_frame_data_length: int, ref_num_frames: int
-) -> npt.NDArray:
+) -> npt.NDArray[Any]:
     array = np.arange(ref_frame_data_length)
     array = array.astype(dtype=INT_16_COMPLEX)
 
     num_sweeps = ref_frame_data_length // ref_sweep_data_length
     array.resize(num_sweeps, ref_sweep_data_length)
 
-    return cast(npt.NDArray, array)
+    return cast(npt.NDArray[Any], array)
 
 
 @pytest.fixture
-def ref_frame(ref_frame_raw: npt.NDArray) -> npt.NDArray[np.complex_]:
+def ref_frame(ref_frame_raw: npt.NDArray[Any]) -> npt.NDArray[np.complex_]:
     return cast(npt.NDArray[np.complex_], ref_frame_raw["real"] + 1j * ref_frame_raw["imag"])
 
 
@@ -133,7 +133,7 @@ def ref_metadata(ref_sweep_data_length: int, ref_frame_data_length: int) -> a121
 
 
 @pytest.fixture
-def ref_data(ref_frame_raw: npt.NDArray[np.int_], ref_num_frames: int) -> npt.NDArray:
+def ref_data(ref_frame_raw: npt.NDArray[np.int_], ref_num_frames: int) -> npt.NDArray[np.int_]:
     data_frames = np.stack((ref_frame_raw,) * ref_num_frames)
 
     # sanity check
