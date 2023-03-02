@@ -66,7 +66,7 @@ def get_approx_fft_vels(
 
     spf = config.sweeps_per_frame
     f_res = 1 / spf
-    freqs = np.fft.fftshift(np.fft.fftfreq(spf))  # type: ignore[call-overload]
+    freqs = np.fft.fftshift(np.fft.fftfreq(spf))
     f_to_v = 2.5e-3 * sweep_rate
     return freqs * f_to_v, f_res * f_to_v
 

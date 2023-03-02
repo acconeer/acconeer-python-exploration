@@ -112,8 +112,7 @@ try {
                     printNodeInfo()
                     checkoutAndCleanup(lfs: false)
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        sh 'python3 -V'
-                        sh 'nox -s mypy'
+                        sh '''nox -s "mypy(python='3.7')"'''
                     }
                 }
             }

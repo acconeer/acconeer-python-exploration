@@ -17,7 +17,7 @@ from ._processor import SubsweepProcessorResult
 S = t.TypeVar("S")
 T = t.TypeVar("T")
 
-_ALL_RESULT_FIELDS: t.Final = (
+_ALL_RESULT_FIELDS = (
     "frame",
     "distance_velocity_map",
     "amplitudes",

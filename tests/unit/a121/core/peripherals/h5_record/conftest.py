@@ -108,7 +108,7 @@ def ref_frame_raw(
     num_sweeps = ref_frame_data_length // ref_sweep_data_length
     array.resize(num_sweeps, ref_sweep_data_length)
 
-    return array
+    return cast(npt.NDArray, array)
 
 
 @pytest.fixture

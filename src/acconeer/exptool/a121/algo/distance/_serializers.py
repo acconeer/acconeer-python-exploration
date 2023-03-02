@@ -20,7 +20,7 @@ S = t.TypeVar("S")
 T = t.TypeVar("T")
 DTypeT = t.TypeVar("DTypeT")
 
-_ALL_PROCESSOR_RESULT_FIELDS: t.Final = (
+_ALL_PROCESSOR_RESULT_FIELDS = (
     "estimated_distances",
     "estimated_rcs",
     "near_edge_status",
@@ -31,7 +31,7 @@ _ALL_PROCESSOR_RESULT_FIELDS: t.Final = (
     # "extra_result" ignored by default
 )
 
-_ALL_DETECTOR_RESULT_FIELDS: t.Final = (
+_ALL_DETECTOR_RESULT_FIELDS = (
     "rcs",
     "distances",
     "near_edge_status",
@@ -272,12 +272,12 @@ class ProcessorResultListH5Serializer:
 
         return [
             ProcessorResult(
-                estimated_distances=self._replace_if_all_is_nan(
+                estimated_distances=self._replace_if_all_is_nan(  # type: ignore[arg-type]
                     est_dists,
-                ),  # type: ignore[arg-type]
-                estimated_rcs=self._replace_if_all_is_nan(
+                ),
+                estimated_rcs=self._replace_if_all_is_nan(  # type: ignore[arg-type]
                     est_rcs,
-                ),  # type: ignore[arg-type]
+                ),
                 near_edge_status=(
                     self._replace_if_all_is_nan(near_edge_status)  # type: ignore[arg-type]
                 ),
@@ -289,9 +289,9 @@ class ProcessorResultListH5Serializer:
                 ),
                 direct_leakage=(self._direct_leakage_deserialize(direct_leakage)),
                 phase_jitter_comp_reference=(
-                    self._replace_if_all_is_nan(
+                    self._replace_if_all_is_nan(  # type: ignore[arg-type]
                         jitter_comp.reshape((-1, 1)) if jitter_comp is not None else None
-                    )  # type: ignore[arg-type]
+                    )
                 ),
                 extra_result=None,  # type: ignore[arg-type]
             )

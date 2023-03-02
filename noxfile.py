@@ -103,6 +103,7 @@ def reformat(session):
 
 
 @nox.session
+@nox.parametrize("python", ["3.7"])
 def mypy(session):
     session.install("-e", ".", MYPY_SPEC, PYTEST_SPEC)
     session.run("python", "-m", "mypy")
