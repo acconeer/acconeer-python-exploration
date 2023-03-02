@@ -57,7 +57,7 @@ class CollapsiblePidgetGroup(PidgetGroup):
 def _in_a_vboxed_widget(widgets: t.Iterable[QWidget]) -> QWidget:
     layout = QVBoxLayout()
     layout.setContentsMargins(0, 0, 0, 0)
-    layout.setSpacing(11)
+    layout.setSpacing(0)
 
     for widget in widgets:
         layout.addWidget(widget)
