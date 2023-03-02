@@ -14,20 +14,19 @@ The definitions of these hooks are placed in ``pidget_groups.py`` and
 
 .. code-block:: python
     PidgetGroupHook = t.Callable[
-        ["PidgetGroup", t.Mapping[str, Pidget]], None
+        [QWidget, t.Mapping[str, Pidget]], None
     ]
     PidgetHook = Callable[
         ["Pidget", Mapping[str, "Pidget"]], None
     ]
 
-A ``PidgetGroupHook`` is a function that accepts a
-``PidgetGroup`` instance and a ``Mapping[str, Pidget]`` and returns nothing.
-
-The first argument of a ``PidgetGroupHook`` (the ``PidgetGroup`` instance)
-will be the instance the hook is assigned to:
+A ``PidgetGroupHook`` is a function that accepts a ``QWidget`` instance
+and a ``Mapping[str, Pidget]`` and returns nothing.
+The ``QWidget`` instance is the container widget returned by the
+``get_container`` function of the ``PidgetGroup``.
 
 .. code-block:: python
-    def my_hook(pg: PidgetGroup, mapping: Mapping[str, Pidget]) -> None:
+    def my_hook(pg: QWidget, mapping: Mapping[str, Pidget]) -> None:
         print(pg)  # pg will be the "a" variable below
 
     a = PidgetGroup(
@@ -38,7 +37,7 @@ The second argument of a ``PidgetGroupHook`` is the ``PidgetMapping`` kept
 internally in ``AttrsConfigEditor``;
 
 .. code-block:: python
-    def my_hook(pg: PidgetGroup, mapping: Mapping[str, Pidget]) -> None:
+    def my_hook(pg: QWidget, mapping: Mapping[str, Pidget]) -> None:
         print(mapping)
         # mapping will be:
         # {
@@ -55,7 +54,8 @@ internally in ``AttrsConfigEditor``;
         }
     }
 
-P.S. The functionality is analogous in ``PidgetHook``!
+P.S. The functionality is analogous in ``PidgetHook``, but the
+actual ``Pidget`` the hook is attached to is the first argument of the hook.
 
 
 This means that the hook has access to any pidget in a ``AttrsConfigEditor``,
