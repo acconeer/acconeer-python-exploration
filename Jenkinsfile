@@ -126,33 +126,36 @@ try {
         }
     }
 
-    integrationTestPythonVersions.each { pythonVersion ->
-        parallel_steps["XM112 test (${pythonVersion})"] = {
-            node('exploration_tool') {
-                ws('workspace/exptool') {
-                    stage('Setup') {
-                        printNodeInfo()
-                        checkoutAndCleanup(lfs: false)
+    parallel_steps["XM112 test (${integrationTestPythonVersions})"] = {
+        node('exploration_tool') {
+            ws('workspace/exptool') {
+                def dockerImg = null
 
-                        findBuildAndCopyArtifacts(
-                            projectName: 'sw-main',
-                            revision: "master",
-                            artifactNames: [
-                                "out/internal_stash_python_libs.tgz",
-                                "out/internal_stash_binaries_xm112.tgz",
-                            ]
-                        )
-                        sh 'mkdir stash'
-                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
-                        sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
+                stage('Setup') {
+                    printNodeInfo()
+                    checkoutAndCleanup(lfs: false)
+
+                    findBuildAndCopyArtifacts(
+                        projectName: 'sw-main',
+                        revision: "master",
+                        artifactNames: [
+                            "out/internal_stash_python_libs.tgz",
+                            "out/internal_stash_binaries_xm112.tgz",
+                        ]
+                    )
+                    sh 'mkdir stash'
+                    sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
+                    sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
+                    dockerImg = buildDocker(path: 'docker')
+                }
+                lock("${env.NODE_NAME}-xm112") {
+                    stage ('Flash') {
+                        sh '(cd stash && python3 python_libs/test_utils/flash.py)'
                     }
-                    lock("${env.NODE_NAME}-xm112") {
-                        stage ('Flash') {
-                            sh '(cd stash && python3 python_libs/test_utils/flash.py)'
-                        }
-                        stage('Run integration tests') {
-                            buildDocker(path: 'docker').inside(dockerArgs(env) + " --net=host --privileged") {
-                                sh "tests/run-a111-xm112-integration-tests.sh ${pythonVersion}"
+                    dockerImg.inside(dockerArgs(env) + " --net=host --privileged") {
+                        integrationTestPythonVersions.each { v ->
+                            stage("Run integration tests (${v})") {
+                                sh "tests/run-a111-xm112-integration-tests.sh ${v}"
                             }
                         }
                     }
