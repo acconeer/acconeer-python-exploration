@@ -579,7 +579,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                     subsweep.start_point = 0
                     # Set num_points to a high number to get sufficient number of data points to
                     # estimate the standard deviation.
-                    subsweep.num_points = 500
+                    subsweep.num_points = 220
 
         extended_metadata = self.client.setup_session(session_config)
         assert isinstance(extended_metadata, list)

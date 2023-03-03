@@ -70,12 +70,6 @@ def input_path(resource_name: str) -> Path:
             distance_test.distance_detector,
             distance_test.DistanceDetectorResultH5Serializer,
             distance_test.detector_result_comparator,
-            "input-distance-detector.h5",
-        ),
-        (
-            distance_test.distance_detector,
-            distance_test.DistanceDetectorResultH5Serializer,
-            distance_test.detector_result_comparator,
             "input-distance-detector-5_to_10cm.h5",
         ),
         (

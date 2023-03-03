@@ -7,6 +7,8 @@ import json
 import warnings
 from typing import Any, Optional, Union
 
+import numpy as np
+
 from acconeer.exptool.a121._core import utils
 
 from .sensor_config import SensorConfig
@@ -302,8 +304,8 @@ def _validate_groups_structure(groups: list[dict[int, SensorConfig]]) -> None:
             raise ValueError
 
         for sensor_id, entry in group.items():
-            if not isinstance(sensor_id, int):
-                raise ValueError
+            if not isinstance(sensor_id, (int, np.int64)):
+                raise ValueError(f"{type(sensor_id)} not int")
 
             if not isinstance(entry, SensorConfig):
                 raise ValueError
