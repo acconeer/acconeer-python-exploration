@@ -85,7 +85,7 @@ class AlgoBase:
         return cls.from_dict(json.loads(json_str))
 
 
-class AlgoConfigBase(AlgoBase):
+class AlgoConfigBase(AlgoBase, abc.ABC):
     def validate(self) -> None:
         """Performs self-validation
 
@@ -102,7 +102,7 @@ class AlgoConfigBase(AlgoBase):
         pass
 
 
-class AlgoProcessorConfigBase(AlgoBase):
+class AlgoProcessorConfigBase(AlgoBase, abc.ABC):
     def validate(self, config: Union[a121.SensorConfig, a121.SessionConfig]) -> None:
         """Performs self-validation and validation of its session config
 
