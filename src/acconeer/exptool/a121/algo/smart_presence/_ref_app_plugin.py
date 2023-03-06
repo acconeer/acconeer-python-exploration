@@ -37,7 +37,7 @@ from acconeer.exptool.app.new import (
     GridGroupBox,
     Message,
     MiscErrorView,
-    PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
@@ -477,14 +477,16 @@ class ViewPlugin(DetectorViewPluginBase):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
+    def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
         presence_pidget_mapping = dict(PresenceViewPlugin._get_pidget_mapping())
         presence_pidget_mapping.update(
             {
-                "num_zones": pidgets.IntPidgetFactory(
-                    name_label_text="Number of zones",
-                    limits=(1, None),
-                ),
+                pidgets.FlatPidgetGroup(): {
+                    "num_zones": pidgets.IntPidgetFactory(
+                        name_label_text="Number of zones",
+                        limits=(1, None),
+                    ),
+                }
             }
         )
         return presence_pidget_mapping

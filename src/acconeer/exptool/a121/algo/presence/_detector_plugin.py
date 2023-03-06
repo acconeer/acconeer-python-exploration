@@ -34,7 +34,7 @@ from acconeer.exptool.app.new import (
     GridGroupBox,
     Message,
     MiscErrorView,
-    PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
@@ -44,6 +44,7 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import disable_if, parameter_is
 
 from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
 from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult, _load_algo_data
@@ -471,8 +472,8 @@ class ViewPlugin(DetectorViewPluginBase):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
-        return {
+    def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
+        service_parameters = {
             "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range start",
                 suffix=" m",
@@ -524,9 +525,8 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.IdleState.READY: "Ready",
                 },
             ),
-            "intra_enable": pidgets.CheckboxPidgetFactory(
-                name_label_text="Enable fast motion detection"
-            ),
+        }
+        intra_parameters = {
             "intra_detection_threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra detection threshold",
                 decimals=2,
@@ -545,9 +545,8 @@ class ViewPlugin(DetectorViewPluginBase):
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_enable": pidgets.CheckboxPidgetFactory(
-                name_label_text="Enable slow motion detection"
-            ),
+        }
+        inter_parameters = {
             "inter_phase_boost": pidgets.CheckboxPidgetFactory(
                 name_label_text="Enable phase boost"
             ),
@@ -591,6 +590,25 @@ class ViewPlugin(DetectorViewPluginBase):
                 limits=(1, 30),
                 init_set_value=5,
             ),
+        }
+        return {
+            pidgets.FlatPidgetGroup(): service_parameters,
+            pidgets.FlatPidgetGroup(): {
+                "intra_enable": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Enable intra (fast) motion detection"
+                ),
+            },
+            pidgets.FlatPidgetGroup(
+                hooks=(disable_if(parameter_is("intra_enable", False)),),
+            ): intra_parameters,
+            pidgets.FlatPidgetGroup(): {
+                "inter_enable": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Enable inter (slow) motion detection"
+                ),
+            },
+            pidgets.FlatPidgetGroup(
+                hooks=(disable_if(parameter_is("inter_enable", False)),),
+            ): inter_parameters,
         }
 
     def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
