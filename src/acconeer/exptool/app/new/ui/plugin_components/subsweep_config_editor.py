@@ -14,6 +14,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
+from .collapsible_widget import CollapsibleWidget
 from .range_help_view import RangeHelpView
 from .types import PidgetFactoryMapping
 
@@ -94,6 +95,13 @@ class SubsweepConfigEditor(QWidget):
             name_label_tooltip=a121.SubsweepConfig.phase_enhancement.__doc__,
         ),
     }
+    ADVANCED_PARAMETERS = {
+        "receiver_gain",
+        "prf",
+        "enable_tx",
+        "enable_loopback",
+        "phase_enhancement",
+    }
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
@@ -108,10 +116,16 @@ class SubsweepConfigEditor(QWidget):
         self.range_help_view = RangeHelpView(self)
         self.layout().addWidget(self.range_help_view)
 
+        collapsible_layout = QVBoxLayout()
+
         self._subsweep_config_pidgets: Mapping[str, pidgets.Pidget] = {}
         for aspect, factory in self.SUBSWEEP_CONFIG_FACTORIES.items():
             pidget = factory.create(self)
-            self.layout().addWidget(pidget)
+
+            if aspect in self.ADVANCED_PARAMETERS:
+                collapsible_layout.addWidget(pidget)
+            else:
+                self.layout().addWidget(pidget)
 
             pidget.sig_parameter_changed.connect(
                 partial(self._update_subsweep_config_aspect, aspect)
@@ -119,6 +133,17 @@ class SubsweepConfigEditor(QWidget):
 
             self._all_pidgets.append(pidget)
             self._subsweep_config_pidgets[aspect] = pidget
+
+        # Some left margin here will show the hierarchy
+        collapsible_layout.setContentsMargins(11, 0, 0, 0)
+        dummy = QWidget()
+        dummy.setLayout(collapsible_layout)
+        self.layout().addWidget(
+            CollapsibleWidget(
+                label="Advanced",
+                widget=dummy,
+            )
+        )
 
     def sync(self) -> None:
         self._update_ui()

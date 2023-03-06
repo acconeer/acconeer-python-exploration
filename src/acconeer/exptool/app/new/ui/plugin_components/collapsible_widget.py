@@ -25,6 +25,7 @@ class CollapsibleWidget(QWidget):
         self.arrow_button.toggled.connect(self._on_toggle)
 
         self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().addWidget(self.arrow_button)
         self.layout().addWidget(self.widget)
 
