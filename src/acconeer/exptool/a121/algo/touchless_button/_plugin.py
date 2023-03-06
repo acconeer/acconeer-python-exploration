@@ -211,7 +211,7 @@ TOUCHLESS_BUTTON_PLUGIN = PluginSpec(
     key="touchless_button",
     title="Touchless button",
     description="Detect tap/wave motion and register as button press.",
-    family=PluginFamily.EXAMPLE_APP,
+    family=PluginFamily.REF_APP,
     presets=[
         PluginPresetBase(
             name="Close range",

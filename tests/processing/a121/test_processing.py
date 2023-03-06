@@ -11,7 +11,14 @@ import pytest
 
 from acconeer.exptool import a121
 
-from . import distance_test, presence_test, resources, smart_presence_test, tank_level_test
+from . import (
+    distance_test,
+    presence_test,
+    resources,
+    smart_presence_test,
+    tank_level_test,
+    touchless_button_test,
+)
 from .misc import AlgorithmFactory, AlgorithmResult, H5ResultSerializer
 
 
@@ -101,6 +108,36 @@ def input_path(resource_name: str) -> Path:
             tank_level_test.TankLevelResultH5Serializer,
             tank_level_test.tank_level_result_comparator,
             "medium_tank.h5",
+        ),
+        (
+            touchless_button_test.touchless_button_default,
+            touchless_button_test.TouchlessButtonResultH5Serializer,
+            touchless_button_test.result_comparator,
+            "input-touchless_button_default.h5",
+        ),
+        (
+            touchless_button_test.touchless_button_both_ranges,
+            touchless_button_test.TouchlessButtonResultH5Serializer,
+            touchless_button_test.result_comparator,
+            "input-touchless_button_both_ranges.h5",
+        ),
+        (
+            touchless_button_test.touchless_button_patience,
+            touchless_button_test.TouchlessButtonResultH5Serializer,
+            touchless_button_test.result_comparator,
+            "input-touchless_button_both_ranges.h5",
+        ),
+        (
+            touchless_button_test.touchless_button_sensitivity,
+            touchless_button_test.TouchlessButtonResultH5Serializer,
+            touchless_button_test.result_comparator,
+            "input-touchless_button_both_ranges.h5",
+        ),
+        (
+            touchless_button_test.touchless_button_calibration,
+            touchless_button_test.TouchlessButtonResultH5Serializer,
+            touchless_button_test.result_comparator,
+            "input-touchless_button_calibration.h5",
         ),
     ],
 )
