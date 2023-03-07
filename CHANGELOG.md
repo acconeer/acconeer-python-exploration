@@ -1,5 +1,20 @@
 # Changelog
 
+## v5.9.2
+
+### Added
+- A121: High speed mode, HSM, metadata. Available in RSS version > 0.8.0.
+- A121: `tcp_port`-argument to `a121.Client`, which enables specifying
+        the port of an exploration server. If not specified, the default
+        port will be used.
+- Parameter categories
+- A121: Presets for presence detector and smart presence added.
+        Default values are changed.
+
+### Fixed
+- Fix mock/simulated client for portable release
+- Fix Python 3.7 incompatibility in AppModel
+
 ## v5.9.1
 
 ### Changed
