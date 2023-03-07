@@ -2,7 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
-from typing import Final, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import h5py
 import numpy as np
@@ -10,7 +10,7 @@ import numpy as np
 from ._ref_app import RefAppResult
 
 
-_ALL_REF_APP_RESULT_FIELDS: Final = (
+_ALL_REF_APP_RESULT_FIELDS = (
     "zone_limits",
     "presence_detected",
     "max_presence_zone",
