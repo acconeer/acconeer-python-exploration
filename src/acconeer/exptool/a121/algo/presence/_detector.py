@@ -144,6 +144,21 @@ class DetectorConfig(AlgoConfigBase):
 
 
 @attrs.frozen(kw_only=True)
+class DetectorMetadata:
+    start_m: float = attrs.field()
+    """Actual start point of measurement in meters"""
+
+    step_length_m: float = attrs.field()
+    """Actual step length between each data point of the measurement in meters"""
+
+    num_points: int = attrs.field()
+    """The number of data points in the measurement"""
+
+    profile: a121.Profile = attrs.field()
+    """Profile used for measurement"""
+
+
+@attrs.frozen(kw_only=True)
 class DetectorResult:
     intra_presence_score: float = attrs.field()
     """A measure of the amount of fast motion detected."""
@@ -185,6 +200,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
     ) -> None:
         super().__init__(client=client, config=detector_config)
         self.sensor_id = sensor_id
+        self.detector_metadata: Optional[DetectorMetadata] = None
 
         self.started = False
 
@@ -238,6 +254,13 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         assert isinstance(metadata, a121.Metadata)
 
         processor_config = self._get_processor_config(self.config)
+
+        self.detector_metadata = DetectorMetadata(
+            start_m=self.config.start_m,
+            step_length_m=metadata.base_step_length_m * sensor_config.step_length,
+            num_points=sensor_config.num_points,
+            profile=sensor_config.profile,
+        )
 
         self.processor = Processor(
             sensor_config=sensor_config,

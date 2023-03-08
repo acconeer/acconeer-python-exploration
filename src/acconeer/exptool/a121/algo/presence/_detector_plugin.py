@@ -46,7 +46,7 @@ from acconeer.exptool.app.new import (
 )
 
 from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
-from ._detector import Detector, DetectorConfig, DetectorResult, _load_algo_data
+from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult, _load_algo_data
 
 
 @attrs.mutable(kw_only=True)
@@ -133,7 +133,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 name="setup",
                 kwargs=dict(
                     detector_config=self.shared_state.config,
-                    sensor_config=Detector._get_sensor_config(self.shared_state.config),
+                    detector_metadata=self._detector_instance.detector_metadata,
                     estimated_frame_rate=self._detector_instance.estimated_frame_rate,
                 ),
                 recipient="plot_plugin",
@@ -173,12 +173,14 @@ class PlotPlugin(DetectorPlotPluginBase):
     def setup(
         self,
         detector_config: DetectorConfig,
-        sensor_config: a121.SensorConfig,
+        detector_metadata: DetectorMetadata,
         estimated_frame_rate: float,
     ) -> None:
         self.detector_config = detector_config
         self.distances = np.linspace(
-            detector_config.start_m, detector_config.end_m, sensor_config.num_points
+            detector_metadata.start_m,
+            detector_config.end_m,
+            detector_metadata.num_points,
         )
 
         self.history_length_s = 5
