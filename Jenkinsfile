@@ -308,6 +308,38 @@ try {
             }
         }
     }
+
+    if (buildScope == BuildScope.NIGHTLY) {
+        stage('Update release branches') {
+            node('docker') {
+                ws('workspace/exptool') {
+                    printNodeInfo()
+                    checkoutAndCleanup(lfs: false)
+
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                        withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f')]) {
+                            sh '''
+                                git config user.name "Jenkins Builder"
+                                git config user.email "ai@acconeer.com"
+
+                                tests/update-release-branches.sh
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    stage('Report to gerrit') {
+        if (currentBuild.currentResult == 'SUCCESS') {
+            echo "Reporting OK to Gerrit"
+            gerritReview labels: [Verified: 1], message: "Success: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
+        } else {
+            echo "Reporting Fail to Gerrit"
+            gerritReview labels: [Verified: -1], message: "Failed: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
+        }
+    }
 } catch (exception) {
     currentBuild.result = 'FAILURE'
 }
