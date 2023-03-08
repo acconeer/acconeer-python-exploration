@@ -31,7 +31,11 @@ def main():
     detector = Detector(client=client, sensor_id=1, detector_config=detector_config)
     detector.start()
 
-    pg_updater = PGUpdater(detector_config, detector._get_sensor_config(detector_config))
+    pg_updater = PGUpdater(
+        detector_config,
+        detector._get_sensor_config(detector_config),
+        detector.estimated_frame_rate,
+    )
     pg_process = et.PGProcess(pg_updater)
     pg_process.start()
 
@@ -59,18 +63,21 @@ def main():
 
 
 class PGUpdater:
-    def __init__(self, detector_config: DetectorConfig, sensor_config: SensorConfig):
+    def __init__(
+        self,
+        detector_config: DetectorConfig,
+        sensor_config: SensorConfig,
+        estimated_frame_rate: float,
+    ):
         self.detector_config = detector_config
         self.distances = np.linspace(
             detector_config.start_m, detector_config.end_m, sensor_config.num_points
         )
 
-        self.history_length_s = 10
-
-        max_num_of_sectors = max(6, self.distances.size // 3)
-        self.sector_size = max(1, -(-self.distances.size // max_num_of_sectors))
-        self.num_sectors = -(-self.distances.size // self.sector_size)
-        self.sector_offset = (self.num_sectors * self.sector_size - self.distances.size) // 2
+        self.history_length_s = 5
+        self.history_length_n = int(round(self.history_length_s * estimated_frame_rate))
+        self.intra_history = np.zeros(self.history_length_n)
+        self.inter_history = np.zeros(self.history_length_n)
 
         self.setup_is_done = False
 
@@ -216,30 +223,9 @@ class PGUpdater:
         for line in self.inter_limit_lines:
             line.setPos(self.detector_config.inter_detection_threshold)
 
-        # Sector plot
-
-        self.sector_plot = pg.PlotItem()
-        self.sector_plot.setAspectLocked()
-        self.sector_plot.hideAxis("left")
-        self.sector_plot.hideAxis("bottom")
-        self.sectors = []
-
-        pen = pg.mkPen("k", width=1)
-        span_deg = 25
-        for r in np.flip(np.arange(self.num_sectors) + 1):
-            sector = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
-            sector.setStartAngle(-16 * span_deg)
-            sector.setSpanAngle(16 * span_deg * 2)
-            sector.setPen(pen)
-            self.sector_plot.addItem(sector)
-            self.sectors.append(sector)
-
-        self.sectors.reverse()
-
         sublayout = win.addLayout(row=2, col=0, colspan=2)
         sublayout.layout.setColumnStretchFactor(0, 2)
         sublayout.addItem(self.move_plot, row=0, col=0)
-        sublayout.addItem(self.sector_plot, row=0, col=1)
 
         self.setup_is_done = True
 
@@ -250,12 +236,10 @@ class PGUpdater:
 
         movement_x = data.presence_distance
 
-        self.inter_curve.setData(self.distances, data.processor_extra_result.inter)
-        self.intra_curve.setData(self.distances, data.processor_extra_result.intra)
+        self.inter_curve.setData(self.distances, data.inter_depthwise_scores)
+        self.intra_curve.setData(self.distances, data.intra_depthwise_scores)
         m = self.move_smooth_max.update(
-            np.max(
-                np.maximum(data.processor_extra_result.inter, data.processor_extra_result.intra)
-            )
+            np.max(np.maximum(data.inter_depthwise_scores, data.intra_depthwise_scores))
         )
         m = max(
             m,
@@ -283,42 +267,33 @@ class PGUpdater:
             self.not_present_text_item.show()
 
         # Intra presence
+        move_hist_xs = np.linspace(-self.history_length_s, 0, self.history_length_n)
 
-        move_hist_ys = data.processor_extra_result.intra_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        self.intra_history = np.roll(self.intra_history, -1)
+        self.intra_history[-1] = data.intra_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.detector_config.intra_detection_threshold * 1.05
+            float(np.max(self.intra_history)),
+            self.detector_config.intra_detection_threshold * 1.05,
         )
         m_hist = self.intra_history_smooth_max.update(m_hist)
 
         self.intra_hist_plot.setYRange(0, m_hist)
-        self.intra_hist_curve.setData(move_hist_xs, move_hist_ys)
+        self.intra_hist_curve.setData(move_hist_xs, self.intra_history)
 
         # Inter presence
 
-        move_hist_ys = data.processor_extra_result.inter_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        self.inter_history = np.roll(self.inter_history, -1)
+        self.inter_history[-1] = data.inter_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.detector_config.inter_detection_threshold * 1.05
+            float(np.max(self.inter_history)),
+            self.detector_config.inter_detection_threshold * 1.05,
         )
         m_hist = self.inter_history_smooth_max.update(m_hist)
 
         self.inter_hist_plot.setYRange(0, m_hist)
-        self.inter_hist_curve.setData(move_hist_xs, move_hist_ys)
-
-        # Sector
-
-        brush = et.utils.pg_brush_cycler(0)
-        for sector in self.sectors:
-            sector.setBrush(brush)
-
-        if data.presence_detected:
-            index = (
-                data.processor_extra_result.presence_distance_index + self.sector_offset
-            ) // self.sector_size
-            self.sectors[index].setBrush(et.utils.pg_brush_cycler(1))
+        self.inter_hist_curve.setData(move_hist_xs, self.inter_history)
 
     def set_present_text_y_pos(self, y):
         x_pos = self.distances[0] + (self.distances[-1] - self.distances[0]) / 2

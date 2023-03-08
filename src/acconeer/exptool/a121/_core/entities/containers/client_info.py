@@ -37,6 +37,7 @@ class ConnectionTypeBase(abc.ABC):
     def _from_open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -75,6 +76,7 @@ class SerialInfo(ConnectionTypeBase):
     def _from_open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -103,6 +105,7 @@ class USBInfo(ConnectionTypeBase):
     def _from_open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -128,18 +131,20 @@ class USBInfo(ConnectionTypeBase):
 @attrs.frozen(kw_only=True)
 class SocketInfo(ConnectionTypeBase):
     ip_address: str
+    tcp_port: Optional[int]
 
     @classmethod
     def _from_open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
     ) -> ClientInfo:
         if ip_address is not None:
-            return ClientInfo(socket=SocketInfo(ip_address=ip_address))
+            return ClientInfo(socket=SocketInfo(ip_address=ip_address, tcp_port=tcp_port))
 
         raise ClientInfoCreationError()
 
@@ -155,6 +160,7 @@ class MockInfo(ConnectionTypeBase):
     def _from_open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -184,6 +190,7 @@ class ClientInfo:
     def _from_open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -194,6 +201,7 @@ class ClientInfo:
             try:
                 client_info = subclass._from_open(
                     ip_address=ip_address,
+                    tcp_port=tcp_port,
                     serial_port=serial_port,
                     usb_device=usb_device,
                     mock=mock,
@@ -213,7 +221,7 @@ class ClientInfo:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> ClientInfo:
+    def from_dict(cls, d: dict[str, Any]) -> ClientInfo:
         for arg in d:
             if arg not in ["socket", "serial", "usb", "mock"]:
                 raise TypeError()

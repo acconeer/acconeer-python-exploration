@@ -1,7 +1,9 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
+
+import typing as t
 
 import attrs
 import numpy as np
@@ -31,11 +33,14 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 
 @attrs.frozen(kw_only=True)
-class ProcessorResult:
+class SubsweepProcessorResult:
     frame: npt.NDArray[np.complex_] = attrs.field(eq=utils.attrs_ndarray_eq)
-    distance_velocity_map: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     amplitudes: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     phases: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    distance_velocity_map: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+
+
+ProcessorResult = t.List[SubsweepProcessorResult]
 
 
 class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
@@ -53,29 +58,33 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.window /= np.sum(self.window)
 
     def process(self, result: a121.Result) -> ProcessorResult:
-        frame = result.frame
+        subframes = result.subframes
 
-        z_ft = np.fft.fftshift(np.fft.fft(frame * self.window, axis=0), axes=(0,))
-        abs_z_ft = np.abs(z_ft)
+        processor_result = []
 
-        amplitude_method = self.processor_config.amplitude_method
-        if amplitude_method == AmplitudeMethod.COHERENT:
-            ampls = np.abs(frame.mean(axis=0))
-        elif amplitude_method == AmplitudeMethod.NONCOHERENT:
-            ampls = np.abs(frame).mean(axis=0)
-        elif amplitude_method == AmplitudeMethod.FFT_MAX:
-            ampls = abs_z_ft.mean(axis=0)
-        else:
-            raise RuntimeError(f"Unknown AmplitudeMethod: {amplitude_method}")
+        for subframe in subframes:
+            z_ft = np.fft.fftshift(np.fft.fft(subframe * self.window, axis=0), axes=(0,))
+            abs_z_ft = np.abs(z_ft)
 
-        phases = np.angle(frame.mean(axis=0))
+            amplitude_method = self.processor_config.amplitude_method
+            if amplitude_method == AmplitudeMethod.COHERENT:
+                ampls = np.abs(subframe.mean(axis=0))
+            elif amplitude_method == AmplitudeMethod.NONCOHERENT:
+                ampls = np.abs(subframe).mean(axis=0)
+            elif amplitude_method == AmplitudeMethod.FFT_MAX:
+                ampls = abs_z_ft.mean(axis=0)
+            else:
+                raise RuntimeError(f"Unknown AmplitudeMethod: {amplitude_method}")
 
-        return ProcessorResult(
-            frame=frame,
-            distance_velocity_map=abs_z_ft,
-            amplitudes=ampls,
-            phases=phases,
-        )
+            phases = np.angle(subframe.mean(axis=0))
+
+            processor_result.append(
+                SubsweepProcessorResult(
+                    frame=subframe, amplitudes=ampls, phases=phases, distance_velocity_map=abs_z_ft
+                )
+            )
+
+        return processor_result
 
     def update_config(self, config: ProcessorConfig) -> None:
         self.processor_config = config

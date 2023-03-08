@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         # Note: Incomplete mapping
         return {
-            "threshold": pidgets.FloatParameterWidgetFactory(
+            "threshold": pidgets.FloatPidgetFactory(
                 name_label_text="Threshold",
                 decimals=1,
                 limits=(0.0, 10000),
@@ -139,7 +139,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.history_curve = self.history_plot.plot(**feat_kws[0])
 
         self.sweep_smooth_max = et.utils.SmoothMax()
-        self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.5, tau_grow=0.1)
+        self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.2, tau_grow=0.1)
 
     def update(self, processor_result: ProcessorResult) -> None:
         assert processor_result is not None

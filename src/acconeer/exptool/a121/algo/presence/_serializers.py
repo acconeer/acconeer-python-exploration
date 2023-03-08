@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -13,11 +13,13 @@ from ._processors import ProcessorResult
 S = t.TypeVar("S")
 T = t.TypeVar("T")
 
-_ALL_RESULT_FIELDS: t.Final = (
+_ALL_RESULT_FIELDS = (
     "intra_presence_score",
     "inter_presence_score",
     "presence_distance",
     "presence_detected",
+    "intra",
+    "inter",
     # "extra_result" ignored by default
 )
 
@@ -91,6 +93,22 @@ class ProcessorResultListH5Serializer:
                 track_times=False,
             )
 
+        if "intra" in self.fields:
+            self.group.create_dataset(
+                "intra",
+                dtype=float,
+                data=np.array([res.intra for res in results]),
+                track_times=False,
+            )
+
+        if "inter" in self.fields:
+            self.group.create_dataset(
+                "inter",
+                dtype=float,
+                data=np.array([res.inter for res in results]),
+                track_times=False,
+            )
+
     def deserialize(self, _: None) -> t.List[ProcessorResult]:
         if "extra_result" in self.fields:
             raise NotImplementedError(
@@ -103,6 +121,8 @@ class ProcessorResultListH5Serializer:
             self.group.get("inter_presence_score", PhonyNoneSeries()),
             self.group.get("presence_distance", PhonyNoneSeries()),
             self.group.get("presence_detected", PhonyNoneSeries()),
+            self.group.get("intra", PhonyNoneSeries()),
+            self.group.get("inter", PhonyNoneSeries()),
         )
 
         if all(isinstance(group, PhonyNoneSeries) for group in groups):
@@ -110,11 +130,20 @@ class ProcessorResultListH5Serializer:
 
         return [
             ProcessorResult(
-                intra_presence_score=intra,
-                inter_presence_score=inter,
+                intra_presence_score=intra_presence_score,
+                inter_presence_score=inter_presence_score,
                 presence_distance=distance,
                 presence_detected=detected,
+                intra=intra,
+                inter=inter,
                 extra_result=None,  # type: ignore[arg-type]
             )
-            for intra, inter, distance, detected in zip(*groups)
+            for (
+                intra_presence_score,
+                inter_presence_score,
+                distance,
+                detected,
+                intra,
+                inter,
+            ) in zip(*groups)
         ]

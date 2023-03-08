@@ -12,7 +12,7 @@ import h5py
 import numpy as np
 import qtawesome as qta
 
-from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QPushButton, QTabWidget, QVBoxLayout, QWidget
 
 import pyqtgraph as pg
 
@@ -45,7 +45,14 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
+from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import (
+    disable_if,
+    enable_if,
+    parameter_is,
+)
 
+from ._configs import get_high_accuracy_detector_config
 from ._detector import (
     DetailedStatus,
     Detector,
@@ -67,12 +74,14 @@ class SharedState:
 
 class PluginPresetId(Enum):
     DEFAULT = auto()
+    HIGH_ACCURACY = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: DetectorConfig()
+        PluginPresetId.DEFAULT.value: lambda: DetectorConfig(),
+        PluginPresetId.HIGH_ACCURACY.value: lambda: get_high_accuracy_detector_config(),
     }
 
     def __init__(
@@ -195,7 +204,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
 class PlotPlugin(DetectorPlotPluginBase):
 
-    _DISTANCE_HISTORY_PLOT_HALF_SPAN = 0.2
+    _DISTANCE_HISTORY_SPAN_MARGIN = 0.01
 
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
@@ -253,7 +262,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.dist_history_curve = self.dist_history_plot.plot(**feat_kw)
 
         self.sweep_smooth_max = et.utils.SmoothMax()
-        self.distance_hist_smooth_lim = et.utils.SmoothLimits()
+        self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.5)
 
     def update(self, multi_sensor_result: dict[int, DetectorResult]) -> None:
         # Get the first element as the plugin only supports single sensor operation.
@@ -288,16 +297,17 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         if np.any(~np.isnan(self.distance_history)):
             self.dist_history_curve.setData(self.distance_history)
-            distance_span = distances_m[-1] - distances_m[0]
             lims = self.distance_hist_smooth_lim.update(self.distance_history)
-            lower_lim = max(0.0, lims[0] - distance_span * self._DISTANCE_HISTORY_PLOT_HALF_SPAN)
-            upper_lim = lims[1] + distance_span * self._DISTANCE_HISTORY_PLOT_HALF_SPAN
+            lower_lim = max(0.0, lims[0] - self._DISTANCE_HISTORY_SPAN_MARGIN)
+            upper_lim = lims[1] + self._DISTANCE_HISTORY_SPAN_MARGIN
             self.dist_history_plot.setYRange(lower_lim, upper_lim)
         else:
             self.dist_history_curve.setData([])
 
 
 class ViewPlugin(DetectorViewPluginBase):
+
+    sensor_config_editors: list[SensorConfigEditor]
 
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
@@ -376,7 +386,7 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
-        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
@@ -391,29 +401,45 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
+        self.sensor_config_editor_tabs = QTabWidget()
+        self.sensor_config_editor_tabs.setStyleSheet("QTabWidget::pane { padding: 5px;}")
+        self.sensor_config_editors = []
+        self.range_labels = ["Close range", "Far range"]
+
+        for label in self.range_labels:
+            sensor_config_editor = SensorConfigEditor()
+            sensor_config_editor.set_read_only(True)
+            self.sensor_config_editors.append(sensor_config_editor)
+            self.sensor_config_editor_tabs.addTab(sensor_config_editor, label)
+
+        self.collapsible_widget = CollapsibleWidget(
+            "Sensor config info", self.sensor_config_editor_tabs, self.scrolly_widget
+        )
+        scrolly_layout.addWidget(self.collapsible_widget)
+
         self.sticky_widget.setLayout(sticky_layout)
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "start_m": pidgets.FloatParameterWidgetFactory(
+            "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range start",
                 suffix=" m",
                 decimals=3,
             ),
-            "end_m": pidgets.FloatParameterWidgetFactory(
+            "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range end",
                 suffix=" m",
                 decimals=3,
             ),
-            "max_step_length": pidgets.OptionalIntParameterWidgetFactory(
+            "max_step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Max step length",
                 checkbox_label_text="Set",
                 limits=(1, None),
                 init_set_value=12,
             ),
-            "max_profile": pidgets.EnumParameterWidgetFactory(
+            "max_profile": pidgets.EnumPidgetFactory(
                 name_label_text="Max profile",
                 enum_type=a121.Profile,
                 label_mapping={
@@ -424,11 +450,15 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.Profile.PROFILE_5: "5 (longest)",
                 },
             ),
-            "num_frames_in_recorded_threshold": pidgets.IntParameterWidgetFactory(
-                name_label_text="Num frames in rec. thr.",
-                limits=(1, None),
+            "peaksorting_method": pidgets.EnumPidgetFactory(
+                name_label_text="Peak sorting method",
+                enum_type=PeakSortingMethod,
+                label_mapping={
+                    PeakSortingMethod.CLOSEST: "Closest",
+                    PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
+                },
             ),
-            "threshold_method": pidgets.EnumParameterWidgetFactory(
+            "threshold_method": pidgets.EnumPidgetFactory(
                 name_label_text="Threshold method",
                 enum_type=ThresholdMethod,
                 label_mapping={
@@ -437,33 +467,32 @@ class ViewPlugin(DetectorViewPluginBase):
                     ThresholdMethod.RECORDED: "Recorded",
                 },
             ),
-            "peaksorting_method": pidgets.EnumParameterWidgetFactory(
-                name_label_text="Peak sorting method",
-                enum_type=PeakSortingMethod,
-                label_mapping={
-                    PeakSortingMethod.CLOSEST: "Closest",
-                    PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
-                },
-            ),
-            "fixed_threshold_value": pidgets.FloatParameterWidgetFactory(
+            "fixed_threshold_value": pidgets.FloatPidgetFactory(
                 name_label_text="Fixed threshold value",
                 decimals=1,
                 limits=(0, None),
+                hooks=(enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),),
             ),
-            "threshold_sensitivity": pidgets.FloatSliderParameterWidgetFactory(
+            "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
+                name_label_text="Num frames in rec. thr.",
+                limits=(1, None),
+                hooks=(enable_if(parameter_is("threshold_method", ThresholdMethod.RECORDED)),),
+            ),
+            "threshold_sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Threshold sensitivity",
                 decimals=2,
                 limits=(0, 1),
                 show_limit_values=False,
+                hooks=(disable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),),
             ),
-            "signal_quality": pidgets.FloatSliderParameterWidgetFactory(
+            "signal_quality": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Signal quality",
                 decimals=1,
                 limits=(-10, 35),
                 show_limit_values=False,
                 limit_texts=("Less power", "Higher quality"),
             ),
-            "update_rate": pidgets.OptionalFloatParameterWidgetFactory(
+            "update_rate": pidgets.OptionalFloatPidgetFactory(
                 name_label_text="Update rate",
                 checkbox_label_text="Set",
                 limits=(1, None),
@@ -498,6 +527,28 @@ class ViewPlugin(DetectorViewPluginBase):
 
         assert isinstance(state, SharedState)
 
+        try:
+            session_config, _ = Detector._detector_to_session_config_and_processor_specs(
+                state.config, state.sensor_ids
+            )
+        except Exception:
+            pass  # Since the session config is read only there is no gain in handling this error
+        else:
+            tab_visible = [False, False]
+            for group in session_config.groups:
+                for _, sensor_config in group.items():
+                    index = 0 if sensor_config.subsweeps[0].enable_loopback else 1
+                    tab_visible[index] = True
+                    sensor_config_editor = self.sensor_config_editors[index]
+                    sensor_config_editor.set_data(sensor_config)
+                    sensor_config_editor.sync()
+
+            for i, sensor_config_editor in enumerate(self.sensor_config_editors):
+                index = self.sensor_config_editor_tabs.indexOf(sensor_config_editor)
+                self.sensor_config_editor_tabs.setTabVisible(index, tab_visible[i])
+
+            self.collapsible_widget.widget = self.sensor_config_editor_tabs
+
         self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
@@ -528,7 +579,6 @@ class ViewPlugin(DetectorViewPluginBase):
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
             self._log.debug(f"{type(self).__name__} syncing")
-
             self.config_editor.sync()
         else:
             raise RuntimeError("Unknown message")
@@ -565,7 +615,8 @@ DISTANCE_DETECTOR_PLUGIN = PluginSpec(
     description="Easily measure distance to objects.",
     family=PluginFamily.DETECTOR,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(name="Low power", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(name="High accuracy", preset_id=PluginPresetId.HIGH_ACCURACY),
     ],
     default_preset_id=PluginPresetId.DEFAULT,
 )

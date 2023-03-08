@@ -1,0 +1,67 @@
+digraph {
+  pad=0.1
+  ranksep=0.3
+  nodesep=0.3
+  bgcolor="#ffffff00"
+  fontname=sans
+  fontsize=12
+  style=rounded
+  node [fontname=sans, fontsize=12, shape=record, style=rounded]
+
+  subgraph cluster {
+    style=invis
+
+    subgraph cluster_fast {
+        label="Fast Motion \nDetection"
+        style=rounded
+        fast_motion_score -> max_over_distances_fast -> compare_against_threshold_fast -> fast_motion_detection
+        fast_motion_score -> outlier_detection
+        outlier_detection -> record_fast_motion_score [ label = "Y" ];
+        record_fast_motion_score -> {calculate_lower_boundary, calculate_upper_boundary}
+        calculate_upper_boundary -> compare_against_upper_boundary_fast -> fast_motion_detection
+        calculate_lower_boundary -> compare_against_lower_boundary_fast -> fast_motion_detection
+    }
+
+    subgraph cluster_slow {
+        label="Slow Motion \nDetection"
+        style=rounded
+        slow_motion_score -> adaptive_threshold
+        adaptive_threshold -> compare_against_recorded_threshold [ label = "N" ];
+        adaptive_threshold -> record_slow_motion_score [ label = "Y" ];
+        record_slow_motion_score -> frame_index
+        frame_index -> compare_against_recorded_threshold [ label = "N" ];
+        frame_index -> set_recorded_threshold [ label = "Y" ];
+        set_recorded_threshold -> compare_against_recorded_threshold
+        compare_against_recorded_threshold -> slow_motion_detection
+
+    }
+  }
+
+  in -> {fast_motion_score, slow_motion_score}
+  fast_motion_detection -> out
+  slow_motion_detection -> out
+  in [shape=Mdiamond, label="Presence detection (sparse)\nresult"]
+  {
+    rank=same;
+    fast_motion_detection; slow_motion_detection;
+  }
+
+  fast_motion_score [label="Fast motion score"]
+  slow_motion_score [label="Slow motion score"]
+  max_over_distances_fast [label="Max over distances"]
+  outlier_detection [shape = diamond; label="Outlier detection"]
+  adaptive_threshold [shape = diamond; label="Adaptive threshold"]
+  frame_index [shape = diamond; label="Recording time \nfinished"]
+  compare_against_threshold_fast [label="Compare against threshold"]
+  compare_against_upper_boundary_fast [label="Compare against \nupper boundary"]
+  compare_against_lower_boundary_fast [label="Compare against \nlower boundary"]
+  compare_against_recorded_threshold [label="Compare against \ndepthwise threshold"]
+  set_recorded_threshold [label="Set recorded threshold as \na new slow threshold"]
+  record_fast_motion_score [label="Record fast motion \nscore"]
+  record_slow_motion_score [label="Record slow motion \nscore"]
+  calculate_upper_boundary [label="Calculate upper \nboundary"]
+  calculate_lower_boundary [label="Calculate lower \nboundary"]
+  fast_motion_detection [label="Fast motion detection"]
+  slow_motion_detection [label="Slow motion detection"]
+  out [shape=Msquare, label="Output"]
+}

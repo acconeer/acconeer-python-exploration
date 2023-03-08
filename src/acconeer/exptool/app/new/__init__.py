@@ -30,6 +30,7 @@ from .ui import (
     HorizontalGroupBox,
     MiscErrorView,
     PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     SessionConfigEditor,
     SmartMetadataView,
     SmartPerfCalcView,

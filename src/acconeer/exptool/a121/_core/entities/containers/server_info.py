@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ class ServerInfo:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> ServerInfo:
+    def from_dict(cls, d: dict[str, Any]) -> ServerInfo:
         d = d.copy()
         d["sensor_infos"] = {
             int(sensor_id): SensorInfo.from_dict(sensor_info_dict)

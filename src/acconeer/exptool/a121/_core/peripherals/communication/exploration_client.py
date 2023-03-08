@@ -67,6 +67,7 @@ class ExplorationClient(CommonClient):
     def open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -76,6 +77,7 @@ class ExplorationClient(CommonClient):
 
         client_info = ClientInfo._from_open(
             ip_address=ip_address,
+            tcp_port=tcp_port,
             override_baudrate=override_baudrate,
             serial_port=serial_port,
             usb_device=usb_device,

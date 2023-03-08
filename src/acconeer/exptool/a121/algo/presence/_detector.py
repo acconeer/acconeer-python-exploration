@@ -9,14 +9,14 @@ from typing import Any, Optional, Tuple
 import attrs
 import h5py
 import numpy as np
-from attr import Attribute
+import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import Result
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, select_prf
+from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, Controller, select_prf
 
 from ._processors import Processor, ProcessorConfig, ProcessorContext, ProcessorExtraResult
 
@@ -37,10 +37,10 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
 
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
-    start_m: float = attrs.field(default=1.0)
+    start_m: float = attrs.field(default=0.3)
     """Start point of measurement interval in meters."""
 
-    end_m: float = attrs.field(default=2.0)
+    end_m: float = attrs.field(default=2.5)
     """End point of measurement interval in meters."""
 
     profile: Optional[a121.Profile] = attrs.field(
@@ -57,7 +57,7 @@ class DetectorConfig(AlgoConfigBase):
     calculated based on the profile.
     """
 
-    frame_rate: float = attrs.field(default=10.0)
+    frame_rate: float = attrs.field(default=12.0)
     """Frame rate in Hz."""
 
     sweeps_per_frame: int = attrs.field(default=16)
@@ -83,7 +83,7 @@ class DetectorConfig(AlgoConfigBase):
     intra_frame_time_const: float = attrs.field(default=0.15)
     """Time constant for the depthwise filtering in the intra-frame part."""
 
-    intra_output_time_const: float = attrs.field(default=0.5)
+    intra_output_time_const: float = attrs.field(default=0.3)
     """Time constant for the output in the intra-frame part."""
 
     inter_enable: bool = attrs.field(default=True)
@@ -95,7 +95,7 @@ class DetectorConfig(AlgoConfigBase):
     inter_detection_threshold: float = attrs.field(default=1)
     """Detection threshold for the inter-frame presence detection."""
 
-    inter_frame_fast_cutoff: float = attrs.field(default=20.0)
+    inter_frame_fast_cutoff: float = attrs.field(default=6.0)
     """
     Cutoff frequency of the low pass filter for the fast filtered absolute sweep mean.
     No filtering is applied if the cutoff is set over half the frame rate (Nyquist limit).
@@ -107,20 +107,20 @@ class DetectorConfig(AlgoConfigBase):
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
     """Time constant of the low pass filter for the inter-frame deviation between fast and slow."""
 
-    inter_output_time_const: float = attrs.field(default=5)
+    inter_output_time_const: float = attrs.field(default=2)
     """Time constant for the output in the inter-frame part."""
 
     inter_phase_boost: bool = attrs.field(default=False)
     """Enables the inter-frame phase boost. Used to increase slow motion detection."""
 
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
+    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
     """
     Number of seconds the inter-frame presence score needs to decrease before exponential
     scaling starts for faster decline.
     """
 
     @step_length.validator
-    def _validate_step_length(self, attrs: Attribute, step_length: int) -> None:
+    def _validate_step_length(self, _: Any, step_length: int) -> None:
         if step_length is not None:
             if not (
                 is_divisor_of(SPARSE_IQ_PPC, step_length)
@@ -144,24 +144,45 @@ class DetectorConfig(AlgoConfigBase):
 
 
 @attrs.frozen(kw_only=True)
+class DetectorMetadata:
+    start_m: float = attrs.field()
+    """Actual start point of measurement in meters"""
+
+    step_length_m: float = attrs.field()
+    """Actual step length between each data point of the measurement in meters"""
+
+    num_points: int = attrs.field()
+    """The number of data points in the measurement"""
+
+    profile: a121.Profile = attrs.field()
+    """Profile used for measurement"""
+
+
+@attrs.frozen(kw_only=True)
 class DetectorResult:
     intra_presence_score: float = attrs.field()
     """A measure of the amount of fast motion detected."""
 
+    intra_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
+    """The depthwise presence scores for fast motions."""
+
     inter_presence_score: float = attrs.field()
-    """A measure of the amount of slow motion detected"""
+    """A measure of the amount of slow motion detected."""
+
+    inter_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
+    """The depthwise presence scores for slow motions."""
 
     presence_distance: float = attrs.field()
-    """The distance, in meters, to the detected object"""
+    """The distance, in meters, to the detected object."""
 
     presence_detected: bool = attrs.field()
-    """True if presence was detected, False otherwise"""
+    """True if presence was detected, False otherwise."""
 
     processor_extra_result: ProcessorExtraResult = attrs.field()
     service_result: a121.Result = attrs.field()
 
 
-class Detector:
+class Detector(Controller[DetectorConfig, DetectorResult]):
     MIN_DIST_M = {
         a121.Profile.PROFILE_1: None,
         a121.Profile.PROFILE_2: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_2],
@@ -177,9 +198,9 @@ class Detector:
         sensor_id: int,
         detector_config: DetectorConfig,
     ) -> None:
-        self.client = client
+        super().__init__(client=client, config=detector_config)
         self.sensor_id = sensor_id
-        self.detector_config = detector_config
+        self.detector_metadata: Optional[DetectorMetadata] = None
 
         self.started = False
 
@@ -207,31 +228,39 @@ class Detector:
 
         return float(1.0 / np.nanmean(delta_times))
 
-    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
+    def start(
+        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+    ) -> None:
         if self.started:
             raise RuntimeError("Already started")
 
-        sensor_config = self._get_sensor_config(self.detector_config)
+        sensor_config = self._get_sensor_config(self.config)
         self.session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,
         )
 
-        estimated_frame_rate = self._estimate_frame_rate()
+        self.estimated_frame_rate = self._estimate_frame_rate()
         # Add estimated frame rate to context if it differs more than 10% from the set frame rate
         if (
-            np.abs(self.detector_config.frame_rate - estimated_frame_rate)
-            / self.detector_config.frame_rate
+            np.abs(self.config.frame_rate - self.estimated_frame_rate) / self.config.frame_rate
             > 0.1
         ):
-            context = ProcessorContext(estimated_frame_rate=estimated_frame_rate)
+            context = ProcessorContext(estimated_frame_rate=self.estimated_frame_rate)
         else:
             context = ProcessorContext(estimated_frame_rate=None)
 
         metadata = self.client.setup_session(self.session_config)
         assert isinstance(metadata, a121.Metadata)
 
-        processor_config = self._get_processor_config(self.detector_config)
+        processor_config = self._get_processor_config(self.config)
+
+        self.detector_metadata = DetectorMetadata(
+            start_m=self.config.start_m,
+            step_length_m=metadata.base_step_length_m * sensor_config.step_length,
+            num_points=sensor_config.num_points,
+            profile=sensor_config.profile,
+        )
 
         self.processor = Processor(
             sensor_config=sensor_config,
@@ -242,11 +271,12 @@ class Detector:
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
-                algo_group = recorder.require_algo_group("presence_detector")
+                if _algo_group is None:
+                    _algo_group = recorder.require_algo_group("presence_detector")
                 _record_algo_data(
-                    algo_group,
+                    _algo_group,
                     self.sensor_id,
-                    self.detector_config,
+                    self.config,
                 )
             else:
                 # Should never happen as we currently only have the H5Recorder
@@ -257,18 +287,18 @@ class Detector:
         self.started = True
 
     @classmethod
-    def _get_sensor_config(cls, detector_config: DetectorConfig) -> a121.SensorConfig:
-        start_point = int(np.floor(detector_config.start_m / Processor.APPROX_BASE_STEP_LENGTH_M))
-        if detector_config.profile is not None:
-            profile = detector_config.profile
+    def _get_sensor_config(cls, config: DetectorConfig) -> a121.SensorConfig:
+        start_point = int(np.floor(config.start_m / Processor.APPROX_BASE_STEP_LENGTH_M))
+        if config.profile is not None:
+            profile = config.profile
         else:
             viable_profiles = [
-                k for k, v in cls.MIN_DIST_M.items() if v is None or v <= detector_config.start_m
+                k for k, v in cls.MIN_DIST_M.items() if v is None or v <= config.start_m
             ]
             profile = viable_profiles[-1]
 
-        if detector_config.step_length is not None:
-            step_length = detector_config.step_length
+        if config.step_length is not None:
+            step_length = config.step_length
         else:
             # Calculate biggest possible step length based on the fwhm of the set profile
             # Achieve detection on the complete range with minimum number of sampling points
@@ -280,7 +310,7 @@ class Detector:
 
         num_point = int(
             np.ceil(
-                (detector_config.end_m - detector_config.start_m)
+                (config.end_m - config.start_m)
                 / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
             )
             + 1
@@ -292,27 +322,27 @@ class Detector:
             num_points=num_point,
             step_length=step_length,
             prf=select_prf(end_point, profile),
-            hwaas=detector_config.hwaas,
-            sweeps_per_frame=detector_config.sweeps_per_frame,
-            frame_rate=detector_config.frame_rate,
-            inter_frame_idle_state=detector_config.inter_frame_idle_state,
+            hwaas=config.hwaas,
+            sweeps_per_frame=config.sweeps_per_frame,
+            frame_rate=config.frame_rate,
+            inter_frame_idle_state=config.inter_frame_idle_state,
         )
 
     @classmethod
-    def _get_processor_config(cls, detector_config: DetectorConfig) -> ProcessorConfig:
+    def _get_processor_config(cls, config: DetectorConfig) -> ProcessorConfig:
         return ProcessorConfig(
-            intra_enable=detector_config.intra_enable,
-            intra_detection_threshold=detector_config.intra_detection_threshold,
-            intra_frame_time_const=detector_config.intra_frame_time_const,
-            intra_output_time_const=detector_config.intra_output_time_const,
-            inter_enable=detector_config.inter_enable,
-            inter_detection_threshold=detector_config.inter_detection_threshold,
-            inter_frame_fast_cutoff=detector_config.inter_frame_fast_cutoff,
-            inter_frame_slow_cutoff=detector_config.inter_frame_slow_cutoff,
-            inter_frame_deviation_time_const=detector_config.inter_frame_deviation_time_const,
-            inter_output_time_const=detector_config.inter_output_time_const,
-            inter_phase_boost=detector_config.inter_phase_boost,
-            inter_frame_presence_timeout=detector_config.inter_frame_presence_timeout,
+            intra_enable=config.intra_enable,
+            intra_detection_threshold=config.intra_detection_threshold,
+            intra_frame_time_const=config.intra_frame_time_const,
+            intra_output_time_const=config.intra_output_time_const,
+            inter_enable=config.inter_enable,
+            inter_detection_threshold=config.inter_detection_threshold,
+            inter_frame_fast_cutoff=config.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=config.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=config.inter_frame_deviation_time_const,
+            inter_output_time_const=config.inter_output_time_const,
+            inter_phase_boost=config.inter_phase_boost,
+            inter_frame_presence_timeout=config.inter_frame_presence_timeout,
         )
 
     def get_next(self) -> DetectorResult:
@@ -327,7 +357,9 @@ class Detector:
 
         return DetectorResult(
             intra_presence_score=processor_result.intra_presence_score,
+            intra_depthwise_scores=processor_result.intra,
             inter_presence_score=processor_result.inter_presence_score,
+            inter_depthwise_scores=processor_result.inter,
             presence_distance=processor_result.presence_distance,
             presence_detected=processor_result.presence_detected,
             processor_extra_result=processor_result.extra_result,
@@ -351,14 +383,14 @@ class Detector:
 def _record_algo_data(
     algo_group: h5py.Group,
     sensor_id: int,
-    detector_config: DetectorConfig,
+    config: DetectorConfig,
 ) -> None:
     algo_group.create_dataset(
         "sensor_id",
         data=sensor_id,
         track_times=False,
     )
-    _create_h5_string_dataset(algo_group, "detector_config", detector_config.to_json())
+    _create_h5_string_dataset(algo_group, "detector_config", config.to_json())
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig]:

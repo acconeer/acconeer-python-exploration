@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
 from __future__ import annotations
@@ -70,21 +70,26 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         # Note: Incomplete mapping
         return {
-            "time_series_length": pidgets.IntParameterWidgetFactory(
+            "time_series_length": pidgets.IntPidgetFactory(
                 name_label_text="Time series length",
                 limits=(0, None),
             ),
-            "lp_coeff": pidgets.FloatSliderParameterWidgetFactory(
+            "lp_coeff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Time filtering coefficient",
                 suffix="",
                 limits=(0, 1),
                 decimals=2,
             ),
-            "sensitivity": pidgets.FloatSliderParameterWidgetFactory(
+            "sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Threshold sensitivity",
                 suffix="dB",
                 limits=(0, 30),
                 decimals=1,
+            ),
+            "amplitude_threshold": pidgets.FloatPidgetFactory(
+                name_label_text="Minimum amplitude",
+                decimals=0,
+                limits=(0, None),
             ),
         }
 
@@ -108,16 +113,20 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         feat_kw = dict(pen=pen, **symbol_kw)
         symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
 
-        # precense plot
-        self.precense_plot = pg.PlotItem()
-        self.precense_plot.setMenuEnabled(False)
-        self.precense_plot.showGrid(x=False, y=True)
-        self.precense_plot.setLabel("left", "Max amplitude")
-        self.precense_plot.setLabel("bottom", "Distance (m)")
-        self.precense_plot.setXRange(self.meas_dist_m - 0.001, self.meas_dist_m + 0.001)
-        self.precense_curve = self.precense_plot.plot(**dict(pen=pen, **symbol_dot_kw))
+        # presence plot
+        self.presence_plot = pg.PlotItem()
+        self.presence_plot.setMenuEnabled(False)
+        self.presence_plot.showGrid(x=False, y=True)
+        self.presence_plot.setLabel("left", "Max amplitude")
+        self.presence_plot.setLabel("bottom", "Distance (m)")
+        self.presence_plot.setXRange(self.meas_dist_m - 0.001, self.meas_dist_m + 0.001)
+        self.presence_curve = self.presence_plot.plot(**dict(pen=pen, **symbol_dot_kw))
 
-        self.smooth_max_precense = et.utils.SmoothMax(tau_decay=10.0)
+        self.presence_threshold = pg.InfiniteLine(pen=pen, angle=0)
+        self.presence_plot.addItem(self.presence_threshold)
+        self.presence_threshold.show()
+
+        self.smooth_max_presence = et.utils.SmoothMax(tau_decay=10.0)
 
         # sweep and threshold plot
         self.time_series_plot = pg.PlotItem()
@@ -129,7 +138,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
 
         sublayout = self.plot_layout.addLayout(row=0, col=0)
         sublayout.layout.setColumnStretchFactor(1, 5)
-        sublayout.addItem(self.precense_plot, row=0, col=0)
+        sublayout.addItem(self.presence_plot, row=0, col=0)
         sublayout.addItem(self.time_series_plot, row=0, col=1)
 
         self.smooth_lim_time_series = et.utils.SmoothLimits(tau_decay=0.5, tau_grow=0.1)
@@ -160,35 +169,41 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         z_abs_db = processor_result.lp_z_abs_db
         freqs = processor_result.freqs
         max_amplitude = processor_result.max_amplitude
+        amplitude_threshold = processor_result.amplitude_threshold
         max_psd_ampl = processor_result.max_psd_ampl
         max_psd_ampl_freq = processor_result.max_psd_ampl_freq
 
-        self.precense_curve.setData([self.meas_dist_m], [max_amplitude])
-        lim = self.smooth_max_precense.update(max_amplitude)
-        self.precense_plot.setYRange(0, max(1000.0, lim))
+        # plot object presence metric.
+        self.presence_curve.setData([self.meas_dist_m], [max_amplitude])
+        self.presence_threshold.setValue(amplitude_threshold)
+        lim = self.smooth_max_presence.update(max_amplitude)
+        self.presence_plot.setYRange(0, max(1000.0, lim))
 
-        self.time_series_curve.setData(time_series)
-        lim = self.smooth_lim_time_series.update(time_series)
-        self.time_series_plot.setYRange(lim[0], lim[1])
+        if processor_result.result_available:
+            # plot time series and psd as object is present.
+            self.time_series_curve.setData(time_series)
+            lim = self.smooth_lim_time_series.update(time_series)
+            self.time_series_plot.setYRange(lim[0], lim[1])
 
-        self.fft_curve[0].setData(freqs, z_abs_db)
-        lim = self.smooth_max_fft.update(np.max(z_abs_db))
-        self.fft_plot.setYRange(0, lim)
+            assert z_abs_db is not None
+            self.fft_curve[0].setData(freqs, z_abs_db)
+            lim = self.smooth_max_fft.update(np.max(z_abs_db))
+            self.fft_plot.setYRange(0, lim)
 
-        if max_psd_ampl_freq is not None:
-            self.fft_curve[1].setData([max_psd_ampl_freq], [max_psd_ampl])
-            # Place text box centered at the top of the plotting window.
-            self.text_item.setPos(max(freqs) / 2, lim * 0.95)
-            html_format = (
-                '<div style="text-align: center">'
-                '<span style="color: #FFFFFF;font-size:15pt;">'
-                "{}</span></div>".format("Detected Frequency: " + str(int(max_psd_ampl_freq)))
-            )
-            self.text_item.setHtml(html_format)
-            self.text_item.show()
-        else:
-            self.fft_curve[1].setData([], [])
-            self.text_item.hide()
+            if max_psd_ampl_freq is not None:
+                self.fft_curve[1].setData([max_psd_ampl_freq], [max_psd_ampl])
+                # Place text box centered at the top of the plotting window.
+                self.text_item.setPos(max(freqs) / 2, lim * 0.95)
+                html_format = (
+                    '<div style="text-align: center">'
+                    '<span style="color: #FFFFFF;font-size:15pt;">'
+                    "{}</span></div>".format("Detected Frequency: " + str(int(max_psd_ampl_freq)))
+                )
+                self.text_item.setHtml(html_format)
+                self.text_item.show()
+            else:
+                self.fft_curve[1].setData([], [])
+                self.text_item.hide()
 
 
 class PluginSpec(PluginSpecBase):

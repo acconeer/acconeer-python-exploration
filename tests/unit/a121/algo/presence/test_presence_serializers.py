@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import typing as t
 from pathlib import Path
 
 import h5py
+import numpy as np
 import pytest
 
 from acconeer.exptool.a121.algo.presence import ProcessorResult, _serializers
@@ -28,6 +29,8 @@ def result() -> ProcessorResult:
         inter_presence_score=0.2,
         presence_detected=False,
         presence_distance=0.4,
+        intra=np.zeros(5),
+        inter=np.zeros(5),
         extra_result=None,  # type: ignore[arg-type]
     )
 

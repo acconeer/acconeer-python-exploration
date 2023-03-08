@@ -85,6 +85,7 @@ class MockClient(CommonClient):
     def open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -103,7 +104,7 @@ class MockClient(CommonClient):
         if client_info.mock is None:
             raise ClientCreationError()
 
-        self._start_time = time.monotonic()
+        self._start_time = time.perf_counter()
         self._connected = False
         self._mock_update_rate = self.MAX_MOCK_UPDATE_RATE_HZ
         self._mock_next_data_time = 0.0
@@ -127,6 +128,7 @@ class MockClient(CommonClient):
             subsweep_data_length=np.array(subsweep_data_length),
             subsweep_data_offset=np.array(subsweep_data_offset),
             max_sweep_rate=100000,
+            high_speed_mode=True,
             tick_period=tick_period,
             calibration_temperature=cls.CALIBRATION_TEMPERATURE,
             base_step_length_m=cls.BASE_STEP_LENGTH_M,
@@ -181,8 +183,8 @@ class MockClient(CommonClient):
     @classmethod
     def _sensor_config_to_frame(
         cls, sensor_id: int, sensor_config: SensorConfig, metadata: Metadata
-    ) -> npt.NDArray:
-        frame: npt.NDArray = np.ndarray(
+    ) -> npt.NDArray[Any]:
+        frame: npt.NDArray[Any] = np.ndarray(
             shape=(sensor_config._sweeps_per_frame, metadata.sweep_data_length),
             dtype=INT_16_COMPLEX,
         )
@@ -203,7 +205,7 @@ class MockClient(CommonClient):
             frame_delayed=False,
             calibration_needed=False,
             temperature=int(self.CALIBRATION_TEMPERATURE + np.random.normal(0, 2)),
-            tick=int((time.monotonic() - self._start_time) * self.TICKS_PER_SECOND),
+            tick=int((time.perf_counter() - self._start_time) * self.TICKS_PER_SECOND),
             frame=self._sensor_config_to_frame(sensor_id, sensor_config, metadata),
             context=ResultContext(ticks_per_second=self.TICKS_PER_SECOND, metadata=metadata),
         )
@@ -268,7 +270,7 @@ class MockClient(CommonClient):
 
         self._recorder_start(recorder)
         self._session_is_started = True
-        self._start_time = time.monotonic()
+        self._start_time = time.perf_counter()
         self._mock_next_data_time = self._start_time
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:

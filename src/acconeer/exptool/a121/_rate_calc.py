@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -63,7 +63,8 @@ class _RateCalculator:
         self.tick_fifo = np.roll(self.tick_fifo, -1)
         self.tick_fifo[-1] = delta_tick
 
-        rate = 1.0 / np.nanmean(self.time_fifo)
+        mean_diff = np.nanmean(self.time_fifo)
+        rate = 1.0 / mean_diff if mean_diff > 0 else 0
         jitter = np.nanstd(self.time_fifo)
 
         rate_warning = result.frame_delayed

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import pytest
 
 from acconeer.exptool import a121
 
-from . import distance_test, presence_test, resources, sparse_iq_test
+from . import distance_test, presence_test, resources, smart_presence_test
 from .misc import AlgorithmFactory, AlgorithmResult, H5ResultSerializer
 
 
@@ -37,12 +37,6 @@ def input_path(resource_name: str) -> Path:
     ),
     [
         (
-            sparse_iq_test.sparse_iq_default,
-            sparse_iq_test.SparseIqResultH5Serializer,
-            sparse_iq_test.result_comparator,
-            "input.h5",
-        ),
-        (
             presence_test.presence_default,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
@@ -55,22 +49,52 @@ def input_path(resource_name: str) -> Path:
             "input-presence-default.h5",
         ),
         (
-            presence_test.presence_timeout_3s,
+            presence_test.presence_short_range,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
-            "input-presence-presence_timeout3s.h5",
+            "input-presence-short_range.h5",
         ),
         (
-            presence_test.presence_timeout_2s_phase_boost,
+            presence_test.presence_long_range,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
-            "input-presence-0p35m_phase_boost.h5",
+            "input-presence-long_range.h5",
         ),
         (
-            distance_test.distance_default,
-            distance_test.DistanceResultH5Serializer,
-            distance_test.result_comparator,
+            presence_test.presence_medium_range_phase_boost_no_timeout,
+            presence_test.PresenceResultH5Serializer,
+            presence_test.result_comparator,
+            "input-presence-medium_range_phase_boost_no_timeout.h5",
+        ),
+        (
+            distance_test.distance_processor,
+            distance_test.DistanceProcessorResultH5Serializer,
+            distance_test.processor_result_comparator,
             "input.h5",
+        ),
+        (
+            distance_test.distance_detector,
+            distance_test.DistanceDetectorResultH5Serializer,
+            distance_test.detector_result_comparator,
+            "input-distance-detector-5_to_10cm.h5",
+        ),
+        (
+            distance_test.distance_detector,
+            distance_test.DistanceDetectorResultH5Serializer,
+            distance_test.detector_result_comparator,
+            "input-distance-detector-5_to_20cm.h5",
+        ),
+        (
+            distance_test.distance_detector,
+            distance_test.DistanceDetectorResultH5Serializer,
+            distance_test.detector_result_comparator,
+            "input-distance-detector-200_to_400cm.h5",
+        ),
+        (
+            smart_presence_test.smart_presence_controller,
+            smart_presence_test.SmartPresenceResultH5Serializer,
+            smart_presence_test.smart_presence_result_comparator,
+            "smart_presence.h5",
         ),
     ],
 )
@@ -85,7 +109,12 @@ def test_input_output(
     with h5py.File(input_path) as f:
         r = a121.H5Record(f)
         algorithm = algorithm_factory(r)
-        actual_results = [algorithm.process(result) for result in r.results]
+        if hasattr(algorithm, "process"):
+            actual_results = [algorithm.process(result) for result in r.results]
+        elif hasattr(algorithm, "get_next"):
+            actual_results = [algorithm.get_next() for _ in r.extended_results]
+        else:
+            raise AttributeError("Algorithm does not have process() or get_next()")
 
     if should_update_outputs:
         output_path.unlink(missing_ok=True)

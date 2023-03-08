@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ class ResultMessage(Message):
         )
 
     @staticmethod
-    def _create_result(args: tuple[ResultInfoDict, npt.NDArray, ResultContext]) -> Result:
+    def _create_result(args: tuple[ResultInfoDict, npt.NDArray[t.Any], ResultContext]) -> Result:
         result_info, frame, context = args
         return Result(
             **result_info,
@@ -77,7 +77,7 @@ class ResultMessage(Message):
     @classmethod
     def _get_array_from_blob(
         cls, frame_blob: bytes, start: int, end: int, frame_shape: t.Tuple[int, int]
-    ) -> npt.NDArray:
+    ) -> npt.NDArray[t.Any]:
         raw_frame_data = frame_blob[start:end]
         assert len(raw_frame_data) == end - start
         np_frame = np.frombuffer(raw_frame_data, dtype=INT_16_COMPLEX)
@@ -87,11 +87,11 @@ class ResultMessage(Message):
     @classmethod
     def _divide_frame_blob(
         cls, frame_blob: bytes, extended_metadata: list[dict[int, Metadata]]
-    ) -> list[dict[int, npt.NDArray]]:
+    ) -> list[dict[int, npt.NDArray[t.Any]]]:
         start = 0
         result = []
         for metadata_group in extended_metadata:
-            result_group: dict[int, npt.NDArray] = {}
+            result_group: dict[int, npt.NDArray[t.Any]] = {}
             result.append(result_group)
             for sensor_id, metadata in metadata_group.items():
                 end = start + metadata.frame_data_length * 4  # 4 = sizeof(int_16_complex)

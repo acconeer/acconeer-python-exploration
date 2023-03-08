@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -373,8 +373,8 @@ class _KalmanFilter:
         sensor_position: str,
         min_num_updates_valid_estimate: int,
     ) -> None:
-        self.A = np.matrix([[1.0, dt], [0.0, 1.0]])
-        self.H = np.matrix([[1, 0]])
+        self.A: npt.NDArray[np.float_] = np.matrix([[1.0, dt], [0.0, 1.0]])
+        self.H: npt.NDArray[np.float_] = np.matrix([[1, 0]])
         process_noise_gain = self._sensitivity_to_gain(process_noise_gain_sensitivity)
         # Random acceleration process noise.
         self.Q = (
@@ -384,7 +384,7 @@ class _KalmanFilter:
         )
         self.R = self._MEASUREMENT_NOISE_STD**2
         self.P = np.eye(self.A.shape[1])
-        self.x = np.matrix([[init_state], [0.0]])
+        self.x: npt.NDArray[np.float_] = np.matrix([[init_state], [0.0]])
         self.min_num_updates_valid_estimate = min_num_updates_valid_estimate
         self.dead_reckoning_count = 0
         self.num_updates = 0

@@ -13,10 +13,18 @@ CLIENT_PARAMETRIZE = [
 ]
 
 
+@pytest.fixture(params=CLIENT_PARAMETRIZE)
+def client_kwargs(request, port_from_cli):
+    if "ip_address" in request.param:
+        request.param["tcp_port"] = port_from_cli
+
+    return request.param
+
+
 class TestAClosedClient:
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        c = a121.Client.open(**request.param)
+    def client(self, client_kwargs):
+        c = a121.Client.open(**client_kwargs)
         c.close()
         yield c
         if c.connected:
@@ -50,8 +58,8 @@ class TestAClosedClient:
 
 class TestAConnectedClient:
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        with a121.Client.open(**request.param) as c:
+    def client(self, client_kwargs):
+        with a121.Client.open(**client_kwargs) as c:
             yield c
 
     def test_can_access_server_info(self, client):
@@ -84,8 +92,8 @@ class TestAConnectedClient:
 
 class TestASetupClient:
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        with a121.Client.open(**request.param) as c:
+    def client(self, client_kwargs):
+        with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             yield c
 
@@ -249,8 +257,8 @@ class TestASetupClient:
 
 class TestAStartedClient:
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        with a121.Client.open(**request.param) as c:
+    def client(self, client_kwargs):
+        with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             yield c
@@ -260,8 +268,8 @@ class TestAStartedClient:
         return tmp_path / "record.h5"
 
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client_with_recorder(self, request, tmp_h5_file_path):
-        with a121.Client.open(**request.param) as c:
+    def client_with_recorder(self, client_kwargs, tmp_h5_file_path):
+        with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
             yield c
@@ -295,8 +303,8 @@ class TestAStoppedClient(TestASetupClient):
     """A stopped client should have the same behaviour as it had when first set up"""
 
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        with a121.Client.open(**request.param) as c:
+    def client(self, client_kwargs):
+        with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -309,8 +317,8 @@ class TestAStoppedAndSetupClient(TestASetupClient):
     """
 
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        with a121.Client.open(**request.param) as c:
+    def client(self, client_kwargs):
+        with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -324,8 +332,8 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
     """
 
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        with a121.Client.open(**request.param) as c:
+    def client(self, client_kwargs):
+        with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -338,8 +346,8 @@ class TestADisconnectedClient(TestAClosedClient):
     """A disconnected client should have the same behaviour as a fresh, unconnected client."""
 
     @pytest.fixture(params=CLIENT_PARAMETRIZE)
-    def client(self, request):
-        c = a121.Client.open(**request.param)
+    def client(self, client_kwargs):
+        c = a121.Client.open(**client_kwargs)
         c.setup_session(a121.SessionConfig())
         c.start_session()
         c.stop_session()

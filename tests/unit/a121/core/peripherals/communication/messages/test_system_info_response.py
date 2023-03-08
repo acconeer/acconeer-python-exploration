@@ -1,5 +1,8 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
 
 import pytest
 
@@ -9,7 +12,7 @@ from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol 
 
 class TestGetSystemInfoReponse:
     @pytest.fixture
-    def valid_server_response(self) -> dict:
+    def valid_server_response(self) -> dict[str, t.Any]:
         return {
             "status": "ok",
             "system_info": {
@@ -22,10 +25,12 @@ class TestGetSystemInfoReponse:
         }
 
     @pytest.fixture
-    def invalid_server_response(self) -> dict:
+    def invalid_server_response(self) -> dict[str, t.Any]:
         return {"status": "ok"}
 
-    def test_parse(self, valid_server_response: dict, invalid_server_response: dict) -> None:
+    def test_parse(
+        self, valid_server_response: dict[str, t.Any], invalid_server_response: dict[str, t.Any]
+    ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
             == messages.SystemInfoResponse

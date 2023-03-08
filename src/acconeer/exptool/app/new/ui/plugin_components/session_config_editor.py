@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ class SessionConfigEditor(QWidget):
     _session_config: Optional[a121.SessionConfig]
     _server_info: Optional[a121.ServerInfo]
 
-    _sensor_id_pidget: pidgets.SensorIdParameterWidget
+    _sensor_id_pidget: pidgets.SensorIdPidget
 
     sig_update = Signal(object)
 
@@ -46,11 +46,11 @@ class SessionConfigEditor(QWidget):
         self.session_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.session_group_box)
 
-        self._sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(self)
+        self._sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(self)
         self._sensor_id_pidget.sig_parameter_changed.connect(self._update_sensor_id)
         self.session_group_box.layout().addWidget(self._sensor_id_pidget)
 
-        self._update_rate_pidget = pidgets.OptionalFloatParameterWidgetFactory(
+        self._update_rate_pidget = pidgets.OptionalFloatPidgetFactory(
             name_label_text="Update rate:",
             name_label_tooltip=(
                 "Set an update rate limit on the server.\n"
@@ -73,6 +73,11 @@ class SessionConfigEditor(QWidget):
         self._session_config = session_config
         if session_config is not None:
             self._sensor_config_editor.set_data(session_config.sensor_config)
+
+    def set_read_only(self, read_only: bool) -> None:
+        self._sensor_id_pidget.setEnabled(not read_only)
+        self._update_rate_pidget.setEnabled(not read_only)
+        self._sensor_config_editor.set_read_only(read_only)
 
     def sync(self) -> None:
         self._update_ui()

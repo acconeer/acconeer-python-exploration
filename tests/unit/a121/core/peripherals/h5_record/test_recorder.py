@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -7,10 +7,11 @@ from pathlib import Path
 from typing import Optional
 
 import h5py
-import importlib_metadata
 import pytest
 
+import acconeer.exptool
 from acconeer.exptool import a121
+from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
 
 def assert_record_equals(record_a: a121.Record, record_b: a121.Record) -> None:
@@ -40,7 +41,7 @@ def test_init_defaults_with_path(tmp_file_path: Path) -> None:
     assert recorder.path == tmp_file_path
 
     with h5py.File(tmp_file_path, "r") as f:
-        assert f["lib_version"][()].decode() == importlib_metadata.version("acconeer-exptool")
+        assert f["lib_version"][()].decode() == get_module_version(acconeer.exptool)
         assert f["generation"][()].decode() == "a121"
 
 
@@ -49,7 +50,7 @@ def test_init_defaults_with_file_object(tmp_file_path: Path) -> None:
         recorder = a121.H5Recorder(f)
         assert recorder.owns_file is False
         assert recorder.path is None
-        assert f["lib_version"][()].decode() == importlib_metadata.version("acconeer-exptool")
+        assert f["lib_version"][()].decode() == get_module_version(acconeer.exptool)
         assert f["generation"][()].decode() == "a121"
 
 

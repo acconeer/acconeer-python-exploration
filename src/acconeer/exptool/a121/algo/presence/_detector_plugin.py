@@ -20,7 +20,6 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo._base import AlgoBase
 from acconeer.exptool.a121.algo._plugins import (
     DetectorBackendPluginBase,
     DetectorPlotPluginBase,
@@ -35,7 +34,7 @@ from acconeer.exptool.app.new import (
     GridGroupBox,
     Message,
     MiscErrorView,
-    PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
@@ -45,30 +44,30 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import disable_if, parameter_is
 
-from ._detector import Detector, DetectorConfig, DetectorResult, _load_algo_data
-
-
-@attrs.mutable(kw_only=True)
-class PlotConfig(AlgoBase):
-    number_of_zones: Optional[int] = attrs.field(default=None)
+from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
+from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult, _load_algo_data
 
 
 @attrs.mutable(kw_only=True)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
-    plot_config: PlotConfig = attrs.field(factory=PlotConfig)
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    SHORT_RANGE = auto()
+    MEDIUM_RANGE = auto()
+    LONG_RANGE = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: DetectorConfig()
+        PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
+        PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
+        PluginPresetId.LONG_RANGE.value: lambda: get_long_range_config(),
     }
 
     def __init__(
@@ -84,7 +83,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def _load_from_cache(self, file: h5py.File) -> None:
         self.shared_state.config = DetectorConfig.from_json(file["config"][()])
-        self.shared_state.plot_config = PlotConfig.from_json(file["plot_config"][()])
 
     @is_task
     def restore_defaults(self) -> None:
@@ -94,11 +92,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def update_sensor_id(self, *, sensor_id: int) -> None:
         self.shared_state.sensor_id = sensor_id
-        self.broadcast(sync=True)
-
-    @is_task
-    def update_plot_config(self, *, config: PlotConfig) -> None:
-        self.shared_state.plot_config = config
         self.broadcast(sync=True)
 
     def _sync_sensor_ids(self) -> None:
@@ -115,7 +108,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def save_to_cache(self, file: h5py.File) -> None:
         _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
-        _create_h5_string_dataset(file, "plot_config", self.shared_state.plot_config.to_json())
 
     @is_task
     def set_preset(self, preset_id: int) -> None:
@@ -142,8 +134,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 name="setup",
                 kwargs=dict(
                     detector_config=self.shared_state.config,
-                    sensor_config=Detector._get_sensor_config(self.shared_state.config),
-                    plot_config=self.shared_state.plot_config,
+                    detector_metadata=self._detector_instance.detector_metadata,
+                    estimated_frame_rate=self._detector_instance.estimated_frame_rate,
                 ),
                 recipient="plot_plugin",
             )
@@ -178,25 +170,21 @@ class PlotPlugin(DetectorPlotPluginBase):
     def setup(
         self,
         detector_config: DetectorConfig,
-        sensor_config: a121.SensorConfig,
-        plot_config: PlotConfig,
+        detector_metadata: DetectorMetadata,
+        estimated_frame_rate: float,
     ) -> None:
         self.detector_config = detector_config
         self.distances = np.linspace(
-            detector_config.start_m, detector_config.end_m, sensor_config.num_points
+            detector_metadata.start_m,
+            detector_config.end_m,
+            detector_metadata.num_points,
         )
 
-        self.history_length_s = 10
+        self.history_length_s = 5
+        self.history_length_n = int(round(self.history_length_s * estimated_frame_rate))
+        self.intra_history = np.zeros(self.history_length_n)
+        self.inter_history = np.zeros(self.history_length_n)
 
-        if plot_config.number_of_zones:
-            self.num_sectors = min(plot_config.number_of_zones, self.distances.size)
-            self.sector_size = max(1, -(-self.distances.size // self.num_sectors))
-        else:
-            max_num_of_sectors = max(6, self.distances.size // 3)
-            self.sector_size = max(1, -(-self.distances.size // max_num_of_sectors))
-            self.num_sectors = -(-self.distances.size // self.sector_size)
-
-        self.sector_offset = (self.num_sectors * self.sector_size - self.distances.size) // 2
         win = self.plot_layout
 
         self.intra_limit_lines = []
@@ -338,30 +326,9 @@ class PlotPlugin(DetectorPlotPluginBase):
         for line in self.inter_limit_lines:
             line.setPos(self.detector_config.inter_detection_threshold)
 
-        # Sector plot
-
-        self.sector_plot = pg.PlotItem()
-        self.sector_plot.setAspectLocked()
-        self.sector_plot.hideAxis("left")
-        self.sector_plot.hideAxis("bottom")
-        self.sectors = []
-
-        pen = pg.mkPen("k", width=1)
-        span_deg = 25
-        for r in np.flip(np.arange(self.num_sectors) + 1):
-            sector = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
-            sector.setStartAngle(-16 * span_deg)
-            sector.setSpanAngle(16 * span_deg * 2)
-            sector.setPen(pen)
-            self.sector_plot.addItem(sector)
-            self.sectors.append(sector)
-
-        self.sectors.reverse()
-
         sublayout = win.addLayout(row=2, col=0, colspan=2)
         sublayout.layout.setColumnStretchFactor(0, 2)
         sublayout.addItem(self.move_plot, row=0, col=0)
-        sublayout.addItem(self.sector_plot, row=0, col=1)
 
     def update(self, data: DetectorResult) -> None:
         noise = data.processor_extra_result.lp_noise
@@ -370,12 +337,10 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         movement_x = data.presence_distance
 
-        self.inter_curve.setData(self.distances, data.processor_extra_result.inter)
-        self.intra_curve.setData(self.distances, data.processor_extra_result.intra)
+        self.inter_curve.setData(self.distances, data.inter_depthwise_scores)
+        self.intra_curve.setData(self.distances, data.intra_depthwise_scores)
         m = self.move_smooth_max.update(
-            np.max(
-                np.maximum(data.processor_extra_result.inter, data.processor_extra_result.intra)
-            )
+            np.max(np.maximum(data.inter_depthwise_scores, data.intra_depthwise_scores))
         )
         m = max(
             m,
@@ -404,41 +369,33 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         # Intra presence
 
-        move_hist_ys = data.processor_extra_result.intra_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        move_hist_xs = np.linspace(-self.history_length_s, 0, self.history_length_n)
+
+        self.intra_history = np.roll(self.intra_history, -1)
+        self.intra_history[-1] = data.intra_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.detector_config.intra_detection_threshold * 1.05
+            float(np.max(self.intra_history)),
+            self.detector_config.intra_detection_threshold * 1.05,
         )
         m_hist = self.intra_history_smooth_max.update(m_hist)
 
         self.intra_hist_plot.setYRange(0, m_hist)
-        self.intra_hist_curve.setData(move_hist_xs, move_hist_ys)
+        self.intra_hist_curve.setData(move_hist_xs, self.intra_history)
 
         # Inter presence
 
-        move_hist_ys = data.processor_extra_result.inter_presence_history
-        move_hist_xs = np.linspace(-self.history_length_s, 0, len(move_hist_ys))
+        self.inter_history = np.roll(self.inter_history, -1)
+        self.inter_history[-1] = data.inter_presence_score
 
         m_hist = max(
-            float(np.max(move_hist_ys)), self.detector_config.inter_detection_threshold * 1.05
+            float(np.max(self.inter_history)),
+            self.detector_config.inter_detection_threshold * 1.05,
         )
         m_hist = self.inter_history_smooth_max.update(m_hist)
 
         self.inter_hist_plot.setYRange(0, m_hist)
-        self.inter_hist_curve.setData(move_hist_xs, move_hist_ys)
-
-        # Sector
-
-        brush = et.utils.pg_brush_cycler(0)
-        for sector in self.sectors:
-            sector.setBrush(brush)
-
-        if data.presence_detected:
-            index = (
-                data.processor_extra_result.presence_distance_index + self.sector_offset
-            ) // self.sector_size
-            self.sectors[index].setBrush(et.utils.pg_brush_cycler(1))
+        self.inter_hist_curve.setData(move_hist_xs, self.inter_history)
 
     def set_present_text_y_pos(self, y: float) -> None:
         x_pos = self.distances[0] + (self.distances[-1] - self.distances[0]) / 2
@@ -492,7 +449,7 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
-        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
@@ -507,38 +464,23 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
-        self.plot_config_editor = AttrsConfigEditor[PlotConfig](
-            title="Plot parameters",
-            factory_mapping={
-                "number_of_zones": pidgets.OptionalIntParameterWidgetFactory(
-                    name_label_text="Detection zones",
-                    checkbox_label_text="Override",
-                    limits=(1, 10),
-                    init_set_value=3,
-                )
-            },
-            parent=self.scrolly_widget,
-        )
-        self.plot_config_editor.sig_update.connect(self._on_plot_config_update)
-        scrolly_layout.addWidget(self.plot_config_editor)
-
         self.sticky_widget.setLayout(sticky_layout)
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
-        return {
-            "start_m": pidgets.FloatParameterWidgetFactory(
+    def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
+        service_parameters = {
+            "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range start",
                 suffix=" m",
                 decimals=3,
             ),
-            "end_m": pidgets.FloatParameterWidgetFactory(
+            "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range end",
                 suffix=" m",
                 decimals=3,
             ),
-            "profile": pidgets.OptionalEnumParameterWidgetFactory(
+            "profile": pidgets.OptionalEnumPidgetFactory(
                 name_label_text="Profile",
                 checkbox_label_text="Override",
                 enum_type=a121.Profile,
@@ -550,27 +492,27 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.Profile.PROFILE_5: "5 (longest)",
                 },
             ),
-            "step_length": pidgets.OptionalIntParameterWidgetFactory(
+            "step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Step length",
                 checkbox_label_text="Override",
                 limits=(1, None),
                 init_set_value=24,
             ),
-            "frame_rate": pidgets.FloatParameterWidgetFactory(
+            "frame_rate": pidgets.FloatPidgetFactory(
                 name_label_text="Frame rate",
                 suffix=" Hz",
                 decimals=1,
                 limits=(1, 100),
             ),
-            "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
+            "sweeps_per_frame": pidgets.IntPidgetFactory(
                 name_label_text="Sweeps per frame",
                 limits=(1, 4095),
             ),
-            "hwaas": pidgets.IntParameterWidgetFactory(
+            "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="HWAAS",
                 limits=(1, 511),
             ),
-            "inter_frame_idle_state": pidgets.EnumParameterWidgetFactory(
+            "inter_frame_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
                 name_label_text="Inter frame idle state",
                 label_mapping={
@@ -579,73 +521,90 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.IdleState.READY: "Ready",
                 },
             ),
-            "intra_enable": pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable fast motion detection"
-            ),
-            "intra_detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
+        }
+        intra_parameters = {
+            "intra_detection_threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra detection threshold",
                 decimals=2,
                 limits=(0, 5),
             ),
-            "intra_frame_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "intra_frame_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0, 1),
             ),
-            "intra_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "intra_output_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra output time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_enable": pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable slow motion detection"
-            ),
-            "inter_phase_boost": pidgets.CheckboxParameterWidgetFactory(
+        }
+        inter_parameters = {
+            "inter_phase_boost": pidgets.CheckboxPidgetFactory(
                 name_label_text="Enable phase boost"
             ),
-            "inter_detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_detection_threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter detection threshold",
                 decimals=2,
                 limits=(0, 5),
             ),
-            "inter_frame_fast_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_fast_cutoff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter fast cutoff freq.",
                 suffix=" Hz",
                 decimals=2,
                 limits=(1, 50),
                 log_scale=True,
             ),
-            "inter_frame_slow_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_slow_cutoff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter slow cutoff freq.",
                 suffix=" Hz",
                 decimals=2,
                 limits=(0.01, 1),
                 log_scale=True,
             ),
-            "inter_frame_deviation_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_deviation_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_output_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter output time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_frame_presence_timeout": pidgets.OptionalIntParameterWidgetFactory(
+            "inter_frame_presence_timeout": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Presence timeout",
                 checkbox_label_text="Enable",
                 suffix=" s",
                 limits=(1, 30),
                 init_set_value=5,
             ),
+        }
+        return {
+            pidgets.FlatPidgetGroup(): service_parameters,
+            pidgets.FlatPidgetGroup(): {
+                "intra_enable": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Enable intra (fast) motion detection"
+                ),
+            },
+            pidgets.FlatPidgetGroup(
+                hooks=(disable_if(parameter_is("intra_enable", False)),),
+            ): intra_parameters,
+            pidgets.FlatPidgetGroup(): {
+                "inter_enable": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Enable inter (slow) motion detection"
+                ),
+            },
+            pidgets.FlatPidgetGroup(
+                hooks=(disable_if(parameter_is("inter_enable", False)),),
+            ): inter_parameters,
         }
 
     def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
@@ -668,8 +627,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
-            self.plot_config_editor.set_data(None)
-            self.plot_config_editor.setEnabled(False)
             self.sensor_id_pidget.set_selected_sensor(None, [])
 
             return
@@ -680,8 +637,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
-        self.plot_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.plot_config_editor.set_data(state.plot_config)
         self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
@@ -690,9 +645,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_config_update(self, config: DetectorConfig) -> None:
         self.app_model.put_backend_plugin_task("update_config", {"config": config})
-
-    def _on_plot_config_update(self, config: PlotConfig) -> None:
-        self.app_model.put_backend_plugin_task("update_plot_config", {"config": config})
 
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "sync":
@@ -731,7 +683,21 @@ PRESENCE_DETECTOR_PLUGIN = PluginSpec(
     description="Detect human presence.",
     family=PluginFamily.DETECTOR,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(
+            name="Short range",
+            description="Short range",
+            preset_id=PluginPresetId.SHORT_RANGE,
+        ),
+        PluginPresetBase(
+            name="Medium range",
+            description="Medium range",
+            preset_id=PluginPresetId.MEDIUM_RANGE,
+        ),
+        PluginPresetBase(
+            name="Long range",
+            description="Long range",
+            preset_id=PluginPresetId.LONG_RANGE,
+        ),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.MEDIUM_RANGE,
 )

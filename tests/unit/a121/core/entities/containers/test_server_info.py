@@ -1,5 +1,8 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
 
 import packaging.version
 import pytest
@@ -14,7 +17,7 @@ def reference_sensor_info() -> SensorInfo:
 
 
 @pytest.fixture
-def reference_dict(reference_sensor_info: SensorInfo) -> dict:
+def reference_dict(reference_sensor_info: SensorInfo) -> dict[str, t.Any]:
     return {
         "rss_version": "a121-v2.3.4",
         "sensor_count": 1,
@@ -26,7 +29,9 @@ def reference_dict(reference_sensor_info: SensorInfo) -> dict:
 
 
 @pytest.fixture
-def reference_obj(reference_dict: dict, reference_sensor_info: SensorInfo) -> a121.ServerInfo:
+def reference_obj(
+    reference_dict: dict[str, t.Any], reference_sensor_info: SensorInfo
+) -> a121.ServerInfo:
     return a121.ServerInfo(
         rss_version=reference_dict["rss_version"],
         sensor_count=reference_dict["sensor_count"],
@@ -37,11 +42,11 @@ def reference_obj(reference_dict: dict, reference_sensor_info: SensorInfo) -> a1
     )
 
 
-def test_to_dict(reference_obj: a121.ServerInfo, reference_dict: dict) -> None:
+def test_to_dict(reference_obj: a121.ServerInfo, reference_dict: dict[str, t.Any]) -> None:
     assert reference_obj.to_dict() == reference_dict
 
 
-def test_from_dict(reference_obj: a121.ServerInfo, reference_dict: dict) -> None:
+def test_from_dict(reference_obj: a121.ServerInfo, reference_dict: dict[str, t.Any]) -> None:
     assert a121.ServerInfo.from_dict(reference_dict) == reference_obj
 
 
@@ -55,7 +60,7 @@ def test_parsed_rss_version(reference_obj: a121.ServerInfo) -> None:
     assert reference_obj.parsed_rss_version == packaging.version.Version("2.3.4")
 
 
-def test_sensor_info_str(reference_sensor_info: dict) -> None:
+def test_sensor_info_str(reference_sensor_info: dict[str, t.Any]) -> None:
     assert str(reference_sensor_info).splitlines() == [
         "SensorInfo:",
         "  connected .............. True",

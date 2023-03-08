@@ -44,6 +44,7 @@ class Client(ClientABCWithGoodError):
     def open(
         cls,
         ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
         serial_port: Optional[str] = None,
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
@@ -61,6 +62,7 @@ class Client(ClientABCWithGoodError):
             try:
                 client = subclass.open(
                     ip_address,
+                    tcp_port,
                     serial_port,
                     usb_device,
                     mock,

@@ -51,7 +51,9 @@ def get_one_usb_device(only_accessible: bool = False) -> USBDevice:
 def link_factory(client_info: ClientInfo) -> BufferedLink:
 
     if client_info.socket is not None:
-        return AdaptedSocketLink(host=client_info.socket.ip_address)
+        return AdaptedSocketLink(
+            host=client_info.socket.ip_address, port=client_info.socket.tcp_port
+        )
 
     if client_info.serial is not None:
         return AdaptedSerialLink(

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -27,49 +27,54 @@ def results() -> t.List[ProcessorResult]:
     return [
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
+            near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
                 np.float_(0.1),
             ]
             * 20,
             direct_leakage=np.arange(20, dtype=complex),
-            phase_jitter_comp_reference=np.arange(20, dtype=float).reshape((2, 10)),
+            phase_jitter_comp_reference=np.arange(10, dtype=float).reshape((10, 1)),
             extra_result=None,  # type: ignore[arg-type]
         ),
         ProcessorResult(
             estimated_distances=None,
-            estimated_amplitudes=None,
+            estimated_rcs=None,
+            near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[np.float_(0.1)] * 20,
             direct_leakage=np.arange(20, dtype=complex),
-            phase_jitter_comp_reference=np.arange(20, dtype=float).reshape((2, 10)),
+            phase_jitter_comp_reference=np.arange(10, dtype=float).reshape((10, 1)),
             extra_result=None,  # type: ignore[arg-type]
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
+            near_edge_status=True,
             recorded_threshold_mean_sweep=None,
             recorded_threshold_noise_std=None,
             direct_leakage=np.arange(20, dtype=complex),
-            phase_jitter_comp_reference=np.arange(20, dtype=float).reshape((2, 10)),
+            phase_jitter_comp_reference=np.arange(10, dtype=float).reshape((10, 1)),
             extra_result=None,  # type: ignore[arg-type]
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
+            near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
                 np.float_(0.1),
             ]
             * 20,
             direct_leakage=None,
-            phase_jitter_comp_reference=np.arange(20, dtype=float).reshape((2, 10)),
+            phase_jitter_comp_reference=np.arange(10, dtype=float).reshape((10, 1)),
             extra_result=None,  # type: ignore[arg-type]
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_amplitudes=[float(i) for i in range(10)],
+            estimated_rcs=[float(i) for i in range(10)],
+            near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
                 np.float_(0.1),
@@ -95,10 +100,12 @@ class TestDistanceResultListH5Serializer:
     @pytest.mark.parametrize(
         ("fields", "allow_missing_fields"),
         [
-            (_serializers._ALL_RESULT_FIELDS, False),
+            (_serializers._ALL_PROCESSOR_RESULT_FIELDS, False),
             *[
                 (subset, True)
-                for subset in proper_subsets_minus_empty_set(_serializers._ALL_RESULT_FIELDS)
+                for subset in proper_subsets_minus_empty_set(
+                    _serializers._ALL_PROCESSOR_RESULT_FIELDS
+                )
             ],
         ],
         ids=str,

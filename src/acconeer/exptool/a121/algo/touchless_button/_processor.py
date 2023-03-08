@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -28,8 +28,8 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         converter=MeasurementType,
     )
     """The measurement type.
-    ``CLOSE_RANGE`` corresponds to a range of approximate 2 cm - 12 cm.
-    ``FAR_RANGE`` corresponds to approximate 10 cm - 30 cm.
+    ``CLOSE_RANGE`` corresponds to a range of approximate 0 cm - 5 cm.
+    ``FAR_RANGE`` corresponds to approximate 0 cm - 24 cm.
     ``CLOSE_AND_FAR_RANGE`` gives two detection outputs, one for each range."""
 
     sensitivity_close: float = attrs.field(default=1.9)
@@ -60,12 +60,27 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     ) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
-        if config.sensor_config.num_subsweeps > 2:
+        if (
+            config.sensor_config.num_subsweeps != 2
+            and self.measurement_type is MeasurementType.CLOSE_AND_FAR_RANGE
+        ):
             validation_results.append(
                 a121.ValidationError(
                     config.sensor_config,
                     "num_subsweeps",
-                    "Number of subsweeps must be maximum 2",
+                    'Number of subsweeps must be 2 for range "Close and far"',
+                )
+            )
+
+        if config.sensor_config.num_subsweeps != 1 and (
+            self.measurement_type is MeasurementType.CLOSE_RANGE
+            or self.measurement_type is MeasurementType.FAR_RANGE
+        ):
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "num_subsweeps",
+                    'Number of subsweeps must be 1 for ranges "Close" and "Far"',
                 )
             )
 
@@ -182,7 +197,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         )
         self._frames_since_last_cal = 0
 
-    def _calc_variance(self, frame: npt.NDArray) -> npt.NDArray:
+    def _calc_variance(self, frame: npt.NDArray[np.complex_]) -> npt.NDArray[np.float_]:
         xn = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
         y = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
 
@@ -208,11 +223,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def _process_single_range(
         self,
-        frame: npt.NDArray,
+        frame: npt.NDArray[np.complex_],
         detection: bool,
         patience: int,
-        detection_depth: npt.NDArray,
-        counts: npt.NDArray,
+        detection_depth: npt.NDArray[np.float_],
+        counts: npt.NDArray[np.int_],
         measurement_type: MeasurementType,
     ) -> bool:
 
@@ -256,9 +271,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def _process_multiple_ranges(
         self,
-        frame: npt.NDArray,
-        detection_depth: npt.NDArray,
-        counts: npt.NDArray,
+        frame: npt.NDArray[np.complex_],
+        detection_depth: npt.NDArray[np.float_],
+        counts: npt.NDArray[np.int_],
     ) -> ProcessorResult:
 
         if detection_depth[counts > 1].size > 0:

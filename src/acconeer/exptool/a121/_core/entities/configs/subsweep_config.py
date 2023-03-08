@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -93,7 +93,7 @@ class SubsweepConfig:
         converter=bool,
     )
     _prf: PRF = attrs.field(
-        default=PRF.PRF_13_0_MHz,
+        default=PRF.PRF_15_6_MHz,
         converter=prf_converter,
     )
 
@@ -190,7 +190,7 @@ class SubsweepConfig:
         self._step_length = value
 
     @_step_length.validator
-    def _(self, _: attrs.Attribute, step_length: int) -> None:
+    def _(self, _: t.Any, step_length: int) -> None:
         if not (
             is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
         ):
@@ -313,11 +313,11 @@ class SubsweepConfig:
         PRF Setting            PRF    MMD    MUR
         ================= ======== ====== ======
         PRF_19_5_MHZ [*]_ 19.5 MHz  3.1 m  7.7 m
-        PRF_15_6_MHZ      15.6 MHz  5.8 m  9.6 m
+        PRF_15_6_MHZ      15.6 MHz  5.1 m  9.6 m
         PRF_13_0_MHZ      13.0 MHz  7.0 m 11.5 m
         PRF_8_7_MHZ        8.7 MHz 12.7 m 17.3 m
         PRF_6_5_MHZ        6.5 MHz 18.5 m 23.1 m
-        PRF_5_2_MHZ        5.2 MHz 24.2 m 28.8 m
+        PRF_5_2_MHZ        5.2 MHz 24.3 m 28.8 m
         ================= ======== ====== ======
 
         .. [*] 19.5MHz is only available for profile 1.
@@ -333,7 +333,7 @@ class SubsweepConfig:
         return {k.strip("_"): v for k, v in attrs.asdict(self).items()}
 
     @classmethod
-    def from_dict(cls, d: dict) -> SubsweepConfig:
+    def from_dict(cls, d: dict[str, t.Any]) -> SubsweepConfig:
         return SubsweepConfig(**d)
 
     def to_json(self) -> str:

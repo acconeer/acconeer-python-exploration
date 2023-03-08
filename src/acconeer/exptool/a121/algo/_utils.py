@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
 import copy
-from typing import Any, Tuple
+from typing import Any, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -32,11 +32,11 @@ SIGNAL_TEMPERATURE_MODEL_PARAMETER = {
 # Largest measurable distance per PRF.
 MAX_MEASURABLE_DIST_M = {
     a121.PRF.PRF_19_5_MHz: 3.1,
-    a121.PRF.PRF_15_6_MHz: 5.8,
+    a121.PRF.PRF_15_6_MHz: 5.1,
     a121.PRF.PRF_13_0_MHz: 7.0,
     a121.PRF.PRF_8_7_MHz: 12.7,
     a121.PRF.PRF_6_5_MHz: 18.5,
-    a121.PRF.PRF_5_2_MHz: 28.8,
+    a121.PRF.PRF_5_2_MHz: 24.3,
 }
 # Slope and interception of linear noise temperature model.
 NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
@@ -48,8 +48,7 @@ PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 
 
 def get_distances_m(
-    config: a121.SensorConfig,
-    metadata: a121.Metadata,
+    config: Union[a121.SensorConfig, a121.SubsweepConfig], metadata: a121.Metadata
 ) -> Tuple[npt.NDArray[np.float_], float]:
     points = np.arange(config.num_points) * config.step_length + config.start_point
     distances_m = points * metadata.base_step_length_m
@@ -57,22 +56,17 @@ def get_distances_m(
     return distances_m, step_length_m
 
 
-def get_approx_sweep_rate(config: a121.SensorConfig) -> float:
-    ppp = {1: 24, 2: 20, 3: 16, 4: 16, 5: 16}[config.profile.value]
-
-    n = 3 * ppp + config.num_points * config.hwaas * ppp
-
-    return config.prf.frequency / n
-
-
-def get_approx_fft_vels(config: a121.SensorConfig) -> Tuple[npt.NDArray, float]:
-    sweep_rate = get_approx_sweep_rate(config)
+def get_approx_fft_vels(
+    metadata: a121.Metadata, config: a121.SensorConfig
+) -> Tuple[npt.NDArray[np.float_], float]:
     if config.sweep_rate is not None:
-        sweep_rate = min([sweep_rate, config.sweep_rate])
+        sweep_rate = config.sweep_rate
+    else:
+        sweep_rate = metadata.max_sweep_rate
 
     spf = config.sweeps_per_frame
     f_res = 1 / spf
-    freqs = np.fft.fftshift(np.fft.fftfreq(spf))  # type: ignore[call-overload]
+    freqs = np.fft.fftshift(np.fft.fftfreq(spf))
     f_to_v = 2.5e-3 * sweep_rate
     return freqs * f_to_v, f_res * f_to_v
 

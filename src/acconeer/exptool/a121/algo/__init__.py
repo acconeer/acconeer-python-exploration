@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from ._base import (
@@ -6,6 +6,7 @@ from ._base import (
     AlgoConfigBase,
     AlgoParamEnum,
     AlgoProcessorConfigBase,
+    Controller,
     ExtendedProcessorBase,
     GenericProcessorBase,
     ProcessorBase,
@@ -18,7 +19,6 @@ from ._utils import (
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
     find_peaks,
     get_approx_fft_vels,
-    get_approx_sweep_rate,
     get_distance_filter_coeffs,
     get_distance_filter_edge_margin,
     get_distances_m,

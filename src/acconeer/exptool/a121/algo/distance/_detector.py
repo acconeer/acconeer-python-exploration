@@ -20,6 +20,7 @@ from acconeer.exptool.a121.algo import (
     ENVELOPE_FWHM_M,
     AlgoBase,
     AlgoConfigBase,
+    Controller,
     get_distance_filter_edge_margin,
     select_prf,
 )
@@ -97,6 +98,16 @@ class DetectorContext(AlgoBase):
 
 
 @attrs.mutable(kw_only=True)
+class SingleSensorExtraContext(AlgoBase):
+    offset_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
+    noise_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
+    close_range_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
+    recorded_threshold_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(
+        default=None
+    )
+
+
+@attrs.mutable(kw_only=True)
 class SingleSensorContext(AlgoBase):
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
     direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
@@ -111,6 +122,7 @@ class SingleSensorContext(AlgoBase):
     )
     reference_temperature: Optional[int] = attrs.field(default=None)
     sensor_calibration: Optional[a121.SensorCalibration] = attrs.field(default=None)
+    extra_context: SingleSensorExtraContext = attrs.field(factory=SingleSensorExtraContext)
     # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float_]]]]
 
     def to_h5(self, group: h5py.Group) -> None:
@@ -119,6 +131,7 @@ class SingleSensorContext(AlgoBase):
                 "recorded_thresholds_mean_sweep",
                 "recorded_thresholds_noise_std",
                 "bg_noise_std",
+                "extra_context",
             ]:
                 continue
 
@@ -130,7 +143,7 @@ class SingleSensorContext(AlgoBase):
             elif isinstance(v, a121.SensorCalibration):
                 sensor_calibration_group = group.create_group("sensor_calibration")
                 v.to_h5(sensor_calibration_group)
-            elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
+            elif isinstance(v, (np.ndarray, float, int, np.int64)):
                 group.create_dataset(k, data=v, track_times=False)
             else:
                 raise RuntimeError(
@@ -161,9 +174,38 @@ class SingleSensorContext(AlgoBase):
             for i, v in enumerate(self.bg_noise_std):
                 bg_noise_std_group.create_dataset(f"index_{i}", data=v, track_times=False)
 
+        extra_group = group.create_group("extra_context")
+
+        if self.extra_context.offset_frames is not None:
+            offset_frames_group = extra_group.create_group("offset_frames")
+
+            for i, v in enumerate(self.extra_context.offset_frames):
+                offset_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+        if self.extra_context.noise_frames is not None:
+            noise_frames_group = extra_group.create_group("noise_frames")
+
+            for i, v in enumerate(self.extra_context.noise_frames):
+                noise_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+        if self.extra_context.close_range_frames is not None:
+            close_range_frames_group = extra_group.create_group("close_range_frames")
+
+            for i, v in enumerate(self.extra_context.close_range_frames):
+                close_range_frames_group.create_dataset(f"index_{i}", data=v, track_times=False)
+
+        if self.extra_context.recorded_threshold_frames is not None:
+            recorded_threshold_frames_group = extra_group.create_group("recorded_threshold_frames")
+
+            for i, v in enumerate(self.extra_context.recorded_threshold_frames):
+                recorded_threshold_frames_group.create_dataset(
+                    f"index_{i}", data=v, track_times=False
+                )
+
     @classmethod
     def from_h5(cls, group: h5py.Group) -> SingleSensorContext:
-        context_dict = {}
+        context_dict: Dict[str, Any] = {}
+        context_dict["extra_context"] = {}
 
         unknown_keys = set(group.keys()) - set(attrs.fields_dict(SingleSensorContext).keys())
         if unknown_keys:
@@ -200,6 +242,31 @@ class SingleSensorContext(AlgoBase):
             context_dict["sensor_calibration"] = a121.SensorCalibration.from_h5(
                 group["sensor_calibration"]
             )
+
+        if "extra_context" in group:
+            extra_group = group["extra_context"]
+
+            if "offset_frames" in extra_group:
+                offset_frames = _get_group_items(extra_group["offset_frames"])
+                context_dict["extra_context"]["offset_frames"] = offset_frames
+
+            if "noise_frames" in extra_group:
+                noise_frames = _get_group_items(extra_group["noise_frames"])
+                context_dict["extra_context"]["noise_frames"] = noise_frames
+
+            if "close_range_frames" in extra_group:
+                close_range_frames = _get_group_items(extra_group["close_range_frames"])
+                context_dict["extra_context"]["close_range_frames"] = close_range_frames
+
+            if "recorded_threshold_frames" in extra_group:
+                recorded_threshold_frames = _get_group_items(
+                    extra_group["recorded_threshold_frames"]
+                )
+                context_dict["extra_context"][
+                    "recorded_threshold_frames"
+                ] = recorded_threshold_frames
+
+        context_dict["extra_context"] = SingleSensorExtraContext(**context_dict["extra_context"])
 
         return SingleSensorContext(**context_dict)
 
@@ -274,13 +341,40 @@ class DetectorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
-    rcs: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     distances: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    """Estimated distances (m), sorted according to the selected peak sorting strategy."""
+
+    rcs: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    """Estimated radar cross section (dBsm) corresponding to the peak amplitude of the
+    estimated distances.
+    """
+
+    near_edge_status: Optional[bool] = attrs.field(default=None)
+    """Boolean indicating an object close to the start edge, located outside of the
+    measurement range.
+    """
+
+    sensor_calibration_needed: Optional[bool] = attrs.field(default=None)
+    """Indication of sensor calibration needed. The sensor calibration needs to be redone if this
+    indication is set.
+
+    A sensor calibration should be followed by a detector recalibration, by calling
+    :func:`recalibrate_detector`.
+    """
+
+    temperature: Optional[int] = attrs.field(default=None)
+    """Temperature in sensor during measurement (in degree Celsius). Notice that this has poor
+    absolute accuracy.
+    """
+
     processor_results: list[ProcessorResult] = attrs.field()
+    """Processing result. Used for visualization in Exploration Tool."""
+
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
+    """Service extended result. Used for visualization in Exploration Tool."""
 
 
-class Detector:
+class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
     """Distance detector
     :param client: Client
     :param sensor_id: Sensor id
@@ -289,7 +383,7 @@ class Detector:
     """
 
     MIN_DIST_M = 0.0
-    MAX_DIST_M = 17.0
+    MAX_DIST_M = 23.0
     MIN_LEAKAGE_FREE_DIST_M = {
         a121.Profile.PROFILE_1: 0.12,
         a121.Profile.PROFILE_2: 0.28,
@@ -317,9 +411,8 @@ class Detector:
         detector_config: DetectorConfig,
         context: Optional[DetectorContext] = None,
     ) -> None:
-        self.client = client
+        super().__init__(client=client, config=detector_config)
         self.sensor_ids = sensor_ids
-        self.detector_config = detector_config
         self.started = False
 
         if context is None or not bool(context.single_sensor_contexts):
@@ -333,7 +426,7 @@ class Detector:
 
         self.aggregator: Optional[Aggregator] = None
 
-        self.update_config(self.detector_config)
+        self.update_config(self.config)
 
     def _validate_ready_for_calibration(self) -> None:
         if self.started:
@@ -352,16 +445,27 @@ class Detector:
 
         self._calibrate_noise()
 
-        if self._has_close_range_measurement(self.detector_config):
+        if self._has_close_range_measurement(self.config):
             self._calibrate_close_range()
 
-        if self._has_close_range_measurement(
-            self.detector_config
-        ) or self._has_recorded_threshold_mode(self.detector_config, self.sensor_ids):
+        if self._has_close_range_measurement(self.config) or self._has_recorded_threshold_mode(
+            self.config, self.sensor_ids
+        ):
             self._record_threshold()
 
         for context in self.context.single_sensor_contexts.values():
             context.session_config_used_during_calibration = self.session_config
+
+    def recalibrate_detector(self) -> None:
+        """Recalibrate detector by running a subset of the calibration routines.
+
+        Once the detector is calibrated, by calling :func:`calibrate_detector`, a sensor
+        calibration should be followed by a detector recalibration.
+        """
+
+        self._validate_ready_for_calibration()
+
+        self._calibrate_offset()
 
     def _calibrate_close_range(self) -> None:
         """Calibrates the close range measurement parameters used when subtracting the direct
@@ -406,6 +510,13 @@ class Detector:
 
             context.sensor_calibration = self.client.calibrations[sensor_id]
 
+            if context.extra_context.close_range_frames is None:
+                context.extra_context.close_range_frames = [[] for _ in extended_result]
+
+            for i, res in enumerate(extended_result):
+                result = res[sensor_id]
+                context.extra_context.close_range_frames[i].append(result._frame)
+
     def _record_threshold(self) -> None:
         """Calibrates the parameters used when forming the recorded threshold."""
 
@@ -432,13 +543,21 @@ class Detector:
 
         self.client.start_session()
         aggregators_result = {}
-        for _ in range(self.detector_config.num_frames_in_recorded_threshold):
+        for _ in range(self.config.num_frames_in_recorded_threshold):
             extended_result = self.client.get_next()
             assert isinstance(extended_result, list)
             aggregators_result = {
                 sensor_id: aggregators[sensor_id].process(extended_result=extended_result)
                 for sensor_id in self.sensor_ids
             }
+            for sensor_id, context in self.context.single_sensor_contexts.items():
+
+                if context.extra_context.recorded_threshold_frames is None:
+                    context.extra_context.recorded_threshold_frames = [[] for _ in extended_result]
+
+                for i, res in enumerate(extended_result):
+                    result = res[sensor_id]
+                    context.extra_context.recorded_threshold_frames[i].append(result._frame)
         self.client.stop_session()
 
         assert isinstance(extended_result, list)
@@ -484,7 +603,7 @@ class Detector:
                     subsweep.start_point = 0
                     # Set num_points to a high number to get sufficient number of data points to
                     # estimate the standard deviation.
-                    subsweep.num_points = 500
+                    subsweep.num_points = 220
 
         extended_metadata = self.client.setup_session(session_config)
         assert isinstance(extended_metadata, list)
@@ -508,6 +627,13 @@ class Detector:
                         bg_noise_std_in_subsweep.append(subsweep_std)
                 bg_noise_one_sensor.append(bg_noise_std_in_subsweep)
             context.bg_noise_std = bg_noise_one_sensor
+
+            if context.extra_context.noise_frames is None:
+                context.extra_context.noise_frames = [[] for _ in extended_result]
+
+            for i, res in enumerate(extended_result):
+                result = res[sensor_id]
+                context.extra_context.noise_frames[i].append(result._frame)
 
     def _calibrate_offset(self) -> None:
         """Estimates sensor offset error based on loopback measurement."""
@@ -539,6 +665,13 @@ class Detector:
             context.loopback_peak_location_m = calculate_loopback_peak_location(
                 extended_result[0][sensor_id], sensor_config
             )
+
+            if context.extra_context.offset_frames is None:
+                context.extra_context.offset_frames = [[] for _ in extended_result]
+
+            for i, res in enumerate(extended_result):
+                result = res[sensor_id]
+                context.extra_context.offset_frames[i].append(result._frame)
 
     @staticmethod
     def _get_sensor_calibrations(context: DetectorContext) -> dict[int, a121.SensorCalibration]:
@@ -682,7 +815,7 @@ class Detector:
         if self.started:
             raise RuntimeError("Already started")
 
-        status = self.get_detector_status(self.detector_config, self.context, self.sensor_ids)
+        status = self.get_detector_status(self.config, self.context, self.sensor_ids)
 
         if not status.ready_to_start:
             raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
@@ -701,9 +834,7 @@ class Detector:
                 for context in self.context.single_sensor_contexts.values()
             ]
         )
-        aggregator_config = AggregatorConfig(
-            peak_sorting_method=self.detector_config.peaksorting_method
-        )
+        aggregator_config = AggregatorConfig(peak_sorting_method=self.config.peaksorting_method)
         self.aggregators = {
             sensor_id: Aggregator(
                 session_config=self.session_config,
@@ -723,7 +854,7 @@ class Detector:
                 _record_algo_data(
                     _algo_group,
                     self.sensor_ids,
-                    self.detector_config,
+                    self.config,
                     self.context,
                 )
             else:
@@ -752,6 +883,9 @@ class Detector:
             sensor_id: DetectorResult(
                 rcs=aggregator_results[sensor_id].estimated_rcs,
                 distances=aggregator_results[sensor_id].estimated_distances,
+                near_edge_status=aggregator_results[sensor_id].near_edge_status,
+                sensor_calibration_needed=extended_result[0][sensor_id].calibration_needed,
+                temperature=extended_result[0][sensor_id].temperature,
                 processor_results=aggregator_results[sensor_id].processor_results,
                 service_extended_result=aggregator_results[sensor_id].service_extended_result,
             )
@@ -935,7 +1069,7 @@ class Detector:
         ]
         transition_profiles.append(config.max_profile)
 
-        transition_subgroup_plans: list = []
+        transition_subgroup_plans: list[SubsweepGroupPlan] = []
 
         for i in range(len(transition_profiles) - 1):
             profile = transition_profiles[i]
@@ -1046,16 +1180,16 @@ class Detector:
     def _calculate_hwaas(
         cls, profile: a121.Profile, breakpoints: list[int], signal_quality: float, step_length: int
     ) -> list[int]:
-        rlg_per_hwaas = Aggregator.RLG_PER_HWAAS_MAP[profile]
+        rlg_per_hwaas = Processor.RLG_PER_HWAAS_MAP[profile]
         hwaas = []
         for idx in range(len(breakpoints) - 1):
-            processing_gain = Aggregator.calc_processing_gain(profile, step_length)
+            processing_gain = Processor.calc_processing_gain(profile, step_length)
             subsweep_end_point_m = max(
                 APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
                 cls.HWAAS_MIN_DISTANCE,
             )
             rlg = signal_quality + 40 * np.log10(subsweep_end_point_m) - np.log10(processing_gain)
-            hwaas_in_subsweep = int(10 ** ((rlg - rlg_per_hwaas) / 10))
+            hwaas_in_subsweep = int(round(10 ** ((rlg - rlg_per_hwaas) / 10)))
             hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
         return hwaas
 
@@ -1283,7 +1417,7 @@ class Detector:
 def _record_algo_data(
     algo_group: h5py.Group,
     sensor_ids: list[int],
-    detector_config: DetectorConfig,
+    config: DetectorConfig,
     context: DetectorContext,
 ) -> None:
     algo_group.create_dataset(
@@ -1291,7 +1425,7 @@ def _record_algo_data(
         data=sensor_ids,
         track_times=False,
     )
-    _create_h5_string_dataset(algo_group, "detector_config", detector_config.to_json())
+    _create_h5_string_dataset(algo_group, "detector_config", config.to_json())
 
     context_group = algo_group.create_group("context")
     context.to_h5(context_group)
@@ -1309,7 +1443,7 @@ def _load_algo_data(
     return sensor_id, config, context
 
 
-def _get_group_items(group: h5py.Group) -> list[npt.NDArray]:
+def _get_group_items(group: h5py.Group) -> list[npt.NDArray[Any]]:
     group_items = []
 
     i = 0

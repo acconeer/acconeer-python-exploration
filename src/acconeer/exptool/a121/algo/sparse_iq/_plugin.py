@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "amplitude_method": pidgets.EnumParameterWidgetFactory(
+            "amplitude_method": pidgets.EnumPidgetFactory(
                 enum_type=AmplitudeMethod,
                 name_label_text="Amplitude method:",
                 name_label_tooltip=(
@@ -95,6 +95,10 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
         return ProcessorConfig
 
+    @classmethod
+    def supports_multiple_subsweeps(self) -> bool:
+        return True
+
 
 class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
@@ -102,39 +106,57 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.smooth_max = et.utils.SmoothMax()
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
-        self.distances_m, step_length_m = algo.get_distances_m(sensor_config, metadata)
-        vels, vel_res = algo.get_approx_fft_vels(sensor_config)
-
-        self.ampl_plot = self._create_amplitude_plot(self.plot_layout)
-        self.ampl_curve = self._create_amplitude_curve(0, self.distances_m)
-        self.ampl_plot.addItem(self.ampl_curve)
-
+        self.ampl_plot = self._create_amplitude_plot(self.plot_layout, sensor_config.num_subsweeps)
+        self.plot_layout.nextRow()
+        self.phase_plot = self._create_phase_plot(self.plot_layout, sensor_config.num_subsweeps)
         self.plot_layout.nextRow()
 
-        self.phase_plot = self._create_phase_plot(self.plot_layout)
-        self.phase_curve = self._create_phase_curve(0)
-        self.phase_plot.addItem(self.phase_curve)
+        self.ampl_curves = []
+        self.phase_curves = []
+        self.ft_plots = []
+        self.ft_im_list = []
+        self.distances_m_list = []
 
-        self.plot_layout.nextRow()
+        vels, vel_res = algo.get_approx_fft_vels(metadata, sensor_config)
 
-        self.ft_plot, self.ft_im = self._create_fft_plot(
-            self.plot_layout,
-            distances_m=self.distances_m,
-            step_length_m=step_length_m,
-            vels=vels,
-            vel_res=vel_res,
-        )
+        for i, subsweep in enumerate(sensor_config.subsweeps):
+            distances_m, step_length_m = algo.get_distances_m(subsweep, metadata)
+            self.distances_m_list.append(distances_m)
+
+            ampl_curve = self._create_amplitude_curve(i, distances_m)
+            self.ampl_plot.addItem(ampl_curve)
+            self.ampl_curves.append(ampl_curve)
+
+            phase_curve = self._create_phase_curve(i)
+            self.phase_plot.addItem(phase_curve)
+            self.phase_curves.append(phase_curve)
+
+            ft_plot, ft_im = self._create_fft_plot(
+                self.plot_layout,
+                distances_m=distances_m,
+                step_length_m=step_length_m,
+                vels=vels,
+                vel_res=vel_res,
+            )
+            self.ft_plots.append(ft_plot)
+            self.ft_im_list.append(ft_im)
 
     def update(self, processor_result: ProcessorResult) -> None:
-        ampls = processor_result.amplitudes
-        self.ampl_curve.setData(self.distances_m, ampls)
-        self.phase_curve.setData(self.distances_m, processor_result.phases)
-        self.ampl_plot.setYRange(0, self.smooth_max.update(ampls))
-        dvm = processor_result.distance_velocity_map
-        self.ft_im.updateImage(
-            dvm.T,
-            levels=(0, 1.05 * np.max(dvm)),
-        )
+        max_ = 0.0
+
+        for i, result in enumerate(processor_result):
+            ampls = result.amplitudes
+            self.ampl_curves[i].setData(self.distances_m_list[i], ampls)
+            self.phase_curves[i].setData(self.distances_m_list[i], result.phases)
+            dvm = result.distance_velocity_map
+            self.ft_im_list[i].updateImage(
+                dvm.T,
+                levels=(0, 1.05 * np.max(dvm)),
+            )
+
+            max_ = max(max_, np.max(ampls).item())
+
+        self.ampl_plot.setYRange(0, self.smooth_max.update(max_))
 
     @staticmethod
     def _create_amplitude_curve(
@@ -158,16 +180,16 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         )
 
     @staticmethod
-    def _create_amplitude_plot(parent: pg.GraphicsLayout) -> pg.PlotItem:
-        ampl_plot = parent.addPlot()
+    def _create_amplitude_plot(parent: pg.GraphicsLayout, colspan: int) -> pg.PlotItem:
+        ampl_plot = parent.addPlot(colspan=colspan)
         ampl_plot.setMenuEnabled(False)
         ampl_plot.showGrid(x=True, y=True)
         ampl_plot.setLabel("left", "Amplitude")
         return ampl_plot
 
     @staticmethod
-    def _create_phase_plot(parent: pg.GraphicsLayout) -> pg.PlotItem:
-        phase_plot = parent.addPlot()
+    def _create_phase_plot(parent: pg.GraphicsLayout, colspan: int) -> pg.PlotItem:
+        phase_plot = parent.addPlot(colspan=colspan)
         phase_plot.setMenuEnabled(False)
         phase_plot.showGrid(x=True, y=True)
         phase_plot.setLabel("left", "Phase")
@@ -201,7 +223,9 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         return plot, im
 
 
-class PluginSpec(ProcessorPluginSpec):
+class PluginSpec(
+    ProcessorPluginSpec[a121.Result, ProcessorConfig, ProcessorResult, a121.Metadata]
+):
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
     ) -> BackendPlugin:

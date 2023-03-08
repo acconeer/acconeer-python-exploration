@@ -1,5 +1,8 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
 
 import numpy as np
 import pytest
@@ -18,11 +21,12 @@ def ref_metadata() -> a121.Metadata:
         tick_period=50,
         base_step_length_m=0.0025,
         max_sweep_rate=1000.0,
+        high_speed_mode=True,
     )
 
 
 @pytest.fixture
-def ref_metadata_dict() -> dict:
+def ref_metadata_dict() -> dict[str, t.Any]:
     return {
         "frame_data_length": 10,
         "sweep_data_length": 10,
@@ -32,6 +36,7 @@ def ref_metadata_dict() -> dict:
         "tick_period": 50,
         "base_step_length_m": 0.0025,
         "max_sweep_rate": 1000.0,
+        "high_speed_mode": True,
     }
 
 
@@ -44,6 +49,7 @@ def test_init(ref_metadata: a121.Metadata) -> None:
     assert ref_metadata.tick_period == 50
     assert ref_metadata.base_step_length_m == 0.0025
     assert ref_metadata.max_sweep_rate == 1000.0
+    assert ref_metadata.high_speed_mode is True
 
 
 def test_eq(ref_metadata: a121.Metadata) -> None:
@@ -56,17 +62,18 @@ def test_eq(ref_metadata: a121.Metadata) -> None:
         tick_period=50,
         base_step_length_m=0.0025,
         max_sweep_rate=1000.0,
+        high_speed_mode=True,
     )
 
 
-def test_to_dict(ref_metadata: a121.Metadata, ref_metadata_dict: dict) -> None:
+def test_to_dict(ref_metadata: a121.Metadata, ref_metadata_dict: dict[str, t.Any]) -> None:
     d = ref_metadata.to_dict()
     assert d == ref_metadata_dict
     assert isinstance(d["subsweep_data_length"], np.ndarray)
     assert isinstance(d["subsweep_data_offset"], np.ndarray)
 
 
-def test_from_dict(ref_metadata: a121.Metadata, ref_metadata_dict: dict) -> None:
+def test_from_dict(ref_metadata: a121.Metadata, ref_metadata_dict: dict[str, t.Any]) -> None:
     constructed = a121.Metadata.from_dict(ref_metadata_dict)
     assert constructed == ref_metadata
     assert isinstance(constructed.subsweep_data_length, np.ndarray)

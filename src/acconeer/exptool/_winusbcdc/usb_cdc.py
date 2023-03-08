@@ -130,7 +130,7 @@ class ComPort:
         end_timeout = time.monotonic() + (self.timeout or 0.2)
         if size:
             while length < size:
-                c = self.winusby.read(self._ep_in, size - length)
+                c = self.winusbpy.read(self._ep_in, size - length)
                 if c is not None and len(c):
                     rx.append(c)
                     length += len(c)
@@ -159,7 +159,7 @@ class ComPort:
         if not self.is_open:
             return None
         try:
-            ret = self.winusbpy.write(self._ep_out, data)
+            ret = self.winusbpy.write(self._ep_out, bytes(data))
         except Exception as e:
             log.warning("USB Error on write {}".format(e))
             return

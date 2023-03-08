@@ -30,7 +30,7 @@ def is_task(func: T) -> T:
 
 
 class Model:
-    backend_plugin: Optional[BackendPlugin]
+    backend_plugin: Optional[BackendPlugin[Any]]
     client: Optional[a121.Client]
 
     def __init__(self, task_callback: Callable[[Message], None]) -> None:
@@ -63,7 +63,7 @@ class Model:
         method(**kwargs)
 
     @is_task
-    def connect_client(self, open_client_parameters: Dict) -> None:
+    def connect_client(self, open_client_parameters: Dict[str, Any]) -> None:
         if self.client is not None:
             raise RuntimeError(
                 "Model already has a Client. The current Client needs to be disconnected first."

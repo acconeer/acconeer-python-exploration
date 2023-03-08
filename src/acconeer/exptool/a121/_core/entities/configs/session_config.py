@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 import warnings
 from typing import Any, Optional, Union
+
+import numpy as np
 
 from acconeer.exptool.a121._core import utils
 
@@ -224,7 +226,7 @@ class SessionConfig:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> SessionConfig:
+    def from_dict(cls, d: dict[str, Any]) -> SessionConfig:
         d = d.copy()
         d["arg"] = []
         groups_list = d.pop("groups")
@@ -302,8 +304,8 @@ def _validate_groups_structure(groups: list[dict[int, SensorConfig]]) -> None:
             raise ValueError
 
         for sensor_id, entry in group.items():
-            if not isinstance(sensor_id, int):
-                raise ValueError
+            if not isinstance(sensor_id, (int, np.int64)):
+                raise ValueError(f"{type(sensor_id)} not int")
 
             if not isinstance(entry, SensorConfig):
                 raise ValueError

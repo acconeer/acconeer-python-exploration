@@ -76,7 +76,7 @@ class PluginSpec(Protocol):
 
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
+    ) -> BackendPlugin[Any]:
         ...
 
     def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPluginInterface:
@@ -115,13 +115,13 @@ class _BackendListeningThread(QThread):
         log.debug("Backend listening thread stopping...")
 
 
-def _to_usbdevice(obj: Union[dict, USBDevice]) -> Optional[USBDevice]:
+def _to_usbdevice(obj: Union[dict[str, Any], USBDevice]) -> Optional[USBDevice]:
     if isinstance(obj, dict):
         return USBDevice.from_dict(obj)
     return obj
 
 
-def _to_serialdevice(obj: Union[dict, SerialDevice]) -> Optional[SerialDevice]:
+def _to_serialdevice(obj: Union[dict[str, Any], SerialDevice]) -> Optional[SerialDevice]:
     if isinstance(obj, dict):
         return SerialDevice.from_dict(obj)
     return obj
@@ -143,7 +143,7 @@ class _PersistentState:
             return json.JSONEncoder.default(self, obj)
 
     @staticmethod
-    def _to_enum(d: dict) -> Any:
+    def _to_enum(d: dict[str, Any]) -> Any:
         if "__enum__" in d:
             # Transform the dict {"__enum__": "RegisteredEnum.MEMBER"}
             # to the enum RegisteredEnum.MEMBER
@@ -165,7 +165,7 @@ class _PersistentState:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> _PersistentState:
+    def from_dict(cls, d: dict[str, Any]) -> _PersistentState:
         return cls(**d)
 
     def to_json(self) -> str:
@@ -327,7 +327,7 @@ class AppModel(QObject):
             kwargs,
             plugin=True,
             on_ok=on_ok,
-            on_error=on_error,
+            on_error=on_error or self.emit_error,
         )
 
     def _handle_backend_closed_task(self, closed_task: ClosedTask) -> None:
@@ -417,7 +417,11 @@ class AppModel(QObject):
 
     def _update_saveable_file(self, path: Optional[Path]) -> None:
         if self.saveable_file is not None:
-            self.saveable_file.unlink(missing_ok=True)
+            try:
+                self.saveable_file.unlink()
+            except FileNotFoundError:
+                # If the file we want to remove does not exist, that is fine.
+                pass
 
         self.saveable_file = path
         self.broadcast()

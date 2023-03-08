@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -31,7 +31,6 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     inter_output_time_const: float = attrs.field(default=5)
     intra_frame_time_const: float = attrs.field(default=0.15)
     intra_output_time_const: float = attrs.field(default=0.5)
-    history_length_s: int = attrs.field(default=5)
 
     def _collect_validation_results(
         self, config: a121.SessionConfig
@@ -84,17 +83,15 @@ class ProcessorExtraResult:
     fast_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     slow_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
     lp_noise: npt.NDArray[np.float_] = attrs.field()
-    inter: npt.NDArray[np.float_] = attrs.field()
-    intra: npt.NDArray[np.float_] = attrs.field()
     presence_distance_index: int = attrs.field()
-    inter_presence_history: npt.NDArray[np.float_] = attrs.field()
-    intra_presence_history: npt.NDArray[np.float_] = attrs.field()
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     intra_presence_score: float = attrs.field()
+    intra: npt.NDArray[np.float_] = attrs.field()
     inter_presence_score: float = attrs.field()
+    inter: npt.NDArray[np.float_] = attrs.field()
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
     extra_result: ProcessorExtraResult = attrs.field()
@@ -188,9 +185,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.presence_distance_index = 0
         self.presence_distance = 0
 
-        history_length_n = int(round(self.f * processor_config.history_length_s))
-        self.intra_presence_history = np.zeros(history_length_n)
-        self.inter_presence_history = np.zeros(history_length_n)
         self.update_index = 0
 
         self.intra_enable = processor_config.intra_enable
@@ -268,13 +262,17 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return np.mean(np.abs(a), axis=axis) * sqrt(n / (n - ddof))  # type: ignore[no-any-return]
 
     @staticmethod
-    def _depth_filter(a: npt.NDArray, depth_filter_length: int) -> npt.NDArray[np.float_]:
+    def _depth_filter(
+        a: npt.NDArray[np.float_], depth_filter_length: int
+    ) -> npt.NDArray[np.float_]:
         b = np.ones(depth_filter_length) / depth_filter_length
 
         return np.correlate(a, b, mode="same")
 
     @staticmethod
-    def _calculate_phase_shift(a: npt.NDArray, b: npt.NDArray) -> npt.NDArray[np.float_]:
+    def _calculate_phase_shift(
+        a: npt.NDArray[np.complex_], b: npt.NDArray[np.float_]
+    ) -> npt.NDArray[np.float_]:
         phase_a = np.angle(a)
         phase_b = np.angle(b)
         phases_unwrapped = np.unwrap([phase_a, phase_b], axis=0)
@@ -282,7 +280,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
         return phase_shift  # type: ignore[no-any-return]
 
-    def _calculate_phase_and_amp_weight(self, mean_sweep: npt.NDArray) -> np.float_:
+    def _calculate_phase_and_amp_weight(self, mean_sweep: npt.NDArray[np.float_]) -> np.float_:
         """
         Calculation of a weight factor based on phase shift and amplitude.
         The phase shift between the mean sweep and a lp-filtered mean sweep is
@@ -463,13 +461,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             presence_detected = False
             self.presence_distance = 0
 
-        # TODO: self.presence_history will be removed in the future
-        self.intra_presence_history = np.roll(self.intra_presence_history, -1)
-        self.intra_presence_history[-1] = self.intra_presence_score
-
-        self.inter_presence_history = np.roll(self.inter_presence_history, -1)
-        self.inter_presence_history[-1] = self.inter_presence_score
-
         self.update_index += 1
 
         extra_result = ProcessorExtraResult(
@@ -478,16 +469,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             fast_lp_mean_sweep=self.fast_lp_mean_sweep,
             slow_lp_mean_sweep=self.slow_lp_mean_sweep,
             lp_noise=self.lp_noise,
-            inter=inter,
-            intra=intra,
             presence_distance_index=self.presence_distance_index,
-            intra_presence_history=self.intra_presence_history,
-            inter_presence_history=self.inter_presence_history,
         )
 
         return ProcessorResult(
             intra_presence_score=self.intra_presence_score,
+            intra=intra,
             inter_presence_score=self.inter_presence_score,
+            inter=inter,
             presence_detected=presence_detected,
             presence_distance=self.presence_distance,
             extra_result=extra_result,

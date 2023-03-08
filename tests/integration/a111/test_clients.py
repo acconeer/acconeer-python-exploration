@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import time
@@ -13,7 +13,7 @@ from acconeer.exptool.a111._clients.reg.client import SPIClient, UARTClient
 
 
 @pytest.fixture(scope="module")
-def setup(request):
+def setup(request, port_from_cli):
     conn_type, *args = request.param
 
     if conn_type == "spi":
@@ -24,7 +24,7 @@ def setup(request):
         client = UARTClient(port)
         sensor = 1
     elif conn_type == "socket":
-        client = SocketClient(args[0])
+        client = SocketClient(args[0], port=port_from_cli)
         sensor = int(args[1])
     elif conn_type == "mock":
         client = MockClient()

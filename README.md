@@ -14,11 +14,11 @@ To run the Python exploration scripts, you will need an [evaluation kit](https:/
 This release is developed for [Acconeer SDK and Module SW](https://developer.acconeer.com/)
 **A111-v2.14.0**
 and
-**A121-v0.7.1**.
+**A121-v0.8.0**.
 Running this version is strongly recommended, as we continuously fix bugs and add features.
 
 <p align="center">
-  <img alt="The application in action" src="https://raw.githubusercontent.com/acconeer/acconeer-python-exploration/0aa884c4a7c17e6f5299e2e57aa1ccc02d3f4c05/docs/_static/gui.png" width=85%>
+  <img alt="The application in action" src="https://raw.githubusercontent.com/acconeer/acconeer-python-exploration/8f633e02abac99ffec6fefec4339d13bc5c18388/docs/_static/gui.png" width=85%>
 </p>
 
 ## Quickstart for Windows
@@ -61,7 +61,7 @@ Python 3.7 or newer. Older versions have limited or no support.
 
 Tested on:
 
-* Python 3 (developed and tested on 3.7, 3.8 and 3.9)
+* Python 3 (developed and tested on 3.7, 3.8, 3.9, 3.10 and 3.11)
 * Windows 10
 * Ubuntu 20.04
 
@@ -178,3 +178,7 @@ Scripts can be terminated by pressing Ctrl-C in the terminal.
 ## Disclaimer
 
 Here you find the [disclaimer](https://docs.acconeer.com/en/latest/disclaimer.html).
+
+## FAQ and common issues
+
+See the [FAQ](https://docs.acconeer.com/en/latest/exploration_tool/faq.html) on the Acconeer documentation pages.

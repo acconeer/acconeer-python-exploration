@@ -1,9 +1,8 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
-
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Any, Tuple
 
 import pytest
 
@@ -13,11 +12,11 @@ from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[impor
 
 CLIENT_INFO_PARAMETRIZE = [
     (
-        dict(ip_address="addr"),
+        dict(ip_address="addr", tcp_port=None),
         {
             "serial": None,
             "usb": None,
-            "socket": {"ip_address": "addr"},
+            "socket": {"ip_address": "addr", "tcp_port": None},
             "mock": None,
         },
     ),
@@ -61,37 +60,37 @@ CLIENT_INFO_PARAMETRIZE = [
 
 
 @pytest.fixture(params=CLIENT_INFO_PARAMETRIZE)
-def client_info_fixture(request: pytest.FixtureRequest) -> Tuple[ClientInfo, dict]:
+def client_info_fixture(request: pytest.FixtureRequest) -> Tuple[ClientInfo, dict[str, Any]]:
     from_open_args = request.param[0]
     client_info_dict = request.param[1]
     return (ClientInfo._from_open(**from_open_args), client_info_dict)
 
 
-def test_to_dict(client_info_fixture: Tuple[ClientInfo, dict]) -> None:
+def test_to_dict(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     client_info_dict = client_info_fixture[1]
     assert client_info.to_dict() == client_info_dict
 
 
-def test_from_dict(client_info_fixture: Tuple[ClientInfo, dict]) -> None:
+def test_from_dict(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     client_info_dict = client_info_fixture[1]
     assert ClientInfo.from_dict(client_info_dict) == client_info
 
 
-def test_to_from_dict_equality(client_info_fixture: Tuple[ClientInfo, dict]) -> None:
+def test_to_from_dict_equality(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     assert client_info == ClientInfo.from_dict(client_info.to_dict())
 
 
-def test_from_dict_extra_kwarg(client_info_fixture: Tuple[ClientInfo, dict]) -> None:
+def test_from_dict_extra_kwarg(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info_dict = client_info_fixture[1]
     client_info_dict["extra"] = "kwarg"
     with pytest.raises(TypeError):
         ClientInfo.from_dict(client_info_dict)
 
 
-def test_to_from_json_equality(client_info_fixture: Tuple[ClientInfo, dict]) -> None:
+def test_to_from_json_equality(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     assert client_info == ClientInfo.from_json(client_info.to_json())
 

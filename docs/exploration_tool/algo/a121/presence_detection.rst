@@ -1,3 +1,5 @@
+.. _exploration_tool-a121-presence_detection:
+
 Presence detection
 ==================
 
@@ -424,4 +426,9 @@ Configuration parameters
 ------------------------
 
 .. autoclass:: acconeer.exptool.a121.algo.presence._detector.DetectorConfig
+   :members:
+
+Detector result
+--------------------
+.. autoclass:: acconeer.exptool.a121.algo.presence._detector.DetectorResult
    :members:

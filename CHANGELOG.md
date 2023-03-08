@@ -1,5 +1,60 @@
 # Changelog
 
+## v5.9.2
+
+### Added
+- A121: High speed mode, HSM, metadata. Available in RSS version > 0.8.0.
+- A121: `tcp_port`-argument to `a121.Client`, which enables specifying
+        the port of an exploration server. If not specified, the default
+        port will be used.
+- Parameter categories
+- A121: Presets for presence detector and smart presence added.
+        Default values are changed.
+
+### Fixed
+- Fix mock/simulated client for portable release
+- Fix Python 3.7 incompatibility in AppModel
+
+## v5.9.1
+
+### Changed
+- Change default PRF to 15.6 MHz
+
+## v5.9.0
+
+### Added
+- A121: Breathing example
+- A121: Bilateration example
+- A121: Support for subsweeps in the Sparse IQ plugin
+- A111: Presence detector human only
+- A121: Smart presence reference app
+
+### Changed
+- Bump A121 SDK version to v0.8.0
+
+### Removed
+- A121: Sector plots in Presence detector example and plugin
+
+## v5.8.1
+
+### Added
+- Sensor config info in distance detector
+
+### Changed
+- A121 presence: move inter and intra from extra_result to result
+- A111: Update calibration behavior
+  * No longer automatically applied on start, unless auto-apply is ticked
+  * Loading calibration will not auto-apply, unless auto-apply is ticked
+  * New calibration will not be stored in application if a calibration is
+    already present. Old calibration has to be cleared first
+  * Calibration status is updated to reflect this
+
+### Fixed
+- Make sure to sync sensor ids after replaying file
+- A111: Check that calibration background and data length matches, otherwise
+  raise an exception
+- Re-add TickUnwrapper
+
 ## v5.8.0
 
 ### Added

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ class TestLatestExplorationProtocolCommands:
         ],
     )
     def test_all_command_functions_end_with_linebreak(
-        self, function: Callable, kwargs: Any
+        self, function: Callable[..., Any], kwargs: Any
     ) -> None:
         assert function(**kwargs).endswith(b"\n")
 
