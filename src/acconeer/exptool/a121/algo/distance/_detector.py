@@ -443,6 +443,17 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         for context in self.context.single_sensor_contexts.values():
             context.session_config_used_during_calibration = self.session_config
 
+    def recalibrate_detector(self) -> None:
+        """Recalibrate detector by running a subset of the calibration routines.
+
+        Once the detector is calibrated, by calling :func:`calibrate_detector`, a sensor
+        calibration should be followed by a detector recalibration.
+        """
+
+        self._validate_ready_for_calibration()
+
+        self._calibrate_offset()
+
     def _calibrate_close_range(self) -> None:
         """Calibrates the close range measurement parameters used when subtracting the direct
         leakage from the measured signal.
