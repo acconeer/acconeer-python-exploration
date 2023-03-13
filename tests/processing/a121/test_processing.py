@@ -49,16 +49,22 @@ def input_path(resource_name: str) -> Path:
             "input-presence-default.h5",
         ),
         (
-            presence_test.presence_timeout_3s,
+            presence_test.presence_short_range,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
-            "input-presence-presence_timeout3s.h5",
+            "input-presence-short_range.h5",
         ),
         (
-            presence_test.presence_timeout_2s_phase_boost,
+            presence_test.presence_long_range,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
-            "input-presence-0p35m_phase_boost.h5",
+            "input-presence-long_range.h5",
+        ),
+        (
+            presence_test.presence_medium_range_phase_boost_no_timeout,
+            presence_test.PresenceResultH5Serializer,
+            presence_test.result_comparator,
+            "input-presence-medium_range_phase_boost_no_timeout.h5",
         ),
         (
             distance_test.distance_processor,
