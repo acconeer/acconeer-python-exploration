@@ -19,6 +19,20 @@ def integrationTestPythonVersionsForBuildScope = [
     (BuildScope.NIGHTLY) : ["3.7", "3.8", "3.9", "3.10", "3.11"],
 ]
 
+@Field
+def integrationTestA121RssVersionsForBuildScope = [
+    (BuildScope.SANITY)  : [branch: "master"],
+    (BuildScope.HOURLY)  : [tag: "a121-v0.8.0"],
+    (BuildScope.NIGHTLY) : [branch: "master", tag: "a121-v0.8.0"],
+]
+
+@Field
+def integrationTestA111RssVersionsForBuildScope = [
+    (BuildScope.SANITY)  : [branch: "master"],
+    (BuildScope.HOURLY)  : [],
+    (BuildScope.NIGHTLY) : [branch: "master", tag: "a111-v2.14.2"],
+]
+
 
 String dockerArgs(env_map) {
   return "--hostname ${env_map.NODE_NAME}" +
@@ -63,6 +77,8 @@ try {
 
     def isolatedTestPythonVersions = isolatedTestPythonVersionsForBuildScope[buildScope]
     def integrationTestPythonVersions = integrationTestPythonVersionsForBuildScope[buildScope]
+    def integrationTestA121RssVersions = integrationTestA121RssVersionsForBuildScope[buildScope]
+    def integrationTestA111RssVersions = integrationTestA111RssVersionsForBuildScope[buildScope]
 
     stage('Report start to Gerrit') {
         gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}, Scope: ${buildScope}"
@@ -138,72 +154,115 @@ try {
         }
     }
 
-    parallel_steps["Mock test (${integrationTestPythonVersions})"] = {
+    parallel_steps["A121 Mock test (py=${integrationTestPythonVersions}, rss=${integrationTestA121RssVersions})"] = {
         node('docker') {
             ws('workspace/exptool') {
-                stage('Setup') {
-                    printNodeInfo()
-                    checkoutAndCleanup()
+                integrationTestA121RssVersions.each { rssVersion ->
+                    def rssVersionName = rssVersion.getValue()
 
-                    findBuildAndCopyArtifacts(
-                        projectName: 'sw-main',
-                        branch: "master",
-                        artifactNames: [
-                            "out/internal_stash_binaries_sanitizer_a111.tgz",
-                            "out/internal_stash_binaries_sanitizer_a121.tgz"
-                        ]
-                    )
-                    sh 'mkdir stash'
-                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
-                    sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
-                }
-                stage("Run integration tests (${integrationTestPythonVersions})") {
-                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        integrationTestPythonVersions.each { v -> sh "python${v} -V" }
-                        List<String> doitTasksA111 = integrationTestPythonVersions
-                                                        .collect { v -> "integration_test:${v}-a111" }
-                        List<String> doitTasksA121 = integrationTestPythonVersions
-                                                        .collect { v -> "integration_test:${v}-a121" }
-                        // A111 & A121 needs to run sequentially since they use the same python verions
-                        // installing the same package simultaneously on 2 processes is flaky
-                        sh "doit -f dodo.py -n ${doitTasksA111.size()} " + doitTasksA111.join(' ')
-                        sh "doit -f dodo.py -n ${doitTasksA121.size()} " + doitTasksA121.join(' ')
+                    stage("Setup (rss=${rssVersionName})") {
+                        printNodeInfo()
+                        checkoutAndCleanup()
+
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ["out/internal_stash_binaries_sanitizer_a121.tgz"],
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-v0.8.0']
+                        )
+                        sh 'mkdir stash'
+                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
+                    }
+                    stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
+                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                            integrationTestPythonVersions.each { v -> sh "python${v} -V" }
+
+                            List<String> doitTasks = integrationTestPythonVersions
+                                                            .collect { v -> "integration_test:${v}-a121" }
+
+                            if (rssVersionName == 'a121-v0.8.0') {
+                                // The current latest release does not support the "--port" argument, which requires
+                                // us to run the test tasks sequentially ("-n 1") and with default ports ("port_strategy=default").
+                                // This can be removed at 1.0.0.
+                                sh "doit -f dodo.py port_strategy=default -n 1 " + doitTasks.join(' ')
+                            } else {
+                                sh "doit -f dodo.py port_strategy=unique -n ${doitTasks.size()} " + doitTasks.join(' ')
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    parallel_steps["XM112 test (${integrationTestPythonVersions})"] = {
+    parallel_steps["A111 Mock test (py=${integrationTestPythonVersions}, rss=${integrationTestA111RssVersions})"] = {
+        node('docker') {
+            ws('workspace/exptool') {
+                integrationTestA111RssVersions.each { rssVersion ->
+                    def rssVersionName = rssVersion.getValue()
+
+                    stage("Setup (rss=${rssVersionName})") {
+                        printNodeInfo()
+                        checkoutAndCleanup()
+
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ["out/internal_stash_binaries_sanitizer_a111.tgz"],
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-v2.14.2']
+                        )
+                        sh 'mkdir stash'
+                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
+                    }
+                    stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
+                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                            integrationTestPythonVersions.each { v -> sh "python${v} -V" }
+
+                            List<String> doitTasks = integrationTestPythonVersions
+                                                            .collect { v -> "integration_test:${v}-a111" }
+
+                            sh "doit -f dodo.py port_strategy=unique -n ${doitTasks.size()} " + doitTasks.join(' ')
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    parallel_steps["XM112 test (py=${integrationTestPythonVersions}, rss=${integrationTestA111RssVersions})"] = {
         node('exploration_tool') {
             ws('workspace/exptool') {
-                def dockerImg = null
+                integrationTestA111RssVersions.each { rssVersion ->
+                    def rssVersionName = rssVersion.getValue()
 
-                stage('Setup') {
-                    printNodeInfo()
-                    checkoutAndCleanup()
+                    def dockerImg = null
+                    stage("Setup (rss=${rssVersionName})") {
+                        printNodeInfo()
+                        checkoutAndCleanup()
 
-                    findBuildAndCopyArtifacts(
-                        projectName: 'sw-main',
-                        branch: "master",
-                        artifactNames: [
-                            "out/internal_stash_python_libs.tgz",
-                            "out/internal_stash_binaries_xm112.tgz",
-                        ]
-                    )
-                    sh 'mkdir stash'
-                    sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
-                    sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
-                    dockerImg = buildDocker(path: 'docker')
-                }
-                lock("${env.NODE_NAME}-xm112") {
-                    stage ('Flash') {
-                        sh '(cd stash && python3 python_libs/test_utils/flash.py)'
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: [
+                                    "out/internal_stash_python_libs.tgz",
+                                    "out/internal_stash_binaries_xm112.tgz",
+                                ]
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a111-v2.14.2']
+                        )
+                        sh 'mkdir stash'
+                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
+                        sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
+                        dockerImg = buildDocker(path: 'docker')
                     }
-                    dockerImg.inside(dockerArgs(env) + " --net=host --privileged") {
-                        integrationTestPythonVersions.each { v ->
-                            stage("Run integration tests (${v})") {
-                                sh "tests/run-a111-xm112-integration-tests.sh ${v}"
+                    lock("${env.NODE_NAME}-xm112") {
+                        stage ("Flash (rss=${rssVersionName})") {
+                            sh '(cd stash && python3 python_libs/test_utils/flash.py)'
+                        }
+                        dockerImg.inside(dockerArgs(env) + " --net=host --privileged") {
+                            integrationTestPythonVersions.each { pythonVersion ->
+                                stage("Run integration tests (py=${pythonVersion}, rss=${rssVersionName})") {
+                                    sh "tests/run-a111-xm112-integration-tests.sh ${pythonVersion}"
+                                }
                             }
                         }
                     }
