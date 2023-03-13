@@ -354,6 +354,19 @@ class DetectorResult:
     measurement range.
     """
 
+    sensor_calibration_needed: Optional[bool] = attrs.field(default=None)
+    """Indication of sensor calibration needed. The sensor calibration needs to be redone if this
+    indication is set.
+
+    A sensor calibration should be followed by a detector recalibration, by calling
+    :func:`recalibrate_detector`.
+    """
+
+    temperature: Optional[int] = attrs.field(default=None)
+    """Temperature in sensor during measurement (in degree Celsius). Notice that this has poor
+    absolute accuracy.
+    """
+
     processor_results: list[ProcessorResult] = attrs.field()
     """Processing result. Used for visualization in Exploration Tool."""
 
@@ -871,6 +884,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 rcs=aggregator_results[sensor_id].estimated_rcs,
                 distances=aggregator_results[sensor_id].estimated_distances,
                 near_edge_status=aggregator_results[sensor_id].near_edge_status,
+                sensor_calibration_needed=extended_result[0][sensor_id].calibration_needed,
+                temperature=extended_result[0][sensor_id].temperature,
                 processor_results=aggregator_results[sensor_id].processor_results,
                 service_extended_result=aggregator_results[sensor_id].service_extended_result,
             )
