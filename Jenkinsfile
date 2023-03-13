@@ -1,5 +1,5 @@
 import groovy.transform.Field
-@Library('sw-jenkins-library@f8abd2e69ceef2d37e8ab7f1fbc294e34ac04670') _
+@Library('sw-jenkins-library@1c4f7b55ac3559620ccbc54a847f5bb46c172619') _
 
 enum BuildScope {
     SANITY, HOURLY, NIGHTLY
@@ -73,7 +73,7 @@ try {
         node('docker') {
             ws('workspace/exptool') {
                 printNodeInfo()
-                checkoutAndCleanup(lfs: false)
+                checkoutAndCleanup()
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     sh 'python3 -V'
@@ -90,7 +90,7 @@ try {
             ws('workspace/exptool') {
                 stage('Build package & documentation') {
                     printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+                    checkoutAndCleanup()
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh 'python3 -V'
@@ -110,7 +110,7 @@ try {
             ws('workspace/exptool') {
                 stage('Mypy') {
                     printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+                    checkoutAndCleanup()
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh '''nox -s "mypy(python='3.7')"'''
                     }
@@ -124,7 +124,7 @@ try {
             ws('workspace/exptool') {
                 stage("Isolated tests (${isolatedTestPythonVersions})") {
                     printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+                    checkoutAndCleanup()
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
@@ -143,11 +143,11 @@ try {
             ws('workspace/exptool') {
                 stage('Setup') {
                     printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+                    checkoutAndCleanup()
 
                     findBuildAndCopyArtifacts(
                         projectName: 'sw-main',
-                        revision: "master",
+                        branch: "master",
                         artifactNames: [
                             "out/internal_stash_binaries_sanitizer_a111.tgz",
                             "out/internal_stash_binaries_sanitizer_a121.tgz"
@@ -181,11 +181,11 @@ try {
 
                 stage('Setup') {
                     printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+                    checkoutAndCleanup()
 
                     findBuildAndCopyArtifacts(
                         projectName: 'sw-main',
-                        revision: "master",
+                        branch: "master",
                         artifactNames: [
                             "out/internal_stash_python_libs.tgz",
                             "out/internal_stash_binaries_xm112.tgz",
@@ -220,7 +220,7 @@ try {
         node('docker') {
             ws('workspace/exptool') {
                 printNodeInfo()
-                checkoutAndCleanup(lfs: false)
+                checkoutAndCleanup()
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     env.TWINE_NON_INTERACTIVE = '1'
