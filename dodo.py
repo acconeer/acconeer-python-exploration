@@ -43,7 +43,7 @@ def task_test():
             "name": py_ver,
             "actions": [
                 f'nox -s "test(python={py_ver!r})" -- '
-                + "--test-groups unit integration "
+                + "--test-groups unit integration app "
                 + "--editable"
             ],
         }

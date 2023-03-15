@@ -80,6 +80,7 @@ packages = [
     "acconeer.exptool.app.new",
     "acconeer.exptool.setup",
     "tests.unit.a121",
+    "tests.app",
 ]
 check_untyped_defs = true
 disallow_any_generics = true
@@ -96,6 +97,7 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
+    "dirty_equals.*",
     "h5py.*",
     "platformdirs.*",
     "psutil.*",

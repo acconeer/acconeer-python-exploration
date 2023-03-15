@@ -20,6 +20,7 @@ PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 PYTEST_SPEC = "pytest==7.2"
 PYTEST_XDIST_SPEC = "pytest-xdist==3.1.0"
+DIRTY_EQUALS_SPEC = "dirty-equals==0.5.0"
 
 SPHINX_SOURCE_DIR = "docs"
 SPHINX_OUTPUT_DIR = "docs/_build"
@@ -206,6 +207,11 @@ def test(session):
             )
 
     if "app" in args.test_groups:
+        install_deps |= {DIRTY_EQUALS_SPEC}
+        install_extras |= {"app"}
+        pytest_commands.append(["tests/app"])
+
+    if "clickbot" in args.test_groups:
         install_deps |= {
             PYTEST_MOCK_SPEC,
             "pytest-qt",
