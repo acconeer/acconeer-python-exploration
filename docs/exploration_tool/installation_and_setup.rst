@@ -1,3 +1,5 @@
+.. _installation-and-setup:
+
 Installation and setup
 ======================
 
@@ -110,10 +112,3 @@ Udev needs to be informed that rules have changed if changes have been made in `
     sudo udevadm trigger
 
 An USB device have to be disconnected and reconnected before the udev permissions are updated.
-
-Launching the application
---------------------------
-
-After installing the Exploration Tool, it is launched with::
-
-    python -m acconeer.exptool.app
