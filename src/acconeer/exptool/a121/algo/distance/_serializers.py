@@ -2,7 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import copy
 import typing as t
 
 import h5py
@@ -11,14 +10,11 @@ import numpy.typing as npt
 
 from acconeer.exptool.a121._core import INT_16_COMPLEX, complex_array_to_int16_complex
 from acconeer.exptool.a121._core.entities.containers.utils import int16_complex_array_to_complex
+from acconeer.exptool.utils import PhonySeries  # type: ignore[import]
 
 from ._detector import DetectorResult
 from ._processors import ProcessorResult
 
-
-S = t.TypeVar("S")
-T = t.TypeVar("T")
-DTypeT = t.TypeVar("DTypeT")
 
 _ALL_PROCESSOR_RESULT_FIELDS = (
     "estimated_distances",
@@ -40,21 +36,6 @@ _ALL_DETECTOR_RESULT_FIELDS = (
 )
 
 _INT_16_COMPLEX_SENTINEL = -(2**15)
-
-
-class PhonySeries(t.Generic[T]):
-    def __init__(self, prototype: T, is_prototype_singleton: bool = True) -> None:
-        self._prototype = prototype
-        self._is_prototype_singleton = is_prototype_singleton
-
-    def __next__(self) -> T:
-        if self._is_prototype_singleton:
-            return self._prototype
-        else:
-            return copy.copy(self._prototype)
-
-    def __iter__(self) -> PhonySeries[T]:
-        return self
 
 
 def _stack_optional_arraylike(

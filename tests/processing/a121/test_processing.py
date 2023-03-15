@@ -11,7 +11,7 @@ import pytest
 
 from acconeer.exptool import a121
 
-from . import distance_test, presence_test, resources, smart_presence_test
+from . import distance_test, presence_test, resources, smart_presence_test, tank_level_test
 from .misc import AlgorithmFactory, AlgorithmResult, H5ResultSerializer
 
 
@@ -95,6 +95,12 @@ def input_path(resource_name: str) -> Path:
             smart_presence_test.SmartPresenceResultH5Serializer,
             smart_presence_test.smart_presence_result_comparator,
             "smart_presence.h5",
+        ),
+        (
+            tank_level_test.tank_level_controller,
+            tank_level_test.TankLevelResultH5Serializer,
+            tank_level_test.tank_level_result_comparator,
+            "medium_tank.h5",
         ),
     ],
 )

@@ -1,7 +1,13 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
+import os
+import sys
+
 import pytest
+
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 
 def pytest_addoption(parser):
