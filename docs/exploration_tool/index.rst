@@ -17,7 +17,6 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    gui/index
    faq
    changelog
-   migration_v3_to_v4
 
 .. toctree::
    :caption: API reference
