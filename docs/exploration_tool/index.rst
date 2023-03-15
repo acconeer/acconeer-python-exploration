@@ -29,6 +29,18 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    changelog
 
 .. toctree::
+   :maxdepth: 1
+   :glob:
+   :caption: Setting up your EVK
+   :hidden:
+
+   XC120 + XE121 (A121) <evk_setup/xc120_xe121>
+   XM112 <evk_setup/xm112>
+   XM122 <evk_setup/xm122>
+   XM132 <evk_setup/xm132>
+   Raspberry Pi (A111) <evk_setup/raspberry_a111>
+
+.. toctree::
    :caption: API reference
    :maxdepth: 1
    :hidden:
@@ -43,18 +55,6 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
 
    A111 <file_format_ref/a111>
    A121 <file_format_ref/a121>
-
-.. toctree::
-   :maxdepth: 1
-   :glob:
-   :caption: Setting up your EVK
-   :hidden:
-
-   XC120 + XE121 (A121) <evk_setup/xc120_xe121>
-   XM112 <evk_setup/xm112>
-   XM122 <evk_setup/xm122>
-   XM132 <evk_setup/xm132>
-   Raspberry Pi (A111) <evk_setup/raspberry_a111>
 
 .. toctree::
    :maxdepth: 2
