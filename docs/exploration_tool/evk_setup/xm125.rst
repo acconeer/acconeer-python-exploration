@@ -1,0 +1,19 @@
+.. _setup_xm125:
+
+Setting up your XM125
+=====================
+
+For detailed instructions, visit our `developer page <https://developer.acconeer.com/>`_.
+
+Flashing
+--------
+
+Start by downloading the latest ``acc_exploration_server_a121.bin`` from our `developer page <https://developer.acconeer.com/>`_.
+
+Flash XM125 using the Exploration Tool Application::
+
+   python -m acconeer.exptool.app
+
+or by using the following command::
+
+   python -m acconeer.exptool.flash flash -d XM125 -i acc_exploration_server_a121.bin

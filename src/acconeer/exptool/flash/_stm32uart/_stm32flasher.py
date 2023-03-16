@@ -1,8 +1,11 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+
+from __future__ import annotations
 
 import functools
 import operator
+from typing import Optional
 
 import serial
 
@@ -14,6 +17,19 @@ STM32_DEFAULT_BAUDRATE = 115200
 STM32_UART_TIMEOUT = 2
 
 FLASH_ADDRESS = 0x08000000
+
+DFU_BOOT_DESCRIPTION = {
+    "XM125": (
+        "<p>"
+        "<ol>"
+        "<li>Press and hold the <b>DFU</b> button on the board</li>"
+        "<li>Press the <b>RESET</b> button (still holding the DFU button)</li>"
+        "<li>Release the <b>RESET</b> button</li>"
+        "<li>Release the <b>DFU</b> button</li>"
+        "</ol>"
+        "</p>"
+    ),
+}
 
 
 class Stm32DeviceException(Exception):
@@ -46,6 +62,21 @@ class Stm32UartFlasher(DeviceFlasherBase):
             flasher.go(FLASH_ADDRESS)
 
         flasher.close()
+
+    @staticmethod
+    def get_boot_description(device_name: str) -> Optional[str]:
+        description = (
+            "Please visit https://developer.acconeer.com to find the latest flash "
+            f"instructions for {device_name}."
+        )
+
+        if device_name in DFU_BOOT_DESCRIPTION.keys():
+            description = (
+                f"<p>To flash the {device_name} it needs to be put in bootloader mode:</p>"
+                f"{DFU_BOOT_DESCRIPTION[device_name]}"
+            )
+
+        return description
 
 
 class Stm32FlashProtocol:
