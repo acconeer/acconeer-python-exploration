@@ -16,3 +16,4 @@ A121 algorithms
    smart_presence
    gesture_control
    carpet_detection
+   surface_velocity

@@ -1,3 +1,5 @@
+.. _handbook-a121-csm:
+
 Continuous sweep mode (CSM)
 ===========================
 
