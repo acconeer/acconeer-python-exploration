@@ -68,6 +68,14 @@ BuildScope getBuildScope() {
     }
 }
 
+def finishBuild() {
+    stage('Report to gerrit') {
+        int score = currentBuild.currentResult == 'SUCCESS' ? 1 : -1
+        String success = currentBuild.currentResult == 'SUCCESS' ? "success" : "failure"
+        String message = "${currentBuild.currentResult}: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
+        gerritReview labels: [Verified: score], message: message
+    }
+}
 
 try {
     // Ensure cron triggers are setup (for periodic jobs)
@@ -300,20 +308,8 @@ try {
             }
         }
     }
-
-    stage('Report to gerrit') {
-        if (currentBuild.currentResult == 'SUCCESS') {
-            echo "Reporting OK to Gerrit"
-            gerritReview labels: [Verified: 1], message: "Success: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
-        } else {
-            echo "Reporting Fail to Gerrit"
-            gerritReview labels: [Verified: -1], message: "Failed: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
-        }
-    }
 } catch (exception) {
-    stage('Report result to gerrit') {
-        echo "Reporting Fail to Gerrit"
-        gerritReview labels: [Verified: -1], message: "Failed: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
-    }
-    throw exception
+    currentBuild.result = 'FAILURE'
 }
+
+finishBuild()
