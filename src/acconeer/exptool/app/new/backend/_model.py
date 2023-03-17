@@ -69,6 +69,8 @@ class Model:
                 "Model already has a Client. The current Client needs to be disconnected first."
             )
 
+        self.task_callback(ConnectionStateMessage(state=ConnectionState.CONNECTING))
+
         self.client = a121.Client(
             ip_address=client_info.ip_address,
             serial_port=client_info.serial_port,
@@ -112,6 +114,8 @@ class Model:
     def disconnect_client(self) -> None:
         if self.client is None:
             raise RuntimeError("Backend has no client to disconnect.")
+
+        self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTING))
 
         if self.backend_plugin is not None:
             self.backend_plugin.detach_client()

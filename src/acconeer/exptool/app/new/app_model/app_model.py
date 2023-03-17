@@ -346,7 +346,7 @@ class AppModel(QObject):
 
     def _handle_backend_message(self, message: Message) -> None:
         if isinstance(message, ConnectionStateMessage):
-            log.debug("Got backend connection state message")
+            log.debug(f"Got backend connection state message {message.state}")
             self.connection_state = message.state
             self.connection_warning = message.warning
             self.broadcast()
@@ -578,13 +578,11 @@ class AppModel(QObject):
             {"client_info": client_info},
             on_error=on_error,
         )
-        self.connection_state = ConnectionState.CONNECTING
         self.connection_warning = None
         self.broadcast()
 
     def disconnect_client(self) -> None:
         self._put_backend_task("disconnect_client", {})
-        self.connection_state = ConnectionState.DISCONNECTING
         self.connection_warning = None
         self._a121_server_info = None
         self.broadcast()

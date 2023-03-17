@@ -15,7 +15,7 @@ import dirty_equals as de
 class DisconnectedBackend:
     """Mix-in with test cases for a Backend without a client"""
 
-    def test_cannot_connect_to_invalid_client(
+    def test_connect_to_invalid_client_fails_but_updates_state_accordingly(
         self,
         backend: Backend,
         assert_messages: t.Callable[..., None],
@@ -25,6 +25,7 @@ class DisconnectedBackend:
         assert_messages(
             backend,
             received=[
+                ConnectionStateMessage(state=ConnectionState.CONNECTING),
                 ConnectionStateMessage(state=ConnectionState.DISCONNECTED),
                 tasks.FAILED_CLOSED_TASK,
             ],
@@ -41,10 +42,10 @@ class DisconnectedBackend:
         assert_messages(
             backend,
             received=[
+                ConnectionStateMessage(state=ConnectionState.CONNECTING),
                 ConnectionStateMessage(state=ConnectionState.CONNECTED),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            not_received=[ConnectionStateMessage(state=ConnectionState.CONNECTING)],
         )
 
     def test_disconnecting_fails_and_does_not_update_connection_state(
@@ -87,10 +88,10 @@ class ConnectedBackend:
         assert_messages(
             backend,
             received=[
+                ConnectionStateMessage(state=ConnectionState.DISCONNECTING),
                 ConnectionStateMessage(state=ConnectionState.DISCONNECTED),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            not_received=[ConnectionStateMessage(state=ConnectionState.DISCONNECTING)],
         )
 
 
