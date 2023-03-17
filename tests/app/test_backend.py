@@ -98,7 +98,7 @@ class ConnectedBackend:
 class UnloadedBackend:
     """Mix-in with test cases for a Backend without a plugin"""
 
-    def test_loading_a_plugin_reports_idle_plugin_state(
+    def test_loading_a_plugin_reports_loading_and_loaded_plugin_state(
         self,
         backend: Backend,
         assert_messages: t.Callable[..., None],
@@ -108,10 +108,10 @@ class UnloadedBackend:
         assert_messages(
             backend,
             received=[
+                PluginStateMessage(state=PluginState.LOADING),
                 PluginStateMessage(state=PluginState.LOADED_IDLE),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            not_received=[PluginStateMessage(state=PluginState.LOADING)],
         )
 
     def test_unloading_nonexisting_plugin_is_allowed_but_does_not_change_state(
@@ -131,7 +131,7 @@ class UnloadedBackend:
 class LoadedBackend:
     """Mix-in with test cases for a Backend with a plugin"""
 
-    def test_loading_a_plugin_reports_idle_plugin_state(
+    def test_loading_a_plugin_does_not_report_any_unloading_state_changes(
         self,
         backend: Backend,
         assert_messages: t.Callable[..., None],
@@ -141,11 +141,11 @@ class LoadedBackend:
         assert_messages(
             backend,
             received=[
+                PluginStateMessage(state=PluginState.LOADING),
                 PluginStateMessage(state=PluginState.LOADED_IDLE),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
             not_received=[
-                PluginStateMessage(state=PluginState.LOADING),
                 PluginStateMessage(state=PluginState.UNLOADING),
                 PluginStateMessage(state=PluginState.UNLOADED),
             ],
@@ -161,10 +161,10 @@ class LoadedBackend:
         assert_messages(
             backend,
             received=[
+                PluginStateMessage(state=PluginState.UNLOADING),
                 PluginStateMessage(state=PluginState.UNLOADED),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            not_received=[PluginStateMessage(state=PluginState.UNLOADING)],
         )
 
 

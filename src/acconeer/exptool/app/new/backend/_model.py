@@ -134,6 +134,8 @@ class Model:
         if self.backend_plugin is not None:
             self.unload_plugin(send_callback=False)
 
+        self.task_callback(PluginStateMessage(state=PluginState.LOADING))
+
         self.backend_plugin = plugin_factory(self.task_callback, key)
         log.info(f"{plugin_factory.__name__} was loaded.")
 
@@ -147,6 +149,9 @@ class Model:
     def unload_plugin(self, send_callback: bool = True) -> None:
         if self.backend_plugin is None:
             return
+
+        if send_callback:
+            self.task_callback(PluginStateMessage(state=PluginState.UNLOADING))
 
         self.backend_plugin.teardown()
         self.backend_plugin = None

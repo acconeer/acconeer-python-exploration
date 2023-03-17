@@ -351,7 +351,7 @@ class AppModel(QObject):
             self.connection_warning = message.warning
             self.broadcast()
         elif isinstance(message, PluginStateMessage):
-            log.debug("Got backend plugin state message")
+            log.debug(f"Got plugin state message {message.state}")
             self.plugin_state = message.state
             self.broadcast()
         elif isinstance(message, BackendPluginStateMessage):
@@ -693,9 +693,6 @@ class AppModel(QObject):
         self.sig_load_plugin.emit(None)
         self._update_saveable_file(None)
         self.backend_plugin_state = None
-        if self.plugin is not None:
-            self.plugin_state = PluginState.UNLOADING
-
         self.broadcast()
 
         self._put_backend_task("unload_plugin", {}, on_error=self.emit_error)
@@ -717,7 +714,6 @@ class AppModel(QObject):
                 on_error=self.emit_error,
             )
             self.put_backend_plugin_task("load_from_cache", {})
-            self.plugin_state = PluginState.LOADING
 
         self.sig_load_plugin.emit(plugin)
         self.plugin = plugin
@@ -765,6 +761,7 @@ class AppModel(QObject):
 
         self.load_plugin(plugin)
         self.put_backend_plugin_task("load_from_file", {"path": path}, on_error=self.emit_error)
+        # TODO: remove 2 lines below
         self.plugin_state = PluginState.LOADED_STARTING
         self.broadcast()
 
