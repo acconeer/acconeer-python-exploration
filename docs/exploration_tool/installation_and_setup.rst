@@ -54,7 +54,7 @@ After installing the ``acconeer-exptool`` package, you can run::
     python -m acconeer.exptool.setup
 
 which interactively configures your machine and downloads needed dependencies.
-This is done in order for your machine to work at its best with Exploration tool.
+This is done in order for your machine to work at its best with Exploration Tool.
 ``acconeer.exptool.setup`` performs the same steps that described in the sections below.
 
 

@@ -15,7 +15,7 @@ The trigger filter can trigger a detection (i.e. a button press) if the value is
 
 Calibration
 -----------
-The calibration system is designed for usage in the Exploration tool and similar experimental environments. If this code is to be used in a deployment, the calibration method could need adjustment.
+The calibration system is designed for usage in the Exploration Tool and similar experimental environments. If this code is to be used in a deployment, the calibration method could need adjustment.
 
 The time constant of the first filter indirectly determines how much the underlying noise will affect the output. A slow filter will let through small deviations to the amplifier, and vice versa.
 

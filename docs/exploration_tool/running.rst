@@ -1,10 +1,10 @@
 .. _exploration_tool-running:
 
-Running Exploration tool
+Running Exploration Tool
 ========================
 
 
-Launching the Exploration tool application
+Launching the Exploration Tool application
 ------------------------------------------
 
 After :ref:`installation-and-setup`, Exploration Tool is launched with::

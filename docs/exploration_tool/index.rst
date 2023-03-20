@@ -11,7 +11,7 @@ It will also guide you to the optimal sensor settings and help you fine-tune the
 
 .. figure:: /_static/gui/app_in_action.png
 
-   Exploration tool running Presence detection
+   Exploration Tool running Presence detection
 
 
 The Exploration Tool application runs on Windows and Linux and is the primary way to explore our radar technology and evaluation kits.
