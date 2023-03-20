@@ -23,7 +23,8 @@ Python related
 
 #) The GUI does not start and shows an error: ``qt.qpa.plugin: Could not find the Qt platform plugin "windows" in ""``.
 
-   This error may occur when there are non-ASCII characters in the path.
+   This error have been witnessed when Exploration Tool is installed in an Anaconda environment.
+   The error may also occur when there are non-ASCII characters in the path.
 
 #) Dropdown menu is out of position
 
