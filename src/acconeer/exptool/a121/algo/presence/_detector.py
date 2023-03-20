@@ -10,7 +10,6 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
-from attr import Attribute
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import Result
@@ -38,10 +37,10 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
 
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
-    start_m: float = attrs.field(default=1.0)
+    start_m: float = attrs.field(default=0.3)
     """Start point of measurement interval in meters."""
 
-    end_m: float = attrs.field(default=2.0)
+    end_m: float = attrs.field(default=2.5)
     """End point of measurement interval in meters."""
 
     profile: Optional[a121.Profile] = attrs.field(
@@ -58,7 +57,7 @@ class DetectorConfig(AlgoConfigBase):
     calculated based on the profile.
     """
 
-    frame_rate: float = attrs.field(default=10.0)
+    frame_rate: float = attrs.field(default=12.0)
     """Frame rate in Hz."""
 
     sweeps_per_frame: int = attrs.field(default=16)
@@ -84,7 +83,7 @@ class DetectorConfig(AlgoConfigBase):
     intra_frame_time_const: float = attrs.field(default=0.15)
     """Time constant for the depthwise filtering in the intra-frame part."""
 
-    intra_output_time_const: float = attrs.field(default=0.5)
+    intra_output_time_const: float = attrs.field(default=0.3)
     """Time constant for the output in the intra-frame part."""
 
     inter_enable: bool = attrs.field(default=True)
@@ -96,7 +95,7 @@ class DetectorConfig(AlgoConfigBase):
     inter_detection_threshold: float = attrs.field(default=1)
     """Detection threshold for the inter-frame presence detection."""
 
-    inter_frame_fast_cutoff: float = attrs.field(default=20.0)
+    inter_frame_fast_cutoff: float = attrs.field(default=6.0)
     """
     Cutoff frequency of the low pass filter for the fast filtered absolute sweep mean.
     No filtering is applied if the cutoff is set over half the frame rate (Nyquist limit).
@@ -108,20 +107,20 @@ class DetectorConfig(AlgoConfigBase):
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
     """Time constant of the low pass filter for the inter-frame deviation between fast and slow."""
 
-    inter_output_time_const: float = attrs.field(default=5)
+    inter_output_time_const: float = attrs.field(default=2)
     """Time constant for the output in the inter-frame part."""
 
     inter_phase_boost: bool = attrs.field(default=False)
     """Enables the inter-frame phase boost. Used to increase slow motion detection."""
 
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
+    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
     """
     Number of seconds the inter-frame presence score needs to decrease before exponential
     scaling starts for faster decline.
     """
 
     @step_length.validator
-    def _validate_step_length(self, attrs: Attribute, step_length: int) -> None:
+    def _validate_step_length(self, _: Any, step_length: int) -> None:
         if step_length is not None:
             if not (
                 is_divisor_of(SPARSE_IQ_PPC, step_length)
@@ -142,6 +141,21 @@ class DetectorConfig(AlgoConfigBase):
             )
 
         return validation_results
+
+
+@attrs.frozen(kw_only=True)
+class DetectorMetadata:
+    start_m: float = attrs.field()
+    """Actual start point of measurement in meters"""
+
+    step_length_m: float = attrs.field()
+    """Actual step length between each data point of the measurement in meters"""
+
+    num_points: int = attrs.field()
+    """The number of data points in the measurement"""
+
+    profile: a121.Profile = attrs.field()
+    """Profile used for measurement"""
 
 
 @attrs.frozen(kw_only=True)
@@ -186,6 +200,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
     ) -> None:
         super().__init__(client=client, config=detector_config)
         self.sensor_id = sensor_id
+        self.detector_metadata: Optional[DetectorMetadata] = None
 
         self.started = False
 
@@ -239,6 +254,13 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         assert isinstance(metadata, a121.Metadata)
 
         processor_config = self._get_processor_config(self.config)
+
+        self.detector_metadata = DetectorMetadata(
+            start_m=self.config.start_m,
+            step_length_m=metadata.base_step_length_m * sensor_config.step_length,
+            num_points=sensor_config.num_points,
+            profile=sensor_config.profile,
+        )
 
         self.processor = Processor(
             sensor_config=sensor_config,

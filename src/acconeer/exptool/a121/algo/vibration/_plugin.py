@@ -70,23 +70,23 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         # Note: Incomplete mapping
         return {
-            "time_series_length": pidgets.IntParameterWidgetFactory(
+            "time_series_length": pidgets.IntPidgetFactory(
                 name_label_text="Time series length",
                 limits=(0, None),
             ),
-            "lp_coeff": pidgets.FloatSliderParameterWidgetFactory(
+            "lp_coeff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Time filtering coefficient",
                 suffix="",
                 limits=(0, 1),
                 decimals=2,
             ),
-            "sensitivity": pidgets.FloatSliderParameterWidgetFactory(
+            "sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Threshold sensitivity",
                 suffix="dB",
                 limits=(0, 30),
                 decimals=1,
             ),
-            "amplitude_threshold": pidgets.FloatParameterWidgetFactory(
+            "amplitude_threshold": pidgets.FloatPidgetFactory(
                 name_label_text="Minimum amplitude",
                 decimals=0,
                 limits=(0, None),

@@ -4,8 +4,10 @@ Interpreting radar data
 =======================
 
 The data produced by the A121 sparse IQ service is conceptually similar to that of the A111 IQ service.
-Every sweep is a vector of complex values corresponding to an amplitude and phase of the reflected pulses in the configured range.
-However, unlike the A111 IQ service, the different points should be regarded as independent as no filter is applied.
+The A121 Sparse IQ data is represented by complex numbers, one for each distance sampled.
+Each number has an *amplitude* and a *phase*, the amplitude is obtained by taking the absolute value of the complex number
+and the phase is obtained by taking the argument of the same complex number.
+A *sweep* is a array of these complex values corresponding to an amplitude and phase of the reflected pulses in the configured range.
 
 For any given frame, we let :math:`z(s, d)` be the complex IQ value (point) for a sweep :math:`s` and a distance point :math:`d`.
 

@@ -2,7 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import copy
 import typing as t
 
 import h5py
@@ -11,16 +10,13 @@ import numpy.typing as npt
 
 from acconeer.exptool.a121._core import INT_16_COMPLEX, complex_array_to_int16_complex
 from acconeer.exptool.a121._core.entities.containers.utils import int16_complex_array_to_complex
+from acconeer.exptool.utils import PhonySeries  # type: ignore[import]
 
 from ._detector import DetectorResult
 from ._processors import ProcessorResult
 
 
-S = t.TypeVar("S")
-T = t.TypeVar("T")
-DTypeT = t.TypeVar("DTypeT")
-
-_ALL_PROCESSOR_RESULT_FIELDS: t.Final = (
+_ALL_PROCESSOR_RESULT_FIELDS = (
     "estimated_distances",
     "estimated_rcs",
     "near_edge_status",
@@ -31,7 +27,7 @@ _ALL_PROCESSOR_RESULT_FIELDS: t.Final = (
     # "extra_result" ignored by default
 )
 
-_ALL_DETECTOR_RESULT_FIELDS: t.Final = (
+_ALL_DETECTOR_RESULT_FIELDS = (
     "rcs",
     "distances",
     "near_edge_status",
@@ -42,25 +38,10 @@ _ALL_DETECTOR_RESULT_FIELDS: t.Final = (
 _INT_16_COMPLEX_SENTINEL = -(2**15)
 
 
-class PhonySeries(t.Generic[T]):
-    def __init__(self, prototype: T, is_prototype_singleton: bool = True) -> None:
-        self._prototype = prototype
-        self._is_prototype_singleton = is_prototype_singleton
-
-    def __next__(self) -> T:
-        if self._is_prototype_singleton:
-            return self._prototype
-        else:
-            return copy.copy(self._prototype)
-
-    def __iter__(self) -> PhonySeries:
-        return self
-
-
 def _stack_optional_arraylike(
-    sequence: t.Sequence[t.Optional[t.Union[t.List, npt.NDArray]]],
+    sequence: t.Sequence[t.Optional[t.Union[t.List[t.Any], npt.NDArray[t.Any]]]],
     dtype: t.Union[t.Type[float], t.Type[complex]] = float,
-) -> npt.NDArray:
+) -> npt.NDArray[t.Any]:
     """
     Tries to create an NDArray from a sequence of Optional ArrayLikes, i.e.
     a sequence that looks something like
@@ -239,7 +220,9 @@ class ProcessorResultListH5Serializer:
         return replacement if np.isnan(x).all() else x
 
     @staticmethod
-    def _direct_leakage_deserialize(x: t.Optional[npt.NDArray]) -> t.Optional[npt.NDArray]:
+    def _direct_leakage_deserialize(
+        x: t.Optional[npt.NDArray[t.Any]],
+    ) -> t.Optional[npt.NDArray[t.Any]]:
         if x is None:
             return None
         elif (x == np.array(-(2**15), dtype=INT_16_COMPLEX)).all():
@@ -272,12 +255,12 @@ class ProcessorResultListH5Serializer:
 
         return [
             ProcessorResult(
-                estimated_distances=self._replace_if_all_is_nan(
+                estimated_distances=self._replace_if_all_is_nan(  # type: ignore[arg-type]
                     est_dists,
-                ),  # type: ignore[arg-type]
-                estimated_rcs=self._replace_if_all_is_nan(
+                ),
+                estimated_rcs=self._replace_if_all_is_nan(  # type: ignore[arg-type]
                     est_rcs,
-                ),  # type: ignore[arg-type]
+                ),
                 near_edge_status=(
                     self._replace_if_all_is_nan(near_edge_status)  # type: ignore[arg-type]
                 ),
@@ -289,9 +272,9 @@ class ProcessorResultListH5Serializer:
                 ),
                 direct_leakage=(self._direct_leakage_deserialize(direct_leakage)),
                 phase_jitter_comp_reference=(
-                    self._replace_if_all_is_nan(
+                    self._replace_if_all_is_nan(  # type: ignore[arg-type]
                         jitter_comp.reshape((-1, 1)) if jitter_comp is not None else None
-                    )  # type: ignore[arg-type]
+                    )
                 ),
                 extra_result=None,  # type: ignore[arg-type]
             )
@@ -344,7 +327,7 @@ class DetectorResultListH5Serializer:
             )
 
         if "rcs" in self.fields:
-            data: t.Dict[int, t.List[t.Optional[npt.NDArray]]] = {}
+            data: t.Dict[int, t.List[t.Optional[npt.NDArray[t.Any]]]] = {}
             for res in results:
                 for sensor_id, detector_result in res.items():
                     if sensor_id not in data:

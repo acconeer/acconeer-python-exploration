@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -58,6 +58,7 @@ class SetupResponse(Message):
                         calibration_temperature=metadata_dict["calibration_temperature"],
                         base_step_length_m=metadata_dict["base_step_length_m"],
                         max_sweep_rate=metadata_dict["max_sweep_rate"],
+                        high_speed_mode=metadata_dict.get("high_speed_mode", None),
                         tick_period=header["tick_period"],
                     )
                     for metadata_dict in metadata_group

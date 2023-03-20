@@ -1,5 +1,8 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
 
 import pytest
 
@@ -9,7 +12,7 @@ from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol 
 
 class TestResultMessage:
     @pytest.fixture
-    def valid_server_message(self) -> dict:
+    def valid_server_message(self) -> dict[str, t.Any]:
         return {
             "status": "ok",
             "result_info": [
@@ -31,11 +34,14 @@ class TestResultMessage:
         return bytes([0, 0, 1, 1])
 
     @pytest.fixture
-    def invalid_server_message(self) -> dict:
+    def invalid_server_message(self) -> dict[str, t.Any]:
         return {"status": "ok"}
 
     def test_parse(
-        self, valid_server_message: dict, server_payload: bytes, invalid_server_message: dict
+        self,
+        valid_server_message: dict[str, t.Any],
+        server_payload: bytes,
+        invalid_server_message: dict[str, t.Any],
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_message, server_payload))

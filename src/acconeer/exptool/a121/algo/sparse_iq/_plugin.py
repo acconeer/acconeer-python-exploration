@@ -77,7 +77,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "amplitude_method": pidgets.EnumParameterWidgetFactory(
+            "amplitude_method": pidgets.EnumPidgetFactory(
                 enum_type=AmplitudeMethod,
                 name_label_text="Amplitude method:",
                 name_label_tooltip=(
@@ -223,7 +223,9 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         return plot, im
 
 
-class PluginSpec(ProcessorPluginSpec):
+class PluginSpec(
+    ProcessorPluginSpec[a121.Result, ProcessorConfig, ProcessorResult, a121.Metadata]
+):
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
     ) -> BackendPlugin:

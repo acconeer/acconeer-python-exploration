@@ -35,25 +35,10 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
 
 @attrs.mutable(kw_only=True)
 class RefAppConfig(DetectorConfig):
-
-    num_zones: int = attrs.field(default=3)
+    num_zones: int = attrs.field(default=7)
     """Maximum number of detection zones."""
 
-    start_m: float = attrs.field(default=1.0)
-
-    end_m: float = attrs.field(default=3.0)
-
-    frame_rate: float = attrs.field(default=10.0)
-
-    sweeps_per_frame: int = attrs.field(default=32)
-
-    hwaas: int = attrs.field(default=16)
-
-    inter_output_time_const: float = attrs.field(default=3)
-
-    inter_phase_boost: bool = attrs.field(default=False)
-
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    show_all_detected_zones: bool = attrs.field(default=False)
 
 
 @attrs.frozen(kw_only=True)
@@ -208,6 +193,6 @@ def _record_algo_data(
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig]:
-    sensor_id = algo_group["ref_app_sensor_id"][()]
+    sensor_id = int(algo_group["ref_app_sensor_id"][()])
     config = RefAppConfig.from_json(algo_group["ref_app_config"][()])
     return sensor_id, config

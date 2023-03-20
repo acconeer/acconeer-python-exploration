@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import logging
@@ -73,11 +73,12 @@ class SocketLink(BaseLink):
     _CHUNK_SIZE = 4096
     _PORT = 6110
 
-    def __init__(self, host=None):
+    def __init__(self, host=None, port=None):
         super().__init__()
         self._host = host
         self._sock = None
         self._buf = None
+        self._port = self._PORT if (port is None) else port
 
     def _update_timeout(self):
         if self._sock is not None:
@@ -88,7 +89,7 @@ class SocketLink(BaseLink):
         self._update_timeout()
 
         try:
-            self._sock.connect((self._host, self._PORT))
+            self._sock.connect((self._host, self._port))
         except OSError as e:
             self._sock.close()
             self._sock = None

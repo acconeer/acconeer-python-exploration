@@ -1,7 +1,9 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
+
+import typing as t
 
 import attrs
 import numpy as np
@@ -50,7 +52,7 @@ class Result:
     absolute accuracy.
     """
 
-    _frame: npt.NDArray = attrs.field(eq=attrs_ndarray_eq)
+    _frame: npt.NDArray[t.Any] = attrs.field(eq=attrs_ndarray_eq)
     """Frame data in the original data format (complex int16)"""
 
     tick: int = attrs.field()

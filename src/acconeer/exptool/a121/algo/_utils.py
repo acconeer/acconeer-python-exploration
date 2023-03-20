@@ -36,7 +36,7 @@ MAX_MEASURABLE_DIST_M = {
     a121.PRF.PRF_13_0_MHz: 7.0,
     a121.PRF.PRF_8_7_MHz: 12.7,
     a121.PRF.PRF_6_5_MHz: 18.5,
-    a121.PRF.PRF_5_2_MHz: 28.8,
+    a121.PRF.PRF_5_2_MHz: 24.3,
 }
 # Slope and interception of linear noise temperature model.
 NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
@@ -58,7 +58,7 @@ def get_distances_m(
 
 def get_approx_fft_vels(
     metadata: a121.Metadata, config: a121.SensorConfig
-) -> Tuple[npt.NDArray, float]:
+) -> Tuple[npt.NDArray[np.float_], float]:
     if config.sweep_rate is not None:
         sweep_rate = config.sweep_rate
     else:
@@ -66,7 +66,7 @@ def get_approx_fft_vels(
 
     spf = config.sweeps_per_frame
     f_res = 1 / spf
-    freqs = np.fft.fftshift(np.fft.fftfreq(spf))  # type: ignore[call-overload]
+    freqs = np.fft.fftshift(np.fft.fftfreq(spf))
     f_to_v = 2.5e-3 * sweep_rate
     return freqs * f_to_v, f_res * f_to_v
 

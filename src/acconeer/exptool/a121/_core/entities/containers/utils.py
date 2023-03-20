@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import TypeVar
+import typing as t
 
 import numpy as np
 import numpy.typing as npt
@@ -13,7 +13,7 @@ from acconeer.exptool.a121._core.entities.dtypes import INT_16_COMPLEX
 from .metadata import Metadata
 
 
-T = TypeVar("T", bound=np.generic)
+T = t.TypeVar("T", bound=np.generic)
 
 
 def get_subsweeps_from_frame(frame: npt.NDArray[T], metadata: Metadata) -> list[npt.NDArray[T]]:
@@ -26,7 +26,7 @@ def get_subsweeps_from_frame(frame: npt.NDArray[T], metadata: Metadata) -> list[
     return [frame[..., o : o + l] for o, l in zip(offsets, lengths)]
 
 
-def int16_complex_array_to_complex(array: npt.NDArray) -> npt.NDArray[np.complex_]:
+def int16_complex_array_to_complex(array: npt.NDArray[t.Any]) -> npt.NDArray[np.complex_]:
     """Converts an array with dtype = INT_16_COMPLEX
     (structured with parts "real" and "imag") into
     an array with plain complex dtype (non-structured).
@@ -36,7 +36,7 @@ def int16_complex_array_to_complex(array: npt.NDArray) -> npt.NDArray[np.complex
     return real + 1.0j * imaginary  # type: ignore[no-any-return]
 
 
-def complex_array_to_int16_complex(array: npt.NDArray[np.complex_]) -> npt.NDArray:
+def complex_array_to_int16_complex(array: npt.NDArray[np.complex_]) -> npt.NDArray[t.Any]:
     """Converts an array with plain complex dtype (non-structured)
     into an array with dtype = INT_16_COMPLEX
     (structured with parts "real" and "imag") using `numpy.round`.

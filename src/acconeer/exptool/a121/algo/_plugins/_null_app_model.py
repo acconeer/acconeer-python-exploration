@@ -1,16 +1,16 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Callable
+import typing as t
 
 from acconeer.exptool.app.new import AppModel
 
 
 class NullAppModel(AppModel):
     class _NullSignal:
-        def connect(self, slot: Callable) -> None:
+        def connect(self, slot: t.Callable[..., t.Any]) -> None:
             pass
 
     sig_notify: _NullSignal

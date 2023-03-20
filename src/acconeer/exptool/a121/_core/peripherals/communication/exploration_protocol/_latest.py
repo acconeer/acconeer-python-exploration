@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -106,7 +106,7 @@ class ExplorationProtocol(CommunicationProtocol):
         ).encode("ascii")
 
     @classmethod
-    def _setup_command_preprocessing(cls, session_config: SessionConfig) -> dict:
+    def _setup_command_preprocessing(cls, session_config: SessionConfig) -> dict[str, Any]:
         result = session_config.to_dict()
 
         if session_config.update_rate is None:

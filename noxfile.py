@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import argparse
@@ -15,7 +15,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 BLACK_SPEC = "black==22.12.0"
 ISORT_SPEC = "isort==5.6.3"
-MYPY_SPEC = "mypy==0.991"
+MYPY_SPEC = "mypy==1.0.1"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 PYTEST_SPEC = "pytest==7.2"
@@ -103,19 +103,10 @@ def reformat(session):
 
 
 @nox.session
+@nox.parametrize("python", ["3.7"])
 def mypy(session):
-    args = Parser().parse_args(session.posargs)
-
-    if args.editable:
-        session.install("-e", ".")
-    else:
-        session.install(".")
-
-    session.install(MYPY_SPEC, PYTEST_SPEC)
-    session.run("python", "-m", "mypy", "-p", "acconeer.exptool.a121")
-    session.run("python", "-m", "mypy", "-p", "acconeer.exptool.app.new")
-    session.run("python", "-m", "mypy", "-p", "acconeer.exptool.setup")
-    session.run("python", "-m", "mypy", "tests/unit/a121")
+    session.install("-e", ".", MYPY_SPEC, PYTEST_SPEC)
+    session.run("python", "-m", "mypy")
 
 
 @nox.session
@@ -219,7 +210,6 @@ def test(session):
             PYTEST_MOCK_SPEC,
             "pytest-qt",
             "pytest-timeout",
-            "requests",
         }
         install_extras |= {"app"}
         pytest_commands.extend(

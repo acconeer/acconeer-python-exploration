@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -6,7 +6,7 @@ from __future__ import annotations
 import contextlib
 import json
 import warnings
-from typing import Any, Iterator, Optional, Type, TypeVar, Union, overload
+from typing import Any, Iterator, Optional, TypeVar, Union, overload
 
 import numpy as np
 
@@ -47,17 +47,17 @@ class SubsweepProxyProperty(utils.ProxyProperty[T]):
             ) from None
 
     @overload
-    def __get__(self, obj: None, objtype: Optional[Type] = ...) -> utils.ProxyProperty[T]:
+    def __get__(self, obj: None, objtype: Optional[type] = ...) -> utils.ProxyProperty[T]:
         ...
 
     @overload
-    def __get__(self, obj: Any, objtype: Optional[Type] = ...) -> T:
+    def __get__(self, obj: Any, objtype: Optional[type] = ...) -> T:
         ...
 
     def __get__(
         self,
         obj: Optional[Any],
-        objtype: Optional[Type] = None,
+        objtype: Optional[type] = None,
     ) -> Union[T, utils.ProxyProperty[T]]:
         with self._more_helpful_accessor_errors():
             return super().__get__(obj, objtype)
@@ -276,7 +276,7 @@ class SensorConfig:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> SensorConfig:
+    def from_dict(cls, d: dict[str, Any]) -> SensorConfig:
         d = d.copy()
         d["subsweeps"] = [SubsweepConfig.from_dict(subsweep_d) for subsweep_d in d["subsweeps"]]
         return cls(**d)

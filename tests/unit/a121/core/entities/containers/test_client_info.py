@@ -1,5 +1,8 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
 
 import pytest
 
@@ -11,6 +14,7 @@ from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[impor
 def client_info() -> ClientInfo:
     return ClientInfo(
         ip_address="addr",
+        tcp_port=None,
         serial_port="port",
         usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
         override_baudrate=0,
@@ -19,9 +23,10 @@ def client_info() -> ClientInfo:
 
 
 @pytest.fixture
-def client_info_dict() -> dict:
+def client_info_dict() -> dict[str, t.Any]:
     return {
         "ip_address": "addr",
+        "tcp_port": None,
         "serial_port": "port",
         "usb_device": {
             "vid": 0x4CC0,
@@ -63,11 +68,11 @@ def test_eq(client_info: ClientInfo) -> None:
     )
 
 
-def test_to_dict(client_info: ClientInfo, client_info_dict: dict) -> None:
+def test_to_dict(client_info: ClientInfo, client_info_dict: dict[str, t.Any]) -> None:
     assert client_info.to_dict() == client_info_dict
 
 
-def test_from_dict(client_info: ClientInfo, client_info_dict: dict) -> None:
+def test_from_dict(client_info: ClientInfo, client_info_dict: dict[str, t.Any]) -> None:
     assert ClientInfo.from_dict(client_info_dict) == client_info
 
 
@@ -75,7 +80,7 @@ def test_to_from_dict_equality(client_info: ClientInfo) -> None:
     assert client_info == ClientInfo.from_dict(client_info.to_dict())
 
 
-def test_from_dict_extra_kwarg(client_info_dict: dict) -> None:
+def test_from_dict_extra_kwarg(client_info_dict: dict[str, t.Any]) -> None:
     client_info_dict["extra"] = "kwarg"
     with pytest.raises(TypeError):
         ClientInfo.from_dict(client_info_dict)

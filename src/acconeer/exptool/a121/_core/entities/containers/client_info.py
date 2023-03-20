@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from acconeer.exptool.utils import USBDevice  # type: ignore[import]
 @attrs.frozen(kw_only=True)
 class ClientInfo:
     ip_address: Optional[str] = None
+    tcp_port: Optional[int] = None
     serial_port: Optional[str] = None
     usb_device: Optional[USBDevice] = None
     mock: Optional[bool] = None
@@ -24,7 +25,7 @@ class ClientInfo:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> ClientInfo:
+    def from_dict(cls, d: dict[str, Any]) -> ClientInfo:
         if d.get("usb_device") is not None:
             d = d.copy()
             d["usb_device"] = USBDevice.from_dict(d["usb_device"])

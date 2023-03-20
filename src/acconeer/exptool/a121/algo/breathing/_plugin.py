@@ -71,21 +71,21 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         # Note: Incomplete mapping
         return {
-            "time_series_length": pidgets.IntParameterWidgetFactory(
+            "time_series_length": pidgets.IntPidgetFactory(
                 name_label_text="Time series length",
                 limits=(0, None),
             ),
-            "lp_coeff": pidgets.FloatSliderParameterWidgetFactory(
+            "lp_coeff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Time filtering coefficient",
                 limits=(0, 1),
                 decimals=2,
             ),
-            "min_freq": pidgets.FloatSliderParameterWidgetFactory(
+            "min_freq": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Lower frequency of bandpass filter",
                 limits=(0, 1.0),
                 decimals=1,
             ),
-            "max_freq": pidgets.FloatSliderParameterWidgetFactory(
+            "max_freq": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Upper frequency of bandpass filter",
                 limits=(2.0, 10.0),
                 decimals=1,

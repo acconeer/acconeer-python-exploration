@@ -17,7 +17,7 @@ from ._processor import SubsweepProcessorResult
 S = t.TypeVar("S")
 T = t.TypeVar("T")
 
-_ALL_RESULT_FIELDS: t.Final = (
+_ALL_RESULT_FIELDS = (
     "frame",
     "distance_velocity_map",
     "amplitudes",
@@ -45,7 +45,7 @@ _maybe_ndarray = optional_apply(np.array)
 
 
 @optional_apply
-def _frame_preprocessing(json_frame: npt.NDArray) -> npt.NDArray[np.complex_]:
+def _frame_preprocessing(json_frame: npt.NDArray[np.int_]) -> npt.NDArray[np.complex_]:
     """
     A "json_frame" has the ".real" & ".imag" in a 2-lenght-list in the innermost dimension.
     """
@@ -76,7 +76,7 @@ class SubsweepProcessorResultJSONDecoder(json.JSONDecoder):
         super().__init__(object_hook=self.object_hook, **kwargs)
         self.allow_missing_fields = allow_missing_fields
 
-    def object_hook(self, obj: dict) -> SubsweepProcessorResult:
+    def object_hook(self, obj: dict[str, t.Any]) -> SubsweepProcessorResult:
         frame = _frame_preprocessing(_maybe_ndarray(obj.get("frame")))
         dvm = _maybe_ndarray(obj.get("distance_velocity_map"))
         amplitudes = _maybe_ndarray(obj.get("amplitudes"))
@@ -97,7 +97,7 @@ class SubsweepProcessorResultJSONDecoder(json.JSONDecoder):
 
 class SubsweepProcessorResultJSONSerializer:
     def __init__(
-        self, fields: t.Sequence = _ALL_RESULT_FIELDS, allow_missing_fields: bool = False
+        self, fields: t.Sequence[str] = _ALL_RESULT_FIELDS, allow_missing_fields: bool = False
     ) -> None:
         self.fields = fields
         self.allow_missing_fields = allow_missing_fields

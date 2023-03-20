@@ -79,10 +79,19 @@ Peak sorting allows selection of which peak is of highest importance.
 The following options are available.
 
 Closest
-    This method returns the closest peak.
-Highest RCS(default)
-    This method returns the peak corresponding with the highest radar cross section according to the radar equation.
+    This method sorts the peaks according to distance from the sensor.
+Highest radar cross section(default)
+    This method sorts the peaks according to their radar cross section, estimated using the radar equation.
+
+    The radar cross section is a measure of how much energy a given object reflects.
+    It is a combination of its material and shape.
+    A higher radar cross section corresponds to a more reflective object.
+
+    It is employed to sort peaks in order of decreasing power and is used instead of amplitude as the overall gain varies across subsweeps, due to the optimized subsweep configurations.
+
     Note, the calculated RCS is an approximation of the actual RCS and is known to be less accurate at close distances.
+
+    To learn more about radar cross section, see the :doc:`radar principles</handbook/radar_principles>` section.
 
 Detector calibration
 --------------------
@@ -140,3 +149,8 @@ Configuration parameters
 .. autoclass:: acconeer.exptool.a121.algo.distance.PeakSortingMethod
     :members:
     :undoc-members:
+
+Detector result
+---------------
+.. autoclass:: acconeer.exptool.a121.algo.distance._detector.DetectorResult
+   :members:

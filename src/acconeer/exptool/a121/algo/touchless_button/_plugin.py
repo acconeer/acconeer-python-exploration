@@ -78,26 +78,26 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         # Note: Incomplete mapping
         return {
-            "sensitivity_close": pidgets.FloatParameterWidgetFactory(
+            "sensitivity_close": pidgets.FloatPidgetFactory(
                 name_label_text="Sensitivity",
                 decimals=1,
                 limits=(0.1, 4),
             ),
-            "patience_close": pidgets.IntParameterWidgetFactory(
+            "patience_close": pidgets.IntPidgetFactory(
                 name_label_text="Patience",
                 limits=(0, None),
             ),
-            "calibration_duration_s": pidgets.FloatParameterWidgetFactory(
+            "calibration_duration_s": pidgets.FloatPidgetFactory(
                 name_label_text="Calibration duration",
                 suffix="s",
                 limits=(0, None),
             ),
-            "calibration_interval_s": pidgets.FloatParameterWidgetFactory(
+            "calibration_interval_s": pidgets.FloatPidgetFactory(
                 name_label_text="Calibration interval",
                 suffix="s",
                 limits=(1, None),
             ),
-            "measurement_type": pidgets.EnumParameterWidgetFactory(
+            "measurement_type": pidgets.EnumPidgetFactory(
                 enum_type=MeasurementType,
                 name_label_text="Range:",
                 label_mapping={

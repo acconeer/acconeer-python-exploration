@@ -46,6 +46,11 @@ from acconeer.exptool.app.new import (
     pidgets,
 )
 from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
+from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import (
+    disable_if,
+    enable_if,
+    parameter_is,
+)
 
 from ._configs import get_high_accuracy_detector_config
 from ._detector import (
@@ -385,7 +390,7 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
-        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
@@ -422,23 +427,23 @@ class ViewPlugin(DetectorViewPluginBase):
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
-            "start_m": pidgets.FloatParameterWidgetFactory(
+            "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range start",
                 suffix=" m",
                 decimals=3,
             ),
-            "end_m": pidgets.FloatParameterWidgetFactory(
+            "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range end",
                 suffix=" m",
                 decimals=3,
             ),
-            "max_step_length": pidgets.OptionalIntParameterWidgetFactory(
+            "max_step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Max step length",
                 checkbox_label_text="Set",
                 limits=(1, None),
                 init_set_value=12,
             ),
-            "max_profile": pidgets.EnumParameterWidgetFactory(
+            "max_profile": pidgets.EnumPidgetFactory(
                 name_label_text="Max profile",
                 enum_type=a121.Profile,
                 label_mapping={
@@ -449,11 +454,15 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.Profile.PROFILE_5: "5 (longest)",
                 },
             ),
-            "num_frames_in_recorded_threshold": pidgets.IntParameterWidgetFactory(
-                name_label_text="Num frames in rec. thr.",
-                limits=(1, None),
+            "peaksorting_method": pidgets.EnumPidgetFactory(
+                name_label_text="Peak sorting method",
+                enum_type=PeakSortingMethod,
+                label_mapping={
+                    PeakSortingMethod.CLOSEST: "Closest",
+                    PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
+                },
             ),
-            "threshold_method": pidgets.EnumParameterWidgetFactory(
+            "threshold_method": pidgets.EnumPidgetFactory(
                 name_label_text="Threshold method",
                 enum_type=ThresholdMethod,
                 label_mapping={
@@ -462,33 +471,32 @@ class ViewPlugin(DetectorViewPluginBase):
                     ThresholdMethod.RECORDED: "Recorded",
                 },
             ),
-            "peaksorting_method": pidgets.EnumParameterWidgetFactory(
-                name_label_text="Peak sorting method",
-                enum_type=PeakSortingMethod,
-                label_mapping={
-                    PeakSortingMethod.CLOSEST: "Closest",
-                    PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
-                },
-            ),
-            "fixed_threshold_value": pidgets.FloatParameterWidgetFactory(
+            "fixed_threshold_value": pidgets.FloatPidgetFactory(
                 name_label_text="Fixed threshold value",
                 decimals=1,
                 limits=(0, None),
+                hooks=(enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),),
             ),
-            "threshold_sensitivity": pidgets.FloatSliderParameterWidgetFactory(
+            "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
+                name_label_text="Num frames in rec. thr.",
+                limits=(1, None),
+                hooks=(enable_if(parameter_is("threshold_method", ThresholdMethod.RECORDED)),),
+            ),
+            "threshold_sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Threshold sensitivity",
                 decimals=2,
                 limits=(0, 1),
                 show_limit_values=False,
+                hooks=(disable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),),
             ),
-            "signal_quality": pidgets.FloatSliderParameterWidgetFactory(
+            "signal_quality": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Signal quality",
                 decimals=1,
                 limits=(-10, 35),
                 show_limit_values=False,
                 limit_texts=("Less power", "Higher quality"),
             ),
-            "update_rate": pidgets.OptionalFloatParameterWidgetFactory(
+            "update_rate": pidgets.OptionalFloatPidgetFactory(
                 name_label_text="Update rate",
                 checkbox_label_text="Set",
                 limits=(1, None),

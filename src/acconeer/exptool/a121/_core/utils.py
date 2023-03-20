@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ class ProxyProperty(Generic[T]):
 
     def __init__(
         self,
-        accessor: Callable,
+        accessor: Callable,  # type: ignore[type-arg]
         prop: property,
     ):
         """
@@ -85,17 +85,17 @@ class ProxyProperty(Generic[T]):
         self.__doc__ = prop.__doc__
 
     @overload
-    def __get__(self, obj: None, objtype: Optional[Type] = ...) -> ProxyProperty[T]:
+    def __get__(self, obj: None, objtype: Optional[type] = ...) -> ProxyProperty[T]:
         ...
 
     @overload
-    def __get__(self, obj: Any, objtype: Optional[Type] = ...) -> T:
+    def __get__(self, obj: Any, objtype: Optional[type] = ...) -> T:
         ...
 
     def __get__(
         self,
         obj: Optional[Any],
-        objtype: Optional[Type] = None,
+        objtype: Optional[type] = None,
     ) -> Union[T, ProxyProperty[T]]:
         if obj is not None:
             proxee = self._accessor(obj)

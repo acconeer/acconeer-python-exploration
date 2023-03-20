@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -7,13 +7,15 @@ import pytest
 from acconeer.exptool import a121
 
 
-CLIENT_KWARGS = dict(ip_address="localhost")
+@pytest.fixture
+def client_kwargs(port_from_cli):
+    return dict(ip_address="localhost", tcp_port=port_from_cli)
 
 
 class TestAnUnconnectedClient:
     @pytest.fixture
-    def client(self):
-        c = a121.Client(**CLIENT_KWARGS)
+    def client(self, client_kwargs):
+        c = a121.Client(**client_kwargs)
         yield c
         if c.connected:
             c.disconnect()
@@ -56,8 +58,8 @@ class TestAnUnconnectedClient:
 
 class TestAConnectedClient:
     @pytest.fixture
-    def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def client(self, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             yield c
 
     def test_can_access_server_info(self, client):
@@ -90,8 +92,8 @@ class TestAConnectedClient:
 
 class TestASetupClient:
     @pytest.fixture
-    def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def client(self, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             yield c
 
@@ -135,8 +137,8 @@ class TestASetupClient:
             for sensor_id in group:
                 assert calibrations.get(sensor_id)
 
-    def test_multiple_calibrations_after_setup(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def test_multiple_calibrations_after_setup(self, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             c.setup_session(
                 a121.SessionConfig(
                     [
@@ -256,8 +258,8 @@ class TestASetupClient:
 
 class TestAStartedClient:
     @pytest.fixture
-    def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def client(self, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             yield c
@@ -267,8 +269,8 @@ class TestAStartedClient:
         return tmp_path / "record.h5"
 
     @pytest.fixture
-    def client_with_recorder(self, tmp_h5_file_path):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def client_with_recorder(self, tmp_h5_file_path, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
             yield c
@@ -302,8 +304,8 @@ class TestAStoppedClient(TestASetupClient):
     """A stopped client should have the same behaviour as it had when first set up"""
 
     @pytest.fixture
-    def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def client(self, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -316,8 +318,8 @@ class TestAStoppedAndSetupClient(TestASetupClient):
     """
 
     @pytest.fixture
-    def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def client(self, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -331,8 +333,8 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
     """
 
     @pytest.fixture
-    def client(self):
-        with a121.Client(**CLIENT_KWARGS) as c:
+    def client(self, client_kwargs):
+        with a121.Client(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             c.stop_session()
@@ -345,8 +347,8 @@ class TestADisconnectedClient(TestAnUnconnectedClient):
     """A disconnected client should have the same behaviour as a fresh, unconnected client."""
 
     @pytest.fixture
-    def client(self):
-        c = a121.Client(**CLIENT_KWARGS)
+    def client(self, client_kwargs):
+        c = a121.Client(**client_kwargs)
         c.connect()
         c.setup_session(a121.SessionConfig())
         c.start_session()

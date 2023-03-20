@@ -11,7 +11,7 @@ import pytest
 
 from acconeer.exptool import a121
 
-from . import distance_test, presence_test, resources
+from . import distance_test, presence_test, resources, smart_presence_test, tank_level_test
 from .misc import AlgorithmFactory, AlgorithmResult, H5ResultSerializer
 
 
@@ -49,28 +49,28 @@ def input_path(resource_name: str) -> Path:
             "input-presence-default.h5",
         ),
         (
-            presence_test.presence_timeout_3s,
+            presence_test.presence_short_range,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
-            "input-presence-presence_timeout3s.h5",
+            "input-presence-short_range.h5",
         ),
         (
-            presence_test.presence_timeout_2s_phase_boost,
+            presence_test.presence_long_range,
             presence_test.PresenceResultH5Serializer,
             presence_test.result_comparator,
-            "input-presence-0p35m_phase_boost.h5",
+            "input-presence-long_range.h5",
+        ),
+        (
+            presence_test.presence_medium_range_phase_boost_no_timeout,
+            presence_test.PresenceResultH5Serializer,
+            presence_test.result_comparator,
+            "input-presence-medium_range_phase_boost_no_timeout.h5",
         ),
         (
             distance_test.distance_processor,
             distance_test.DistanceProcessorResultH5Serializer,
             distance_test.processor_result_comparator,
             "input.h5",
-        ),
-        (
-            distance_test.distance_detector,
-            distance_test.DistanceDetectorResultH5Serializer,
-            distance_test.detector_result_comparator,
-            "input-distance-detector.h5",
         ),
         (
             distance_test.distance_detector,
@@ -89,6 +89,18 @@ def input_path(resource_name: str) -> Path:
             distance_test.DistanceDetectorResultH5Serializer,
             distance_test.detector_result_comparator,
             "input-distance-detector-200_to_400cm.h5",
+        ),
+        (
+            smart_presence_test.smart_presence_controller,
+            smart_presence_test.SmartPresenceResultH5Serializer,
+            smart_presence_test.smart_presence_result_comparator,
+            "smart_presence.h5",
+        ),
+        (
+            tank_level_test.tank_level_controller,
+            tank_level_test.TankLevelResultH5Serializer,
+            tank_level_test.tank_level_result_comparator,
+            "medium_tank.h5",
         ),
     ],
 )

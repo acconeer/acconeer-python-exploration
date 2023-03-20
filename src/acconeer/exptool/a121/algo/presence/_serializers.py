@@ -13,7 +13,7 @@ from ._processors import ProcessorResult
 S = t.TypeVar("S")
 T = t.TypeVar("T")
 
-_ALL_RESULT_FIELDS: t.Final = (
+_ALL_RESULT_FIELDS = (
     "intra_presence_score",
     "inter_presence_score",
     "presence_distance",

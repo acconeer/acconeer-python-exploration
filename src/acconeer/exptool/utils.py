@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import abc
+import copy
 import json
 import logging
 import operator
@@ -14,7 +15,7 @@ import sys
 import time
 from datetime import datetime
 from types import ModuleType
-from typing import Any, List, Optional
+from typing import Any, Generic, List, Optional, TypeVar
 
 import attrs
 import numpy as np
@@ -38,6 +39,11 @@ except ImportError:
     WinUsbPy = None
 
 from acconeer.exptool._pyusb.pyusbcomm import PyUsbComm
+
+
+S = TypeVar("S")
+T = TypeVar("T")
+DTypeT = TypeVar("DTypeT")
 
 
 @attrs.frozen(kw_only=True)
@@ -694,3 +700,18 @@ def is_power_of_2(n):
 
 def optional_or_else(value, default):
     return default if value is None else value
+
+
+class PhonySeries(Generic[T]):
+    def __init__(self, prototype: T, is_prototype_singleton: bool = True) -> None:
+        self._prototype = prototype
+        self._is_prototype_singleton = is_prototype_singleton
+
+    def __next__(self) -> T:
+        if self._is_prototype_singleton:
+            return self._prototype
+        else:
+            return copy.copy(self._prototype)
+
+    def __iter__(self) -> PhonySeries:
+        return self

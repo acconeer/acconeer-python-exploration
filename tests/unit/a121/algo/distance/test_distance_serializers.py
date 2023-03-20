@@ -2,7 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import itertools
 import typing as t
 from pathlib import Path
 
@@ -12,14 +11,7 @@ import pytest
 
 from acconeer.exptool.a121.algo.distance import ProcessorResult, _serializers
 
-
-def proper_subsets_minus_empty_set(
-    collection: t.Collection[t.Any],
-) -> t.Iterator[t.Collection[t.Any]]:
-    return itertools.chain.from_iterable(
-        itertools.combinations(iterable=collection, r=subset_size)
-        for subset_size in range(1, len(collection) + 1)
-    )
+from utils.test_utils import subsets_minus_empty_set  # type: ignore[import]
 
 
 @pytest.fixture
@@ -103,9 +95,7 @@ class TestDistanceResultListH5Serializer:
             (_serializers._ALL_PROCESSOR_RESULT_FIELDS, False),
             *[
                 (subset, True)
-                for subset in proper_subsets_minus_empty_set(
-                    _serializers._ALL_PROCESSOR_RESULT_FIELDS
-                )
+                for subset in subsets_minus_empty_set(_serializers._ALL_PROCESSOR_RESULT_FIELDS)
             ],
         ],
         ids=str,

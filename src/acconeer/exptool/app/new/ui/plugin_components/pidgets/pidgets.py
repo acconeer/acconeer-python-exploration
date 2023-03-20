@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 from enum import Enum
-from typing import Any, Generic, Optional, Tuple, Type, TypeVar
+from typing import Any, Callable, Generic, Mapping, Optional, Sequence, Tuple, Type, TypeVar, cast
 
 import attrs
 import numpy as np
@@ -34,31 +34,33 @@ def widget_wrap_layout(layout: QLayout) -> QWidget:
     return dummy
 
 
+PidgetHook = Callable[["Pidget", Mapping[str, "Pidget"]], None]
 T = TypeVar("T")
 EnumT = TypeVar("EnumT", bound=Enum)
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class ParameterWidgetFactory(abc.ABC):
+class PidgetFactory(abc.ABC):
     name_label_text: str
     name_label_tooltip: Optional[str] = None
     note_label_text: Optional[str] = None
+    hooks: Sequence[PidgetHook] = attrs.field(factory=tuple)
 
     @abc.abstractmethod
-    def create(self, parent: QWidget) -> ParameterWidget:
+    def create(self, parent: QWidget) -> Pidget:
         ...
 
 
-class ParameterWidget(QWidget):
+class Pidget(QWidget):
     """Base class for a parameter-bound widget.
 
-    A ``ParameterWidget`` comes with a
+    A ``Pidget`` comes with a
     ``name`` label and an ``note`` label by default.
     """
 
     sig_parameter_changed = QtCore.Signal(object)
 
-    def __init__(self, factory: ParameterWidgetFactory, parent: QWidget) -> None:
+    def __init__(self, factory: PidgetFactory, parent: QWidget) -> None:
         super().__init__(parent=parent)
 
         self.setLayout(QVBoxLayout(self))
@@ -81,7 +83,7 @@ class ParameterWidget(QWidget):
         self.layout().addWidget(self.__note_widget)
 
     def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
-        """Called by ParameterWidget.__init__"""
+        """Called by Pidget.__init__"""
 
         layout = QHBoxLayout(self._body_widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -111,18 +113,22 @@ class ParameterWidget(QWidget):
     def set_parameter(self, value: Any) -> None:
         pass
 
+    @abc.abstractmethod
+    def get_parameter(self) -> Any:
+        pass
+
 
 @attrs.frozen(kw_only=True, slots=False)
-class IntParameterWidgetFactory(ParameterWidgetFactory):
+class IntPidgetFactory(PidgetFactory):
     limits: Optional[Tuple[Optional[int], Optional[int]]] = None
     suffix: Optional[str] = None
 
-    def create(self, parent: QWidget) -> IntParameterWidget:
-        return IntParameterWidget(self, parent)
+    def create(self, parent: QWidget) -> IntPidget:
+        return IntPidget(self, parent)
 
 
-class IntParameterWidget(ParameterWidget):
-    def __init__(self, factory: IntParameterWidgetFactory, parent: QWidget) -> None:
+class IntPidget(Pidget):
+    def __init__(self, factory: IntPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self.__spin_box = _PidgetSpinBox(
@@ -139,22 +145,25 @@ class IntParameterWidget(ParameterWidget):
         with QtCore.QSignalBlocker(self):
             self.__spin_box.setValue(value)
 
+    def get_parameter(self) -> int:
+        return int(self.__spin_box.value())
+
     def __on_changed(self) -> None:
         self.sig_parameter_changed.emit(self.__spin_box.value())
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class FloatParameterWidgetFactory(ParameterWidgetFactory):
+class FloatPidgetFactory(PidgetFactory):
     limits: Optional[Tuple[Optional[float], Optional[float]]] = None
     suffix: Optional[str] = None
     decimals: int = 1
 
-    def create(self, parent: QWidget) -> FloatParameterWidget:
-        return FloatParameterWidget(self, parent)
+    def create(self, parent: QWidget) -> FloatPidget:
+        return FloatPidget(self, parent)
 
 
-class FloatParameterWidget(ParameterWidget):
-    def __init__(self, factory: FloatParameterWidgetFactory, parent: QWidget) -> None:
+class FloatPidget(Pidget):
+    def __init__(self, factory: FloatPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self.__spin_box = _PidgetDoubleSpinBox(
@@ -172,12 +181,15 @@ class FloatParameterWidget(ParameterWidget):
         with QtCore.QSignalBlocker(self):
             self.__spin_box.setValue(value)
 
+    def get_parameter(self) -> float:
+        return float(self.__spin_box.value())
+
     def __on_changed(self) -> None:
         self.sig_parameter_changed.emit(self.__spin_box.value())
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class FloatSliderParameterWidgetFactory(FloatParameterWidgetFactory):
+class FloatSliderPidgetFactory(FloatPidgetFactory):
     limits: Tuple[float, float]
     log_scale: bool = False
     show_limit_values: bool = True
@@ -188,12 +200,12 @@ class FloatSliderParameterWidgetFactory(FloatParameterWidgetFactory):
             if self.limits[0] <= 0:
                 raise ValueError("Lower limit must be > 0 when using log scale")
 
-    def create(self, parent: QWidget) -> FloatSliderParameterWidget:
-        return FloatSliderParameterWidget(self, parent)
+    def create(self, parent: QWidget) -> FloatSliderPidget:
+        return FloatSliderPidget(self, parent)
 
 
-class FloatSliderParameterWidget(ParameterWidget):
-    def __init__(self, factory: FloatSliderParameterWidgetFactory, parent: QWidget) -> None:
+class FloatSliderPidget(Pidget):
+    def __init__(self, factory: FloatSliderPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self.__spin_box = _PidgetDoubleSpinBox(
@@ -246,7 +258,7 @@ class FloatSliderParameterWidget(ParameterWidget):
                 label_text_widget.layout().addWidget(label)
 
     def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
-        """Called by ParameterWidget.__init__"""
+        """Called by Pidget.__init__"""
 
         layout = QGridLayout(self._body_widget)
         layout.setContentsMargins(0, 0, 0, 6)
@@ -260,6 +272,9 @@ class FloatSliderParameterWidget(ParameterWidget):
         with QtCore.QSignalBlocker(self):
             self.__spin_box.setValue(value)
             self.__slider.wrapped_set_value(value)
+
+    def get_parameter(self) -> float:
+        return float(self.__spin_box.value())
 
     def __on_spin_box_changed(self, value: float) -> None:
         with QtCore.QSignalBlocker(self):
@@ -275,14 +290,14 @@ class FloatSliderParameterWidget(ParameterWidget):
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class OptionalParameterWidgetFactory(ParameterWidgetFactory):
+class OptionalPidgetFactory(PidgetFactory):
     checkbox_label_text: Optional[str] = None
 
 
-class OptionalParameterWidget(ParameterWidget):
+class OptionalPidget(Pidget):
     """Optional parameter, not optional widget"""
 
-    def __init__(self, factory: OptionalParameterWidgetFactory, parent: QWidget) -> None:
+    def __init__(self, factory: OptionalPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self._optional_widget = QWidget(self._body_widget)
@@ -295,7 +310,7 @@ class OptionalParameterWidget(ParameterWidget):
         self._optional_layout = self._create_optional_layout(self._none_checkbox)
 
     def _create_optional_layout(self, none_checkbox: QWidget) -> QLayout:
-        """Called by OptionalParameterWidget.__init__"""
+        """Called by OptionalPidget.__init__"""
 
         layout = QHBoxLayout(self._optional_widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -307,17 +322,21 @@ class OptionalParameterWidget(ParameterWidget):
         with QtCore.QSignalBlocker(self):
             self._none_checkbox.setChecked(value is not None)
 
+    @abc.abstractmethod
+    def get_parameter(self) -> Optional[Any]:
+        pass
+
 
 @attrs.frozen(kw_only=True, slots=False)
-class OptionalIntParameterWidgetFactory(OptionalParameterWidgetFactory, IntParameterWidgetFactory):
+class OptionalIntPidgetFactory(OptionalPidgetFactory, IntPidgetFactory):
     init_set_value: Optional[int] = None
 
-    def create(self, parent: QWidget) -> OptionalIntParameterWidget:
-        return OptionalIntParameterWidget(self, parent)
+    def create(self, parent: QWidget) -> OptionalIntPidget:
+        return OptionalIntPidget(self, parent)
 
 
-class OptionalIntParameterWidget(OptionalParameterWidget):
-    def __init__(self, factory: OptionalIntParameterWidgetFactory, parent: QWidget) -> None:
+class OptionalIntPidget(OptionalPidget):
+    def __init__(self, factory: OptionalIntPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self.__spin_box = _PidgetSpinBox(
@@ -350,19 +369,23 @@ class OptionalIntParameterWidget(OptionalParameterWidget):
                 self.__spin_box.setValue(value)
                 self.__spin_box.setEnabled(True)
 
+    def get_parameter(self) -> Optional[int]:
+        if not self._none_checkbox.isChecked():
+            return None
+        else:
+            return int(self.__spin_box.value())
+
 
 @attrs.frozen(kw_only=True, slots=False)
-class OptionalFloatParameterWidgetFactory(
-    OptionalParameterWidgetFactory, FloatParameterWidgetFactory
-):
+class OptionalFloatPidgetFactory(OptionalPidgetFactory, FloatPidgetFactory):
     init_set_value: Optional[float] = None
 
-    def create(self, parent: QWidget) -> OptionalFloatParameterWidget:
-        return OptionalFloatParameterWidget(self, parent)
+    def create(self, parent: QWidget) -> OptionalFloatPidget:
+        return OptionalFloatPidget(self, parent)
 
 
-class OptionalFloatParameterWidget(OptionalParameterWidget):
-    def __init__(self, factory: OptionalFloatParameterWidgetFactory, parent: QWidget) -> None:
+class OptionalFloatPidget(OptionalPidget):
+    def __init__(self, factory: OptionalFloatPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self.__spin_box = _PidgetDoubleSpinBox(
@@ -396,15 +419,21 @@ class OptionalFloatParameterWidget(OptionalParameterWidget):
                 self.__spin_box.setValue(value)
                 self.__spin_box.setEnabled(True)
 
+    def get_parameter(self) -> Optional[float]:
+        if not self._none_checkbox.isChecked():
+            return None
+        else:
+            return float(self.__spin_box.value())
+
 
 @attrs.frozen(kw_only=True, slots=False)
-class CheckboxParameterWidgetFactory(ParameterWidgetFactory):
-    def create(self, parent: QWidget) -> CheckboxParameterWidget:
-        return CheckboxParameterWidget(self, parent)
+class CheckboxPidgetFactory(PidgetFactory):
+    def create(self, parent: QWidget) -> CheckboxPidget:
+        return CheckboxPidget(self, parent)
 
 
-class CheckboxParameterWidget(ParameterWidget):
-    def __init__(self, factory: CheckboxParameterWidgetFactory, parent: QWidget) -> None:
+class CheckboxPidget(Pidget):
+    def __init__(self, factory: CheckboxPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         assert isinstance(self._body_layout, QGridLayout)
@@ -416,7 +445,7 @@ class CheckboxParameterWidget(ParameterWidget):
         self._body_layout.setColumnStretch(1, 1)
 
     def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
-        """Called by ParameterWidget.__init__"""
+        """Called by Pidget.__init__"""
 
         layout = QGridLayout(self._body_widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -431,17 +460,20 @@ class CheckboxParameterWidget(ParameterWidget):
         with QtCore.QSignalBlocker(self):
             self.__checkbox.setChecked(bool(param))
 
+    def get_parameter(self) -> bool:
+        return bool(self.__checkbox.isChecked())
+
 
 @attrs.frozen(kw_only=True, slots=False)
-class ComboboxParameterWidgetFactory(ParameterWidgetFactory, Generic[T]):
+class ComboboxPidgetFactory(PidgetFactory, Generic[T]):
     items: list[tuple[str, T]]
 
-    def create(self, parent: QWidget) -> ComboboxParameterWidget[T]:
-        return ComboboxParameterWidget(self, parent)
+    def create(self, parent: QWidget) -> ComboboxPidget[T]:
+        return ComboboxPidget(self, parent)
 
 
-class ComboboxParameterWidget(ParameterWidget, Generic[T]):
-    def __init__(self, factory: ComboboxParameterWidgetFactory[T], parent: QWidget) -> None:
+class ComboboxPidget(Pidget, Generic[T]):
+    def __init__(self, factory: ComboboxPidgetFactory[T], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self._combobox = _PidgetComboBox(self._body_widget)
@@ -463,20 +495,23 @@ class ComboboxParameterWidget(ParameterWidget, Generic[T]):
                 raise ValueError(f"Data item {param} could not be found in {self}.")
             self._combobox.setCurrentIndex(index)
 
+    def get_parameter(self) -> T:
+        return cast(T, self._combobox.currentData())
+
 
 @attrs.frozen(kw_only=True, slots=False)
-class SensorIdParameterWidgetFactory(ComboboxParameterWidgetFactory[int]):
+class SensorIdPidgetFactory(ComboboxPidgetFactory[int]):
     name_label_text: str = attrs.field(default="Sensor:")
     name_label_tooltip: str = attrs.field(default="The sensor to use in session")
 
-    def create(self, parent: QWidget) -> SensorIdParameterWidget:
-        return SensorIdParameterWidget(self, parent)
+    def create(self, parent: QWidget) -> SensorIdPidget:
+        return SensorIdPidget(self, parent)
 
 
-class SensorIdParameterWidget(ComboboxParameterWidget[int]):
+class SensorIdPidget(ComboboxPidget[int]):
     _sensor_list: list[int]
 
-    def __init__(self, factory: SensorIdParameterWidgetFactory, parent: QWidget) -> None:
+    def __init__(self, factory: SensorIdPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
         self._sensor_list = []
 
@@ -503,7 +538,7 @@ class SensorIdParameterWidget(ComboboxParameterWidget[int]):
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class EnumParameterWidgetFactory(ComboboxParameterWidgetFactory[EnumT]):
+class EnumPidgetFactory(ComboboxPidgetFactory[EnumT]):
     enum_type: Type[EnumT] = attrs.field()
     label_mapping: dict[EnumT, str] = attrs.field()
 
@@ -522,25 +557,23 @@ class EnumParameterWidgetFactory(ComboboxParameterWidgetFactory[EnumT]):
 
         object.__setattr__(self, "items", items)
 
-    def create(self, parent: QWidget) -> EnumParameterWidget[EnumT]:
-        return EnumParameterWidget[EnumT](self, parent)
+    def create(self, parent: QWidget) -> EnumPidget[EnumT]:
+        return EnumPidget[EnumT](self, parent)
 
 
-class EnumParameterWidget(ComboboxParameterWidget[EnumT]):
-    def __init__(self, factory: EnumParameterWidgetFactory, parent: QWidget) -> None:
+class EnumPidget(ComboboxPidget[EnumT]):
+    def __init__(self, factory: EnumPidgetFactory[EnumT], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
 
 @attrs.frozen(kw_only=True, slots=False)
-class OptionalEnumParameterWidgetFactory(
-    OptionalParameterWidgetFactory, EnumParameterWidgetFactory
-):
-    def create(self, parent: QWidget) -> OptionalEnumParameterWidget:
-        return OptionalEnumParameterWidget(self, parent)
+class OptionalEnumPidgetFactory(OptionalPidgetFactory, EnumPidgetFactory[EnumT]):
+    def create(self, parent: QWidget) -> OptionalEnumPidget:
+        return OptionalEnumPidget(self, parent)
 
 
-class OptionalEnumParameterWidget(OptionalParameterWidget):
-    def __init__(self, factory: OptionalEnumParameterWidgetFactory, parent: QWidget) -> None:
+class OptionalEnumPidget(OptionalPidget):
+    def __init__(self, factory: OptionalEnumPidgetFactory[EnumT], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self._combobox = _PidgetComboBox(self._body_widget)
@@ -570,6 +603,12 @@ class OptionalEnumParameterWidget(OptionalParameterWidget):
             self._combobox.setEnabled(True)
         else:
             self._combobox.setEnabled(False)
+
+    def get_parameter(self) -> Optional[Enum]:
+        if not self._none_checkbox.isChecked():
+            return None
+        else:
+            return cast(Enum, self._combobox.currentData())
 
     def set_enum_parameter(self, param: Any) -> None:
         with QtCore.QSignalBlocker(self):

@@ -70,7 +70,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         # Note: Incomplete mapping
         return {
-            "threshold": pidgets.FloatParameterWidgetFactory(
+            "threshold": pidgets.FloatPidgetFactory(
                 name_label_text="Threshold",
                 decimals=1,
                 limits=(0.0, 10000),

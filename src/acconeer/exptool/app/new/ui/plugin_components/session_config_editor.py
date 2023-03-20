@@ -24,7 +24,7 @@ class SessionConfigEditor(QWidget):
     _session_config: Optional[a121.SessionConfig]
     _server_info: Optional[a121.ServerInfo]
 
-    _sensor_id_pidget: pidgets.SensorIdParameterWidget
+    _sensor_id_pidget: pidgets.SensorIdPidget
 
     sig_update = Signal(object)
 
@@ -46,11 +46,11 @@ class SessionConfigEditor(QWidget):
         self.session_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.session_group_box)
 
-        self._sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(self)
+        self._sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(self)
         self._sensor_id_pidget.sig_parameter_changed.connect(self._update_sensor_id)
         self.session_group_box.layout().addWidget(self._sensor_id_pidget)
 
-        self._update_rate_pidget = pidgets.OptionalFloatParameterWidgetFactory(
+        self._update_rate_pidget = pidgets.OptionalFloatPidgetFactory(
             name_label_text="Update rate:",
             name_label_tooltip=(
                 "Set an update rate limit on the server.\n"

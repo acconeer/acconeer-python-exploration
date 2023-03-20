@@ -37,7 +37,7 @@ from acconeer.exptool.app.new import (
     GridGroupBox,
     Message,
     MiscErrorView,
-    PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
@@ -48,6 +48,7 @@ from acconeer.exptool.app.new import (
     pidgets,
 )
 
+from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
 from ._ref_app import RefApp, RefAppConfig, RefAppResult, _load_algo_data
 
 
@@ -64,13 +65,17 @@ class SharedState:
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    SHORT_RANGE = auto()
+    MEDIUM_RANGE = auto()
+    LONG_RANGE = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: RefAppConfig()
+        PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
+        PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
+        PluginPresetId.LONG_RANGE.value: lambda: get_long_range_config(),
     }
 
     def __init__(
@@ -87,6 +92,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def _load_from_cache(self, file: h5py.File) -> None:
         self.shared_state.config = RefAppConfig.from_json(file["config"][()])
         self.shared_state.plot_config = PlotConfig.from_json(file["plot_config"][()])
+
+        show_all_detected_zones = self.shared_state.plot_config.show_all_detected_zones
+        self.shared_state.config.show_all_detected_zones = show_all_detected_zones
 
     @is_task
     def restore_defaults(self) -> None:
@@ -438,7 +446,7 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
-        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
@@ -456,7 +464,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.plot_config_editor = AttrsConfigEditor[PlotConfig](
             title="Plot parameters",
             factory_mapping={
-                "show_all_detected_zones": pidgets.CheckboxParameterWidgetFactory(
+                "show_all_detected_zones": pidgets.CheckboxPidgetFactory(
                     name_label_text="Show all detected zones",
                 )
             },
@@ -469,14 +477,16 @@ class ViewPlugin(DetectorViewPluginBase):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
+    def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
         presence_pidget_mapping = dict(PresenceViewPlugin._get_pidget_mapping())
         presence_pidget_mapping.update(
             {
-                "num_zones": pidgets.IntParameterWidgetFactory(
-                    name_label_text="Number of zones",
-                    limits=(1, None),
-                ),
+                pidgets.FlatPidgetGroup(): {
+                    "num_zones": pidgets.IntPidgetFactory(
+                        name_label_text="Number of zones",
+                        limits=(1, None),
+                    ),
+                }
             }
         )
         return presence_pidget_mapping
@@ -563,7 +573,21 @@ SMART_PRESENCE_PLUGIN = PluginSpec(
     description="Split presence detection range into zones.",
     family=PluginFamily.REF_APP,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(
+            name="Short range",
+            description="Short range",
+            preset_id=PluginPresetId.SHORT_RANGE,
+        ),
+        PluginPresetBase(
+            name="Medium range",
+            description="Medium range",
+            preset_id=PluginPresetId.MEDIUM_RANGE,
+        ),
+        PluginPresetBase(
+            name="Long range",
+            description="Long range",
+            preset_id=PluginPresetId.LONG_RANGE,
+        ),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.MEDIUM_RANGE,
 )

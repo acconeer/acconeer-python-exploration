@@ -14,6 +14,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
+from .collapsible_widget import CollapsibleWidget
 from .range_help_view import RangeHelpView
 from .types import PidgetFactoryMapping
 
@@ -26,7 +27,7 @@ class SubsweepConfigEditor(QWidget):
 
     _subsweep_config: Optional[a121.SubsweepConfig]
 
-    _all_pidgets: list[pidgets.ParameterWidget]
+    _all_pidgets: list[pidgets.Pidget]
 
     SPACING = 15
     PROFILE_LABEL_MAP = {
@@ -45,54 +46,61 @@ class SubsweepConfigEditor(QWidget):
         a121.PRF.PRF_5_2_MHz: "5.2 MHz",
     }
     SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
-        "start_point": pidgets.IntParameterWidgetFactory(
+        "start_point": pidgets.IntPidgetFactory(
             name_label_text="Start point:",
             name_label_tooltip=a121.SubsweepConfig.start_point.__doc__,
         ),
-        "num_points": pidgets.IntParameterWidgetFactory(
+        "num_points": pidgets.IntPidgetFactory(
             name_label_text="Number of points:",
             name_label_tooltip=a121.SubsweepConfig.num_points.__doc__,
             limits=(1, 4095),
         ),
-        "step_length": pidgets.IntParameterWidgetFactory(
+        "step_length": pidgets.IntPidgetFactory(
             name_label_text="Step length:",
             name_label_tooltip=a121.SubsweepConfig.step_length.__doc__,
             limits=(1, None),
         ),
-        "hwaas": pidgets.IntParameterWidgetFactory(
+        "hwaas": pidgets.IntPidgetFactory(
             name_label_text="HWAAS:",
             name_label_tooltip=a121.SubsweepConfig.hwaas.__doc__,
             limits=(1, 511),
         ),
-        "receiver_gain": pidgets.IntParameterWidgetFactory(
+        "receiver_gain": pidgets.IntPidgetFactory(
             name_label_text="Receiver gain:",
             name_label_tooltip=a121.SubsweepConfig.receiver_gain.__doc__,
             limits=(0, 23),
         ),
-        "profile": pidgets.EnumParameterWidgetFactory(
+        "profile": pidgets.EnumPidgetFactory(
             enum_type=a121.Profile,
             name_label_text="Profile:",
             name_label_tooltip=a121.SubsweepConfig.profile.__doc__,  # type: ignore[arg-type]
             label_mapping=PROFILE_LABEL_MAP,
         ),
-        "prf": pidgets.EnumParameterWidgetFactory(
+        "prf": pidgets.EnumPidgetFactory(
             enum_type=a121.PRF,
             name_label_text="PRF:",
             name_label_tooltip=a121.SubsweepConfig.prf.__doc__,  # type: ignore[arg-type]
             label_mapping=PRF_LABEL_MAP,
         ),
-        "enable_tx": pidgets.CheckboxParameterWidgetFactory(
+        "enable_tx": pidgets.CheckboxPidgetFactory(
             name_label_text="Enable transmitter",
             name_label_tooltip=a121.SubsweepConfig.enable_tx.__doc__,
         ),
-        "enable_loopback": pidgets.CheckboxParameterWidgetFactory(
+        "enable_loopback": pidgets.CheckboxPidgetFactory(
             name_label_text="Enable loopback",
             name_label_tooltip=a121.SubsweepConfig.enable_loopback.__doc__,
         ),
-        "phase_enhancement": pidgets.CheckboxParameterWidgetFactory(
+        "phase_enhancement": pidgets.CheckboxPidgetFactory(
             name_label_text="Phase enhancement",
             name_label_tooltip=a121.SubsweepConfig.phase_enhancement.__doc__,
         ),
+    }
+    ADVANCED_PARAMETERS = {
+        "receiver_gain",
+        "prf",
+        "enable_tx",
+        "enable_loopback",
+        "phase_enhancement",
     }
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
@@ -108,10 +116,16 @@ class SubsweepConfigEditor(QWidget):
         self.range_help_view = RangeHelpView(self)
         self.layout().addWidget(self.range_help_view)
 
-        self._subsweep_config_pidgets: Mapping[str, pidgets.ParameterWidget] = {}
+        collapsible_layout = QVBoxLayout()
+
+        self._subsweep_config_pidgets: Mapping[str, pidgets.Pidget] = {}
         for aspect, factory in self.SUBSWEEP_CONFIG_FACTORIES.items():
             pidget = factory.create(self)
-            self.layout().addWidget(pidget)
+
+            if aspect in self.ADVANCED_PARAMETERS:
+                collapsible_layout.addWidget(pidget)
+            else:
+                self.layout().addWidget(pidget)
 
             pidget.sig_parameter_changed.connect(
                 partial(self._update_subsweep_config_aspect, aspect)
@@ -119,6 +133,17 @@ class SubsweepConfigEditor(QWidget):
 
             self._all_pidgets.append(pidget)
             self._subsweep_config_pidgets[aspect] = pidget
+
+        # Some left margin here will show the hierarchy
+        collapsible_layout.setContentsMargins(11, 0, 0, 0)
+        dummy = QWidget()
+        dummy.setLayout(collapsible_layout)
+        self.layout().addWidget(
+            CollapsibleWidget(
+                label="Advanced",
+                widget=dummy,
+            )
+        )
 
     def sync(self) -> None:
         self._update_ui()

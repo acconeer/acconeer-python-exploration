@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import enum
@@ -492,13 +492,13 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
 
 
 class SocketClient(BaseClient):
-    def __init__(self, host, serial_link=False, override_baudrate=None, **kwargs):
+    def __init__(self, host, port=None, serial_link=False, override_baudrate=None, **kwargs):
         super().__init__(**kwargs)
 
         if serial_link:
             self._link = links.ExploreSerialLink(host)
         else:
-            self._link = links.SocketLink(host)
+            self._link = links.SocketLink(host, port)
         self._protocol = None
         self._override_baudrate = override_baudrate
 

@@ -143,7 +143,7 @@ class SingleSensorContext(AlgoBase):
             elif isinstance(v, a121.SensorCalibration):
                 sensor_calibration_group = group.create_group("sensor_calibration")
                 v.to_h5(sensor_calibration_group)
-            elif isinstance(v, np.ndarray) or isinstance(v, float) or isinstance(v, int):
+            elif isinstance(v, (np.ndarray, float, int, np.int64)):
                 group.create_dataset(k, data=v, track_times=False)
             else:
                 raise RuntimeError(
@@ -266,6 +266,8 @@ class SingleSensorContext(AlgoBase):
                     "recorded_threshold_frames"
                 ] = recorded_threshold_frames
 
+        context_dict["extra_context"] = SingleSensorExtraContext(**context_dict["extra_context"])
+
         return SingleSensorContext(**context_dict)
 
 
@@ -339,11 +341,37 @@ class DetectorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
-    rcs: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     distances: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    """Estimated distances (m), sorted according to the selected peak sorting strategy."""
+
+    rcs: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    """Estimated radar cross section (dBsm) corresponding to the peak amplitude of the
+    estimated distances.
+    """
+
     near_edge_status: Optional[bool] = attrs.field(default=None)
+    """Boolean indicating an object close to the start edge, located outside of the
+    measurement range.
+    """
+
+    sensor_calibration_needed: Optional[bool] = attrs.field(default=None)
+    """Indication of sensor calibration needed. The sensor calibration needs to be redone if this
+    indication is set.
+
+    A sensor calibration should be followed by a detector recalibration, by calling
+    :func:`recalibrate_detector`.
+    """
+
+    temperature: Optional[int] = attrs.field(default=None)
+    """Temperature in sensor during measurement (in degree Celsius). Notice that this has poor
+    absolute accuracy.
+    """
+
     processor_results: list[ProcessorResult] = attrs.field()
+    """Processing result. Used for visualization in Exploration Tool."""
+
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
+    """Service extended result. Used for visualization in Exploration Tool."""
 
 
 class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
@@ -427,6 +455,17 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
         for context in self.context.single_sensor_contexts.values():
             context.session_config_used_during_calibration = self.session_config
+
+    def recalibrate_detector(self) -> None:
+        """Recalibrate detector by running a subset of the calibration routines.
+
+        Once the detector is calibrated, by calling :func:`calibrate_detector`, a sensor
+        calibration should be followed by a detector recalibration.
+        """
+
+        self._validate_ready_for_calibration()
+
+        self._calibrate_offset()
 
     def _calibrate_close_range(self) -> None:
         """Calibrates the close range measurement parameters used when subtracting the direct
@@ -564,7 +603,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                     subsweep.start_point = 0
                     # Set num_points to a high number to get sufficient number of data points to
                     # estimate the standard deviation.
-                    subsweep.num_points = 500
+                    subsweep.num_points = 220
 
         extended_metadata = self.client.setup_session(session_config)
         assert isinstance(extended_metadata, list)
@@ -845,6 +884,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 rcs=aggregator_results[sensor_id].estimated_rcs,
                 distances=aggregator_results[sensor_id].estimated_distances,
                 near_edge_status=aggregator_results[sensor_id].near_edge_status,
+                sensor_calibration_needed=extended_result[0][sensor_id].calibration_needed,
+                temperature=extended_result[0][sensor_id].temperature,
                 processor_results=aggregator_results[sensor_id].processor_results,
                 service_extended_result=aggregator_results[sensor_id].service_extended_result,
             )
@@ -1028,7 +1069,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         ]
         transition_profiles.append(config.max_profile)
 
-        transition_subgroup_plans: list = []
+        transition_subgroup_plans: list[SubsweepGroupPlan] = []
 
         for i in range(len(transition_profiles) - 1):
             profile = transition_profiles[i]
@@ -1402,7 +1443,7 @@ def _load_algo_data(
     return sensor_id, config, context
 
 
-def _get_group_items(group: h5py.Group) -> list[npt.NDArray]:
+def _get_group_items(group: h5py.Group) -> list[npt.NDArray[Any]]:
     group_items = []
 
     i = 0

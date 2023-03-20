@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import typing as t
+
 from PySide6 import QtCore
 from PySide6.QtWidgets import QToolButton, QVBoxLayout, QWidget
 
 
 class CollapsibleWidget(QWidget):
-    def __init__(self, label: str, widget: QWidget, parent: QWidget) -> None:
+    def __init__(self, label: str, widget: QWidget, parent: t.Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.widget = widget
@@ -23,13 +25,13 @@ class CollapsibleWidget(QWidget):
         self.arrow_button.toggled.connect(self._on_toggle)
 
         self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().addWidget(self.arrow_button)
         self.layout().addWidget(self.widget)
 
-    def _on_toggle(self, checked: bool) -> None:
-        self.widget.setVisible(checked)
+    def set_collapsed(self, collapsed: bool) -> None:
+        self.widget.setVisible(not collapsed)
+        self.arrow_button.setArrowType(QtCore.Qt.RightArrow if collapsed else QtCore.Qt.DownArrow)
 
-        if checked:
-            self.arrow_button.setArrowType(QtCore.Qt.DownArrow)
-        else:
-            self.arrow_button.setArrowType(QtCore.Qt.RightArrow)
+    def _on_toggle(self, checked: bool) -> None:
+        self.set_collapsed(not checked)

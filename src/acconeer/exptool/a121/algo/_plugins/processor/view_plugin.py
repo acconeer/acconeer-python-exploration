@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -112,7 +112,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
             raise RuntimeError("Unknown message")
 
     def on_backend_state_update(
-        self, backend_plugin_state: Optional[ProcessorBackendPluginSharedState]
+        self,
+        backend_plugin_state: Optional[
+            ProcessorBackendPluginSharedState[ProcessorConfigT, a121.Metadata]
+        ],
     ) -> None:
         if backend_plugin_state is None:
             self.session_config_editor.set_data(None)

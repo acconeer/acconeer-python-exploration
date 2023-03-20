@@ -34,7 +34,7 @@ from acconeer.exptool.app.new import (
     GridGroupBox,
     Message,
     MiscErrorView,
-    PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
@@ -44,8 +44,10 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import disable_if, parameter_is
 
-from ._detector import Detector, DetectorConfig, DetectorResult, _load_algo_data
+from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
+from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult, _load_algo_data
 
 
 @attrs.mutable(kw_only=True)
@@ -55,13 +57,17 @@ class SharedState:
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    SHORT_RANGE = auto()
+    MEDIUM_RANGE = auto()
+    LONG_RANGE = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: DetectorConfig()
+        PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
+        PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
+        PluginPresetId.LONG_RANGE.value: lambda: get_long_range_config(),
     }
 
     def __init__(
@@ -128,7 +134,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 name="setup",
                 kwargs=dict(
                     detector_config=self.shared_state.config,
-                    sensor_config=Detector._get_sensor_config(self.shared_state.config),
+                    detector_metadata=self._detector_instance.detector_metadata,
                     estimated_frame_rate=self._detector_instance.estimated_frame_rate,
                 ),
                 recipient="plot_plugin",
@@ -168,12 +174,14 @@ class PlotPlugin(DetectorPlotPluginBase):
     def setup(
         self,
         detector_config: DetectorConfig,
-        sensor_config: a121.SensorConfig,
+        detector_metadata: DetectorMetadata,
         estimated_frame_rate: float,
     ) -> None:
         self.detector_config = detector_config
         self.distances = np.linspace(
-            detector_config.start_m, detector_config.end_m, sensor_config.num_points
+            detector_metadata.start_m,
+            detector_config.end_m,
+            detector_metadata.num_points,
         )
 
         self.history_length_s = 5
@@ -445,7 +453,7 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
-        self.sensor_id_pidget = pidgets.SensorIdParameterWidgetFactory(items=[]).create(
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
         self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
@@ -464,19 +472,19 @@ class ViewPlugin(DetectorViewPluginBase):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_pidget_mapping(cls) -> PidgetFactoryMapping:
-        return {
-            "start_m": pidgets.FloatParameterWidgetFactory(
+    def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
+        service_parameters = {
+            "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range start",
                 suffix=" m",
                 decimals=3,
             ),
-            "end_m": pidgets.FloatParameterWidgetFactory(
+            "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range end",
                 suffix=" m",
                 decimals=3,
             ),
-            "profile": pidgets.OptionalEnumParameterWidgetFactory(
+            "profile": pidgets.OptionalEnumPidgetFactory(
                 name_label_text="Profile",
                 checkbox_label_text="Override",
                 enum_type=a121.Profile,
@@ -488,27 +496,27 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.Profile.PROFILE_5: "5 (longest)",
                 },
             ),
-            "step_length": pidgets.OptionalIntParameterWidgetFactory(
+            "step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Step length",
                 checkbox_label_text="Override",
                 limits=(1, None),
                 init_set_value=24,
             ),
-            "frame_rate": pidgets.FloatParameterWidgetFactory(
+            "frame_rate": pidgets.FloatPidgetFactory(
                 name_label_text="Frame rate",
                 suffix=" Hz",
                 decimals=1,
                 limits=(1, 100),
             ),
-            "sweeps_per_frame": pidgets.IntParameterWidgetFactory(
+            "sweeps_per_frame": pidgets.IntPidgetFactory(
                 name_label_text="Sweeps per frame",
                 limits=(1, 4095),
             ),
-            "hwaas": pidgets.IntParameterWidgetFactory(
+            "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="HWAAS",
                 limits=(1, 511),
             ),
-            "inter_frame_idle_state": pidgets.EnumParameterWidgetFactory(
+            "inter_frame_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
                 name_label_text="Inter frame idle state",
                 label_mapping={
@@ -517,73 +525,90 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.IdleState.READY: "Ready",
                 },
             ),
-            "intra_enable": pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable fast motion detection"
-            ),
-            "intra_detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
+        }
+        intra_parameters = {
+            "intra_detection_threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra detection threshold",
                 decimals=2,
                 limits=(0, 5),
             ),
-            "intra_frame_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "intra_frame_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0, 1),
             ),
-            "intra_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "intra_output_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Intra output time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_enable": pidgets.CheckboxParameterWidgetFactory(
-                name_label_text="Enable slow motion detection"
-            ),
-            "inter_phase_boost": pidgets.CheckboxParameterWidgetFactory(
+        }
+        inter_parameters = {
+            "inter_phase_boost": pidgets.CheckboxPidgetFactory(
                 name_label_text="Enable phase boost"
             ),
-            "inter_detection_threshold": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_detection_threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter detection threshold",
                 decimals=2,
                 limits=(0, 5),
             ),
-            "inter_frame_fast_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_fast_cutoff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter fast cutoff freq.",
                 suffix=" Hz",
                 decimals=2,
                 limits=(1, 50),
                 log_scale=True,
             ),
-            "inter_frame_slow_cutoff": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_slow_cutoff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter slow cutoff freq.",
                 suffix=" Hz",
                 decimals=2,
                 limits=(0.01, 1),
                 log_scale=True,
             ),
-            "inter_frame_deviation_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_frame_deviation_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_output_time_const": pidgets.FloatSliderParameterWidgetFactory(
+            "inter_output_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Inter output time constant",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
-            "inter_frame_presence_timeout": pidgets.OptionalIntParameterWidgetFactory(
+            "inter_frame_presence_timeout": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Presence timeout",
                 checkbox_label_text="Enable",
                 suffix=" s",
                 limits=(1, 30),
                 init_set_value=5,
             ),
+        }
+        return {
+            pidgets.FlatPidgetGroup(): service_parameters,
+            pidgets.FlatPidgetGroup(): {
+                "intra_enable": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Enable intra (fast) motion detection"
+                ),
+            },
+            pidgets.FlatPidgetGroup(
+                hooks=(disable_if(parameter_is("intra_enable", False)),),
+            ): intra_parameters,
+            pidgets.FlatPidgetGroup(): {
+                "inter_enable": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Enable inter (slow) motion detection"
+                ),
+            },
+            pidgets.FlatPidgetGroup(
+                hooks=(disable_if(parameter_is("inter_enable", False)),),
+            ): inter_parameters,
         }
 
     def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
@@ -662,7 +687,21 @@ PRESENCE_DETECTOR_PLUGIN = PluginSpec(
     description="Detect human presence.",
     family=PluginFamily.DETECTOR,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(
+            name="Short range",
+            description="Short range",
+            preset_id=PluginPresetId.SHORT_RANGE,
+        ),
+        PluginPresetBase(
+            name="Medium range",
+            description="Medium range",
+            preset_id=PluginPresetId.MEDIUM_RANGE,
+        ),
+        PluginPresetBase(
+            name="Long range",
+            description="Long range",
+            preset_id=PluginPresetId.LONG_RANGE,
+        ),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.MEDIUM_RANGE,
 )

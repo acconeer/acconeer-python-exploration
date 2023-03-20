@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Generic, Mapping, Optional, TypeVar
+from typing import Any, Generic, Optional, Sequence, TypeVar, Union, cast
 
 import attrs
 
@@ -14,12 +14,37 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
-from .pidgets import ParameterWidget
-from .types import PidgetFactoryMapping
+from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetGroupHook, PidgetHook
+from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import VerticalGroupBox
 
 
 T = TypeVar("T")
+
+
+def _to_group_factory_mapping(
+    factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping]
+) -> PidgetGroupFactoryMapping:
+    if factory_mapping == {}:
+        return {}
+
+    (first_key, *_) = factory_mapping
+
+    # The casts boils down to "non-transferable" type narrowing
+    # of a Mapping (typically a dict) given its keys.
+    #   In this function, we want to do type narrowing of the parameter type
+    # (rewritten as dict[Union[str, PidgetGroup], ...]). The key will have type
+    # Union[str, PidgetGroup], which can be narrowed to str or PidgetGroup.
+    # This type narrowing is not transferred to the original dict, requiring a cast.
+    if isinstance(first_key, PidgetGroup):
+        return cast(PidgetGroupFactoryMapping, factory_mapping)
+
+    if isinstance(first_key, str):
+        return {FlatPidgetGroup(): cast(PidgetFactoryMapping, factory_mapping)}
+
+    raise RuntimeError(
+        "factory_mapping was neither a PidgetFactoryMappingi nor a PidgetGroupFactoryMapping"
+    )
 
 
 class AttrsConfigEditor(QWidget, Generic[T]):
@@ -28,7 +53,10 @@ class AttrsConfigEditor(QWidget, Generic[T]):
     sig_update = Signal(object)
 
     def __init__(
-        self, title: str, factory_mapping: PidgetFactoryMapping, parent: Optional[QWidget] = None
+        self,
+        title: str,
+        factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent=parent)
         self._config = None
@@ -38,14 +66,27 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         group_box = VerticalGroupBox(title, parent=self)
         self.layout().addWidget(group_box)
 
-        self._pidget_mapping: Mapping[str, ParameterWidget] = {}
+        self._pidget_mapping: dict[str, Pidget] = {}
+        self._pidget_hooks: dict[str, Sequence[PidgetHook]] = {}
+        self._group_widgets: list[QWidget] = []
+        self._group_hooks: list[Sequence[PidgetGroupHook]] = []
 
-        for aspect, factory in factory_mapping.items():
-            pidget = factory.create(group_box)
-            pidget.sig_parameter_changed.connect(partial(self._update_config_aspect, aspect))
-            group_box.layout().addWidget(pidget)
+        for pidget_group, factory_mapping in _to_group_factory_mapping(factory_mapping).items():
+            pidgets = []
+            for aspect, factory in factory_mapping.items():
+                pidget = factory.create(group_box)
+                pidget.sig_parameter_changed.connect(partial(self._update_config_aspect, aspect))
 
-            self._pidget_mapping[aspect] = pidget
+                self._pidget_mapping[aspect] = pidget
+                self._pidget_hooks[aspect] = factory.hooks
+
+                pidgets.append(pidget)
+
+            group_widget = pidget_group.get_container(pidgets)
+            group_box.layout().addWidget(group_widget)
+
+            self._group_widgets.append(group_widget)
+            self._group_hooks.append(pidget_group.hooks)
 
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
@@ -63,9 +104,20 @@ class AttrsConfigEditor(QWidget, Generic[T]):
 
     def set_data(self, config: Optional[T]) -> None:
         self._config = config
+        self._run_pidget_hooks()
+
+    def _run_pidget_hooks(self) -> None:
+        for aspect, hooks in self._pidget_hooks.items():
+            for hook in hooks:
+                hook(self._pidget_mapping[aspect], self._pidget_mapping)
+
+        for group_widget, hooks in zip(self._group_widgets, self._group_hooks):
+            for hook in hooks:
+                hook(group_widget, self._pidget_mapping)
 
     def sync(self) -> None:
         self._update_pidgets()
+        self._run_pidget_hooks()
 
     def setEnabled(self, enabled: bool) -> None:
         super().setEnabled(enabled and self._config is not None)

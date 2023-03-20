@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -142,6 +142,15 @@ class MetadataView(QGroupBox):
         max_sweep_rate_label.setToolTip(a121.Metadata.max_sweep_rate.__doc__)
         self.layout().addWidget(max_sweep_rate_label, row, 0)
 
+        row += 1
+
+        self.high_speed_mode = MetadataValueWidget(self)
+        self.layout().addWidget(self.high_speed_mode, row, 1)
+
+        high_speed_mode_label = QLabel("High speed mode", self)
+        high_speed_mode_label.setToolTip(a121.Metadata.high_speed_mode.__doc__)
+        self.layout().addWidget(high_speed_mode_label, row, 0)
+
         self.update(None)
 
     def update(self, metadata: Optional[a121.Metadata]) -> None:
@@ -159,6 +168,12 @@ class MetadataView(QGroupBox):
             max_sweep_rate_text = "-"
 
         self.max_sweep_rate.setText(max_sweep_rate_text)
+
+        self.high_speed_mode.setText(
+            f"{metadata.high_speed_mode}"
+            if metadata and metadata.high_speed_mode is not None
+            else "-"
+        )
 
 
 class MetadataValueWidget(QLineEdit):

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ def is_task(func: T) -> T:
 
 
 class Model:
-    backend_plugin: Optional[BackendPlugin]
+    backend_plugin: Optional[BackendPlugin[Any]]
     client: Optional[a121.Client]
 
     def __init__(self, task_callback: Callable[[Message], None]) -> None:
