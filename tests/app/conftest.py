@@ -5,11 +5,13 @@ from __future__ import annotations
 import copy
 import queue
 import typing as t
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 
 from acconeer.exptool import a121
+from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
 
 import dirty_equals as de
@@ -37,6 +39,10 @@ class Tasks:
         False,
     )
     UNLOAD_PLUGIN_TASK: Task = ("unload_plugin", {}, False)
+    START_SESSION_TASK: Task = ("start_session", dict(with_recorder=True), True)
+    STOP_SESSION_TASK: Task = ("stop_session", {}, True)
+    CALIBRATE_DETECTOR_TASK: Task = ("calibrate_detector", {}, True)
+
     SUCCESSFULLY_CLOSED_TASK = ClosedTask(
         key=de.IsUUID,
         exception=None,
@@ -47,6 +53,30 @@ class Tasks:
         exception=de.IsInstance(Exception),
         traceback_format_exc=de.IsStr,
     )
+    ANY_CLOSED_TASK = ClosedTask(
+        key=de.IsUUID,
+        exception=de.AnyThing,
+        traceback_format_exc=de.AnyThing,
+    )
+
+    @staticmethod
+    def load_from_file_task(path: Path) -> Task:
+        return (
+            "load_from_file",
+            dict(path=path),
+            True,
+        )
+
+    @staticmethod
+    def load_plugin_task(spec: PluginSpec) -> Task:
+        return (
+            "load_plugin",
+            dict(
+                plugin_factory=spec.create_backend_plugin,
+                key=spec.key,
+            ),
+            False,
+        )
 
 
 @pytest.fixture
