@@ -14,6 +14,7 @@ A121 algorithms
    bilateration
    breathing
    smart_presence
+   tank_level
    gesture_control
    carpet_detection
    surface_velocity
