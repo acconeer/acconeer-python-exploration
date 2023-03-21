@@ -25,9 +25,13 @@ from ._processor import Processor, ProcessorConfig, ProcessorExtraResult, Proces
 @attrs.mutable(kw_only=True)
 class RefAppConfig(DetectorConfig):
     start_m: float = attrs.field(default=0.03)
+    """Start of measurement range."""
     end_m: float = attrs.field(default=0.5)
+    """End of measurement range."""
     median_filter_length: int = attrs.field(default=5)
+    """Length of the median filter used to improve robustness of the result."""
     num_medians_to_average: int = attrs.field(default=1)
+    """Number of medians averaged to obtain the final level."""
 
     def to_detector_config(self) -> DetectorConfig:
         return DetectorConfig(
@@ -57,9 +61,14 @@ RefAppContext = DetectorContext
 @attrs.frozen(kw_only=True)
 class RefAppResult:
     peak_detected: Optional[bool]
+    """True if a peak (level) is detected, False if no peak is
+    detected, or None if a result is not available."""
     peak_status: Optional[ProcessorLevelStatus]
+    """Status assigned to the detected peak."""
     level: Optional[float]
+    """Liquid level relative to the base of the tank."""
     extra_result: RefAppExtraResult
+    """Extra result: Only used for the plots in the GUI."""
 
 
 class RefApp(Controller[RefAppConfig, RefAppResult]):
