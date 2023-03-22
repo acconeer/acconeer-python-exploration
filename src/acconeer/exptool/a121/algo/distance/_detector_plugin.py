@@ -480,7 +480,6 @@ class ViewPlugin(DetectorViewPluginBase):
             "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
                 name_label_text="Num frames in rec. thr.",
                 limits=(1, None),
-                hooks=(enable_if(parameter_is("threshold_method", ThresholdMethod.RECORDED)),),
             ),
             "threshold_sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Threshold sensitivity",
