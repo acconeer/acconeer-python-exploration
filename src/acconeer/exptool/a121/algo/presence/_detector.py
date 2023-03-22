@@ -256,7 +256,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         processor_config = self._get_processor_config(self.config)
 
         self.detector_metadata = DetectorMetadata(
-            start_m=self.config.start_m,
+            start_m=sensor_config.start_point * Processor.APPROX_BASE_STEP_LENGTH_M,
             step_length_m=metadata.base_step_length_m * sensor_config.step_length,
             num_points=sensor_config.num_points,
             profile=sensor_config.profile,

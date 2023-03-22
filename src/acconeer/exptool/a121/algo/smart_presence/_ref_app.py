@@ -111,12 +111,15 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             client=self.client, sensor_id=self.sensor_id, detector_config=detector_config
         )
         self.detector.start(recorder=recorder, _algo_group=algo_group)
+        assert self.detector.detector_metadata is not None
 
         session_config = self.detector.session_config
 
         processor_config = ProcessorConfig(num_zones=self.config.num_zones)
 
-        self.ref_app_processor = Processor(processor_config, detector_config, session_config)
+        self.ref_app_processor = Processor(
+            processor_config, detector_config, session_config, self.detector.detector_metadata
+        )
 
         self.started = True
 
