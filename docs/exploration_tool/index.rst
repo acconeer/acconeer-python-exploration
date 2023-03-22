@@ -41,6 +41,14 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    Raspberry Pi (A111) <evk_setup/raspberry_a111>
 
 .. toctree::
+   :maxdepth: 2
+   :caption: Algorithms
+   :hidden:
+
+   A111 <algo/a111/index>
+   A121 <algo/a121/index>
+
+.. toctree::
    :caption: API reference
    :maxdepth: 1
    :hidden:
@@ -55,11 +63,3 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
 
    A111 <file_format_ref/a111>
    A121 <file_format_ref/a121>
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Algorithms
-   :hidden:
-
-   A111 <algo/a111/index>
-   A121 <algo/a121/index>
