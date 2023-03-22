@@ -1,5 +1,5 @@
-FAQ and common issues
-=====================
+Common Issues
+=============
 
 Python related
 --------------

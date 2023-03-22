@@ -25,8 +25,6 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    Overview <self>
    installation_and_setup
    running
-   faq
-   changelog
 
 .. toctree::
    :maxdepth: 1
@@ -63,3 +61,12 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
 
    A111 <file_format_ref/a111>
    A121 <file_format_ref/a121>
+
+
+.. toctree::
+   :caption: Changelog & Issues
+   :maxdepth: 1
+   :hidden:
+
+   changelog
+   faq
