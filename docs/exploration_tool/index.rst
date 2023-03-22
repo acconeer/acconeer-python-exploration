@@ -18,7 +18,7 @@ The Exploration Tool application runs on Windows and Linux and is the primary wa
 It is freely downloaded and installed from `GitHub <https://github.com/acconeer/acconeer-python-exploration>`__.
 
 .. toctree::
-   :caption: Exploration Tool
+   :caption: Getting started
    :maxdepth: 1
    :hidden:
 
