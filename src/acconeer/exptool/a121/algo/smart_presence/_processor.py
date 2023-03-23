@@ -10,7 +10,7 @@ import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase
-from acconeer.exptool.a121.algo.presence import DetectorConfig, DetectorResult
+from acconeer.exptool.a121.algo.presence import DetectorConfig, DetectorMetadata, DetectorResult
 
 
 @attrs.frozen(kw_only=True)
@@ -50,10 +50,15 @@ class Processor:
         processor_config: ProcessorConfig,
         detector_config: DetectorConfig,
         session_config: a121.SessionConfig,
+        detector_metadata: DetectorMetadata,
     ):
         num_points = session_config.sensor_config.num_points
         self.num_zones = np.minimum(processor_config.num_zones, num_points)
-        self.distances = np.linspace(detector_config.start_m, detector_config.end_m, num_points)
+        self.distances = np.linspace(
+            detector_metadata.start_m,
+            detector_metadata.start_m + (num_points - 1) * detector_metadata.step_length_m,
+            num_points,
+        )
         self.zone_limits = self.create_zones(self.distances, self.num_zones)
 
         self.inter_enable = detector_config.inter_enable

@@ -1,3 +1,5 @@
+.. _installation-and-setup:
+
 Installation and setup
 ======================
 
@@ -52,7 +54,7 @@ After installing the ``acconeer-exptool`` package, you can run::
     python -m acconeer.exptool.setup
 
 which interactively configures your machine and downloads needed dependencies.
-This is done in order for your machine to work at its best with Exploration tool.
+This is done in order for your machine to work at its best with Exploration Tool.
 ``acconeer.exptool.setup`` performs the same steps that described in the sections below.
 
 
@@ -110,10 +112,3 @@ Udev needs to be informed that rules have changed if changes have been made in `
     sudo udevadm trigger
 
 An USB device have to be disconnected and reconnected before the udev permissions are updated.
-
-Launching the application
---------------------------
-
-After installing the Exploration Tool, it is launched with::
-
-    python -m acconeer.exptool.app
