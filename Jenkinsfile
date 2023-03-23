@@ -309,21 +309,24 @@ try {
         }
     }
 
-    if (buildScope == BuildScope.NIGHTLY) {
-        stage('Update release branches') {
-            node('docker') {
-                ws('workspace/exptool') {
-                    printNodeInfo()
-                    checkoutAndCleanup(lfs: false)
+    stage('Manage release branches') {
+        node('docker') {
+            ws('workspace/exptool') {
+                printNodeInfo()
+                checkoutAndCleanup(lfs: false)
 
-                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f')]) {
-                            sh '''
+                buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                    withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f')]) {
+                        if (buildScope == BuildScope.NIGHTLY) {
+                            sh '''#!/bin/bash
+
                                 git config user.name "Jenkins Builder"
                                 git config user.email "ai@acconeer.com"
 
-                                tests/update-release-branches.sh
+                                tests/release_branch/release_branch_update.sh -p
                             '''
+                        } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
+                            sh 'tests/release_branch/release_branch_push.sh'
                         }
                     }
                 }
