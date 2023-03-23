@@ -128,6 +128,16 @@ Recorded threshold
     The recorded threshold is also recorded as a part of the detector calibration.
     Note, this calibration is only performed if the detector is configured to used recorded threshold or if close range measurement is active, where recorded threshold is used.
 
+Detector recalibration
+----------------------
+
+To maintain optimal performance, the sensor should be recalibrated if
+:attr:`~acconeer.exptool.a121.algo.distance.DetectorResult.sensor_calibration_needed`
+is set to True.
+A sensor calibration should be followed by a detector recalibration, performed by calling :attr:`~acconeer.exptool.a121.algo.distance.Detector.recalibrate_detector`.
+
+The detector recalibration carries out a subset of the calibration steps.
+All the calibration steps performed are agnostic to its surroundings and can be done at any time without considerations to the environment.
 
 Temperature compensation
 ------------------------
