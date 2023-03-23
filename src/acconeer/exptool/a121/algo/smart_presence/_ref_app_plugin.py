@@ -428,17 +428,9 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
         self.stop_button.clicked.connect(self._send_stop_request)
 
-        self.defaults_button = QPushButton(
-            qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
-            "Reset settings and calibrations",
-            self.sticky_widget,
-        )
-        self.defaults_button.clicked.connect(self._send_defaults_request)
-
         button_group = GridGroupBox("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
-        button_group.layout().addWidget(self.defaults_button, 1, 0, 1, -1)
 
         sticky_layout.addWidget(button_group)
 
@@ -507,7 +499,6 @@ class ViewPlugin(DetectorViewPluginBase):
         if state is None:
             self.start_button.setEnabled(False)
             self.stop_button.setEnabled(False)
-            self.defaults_button.setEnabled(False)
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
@@ -516,8 +507,6 @@ class ViewPlugin(DetectorViewPluginBase):
             return
 
         assert isinstance(state, SharedState)
-
-        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
