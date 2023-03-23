@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QTabWidget, QToolButton, QVBoxLayout, QWidget
@@ -28,8 +28,8 @@ class SensorConfigEditor(QWidget):
     _sensor_config: Optional[a121.SensorConfig]
     _subsweep_config_editors: list[SubsweepConfigEditor]
 
-    _all_pidgets: list[pidgets.Pidget]
-
+    _sensor_config_pidgets: dict[str, pidgets.Pidget]
+    _erroneous_aspects: set[str]
     _read_only: bool
     _supports_multiple_subsweeps: bool
 
@@ -131,7 +131,8 @@ class SensorConfigEditor(QWidget):
     ) -> None:
         super().__init__(parent=parent)
 
-        self._all_pidgets = []
+        self._sensor_config_pidgets = {}
+        self._erroneous_aspects = set()
 
         self._sensor_config = None
         self._subsweep_config_editors = []
@@ -146,7 +147,6 @@ class SensorConfigEditor(QWidget):
         self.sensor_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.sensor_group_box)
 
-        self._sensor_config_pidgets: Mapping[str, pidgets.Pidget] = {}
         for aspect, factory in self.SENSOR_CONFIG_FACTORIES.items():
             pidget = factory.create(self.sensor_group_box)
             self.sensor_group_box.layout().addWidget(pidget)
@@ -155,7 +155,6 @@ class SensorConfigEditor(QWidget):
                 partial(self._update_sensor_config_aspect, aspect)
             )
 
-            self._all_pidgets.append(pidget)
             self._sensor_config_pidgets[aspect] = pidget
 
         self.subsweep_group_box = VerticalGroupBox("Subsweep parameters", parent=self)
@@ -257,10 +256,16 @@ class SensorConfigEditor(QWidget):
         for i, subsweep in enumerate(sensor_config.subsweeps):
             self._subsweep_config_editors[i].set_data(subsweep)
 
+    @property
+    def is_ready(self) -> bool:
+        return self._erroneous_aspects == set() and all(
+            se.is_ready for se in self._subsweep_config_editors
+        )
+
     def set_read_only(self, read_only: bool) -> None:
         self._read_only = read_only
 
-        for pidget in self._all_pidgets:
+        for pidget in self._sensor_config_pidgets.values():
             pidget.setEnabled(not read_only)
 
         if self._supports_multiple_subsweeps:
@@ -281,8 +286,9 @@ class SensorConfigEditor(QWidget):
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
     ) -> list[a121.ValidationResult]:
-        for pidget in self._all_pidgets:
-            pidget.set_note_text("")
+        for aspect, pidget in self._sensor_config_pidgets.items():
+            if aspect not in self._erroneous_aspects:
+                pidget.set_note_text("")
 
         unhandled_results: list[a121.ValidationResult] = []
 
@@ -299,14 +305,18 @@ class SensorConfigEditor(QWidget):
         if result.aspect is None or self._sensor_config is None:
             return False
 
+        if result.aspect in self._erroneous_aspects:
+            # If there is an erroneous aspect in the GUI, we do not want to overwrite that.
+            # Once the erroneous aspect is handled with, the same validation result will
+            # come through here anyway
+            return True
+
         result_handled = False
 
         if result.source == self._sensor_config:
-            for pidget in self._sensor_config_pidgets:
-                if result.aspect == pidget:
-                    self._sensor_config_pidgets[result.aspect].set_note_text(
-                        result.message, result.criticality
-                    )
+            for aspect, pidget in self._sensor_config_pidgets.items():
+                if result.aspect == aspect:
+                    pidget.set_note_text(result.message, result.criticality)
                     result_handled = True
 
         return result_handled
@@ -319,5 +329,9 @@ class SensorConfigEditor(QWidget):
             setattr(self._sensor_config, aspect, value)
         except Exception as e:
             self._sensor_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
+            self._erroneous_aspects.add(aspect)
+        else:
+            if aspect in self._erroneous_aspects:
+                self._erroneous_aspects.remove(aspect)
 
         self._broadcast()

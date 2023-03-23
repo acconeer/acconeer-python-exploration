@@ -579,7 +579,9 @@ class ViewPlugin(DetectorViewPluginBase):
         ready_for_session = app_model.is_ready_for_session()
 
         self.calibrate_detector_button.setEnabled(ready_for_session)
-        self.start_button.setEnabled(ready_for_session and detector_status.ready_to_start)
+        self.start_button.setEnabled(
+            ready_for_session and detector_status.ready_to_start and self.config_editor.is_ready
+        )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:

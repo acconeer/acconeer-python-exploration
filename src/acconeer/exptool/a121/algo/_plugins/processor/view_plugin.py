@@ -157,7 +157,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         self.processor_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
         self.start_button.setEnabled(
-            app_model.is_ready_for_session() and app_model.backend_plugin_state.ready
+            app_model.is_ready_for_session()
+            and app_model.backend_plugin_state.ready
+            and self.session_config_editor.is_ready
+            and self.processor_config_editor.is_ready
         )
 
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)

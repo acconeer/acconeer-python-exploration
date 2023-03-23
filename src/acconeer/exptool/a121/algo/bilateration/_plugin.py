@@ -617,7 +617,9 @@ class ViewPlugin(DetectorViewPluginBase):
             ready_for_session
             and not detector_status.detector_state == DetailedStatus.SENSOR_IDS_NOT_UNIQUE
         )
-        self.start_button.setEnabled(ready_for_session and detector_status.ready_to_start)
+        self.start_button.setEnabled(
+            ready_for_session and detector_status.ready_to_start and self.config_editor.is_ready
+        )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def _on_config_update(self, config: DetectorConfig) -> None:

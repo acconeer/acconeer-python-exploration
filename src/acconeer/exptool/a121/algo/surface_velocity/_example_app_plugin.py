@@ -534,7 +534,9 @@ class ViewPlugin(DetectorViewPluginBase):
         self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
-        self.start_button.setEnabled(app_model.is_ready_for_session())
+        self.start_button.setEnabled(
+            app_model.is_ready_for_session() and self.config_editor.is_ready
+        )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def _on_config_update(self, config: ExampleAppConfig) -> None:

@@ -49,6 +49,7 @@ def _to_group_factory_mapping(
 
 class AttrsConfigEditor(QWidget, Generic[T]):
     _config: Optional[T]
+    _erroneous_aspects: set[str]
 
     sig_update = Signal(object)
 
@@ -70,6 +71,7 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         self._pidget_hooks: dict[str, Sequence[PidgetHook]] = {}
         self._group_widgets: list[QWidget] = []
         self._group_hooks: list[Sequence[PidgetGroupHook]] = []
+        self._erroneous_aspects = set()
 
         for pidget_group, factory_mapping in _to_group_factory_mapping(factory_mapping).items():
             pidgets = []
@@ -91,8 +93,9 @@ class AttrsConfigEditor(QWidget, Generic[T]):
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
     ) -> list[a121.ValidationResult]:
-        for _, pidget in self._pidget_mapping.items():
-            pidget.set_note_text("")
+        for aspect, pidget in self._pidget_mapping.items():
+            if aspect not in self._erroneous_aspects:
+                pidget.set_note_text("")
 
         unhandled_results: list[a121.ValidationResult] = []
 
@@ -101,6 +104,10 @@ class AttrsConfigEditor(QWidget, Generic[T]):
                 unhandled_results.append(result)
 
         return unhandled_results
+
+    @property
+    def is_ready(self) -> bool:
+        return self._erroneous_aspects == set()
 
     def set_data(self, config: Optional[T]) -> None:
         self._config = config
@@ -129,6 +136,12 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         if result.aspect is None:
             return False
 
+        if result.aspect in self._erroneous_aspects:
+            # If there is an erroneous aspect in the GUI, we do not want to overwrite that.
+            # Once the erroneous aspect is handled with, the same validation result will
+            # come through here anyway
+            return True
+
         result_handled = False
 
         if result.source == self._config:
@@ -156,8 +169,11 @@ class AttrsConfigEditor(QWidget, Generic[T]):
         try:
             self._config = attrs.evolve(self._config, **{aspect: value})
         except Exception as e:
+            self._erroneous_aspects.add(aspect)
             self._pidget_mapping[aspect].set_note_text(e.args[0], Criticality.ERROR)
         else:
             self._pidget_mapping[aspect].set_note_text(None)
+            if aspect in self._erroneous_aspects:
+                self._erroneous_aspects.remove(aspect)
 
         self._broadcast()

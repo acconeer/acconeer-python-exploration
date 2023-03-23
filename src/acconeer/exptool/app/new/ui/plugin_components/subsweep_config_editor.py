@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import Any, Mapping, Optional
+from typing import Any, Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
@@ -27,7 +27,8 @@ class SubsweepConfigEditor(QWidget):
 
     _subsweep_config: Optional[a121.SubsweepConfig]
 
-    _all_pidgets: list[pidgets.Pidget]
+    _subsweep_config_pidgets: dict[str, pidgets.Pidget]
+    _erroneous_aspects: set[str]
 
     SPACING = 15
     PROFILE_LABEL_MAP = {
@@ -106,7 +107,8 @@ class SubsweepConfigEditor(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent=parent)
 
-        self._all_pidgets = []
+        self._subsweep_config_pidgets = {}
+        self._erroneous_aspects = set()
 
         self._subsweep_config = None
 
@@ -118,7 +120,6 @@ class SubsweepConfigEditor(QWidget):
 
         collapsible_layout = QVBoxLayout()
 
-        self._subsweep_config_pidgets: Mapping[str, pidgets.Pidget] = {}
         for aspect, factory in self.SUBSWEEP_CONFIG_FACTORIES.items():
             pidget = factory.create(self)
 
@@ -131,7 +132,6 @@ class SubsweepConfigEditor(QWidget):
                 partial(self._update_subsweep_config_aspect, aspect)
             )
 
-            self._all_pidgets.append(pidget)
             self._subsweep_config_pidgets[aspect] = pidget
 
         # Some left margin here will show the hierarchy
@@ -178,8 +178,12 @@ class SubsweepConfigEditor(QWidget):
         self.range_help_view.update(subsweep_config)
         self._subsweep_config = subsweep_config
 
+    @property
+    def is_ready(self) -> bool:
+        return self._erroneous_aspects == set()
+
     def set_read_only(self, read_only: bool) -> None:
-        for pidget in self._all_pidgets:
+        for pidget in self._subsweep_config_pidgets.values():
             pidget.setEnabled(not read_only)
 
     def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
@@ -189,15 +193,20 @@ class SubsweepConfigEditor(QWidget):
         try:
             setattr(self._subsweep_config, aspect, value)
         except Exception as e:
+            self._erroneous_aspects.add(aspect)
             self._subsweep_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
+        else:
+            if aspect in self._erroneous_aspects:
+                self._erroneous_aspects.remove(aspect)
 
         self._broadcast()
 
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
     ) -> list[a121.ValidationResult]:
-        for pidget in self._all_pidgets:
-            pidget.set_note_text("")
+        for aspect, pidget in self._subsweep_config_pidgets.items():
+            if aspect not in self._erroneous_aspects:
+                pidget.set_note_text("")
 
         unhandled_results: list[a121.ValidationResult] = []
 
@@ -210,6 +219,12 @@ class SubsweepConfigEditor(QWidget):
     def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if result.aspect is None or self._subsweep_config is None:
             return False
+
+        if result.aspect in self._erroneous_aspects:
+            # If there is an erroneous aspect in the GUI, we do not want to overwrite that.
+            # Once the erroneous aspect is handled with, the same validation result will
+            # come through here anyway
+            return True
 
         result_handled = False
 

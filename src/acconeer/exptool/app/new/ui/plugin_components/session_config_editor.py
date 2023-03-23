@@ -69,6 +69,10 @@ class SessionConfigEditor(QWidget):
         self._sensor_config_editor.sig_update.connect(self._broadcast)
         self.layout().addWidget(self._sensor_config_editor)
 
+    @property
+    def is_ready(self) -> bool:
+        return self._sensor_config_editor.is_ready
+
     def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
         self._session_config = session_config
         if session_config is not None:
