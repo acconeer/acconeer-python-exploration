@@ -111,6 +111,7 @@ class SubsweepConfig:
     )
 
     def _collect_validation_results(self) -> list[ValidationResult]:
+        APPROX_BASE_STEP_LENGTH = 2.5e-3
         validation_results: list[ValidationResult] = []
 
         if self.enable_loopback and self.profile == Profile.PROFILE_2:
@@ -146,6 +147,33 @@ class SubsweepConfig:
                         ),
                     ]
                 )
+
+        end_point_m = (
+            self.start_point + ((self.num_points - 1) * self.step_length)
+        ) * APPROX_BASE_STEP_LENGTH
+        if end_point_m > self.prf.maximum_measurable_distance:
+            validation_results.extend(
+                [
+                    ValidationError(
+                        self,
+                        "prf",
+                        f"PRF is too high for the measuring end point ({end_point_m:.3f}m), "
+                        + "try lowering the PRF.",
+                    ),
+                    ValidationError(
+                        self,
+                        "num_points",
+                        f"Measuring range is too long for PRF (max {self.prf.mmd:.2f}m), "
+                        + "try decreasing the number of points.",
+                    ),
+                    ValidationError(
+                        self,
+                        "step_length",
+                        f"Measuring range is too long for PRF (max {self.prf.mmd:.2f}m), "
+                        + "try decreasing the step length.",
+                    ),
+                ]
+            )
 
         return validation_results
 
