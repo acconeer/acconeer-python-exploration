@@ -401,7 +401,7 @@ class SensorConfig:
 
     def _validate_required_buffer_usage(self) -> list[ValidationResult]:
         BUFFER_SIZE = 4096
-        ERROR_MSG = "This config would have required buffer size {}, but the max is {}"
+        ERROR_MSG = "Required buffer size is too large: {}/{}."
 
         buffer_size_available = (
             (BUFFER_SIZE // 2) - 1 if self.double_buffering else BUFFER_SIZE - 1
@@ -416,14 +416,16 @@ class SensorConfig:
                 ValidationError(
                     self,
                     "sweeps_per_frame",
-                    ERROR_MSG.format(required_buffer_size, buffer_size_available),
+                    ERROR_MSG.format(required_buffer_size, buffer_size_available)
+                    + " Decreasing sweeps per frame reduces buffer usage.",
                 ),
             )
             validation_results.extend(
                 ValidationError(
                     subsweep_config,
                     "num_points",
-                    ERROR_MSG.format(required_buffer_size, buffer_size_available),
+                    ERROR_MSG.format(required_buffer_size, buffer_size_available)
+                    + " Decreasing number of points reduces buffer usage.",
                 )
                 for subsweep_config in self.subsweeps
             )
