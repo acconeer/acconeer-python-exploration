@@ -677,16 +677,13 @@ class ViewPlugin(DetectorViewPluginBase):
             {"with_recorder": self.app_model.recording_enabled},
             on_error=self.app_model.emit_error,
         )
-        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     # TODO: move to detector base (?)
     def _send_stop_request(self) -> None:
         self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
-        self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)
 
     def _on_calibrate_detector(self) -> None:
         self.app_model.put_backend_plugin_task("calibrate_detector")
-        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_defaults_request(self) -> None:
         self.app_model.put_backend_plugin_task("restore_defaults")

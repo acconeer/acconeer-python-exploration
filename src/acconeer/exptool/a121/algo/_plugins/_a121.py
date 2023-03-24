@@ -160,6 +160,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         else:
             self._recorder = None
 
+        self.callback(PluginStateMessage(state=PluginState.LOADED_STARTING))
         try:
             self._start_session(self._recorder)
         except Exception as exc:
@@ -177,6 +178,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         if not self._started:
             raise RuntimeError
 
+        self.callback(PluginStateMessage(state=PluginState.LOADED_STOPPING))
         try:
             self.end_session()
         except Exception as exc:

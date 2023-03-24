@@ -204,7 +204,6 @@ class AppModel(QObject):
 
     connection_state: ConnectionState
     connection_warning: Optional[str]
-    plugin_state: PluginState
     available_serial_devices: List[SerialDevice]
     available_usb_devices: List[USBDevice]
 
@@ -237,13 +236,18 @@ class AppModel(QObject):
 
         self.connection_state = ConnectionState.DISCONNECTED
         self.connection_warning = None
-        self.plugin_state = PluginState.UNLOADED
+        self._plugin_state = PluginState.UNLOADED
         self._serial_connection_device = None
         self._usb_connection_device = None
         self.available_serial_devices = []
         self.available_usb_devices = []
 
         self.saveable_file = None
+
+    @property
+    def plugin_state(self) -> PluginState:
+        """Read-only property of the plugin state"""
+        return self._plugin_state
 
     def start(self) -> None:
         self._listener.start()
@@ -352,7 +356,7 @@ class AppModel(QObject):
             self.broadcast()
         elif isinstance(message, PluginStateMessage):
             log.debug(f"Got plugin state message {message.state}")
-            self.plugin_state = message.state
+            self._plugin_state = message.state
             self.broadcast()
         elif isinstance(message, BackendPluginStateMessage):
             log.debug("Got backend plugin state message")
@@ -680,10 +684,6 @@ class AppModel(QObject):
         self._persistent_state.usb_connection_device = device
         self.broadcast()
 
-    def set_plugin_state(self, state: PluginState) -> None:
-        self.plugin_state = state
-        self.broadcast()
-
     def set_autoconnect_enabled(self, autoconnect_enabled: bool) -> None:
         self._persistent_state.autoconnect_enabled = autoconnect_enabled
         self.broadcast()
@@ -769,9 +769,6 @@ class AppModel(QObject):
 
         self.load_plugin(plugin)
         self.put_backend_plugin_task("load_from_file", {"path": path}, on_error=self.emit_error)
-        # TODO: remove 2 lines below
-        self.plugin_state = PluginState.LOADED_STARTING
-        self.broadcast()
 
     def _find_plugin(self, find_key: Optional[str]) -> PluginSpec:  # TODO: Also find by generation
         if find_key is None:

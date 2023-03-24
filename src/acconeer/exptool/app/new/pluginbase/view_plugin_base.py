@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,6 @@ import abc
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from acconeer.exptool.app.new import PluginState
 from acconeer.exptool.app.new.app_model import AppModel, ViewPluginInterface
 from acconeer.exptool.app.new.backend import GeneralMessage
 from acconeer.exptool.app.new.ui import utils
@@ -61,8 +60,6 @@ class ViewPluginBase(UiPluginBase, abc.ABC, ViewPluginInterface):
             {"with_recorder": self.app_model.recording_enabled},
             on_error=self.app_model.emit_error,
         )
-        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_stop_request(self) -> None:
         self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
-        self.app_model.set_plugin_state(PluginState.LOADED_STOPPING)

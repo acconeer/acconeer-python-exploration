@@ -108,10 +108,10 @@ class TestBackendPlugins:
         assert_messages(
             backend,
             received=[
+                PluginStateMessage(state=PluginState.LOADED_STARTING),
                 PluginStateMessage(state=PluginState.LOADED_BUSY),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            not_received=[PluginStateMessage(state=PluginState.LOADED_STARTING)],
             max_num_messages=1000,
         )
 
@@ -120,10 +120,10 @@ class TestBackendPlugins:
         assert_messages(
             backend,
             received=[
+                PluginStateMessage(state=PluginState.LOADED_STOPPING),
                 PluginStateMessage(state=PluginState.LOADED_IDLE),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            not_received=[PluginStateMessage(state=PluginState.LOADED_STOPPING)],
             max_num_messages=1000,  # a lot of messages could be sent when busy
         )
 
@@ -139,10 +139,8 @@ class TestBackendPlugins:
             assert_messages(
                 backend,
                 received=[
+                    PluginStateMessage(state=PluginState.LOADED_STARTING),
                     PluginStateMessage(state=PluginState.LOADED_BUSY),
                     tasks.SUCCESSFULLY_CLOSED_TASK,
-                ],
-                not_received=[
-                    PluginStateMessage(state=PluginState.LOADED_STARTING),
                 ],
             )

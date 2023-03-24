@@ -601,7 +601,6 @@ class ViewPlugin(DetectorViewPluginBase):
         self.app_model.put_backend_plugin_task(
             "calibrate_detector", on_error=self.app_model.emit_error
         )
-        self.app_model.set_plugin_state(PluginState.LOADED_STARTING)
 
     def _send_defaults_request(self) -> None:
         self.app_model.put_backend_plugin_task("restore_defaults")
