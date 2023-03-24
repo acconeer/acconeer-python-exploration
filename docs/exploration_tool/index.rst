@@ -33,12 +33,12 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    :hidden:
 
    XC120 + XE121 (A121) <evk_setup/xc120_xe121>
-   Raspberry Pi (A121) <evk_setup/raspberry_a121_xe121>
+   RPi + XE121 (A121) <evk_setup/raspberry_a121_xe121>
    XM112 <evk_setup/xm112>
    XM122 <evk_setup/xm122>
    XM125 <evk_setup/xm125>
    XM132 <evk_setup/xm132>
-   Raspberry Pi (A111) <evk_setup/raspberry_a111>
+   RPi + XC112/XR112 <evk_setup/raspberry_a111>
 
 .. toctree::
    :maxdepth: 2

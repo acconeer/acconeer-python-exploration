@@ -1,7 +1,8 @@
-Setting up your Raspberry Pi EVK for A111
-=========================================
+Setting up Raspberry Pi for XC112/XR112
+=======================================
 
-This applies to the XC111+XR111 or XC112+XR112 kits (mounted on a Raspberry Pi).
+.. note::
+   Altough discontinued, this guide applies to XC111/XR111 as well.
 
 Overview
 --------
