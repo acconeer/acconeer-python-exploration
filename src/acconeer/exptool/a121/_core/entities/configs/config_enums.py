@@ -17,6 +17,13 @@ def find_by_value(enum: Type[T], value: object) -> Optional[T]:
     return None
 
 
+def find_by_first_element_in_value(enum: Type[T], value: object) -> Optional[T]:
+    for member in enum:
+        if member.value[0] == value:
+            return member
+    return None
+
+
 def find_by_name(enum: Type[T], name: object) -> Optional[T]:
     for member in enum:
         if member.name == name:
@@ -78,20 +85,37 @@ class PRF(Enum):
     .. [*] 19.5MHz is only available for profile 1.
     """
 
-    PRF_19_5_MHz = 19500000
-    PRF_15_6_MHz = 15600000
-    PRF_13_0_MHz = 13000000
-    PRF_8_7_MHz = 8700000
-    PRF_6_5_MHz = 6500000
-    PRF_5_2_MHz = 5200000
+    #               PRF       MMD  MUR
+    PRF_19_5_MHz = (19500000, 3.1, 7.7)
+    PRF_15_6_MHz = (15600000, 5.1, 9.6)
+    PRF_13_0_MHz = (13000000, 7.0, 11.5)
+    PRF_8_7_MHz = (8700000, 12.7, 17.3)
+    PRF_6_5_MHz = (6500000, 18.5, 23.1)
+    PRF_5_2_MHz = (5200000, 24.3, 28.8)
 
     @property
     def frequency(self) -> int:
-        return self.value
+        return int(self.value[0])
+
+    @property
+    def maximum_measurable_distance(self) -> float:
+        return float(self.value[1])
+
+    @property
+    def mmd(self) -> float:
+        return self.maximum_measurable_distance
+
+    @property
+    def maximum_unambiguous_range(self) -> float:
+        return float(self.value[2])
+
+    @property
+    def mur(self) -> float:
+        return self.maximum_unambiguous_range
 
     @classmethod
     def _missing_(cls, value: object) -> Optional[PRF]:
-        return find_by_value(cls, value) or find_by_name(cls, value)
+        return find_by_first_element_in_value(cls, value) or find_by_name(cls, value)
 
 
 @unique

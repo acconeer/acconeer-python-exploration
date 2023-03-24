@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -24,6 +24,13 @@ def test_prf_init() -> None:
         == a121.PRF(13e6)
         == a121.PRF("PRF_13_0_MHz")
     )
+
+
+def test_prf_accessors() -> None:
+    assert a121.PRF.PRF_19_5_MHz.maximum_measurable_distance == 3.1
+    assert a121.PRF.PRF_19_5_MHz.mmd == 3.1
+    assert a121.PRF.PRF_19_5_MHz.maximum_unambiguous_range == 7.7
+    assert a121.PRF.PRF_19_5_MHz.mur == 7.7
 
 
 def test_idle_state_init() -> None:
