@@ -160,22 +160,3 @@ Utility functions
         get_temperature_adjustment_factors,
         interpolate_peaks,
         select_prf,
-
-Distance (under development)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: acconeer.exptool.a121.algo.distance.Processor
-    :members:
-    :undoc-members:
-
-.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorConfig
-    :members:
-    :undoc-members:
-
-.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorContext
-    :members:
-    :undoc-members:
-
-.. autoclass:: acconeer.exptool.a121.algo.distance.ProcessorResult
-    :members:
-    :undoc-members:
