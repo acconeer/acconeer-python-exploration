@@ -14,3 +14,5 @@ A121 algorithms
    bilateration
    breathing
    smart_presence
+   gesture_control
+   carpet_detection
