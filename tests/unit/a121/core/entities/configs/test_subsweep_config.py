@@ -172,3 +172,7 @@ def test_validation_is_run_on_set() -> None:
 
     with pytest.raises(ValueError):
         conf.hwaas = -1
+
+
+def test_prf_property_has_same_docstring_as_enum() -> None:
+    assert a121.SubsweepConfig.prf.__doc__ == a121.PRF.__doc__
