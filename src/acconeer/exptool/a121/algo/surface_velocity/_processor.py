@@ -23,12 +23,10 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     time_series_length: int = attrs.field(default=512)
     slow_zone: int = attrs.field(default=3)
     psd_lp_coeff: float = attrs.field(default=0.75)
-    time_series_downsampling: int = attrs.field(default=2)
     cfar_guard: int = attrs.field(default=6)
     cfar_win: int = attrs.field(default=6)
     cfar_sensitivity: float = attrs.field(default=0.15)
     velocity_lp_coeff: float = attrs.field(default=0.95)
-    output_lp_coeff: float = attrs.field(default=0.98)
     max_peak_interval_s: float = attrs.field(default=4)
 
     def _collect_validation_results(
@@ -69,27 +67,18 @@ class ProcessorExtraResult:
     """
 
     max_bin_vertical_vs: npt.NDArray[np.float_] = attrs.field()
-    max_bin_vertical_vs_ds: npt.NDArray[np.float_] = attrs.field()
-    estimated_peak_width: float = attrs.field()
+    peak_width: float = attrs.field()
 
     vertical_velocities: npt.NDArray[np.float_] = attrs.field()
     psd: npt.NDArray[np.float_] = attrs.field()
     peak_idx: Optional[np.int_] = attrs.field()
     psd_threshold: npt.NDArray[np.float_] = attrs.field()
-    lp_velocity: float = attrs.field()
-
-    vertical_velocities_ds: npt.NDArray[np.float_] = attrs.field()
-    psd_ds: npt.NDArray[np.float_] = attrs.field()
-    peak_idx_ds: Optional[np.int_] = attrs.field()
-    psd_ds_threshold: npt.NDArray[np.float_] = attrs.field()
-    lp_velocity_ds: float = attrs.field()
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     estimated_v: float = attrs.field()
-    used_distance_m: float = attrs.field()
-    used_downsampling: int = attrs.field()
+    distance_m: float = attrs.field()
 
     extra_result: ProcessorExtraResult = attrs.field()
 
@@ -127,18 +116,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if not sensor_config.continuous_sweep_mode:
             self.time_series_length = self.sweeps_per_frame
         else:
+            if sensor_config.sweeps_per_frame > processor_config.time_series_length:
+                raise ValueError("time_series_length must be >= sweeps_per_frame")
+
             self.time_series_length = processor_config.time_series_length
 
-        if (
-            processor_config.time_series_downsampling > 1
-            and not np.mod(processor_config.time_series_downsampling, 2) == 0
-        ):
-            raise ValueError("time_series_downsampling must be 1 or a divisor by 2")
-
         self.time_series = np.zeros(
-            [self.time_series_length, self.num_distances], dtype=np.complex_
-        )
-        self.time_series_ds = np.zeros(
             [self.time_series_length, self.num_distances], dtype=np.complex_
         )
 
@@ -163,16 +146,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         _, bin_fs = self.scipy_welch(self.time_series, self.sweep_rate)
         self.bin_rad_vs = bin_fs * PERCEIVED_WAVELENGTH
 
-        self.psd_ds_factor = processor_config.time_series_downsampling
-        _, bin_fs_ds = self.scipy_welch(self.time_series_ds, self.sweep_rate / self.psd_ds_factor)
-        self.bin_rad_vs_ds = bin_fs_ds * PERCEIVED_WAVELENGTH
+        self.max_bin_vertical_vs = self.bin_rad_vs * self.get_angle_correction(self.distances[0])
 
         self.lp_velocity = 0.0
-        self.lp_velocity_ds = 0.0
-        self.lp_estimated_v = 0.0
 
         self.lp_psds = np.zeros([self.segment_length, self.num_distances])
-        self.lp_psds_ds = np.zeros([self.segment_length, self.num_distances])
         self.psd_lp_coeff = processor_config.psd_lp_coeff
 
         # cfar
@@ -180,16 +158,14 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.cfar_win_length = processor_config.cfar_win
 
         if not processor_config.cfar_sensitivity > 0:
-            raise ValueError("cfar_sensitivity must > 0")
+            raise ValueError("cfar_sensitivity must be > 0")
 
         self.cfar_sensitivity = processor_config.cfar_sensitivity
 
         self.slow_zone = processor_config.slow_zone
         self.velocity_lp_coeff = processor_config.velocity_lp_coeff
-        self.output_lp_coeff = processor_config.output_lp_coeff
 
         self.wait_n = 0
-        self.wait_n_ds = 0
 
         self.update_config(processor_config)
 
@@ -344,28 +320,17 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.time_series = np.roll(self.time_series, axis=0, shift=-self.sweeps_per_frame)
         self.time_series[-self.sweeps_per_frame :, :] = data_segment
 
-        data_segment_ds = data_segment[:: self.psd_ds_factor, :]
-        n = data_segment[:: self.psd_ds_factor, :].shape[0]
-        self.time_series_ds = np.roll(self.time_series_ds, axis=0, shift=-n)
-        self.time_series_ds[-n:, :] = data_segment_ds
-
         psds, _ = self.scipy_welch(self.time_series, self.sweep_rate)
         if self.update_index * self.sweeps_per_frame < self.time_series_length:
             self.lp_psds = psds
 
         self.lp_psds = self.lp_psds * self.psd_lp_coeff + psds * (1 - self.psd_lp_coeff)
 
-        psds_ds, _ = self.scipy_welch(self.time_series_ds, self.sweep_rate / self.psd_ds_factor)
-        if self.update_index * n < self.time_series_length:
-            self.lp_psds_ds = psds_ds
-
-        self.lp_psds_ds = self.lp_psds_ds * self.psd_lp_coeff + psds_ds * (1 - self.psd_lp_coeff)
-
         distance_idx = self.get_distance_idx(self.lp_psds)
         self.distance_idx = distance_idx
-        max_distance = self.distances[distance_idx]
+        distance = self.distances[distance_idx]
         psd = self.lp_psds[:, distance_idx]
-        bin_vertical_vs = self.bin_rad_vs * self.get_angle_correction(max_distance)
+        bin_vertical_vs = self.bin_rad_vs * self.get_angle_correction(distance)
 
         psd_cfar = self.get_cfar_threshold(psd)
         psd_peak_idxs = self.cfar_peaks(psd_cfar, psd)
@@ -402,104 +367,20 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         if (self.update_index * self.sweeps_per_frame) > self.time_series_length:
             self.lp_velocity = sf * self.lp_velocity + (1 - sf) * vertical_v
 
-        distance_idx_ds = self.get_distance_idx(self.lp_psds_ds)
-        max_distance_ds = self.distances[distance_idx_ds]
-        psd_ds = self.lp_psds_ds[:, distance_idx_ds]
-        bin_vertical_vs_ds = self.bin_rad_vs_ds * self.get_angle_correction(max_distance_ds)
-
-        psd_ds_cfar = self.get_cfar_threshold(psd_ds)
-        psd_ds_peak_idxs = self.cfar_peaks(psd_ds_cfar, psd_ds)
-
-        if len(psd_ds_peak_idxs) > 0:
-            if (
-                np.max(np.abs(bin_vertical_vs_ds[psd_ds_peak_idxs]))
-                > bin_vertical_vs_ds[self.slow_zone]
-            ):
-                velocity_ds, peak_idx_ds, peak_width_ds = self.get_velocity_estimate(
-                    bin_vertical_vs_ds, psd_ds_peak_idxs, psd_ds
-                )
-            else:
-                velocity_ds, peak_idx_ds = self.get_velocity_estimate_slow_zone(
-                    bin_vertical_vs_ds, psd_ds_peak_idxs, psd_ds
-                )
-                peak_width_ds = 0
-
-            if np.abs(self.lp_velocity_ds) > 0 and velocity_ds / self.lp_velocity_ds < 0.8:
-                if self.wait_n_ds < self.max_peak_interval_n:
-                    velocity_ds = self.lp_velocity_ds
-                    self.wait_n_ds += 1
-            else:
-                self.wait_n_ds = 0
-
-        else:
-            if self.wait_n_ds < self.max_peak_interval_n:
-                velocity_ds = self.lp_velocity_ds
-                self.wait_n_ds += 1
-            else:
-                velocity_ds = 0
-
-            peak_idx_ds = None
-            peak_width_ds = 0
-
-        if (self.update_index * n) > self.time_series_length:
-            self.lp_velocity_ds = sf * self.lp_velocity_ds + (1 - sf) * velocity_ds
-
-        if self.lp_velocity_ds > 0:
-            if np.abs(self.lp_velocity) > np.abs(bin_vertical_vs_ds[-1]):
-                estimated_v = self.lp_velocity
-                estimated_peak_width = peak_width
-                used_downsampling = 1
-                used_distance_m = max_distance
-            elif (
-                np.abs(self.lp_velocity)
-                > np.abs(bin_vertical_vs[self.middle_idx + self.slow_zone])
-                and np.abs(np.abs(self.lp_velocity_ds) - np.abs(self.lp_velocity))
-                / np.abs(self.lp_velocity_ds)
-                > 0.1
-            ):
-                estimated_v = self.lp_velocity
-                estimated_peak_width = peak_width
-                used_downsampling = 1
-                used_distance_m = max_distance
-            else:
-                estimated_v = self.lp_velocity_ds
-                estimated_peak_width = peak_width_ds
-                used_downsampling = self.psd_ds_factor
-                used_distance_m = max_distance_ds
-        else:
-            estimated_v = self.lp_velocity_ds
-            estimated_peak_width = peak_width_ds
-            used_downsampling = self.psd_ds_factor
-            used_distance_m = max_distance_ds
-
-        sf = self._dynamic_sf(self.output_lp_coeff, self.update_index)
-        self.lp_estimated_v = sf * self.lp_estimated_v + (1 - sf) * estimated_v
-
-        max_bin_vertical_vs = self.bin_rad_vs * self.get_angle_correction(-1)
-        max_bin_vertical_vs_ds = self.bin_rad_vs_ds * self.get_angle_correction(-1)
-
         self.update_index += 1
 
         extra_result = ProcessorExtraResult(
-            max_bin_vertical_vs=max_bin_vertical_vs,
-            max_bin_vertical_vs_ds=max_bin_vertical_vs_ds,
-            estimated_peak_width=estimated_peak_width,
+            max_bin_vertical_vs=self.max_bin_vertical_vs,
+            peak_width=peak_width,
             vertical_velocities=bin_vertical_vs,
             psd=psd,
             peak_idx=peak_idx,
             psd_threshold=psd_cfar,
-            lp_velocity=self.lp_velocity,
-            vertical_velocities_ds=bin_vertical_vs_ds,
-            psd_ds=psd_ds,
-            peak_idx_ds=peak_idx_ds,
-            psd_ds_threshold=psd_ds_cfar,
-            lp_velocity_ds=self.lp_velocity_ds,
         )
 
         return ProcessorResult(
-            estimated_v=self.lp_estimated_v,
-            used_distance_m=used_distance_m,
-            used_downsampling=used_downsampling,
+            estimated_v=self.lp_velocity,
+            distance_m=distance,
             extra_result=extra_result,
         )
 

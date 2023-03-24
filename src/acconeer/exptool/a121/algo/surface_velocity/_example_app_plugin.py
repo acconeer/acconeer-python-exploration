@@ -171,12 +171,10 @@ class PlotPlugin(DetectorPlotPluginBase):
         example_app_config: ExampleAppConfig,
     ) -> None:
 
-        self.downsampling = example_app_config.time_series_downsampling
         self.slow_zone = example_app_config.slow_zone
         self.history_length_n = 10
 
         c0_dashed_pen = et.utils.pg_pen_cycler(0, width=2.5, style="--")
-        c1_dashed_pen = et.utils.pg_pen_cycler(1, width=2.5, style="--")
 
         # Velocity plot
 
@@ -197,26 +195,13 @@ class PlotPlugin(DetectorPlotPluginBase):
             "{}</span></div>"
         )
 
-        self.psd_ds_html = (
-            '<div style="text-align: center">'
-            '<span style="color: #FFFFFF;font-size:13pt;">'
-            "{}</span></div>"
-        )
-
         self.distance_text_item = pg.TextItem(
             html=self.psd_html,
             fill=pg.mkColor(0x1F, 0x77, 0xB4, 180),
             anchor=(0.5, 0),
         )
 
-        self.distance_ds_text_item = pg.TextItem(
-            html=self.psd_ds_html,
-            fill=pg.mkColor(0xFF, 0x7F, 0x0E, 200),
-            anchor=(0.5, 0),
-        )
-
         self.velocity_history_plot.addItem(self.distance_text_item)
-        self.velocity_history_plot.addItem(self.distance_ds_text_item)
 
         self.velocity_history = np.zeros(self.history_length_n)
 
@@ -261,36 +246,6 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         self.psd_plot.setLogMode(x=False, y=True)
 
-        # PSD ds plot
-
-        self.psd_ds_plot = self._create_plot(self.plot_layout, row=2, col=0)
-        self.psd_ds_plot.setTitle(
-            "PSD, downsampled time series<br>(colored area represents the slow zone)"
-        )
-        self.psd_ds_plot.setLabel(axis="left", text="Power")
-        self.psd_ds_plot.setLabel(axis="bottom", text="Velocity", units="m/s")
-        self.psd_ds_plot.addLegend(labelTextSize="10pt")
-
-        self.psd_slow_smooth_max = et.utils.SmoothMax(tau_grow=0.5, tau_decay=2.0)
-
-        self.psd_ds_curve = self.psd_ds_plot.plot(pen=et.utils.pg_pen_cycler(1), name="PSD")
-        self.psd_ds_threshold = self.psd_ds_plot.plot(pen=c1_dashed_pen, name="Threshold")
-
-        psd_ds_slow_zone_color = et.utils.color_cycler(1)
-        psd_ds_slow_zone_color = f"{psd_ds_slow_zone_color}50"
-        psd_ds_slow_zone_brush = pg.mkBrush(psd_ds_slow_zone_color)
-
-        self.psd_ds_slow_zone = pg.LinearRegionItem(brush=psd_ds_slow_zone_brush, movable=False)
-        self.psd_ds_plot.addItem(self.psd_ds_slow_zone)
-
-        brush = et.utils.pg_brush_cycler(1)
-        self.psd_ds_peak_plot_item = pg.PlotDataItem(
-            pen=None, symbol="o", symbolSize=8, symbolBrush=brush, symbolPen="k"
-        )
-        self.psd_ds_plot.addItem(self.psd_ds_peak_plot_item)
-
-        self.psd_ds_plot.setLogMode(x=False, y=True)
-
     def update(self, example_app_result: ExampleAppResult) -> None:
         processor_extra_result = example_app_result.processor_extra_result
 
@@ -307,38 +262,23 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.velocity_history[-1] = example_app_result.velocity
         self.velocity_curve.setData(xs, self.velocity_history)
 
-        if example_app_result.used_downsampling == 1:
-            velocity_html = self.psd_html.format(
-                f"Distance {np.around(example_app_result.used_distance_m, 2)} m, "
-                f"downsampling 1"
-            )
-            self.distance_text_item.setHtml(velocity_html)
-            self.distance_text_item.setPos(
-                -self.history_length_n / 2, lim[1] + self._VELOCITY_Y_SCALE_MARGIN_M
-            )
-            self.distance_text_item.show()
-            self.distance_ds_text_item.hide()
-        else:
-            velocity_html = self.psd_ds_html.format(
-                f"Distance used {np.around(example_app_result.used_distance_m, 2)} m, "
-                f"downsampling {self.downsampling}"
-            )
-            self.distance_ds_text_item.setHtml(velocity_html)
-            self.distance_ds_text_item.setPos(
-                -self.history_length_n / 2, lim[1] + self._VELOCITY_Y_SCALE_MARGIN_M
-            )
-            self.distance_ds_text_item.show()
-            self.distance_text_item.hide()
+        velocity_html = self.psd_html.format(
+            f"Distance {np.around(example_app_result.distance_m, 2)} m, "
+        )
+        self.distance_text_item.setHtml(velocity_html)
+        self.distance_text_item.setPos(
+            -self.history_length_n / 2, lim[1] + self._VELOCITY_Y_SCALE_MARGIN_M
+        )
 
         self.lower_std_history = np.roll(self.lower_std_history, -1)
         self.lower_std_history[-1] = (
-            example_app_result.velocity + 0.5 * processor_extra_result.estimated_peak_width
+            example_app_result.velocity + 0.5 * processor_extra_result.peak_width
         )
         self.lower_std_curve.setData(xs, self.lower_std_history)
 
         self.upper_std_history = np.roll(self.upper_std_history, -1)
         self.upper_std_history[-1] = (
-            example_app_result.velocity - 0.5 * processor_extra_result.estimated_peak_width
+            example_app_result.velocity - 0.5 * processor_extra_result.peak_width
         )
         self.upper_std_curve.setData(xs, self.upper_std_history)
 
@@ -362,41 +302,11 @@ class PlotPlugin(DetectorPlotPluginBase):
         else:
             self.psd_peak_plot_item.clear()
 
-        lim = self.psd_slow_smooth_max.update(processor_extra_result.psd_ds)
-        self.psd_ds_plot.setYRange(np.log(0.5), np.log(lim))
-        self.psd_ds_plot.setXRange(
-            processor_extra_result.max_bin_vertical_vs_ds[0],
-            processor_extra_result.max_bin_vertical_vs_ds[-1],
-        )
-        self.psd_ds_threshold.setData(
-            processor_extra_result.vertical_velocities_ds, processor_extra_result.psd_ds_threshold
-        )
-        self.psd_ds_curve.setData(
-            processor_extra_result.vertical_velocities_ds, processor_extra_result.psd_ds
-        )
-        if processor_extra_result.peak_idx_ds is not None:
-            self.psd_ds_peak_plot_item.setData(
-                [
-                    processor_extra_result.vertical_velocities_ds[
-                        processor_extra_result.peak_idx_ds
-                    ]
-                ],
-                [processor_extra_result.psd_ds[processor_extra_result.peak_idx_ds]],
-            )
-        else:
-            self.psd_ds_peak_plot_item.clear()
-
         middle_idx = int(np.around(processor_extra_result.vertical_velocities.shape[0] / 2))
         self.psd_slow_zone.setRegion(
             [
                 processor_extra_result.vertical_velocities[middle_idx - self.slow_zone],
                 processor_extra_result.vertical_velocities[middle_idx + self.slow_zone],
-            ]
-        )
-        self.psd_ds_slow_zone.setRegion(
-            [
-                processor_extra_result.vertical_velocities_ds[middle_idx - self.slow_zone],
-                processor_extra_result.vertical_velocities_ds[middle_idx + self.slow_zone],
             ]
         )
 
@@ -483,7 +393,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="Sensor angle",
                 suffix=" degrees",
                 decimals=1,
-                limits=(0, 90),
+                limits=(0, 89),
             ),
             "num_points": pidgets.IntPidgetFactory(
                 name_label_text="Number of distance points",
@@ -493,11 +403,11 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="Sweep rate",
                 suffix=" Hz",
                 decimals=1,
-                limits=(1000, None),
+                limits=(100, None),
             ),
             "sweeps_per_frame": pidgets.IntPidgetFactory(
                 name_label_text="Sweeps per frame",
-                limits=(128, 2048),
+                limits=(64, 2048),
             ),
             "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="HWAAS",
@@ -553,7 +463,7 @@ class ViewPlugin(DetectorViewPluginBase):
             ),
             "time_series_length": pidgets.IntPidgetFactory(
                 name_label_text="Time series length",
-                limits=(64, 2048),
+                limits=(64, None),
             ),
             "psd_lp_coeff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="PSD time filtering coeff.",
@@ -566,11 +476,6 @@ class ViewPlugin(DetectorViewPluginBase):
             ),
             "velocity_lp_coeff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Velocity time filtering coeff.\nper time series",
-                limits=(0, 1),
-                decimals=3,
-            ),
-            "output_lp_coeff": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Output velocity\ntime filtering coeff.",
                 limits=(0, 1),
                 decimals=3,
             ),
@@ -592,10 +497,6 @@ class ViewPlugin(DetectorViewPluginBase):
                 decimals=1,
                 limits=(0, 20),
                 suffix=" s",
-            ),
-            "time_series_downsampling": pidgets.IntPidgetFactory(
-                name_label_text="Time series downsampling",
-                limits=(0, 6),
             ),
         }
 

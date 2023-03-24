@@ -116,25 +116,15 @@ class ExampleAppConfig(AlgoConfigBase):
     slow_zone: int = attrs.field(default=3)
     """Half size of the number of frequency bins that are regarded as the slow zone."""
 
-    velocity_lp_coeff: float = attrs.field(default=0.95)
+    velocity_lp_coeff: float = attrs.field(default=0.98)
     """
-    Filter coefficient for the exponential filter of velocity over time for each time series.
+    Filter coefficient for the exponential filter of the velocity estimate.
     """
-
-    output_lp_coeff: float = attrs.field(default=0.98)
-    """Filter coefficient for the exponential filter of the estimated velocity over time."""
 
     max_peak_interval_s: float = attrs.field(default=4)
     """
     Maximal number of seconds that is tolerated between
     peaks before the estimated velocity starts decreasing.
-    """
-
-    time_series_downsampling: int = attrs.field(default=2)
-    """
-    Sets the downsampling factor for the second time series.
-    Used to get better resolution in the slow velocities.
-    If set to 1, the downsampling is disabled.
     """
 
     @step_length.validator
@@ -156,11 +146,8 @@ class ExampleAppResult:
     velocity: float = attrs.field()
     """Estimated velocity."""
 
-    used_distance_m: float = attrs.field()
+    distance_m: float = attrs.field()
     """Distance in meters used for the current velocity estimate."""
-
-    used_downsampling: int = attrs.field()
-    """Downsampling factor for the time series used for the current velocity estimate."""
 
     processor_extra_result: ProcessorExtraResult = attrs.field()
     service_result: a121.Result = attrs.field()
@@ -281,9 +268,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
             cfar_win=config.cfar_win,
             cfar_sensitivity=config.cfar_sensitivity,
             velocity_lp_coeff=config.velocity_lp_coeff,
-            output_lp_coeff=config.output_lp_coeff,
             max_peak_interval_s=config.max_peak_interval_s,
-            time_series_downsampling=config.time_series_downsampling,
         )
 
     def get_next(self) -> ExampleAppResult:
@@ -298,8 +283,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
 
         return ExampleAppResult(
             velocity=processor_result.estimated_v,
-            used_distance_m=processor_result.used_distance_m,
-            used_downsampling=processor_result.used_downsampling,
+            distance_m=processor_result.distance_m,
             processor_extra_result=processor_result.extra_result,
             service_result=result,
         )
