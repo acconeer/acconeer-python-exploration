@@ -30,7 +30,9 @@ The ``QWidget`` instance is the container widget returned by the
         print(pg)  # pg will be the "a" variable below
 
     a = PidgetGroup(
-        hooks=(my_hook,)  # NOTE that this is a tuple, not a list!
+        hooks=my_hook,
+        # or hooks=[my_hook]
+        # or hooks=(my_hook,)
     )
 
 The second argument of a ``PidgetGroupHook`` is the ``PidgetMapping`` kept
@@ -48,7 +50,7 @@ internally in ``AttrsConfigEditor``;
         #
 
     mapping: PidgetGroupFactoryMapping = {
-        PidgetGroup(hooks=(my_hook,)): {
+        PidgetGroup(hooks=my_hook): {
             "int_parameter": IntPidgetFactory(...),
             "float_parameter": FloatPidgetFactory(...),
         }

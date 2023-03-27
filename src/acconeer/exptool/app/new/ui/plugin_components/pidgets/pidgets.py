@@ -27,6 +27,8 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool.a121._core.entities import Criticality
 
+from .common import MaybeIterable, as_sequence
+
 
 def widget_wrap_layout(layout: QLayout) -> QWidget:
     dummy = QWidget()
@@ -39,12 +41,16 @@ T = TypeVar("T")
 EnumT = TypeVar("EnumT", bound=Enum)
 
 
+def _hooks_converter(a: MaybeIterable[PidgetHook]) -> Sequence[PidgetHook]:
+    return as_sequence(a)
+
+
 @attrs.frozen(kw_only=True, slots=False)
 class PidgetFactory(abc.ABC):
     name_label_text: str
     name_label_tooltip: Optional[str] = None
     note_label_text: Optional[str] = None
-    hooks: Sequence[PidgetHook] = attrs.field(factory=tuple)
+    hooks: Sequence[PidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
 
     @abc.abstractmethod
     def create(self, parent: QWidget) -> Pidget:

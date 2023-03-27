@@ -591,7 +591,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 ),
             },
             pidgets.FlatPidgetGroup(
-                hooks=(disable_if(parameter_is("intra_enable", False)),),
+                hooks=disable_if(parameter_is("intra_enable", False)),
             ): intra_parameters,
             pidgets.FlatPidgetGroup(): {
                 "inter_enable": pidgets.CheckboxPidgetFactory(
@@ -599,7 +599,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 ),
             },
             pidgets.FlatPidgetGroup(
-                hooks=(disable_if(parameter_is("inter_enable", False)),),
+                hooks=disable_if(parameter_is("inter_enable", False)),
             ): inter_parameters,
         }
 

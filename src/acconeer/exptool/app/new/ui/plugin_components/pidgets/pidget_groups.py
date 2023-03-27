@@ -12,10 +12,15 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool.app.new.ui.plugin_components.collapsible_widget import CollapsibleWidget
 
+from .common import MaybeIterable, as_sequence
 from .pidgets import Pidget
 
 
 PidgetGroupHook = t.Callable[[QWidget, t.Mapping[str, Pidget]], None]
+
+
+def _hooks_converter(a: MaybeIterable[PidgetGroupHook]) -> t.Sequence[PidgetGroupHook]:
+    return as_sequence(a)
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -25,7 +30,7 @@ class PidgetGroup(abc.ABC):
     _instance_id: uuid.UUID = attrs.field(factory=uuid.uuid4, init=False)
     """Unique ID for each instance. Enables using otherwise equal instances as hash keys"""
 
-    hooks: t.Sequence[PidgetGroupHook] = attrs.field(factory=tuple)
+    hooks: t.Sequence[PidgetGroupHook] = attrs.field(factory=tuple, converter=_hooks_converter)
     """Sequence of hooks for this instance"""
 
     @abc.abstractmethod

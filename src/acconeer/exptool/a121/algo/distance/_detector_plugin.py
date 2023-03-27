@@ -484,7 +484,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="Fixed threshold value",
                 decimals=1,
                 limits=(0, None),
-                hooks=(enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),),
+                hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),
             ),
             "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
                 name_label_text="Num frames in rec. thr.",
@@ -495,7 +495,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 decimals=2,
                 limits=(0, 1),
                 show_limit_values=False,
-                hooks=(disable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),),
+                hooks=disable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),
             ),
             "signal_quality": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Signal quality",
