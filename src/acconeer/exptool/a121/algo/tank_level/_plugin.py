@@ -28,6 +28,7 @@ from acconeer.exptool.a121.algo.distance._detector import (
     DetailedStatus,
     Detector,
     PeakSortingMethod,
+    ReflectorShape,
     ThresholdMethod,
 )
 from acconeer.exptool.a121.algo.tank_level._configs import (
@@ -617,6 +618,14 @@ class ViewPlugin(DetectorViewPluginBase):
                     ThresholdMethod.CFAR: "CFAR",
                     ThresholdMethod.FIXED: "Fixed",
                     ThresholdMethod.RECORDED: "Recorded",
+                },
+            ),
+            "reflector_shape": pidgets.EnumPidgetFactory(
+                name_label_text="Reflector shape",
+                enum_type=ReflectorShape,
+                label_mapping={
+                    ReflectorShape.GENERIC: "Generic",
+                    ReflectorShape.PLANAR: "Planar",
                 },
             ),
             "peaksorting_method": pidgets.EnumPidgetFactory(

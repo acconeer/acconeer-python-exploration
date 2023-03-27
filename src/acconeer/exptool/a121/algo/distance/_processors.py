@@ -54,6 +54,21 @@ class ThresholdMethod(AlgoParamEnum):
     RECORDED = enum.auto()
 
 
+class ReflectorShape(AlgoParamEnum):
+    """Reflector shape.
+
+    ``GENERIC`` Reflectors of any shape.
+    ``PLANAR`` Planar shaped reflectors facing the radar, for example water surfaces.
+    """
+
+    GENERIC = 4
+    PLANAR = 2
+
+    @property
+    def exponent(self) -> float:
+        return float(self.value)
+
+
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
     processor_mode: ProcessorMode = attrs.field(
@@ -64,6 +79,9 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     )
     measurement_type: MeasurementType = attrs.field(
         default=MeasurementType.FAR_RANGE, converter=MeasurementType
+    )
+    reflector_shape: ReflectorShape = attrs.field(
+        default=ReflectorShape.GENERIC, converter=ReflectorShape
     )
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
@@ -453,6 +471,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             estimated_distances,
             self.range_subsweep_configs,
             self.context.bg_noise_std,  # type: ignore[arg-type]
+            self.processor_config.reflector_shape,
         )
 
         estimated_distances = [dist - self.offset_m for dist in estimated_distances]
@@ -634,6 +653,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         distances: list[float],
         subsweeps: list[a121.SubsweepConfig],
         bg_noise_std: list[float],
+        reflector_shape: ReflectorShape,
     ) -> list[float]:
 
         # Determine subsweep breakpoints in meters.
@@ -656,7 +676,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             processing_gain_db = 10 * np.log10(cls.calc_processing_gain(profile, step_length))
             s_db = 20 * np.log10(amplitude)
             n_db = 20 * np.log10(sigma)
-            r_db = 40 * np.log10(distance)
+            r_db = reflector_shape.exponent * 10 * np.log10(distance)
             rlg_db = cls.RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
 
             strengths.append(s_db - n_db - rlg_db + r_db - processing_gain_db)

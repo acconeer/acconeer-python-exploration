@@ -35,6 +35,7 @@ from ._processors import (
     ProcessorContext,
     ProcessorMode,
     ProcessorResult,
+    ReflectorShape,
     ThresholdMethod,
     calculate_bg_noise_std,
     calculate_loopback_peak_location,
@@ -302,6 +303,12 @@ class DetectorConfig(AlgoConfigBase):
         converter=PeakSortingMethod,
     )
     """Sorting method of estimated distances."""
+
+    reflector_shape: ReflectorShape = attrs.field(
+        default=ReflectorShape.GENERIC,
+        converter=ReflectorShape,
+    )
+    """Reflector shape."""
 
     num_frames_in_recorded_threshold: int = attrs.field(default=100)
     """Number of frames used when calibrating threshold."""
@@ -1136,7 +1143,13 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         """Creates a group plan."""
         step_length = cls._limit_step_length(profile, config.max_step_length)
         breakpoints = cls._m_to_points(breakpoints_m, step_length)
-        hwaas = cls._calculate_hwaas(profile, breakpoints, config.signal_quality, step_length)
+        hwaas = cls._calculate_hwaas(
+            profile,
+            breakpoints,
+            config.signal_quality,
+            step_length,
+            config.reflector_shape,
+        )
 
         extended_breakpoints = cls._add_margin_to_breakpoints(
             profile=profile,
@@ -1178,7 +1191,12 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
     @classmethod
     def _calculate_hwaas(
-        cls, profile: a121.Profile, breakpoints: list[int], signal_quality: float, step_length: int
+        cls,
+        profile: a121.Profile,
+        breakpoints: list[int],
+        signal_quality: float,
+        step_length: int,
+        reflector_shape: ReflectorShape,
     ) -> list[int]:
         rlg_per_hwaas = Processor.RLG_PER_HWAAS_MAP[profile]
         hwaas = []
@@ -1188,7 +1206,11 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
                 cls.HWAAS_MIN_DISTANCE,
             )
-            rlg = signal_quality + 40 * np.log10(subsweep_end_point_m) - np.log10(processing_gain)
+            rlg = (
+                signal_quality
+                + reflector_shape.exponent * 10 * np.log10(subsweep_end_point_m)
+                - np.log10(processing_gain)
+            )
             hwaas_in_subsweep = int(round(10 ** ((rlg - rlg_per_hwaas) / 10)))
             hwaas.append(np.clip(hwaas_in_subsweep, cls.MIN_HWAAS, cls.MAX_HWAAS))
         return hwaas

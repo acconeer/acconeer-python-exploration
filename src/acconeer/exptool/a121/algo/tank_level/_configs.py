@@ -2,7 +2,7 @@
 # All rights reserved
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo.distance._aggregator import PeakSortingMethod
+from acconeer.exptool.a121.algo.distance import PeakSortingMethod, ReflectorShape
 from acconeer.exptool.a121.algo.tank_level._ref_app import RefAppConfig
 
 
@@ -16,6 +16,7 @@ def get_small_config() -> RefAppConfig:
         max_profile=a121.Profile.PROFILE_2,
         num_frames_in_recorded_threshold=50,
         peaksorting_method=PeakSortingMethod.CLOSEST,
+        reflector_shape=ReflectorShape.GENERIC,
         threshold_sensitivity=0.0,
         signal_quality=15.0,
     )
@@ -30,6 +31,7 @@ def get_medium_config() -> RefAppConfig:
         max_profile=a121.Profile.PROFILE_3,
         num_frames_in_recorded_threshold=50,
         peaksorting_method=PeakSortingMethod.STRONGEST,
+        reflector_shape=ReflectorShape.GENERIC,
         threshold_sensitivity=0.0,
         signal_quality=20.0,
     )
@@ -44,6 +46,7 @@ def get_large_config() -> RefAppConfig:
         max_profile=a121.Profile.PROFILE_5,
         num_frames_in_recorded_threshold=50,
         peaksorting_method=PeakSortingMethod.STRONGEST,
+        reflector_shape=ReflectorShape.GENERIC,
         threshold_sensitivity=0.0,
         signal_quality=25.0,
     )

@@ -16,6 +16,7 @@ from ._processors import (
     ProcessorContext,
     ProcessorMode,
     ProcessorResult,
+    ReflectorShape,
     ThresholdMethod,
     calculate_bg_noise_std,
 )

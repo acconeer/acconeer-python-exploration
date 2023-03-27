@@ -60,6 +60,7 @@ from ._detector import (
     DetectorContext,
     DetectorResult,
     PeakSortingMethod,
+    ReflectorShape,
     ThresholdMethod,
     _load_algo_data,
 )
@@ -452,6 +453,14 @@ class ViewPlugin(DetectorViewPluginBase):
                     a121.Profile.PROFILE_3: "3",
                     a121.Profile.PROFILE_4: "4",
                     a121.Profile.PROFILE_5: "5 (longest)",
+                },
+            ),
+            "reflector_shape": pidgets.EnumPidgetFactory(
+                name_label_text="Reflector shape",
+                enum_type=ReflectorShape,
+                label_mapping={
+                    ReflectorShape.GENERIC: "Generic",
+                    ReflectorShape.PLANAR: "Planar",
                 },
             ),
             "peaksorting_method": pidgets.EnumPidgetFactory(
