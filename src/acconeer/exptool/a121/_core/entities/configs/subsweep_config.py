@@ -235,7 +235,7 @@ class SubsweepConfig:
         if not (
             is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
         ):
-            raise ValueError(f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}")
+            raise ValueError(f"Step length must be a divisor or multiple of {SPARSE_IQ_PPC}")
 
     @property
     def profile(self) -> Profile:

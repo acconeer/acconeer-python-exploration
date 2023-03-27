@@ -150,14 +150,21 @@ class SessionConfig:
             for group_id, sensor_id, sensor_config in utils.iterate_extended_structure(
                 self._groups
             ):
-                error_msg = (
-                    f"Sensor config in group {group_id} with sensor id {sensor_id} "
-                    + "has a set `frame_rate`. This is not allowed."
-                )
                 if sensor_config.frame_rate is not None:
-                    validation_results.append(ValidationError(self, "update_rate", error_msg))
                     validation_results.append(
-                        ValidationError(sensor_config, "frame_rate", error_msg)
+                        ValidationError(
+                            self,
+                            "update_rate",
+                            "A set update rate is incompatible with a set frame rate of sensor "
+                            + f"{sensor_id} in group {group_id}",
+                        )
+                    )
+                    validation_results.append(
+                        ValidationError(
+                            sensor_config,
+                            "frame_rate",
+                            "A set frame rate is incompatible with a set update rate",
+                        )
                     )
 
         return validation_results

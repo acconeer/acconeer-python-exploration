@@ -322,7 +322,7 @@ class SensorConfig:
                 ValidationError(
                     self,
                     "frame_rate",
-                    "Frame rate must unset (`None`) to use continuous sweep mode.",
+                    "Frame rate must be unset to use continuous sweep mode.",
                 )
             )
         if self.sweep_rate is None:
@@ -380,10 +380,10 @@ class SensorConfig:
                     ValidationError(
                         self,
                         "frame_rate",
-                        "The frame rate is set faster than what the sweep rate allows."
-                        + f"Frame rate: {self.frame_rate} Hz\n"
+                        "The frame rate is set higher than what the sweep rate allows.\n"
+                        + f"Frame rate: {self.frame_rate:.2f} Hz\n"
                         + "Sweep rate / sweeps per frame: "
-                        + f"{self.sweep_rate / self.sweeps_per_frame} Hz",
+                        + f"{self.sweep_rate / self.sweeps_per_frame:.2f} Hz",
                     )
                 )
 
