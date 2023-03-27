@@ -29,7 +29,7 @@ def get_medium_config() -> RefAppConfig:
         end_m=6.0,
         max_profile=a121.Profile.PROFILE_3,
         num_frames_in_recorded_threshold=50,
-        peaksorting_method=PeakSortingMethod.HIGHEST_RCS,
+        peaksorting_method=PeakSortingMethod.STRONGEST,
         threshold_sensitivity=0.0,
         signal_quality=20.0,
     )
@@ -43,7 +43,7 @@ def get_large_config() -> RefAppConfig:
         end_m=10,
         max_profile=a121.Profile.PROFILE_5,
         num_frames_in_recorded_threshold=50,
-        peaksorting_method=PeakSortingMethod.HIGHEST_RCS,
+        peaksorting_method=PeakSortingMethod.STRONGEST,
         threshold_sensitivity=0.0,
         signal_quality=25.0,
     )

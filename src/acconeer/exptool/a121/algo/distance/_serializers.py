@@ -18,7 +18,7 @@ from ._processors import ProcessorResult
 
 _ALL_PROCESSOR_RESULT_FIELDS = (
     "estimated_distances",
-    "estimated_rcs",
+    "estimated_strengths",
     "near_edge_status",
     "recorded_threshold_mean_sweep",
     "recorded_threshold_noise_std",
@@ -28,7 +28,7 @@ _ALL_PROCESSOR_RESULT_FIELDS = (
 )
 
 _ALL_DETECTOR_RESULT_FIELDS = (
-    "rcs",
+    "strengths",
     "distances",
     "near_edge_status",
     "processor_results",
@@ -133,11 +133,11 @@ class ProcessorResultListH5Serializer:
                 track_times=False,
             )
 
-        if "estimated_rcs" in self.fields:
-            data = _stack_optional_arraylike([r.estimated_rcs for r in results])
+        if "estimated_strengths" in self.fields:
+            data = _stack_optional_arraylike([r.estimated_strengths for r in results])
 
             self.group.create_dataset(
-                "estimated_rcs",
+                "estimated_strengths",
                 dtype=float,
                 data=data,
                 track_times=False,
@@ -239,7 +239,7 @@ class ProcessorResultListH5Serializer:
 
         groups = (
             self.group.get("estimated_distances", PhonySeries([], is_prototype_singleton=False)),
-            self.group.get("estimated_rcs", PhonySeries([], is_prototype_singleton=False)),
+            self.group.get("estimated_strengths", PhonySeries([], is_prototype_singleton=False)),
             self.group.get("near_edge_status", PhonySeries(None)),
             self.group.get("recorded_threshold_mean_sweep", PhonySeries(None)),
             self.group.get("recorded_threshold_noise_std", PhonySeries(None)),
@@ -258,8 +258,8 @@ class ProcessorResultListH5Serializer:
                 estimated_distances=self._replace_if_all_is_nan(  # type: ignore[arg-type]
                     est_dists,
                 ),
-                estimated_rcs=self._replace_if_all_is_nan(  # type: ignore[arg-type]
-                    est_rcs,
+                estimated_strengths=self._replace_if_all_is_nan(  # type: ignore[arg-type]
+                    est_strengths,
                 ),
                 near_edge_status=(
                     self._replace_if_all_is_nan(near_edge_status)  # type: ignore[arg-type]
@@ -280,7 +280,7 @@ class ProcessorResultListH5Serializer:
             )
             for (
                 est_dists,
-                est_rcs,
+                est_strengths,
                 near_edge_status,
                 rt_mean_sweep,
                 rt_noise_std,
@@ -326,25 +326,25 @@ class DetectorResultListH5Serializer:
                 + "Skip it by specifying which fields to serialize"
             )
 
-        if "rcs" in self.fields:
+        if "strengths" in self.fields:
             data: t.Dict[int, t.List[t.Optional[npt.NDArray[t.Any]]]] = {}
             for res in results:
                 for sensor_id, detector_result in res.items():
                     if sensor_id not in data:
                         data[sensor_id] = []
-                    data[sensor_id].append(detector_result.rcs)
+                    data[sensor_id].append(detector_result.strengths)
 
-            rcs_data: t.Dict[int, npt.ArrayLike] = {}
-            for sensor_id, rcs in data.items():
-                rcs_data[sensor_id] = _stack_optional_arraylike(rcs)
+            strengths_data: t.Dict[int, npt.ArrayLike] = {}
+            for sensor_id, strengths in data.items():
+                strengths_data[sensor_id] = _stack_optional_arraylike(strengths)
 
-            rcs_group = self.group.create_group("rcs")
+            strengths_group = self.group.create_group("strengths")
 
-            for sens, rcs_item in rcs_data.items():
-                rcs_group.create_dataset(
+            for sens, strengths_item in strengths_data.items():
+                strengths_group.create_dataset(
                     str(sens),
                     dtype=float,
-                    data=rcs_item,
+                    data=strengths_item,
                     track_times=False,
                 )
 
@@ -406,7 +406,7 @@ class DetectorResultListH5Serializer:
             )
 
         groups = (
-            self.group.get("rcs", PhonySeries([], is_prototype_singleton=False)),
+            self.group.get("strengths", PhonySeries([], is_prototype_singleton=False)),
             self.group.get("distances", PhonySeries([], is_prototype_singleton=False)),
             self.group.get("near_edge_status", PhonySeries(None)),
         )
@@ -418,14 +418,14 @@ class DetectorResultListH5Serializer:
             return []
 
         res = []
-        (rcs, dists, near_edge_status) = groups
+        (strengths, dists, near_edge_status) = groups
 
-        for k in rcs.keys():
-            for r, d, n in zip(rcs.get(k), dists.get(k), near_edge_status.get(k)):
+        for k in strengths.keys():
+            for r, d, n in zip(strengths.get(k), dists.get(k), near_edge_status.get(k)):
                 res.append(
                     {
                         int(k): DetectorResult(
-                            rcs=r[~np.isnan(r)],
+                            strengths=r[~np.isnan(r)],
                             distances=d[~np.isnan(d)],
                             near_edge_status=(n),
                             processor_results=[],

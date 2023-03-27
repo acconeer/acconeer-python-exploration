@@ -99,7 +99,7 @@ class ProcessorExtraResult:
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     estimated_distances: Optional[list[float]] = attrs.field(default=None)
-    estimated_rcs: Optional[list[float]] = attrs.field(default=None)
+    estimated_strengths: Optional[list[float]] = attrs.field(default=None)
     near_edge_status: Optional[bool] = attrs.field(default=None)
     recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     recorded_threshold_noise_std: Optional[list[np.float_]] = attrs.field(default=None)
@@ -445,9 +445,10 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             distances_m=distances_m,
         )
 
-        # Calculate rcs before applying offset as the offset could push the estimated distance
-        # into the next subsweep, resulting in rcs being calculated with wring sensor parameters.
-        esimated_rcs = self._convert_amplitudes_to_rcs(
+        # Calculate strengths before applying offset as the offset could push the estimated
+        # distance into the next subsweep, resulting in strengths being calculated with wrong
+        # sensor parameters.
+        estimated_strengths = self._convert_amplitudes_to_strengths(
             estimated_amplitudes,
             estimated_distances,
             self.range_subsweep_configs,
@@ -457,7 +458,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         estimated_distances = [dist - self.offset_m for dist in estimated_distances]
         return ProcessorResult(
             estimated_distances=estimated_distances,
-            estimated_rcs=esimated_rcs,
+            estimated_strengths=estimated_strengths,
             near_edge_status=self._detect_close_object(abs_sweep, threshold),
             extra_result=extra_result,
         )
@@ -627,7 +628,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return threshold
 
     @classmethod
-    def _convert_amplitudes_to_rcs(
+    def _convert_amplitudes_to_strengths(
         cls,
         amplitudes: list[float],
         distances: list[float],
@@ -639,7 +640,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         start_points = [subsweep.start_point for subsweep in subsweeps]
         bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
 
-        rcs = []
+        strengths = []
         # Loop over amplitude/distance pairs.
         for amplitude, distance in zip(amplitudes, distances):
 
@@ -651,16 +652,16 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             profile = subsweeps[subsweep_idx].profile
             step_length = subsweeps[subsweep_idx].step_length
 
-            # Calculate rcs.
+            # Calculate strengths.
             processing_gain_db = 10 * np.log10(cls.calc_processing_gain(profile, step_length))
             s_db = 20 * np.log10(amplitude)
             n_db = 20 * np.log10(sigma)
             r_db = 40 * np.log10(distance)
             rlg_db = cls.RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
 
-            rcs.append(s_db - n_db - rlg_db + r_db - processing_gain_db)
+            strengths.append(s_db - n_db - rlg_db + r_db - processing_gain_db)
 
-        return rcs
+        return strengths
 
     @staticmethod
     def calc_processing_gain(profile: a121.Profile, step_length: int) -> float:

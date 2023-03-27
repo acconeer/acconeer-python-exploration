@@ -624,7 +624,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 enum_type=PeakSortingMethod,
                 label_mapping={
                     PeakSortingMethod.CLOSEST: "Closest",
-                    PeakSortingMethod.HIGHEST_RCS: "Highest RCS",
+                    PeakSortingMethod.STRONGEST: "Strongest",
                 },
             ),
             "fixed_threshold_value": pidgets.FloatPidgetFactory(

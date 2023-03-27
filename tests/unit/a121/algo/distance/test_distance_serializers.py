@@ -19,7 +19,7 @@ def results() -> t.List[ProcessorResult]:
     return [
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_rcs=[float(i) for i in range(10)],
+            estimated_strengths=[float(i) for i in range(10)],
             near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
@@ -32,7 +32,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=None,
-            estimated_rcs=None,
+            estimated_strengths=None,
             near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[np.float_(0.1)] * 20,
@@ -42,7 +42,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_rcs=[float(i) for i in range(10)],
+            estimated_strengths=[float(i) for i in range(10)],
             near_edge_status=True,
             recorded_threshold_mean_sweep=None,
             recorded_threshold_noise_std=None,
@@ -52,7 +52,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_rcs=[float(i) for i in range(10)],
+            estimated_strengths=[float(i) for i in range(10)],
             near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[
@@ -65,7 +65,7 @@ def results() -> t.List[ProcessorResult]:
         ),
         ProcessorResult(
             estimated_distances=[float(i) for i in range(10)],
-            estimated_rcs=[float(i) for i in range(10)],
+            estimated_strengths=[float(i) for i in range(10)],
             near_edge_status=True,
             recorded_threshold_mean_sweep=np.array(range(20)),
             recorded_threshold_noise_std=[

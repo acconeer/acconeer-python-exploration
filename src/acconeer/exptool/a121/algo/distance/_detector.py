@@ -298,7 +298,7 @@ class DetectorConfig(AlgoConfigBase):
     """Threshold method"""
 
     peaksorting_method: PeakSortingMethod = attrs.field(
-        default=PeakSortingMethod.HIGHEST_RCS,
+        default=PeakSortingMethod.STRONGEST,
         converter=PeakSortingMethod,
     )
     """Sorting method of estimated distances."""
@@ -344,9 +344,9 @@ class DetectorResult:
     distances: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
     """Estimated distances (m), sorted according to the selected peak sorting strategy."""
 
-    rcs: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    """Estimated radar cross section (dBsm) corresponding to the peak amplitude of the
-    estimated distances.
+    strengths: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    """Estimated reflector strengths corresponding to the peak amplitude of the estimated
+    distances.
     """
 
     near_edge_status: Optional[bool] = attrs.field(default=None)
@@ -881,7 +881,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
         result = {
             sensor_id: DetectorResult(
-                rcs=aggregator_results[sensor_id].estimated_rcs,
+                strengths=aggregator_results[sensor_id].estimated_strengths,
                 distances=aggregator_results[sensor_id].estimated_distances,
                 near_edge_status=aggregator_results[sensor_id].near_edge_status,
                 sensor_calibration_needed=extended_result[0][sensor_id].calibration_needed,

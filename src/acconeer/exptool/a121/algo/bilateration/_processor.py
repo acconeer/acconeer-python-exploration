@@ -123,11 +123,11 @@ class Processor:
 
     def process(self, result: t.Dict[int, DetectorResult]) -> ProcessorResult:
         distances_left = result[self.sensor_position_to_ids[self._SENSOR_POSITION_LEFT]].distances
-        rcs_left = result[self.sensor_position_to_ids[self._SENSOR_POSITION_LEFT]].rcs
+        rcs_left = result[self.sensor_position_to_ids[self._SENSOR_POSITION_LEFT]].strengths
         distances_right = result[
             self.sensor_position_to_ids[self._SENSOR_POSITION_RIGHT]
         ].distances
-        rcs_right = result[self.sensor_position_to_ids[self._SENSOR_POSITION_RIGHT]].rcs
+        rcs_right = result[self.sensor_position_to_ids[self._SENSOR_POSITION_RIGHT]].strengths
         assert distances_left is not None
         assert rcs_left is not None
         assert distances_right is not None

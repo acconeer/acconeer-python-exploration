@@ -37,7 +37,7 @@ def optional_float_arraylike_comp(
 
 _PROCESSOR_FIELD_COMPARATORS = {
     "estimated_distances": optional_float_arraylike_comp,
-    "estimated_rcs": optional_float_arraylike_comp,
+    "estimated_strengths": optional_float_arraylike_comp,
     "near_edge_status": lambda a, b: a == b,
     # ignored: "recorded_threshold_mean_sweep"
     # ignored: "recorded_threshold_noise_std"
@@ -46,7 +46,7 @@ _PROCESSOR_FIELD_COMPARATORS = {
 }
 
 _DETECTOR_FIELD_COMPARATORS = {
-    "rcs": optional_float_arraylike_comp,
+    "strengths": optional_float_arraylike_comp,
     "distances": optional_float_arraylike_comp,
     "near_edge_status": lambda a, b: a == b,
     # ignored: "processor_results"
