@@ -24,13 +24,8 @@ from acconeer.exptool.a121.algo._plugins import (
     DetectorPlotPluginBase,
     DetectorViewPluginBase,
 )
-from acconeer.exptool.a121.algo.distance._detector import (
-    DetailedStatus,
-    Detector,
-    PeakSortingMethod,
-    ReflectorShape,
-    ThresholdMethod,
-)
+from acconeer.exptool.a121.algo.distance._detector import DetailedStatus, Detector
+from acconeer.exptool.a121.algo.distance._detector_plugin import ViewPlugin as DistanceViewPlugin
 from acconeer.exptool.a121.algo.tank_level._configs import (
     get_large_config,
     get_medium_config,
@@ -589,6 +584,17 @@ class ViewPlugin(DetectorViewPluginBase):
 
     @classmethod
     def _get_detector_pidget_mapping(cls) -> PidgetFactoryMapping:
+        COMMON_PIDGETS = {
+            "max_profile",
+            "reflector_shape",
+            "peaksorting_method",
+            "threshold_method",
+            "fixed_threshold_value",
+            "num_frames_in_recorded_threshold",
+            "threshold_sensitivity",
+            "signal_quality",
+        }
+
         return {
             "max_step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Max step length",
@@ -596,64 +602,11 @@ class ViewPlugin(DetectorViewPluginBase):
                 limits=(1, None),
                 init_set_value=1,
             ),
-            "max_profile": pidgets.EnumPidgetFactory(
-                name_label_text="Max profile",
-                enum_type=a121.Profile,
-                label_mapping={
-                    a121.Profile.PROFILE_1: "1 (shortest)",
-                    a121.Profile.PROFILE_2: "2",
-                    a121.Profile.PROFILE_3: "3",
-                    a121.Profile.PROFILE_4: "4",
-                    a121.Profile.PROFILE_5: "5 (longest)",
-                },
-            ),
-            "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
-                name_label_text="Num frames in rec. thr.",
-                limits=(1, None),
-            ),
-            "threshold_method": pidgets.EnumPidgetFactory(
-                name_label_text="Threshold method",
-                enum_type=ThresholdMethod,
-                label_mapping={
-                    ThresholdMethod.CFAR: "CFAR",
-                    ThresholdMethod.FIXED: "Fixed",
-                    ThresholdMethod.RECORDED: "Recorded",
-                },
-            ),
-            "reflector_shape": pidgets.EnumPidgetFactory(
-                name_label_text="Reflector shape",
-                enum_type=ReflectorShape,
-                label_mapping={
-                    ReflectorShape.GENERIC: "Generic",
-                    ReflectorShape.PLANAR: "Planar",
-                },
-            ),
-            "peaksorting_method": pidgets.EnumPidgetFactory(
-                name_label_text="Peak sorting method",
-                enum_type=PeakSortingMethod,
-                label_mapping={
-                    PeakSortingMethod.CLOSEST: "Closest",
-                    PeakSortingMethod.STRONGEST: "Strongest",
-                },
-            ),
-            "fixed_threshold_value": pidgets.FloatPidgetFactory(
-                name_label_text="Fixed threshold value",
-                decimals=1,
-                limits=(0, None),
-            ),
-            "threshold_sensitivity": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Threshold sensitivity",
-                decimals=2,
-                limits=(0, 1),
-                show_limit_values=False,
-            ),
-            "signal_quality": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Signal quality",
-                decimals=1,
-                limits=(-10, 35),
-                show_limit_values=False,
-                limit_texts=("Less power", "Higher quality"),
-            ),
+            **{
+                aspect: factory
+                for aspect, factory in DistanceViewPlugin.get_pidget_mapping().items()
+                if aspect in COMMON_PIDGETS
+            },
         }
 
     def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
