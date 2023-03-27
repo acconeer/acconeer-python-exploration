@@ -48,7 +48,12 @@ The profile, HWAAS and step length are automatically assigned per subsweep, base
 
 - HWAAS is assigned to each subsweep in order to maintain SNR throughout the measured range as the signal strength decrease with the distance between the sensor and the measured target.
   The target SNR level is adjusted using the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.signal_quality`.
+
   Note, higher signal quality will increase power consumption and measurement time.
+
+  The expected reflector shape is considered when assigning HWAAS to the subsweeps.
+  For planar reflectors, such as fluid surfaces, select :attr:`~acconeer.exptool.a121.algo.distance.ReflectorShape.PLANAR`.
+  For all other reflectors, select :attr:`~acconeer.exptool.a121.algo.distance.ReflectorShape.GENERIC`.
 
 In the Exploration Tool GUI, the subsweeps can be seen as slightly overlapping lines.
 If the measured object is in the overlapping region, the result from the neighboring segments is averaged together.
@@ -66,32 +71,41 @@ Recorded threshold
     To isolate objects of interest, the threshold is based on measurements of the static environment.
     The first step is to collect multiple sweeps, from which the mean sweep and standard deviation is calculated.
     Secondly, the threshold is formed by adding a number of standard deviations (the number is determined by the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity`) to the mean sweep.
-Constant False Alarm Rate (CFAR) threshold(default)
+Constant False Alarm Rate (CFAR) threshold (default)
     A final method to construct a threshold for a certain distance is to use the signal from neighbouring distances of the same sweep.
-    This requires that the object gives rise to a single strong peak, such as a water surface and not, for example, the level in a large waste container.
+    This requires that the object gives rise to a single strong peak, such as a fluid surface and not, for example, the level in a large waste container.
     The main advantage is that the memory consumption is minimal.
+
+Reflector shape
+---------------
+
+The expected reflector shape is considered when assigning HWAAS to the subsweeps and during peak sorting.
+
+The reflector shape is set through the detector configuration parameter
+:attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.reflector_shape`.
+
+For a planar reflector, such as a fluid surface, select :attr:`~acconeer.exptool.a121.algo.distance.ReflectorShape.PLANAR`.
+For all other reflectors, select :attr:`~acconeer.exptool.a121.algo.distance.ReflectorShape.GENERIC`.
 
 Peak sorting
 ------------
 
 Multiple objects in the scene will give rise to several peaks.
 Peak sorting allows selection of which peak is of highest importance.
-The following options are available.
+
+The peak sorting strategy is set through :attr:`~acconeer.exptool.a121.algo.distance.PeakSortingMethod`,
+which is part of the detector configuration.
+
+The following peak sorting options are available.
 
 Closest
     This method sorts the peaks according to distance from the sensor.
-Highest radar cross section(default)
-    This method sorts the peaks according to their radar cross section, estimated using the radar equation.
+Strongest (default)
+    This method sorts the peaks according to their relative strength.
 
-    The radar cross section is a measure of how much energy a given object reflects.
-    It is a combination of its material and shape.
-    A higher radar cross section corresponds to a more reflective object.
-
-    It is employed to sort peaks in order of decreasing power and is used instead of amplitude as the overall gain varies across subsweeps, due to the optimized subsweep configurations.
-
-    Note, the calculated RCS is an approximation of the actual RCS and is known to be less accurate at close distances.
-
-    To learn more about radar cross section, see the :doc:`radar principles</handbook/radar_principles>` section.
+    Note, the reflector shape is considered when calculating each peak's strength.
+    The reflector shape is selected through detector configuration parameter
+    :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.reflector_shape`.
 
 Detector calibration
 --------------------
@@ -157,6 +171,10 @@ Configuration parameters
     :undoc-members:
 
 .. autoclass:: acconeer.exptool.a121.algo.distance.PeakSortingMethod
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a121.algo.distance.ReflectorShape
     :members:
     :undoc-members:
 
