@@ -530,6 +530,9 @@ class SensorConfig:
         If enabled, the sensor buffer will be split in two halves reducing the
         maximum number of samples. A frame can be read while sampling is done into the
         other buffer.
+
+        When using double buffering, measurements coinciding with SPI activity may have distorted
+        phase. To mitigate this issue, applying a median filter is recommended.
         """
 
         return self._double_buffering
