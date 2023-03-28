@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, Mapping, Optional
+from typing import Callable, Mapping, Optional, cast
 
 import attrs
 import h5py
@@ -324,14 +324,6 @@ class ViewPlugin(DetectorViewPluginBase):
             "Current configuration does not match the configuration "
             + "used during detector calibration. Run detector calibration."
         ),
-        DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE: (
-            "Invalid detector config. Valid measurement"
-            + " range is "
-            + str(Detector.MIN_DIST_M)
-            + "-"
-            + str(Detector.MAX_DIST_M)
-            + "m."
-        ),
     }
 
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
@@ -576,11 +568,23 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
 
-        ready_for_session = app_model.is_ready_for_session()
+        app_model_ready = app_model.is_ready_for_session()
 
-        self.calibrate_detector_button.setEnabled(ready_for_session)
+        try:
+            cast(SharedState, app_model.backend_plugin_state).config.validate()
+        except a121.ValidationError:
+            config_valid = False
+        else:
+            config_valid = True
+
+        self.calibrate_detector_button.setEnabled(
+            app_model_ready and config_valid and self.config_editor.is_ready
+        )
         self.start_button.setEnabled(
-            ready_for_session and detector_status.ready_to_start and self.config_editor.is_ready
+            app_model_ready
+            and config_valid
+            and detector_status.ready_to_start
+            and self.config_editor.is_ready
         )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 

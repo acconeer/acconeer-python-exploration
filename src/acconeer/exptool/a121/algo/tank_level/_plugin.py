@@ -466,14 +466,6 @@ class ViewPlugin(DetectorViewPluginBase):
             "Current configuration does not match the configuration "
             + "used during detector calibration. Run detector calibration."
         ),
-        DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE: (
-            "Invalid detector config. Valid measurement"
-            + " range is "
-            + str(Detector.MIN_DIST_M)
-            + "-"
-            + str(Detector.MAX_DIST_M)
-            + "m."
-        ),
     }
 
     def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
@@ -611,11 +603,18 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
         if backend_plugin_state is not None and backend_plugin_state.config is not None:
+            self.config_editor.set_data(backend_plugin_state.config)
+            self.tank_level_config_editor.set_data(backend_plugin_state.config)
+
             results = backend_plugin_state.config._collect_validation_results()
 
-            not_handled = self.config_editor.handle_validation_results(results)
+            not_handled = self.tank_level_config_editor.handle_validation_results(results)
+            not_handled = self.config_editor.handle_validation_results(not_handled)
 
             assert not_handled == []
+        else:
+            self.config_editor.set_data(None)
+            self.tank_level_config_editor.set_data(None)
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
@@ -626,9 +625,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.stop_button.setEnabled(False)
             self.defaults_button.setEnabled(False)
 
-            self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
-            self.tank_level_config_editor.set_data(None)
             self.tank_level_config_editor.setEnabled(False)
             self.sensor_id_pidget.set_selected_sensor(None, [])
             self.message_box.setText("")
@@ -640,9 +637,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
         self.tank_level_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.tank_level_config_editor.set_data(state.config)
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.config_editor.set_data(state.config)
 
         self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)

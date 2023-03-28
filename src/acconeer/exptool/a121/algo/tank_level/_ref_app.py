@@ -33,6 +33,16 @@ class RefAppConfig(DetectorConfig):
     num_medians_to_average: int = attrs.field(default=1)
     """Number of medians averaged to obtain the final level."""
 
+    @start_m.validator
+    def _(self, _: Any, value: float) -> None:
+        if value < Detector.MIN_DIST_M:
+            raise ValueError(f"Cannot start measurements closer than {Detector.MIN_DIST_M}m")
+
+    @end_m.validator
+    def _(self, _: Any, value: float) -> None:
+        if value > Detector.MAX_DIST_M:
+            raise ValueError(f"Cannot measure further than {Detector.MAX_DIST_M}m")
+
     def to_detector_config(self) -> DetectorConfig:
         return DetectorConfig(
             start_m=self.start_m - 0.015,

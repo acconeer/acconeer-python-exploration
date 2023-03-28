@@ -14,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
@@ -55,7 +56,6 @@ class DetailedStatus(enum.Enum):
     CONTEXT_MISSING = enum.auto()
     CALIBRATION_MISSING = enum.auto()
     CONFIG_MISMATCH = enum.auto()
-    INVALID_DETECTOR_CONFIG_RANGE = enum.auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -280,7 +280,7 @@ class DetectorConfig(AlgoConfigBase):
     end_m: float = attrs.field(default=3.0)
     """End point of measurement interval in meters."""
 
-    max_step_length: Optional[int] = attrs.field(default=None)  # TODO: Check validity
+    max_step_length: Optional[int] = attrs.field(default=None)
     """Used to limit step length. If no argument is provided, the step length is automatically
     calculated based on the profile."""
 
@@ -323,6 +323,16 @@ class DetectorConfig(AlgoConfigBase):
     update_rate: Optional[float] = attrs.field(default=50.0)
     """Sets the detector update rate."""
 
+    @start_m.validator
+    def _(self, _: Any, value: float) -> None:
+        if value < Detector.MIN_DIST_M:
+            raise ValueError(f"Cannot start measurements closer than {Detector.MIN_DIST_M}m")
+
+    @end_m.validator
+    def _(self, _: Any, value: float) -> None:
+        if value > Detector.MAX_DIST_M:
+            raise ValueError(f"Cannot measure further than {Detector.MAX_DIST_M}m")
+
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
@@ -340,6 +350,24 @@ class DetectorConfig(AlgoConfigBase):
                     self,
                     "end_m",
                     "Must be greater than 'Range start'",
+                )
+            )
+
+        if self.max_step_length is not None and (
+            not utils.is_divisor_of(24, self.max_step_length)
+            and not utils.is_multiple_of(24, self.max_step_length)
+        ):
+            valid_step_length = next(
+                sl
+                for sl in range(self.max_step_length, 0, -1)
+                if utils.is_divisor_of(24, sl) or utils.is_multiple_of(24, sl)
+            )
+            validation_results.append(
+                a121.ValidationWarning(
+                    self,
+                    "max_step_length",
+                    "Actual step length will be rounded down "
+                    + f"to the closest valid step length ({valid_step_length}).",
                 )
             )
 
@@ -697,12 +725,6 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
     ) -> DetectorStatus:
         """Returns the detector status along with the detector state."""
 
-        if not cls._valid_detector_config_range(config=config):
-            return DetectorStatus(
-                detector_state=DetailedStatus.INVALID_DETECTOR_CONFIG_RANGE,
-                ready_to_start=False,
-            )
-
         if config.end_m < config.start_m:
             return DetectorStatus(
                 detector_state=DetailedStatus.END_LESSER_THAN_START,
@@ -751,10 +773,6 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             detector_state=detector_state,
             ready_to_start=(detector_state == DetailedStatus.OK),
         )
-
-    @classmethod
-    def _valid_detector_config_range(cls, config: DetectorConfig) -> bool:
-        return cls.MIN_DIST_M <= config.start_m and config.end_m <= cls.MAX_DIST_M
 
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
