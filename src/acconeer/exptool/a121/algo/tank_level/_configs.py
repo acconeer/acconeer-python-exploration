@@ -16,9 +16,10 @@ def get_small_config() -> RefAppConfig:
         max_profile=a121.Profile.PROFILE_2,
         num_frames_in_recorded_threshold=50,
         peaksorting_method=PeakSortingMethod.CLOSEST,
-        reflector_shape=ReflectorShape.GENERIC,
+        reflector_shape=ReflectorShape.PLANAR,
         threshold_sensitivity=0.0,
-        signal_quality=15.0,
+        signal_quality=20.0,
+        update_rate=None,
     )
 
 
@@ -31,9 +32,10 @@ def get_medium_config() -> RefAppConfig:
         max_profile=a121.Profile.PROFILE_3,
         num_frames_in_recorded_threshold=50,
         peaksorting_method=PeakSortingMethod.STRONGEST,
-        reflector_shape=ReflectorShape.GENERIC,
+        reflector_shape=ReflectorShape.PLANAR,
         threshold_sensitivity=0.0,
         signal_quality=20.0,
+        update_rate=None,
     )
 
 
@@ -46,7 +48,8 @@ def get_large_config() -> RefAppConfig:
         max_profile=a121.Profile.PROFILE_5,
         num_frames_in_recorded_threshold=50,
         peaksorting_method=PeakSortingMethod.STRONGEST,
-        reflector_shape=ReflectorShape.GENERIC,
+        reflector_shape=ReflectorShape.PLANAR,
         threshold_sensitivity=0.0,
-        signal_quality=25.0,
+        signal_quality=20.0,
+        update_rate=None,
     )
