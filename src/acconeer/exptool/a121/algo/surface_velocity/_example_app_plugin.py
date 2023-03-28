@@ -574,7 +574,7 @@ SURFACE_VELOCITY_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="surface_velocity",
     title="Surface velocity",
-    description="Estimate the surface velocity.",
+    description="Estimate surface speed and direction of streaming water.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[
         PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
