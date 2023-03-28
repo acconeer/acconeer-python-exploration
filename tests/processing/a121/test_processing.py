@@ -110,6 +110,12 @@ def input_path(resource_name: str) -> Path:
             "medium_tank.h5",
         ),
         (
+            tank_level_test.tank_level_controller,
+            tank_level_test.TankLevelResultH5Serializer,
+            tank_level_test.tank_level_result_comparator,
+            "small_tank.h5",
+        ),
+        (
             touchless_button_test.touchless_button_default,
             touchless_button_test.TouchlessButtonResultH5Serializer,
             touchless_button_test.result_comparator,
