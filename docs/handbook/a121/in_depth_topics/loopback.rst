@@ -70,7 +70,7 @@ to key feature #4.
 
 The distance detector takes advantage of this concept to achieve a more stable distance estimate
 when measuring close to the sensor, referred to as a close range measurement.
-For details, see the :doc:`Distance detector</exploration_tool/algo/a121/distance_detection>`
+For details, see the :doc:`Distance detector</exploration_tool/algo/a121/detectors/distance_detection>`
 documentation.
 
 The concept behind the close range measurement strategy is to first characterize the direct leakage
@@ -106,7 +106,7 @@ Key feature **#2** and **#4** are used to achieve phase coherent data in the dis
 Phase coherency in the distance domain enables coherent distance filtering, allowing for increased
 SNR through data processing.
 For details regarding distance filtering, see the see the
-:doc:`Distance detector</exploration_tool/algo/a121/distance_detection>` documentation.
+:doc:`Distance detector</exploration_tool/algo/a121/detectors/distance_detection>` documentation.
 
 The first step of the phase enhancement process takes place during the sensor calibration where
 a loopback measurement is performed to quantify the phase pattern over a fixed distance interval.

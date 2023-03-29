@@ -49,7 +49,7 @@ The purpose of the subsweeps is to offer more flexibility when configuring the s
 As the name implies, a subsweep represent a sub-region in the overall sweep.
 Each subsweep can be configured independently of other subsweeps, e.g. two subsweeps can be configured with overlapping range and different profiles.
 
-The concept is utilized in the :doc:`Distance detector</exploration_tool/algo/a121/distance_detection>`, where the measured range is split into subsweeps, each configured with increasing HWAAS and Profile, to maintain SNR throughout the sweep, as the signal strength decrease with the distance.
+The concept is utilized in the :doc:`Distance detector</exploration_tool/algo/a121/detectors/distance_detection>`, where the measured range is split into subsweeps, each configured with increasing HWAAS and Profile, to maintain SNR throughout the sweep, as the signal strength decrease with the distance.
 
 Measurement execution order
 ---------------------------

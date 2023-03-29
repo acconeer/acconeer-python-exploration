@@ -24,7 +24,7 @@ Distance estimation
 The bilateration algorithm takes advantage of the existing distance detector algorithm for
 estimating the radial distance to various objects in the scene.
 For more information regarding the detector, see the
-:doc:`Distance detector</exploration_tool/algo/a121/distance_detection>`
+:doc:`Distance detector</exploration_tool/algo/a121/detectors/distance_detection>`
 documentation.
 
 Kalman filtering

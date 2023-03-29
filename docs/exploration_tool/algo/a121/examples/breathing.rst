@@ -13,7 +13,7 @@ Form time series
 ----------------
 
 The utilized concept is similar to the phase tracking example.
-For details, see the :doc:`phase tracking documentation</exploration_tool/algo/a121/phase_tracking>`.
+For details, see the :doc:`phase tracking documentation</exploration_tool/algo/a121/examples/phase_tracking>`.
 
 The sparse IQ service produce complex data samples where the amplitude corresponds to the amount of reflected energy
 and the phase to the relative timing of the returning pulse.

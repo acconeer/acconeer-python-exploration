@@ -2,7 +2,7 @@ Tank level
 ==========
 
 The tank level reference application shows the liquid level in a tank with an A121 sensor mounted at the top.
-This reference application is built on top of the distance detector (see :doc:`Distance detector</exploration_tool/algo/a121/distance_detection>`) with some additional configurations specific to the tank level application.
+This reference application is built on top of the distance detector (see :doc:`Distance detector</exploration_tool/algo/a121/detectors/distance_detection>`) with some additional configurations specific to the tank level application.
 
 Measurement range
     The liquid level in the tank can be measured from a minimum distance of 3 cm from the sensor to a maximum distance of 20 m.
@@ -16,7 +16,7 @@ Configuration
 
     Multiple peaks can be detected in the distance domain by the detector due to various factors such as sensor installation, tank geometry, etc.
     The peak sorting method in the detector parameters can be used to ensure that the correct peak is chosen as the first peak for calculating the liquid level.
-    Refer to :doc:`Distance detector</exploration_tool/algo/a121/distance_detection>` for a detailed description of the detector parameters.
+    Refer to :doc:`Distance detector</exploration_tool/algo/a121/detectors/distance_detection>` for a detailed description of the detector parameters.
 
 Calibration
     The distance detector calibration process performs noise level estimation and offset compensation.
@@ -35,7 +35,7 @@ Processing
 GUI
 ---
 The GUI includes three plots. The top left plot indicates the fluid level, and the top right plot shows the level history.
-The bottom plot shows the tank size, the subsweeps, and the threshold used by the distance detector to detect amplitude peaks in the subsweeps. The subsweeps and different threshold types are decribed in :doc:`Distance detector</exploration_tool/algo/a121/distance_detection>`.
+The bottom plot shows the tank size, the subsweeps, and the threshold used by the distance detector to detect amplitude peaks in the subsweeps. The subsweeps and different threshold types are decribed in :doc:`Distance detector</exploration_tool/algo/a121/detectors/distance_detection>`.
 
 .. image:: /_static/processing/a121_tank_level.png
     :align: center
