@@ -78,7 +78,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
     def __init__(
         self,
         *,
-        client: a121.ClientBase,
+        client: a121.Client,
         sensor_id: int,
         ref_app_config: RefAppConfig,
     ) -> None:

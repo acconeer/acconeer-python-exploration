@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -10,8 +10,7 @@ filename = "data.h5"
 h5_recorder = a121.H5Recorder(filename)
 
 # Client creation
-client = a121.Client(ip_address="192.168.0.1")
-client.connect()
+client = a121.Client.open(ip_address="192.168.0.1")
 
 # Session setup, just like the other examples.
 config = a121.SessionConfig()
@@ -30,7 +29,7 @@ for i in range(n):
     print(f"Result {i + 1}/{n} was sampled")
 
 client.stop_session()
-client.disconnect()
+client.close()
 
 with a121.open_record(filename) as record:
     print(record)

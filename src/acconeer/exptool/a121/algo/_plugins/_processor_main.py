@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -33,8 +33,7 @@ def processor_main(
     args = parser.parse_args()
     et.utils.config_logging(args)
 
-    client = a121.Client(**a121.get_client_args(args))
-    client.connect()
+    client = a121.Client.open(**a121.get_client_args(args))
 
     sensor_config = sensor_config_getter()
     session_config = a121.SessionConfig({args.sensor: sensor_config})
@@ -89,7 +88,7 @@ def processor_main(
     if bs_process is not None:
         bs_process.close()
 
-    client.disconnect()
+    client.close()
 
 
 @attrs.mutable(kw_only=True, slots=False)

@@ -144,10 +144,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._example_app_instance.get_next()
 
-        self._frame_count += 1
-
-        self.callback(GeneralMessage(name="rate_stats", data=self.client._rate_stats))
-        self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
         self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
 
 

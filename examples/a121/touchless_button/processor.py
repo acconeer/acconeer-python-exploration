@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -21,8 +21,7 @@ def main():
     args = a121.ExampleArgumentParser().parse_args()
     et.utils.config_logging(args)
 
-    client = a121.Client(**a121.get_client_args(args))
-    client.connect()
+    client = a121.Client.open(**a121.get_client_args(args))
 
     processor_config = ProcessorConfig()
 
@@ -55,7 +54,7 @@ def main():
     print("Disconnecting...")
     pg_process.close()
     client.stop_session()
-    client.disconnect()
+    client.close()
 
 
 class PGUpdater:

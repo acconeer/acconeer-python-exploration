@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import time
 from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 from acconeer.exptool.a121 import (
-    ClientBase,
+    Client,
     ClientError,
     ClientInfo,
     Metadata,
@@ -19,16 +19,13 @@ from acconeer.exptool.a121 import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._rate_calc import _RateCalculator, _RateStats
 
 
 class _StopReplay(Exception):
     pass
 
 
-class _ReplayingClient(ClientBase):
-    _rate_stats_calc: Optional[_RateCalculator]
-
+class _ReplayingClient(Client):
     def __init__(self, record: Record):
         self._record = record
         self._is_started: bool = False
@@ -36,7 +33,6 @@ class _ReplayingClient(ClientBase):
             Union[Iterator[Result], Iterator[list[dict[int, Result]]]]
         ] = None
         self._origin_time: Optional[float] = None
-        self._rate_stats_calc = None
 
     def _assert_connected(self) -> None:
         if not self.connected:
@@ -52,7 +48,7 @@ class _ReplayingClient(ClientBase):
         if not self.session_is_started:
             raise ClientError("Session is not started.")
 
-    def connect(self) -> None:
+    def _open(self) -> None:
         pass
 
     def setup_session(
@@ -60,9 +56,6 @@ class _ReplayingClient(ClientBase):
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
-        if not self.connected:
-            self.connect()
-
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
 
@@ -85,13 +78,6 @@ class _ReplayingClient(ClientBase):
 
         self._is_started = True
         self._origin_time = None
-
-        if self.session_config.extended:
-            self._rate_stats_calc = _RateCalculator(
-                self.session_config, self._record.extended_metadata
-            )
-        else:
-            self._rate_stats_calc = _RateCalculator(self.session_config, self._record.metadata)
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         if not self.session_is_setup:
@@ -120,16 +106,13 @@ class _ReplayingClient(ClientBase):
         if delta < 0:
             time.sleep(-delta)
 
-        assert self._rate_stats_calc is not None
-        self._rate_stats_calc.update(result)
-
         return result
 
     def stop_session(self) -> Any:
         self._result_iterator = None
         self._is_started = False
 
-    def disconnect(self) -> None:
+    def close(self) -> None:
         pass
 
     @property
@@ -167,9 +150,3 @@ class _ReplayingClient(ClientBase):
     @property
     def calibrations_provided(self) -> dict[int, bool]:
         return self._record.calibrations_provided
-
-    @property
-    def _rate_stats(self) -> _RateStats:
-        self._assert_session_started()
-        assert self._rate_stats_calc is not None
-        return self._rate_stats_calc.stats

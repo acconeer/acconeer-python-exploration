@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Optional, Union
+from typing import Any, Optional, Type, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -14,6 +14,7 @@ from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
     ClientInfo,
     Metadata,
+    MockInfo,
     Profile,
     Result,
     ResultContext,
@@ -24,14 +25,17 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
     SubsweepConfig,
 )
-from acconeer.exptool.a121._core.mediators import ClientError, Recorder
+from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.a121._core.utils import unextend
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
+from .client import Client, ClientCreationError, ClientError
 from .common_client import CommonClient
+from .communication_protocol import CommunicationProtocol
 from .utils import get_calibrations_provided
 
 
+@Client._register
 class MockClient(CommonClient):
 
     TICKS_PER_SECOND = 1000000
@@ -77,7 +81,29 @@ class MockClient(CommonClient):
     _mock_update_rate: float
     _mock_next_data_time: float
 
-    def __init__(self, client_info: ClientInfo) -> None:
+    @classmethod
+    def open(
+        cls,
+        ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
+        serial_port: Optional[str] = None,
+        usb_device: Optional[Union[str, bool]] = None,
+        mock: Optional[bool] = None,
+        override_baudrate: Optional[int] = None,
+        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
+    ) -> Client:
+
+        client_info = ClientInfo._from_open(
+            mock=mock,
+        )
+
+        return cls(client_info=client_info)
+
+    def __init__(self, client_info: ClientInfo = ClientInfo(mock=MockInfo())) -> None:
+
+        if client_info.mock is None:
+            raise ClientCreationError()
+
         self._start_time = time.perf_counter()
         self._connected = False
         self._mock_update_rate = self.MAX_MOCK_UPDATE_RATE_HZ
@@ -193,7 +219,7 @@ class MockClient(CommonClient):
             result_list.append(result_dict)
         return result_list
 
-    def connect(self) -> None:
+    def _open(self) -> None:
         if not self._connected:
             self._connected = True
         else:
@@ -243,7 +269,6 @@ class MockClient(CommonClient):
             raise ClientError("Session is already started.")
 
         self._recorder_start(recorder)
-        self._create_rate_stats_calc()
         self._session_is_started = True
         self._start_time = time.perf_counter()
         self._mock_next_data_time = self._start_time
@@ -266,19 +291,17 @@ class MockClient(CommonClient):
         self._mock_next_data_time += 1 / self._mock_update_rate
 
         self._recorder_sample(extended_results)
-        self._update_rate_stats_calc(extended_results)
         return self._return_results(extended_results)
 
     def stop_session(self) -> Any:
         self._assert_session_started()
         self._session_is_started = False
-        self._rate_stats_calc = None
 
         return self._recorder_stop()
 
-    def disconnect(self) -> None:
+    def close(self) -> None:
         if not self._connected:
-            raise ClientError("Client is already disconnected")
+            raise ClientError("Client is already closed")
 
         if self.session_is_started:
             _ = self.stop_session()

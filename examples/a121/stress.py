@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -27,8 +27,7 @@ def main() -> None:
     args = parser.parse_args()
     et.utils.config_logging(args)
 
-    client = a121.Client(**a121.get_client_args(args))
-    client.connect()
+    client = a121.Client.open(**a121.get_client_args(args))
     print(client.client_info)
     print()
     print(client.server_info)
@@ -52,18 +51,17 @@ def main() -> None:
     except KeyboardInterrupt:
         print()
         try:
-            client.disconnect()
+            client.close()
         except Exception:
             pass
 
 
-def flow(client: a121.Client) -> None:
-    client.disconnect()
+def flow(client: a121.Client.open) -> None:
+    client.close()
 
     n = 0
 
     while True:
-        client.connect()
 
         for _ in range(5):
             client.setup_session(a121.SensorConfig())
@@ -74,14 +72,14 @@ def flow(client: a121.Client) -> None:
 
             client.stop_session()
 
-        client.disconnect()
+        client.close()
 
         n += 1
 
         print_status(f"{n:8}")
 
 
-def throughput(client: a121.Client) -> None:
+def throughput(client: a121.Client.open) -> None:
     config = a121.SensorConfig(
         hwaas=1,
         profile=a121.Profile.PROFILE_5,
@@ -95,7 +93,7 @@ def throughput(client: a121.Client) -> None:
     _stress_session(client, config)
 
 
-def rate(client: a121.Client) -> None:
+def rate(client: a121.Client.open) -> None:
     config = a121.SensorConfig(
         hwaas=1,
         profile=a121.Profile.PROFILE_5,
@@ -109,15 +107,15 @@ def rate(client: a121.Client) -> None:
     _stress_session(client, config)
 
 
-def short_pauses(client: a121.Client) -> None:
+def short_pauses(client: a121.Client.open) -> None:
     _pauses(client, pause_time=0.25)
 
 
-def long_pauses(client: a121.Client) -> None:
+def long_pauses(client: a121.Client.open) -> None:
     _pauses(client, pause_time=1.5)
 
 
-def _pauses(client: a121.Client, *, pause_time: float) -> None:
+def _pauses(client: a121.Client.open, *, pause_time: float) -> None:
     config = a121.SensorConfig(
         hwaas=1,
         profile=a121.Profile.PROFILE_5,
@@ -132,7 +130,7 @@ def _pauses(client: a121.Client, *, pause_time: float) -> None:
 
 
 def _stress_session(
-    client: a121.Client,
+    client: a121.Client.open,
     config: a121.SensorConfig,
     *,
     pause_time: t.Optional[float] = None,

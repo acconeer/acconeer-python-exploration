@@ -10,7 +10,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from acconeer.exptool import a121
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
 
@@ -24,12 +23,12 @@ def _mock_plugin_factory(*args: t.Any, **kwargs: t.Any) -> t.Any:
 class Tasks:
     CONNECT_CLIENT_TASK: Task = (
         "connect_client",
-        dict(client_info=a121.ClientInfo(mock=True)),
+        dict(open_client_parameters=dict(mock=True)),
         False,
     )
     BAD_CONNECT_CLIENT_TASK = (
         "connect_client",
-        dict(client_info=a121.ClientInfo(ip_address="some_ip")),
+        dict(open_client_parameters=dict(ip_address="some_ip")),
         False,
     )
     DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {}, False)

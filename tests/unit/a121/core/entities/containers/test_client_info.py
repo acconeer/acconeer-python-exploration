@@ -2,7 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
-import typing as t
+from typing import Any, Tuple
 
 import pytest
 
@@ -10,83 +10,88 @@ from acconeer.exptool.a121 import ClientInfo
 from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
 
 
-@pytest.fixture
-def client_info() -> ClientInfo:
-    return ClientInfo(
-        ip_address="addr",
-        tcp_port=None,
-        serial_port="port",
-        usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
-        override_baudrate=0,
-        mock=True,
-    )
-
-
-@pytest.fixture
-def client_info_dict() -> dict[str, t.Any]:
-    return {
-        "ip_address": "addr",
-        "tcp_port": None,
-        "serial_port": "port",
-        "usb_device": {
-            "vid": 0x4CC0,
-            "pid": 0xAEE3,
+CLIENT_INFO_PARAMETRIZE = [
+    (
+        dict(ip_address="addr", tcp_port=None),
+        {
             "serial": None,
-            "name": "name",
-            "accessible": True,
-            "unflashed": False,
-            "recognized": True,
+            "usb": None,
+            "socket": {"ip_address": "addr", "tcp_port": None},
+            "mock": None,
         },
-        "mock": True,
-        "override_baudrate": 0,
-    }
+    ),
+    (
+        dict(serial_port="port", override_baudrate=0),
+        {
+            "serial": {"port": "port", "override_baudrate": 0, "serial_number": None},
+            "usb": None,
+            "socket": None,
+            "mock": None,
+        },
+    ),
+    (
+        dict(usb_device=True),
+        {
+            "serial": None,
+            "socket": None,
+            "mock": None,
+            "usb": {"vid": None, "pid": None, "serial_number": None},
+        },
+    ),
+    (
+        dict(usb_device="1234"),
+        {
+            "serial": None,
+            "usb": {"vid": None, "pid": None, "serial_number": "1234"},
+            "socket": None,
+            "mock": None,
+        },
+    ),
+    (
+        dict(mock=True),
+        {
+            "serial": None,
+            "usb": None,
+            "socket": None,
+            "mock": {},
+        },
+    ),
+]
 
 
-def test_init(client_info: ClientInfo) -> None:
-    assert client_info.ip_address == "addr"
-    assert client_info.serial_port == "port"
-    assert client_info.usb_device == USBDevice(
-        vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True
-    )
-    assert client_info.override_baudrate == 0
+@pytest.fixture(params=CLIENT_INFO_PARAMETRIZE)
+def client_info_fixture(request: pytest.FixtureRequest) -> Tuple[ClientInfo, dict[str, Any]]:
+    from_open_args = request.param[0]
+    client_info_dict = request.param[1]
+    return (ClientInfo._from_open(**from_open_args), client_info_dict)
 
 
-def test_eq(client_info: ClientInfo) -> None:
-    assert client_info == ClientInfo(
-        ip_address="addr",
-        serial_port="port",
-        usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
-        override_baudrate=0,
-        mock=True,
-    )
-    assert client_info != ClientInfo(
-        ip_address="ddr",
-        serial_port="port",
-        usb_device=USBDevice(vid=0x4CC0, pid=0xAEE3, serial=None, name="name", recognized=True),
-        override_baudrate=0,
-        mock=True,
-    )
-
-
-def test_to_dict(client_info: ClientInfo, client_info_dict: dict[str, t.Any]) -> None:
+def test_to_dict(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+    client_info = client_info_fixture[0]
+    client_info_dict = client_info_fixture[1]
     assert client_info.to_dict() == client_info_dict
 
 
-def test_from_dict(client_info: ClientInfo, client_info_dict: dict[str, t.Any]) -> None:
+def test_from_dict(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+    client_info = client_info_fixture[0]
+    client_info_dict = client_info_fixture[1]
     assert ClientInfo.from_dict(client_info_dict) == client_info
 
 
-def test_to_from_dict_equality(client_info: ClientInfo) -> None:
+def test_to_from_dict_equality(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+    client_info = client_info_fixture[0]
     assert client_info == ClientInfo.from_dict(client_info.to_dict())
 
 
-def test_from_dict_extra_kwarg(client_info_dict: dict[str, t.Any]) -> None:
+def test_from_dict_extra_kwarg(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+    client_info_dict = client_info_fixture[1]
     client_info_dict["extra"] = "kwarg"
     with pytest.raises(TypeError):
         ClientInfo.from_dict(client_info_dict)
 
 
-def test_to_from_json_equality(client_info: ClientInfo) -> None:
+def test_to_from_json_equality(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+    client_info = client_info_fixture[0]
     assert client_info == ClientInfo.from_json(client_info.to_json())
 
 

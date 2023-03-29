@@ -14,7 +14,7 @@ def client_kwargs(port_from_cli):
 
 
 def test_can_connect(client_kwargs):
-    with a121.Client(**client_kwargs) as client:
+    with a121.Client.open(**client_kwargs) as client:
         assert client.connected
 
 
@@ -48,7 +48,7 @@ class TestMockExplorationServerDataParsing:
     )
     def test_sweep(self, config: a121.SessionConfig, expected_sweep, client_kwargs):
         assert config.extended
-        with a121.Client(**client_kwargs) as client:
+        with a121.Client.open(**client_kwargs) as client:
             client.setup_session(config)
 
             client.start_session()
@@ -63,5 +63,5 @@ class TestMockExplorationServerDataParsing:
 
 @pytest.mark.parametrize("prf", set(a121.PRF))
 def test_setup_with_all_prfs(prf: a121.PRF, client_kwargs) -> None:
-    with a121.Client(**client_kwargs) as client:
+    with a121.Client.open(**client_kwargs) as client:
         client.setup_session(a121.SensorConfig(prf=prf, profile=a121.Profile.PROFILE_1))

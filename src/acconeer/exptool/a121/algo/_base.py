@@ -52,7 +52,7 @@ ExtendedProcessorBase = GenericProcessorBase[
 
 
 class Controller(abc.ABC, Generic[ConfigT, ResultT]):
-    def __init__(self, *, client: a121.ClientBase, config: ConfigT):
+    def __init__(self, *, client: a121.Client, config: ConfigT):
         self.client = client
         self.config = config
 

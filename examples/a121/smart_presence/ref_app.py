@@ -19,8 +19,7 @@ def main():
     args = a121.ExampleArgumentParser().parse_args()
     et.utils.config_logging(args)
 
-    client = a121.Client(**a121.get_client_args(args))
-    client.connect()
+    client = a121.Client.open(**a121.get_client_args(args))
 
     ref_app_config = RefAppConfig(
         start_m=1.0,
@@ -57,7 +56,7 @@ def main():
     ref_app.stop()
 
     print("Disconnecting...")
-    client.disconnect()
+    client.close()
 
 
 class PGUpdater:

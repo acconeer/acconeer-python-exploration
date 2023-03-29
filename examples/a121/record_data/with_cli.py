@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import acconeer.exptool as et
@@ -15,8 +15,7 @@ et.utils.config_logging(args)
 # The H5Recorder is an object that saves frames directly to a H5-file.
 h5_recorder = a121.H5Recorder(args.output_file)
 
-client = a121.Client(**a121.get_client_args(args))
-client.connect()
+client = a121.Client.open(**a121.get_client_args(args))
 
 # Session setup, just like the other examples.
 config = a121.SessionConfig()
@@ -34,4 +33,4 @@ for i in range(args.num_frames):
     print(f"Result {i + 1}/{args.num_frames} was sampled")
 
 client.stop_session()
-client.disconnect()
+client.close()

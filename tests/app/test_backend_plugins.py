@@ -99,7 +99,9 @@ class TestBackendPlugins:
     ) -> None:
         # Some backend plugins need to calibrate before starting session
         backend.put_task(tasks.CALIBRATE_DETECTOR_TASK)
-        assert_messages(backend, received=[tasks.ANY_CLOSED_TASK], recv_timeout=2.0)
+        assert_messages(
+            backend, received=[tasks.ANY_CLOSED_TASK], max_num_messages=1000, recv_timeout=2.0
+        )
 
         # Starting the session should close successfully and report the busy state
         backend.put_task(tasks.START_SESSION_TASK)
@@ -110,6 +112,7 @@ class TestBackendPlugins:
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
             not_received=[PluginStateMessage(state=PluginState.LOADED_STARTING)],
+            max_num_messages=1000,
         )
 
         # Stopping the task should be successful and report the idle state

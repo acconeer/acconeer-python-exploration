@@ -19,8 +19,7 @@ def main():
     args = a121.ExampleArgumentParser().parse_args()
     et.utils.config_logging(args)
 
-    client = a121.Client(**a121.get_client_args(args))
-    client.connect()
+    client = a121.Client.open(**a121.get_client_args(args))
 
     processor_config = smart_presence.ProcessorConfig(
         num_zones=3,
@@ -76,7 +75,7 @@ def main():
     presence_detector.stop()
 
     print("Disconnecting...")
-    client.disconnect()
+    client.close()
 
 
 class PGUpdater:

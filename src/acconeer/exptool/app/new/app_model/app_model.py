@@ -10,7 +10,7 @@ import shutil
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 import attrs
@@ -550,24 +550,32 @@ class AppModel(QObject):
         return current_port, False
 
     def connect_client(self, auto: bool = False) -> None:
+        open_client_parameters: Dict[str, Any]
+
         if self.connection_interface == ConnectionInterface.SIMULATED:
-            client_info = a121.ClientInfo(mock=True)
+            open_client_parameters = {"mock": True}
         elif self.connection_interface == ConnectionInterface.SOCKET:
-            client_info = a121.ClientInfo(ip_address=self.socket_connection_ip)
+            open_client_parameters = {"ip_address": self.socket_connection_ip}
         elif (
             self.connection_interface == ConnectionInterface.SERIAL
             and self.serial_connection_device is not None
         ):
-            client_info = a121.ClientInfo(
-                serial_port=self.serial_connection_device.port,
-                override_baudrate=self.overridden_baudrate,
-            )
-        elif self.connection_interface == ConnectionInterface.USB:
-            client_info = a121.ClientInfo(usb_device=self.usb_connection_device)
+            open_client_parameters = {
+                "serial_port": self.serial_connection_device.port,
+                "override_baudrate": self.overridden_baudrate,
+            }
+        elif (
+            self.connection_interface == ConnectionInterface.USB
+            and self.usb_connection_device is not None
+        ):
+            if self.usb_connection_device.serial is not None:
+                open_client_parameters = {"usb_device": self.usb_connection_device.serial}
+            else:
+                open_client_parameters = {"usb_device": True}
         else:
             raise RuntimeError
 
-        log.debug(f"Connecting client with {client_info}")
+        log.debug(f"Connecting client with {open_client_parameters}")
 
         on_error = self.emit_error
         if auto:
@@ -575,7 +583,7 @@ class AppModel(QObject):
 
         self._put_backend_task(
             "connect_client",
-            {"client_info": client_info},
+            {"open_client_parameters": open_client_parameters},
             on_error=on_error,
         )
         self.connection_warning = None

@@ -1,7 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
-from .client_info import ClientInfo
+from .client_info import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
 from .metadata import Metadata
 from .record import PersistentRecord, Record, RecordException
 from .result import Result, ResultContext

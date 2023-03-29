@@ -165,7 +165,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
     def __init__(
         self,
         *,
-        client: a121.ClientBase,
+        client: a121.Client,
         sensor_id: int,
         example_app_config: ExampleAppConfig,
     ) -> None:

@@ -22,7 +22,7 @@ from acconeer.exptool.a121._core.entities import (
     ServerLogMessage,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import ClientError, Recorder
+from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.a121._core.utils import (
     create_extended_structure,
     iterate_extended_structure,
@@ -31,6 +31,7 @@ from acconeer.exptool.a121._core.utils import (
 )
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
+from .client import Client, ClientCreationError, ClientError
 from .common_client import CommonClient
 from .communication_protocol import CommunicationProtocol
 from .exploration_protocol import (
@@ -48,6 +49,7 @@ from .utils import autodetermine_client_link, get_calibrations_provided, link_fa
 log = logging.getLogger(__name__)
 
 
+@Client._register
 class ExplorationClient(CommonClient):
     _link: BufferedLink
     _default_link_timeout: float
@@ -61,13 +63,37 @@ class ExplorationClient(CommonClient):
     _message_stream: Iterator[Message]
     _log_queue: list[ServerLogMessage]
 
+    @classmethod
+    def open(
+        cls,
+        ip_address: Optional[str] = None,
+        tcp_port: Optional[int] = None,
+        serial_port: Optional[str] = None,
+        usb_device: Optional[Union[str, bool]] = None,
+        mock: Optional[bool] = None,
+        override_baudrate: Optional[int] = None,
+        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
+    ) -> Client:
+
+        client_info = ClientInfo._from_open(
+            ip_address=ip_address,
+            tcp_port=tcp_port,
+            override_baudrate=override_baudrate,
+            serial_port=serial_port,
+            usb_device=usb_device,
+        )
+
+        return cls(client_info=client_info, _override_protocol=_override_protocol)
+
     def __init__(
         self,
-        client_info: ClientInfo,
+        client_info: ClientInfo = ClientInfo(mock=None),
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> None:
+        if client_info.mock is not None:
+            raise ClientCreationError()
+
         super().__init__(client_info)
-        self._link = link_factory(self.client_info)
         self._tick_unwrapper = TickUnwrapper()
         self._message_stream = iter([])
         self._sensor_infos = {}
@@ -80,6 +106,8 @@ class ExplorationClient(CommonClient):
         if _override_protocol is not None:
             self._protocol = _override_protocol
             self._protocol_overridden = True
+
+        self._link = link_factory(self.client_info)
 
     def _assert_connected(self) -> None:
         if not self.connected:
@@ -199,7 +227,7 @@ class ExplorationClient(CommonClient):
         try:
             new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
         except Exception:
-            self.disconnect()
+            self.close()
             raise
         else:
             self._protocol = new_protocol
@@ -209,8 +237,11 @@ class ExplorationClient(CommonClient):
         if not isinstance(self._link, AdaptedSerialLink):
             return
 
+        if self.client_info.serial is None:
+            return
+
         DEFAULT_BAUDRATE = 115200
-        overridden_baudrate = self.client_info.override_baudrate
+        overridden_baudrate = self.client_info.serial.override_baudrate
         max_baudrate = self.server_info.max_baudrate
         baudrate_to_use = self.server_info.max_baudrate or DEFAULT_BAUDRATE
 
@@ -234,7 +265,7 @@ class ExplorationClient(CommonClient):
 
         self._link.baudrate = baudrate_to_use
 
-    def connect(self) -> None:
+    def _open(self) -> None:
         try:
             self._connect_link()
         except NullLinkError:
@@ -247,9 +278,6 @@ class ExplorationClient(CommonClient):
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
-        if not self.connected:
-            self.connect()
-
         if self.session_is_started:
             raise ClientError("Session is currently running, can't setup.")
 
@@ -300,7 +328,6 @@ class ExplorationClient(CommonClient):
             raise ClientError("Session is already started.")
 
         self._recorder_start(recorder)
-        self._create_rate_stats_calc()
         self._session_is_started = True
 
         self._link.timeout = self._link_timeout
@@ -332,7 +359,6 @@ class ExplorationClient(CommonClient):
         extended_results = self._tick_unwrapper.unwrap_ticks(extended_results)
 
         self._recorder_sample(extended_results)
-        self._update_rate_stats_calc(extended_results)
         return self._return_results(extended_results)
 
     def stop_session(self) -> Any:
@@ -352,12 +378,11 @@ class ExplorationClient(CommonClient):
             self._tick_unwrapper = TickUnwrapper()
 
         recorder_result = self._recorder_stop()
-        self._rate_stats_calc = None
         self._log_queue.clear()
 
         return recorder_result
 
-    def disconnect(self) -> None:
+    def close(self) -> None:
         # TODO: Make sure this cleans up corner-cases (like lost connection)
         #       to not hog resources.
 

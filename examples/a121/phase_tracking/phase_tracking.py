@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -27,8 +27,7 @@ def main():
 
     sensor_config = get_sensor_config()
 
-    client = a121.Client(**a121.get_client_args(args))
-    client.connect()
+    client = a121.Client.open(**a121.get_client_args(args))
     metadata = client.setup_session(sensor_config)
 
     processor = Processor(
@@ -54,7 +53,7 @@ def main():
             break
 
     print("Disconnecting...")
-    client.disconnect()
+    client.close()
 
 
 class PGUpdater:
