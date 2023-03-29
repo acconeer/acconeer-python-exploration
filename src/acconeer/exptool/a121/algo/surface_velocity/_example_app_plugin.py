@@ -172,7 +172,15 @@ class PlotPlugin(DetectorPlotPluginBase):
     ) -> None:
 
         self.slow_zone = example_app_config.slow_zone
-        self.history_length_n = 10
+        self.history_length_s = 10
+        if example_app_config.frame_rate is None:
+            estimated_frame_rate = (
+                example_app_config.sweep_rate / example_app_config.sweeps_per_frame
+            )
+        else:
+            estimated_frame_rate = example_app_config.frame_rate
+
+        self.history_length_n = int(np.around(self.history_length_s * estimated_frame_rate))
 
         c0_dashed_pen = et.utils.pg_pen_cycler(0, width=2.5, style="--")
 
@@ -254,20 +262,20 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.velocity_history_plot.setYRange(
             lim[0] - self._VELOCITY_Y_SCALE_MARGIN_M, lim[1] + self._VELOCITY_Y_SCALE_MARGIN_M
         )
-        self.velocity_history_plot.setXRange(-self.history_length_n, 0)
+        self.velocity_history_plot.setXRange(-self.history_length_s, 0)
 
-        xs = np.linspace(-self.history_length_n, 0, self.history_length_n)
+        xs = np.linspace(-self.history_length_s, 0, self.history_length_n)
 
         self.velocity_history = np.roll(self.velocity_history, -1)
         self.velocity_history[-1] = example_app_result.velocity
         self.velocity_curve.setData(xs, self.velocity_history)
 
         velocity_html = self.psd_html.format(
-            f"Distance {np.around(example_app_result.distance_m, 2)} m, "
+            f"Distance {np.around(example_app_result.distance_m, 2)} m"
         )
         self.distance_text_item.setHtml(velocity_html)
         self.distance_text_item.setPos(
-            -self.history_length_n / 2, lim[1] + self._VELOCITY_Y_SCALE_MARGIN_M
+            -self.history_length_s / 2, lim[1] + self._VELOCITY_Y_SCALE_MARGIN_M
         )
 
         self.lower_std_history = np.roll(self.lower_std_history, -1)
