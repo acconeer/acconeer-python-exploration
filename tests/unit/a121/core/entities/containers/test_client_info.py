@@ -6,7 +6,7 @@ from typing import Any, Tuple
 
 import pytest
 
-from acconeer.exptool.a121 import ClientInfo
+from acconeer.exptool.a121 import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
 from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
 
 
@@ -159,3 +159,76 @@ def test_serial_device_display_name() -> None:
         unflashed=True,
     )
     assert serial_device.display_name() == f"Unflashed {device_name} {port_name}"
+
+
+@pytest.mark.parametrize(
+    "pre_v6_json,expected",
+    [
+        pytest.param(
+            """{
+                "ip_address": null,
+                "serial_port": null,
+                "mock": null,
+                "override_baudrate": null,
+                "usb_device": {
+                    "name": "XC120",
+                    "serial": "000000000000",
+                    "unflashed": false,
+                    "recognized": true,
+                    "vid": 1155,
+                    "pid": 42029,
+                    "accessible": true
+                }
+            }""",
+            ClientInfo(usb=USBInfo(vid=1155, pid=42029, serial_number="000000000000")),
+            id="USB ClientInfo",
+        ),
+        pytest.param(
+            """{
+                "ip_address": "localhost",
+                "tcp_port": 1337,
+                "serial_port": null,
+                "mock": null,
+                "override_baudrate": null,
+                "usb_device": null
+            }""",
+            ClientInfo(socket=SocketInfo(ip_address="localhost", tcp_port=1337)),
+            id="Socket ClientInfo",
+        ),
+        pytest.param(
+            """{
+                "ip_address": "localhost",
+                "serial_port": null,
+                "mock": null,
+                "override_baudrate": null,
+                "usb_device": null
+            }""",
+            ClientInfo(socket=SocketInfo(ip_address="localhost", tcp_port=None)),
+            id="Socket ClientInfo (missing tcp_port entry)",
+        ),
+        pytest.param(
+            """{
+                "ip_address": null,
+                "serial_port": "/dev/ttyACM0",
+                "mock": null,
+                "override_baudrate": 10,
+                "usb_device": null
+            }""",
+            ClientInfo(serial=SerialInfo(port="/dev/ttyACM0", override_baudrate=10)),
+            id="Serial ClientInfo",
+        ),
+        pytest.param(
+            """{
+                "ip_address": null,
+                "serial_port": null,
+                "mock": true,
+                "override_baudrate": null,
+                "usb_device": null
+            }""",
+            ClientInfo(mock=MockInfo()),
+            id="Mock ClientInfo",
+        ),
+    ],
+)
+def test_can_migrate_pre_v6_json(pre_v6_json: str, expected: ClientInfo) -> None:
+    assert ClientInfo.from_json(pre_v6_json) == expected
