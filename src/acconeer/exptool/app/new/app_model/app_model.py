@@ -202,7 +202,6 @@ class AppModel(QObject):
 
     backend_plugin_state: Any
 
-    connection_state: ConnectionState
     connection_warning: Optional[str]
     available_serial_devices: List[SerialDevice]
     available_usb_devices: List[USBDevice]
@@ -234,7 +233,7 @@ class AppModel(QObject):
 
         self.backend_plugin_state = None
 
-        self.connection_state = ConnectionState.DISCONNECTED
+        self._connection_state = ConnectionState.DISCONNECTED
         self.connection_warning = None
         self._plugin_state = PluginState.UNLOADED
         self._serial_connection_device = None
@@ -248,6 +247,11 @@ class AppModel(QObject):
     def plugin_state(self) -> PluginState:
         """Read-only property of the plugin state"""
         return self._plugin_state
+
+    @property
+    def connection_state(self) -> ConnectionState:
+        """Read-only property of the connection state"""
+        return self._connection_state
 
     def start(self) -> None:
         self._listener.start()
@@ -351,7 +355,7 @@ class AppModel(QObject):
     def _handle_backend_message(self, message: Message) -> None:
         if isinstance(message, ConnectionStateMessage):
             log.debug(f"Got backend connection state message {message.state}")
-            self.connection_state = message.state
+            self._connection_state = message.state
             self.connection_warning = message.warning
             self.broadcast()
         elif isinstance(message, PluginStateMessage):
