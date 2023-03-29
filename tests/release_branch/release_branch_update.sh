@@ -8,12 +8,9 @@
 
 # Option parser.
 push_branch=0
-while getopts "p:" arg; do
-    case ${arg} in
-    p)    push_branch=1;;
-    esac
-done
-
+if getopts "p:" arg; then
+    push_branch=1
+fi
 
 # Include helpers.
 source tests/release_branch/release_branch_utils.sh
@@ -124,9 +121,7 @@ for release_branch in ${release_branches[@]}; do
         echo "[WARN] The release branch will not be pushed to origin"
     fi
 
+    echo "[INFO] Restoring git status to original state"
+    git checkout --force ${orig_git_state}
     git branch -D ${staging_branch}
 done
-
-
-echo "[INFO] Restoring git status to original state"
-git checkout --force ${orig_git_state}
