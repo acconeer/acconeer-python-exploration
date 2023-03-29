@@ -628,7 +628,7 @@ DISTANCE_DETECTOR_PLUGIN = PluginSpec(
     description="Easily measure distance to objects.",
     family=PluginFamily.DETECTOR,
     presets=[
-        PluginPresetBase(name="Low power", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
         PluginPresetBase(name="High accuracy", preset_id=PluginPresetId.HIGH_ACCURACY),
     ],
     default_preset_id=PluginPresetId.DEFAULT,
