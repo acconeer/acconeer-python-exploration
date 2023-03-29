@@ -644,14 +644,26 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
 
-        ready_for_session = app_model.is_ready_for_session()
-        # ready_for_session = (
-        #     app_model.plugin_state == PluginState.LOADED_IDLE
-        #     and app_model.connection_state == ConnectionState.CONNECTED
-        # )
-        self.calibrate_detector_button.setEnabled(ready_for_session)
+        app_model_ready = app_model.is_ready_for_session()
+        try:
+            state.config.validate()
+        except a121.ValidationError:
+            config_valid = False
+        else:
+            config_valid = True
+
+        self.calibrate_detector_button.setEnabled(
+            app_model_ready
+            and config_valid
+            and self.config_editor.is_ready
+            and self.tank_level_config_editor.is_ready
+        )
         self.start_button.setEnabled(
-            ready_for_session and detector_status.ready_to_start and self.config_editor.is_ready
+            detector_status.ready_to_start
+            and app_model_ready
+            and config_valid
+            and self.config_editor.is_ready
+            and self.tank_level_config_editor.is_ready
         )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
