@@ -107,6 +107,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.max_num_points_to_plot = int(sensor_config.sweep_rate * self.TIME_HORIZON_S)
         self.distance_history: npt.NDArray[np.float_] = np.array([])
 
+        self.last_sweep_prev_frame = None
+
     def process(self, result: a121.Result) -> ProcessorResult:
 
         frame = result.frame
@@ -135,7 +137,18 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             ):
                 self.distance_history = np.array([0.0])
 
-            delta_angles = np.diff(np.unwrap(np.angle(frame[:, peak_loc_p])))
+            sweeps_at_peak_ampl_dist = frame[:, peak_loc_p]
+
+            # Add the data point from the last sweep of the previous frame to the start of the
+            # sweep data.
+            if self.last_sweep_prev_frame is not None:
+                sweeps_at_peak_ampl_dist = np.insert(
+                    sweeps_at_peak_ampl_dist, 0, self.last_sweep_prev_frame
+                )
+            else:
+                sweeps_at_peak_ampl_dist = sweeps_at_peak_ampl_dist
+
+            delta_angles = np.diff(np.unwrap(np.angle(sweeps_at_peak_ampl_dist)))
             delta_dists = PERCEIVED_WAVELENGTH * delta_angles / (2 * np.pi) * self.M_TO_MM
 
             # Append the new distances to the previous distances. Offset the new values with
@@ -152,6 +165,8 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 0,
                 time_series_length,
             )
+
+            self.last_sweep_prev_frame = sweeps_at_peak_ampl_dist[-1]
         else:
             # Reset variables as no peak is detected.
             peak_loc_m = None
@@ -159,6 +174,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             self.prev_peak_loc_m = None
             rel_time_to_plot = np.array([])
             self.distance_history = np.array([])
+            self.last_sweep_prev_frame = None
 
         self.sweep_index += 1
         self.prev_peak_loc_m = peak_loc_m
