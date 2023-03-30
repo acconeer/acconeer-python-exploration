@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -97,7 +97,7 @@ class CentralWidget(QWidget):
         self.setLayout(QHBoxLayout(self))
 
         with importlib.resources.path(et_app_resources, "a121_gui.png") as path:
-            a121_button = ImageButton("A121 (Beta)", path.as_posix(), QSize(500, 300))
+            a121_button = ImageButton("A121", path.as_posix(), QSize(500, 300))
             a121_button.clicked.connect(self.sig_a121_clicked)
             self.layout().addWidget(a121_button)
 

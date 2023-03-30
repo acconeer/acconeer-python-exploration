@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(MainWindowCentralWidget(app_model, self))
         self.setStatusBar(StatusBar(app_model, self))
-        self.setWindowTitle("Acconeer Exploration Tool (Beta)")
+        self.setWindowTitle("Acconeer Exploration Tool")
         self.moveEvent = lambda _: self.saveGeometry()
 
         app_model.sig_error.connect(self.on_app_model_error)
