@@ -102,6 +102,7 @@ def reformat(session):
         ISORT_SPEC,
         RUFF_SPEC,
     )
+    session.run("python", "tools/check_copyright.py", "--update-year")
     session.run("python", "-m", "ruff", "--fix", ".")
     session.run("python", "-m", "black", ".")
     session.run("python", "-m", "isort", ".")
