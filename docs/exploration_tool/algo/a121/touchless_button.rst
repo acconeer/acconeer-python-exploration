@@ -1,7 +1,7 @@
 Touchless button
 =====================
 
-This reference application aims to show how the A121 sensor can be implemented as a touchless button.
+This example application aims to show how the A121 sensor can be implemented as a touchless button.
 
 The application works for two different ranges, one close to the sensor and one further away.
 The intended close range is from the sensor to 0.05 m and the intended far range is from the sensor to approximately 0.24 m, but may register events slightly outside the range.
