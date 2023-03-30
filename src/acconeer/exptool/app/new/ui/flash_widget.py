@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ import os
 import traceback
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import qtawesome as qta
 from requests import Response, Session
@@ -52,7 +52,11 @@ from acconeer.exptool.flash import (  # type: ignore[import]
     login,
     save_cookies,
 )
-from acconeer.exptool.utils import CommDevice  # type: ignore[import]
+from acconeer.exptool.flash._products import (  # type: ignore[import]
+    EVK_TO_PRODUCT_MAP,
+    PRODUCT_NAME_TO_FLASH_MAP,
+)
+from acconeer.exptool.utils import CommDevice, SerialDevice  # type: ignore[import]
 
 from .misc import BUTTON_ICON_COLOR, SerialPortComboBox, USBDeviceComboBox
 
@@ -399,6 +403,15 @@ class _FlashPopup(QDialog):
     def _flash(self) -> None:
         assert self.bin_file is not None
 
+        boot_description = self._get_boot_description(self.flash_device, self.device_name)
+        if boot_description:
+            _UserMessageDialog(
+                "Bootloader description",
+                boot_description,
+                "Got it! The board is in bootloader mode",
+                self,
+            ).exec()
+
         self.app_model.set_port_updates_pause(True)
         self.flash_dialog.flash(self.bin_file, self.flash_device, self.device_name)
 
@@ -489,6 +502,19 @@ class _FlashPopup(QDialog):
     def _reset_download_version(self) -> None:
         self.downloaded_version_label.setEnabled(False)
         self.downloaded_version_label.setText("<Downloaded bin file version>")
+
+    def _get_boot_description(self, flash_device: SerialDevice, device_name: Optional[str]) -> Any:
+
+        flash_device_name: str = device_name or flash_device.name
+        product: Optional[str] = None
+
+        if flash_device_name in EVK_TO_PRODUCT_MAP.keys():
+            product = EVK_TO_PRODUCT_MAP[flash_device_name]
+
+        if product in PRODUCT_NAME_TO_FLASH_MAP.keys():
+            return PRODUCT_NAME_TO_FLASH_MAP[product].get_boot_description(product)
+
+        return None
 
 
 class FlashButton(QPushButton):
@@ -847,3 +873,38 @@ class CookieConsentDialog(QDialog):
         # fmt: on
 
         self.setLayout(layout)
+
+
+class _UserMessageDialog(QDialog):
+    def __init__(self, title: str, message: str, confirmation: str, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.setMinimumWidth(450)
+        self.setMinimumHeight(200)
+
+        layout = QGridLayout(self)
+
+        self.message_text = QTextEdit(self)
+        self.message_text.setReadOnly(True)
+
+        self.ok_button = QPushButton(confirmation, self)
+        self.ok_button.setEnabled(True)
+        self.ok_button.clicked.connect(self._on_ok)
+
+        # fmt: off
+        # Grid layout:                      row, col, rspan, cspan
+        layout.addWidget(self.message_text, 0,   0,   4,     12)    # noqa: E241
+        layout.addWidget(self.ok_button,    4,   0,   1,     2)     # noqa: E241
+        # fmt: on
+
+        self.setLayout(layout)
+
+        self.setWindowTitle(title)
+        self._set_message(message)
+
+    def _set_message(self, message: str) -> None:
+        self.message_text.insertHtml(message)
+        self.message_text.moveCursor(QTextCursor.MoveOperation.Start)
+
+    def _on_ok(self) -> None:
+        self.accept()

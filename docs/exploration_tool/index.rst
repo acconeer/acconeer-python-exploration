@@ -35,6 +35,7 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    XC120 + XE121 (A121) <evk_setup/xc120_xe121>
    XM112 <evk_setup/xm112>
    XM122 <evk_setup/xm122>
+   XM125 <evk_setup/xm125>
    XM132 <evk_setup/xm132>
    Raspberry Pi (A111) <evk_setup/raspberry_a111>
 
