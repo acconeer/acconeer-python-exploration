@@ -15,6 +15,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 BLACK_SPEC = "black==22.12.0"
 ISORT_SPEC = "isort==5.6.3"
+RUFF_SPEC = "ruff==0.0.260"
 MYPY_SPEC = "mypy==1.0.1"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
@@ -75,20 +76,21 @@ def lint(session):
     session.install(
         BLACK_SPEC,
         ISORT_SPEC,
-        "flake8>=4,<5",
+        RUFF_SPEC,
+        "flake8",
         "flake8-future-annotations",
-        "flake8-mutable",
-        "flake8-quotes",
-        "flake8-tidy-imports",
         "packaging",
     )
+    FUTURE_ANNOTATIONS_ERRORS = "FA10"
+
     session.run("python", "tools/check_permissions.py")
     session.run("python", "tools/check_whitespace.py")
     session.run("python", "tools/check_line_length.py")
     session.run("python", "tools/check_sdk_mentions.py")
     session.run("python", "tools/check_changelog.py")
     session.run("python", "tools/check_copyright.py")
-    session.run("python", "-m", "flake8")
+    session.run("python", "-m", "ruff", ".")
+    session.run("python", "-m", "flake8", "--select", FUTURE_ANNOTATIONS_ERRORS)
     session.run("python", "-m", "black", "--check", "--diff", "--quiet", ".")
     session.run("python", "-m", "isort", "--check", "--diff", "--quiet", ".")
 
@@ -98,7 +100,9 @@ def reformat(session):
     session.install(
         BLACK_SPEC,
         ISORT_SPEC,
+        RUFF_SPEC,
     )
+    session.run("python", "-m", "ruff", "--fix", ".")
     session.run("python", "-m", "black", ".")
     session.run("python", "-m", "isort", ".")
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 # type: ignore
@@ -245,7 +245,7 @@ def test_zip3_extended_structures(structures, expected):
     "structures",
     [
         ([{1: "a"}], [{1: "b"}], [{2: "c"}]),
-        ([{1: "a", 2: "a"}], [{1: "b", 2: "b"}], [{2: "c", 2: "c"}]),
+        ([{1: "a", 2: "a"}], [{1: "b", 2: "b"}], [{2: "c"}]),
     ],
 )
 def test_zip3_extended_structures_with_bad_arguments(structures):

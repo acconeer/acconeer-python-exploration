@@ -14,6 +14,26 @@ write_to_template = "__version__ = \"{version}\"\n"
 [tool.black]
 line-length = 99
 
+[tool.ruff]
+# "extend" here adds to the ruff defaults, rather than replacing.
+extend-select = ["Q", "TID"]  # Q = flake8-quotes, TID = flake8-tidy-imports
+extend-ignore = ["E741"]  # Ambiguous variable names, e.g. I vs l
+
+line-length = 100
+
+show-fixes = true
+show-source = true
+
+src = ["src"]
+namespace-packages = ["src/acconeer"]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401", "E402"]
+"src/acconeer/exptool/_winusbcdc/*" = ["F40", "E501"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
 [tool.isort]
 line_length = 99
 lines_after_imports = 2

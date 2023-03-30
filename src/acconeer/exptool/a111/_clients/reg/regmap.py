@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import enum
@@ -159,7 +159,6 @@ STRIPPED_NAME_TO_INFO_REMAP = {
     "output_buffer_length": None,
     "start": "range_start_m",
     "length": "range_length_m",
-    "step_length": "step_length_m",
     "step_length": "step_length_m",
     "depth_lpf_ratio_used": "depth_lowpass_cutoff_ratio",
 }
