@@ -93,7 +93,7 @@ def assert_messages() -> t.Callable[..., None]:
         received: list[t.Union[Message, ClosedTask]],
         not_received: t.Iterable[t.Union[Message, ClosedTask]] = tuple(),
         max_num_messages: int = 10,
-        recv_timeout: float = 0.5,
+        recv_timeout: float = 2.0,
     ) -> None:
         """
         Utility function that asserts that
