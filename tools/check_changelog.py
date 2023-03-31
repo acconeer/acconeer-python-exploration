@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 """This script checks whether CHANGELOG refers to the same version as the current git tag."""
@@ -94,7 +94,9 @@ def main():
         print(f'Which does not match "{most_recent_tag}".')
         status = False
 
-    empty_unreleased_changelog = "# Unreleased Changelog\n\n## Unreleased\n"
+    empty_unreleased_changelog = (
+        "# Unreleased Changelog\n\n## Unreleased\n\n### Added\n\n### Changed\n\n### Fixed\n"
+    )
 
     if unreleased_changelog.read_text() != empty_unreleased_changelog:
         print("Unreleased changelog is not cleared")
