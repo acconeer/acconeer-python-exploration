@@ -1,5 +1,21 @@
 # Changelog
 
+## v6.0.0
+
+### Added
+- A121: Tank level reference app
+- A121: Distance: Add recalibration functionality.
+- A121: Distance: Add calibration needed and temperature to API.
+- A121: Add surface velocity example app.
+- A121: Distance: Add reflector shape to detector config.
+- A121: Distance: Update peak sorting strategy selections.
+
+# Changed
+- Documentation structure
+- Client interface
+- Setting up instructions
+- Drop beta for A121 Application
+
 ## v5.9.2
 
 ### Added
