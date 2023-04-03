@@ -5,5 +5,6 @@
 ### Added
 
 ### Changed
+- Bump SDK version for A111
 
 ### Fixed
