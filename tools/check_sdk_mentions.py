@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 """This is a script that checks whether version-strings in the docs are up to date"""
@@ -97,8 +97,8 @@ def check_docs_against_sdk_version(sdk_version: str, pattern_for_docs: str):
 def main():
     SEMVER_PATTERN = r"v?(\d+\.\d+\.\d+)"
     INIT_SDK_VERSION_PATTERN = rf'SDK_VERSION\s*=\s*"{SEMVER_PATTERN}"'
-    A111_SEMVER_PATTERN = r"A111-" + SEMVER_PATTERN
-    A121_SEMVER_PATTERN = r"A121-" + SEMVER_PATTERN
+    A111_SEMVER_PATTERN = r"[aA]111-" + SEMVER_PATTERN
+    A121_SEMVER_PATTERN = r"[aA]121-" + SEMVER_PATTERN
 
     a111_init_file = EXPTOOL_ROOT / "src" / "acconeer" / "exptool" / "a111" / "__init__.py"
     a111_sdk_version = get_single_match_in_file(INIT_SDK_VERSION_PATTERN, a111_init_file)
