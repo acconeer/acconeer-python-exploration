@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -127,14 +127,15 @@ def download(
     device = device.lower()
 
     # Get correct device slug
-    slug = "xe121" if device == "xc120" else device
+    slugs = {"xc120": "xe121", "xm125": "xm125_sw"}
+    slug = slugs.get(device, device)
 
     data = f"action=ajax_file_tabs&slug={slug}"
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    request = session.post(url=ACC_DEV_AJAX_URL, data=data, cookies=cookies, headers=headers)
+    response = session.post(url=ACC_DEV_AJAX_URL, data=data, cookies=cookies, headers=headers)
 
-    soup = BeautifulSoup(request.content, "html.parser")
-    form = soup.select_one('form[action*="{}"]'.format(device))
+    soup = BeautifulSoup(response.content, "html.parser")
+    form = soup.select_one('form[action*="{}"]'.format("exploration_server"))
     if form is None:
         raise Exception(f"No image found for device '{device}'")
     zip_url = form.get("action")
