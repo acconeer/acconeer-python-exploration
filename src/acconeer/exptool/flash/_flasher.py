@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import logging
+import re
 import tempfile
 import time
 
@@ -103,6 +104,8 @@ def find_flash_device(
     found_devices = []
     flash_device = None
 
+    device_name = "XE125" if device_name == "XM125" else device_name
+
     if use_serial:
         all_devices.extend(et.utils.get_serial_devices())
 
@@ -174,6 +177,20 @@ def get_flash_download_name(device, device_name):
     raise ValueError(f"Unknown device {name}")
 
 
+def get_boot_description(flash_device, device_name):
+
+    flash_device_name = device_name or flash_device.name
+    product = None
+
+    if flash_device_name in EVK_TO_PRODUCT_MAP.keys():
+        product = EVK_TO_PRODUCT_MAP[flash_device_name]
+
+    if product in PRODUCT_NAME_TO_FLASH_MAP.keys():
+        return PRODUCT_NAME_TO_FLASH_MAP[product].get_boot_description(product)
+
+    return None
+
+
 def fetch_and_flash(args):
     try:
         flash_device = get_flash_device_from_args(args)
@@ -238,6 +255,12 @@ def fetch_and_flash(args):
                     print(f"[OK] (version: {version})")
 
                     try:
+                        boot_description = get_boot_description(flash_device, device_name)
+                        if boot_description:
+                            boot_description = re.sub("<li>", " - ", boot_description)
+                            boot_description = re.sub("</[pli]+?>", "\n", boot_description)
+                            boot_description = re.sub("<[^<]+?>", "", boot_description)
+                            print("\n\n" + boot_description)
                         if _query_yes_no("Proceed to flashing you device?"):
                             print("Flashing...")
                             flash_image(
