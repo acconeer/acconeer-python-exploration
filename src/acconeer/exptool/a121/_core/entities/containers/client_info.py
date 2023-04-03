@@ -222,45 +222,57 @@ class ClientInfo:
 
     @staticmethod
     def _migrate_pre_v6_dict(d: dict[str, Any]) -> dict[str, Any]:
-        d["socket"] = (
-            None
-            if d.get("ip_address") is None
-            else {
-                "ip_address": d.pop("ip_address", None),
-                "tcp_port": d.pop("tcp_port", None),
-            }
-        )
+        ip_address = d.get("ip_address")
+        serial_port = d.get("serial_port")
+        usb_device = d.get("usb_device")
 
-        d["serial"] = (
-            None
-            if d.get("serial_port") is None
-            else {
-                "port": d.pop("serial_port", None),
-                "override_baudrate": d.pop("override_baudrate", None),
-            }
-        )
-
-        d["mock"] = None if d.pop("mock") is None else {}
-
-        usb_device = d.pop("usb_device")
-        d["usb"] = (
-            None
-            if usb_device is None
-            else {
-                "vid": usb_device["vid"],
-                "pid": usb_device["pid"],
-                "serial_number": usb_device["serial"],
-            }
-        )
-
-        return d
+        return {
+            "mock": {} if d.get("mock", False) else None,
+            "socket": (
+                None
+                if ip_address is None
+                else {
+                    "ip_address": ip_address,
+                    "tcp_port": d.get("tcp_port"),
+                }
+            ),
+            "serial": (
+                None
+                if serial_port is None
+                else {
+                    "port": serial_port,
+                    "override_baudrate": d.get("override_baudrate", None),
+                }
+            ),
+            "usb": (
+                None
+                if usb_device is None
+                else {
+                    "vid": usb_device["vid"],
+                    "pid": usb_device["pid"],
+                    "serial_number": usb_device["serial"],
+                }
+            ),
+        }
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> ClientInfo:
-        if not set(d.keys()).issubset(["socket", "serial", "usb", "mock"]):
-            try:
-                d = cls._migrate_pre_v6_dict(d)
-            except Exception:
+        v6_keys = ["socket", "serial", "usb", "mock"]
+        v5_keys = [
+            "ip_address",
+            "tcp_port",
+            "serial_port",
+            "usb_device",
+            "mock",
+            "override_baudrate",
+        ]
+
+        if not set(d.keys()).issubset(v6_keys):
+            d_extra_keys = {k for k in d if k not in v5_keys}
+            if d_extra_keys == set():
+                d_only_v5_keys = {k: d.get(k) for k in v5_keys}
+                d = cls._migrate_pre_v6_dict(d_only_v5_keys)
+            else:
                 raise TypeError(f"Cannot load the dict {d} into a ClientInfo.")
 
         serial = SerialInfo(**d["serial"]) if d.get("serial") is not None else None

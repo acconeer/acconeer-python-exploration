@@ -228,6 +228,16 @@ def test_serial_device_display_name() -> None:
             ClientInfo(mock=MockInfo()),
             id="Mock ClientInfo",
         ),
+        pytest.param(
+            """{
+                "ip_address": null,
+                "serial_port": null,
+                "override_baudrate": null,
+                "usb_device": null
+            }""",
+            ClientInfo(),
+            id="Missing mock key",
+        ),
     ],
 )
 def test_can_migrate_pre_v6_json(pre_v6_json: str, expected: ClientInfo) -> None:
