@@ -6,7 +6,7 @@ Flashing
 
 .. attention::
 
-   To flash and connect to SDK/RSS v0.8.0,
+   To flash and connect to SDK/RSS v0.8.0 or newer,
    Exploration Tool v5.9.0 or newer is required.
 
 
