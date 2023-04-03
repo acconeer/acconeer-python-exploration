@@ -22,8 +22,8 @@ def integrationTestPythonVersionsForBuildScope = [
 @Field
 def integrationTestA121RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [branch: "master"],
-    (BuildScope.HOURLY)  : [tag: "a121-v0.8.0"],
-    (BuildScope.NIGHTLY) : [branch: "master", tag: "a121-v0.8.0"],
+    (BuildScope.HOURLY)  : [tag: "a121-v1.0.0"],
+    (BuildScope.NIGHTLY) : [branch: "master", tag: "a121-v1.0.0"],
 ]
 
 @Field
@@ -176,7 +176,7 @@ try {
                             [
                                 projectName: 'sw-main',
                                 artifactNames: ["out/internal_stash_binaries_sanitizer_a121.tgz"],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-v0.8.0']
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-v1.0.0']
                         )
                         sh 'mkdir stash'
                         sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
@@ -188,14 +188,7 @@ try {
                             List<String> doitTasks = integrationTestPythonVersions
                                                             .collect { v -> "integration_test:${v}-a121" }
 
-                            if (rssVersionName == 'a121-v0.8.0') {
-                                // The current latest release does not support the "--port" argument, which requires
-                                // us to run the test tasks sequentially ("-n 1") and with default ports ("port_strategy=default").
-                                // This can be removed at 1.0.0.
-                                sh "doit -f dodo.py port_strategy=default -n 1 " + doitTasks.join(' ')
-                            } else {
-                                sh "doit -f dodo.py port_strategy=unique -n ${doitTasks.size()} " + doitTasks.join(' ')
-                            }
+                            sh "doit -f dodo.py port_strategy=unique -n ${doitTasks.size()} " + doitTasks.join(' ')
                         }
                     }
                 }
@@ -217,7 +210,7 @@ try {
                             [
                                 projectName: 'sw-main',
                                 artifactNames: ["out/internal_stash_binaries_sanitizer_a111.tgz"],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-v2.14.2']
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a111-v2.14.2']
                         )
                         sh 'mkdir stash'
                         sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
