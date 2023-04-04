@@ -21,9 +21,8 @@ from PySide6.QtWidgets import (
 from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
-
-from .device_comboboxes import SerialPortComboBox, USBDeviceComboBox
-from .icons import COG, LINK, UNLINK
+from acconeer.exptool.app.new.ui.device_comboboxes import SerialPortComboBox, USBDeviceComboBox
+from acconeer.exptool.app.new.ui.icons import COG, LINK, UNLINK
 
 
 class _ConnectAndDisconnectButton(QPushButton):

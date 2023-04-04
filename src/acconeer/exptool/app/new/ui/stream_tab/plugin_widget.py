@@ -32,10 +32,13 @@ from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new._enums import PluginFamily
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
-
-from .icons import ARROW_LEFT_BOLD
-from .plugin_components.utils import VerticalGroupBox
-from .utils import HorizontalSeparator, ScrollAreaDecorator, TopAlignDecorator
+from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD
+from acconeer.exptool.app.new.ui.plugin_components.utils import VerticalGroupBox
+from acconeer.exptool.app.new.ui.utils import (
+    HorizontalSeparator,
+    ScrollAreaDecorator,
+    TopAlignDecorator,
+)
 
 
 log = logging.getLogger(__name__)

@@ -14,8 +14,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 from acconeer.exptool.app.new._enums import ConnectionInterface
 from acconeer.exptool.app.new.app_model import AppModel
-
-from .icons import EXTERNAL_LINK, WARNING
+from acconeer.exptool.app.new.ui.icons import EXTERNAL_LINK, WARNING
 
 
 class HintObject:

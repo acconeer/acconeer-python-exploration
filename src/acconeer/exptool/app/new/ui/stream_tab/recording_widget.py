@@ -10,8 +10,7 @@ from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QCheckBox, QFileDialog, QHBoxLayout, QPushButton, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
-
-from .icons import FOLDER_OPEN, SAVE
+from acconeer.exptool.app.new.ui.icons import FOLDER_OPEN, SAVE
 
 
 class RecordingWidget(QWidget):
