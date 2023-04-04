@@ -22,8 +22,8 @@ from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
+from .device_comboboxes import SerialPortComboBox, USBDeviceComboBox
 from .icons import COG, LINK, UNLINK
-from .misc import SerialPortComboBox, USBDeviceComboBox
 
 
 class _ConnectAndDisconnectButton(QPushButton):

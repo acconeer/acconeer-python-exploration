@@ -57,8 +57,8 @@ from acconeer.exptool.flash._products import (  # type: ignore[import]
 )
 from acconeer.exptool.utils import CommDevice, SerialDevice  # type: ignore[import]
 
+from .device_comboboxes import SerialPortComboBox, USBDeviceComboBox
 from .icons import FLASH
-from .misc import SerialPortComboBox, USBDeviceComboBox
 
 
 _WRONG_CREDENTIALS_MSG = "<font color='red'>Incorrect username (email) or password</font>"
