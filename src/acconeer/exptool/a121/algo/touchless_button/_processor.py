@@ -84,6 +84,34 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                 )
             )
 
+        if config.sensor_config.sweep_rate is None:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "sweep_rate",
+                    "Sweep rate must be set.",
+                )
+            )
+
+        else:
+            if config.sensor_config.sweeps_per_frame > (
+                self.calibration_duration_s * config.sensor_config.sweep_rate
+            ):
+                calibration_limit = np.around(
+                    config.sensor_config.sweeps_per_frame / config.sensor_config.sweep_rate, 2
+                )
+                validation_results.append(
+                    a121.ValidationError(
+                        self,
+                        "calibration_duration_s",
+                        (
+                            f"Calibration duration must be at least {calibration_limit} s. "
+                            "Following condition applies:\n"
+                            "sweeps per frame > (calibration duration * sweep rate)"
+                        ),
+                    )
+                )
+
         return validation_results
 
 
