@@ -11,7 +11,8 @@ from acconeer.exptool.app.new.app_model import AppModel
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
 from .flash_widget import FlashButton
-from .misc import ExceptionWidget, HintWidget, VerticalSeparator
+from .hints import HintWidget
+from .misc import ExceptionWidget, VerticalSeparator
 from .plugin_widget import PluginControlArea, PluginPlotArea, PluginSelectionArea
 from .recording_widget import RecordingWidget
 from .status_bar import StatusBar
