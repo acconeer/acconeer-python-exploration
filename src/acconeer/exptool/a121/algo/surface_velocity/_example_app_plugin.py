@@ -10,7 +10,6 @@ from typing import Callable, Mapping, Optional
 import attrs
 import h5py
 import numpy as np
-import qtawesome as qta
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
@@ -25,7 +24,6 @@ from acconeer.exptool.a121.algo._plugins import (
     DetectorViewPluginBase,
 )
 from acconeer.exptool.app.new import (
-    BUTTON_ICON_COLOR,
     AppModel,
     AttrsConfigEditor,
     BackendLogger,
@@ -40,6 +38,7 @@ from acconeer.exptool.app.new import (
     PluginSpecBase,
     PluginState,
     VerticalGroupBox,
+    icons,
     is_task,
     pidgets,
 )
@@ -335,20 +334,12 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout = QVBoxLayout()
         scrolly_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.start_button = QPushButton(
-            qta.icon("fa5s.play-circle", color=BUTTON_ICON_COLOR),
-            "Start measurement",
-            self.sticky_widget,
-        )
+        self.start_button = QPushButton(icons.PLAY(), "Start measurement")
         self.start_button.setShortcut("space")
         self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
         self.start_button.clicked.connect(self._send_start_request)
 
-        self.stop_button = QPushButton(
-            qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
-            "Stop",
-            self.sticky_widget,
-        )
+        self.stop_button = QPushButton(icons.STOP(), "Stop")
         self.stop_button.setShortcut("space")
         self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
         self.stop_button.clicked.connect(self._send_stop_request)

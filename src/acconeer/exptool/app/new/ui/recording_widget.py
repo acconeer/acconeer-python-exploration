@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -6,14 +6,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-import qtawesome as qta
-
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QCheckBox, QFileDialog, QHBoxLayout, QPushButton, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
 
-from .misc import BUTTON_ICON_COLOR
+from .icons import FOLDER_OPEN, SAVE
 
 
 class RecordingWidget(QWidget):
@@ -87,7 +85,7 @@ class LoadFileButton(FileButton):
         super().__init__(
             app_model,
             "Load from file",
-            qta.icon("fa.folder-open", color=BUTTON_ICON_COLOR),
+            FOLDER_OPEN(),
             "Ctrl+o",
             "Load a previously recorded and saved session and play it back",
             parent,
@@ -116,7 +114,7 @@ class SaveFileButton(FileButton):
         super().__init__(
             app_model,
             "Save to file",
-            qta.icon("mdi.content-save", color=BUTTON_ICON_COLOR),
+            SAVE(),
             "Ctrl+s",
             "Save the current session",
             parent,

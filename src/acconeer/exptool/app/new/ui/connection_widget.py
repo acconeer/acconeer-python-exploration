@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
-
-import qtawesome as qta
 
 from PySide6 import QtCore
 from PySide6.QtGui import QRegularExpressionValidator
@@ -24,7 +22,8 @@ from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 
-from .misc import BUTTON_ICON_COLOR, SerialPortComboBox, USBDeviceComboBox
+from .icons import COG, LINK, UNLINK
+from .misc import SerialPortComboBox, USBDeviceComboBox
 
 
 class _ConnectAndDisconnectButton(QPushButton):
@@ -56,10 +55,10 @@ class _ConnectAndDisconnectButton(QPushButton):
         }
         ENABLED_STATES = {ConnectionState.CONNECTED, ConnectionState.DISCONNECTED}
         ICONS = {
-            ConnectionState.DISCONNECTED: "fa5s.link",
-            ConnectionState.CONNECTING: "fa5s.link",
-            ConnectionState.CONNECTED: "fa5s.unlink",
-            ConnectionState.DISCONNECTING: "fa5s.unlink",
+            ConnectionState.DISCONNECTED: LINK(),
+            ConnectionState.CONNECTING: LINK(),
+            ConnectionState.CONNECTED: UNLINK(),
+            ConnectionState.DISCONNECTING: UNLINK(),
         }
         TOOLTIPS = {
             ConnectionState.DISCONNECTED: "Connect to device using specified interface",
@@ -74,7 +73,7 @@ class _ConnectAndDisconnectButton(QPushButton):
             and app_model.plugin_state.is_steady
             and app_model.is_connect_ready()
         )
-        self.setIcon(qta.icon(ICONS[app_model.connection_state], color=BUTTON_ICON_COLOR))
+        self.setIcon(ICONS[app_model.connection_state])
         self.setToolTip(TOOLTIPS[app_model.connection_state])
 
 
@@ -121,7 +120,7 @@ class _ConnectSettingsButton(QPushButton):
         super().__init__(parent, flat=True)
         self.app_model = app_model
 
-        self.setIcon(qta.icon("fa5s.cog", color=BUTTON_ICON_COLOR))
+        self.setIcon(COG())
         self.setToolTip("Advanced settings")
 
         self.settings_dialog = _ConnectSettingsDialog(app_model, self)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ from acconeer.exptool.app.new._enums import PluginFamily
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
 
+from .icons import ARROW_LEFT_BOLD
 from .plugin_components.utils import VerticalGroupBox
 from .utils import HorizontalSeparator, ScrollAreaDecorator, TopAlignDecorator
 
@@ -217,7 +218,7 @@ class PlotPlaceholder(QWidget):
 
         icon_widget = qta.IconWidget()
         icon_widget.setIconSize(QtCore.QSize(36, 36))
-        icon_widget.setIcon(qta.icon("ph.arrow-left-bold", color="#4d5157"))
+        icon_widget.setIcon(ARROW_LEFT_BOLD(color="#4d5157"))
 
         label = QLabel("Select a module to begin", self)
         label.setStyleSheet("font-size: 20px;")

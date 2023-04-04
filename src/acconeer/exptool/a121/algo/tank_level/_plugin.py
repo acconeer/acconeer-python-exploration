@@ -10,7 +10,6 @@ from typing import Callable, Mapping, Optional
 import attrs
 import h5py
 import numpy as np
-import qtawesome as qta
 
 from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
@@ -40,7 +39,6 @@ from acconeer.exptool.a121.algo.tank_level._ref_app import (
     _load_algo_data,
 )
 from acconeer.exptool.app.new import (
-    BUTTON_ICON_COLOR,
     AppModel,
     BackendLogger,
     GeneralMessage,
@@ -53,6 +51,7 @@ from acconeer.exptool.app.new import (
     PluginState,
     PluginStateMessage,
     VerticalGroupBox,
+    icons,
     is_task,
 )
 from acconeer.exptool.app.new.ui.plugin_components import (
@@ -474,36 +473,20 @@ class ViewPlugin(DetectorViewPluginBase):
         scrolly_layout = QVBoxLayout()
         scrolly_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.start_button = QPushButton(
-            qta.icon("fa5s.play-circle", color=BUTTON_ICON_COLOR),
-            "Start measurement",
-            self.sticky_widget,
-        )
+        self.start_button = QPushButton(icons.PLAY(), "Start measurement")
         self.start_button.setShortcut("space")
         self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
         self.start_button.clicked.connect(self._send_start_request)
 
-        self.stop_button = QPushButton(
-            qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
-            "Stop",
-            self.sticky_widget,
-        )
+        self.stop_button = QPushButton(icons.STOP(), "Stop")
         self.stop_button.setShortcut("space")
         self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
         self.stop_button.clicked.connect(self._send_stop_request)
 
-        self.calibrate_detector_button = QPushButton(
-            qta.icon("fa.circle", color=BUTTON_ICON_COLOR),
-            "Calibrate detector",
-            self.sticky_widget,
-        )
+        self.calibrate_detector_button = QPushButton(icons.CALIBRATE(), "Calibrate detector")
         self.calibrate_detector_button.clicked.connect(self._on_calibrate_detector)
 
-        self.defaults_button = QPushButton(
-            qta.icon("mdi6.restore", color=BUTTON_ICON_COLOR),
-            "Reset settings and calibrations",
-            self.sticky_widget,
-        )
+        self.defaults_button = QPushButton(icons.RESTORE(), "Reset settings and calibrations")
         self.defaults_button.clicked.connect(self._send_defaults_request)
 
         self.message_box = QLabel(self.sticky_widget)

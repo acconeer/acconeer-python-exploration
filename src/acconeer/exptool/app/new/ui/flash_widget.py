@@ -11,7 +11,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Optional, Tuple
 
-import qtawesome as qta
 from requests import Response, Session
 from requests.cookies import RequestsCookieJar
 
@@ -58,7 +57,8 @@ from acconeer.exptool.flash._products import (  # type: ignore[import]
 )
 from acconeer.exptool.utils import CommDevice, SerialDevice  # type: ignore[import]
 
-from .misc import BUTTON_ICON_COLOR, SerialPortComboBox, USBDeviceComboBox
+from .icons import FLASH
+from .misc import SerialPortComboBox, USBDeviceComboBox
 
 
 _WRONG_CREDENTIALS_MSG = "<font color='red'>Incorrect username (email) or password</font>"
@@ -525,7 +525,7 @@ class FlashButton(QPushButton):
 
         self.setFixedWidth(100)
         self.setText("Flash")
-        self.setIcon(qta.icon("mdi.flash", color=BUTTON_ICON_COLOR))
+        self.setIcon(FLASH())
         self.setToolTip("Flash the device with a bin file")
 
         app_model.sig_notify.connect(self._on_app_model_update)

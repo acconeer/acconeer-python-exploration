@@ -27,7 +27,7 @@ from acconeer.exptool.app.new import check_package_outdated, get_latest_changelo
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
-from .misc import BUTTON_ICON_COLOR
+from .icons import BUTTON_ICON_COLOR, REFRESH
 
 
 class FrameCountLabel(QLabel):
@@ -217,7 +217,7 @@ class VersionLabel(QWidget):
     def _add_icon_to_version_label(self, version_widget: QWidget) -> None:
         layout = version_widget.layout()
         icon_widget = qta.IconWidget()
-        icon_widget.setIcon(qta.icon("fa.refresh", color="#e2e2e2"))
+        icon_widget.setIcon(REFRESH(color="#e2e2e2"))
         layout.addWidget(icon_widget)
 
     def _toggle_changelog(self, label: QLabel) -> None:

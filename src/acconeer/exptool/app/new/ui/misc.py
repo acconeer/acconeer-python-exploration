@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -27,8 +27,7 @@ from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.utils import CommDevice  # type: ignore[import]
 
-
-BUTTON_ICON_COLOR = "#0081db"
+from .icons import EXTERNAL_LINK, WARNING
 
 
 class ExceptionWidget(QMessageBox):
@@ -182,7 +181,7 @@ class UserHintWidget(QWidget):
 
         self.icon = qta.IconWidget()
         self.icon.setHidden(True)
-        self.icon.setIcon(qta.icon("fa.warning", color="#ff9e00"))
+        self.icon.setIcon(WARNING())
         self.layout().addWidget(self.icon)
 
         self.label = QLabel(self)
@@ -190,7 +189,7 @@ class UserHintWidget(QWidget):
         self.layout().addWidget(self.label)
 
         self.button = QPushButton(self)
-        self.button.setIcon(qta.icon("fa5s.external-link-alt", color=BUTTON_ICON_COLOR))
+        self.button.setIcon(EXTERNAL_LINK())
         self.button.setText("How to fix")
         self.button.clicked.connect(self._on_click)
         self.button.setHidden(True)

@@ -24,7 +24,6 @@ from .backend import (
 from .pluginbase import PlotPluginBase, PluginPresetBase, PluginSpecBase, ViewPluginBase
 from .storage import get_temp_dir, get_temp_h5_path
 from .ui import (
-    BUTTON_ICON_COLOR,
     AttrsConfigEditor,
     GridGroupBox,
     HorizontalGroupBox,
@@ -36,5 +35,6 @@ from .ui import (
     SmartPerfCalcView,
     TwoSensorIdsEditor,
     VerticalGroupBox,
+    icons,
     pidgets,
 )

@@ -7,15 +7,12 @@ import abc
 import logging
 from typing import Generic, Optional, Type
 
-import qtawesome as qta
-
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._base import ProcessorConfigT
 from acconeer.exptool.a121.algo._plugins._a121 import A121ViewPluginBase
 from acconeer.exptool.app.new import (
-    BUTTON_ICON_COLOR,
     AppModel,
     AttrsConfigEditor,
     GeneralMessage,
@@ -26,6 +23,7 @@ from acconeer.exptool.app.new import (
     SessionConfigEditor,
     SmartMetadataView,
     SmartPerfCalcView,
+    icons,
 )
 
 from .backend_plugin import ProcessorBackendPluginSharedState
@@ -43,16 +41,8 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         scrolly_layout = QVBoxLayout()
         scrolly_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.start_button = QPushButton(
-            qta.icon("fa5s.play-circle", color=BUTTON_ICON_COLOR),
-            "Start measurement",
-            self.sticky_widget,
-        )
-        self.stop_button = QPushButton(
-            qta.icon("fa5s.stop-circle", color=BUTTON_ICON_COLOR),
-            "Stop",
-            self.sticky_widget,
-        )
+        self.start_button = QPushButton(icons.PLAY(), "Start measurement")
+        self.stop_button = QPushButton(icons.STOP(), "Stop")
         self.start_button.clicked.connect(self._send_start_request)
         self.stop_button.clicked.connect(self._send_stop_request)
 
