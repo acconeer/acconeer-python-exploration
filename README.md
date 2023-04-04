@@ -38,10 +38,7 @@ where you can also find the [FAQ](https://docs.acconeer.com/en/latest/exploratio
 
 ## News
 
-* v5.0.0 released. See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html).
-* v4.0.0 released. See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html)
-  and the [Migration Guide](https://docs.acconeer.com/en/latest/migration_v3_to_v4.html).
-
+* v6.0.0 released. See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html).
 
 ## Setting up your evaluation kit
 
