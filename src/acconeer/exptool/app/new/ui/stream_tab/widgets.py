@@ -6,7 +6,6 @@ from __future__ import annotations
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QSplitter, QVBoxLayout, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.app.new.ui.flash_tab import FlashButton
 from acconeer.exptool.app.new.ui.misc import VerticalSeparator
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection
@@ -44,8 +43,6 @@ class TopBar(QFrame):
         self.layout().addWidget(GenerationSelection(app_model, self))
         self.layout().addWidget(VerticalSeparator(self))
         self.layout().addWidget(ClientConnectionWidget(app_model, self))
-        self.layout().addWidget(VerticalSeparator(self))
-        self.layout().addWidget(FlashButton(app_model, self))
         self.layout().addWidget(HintWidget(app_model, self))
         self.layout().addStretch(1)
         self.layout().addWidget(RecordingWidget(app_model, self))

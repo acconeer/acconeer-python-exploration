@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
 from typing import Optional
 
 from PySide6 import QtCore
-from PySide6.QtWidgets import QFrame, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QLayout, QScrollArea, QVBoxLayout, QWidget
 
 
 class ScrollAreaDecorator(QScrollArea):
@@ -32,6 +32,12 @@ class TopAlignDecorator(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(decoratee)
         layout.addStretch(1)
+
+
+class LayoutWrapper(QWidget):
+    def __init__(self, wrappee: QLayout) -> None:
+        super().__init__()
+        self.setLayout(wrappee)
 
 
 class HorizontalSeparator(QFrame):
