@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.0.2
+
+### Changed
+- Pin PySide version, which evades some problems with its latest release
+
 ## v6.0.1
 
 ### Changed
