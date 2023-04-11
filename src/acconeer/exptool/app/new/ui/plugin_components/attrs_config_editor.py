@@ -167,7 +167,11 @@ class AttrsConfigEditor(QWidget, Generic[T]):
             return
 
         try:
-            self._config = attrs.evolve(self._config, **{aspect: value})
+            # The passing of "self._config: T" is not type safe. We cannot know
+            # if "T" is an attrs class in the scope of this class without binding
+            # "T" to a common superclass.
+            # "AlgoConfigBase" is a candidate, but that is part of the algo-package.
+            self._config = attrs.evolve(self._config, **{aspect: value})  # type: ignore[misc]
         except Exception as e:
             self._erroneous_aspects.add(aspect)
             self._pidget_mapping[aspect].set_note_text(e.args[0], Criticality.ERROR)
