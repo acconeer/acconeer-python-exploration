@@ -14,17 +14,19 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .sensor_config_editor import SensorConfigEditor
+from .types import DataEditor
 from .utils import VerticalGroupBox
 
 
 log = logging.getLogger(__name__)
 
 
-class SessionConfigEditor(QWidget):
+class SessionConfigEditor(DataEditor[a121.SessionConfig]):
     _session_config: Optional[a121.SessionConfig]
     _server_info: Optional[a121.ServerInfo]
-
     _sensor_id_pidget: pidgets.SensorIdPidget
+
+    _update_rate_erroneous: bool
 
     sig_update = Signal(object)
 
@@ -38,6 +40,7 @@ class SessionConfigEditor(QWidget):
         self._server_info = None
 
         self._session_config = None
+        self._update_rate_erroneous = False
 
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -71,7 +74,7 @@ class SessionConfigEditor(QWidget):
 
     @property
     def is_ready(self) -> bool:
-        return self._sensor_config_editor.is_ready
+        return not self._update_rate_erroneous and self._sensor_config_editor.is_ready
 
     def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
         self._session_config = session_config
@@ -133,7 +136,10 @@ class SessionConfigEditor(QWidget):
         try:
             self._session_config.update_rate = value
         except Exception as e:
+            self._update_rate_erroneous = True
             self._update_rate_pidget.set_note_text(e.args[0], Criticality.ERROR)
+        else:
+            self._update_rate_erroneous = False
 
         self._broadcast()
 

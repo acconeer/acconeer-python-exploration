@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Generic, Optional, Sequence, TypeVar, Union, cast
+from typing import Any, Optional, Sequence, TypeVar, Union, cast
 
 import attrs
 
@@ -15,7 +15,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetGroupHook, PidgetHook
-from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
+from .types import DataEditor, PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import VerticalGroupBox
 
 
@@ -47,7 +47,7 @@ def _to_group_factory_mapping(
     )
 
 
-class AttrsConfigEditor(QWidget, Generic[T]):
+class AttrsConfigEditor(DataEditor[T]):
     _config: Optional[T]
     _erroneous_aspects: set[str]
 

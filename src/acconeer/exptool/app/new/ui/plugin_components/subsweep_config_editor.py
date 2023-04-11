@@ -16,13 +16,13 @@ from acconeer.exptool.a121._core import Criticality
 from . import pidgets
 from .collapsible_widget import CollapsibleWidget
 from .range_help_view import RangeHelpView
-from .types import PidgetFactoryMapping
+from .types import DataEditor, PidgetFactoryMapping
 
 
 log = logging.getLogger(__name__)
 
 
-class SubsweepConfigEditor(QWidget):
+class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
     sig_update = Signal(object)
 
     _subsweep_config: Optional[a121.SubsweepConfig]
@@ -185,6 +185,9 @@ class SubsweepConfigEditor(QWidget):
     def set_read_only(self, read_only: bool) -> None:
         for pidget in self._subsweep_config_pidgets.values():
             pidget.setEnabled(not read_only)
+
+    def setEnabled(self, enabled: bool) -> None:
+        super().setEnabled(enabled and self._subsweep_config is not None)
 
     def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
         if self._subsweep_config is None:

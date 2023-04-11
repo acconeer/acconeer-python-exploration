@@ -15,14 +15,14 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .subsweep_config_editor import SubsweepConfigEditor
-from .types import PidgetFactoryMapping
+from .types import DataEditor, PidgetFactoryMapping
 from .utils import VerticalGroupBox
 
 
 log = logging.getLogger(__name__)
 
 
-class SensorConfigEditor(QWidget):
+class SensorConfigEditor(DataEditor[a121.SensorConfig]):
     sig_update = Signal(object)
 
     _sensor_config: Optional[a121.SensorConfig]
@@ -255,6 +255,9 @@ class SensorConfigEditor(QWidget):
         self._add_tabs(tabs_needed)
         for i, subsweep in enumerate(sensor_config.subsweeps):
             self._subsweep_config_editors[i].set_data(subsweep)
+
+    def setEnabled(self, enabled: bool) -> None:
+        super().setEnabled(enabled and self._sensor_config is not None)
 
     @property
     def is_ready(self) -> bool:
