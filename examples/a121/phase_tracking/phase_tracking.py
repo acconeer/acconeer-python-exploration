@@ -143,7 +143,7 @@ class PGUpdater:
             self.sweep_vertical_line.hide()
             self.argument_vertical_line.hide()
 
-        if history is not None:
+        if history.shape[0] != 0:
             # update history plot
             self.history_curve.setData(rel_time_stamps, history)
             lims = self.distance_hist_smooth_lim.update(history)
