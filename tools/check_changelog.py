@@ -13,20 +13,36 @@ from typing import Optional
 from packaging.version import Version
 
 
-def utf8_subprocess_output(*args: str):
+VERSION_PATTERN = r"v?\d+\.\d+\.\d+"
+
+
+def utf8_subprocess_output(*args: str) -> str:
     return subprocess.check_output(args, encoding="utf-8").strip()
 
 
-def get_commit_sha_of_git_tag(git_tag: str):
+def get_commit_sha_of_git_tag(git_tag: str) -> str:
     return utf8_subprocess_output("git", "rev-list", "-n", "1", git_tag)
 
 
-def get_current_commit_sha():
+def get_current_commit_sha() -> str:
     return utf8_subprocess_output("git", "rev-parse", "--verify", "HEAD")
 
 
-def get_most_recent_git_tag():
+def get_current_commit_prepare_release_version() -> Optional[str]:
+    commit_title = utf8_subprocess_output("git", "log", "-n1", "--pretty=format:%s")
+    match = re.match(rf"Prepare release ({VERSION_PATTERN})", commit_title)
+    return None if match is None else match.groups()[0]
+
+
+def get_most_recent_git_tag() -> str:
     return utf8_subprocess_output("git", "describe", "--abbrev=0", "--tags")
+
+
+def get_current_commit_tag() -> Optional[str]:
+    recent_tag = get_most_recent_git_tag()
+    return (
+        recent_tag if get_current_commit_sha() == get_commit_sha_of_git_tag(recent_tag) else None
+    )
 
 
 def get_first_match_in_string(pattern: str, string: str, *, group: int = 0) -> Optional[str]:
@@ -51,14 +67,14 @@ def get_number_of_matches_in_string(pattern: str, string: str) -> int:
     return len(match)
 
 
-def main():
-    VERSION_PATTERN = r"v?\d+\.\d+\.\d+"
+def main() -> None:
     FILE_PATH = "CHANGELOG.md"
     UNRELEASED_FILE_PATH = "UNRELEASED_CHANGELOG.md"
-    status = True
 
     changelog = Path(FILE_PATH)
     unreleased_changelog = Path(UNRELEASED_FILE_PATH)
+
+    status = True
 
     if get_number_of_matches_in_string(r"## Unreleased", changelog.read_text()) > 0:
         print("Changelog contains illegal 'Unreleased' headline")
@@ -68,30 +84,25 @@ def main():
         get_number_of_matches_in_string(r"## " + VERSION_PATTERN, unreleased_changelog.read_text())
         > 0
     ):
-        print("Unreleased contains illegal version tag headline")
+        print("Unreleased Changelog contains illegal version tag headline")
         status = False
 
-    most_recent_tag = get_most_recent_git_tag()
-    most_recent_tag_commit_sha = get_commit_sha_of_git_tag(most_recent_tag)
-    current_commit_sha = get_current_commit_sha()
+    # First, we check if this is a "Prepare release" commit.
+    # If it's not, we check if the current commit is tagged.
+    current_tag = get_current_commit_prepare_release_version() or get_current_commit_tag()
 
-    is_current_commit_tagged = most_recent_tag_commit_sha == current_commit_sha
-    if not is_current_commit_tagged:
+    if current_tag is None or Version(current_tag).is_prerelease:
         exit(0 if status else 1)
 
-    if Version(most_recent_tag).is_prerelease:
-        exit(0 if status else 1)
-
-    print(f"Current commit ({current_commit_sha[:7]}) is tagged ({most_recent_tag}).")
+    print(f"Current commit is tagged ({current_tag}).")
 
     first_match = get_first_match_in_string(VERSION_PATTERN, changelog.read_text())
     print(f'Found "{first_match}" in {FILE_PATH}', end=" ... ")
 
-    is_exact_match = first_match == most_recent_tag
-    if is_exact_match:
-        print(f"Which matches {most_recent_tag} exactly.")
+    if first_match == current_tag:
+        print(f"Which matches {current_tag} exactly.")
     else:
-        print(f'Which does not match "{most_recent_tag}".')
+        print(f'Which does not match "{current_tag}".')
         status = False
 
     empty_unreleased_changelog = (
