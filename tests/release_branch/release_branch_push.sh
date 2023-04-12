@@ -16,7 +16,7 @@ if [ ${jenkins_merge} -eq 1 ]; then
         git fetch origin ${release_branch}
         handle_exit_status $? "fetch"
 
-        git push --force --dry-run origin HEAD:refs/heads/${release_branch}  # TODO: remove --dry-run when confident
+        git push --force origin HEAD:refs/heads/${release_branch}
         handle_exit_status $? "push-refs-heads"
     fi
 fi
