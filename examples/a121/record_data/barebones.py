@@ -4,17 +4,17 @@
 from acconeer.exptool import a121
 
 
-# Here we create a H5Recorder.
-# The H5Recorder is an object that saves frames directly to a H5-file.
-filename = "data.h5"
-h5_recorder = a121.H5Recorder(filename)
-
 # Client creation
 client = a121.Client.open(ip_address="192.168.0.1")
 
 # Session setup, just like the other examples.
 config = a121.SessionConfig()
 client.setup_session(config)
+
+# Here we create a H5Recorder.
+# The H5Recorder is an object that saves frames directly to a H5-file.
+filename = "data.h5"
+h5_recorder = a121.H5Recorder(filename)
 
 # Here we send the H5Recorder to the Client.
 # After this call, the client is responsible for the H5Recorder.
