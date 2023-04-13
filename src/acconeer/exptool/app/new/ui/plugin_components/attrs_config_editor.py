@@ -91,6 +91,36 @@ class AttrsConfigEditor(DataEditor[T]):
             self._group_widgets.append(group_widget)
             self._group_hooks.append(pidget_group.hooks)
 
+    def sync(self) -> None:
+        pass
+
+    def set_data(self, config: Optional[T]) -> None:
+        if self._config == config:
+            return
+
+        self._config = config
+        self.setEnabled(config is not None)
+
+        if self._config is None:
+            return
+
+        for aspect, pidget in self._pidget_mapping.items():
+            if aspect in self._erroneous_aspects:
+                continue
+            config_value = getattr(self._config, aspect)
+            pidget.set_parameter(config_value)
+
+        for aspect, hooks in self._pidget_hooks.items():
+            for hook in hooks:
+                hook(self._pidget_mapping[aspect], self._pidget_mapping)
+
+        for group_widget, hooks in zip(self._group_widgets, self._group_hooks):
+            for hook in hooks:
+                hook(group_widget, self._pidget_mapping)
+
+    def get_data(self) -> Optional[T]:
+        return copy.deepcopy(self._config)
+
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
     ) -> list[a121.ValidationResult]:
@@ -109,29 +139,6 @@ class AttrsConfigEditor(DataEditor[T]):
     @property
     def is_ready(self) -> bool:
         return self._erroneous_aspects == set()
-
-    def set_data(self, config: Optional[T]) -> None:
-        self._config = config
-        self._run_pidget_hooks()
-
-    def get_data(self) -> Optional[T]:
-        return copy.deepcopy(self._config)
-
-    def _run_pidget_hooks(self) -> None:
-        for aspect, hooks in self._pidget_hooks.items():
-            for hook in hooks:
-                hook(self._pidget_mapping[aspect], self._pidget_mapping)
-
-        for group_widget, hooks in zip(self._group_widgets, self._group_hooks):
-            for hook in hooks:
-                hook(group_widget, self._pidget_mapping)
-
-    def sync(self) -> None:
-        self._update_pidgets()
-        self._run_pidget_hooks()
-
-    def _broadcast(self) -> None:
-        self.sig_update.emit(self._config)
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if result.aspect is None:
@@ -155,14 +162,6 @@ class AttrsConfigEditor(DataEditor[T]):
 
         return result_handled
 
-    def _update_pidgets(self) -> None:
-        if self._config is None:
-            return
-
-        for aspect, pidget in self._pidget_mapping.items():
-            config_value = getattr(self._config, aspect)
-            pidget.set_parameter(config_value)
-
     def _update_config_aspect(self, aspect: str, value: Any) -> None:
         if self._config is None:
             return
@@ -172,13 +171,16 @@ class AttrsConfigEditor(DataEditor[T]):
             # if "T" is an attrs class in the scope of this class without binding
             # "T" to a common superclass.
             # "AlgoConfigBase" is a candidate, but that is part of the algo-package.
-            self._config = attrs.evolve(self._config, **{aspect: value})  # type: ignore[misc]
+            config = attrs.evolve(self._config, **{aspect: value})  # type: ignore[misc]
         except Exception as e:
             self._erroneous_aspects.add(aspect)
             self._pidget_mapping[aspect].set_note_text(e.args[0], Criticality.ERROR)
+
+            # this emit needs to be done to signal that "is_ready" has changed.
+            self.sig_update.emit(self.get_data())
         else:
             self._pidget_mapping[aspect].set_note_text(None)
-            if aspect in self._erroneous_aspects:
-                self._erroneous_aspects.remove(aspect)
+            self._erroneous_aspects.discard(aspect)
 
-        self._broadcast()
+            self.set_data(config)
+            self.sig_update.emit(config)

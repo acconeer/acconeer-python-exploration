@@ -146,6 +146,18 @@ class TestSignalling:
         (args, kwargs) = listener.call_args
         assert args != (original_data,)
 
+    def test_making_an_bad_edit_signals_an_equal_object(
+        self, editor_fixture: EditorFixture[t.Any]
+    ) -> None:
+        editor = editor_fixture.get_editor()
+        original_data = editor.get_data()
+        listener = Mock()
+        editor.sig_update.connect(listener)
+
+        editor_fixture.bad_ui_edit(editor)
+        (args, kwargs) = listener.call_args
+        assert args == (original_data,)
+
     def test_making_a_noop_edit_signals_an_equal_object(
         self, editor_fixture: EditorFixture[t.Any]
     ) -> None:
@@ -168,15 +180,11 @@ class TestState:
         editor_fixture.bad_ui_edit(editor)
         assert not editor.is_ready
 
-    def test_setting_data_to_None_does_not_disable_even_after_sync(
-        self, editor_fixture: EditorFixture[t.Any]
-    ) -> None:
+    def test_setting_data_to_None_disables(self, editor_fixture: EditorFixture[t.Any]) -> None:
         editor = editor_fixture.get_editor()
 
         editor.set_data(None)
-        assert editor.isEnabled()
-        editor.sync()
-        assert editor.isEnabled()
+        assert not editor.isEnabled()
 
     @pytest.mark.parametrize("enabled", [True, False])
     def test_calling_setEnabled_when_data_is_None_always_disables(
@@ -188,21 +196,19 @@ class TestState:
         editor.setEnabled(enabled)
         assert not editor.isEnabled()
 
-    def test_making_an_edit_does_not_change_the_ui_value(
+    def test_making_an_edit_changes_the_ui_value(
         self, editor_fixture: EditorFixture[t.Any]
     ) -> None:
         editor = editor_fixture.get_editor()
 
         original_value = editor_fixture.read_ui(editor)
         editor_fixture.good_ui_edit(editor)
-        assert original_value == editor_fixture.read_ui(editor)
+        assert original_value != editor_fixture.read_ui(editor)
 
-    def test_setting_data_does_not_change_the_ui_value(
-        self, editor_fixture: EditorFixture[t.Any]
-    ) -> None:
+    def test_setting_data_changes_the_ui_value(self, editor_fixture: EditorFixture[t.Any]) -> None:
         editor = editor_fixture.get_editor()
 
         editor_fixture.good_ui_edit(editor)
         original_value = editor_fixture.read_ui(editor)
         editor.set_data(editor_fixture.data)
-        assert original_value == editor_fixture.read_ui(editor)
+        assert original_value != editor_fixture.read_ui(editor)

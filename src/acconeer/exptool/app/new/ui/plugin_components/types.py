@@ -26,15 +26,11 @@ class DataEditor(QWidget, t.Generic[_DataT]):
     sig_update = Signal(object)
 
     def set_data(self, data: t.Optional[_DataT]) -> None:
-        """Update the data that should be displayed (no extra update of UI)"""
+        """Update the data that is displayed"""
         raise NotImplementedError
 
     def get_data(self) -> t.Optional[_DataT]:
         """Gets the data stored in the widget"""
-        raise NotImplementedError
-
-    def sync(self) -> None:
-        """Forces an update of the view"""
         raise NotImplementedError
 
     @property

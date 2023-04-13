@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import logging
 from functools import partial
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QTabWidget, QToolButton, QVBoxLayout, QWidget
@@ -27,7 +27,6 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
     sig_update = Signal(object)
 
     _sensor_config: Optional[a121.SensorConfig]
-    _subsweep_config_editors: list[SubsweepConfigEditor]
 
     _sensor_config_pidgets: dict[str, pidgets.Pidget]
     _erroneous_aspects: set[str]
@@ -136,7 +135,6 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
         self._erroneous_aspects = set()
 
         self._sensor_config = None
-        self._subsweep_config_editors = []
 
         self._read_only = False
         self._supports_multiple_subsweeps = supports_multiple_subsweeps
@@ -177,95 +175,6 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
             self._tab_widget.setCornerWidget(self._plus_button)
             self._tab_widget.cornerWidget().setMinimumSize(self._plus_button.sizeHint())
 
-    def _add_subsweep_config(self) -> None:
-        if self._sensor_config is None:
-            return
-        if self._tab_widget.count() > 3:
-            return
-        subsweep_config = a121.SubsweepConfig()
-        self._sensor_config._subsweeps.append(subsweep_config)
-        self._broadcast()
-        subsweep_config_editor = self._add_subsweep_config_editor()
-        subsweep_config_editor.set_data(subsweep_config)
-        subsweep_config_editor.sync()
-
-    def _add_tabs(self, tabs_needed: int) -> None:
-        while self._tab_widget.count() < tabs_needed:
-            self._add_subsweep_config_editor()
-
-    def _add_subsweep_config_editor(self) -> SubsweepConfigEditor:
-        subsweep_config_editor = SubsweepConfigEditor(self)
-        subsweep_config_editor.sig_update.connect(self._broadcast)
-        subsweep_config_editor.set_read_only(self._read_only)
-        self._subsweep_config_editors.append(subsweep_config_editor)
-        self._tab_widget.addTab(subsweep_config_editor, str(len(self._subsweep_config_editors)))
-        self._update_tab_labels()
-        return subsweep_config_editor
-
-    def _remove_subsweep_config(self, idx: int) -> None:
-        if self._sensor_config is None:
-            return
-        if self._tab_widget.count() < 2:
-            return
-        self._sensor_config.subsweeps.pop(idx)
-        self._broadcast()
-        self._remove_subsweep_config_editor(idx)
-
-    def _remove_tabs(self, tabs_needed: int) -> None:
-        while self._tab_widget.count() > tabs_needed:
-            self._remove_subsweep_config_editor(0)
-
-    def _remove_subsweep_config_editor(self, idx: int) -> None:
-        self._tab_widget.removeTab(idx)
-        self._subsweep_config_editors.pop(idx)
-        self._update_tab_labels()
-
-    def _update_tab_labels(self) -> None:
-        for tab_idx in range(self._tab_widget.count()):
-            self._tab_widget.setTabText(tab_idx, f"{tab_idx + 1}      ")
-
-    def _update_ui(self) -> None:
-        if self._sensor_config is None:
-            log.debug("could not update ui as SensorConfig is None")
-            return
-
-        self._sensor_config_pidgets["sweeps_per_frame"].set_parameter(
-            self._sensor_config.sweeps_per_frame
-        )
-        self._sensor_config_pidgets["sweep_rate"].set_parameter(self._sensor_config.sweep_rate)
-        self._sensor_config_pidgets["frame_rate"].set_parameter(self._sensor_config.frame_rate)
-        self._sensor_config_pidgets["continuous_sweep_mode"].set_parameter(
-            self._sensor_config.continuous_sweep_mode
-        )
-        self._sensor_config_pidgets["double_buffering"].set_parameter(
-            self._sensor_config.double_buffering
-        )
-        self._sensor_config_pidgets["inter_frame_idle_state"].set_parameter(
-            self._sensor_config.inter_frame_idle_state
-        )
-        self._sensor_config_pidgets["inter_sweep_idle_state"].set_parameter(
-            self._sensor_config.inter_sweep_idle_state
-        )
-
-    def set_data(self, sensor_config: Optional[a121.SensorConfig]) -> None:
-        self._sensor_config = sensor_config
-        if sensor_config is None:
-            return
-        tabs_needed = len(sensor_config.subsweeps)
-        self._remove_tabs(tabs_needed)
-        self._add_tabs(tabs_needed)
-        for i, subsweep in enumerate(sensor_config.subsweeps):
-            self._subsweep_config_editors[i].set_data(subsweep)
-
-    def get_data(self) -> Optional[a121.SensorConfig]:
-        return copy.deepcopy(self._sensor_config)
-
-    @property
-    def is_ready(self) -> bool:
-        return self._erroneous_aspects == set() and all(
-            se.is_ready for se in self._subsweep_config_editors
-        )
-
     def set_read_only(self, read_only: bool) -> None:
         self._read_only = read_only
 
@@ -280,12 +189,43 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
             editor.set_read_only(read_only)
 
     def sync(self) -> None:
-        self._update_ui()
-        for subsweep_config_editor in self._subsweep_config_editors:
-            subsweep_config_editor.sync()
+        pass
 
-    def _broadcast(self) -> None:
-        self.sig_update.emit(self._sensor_config)
+    def set_data(self, sensor_config: Optional[a121.SensorConfig]) -> None:
+        if self._sensor_config == sensor_config:
+            return
+
+        self._sensor_config = sensor_config
+
+        self.setEnabled(sensor_config is not None)
+        if self._sensor_config is None:
+            log.debug("could not update ui as SensorConfig is None")
+            return
+
+        for aspect, pidget in self._sensor_config_pidgets.items():
+            if aspect in self._erroneous_aspects:
+                continue
+            pidget.set_parameter(getattr(self._sensor_config, aspect))
+
+        while self._tab_widget.count() > self._sensor_config.num_subsweeps:
+            self._tab_widget.removeTab(0)
+
+        while self._tab_widget.count() < self._sensor_config.num_subsweeps:
+            new_tab_idx = self._tab_widget.count()
+            self._tab_widget.addTab(self._create_subsweep_config_editor(new_tab_idx), "")
+
+        for tab_idx, subsweep_editor in enumerate(self._subsweep_config_editors):
+            self._tab_widget.setTabText(tab_idx, f"{tab_idx + 1}      ")
+            subsweep_editor.sig_update.disconnect()
+            subsweep_editor.sig_update.connect(
+                partial(self._update_subsweep_config_at_index, tab_idx)
+            )
+
+        for subsweep, editor in zip(self._sensor_config.subsweeps, self._subsweep_config_editors):
+            editor.set_data(subsweep)
+
+    def get_data(self) -> Optional[a121.SensorConfig]:
+        return copy.deepcopy(self._sensor_config)
 
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
@@ -304,6 +244,12 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
             unhandled_results = subsweep_config_editor.handle_validation_results(unhandled_results)
 
         return unhandled_results
+
+    @property
+    def is_ready(self) -> bool:
+        return self._erroneous_aspects == set() and all(
+            se.is_ready for se in self._subsweep_config_editors
+        )
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if result.aspect is None or self._sensor_config is None:
@@ -325,17 +271,64 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
 
         return result_handled
 
+    def _create_subsweep_config_editor(self, index: int) -> SubsweepConfigEditor:
+        e = SubsweepConfigEditor()
+        e.sig_update.connect(lambda ssc: self._update_subsweep_config_at_index(index, ssc))
+        e.set_read_only(self._read_only)
+        return e
+
+    @property
+    def _subsweep_config_editors(self) -> Iterator[SubsweepConfigEditor]:
+        for tab_idx in range(self._tab_widget.count()):
+            tab_widget = self._tab_widget.widget(tab_idx)
+            assert isinstance(tab_widget, SubsweepConfigEditor)
+            yield tab_widget
+
+    def _add_subsweep_config(self) -> None:
+        if self._sensor_config is None or self._sensor_config.num_subsweeps >= 4:
+            return
+
+        config = copy.deepcopy(self._sensor_config)
+        config._subsweeps.append(a121.SubsweepConfig())
+        self.set_data(config)
+        self.sig_update.emit(config)
+
+    def _remove_subsweep_config(self, idx: int) -> None:
+        if self._sensor_config is None or len(self._sensor_config.subsweeps) <= 1:
+            return
+
+        config = copy.deepcopy(self._sensor_config)
+        config._subsweeps.pop(idx)
+        self.set_data(config)
+        self.sig_update.emit(config)
+
+    def _update_subsweep_config_at_index(
+        self, index: int, subsweep_config: a121.SubsweepConfig
+    ) -> None:
+        if self._sensor_config is None or index not in range(self._sensor_config.num_subsweeps):
+            return
+
+        config = copy.deepcopy(self._sensor_config)
+        config._subsweeps[index] = subsweep_config
+        self.set_data(config)
+        self.sig_update.emit(config)
+
     def _update_sensor_config_aspect(self, aspect: str, value: Any) -> None:
         if self._sensor_config is None:
             raise TypeError("SensorConfig is None")
 
+        config = copy.deepcopy(self._sensor_config)
+
         try:
-            setattr(self._sensor_config, aspect, value)
+            setattr(config, aspect, value)
         except Exception as e:
             self._sensor_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
             self._erroneous_aspects.add(aspect)
-        else:
-            if aspect in self._erroneous_aspects:
-                self._erroneous_aspects.remove(aspect)
 
-        self._broadcast()
+            # this emit needs to be done to signal that "is_ready" has changed.
+            self.sig_update.emit(self.get_data())
+        else:
+            self._erroneous_aspects.discard(aspect)
+
+            self.set_data(config)
+            self.sig_update.emit(config)

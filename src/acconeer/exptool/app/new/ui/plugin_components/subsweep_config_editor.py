@@ -146,64 +146,32 @@ class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
             )
         )
 
-    def sync(self) -> None:
-        self._update_ui()
-
-    def _update_ui(self) -> None:
-        if self._subsweep_config is None:
-            log.debug("could not update ui as SubsweepConfig is None")
-            return
-
-        self._subsweep_config_pidgets["start_point"].set_parameter(
-            self._subsweep_config.start_point
-        )
-        self._subsweep_config_pidgets["num_points"].set_parameter(self._subsweep_config.num_points)
-        self._subsweep_config_pidgets["step_length"].set_parameter(
-            self._subsweep_config.step_length
-        )
-        self._subsweep_config_pidgets["profile"].set_parameter(self._subsweep_config.profile)
-        self._subsweep_config_pidgets["hwaas"].set_parameter(self._subsweep_config.hwaas)
-        self._subsweep_config_pidgets["receiver_gain"].set_parameter(
-            self._subsweep_config.receiver_gain
-        )
-        self._subsweep_config_pidgets["enable_tx"].set_parameter(self._subsweep_config.enable_tx)
-        self._subsweep_config_pidgets["enable_loopback"].set_parameter(
-            self._subsweep_config.enable_loopback
-        )
-        self._subsweep_config_pidgets["phase_enhancement"].set_parameter(
-            self._subsweep_config.phase_enhancement
-        )
-        self._subsweep_config_pidgets["prf"].set_parameter(self._subsweep_config.prf)
-
-    def set_data(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
-        self.range_help_view.update(subsweep_config)
-        self._subsweep_config = subsweep_config
-
-    def get_data(self) -> Optional[a121.SubsweepConfig]:
-        return copy.deepcopy(self._subsweep_config)
-
-    @property
-    def is_ready(self) -> bool:
-        return self._erroneous_aspects == set()
-
     def set_read_only(self, read_only: bool) -> None:
         for pidget in self._subsweep_config_pidgets.values():
             pidget.setEnabled(not read_only)
 
-    def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
+    def sync(self) -> None:
+        pass
+
+    def set_data(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
+        if self._subsweep_config == subsweep_config:
+            return
+
+        self.range_help_view.update(subsweep_config)
+        self._subsweep_config = subsweep_config
+
+        self.setEnabled(self._subsweep_config is not None)
         if self._subsweep_config is None:
-            raise TypeError("SubsweepConfig is None")
+            log.debug("could not update ui as SubsweepConfig is None")
+            return
 
-        try:
-            setattr(self._subsweep_config, aspect, value)
-        except Exception as e:
-            self._erroneous_aspects.add(aspect)
-            self._subsweep_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
-        else:
+        for aspect, pidget in self._subsweep_config_pidgets.items():
             if aspect in self._erroneous_aspects:
-                self._erroneous_aspects.remove(aspect)
+                continue
+            pidget.set_parameter(getattr(self._subsweep_config, aspect))
 
-        self._broadcast()
+    def get_data(self) -> Optional[a121.SubsweepConfig]:
+        return copy.deepcopy(self._subsweep_config)
 
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
@@ -219,6 +187,10 @@ class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
                 unhandled_results.append(result)
 
         return unhandled_results
+
+    @property
+    def is_ready(self) -> bool:
+        return self._erroneous_aspects == set()
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if result.aspect is None or self._subsweep_config is None:
@@ -240,5 +212,21 @@ class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
 
         return result_handled
 
-    def _broadcast(self) -> None:
-        self.sig_update.emit(self._subsweep_config)
+    def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
+        if self._subsweep_config is None:
+            raise TypeError("SubsweepConfig is None")
+
+        config = copy.deepcopy(self._subsweep_config)
+
+        try:
+            setattr(config, aspect, value)
+        except Exception as e:
+            self._erroneous_aspects.add(aspect)
+            self._subsweep_config_pidgets[aspect].set_note_text(e.args[0], Criticality.ERROR)
+
+            # this emit needs to be done to signal that "is_ready" has changed.
+            self.sig_update.emit(self.get_data())
+        else:
+            self._erroneous_aspects.discard(aspect)
+            self.set_data(config)
+            self.sig_update.emit(config)

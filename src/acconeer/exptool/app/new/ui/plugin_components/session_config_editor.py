@@ -51,7 +51,7 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
         self.layout().addWidget(self.session_group_box)
 
         self._sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(self)
-        self._sensor_id_pidget.sig_parameter_changed.connect(self._update_sensor_id)
+        self._sensor_id_pidget.sig_parameter_changed.connect(self._update_sole_sensor_id)
         self.session_group_box.layout().addWidget(self._sensor_id_pidget)
 
         self._update_rate_pidget = pidgets.OptionalFloatPidgetFactory(
@@ -70,20 +70,11 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
         self.session_group_box.layout().addWidget(self._update_rate_pidget)
 
         self._sensor_config_editor = SensorConfigEditor(supports_multiple_subsweeps, self)
-        self._sensor_config_editor.sig_update.connect(self._broadcast)
+        self._sensor_config_editor.sig_update.connect(self._update_sole_sensor_config)
         self.layout().addWidget(self._sensor_config_editor)
 
-    @property
-    def is_ready(self) -> bool:
-        return not self._update_rate_erroneous and self._sensor_config_editor.is_ready
-
-    def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
-        self._session_config = session_config
-        if session_config is not None:
-            self._sensor_config_editor.set_data(session_config.sensor_config)
-
-    def get_data(self) -> Optional[a121.SessionConfig]:
-        return copy.deepcopy(self._session_config)
+    def set_selected_sensor(self, sensor_id: Optional[int], sensor_list: list[int]) -> None:
+        self._sensor_id_pidget.set_selected_sensor(sensor_id, sensor_list)
 
     def set_read_only(self, read_only: bool) -> None:
         self._sensor_id_pidget.setEnabled(not read_only)
@@ -91,11 +82,24 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
         self._sensor_config_editor.set_read_only(read_only)
 
     def sync(self) -> None:
-        self._update_ui()
-        self._sensor_config_editor.sync()
+        pass
 
-    def _broadcast(self) -> None:
-        self.sig_update.emit(self._session_config)
+    def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
+        if self._session_config == session_config:
+            return
+
+        self._session_config = session_config
+        self.setEnabled(session_config is not None)
+
+        if self._session_config is None:
+            log.debug("could not update ui as SessionConfig is None")
+            return
+
+        self._update_rate_pidget.set_parameter(self._session_config.update_rate)
+        self._sensor_config_editor.set_data(self._session_config.sensor_config)
+
+    def get_data(self) -> Optional[a121.SessionConfig]:
+        return copy.deepcopy(self._session_config)
 
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
@@ -112,6 +116,10 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
         unhandled_results = self._sensor_config_editor.handle_validation_results(unhandled_results)
 
         return unhandled_results
+
+    @property
+    def is_ready(self) -> bool:
+        return not self._update_rate_erroneous and self._sensor_config_editor.is_ready
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if self._session_config is None:
@@ -134,33 +142,44 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
         if self._session_config is None:
             raise TypeError("SessionConfig is None")
 
+        config = copy.deepcopy(self._session_config)
+
         try:
-            self._session_config.update_rate = value
+            config.update_rate = value
         except Exception as e:
             self._update_rate_erroneous = True
             self._update_rate_pidget.set_note_text(e.args[0], Criticality.ERROR)
+
+            # this emit needs to be done to signal that "is_ready" has changed.
+            self.sig_update.emit(self.get_data())
         else:
             self._update_rate_erroneous = False
 
-        self._broadcast()
+            self.set_data(config)
+            self.sig_update.emit(config)
 
-    def _update_sensor_id(self, value: Any) -> None:
+    def _update_sole_sensor_id(self, value: Any) -> None:
         if self._session_config is None:
             raise TypeError("SessionConfig is None")
 
+        config = copy.deepcopy(self._session_config)
+
         try:
-            self._session_config.sensor_id = value
+            config.sensor_id = value
         except Exception as e:
             self._sensor_id_pidget.set_note_text(e.args[0], Criticality.ERROR)
 
-        self._broadcast()
+        self.set_data(config)
+        self.sig_update.emit(config)
 
-    def _update_ui(self) -> None:
+    def _update_sole_sensor_config(self, sensor_config: a121.SensorConfig) -> None:
         if self._session_config is None:
-            log.debug("could not update ui as SessionConfig is None")
-            return
+            raise RuntimeError
 
-        self._update_rate_pidget.set_parameter(self._session_config.update_rate)
-
-    def set_selected_sensor(self, sensor_id: Optional[int], sensor_list: list[int]) -> None:
-        self._sensor_id_pidget.set_selected_sensor(sensor_id, sensor_list)
+        config = a121.SessionConfig(
+            {self._session_config.sensor_id: sensor_config},
+            update_rate=self._session_config.update_rate,
+            extended=self._session_config.extended,
+        )
+        self.set_data(config)
+        self.sig_update.emit(config)
