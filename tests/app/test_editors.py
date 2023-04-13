@@ -27,6 +27,7 @@ class EditorFixture(t.Generic[T]):
     good_ui_edit: t.Callable[[pc.DataEditor[T]], None]
     bad_ui_edit: t.Callable[[pc.DataEditor[T]], None]
     read_ui: t.Callable[[pc.DataEditor[T]], t.Any]
+    noop_ui_edit: t.Callable[[pc.DataEditor[T]], None]
     editor_kwargs: dict[str, t.Any] = attrs.field(factory=dict)
 
     @property
@@ -60,6 +61,7 @@ def qapplication() -> QApplication:
             data_prototype=StubAttrsClass(1),
             good_ui_edit=partial(pc.AttrsConfigEditor._update_config_aspect, aspect="a", value=2),
             bad_ui_edit=partial(pc.AttrsConfigEditor._update_config_aspect, aspect="a", value=-1),
+            noop_ui_edit=partial(pc.AttrsConfigEditor._update_config_aspect, aspect="a", value=1),
             read_ui=lambda ace: ace._pidget_mapping["a"].get_parameter(),
         ),
         EditorFixture(
@@ -67,6 +69,9 @@ def qapplication() -> QApplication:
             data_prototype=a121.SessionConfig(),
             good_ui_edit=partial(pc.SessionConfigEditor._update_update_rate, value=1.0),
             bad_ui_edit=partial(pc.SessionConfigEditor._update_update_rate, value=-1.0),
+            noop_ui_edit=partial(
+                pc.SessionConfigEditor._update_update_rate, value=a121.SessionConfig().update_rate
+            ),
             read_ui=lambda sce: sce._update_rate_pidget.get_parameter(),
         ),
         EditorFixture(
@@ -78,6 +83,11 @@ def qapplication() -> QApplication:
             bad_ui_edit=partial(
                 pc.SensorConfigEditor._update_sensor_config_aspect, aspect="frame_rate", value=-1.0
             ),
+            noop_ui_edit=partial(
+                pc.SensorConfigEditor._update_sensor_config_aspect,
+                aspect="frame_rate",
+                value=a121.SensorConfig().frame_rate,
+            ),
             read_ui=lambda sce: sce._sensor_config_pidgets["frame_rate"].get_parameter(),
         ),
         EditorFixture(
@@ -88,6 +98,11 @@ def qapplication() -> QApplication:
             ),
             bad_ui_edit=partial(
                 pc.SubsweepConfigEditor._update_subsweep_config_aspect, aspect="hwaas", value=-1
+            ),
+            noop_ui_edit=partial(
+                pc.SubsweepConfigEditor._update_subsweep_config_aspect,
+                aspect="hwaas",
+                value=a121.SubsweepConfig().hwaas,
             ),
             read_ui=lambda sce: sce._subsweep_config_pidgets["hwaas"].get_parameter(),
         ),
@@ -118,6 +133,29 @@ class TestSignalling:
 
         editor_fixture.good_ui_edit(editor)
         listener.assert_called()
+
+    def test_making_an_edit_signals_the_modified_object(
+        self, editor_fixture: EditorFixture[t.Any]
+    ) -> None:
+        editor = editor_fixture.get_editor()
+        original_data = editor.get_data()
+        listener = Mock()
+        editor.sig_update.connect(listener)
+
+        editor_fixture.good_ui_edit(editor)
+        (args, kwargs) = listener.call_args
+        assert args != (original_data,)
+
+    def test_making_a_noop_edit_signals_an_equal_object(
+        self, editor_fixture: EditorFixture[t.Any]
+    ) -> None:
+        editor = editor_fixture.get_editor()
+        original_data = editor.get_data()
+        listener = Mock()
+        editor.sig_update.connect(listener)
+
+        editor_fixture.noop_ui_edit(editor)
+        listener.assert_called_once_with(original_data)
 
 
 class TestState:

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 from typing import Any, Optional
 
@@ -81,6 +82,9 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
         if session_config is not None:
             self._sensor_config_editor.set_data(session_config.sensor_config)
 
+    def get_data(self) -> Optional[a121.SessionConfig]:
+        return copy.deepcopy(self._session_config)
+
     def set_read_only(self, read_only: bool) -> None:
         self._sensor_id_pidget.setEnabled(not read_only)
         self._update_rate_pidget.setEnabled(not read_only)
@@ -89,9 +93,6 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
     def sync(self) -> None:
         self._update_ui()
         self._sensor_config_editor.sync()
-
-    def setEnabled(self, enabled: bool) -> None:
-        super().setEnabled(enabled and self._session_config is not None)
 
     def _broadcast(self) -> None:
         self.sig_update.emit(self._session_config)

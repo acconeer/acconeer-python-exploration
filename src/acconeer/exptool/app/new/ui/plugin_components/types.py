@@ -20,13 +20,17 @@ _DataT = t.TypeVar("_DataT")
 class DataEditor(QWidget, t.Generic[_DataT]):
     """A DataEditor is a widget that enables a user to edit some data.
     The updated data can be used programmatically and is propagated via
-    the `sig_update` Signal.
+    the `sig_update` Signal or retrieved via `get_data`.
     """
 
     sig_update = Signal(object)
 
     def set_data(self, data: t.Optional[_DataT]) -> None:
         """Update the data that should be displayed (no extra update of UI)"""
+        raise NotImplementedError
+
+    def get_data(self) -> t.Optional[_DataT]:
+        """Gets the data stored in the widget"""
         raise NotImplementedError
 
     def sync(self) -> None:
@@ -37,3 +41,6 @@ class DataEditor(QWidget, t.Generic[_DataT]):
     def is_ready(self) -> bool:
         """Returns true if there are any non-validation errors present."""
         raise NotImplementedError
+
+    def setEnabled(self, enabled: bool) -> None:
+        super().setEnabled(enabled and self.get_data() is not None)

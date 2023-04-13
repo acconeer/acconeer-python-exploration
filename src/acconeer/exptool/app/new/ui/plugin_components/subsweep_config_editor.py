@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 from functools import partial
 from typing import Any, Optional
@@ -178,6 +179,9 @@ class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
         self.range_help_view.update(subsweep_config)
         self._subsweep_config = subsweep_config
 
+    def get_data(self) -> Optional[a121.SubsweepConfig]:
+        return copy.deepcopy(self._subsweep_config)
+
     @property
     def is_ready(self) -> bool:
         return self._erroneous_aspects == set()
@@ -185,9 +189,6 @@ class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
     def set_read_only(self, read_only: bool) -> None:
         for pidget in self._subsweep_config_pidgets.values():
             pidget.setEnabled(not read_only)
-
-    def setEnabled(self, enabled: bool) -> None:
-        super().setEnabled(enabled and self._subsweep_config is not None)
 
     def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
         if self._subsweep_config is None:

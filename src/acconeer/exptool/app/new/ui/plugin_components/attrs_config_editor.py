@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 from functools import partial
 from typing import Any, Optional, Sequence, TypeVar, Union, cast
 
@@ -113,6 +114,9 @@ class AttrsConfigEditor(DataEditor[T]):
         self._config = config
         self._run_pidget_hooks()
 
+    def get_data(self) -> Optional[T]:
+        return copy.deepcopy(self._config)
+
     def _run_pidget_hooks(self) -> None:
         for aspect, hooks in self._pidget_hooks.items():
             for hook in hooks:
@@ -125,9 +129,6 @@ class AttrsConfigEditor(DataEditor[T]):
     def sync(self) -> None:
         self._update_pidgets()
         self._run_pidget_hooks()
-
-    def setEnabled(self, enabled: bool) -> None:
-        super().setEnabled(enabled and self._config is not None)
 
     def _broadcast(self) -> None:
         self.sig_update.emit(self._config)

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 from functools import partial
 from typing import Any, Optional
@@ -256,8 +257,8 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
         for i, subsweep in enumerate(sensor_config.subsweeps):
             self._subsweep_config_editors[i].set_data(subsweep)
 
-    def setEnabled(self, enabled: bool) -> None:
-        super().setEnabled(enabled and self._sensor_config is not None)
+    def get_data(self) -> Optional[a121.SensorConfig]:
+        return copy.deepcopy(self._sensor_config)
 
     @property
     def is_ready(self) -> bool:
