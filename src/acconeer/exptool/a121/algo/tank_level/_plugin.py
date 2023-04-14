@@ -116,7 +116,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState(config=get_small_config())
-        self.broadcast(sync=True)
+        self.broadcast()
 
     def _sync_sensor_ids(self) -> None:
         if self.client is not None:
@@ -139,7 +139,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def set_preset(self, preset_id: int) -> None:
         preset_config = self.PLUGIN_PRESETS[preset_id]
         self.shared_state.config = preset_config.config
-        self.broadcast(sync=True)
+        self.broadcast()
 
     def save_to_cache(self, file: h5py.File) -> None:
         _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
@@ -655,15 +655,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_config_update(self, config: RefAppConfig) -> None:
         self.app_model.put_backend_plugin_task("update_config", {"config": config})
-
-    def handle_message(self, message: GeneralMessage) -> None:
-        if message.name == "sync":
-            self._log.debug(f"{type(self).__name__} syncing")
-
-            self.config_editor.sync()
-            self.tank_level_config_editor.sync()
-        else:
-            raise RuntimeError("Unknown message")
 
     # TODO: move to detector base (?)
     def _send_start_request(self) -> None:

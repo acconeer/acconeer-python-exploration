@@ -150,9 +150,6 @@ class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
         for pidget in self._subsweep_config_pidgets.values():
             pidget.setEnabled(not read_only)
 
-    def sync(self) -> None:
-        pass
-
     def set_data(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
         if self._subsweep_config == subsweep_config:
             return

@@ -91,9 +91,6 @@ class AttrsConfigEditor(DataEditor[T]):
             self._group_widgets.append(group_widget)
             self._group_hooks.append(pidget_group.hooks)
 
-    def sync(self) -> None:
-        pass
-
     def set_data(self, config: Optional[T]) -> None:
         if self._config == config:
             return

@@ -98,17 +98,17 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState()
-        self.broadcast(sync=True)
+        self.broadcast()
 
     @is_task
     def update_sensor_id(self, *, sensor_id: int) -> None:
         self.shared_state.sensor_id = sensor_id
-        self.broadcast(sync=True)
+        self.broadcast()
 
     @is_task
     def update_plot_config(self, *, config: PlotConfig) -> None:
         self.shared_state.plot_config = config
-        self.broadcast(sync=True)
+        self.broadcast()
 
     def _sync_sensor_ids(self) -> None:
         if self.client is not None:
@@ -131,7 +131,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         preset_config = self.PLUGIN_PRESETS[preset_id]
         self.shared_state.config = preset_config()
         self.shared_state.plot_config = PlotConfig()
-        self.broadcast(sync=True)
+        self.broadcast()
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         algo_group = record.get_algo_group(self.key)
@@ -512,15 +512,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_plot_config_update(self, config: PlotConfig) -> None:
         self.app_model.put_backend_plugin_task("update_plot_config", {"config": config})
-
-    def handle_message(self, message: GeneralMessage) -> None:
-        if message.name == "sync":
-            self._log.debug(f"{type(self).__name__} syncing")
-
-            self.config_editor.sync()
-            self.plot_config_editor.sync()
-        else:
-            raise RuntimeError("Unknown message")
 
     def _send_defaults_request(self) -> None:
         self.app_model.put_backend_plugin_task("restore_defaults")

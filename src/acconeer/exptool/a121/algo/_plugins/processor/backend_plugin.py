@@ -203,7 +203,7 @@ class ProcessorBackendPluginBase(
             processor_config=self.get_processor_config_cls()(),
         )
 
-        self.broadcast(sync=True)
+        self.broadcast()
 
     @is_task
     def set_preset(self, preset_id: int) -> None:
@@ -211,7 +211,7 @@ class ProcessorBackendPluginBase(
         processor_preset = preset_config()
         self.shared_state.session_config = processor_preset.session_config
         self.shared_state.processor_config = processor_preset.processor_config
-        self.broadcast(sync=True)
+        self.broadcast()
 
     def get_next(self) -> None:
         if self._processor_instance is None:

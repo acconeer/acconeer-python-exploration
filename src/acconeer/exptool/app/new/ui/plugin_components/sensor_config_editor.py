@@ -188,9 +188,6 @@ class SensorConfigEditor(DataEditor[a121.SensorConfig]):
         for editor in self._subsweep_config_editors:
             editor.set_read_only(read_only)
 
-    def sync(self) -> None:
-        pass
-
     def set_data(self, sensor_config: Optional[a121.SensorConfig]) -> None:
         if self._sensor_config == sensor_config:
             return

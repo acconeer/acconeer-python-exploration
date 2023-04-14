@@ -15,7 +15,6 @@ from acconeer.exptool.a121.algo._plugins._a121 import A121ViewPluginBase
 from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
-    GeneralMessage,
     GridGroupBox,
     MiscErrorView,
     PidgetFactoryMapping,
@@ -91,15 +90,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         self.app_model.put_backend_plugin_task(
             "update_processor_config", {"processor_config": processor_config}
         )
-
-    def handle_message(self, message: GeneralMessage) -> None:
-        if message.name == "sync":
-            log.debug(f"{type(self).__name__} syncing")
-
-            self.session_config_editor.sync()
-            self.processor_config_editor.sync()
-        else:
-            raise RuntimeError("Unknown message")
 
     def on_backend_state_update(
         self,

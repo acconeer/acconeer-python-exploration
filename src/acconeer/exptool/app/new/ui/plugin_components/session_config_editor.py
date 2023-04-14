@@ -81,9 +81,6 @@ class SessionConfigEditor(DataEditor[a121.SessionConfig]):
         self._update_rate_pidget.setEnabled(not read_only)
         self._sensor_config_editor.set_read_only(read_only)
 
-    def sync(self) -> None:
-        pass
-
     def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
         if self._session_config == session_config:
             return

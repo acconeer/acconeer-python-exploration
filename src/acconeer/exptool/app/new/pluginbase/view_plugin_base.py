@@ -50,9 +50,8 @@ class ViewPluginBase(UiPluginBase, abc.ABC, ViewPluginInterface):
         """The scrolly widget. The scrolly area is located below the sticky area"""
         return self._scrolly_widget
 
-    @abc.abstractmethod
     def handle_message(self, message: GeneralMessage) -> None:
-        pass
+        raise RuntimeError("ViewPlugins does not expect any messages ATM.")
 
     def _send_start_request(self) -> None:
         self.app_model.put_backend_plugin_task(

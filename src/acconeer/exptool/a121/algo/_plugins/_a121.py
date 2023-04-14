@@ -69,7 +69,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         self.start_session(with_recorder=False)
 
         self.send_status_message(f"<b>Replaying from {path.name}</b>")
-        self.broadcast(sync=True)
+        self.broadcast()
 
     @abc.abstractmethod
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
@@ -84,7 +84,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             pass
 
         self._sync_sensor_ids()
-        self.broadcast(sync=True)
+        self.broadcast()
 
     @abc.abstractmethod
     def _load_from_cache(self, file: h5py.File) -> None:
@@ -130,7 +130,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     def attach_client(self, *, client: a121.Client) -> None:
         self._live_client = ApplicationClient.wrap(client, self.callback)
         self._sync_sensor_ids()
-        self.broadcast(True)
+        self.broadcast()
 
     def detach_client(self) -> None:
         self._live_client = None

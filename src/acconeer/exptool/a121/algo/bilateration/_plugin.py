@@ -137,7 +137,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState(config=get_default_detector_config())
-        self.broadcast(sync=True)
+        self.broadcast()
 
     def _sync_sensor_ids(self) -> None:
         if self.client is not None:
@@ -171,7 +171,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         preset_config = self.PLUGIN_PRESETS[preset_id]
         self.shared_state.config = preset_config.detector_config
         self.shared_state.bilateration_config = preset_config.bilateration_config
-        self.broadcast(sync=True)
+        self.broadcast()
 
     def save_to_cache(self, file: h5py.File) -> None:
         _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
@@ -601,15 +601,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_sensor_ids_update(self, sensor_ids: list[int]) -> None:
         self.app_model.put_backend_plugin_task("update_sensor_ids", {"sensor_ids": sensor_ids})
-
-    def handle_message(self, message: GeneralMessage) -> None:
-        if message.name == "sync":
-            log.debug(f"{type(self).__name__} syncing")
-
-            self.config_editor.sync()
-            self.bilateration_config_editor.sync()
-        else:
-            raise RuntimeError("Unknown message")
 
     def _on_calibrate_detector(self) -> None:
         self.app_model.put_backend_plugin_task("calibrate_detector")
