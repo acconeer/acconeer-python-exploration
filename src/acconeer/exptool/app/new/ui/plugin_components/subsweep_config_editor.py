@@ -16,8 +16,9 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .collapsible_widget import CollapsibleWidget
+from .data_editor import DataEditor
 from .range_help_view import RangeHelpView
-from .types import DataEditor, PidgetFactoryMapping
+from .types import PidgetFactoryMapping
 
 
 log = logging.getLogger(__name__)

@@ -15,8 +15,9 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
+from .data_editor import DataEditor
 from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetGroupHook, PidgetHook
-from .types import DataEditor, PidgetFactoryMapping, PidgetGroupFactoryMapping
+from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import VerticalGroupBox
 
 

@@ -15,8 +15,9 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
+from .data_editor import DataEditor
 from .subsweep_config_editor import SubsweepConfigEditor
-from .types import DataEditor, PidgetFactoryMapping
+from .types import PidgetFactoryMapping
 from .utils import VerticalGroupBox
 
 

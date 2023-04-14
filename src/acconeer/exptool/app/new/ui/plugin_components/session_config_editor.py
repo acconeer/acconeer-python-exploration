@@ -14,8 +14,8 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
+from .data_editor import DataEditor
 from .sensor_config_editor import SensorConfigEditor
-from .types import DataEditor
 from .utils import VerticalGroupBox
 
 
