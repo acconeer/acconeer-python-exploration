@@ -13,7 +13,12 @@ from scipy.signal import welch
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase, ProcessorBase
-from acconeer.exptool.a121.algo._utils import PERCEIVED_WAVELENGTH, find_peaks, get_distances_m
+from acconeer.exptool.a121.algo._utils import (
+    APPROX_BASE_STEP_LENGTH_M,
+    PERCEIVED_WAVELENGTH,
+    find_peaks,
+    get_distances_m,
+)
 
 
 @attrs.mutable(kw_only=True)
@@ -49,6 +54,15 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                     config.sensor_config,
                     "sweep_rate",
                     "Must be set",
+                )
+            )
+
+        if config.sensor_config.start_point * APPROX_BASE_STEP_LENGTH_M <= self.surface_distance:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "start_point",
+                    "Start point must be > surface distance",
                 )
             )
 
@@ -195,11 +209,9 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         return np.array(psds).T, freqs
 
     def get_angle_correction(self, distance: float) -> float:
-        if (self.surface_distance / distance) < 1 and (self.surface_distance / distance) > -1:
-            insonation_angle = np.arcsin(self.surface_distance / distance)
-            angle_correction = 1 / np.cos(insonation_angle)
-        else:
-            angle_correction = 1
+        # distanca > self.surface_distance is checked in sensor config
+        insonation_angle = np.arcsin(self.surface_distance / distance)
+        angle_correction = 1 / np.cos(insonation_angle)
 
         return angle_correction  # type: ignore[no-any-return]
 

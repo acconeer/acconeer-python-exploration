@@ -137,8 +137,37 @@ class ExampleAppConfig(AlgoConfigBase):
                 raise ValueError(f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}")
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
 
-        return []
+        if not self.sensor_angle < 90 or not self.sensor_angle > 0:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "sensor_angle",
+                    "Sensor angle must be between 0 and 90 degrees",
+                )
+            )
+
+        optimal_distance = self.surface_distance / np.cos(np.radians(self.sensor_angle))
+        optimal_point = int(np.ceil(optimal_distance / APPROX_BASE_STEP_LENGTH_M))
+
+        start_point = int(
+            np.around(optimal_point - np.floor((self.num_points - 1) / 2) * self.step_length)
+        )
+
+        if start_point * APPROX_BASE_STEP_LENGTH_M <= self.surface_distance:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "sensor_angle",
+                    (
+                        "Start point must be > surface distance. Increase sensor angle, "
+                        "decrease step length or decrease number of distance points"
+                    ),
+                )
+            )
+
+        return validation_results
 
 
 @attrs.frozen(kw_only=True)
@@ -218,17 +247,12 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
     @classmethod
     def _get_sensor_config(cls, config: ExampleAppConfig) -> a121.SensorConfig:
         optimal_distance = config.surface_distance / np.cos(np.radians(config.sensor_angle))
-        optimal_point = int(np.floor(optimal_distance / APPROX_BASE_STEP_LENGTH_M))
+        optimal_point = int(np.ceil(optimal_distance / APPROX_BASE_STEP_LENGTH_M))
 
-        start_point = int(np.around(optimal_point - (config.num_points / 2) * config.step_length))
-        if np.mod(config.num_points, 2) == 0:
-            end_point = int(
-                np.around(optimal_point + (config.num_points / 2 - 1) * config.step_length)
-            )
-        else:
-            end_point = int(
-                np.around(optimal_point + (config.num_points / 2) * config.step_length)
-            )
+        start_point = int(
+            np.around(optimal_point - np.floor((config.num_points - 1) / 2) * config.step_length)
+        )
+        end_point = start_point + (config.num_points - 1) * config.step_length
 
         if config.profile is not None:
             profile = config.profile
