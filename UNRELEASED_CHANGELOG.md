@@ -7,5 +7,6 @@
   larger than the surface distance
 
 ### Changed
+- A121: Surface velocity: Remove sensor angle from processing config, it's not used
 
 ### Fixed

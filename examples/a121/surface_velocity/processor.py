@@ -39,7 +39,6 @@ def main():
 
     processor_config = ProcessorConfig(
         surface_distance=0.40,
-        sensor_angle=35,
         time_series_length=1024,
     )
 

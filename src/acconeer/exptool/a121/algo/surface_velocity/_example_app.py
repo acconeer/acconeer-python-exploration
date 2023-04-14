@@ -284,7 +284,6 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
     def _get_processor_config(cls, config: ExampleAppConfig) -> ProcessorConfig:
         return ProcessorConfig(
             surface_distance=config.surface_distance,
-            sensor_angle=config.sensor_angle,
             time_series_length=config.time_series_length,
             slow_zone=config.slow_zone,
             psd_lp_coeff=config.psd_lp_coeff,

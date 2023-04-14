@@ -24,7 +24,6 @@ from acconeer.exptool.a121.algo._utils import (
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
     surface_distance: float = attrs.field(default=1)
-    sensor_angle: float = attrs.field(default=45)
     time_series_length: int = attrs.field(default=512)
     slow_zone: int = attrs.field(default=3)
     psd_lp_coeff: float = attrs.field(default=0.75)
@@ -140,7 +139,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         )
 
         self.surface_distance = processor_config.surface_distance
-        self.sensor_angle = processor_config.sensor_angle
 
         if sensor_config.frame_rate is None:
             estimated_frame_rate = self.sweep_rate / self.sweeps_per_frame
