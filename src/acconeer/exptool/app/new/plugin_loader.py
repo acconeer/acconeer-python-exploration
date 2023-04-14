@@ -21,16 +21,17 @@ def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a121.algo.touchless_button._plugin import TOUCHLESS_BUTTON_PLUGIN
     from acconeer.exptool.a121.algo.vibration._plugin import VIBRATION_PLUGIN
 
+    # Please keep in lexicographical order
     return [
-        SPARSE_IQ_PLUGIN,
+        BILATERATION_PLUGIN,
+        BREATHING_PLUGIN,
         DISTANCE_DETECTOR_PLUGIN,
         PHASE_TRACKING_PLUGIN,
         PRESENCE_DETECTOR_PLUGIN,
+        SMART_PRESENCE_PLUGIN,
+        SPARSE_IQ_PLUGIN,
+        SURFACE_VELOCITY_PLUGIN,
+        TANK_LEVEL_PLUGIN,
         TOUCHLESS_BUTTON_PLUGIN,
         VIBRATION_PLUGIN,
-        BILATERATION_PLUGIN,
-        BREATHING_PLUGIN,
-        SMART_PRESENCE_PLUGIN,
-        TANK_LEVEL_PLUGIN,
-        SURFACE_VELOCITY_PLUGIN,
     ]
