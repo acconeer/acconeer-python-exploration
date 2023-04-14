@@ -24,7 +24,7 @@ from .types import PidgetFactoryMapping
 log = logging.getLogger(__name__)
 
 
-class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig]):
+class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
     sig_update = Signal(object)
 
     _subsweep_config: Optional[a121.SubsweepConfig]

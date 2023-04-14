@@ -49,7 +49,7 @@ def _to_group_factory_mapping(
     )
 
 
-class AttrsConfigEditor(DataEditor[T]):
+class AttrsConfigEditor(DataEditor[Optional[T]]):
     _config: Optional[T]
     _erroneous_aspects: set[str]
 

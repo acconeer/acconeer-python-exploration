@@ -24,7 +24,7 @@ from .utils import VerticalGroupBox
 log = logging.getLogger(__name__)
 
 
-class SensorConfigEditor(DataEditor[a121.SensorConfig]):
+class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
     sig_update = Signal(object)
 
     _sensor_config: Optional[a121.SensorConfig]

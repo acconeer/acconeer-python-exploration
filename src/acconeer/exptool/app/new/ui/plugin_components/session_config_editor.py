@@ -22,7 +22,7 @@ from .utils import VerticalGroupBox
 log = logging.getLogger(__name__)
 
 
-class SessionConfigEditor(DataEditor[a121.SessionConfig]):
+class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
     _session_config: Optional[a121.SessionConfig]
     _server_info: Optional[a121.ServerInfo]
     _sensor_id_pidget: pidgets.SensorIdPidget
