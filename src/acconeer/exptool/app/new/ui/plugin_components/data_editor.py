@@ -28,10 +28,10 @@ class DataEditor(QWidget, t.Generic[_DataT]):
         """Gets the data stored in the widget"""
         raise NotImplementedError
 
+    def setEnabled(self, enabled: bool) -> None:
+        super().setEnabled(enabled and self.get_data() is not None)
+
     @property
     def is_ready(self) -> bool:
         """Returns true if there are any non-validation errors present."""
         raise NotImplementedError
-
-    def setEnabled(self, enabled: bool) -> None:
-        super().setEnabled(enabled and self.get_data() is not None)

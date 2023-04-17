@@ -130,9 +130,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
             else:
                 self.layout().addWidget(pidget)
 
-            pidget.sig_parameter_changed.connect(
-                partial(self._update_subsweep_config_aspect, aspect)
-            )
+            pidget.sig_update.connect(partial(self._update_subsweep_config_aspect, aspect))
 
             self._subsweep_config_pidgets[aspect] = pidget
 
@@ -166,7 +164,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         for aspect, pidget in self._subsweep_config_pidgets.items():
             if aspect in self._erroneous_aspects:
                 continue
-            pidget.set_parameter(getattr(self._subsweep_config, aspect))
+            pidget.set_data(getattr(self._subsweep_config, aspect))
 
     def get_data(self) -> Optional[a121.SubsweepConfig]:
         return copy.deepcopy(self._subsweep_config)

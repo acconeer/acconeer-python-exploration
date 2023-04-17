@@ -428,7 +428,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
-        self.sensor_id_pidget.sig_parameter_changed.connect(self._on_sensor_id_update)
+        self.sensor_id_pidget.sig_update.connect(self._on_sensor_id_update)
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
         scrolly_layout.addWidget(sensor_selection_group)
 

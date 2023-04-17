@@ -83,7 +83,7 @@ def parameter_equals(aspect: str, value: t.Any) -> PidgetMappingPredicate:
     """Checks whether the parameter of the pidget assigned to aspect is equal to value"""
 
     def inner(mapping: PidgetMapping) -> bool:
-        return bool(mapping[aspect].get_parameter() == value)
+        return bool(mapping[aspect].get_data() == value)
 
     return inner
 
@@ -94,7 +94,7 @@ def parameter_is(aspect: str, value: t.Any) -> PidgetMappingPredicate:
     """
 
     def inner(mapping: PidgetMapping) -> bool:
-        return mapping[aspect].get_parameter() is value
+        return mapping[aspect].get_data() is value
 
     return inner
 
@@ -104,7 +104,7 @@ def parameter_within(aspect: str, range: t.Tuple[float, float]) -> PidgetMapping
 
     def inner(mapping: PidgetMapping) -> bool:
         lower, higher = range
-        return bool(lower < mapping[aspect].get_parameter() < higher)
+        return bool(lower < mapping[aspect].get_data() < higher)
 
     return inner
 

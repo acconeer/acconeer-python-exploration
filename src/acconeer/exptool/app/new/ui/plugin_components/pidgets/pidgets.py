@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool.a121._core.entities import Criticality
+from acconeer.exptool.app.new.ui.plugin_components.data_editor import DataEditor
 
 from .common import MaybeIterable, as_sequence
 
@@ -57,14 +58,14 @@ class PidgetFactory(abc.ABC):
         ...
 
 
-class Pidget(QWidget):
+class Pidget(DataEditor[Any]):
     """Base class for a parameter-bound widget.
 
     A ``Pidget`` comes with a
     ``name`` label and an ``note`` label by default.
     """
 
-    sig_parameter_changed = QtCore.Signal(object)
+    sig_update = QtCore.Signal(object)
 
     def __init__(self, factory: PidgetFactory, parent: QWidget) -> None:
         super().__init__(parent=parent)
@@ -116,12 +117,16 @@ class Pidget(QWidget):
         )
 
     @abc.abstractmethod
-    def set_parameter(self, value: Any) -> None:
+    def set_data(self, value: Any) -> None:
         pass
 
     @abc.abstractmethod
-    def get_parameter(self) -> Any:
+    def get_data(self) -> Any:
         pass
+
+    @property
+    def is_ready(self) -> bool:
+        return not self.__note_widget.isVisible()
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -137,25 +142,25 @@ class IntPidget(Pidget):
     def __init__(self, factory: IntPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self.__spin_box = _PidgetSpinBox(
+        self._spin_box = _PidgetSpinBox(
             self._body_widget,
             limits=factory.limits,
             suffix=factory.suffix,
         )
-        self.__spin_box.valueChanged.connect(self.__on_changed)
-        self._body_layout.addWidget(self.__spin_box)
+        self._spin_box.valueChanged.connect(self.__on_changed)
+        self._body_layout.addWidget(self._spin_box)
 
-    def set_parameter(self, value: Any) -> None:
+    def set_data(self, value: Any) -> None:
         assert isinstance(value, int)
 
         with QtCore.QSignalBlocker(self):
-            self.__spin_box.setValue(value)
+            self._spin_box.setValue(value)
 
-    def get_parameter(self) -> int:
-        return int(self.__spin_box.value())
+    def get_data(self) -> int:
+        return int(self._spin_box.value())
 
     def __on_changed(self) -> None:
-        self.sig_parameter_changed.emit(self.__spin_box.value())
+        self.sig_update.emit(self._spin_box.value())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -172,26 +177,26 @@ class FloatPidget(Pidget):
     def __init__(self, factory: FloatPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self.__spin_box = _PidgetDoubleSpinBox(
+        self._spin_box = _PidgetDoubleSpinBox(
             self._body_widget,
             limits=factory.limits,
             suffix=factory.suffix,
             decimals=factory.decimals,
         )
-        self.__spin_box.valueChanged.connect(self.__on_changed)
-        self._body_layout.addWidget(self.__spin_box)
+        self._spin_box.valueChanged.connect(self.__on_changed)
+        self._body_layout.addWidget(self._spin_box)
 
-    def set_parameter(self, value: Any) -> None:
+    def set_data(self, value: Any) -> None:
         assert isinstance(value, (int, float))
 
         with QtCore.QSignalBlocker(self):
-            self.__spin_box.setValue(value)
+            self._spin_box.setValue(value)
 
-    def get_parameter(self) -> float:
-        return float(self.__spin_box.value())
+    def get_data(self) -> float:
+        return float(self._spin_box.value())
 
     def __on_changed(self) -> None:
-        self.sig_parameter_changed.emit(self.__spin_box.value())
+        self.sig_update.emit(self._spin_box.value())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -232,14 +237,14 @@ class FloatSliderPidget(Pidget):
         if factory.show_limit_values:
             slider_widget.layout().addWidget(QLabel(str(lower_limit), slider_widget))
 
-        self.__slider = _PidgetFloatSlider(
+        self._slider = _PidgetFloatSlider(
             slider_widget,
             limits=factory.limits,
             decimals=factory.decimals,
             log_scale=factory.log_scale,
         )
-        self.__slider.wrapped_value_changed.connect(self.__on_slider_changed)
-        slider_widget.layout().addWidget(self.__slider)
+        self._slider.wrapped_value_changed.connect(self.__on_slider_changed)
+        slider_widget.layout().addWidget(self._slider)
 
         if factory.show_limit_values:
             slider_widget.layout().addWidget(QLabel(str(upper_limit), slider_widget))
@@ -272,27 +277,27 @@ class FloatSliderPidget(Pidget):
         layout.addWidget(note_label_widget, 0, 0)
         return layout
 
-    def set_parameter(self, value: Any) -> None:
+    def set_data(self, value: Any) -> None:
         assert isinstance(value, (int, float))
 
         with QtCore.QSignalBlocker(self):
             self.__spin_box.setValue(value)
-            self.__slider.wrapped_set_value(value)
+            self._slider.wrapped_set_value(value)
 
-    def get_parameter(self) -> float:
+    def get_data(self) -> float:
         return float(self.__spin_box.value())
 
     def __on_spin_box_changed(self, value: float) -> None:
         with QtCore.QSignalBlocker(self):
-            self.__slider.wrapped_set_value(value)
+            self._slider.wrapped_set_value(value)
 
-        self.sig_parameter_changed.emit(value)
+        self.sig_update.emit(value)
 
     def __on_slider_changed(self, value: float) -> None:
         with QtCore.QSignalBlocker(self):
             self.__spin_box.setValue(value)
 
-        self.sig_parameter_changed.emit(value)
+        self.sig_update.emit(value)
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -324,12 +329,12 @@ class OptionalPidget(Pidget):
         layout.addWidget(none_checkbox)
         return layout
 
-    def set_parameter(self, value: Any) -> None:
+    def set_data(self, value: Any) -> None:
         with QtCore.QSignalBlocker(self):
             self._none_checkbox.setChecked(value is not None)
 
     @abc.abstractmethod
-    def get_parameter(self) -> Optional[Any]:
+    def get_data(self) -> Optional[Any]:
         pass
 
 
@@ -345,41 +350,41 @@ class OptionalIntPidget(OptionalPidget):
     def __init__(self, factory: OptionalIntPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self.__spin_box = _PidgetSpinBox(
+        self._spin_box = _PidgetSpinBox(
             self._optional_widget,
             limits=factory.limits,
             suffix=factory.suffix,
             init_set_value=factory.init_set_value,
         )
-        self._optional_layout.addWidget(self.__spin_box)
+        self._optional_layout.addWidget(self._spin_box)
 
         self._none_checkbox.stateChanged.connect(self.__on_changed)
-        self.__spin_box.valueChanged.connect(self.__on_changed)
+        self._spin_box.valueChanged.connect(self.__on_changed)
 
     def __on_changed(self) -> None:
         checked = self._none_checkbox.isChecked()
 
         with QtCore.QSignalBlocker(self):
-            self.__spin_box.setEnabled(checked)
+            self._spin_box.setEnabled(checked)
 
-        value = self.__spin_box.value() if checked else None
-        self.sig_parameter_changed.emit(value)
+        value = self._spin_box.value() if checked else None
+        self.sig_update.emit(value)
 
-    def set_parameter(self, value: Any) -> None:
-        super().set_parameter(value)
+    def set_data(self, value: Any) -> None:
+        super().set_data(value)
 
         with QtCore.QSignalBlocker(self):
             if value is None:
-                self.__spin_box.setEnabled(False)
+                self._spin_box.setEnabled(False)
             else:
-                self.__spin_box.setValue(value)
-                self.__spin_box.setEnabled(True)
+                self._spin_box.setValue(value)
+                self._spin_box.setEnabled(True)
 
-    def get_parameter(self) -> Optional[int]:
+    def get_data(self) -> Optional[int]:
         if not self._none_checkbox.isChecked():
             return None
         else:
-            return int(self.__spin_box.value())
+            return int(self._spin_box.value())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -394,42 +399,42 @@ class OptionalFloatPidget(OptionalPidget):
     def __init__(self, factory: OptionalFloatPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self.__spin_box = _PidgetDoubleSpinBox(
+        self._spin_box = _PidgetDoubleSpinBox(
             self._optional_widget,
             decimals=factory.decimals,
             limits=factory.limits,
             suffix=factory.suffix,
             init_set_value=factory.init_set_value,
         )
-        self._optional_layout.addWidget(self.__spin_box)
+        self._optional_layout.addWidget(self._spin_box)
 
         self._none_checkbox.stateChanged.connect(self.__on_changed)
-        self.__spin_box.valueChanged.connect(self.__on_changed)
+        self._spin_box.valueChanged.connect(self.__on_changed)
 
     def __on_changed(self) -> None:
         checked = self._none_checkbox.isChecked()
 
         with QtCore.QSignalBlocker(self):
-            self.__spin_box.setEnabled(checked)
+            self._spin_box.setEnabled(checked)
 
-        value = self.__spin_box.value() if checked else None
-        self.sig_parameter_changed.emit(value)
+        value = self._spin_box.value() if checked else None
+        self.sig_update.emit(value)
 
-    def set_parameter(self, value: Any) -> None:
-        super().set_parameter(value)
+    def set_data(self, value: Any) -> None:
+        super().set_data(value)
 
         with QtCore.QSignalBlocker(self):
             if value is None:
-                self.__spin_box.setEnabled(False)
+                self._spin_box.setEnabled(False)
             else:
-                self.__spin_box.setValue(value)
-                self.__spin_box.setEnabled(True)
+                self._spin_box.setValue(value)
+                self._spin_box.setEnabled(True)
 
-    def get_parameter(self) -> Optional[float]:
+    def get_data(self) -> Optional[float]:
         if not self._none_checkbox.isChecked():
             return None
         else:
-            return float(self.__spin_box.value())
+            return float(self._spin_box.value())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -444,9 +449,9 @@ class CheckboxPidget(Pidget):
 
         assert isinstance(self._body_layout, QGridLayout)
 
-        self.__checkbox = QCheckBox(self._body_widget)
-        self.__checkbox.clicked.connect(self.__on_checkbox_click)
-        self._body_layout.addWidget(self.__checkbox, 0, 0)
+        self._checkbox = QCheckBox(self._body_widget)
+        self._checkbox.clicked.connect(self.__on_checkbox_click)
+        self._body_layout.addWidget(self._checkbox, 0, 0)
         self._body_layout.setColumnStretch(0, 0)
         self._body_layout.setColumnStretch(1, 1)
 
@@ -460,14 +465,14 @@ class CheckboxPidget(Pidget):
         return layout
 
     def __on_checkbox_click(self, checked: bool) -> None:
-        self.sig_parameter_changed.emit(checked)
+        self.sig_update.emit(checked)
 
-    def set_parameter(self, param: Any) -> None:
+    def set_data(self, param: Any) -> None:
         with QtCore.QSignalBlocker(self):
-            self.__checkbox.setChecked(bool(param))
+            self._checkbox.setChecked(bool(param))
 
-    def get_parameter(self) -> bool:
-        return bool(self.__checkbox.isChecked())
+    def get_data(self) -> bool:
+        return bool(self._checkbox.isChecked())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -492,16 +497,16 @@ class ComboboxPidget(Pidget, Generic[T]):
 
     def __emit_data_of_combobox_item(self, index: int) -> None:
         data = self._combobox.itemData(index)
-        self.sig_parameter_changed.emit(data)
+        self.sig_update.emit(data)
 
-    def set_parameter(self, param: Any) -> None:
+    def set_data(self, param: Any) -> None:
         with QtCore.QSignalBlocker(self):
             index = self._combobox.findData(param)
             if index == -1:
                 raise ValueError(f"Data item {param} could not be found in {self}.")
             self._combobox.setCurrentIndex(index)
 
-    def get_parameter(self) -> T:
+    def get_data(self) -> T:
         return cast(T, self._combobox.currentData())
 
 
@@ -536,7 +541,7 @@ class SensorIdPidget(ComboboxPidget[int]):
             self._update_items([(str(i), i) for i in sensor_list])
 
         try:
-            super().set_parameter(sensor_id)
+            super().set_data(sensor_id)
         except ValueError:
             self.setEnabled(False)
         else:
@@ -595,22 +600,22 @@ class OptionalEnumPidget(OptionalPidget):
     def __emit_data_of_combobox_or_none(self) -> None:
         if self._none_checkbox.isChecked():
             data = self._combobox.currentData()
-            self.sig_parameter_changed.emit(data)
+            self.sig_update.emit(data)
         else:
-            self.sig_parameter_changed.emit(None)
+            self.sig_update.emit(None)
 
     def __enable_combobox_if_checked(self) -> None:
         self._combobox.setEnabled(self._none_checkbox.isChecked())
 
-    def set_parameter(self, value: Any) -> None:
-        super().set_parameter(value)
+    def set_data(self, value: Any) -> None:
+        super().set_data(value)
         if value is not None:
             self.set_enum_parameter(value)
             self._combobox.setEnabled(True)
         else:
             self._combobox.setEnabled(False)
 
-    def get_parameter(self) -> Optional[Enum]:
+    def get_data(self) -> Optional[Enum]:
         if not self._none_checkbox.isChecked():
             return None
         else:

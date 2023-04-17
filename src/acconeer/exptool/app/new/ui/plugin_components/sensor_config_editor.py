@@ -151,9 +151,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
             pidget = factory.create(self.sensor_group_box)
             self.sensor_group_box.layout().addWidget(pidget)
 
-            pidget.sig_parameter_changed.connect(
-                partial(self._update_sensor_config_aspect, aspect)
-            )
+            pidget.sig_update.connect(partial(self._update_sensor_config_aspect, aspect))
 
             self._sensor_config_pidgets[aspect] = pidget
 
@@ -203,7 +201,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
         for aspect, pidget in self._sensor_config_pidgets.items():
             if aspect in self._erroneous_aspects:
                 continue
-            pidget.set_parameter(getattr(self._sensor_config, aspect))
+            pidget.set_data(getattr(self._sensor_config, aspect))
 
         while self._tab_widget.count() > self._sensor_config.num_subsweeps:
             self._tab_widget.removeTab(0)

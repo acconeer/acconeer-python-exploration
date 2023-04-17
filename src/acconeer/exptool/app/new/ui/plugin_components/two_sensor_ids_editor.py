@@ -32,10 +32,10 @@ class TwoSensorIdsEditor(QWidget):
         self.layout().addWidget(self._sensor_id_pidget_1)
         self.layout().addWidget(self._sensor_id_pidget_2)
 
-        self._sensor_id_pidget_1.sig_parameter_changed.connect(
+        self._sensor_id_pidget_1.sig_update.connect(
             lambda sensor_id: self.handle_pidget_signal(sensor_id, sensor_id_position=0)
         )
-        self._sensor_id_pidget_2.sig_parameter_changed.connect(
+        self._sensor_id_pidget_2.sig_update.connect(
             lambda sensor_id: self.handle_pidget_signal(sensor_id, sensor_id_position=1)
         )
         self.sensor_ids = None

@@ -51,7 +51,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         self.layout().addWidget(self.session_group_box)
 
         self._sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(self)
-        self._sensor_id_pidget.sig_parameter_changed.connect(self._update_sole_sensor_id)
+        self._sensor_id_pidget.sig_update.connect(self._update_sole_sensor_id)
         self.session_group_box.layout().addWidget(self._sensor_id_pidget)
 
         self._update_rate_pidget = pidgets.OptionalFloatPidgetFactory(
@@ -66,7 +66,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
             suffix="Hz",
             checkbox_label_text="Limit",
         ).create(self)
-        self._update_rate_pidget.sig_parameter_changed.connect(self._update_update_rate)
+        self._update_rate_pidget.sig_update.connect(self._update_update_rate)
         self.session_group_box.layout().addWidget(self._update_rate_pidget)
 
         self._sensor_config_editor = SensorConfigEditor(supports_multiple_subsweeps, self)
@@ -92,7 +92,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
             log.debug("could not update ui as SessionConfig is None")
             return
 
-        self._update_rate_pidget.set_parameter(self._session_config.update_rate)
+        self._update_rate_pidget.set_data(self._session_config.update_rate)
         self._sensor_config_editor.set_data(self._session_config.sensor_config)
 
     def get_data(self) -> Optional[a121.SessionConfig]:

@@ -79,7 +79,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
             pidgets = []
             for aspect, factory in factory_mapping.items():
                 pidget = factory.create(group_box)
-                pidget.sig_parameter_changed.connect(partial(self._update_config_aspect, aspect))
+                pidget.sig_update.connect(partial(self._update_config_aspect, aspect))
 
                 self._pidget_mapping[aspect] = pidget
                 self._pidget_hooks[aspect] = factory.hooks
@@ -106,7 +106,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
             if aspect in self._erroneous_aspects:
                 continue
             config_value = getattr(self._config, aspect)
-            pidget.set_parameter(config_value)
+            pidget.set_data(config_value)
 
         for aspect, hooks in self._pidget_hooks.items():
             for hook in hooks:
