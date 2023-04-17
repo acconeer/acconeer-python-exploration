@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 import json
-from typing import Any, List, Optional, Type, Union
+from typing import Any, ClassVar, List, Optional, Type, Union
 
 import attrs
 
@@ -16,9 +16,10 @@ class ClientInfoCreationError(Exception):
     pass
 
 
+@attrs.frozen(slots=False)
 class ConnectionTypeBase(abc.ABC):
 
-    __registry: List[Type[ConnectionTypeBase]] = []
+    __registry: ClassVar[List[Type[ConnectionTypeBase]]] = []
 
     @classmethod
     def _register(cls, subclass: Type[ConnectionTypeBase]) -> Type[ConnectionTypeBase]:
@@ -66,7 +67,7 @@ class ConnectionTypeBase(abc.ABC):
 
 
 @ConnectionTypeBase._register
-@attrs.frozen(kw_only=True)
+@attrs.frozen(kw_only=True, slots=False)
 class SerialInfo(ConnectionTypeBase):
     port: str
     override_baudrate: Optional[int] = None
@@ -95,7 +96,7 @@ class SerialInfo(ConnectionTypeBase):
 
 
 @ConnectionTypeBase._register
-@attrs.frozen(kw_only=True)
+@attrs.frozen(kw_only=True, slots=False)
 class USBInfo(ConnectionTypeBase):
     vid: Optional[int] = None
     pid: Optional[int] = None
@@ -128,7 +129,7 @@ class USBInfo(ConnectionTypeBase):
 
 
 @ConnectionTypeBase._register
-@attrs.frozen(kw_only=True)
+@attrs.frozen(kw_only=True, slots=False)
 class SocketInfo(ConnectionTypeBase):
     ip_address: str
     tcp_port: Optional[int]
@@ -154,7 +155,7 @@ class SocketInfo(ConnectionTypeBase):
 
 
 @ConnectionTypeBase._register
-@attrs.frozen(kw_only=True)
+@attrs.frozen(kw_only=True, slots=True)
 class MockInfo(ConnectionTypeBase):
     @classmethod
     def _from_open(

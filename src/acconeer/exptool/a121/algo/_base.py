@@ -69,6 +69,7 @@ class Controller(abc.ABC, Generic[ConfigT, ResultT]):
         ...
 
 
+@attrs.mutable(slots=False)
 class AlgoBase:
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)
@@ -85,6 +86,7 @@ class AlgoBase:
         return cls.from_dict(json.loads(json_str))
 
 
+@attrs.mutable(slots=False)
 class AlgoConfigBase(AlgoBase, abc.ABC):
     def validate(self) -> None:
         """Performs self-validation
@@ -102,6 +104,7 @@ class AlgoConfigBase(AlgoBase, abc.ABC):
         pass
 
 
+@attrs.mutable(slots=False)
 class AlgoProcessorConfigBase(AlgoBase, abc.ABC):
     def validate(self, config: Union[a121.SensorConfig, a121.SessionConfig]) -> None:
         """Performs self-validation and validation of its session config
