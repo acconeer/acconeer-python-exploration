@@ -6,7 +6,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QSplitter, QVBoxLayout, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.app.new.ui.flash_widget import FlashButton
+from acconeer.exptool.app.new.ui.flash_tab import FlashButton
 from acconeer.exptool.app.new.ui.misc import VerticalSeparator
 
 from .connection_widget import ClientConnectionWidget, GenerationSelection

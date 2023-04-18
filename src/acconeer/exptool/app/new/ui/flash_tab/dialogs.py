@@ -5,16 +5,12 @@ from __future__ import annotations
 
 import importlib
 import logging
-import os
-import traceback
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, Optional, Tuple
 
 from requests import Response, Session
 from requests.cookies import RequestsCookieJar
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent, QMovie, QTextCursor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -33,22 +29,16 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
-from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
-from acconeer.exptool.app.new._exceptions import HandledException
+from acconeer.exptool.app.new._enums import ConnectionInterface
 from acconeer.exptool.app.new.app_model import AppModel
+from acconeer.exptool.app.new.ui.device_comboboxes import SerialPortComboBox, USBDeviceComboBox
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 from acconeer.exptool.flash import (  # type: ignore[import]
     BIN_FETCH_PROMPT,
-    ET_DIR,
     DevLicense,
     clear_cookies,
-    download,
-    flash_image,
-    get_content,
-    get_cookies,
     get_flash_download_name,
     get_flash_known_devices,
-    login,
     save_cookies,
 )
 from acconeer.exptool.flash._products import (  # type: ignore[import]
@@ -57,8 +47,7 @@ from acconeer.exptool.flash._products import (  # type: ignore[import]
 )
 from acconeer.exptool.utils import CommDevice, SerialDevice  # type: ignore[import]
 
-from .device_comboboxes import SerialPortComboBox, USBDeviceComboBox
-from .icons import FLASH
+from .threads import AuthThread, BinDownloadThread, FlashThread
 
 
 _WRONG_CREDENTIALS_MSG = "<font color='red'>Incorrect username (email) or password</font>"
@@ -70,40 +59,7 @@ _LOGGED_IN_MSG = (
 log = logging.getLogger(__name__)
 
 
-class _FlashThread(QThread):
-    flash_failed = Signal(Exception, str)
-    flash_done = Signal()
-    flash_progress = Signal(int)
-
-    def __init__(
-        self, bin_file: str, flash_device: CommDevice, device_name: Optional[str]
-    ) -> None:
-        super().__init__()
-        self.bin_file = bin_file
-        self.flash_device = flash_device
-        self.device_name = device_name
-
-    def run(self) -> None:
-        def progress_callback(progress: int, end: bool = False) -> None:
-            if end:
-                self.flash_progress.emit(100)
-            else:
-                self.flash_progress.emit(progress)
-
-        try:
-            flash_image(
-                self.bin_file,
-                self.flash_device,
-                device_name=self.device_name,
-                progress_callback=progress_callback,
-            )
-            self.flash_done.emit()
-        except Exception as e:
-            log.error(str(e))
-            self.flash_failed.emit(HandledException(e), traceback.format_exc())
-
-
-class _FlashDialog(QDialog):
+class FlashDialog(QDialog):
     flash_done = Signal()
 
     def __init__(self, parent: QWidget) -> None:
@@ -139,7 +95,7 @@ class _FlashDialog(QDialog):
         self.setLayout(vbox)
 
     def flash(self, bin_file: str, flash_device: CommDevice, device_name: Optional[str]) -> None:
-        self.flash_thread = _FlashThread(bin_file, flash_device, device_name)
+        self.flash_thread = FlashThread(bin_file, flash_device, device_name)
         self.flash_thread.started.connect(self._flash_start)
         self.flash_thread.finished.connect(self.flash_thread.deleteLater)
         self.flash_thread.finished.connect(self._flash_stop)
@@ -187,7 +143,7 @@ class _FlashDialog(QDialog):
         super().closeEvent(event)
 
 
-class _FlashPopup(QDialog):
+class FlashPopup(QDialog):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
@@ -280,7 +236,7 @@ class _FlashPopup(QDialog):
         self.browse_file_dialog = QFileDialog(None)
         self.browse_file_dialog.setNameFilter("Bin files (*.bin)")
 
-        self.flash_dialog = _FlashDialog(self)
+        self.flash_dialog = FlashDialog(self)
         self.flash_dialog.flash_done.connect(self._flash_done)
 
         app_model.sig_notify.connect(self._on_app_model_update)
@@ -301,7 +257,7 @@ class _FlashPopup(QDialog):
             return self.device_name_selection
 
     def _get_latest_bin_file(self) -> None:
-        self.auth_thread = _AuthThread(dev_license=self.dev_license)
+        self.auth_thread = AuthThread(dev_license=self.dev_license)
         self.auth_thread.started.connect(self._auth_start)
         self.auth_thread.finished.connect(self.auth_thread.deleteLater)
         self.auth_thread.finished.connect(self._auth_stop)
@@ -331,7 +287,7 @@ class _FlashPopup(QDialog):
         self._init_download(cookies, content)
 
     def _auth_failed(self) -> None:
-        login_dialog = _FlashLoginDialog(self)
+        login_dialog = FlashLoginDialog(self)
         authenticated = login_dialog.exec()
 
         if authenticated:
@@ -405,7 +361,7 @@ class _FlashPopup(QDialog):
 
         boot_description = self._get_boot_description(self.flash_device, self.device_name)
         if boot_description:
-            _UserMessageDialog(
+            UserMessageDialog(
                 "Bootloader description",
                 boot_description,
                 "Got it! The board is in bootloader mode",
@@ -517,29 +473,7 @@ class _FlashPopup(QDialog):
         return None
 
 
-class FlashButton(QPushButton):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.app_model = app_model
-
-        self.setFixedWidth(100)
-        self.setText("Flash")
-        self.setIcon(FLASH())
-        self.setToolTip("Flash the device with a bin file")
-
-        app_model.sig_notify.connect(self._on_app_model_update)
-        self.pop_up = _FlashPopup(app_model, self)
-        self.clicked.connect(self._on_click)
-
-    def _on_click(self) -> None:
-        self.pop_up.exec()
-
-    def _on_app_model_update(self, app_model: AppModel) -> None:
-        self.setEnabled(app_model.connection_state == ConnectionState.DISCONNECTED)
-
-
-class _FlashLoginDialog(QDialog):
+class FlashLoginDialog(QDialog):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
@@ -625,7 +559,7 @@ class _FlashLoginDialog(QDialog):
         usr = self.usr_edit.text()
         pwd = self.pwd_edit.text()
 
-        self.login_thread = _AuthThread(usr, pwd, do_login=True)
+        self.login_thread = AuthThread(usr, pwd, do_login=True)
         self.login_thread.started.connect(self._login_start)
         self.login_thread.finished.connect(self.login_thread.deleteLater)
         self.login_thread.finished.connect(self._login_stop)
@@ -681,103 +615,47 @@ class _FlashLoginDialog(QDialog):
         super().closeEvent(event)
 
 
-class _AuthThread(QThread):
-    license_loaded = Signal(DevLicense)
-    auth_failed = Signal()
-    auth_done = Signal((RequestsCookieJar, Tuple[bool, Session, Response]))
+class CookieConsentDialog(QDialog):
+    def __init__(self, parent: QWidget) -> None:
+        super().__init__(parent)
 
-    def __init__(
-        self,
-        usr: Optional[str] = "",
-        pwd: Optional[str] = "",
-        do_login: bool = False,
-        dev_license: DevLicense = None,
-    ) -> None:
+        self.setWindowTitle("Cookie consent")
 
-        super().__init__()
-        self.usr = usr
-        self.pwd = pwd
-        self.do_login = do_login
-        self.dev_license = dev_license
+        layout = QGridLayout(self)
 
-    def run(self) -> None:
-        login_succeeded = False
+        self.consent_label = QLabel(
+            "We use cookies to optimize the service of our applications", self
+        )
+        self.empty_row = QLabel("", self)
 
-        if self.do_login:
-            cookies = login(self.usr, self.pwd)
-        else:
-            cookies = get_cookies()
+        self.cookie_policy_label = QLabel(
+            "<a href='https://acconeer.com/cookie-policy-eu/'>Cookie Policy</a>", self
+        )
+        self.cookie_policy_label.setOpenExternalLinks(True)
 
-        try:
-            if cookies is not None:
-                content = get_content(cookies)
-                login_succeeded = content[0]
-            else:
-                login_succeeded = False
-        except Exception as e:
-            log.error(str(e))
+        self.privacy_statement_label = QLabel(
+            "<a href='https://developer.acconeer.com/privacy-policy/'>Privacy Statement</a>",
+            self,
+        )
+        self.privacy_statement_label.setOpenExternalLinks(True)
 
-        if self.dev_license is not None:
-            self.dev_license.load()
-            self.license_loaded.emit(self.dev_license)
+        self.accept_button = QPushButton("Accept", self)
+        self.accept_button.clicked.connect(self.accept)
 
-        if login_succeeded:
-            self.auth_done.emit((cookies, content))
-        else:
-            if not self.do_login:
-                clear_cookies()
-            self.auth_failed.emit()
+        self.deny_button = QPushButton("Deny", self)
+        self.deny_button.clicked.connect(self.reject)
 
+        # fmt: off
+        # Grid layout:                                 row, col, rspan, cspan
+        layout.addWidget(self.consent_label,           0,   0,   1,     4)    # noqa: E241
+        layout.addWidget(self.empty_row,               1,   0,   1,     4)    # noqa: E241
+        layout.addWidget(self.cookie_policy_label,     2,   0,   1,     4)    # noqa: E241
+        layout.addWidget(self.privacy_statement_label, 3,   0,   1,     4)    # noqa: E241
+        layout.addWidget(self.accept_button,           4,   0,   1,     2)    # noqa: E241
+        layout.addWidget(self.deny_button,             4,   2,   1,     2)    # noqa: E241
+        # fmt: on
 
-class BinDownloadThread(QThread):
-    download_done = Signal(str, str)
-    download_failed = Signal(str)
-
-    def __init__(
-        self,
-        device: Optional[str],
-        cookies: RequestsCookieJar,
-        session: Session,
-        response: Response,
-    ) -> None:
-
-        super().__init__()
-        self.device = device
-        self.cookies = cookies
-        self.session = session
-        self.response = response
-
-    def run(self) -> None:
-
-        if (
-            self.device is None
-            or self.cookies is None
-            or self.session is None
-            or self.response is None
-        ):
-            self.download_failed.emit("Failed to start download")
-        else:
-            with TemporaryDirectory() as temp_dir:
-                try:
-                    temp_file, version = download(
-                        session=self.session,
-                        cookies=self.cookies,
-                        path=temp_dir,
-                        device=self.device,
-                    )
-
-                    if temp_file is not None:
-                        bin_file = str(ET_DIR / Path(temp_file).name)
-                        os.replace(temp_file, bin_file)
-                        self.download_done.emit(bin_file, version)
-                    else:
-                        self.download_failed.emit(
-                            f"Failed to download firmware for device {self.device}"
-                        )
-                except Exception as e:
-                    self.download_failed.emit(str(e))
-                finally:
-                    self.session.close()
+        self.setLayout(layout)
 
 
 class LicenseAgreementDialog(QDialog):
@@ -832,50 +710,7 @@ class LicenseAgreementDialog(QDialog):
         self.license_text.moveCursor(QTextCursor.MoveOperation.Start)
 
 
-class CookieConsentDialog(QDialog):
-    def __init__(self, parent: QWidget) -> None:
-        super().__init__(parent)
-
-        self.setWindowTitle("Cookie consent")
-
-        layout = QGridLayout(self)
-
-        self.consent_label = QLabel(
-            "We use cookies to optimize the service of our applications", self
-        )
-        self.empty_row = QLabel("", self)
-
-        self.cookie_policy_label = QLabel(
-            "<a href='https://acconeer.com/cookie-policy-eu/'>Cookie Policy</a>", self
-        )
-        self.cookie_policy_label.setOpenExternalLinks(True)
-
-        self.privacy_statement_label = QLabel(
-            "<a href='https://developer.acconeer.com/privacy-policy/'>Privacy Statement</a>",
-            self,
-        )
-        self.privacy_statement_label.setOpenExternalLinks(True)
-
-        self.accept_button = QPushButton("Accept", self)
-        self.accept_button.clicked.connect(self.accept)
-
-        self.deny_button = QPushButton("Deny", self)
-        self.deny_button.clicked.connect(self.reject)
-
-        # fmt: off
-        # Grid layout:                                 row, col, rspan, cspan
-        layout.addWidget(self.consent_label,           0,   0,   1,     4)    # noqa: E241
-        layout.addWidget(self.empty_row,               1,   0,   1,     4)    # noqa: E241
-        layout.addWidget(self.cookie_policy_label,     2,   0,   1,     4)    # noqa: E241
-        layout.addWidget(self.privacy_statement_label, 3,   0,   1,     4)    # noqa: E241
-        layout.addWidget(self.accept_button,           4,   0,   1,     2)    # noqa: E241
-        layout.addWidget(self.deny_button,             4,   2,   1,     2)    # noqa: E241
-        # fmt: on
-
-        self.setLayout(layout)
-
-
-class _UserMessageDialog(QDialog):
+class UserMessageDialog(QDialog):
     def __init__(self, title: str, message: str, confirmation: str, parent: QWidget) -> None:
         super().__init__(parent)
 
