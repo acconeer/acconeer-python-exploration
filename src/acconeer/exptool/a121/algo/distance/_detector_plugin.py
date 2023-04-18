@@ -409,6 +409,9 @@ class ViewPlugin(DetectorViewPluginBase):
                 suffix=" m",
                 decimals=3,
             ),
+            "close_range_leakage_cancellation": pidgets.CheckboxPidgetFactory(
+                name_label_text="Enable close range leakage cancellation"
+            ),
             "max_step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Max step length",
                 checkbox_label_text="Set",

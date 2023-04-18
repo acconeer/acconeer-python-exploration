@@ -288,6 +288,17 @@ class DetectorConfig(AlgoConfigBase):
     """Specifies the longest allowed profile. If no argument is provided, the highest possible
     profile without interference of direct leakage is used to maximize SNR."""
 
+    close_range_leakage_cancellation: bool = attrs.field(default=True)
+    """Enable close range leakage cancellation logic.
+
+    Close range leakage cancellation refers to the process of measuring close to the
+    sensor(<100mm) by first characterizing the direct leakage, and then subtracting it
+    from the measured sweep in order to isolate the signal component of interest.
+
+    The close range leakage cancellation process requires the sensor to be installed in its
+    intended geometry with free space in front of the sensor during detector calibration.
+    """
+
     signal_quality: float = attrs.field(default=15.0)
     """Signal quality. High quality equals higher HWAAS and better SNR but increase power
     consumption."""
@@ -1020,7 +1031,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         close_range_transition_m = min_dist_m[a121.Profile.PROFILE_1]
 
         # Add close range group plan if applicable
-        if config.start_m < close_range_transition_m:
+        if config.close_range_leakage_cancellation and config.start_m < close_range_transition_m:
             plans[MeasurementType.CLOSE_RANGE] = cls._get_close_range_group_plan(
                 close_range_transition_m, config
             )
@@ -1101,7 +1112,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             next_profile = transition_profiles[i + 1]
 
             if config.start_m < min_dist_m[next_profile] and min_dist_m[profile] < config.end_m:
-                start_m = max(min_dist_m[profile], config.start_m)
+                if i == 0 and not config.close_range_leakage_cancellation:
+                    start_m = config.start_m
+                else:
+                    start_m = max(min_dist_m[profile], config.start_m)
                 end_m = min(config.end_m, min_dist_m[next_profile])
                 has_neighbour = (
                     has_close_range_measurement or len(transition_subgroup_plans) != 0,
