@@ -225,6 +225,23 @@ class BootloaderTool(DeviceFlasherBase):
                 raise ValueError("DFU device not found")
 
     @staticmethod
+    def _try_open_port(serial_port):
+        retries = 5
+        ser = None
+        while retries > 0 and ser is None:
+            try:
+                ser = serial.Serial(serial_port, exclusive=True)
+            except SerialException:
+                ser = None
+                time.sleep(0.2)
+                retries -= 1
+
+        if ser is None:
+            raise ValueError(f"Flash failed, {serial_port} cannot be opened")
+
+        return ser
+
+    @staticmethod
     def flash(device_port, device_name, image_path, progress_callback=None):
         """Flash an firmware image to the device"""
         BootloaderTool.enter_dfu(device_port)
@@ -234,7 +251,7 @@ class BootloaderTool(DeviceFlasherBase):
         usb_dfu = BootloaderTool._find_usb_dfu_device()
         serial_dev = None
         if dfu_port is not None:
-            serial_dev = serial.Serial(dfu_port, exclusive=True)
+            serial_dev = BootloaderTool._try_open_port(dfu_port)
         elif usb_dfu is not None and ComPort is not None:
             serial_dev = ComPort(
                 vid=usb_dfu.vid,
