@@ -63,6 +63,7 @@ from acconeer.exptool.app.new.ui.plugin_components import (
 
 
 NO_DETECTION_TIMEOUT = 50
+TIME_HISTORY_S = 30
 
 
 @attrs.mutable(kw_only=True)
@@ -395,6 +396,15 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.vertical_line_start.show()
         self.vertical_line_end.show()
 
+        # update level history plot
+        if any(~np.isnan(time_and_level_dict["level"])):
+            self.level_history_curve.setData(
+                time_and_level_dict["time"], time_and_level_dict["level"] * 100
+            )
+            self.level_history_plot.setXRange(-TIME_HISTORY_S + 1, 0)
+            self.level_history_plot.setYRange(0, (self.end_m - self.start_m + 0.01) * 100)
+
+        # update level plot
         if (
             result.level is not None
             and result.peak_detected is not None
@@ -403,15 +413,7 @@ class PlotPlugin(DetectorPlotPluginBase):
             current_level = result.level
             peak_detected = result.peak_detected
             peak_status = result.peak_status
-            # update level history plot
-            if any(~np.isnan(time_and_level_dict["level"])):
-                self.level_history_curve.setData(
-                    time_and_level_dict["time"], time_and_level_dict["level"] * 100
-                )
-                self.level_history_plot.setXRange(-30 + 1, 0)
-                self.level_history_plot.setYRange(0, (self.end_m - self.start_m + 0.01) * 100)
 
-            # update level plot
             level_text = self.STATUS_MSG_MAP[peak_status]
             if peak_status == ProcessorLevelStatus.OVERFLOW:
                 for rect in self.rects:
