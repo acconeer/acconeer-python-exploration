@@ -73,14 +73,14 @@ class SharedState:
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    BALANCED = auto()
     HIGH_ACCURACY = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: DetectorConfig(),
+        PluginPresetId.BALANCED.value: lambda: DetectorConfig(),
         PluginPresetId.HIGH_ACCURACY.value: lambda: get_high_accuracy_detector_config(),
     }
 
@@ -606,8 +606,8 @@ DISTANCE_DETECTOR_PLUGIN = PluginSpec(
     description="Easily measure distance to objects.",
     family=PluginFamily.DETECTOR,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(name="Balanced", preset_id=PluginPresetId.BALANCED),
         PluginPresetBase(name="High accuracy", preset_id=PluginPresetId.HIGH_ACCURACY),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.BALANCED,
 )
