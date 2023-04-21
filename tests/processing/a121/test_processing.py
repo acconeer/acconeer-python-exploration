@@ -98,6 +98,12 @@ def input_path(resource_name: str) -> Path:
             "input-distance-detector-200_to_400cm.h5",
         ),
         (
+            distance_test.distance_detector,
+            distance_test.DistanceDetectorResultH5Serializer,
+            distance_test.detector_result_comparator,
+            "input-distance-detector-5_to_200_cm_close_range_cancellation_disabled.h5",
+        ),
+        (
             smart_presence_test.smart_presence_controller,
             smart_presence_test.SmartPresenceResultH5Serializer,
             smart_presence_test.smart_presence_result_comparator,
