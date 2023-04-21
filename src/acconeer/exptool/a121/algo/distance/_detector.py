@@ -1097,6 +1097,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         The transition region can consist of maximum two subsweeps, where the first utilize profile
         1 and the second profile 3. Whether both, one or none is used depends on the user provided
         detector config.
+
+        If close_range_leakage_cancellation is set to False, the first group plan should use
+        the user provided starting point as start, as there is no close range leakage cancellation
+        measurement.
         """
         transition_profiles = [
             profile
@@ -1111,14 +1115,22 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             profile = transition_profiles[i]
             next_profile = transition_profiles[i + 1]
 
-            if config.start_m < min_dist_m[next_profile] and min_dist_m[profile] < config.end_m:
-                if i == 0 and not config.close_range_leakage_cancellation:
-                    start_m = config.start_m
-                else:
-                    start_m = max(min_dist_m[profile], config.start_m)
+            is_first_group_plan = len(transition_subgroup_plans) == 0
+            start_m = None
+            if (
+                not config.close_range_leakage_cancellation
+                and is_first_group_plan
+                and config.start_m < min_dist_m[next_profile]
+            ):
+                start_m = config.start_m
+
+            elif config.start_m < min_dist_m[next_profile] and min_dist_m[profile] < config.end_m:
+                start_m = max(min_dist_m[profile], config.start_m)
+
+            if start_m is not None:
                 end_m = min(config.end_m, min_dist_m[next_profile])
                 has_neighbour = (
-                    has_close_range_measurement or len(transition_subgroup_plans) != 0,
+                    has_close_range_measurement or not is_first_group_plan,
                     min_dist_m[next_profile] < end_m,
                 )
 
