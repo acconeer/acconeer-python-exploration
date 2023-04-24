@@ -1072,12 +1072,19 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         The close range measurement always use profile 1 to minimize direct leakage region.
         """
         profile = a121.Profile.PROFILE_1
+        # Select the end point as the shorter of the user provided end point or the transition
+        # point.
+        close_range_group_end_m = min(transition_m, config.end_m)
         # No left neighbour as this is the first subsweep when close range measurement is
         # applicable.
         has_neighbour = (False, transition_m < config.end_m)
         return [
             cls._create_group_plan(
-                profile, config, [config.start_m, transition_m], has_neighbour, True
+                profile,
+                config,
+                [config.start_m, close_range_group_end_m],
+                has_neighbour,
+                True,
             )
         ]
 
