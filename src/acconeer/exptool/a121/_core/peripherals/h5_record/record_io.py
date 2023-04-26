@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -79,9 +79,11 @@ def save_record_to_h5(path_or_file: PathOrH5File, record: Record) -> None:
 
     recorder._start(
         client_info=record.client_info,
-        extended_metadata=record.extended_metadata,
         server_info=record.server_info,
+    )
+    recorder._start_session(
         session_config=record.session_config,
+        extended_metadata=record.extended_metadata,
         calibrations=record.calibrations,
         calibrations_provided=record.calibrations_provided,
     )

@@ -62,9 +62,11 @@ class CommonClient(Client):
             self._recorder = recorder
             self._recorder._start(
                 client_info=self.client_info,
-                extended_metadata=self.extended_metadata,
                 server_info=self.server_info,
+            )
+            self._recorder._start_session(
                 session_config=self.session_config,
+                extended_metadata=self.extended_metadata,
                 calibrations=calibrations,
                 calibrations_provided=calibrations_provided,
             )

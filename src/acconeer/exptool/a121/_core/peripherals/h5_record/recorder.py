@@ -101,7 +101,7 @@ class H5Recorder(Recorder):
         self.path = Path(self.file.filename) if self.owns_file else None
         self._chunk_size = _chunk_size
         self._chunk_buffer = []
-        self._num_frames = 0
+        self._num_frames_current_session = 0
         self._last_write_time = 0.0
 
         if _lib_version is None:
@@ -142,25 +142,48 @@ class H5Recorder(Recorder):
         self,
         *,
         client_info: ClientInfo,
-        extended_metadata: list[dict[int, Metadata]],
         server_info: ServerInfo,
+    ) -> None:
+        if "client_info" in self.file:
+            client_info_in_file = ClientInfo.from_json(self.file["client_info"][()].decode())
+            if client_info_in_file != client_info:
+                raise ValueError(
+                    f"Passed ClientInfo ({client_info}) differs "
+                    + f"from the recorded ClientInfo ({client_info_in_file})"
+                )
+        else:
+            self.file.create_dataset(
+                "client_info",
+                data=client_info.to_json(),
+                dtype=_H5PY_STR_DTYPE,
+                track_times=False,
+            )
+            self._last_write_time = time()
+
+        if "server_info" in self.file:
+            server_info_in_file = ServerInfo.from_json(self.file["server_info"][()].decode())
+            if server_info_in_file != server_info:
+                raise ValueError(
+                    f"Passed ServerInfo ({server_info}) differs "
+                    + f"from the recorded ServerInfo ({server_info_in_file})"
+                )
+        else:
+            self.file.create_dataset(
+                "server_info",
+                data=server_info.to_json(),
+                dtype=_H5PY_STR_DTYPE,
+                track_times=False,
+            )
+            self._last_write_time = time()
+
+    def _start_session(
+        self,
+        *,
         session_config: SessionConfig,
+        extended_metadata: list[dict[int, Metadata]],
         calibrations: Optional[dict[int, SensorCalibration]],
         calibrations_provided: Optional[dict[int, bool]],
     ) -> None:
-        self.file.create_dataset(
-            "client_info",
-            data=client_info.to_json(),
-            dtype=_H5PY_STR_DTYPE,
-            track_times=False,
-        )
-        self.file.create_dataset(
-            "server_info",
-            data=server_info.to_json(),
-            dtype=_H5PY_STR_DTYPE,
-            track_times=False,
-        )
-
         session_group = self.file.create_group("session")
 
         session_group.create_dataset(
@@ -236,14 +259,20 @@ class H5Recorder(Recorder):
             write = len(self._chunk_buffer) == self._chunk_size
 
         if write:
-            self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
+            self._num_frames_current_session += self._write_chunk_buffer_to_file(
+                start_idx=self._num_frames_current_session
+            )
             self._chunk_buffer = []
             self._last_write_time = time()
 
-    def _stop(self) -> Any:
-        self._num_frames += self._write_chunk_buffer_to_file(start_idx=self._num_frames)
-        self._chunk_buffer = []
+    def _stop_session(self) -> None:
+        if len(self._chunk_buffer) > 0:
+            _ = self._write_chunk_buffer_to_file(start_idx=self._num_frames_current_session)
+            self._chunk_buffer = []
+        self._num_frames_current_session = 0
 
+    def _stop(self) -> Any:
+        self._stop_session()
         if self.owns_file:
             self.file.close()
 
