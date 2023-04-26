@@ -414,43 +414,64 @@ class PlotPlugin(DetectorPlotPluginBase):
             peak_detected = result.peak_detected
             peak_status = result.peak_status
 
-            level_text = self.STATUS_MSG_MAP[peak_status]
-            if peak_status == ProcessorLevelStatus.OVERFLOW:
+            # Show the percentage level plot if the plot width is greater than 600 pixels,
+            # otherwise display the level as text.
+            if self.plot_layout.width() >= 600:
+                level_text = self.STATUS_MSG_MAP[peak_status]
+                if peak_status == ProcessorLevelStatus.OVERFLOW:
+                    for rect in self.rects:
+                        rect.setBrush(et.utils.pg_brush_cycler(0))
+                elif peak_detected and (peak_status == ProcessorLevelStatus.IN_RANGE):
+                    self.bar_loc = round(
+                        current_level / (self.end_m - self.start_m) * self.num_rects
+                    )
+                    for rect in self.rects[: self.bar_loc]:
+                        rect.setBrush(et.utils.pg_brush_cycler(0))
+
+                    for rect in self.rects[self.bar_loc :]:
+                        rect.setBrush(et.utils.pg_brush_cycler(1))
+
+                    level_text = "Level: {:.1f} cm, {:.0f} %".format(
+                        current_level * 100,
+                        current_level / (self.end_m - self.start_m) * 100,
+                    )
+                    self.counter = 0
+                elif peak_detected and (peak_status == ProcessorLevelStatus.OUT_OF_RANGE):
+                    for rect in self.rects:
+                        rect.setBrush(et.utils.pg_brush_cycler(1))
+                elif ~peak_detected and (self.counter <= NO_DETECTION_TIMEOUT):
+                    for rect in self.rects[: self.bar_loc]:
+                        rect.setBrush(et.utils.pg_brush_cycler(0))
+
+                    for rect in self.rects[self.bar_loc :]:
+                        rect.setBrush(et.utils.pg_brush_cycler(1))
+
+                    self.counter += 1
+                else:
+                    for rect in self.rects:
+                        rect.setBrush(et.utils.pg_brush_cycler(1))
+                        self.bar_loc = 0
                 for rect in self.rects:
-                    rect.setBrush(et.utils.pg_brush_cycler(0))
-            elif peak_detected and (peak_status == ProcessorLevelStatus.IN_RANGE):
-                self.bar_loc = round(current_level / (self.end_m - self.start_m) * self.num_rects)
-                for rect in self.rects[: self.bar_loc]:
-                    rect.setBrush(et.utils.pg_brush_cycler(0))
+                    rect.setVisible(True)
 
-                for rect in self.rects[self.bar_loc :]:
-                    rect.setBrush(et.utils.pg_brush_cycler(1))
-
-                level_text = "Level: {:.1f} cm, {:.0f} %".format(
-                    current_level * 100,
-                    current_level / (self.end_m - self.start_m) * 100,
-                )
-                self.counter = 0
-            elif peak_detected and (peak_status == ProcessorLevelStatus.OUT_OF_RANGE):
-                for rect in self.rects:
-                    rect.setBrush(et.utils.pg_brush_cycler(1))
-            elif ~peak_detected and (self.counter <= NO_DETECTION_TIMEOUT):
-                for rect in self.rects[: self.bar_loc]:
-                    rect.setBrush(et.utils.pg_brush_cycler(0))
-
-                for rect in self.rects[self.bar_loc :]:
-                    rect.setBrush(et.utils.pg_brush_cycler(1))
-
-                self.counter += 1
+                level_html = self.level_html_format.format(level_text)
+                self.level_text_item.setHtml(level_html)
+                self.level_text_item.setPos(self.num_rects / 4.0, self.num_rects + 4.0)
+                self.level_text_item.show()
             else:
+                level_text = self.STATUS_MSG_MAP[peak_status]
+                if peak_detected and (peak_status == ProcessorLevelStatus.IN_RANGE):
+                    level_text = "Level: {:.1f} cm, {:.0f} %".format(
+                        current_level * 100,
+                        current_level / (self.end_m - self.start_m) * 100,
+                    )
+                    self.counter = 0
+                level_html = self.level_html_format.format(level_text)
+                self.level_text_item.setHtml(level_html)
+                self.level_text_item.setPos(self.num_rects / 4.0, self.num_rects + 4.0)
+                self.level_text_item.show()
                 for rect in self.rects:
-                    rect.setBrush(et.utils.pg_brush_cycler(1))
-                    self.bar_loc = 0
-
-            level_html = self.level_html_format.format(level_text)
-            self.level_text_item.setHtml(level_html)
-            self.level_text_item.setPos(self.num_rects / 4.0, self.num_rects + 4.0)
-            self.level_text_item.show()
+                    rect.setVisible(False)
 
 
 class ViewPlugin(DetectorViewPluginBase):
