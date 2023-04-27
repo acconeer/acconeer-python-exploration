@@ -3,7 +3,7 @@
 
 from .client_info import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
 from .metadata import Metadata
-from .record import PersistentRecord, Record, RecordException
+from .record import PersistentRecord, Record, RecordException, SessionRecord
 from .result import Result, ResultContext
 from .sensor_calibration import SensorCalibration
 from .server_info import SensorInfo, ServerInfo

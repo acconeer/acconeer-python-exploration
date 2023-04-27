@@ -27,6 +27,7 @@ from .containers import (
     SerialInfo,
     ServerInfo,
     ServerLogMessage,
+    SessionRecord,
     SocketInfo,
     StackedResults,
     USBInfo,

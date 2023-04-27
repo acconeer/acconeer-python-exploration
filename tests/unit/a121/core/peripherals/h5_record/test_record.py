@@ -54,7 +54,7 @@ def test_uuid(ref_record: a121.Record, ref_uuid: str) -> None:
 
 
 def test_data_layout(ref_record: a121.H5Record, ref_structure: Iterator[Iterator[int]]) -> None:
-    assert [set(d.keys()) for d in ref_record._get_entries()] == ref_structure
+    assert [set(d.keys()) for d in ref_record.session(0)._get_entries()] == ref_structure
 
 
 def test_extended_results(

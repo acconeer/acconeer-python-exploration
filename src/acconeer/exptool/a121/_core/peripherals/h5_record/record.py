@@ -23,6 +23,7 @@ from acconeer.exptool.a121._core.entities import (
     SensorCalibration,
     ServerInfo,
     SessionConfig,
+    SessionRecord,
     StackedResults,
 )
 from acconeer.exptool.utils import get_module_version  # type: ignore[import]
@@ -35,6 +36,140 @@ T = TypeVar("T")
 
 class H5RecordException(RecordException):
     pass
+
+
+class H5SessionRecord(SessionRecord):
+    def __init__(self, group: h5py.Group, ticks_per_second: int) -> None:
+        self._group = group
+        self._ticks_per_second = ticks_per_second
+
+    @property
+    def extended_metadata(self) -> list[dict[int, Metadata]]:
+        return self._map_over_entries(self._get_metadata_for_entry_group)
+
+    @property
+    def extended_results(self) -> Iterator[list[dict[int, Result]]]:
+        for frame_no in range(self.num_frames):
+            yield self._get_result_for_all_entries(frame_no)
+
+    @property
+    def extended_stacked_results(self) -> list[dict[int, StackedResults]]:
+        return self._map_over_entries(self._entry_group_to_stacked_results)
+
+    @property
+    def num_frames(self) -> int:
+        (num_frames,) = {len(entry["result/frame"]) for _, _, entry in self._iterate_entries()}
+        return num_frames
+
+    @property
+    def session_config(self) -> SessionConfig:
+        return SessionConfig.from_json(self._group["session_config"][()])
+
+    @property
+    def sensor_id(self) -> int:
+        entry_group = utils.unextend(self._get_entries())
+        return int(entry_group["sensor_id"][()])
+
+    @property
+    def calibrations(self) -> dict[int, SensorCalibration]:
+        sensor_calibrations_dict = {}
+        for sensor_id, group in self._iterate_calibrations():
+            sensor_calibrations_dict[sensor_id] = SensorCalibration.from_h5(group)
+
+        return sensor_calibrations_dict
+
+    @property
+    def calibrations_provided(self) -> dict[int, bool]:
+        calibrations_provided = {}
+        for sensor_id, group in self._iterate_calibrations():
+            calibrations_provided[sensor_id] = group["provided"][()] > 0
+
+        return calibrations_provided
+
+    @staticmethod
+    def _get_metadata_for_entry_group(g: h5py.Group) -> Metadata:
+        return Metadata.from_json(g["metadata"][()])
+
+    def _get_result_for_all_entries(self, frame_no: int) -> list[dict[int, Result]]:
+        def entry_group_to_result(entry_group: h5py.Group) -> Result:
+            return Result(
+                data_saturated=entry_group["result/data_saturated"][frame_no],
+                frame_delayed=entry_group["result/frame_delayed"][frame_no],
+                calibration_needed=entry_group["result/calibration_needed"][frame_no],
+                temperature=entry_group["result/temperature"][frame_no],
+                tick=entry_group["result/tick"][frame_no],
+                frame=np.array(entry_group["result/frame"][frame_no]),
+                context=self._get_result_context_for_entry_group(entry_group),
+            )
+
+        return self._map_over_entries(entry_group_to_result)
+
+    def _entry_group_to_stacked_results(self, entry_group: h5py.Group) -> StackedResults:
+        return StackedResults(
+            data_saturated=entry_group["result/data_saturated"][()],
+            calibration_needed=entry_group["result/calibration_needed"][()],
+            temperature=entry_group["result/temperature"][()],
+            tick=entry_group["result/tick"][()],
+            frame_delayed=entry_group["result/frame_delayed"][()],
+            frame=entry_group["result/frame"][()],
+            context=self._get_result_context_for_entry_group(entry_group),
+        )
+
+    def _get_result_context_for_entry_group(self, entry_group: h5py.Group) -> ResultContext:
+        return ResultContext(
+            metadata=self._get_metadata_for_entry_group(entry_group),
+            ticks_per_second=self._ticks_per_second,
+        )
+
+    def _get_entries(self) -> list[dict[int, h5py.Group]]:
+        structure: dict[int, dict[int, h5py.Group]] = {}
+
+        for k, v in self._group.items():
+            m = re.fullmatch(r"group_(\d+)", k)
+
+            if not m:
+                continue
+
+            group_index = int(m.group(1))
+            structure[group_index] = {}
+
+            for vv in v.values():
+                sensor_id = vv["sensor_id"][()]
+                structure[group_index][sensor_id] = vv
+
+        return [structure[i] for i in range(len(structure))]
+
+    def _iterate_entries(self) -> Iterator[Tuple[int, int, h5py.Group]]:
+        """Iterates over "Entry" items in this record.
+
+        :returns: An iterable of <group_id>, <sensor_id>, <"EntryGroup">
+        """
+        for group_id, group_dict in enumerate(self._get_entries()):
+            for sensor_id, entry_group in group_dict.items():
+                yield (group_id, sensor_id, entry_group)
+
+    def _get_calibrations_group(self) -> h5py.Group:
+        if "calibrations" in self._group.keys():
+            return self._group["calibrations"]
+        raise H5RecordException("No calibration in h5 file")
+
+    def _iterate_calibrations(self) -> Iterator[Tuple[int, h5py.Group]]:
+        """Iterates over "Calibration" items in this record.
+
+        :returns: An iterable of <sensor_id>, <"CalibrationGroup">
+        """
+        calibrations_group = self._get_calibrations_group()
+        for sensor_group_name, group in calibrations_group.items():
+            m = re.fullmatch(r"sensor_(\d+)", sensor_group_name)
+
+            if not m:
+                continue
+
+            sensor_id = int(m.group(1))
+            yield (sensor_id, group)
+
+    def _map_over_entries(self, func: Callable[[h5py.Group], T]) -> list[dict[int, T]]:
+        return utils.map_over_extended_structure(func, self._get_entries())
 
 
 class H5Record(PersistentRecord):
@@ -63,71 +198,12 @@ class H5Record(PersistentRecord):
         return ClientInfo.from_json(self.file["client_info"][()])
 
     @property
-    def extended_metadata(self) -> list[dict[int, Metadata]]:
-        return self._map_over_entries(self._get_metadata_for_entry_group)
-
-    @property
-    def extended_stacked_results(self) -> list[dict[int, StackedResults]]:
-        return self._map_over_entries(self._entry_group_to_stacked_results)
-
-    def _entry_group_to_stacked_results(self, entry_group: h5py.Group) -> StackedResults:
-        return StackedResults(
-            data_saturated=entry_group["result/data_saturated"][()],
-            calibration_needed=entry_group["result/calibration_needed"][()],
-            temperature=entry_group["result/temperature"][()],
-            tick=entry_group["result/tick"][()],
-            frame_delayed=entry_group["result/frame_delayed"][()],
-            frame=entry_group["result/frame"][()],
-            context=self._get_result_context_for_entry_group(entry_group),
-        )
-
-    @property
-    def extended_results(self) -> Iterator[list[dict[int, Result]]]:
-        for frame_no in range(self.num_frames):
-            yield self._get_result_for_all_entries(frame_no)
-
-    def _get_result_for_all_entries(self, frame_no: int) -> list[dict[int, Result]]:
-        def entry_group_to_result(entry_group: h5py.Group) -> Result:
-            return Result(
-                data_saturated=entry_group["result/data_saturated"][frame_no],
-                frame_delayed=entry_group["result/frame_delayed"][frame_no],
-                calibration_needed=entry_group["result/calibration_needed"][frame_no],
-                temperature=entry_group["result/temperature"][frame_no],
-                tick=entry_group["result/tick"][frame_no],
-                frame=np.array(entry_group["result/frame"][frame_no]),
-                context=self._get_result_context_for_entry_group(entry_group),
-            )
-
-        return self._map_over_entries(entry_group_to_result)
-
-    def _get_result_context_for_entry_group(self, entry_group: h5py.Group) -> ResultContext:
-        return ResultContext(
-            metadata=self._get_metadata_for_entry_group(entry_group),
-            ticks_per_second=self.server_info.ticks_per_second,
-        )
-
-    @property
     def lib_version(self) -> str:
         return self._h5py_dataset_to_str(self.file["lib_version"])
 
     @property
-    def num_frames(self) -> int:
-        (num_frames,) = {len(entry["result/frame"]) for _, _, entry in self._iterate_entries()}
-        return num_frames
-
-    @property
     def server_info(self) -> ServerInfo:
         return ServerInfo.from_json(self.file["server_info"][()])
-
-    @property
-    def session_config(self) -> SessionConfig:
-        (session_group,) = self._schema.session_groups_on_disk(self.file)
-        return SessionConfig.from_json(session_group["session_config"][()])
-
-    @property
-    def sensor_id(self) -> int:
-        entry_group = utils.unextend(self._get_entries())
-        return int(entry_group["sensor_id"][()])
 
     @property
     def timestamp(self) -> str:
@@ -139,41 +215,6 @@ class H5Record(PersistentRecord):
 
     def close(self) -> None:
         self.file.close()
-
-    def _get_entries(self) -> list[dict[int, h5py.Group]]:
-        structure: dict[int, dict[int, h5py.Group]] = {}
-
-        (session_group,) = self._schema.session_groups_on_disk(self.file)
-        for k, v in session_group.items():
-            m = re.fullmatch(r"group_(\d+)", k)
-
-            if not m:
-                continue
-
-            group_index = int(m.group(1))
-            structure[group_index] = {}
-
-            for vv in v.values():
-                sensor_id = vv["sensor_id"][()]
-                structure[group_index][sensor_id] = vv
-
-        return [structure[i] for i in range(len(structure))]
-
-    def _map_over_entries(self, func: Callable[[h5py.Group], T]) -> list[dict[int, T]]:
-        return utils.map_over_extended_structure(func, self._get_entries())
-
-    def _iterate_entries(self) -> Iterator[Tuple[int, int, h5py.Group]]:
-        """Iterates over "Entry" items in this record.
-
-        :returns: An iterable of <group_id>, <sensor_id>, <"EntryGroup">
-        """
-        for group_id, group_dict in enumerate(self._get_entries()):
-            for sensor_id, entry_group in group_dict.items():
-                yield (group_id, sensor_id, entry_group)
-
-    @staticmethod
-    def _get_metadata_for_entry_group(g: h5py.Group) -> Metadata:
-        return Metadata.from_json(g["metadata"][()])
 
     @staticmethod
     def _h5py_dataset_to_str(dataset: h5py.Dataset) -> str:
@@ -188,40 +229,12 @@ class H5Record(PersistentRecord):
 
         return group
 
-    def _get_calibrations_group(self) -> h5py.Group:
-        (session_group,) = self._schema.session_groups_on_disk(self.file)
-
-        if "calibrations" in session_group.keys():
-            return session_group["calibrations"]
-        raise H5RecordException("No calibration in h5 file")
-
-    def _iterate_calibrations(self) -> Iterator[Tuple[int, h5py.Group]]:
-        """Iterates over "Calibration" items in this record.
-
-        :returns: An iterable of <sensor_id>, <"CalibrationGroup">
-        """
-        calibrations_group = self._get_calibrations_group()
-        for sensor_group_name, group in calibrations_group.items():
-            m = re.fullmatch(r"sensor_(\d+)", sensor_group_name)
-
-            if not m:
-                continue
-
-            sensor_id = int(m.group(1))
-            yield (sensor_id, group)
+    def session(self, session_index: int) -> H5SessionRecord:
+        return H5SessionRecord(
+            group=self._schema.session_groups_on_disk(self.file)[session_index],
+            ticks_per_second=self.server_info.ticks_per_second,
+        )
 
     @property
-    def calibrations(self) -> dict[int, SensorCalibration]:
-        sensor_calibrations_dict = {}
-        for sensor_id, group in self._iterate_calibrations():
-            sensor_calibrations_dict[sensor_id] = SensorCalibration.from_h5(group)
-
-        return sensor_calibrations_dict
-
-    @property
-    def calibrations_provided(self) -> dict[int, bool]:
-        calibrations_provided = {}
-        for sensor_id, group in self._iterate_calibrations():
-            calibrations_provided[sensor_id] = group["provided"][()] > 0
-
-        return calibrations_provided
+    def num_sessions(self) -> int:
+        return len(self._schema.session_groups_on_disk(self.file))
