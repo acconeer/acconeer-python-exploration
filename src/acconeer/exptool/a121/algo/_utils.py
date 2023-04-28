@@ -39,6 +39,8 @@ RADIO_FREQUENCY = 60.5e9
 WAVELENGTH = SPEED_OF_LIGHT / RADIO_FREQUENCY
 PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 
+OUTLIER_STD_DEV_THRESHOLD = 4.0
+
 
 def get_distances_m(
     config: Union[a121.SensorConfig, a121.SubsweepConfig], metadata: a121.Metadata
@@ -184,6 +186,53 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
     get_distance_filter_coeffs.
     """
     return int(_safe_ceil(ENVELOPE_FWHM_M[profile] / (APPROX_BASE_STEP_LENGTH_M * step_length)))
+
+
+def double_buffering_frame_filter(frame: npt.NDArray[np.complex_]) -> npt.NDArray[np.complex_]:
+    """
+    Detects and removes outliers in data that appear when the double buffering mode is enabled,
+    and returns the filtered frame.
+
+    The filter is applied only when there are 32 or more sweeps per frame.
+
+    The disturbance caused by enabling the double buffering mode can appear in multiple sweeps
+    but, according to observations, is limited to a maximum of two consecutive sweeps.
+
+    Outliers are detected along the sweep dimension using the second order difference and removed
+    by interpolating between the sample before and the sample two positions ahead.
+    """
+
+    (n_s, n_d) = frame.shape
+    min_num_sweeps = 32
+
+    if n_s < min_num_sweeps:
+        return frame
+
+    # Detect outliers in the second order difference along sweeps.
+    frame_diff_abs = np.zeros((n_s, n_d))
+    frame_diff_abs[1:-1, :] = np.abs(np.diff(frame, axis=0, n=2))
+    diff_mean = np.mean(frame_diff_abs, axis=0, keepdims=True)
+    diff_std = np.std(frame_diff_abs, axis=0, keepdims=True)
+    outliers = frame_diff_abs > diff_mean + OUTLIER_STD_DEV_THRESHOLD * diff_std
+
+    # Perform filtering at each distance to remove outliers
+    filtered_frame = frame.copy()
+    for d in range(n_d):
+        if np.any(outliers[:, d]):
+            args = np.where(outliers[:, d])[0]
+            for idx in args:
+                if idx <= 1:
+                    # median filtering for the first two and the last two sweeps
+                    filtered_frame[idx, d] = np.median(filtered_frame[idx : idx + 4, d])
+                elif idx >= n_s - 2:
+                    filtered_frame[idx, d] = np.median(filtered_frame[idx - 3 : idx, d])
+                else:
+                    # interpolation for the remaining sweeps
+                    filtered_frame[idx, d] = (
+                        2 / 3 * filtered_frame[max(idx - 1, 0), d]
+                        + 1 / 3 * filtered_frame[min(idx + 2, n_s - 1), d]
+                    )
+    return filtered_frame
 
 
 def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
