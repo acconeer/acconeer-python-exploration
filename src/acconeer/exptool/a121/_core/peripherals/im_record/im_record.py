@@ -28,16 +28,12 @@ class InMemoryRecordException(Exception):
 
 @attrs.frozen(kw_only=True)
 class InMemorySessionRecord(SessionRecord):
-    _extended_metadata: list[dict[int, Metadata]] = attrs.field()
-    _extended_stacked_results: list[dict[int, StackedResults]] = attrs.field()
-    _num_frames: int = attrs.field()
-    _session_config: SessionConfig = attrs.field()
-    _calibrations: Optional[dict[int, SensorCalibration]] = attrs.field()
-    _calibrations_provided: Optional[dict[int, bool]] = attrs.field()
-
-    @property
-    def extended_metadata(self) -> list[dict[int, Metadata]]:
-        return self._extended_metadata
+    extended_metadata: list[dict[int, Metadata]]
+    extended_stacked_results: list[dict[int, StackedResults]]
+    num_frames: int
+    session_config: SessionConfig
+    _calibrations: Optional[dict[int, SensorCalibration]]
+    _calibrations_provided: Optional[dict[int, bool]]
 
     @property
     def extended_results(self) -> Iterator[list[dict[int, Result]]]:
@@ -45,20 +41,8 @@ class InMemorySessionRecord(SessionRecord):
             yield self._get_result_for_all_entries(frame_no)
 
     @property
-    def extended_stacked_results(self) -> list[dict[int, StackedResults]]:
-        return self._extended_stacked_results
-
-    @property
-    def num_frames(self) -> int:
-        return self._num_frames
-
-    @property
-    def session_config(self) -> SessionConfig:
-        return self._session_config
-
-    @property
     def sensor_id(self) -> int:
-        return self._session_config.sensor_id
+        return self.session_config.sensor_id
 
     @property
     def calibrations(self) -> dict[int, SensorCalibration]:
@@ -77,7 +61,7 @@ class InMemorySessionRecord(SessionRecord):
             return stacked_results[frame_no]
 
         return utils.map_over_extended_structure(
-            stacked_results_to_result, self._extended_stacked_results
+            stacked_results_to_result, self.extended_stacked_results
         )
 
     @classmethod
@@ -101,32 +85,12 @@ class InMemorySessionRecord(SessionRecord):
 
 @attrs.frozen(kw_only=True)
 class InMemoryRecord(Record):
-    _client_info: ClientInfo = attrs.field()
-    _lib_version: str = attrs.field()
-    _server_info: ServerInfo = attrs.field()
-    _timestamp: str = attrs.field()
-    _uuid: str = attrs.field()
-    _sessions: Sequence[InMemorySessionRecord] = attrs.field()
-
-    @property
-    def client_info(self) -> ClientInfo:
-        return self._client_info
-
-    @property
-    def lib_version(self) -> str:
-        return self._lib_version
-
-    @property
-    def server_info(self) -> ServerInfo:
-        return self._server_info
-
-    @property
-    def timestamp(self) -> str:
-        return self._timestamp
-
-    @property
-    def uuid(self) -> str:
-        return self._uuid
+    client_info: ClientInfo
+    lib_version: str
+    server_info: ServerInfo
+    timestamp: str
+    uuid: str
+    _sessions: Sequence[InMemorySessionRecord]
 
     def session(self, session_index: int) -> InMemorySessionRecord:
         return self._sessions[session_index]
