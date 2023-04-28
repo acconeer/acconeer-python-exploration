@@ -27,6 +27,8 @@ from acconeer.exptool.a121._core.entities import (
 )
 from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
+from .session_schema import SessionSchema
+
 
 T = TypeVar("T")
 
@@ -36,6 +38,8 @@ class H5RecordException(RecordException):
 
 
 class H5Record(PersistentRecord):
+    _schema = SessionSchema
+
     file: h5py.File
 
     def __init__(self, file: h5py.File) -> None:
@@ -117,7 +121,8 @@ class H5Record(PersistentRecord):
 
     @property
     def session_config(self) -> SessionConfig:
-        return SessionConfig.from_json(self.file["session/session_config"][()])
+        (session_group,) = self._schema.session_groups_on_disk(self.file)
+        return SessionConfig.from_json(session_group["session_config"][()])
 
     @property
     def sensor_id(self) -> int:
@@ -138,7 +143,8 @@ class H5Record(PersistentRecord):
     def _get_entries(self) -> list[dict[int, h5py.Group]]:
         structure: dict[int, dict[int, h5py.Group]] = {}
 
-        for k, v in self.file["session"].items():
+        (session_group,) = self._schema.session_groups_on_disk(self.file)
+        for k, v in session_group.items():
             m = re.fullmatch(r"group_(\d+)", k)
 
             if not m:
@@ -183,7 +189,7 @@ class H5Record(PersistentRecord):
         return group
 
     def _get_calibrations_group(self) -> h5py.Group:
-        session_group = self.file["session"]
+        (session_group,) = self._schema.session_groups_on_disk(self.file)
 
         if "calibrations" in session_group.keys():
             return session_group["calibrations"]

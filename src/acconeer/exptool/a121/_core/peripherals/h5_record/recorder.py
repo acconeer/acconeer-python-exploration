@@ -27,6 +27,7 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
+from .session_schema import SessionSchema
 from .utils import PathOrH5File, h5_file_factory
 
 
@@ -73,6 +74,7 @@ class H5Recorder(Recorder):
 
     _AUTO_CHUNK_MAX_SIZE = 512
     _AUTO_CHUNK_MAX_TIME = 1.0
+    _schema = SessionSchema
 
     path: Optional[os.PathLike[Any]]
     """The file path, if a path-like object was given for ``path_or_file``."""
@@ -82,7 +84,7 @@ class H5Recorder(Recorder):
     """Whether :class:`H5Recorder` opened and owns the file, i.e., if a path-like object was given
     for ``path_or_file``. If it does, the file is closed when stopping.
     """
-    _num_frames: int
+    _num_frames_current_session: int
     _chunk_size: Optional[int]
     _chunk_buffer: list[list[dict[int, Result]]]
     _last_write_time: float
@@ -103,6 +105,7 @@ class H5Recorder(Recorder):
         self._chunk_buffer = []
         self._num_frames_current_session = 0
         self._last_write_time = 0.0
+        self._current_session_group: Optional[h5py.Group] = None
 
         if _lib_version is None:
             _lib_version = get_module_version(acconeer.exptool)
@@ -184,9 +187,9 @@ class H5Recorder(Recorder):
         calibrations: Optional[dict[int, SensorCalibration]],
         calibrations_provided: Optional[dict[int, bool]],
     ) -> None:
-        session_group = self.file.create_group("session")
+        self._current_session_group = self._schema.create_next_session_group(self.file)
 
-        session_group.create_dataset(
+        self._current_session_group.create_dataset(
             "session_config",
             data=session_config.to_json(),
             dtype=_H5PY_STR_DTYPE,
@@ -194,7 +197,7 @@ class H5Recorder(Recorder):
         )
 
         for i, metadata_group_dict in enumerate(extended_metadata):
-            group_group = session_group.create_group(f"group_{i}")
+            group_group = self._current_session_group.create_group(f"group_{i}")
 
             for entry_id, (sensor_id, metadata) in enumerate(metadata_group_dict.items()):
                 entry_group = group_group.create_group(f"entry_{entry_id}")
@@ -216,7 +219,7 @@ class H5Recorder(Recorder):
             )
 
         if calibrations is not None and calibrations_provided is not None:
-            calibrations_group = session_group.create_group("calibrations")
+            calibrations_group = self._current_session_group.create_group("calibrations")
             for sensor_id, calibration in calibrations.items():
                 sensor_calibration_group = calibrations_group.create_group(f"sensor_{sensor_id}")
 
@@ -233,15 +236,17 @@ class H5Recorder(Recorder):
 
         :returns: the number of extended results saved.
         """
-
         if len(self._chunk_buffer) == 0:
             return 0
+
+        if self._current_session_group is None:
+            raise RuntimeError("No session group selected yet. This should not happen.")
 
         for group_idx, entry_idx, results in utils.iterate_extended_structure_as_entry_list(
             utils.transpose_extended_structures(self._chunk_buffer)
         ):
             self._write_results(
-                g=self.file[f"session/group_{group_idx}/entry_{entry_idx}/result"],
+                g=self._current_session_group[f"group_{group_idx}/entry_{entry_idx}/result"],
                 start_index=start_idx,
                 results=results,
             )
