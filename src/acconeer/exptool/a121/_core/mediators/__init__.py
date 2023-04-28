@@ -2,4 +2,4 @@
 # All rights reserved
 
 from .link import BufferedLink, Link
-from .recorder import Recorder
+from .recorder import Recorder, RecorderAttachable

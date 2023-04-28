@@ -165,6 +165,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     def end_session(self) -> None:
         if self._ref_app_instance is None:
             raise RuntimeError
+        if self._recorder is not None:
+            self._recorder.close()
         self._ref_app_instance.stop()
 
     def get_next(self) -> None:

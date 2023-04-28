@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from pathlib import Path
@@ -50,3 +50,7 @@ def test_open_record_a111(ref_record_file_a111: Path) -> None:
     with pytest.raises(a121.RecordError):
         with a121.open_record(ref_record_file_a111) as _:
             pass
+
+
+def test_can_save_record(ref_record: a121.Record, tmp_file_path: Path) -> None:
+    a121.save_record(tmp_file_path.with_suffix(".copy"), ref_record)

@@ -67,39 +67,49 @@ def test_init_defaults_with_file_object(tmp_file_path: Path) -> None:
         assert f["generation"][()].decode() == "a121"
 
 
+def test_start_can_only_be_called_once(
+    tmp_file_path: Path,
+    ref_client_info: a121.ClientInfo,
+    ref_server_info: a121.ServerInfo,
+) -> None:
+    r = a121.H5Recorder(tmp_file_path)
+    r._start(client_info=ref_client_info, server_info=ref_server_info)
+
+    with pytest.raises(Exception):
+        r._start(client_info=ref_client_info, server_info=ref_server_info)
+
+
 @pytest.mark.parametrize("chunk_size", [None, 1, 512])
 def test_sample_whole_record(
     tmp_path: Path, ref_record: a121.Record, chunk_size: Optional[int]
 ) -> None:
     filename = tmp_path / "empty.h5"
-    recorder = a121.H5Recorder(
+    with a121.H5Recorder(
         filename,
         _lib_version=ref_record.lib_version,
         _timestamp=ref_record.timestamp,
         _uuid=ref_record.uuid,
         _chunk_size=chunk_size,
-    )
-
-    recorder._start(
-        client_info=ref_record.client_info,
-        server_info=ref_record.server_info,
-    )
-
-    assert ref_record.num_sessions > 0
-    for i in range(ref_record.num_sessions):
-        session = ref_record.session(i)
-        recorder._start_session(
-            session_config=session.session_config,
-            extended_metadata=session.extended_metadata,
-            calibrations=session.calibrations,
-            calibrations_provided=session.calibrations_provided,
+    ) as recorder:
+        recorder._start(
+            client_info=ref_record.client_info,
+            server_info=ref_record.server_info,
         )
 
-        for extended_results in session.extended_results:
-            recorder._sample(extended_results)
+        assert ref_record.num_sessions > 0
+        for i in range(ref_record.num_sessions):
+            session = ref_record.session(i)
+            recorder._start_session(
+                session_config=session.session_config,
+                extended_metadata=session.extended_metadata,
+                calibrations=session.calibrations,
+                calibrations_provided=session.calibrations_provided,
+            )
 
-        recorder._stop_session()
-    recorder._stop()
+            for extended_results in session.extended_results:
+                recorder._sample(extended_results)
+
+            recorder._stop_session()
 
     with a121.open_record(filename) as record:
         assert_record_equals(record, ref_record)

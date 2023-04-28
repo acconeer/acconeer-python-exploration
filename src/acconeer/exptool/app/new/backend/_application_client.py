@@ -7,7 +7,6 @@ from typing import Any, Callable, Optional, TypeVar, Union, cast
 
 from acconeer.exptool.a121 import Client, Result, _RateCalculator
 from acconeer.exptool.a121._core import utils
-from acconeer.exptool.a121._core.mediators import Recorder
 
 from ._message import GeneralMessage, Message
 
@@ -45,8 +44,8 @@ class ApplicationClient:
         """
         return cast(ClientT, cls(wrapped_client, callback))
 
-    def start_session(self, recorder: Optional[Recorder] = None) -> None:
-        self._wrapped_client.start_session(recorder)
+    def start_session(self) -> None:
+        self._wrapped_client.start_session()
         assert self._wrapped_client.session_config is not None
         assert self._wrapped_client.extended_metadata is not None
 
@@ -67,7 +66,7 @@ class ApplicationClient:
         self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
         return results
 
-    def stop_session(self) -> Any:
+    def stop_session(self) -> None:
         result = self._wrapped_client.stop_session()
         self._frame_count = 0
         self.callback(GeneralMessage(name="rate_stats", data=None))

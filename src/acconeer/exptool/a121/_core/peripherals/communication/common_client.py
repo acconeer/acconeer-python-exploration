@@ -50,8 +50,18 @@ class CommonClient(Client):
         self._session_is_started = False
         self._session_config = None
 
-    def _recorder_start(self, recorder: Optional[Recorder]) -> None:
-        if recorder is not None:
+    def attach_recorder(self, recorder: Recorder) -> None:
+        if self.session_is_started:
+            raise ClientError("Cannot attach a recorder when session is started.")
+
+        self._recorder = recorder
+        self._recorder._start(
+            client_info=self.client_info,
+            server_info=self.server_info,
+        )
+
+    def _recorder_start_session(self) -> None:
+        if self._recorder is not None:
             calibrations_provided: Optional[dict[int, bool]] = self.calibrations_provided
             try:
                 calibrations = self.calibrations
@@ -59,11 +69,6 @@ class CommonClient(Client):
                 calibrations = None
                 calibrations_provided = None
 
-            self._recorder = recorder
-            self._recorder._start(
-                client_info=self.client_info,
-                server_info=self.server_info,
-            )
             self._recorder._start_session(
                 session_config=self.session_config,
                 extended_metadata=self.extended_metadata,
@@ -71,11 +76,15 @@ class CommonClient(Client):
                 calibrations_provided=calibrations_provided,
             )
 
-    def _recorder_stop(self) -> Any:
+    def _recorder_stop_session(self) -> None:
+        if self._recorder is not None:
+            self._recorder._stop_session()
+
+    def _recorder_close(self) -> Any:
         if self._recorder is None:
             recorder_result = None
         else:
-            recorder_result = self._recorder._stop()
+            recorder_result = self._recorder.close()
             self._recorder = None
         return recorder_result
 

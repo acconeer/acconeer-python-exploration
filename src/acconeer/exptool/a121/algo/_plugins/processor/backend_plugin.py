@@ -75,7 +75,6 @@ class GenericProcessorBackendPluginBase(
     ):
         super().__init__(callback=callback, generation=generation, key=key)
         self._processor_instance = None
-        self._recorder = None
         self._log = BackendLogger.getLogger(__name__)
         self.restore_defaults()
 
@@ -133,6 +132,7 @@ class GenericProcessorBackendPluginBase(
         session_config = self.shared_state.session_config
         self._validate_session_config(session_config)
 
+        assert self.client
         if recorder:
             algo_group = recorder.require_algo_group(self.key)  # noqa: F841
 
@@ -140,7 +140,9 @@ class GenericProcessorBackendPluginBase(
             _create_h5_string_dataset(
                 algo_group, "processor_config", self.shared_state.processor_config.to_json()
             )
-        assert self.client
+
+            self.client.attach_recorder(recorder)
+
         metadata = self.client.setup_session(session_config)
         the_first_sensor_config = next(
             _core.utils.iterate_extended_structure_values(session_config.groups)
@@ -152,7 +154,7 @@ class GenericProcessorBackendPluginBase(
         )
 
         self.shared_state.metadata = metadata  # type: ignore[assignment]
-        self.client.start_session(self._recorder)
+        self.client.start_session()
 
         self.callback(
             GeneralMessage(
@@ -165,6 +167,9 @@ class GenericProcessorBackendPluginBase(
     def end_session(self) -> None:
         if self.client is None:
             raise RuntimeError("Client is not attached. Can not 'stop'.")
+
+        if self._recorder is not None:
+            self._recorder.close()
         self.client.stop_session()
 
     @classmethod

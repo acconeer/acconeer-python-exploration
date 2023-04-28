@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
+import warnings
+from typing import Any, Iterator, Optional, Union
 
+import acconeer.exptool.a121._core.utils as core_utils
 from acconeer.exptool.a121 import (
     Client,
     ClientError,
@@ -26,13 +28,26 @@ class _StopReplay(Exception):
 
 
 class _ReplayingClient(Client):
-    def __init__(self, record: Record):
+    def __init__(self, record: Record, *, cycled_session_idx: Optional[int] = None):
+        """
+        :param record: The Record to replay from
+        :param cycled_session_idx:
+            If specified, cycle (reuse as next session) the session
+            specified by 'cycled_session_idx'.
+        """
         self._record = record
         self._is_started: bool = False
-        self._result_iterator: Optional[
-            Union[Iterator[Result], Iterator[list[dict[int, Result]]]]
-        ] = None
+        self._result_iterator: Iterator[list[dict[int, Result]]] = iter([])
         self._origin_time: Optional[float] = None
+        self._session_idx = 0
+        self._cycled_session_idx = cycled_session_idx
+
+    @property
+    def _actual_session_idx(self) -> int:
+        if self._cycled_session_idx is not None:
+            return self._cycled_session_idx
+        else:
+            return self._session_idx
 
     def _assert_connected(self) -> None:
         if not self.connected:
@@ -59,23 +74,16 @@ class _ReplayingClient(Client):
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
 
-        if config != self._record.session_config:
+        if config != self.session_config:
             raise ValueError
 
         if self.session_config.extended:
-            return self._record.extended_metadata
+            return self.extended_metadata
         else:
-            return self._record.metadata
+            return core_utils.unextend(self.extended_metadata)
 
-    def start_session(self, recorder: Optional[Recorder] = None) -> None:
-        if recorder is not None:
-            raise ValueError(f"{type(self).__name__} can not record")
-
-        if self.session_config.extended:
-            self._result_iterator = self._record.extended_results
-        else:
-            self._result_iterator = self._record.results
-
+    def start_session(self) -> None:
+        self._result_iterator = self._record.session(self._actual_session_idx).extended_results
         self._is_started = True
         self._origin_time = None
 
@@ -86,15 +94,11 @@ class _ReplayingClient(Client):
         assert self._result_iterator is not None
 
         try:
-            result_ = next(self._result_iterator)
-            result = cast(Union[Result, List[Dict[int, Result]]], result_)
+            result = next(self._result_iterator)
         except StopIteration:
             raise _StopReplay
 
-        if isinstance(result, Result):
-            some_result = result
-        else:
-            some_result = next(iter(next(iter(result)).values()))
+        some_result = next(core_utils.iterate_extended_structure_values(result))
 
         now = time.monotonic() - some_result.tick_time
 
@@ -106,11 +110,24 @@ class _ReplayingClient(Client):
         if delta < 0:
             time.sleep(-delta)
 
-        return result
+        if self.session_config.extended:
+            return result
+        else:
+            return core_utils.unextend(result)
 
     def stop_session(self) -> Any:
-        self._result_iterator = None
+        try:
+            _ = next(self._result_iterator)
+        except StopIteration:
+            pass
+        else:
+            warnings.warn(f"Results of session {self._actual_session_idx} were not exhausted.")
+
+        self._session_idx += 1
         self._is_started = False
+
+    def attach_recorder(self, recorder: Recorder) -> None:
+        raise NotImplementedError
 
     def close(self) -> None:
         pass
@@ -137,16 +154,16 @@ class _ReplayingClient(Client):
 
     @property
     def session_config(self) -> SessionConfig:
-        return self._record.session_config
+        return self._record.session(self._actual_session_idx).session_config
 
     @property
     def extended_metadata(self) -> list[dict[int, Metadata]]:
-        return self._record.extended_metadata
+        return self._record.session(self._actual_session_idx).extended_metadata
 
     @property
     def calibrations(self) -> dict[int, SensorCalibration]:
-        return self._record.calibrations
+        return self._record.session(self._actual_session_idx).calibrations
 
     @property
     def calibrations_provided(self) -> dict[int, bool]:
-        return self._record.calibrations_provided
+        return self._record.session(self._actual_session_idx).calibrations_provided

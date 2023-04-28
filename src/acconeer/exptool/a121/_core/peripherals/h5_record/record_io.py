@@ -75,20 +75,20 @@ def save_record(path_or_file: PathOrH5File, record: Record) -> None:
 def save_record_to_h5(path_or_file: PathOrH5File, record: Record) -> None:
     """Save a record to a HDF5 file"""
 
-    recorder = H5Recorder(path_or_file)
+    with H5Recorder(path_or_file) as r:
+        r._start(
+            client_info=record.client_info,
+            server_info=record.server_info,
+        )
+        for session in (record.session(i) for i in range(record.num_sessions)):
+            r._start_session(
+                session_config=session.session_config,
+                extended_metadata=session.extended_metadata,
+                calibrations=session.calibrations,
+                calibrations_provided=session.calibrations_provided,
+            )
 
-    recorder._start(
-        client_info=record.client_info,
-        server_info=record.server_info,
-    )
-    recorder._start_session(
-        session_config=record.session_config,
-        extended_metadata=record.extended_metadata,
-        calibrations=record.calibrations,
-        calibrations_provided=record.calibrations_provided,
-    )
+            for extended_result in session.extended_results:
+                r._sample(extended_result)
 
-    for extended_result in record.extended_results:
-        recorder._sample(extended_result)
-
-    recorder._stop()
+            r._stop_session()

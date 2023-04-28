@@ -22,7 +22,6 @@ from acconeer.exptool.a121._core.entities import (
     ServerLogMessage,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.a121._core.utils import (
     create_extended_structure,
     iterate_extended_structure,
@@ -321,13 +320,13 @@ class ExplorationClient(CommonClient):
         else:
             return unextend(self._metadata)
 
-    def start_session(self, recorder: Optional[Recorder] = None) -> None:
+    def start_session(self) -> None:
         self._assert_session_setup()
 
         if self.session_is_started:
             raise ClientError("Session is already started.")
 
-        self._recorder_start(recorder)
+        self._recorder_start_session()
         self._session_is_started = True
 
         self._link.timeout = self._link_timeout
@@ -361,7 +360,7 @@ class ExplorationClient(CommonClient):
         self._recorder_sample(extended_results)
         return self._return_results(extended_results)
 
-    def stop_session(self) -> Any:
+    def stop_session(self) -> None:
         self._assert_session_started()
 
         self._link.send(self._protocol.stop_streaming_command())
@@ -375,20 +374,19 @@ class ExplorationClient(CommonClient):
             raise
         finally:
             self._link.timeout = self._default_link_timeout
-            self._tick_unwrapper = TickUnwrapper()
 
-        recorder_result = self._recorder_stop()
+        self._recorder_stop_session()
+
         self._log_queue.clear()
-
-        return recorder_result
 
     def close(self) -> None:
         # TODO: Make sure this cleans up corner-cases (like lost connection)
         #       to not hog resources.
 
         if self.session_is_started:
-            _ = self.stop_session()
+            self.stop_session()
 
+        self._tick_unwrapper = TickUnwrapper()
         self._system_info = None
         self._sensor_infos = {}
         self._message_stream = iter([])

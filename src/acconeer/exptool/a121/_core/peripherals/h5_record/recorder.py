@@ -24,7 +24,7 @@ from acconeer.exptool.a121._core.entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import Recorder
+from acconeer.exptool.a121._core.mediators import Recorder, RecorderAttachable
 from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
 from .session_schema import SessionSchema
@@ -58,6 +58,9 @@ class H5Recorder(Recorder):
 
         If an ``h5py.File``, that file is used as-is. In this case, the file is not closed when
         stopping.
+    :param attachable:
+        A ``Client`` that the recorder will be attached to. When a recorder is attached to a
+        ``Client``, all metadata and data frames will be recorded.
     :param mode:
         The file mode to use if a path-like object was given for ``path_or_file``. Default value is
         'x', meaning that we open for exclusive creation, failing if the file already exists.
@@ -92,6 +95,7 @@ class H5Recorder(Recorder):
     def __init__(
         self,
         path_or_file: PathOrH5File,
+        attachable: Optional[RecorderAttachable] = None,
         mode: str = "x",
         *,
         _chunk_size: Optional[int] = None,
@@ -106,6 +110,9 @@ class H5Recorder(Recorder):
         self._num_frames_current_session = 0
         self._last_write_time = 0.0
         self._current_session_group: Optional[h5py.Group] = None
+
+        if attachable is not None:
+            attachable.attach_recorder(self)
 
         if _lib_version is None:
             _lib_version = get_module_version(acconeer.exptool)
@@ -147,37 +154,22 @@ class H5Recorder(Recorder):
         client_info: ClientInfo,
         server_info: ServerInfo,
     ) -> None:
-        if "client_info" in self.file:
-            client_info_in_file = ClientInfo.from_json(self.file["client_info"][()].decode())
-            if client_info_in_file != client_info:
-                raise ValueError(
-                    f"Passed ClientInfo ({client_info}) differs "
-                    + f"from the recorded ClientInfo ({client_info_in_file})"
-                )
-        else:
-            self.file.create_dataset(
-                "client_info",
-                data=client_info.to_json(),
-                dtype=_H5PY_STR_DTYPE,
-                track_times=False,
-            )
-            self._last_write_time = time()
+        if "client_info" in self.file or "server_info" in self.file:
+            raise RuntimeError("It's not allowed to call '_start' once.")
 
-        if "server_info" in self.file:
-            server_info_in_file = ServerInfo.from_json(self.file["server_info"][()].decode())
-            if server_info_in_file != server_info:
-                raise ValueError(
-                    f"Passed ServerInfo ({server_info}) differs "
-                    + f"from the recorded ServerInfo ({server_info_in_file})"
-                )
-        else:
-            self.file.create_dataset(
-                "server_info",
-                data=server_info.to_json(),
-                dtype=_H5PY_STR_DTYPE,
-                track_times=False,
-            )
-            self._last_write_time = time()
+        self.file.create_dataset(
+            "client_info",
+            data=client_info.to_json(),
+            dtype=_H5PY_STR_DTYPE,
+            track_times=False,
+        )
+        self.file.create_dataset(
+            "server_info",
+            data=server_info.to_json(),
+            dtype=_H5PY_STR_DTYPE,
+            track_times=False,
+        )
+        self._last_write_time = time()
 
     def _start_session(
         self,
@@ -276,7 +268,7 @@ class H5Recorder(Recorder):
             self._chunk_buffer = []
         self._num_frames_current_session = 0
 
-    def _stop(self) -> Any:
+    def close(self) -> Any:
         self._stop_session()
         if self.owns_file:
             self.file.close()

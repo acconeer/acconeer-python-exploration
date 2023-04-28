@@ -13,7 +13,7 @@ CLIENT_PARAMETRIZE = [
 ]
 
 
-@pytest.fixture(params=CLIENT_PARAMETRIZE)
+@pytest.fixture(params=CLIENT_PARAMETRIZE, ids=str)
 def client_kwargs(request, port_from_cli):
     if "ip_address" in request.param:
         request.param["tcp_port"] = port_from_cli
@@ -22,7 +22,7 @@ def client_kwargs(request, port_from_cli):
 
 
 class TestAClosedClient:
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         c = a121.Client.open(**client_kwargs)
         c.close()
@@ -57,7 +57,7 @@ class TestAClosedClient:
 
 
 class TestAConnectedClient:
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             yield c
@@ -91,7 +91,7 @@ class TestAConnectedClient:
 
 
 class TestASetupClient:
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
@@ -157,7 +157,8 @@ class TestASetupClient:
         setup_calibrations = client.calibrations
         assert setup_calibrations
 
-        client.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
+        _ = a121.H5Recorder(tmp_h5_file_path, client)
+        client.start_session()
         [client.get_next() for _ in range(5)]
         client.stop_session()
 
@@ -232,7 +233,8 @@ class TestASetupClient:
             },
         )
 
-        client.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
+        _ = a121.H5Recorder(tmp_h5_file_path, client)
+        client.start_session()
         [client.get_next() for _ in range(5)]
         client.stop_session()
 
@@ -256,7 +258,7 @@ class TestASetupClient:
 
 
 class TestAStartedClient:
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
@@ -267,11 +269,12 @@ class TestAStartedClient:
     def tmp_h5_file_path(self, tmp_path):
         return tmp_path / "record.h5"
 
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client_with_recorder(self, client_kwargs, tmp_h5_file_path):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
-            c.start_session(recorder=a121.H5Recorder(tmp_h5_file_path))
+            _ = a121.H5Recorder(tmp_h5_file_path, c)
+            c.start_session()
             yield c
 
         tmp_h5_file_path.unlink()
@@ -294,15 +297,38 @@ class TestAStartedClient:
         for result_a, result_b in zip(record.results, results):
             assert result_a == result_b
 
+    def test_cannot_attach_a_recorder(self, client, tmp_h5_file_path):
+        with pytest.raises(a121.ClientError):
+            client.attach_recorder(a121.H5Recorder(tmp_h5_file_path, client))
+
     def test_can_stop(self, client):
         client.stop_session()
         assert not client.session_is_started
+
+    def test_cannot_start_again(self, client_with_recorder):
+        with pytest.raises(a121.ClientError):
+            client_with_recorder.start_session()
+
+    def test_can_stop_and_start_to_create_new_sessions_in_the_recorder(
+        self, client_with_recorder, tmp_h5_file_path
+    ):
+        num_additional_sessions = 3
+        for _ in range(num_additional_sessions):
+            client_with_recorder.stop_session()
+            client_with_recorder.start_session()
+
+        client_with_recorder.stop_session()
+        assert (
+            a121.load_record(tmp_h5_file_path).num_sessions
+            == a121.open_record(tmp_h5_file_path).num_sessions
+            == (num_additional_sessions + 1)
+        )
 
 
 class TestAStoppedClient(TestASetupClient):
     """A stopped client should have the same behaviour as it had when first set up"""
 
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
@@ -316,7 +342,7 @@ class TestAStoppedAndSetupClient(TestASetupClient):
     should have the same behaviour as a setup client.
     """
 
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
@@ -331,7 +357,7 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
     should have the same behaviour as client that has been started once.
     """
 
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
@@ -345,7 +371,7 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
 class TestADisconnectedClient(TestAClosedClient):
     """A disconnected client should have the same behaviour as a fresh, unconnected client."""
 
-    @pytest.fixture(params=CLIENT_PARAMETRIZE)
+    @pytest.fixture
     def client(self, client_kwargs):
         c = a121.Client.open(**client_kwargs)
         c.setup_session(a121.SessionConfig())

@@ -25,7 +25,6 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
     SubsweepConfig,
 )
-from acconeer.exptool.a121._core.mediators import Recorder
 from acconeer.exptool.a121._core.utils import unextend
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
@@ -262,13 +261,13 @@ class MockClient(CommonClient):
         else:
             return unextend(self._metadata)
 
-    def start_session(self, recorder: Optional[Recorder] = None) -> None:
+    def start_session(self) -> None:
         self._assert_session_setup()
 
         if self.session_is_started:
             raise ClientError("Session is already started.")
 
-        self._recorder_start(recorder)
+        self._recorder_start_session()
         self._session_is_started = True
         self._start_time = time.perf_counter()
         self._mock_next_data_time = self._start_time
@@ -293,18 +292,17 @@ class MockClient(CommonClient):
         self._recorder_sample(extended_results)
         return self._return_results(extended_results)
 
-    def stop_session(self) -> Any:
+    def stop_session(self) -> None:
         self._assert_session_started()
+        self._recorder_stop_session()
         self._session_is_started = False
-
-        return self._recorder_stop()
 
     def close(self) -> None:
         if not self._connected:
             raise ClientError("Client is already closed")
 
         if self.session_is_started:
-            _ = self.stop_session()
+            self.stop_session()
 
         self._metadata = None
         self._connected = False

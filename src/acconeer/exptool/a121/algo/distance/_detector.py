@@ -897,7 +897,9 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 # Should never happen as we currently only have the H5Recorder
                 warnings.warn("Will not save algo data")
 
-        self.client.start_session(recorder)
+            self.client.attach_recorder(recorder)
+
+        self.client.start_session()
         self.started = True
 
     def get_next(self) -> Dict[int, DetectorResult]:

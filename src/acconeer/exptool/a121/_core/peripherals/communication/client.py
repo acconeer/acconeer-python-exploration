@@ -115,7 +115,7 @@ class Client(ClientABCWithGoodError):
         ...
 
     @abc.abstractmethod
-    def start_session(self, recorder: Optional[Recorder] = None) -> None:
+    def start_session(self) -> None:
         """Starts the already set up session.
 
         After this call, the server starts streaming data to the client.
@@ -139,19 +139,22 @@ class Client(ClientABCWithGoodError):
         ...
 
     @abc.abstractmethod
-    def stop_session(self) -> Any:
+    def stop_session(self) -> None:
         """Stops an on-going session
 
-        :returns:
-            The return value of the passed ``Recorder.stop()`` passed in ``start_session``.
         :raises:
             ``ClientError`` if ``Client``'s session is not started.
         """
         ...
 
     @abc.abstractmethod
+    def attach_recorder(self, recorder: Recorder) -> None:
+        """Attaches a recorder to this client."""
+        ...
+
+    @abc.abstractmethod
     def close(self) -> None:
-        """Disconnects the client from the host."""
+        """Closes the connection to the host"""
         ...
 
     @property

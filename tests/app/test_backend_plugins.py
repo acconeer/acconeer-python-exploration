@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from acconeer.exptool import a121
 from acconeer.exptool.a121.algo.bilateration._plugin import BILATERATION_PLUGIN
 from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
 from acconeer.exptool.a121.algo.smart_presence._ref_app_plugin import SMART_PRESENCE_PLUGIN
@@ -127,6 +128,13 @@ class TestBackendPlugins:
             max_num_messages=1000,  # a lot of messages could be sent when busy
         )
 
+        saved_file = t.cast(CaptureSaveableFile, backend).saveable_file_path
+
+        with a121.open_record(saved_file) as _:
+            # this open makes sure that the file can be opened directly after
+            # the session is stopped
+            pass
+
         if plugin in [PRESENCE_DETECTOR_PLUGIN, SMART_PRESENCE_PLUGIN]:
             pytest.xfail(
                 "Presence- & presence-based algorithms have an "
@@ -134,13 +142,15 @@ class TestBackendPlugins:
                 + "'start_session' & 'stop_session' are tested."
             )
         else:
-            saved_file = t.cast(CaptureSaveableFile, backend).saveable_file_path
             backend.put_task(tasks.load_from_file_task(saved_file))
             assert_messages(
                 backend,
                 received=[
                     PluginStateMessage(state=PluginState.LOADED_STARTING),
                     PluginStateMessage(state=PluginState.LOADED_BUSY),
+                    PluginStateMessage(state=PluginState.LOADED_STOPPING),
+                    PluginStateMessage(state=PluginState.LOADED_IDLE),
                     tasks.SUCCESSFULLY_CLOSED_TASK,
                 ],
+                max_num_messages=1000,
             )

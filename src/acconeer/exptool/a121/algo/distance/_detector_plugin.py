@@ -161,6 +161,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def end_session(self) -> None:
         assert self._detector_instance
+        if self._recorder is not None:
+            self._recorder.close()
         self._detector_instance.stop()
 
     def get_next(self) -> None:

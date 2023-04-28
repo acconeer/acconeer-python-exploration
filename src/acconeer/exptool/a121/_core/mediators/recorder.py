@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from typing_extensions import Protocol
+import typing_extensions as te
 
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
@@ -17,7 +17,12 @@ from acconeer.exptool.a121._core.entities import (
 )
 
 
-class Recorder(Protocol):
+class RecorderAttachable(te.Protocol):
+    def attach_recorder(self, recorder: Recorder) -> None:
+        ...
+
+
+class Recorder(te.Protocol):
     def _start(
         self,
         *,
@@ -42,5 +47,11 @@ class Recorder(Protocol):
     def _stop_session(self) -> None:
         ...
 
-    def _stop(self) -> Any:
+    def close(self) -> Any:
         ...
+
+    def __enter__(self) -> te.Self:
+        return self
+
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        self.close()
