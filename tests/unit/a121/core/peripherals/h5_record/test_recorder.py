@@ -16,23 +16,36 @@ from acconeer.exptool.utils import get_module_version  # type: ignore[import]
 
 def assert_record_equals(record_a: a121.Record, record_b: a121.Record) -> None:
     attrs = [
-        "extended_metadata",
-        "extended_results",
         "lib_version",
-        "num_frames",
         "server_info",
-        "session_config",
         "timestamp",
         "uuid",
     ]
     for attr in attrs:
         attr_a = getattr(record_a, attr)
         attr_b = getattr(record_b, attr)
-        if attr == "extended_results":
-            attr_a = list(attr_a)
-            attr_b = list(attr_b)
 
         assert attr_a == attr_b, f".{attr} differs:\n{attr_a},\n{attr_b}"
+
+    session_attrs = [
+        "extended_metadata",
+        "extended_results",
+        "num_frames",
+        "session_config",
+    ]
+    assert record_a.num_sessions == record_b.num_sessions
+    for session_idx in range(record_a.num_sessions):
+        session_a = record_a.session(session_idx)
+        session_b = record_b.session(session_idx)
+
+        for attr in session_attrs:
+            attr_a = getattr(session_a, attr)
+            attr_b = getattr(session_b, attr)
+            if attr == "extended_results":
+                attr_a = list(attr_a)
+                attr_b = list(attr_b)
+
+            assert attr_a == attr_b, f".{attr} differs:\n{attr_a},\n{attr_b}"
 
 
 def test_init_defaults_with_path(tmp_file_path: Path) -> None:
@@ -71,15 +84,21 @@ def test_sample_whole_record(
         client_info=ref_record.client_info,
         server_info=ref_record.server_info,
     )
-    recorder._start_session(
-        session_config=ref_record.session_config,
-        extended_metadata=ref_record.extended_metadata,
-        calibrations=ref_record.calibrations,
-        calibrations_provided=ref_record.calibrations_provided,
-    )
 
-    for extended_results in ref_record.extended_results:
-        recorder._sample(extended_results)
+    assert ref_record.num_sessions > 0
+    for i in range(ref_record.num_sessions):
+        session = ref_record.session(i)
+        recorder._start_session(
+            session_config=session.session_config,
+            extended_metadata=session.extended_metadata,
+            calibrations=session.calibrations,
+            calibrations_provided=session.calibrations_provided,
+        )
+
+        for extended_results in session.extended_results:
+            recorder._sample(extended_results)
+
+        recorder._stop_session()
     recorder._stop()
 
     with a121.open_record(filename) as record:

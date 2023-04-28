@@ -71,13 +71,14 @@ def ref_session_config() -> a121.SessionConfig:
         [{1}],
         [{2, 3}, {2}],
         [{1, 2}, {3, 4}, {1, 2, 3, 4, 5}],
-    ]
+    ],
+    ids=lambda s: f"structure={s}",
 )
 def ref_structure(request: pytest.FixtureRequest) -> Iterator[Iterator[int]]:
     return cast(Iterator[Iterator[int]], request.param)
 
 
-@pytest.fixture(params=range(1, 4, 2))
+@pytest.fixture(params=range(1, 4, 2), ids=lambda n: f"num_frames={n}")
 def ref_num_frames(request: pytest.FixtureRequest) -> int:
     """This is a parametrized fixture.
     Dependent fixtures will also be parameterized as a result
@@ -85,7 +86,7 @@ def ref_num_frames(request: pytest.FixtureRequest) -> int:
     return cast(int, request.param)
 
 
-@pytest.fixture(params=range(1, 4, 2))
+@pytest.fixture(params=range(1, 4, 2), ids=lambda n: f"num_points={n}")
 def ref_sweep_data_length(request: pytest.FixtureRequest) -> int:
     """This is a parametrized fixture.
     Dependent fixtures will also be parameterized as a result
@@ -142,7 +143,10 @@ def ref_data(ref_frame_raw: npt.NDArray[np.int_], ref_num_frames: int) -> npt.ND
     return data_frames
 
 
-@pytest.fixture
+@pytest.fixture(
+    params=[1, 2],
+    ids=lambda n: f"num_sessions={n}",
+)
 def ref_record_file(
     ref_lib_version: str,
     ref_timestamp: str,
@@ -155,6 +159,7 @@ def ref_record_file(
     ref_num_frames: int,
     ref_data: npt.NDArray[np.int_],
     tmp_file_path: Path,
+    request: pytest.FixtureRequest,
 ) -> Path:
     with h5py.File(tmp_file_path, mode="x") as f:
         f.create_dataset(
@@ -175,51 +180,57 @@ def ref_record_file(
 
         f.create_dataset("generation", data="a121", dtype=_H5PY_STR_DTYPE, track_times=False)
 
-        session_config_data = ref_session_config.to_json()
-        session_group = f.create_group("session")
-        session_group.create_dataset(
-            "session_config",
-            data=session_config_data,
-            dtype=_H5PY_STR_DTYPE,
-            track_times=False,
-        )
+        num_sessions = request.param
 
-        calibrations_group = session_group.create_group("calibrations")
-        for group in ref_structure:
-            for sensor_id in group:
-                sensor_group_name = f"sensor_{sensor_id}"
-                if sensor_group_name not in calibrations_group.keys():
-                    sensor_calibration_group = calibrations_group.create_group(sensor_group_name)
-                    sensor_calibration_group.create_dataset(
-                        "temperature", data=15, track_times=False
-                    )
-                    sensor_calibration_group.create_dataset(
-                        "data",
-                        data="01234567890abcdef",
-                        dtype=_H5PY_STR_DTYPE,
-                        track_times=False,
-                    )
-                    sensor_calibration_group.create_dataset(
-                        "provided", data=False, track_times=False
-                    )
+        f["session"] = h5py.SoftLink("/sessions/session_0")
+        for name in [f"sessions/session_{i}" for i in range(num_sessions)]:
+            session_config_data = ref_session_config.to_json()
+            session_group = f.create_group(name)
+            session_group.create_dataset(
+                "session_config",
+                data=session_config_data,
+                dtype=_H5PY_STR_DTYPE,
+                track_times=False,
+            )
 
-        zero_array = np.zeros(ref_num_frames, dtype=int)
-        false_array = np.zeros(ref_num_frames, dtype=bool)
-        tick_array = np.arange(ref_num_frames, dtype=int)
+            calibrations_group = session_group.create_group("calibrations")
+            for group in ref_structure:
+                for sensor_id in group:
+                    sensor_group_name = f"sensor_{sensor_id}"
+                    if sensor_group_name not in calibrations_group.keys():
+                        sensor_calibration_group = calibrations_group.create_group(
+                            sensor_group_name
+                        )
+                        sensor_calibration_group.create_dataset(
+                            "temperature", data=15, track_times=False
+                        )
+                        sensor_calibration_group.create_dataset(
+                            "data",
+                            data="01234567890abcdef",
+                            dtype=_H5PY_STR_DTYPE,
+                            track_times=False,
+                        )
+                        sensor_calibration_group.create_dataset(
+                            "provided", data=False, track_times=False
+                        )
 
-        for group_id, group in enumerate(ref_structure):
-            for entry_id, sensor_id in enumerate(group):
-                entry_group = session_group.create_group(f"group_{group_id}/entry_{entry_id}")
-                entry_group.create_dataset("metadata", data=ref_metadata.to_json())
-                entry_group.create_dataset("sensor_id", data=sensor_id)
+            zero_array = np.zeros(ref_num_frames, dtype=int)
+            false_array = np.zeros(ref_num_frames, dtype=bool)
+            tick_array = np.arange(ref_num_frames, dtype=int)
 
-                result_group = entry_group.create_group("result")
-                result_group.create_dataset("frame", data=ref_data)
-                result_group.create_dataset("data_saturated", data=false_array)
-                result_group.create_dataset("calibration_needed", data=false_array)
-                result_group.create_dataset("frame_delayed", data=false_array)
-                result_group.create_dataset("temperature", data=zero_array)
-                result_group.create_dataset("tick", data=tick_array)
+            for group_id, group in enumerate(ref_structure):
+                for entry_id, sensor_id in enumerate(group):
+                    entry_group = session_group.create_group(f"group_{group_id}/entry_{entry_id}")
+                    entry_group.create_dataset("metadata", data=ref_metadata.to_json())
+                    entry_group.create_dataset("sensor_id", data=sensor_id)
+
+                    result_group = entry_group.create_group("result")
+                    result_group.create_dataset("frame", data=ref_data)
+                    result_group.create_dataset("data_saturated", data=false_array)
+                    result_group.create_dataset("calibration_needed", data=false_array)
+                    result_group.create_dataset("frame_delayed", data=false_array)
+                    result_group.create_dataset("temperature", data=zero_array)
+                    result_group.create_dataset("tick", data=tick_array)
 
     return tmp_file_path
 

@@ -56,11 +56,14 @@ HDF5 structure
 ``server_info``
    JSON string representation of :class:`~acconeer.exptool.a121.ServerInfo`.
 
-``session/``
-   HDF5 group containing all data related to the recorded session.
+``session``
+   A *soft link* to ``sessions/session_0``. Used for backwards-compatibility.
 
-   ``group_X/entry_Y/``
-      HDF5 group for entry *Y* in configuration group *X*. *X* and *Y* are integers starting from 0.
+``sessions/session_X``
+   HDF5 group containing all data related to the recorded session. *X* is an integer starting from 0.
+
+   ``group_Y/entry_Z/``
+      HDF5 group for entry *Z* in configuration group *Y*. *Y* and *Z* are integers starting from 0.
 
       ``result/``
          HDF5 group with a dataset for every field in the :class:`~acconeer.exptool.a121.Result`.
