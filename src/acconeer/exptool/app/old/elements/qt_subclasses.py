@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from collections import namedtuple
@@ -82,7 +82,7 @@ class AdvancedSerialDialog(QDialog):
         self.sb.setValue(state if checked else 115200)
 
     def get_state(self):
-        return self.sb.value() if self.cb.checkState() else None
+        return self.sb.value() if self.cb.isChecked() else None
 
 
 class BiggerMessageBox(QtWidgets.QMessageBox):

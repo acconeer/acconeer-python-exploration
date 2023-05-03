@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import abc
@@ -185,46 +185,43 @@ class UARTClient(RegBaseClient):
     def _connect(self):
         self._link.timeout = self.CONNECT_ROUTINE_TIMEOUT
 
-        if self.override_baudrate:
-            self._link.baudrate = self.override_baudrate
-            self._link.connect()
+        baudrates = [int(3e6), int(1e6)]
+        if self.override_baudrate is not None:
+            baudrates.append(self.override_baudrate)
+        baudrates.append(self.DEFAULT_BASE_BAUDRATE)
+        baudrates = sorted(list(set(baudrates)))
+
+        self._link.baudrate = baudrates[0]
+        self._link.connect()
+
+        for i, baudrate in enumerate(baudrates):
+            if i != 0:
+                self._link.baudrate = baudrate
+                sleep(0.2)
 
             try:
                 self._handshake()
-            except links.LinkError as e:
-                raise ClientError("could not connect, no response") from e
-        else:
-            baudrates = [int(3e6), int(1e6)]
-            baudrates.append(self.DEFAULT_BASE_BAUDRATE)
-            baudrates = sorted(list(set(baudrates)))
-
-            self._link.baudrate = baudrates[0]
-            self._link.connect()
-
-            for i, baudrate in enumerate(baudrates):
-                if i != 0:
-                    self._link.baudrate = baudrate
-                    sleep(0.2)
-
-                try:
-                    self._handshake()
-                except links.LinkError:
-                    log.debug("handshake failed at {} baud".format(baudrate))
-                else:
-                    log.debug("handshake succeeded at {} baud".format(baudrate))
-                    break
+            except links.LinkError:
+                log.debug("handshake failed at {} baud".format(baudrate))
             else:
-                raise ClientError("could not connect, no response")
+                log.debug("handshake succeeded at {} baud".format(baudrate))
+                break
+        else:
+            raise ClientError("could not connect, no response")
 
-            product_max_baudrate = self._read_reg("product_max_uart_baudrate")
+        use_baudrate = (
+            self.override_baudrate
+            if self.override_baudrate is not None
+            else self._read_reg("product_max_uart_baudrate")
+        )
 
-            if baudrate != product_max_baudrate:
-                log.debug("switching to {} baud...".format(product_max_baudrate))
-                self._write_reg("uart_baudrate", product_max_baudrate)
-                self._link.baudrate = product_max_baudrate
-                sleep(0.2)
-                self._handshake()
-                log.debug("handshake succeeded at {} baud".format(product_max_baudrate))
+        if baudrate != use_baudrate:
+            log.debug("switching to {} baud...".format(use_baudrate))
+            self._write_reg("uart_baudrate", use_baudrate)
+            self._link.baudrate = use_baudrate
+            sleep(0.2)
+            self._handshake()
+            log.debug("handshake succeeded at {} baud".format(use_baudrate))
 
         self._link.timeout = self._link.DEFAULT_TIMEOUT
 
