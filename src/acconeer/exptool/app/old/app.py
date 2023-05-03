@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -2201,30 +2201,23 @@ def watchdog(event):
         os._exit(1)
 
 
-def remove_user_data_files():
-    """Removes all files under USER_DATA_DIR interactively"""
-    user_data_dir = pathlib.Path(USER_DATA_DIR)
-    if not user_data_dir.exists():
-        print(f'Config folder ("{user_data_dir}") does not exists.')
+def remove_last_config():
+    """Interacively removes last_config.npy from user data dirs"""
+    file = pathlib.Path(LAST_CONF_FILENAME)
+    if not file.exists():
+        print(f'Config file ("{file}") does not exists.')
         print("Nothing will be done.")
         return
 
-    if not any(user_data_dir.iterdir()):
-        print(f'There exists no files under "{user_data_dir}".')
-        print("Nothing will be done.")
-        return
-
-    print("Proceeding will remove the following files:\n")
-    for file in user_data_dir.iterdir():
-        print(f"    * {file}")
+    print("Proceeding will remove the following file:\n")
+    print(f"    * {file}")
     print()
 
     choice = input("Continue? [y/N] ")
     should_remove = choice.lower().startswith("y")
     if should_remove:
-        for file in user_data_dir.iterdir():
-            file.unlink()  # unlink <=> rm
-            print(f'Removed "{file}"')
+        file.unlink()  # unlink <=> rm
+        print(f'Removed "{file}"')
     else:
         print("Nothing was removed.")
 
@@ -2238,7 +2231,7 @@ def main():
     args = ExptoolArgumentParser().parse_args()
 
     if args.purge_config:
-        remove_user_data_files()
+        remove_last_config()
         sys.exit(0)
 
     if args.use_last_config:

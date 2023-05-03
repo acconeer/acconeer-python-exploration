@@ -13,3 +13,4 @@
 ### Fixed
 - A111: Perform handshake on multiple baudrate even when overriding baudrate
 - A111: Fix bug with not being able to untick override baudrate option
+- A111: Bug in acconeer.exptool.app --purge-config which caused a crash
