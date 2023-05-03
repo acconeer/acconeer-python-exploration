@@ -8,3 +8,4 @@ from ._processor import (
     ProcessorConfig,
     ProcessorResult,
 )
+from ._ref_app import RefApp, RefAppConfig, RefAppResult
