@@ -9,3 +9,6 @@
 ### Changed
 
 ### Fixed
+
+### Removed
+- Breathing example application removed
