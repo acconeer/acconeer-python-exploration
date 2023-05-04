@@ -87,22 +87,31 @@ def main() -> None:
         print("Unreleased Changelog contains illegal version tag headline")
         status = False
 
-    # First, we check if this is a "Prepare release" commit.
-    # If it's not, we check if the current commit is tagged.
-    current_tag = get_current_commit_prepare_release_version() or get_current_commit_tag()
+    # The version if this is a "Prepare release" commit.
+    prepare_release_version = get_current_commit_prepare_release_version()
 
-    if current_tag is None or Version(current_tag).is_prerelease:
+    # The current git tag
+    git_tag = get_current_commit_tag()
+
+    version_tag = prepare_release_version or git_tag
+
+    if version_tag is None or Version(version_tag).is_prerelease:
         exit(0 if status else 1)
 
-    print(f"Current commit is tagged ({current_tag}).")
+    if prepare_release_version is not None:
+        print(f"Current commit is a prepare commit for {prepare_release_version}.")
+    elif git_tag is not None:
+        print(f"Current commit is tagged ({git_tag}).")
+    else:
+        assert False
 
     first_match = get_first_match_in_string(VERSION_PATTERN, changelog.read_text())
     print(f'Found "{first_match}" in {FILE_PATH}', end=" ... ")
 
-    if first_match == current_tag:
-        print(f"Which matches {current_tag} exactly.")
+    if first_match == version_tag:
+        print(f"Which matches {version_tag} exactly.")
     else:
-        print(f'Which does not match "{current_tag}".')
+        print(f'Which does not match "{version_tag}".')
         status = False
 
     empty_unreleased_changelog = (
