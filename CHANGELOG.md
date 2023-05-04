@@ -1,5 +1,20 @@
 # Changelog
 
+## v6.0.5
+
+### Added
+- A121: Surface velocity: Validation added to check that start point is
+  larger than the surface distance
+- Tabs in the A121 Application
+
+### Changed
+- A121: Surface velocity: Remove unused sensor angle from processing config
+
+### Fixed
+- A111: Perform handshake on multiple baudrate even when overriding baudrate
+- A111: Fix bug with not being able to untick override baudrate option
+- A111: Bug in acconeer.exptool.app --purge-config which caused a crash
+
 ## v6.0.4
 
 ### Changed
