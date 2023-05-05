@@ -27,10 +27,10 @@ Start the Exploration Tool Application::
 
 To automatically download the latest binary file:
 
-1. Open the **Flash tool** by clicking the **Flash** button located in the top bar
+1. Open the **Flash tool** by selecting the **Flash tab** in the tab selection
 2. Click the **Get latest bin file** button
 
-.. figure:: /_static/gui/flash_tool_dialog.png
+.. figure:: /_static/gui/flash_tool_dialog_xm125.png
    :align: center
    :width: 80%
 
