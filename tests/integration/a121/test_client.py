@@ -21,7 +21,49 @@ def client_kwargs(request, port_from_cli):
     return request.param
 
 
-class TestAClosedClient:
+@pytest.fixture
+def tmp_h5_file_path(tmp_path):
+    return tmp_path / "record.h5"
+
+
+@pytest.fixture
+def h5_recorder(tmp_h5_file_path):
+    with a121.H5Recorder(tmp_h5_file_path) as recorder:
+        yield recorder
+
+
+class CanAttachAndDetachRecorder:
+    """Mixin test cases for Client's Recorder handling in all happy paths"""
+
+    def test_can_attach_a_recorder(self, client, h5_recorder):
+        client.attach_recorder(h5_recorder)
+
+    def test_can_detach_recorder(self, client, h5_recorder):
+        assert client.detach_recorder() is None
+
+        client.attach_recorder(h5_recorder)
+        assert client.detach_recorder() is h5_recorder
+
+    def test_can_only_have_one_recorder_attached_at_a_time(self, client, h5_recorder):
+        client.attach_recorder(h5_recorder)
+
+        with pytest.raises(a121.ClientError):
+            client.attach_recorder(h5_recorder)
+
+
+class CannotPlayAroundWithRecorder:
+    """Mixin test cases for Client's Recorder handling in all sad paths"""
+
+    def test_cannot_attach_a_recorder(self, client, h5_recorder):
+        with pytest.raises(a121.ClientError):
+            client.attach_recorder(h5_recorder)
+
+    def test_cannot_detach_a_recorder(self, client, h5_recorder):
+        with pytest.raises(a121.ClientError):
+            client.detach_recorder()
+
+
+class TestAClosedClient(CannotPlayAroundWithRecorder):
     @pytest.fixture
     def client(self, client_kwargs):
         c = a121.Client.open(**client_kwargs)
@@ -56,7 +98,7 @@ class TestAClosedClient:
             _ = client.extended_metadata
 
 
-class TestAConnectedClient:
+class TestAConnectedClient(CanAttachAndDetachRecorder):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
@@ -90,16 +132,12 @@ class TestAConnectedClient:
             _ = client.extended_metadata
 
 
-class TestASetupClient:
+class TestASetupClient(CanAttachAndDetachRecorder):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             yield c
-
-    @pytest.fixture
-    def tmp_h5_file_path(self, tmp_path):
-        return tmp_path / "record.h5"
 
     def test_reports_correct_statuses(self, client):
         assert client.connected
@@ -257,17 +295,13 @@ class TestASetupClient:
         assert record.calibrations_provided[4]
 
 
-class TestAStartedClient:
+class TestAStartedClient(CannotPlayAroundWithRecorder):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
             c.setup_session(a121.SessionConfig())
             c.start_session()
             yield c
-
-    @pytest.fixture
-    def tmp_h5_file_path(self, tmp_path):
-        return tmp_path / "record.h5"
 
     @pytest.fixture
     def client_with_recorder(self, client_kwargs, tmp_h5_file_path):
@@ -296,10 +330,6 @@ class TestAStartedClient:
 
         for result_a, result_b in zip(record.results, results):
             assert result_a == result_b
-
-    def test_cannot_attach_a_recorder(self, client, tmp_h5_file_path):
-        with pytest.raises(a121.ClientError):
-            client.attach_recorder(a121.H5Recorder(tmp_h5_file_path, client))
 
     def test_can_stop(self, client):
         client.stop_session()

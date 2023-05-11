@@ -153,6 +153,11 @@ class Client(ClientABCWithGoodError):
         ...
 
     @abc.abstractmethod
+    def detach_recorder(self) -> Optional[Recorder]:
+        """Detaches and returns the attached recorder (if present)."""
+        ...
+
+    @abc.abstractmethod
     def close(self) -> None:
         """Closes the connection to the host"""
         ...

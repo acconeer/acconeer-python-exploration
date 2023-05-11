@@ -111,7 +111,10 @@ class H5Recorder(Recorder):
         self._last_write_time = 0.0
         self._current_session_group: Optional[h5py.Group] = None
 
-        if attachable is not None:
+        if attachable is None:
+            self._attachable = None
+        else:
+            self._attachable = attachable
             attachable.attach_recorder(self)
 
         if _lib_version is None:
@@ -269,9 +272,15 @@ class H5Recorder(Recorder):
         self._num_frames_current_session = 0
 
     def close(self) -> Any:
-        self._stop_session()
-        if self.owns_file:
-            self.file.close()
+        try:
+            self._stop_session()
+
+            # If the client has self as an attached recorder, make sure to detatch it.
+            if self._attachable is not None:
+                _ = self._attachable.detach_recorder()
+        finally:
+            if self.owns_file:
+                self.file.close()
 
     @staticmethod
     def _create_result_datasets(g: h5py.Group, metadata: Metadata) -> None:

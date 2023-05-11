@@ -21,6 +21,9 @@ class RecorderAttachable(te.Protocol):
     def attach_recorder(self, recorder: Recorder) -> None:
         ...
 
+    def detach_recorder(self) -> Optional[Recorder]:
+        ...
+
 
 class Recorder(te.Protocol):
     def _start(

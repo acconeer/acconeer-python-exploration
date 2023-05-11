@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
@@ -54,11 +54,34 @@ class CommonClient(Client):
         if self.session_is_started:
             raise ClientError("Cannot attach a recorder when session is started.")
 
+        if not self.connected:
+            raise ClientError("Cannot attach a recorder to a closed client")
+
+        if self._recorder is not None:
+            raise ClientError(
+                "Client already has a recorder attached. "
+                + "Try detaching the current recorder before attaching a new recorder."
+            )
+
         self._recorder = recorder
         self._recorder._start(
             client_info=self.client_info,
             server_info=self.server_info,
         )
+
+    def detach_recorder(self) -> Optional[Recorder]:
+        if self.session_is_started:
+            raise ClientError("Cannot detach a recorder when session is started.")
+
+        if not self.connected:
+            raise ClientError("Cannot detach a recorder from a closed client")
+
+        if self._recorder is None:
+            return None
+        else:
+            previously_attached_recorder = self._recorder
+            self._recorder = None
+            return previously_attached_recorder
 
     def _recorder_start_session(self) -> None:
         if self._recorder is not None:
@@ -79,14 +102,6 @@ class CommonClient(Client):
     def _recorder_stop_session(self) -> None:
         if self._recorder is not None:
             self._recorder._stop_session()
-
-    def _recorder_close(self) -> Any:
-        if self._recorder is None:
-            recorder_result = None
-        else:
-            recorder_result = self._recorder.close()
-            self._recorder = None
-        return recorder_result
 
     def _recorder_sample(self, extended_results: list[dict[int, Result]]) -> None:
         if self._recorder is not None:
