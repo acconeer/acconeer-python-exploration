@@ -1,5 +1,33 @@
 # Changelog
 
+## v7.0.0
+This release is not fully backwards compatibility,
+which calls for a *major bump* (`v6 -> v7`).
+
+### Changed
+`Client` & `H5Recorder` classes have been changed (and upgraded).
+`H5Recorder` is now able to record multiple `Client` sessions in a single file.
+Recommended usage can be seen below.
+Detectors and Reference Applications have gotten no changes.
+
+```
+client = a121.Client.open()
+
+with a121.H5Recorder("filename.h5", client):
+    for number_of_sessions in range(10):
+        client.setup_session(a121.SessionConfig())
+        client.start_session()
+
+        for _ in range(10):
+            client.get_next()
+
+        client.stop_session()
+
+client.close()
+```
+
+All examples have been updated accordingly.
+
 ## v6.0.5
 
 ### Added
