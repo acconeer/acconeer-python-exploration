@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.0.1
+
+### Fixed
+- Recording bug introduced in v7.0.0 that broke all algorithms.
+
 ## v7.0.0
 This release is not fully backwards compatibility,
 which calls for a *major bump* (`v6 -> v7`).
