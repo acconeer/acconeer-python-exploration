@@ -65,7 +65,6 @@ class GenericProcessorBackendPluginBase(
     _processor_instance: Optional[
         GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT]
     ]
-    _recorder: Optional[a121.H5Recorder]
     _started: bool
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], ProcessorPluginPreset[ProcessorConfigT]]] = {}
@@ -168,9 +167,11 @@ class GenericProcessorBackendPluginBase(
         if self.client is None:
             raise RuntimeError("Client is not attached. Can not 'stop'.")
 
-        if self._recorder is not None:
-            self._recorder.close()
         self.client.stop_session()
+
+        recorder = self.client.detach_recorder()
+        if recorder is not None:
+            recorder.close()
 
     @classmethod
     @abc.abstractmethod

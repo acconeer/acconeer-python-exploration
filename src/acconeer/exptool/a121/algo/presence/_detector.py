@@ -375,7 +375,12 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         if not self.started:
             raise RuntimeError("Already stopped")
 
-        recorder_result = self.client.stop_session()
+        self.client.stop_session()
+        recorder = self.client.detach_recorder()
+        if recorder is None:
+            recorder_result = None
+        else:
+            recorder_result = recorder.close()
 
         self.started = False
 
