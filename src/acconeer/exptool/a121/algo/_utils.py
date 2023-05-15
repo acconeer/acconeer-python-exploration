@@ -285,6 +285,20 @@ def estimate_frame_rate(client: a121.Client, session_config: a121.SessionConfig)
     return float(1.0 / np.nanmean(delta_times))
 
 
+def exponential_smoothing_coefficient(fs: float, time_constant: float) -> float:
+    """Calculate the exponential smoothing coefficient.
+
+    Typical usage:
+
+    y = y * coeff + x * (1 - coeff)
+
+    :param fs: Sampling frequency.
+    :param time_constant: Time constant.
+    """
+    dt = 1 / fs
+    return float(np.exp(-dt / time_constant))
+
+
 def _safe_ceil(x: float) -> float:
     """Perform safe ceil.
 

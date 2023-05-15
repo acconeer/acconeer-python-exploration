@@ -18,6 +18,7 @@ from ._utils import (
     PERCEIVED_WAVELENGTH,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
     double_buffering_frame_filter,
+    exponential_smoothing_coefficient,
     find_peaks,
     get_approx_fft_vels,
     get_distance_filter_coeffs,
