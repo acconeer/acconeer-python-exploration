@@ -8,6 +8,7 @@ from .app_model import PluginSpec
 
 def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a121.algo.bilateration._plugin import BILATERATION_PLUGIN
+    from acconeer.exptool.a121.algo.breathing._ref_app_plugin import BREATHING_PLUGIN
     from acconeer.exptool.a121.algo.distance._detector_plugin import DISTANCE_DETECTOR_PLUGIN
     from acconeer.exptool.a121.algo.phase_tracking._plugin import PHASE_TRACKING_PLUGIN
     from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
@@ -23,6 +24,7 @@ def load_default_plugins() -> list[PluginSpec]:
     # Please keep in lexicographical order
     return [
         BILATERATION_PLUGIN,
+        BREATHING_PLUGIN,
         DISTANCE_DETECTOR_PLUGIN,
         PHASE_TRACKING_PLUGIN,
         PRESENCE_DETECTOR_PLUGIN,
