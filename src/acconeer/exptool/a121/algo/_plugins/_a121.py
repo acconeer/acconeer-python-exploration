@@ -55,7 +55,14 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     def load_from_file(self, *, path: Path) -> None:
         try:
             self._opened_record = a121.H5Record(h5py.File(path, mode="r"))
-            replaying_client = a121._ReplayingClient(self._opened_record)
+
+            # This is to be able to replay files recorded before v7.0.0
+            # when there were only one session per file
+            if self._opened_record.num_sessions <= 1:
+                replaying_client = a121._ReplayingClient(self._opened_record, cycled_session_idx=0)
+            else:
+                replaying_client = a121._ReplayingClient(self._opened_record)
+
             self.load_from_record_setup(record=self._opened_record)
         except Exception as exc:
             self._opened_record = None
