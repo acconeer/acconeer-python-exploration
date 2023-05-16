@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.0.2
+
+### Fixed
+- A121: Fix replaying issues in apps
+
 ## v7.0.1
 
 ### Fixed
