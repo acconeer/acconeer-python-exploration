@@ -596,19 +596,19 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def _on_config_update(self, config: DetectorConfig) -> None:
-        self.app_model.put_backend_plugin_task("update_config", {"config": config})
+        BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)
 
     def _on_processor_config_update(self, config: ProcessorConfig) -> None:
-        self.app_model.put_backend_plugin_task("update_processor_config", {"config": config})
+        BackendPlugin.update_processor_config.rpc(self.app_model.put_task, config=config)
 
     def _on_sensor_ids_update(self, sensor_ids: list[int]) -> None:
-        self.app_model.put_backend_plugin_task("update_sensor_ids", {"sensor_ids": sensor_ids})
+        BackendPlugin.update_sensor_ids.rpc(self.app_model.put_task, sensor_ids=sensor_ids)
 
     def _on_calibrate_detector(self) -> None:
-        self.app_model.put_backend_plugin_task("calibrate_detector")
+        BackendPlugin.calibrate_detector.rpc(self.app_model.put_task)
 
     def _send_defaults_request(self) -> None:
-        self.app_model.put_backend_plugin_task("restore_defaults")
+        BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
 
 
 class PluginSpec(PluginSpecBase):

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import Generic, Optional, Type
+from typing import Any, Generic, Optional, Type
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
 
@@ -25,7 +25,7 @@ from acconeer.exptool.app.new import (
     icons,
 )
 
-from .backend_plugin import ProcessorBackendPluginSharedState
+from .backend_plugin import ProcessorBackendPluginBase, ProcessorBackendPluginSharedState
 
 
 log = logging.getLogger(__name__)
@@ -82,13 +82,14 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     def _on_session_config_update(self, session_config: a121.SessionConfig) -> None:
-        self.app_model.put_backend_plugin_task(
-            "update_session_config", {"session_config": session_config}
+        ProcessorBackendPluginBase.update_session_config.rpc(
+            self.app_model.put_task, session_config=session_config
         )
 
     def _on_processor_config_update(self, processor_config: ProcessorConfigT) -> None:
-        self.app_model.put_backend_plugin_task(
-            "update_processor_config", {"processor_config": processor_config}
+        ProcessorBackendPluginBase[ProcessorConfigT, Any].update_processor_config.rpc(
+            self.app_model.put_task,
+            processor_config=processor_config,
         )
 
     def on_backend_state_update(

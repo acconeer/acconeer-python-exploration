@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import queue
@@ -39,8 +40,10 @@ from acconeer.exptool.app.new.backend import (
     GeneralMessage,
     LogMessage,
     Message,
+    Model,
     PluginStateMessage,
     StatusMessage,
+    Task,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice  # type: ignore[import]
@@ -322,21 +325,20 @@ class AppModel(QObject):
 
         log.debug(f"Put backend task with name: '{name}', key: {key.time_low}")
 
-    def put_backend_plugin_task(
+    def put_nonplugin_task(
         self,
-        name: str,
-        kwargs: Optional[dict[str, Any]] = None,
+        task: Task,
         *,
-        on_ok: Optional[Callable[[], None]] = None,
         on_error: Optional[Callable[[Exception, Optional[str]], None]] = None,
     ) -> None:
         self._put_backend_task(
-            name,
-            kwargs,
-            plugin=True,
-            on_ok=on_ok,
-            on_error=on_error or self.emit_error,
+            *task[:-1],
+            plugin=False,
+            on_error=on_error if on_error is not None else self.emit_error,
         )
+
+    def put_task(self, task: Task) -> None:
+        self._put_backend_task(*task[:-1], plugin=True, on_error=self.emit_error)
 
     def _handle_backend_closed_task(self, closed_task: ClosedTask) -> None:
         log.debug(f"Got backend closed task: {closed_task.key.time_low}")
@@ -585,20 +587,18 @@ class AppModel(QObject):
 
         log.debug(f"Connecting client with {open_client_parameters}")
 
-        on_error = self.emit_error
-        if auto:
-            on_error = self._failed_autoconnect
-
-        self._put_backend_task(
-            "connect_client",
-            {"open_client_parameters": open_client_parameters},
-            on_error=on_error,
+        Model.connect_client.rpc(
+            functools.partial(
+                self.put_nonplugin_task,
+                on_error=self._failed_autoconnect if auto else self.emit_error,
+            ),
+            open_client_parameters=open_client_parameters,
         )
         self.connection_warning = None
         self.broadcast()
 
     def disconnect_client(self) -> None:
-        self._put_backend_task("disconnect_client", {})
+        Model.disconnect_client.rpc(self.put_nonplugin_task)
         self.connection_warning = None
         self._a121_server_info = None
         self.broadcast()
@@ -707,7 +707,7 @@ class AppModel(QObject):
         self.backend_plugin_state = None
         self.broadcast()
 
-        self._put_backend_task("unload_plugin", {}, on_error=self.emit_error)
+        Model.unload_plugin.rpc(self.put_nonplugin_task)
 
     def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
         log.debug(f"AppModel is loading the plugin {plugin}")
@@ -717,15 +717,12 @@ class AppModel(QObject):
         self._unload_current_plugin()
 
         if plugin is not None:
-            self._put_backend_task(
-                "load_plugin",
-                {
-                    "plugin_factory": plugin.create_backend_plugin,
-                    "key": plugin.key,
-                },
-                on_error=self.emit_error,
+            Model.load_plugin.rpc(
+                self.put_nonplugin_task,
+                plugin_factory=plugin.create_backend_plugin,
+                key=plugin.key,
             )
-            self.put_backend_plugin_task("load_from_cache", {})
+            BackendPlugin.load_from_cache.rpc(self.put_task)
 
         self.sig_load_plugin.emit(plugin)
         self.plugin = plugin
@@ -733,14 +730,7 @@ class AppModel(QObject):
         self.broadcast_backend_state()
 
     def set_plugin_preset(self, preset_id: Enum) -> None:
-        self._put_backend_task(
-            "set_preset",
-            {
-                "preset_id": preset_id.value,
-            },
-            plugin=True,
-            on_error=self.emit_error,
-        )
+        BackendPlugin.set_preset.rpc(self.put_task, preset_id=preset_id.value)
 
     def save_to_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} saving to file '{path}'")
@@ -772,7 +762,7 @@ class AppModel(QObject):
             plugin = self._find_plugin("sparse_iq")  # noqa: F841
 
         self.load_plugin(plugin)
-        self.put_backend_plugin_task("load_from_file", {"path": path}, on_error=self.emit_error)
+        BackendPlugin.load_from_file.rpc(self.put_task, path=path)
 
     def _find_plugin(self, find_key: Optional[str]) -> PluginSpec:  # TODO: Also find by generation
         if find_key is None:

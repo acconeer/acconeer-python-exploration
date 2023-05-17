@@ -215,7 +215,14 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
 
 
 class A121ViewPluginBase(ViewPluginBase):
-    pass
+    def _send_start_request(self) -> None:
+        A121BackendPluginBase.start_session.rpc(
+            self.app_model.put_task,
+            with_recorder=self.app_model.recording_enabled,
+        )
+
+    def _send_stop_request(self) -> None:
+        A121BackendPluginBase.stop_session.rpc(self.app_model.put_task)
 
 
 class A121PlotPluginBase(PlotPluginBase):

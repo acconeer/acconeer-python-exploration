@@ -109,7 +109,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
         self.restore_defaults()
 
-    @is_task
     def _load_from_cache(self, file: h5py.File) -> None:
         self.shared_state.config = RefAppConfig.from_json(file["config"][()])
         self.shared_state.context = RefAppContext.from_h5(file["context"])
@@ -678,28 +677,26 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
-        self.app_model.put_backend_plugin_task("update_sensor_id", {"sensor_id": sensor_id})
+        BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
 
     def _on_config_update(self, config: RefAppConfig) -> None:
-        self.app_model.put_backend_plugin_task("update_config", {"config": config})
+        BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)
 
     # TODO: move to detector base (?)
     def _send_start_request(self) -> None:
-        self.app_model.put_backend_plugin_task(
-            "start_session",
-            {"with_recorder": self.app_model.recording_enabled},
-            on_error=self.app_model.emit_error,
+        BackendPlugin.start_session.rpc(
+            self.app_model.put_task, with_recorder=self.app_model.recording_enabled
         )
 
     # TODO: move to detector base (?)
     def _send_stop_request(self) -> None:
-        self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)
+        BackendPlugin.stop_session.rpc(self.app_model.put_task)
 
     def _on_calibrate_detector(self) -> None:
-        self.app_model.put_backend_plugin_task("calibrate_detector")
+        BackendPlugin.calibrate_detector.rpc(self.app_model.put_task)
 
     def _send_defaults_request(self) -> None:
-        self.app_model.put_backend_plugin_task("restore_defaults")
+        BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
 
 
 class PluginSpec(PluginSpecBase):

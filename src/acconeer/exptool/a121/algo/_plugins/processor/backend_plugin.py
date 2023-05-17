@@ -74,7 +74,7 @@ class GenericProcessorBackendPluginBase(
     ):
         super().__init__(callback=callback, generation=generation, key=key)
         self._processor_instance = None
-        self._log = BackendLogger.getLogger(__name__)
+        self._log: BackendLogger = BackendLogger.getLogger(__name__)
         self.restore_defaults()
 
     def _load_from_cache(self, file: h5py.File) -> None:

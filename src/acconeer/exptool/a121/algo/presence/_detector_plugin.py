@@ -627,13 +627,13 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
     def _on_config_update(self, config: DetectorConfig) -> None:
-        self.app_model.put_backend_plugin_task("update_config", {"config": config})
+        BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)
 
     def _send_defaults_request(self) -> None:
-        self.app_model.put_backend_plugin_task("restore_defaults")
+        BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
-        self.app_model.put_backend_plugin_task("update_sensor_id", {"sensor_id": sensor_id})
+        BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
 
 
 class PluginSpec(PluginSpecBase):

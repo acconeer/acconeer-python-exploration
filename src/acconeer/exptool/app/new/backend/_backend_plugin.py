@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import abc
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 import h5py
@@ -13,6 +14,7 @@ from acconeer.exptool.app.new import PluginGeneration
 from acconeer.exptool.app.new.storage import get_config_dir
 
 from ._message import BackendPluginStateMessage, Message, StatusMessage
+from ._tasks import is_task
 
 
 StateT = TypeVar("StateT")
@@ -42,8 +44,19 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         yield h5_file
         h5_file.close()
 
+    @is_task
     @abc.abstractmethod
     def load_from_cache(self) -> None:
+        pass
+
+    @is_task
+    @abc.abstractmethod
+    def load_from_file(self, *, path: Path) -> None:
+        pass
+
+    @is_task
+    @abc.abstractmethod
+    def set_preset(self, preset_id: int) -> None:
         pass
 
     @abc.abstractmethod
@@ -60,10 +73,6 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
 
     @abc.abstractmethod
     def teardown(self) -> None:
-        pass
-
-    @abc.abstractmethod
-    def set_preset(self, preset_id: int) -> None:
         pass
 
     def broadcast(self) -> None:

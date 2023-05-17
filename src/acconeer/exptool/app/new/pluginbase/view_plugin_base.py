@@ -52,13 +52,3 @@ class ViewPluginBase(UiPluginBase, abc.ABC, ViewPluginInterface):
 
     def handle_message(self, message: GeneralMessage) -> None:
         raise RuntimeError("ViewPlugins does not expect any messages ATM.")
-
-    def _send_start_request(self) -> None:
-        self.app_model.put_backend_plugin_task(
-            "start_session",
-            {"with_recorder": self.app_model.recording_enabled},
-            on_error=self.app_model.emit_error,
-        )
-
-    def _send_stop_request(self) -> None:
-        self.app_model.put_backend_plugin_task("stop_session", on_error=self.app_model.emit_error)

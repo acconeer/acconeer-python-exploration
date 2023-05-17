@@ -2,7 +2,7 @@
 # All rights reserved
 
 from ._application_client import ApplicationClient
-from ._backend import Backend, ClosedTask, Task
+from ._backend import Backend, ClosedTask
 from ._backend_logger import BackendLogger
 from ._backend_plugin import BackendPlugin
 from ._message import (
@@ -14,4 +14,5 @@ from ._message import (
     PluginStateMessage,
     StatusMessage,
 )
-from ._model import is_task
+from ._model import Model
+from ._tasks import Task, is_task

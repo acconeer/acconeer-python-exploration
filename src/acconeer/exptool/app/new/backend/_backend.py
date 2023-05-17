@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import time
 import traceback
 import uuid
 from multiprocessing.synchronize import Event as mp_EventType  # NOTE! this is not mp.Event.
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import attrs
 import psutil
@@ -19,6 +19,7 @@ from typing_extensions import Literal
 from ._backend_logger import BackendLogger
 from ._message import GeneralMessage, Message
 from ._model import Model
+from ._tasks import Task
 
 
 log = logging.getLogger(__name__)
@@ -30,11 +31,6 @@ class ClosedTask:
     exception: Optional[Exception] = attrs.field(default=None)
     traceback_format_exc: Optional[str] = attrs.field(default=None)
 
-
-TaskName = str
-TaskPlugin = bool
-TaskKwargs = Dict[str, Any]
-Task = Tuple[TaskName, TaskKwargs, TaskPlugin]
 
 ToBackendQueueItem = Union[
     Tuple[Literal["stop"], None],

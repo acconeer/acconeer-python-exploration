@@ -14,6 +14,7 @@ from acconeer.exptool.app.new._exceptions import HandledException
 
 from ._backend_plugin import BackendPlugin
 from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginStateMessage
+from ._tasks import is_task
 
 
 log = logging.getLogger(__name__)
@@ -22,11 +23,6 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 MessageHandler = Callable[[Message], None]
 BackendPluginFactory = Callable[[MessageHandler, str], BackendPlugin]
-
-
-def is_task(func: T) -> T:
-    setattr(func, "is_task", True)
-    return func
 
 
 class Model:
