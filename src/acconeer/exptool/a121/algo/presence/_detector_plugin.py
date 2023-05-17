@@ -62,7 +62,6 @@ class PluginPresetId(Enum):
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
         PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
         PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),

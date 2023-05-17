@@ -251,6 +251,40 @@ def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
     return sorted(viable_prfs, key=lambda prf: prf.frequency)[-1]
 
 
+def estimate_frame_rate(client: a121.Client, session_config: a121.SessionConfig) -> float:
+    """
+    Performs a measurement of the actual frame rate obtained by the configuration.
+    This is hardware dependent. Hence the solution using a measurement.
+
+    If a recorder is attached to the client,
+    this call will result in a new session being run and recorded!
+    """
+
+    delta_times = np.full(2, np.nan)
+
+    client.setup_session(session_config)
+    client.start_session()
+
+    for i in range(4):
+        result = client.get_next()
+        assert isinstance(result, a121.Result)
+
+        if i < 2:
+            # Ignore first read, it is sometimes inaccurate
+            last_time = result.tick_time
+            continue
+
+        time = result.tick_time
+        delta = time - last_time
+        last_time = time
+        delta_times = np.roll(delta_times, -1)
+        delta_times[-1] = delta
+
+    client.stop_session()
+
+    return float(1.0 / np.nanmean(delta_times))
+
+
 def _safe_ceil(x: float) -> float:
     """Perform safe ceil.
 

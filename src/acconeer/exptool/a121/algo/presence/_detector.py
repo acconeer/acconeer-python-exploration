@@ -12,11 +12,11 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.entities import Result
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, Controller, select_prf
+from acconeer.exptool.a121.algo._utils import estimate_frame_rate
 
 from ._processors import Processor, ProcessorConfig, ProcessorContext, ProcessorExtraResult
 
@@ -204,30 +204,6 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
         self.started = False
 
-    def _estimate_frame_rate(self) -> float:
-        delta_times = np.full(2, np.nan)
-
-        self.client.setup_session(self.session_config)
-        self.client.start_session()
-
-        for i in range(4):
-            result = self.client.get_next()
-            assert isinstance(result, Result)
-
-            if i < 2:
-                last_time = result.tick_time
-                continue
-
-            time = result.tick_time
-            delta = time - last_time
-            last_time = time
-            delta_times = np.roll(delta_times, -1)
-            delta_times[-1] = delta
-
-        self.client.stop_session()
-
-        return float(1.0 / np.nanmean(delta_times))
-
     def start(
         self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
     ) -> None:
@@ -240,7 +216,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
             extended=False,
         )
 
-        self.estimated_frame_rate = self._estimate_frame_rate()
+        self.estimated_frame_rate = estimate_frame_rate(self.client, self.session_config)
         # Add estimated frame rate to context if it differs more than 10% from the set frame rate
         if (
             np.abs(self.config.frame_rate - self.estimated_frame_rate) / self.config.frame_rate
