@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import warnings
+from enum import Enum
 from typing import Any, Optional, Tuple
 
 import attrs
@@ -14,9 +15,18 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo.presence._detector import Controller, Detector, DetectorConfig
+from acconeer.exptool.a121.algo._base import AlgoBaseT
+from acconeer.exptool.a121.algo._utils import estimate_frame_rate
+from acconeer.exptool.a121.algo.presence._detector import (
+    AlgoConfigBase,
+    Controller,
+    Detector,
+    DetectorConfig,
+    DetectorContext,
+    DetectorResult,
+)
 
-from ._processor import Processor, ProcessorConfig
+from ._processor import Processor, ProcessorConfig, ProcessorResult
 
 
 SPARSE_IQ_PPC = 24
@@ -34,11 +44,61 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
 
 
 @attrs.mutable(kw_only=True)
-class RefAppConfig(DetectorConfig):
+class PresenceZoneConfig(DetectorConfig):
     num_zones: int = attrs.field(default=7)
     """Maximum number of detection zones."""
 
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+
+        return super()._collect_validation_results()
+
+
+@attrs.mutable(kw_only=True)
+class PresenceWakeUpConfig(PresenceZoneConfig):
+    num_zones_for_wake_up: int = attrs.field(default=1)
+    """Number of detected zones needed for wake up."""
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        validation_results = super()._collect_validation_results()
+
+        if self.num_zones_for_wake_up > self.num_zones:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "num_zones_for_wake_up",
+                    f"Must not be more than number of zones ({self.num_zones})",
+                )
+            )
+
+        return validation_results
+
+
+@attrs.mutable(kw_only=True)
+class RefAppConfig(AlgoConfigBase):
+    nominal_config: PresenceZoneConfig = attrs.field(factory=PresenceZoneConfig)
+    """Configuration used to keep detection."""
+
+    wake_up_config: Optional[PresenceWakeUpConfig] = attrs.field(factory=PresenceWakeUpConfig)
+    """Configuration used for wake up."""
+
+    wake_up_mode: bool = attrs.field(default=True)
+    """Switch between two configurations based on presence detection."""
+
     show_all_detected_zones: bool = attrs.field(default=False)
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+        if self.wake_up_config is not None:
+            validation_results.extend(self.wake_up_config._collect_validation_results())
+
+        return validation_results
+
+    @classmethod
+    def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
+        d["nominal_config"] = PresenceZoneConfig.from_dict(d["nominal_config"])
+        d["wake_up_config"] = PresenceWakeUpConfig.from_dict(d["wake_up_config"])
+
+        return cls(**d)
 
 
 @attrs.frozen(kw_only=True)
@@ -73,8 +133,27 @@ class RefAppResult:
     max_intra_zone: Optional[int] = attrs.field()
     """The zone for maximum fast motion presence score if fast presence detecte, else None."""
 
+    used_config: _Mode = attrs.field()
+    """The configuration used for the measurement."""
+
+    wake_up_detections: Optional[npt.NDArray[np.int_]] = attrs.field()
+    """Wake up detection result."""
+
+    switch_delay: bool = attrs.field()
+    """True if data was collected during switch delay."""
+
+    service_result: a121.Result = attrs.field()
+
+
+class _Mode(Enum):
+    WAKE_UP_CONFIG = 0
+    NOMINAL_CONFIG = 1
+
 
 class RefApp(Controller[RefAppConfig, RefAppResult]):
+
+    wake_up_detections: Optional[npt.NDArray[np.int_]]
+
     def __init__(
         self,
         *,
@@ -86,12 +165,84 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.sensor_id = sensor_id
 
         self.started = False
+        self.delay_count = 0
+        if ref_app_config.wake_up_mode:
+            assert ref_app_config.wake_up_config is not None
+            self.wake_up_detections = np.zeros(ref_app_config.wake_up_config.num_zones)
+            self.max_zone_time_n = int(np.around(2 * ref_app_config.wake_up_config.frame_rate))
+        else:
+            self.wake_up_detections = None
 
     def start(
         self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
     ) -> None:
         if self.started:
             raise RuntimeError("Already started")
+
+        self.nominal_detector_config = self._get_detector_config(self.config.nominal_config)
+
+        sensor_config = Detector._get_sensor_config(self.nominal_detector_config)
+        session_config = a121.SessionConfig(
+            {self.sensor_id: sensor_config},
+            extended=False,
+        )
+
+        self.nominal_detector_context = DetectorContext(
+            estimated_frame_rate=estimate_frame_rate(self.client, session_config)
+        )
+        distances = np.linspace(
+            self.config.nominal_config.start_m,
+            self.config.nominal_config.end_m,
+            sensor_config.num_points,
+        )
+        self.config.nominal_config.num_zones = min(
+            self.config.nominal_config.num_zones, distances.size
+        )
+
+        self.nominal_processor_config = ProcessorConfig(
+            num_zones=self.config.nominal_config.num_zones
+        )
+
+        if self.config.wake_up_mode:
+            self._mode = _Mode.WAKE_UP_CONFIG
+            assert self.config.wake_up_config is not None
+
+            self.wake_up_detector_config = self._get_detector_config(self.config.wake_up_config)
+
+            sensor_config = Detector._get_sensor_config(self.wake_up_detector_config)
+            session_config = a121.SessionConfig(
+                {self.sensor_id: sensor_config},
+                extended=False,
+            )
+
+            self.wake_up_detector_context = DetectorContext(
+                estimated_frame_rate=estimate_frame_rate(self.client, session_config)
+            )
+            distances = np.linspace(
+                self.config.wake_up_config.start_m,
+                self.config.wake_up_config.end_m,
+                sensor_config.num_points,
+            )
+            self.config.wake_up_config.num_zones = min(
+                self.config.wake_up_config.num_zones, distances.size
+            )
+            self.config.wake_up_config.num_zones_for_wake_up = min(
+                self.config.wake_up_config.num_zones_for_wake_up,
+                self.config.wake_up_config.num_zones,
+            )
+
+            self.wake_up_processor_config = ProcessorConfig(
+                num_zones=self.config.wake_up_config.num_zones
+            )
+
+            detector_config = self.wake_up_detector_config
+            detector_context = self.wake_up_detector_context
+            processor_config = self.wake_up_processor_config
+        else:
+            self._mode = _Mode.NOMINAL_CONFIG
+            detector_config = self.nominal_detector_config
+            detector_context = self.nominal_detector_context
+            processor_config = self.nominal_processor_config
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
@@ -105,47 +256,62 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
                 # Should never happen as we currently only have the H5Recorder
                 warnings.warn("Will not save algo data")
 
-        detector_config = self._get_detector_config(self.config)
-
         self.detector = Detector(
-            client=self.client, sensor_id=self.sensor_id, detector_config=detector_config
+            client=self.client,
+            sensor_id=self.sensor_id,
+            detector_config=detector_config,
+            detector_context=detector_context,
         )
-        self.detector.start(recorder=recorder, _algo_group=algo_group)
+        self.detector.start(recorder=None, _algo_group=None)
         assert self.detector.detector_metadata is not None
-
         session_config = self.detector.session_config
 
-        processor_config = ProcessorConfig(num_zones=self.config.num_zones)
-
         self.ref_app_processor = Processor(
-            processor_config, detector_config, session_config, self.detector.detector_metadata
+            processor_config,
+            detector_config,
+            session_config,
+            self.detector.detector_metadata,
+        )
+
+        self.max_switch_delay_n = (
+            np.maximum(
+                (
+                    self.config.nominal_config.inter_frame_deviation_time_const
+                    + self.config.nominal_config.inter_output_time_const
+                ),
+                (
+                    self.config.nominal_config.intra_frame_time_const
+                    + self.config.nominal_config.intra_output_time_const
+                ),
+            )
+            * self.config.nominal_config.frame_rate
         )
 
         self.started = True
 
     @classmethod
-    def _get_detector_config(cls, ref_app_config: RefAppConfig) -> DetectorConfig:
+    def _get_detector_config(cls, presence_zone_config: PresenceZoneConfig) -> DetectorConfig:
         return DetectorConfig(
-            start_m=ref_app_config.start_m,
-            end_m=ref_app_config.end_m,
-            profile=ref_app_config.profile,
-            step_length=ref_app_config.step_length,
-            frame_rate=ref_app_config.frame_rate,
-            sweeps_per_frame=ref_app_config.sweeps_per_frame,
-            hwaas=ref_app_config.hwaas,
-            inter_frame_idle_state=ref_app_config.inter_frame_idle_state,
-            intra_enable=ref_app_config.intra_enable,
-            intra_detection_threshold=ref_app_config.intra_detection_threshold,
-            intra_frame_time_const=ref_app_config.intra_frame_time_const,
-            intra_output_time_const=ref_app_config.intra_output_time_const,
-            inter_enable=ref_app_config.inter_enable,
-            inter_detection_threshold=ref_app_config.inter_detection_threshold,
-            inter_frame_fast_cutoff=ref_app_config.inter_frame_fast_cutoff,
-            inter_frame_slow_cutoff=ref_app_config.inter_frame_slow_cutoff,
-            inter_frame_deviation_time_const=ref_app_config.inter_frame_deviation_time_const,
-            inter_output_time_const=ref_app_config.inter_output_time_const,
-            inter_phase_boost=ref_app_config.inter_phase_boost,
-            inter_frame_presence_timeout=ref_app_config.inter_frame_presence_timeout,
+            start_m=presence_zone_config.start_m,
+            end_m=presence_zone_config.end_m,
+            profile=presence_zone_config.profile,
+            step_length=presence_zone_config.step_length,
+            frame_rate=presence_zone_config.frame_rate,
+            sweeps_per_frame=presence_zone_config.sweeps_per_frame,
+            hwaas=presence_zone_config.hwaas,
+            inter_frame_idle_state=presence_zone_config.inter_frame_idle_state,
+            intra_enable=presence_zone_config.intra_enable,
+            intra_detection_threshold=presence_zone_config.intra_detection_threshold,
+            intra_frame_time_const=presence_zone_config.intra_frame_time_const,
+            intra_output_time_const=presence_zone_config.intra_output_time_const,
+            inter_enable=presence_zone_config.inter_enable,
+            inter_detection_threshold=presence_zone_config.inter_detection_threshold,
+            inter_frame_fast_cutoff=presence_zone_config.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=presence_zone_config.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=presence_zone_config.inter_frame_deviation_time_const,
+            inter_output_time_const=presence_zone_config.inter_output_time_const,
+            inter_phase_boost=presence_zone_config.inter_phase_boost,
+            inter_frame_presence_timeout=presence_zone_config.inter_frame_presence_timeout,
         )
 
     def get_next(self) -> RefAppResult:
@@ -154,6 +320,10 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
         result = self.detector.get_next()
         processor_result = self.ref_app_processor.process(result)
+
+        used_config = self._mode
+        if self.config.wake_up_mode:
+            self.determine_swapping(result, processor_result)
 
         return RefAppResult(
             zone_limits=processor_result.zone_limits,
@@ -166,9 +336,78 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             intra_presence_score=result.intra_presence_score,
             intra_zone_detections=processor_result.intra_zone_detections,
             max_intra_zone=processor_result.max_intra_zone,
+            used_config=used_config,
+            wake_up_detections=self.wake_up_detections,
+            switch_delay=self.delay_count > 0,
+            service_result=result.service_result,
         )
 
-    def update_config(self, config: DetectorConfig) -> None:
+    def determine_swapping(
+        self, result: DetectorResult, processor_result: ProcessorResult
+    ) -> None:
+        if self.delay_count == 0:
+            if self._mode == _Mode.WAKE_UP_CONFIG and result.presence_detected:
+                assert self.config.wake_up_config is not None
+                assert self.wake_up_detections is not None
+                num_detections = 0
+                for i, zone_detection in enumerate(processor_result.total_zone_detections):
+                    if zone_detection == 1:
+                        self.wake_up_detections[i] = self.max_zone_time_n
+
+                    if self.wake_up_detections[i] > 0:
+                        num_detections += 1
+                        self.wake_up_detections[i] -= 1
+
+                if num_detections >= self.config.wake_up_config.num_zones_for_wake_up:
+                    self.swap_config(
+                        self.nominal_detector_config,
+                        self.nominal_processor_config,
+                        self.nominal_detector_context,
+                    )
+                    self._mode = _Mode.NOMINAL_CONFIG
+                    self.delay_count += 1
+            elif self._mode == _Mode.NOMINAL_CONFIG and not result.presence_detected:
+                self.swap_config(
+                    self.wake_up_detector_config,
+                    self.wake_up_processor_config,
+                    self.wake_up_detector_context,
+                )
+                self._mode = _Mode.WAKE_UP_CONFIG
+        else:
+            if self.delay_count == 1:
+                assert self.wake_up_detections is not None
+                self.wake_up_detections.fill(0)
+
+            self.delay_count += 1
+            if self.delay_count >= self.max_switch_delay_n + 1 or result.presence_detected:
+                self.delay_count = 0
+
+    def swap_config(
+        self,
+        detector_config: DetectorConfig,
+        processor_config: ProcessorConfig,
+        detector_context: DetectorContext,
+    ) -> None:
+        self.detector.stop()
+
+        self.detector = Detector(
+            client=self.client,
+            sensor_id=self.sensor_id,
+            detector_config=detector_config,
+            detector_context=detector_context,
+        )
+
+        self.detector.start(recorder=None, _algo_group=None)
+        assert self.detector.detector_metadata is not None
+
+        session_config = self.detector.session_config
+        processor_config = ProcessorConfig(num_zones=processor_config.num_zones)
+
+        self.ref_app_processor = Processor(
+            processor_config, detector_config, session_config, self.detector.detector_metadata
+        )
+
+    def update_config(self, config: RefAppConfig) -> None:
         raise NotImplementedError
 
     def stop(self) -> Any:

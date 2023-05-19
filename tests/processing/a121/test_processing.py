@@ -16,7 +16,6 @@ from . import (
     distance_test,
     presence_test,
     resources,
-    smart_presence_test,
     tank_level_test,
     touchless_button_test,
 )
@@ -103,12 +102,6 @@ def input_path(resource_name: str) -> Path:
             distance_test.DistanceDetectorResultH5Serializer,
             distance_test.detector_result_comparator,
             "input-distance-detector-5_to_200_cm_close_range_cancellation_disabled.h5",
-        ),
-        (
-            smart_presence_test.smart_presence_controller,
-            smart_presence_test.SmartPresenceResultH5Serializer,
-            smart_presence_test.smart_presence_result_comparator,
-            "smart_presence.h5",
         ),
         (
             tank_level_test.tank_level_controller,

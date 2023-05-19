@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- A121: Smart presence: Add wake up mode
 
 ### Changed
 

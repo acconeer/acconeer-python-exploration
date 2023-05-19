@@ -5,11 +5,12 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, Mapping, Optional
+from typing import Callable, List, Mapping, Optional, Tuple
 
 import attrs
 import h5py
 import numpy as np
+import numpy.typing as npt
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
@@ -47,7 +48,15 @@ from acconeer.exptool.app.new import (
 )
 
 from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
-from ._ref_app import RefApp, RefAppConfig, RefAppResult, _load_algo_data
+from ._ref_app import (
+    PresenceWakeUpConfig,
+    PresenceZoneConfig,
+    RefApp,
+    RefAppConfig,
+    RefAppResult,
+    _load_algo_data,
+    _Mode,
+)
 
 
 @attrs.mutable(kw_only=True)
@@ -121,6 +130,16 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.shared_state.config = config
         self.broadcast()
 
+    @is_task
+    def update_nominal_config(self, *, config: PresenceZoneConfig) -> None:
+        self.shared_state.config.nominal_config = config
+        self.broadcast()
+
+    @is_task
+    def update_wake_up_config(self, *, config: PresenceWakeUpConfig) -> None:
+        self.shared_state.config.wake_up_config = config
+        self.broadcast()
+
     def save_to_cache(self, file: h5py.File) -> None:
         _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
         _create_h5_string_dataset(file, "plot_config", self.shared_state.plot_config.to_json())
@@ -145,17 +164,32 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             sensor_id=self.shared_state.sensor_id,
             ref_app_config=self.shared_state.config,
         )
+
         self._ref_app_instance.start(recorder)
+
+        nominal_sensor_config = Detector._get_sensor_config(
+            self._ref_app_instance.nominal_detector_config
+        )
+        distances = np.linspace(
+            self.shared_state.config.nominal_config.start_m,
+            self.shared_state.config.nominal_config.end_m,
+            nominal_sensor_config.num_points,
+        )
+        nominal_zone_limits = self._ref_app_instance.ref_app_processor.create_zones(
+            distances, self.shared_state.config.nominal_config.num_zones
+        )
+
+        # self._ref_app_instance.ref_app_processor.zone_limits will always be for
+        # wake_up_config if wake_up_mode is enabled
         self.callback(
             GeneralMessage(
                 name="setup",
                 kwargs=dict(
                     ref_app_config=self.shared_state.config,
-                    sensor_config=Detector._get_sensor_config(
-                        self._ref_app_instance.detector.config
-                    ),
                     plot_config=self.shared_state.plot_config,
                     estimated_frame_rate=self._ref_app_instance.detector.estimated_frame_rate,
+                    nominal_zone_limits=nominal_zone_limits,
+                    wake_up_zone_limits=self._ref_app_instance.ref_app_processor.zone_limits,
                 ),
                 recipient="plot_plugin",
             )
@@ -192,26 +226,22 @@ class PlotPlugin(DetectorPlotPluginBase):
     def setup(
         self,
         ref_app_config: RefAppConfig,
-        sensor_config: a121.SensorConfig,
         plot_config: PlotConfig,
         estimated_frame_rate: float,
+        nominal_zone_limits: npt.NDArray[np.float_],
+        wake_up_zone_limits: npt.NDArray[np.float_],
     ) -> None:
         self.ref_app_config = ref_app_config
-        self.distances = np.linspace(
-            ref_app_config.start_m, ref_app_config.end_m, sensor_config.num_points
-        )
+        self.nominal_config = ref_app_config.nominal_config
+        self.wake_up_config = ref_app_config.wake_up_config
 
         self.show_all_detected_zones = plot_config.show_all_detected_zones
 
         self.history_length_s = 5
-        self.history_length_n = int(round(self.history_length_s * estimated_frame_rate))
-        self.intra_history = np.zeros(self.history_length_n)
-        self.inter_history = np.zeros(self.history_length_n)
+        self.time_fifo: List[float] = []
+        self.intra_fifo: List[float] = []
+        self.inter_fifo: List[float] = []
 
-        self.num_sectors = min(ref_app_config.num_zones, self.distances.size)
-        self.sector_size = max(1, -(-self.distances.size // self.num_sectors))
-
-        self.sector_offset = (self.num_sectors * self.sector_size - self.distances.size) // 2
         win = self.plot_layout
 
         self.intra_limit_lines = []
@@ -233,22 +263,24 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.intra_hist_plot.setXRange(-self.history_length_s, 0)
         self.intra_history_smooth_max = et.utils.SmoothMax(estimated_frame_rate)
         self.intra_hist_plot.setYRange(0, 10)
-        if not self.ref_app_config.intra_enable:
+        if not self.nominal_config.intra_enable:
             intra_color = et.utils.color_cycler(1)
             intra_color = f"{intra_color}50"
-            intra_dashed_pen = pg.mkPen(intra_color, width=2.5, style=QtCore.Qt.DashLine)
-            intra_pen = pg.mkPen(intra_color, width=2)
+            self.nominal_intra_dashed_pen = pg.mkPen(
+                intra_color, width=2.5, style=QtCore.Qt.DashLine
+            )
+            self.nominal_intra_pen = pg.mkPen(intra_color, width=2)
         else:
-            intra_dashed_pen = et.utils.pg_pen_cycler(1, width=2.5, style="--")
-            intra_pen = et.utils.pg_pen_cycler(1)
+            self.nominal_intra_dashed_pen = et.utils.pg_pen_cycler(1, width=2.5, style="--")
+            self.nominal_intra_pen = et.utils.pg_pen_cycler(1)
 
-        self.intra_hist_curve = self.intra_hist_plot.plot(pen=intra_pen)
-        limit_line = pg.InfiniteLine(angle=0, pen=intra_dashed_pen)
+        self.intra_hist_curve = self.intra_hist_plot.plot(pen=self.nominal_intra_pen)
+        limit_line = pg.InfiniteLine(angle=0, pen=self.nominal_intra_dashed_pen)
         self.intra_hist_plot.addItem(limit_line)
         self.intra_limit_lines.append(limit_line)
 
         for line in self.intra_limit_lines:
-            line.setPos(self.ref_app_config.intra_detection_threshold)
+            line.setPos(self.nominal_config.intra_detection_threshold)
 
         # Inter presence history plot
 
@@ -266,134 +298,293 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.inter_hist_plot.setXRange(-self.history_length_s, 0)
         self.inter_history_smooth_max = et.utils.SmoothMax(estimated_frame_rate)
         self.inter_hist_plot.setYRange(0, 10)
-        if not self.ref_app_config.inter_enable:
+        if not self.nominal_config.inter_enable:
             inter_color = et.utils.color_cycler(0)
             inter_color = f"{inter_color}50"
-            inter_dashed_pen = pg.mkPen(inter_color, width=2.5, style=QtCore.Qt.DashLine)
-            inter_pen = pg.mkPen(inter_color, width=2)
+            self.nominal_inter_dashed_pen = pg.mkPen(
+                inter_color, width=2.5, style=QtCore.Qt.DashLine
+            )
+            self.nominal_inter_pen = pg.mkPen(inter_color, width=2)
         else:
-            inter_pen = et.utils.pg_pen_cycler(0)
-            inter_dashed_pen = et.utils.pg_pen_cycler(0, width=2.5, style="--")
+            self.nominal_inter_pen = et.utils.pg_pen_cycler(0)
+            self.nominal_inter_dashed_pen = et.utils.pg_pen_cycler(0, width=2.5, style="--")
 
-        self.inter_hist_curve = self.inter_hist_plot.plot(pen=inter_pen)
-        limit_line = pg.InfiniteLine(angle=0, pen=inter_dashed_pen)
+        self.inter_hist_curve = self.inter_hist_plot.plot(pen=self.nominal_inter_pen)
+        limit_line = pg.InfiniteLine(angle=0, pen=self.nominal_inter_dashed_pen)
         self.inter_hist_plot.addItem(limit_line)
         self.inter_limit_lines.append(limit_line)
 
         for line in self.inter_limit_lines:
-            line.setPos(self.ref_app_config.inter_detection_threshold)
+            line.setPos(self.nominal_config.inter_detection_threshold)
 
         # Sector plot
 
-        self.sector_plot = pg.PlotItem(
-            title="Detection zone<br>Detection type: fast (orange), slow (blue), both (green)"
-        )
-        self.sector_plot.setAspectLocked()
-        self.sector_plot.hideAxis("left")
-        self.sector_plot.hideAxis("bottom")
-        self.sectors = []
-        self.limit_text = []
+        if ref_app_config.wake_up_mode:
+            title = (
+                "Nominal config<br>"
+                "Detection type: fast (orange), slow (blue), both (green)<br>"
+                "Green background indicates active"
+            )
+        else:
+            title = "Nominal config<br>" "Detection type: fast (orange), slow (blue), both (green)"
 
-        self.range_html = (
+        self.nominal_sector_plot, self.nominal_sectors = self.create_sector_plot(
+            title,
+            self.ref_app_config.nominal_config.num_zones,
+            self.nominal_config.start_m,
+            nominal_zone_limits,
+        )
+
+        if not ref_app_config.wake_up_mode:
+            sublayout = win.addLayout(row=1, col=0, colspan=2)
+            sublayout.layout.setColumnStretchFactor(0, 2)
+            sublayout.addItem(self.nominal_sector_plot, row=0, col=0)
+        else:
+            assert self.wake_up_config is not None
+            sublayout = win.addLayout(row=1, col=0, colspan=2)
+            sublayout.addItem(self.nominal_sector_plot, row=0, col=1)
+
+            title = (
+                "Wake up config<br>"
+                "Detection type: fast (orange), slow (blue), both (green),<br>"
+                "lingering (light grey)<br>"
+                "Green background indicates active"
+            )
+            self.wake_up_sector_plot, self.wake_up_sectors = self.create_sector_plot(
+                title,
+                self.wake_up_config.num_zones,
+                self.wake_up_config.start_m,
+                wake_up_zone_limits,
+            )
+
+            sublayout.addItem(self.wake_up_sector_plot, row=0, col=0)
+
+            if self.wake_up_config.intra_enable:
+                self.wake_up_intra_dashed_pen = et.utils.pg_pen_cycler(1, width=2.5, style="--")
+                self.wake_up_intra_pen = et.utils.pg_pen_cycler(1)
+            else:
+                intra_color = et.utils.color_cycler(1)
+                intra_color = f"{intra_color}50"
+                self.wake_up_intra_dashed_pen = pg.mkPen(
+                    intra_color, width=2.5, style=QtCore.Qt.DashLine
+                )
+                self.wake_up_intra_pen = pg.mkPen(intra_color, width=2)
+
+            if self.wake_up_config.inter_enable:
+                self.wake_up_inter_pen = et.utils.pg_pen_cycler(0)
+                self.wake_up_inter_dashed_pen = et.utils.pg_pen_cycler(0, width=2.5, style="--")
+            else:
+                inter_color = et.utils.color_cycler(0)
+                inter_color = f"{inter_color}50"
+                self.wake_up_inter_dashed_pen = pg.mkPen(
+                    inter_color, width=2.5, style=QtCore.Qt.DashLine
+                )
+                self.wake_up_inter_pen = pg.mkPen(inter_color, width=2)
+
+    @staticmethod
+    def create_sector_plot(
+        title: str, num_sectors: int, start_m: float, zone_limits: npt.NDArray[np.float_]
+    ) -> Tuple[pg.PlotItem, List[pg.QtWidgets.QGraphicsEllipseItem]]:
+        sector_plot = pg.PlotItem(title=title)
+
+        sector_plot.setAspectLocked()
+        sector_plot.hideAxis("left")
+        sector_plot.hideAxis("bottom")
+
+        sectors = []
+        limit_text = []
+
+        range_html = (
             '<div style="text-align: center">'
             '<span style="color: #000000;font-size:12pt;">'
             "{}</span></div>"
         )
 
+        if start_m == zone_limits[0]:
+            x_offset = 0.7
+        else:
+            x_offset = 0
+
         pen = pg.mkPen("k", width=1)
         span_deg = 25
-        for r in np.flip(np.arange(self.num_sectors) + 1):
+        for r in np.flip(np.arange(1, num_sectors + 2)):
             sector = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
             sector.setStartAngle(-16 * span_deg)
             sector.setSpanAngle(16 * span_deg * 2)
             sector.setPen(pen)
-            self.sector_plot.addItem(sector)
-            self.sectors.append(sector)
+            sector_plot.addItem(sector)
+            sectors.append(sector)
 
-            limit = pg.TextItem(html=self.range_html, anchor=(0.5, 0.5), angle=25)
-            x = r * np.cos(np.radians(span_deg))
-            y = r * np.sin(np.radians(span_deg))
-            limit.setPos(x, y + 0.25)
-            self.sector_plot.addItem(limit)
-            self.limit_text.append(limit)
+            if r != 1:
+                limit = pg.TextItem(html=range_html, anchor=(0.5, 0.5), angle=25)
+                x = r * np.cos(np.radians(span_deg))
+                y = r * np.sin(np.radians(span_deg))
+                limit.setPos(x - x_offset, y + 0.25)
+                sector_plot.addItem(limit)
+                limit_text.append(limit)
 
-        self.sectors.reverse()
+        sectors.reverse()
 
-        start_limit_text = pg.TextItem(html=self.range_html, anchor=(0.5, 0.5), angle=25)
-        range_html = self.range_html.format(f"{ref_app_config.start_m}")
-        start_limit_text.setHtml(range_html)
-        start_limit_text.setPos(0, 0.25)
-        self.sector_plot.addItem(start_limit_text)
+        if not start_m == zone_limits[0]:
+            start_limit_text = pg.TextItem(html=range_html, anchor=(0.5, 0.5), angle=25)
+            start_range_html = range_html.format(f"{start_m}")
+            start_limit_text.setHtml(start_range_html)
+            x = 1 * np.cos(np.radians(span_deg))
+            y = 1 * np.sin(np.radians(span_deg))
 
-        unit_text = pg.TextItem(html=self.range_html, anchor=(0.5, 0.5))
-        unit_html = self.range_html.format("[m]")
+            start_limit_text.setPos(x, y + 0.25)
+            sector_plot.addItem(start_limit_text)
+
+        unit_text = pg.TextItem(html=range_html, anchor=(0.5, 0.5))
+        unit_html = range_html.format("[m]")
         unit_text.setHtml(unit_html)
-        unit_text.setPos(
-            self.num_sectors + 0.5, (self.num_sectors + 1) * np.sin(np.radians(span_deg))
-        )
-        self.sector_plot.addItem(unit_text)
+        x = (num_sectors + 2) * np.cos(np.radians(span_deg))
+        y = (num_sectors + 2) * np.sin(np.radians(span_deg))
+        unit_text.setPos(x - x_offset, y + 0.25)
+        sector_plot.addItem(unit_text)
 
-        sublayout = win.addLayout(row=1, col=0, colspan=2)
-        sublayout.layout.setColumnStretchFactor(0, 2)
-        sublayout.addItem(self.sector_plot, row=0, col=0)
+        for (text_item, limit) in zip(limit_text, np.flip(zone_limits)):
+            zone_range_html = range_html.format(np.around(limit, 1))
+            text_item.setHtml(zone_range_html)
+
+        return sector_plot, sectors
 
     def update(self, data: RefAppResult) -> None:
+        if data.used_config == _Mode.NOMINAL_CONFIG:
+            inter_threshold = self.nominal_config.inter_detection_threshold
+            intra_threshold = self.nominal_config.intra_detection_threshold
+            intra_pen = self.nominal_intra_pen
+            intra_dashed_pen = self.nominal_intra_dashed_pen
+            inter_pen = self.nominal_inter_pen
+            inter_dashed_pen = self.nominal_inter_dashed_pen
+        else:
+            assert self.wake_up_config is not None
+            inter_threshold = self.wake_up_config.inter_detection_threshold
+            intra_threshold = self.wake_up_config.intra_detection_threshold
+            intra_pen = self.wake_up_intra_pen
+            intra_dashed_pen = self.wake_up_intra_dashed_pen
+            inter_pen = self.wake_up_inter_pen
+            inter_dashed_pen = self.wake_up_inter_dashed_pen
+
+        self.time_fifo.append(data.service_result.tick_time)
+
+        if data.switch_delay:
+            self.intra_fifo.append(float("nan"))
+            self.inter_fifo.append(float("nan"))
+        else:
+            self.intra_fifo.append(data.intra_presence_score)
+            self.inter_fifo.append(data.inter_presence_score)
+
+        while self.time_fifo[-1] - self.time_fifo[0] > self.history_length_s:
+            self.time_fifo.pop(0)
+            self.intra_fifo.pop(0)
+            self.inter_fifo.pop(0)
+
+        times = [t - self.time_fifo[-1] for t in self.time_fifo]
 
         # Intra presence
 
-        move_hist_xs = np.linspace(-self.history_length_s, 0, self.history_length_n)
+        if np.isnan(self.intra_fifo).all():
+            m_hist = intra_threshold
+        else:
+            m_hist = np.maximum(float(np.nanmax(self.intra_fifo)), intra_threshold * 1.05)
 
-        self.intra_history = np.roll(self.intra_history, -1)
-        self.intra_history[-1] = data.intra_presence_score
-
-        m_hist = max(
-            float(np.max(self.intra_history)), self.ref_app_config.intra_detection_threshold * 1.05
-        )
         m_hist = self.intra_history_smooth_max.update(m_hist)
 
         self.intra_hist_plot.setYRange(0, m_hist)
-        self.intra_hist_curve.setData(move_hist_xs, self.intra_history)
+        self.intra_hist_curve.setData(times, self.intra_fifo, connect="finite")
+        self.intra_hist_curve.setPen(intra_pen)
+
+        for line in self.intra_limit_lines:
+            line.setPos(intra_threshold)
+            line.setPen(intra_dashed_pen)
 
         # Inter presence
 
-        self.inter_history = np.roll(self.inter_history, -1)
-        self.inter_history[-1] = data.inter_presence_score
+        if np.isnan(self.inter_fifo).all():
+            m_hist = inter_threshold
+        else:
+            m_hist = np.maximum(float(np.nanmax(self.inter_fifo)), inter_threshold * 1.05)
 
-        m_hist = max(
-            float(np.max(self.inter_history)), self.ref_app_config.inter_detection_threshold * 1.05
-        )
         m_hist = self.inter_history_smooth_max.update(m_hist)
 
         self.inter_hist_plot.setYRange(0, m_hist)
-        self.inter_hist_curve.setData(move_hist_xs, self.inter_history)
+        self.inter_hist_curve.setData(times, self.inter_fifo, connect="finite")
+        self.inter_hist_curve.setPen(inter_pen)
+
+        for line in self.inter_limit_lines:
+            line.setPos(inter_threshold)
+            line.setPen(inter_dashed_pen)
 
         # Sector
 
         brush = et.utils.pg_brush_cycler(7)
-        for sector in self.sectors:
+        for sector in self.nominal_sectors:
             sector.setBrush(brush)
 
-        if data.presence_detected:
-            if self.show_all_detected_zones:
-                for zone, (inter_value, intra_value) in enumerate(
-                    zip(data.inter_zone_detections, data.intra_zone_detections)
-                ):
-                    if inter_value + intra_value == 2:
-                        self.sectors[zone].setBrush(et.utils.pg_brush_cycler(2))
-                    elif inter_value == 1:
-                        self.sectors[zone].setBrush(et.utils.pg_brush_cycler(0))
-                    elif intra_value == 1:
-                        self.sectors[zone].setBrush(et.utils.pg_brush_cycler(1))
+        if not self.ref_app_config.wake_up_mode:
+            sectors = self.nominal_sectors[1:]
+            show_all_zones = self.show_all_detected_zones
+            color_nominal = "white"
+        else:
+            if data.used_config == _Mode.WAKE_UP_CONFIG:
+                sectors = self.wake_up_sectors[1:]
+                show_all_zones = True
+                color_wake_up = "#DFF1D6"
+                color_nominal = "white"
             else:
-                assert data.max_presence_zone is not None
-                if data.max_presence_zone == data.max_intra_zone:
-                    self.sectors[data.max_presence_zone].setBrush(et.utils.pg_brush_cycler(1))
-                else:
-                    self.sectors[data.max_presence_zone].setBrush(et.utils.pg_brush_cycler(0))
+                sectors = self.nominal_sectors[1:]
+                show_all_zones = self.show_all_detected_zones
+                color_wake_up = "white"
+                color_nominal = "#DFF1D6"
 
-        for (text_item, limit) in zip(self.limit_text, np.flip(data.zone_limits)):
-            range_html = self.range_html.format(np.around(limit, 1))
-            text_item.setHtml(range_html)
+            vb = self.nominal_sector_plot.getViewBox()
+            vb.setBackgroundColor(color_nominal)
+            vb = self.wake_up_sector_plot.getViewBox()
+            vb.setBackgroundColor(color_wake_up)
+
+            for sector in self.wake_up_sectors:
+                sector.setBrush(brush)
+
+        if data.presence_detected:
+            self.color_zones(data, show_all_zones, sectors)
+            self.switch_data = data
+        elif data.switch_delay:
+            self.color_zones(self.switch_data, True, self.wake_up_sectors[1:])
+
+        self.nominal_sectors[0].setPen(pg.mkPen(color_nominal, width=1))
+        self.nominal_sectors[0].setBrush(pg.mkBrush(color_nominal))
+
+        if self.ref_app_config.wake_up_mode:
+            self.wake_up_sectors[0].setPen(pg.mkPen(color_wake_up, width=1))
+            self.wake_up_sectors[0].setBrush(pg.mkBrush(color_wake_up))
+
+    @staticmethod
+    def color_zones(
+        data: RefAppResult,
+        show_all_detected_zones: bool,
+        sectors: List[pg.QtWidgets.QGraphicsEllipseItem],
+    ) -> None:
+        if show_all_detected_zones:
+            for zone, (inter_value, intra_value) in enumerate(
+                zip(data.inter_zone_detections, data.intra_zone_detections)
+            ):
+                if inter_value + intra_value == 2:
+                    sectors[zone].setBrush(et.utils.pg_brush_cycler(2))
+                elif inter_value == 1:
+                    sectors[zone].setBrush(et.utils.pg_brush_cycler(0))
+                elif intra_value == 1:
+                    sectors[zone].setBrush(et.utils.pg_brush_cycler(1))
+                elif data.used_config == _Mode.WAKE_UP_CONFIG:
+                    assert data.wake_up_detections is not None
+                    if data.wake_up_detections[zone] > 0:
+                        sectors[zone].setBrush(pg.mkBrush("#b5afa0"))
+        else:
+            assert data.max_presence_zone is not None
+            if data.max_presence_zone == data.max_intra_zone:
+                sectors[data.max_presence_zone].setBrush(et.utils.pg_brush_cycler(1))
+            else:
+                sectors[data.max_presence_zone].setBrush(et.utils.pg_brush_cycler(0))
 
 
 class ViewPlugin(DetectorViewPluginBase):
@@ -435,12 +626,34 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor = AttrsConfigEditor(
             title="Ref App parameters",
-            factory_mapping=self._get_pidget_mapping(),
+            factory_mapping={
+                "wake_up_mode": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Switch config on wake up"
+                )
+            },
             config_type=RefAppConfig,
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
+
+        self.wake_up_config_editor = AttrsConfigEditor(
+            title="Wake up config parameters",
+            factory_mapping=self._get_presence_wake_up_pidget_mapping(),
+            config_type=PresenceWakeUpConfig,
+            parent=self.scrolly_widget,
+        )
+        self.wake_up_config_editor.sig_update.connect(self._on_wake_up_config_update)
+        scrolly_layout.addWidget(self.wake_up_config_editor)
+
+        self.nominal_config_editor = AttrsConfigEditor(
+            title="Nominal config parameters",
+            factory_mapping=self._get_presence_zone_pidget_mapping(),
+            config_type=PresenceZoneConfig,
+            parent=self.scrolly_widget,
+        )
+        self.nominal_config_editor.sig_update.connect(self._on_nominal_config_update)
+        scrolly_layout.addWidget(self.nominal_config_editor)
 
         self.plot_config_editor = AttrsConfigEditor(
             title="Plot parameters",
@@ -460,15 +673,28 @@ class ViewPlugin(DetectorViewPluginBase):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
+    def _get_presence_zone_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
         presence_pidget_mapping = dict(PresenceViewPlugin._get_pidget_mapping())
         presence_pidget_mapping.update(
             {
                 pidgets.FlatPidgetGroup(): {
                     "num_zones": pidgets.IntPidgetFactory(
-                        name_label_text="Number of zones",
-                        limits=(1, None),
-                    ),
+                        name_label_text="Number of zones", limits=(1, None)
+                    )
+                }
+            }
+        )
+        return presence_pidget_mapping
+
+    @classmethod
+    def _get_presence_wake_up_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
+        presence_pidget_mapping = dict(cls._get_presence_zone_pidget_mapping())
+        presence_pidget_mapping.update(
+            {
+                pidgets.FlatPidgetGroup(): {
+                    "num_zones_for_wake_up": pidgets.IntPidgetFactory(
+                        name_label_text="Number zones for wake up", limits=(1, None)
+                    )
                 }
             }
         )
@@ -480,7 +706,11 @@ class ViewPlugin(DetectorViewPluginBase):
 
             not_handled = self.config_editor.handle_validation_results(results)
 
+            not_handled = self.wake_up_config_editor.handle_validation_results(not_handled)
+
             not_handled = self.misc_error_view.handle_validation_results(not_handled)
+
+            self.wake_up_config_editor.setHidden(not backend_plugin_state.config.wake_up_mode)
 
             assert not_handled == []
 
@@ -493,6 +723,10 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
+            self.nominal_config_editor.set_data(None)
+            self.nominal_config_editor.setEnabled(False)
+            self.wake_up_config_editor.set_data(None)
+            self.wake_up_config_editor.setEnabled(False)
             self.sensor_id_pidget.set_selected_sensor(None, [])
 
             return
@@ -501,6 +735,10 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
+        self.nominal_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.nominal_config_editor.set_data(state.config.nominal_config)
+        self.wake_up_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.wake_up_config_editor.set_data(state.config.wake_up_config)
         self.plot_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.plot_config_editor.set_data(state.plot_config)
         self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
@@ -513,6 +751,12 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_config_update(self, config: RefAppConfig) -> None:
         BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)
+
+    def _on_nominal_config_update(self, config: PresenceZoneConfig) -> None:
+        BackendPlugin.update_nominal_config.rpc(self.app_model.put_task, config=config)
+
+    def _on_wake_up_config_update(self, config: PresenceWakeUpConfig) -> None:
+        BackendPlugin.update_wake_up_config.rpc(self.app_model.put_task, config=config)
 
     def _on_plot_config_update(self, config: PlotConfig) -> None:
         BackendPlugin.update_plot_config.rpc(self.app_model.put_task, config=config)

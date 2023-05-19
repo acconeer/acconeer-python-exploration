@@ -7,7 +7,7 @@ from typing import List, Optional, Sequence
 import h5py
 import numpy as np
 
-from ._ref_app import RefAppResult
+from ._ref_app import RefAppResult, _Mode
 
 
 _ALL_REF_APP_RESULT_FIELDS = (
@@ -21,6 +21,10 @@ _ALL_REF_APP_RESULT_FIELDS = (
     "intra_presence_score",
     "intra_zone_detections",
     "max_intra_zone",
+    "used_config",
+    "wake_up_detections",
+    "switch_delay",
+    # "service_result" ignored by default
 )
 
 
@@ -63,6 +67,12 @@ class RefAppResultListH5Serializer:
         self.allow_missing_fields = allow_missing_fields
 
     def serialize(self, results: List[RefAppResult]) -> None:
+        if "service_result" in self.fields:
+            raise NotImplementedError(
+                "'service_result' are not serializable at the moment."
+                + "Skip it by specifying which fields to serialize"
+            )
+
         if "zone_limits" in self.fields:
             self.group.create_dataset(
                 "zone_limits",
@@ -149,7 +159,37 @@ class RefAppResultListH5Serializer:
                 track_times=False,
             )
 
+        if "used_config" in self.fields:
+            self.group.create_dataset(
+                "used_config",
+                dtype=int,
+                data=np.array([res.used_config.value for res in results]),
+                track_times=False,
+            )
+
+        if "wake_up_detections" in self.fields:
+            self.group.create_dataset(
+                "wake_up_detections",
+                dtype=int,
+                data=np.array([res.wake_up_detections for res in results]),
+                track_times=False,
+            )
+
+        if "switch_delay" in self.fields:
+            self.group.create_dataset(
+                "switch_delay",
+                dtype=bool,
+                data=np.array([res.switch_delay for res in results]),
+                track_times=False,
+            )
+
     def deserialize(self, _: None) -> List[RefAppResult]:
+        if "service_result" in self.fields:
+            raise NotImplementedError(
+                "'service_result' are not serializable at the moment."
+                + "Skip it by specifying which fields to serialize"
+            )
+
         groups = (
             self.group.get("zone_limits", PhonyNoneSeries()),
             self.group.get("presence_detected", PhonyNoneSeries()),
@@ -161,6 +201,9 @@ class RefAppResultListH5Serializer:
             self.group.get("intra_presence_score", PhonyNoneSeries()),
             self.group.get("intra_zone_detections", PhonyNoneSeries()),
             self.group.get("max_intra_zone", PhonyNoneSeries()),
+            self.group.get("used_config", PhonyNoneSeries()),
+            self.group.get("wake_up_detections", PhonyNoneSeries()),
+            self.group.get("switch_delay", PhonyNoneSeries()),
         )
 
         if any(isinstance(g, PhonyNoneSeries) for g in groups) and not self.allow_missing_fields:
@@ -181,6 +224,12 @@ class RefAppResultListH5Serializer:
                 intra_presence_score=intra_presence_score,
                 intra_zone_detections=intra_zone_detections,
                 max_intra_zone=_deserialize_optional_uint(max_intra_zone),
+                used_config=(
+                    None if used_config is None else _Mode(used_config)  # type: ignore[arg-type]
+                ),
+                wake_up_detections=wake_up_detections,
+                switch_delay=switch_delay,
+                service_result=None,  # type: ignore[arg-type]
             )
             for (
                 zone_limits,
@@ -193,5 +242,8 @@ class RefAppResultListH5Serializer:
                 intra_presence_score,
                 intra_zone_detections,
                 max_intra_zone,
+                used_config,
+                wake_up_detections,
+                switch_delay,
             ) in zip(*groups)
         ]

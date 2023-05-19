@@ -9,7 +9,8 @@ import h5py
 import numpy as np
 import pytest
 
-from acconeer.exptool.a121.algo.smart_presence import RefAppResult, _serializer
+from acconeer.exptool.a121.algo.smart_presence import _serializer
+from acconeer.exptool.a121.algo.smart_presence._ref_app import RefAppResult, _Mode
 
 from utils.test_utils import subsets_minus_empty_set  # type: ignore[import]
 
@@ -28,6 +29,10 @@ def results() -> List[RefAppResult]:
             intra_presence_score=0.0,
             intra_zone_detections=np.array(range(10)),
             max_intra_zone=2,
+            used_config=_Mode.NOMINAL_CONFIG,
+            wake_up_detections=np.array(range(10)),
+            switch_delay=False,
+            service_result=None,  # type: ignore[arg-type]
         )
     ]
 
