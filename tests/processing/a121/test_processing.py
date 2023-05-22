@@ -12,6 +12,7 @@ import pytest
 from acconeer.exptool import a121
 
 from . import (
+    breathing_test,
     distance_test,
     presence_test,
     resources,
@@ -150,6 +151,18 @@ def input_path(resource_name: str) -> Path:
             touchless_button_test.TouchlessButtonResultH5Serializer,
             touchless_button_test.result_comparator,
             "input-touchless_button_calibration.h5",
+        ),
+        (
+            breathing_test.breathing_controller,
+            breathing_test.BreathingResultH5Serializer,
+            breathing_test.breathing_result_comparator,
+            "breathing-sitting.h5",
+        ),
+        (
+            breathing_test.breathing_controller,
+            breathing_test.BreathingResultH5Serializer,
+            breathing_test.breathing_result_comparator,
+            "breathing-sitting-no-presence.h5",
         ),
     ],
 )

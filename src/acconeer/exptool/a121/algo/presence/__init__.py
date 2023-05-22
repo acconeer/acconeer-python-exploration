@@ -2,4 +2,4 @@
 # All rights reserved
 
 from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult
-from ._processors import Processor, ProcessorConfig, ProcessorResult
+from ._processors import Processor, ProcessorConfig, ProcessorExtraResult, ProcessorResult

@@ -246,7 +246,11 @@ def get_sensor_config(ref_app_config: RefAppConfig) -> a121.SensorConfig:
 
     start_point = int(ref_app_config.start_m // APPROX_BASE_STEP_LENGTH_M)
     num_points = int(
-        (ref_app_config.end_m - ref_app_config.start_m) / (APPROX_BASE_STEP_LENGTH_M * step_length)
+        np.ceil(
+            (ref_app_config.end_m - ref_app_config.start_m)
+            / (step_length * APPROX_BASE_STEP_LENGTH_M)
+        )
+        + 1
     )
 
     c = a121.SensorConfig()
