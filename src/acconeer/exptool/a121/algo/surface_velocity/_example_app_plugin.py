@@ -287,8 +287,8 @@ class PlotPlugin(DetectorPlotPluginBase):
         )
         self.upper_std_curve.setData(xs, self.upper_std_history)
 
-        lim = self.psd_smooth_max.update(processor_extra_result.psd)
-        self.psd_plot.setYRange(np.log(0.5), np.log(lim))
+        lim = self.psd_smooth_max.update(processor_extra_result.psd_threshold)
+        self.psd_plot.setYRange(np.log10(0.2), np.log10(lim))
         self.psd_plot.setXRange(
             processor_extra_result.max_bin_vertical_vs[0],
             processor_extra_result.max_bin_vertical_vs[-1],
