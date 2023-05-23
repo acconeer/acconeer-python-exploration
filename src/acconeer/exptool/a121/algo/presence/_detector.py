@@ -369,18 +369,27 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
     def update_config(self, config: DetectorConfig) -> None:
         raise NotImplementedError
 
-    def stop(self) -> Any:
+    def stop_detector(self) -> Any:
         if not self.started:
             raise RuntimeError("Already stopped")
 
         self.client.stop_session()
+        self.started = False
+
+        return None
+
+    def stop_recorder(self) -> Any:
         recorder = self.client.detach_recorder()
         if recorder is None:
             recorder_result = None
         else:
             recorder_result = recorder.close()
 
-        self.started = False
+        return recorder_result
+
+    def stop(self) -> Any:
+        self.stop_detector()
+        recorder_result = self.stop_recorder()
 
         return recorder_result
 
