@@ -127,10 +127,10 @@ class _ReplayingClient(Client):
         self._is_started = False
 
     def attach_recorder(self, recorder: Recorder) -> None:
-        raise NotImplementedError
+        pass
 
     def detach_recorder(self) -> Optional[Recorder]:
-        raise NotImplementedError
+        return None
 
     def close(self) -> None:
         pass
