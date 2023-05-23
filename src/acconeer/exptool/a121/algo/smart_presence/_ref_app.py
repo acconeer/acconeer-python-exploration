@@ -15,7 +15,7 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo._base import AlgoBaseT
+from acconeer.exptool.a121.algo._base import AlgoBase, AlgoBaseT
 from acconeer.exptool.a121.algo._utils import estimate_frame_rate
 from acconeer.exptool.a121.algo.presence._detector import (
     AlgoConfigBase,
@@ -101,6 +101,25 @@ class RefAppConfig(AlgoConfigBase):
         return cls(**d)
 
 
+@attrs.mutable(kw_only=True)
+class RefAppContext(AlgoBase):
+    nominal_detector_context: Optional[DetectorContext] = attrs.field(default=None)
+    wake_up_detector_context: Optional[DetectorContext] = attrs.field(default=None)
+
+    @classmethod
+    def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
+        if d["nominal_detector_context"] is not None:
+            d["nominal_detector_context"] = DetectorContext.from_dict(
+                d["nominal_detector_context"]
+            )
+        if d["wake_up_detector_context"] is not None:
+            d["wake_up_detector_context"] = DetectorContext.from_dict(
+                d["wake_up_detector_context"]
+            )
+
+        return cls(**d)
+
+
 @attrs.frozen(kw_only=True)
 class RefAppResult:
     zone_limits: npt.NDArray[np.float_] = attrs.field()
@@ -153,6 +172,7 @@ class _Mode(Enum):
 class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     wake_up_detections: Optional[npt.NDArray[np.int_]]
+    ref_app_context: RefAppContext
 
     def __init__(
         self,
@@ -160,9 +180,14 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         client: a121.Client,
         sensor_id: int,
         ref_app_config: RefAppConfig,
+        ref_app_context: Optional[RefAppContext] = None,
     ) -> None:
         super().__init__(client=client, config=ref_app_config)
         self.sensor_id = sensor_id
+        if ref_app_context is None:
+            self.ref_app_context = RefAppContext()
+        else:
+            self.ref_app_context = ref_app_context
 
         self.started = False
         self.delay_count = 0
@@ -187,9 +212,16 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             extended=False,
         )
 
-        self.nominal_detector_context = DetectorContext(
-            estimated_frame_rate=estimate_frame_rate(self.client, session_config)
-        )
+        if self.ref_app_context.nominal_detector_context is None:
+            self.nominal_detector_context = DetectorContext(
+                estimated_frame_rate=estimate_frame_rate(self.client, session_config)
+            )
+            self.ref_app_context = RefAppContext(
+                nominal_detector_context=self.nominal_detector_context
+            )
+        else:
+            self.nominal_detector_context = self.ref_app_context.nominal_detector_context
+
         distances = np.linspace(
             self.config.nominal_config.start_m,
             self.config.nominal_config.end_m,
@@ -215,9 +247,14 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
                 extended=False,
             )
 
-            self.wake_up_detector_context = DetectorContext(
-                estimated_frame_rate=estimate_frame_rate(self.client, session_config)
-            )
+            if self.ref_app_context.wake_up_detector_context is None:
+                self.wake_up_detector_context = DetectorContext(
+                    estimated_frame_rate=estimate_frame_rate(self.client, session_config)
+                )
+                self.ref_app_context.wake_up_detector_context = self.wake_up_detector_context
+            else:
+                self.wake_up_detector_context = self.ref_app_context.wake_up_detector_context
+
             distances = np.linspace(
                 self.config.wake_up_config.start_m,
                 self.config.wake_up_config.end_m,
@@ -251,6 +288,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
                     algo_group,
                     self.sensor_id,
                     self.config,
+                    self.ref_app_context,
                 )
             else:
                 # Should never happen as we currently only have the H5Recorder
@@ -262,7 +300,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             detector_config=detector_config,
             detector_context=detector_context,
         )
-        self.detector.start(recorder=None, _algo_group=None)
+        self.detector.start(recorder=recorder, _algo_group=algo_group)
         assert self.detector.detector_metadata is not None
         session_config = self.detector.session_config
 
@@ -388,7 +426,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         processor_config: ProcessorConfig,
         detector_context: DetectorContext,
     ) -> None:
-        self.detector.stop()
+        self.detector.stop_detector()
 
         self.detector = Detector(
             client=self.client,
@@ -425,6 +463,7 @@ def _record_algo_data(
     algo_group: h5py.Group,
     sensor_id: int,
     ref_app_config: RefAppConfig,
+    ref_app_context: RefAppContext,
 ) -> None:
     algo_group.create_dataset(
         "ref_app_sensor_id",
@@ -432,9 +471,11 @@ def _record_algo_data(
         track_times=False,
     )
     _create_h5_string_dataset(algo_group, "ref_app_config", ref_app_config.to_json())
+    _create_h5_string_dataset(algo_group, "ref_app_context", ref_app_context.to_json())
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig]:
+def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppContext]:
     sensor_id = int(algo_group["ref_app_sensor_id"][()])
     config = RefAppConfig.from_json(algo_group["ref_app_config"][()])
-    return sensor_id, config
+    ref_app_context = RefAppContext.from_json(algo_group["ref_app_context"][()])
+    return sensor_id, config, ref_app_context

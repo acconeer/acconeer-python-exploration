@@ -53,6 +53,7 @@ from ._ref_app import (
     PresenceZoneConfig,
     RefApp,
     RefAppConfig,
+    RefAppContext,
     RefAppResult,
     _load_algo_data,
     _Mode,
@@ -69,6 +70,7 @@ class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: RefAppConfig = attrs.field(factory=RefAppConfig)
     plot_config: PlotConfig = attrs.field(factory=PlotConfig)
+    ref_app_context: Optional[RefAppContext] = attrs.field(default=None)
 
 
 class PluginPresetId(Enum):
@@ -153,9 +155,10 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         algo_group = record.get_algo_group(self.key)
-        _, config = _load_algo_data(algo_group)
+        _, config, ref_app_context = _load_algo_data(algo_group)
         self.shared_state.config = config
-        self.shared_state.sensor_id = record.sensor_id
+        self.shared_state.ref_app_context = ref_app_context
+        self.shared_state.sensor_id = record.session(0).sensor_id
 
     def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
         assert self.client
@@ -163,6 +166,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             client=self.client,
             sensor_id=self.shared_state.sensor_id,
             ref_app_config=self.shared_state.config,
+            ref_app_context=self.shared_state.ref_app_context,
         )
 
         self._ref_app_instance.start(recorder)
