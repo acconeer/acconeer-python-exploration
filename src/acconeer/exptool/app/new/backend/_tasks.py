@@ -9,8 +9,8 @@ import typing_extensions as te
 from typing_extensions import Concatenate as C
 
 
-#              name kwargs              is plugin?
-Task = t.Tuple[str, t.Dict[str, t.Any], bool]
+#              name kwargs
+Task = t.Tuple[str, t.Dict[str, t.Any]]
 
 _TaskSender = t.Callable[[Task], t.Any]
 _R = t.TypeVar("_R")
@@ -55,7 +55,7 @@ class _TaskDescriptor(t.Generic[_P, _R]):
         if args != ():
             raise ValueError("An RPC must be called with kwargs only.")
 
-        task_sender((self._task_name, kwargs, True))
+        task_sender((self._task_name, kwargs))
 
 
 def is_task(m: t.Callable[C[t.Any, _P], _R]) -> _TaskDescriptor[_P, _R]:
@@ -82,3 +82,15 @@ def is_task(m: t.Callable[C[t.Any, _P], _R]) -> _TaskDescriptor[_P, _R]:
     <task_sender> should be AppModel.put_task in most cases.
     """
     return _TaskDescriptor(m)
+
+
+def get_task(obj: t.Any, name: str) -> t.Optional[t.Callable[..., t.Any]]:
+    """
+    Gets the task method "<name>" of the obj.
+    If obj does not have a task named "<name>", None is returned.
+    """
+    task_method = getattr(obj, name, None)
+    if getattr(task_method, "is_task", False):
+        return task_method
+    else:
+        return None

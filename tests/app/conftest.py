@@ -24,23 +24,20 @@ class Tasks:
     CONNECT_CLIENT_TASK: Task = (
         "connect_client",
         dict(open_client_parameters=dict(mock=True)),
-        False,
     )
     BAD_CONNECT_CLIENT_TASK = (
         "connect_client",
         dict(open_client_parameters=dict(ip_address="some_ip")),
-        False,
     )
-    DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {}, False)
+    DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {})
     LOAD_PLUGIN_TASK: Task = (
         "load_plugin",
         dict(plugin_factory=_mock_plugin_factory, key="key"),
-        False,
     )
-    UNLOAD_PLUGIN_TASK: Task = ("unload_plugin", {}, False)
-    START_SESSION_TASK: Task = ("start_session", dict(with_recorder=True), True)
-    STOP_SESSION_TASK: Task = ("stop_session", {}, True)
-    CALIBRATE_DETECTOR_TASK: Task = ("calibrate_detector", {}, True)
+    UNLOAD_PLUGIN_TASK: Task = ("unload_plugin", {})
+    START_SESSION_TASK: Task = ("start_session", dict(with_recorder=True))
+    STOP_SESSION_TASK: Task = ("stop_session", {})
+    CALIBRATE_DETECTOR_TASK: Task = ("calibrate_detector", {})
 
     SUCCESSFULLY_CLOSED_TASK = ClosedTask(
         key=de.IsUUID,
@@ -63,7 +60,6 @@ class Tasks:
         return (
             "load_from_file",
             dict(path=path),
-            True,
         )
 
     @staticmethod
@@ -74,7 +70,6 @@ class Tasks:
                 plugin_factory=spec.create_backend_plugin,
                 key=spec.key,
             ),
-            False,
         )
 
 

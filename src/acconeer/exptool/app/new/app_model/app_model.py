@@ -305,40 +305,21 @@ class AppModel(QObject):
         log.debug("Emitting error")
         self.sig_error.emit(exception, traceback_format_exc)
 
-    def _put_backend_task(
+    def put_task(
         self,
-        name: str,
-        kwargs: Optional[dict[str, Any]] = None,
+        task: Task,
         *,
-        plugin: bool = False,
         on_ok: Optional[Callable[[], None]] = None,
         on_error: Optional[Callable[[Exception, Optional[str]], None]] = None,
     ) -> None:
-        if kwargs is None:
-            kwargs = {}
-
-        key = self._backend.put_task((name, kwargs, plugin))
+        key = self._backend.put_task(task)
         self._backend_task_callbacks[key] = {
             "on_ok": on_ok,
             "on_error": on_error,
         }
 
+        (name, _) = task
         log.debug(f"Put backend task with name: '{name}', key: {key.time_low}")
-
-    def put_nonplugin_task(
-        self,
-        task: Task,
-        *,
-        on_error: Optional[Callable[[Exception, Optional[str]], None]] = None,
-    ) -> None:
-        self._put_backend_task(
-            *task[:-1],
-            plugin=False,
-            on_error=on_error if on_error is not None else self.emit_error,
-        )
-
-    def put_task(self, task: Task) -> None:
-        self._put_backend_task(*task[:-1], plugin=True, on_error=self.emit_error)
 
     def _handle_backend_closed_task(self, closed_task: ClosedTask) -> None:
         log.debug(f"Got backend closed task: {closed_task.key.time_low}")
@@ -589,8 +570,7 @@ class AppModel(QObject):
 
         Model.connect_client.rpc(
             functools.partial(
-                self.put_nonplugin_task,
-                on_error=self._failed_autoconnect if auto else self.emit_error,
+                self.put_task, on_error=self._failed_autoconnect if auto else self.emit_error
             ),
             open_client_parameters=open_client_parameters,
         )
@@ -598,7 +578,7 @@ class AppModel(QObject):
         self.broadcast()
 
     def disconnect_client(self) -> None:
-        Model.disconnect_client.rpc(self.put_nonplugin_task)
+        Model.disconnect_client.rpc(self.put_task)
         self.connection_warning = None
         self._a121_server_info = None
         self.broadcast()
@@ -707,7 +687,7 @@ class AppModel(QObject):
         self.backend_plugin_state = None
         self.broadcast()
 
-        Model.unload_plugin.rpc(self.put_nonplugin_task)
+        Model.unload_plugin.rpc(self.put_task)
 
     def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
         log.debug(f"AppModel is loading the plugin {plugin}")
@@ -718,7 +698,7 @@ class AppModel(QObject):
 
         if plugin is not None:
             Model.load_plugin.rpc(
-                self.put_nonplugin_task,
+                self.put_task,
                 plugin_factory=plugin.create_backend_plugin,
                 key=plugin.key,
             )

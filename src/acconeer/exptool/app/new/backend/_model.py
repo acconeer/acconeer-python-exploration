@@ -14,7 +14,7 @@ from acconeer.exptool.app.new._exceptions import HandledException
 
 from ._backend_plugin import BackendPlugin
 from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginStateMessage
-from ._tasks import is_task
+from ._tasks import Task, get_task, is_task
 
 
 log = logging.getLogger(__name__)
@@ -40,23 +40,20 @@ class Model:
 
         return self.backend_plugin.idle()
 
-    def execute_task(self, name: str, kwargs: dict[str, Any], plugin: bool) -> None:
-        if plugin:
-            if self.backend_plugin is None:
-                raise RuntimeError
+    def execute_task(self, task: Task) -> None:
+        (name, kwargs) = task
 
-            obj: Any = self.backend_plugin
-        else:
-            obj = self
+        builtin_task = get_task(self, name)
+        if builtin_task is not None:
+            builtin_task(**kwargs)
+            return
 
-        try:
-            method = getattr(obj, name)
-            if not getattr(method, "is_task"):
-                raise Exception
-        except Exception:
-            raise RuntimeError(f"'{name}' is not a task")
+        plugin_task = get_task(self.backend_plugin, name)
+        if plugin_task is not None:
+            plugin_task(**kwargs)
+            return
 
-        method(**kwargs)
+        raise RuntimeError(f"'{name}' is not a task")
 
     @is_task
     def connect_client(self, open_client_parameters: Dict[str, Any]) -> None:

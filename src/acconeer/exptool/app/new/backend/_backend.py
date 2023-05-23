@@ -156,10 +156,9 @@ def process_program(
                 assert maybe_key_and_task is not None
 
                 key, task = maybe_key_and_task
-                name, kwargs, plugin = task
 
                 try:
-                    model.execute_task(name, kwargs, plugin)
+                    model.execute_task(task)
                 except Exception as exc:
                     send_queue.put(ClosedTask(key, exc, traceback.format_exc()))
                 else:

@@ -63,7 +63,7 @@ class TestBackendPlugins:
     def extra_tasks(self, plugin: PluginSpec) -> t.Iterable[Task]:
         if plugin is BILATERATION_PLUGIN:
             return [
-                ("update_sensor_ids", dict(sensor_ids=[1, 2]), True),
+                ("update_sensor_ids", dict(sensor_ids=[1, 2])),
             ]
         else:
             return []
