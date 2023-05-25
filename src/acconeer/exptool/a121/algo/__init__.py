@@ -17,6 +17,7 @@ from ._utils import (
     NOISE_TEMPERATURE_MODEL_PARAMETER,
     PERCEIVED_WAVELENGTH,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
+    double_buffering_frame_filter,
     find_peaks,
     get_approx_fft_vels,
     get_distance_filter_coeffs,

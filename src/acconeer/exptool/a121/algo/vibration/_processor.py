@@ -14,6 +14,7 @@ from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     AlgoProcessorConfigBase,
     ProcessorBase,
+    double_buffering_frame_filter,
 )
 
 
@@ -113,6 +114,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         # Should never happen, checked in validate
         assert sensor_config.sweep_rate is not None
 
+        self.double_buffering = sensor_config.double_buffering
         self.spf = sensor_config.sweeps_per_frame
         self.lp_coeffs = processor_config.lp_coeff
         self.sensitivity = processor_config.sensitivity
@@ -130,7 +132,12 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
 
     def process(self, result: a121.Result) -> ProcessorResult:
 
-        max_amplitude = float(np.max(np.abs(result.frame)))
+        if self.double_buffering:
+            frame = double_buffering_frame_filter(result.frame)
+        else:
+            frame = result.frame
+
+        max_amplitude = float(np.max(np.abs(frame)))
 
         if max_amplitude < self.amplitude_threshold:
             return ProcessorResult(
@@ -140,7 +147,7 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
                 freqs=self.freq,
             )
 
-        new_data_segment = np.angle(result.frame.squeeze(axis=1))
+        new_data_segment = np.angle(frame.squeeze(axis=1))
 
         self.time_series = np.roll(self.time_series, -self.spf)
         self.time_series[-self.spf :] = new_data_segment
