@@ -232,8 +232,9 @@ class SubsweepConfig:
     def step_length(self, value: int) -> None:
         self._step_length = value
 
+    @staticmethod
     @_step_length.validator
-    def _(self, _: t.Any, step_length: int) -> None:
+    def step_length_validator(instance: t.Any, _: t.Any, step_length: int) -> None:
         if not (
             is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
         ):

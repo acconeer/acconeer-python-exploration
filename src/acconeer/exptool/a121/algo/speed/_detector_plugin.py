@@ -1,0 +1,557 @@
+# Copyright (c) Acconeer AB, 2022-2023
+# All rights reserved
+
+from __future__ import annotations
+
+import logging
+from enum import Enum, auto
+from typing import Callable, Mapping, Optional
+
+import attrs
+import h5py
+import numpy as np
+
+from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
+
+import pyqtgraph as pg
+
+import acconeer.exptool as et
+from acconeer.exptool import a121
+from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugins import (
+    DetectorBackendPluginBase,
+    DetectorPlotPluginBase,
+    DetectorViewPluginBase,
+)
+from acconeer.exptool.a121.algo._utils import estimate_frame_rate
+from acconeer.exptool.app.new import (
+    AppModel,
+    AttrsConfigEditor,
+    BackendLogger,
+    GeneralMessage,
+    GroupBox,
+    Message,
+    MiscErrorView,
+    PidgetGroupFactoryMapping,
+    PluginFamily,
+    PluginGeneration,
+    PluginPresetBase,
+    PluginSpecBase,
+    PluginState,
+    icons,
+    is_task,
+    pidgets,
+)
+from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
+from acconeer.exptool.app.new.ui.plugin_components.range_help_view import RangeHelpView
+from acconeer.exptool.app.new.ui.stream_tab.plugin_widget import PluginPlotArea
+
+from ._configs import get_default_config, get_traffic_config
+from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult, _load_algo_data
+
+
+@attrs.mutable(kw_only=True)
+class SharedState:
+    sensor_id: int = attrs.field(default=1)
+    config: DetectorConfig = attrs.field(factory=DetectorConfig)
+
+
+class PluginPresetId(Enum):
+    DEFAULT = auto()
+    TRAFFIC = auto()
+
+
+class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+
+    PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
+        PluginPresetId.DEFAULT.value: lambda: get_default_config(),
+        PluginPresetId.TRAFFIC.value: lambda: get_traffic_config(),
+    }
+
+    def __init__(
+        self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
+    ) -> None:
+        super().__init__(callback=callback, generation=generation, key=key)
+
+        self._recorder: Optional[a121.H5Recorder] = None
+        self._detector_instance: Optional[Detector] = None
+        self._log = BackendLogger.getLogger(__name__)
+
+        self.restore_defaults()
+
+    def _load_from_cache(self, file: h5py.File) -> None:
+        self.shared_state.config = DetectorConfig.from_json(file["config"][()])
+
+    @is_task
+    def restore_defaults(self) -> None:
+        self.shared_state = SharedState()
+        self.broadcast()
+
+    @is_task
+    def update_sensor_id(self, *, sensor_id: int) -> None:
+        self.shared_state.sensor_id = sensor_id
+        self.broadcast()
+
+    def _sync_sensor_ids(self) -> None:
+        if self.client is not None:
+            sensor_ids = self.client.server_info.connected_sensors
+
+            if len(sensor_ids) > 0 and self.shared_state.sensor_id not in sensor_ids:
+                self.shared_state.sensor_id = sensor_ids[0]
+
+    @is_task
+    def update_config(self, *, config: DetectorConfig) -> None:
+        self.shared_state.config = config
+        self.broadcast()
+
+    def save_to_cache(self, file: h5py.File) -> None:
+        _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
+
+    @is_task
+    def set_preset(self, preset_id: int) -> None:
+        preset_config = self.PLUGIN_PRESETS[preset_id]
+        self.shared_state.config = preset_config()
+        self.broadcast()
+
+    def load_from_record_setup(self, *, record: a121.H5Record) -> None:
+        algo_group = record.get_algo_group(self.key)
+        _, config = _load_algo_data(algo_group)
+        self.shared_state.config = config
+        self.shared_state.sensor_id = record.sensor_id
+
+    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+        assert self.client
+        self._detector_instance = Detector(
+            client=self.client,
+            sensor_id=self.shared_state.sensor_id,
+            detector_config=self.shared_state.config,
+        )
+        sensor_config = self._detector_instance._get_sensor_config(self._detector_instance.config)
+        session_config = a121.SessionConfig(
+            {self.shared_state.sensor_id: sensor_config},
+            extended=False,
+        )
+
+        estimated_frame_rate = estimate_frame_rate(self.client, session_config)
+
+        self._detector_instance.start(recorder)
+        self.callback(
+            GeneralMessage(
+                name="setup",
+                kwargs=dict(
+                    detector_config=self.shared_state.config,
+                    detector_metadata=self._detector_instance.detector_metadata,
+                    estimated_frame_rate=estimated_frame_rate,
+                ),
+                recipient="plot_plugin",
+            )
+        )
+
+    def end_session(self) -> None:
+        if self._detector_instance is None:
+            raise RuntimeError
+        self._detector_instance.stop()
+
+    def get_next(self) -> None:
+        assert self.client
+        if self._detector_instance is None:
+            raise RuntimeError
+        result = self._detector_instance.get_next()
+
+        self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
+
+
+class PlotPlugin(DetectorPlotPluginBase):
+    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
+        super().__init__(plot_layout=plot_layout, app_model=app_model)
+
+    def setup_from_message(self, message: GeneralMessage) -> None:
+        assert message.kwargs is not None
+        self.setup(**message.kwargs)
+
+    def update_from_message(self, message: GeneralMessage) -> None:
+        assert isinstance(message.data, DetectorResult)
+        self.update(message.data)
+
+    def setup(
+        self,
+        detector_config: DetectorConfig,
+        detector_metadata: DetectorMetadata,
+        estimated_frame_rate: float,
+    ) -> None:
+        self.detector_config = detector_config
+
+        self.n_depths = detector_metadata.num_points
+
+        max_update_rate = PluginPlotArea._FPS
+
+        if estimated_frame_rate > max_update_rate:
+            plugin_frame_rate = float(max_update_rate)
+        else:
+            plugin_frame_rate = estimated_frame_rate
+
+        self.history_length_s = 10.0
+        self.history_length = int(self.history_length_s * plugin_frame_rate)
+
+        self.time_window_length_s = 3.0
+        self.time_window_length_n = int(self.time_window_length_s * plugin_frame_rate)
+
+        self.speed_history = np.zeros(self.history_length)
+        self.speed_history_xs = np.array([i for i in range(-self.history_length, 0)])
+
+        n_ticks_to_display = 10
+        x_labels = np.linspace(-self.history_length_s, 0, self.history_length)
+        all_ticks = [
+            (t, "{:.0f}".format(label)) for t, label in zip(self.speed_history_xs, x_labels)
+        ]
+        subsample_step = self.history_length // n_ticks_to_display
+        display_ticks = [all_ticks[::subsample_step]]
+
+        win = self.plot_layout
+
+        # FFT plot
+
+        self.raw_fft_plot = win.addPlot(row=1, col=0)
+        self.raw_fft_plot.setTitle("Frequency data")
+        self.raw_fft_plot.setLabel(axis="left", text="Amplitude")
+        self.raw_fft_plot.setLabel(axis="bottom", text="Frequency", units="Hz")
+        self.raw_fft_plot.addLegend(labelTextSize="10pt")
+        self.raw_fft_limits = et.utils.SmoothLimits()
+        self.raw_fft_plot.setMenuEnabled(False)
+        self.raw_fft_plot.setMouseEnabled(x=False, y=False)
+        self.raw_fft_plot.hideButtons()
+        self.raw_fft_plot.showGrid(x=True, y=True)
+        self.raw_fft_plot.setLogMode(x=False, y=True)
+        self.raw_fft_curves = []
+        self.raw_fft_smooth_max = et.utils.SmoothMax(self.detector_config.frame_rate)
+        self.raw_thresholds_curves = []
+
+        for i in range(self.n_depths):
+            raw_fft_curve = self.raw_fft_plot.plot(pen=et.utils.pg_pen_cycler(i), name="Fft")
+            threshold_curve = self.raw_fft_plot.plot(
+                pen=et.utils.pg_pen_cycler(i), name="Threshold"
+            )
+            self.raw_fft_curves.append(raw_fft_curve)
+            self.raw_thresholds_curves.append(threshold_curve)
+
+        self.speed_history_plot = win.addPlot(row=0, col=0)
+        self.speed_history_plot.setTitle("Speed history")
+        self.speed_history_plot.setLabel(axis="left", text="Speed", units="m/s")
+        self.speed_history_plot.setLabel(axis="bottom", text="Time", units="Seconds")
+        self.speed_history_plot.addLegend(labelTextSize="10pt")
+        self.speed_history_curve = self.speed_history_plot.plot(
+            pen=None,
+            name="speed",
+            symbol="o",
+            symbolsize=3,
+        )
+
+        if detector_config.sweep_rate is not None:
+            actual_max_speed = detector_config._get_max_speed(detector_config.sweep_rate)
+            self.speed_history_plot.setYRange(-actual_max_speed, actual_max_speed)
+        else:
+            self.speed_history_plot.setYRange(
+                -detector_config.max_speed, detector_config.max_speed
+            )
+        self.speed_history_plot.setXRange(-self.history_length, 0)
+        ay = self.speed_history_plot.getAxis("bottom")
+        ay.setTicks(display_ticks)
+
+        self.speed_html_format = (
+            '<div style="text-align: center">'
+            '<span style="color: #FFFFFF;font-size:15pt;">'
+            "{}</span></div>"
+        )
+
+        self.speed_text_item = pg.TextItem(
+            fill=pg.mkColor(0xFF, 0x7F, 0x0E, 200),
+            anchor=(0.5, 0.5),
+        )
+
+        self.speed_text_item.setPos(-self.history_length / 2, -detector_config.max_speed / 2)
+        brush = et.utils.pg_brush_cycler(1)
+        self.speed_history_peak_plot_item = pg.PlotDataItem(
+            pen=None, symbol="o", symbolSize=8, symbolBrush=brush, symbolPen="k"
+        )
+        self.speed_history_plot.addItem(self.speed_history_peak_plot_item)
+        self.speed_history_plot.addItem(self.speed_text_item)
+
+        self.speed_text_item.hide()
+
+    def update(self, data: DetectorResult) -> None:
+
+        psd = data.extra_result.psd
+        speed_guess = data.max_speed
+        x_speeds = data.extra_result.velocities
+        thresholds = data.extra_result.actual_thresholds
+
+        self.speed_history = np.roll(self.speed_history, -1)
+
+        self.speed_history[-1] = speed_guess
+
+        if self.time_window_length_n > 0:
+            pos_speed = np.max(self.speed_history[-self.time_window_length_n :])
+            pos_ind = int(np.argmax(self.speed_history[-self.time_window_length_n :]))
+            neg_speed = np.min(self.speed_history[-self.time_window_length_n :])
+            neg_ind = int(np.argmin(self.speed_history[-self.time_window_length_n :]))
+
+            if abs(neg_speed) > abs(pos_speed):
+                max_display_speed = neg_speed
+                max_display_ind = neg_ind
+            else:
+                max_display_speed = pos_speed
+                max_display_ind = pos_ind
+        else:
+            max_display_speed = self.speed_history[-1]
+            max_display_ind = -1
+
+        if max_display_speed != 0.0:
+            speed_text = "Max speed estimate {:.4f} m/s".format(max_display_speed)
+            speed_html = self.speed_html_format.format(speed_text)
+
+            self.speed_text_item.setHtml(speed_html)
+            self.speed_text_item.show()
+
+            sub_xs = self.speed_history_xs[-self.time_window_length_n :]
+            self.speed_history_peak_plot_item.setData(
+                [sub_xs[max_display_ind]], [max_display_speed]
+            )
+        else:
+            self.speed_history_peak_plot_item.clear()
+            self.speed_text_item.hide()
+
+        display_inds = np.array([i for i, x in enumerate(self.speed_history) if x != 0.0])
+        if len(display_inds) > 0:
+            display_xs = self.speed_history_xs[display_inds]
+            display_data = self.speed_history[display_inds]
+        else:
+            display_xs = []
+            display_data = []
+        self.speed_history_curve.setData(display_xs, display_data)
+
+        assert psd is not None
+        assert thresholds is not None
+
+        top_max = max(np.max(psd), np.max(thresholds))
+
+        smooth_max_val = np.log10(self.raw_fft_smooth_max.update(top_max))
+        self.raw_fft_plot.setYRange(-2, smooth_max_val)
+        for i in range(psd.shape[1]):
+            self.raw_fft_curves[i].setData(x_speeds, psd[:, i])
+
+            threshold_line = np.full(x_speeds.shape[0], thresholds[i])
+            self.raw_thresholds_curves[i].setData(x_speeds, threshold_line)
+
+
+class ViewPlugin(DetectorViewPluginBase):
+    def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
+        super().__init__(app_model=app_model, view_widget=view_widget)
+        self._log = logging.getLogger(__name__)
+
+        sticky_layout = QVBoxLayout()
+        sticky_layout.setContentsMargins(0, 0, 0, 0)
+        scrolly_layout = QVBoxLayout()
+        scrolly_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.start_button = QPushButton(icons.PLAY(), "Start measurement")
+        self.start_button.setShortcut("space")
+        self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
+        self.start_button.clicked.connect(self._send_start_request)
+
+        self.stop_button = QPushButton(icons.STOP(), "Stop")
+        self.stop_button.setShortcut("space")
+        self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
+        self.stop_button.clicked.connect(self._send_stop_request)
+
+        button_group = GroupBox.grid("Controls", parent=self.sticky_widget)
+        button_group.layout().addWidget(self.start_button, 0, 0)
+        button_group.layout().addWidget(self.stop_button, 0, 1)
+
+        sticky_layout.addWidget(button_group)
+
+        self.misc_error_view = MiscErrorView(self.scrolly_widget)
+        scrolly_layout.addWidget(self.misc_error_view)
+
+        sensor_selection_group = GroupBox.vertical("Sensor selection", parent=self.scrolly_widget)
+        self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
+            parent=sensor_selection_group
+        )
+        self.sensor_id_pidget.sig_update.connect(self._on_sensor_id_update)
+        sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
+        scrolly_layout.addWidget(sensor_selection_group)
+
+        self.config_editor = AttrsConfigEditor[DetectorConfig](
+            title="Detector parameters",
+            factory_mapping=self._get_pidget_mapping(),
+            config_type=DetectorConfig,
+            parent=self.scrolly_widget,
+        )
+        self.config_editor.sig_update.connect(self._on_config_update)
+
+        self.range_help_view = RangeHelpView()
+        scrolly_layout.addWidget(self.range_help_view)
+
+        scrolly_layout.addWidget(self.config_editor)
+
+        self.sensor_config_status = SensorConfigEditor()
+        self.sensor_config_status.set_read_only(True)
+        collapsible_widget = CollapsibleWidget(
+            "Current sensor settings", self.sensor_config_status, self.scrolly_widget
+        )
+        scrolly_layout.addWidget(collapsible_widget)
+
+        self.sticky_widget.setLayout(sticky_layout)
+        self.scrolly_widget.setLayout(scrolly_layout)
+
+    @classmethod
+    def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
+        service_parameters = {
+            "start_point": pidgets.IntPidgetFactory(
+                name_label_text="Start point",
+            ),
+            "num_points": pidgets.IntPidgetFactory(
+                name_label_text="Number of points",
+                limits=(1, 100),
+            ),
+            "step_length": pidgets.OptionalIntPidgetFactory(
+                name_label_text="Step length",
+                checkbox_label_text="Override",
+                limits=(1, None),
+                init_set_value=72,
+            ),
+            "profile": pidgets.OptionalEnumPidgetFactory(
+                name_label_text="Profile",
+                checkbox_label_text="Override",
+                enum_type=a121.Profile,
+                label_mapping={
+                    a121.Profile.PROFILE_1: "1 (shortest)",
+                    a121.Profile.PROFILE_2: "2",
+                    a121.Profile.PROFILE_3: "3",
+                    a121.Profile.PROFILE_4: "4",
+                    a121.Profile.PROFILE_5: "5 (longest)",
+                },
+            ),
+            "sweep_rate": pidgets.OptionalIntPidgetFactory(
+                name_label_text="Sweep rate",
+                suffix=" Hz",
+                checkbox_label_text="Override",
+                limits=(1, 134000),
+                init_set_value=10000,
+            ),
+            "frame_rate": pidgets.OptionalFloatPidgetFactory(
+                name_label_text="Frame rate",
+                suffix=" Hz",
+                checkbox_label_text="Override",
+                limits=(1, 200),
+                init_set_value=20.0,
+            ),
+            "hwaas": pidgets.OptionalIntPidgetFactory(
+                name_label_text="HWAAS",
+                checkbox_label_text="Override",
+                limits=(1, 511),
+                init_set_value=4,
+            ),
+            "num_bins": pidgets.IntPidgetFactory(
+                name_label_text="Number of bins",
+                limits=(3, 4095),
+            ),
+        }
+        processing_parameters = {
+            "max_speed": pidgets.FloatPidgetFactory(
+                name_label_text="Max speed",
+                suffix=" m/s",
+                limits=(0, 150.0),
+            ),
+            "threshold": pidgets.FloatPidgetFactory(
+                name_label_text="Detection threshold",
+                limits=(1.0, 10000.0),
+            ),
+        }
+        return {
+            pidgets.FlatPidgetGroup(): service_parameters,
+            pidgets.FlatPidgetGroup(): processing_parameters,
+        }
+
+    def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
+        if backend_plugin_state is not None and backend_plugin_state.config is not None:
+            results = backend_plugin_state.config._collect_validation_results()
+
+            not_handled = self.config_editor.handle_validation_results(results)
+
+            not_handled = self.misc_error_view.handle_validation_results(not_handled)
+
+            sensor_config = Detector._get_sensor_config(backend_plugin_state.config)
+            self.range_help_view.update(sensor_config.subsweep)
+            self.sensor_config_status.set_data(sensor_config)
+            assert not_handled == []
+
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        state = app_model.backend_plugin_state
+
+        if state is None:
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(False)
+
+            self.config_editor.set_data(None)
+            self.config_editor.setEnabled(False)
+            self.sensor_id_pidget.set_selected_sensor(None, [])
+
+            return
+
+        assert isinstance(state, SharedState)
+
+        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.config_editor.set_data(state.config)
+        self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
+        self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
+
+        self.start_button.setEnabled(
+            app_model.is_ready_for_session() and self.config_editor.is_ready
+        )
+        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
+
+    def _on_config_update(self, config: DetectorConfig) -> None:
+        BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)
+
+    def _send_defaults_request(self) -> None:
+        BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
+
+    def _on_sensor_id_update(self, sensor_id: int) -> None:
+        BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
+
+
+class PluginSpec(PluginSpecBase):
+    def create_backend_plugin(
+        self, callback: Callable[[Message], None], key: str
+    ) -> BackendPlugin:
+        return BackendPlugin(callback=callback, generation=self.generation, key=key)
+
+    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
+        return ViewPlugin(app_model=app_model, view_widget=view_widget)
+
+    def create_plot_plugin(
+        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
+    ) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+
+
+SPEED_DETECTOR_PLUGIN = PluginSpec(
+    generation=PluginGeneration.A121,
+    key="speed_detector",
+    title="Speed detector",
+    description="Measure speed.",
+    family=PluginFamily.DETECTOR,
+    presets=[
+        PluginPresetBase(
+            name="Default",
+            description="Default settings to validate functionality",
+            preset_id=PluginPresetId.DEFAULT,
+        ),
+        PluginPresetBase(
+            name="Traffic",
+            description="Settings to validate fast traffic",
+            preset_id=PluginPresetId.TRAFFIC,
+        ),
+    ],
+    default_preset_id=PluginPresetId.DEFAULT,
+)

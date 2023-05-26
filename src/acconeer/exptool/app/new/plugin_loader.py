@@ -14,6 +14,7 @@ def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
     from acconeer.exptool.a121.algo.smart_presence._ref_app_plugin import SMART_PRESENCE_PLUGIN
     from acconeer.exptool.a121.algo.sparse_iq._plugin import SPARSE_IQ_PLUGIN
+    from acconeer.exptool.a121.algo.speed._detector_plugin import SPEED_DETECTOR_PLUGIN
     from acconeer.exptool.a121.algo.surface_velocity._example_app_plugin import (
         SURFACE_VELOCITY_PLUGIN,
     )
@@ -34,4 +35,5 @@ def load_default_plugins() -> list[PluginSpec]:
         TANK_LEVEL_PLUGIN,
         TOUCHLESS_BUTTON_PLUGIN,
         VIBRATION_PLUGIN,
+        SPEED_DETECTOR_PLUGIN,
     ]
