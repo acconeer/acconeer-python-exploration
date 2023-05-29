@@ -45,13 +45,21 @@ from acconeer.exptool.app.new import (
 from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import disable_if, parameter_is
 
 from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
-from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult, _load_algo_data
+from ._detector import (
+    Detector,
+    DetectorConfig,
+    DetectorContext,
+    DetectorMetadata,
+    DetectorResult,
+    _load_algo_data,
+)
 
 
 @attrs.mutable(kw_only=True)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
+    context: Optional[DetectorContext] = attrs.field(default=None)
 
 
 class PluginPresetId(Enum):
@@ -114,8 +122,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         algo_group = record.get_algo_group(self.key)
-        _, config = _load_algo_data(algo_group)
+        _, config, context = _load_algo_data(algo_group)
         self.shared_state.config = config
+        self.shared_state.context = context
         self.shared_state.sensor_id = record.sensor_id
 
     def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
@@ -124,6 +133,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             client=self.client,
             sensor_id=self.shared_state.sensor_id,
             detector_config=self.shared_state.config,
+            detector_context=self.shared_state.context,
         )
         self._detector_instance.start(recorder)
         self.callback(

@@ -15,7 +15,13 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoConfigBase, Controller, select_prf
+from acconeer.exptool.a121.algo import (
+    ENVELOPE_FWHM_M,
+    AlgoBase,
+    AlgoConfigBase,
+    Controller,
+    select_prf,
+)
 from acconeer.exptool.a121.algo._utils import estimate_frame_rate
 
 from ._processors import Processor, ProcessorConfig, ProcessorContext, ProcessorExtraResult
@@ -143,6 +149,11 @@ class DetectorConfig(AlgoConfigBase):
         return validation_results
 
 
+@attrs.mutable(kw_only=True)
+class DetectorContext(AlgoBase):
+    estimated_frame_rate: float = attrs.field(default=None)
+
+
 @attrs.frozen(kw_only=True)
 class DetectorMetadata:
     start_m: float = attrs.field()
@@ -197,15 +208,19 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         client: a121.Client,
         sensor_id: int,
         detector_config: DetectorConfig,
+        detector_context: Optional[DetectorContext] = None,
     ) -> None:
         super().__init__(client=client, config=detector_config)
         self.sensor_id = sensor_id
         self.detector_metadata: Optional[DetectorMetadata] = None
+        self.detector_context = detector_context
 
         self.started = False
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+        self,
+        recorder: Optional[a121.Recorder] = None,
+        _algo_group: Optional[h5py.Group] = None,
     ) -> None:
         if self.started:
             raise RuntimeError("Already started")
@@ -216,15 +231,21 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
             extended=False,
         )
 
-        self.estimated_frame_rate = estimate_frame_rate(self.client, self.session_config)
-        # Add estimated frame rate to context if it differs more than 10% from the set frame rate
+        if self.detector_context is None:
+            self.estimated_frame_rate = estimate_frame_rate(self.client, self.session_config)
+            self.detector_context = DetectorContext(estimated_frame_rate=self.estimated_frame_rate)
+        else:
+            self.estimated_frame_rate = self.detector_context.estimated_frame_rate
+
+        # Add estimated frame rate to context if it differs more than
+        # 10% from the set frame rate
         if (
             np.abs(self.config.frame_rate - self.estimated_frame_rate) / self.config.frame_rate
             > 0.1
         ):
-            context = ProcessorContext(estimated_frame_rate=self.estimated_frame_rate)
+            processor_context = ProcessorContext(estimated_frame_rate=self.estimated_frame_rate)
         else:
-            context = ProcessorContext(estimated_frame_rate=None)
+            processor_context = ProcessorContext(estimated_frame_rate=None)
 
         metadata = self.client.setup_session(self.session_config)
         assert isinstance(metadata, a121.Metadata)
@@ -242,7 +263,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
             sensor_config=sensor_config,
             metadata=metadata,
             processor_config=processor_config,
-            context=context,
+            context=processor_context,
         )
 
         if recorder is not None:
@@ -253,6 +274,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
                     _algo_group,
                     self.sensor_id,
                     self.config,
+                    self.detector_context,
                 )
             else:
                 # Should never happen as we currently only have the H5Recorder
@@ -367,6 +389,7 @@ def _record_algo_data(
     algo_group: h5py.Group,
     sensor_id: int,
     config: DetectorConfig,
+    context: DetectorContext,
 ) -> None:
     algo_group.create_dataset(
         "sensor_id",
@@ -374,9 +397,17 @@ def _record_algo_data(
         track_times=False,
     )
     _create_h5_string_dataset(algo_group, "detector_config", config.to_json())
+    _create_h5_string_dataset(algo_group, "detector_context", context.to_json())
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig]:
+def _load_algo_data(
+    algo_group: h5py.Group,
+) -> Tuple[int, DetectorConfig, Optional[DetectorContext]]:
     sensor_id = algo_group["sensor_id"][()]
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
-    return sensor_id, config
+    context_data_set = algo_group.get("detector_context")
+    if context_data_set is None:
+        context = None
+    else:
+        context = DetectorContext.from_json(context_data_set[()])
+    return sensor_id, config, context
