@@ -11,7 +11,12 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoParamEnum, AlgoProcessorConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo import (
+    AlgoParamEnum,
+    AlgoProcessorConfigBase,
+    ProcessorBase,
+    double_buffering_frame_filter,
+)
 
 
 class MeasurementType(AlgoParamEnum):
@@ -162,7 +167,11 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         )
 
     def process(self, result: a121.Result) -> ProcessorResult:
-        frame = result.frame
+        if self._sensor_config.double_buffering:
+            frame = double_buffering_frame_filter(result.frame)
+        else:
+            frame = result.frame
+
         y = np.zeros_like(frame, dtype=float)
 
         sensitivity = self._get_sensitivity()
