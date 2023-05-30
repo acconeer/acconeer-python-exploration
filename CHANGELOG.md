@@ -77,7 +77,7 @@ All examples have been updated accordingly.
 - A121: Distance: Add reflector shape to detector config.
 - A121: Distance: Update peak sorting strategy selections.
 
-# Changed
+### Changed
 - Documentation structure
 - Client interface
 - Setting up instructions
