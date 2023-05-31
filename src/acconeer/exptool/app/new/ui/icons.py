@@ -24,6 +24,7 @@ WARNING_YELLOW = "#ff9e00"
 # fmt: off
 ARROW_LEFT_BOLD = partial(qta.icon, "ph.arrow-left-bold",        color=BUTTON_ICON_COLOR)
 CALIBRATE       = partial(qta.icon, "fa.circle",                 color=BUTTON_ICON_COLOR)
+CHECKMARK       = partial(qta.icon, "fa5s.check",                color=BUTTON_ICON_COLOR)
 COG             = partial(qta.icon, "fa5s.cog",                  color=BUTTON_ICON_COLOR)
 EXTERNAL_LINK   = partial(qta.icon, "fa5s.external-link-alt",    color=BUTTON_ICON_COLOR)
 FLASH           = partial(qta.icon, "mdi.flash",                 color=BUTTON_ICON_COLOR)
