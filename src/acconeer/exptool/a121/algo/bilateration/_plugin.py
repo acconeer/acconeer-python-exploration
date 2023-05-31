@@ -37,7 +37,7 @@ from acconeer.exptool.app.new import (
     AttrsConfigEditor,
     ConnectionState,
     GeneralMessage,
-    GridGroupBox,
+    GroupBox,
     HandledException,
     Message,
     PidgetFactoryMapping,
@@ -470,7 +470,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.message_box = QLabel(self.sticky_widget)
         self.message_box.setWordWrap(True)
 
-        button_group = GridGroupBox("Controls", parent=self.sticky_widget)
+        button_group = GroupBox.grid("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
         button_group.layout().addWidget(self.calibrate_detector_button, 1, 0, 1, -1)
@@ -479,7 +479,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
         sticky_layout.addWidget(button_group)
 
-        sensor_selection_group = GridGroupBox("Sensor selection", parent=self.scrolly_widget)
+        sensor_selection_group = GroupBox.grid("Sensor selection", parent=self.scrolly_widget)
         self.two_sensor_id_editor = TwoSensorIdsEditor(name_label_texts=["Left", "Right"])
         sensor_selection_group.layout().addWidget(self.two_sensor_id_editor, 0, 0)
         scrolly_layout.addWidget(sensor_selection_group)

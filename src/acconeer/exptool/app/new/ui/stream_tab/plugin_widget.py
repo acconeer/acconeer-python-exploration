@@ -33,7 +33,7 @@ from acconeer.exptool.app.new._enums import PluginFamily
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
 from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD
-from acconeer.exptool.app.new.ui.plugin_components.utils import VerticalGroupBox
+from acconeer.exptool.app.new.ui.plugin_components.utils import GroupBox
 from acconeer.exptool.app.new.ui.utils import (
     HorizontalSeparator,
     ScrollAreaDecorator,
@@ -100,7 +100,7 @@ class PluginPresetPlaceholder(QWidget):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(11)
-        self.group_box = VerticalGroupBox("Preset Configurations", self)
+        self.group_box = GroupBox.vertical("Preset Configurations", parent=self)
         self.layout().addWidget(self.group_box)
         self.preset_buttons_widget: Optional[QWidget] = None
 

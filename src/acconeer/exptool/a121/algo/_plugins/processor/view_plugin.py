@@ -15,7 +15,7 @@ from acconeer.exptool.a121.algo._plugins._a121 import A121ViewPluginBase
 from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
-    GridGroupBox,
+    GroupBox,
     MiscErrorView,
     PidgetFactoryMapping,
     PluginState,
@@ -50,7 +50,7 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         self.stop_button.setShortcut("space")
         self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
 
-        button_group = GridGroupBox("Controls", parent=self.sticky_widget)
+        button_group = GroupBox.grid("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
         sticky_layout.addWidget(button_group)

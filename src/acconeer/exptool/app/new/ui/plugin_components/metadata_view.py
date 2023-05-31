@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
 
-from .utils import VerticalGroupBox
+from .utils import GroupBox
 
 
 _WIDGET_WIDTH = 125
@@ -58,7 +58,7 @@ class ExtendedMetadataView(QWidget):
         super().__init__(parent)
         self.setLayout(QVBoxLayout(self))
 
-        group_box = VerticalGroupBox("Metadata", parent=self)
+        group_box = GroupBox.vertical("Metadata", parent=self)
         self.layout().addWidget(group_box)
 
         self._tab_widget = QTabWidget(parent=self)

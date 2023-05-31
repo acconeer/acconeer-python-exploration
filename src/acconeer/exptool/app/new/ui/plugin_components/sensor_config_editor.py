@@ -18,7 +18,7 @@ from . import pidgets
 from .data_editor import DataEditor
 from .subsweep_config_editor import SubsweepConfigEditor
 from .types import PidgetFactoryMapping
-from .utils import VerticalGroupBox
+from .utils import GroupBox
 
 
 log = logging.getLogger(__name__)
@@ -143,7 +143,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
 
-        self.sensor_group_box = VerticalGroupBox("Sensor parameters", parent=self)
+        self.sensor_group_box = GroupBox.vertical("Sensor parameters", parent=self)
         self.sensor_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.sensor_group_box)
 
@@ -155,7 +155,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
 
             self._sensor_config_pidgets[aspect] = pidget
 
-        self.subsweep_group_box = VerticalGroupBox("Subsweep parameters", parent=self)
+        self.subsweep_group_box = GroupBox.vertical("Subsweep parameters", parent=self)
         self.subsweep_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.subsweep_group_box)
 

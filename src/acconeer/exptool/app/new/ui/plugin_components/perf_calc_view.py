@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -6,11 +6,19 @@ from __future__ import annotations
 from typing import Optional, Union
 
 from PySide6 import QtCore
-from PySide6.QtWidgets import QGridLayout, QGroupBox, QLabel, QLineEdit, QStackedLayout, QWidget
+from PySide6.QtWidgets import (
+    QGridLayout,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QStackedLayout,
+    QVBoxLayout,
+    QWidget,
+)
 
 from acconeer.exptool import a121
 
-from .utils import VerticalGroupBox
+from .utils import GroupBox
 
 
 _WIDGET_WIDTH = 125
@@ -41,9 +49,9 @@ class SmartPerfCalcView(QWidget):
             self._perf_calc_view.update(session_config, metadata)
 
 
-class ExtendedPerfCalcView(VerticalGroupBox):
+class ExtendedPerfCalcView(GroupBox):
     def __init__(self, parent: QWidget) -> None:
-        super().__init__("Performance calculations", parent)
+        super().__init__("Performance calculations", QVBoxLayout, parent=parent)
 
         label = QLabel("No estimates available", self)
         label.setEnabled(False)

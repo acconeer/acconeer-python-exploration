@@ -18,7 +18,7 @@ from acconeer.exptool.a121._core import Criticality
 from .data_editor import DataEditor
 from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetGroupHook, PidgetHook
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
-from .utils import VerticalGroupBox
+from .utils import GroupBox
 
 
 T = TypeVar("T")
@@ -66,7 +66,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(11)
-        group_box = VerticalGroupBox(title, parent=self)
+        group_box = GroupBox.vertical(title, parent=self)
         self.layout().addWidget(group_box)
 
         self._pidget_mapping: dict[str, Pidget] = {}

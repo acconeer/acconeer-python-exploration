@@ -13,4 +13,4 @@ from .session_config_editor import SessionConfigEditor
 from .subsweep_config_editor import SubsweepConfigEditor
 from .two_sensor_ids_editor import TwoSensorIdsEditor
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
-from .utils import GridGroupBox, HorizontalGroupBox, VerticalGroupBox
+from .utils import GroupBox

@@ -30,7 +30,7 @@ from acconeer.exptool.app.new._enums import ConnectionInterface
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui import utils as ui_utils
 from acconeer.exptool.app.new.ui.device_comboboxes import SerialPortComboBox, USBDeviceComboBox
-from acconeer.exptool.app.new.ui.plugin_components.utils import VerticalGroupBox
+from acconeer.exptool.app.new.ui.plugin_components.utils import GroupBox
 from acconeer.exptool.flash import (  # type: ignore[import]
     DevLicense,
     clear_cookies,
@@ -142,7 +142,7 @@ class FlashMainWidget(QWidget):
         button_layout.addWidget(self.download_status_label,    5,   1,   1,    11)    # noqa: E241
         # fmt: on
 
-        box = VerticalGroupBox("", self)
+        box = GroupBox.vertical("", parent=self)
         box.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         box.layout().addWidget(ui_utils.LayoutWrapper(button_layout))
 

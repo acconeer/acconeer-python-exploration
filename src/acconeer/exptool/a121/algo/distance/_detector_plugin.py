@@ -28,7 +28,7 @@ from acconeer.exptool.app.new import (
     AttrsConfigEditor,
     BackendLogger,
     GeneralMessage,
-    GridGroupBox,
+    GroupBox,
     HandledException,
     Message,
     MiscErrorView,
@@ -39,7 +39,6 @@ from acconeer.exptool.app.new import (
     PluginSpecBase,
     PluginState,
     PluginStateMessage,
-    VerticalGroupBox,
     icons,
     is_task,
     pidgets,
@@ -351,7 +350,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.message_box = QLabel(self.sticky_widget)
         self.message_box.setWordWrap(True)
 
-        button_group = GridGroupBox("Controls", parent=self.sticky_widget)
+        button_group = GroupBox.grid("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
         button_group.layout().addWidget(self.calibrate_detector_button, 1, 0, 1, -1)
@@ -363,7 +362,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.misc_error_view = MiscErrorView(self.scrolly_widget)
         scrolly_layout.addWidget(self.misc_error_view)
 
-        sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
+        sensor_selection_group = GroupBox.vertical("Sensor selection", parent=self.scrolly_widget)
         self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )

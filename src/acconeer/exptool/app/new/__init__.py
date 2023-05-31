@@ -25,8 +25,7 @@ from .pluginbase import PlotPluginBase, PluginPresetBase, PluginSpecBase, ViewPl
 from .storage import get_temp_dir, get_temp_h5_path
 from .ui import (
     AttrsConfigEditor,
-    GridGroupBox,
-    HorizontalGroupBox,
+    GroupBox,
     MiscErrorView,
     PidgetFactoryMapping,
     PidgetGroupFactoryMapping,
@@ -34,7 +33,6 @@ from .ui import (
     SmartMetadataView,
     SmartPerfCalcView,
     TwoSensorIdsEditor,
-    VerticalGroupBox,
     icons,
     pidgets,
 )

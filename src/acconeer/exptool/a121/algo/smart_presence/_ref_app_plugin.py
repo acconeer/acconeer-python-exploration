@@ -32,7 +32,7 @@ from acconeer.exptool.app.new import (
     AttrsConfigEditor,
     BackendLogger,
     GeneralMessage,
-    GridGroupBox,
+    GroupBox,
     Message,
     MiscErrorView,
     PidgetGroupFactoryMapping,
@@ -41,7 +41,6 @@ from acconeer.exptool.app.new import (
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
-    VerticalGroupBox,
     icons,
     is_task,
     pidgets,
@@ -417,7 +416,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
         self.stop_button.clicked.connect(self._send_stop_request)
 
-        button_group = GridGroupBox("Controls", parent=self.sticky_widget)
+        button_group = GroupBox.grid("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
 
@@ -426,7 +425,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.misc_error_view = MiscErrorView(self.scrolly_widget)
         scrolly_layout.addWidget(self.misc_error_view)
 
-        sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
+        sensor_selection_group = GroupBox.vertical("Sensor selection", parent=self.scrolly_widget)
         self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
