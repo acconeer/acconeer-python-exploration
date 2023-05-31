@@ -61,9 +61,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         self.perf_calc_view = SmartPerfCalcView(parent=self.scrolly_widget)
         scrolly_layout.addWidget(self.perf_calc_view)
 
-        self.processor_config_editor = AttrsConfigEditor[ProcessorConfigT](
+        self.processor_config_editor = AttrsConfigEditor(
             title="Processor parameters",
             factory_mapping=self.get_pidget_mapping(),
+            config_type=self.get_processor_config_cls(),
             parent=self.scrolly_widget,
         )
         self.processor_config_editor.sig_update.connect(self._on_processor_config_update)

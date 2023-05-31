@@ -370,9 +370,10 @@ class ViewPlugin(DetectorViewPluginBase):
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
         scrolly_layout.addWidget(sensor_selection_group)
 
-        self.config_editor = AttrsConfigEditor[DetectorConfig](
+        self.config_editor = AttrsConfigEditor(
             title="Detector parameters",
             factory_mapping=self.get_pidget_mapping(),
+            config_type=DetectorConfig,
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)

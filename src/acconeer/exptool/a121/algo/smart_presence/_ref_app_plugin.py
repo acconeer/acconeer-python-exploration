@@ -433,21 +433,24 @@ class ViewPlugin(DetectorViewPluginBase):
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
         scrolly_layout.addWidget(sensor_selection_group)
 
-        self.config_editor = AttrsConfigEditor[RefAppConfig](
+        self.config_editor = AttrsConfigEditor(
             title="Ref App parameters",
             factory_mapping=self._get_pidget_mapping(),
+            config_type=RefAppConfig,
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
-        self.plot_config_editor = AttrsConfigEditor[PlotConfig](
+        self.plot_config_editor = AttrsConfigEditor(
             title="Plot parameters",
             factory_mapping={
                 "show_all_detected_zones": pidgets.CheckboxPidgetFactory(
                     name_label_text="Show all detected zones",
                 )
             },
+            config_type=PlotConfig,
+            save_load_buttons=False,
             parent=self.scrolly_widget,
         )
         self.plot_config_editor.sig_update.connect(self._on_plot_config_update)

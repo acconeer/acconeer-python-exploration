@@ -365,9 +365,10 @@ class ViewPlugin(DetectorViewPluginBase):
         self.range_helper = RangeHelpView()
         scrolly_layout.addWidget(self.range_helper)
 
-        self.config_editor = AttrsConfigEditor[ExampleAppConfig](
+        self.config_editor = AttrsConfigEditor(
             title="Example app parameters",
             factory_mapping=self._get_pidget_mapping(),
+            config_type=ExampleAppConfig,
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)

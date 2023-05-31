@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import copy
 from functools import partial
-from typing import Any, Optional, Sequence, TypeVar, Union, cast
+from typing import Any, Optional, Sequence, Type, TypeVar, Union, cast
 
 import attrs
 
@@ -16,12 +16,13 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from .data_editor import DataEditor
+from .json_save_load_buttons import JsonPresentable, JsonSaveLoadButtons
 from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetGroupHook, PidgetHook
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import GroupBox
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=JsonPresentable)
 
 
 def _to_group_factory_mapping(
@@ -59,6 +60,9 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         self,
         title: str,
         factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
+        config_type: Type[T],
+        *,
+        save_load_buttons: bool = True,
         parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent=parent)
@@ -66,7 +70,15 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(11)
-        group_box = GroupBox.vertical(title, parent=self)
+        group_box = GroupBox.vertical(
+            title,
+            right_header=(
+                JsonSaveLoadButtons.from_editor_and_config_type(self, config_type)
+                if save_load_buttons
+                else None
+            ),
+            parent=self,
+        )
         self.layout().addWidget(group_box)
 
         self._pidget_mapping: dict[str, Pidget] = {}

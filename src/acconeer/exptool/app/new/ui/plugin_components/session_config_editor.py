@@ -15,6 +15,7 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .data_editor import DataEditor
+from .json_save_load_buttons import JsonSaveLoadButtons
 from .sensor_config_editor import SensorConfigEditor
 from .utils import GroupBox
 
@@ -46,7 +47,11 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
 
-        self.session_group_box = GroupBox.vertical("Session parameters", parent=self)
+        self.session_group_box = GroupBox.vertical(
+            "Session parameters",
+            JsonSaveLoadButtons.from_editor_and_config_type(self, a121.SessionConfig),
+            parent=self,
+        )
         self.session_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.session_group_box)
 

@@ -45,6 +45,13 @@ class EditorFixture(t.Generic[T]):
 class StubAttrsClass:
     a: int = attrs.field(validator=attrs.validators.gt(0))
 
+    def to_json(self) -> str:
+        return f"{{'a': {self.a}}}"
+
+    @classmethod
+    def from_json(cls, json: str) -> StubAttrsClass:
+        return cls(1)  # wrong, but does not matter in these tests
+
 
 class StubEnum(enum.Enum):
     A = enum.auto()
@@ -63,6 +70,7 @@ def qapplication() -> QApplication:
             editor_kwargs={
                 "title": "title",
                 "factory_mapping": {"a": pc.pidgets.IntPidgetFactory(name_label_text="")},
+                "config_type": StubAttrsClass,
             },
             data_prototype=StubAttrsClass(1),
             good_ui_edit=partial(pc.AttrsConfigEditor._update_config_aspect, aspect="a", value=2),

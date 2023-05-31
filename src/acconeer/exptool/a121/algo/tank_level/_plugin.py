@@ -534,17 +534,20 @@ class ViewPlugin(DetectorViewPluginBase):
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
         scrolly_layout.addWidget(sensor_selection_group)
 
-        self.tank_level_config_editor = AttrsConfigEditor[RefAppConfig](
+        self.tank_level_config_editor = AttrsConfigEditor(
             title="Tank level indicator parameters",
             factory_mapping=self._get_processor_pidget_mapping(),
+            config_type=RefAppConfig,
             parent=self.scrolly_widget,
         )
         self.tank_level_config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.tank_level_config_editor)
 
-        self.config_editor = AttrsConfigEditor[RefAppConfig](
+        self.config_editor = AttrsConfigEditor(
             title="Detector parameters",
             factory_mapping=self._get_detector_pidget_mapping(),
+            config_type=RefAppConfig,
+            save_load_buttons=False,
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)

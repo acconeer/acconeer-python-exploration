@@ -484,17 +484,19 @@ class ViewPlugin(DetectorViewPluginBase):
         sensor_selection_group.layout().addWidget(self.two_sensor_id_editor, 0, 0)
         scrolly_layout.addWidget(sensor_selection_group)
 
-        self.bilateration_config_editor = AttrsConfigEditor[ProcessorConfig](
+        self.bilateration_config_editor = AttrsConfigEditor(
             title="Bilateration parameters",
             factory_mapping=self._get_processor_pidget_mapping(),
+            config_type=ProcessorConfig,
             parent=self.scrolly_widget,
         )
         self.bilateration_config_editor.sig_update.connect(self._on_processor_config_update)
         scrolly_layout.addWidget(self.bilateration_config_editor)
 
-        self.config_editor = AttrsConfigEditor[DetectorConfig](
+        self.config_editor = AttrsConfigEditor(
             title="Distance detector parameters",
             factory_mapping=self._get_pidget_mapping(),
+            config_type=DetectorConfig,
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)
