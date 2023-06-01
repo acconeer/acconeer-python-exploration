@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
 import pyqtgraph as pg
 
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
-from acconeer.exptool.app.new._enums import PluginFamily
+from acconeer.exptool.app.new._enums import PluginFamily, PluginState
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
 from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD
@@ -81,6 +81,7 @@ class PluginSelectionButtonGroup(QButtonGroup):
 class PluginPresetButton(QPushButton):
     def __init__(self, plugin_preset: PluginPresetSpec, default: bool, parent: QWidget) -> None:
         super().__init__(parent)
+
         if default:
             self.setText(f"{plugin_preset.name} (default)")
         else:
@@ -94,7 +95,9 @@ class PluginPresetPlaceholder(QWidget):
     def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
-        app_model.sig_load_plugin.connect(self._on_load_plugin)
+        self.app_model = app_model
+        self.app_model.sig_load_plugin.connect(self._on_load_plugin)
+        self.app_model.sig_notify.connect(self._on_app_model_update)
 
         self.app_model = app_model
         self.setLayout(QVBoxLayout(self))
@@ -129,6 +132,9 @@ class PluginPresetPlaceholder(QWidget):
                 button = PluginPresetButton(preset, default_preset, self)
                 self.preset_buttons_widget.layout().addWidget(button)
                 button.clicked.connect(partial(self._on_preset_click, preset.preset_id))
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        self.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
 
 class PluginSelection(QWidget):
