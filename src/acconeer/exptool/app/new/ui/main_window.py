@@ -69,9 +69,15 @@ class _PagedLayout(QSplitter):
     """
 
     def __init__(
-        self, pages: t.Iterable[t.Tuple[QIcon, str, QWidget]], *, index_button_width: int = 60
+        self,
+        app_model: AppModel,
+        pages: t.Iterable[t.Tuple[QIcon, str, QWidget]],
+        *,
+        index_button_width: int = 60,
     ) -> None:
         super().__init__()
+        app_model.sig_notify.connect(self._on_app_model_update)
+
         self._index_button_group = QButtonGroup()
         self._index_button_layout = QVBoxLayout()
         self._index_button_layout.setContentsMargins(0, 0, 0, 0)
@@ -86,11 +92,14 @@ class _PagedLayout(QSplitter):
             self._page_widget.addWidget(page)
 
         self._index_button_group.idClicked.connect(self._page_widget.setCurrentIndex)
-        index_button_widget = TopAlignDecorator(LayoutWrapper(self._index_button_layout))
-        index_button_widget.setFixedWidth(index_button_width)
-        self.addWidget(index_button_widget)
+        self._index_button_widget = TopAlignDecorator(LayoutWrapper(self._index_button_layout))
+        self._index_button_widget.setFixedWidth(index_button_width)
+        self.addWidget(self._index_button_widget)
         self.addWidget(self._page_widget)
         self.setCollapsible(1, False)
+
+    def _on_app_model_update(self, app_model: AppModel) -> None:
+        self._index_button_widget.setEnabled(app_model.plugin_state.is_steady)
 
 
 class MainWindow(QMainWindow):
@@ -101,11 +110,12 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(
             _PagedLayout(
+                app_model,
                 [
                     (RECORD(), "Stream", StreamingMainWidget(app_model, self)),
                     (FLASH(), "Flash", FlashMainWidget(app_model, self)),
                     (HELP(), "Help", HelpMainWidget(self)),
-                ]
+                ],
             )
         )
 
