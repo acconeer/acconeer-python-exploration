@@ -3,3 +3,4 @@
 
 from .dialog import SaveDialogWithPreview
 from .preview import PresentationType, PresentationWindow, PresenterFunc
+from .set_config_presenter import set_config_presenter

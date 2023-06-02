@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import traceback
 import typing as t
 from pathlib import Path
 
@@ -17,7 +18,12 @@ from acconeer.exptool.app.new.ui.icons import CHECKMARK, FOLDER_OPEN, SAVE
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 
 from .data_editor import DataEditor
-from .save_dialog import PresentationType, PresenterFunc, SaveDialogWithPreview
+from .save_dialog import (
+    PresentationType,
+    PresenterFunc,
+    SaveDialogWithPreview,
+    set_config_presenter,
+)
 
 
 @te.runtime_checkable
@@ -28,6 +34,25 @@ class JsonPresentable(te.Protocol):
     @classmethod
     def from_json(self, json: str) -> JsonPresentable:
         ...
+
+
+def _none_coalescing_chain(*funcs: PresenterFunc) -> PresenterFunc:
+    """
+    Composes a sequence of PresenterFuncs into a chain.
+
+    The chain will call the functions in order,
+    terminating at (and returning the result of)
+    the first function returning a non-None value.
+    """
+
+    def _chain(instance: t.Any, t: PresentationType) -> t.Optional[str]:
+        for f in funcs:
+            presentation = f(instance, t)
+            if presentation is not None:
+                return presentation
+        return None
+
+    return _chain
 
 
 def _json_presentation(instance: t.Any, t: PresentationType) -> t.Optional[str]:
@@ -124,7 +149,11 @@ class JsonSaveLoadButtons(QWidget):
         filename = SaveDialogWithPreview.get_save_file_name(
             caption="Save to file",
             model=model,
-            presenter=(lambda i, t: _json_presentation(i, t) or self._extra_presenter(i, t)),
+            presenter=_none_coalescing_chain(
+                _json_presentation,
+                set_config_presenter,
+                self._extra_presenter,
+            ),
             **self._FILE_DIALOG_OPTIONS,
         )
 
@@ -159,6 +188,7 @@ class JsonSaveLoadButtons(QWidget):
                     exc=HandledException(
                         header + "\n" + f"The following exception was raised: {e!r}\n"
                     ),
+                    traceback_str=traceback.format_exc(),
                 ).exec()
 
         return wrapper
