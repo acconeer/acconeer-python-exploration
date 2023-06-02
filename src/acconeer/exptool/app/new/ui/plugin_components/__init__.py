@@ -8,6 +8,7 @@ from .data_editor import DataEditor
 from .metadata_view import ExtendedMetadataView, MetadataView, SmartMetadataView
 from .misc_error_view import MiscErrorView
 from .perf_calc_view import ExtendedPerfCalcView, PerfCalcView, SmartPerfCalcView
+from .save_dialog import PresentationType, PresenterFunc
 from .sensor_config_editor import SensorConfigEditor
 from .session_config_editor import SessionConfigEditor
 from .subsweep_config_editor import SubsweepConfigEditor

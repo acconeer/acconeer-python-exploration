@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import typing as t
 from pathlib import Path
 
@@ -16,8 +17,10 @@ from acconeer.exptool.app.new.ui.icons import CHECKMARK, FOLDER_OPEN, SAVE
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 
 from .data_editor import DataEditor
+from .save_dialog import PresentationType, PresenterFunc, SaveDialogWithPreview
 
 
+@te.runtime_checkable
 class JsonPresentable(te.Protocol):
     def to_json(self) -> str:
         ...
@@ -27,13 +30,23 @@ class JsonPresentable(te.Protocol):
         ...
 
 
+def _json_presentation(instance: t.Any, t: PresentationType) -> t.Optional[str]:
+    if t is PresentationType.JSON and isinstance(instance, JsonPresentable):
+        return json.dumps(
+            json.loads(instance.to_json()),
+            indent=2,
+        )
+
+    return None
+
+
 class JsonSaveLoadButtons(QWidget):
     _ICON_SIZE = QSize(20, 20)
     _BUTTON_SIZE = QSize(35, 25)
     _ICON_TRANSIENT_CHECKMARK_DURATION_MS = 2000
     _FILE_DIALOG_OPTIONS = dict(
         filter="JSON (*.json)",
-        options=QFileDialog.DontUseNativeDialog,
+        options=QFileDialog.Option.DontUseNativeDialog,
     )
 
     def __init__(
@@ -42,6 +55,7 @@ class JsonSaveLoadButtons(QWidget):
         setter: t.Callable[[JsonPresentable], t.Any],
         encoder: t.Callable[[JsonPresentable], str],
         decoder: t.Callable[[str], JsonPresentable],
+        extra_presenter: PresenterFunc,
         parent: t.Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent=parent)
@@ -50,6 +64,7 @@ class JsonSaveLoadButtons(QWidget):
         self._setter = setter
         self._encoder = encoder
         self._decoder = decoder
+        self._extra_presenter = extra_presenter
 
         self._save = QPushButton(SAVE(), "")
         self._save.setFixedSize(self._BUTTON_SIZE)
@@ -83,28 +98,43 @@ class JsonSaveLoadButtons(QWidget):
         cls,
         editor: DataEditor[JsonPresentable],
         config_type: t.Type[JsonPresentable],
+        extra_presenter: PresenterFunc = lambda i, t: None,
     ) -> JsonSaveLoadButtons:
+        """
+        Creates a JsonSaveLoadButtons instance with a built-in JSON preview
+
+        :param editor: The editor to bind the save/load buttons to
+        :param config_type: The type (class) of the config
+        :param extra_presenter:
+            A PresenterFunc hooks into preview presentation creation.
+            This function should always return None if its arguments aren't handled.
+        """
         buttons = cls(
             editor.get_data,
             editor.sig_update.emit,
             config_type.to_json,
             config_type.from_json,
+            extra_presenter,
         )
         editor.sig_update.connect(lambda model: buttons._save.setEnabled(model is not None))
         return buttons
 
     def _save_to_selected_file(self) -> None:
-        filename, _ = QFileDialog.getSaveFileName(
-            caption="Save to file", **self._FILE_DIALOG_OPTIONS
+        model = self._getter()
+        filename = SaveDialogWithPreview.get_save_file_name(
+            caption="Save to file",
+            model=model,
+            presenter=(lambda i, t: _json_presentation(i, t) or self._extra_presenter(i, t)),
+            **self._FILE_DIALOG_OPTIONS,
         )
 
         if filename:
-            Path(filename).with_suffix(".json").write_text(self._encoder(self._getter()))
+            Path(filename).with_suffix(".json").write_text(self._encoder(model))
             self._show_transient_checkmark(self._save)
 
     def _load_and_set_selected_file(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
-            caption="Load to file", **self._FILE_DIALOG_OPTIONS
+            caption="Load from file", **self._FILE_DIALOG_OPTIONS
         )
 
         if filename:
