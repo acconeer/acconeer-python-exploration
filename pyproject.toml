@@ -16,7 +16,8 @@ line-length = 99
 
 [tool.ruff]
 # "extend" here adds to the ruff defaults, rather than replacing.
-extend-select = ["Q", "TID"]  # Q = flake8-quotes, TID = flake8-tidy-imports
+# Q = flake8-quotes, TID = flake8-tidy-imports, I = isort, FA = flake8-future-annotations
+extend-select = ["Q", "TID", "I", "FA"]
 extend-ignore = ["E741"]  # Ambiguous variable names, e.g. I vs l
 
 line-length = 100
@@ -24,7 +25,7 @@ line-length = 100
 show-fixes = true
 show-source = true
 
-src = ["src"]
+src = ["src", "tests"]
 namespace-packages = ["src/acconeer"]
 
 [tool.ruff.per-file-ignores]
@@ -34,14 +35,10 @@ namespace-packages = ["src/acconeer"]
 [tool.ruff.flake8-tidy-imports]
 ban-relative-imports = "parents"
 
-[tool.isort]
-line_length = 99
-lines_after_imports = 2
-multi_line_output = 3
-indent = 4
-default_section = "FIRSTPARTY"
-include_trailing_comma = true
-known_third_party = [
+[tool.ruff.isort]
+lines-after-imports = 2
+
+known-third-party = [
     "numpy",
     "scipy",
     "serial",
@@ -64,35 +61,21 @@ known_third_party = [
     "pyperclip",
     "psutil",
 ]
-known_qt = "PySide6"
-known_plotting = "pyqtgraph"
-known_acconeer = "acconeer"
-sections = [
-    "FUTURE",
-    "STDLIB",
-    "THIRDPARTY",
-    "QT",
-    "PLOTTING",
-    "ACCONEER",
-    "FIRSTPARTY",
-    "LOCALFOLDER",
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "PySide6",
+    "pyqtgraph",
+    "acconeer",
+    "first-party",
+    "local-folder",
 ]
-skip = [
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-    "*.egg-info",
-    "env",
-    "venv",
-    "stash",
-    ".tox",
-    ".nox",
-    ".mypy_cache",
-    ".pytest_cache",
-    "get-pip.py",
-]
-profile = "black"
+
+[tool.ruff.isort.sections]
+"PySide6" = ["PySide6"]
+"pyqtgraph" = ["pyqtgraph"]
+"acconeer" = ["acconeer"]
 
 [tool.mypy]
 packages = [

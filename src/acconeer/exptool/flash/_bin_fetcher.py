@@ -13,9 +13,8 @@ import zipfile
 from pathlib import Path
 from typing import Optional, Tuple
 
-import requests
-
 import platformdirs
+import requests
 from bs4 import BeautifulSoup
 
 

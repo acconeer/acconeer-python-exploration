@@ -14,8 +14,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 
 BLACK_SPEC = "black==22.12.0"
-ISORT_SPEC = "isort==5.6.3"
-RUFF_SPEC = "ruff==0.0.260"
+RUFF_SPEC = "ruff==0.0.270"
 MYPY_SPEC = "mypy==1.3.0"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
@@ -73,15 +72,7 @@ class Parser(argparse.ArgumentParser):
 
 @nox.session
 def lint(session):
-    session.install(
-        BLACK_SPEC,
-        ISORT_SPEC,
-        RUFF_SPEC,
-        "flake8",
-        "flake8-future-annotations",
-        "packaging",
-    )
-    FUTURE_ANNOTATIONS_ERRORS = "FA10"
+    session.install(BLACK_SPEC, RUFF_SPEC, "packaging")
 
     session.run("python", "tools/check_permissions.py")
     session.run("python", "tools/check_whitespace.py")
@@ -90,22 +81,16 @@ def lint(session):
     session.run("python", "tools/check_changelog.py")
     session.run("python", "tools/check_copyright.py")
     session.run("python", "-m", "ruff", ".")
-    session.run("python", "-m", "flake8", "--select", FUTURE_ANNOTATIONS_ERRORS)
     session.run("python", "-m", "black", "--check", "--diff", "--quiet", ".")
-    session.run("python", "-m", "isort", "--check", "--diff", "--quiet", ".")
 
 
 @nox.session
 def reformat(session):
-    session.install(
-        BLACK_SPEC,
-        ISORT_SPEC,
-        RUFF_SPEC,
-    )
+    session.install(BLACK_SPEC, RUFF_SPEC)
+
     session.run("python", "tools/check_copyright.py", "--update-year")
     session.run("python", "-m", "black", ".")
     session.run("python", "-m", "ruff", "--fix", ".")
-    session.run("python", "-m", "isort", ".")
 
 
 @nox.session

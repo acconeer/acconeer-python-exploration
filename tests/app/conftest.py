@@ -8,12 +8,11 @@ import typing as t
 from pathlib import Path
 from unittest.mock import Mock
 
+import dirty_equals as de
 import pytest
 
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
-
-import dirty_equals as de
 
 
 def _mock_plugin_factory(*args: t.Any, **kwargs: t.Any) -> t.Any:

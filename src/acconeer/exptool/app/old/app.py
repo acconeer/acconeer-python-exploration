@@ -18,6 +18,7 @@ import webbrowser
 from typing import Any, Optional, Tuple
 
 import numpy as np
+import platformdirs
 from packaging import version
 
 from PySide6 import QtCore, QtWidgets
@@ -42,8 +43,6 @@ import acconeer.exptool as et
 from acconeer.exptool.a111 import _conf_to_rss_sdk
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo
 from acconeer.exptool.app import resources
-
-import platformdirs
 
 from . import data_processing
 from .elements.helper import (

@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import typing as t
 
+import dirty_equals as de
 import pytest
 
 from acconeer.exptool.app.new import ConnectionState, PluginState
 from acconeer.exptool.app.new.backend import Backend, ConnectionStateMessage, PluginStateMessage
-
-import dirty_equals as de
 
 
 class DisconnectedBackend:

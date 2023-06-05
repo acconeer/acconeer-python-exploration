@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,6 @@ import logging
 from typing import List
 
 import requests
-
 from bs4 import BeautifulSoup
 
 
