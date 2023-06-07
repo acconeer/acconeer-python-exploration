@@ -48,5 +48,10 @@ from ._core import (
     zip_extended_structures,
 )
 from ._core_ext import _ReplayingClient, _StopReplay
-from ._perf_calc import _SensorPerformanceCalc, _SessionPerformanceCalc
+from ._perf_calc import (
+    _SensorPerformanceCalc,
+    _SessionPerformanceCalc,
+    get_point_overhead_duration,
+    get_sample_duration,
+)
 from ._rate_calc import _RateCalculator, _RateStats

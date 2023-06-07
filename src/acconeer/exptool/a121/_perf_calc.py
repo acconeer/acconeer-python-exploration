@@ -1,15 +1,128 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Dict, Optional
 
 import attrs
+from numpy import nan
 
+from acconeer.exptool.a121._core import PRF, Profile
 from acconeer.exptool.a121._core.utils import zip_extended_structures
 
 from ._core import IdleState, Metadata, SensorConfig, SessionConfig
+
+
+_POINT_OVERHEAD_DURATIONS_NS: Dict[PRF, Dict[Profile, float]] = {
+    PRF.PRF_19_5_MHz: {
+        Profile.PROFILE_1: 1744,
+        Profile.PROFILE_2: nan,
+        Profile.PROFILE_3: nan,
+        Profile.PROFILE_4: nan,
+        Profile.PROFILE_5: nan,
+    },
+    PRF.PRF_15_6_MHz: {
+        Profile.PROFILE_1: 2102,
+        Profile.PROFILE_2: 1612,
+        Profile.PROFILE_3: 1282,
+        Profile.PROFILE_4: 1282,
+        Profile.PROFILE_5: 1282,
+    },
+    PRF.PRF_13_0_MHz: {
+        Profile.PROFILE_1: 2462,
+        Profile.PROFILE_2: 1920,
+        Profile.PROFILE_3: 1539,
+        Profile.PROFILE_4: 1539,
+        Profile.PROFILE_5: 1539,
+    },
+    PRF.PRF_8_7_MHz: {
+        Profile.PROFILE_1: 3539,
+        Profile.PROFILE_2: 2844,
+        Profile.PROFILE_3: 2308,
+        Profile.PROFILE_4: 2308,
+        Profile.PROFILE_5: 2308,
+    },
+    PRF.PRF_6_5_MHz: {
+        Profile.PROFILE_1: 4615,
+        Profile.PROFILE_2: 3766,
+        Profile.PROFILE_3: 3077,
+        Profile.PROFILE_4: 3077,
+        Profile.PROFILE_5: 3077,
+    },
+    PRF.PRF_5_2_MHz: {
+        Profile.PROFILE_1: 5692,
+        Profile.PROFILE_2: 4689,
+        Profile.PROFILE_3: 3846,
+        Profile.PROFILE_4: 3846,
+        Profile.PROFILE_5: 3846,
+    },
+}
+
+_SAMPLE_DURATIONS_NS: Dict[PRF, Dict[Profile, float]] = {
+    PRF.PRF_19_5_MHz: {
+        Profile.PROFILE_1: 1487,
+        Profile.PROFILE_2: nan,
+        Profile.PROFILE_3: nan,
+        Profile.PROFILE_4: nan,
+        Profile.PROFILE_5: nan,
+    },
+    PRF.PRF_15_6_MHz: {
+        Profile.PROFILE_1: 1795,
+        Profile.PROFILE_2: 1344,
+        Profile.PROFILE_3: 1026,
+        Profile.PROFILE_4: 1026,
+        Profile.PROFILE_5: 1026,
+    },
+    PRF.PRF_13_0_MHz: {
+        Profile.PROFILE_1: 2103,
+        Profile.PROFILE_2: 1600,
+        Profile.PROFILE_3: 1231,
+        Profile.PROFILE_4: 1231,
+        Profile.PROFILE_5: 1231,
+    },
+    PRF.PRF_8_7_MHz: {
+        Profile.PROFILE_1: 3026,
+        Profile.PROFILE_2: 2369,
+        Profile.PROFILE_3: 1846,
+        Profile.PROFILE_4: 1846,
+        Profile.PROFILE_5: 1846,
+    },
+    PRF.PRF_6_5_MHz: {
+        Profile.PROFILE_1: 3949,
+        Profile.PROFILE_2: 3138,
+        Profile.PROFILE_3: 2462,
+        Profile.PROFILE_4: 2462,
+        Profile.PROFILE_5: 2462,
+    },
+    PRF.PRF_5_2_MHz: {
+        Profile.PROFILE_1: 4872,
+        Profile.PROFILE_2: 3908,
+        Profile.PROFILE_3: 3077,
+        Profile.PROFILE_4: 3077,
+        Profile.PROFILE_5: 3077,
+    },
+}
+
+
+def get_point_overhead_duration(prf: PRF, profile: Profile) -> float:
+    """
+    Returns the time duration (in seconds)
+    the point overhead given a prf and a profile
+
+    """
+    point_duration = _POINT_OVERHEAD_DURATIONS_NS[prf][profile]
+    return point_duration * 1e-9
+
+
+def get_sample_duration(prf: PRF, profile: Profile) -> float:
+    """
+    Returns the time duration (in seconds)
+    to measure a single sample given a prf and a profile
+
+    """
+    sample_duration = _SAMPLE_DURATIONS_NS[prf][profile]
+    return sample_duration * 1e-9
 
 
 @attrs.frozen
