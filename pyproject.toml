@@ -84,6 +84,7 @@ packages = [
     "acconeer.exptool.a121",
     "acconeer.exptool.app.new",
     "acconeer.exptool.setup",
+    "acconeer.exptool.opser",
     "tests.unit.a121",
     "tests.app",
 ]
