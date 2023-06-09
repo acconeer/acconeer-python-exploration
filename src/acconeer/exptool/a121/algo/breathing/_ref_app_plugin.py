@@ -37,7 +37,7 @@ from acconeer.exptool.app.new import (
     AttrsConfigEditor,
     BackendLogger,
     GeneralMessage,
-    GridGroupBox,
+    GroupBox,
     Message,
     MiscErrorView,
     PidgetGroupFactoryMapping,
@@ -46,7 +46,6 @@ from acconeer.exptool.app.new import (
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
-    VerticalGroupBox,
     icons,
     is_task,
     pidgets,
@@ -472,7 +471,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.stop_button.setToolTip("Stops the session.\n\nShortcut: Space")
         self.stop_button.clicked.connect(self._send_stop_request)
 
-        button_group = GridGroupBox("Controls", parent=self.sticky_widget)
+        button_group = GroupBox.grid("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
 
@@ -481,7 +480,7 @@ class ViewPlugin(DetectorViewPluginBase):
         self.misc_error_view = MiscErrorView(self.scrolly_widget)
         scrolly_layout.addWidget(self.misc_error_view)
 
-        sensor_selection_group = VerticalGroupBox("Sensor selection", parent=self.scrolly_widget)
+        sensor_selection_group = GroupBox.vertical("Sensor selection", parent=self.scrolly_widget)
         self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
             parent=sensor_selection_group
         )
@@ -489,7 +488,8 @@ class ViewPlugin(DetectorViewPluginBase):
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
         scrolly_layout.addWidget(sensor_selection_group)
 
-        self.config_editor = AttrsConfigEditor[RefAppConfig](
+        self.config_editor = AttrsConfigEditor(
+            config_type=RefAppConfig,
             title="Ref App parameters",
             factory_mapping=self._get_ref_app_pidget_mapping(),
             parent=self.scrolly_widget,
@@ -497,7 +497,8 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
-        self.breathing_config_editor = AttrsConfigEditor[BreathingProcessorConfig](
+        self.breathing_config_editor = AttrsConfigEditor(
+            config_type=BreathingProcessorConfig,
             title="Breathing configuration parameters",
             factory_mapping=self._get_breathing_pidget_mapping(),
             parent=self.scrolly_widget,
@@ -505,7 +506,8 @@ class ViewPlugin(DetectorViewPluginBase):
         self.breathing_config_editor.sig_update.connect(self._on_breathing_config_update)
         scrolly_layout.addWidget(self.breathing_config_editor)
 
-        self.sensor_config_editor = AttrsConfigEditor[RefAppConfig](
+        self.sensor_config_editor = AttrsConfigEditor(
+            config_type=RefAppConfig,
             title="Sensor configuration",
             factory_mapping=self._get_sensor_config_pidget_mapping(),
             parent=self.scrolly_widget,
@@ -513,7 +515,8 @@ class ViewPlugin(DetectorViewPluginBase):
         self.sensor_config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.sensor_config_editor)
 
-        self.presence_config_editor = AttrsConfigEditor[PresenceProcessorConfig](
+        self.presence_config_editor = AttrsConfigEditor(
+            config_type=PresenceProcessorConfig,
             title="Presence configuration parameters",
             factory_mapping=self._get_presence_config_pidget_mapping(),
             parent=self.scrolly_widget,
