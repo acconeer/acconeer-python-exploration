@@ -77,8 +77,6 @@ class SessionConfig:
     :raises ValueError: If the session config must be extended but ``extended=False``.
     """
 
-    _groups: list[dict[int, SensorConfig]]
-
     def __init__(
         self,
         arg: Optional[
