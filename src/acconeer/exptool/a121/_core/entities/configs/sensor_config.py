@@ -127,6 +127,8 @@ class SensorConfig:
     :raises ValueError: If subsweeps parameters are both given implicitly and via ``subsweeps``.
     """
 
+    MAX_HWAAS = SubsweepConfig.MAX_HWAAS
+
     _subsweeps: list[SubsweepConfig]
 
     _sweeps_per_frame: int

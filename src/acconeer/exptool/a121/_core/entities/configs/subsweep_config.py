@@ -66,6 +66,8 @@ class SubsweepConfig:
     Normally used as a part of the :attr:`SensorConfig`.
     """
 
+    MAX_HWAAS = 511
+
     _start_point: int = attrs.field(
         default=80,
         converter=int_converter,
