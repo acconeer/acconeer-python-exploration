@@ -14,32 +14,35 @@ A reflection occurs when there is a difference in relative permittivity between 
     \gamma=\left(\frac{\sqrt{\varepsilon_1}-\sqrt{\varepsilon_2}}{\sqrt{\varepsilon_1}+\sqrt{\varepsilon_2}}\right)^2
 
 where :math:`\varepsilon_1` and :math:`\varepsilon_2` is the relative permittivity, at 60 GHz, on either side of the boundary.
-The relative permittivity for common materials can be found in various data bases, but keep in mind that it is frequency dependent.
-As an example, :numref:`tab_material` lists approximate values for the real part of the relative permittivity for some common materials.
+Keep in mind that the relative permittivity is generally frequency dependent and may also vary depending on the exact material composiion and manufacturing process.
+:numref:`tab_material` lists approximate values for the real part of the relative permittivity for some common materials.
 
 .. _tab_material:
-.. table:: Relative permittivity of common materials
+.. table:: Approximate relative permittivity of common materials
     :align: center
     :widths: auto
 
-    ==================== ===================================== ===========================================
-    Material             Real(:math:`\varepsilon`) at 60 GHz   :math:`\gamma` with air boundary
-    ==================== ===================================== ===========================================
-    ABS plastic          2.48                                  0.049
-    Mobile phone glass   6.9                                   0.02
-    Plaster              2.7                                   0.059
-    Concrete             4                                     0.11
-    Wood                 2.4                                   0.046
-    Textile              2                                     0.029
-    Metal                --                                    1
-    Human skin           8                                     0.22
-    Water                11.1                                  0.28
-    Air                  1                                     0
-    ==================== ===================================== ===========================================
+    =============================== ===================================== =====================================
+    Material                        Re(:math:`\varepsilon`) at 60 GHz     :math:`\gamma` with air boundary
+    =============================== ===================================== =====================================
+    Air                             1                                     0
+    ABS                             2.5-4.0                               0.05 - 0.11
+    Polyethylene (PE)               2.3                                   0.042
+    Polypropylene (PP)              2.2                                   0.038
+    Polycarbonate                   2.75                                  0.06
+    Mobile phone glass              6.9                                   0.2
+    Plaster                         2.7                                   0.059
+    Concrete                        4                                     0.11
+    Wood                            2.4                                   0.046
+    Textile                         2                                     0.029
+    Metal                           --                                    1
+    Human skin                      8                                     0.22
+    Water                           11.1                                  0.28
+    =============================== ===================================== =====================================
 
 
 :numref:`tab_material` shows that some materials are semi-transparent to 60 GHz signals and it is hence possible to detect reflecting objects behind a surface of these materials, each boundary with a change in permittivity gives a reflection.
-This is a useful property in applications where the use case requires that the sensor measures through, e.g., a wall, clothing or plastic housing.
+This is a useful property in applications where the sensor measures through the product housing or when detecting objects behind other objects such as walls and clothing. For optimal design of the product housing, refer to the radome chapter in the "Hardware and physical integration guideline" document.
 
 Radar cross section
 -------------------
