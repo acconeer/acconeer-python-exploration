@@ -8,6 +8,7 @@
 - Export some configurations to C via the config save buttons.
   + Sparse IQ
   + Distance detector
+  + Presence detector
   + Tank level
 - Breathing reference application
 
