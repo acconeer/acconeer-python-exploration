@@ -18,7 +18,9 @@ line-length = 99
 # "extend" here adds to the ruff defaults, rather than replacing.
 # Q = flake8-quotes, TID = flake8-tidy-imports, I = isort, FA = flake8-future-annotations
 extend-select = ["Q", "TID", "I", "FA"]
-extend-ignore = ["E741"]  # Ambiguous variable names, e.g. I vs l
+# E741 = Ambiguous variable names, e.g. I vs l
+# E501 = "line too long". Handled by black.
+extend-ignore = ["E741", "E501"]
 
 line-length = 100
 
