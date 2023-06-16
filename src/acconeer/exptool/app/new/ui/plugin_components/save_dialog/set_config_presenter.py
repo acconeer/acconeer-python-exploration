@@ -72,7 +72,7 @@ def _uint(number: int) -> str:
 
 
 def _rate(number: t.Optional[float]) -> str:
-    return "0.0f" if number is None else f"{number:.16g}f"
+    return "0.0f" if number is None else f"{number:.3f}f"
 
 
 def _bool(flag: bool) -> str:
