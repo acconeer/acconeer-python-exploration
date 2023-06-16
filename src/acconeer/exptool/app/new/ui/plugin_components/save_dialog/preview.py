@@ -46,6 +46,7 @@ class _SyntaxHighlighter(QSyntaxHighlighter):
     DODGER_BLUE: _Rgb = dict(r=30, g=144, b=255)
     FIREBRICK: _Rgb = dict(r=178, g=34, b=34)
     SIENNA: _Rgb = dict(r=160, g=82, b=45)
+    GRAY: _Rgb = dict(r=100, g=100, b=100)
 
     def __init__(self, parent: QTextDocument, highlights: dict[str, QTextCharFormat]) -> None:
         super().__init__(parent)
@@ -88,23 +89,32 @@ class _SyntaxHighlighter(QSyntaxHighlighter):
 
     @classmethod
     def rss_c(cls, parent: QTextDocument) -> _SyntaxHighlighter:
+        snake_case = "[a-z]+(?:_[a-z]+)*"
+        type_regex = f"{snake_case}_t "
+        acc_type_regex = f"acc_{type_regex}"
         return cls(
             parent,
             {
+                # anything snake_case
+                rf"({snake_case})": cls._create_char_fmt(**cls.SIENNA),
                 # keywords
                 r"(static)": cls._create_char_fmt(**cls.PURPLE),
                 # types
-                r"(void|acc_config_t)": cls._create_char_fmt(**cls.FOREST_GREEN),
-                # the "config" parameter
-                r"[^_](config)": cls._create_char_fmt(**cls.SIENNA, weight=550),
+                rf"(void|{type_regex}|{acc_type_regex})": cls._create_char_fmt(**cls.FOREST_GREEN),
                 # function call & -definition
-                r"(set_config|acc_config_.*_set)": cls._create_char_fmt(b=255, weight=500),
-                # number literals.
-                r"(\d+(?:\.\d+)?[Uf]?)": cls._create_char_fmt(**cls.DODGER_BLUE),
-                # enum members
+                rf"(set_config|acc_{snake_case}_set)\(": cls._create_char_fmt(b=255, weight=500),
+                # int literals
+                r"(\d+U?)": cls._create_char_fmt(**cls.DODGER_BLUE),
+                # floating literals
+                r"(\d+\.\d+f?)": cls._create_char_fmt(**cls.DODGER_BLUE),
+                # bool literals
+                "(true|false)": cls._create_char_fmt(r=0, g=0, b=0),
+                # acconeer enum members/constants
                 r"(ACC[_A-Z0-9]*)": cls._create_char_fmt(**cls.GOLDEN_ROD),
                 # single line comments
                 r"(//.*)": cls._create_char_fmt(**cls.FIREBRICK, italic=True),
+                # parameter ignores
+                rf"(\(void\){snake_case};)": cls._create_char_fmt(**cls.GRAY, italic=True),
             },
         )
 
