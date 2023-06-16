@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, Mapping, Optional, cast
+from typing import Any, Callable, Mapping, Optional, cast
 
 import attrs
 import h5py
@@ -49,6 +49,7 @@ from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import (
     enable_if,
     parameter_is,
 )
+from acconeer.exptool.app.new.ui.plugin_components.save_dialog import PresentationType
 
 from ._configs import get_high_accuracy_detector_config
 from ._detector import (
@@ -374,6 +375,7 @@ class ViewPlugin(DetectorViewPluginBase):
             title="Detector parameters",
             factory_mapping=self.get_pidget_mapping(),
             config_type=DetectorConfig,
+            extra_presenter=_detector_config_presenter,
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)
@@ -582,6 +584,41 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _send_defaults_request(self) -> None:
         BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
+
+
+def _detector_config_presenter(config: Any, presentation_type: PresentationType) -> Optional[str]:
+    if isinstance(config, DetectorConfig) and presentation_type is PresentationType.C_SET_CONFIG:
+        max_step_length = 0 if config.max_step_length is None else config.max_step_length
+
+        return f"""
+static void set_config(acc_detector_distance_config_t *config, distance_preset_config_t preset)
+{{
+    // This snippet is generated to be compatible with RSS A121 v1.0.0
+    // If there is a version missmatch the snippet might need some modification
+
+    (void)preset;
+
+    acc_detector_distance_config_sensor_set(config, SENSOR_ID);
+
+    acc_detector_distance_config_start_set(config, {config.start_m:.3f}f);
+    acc_detector_distance_config_end_set(config, {config.end_m:.3f}f);
+    acc_detector_distance_config_max_step_length_set(config, {max_step_length}U);
+
+    acc_detector_distance_config_signal_quality_set(config, {float(config.signal_quality):.3f}f);
+    acc_detector_distance_config_max_profile_set(config, ACC_CONFIG_{config.max_profile.name});
+    acc_detector_distance_config_peak_sorting_set(config, ACC_DETECTOR_DISTANCE_PEAK_SORTING_{config.peaksorting_method.name});
+    acc_detector_distance_config_reflector_shape_set(config, ACC_DETECTOR_DISTANCE_REFLECTOR_SHAPE_{config.reflector_shape.name});
+
+    acc_detector_distance_config_threshold_method_set(config, ACC_DETECTOR_DISTANCE_THRESHOLD_METHOD_{config.threshold_method.name});
+    acc_detector_distance_config_num_frames_recorded_threshold_set(config, {config.num_frames_in_recorded_threshold}U);
+    acc_detector_distance_config_fixed_threshold_value_set(config, {config.fixed_threshold_value:.3f}f);
+    acc_detector_distance_config_threshold_sensitivity_set(config, {config.threshold_sensitivity:.3f}f);
+
+    acc_detector_distance_config_close_range_leakage_cancellation_set(config, {str(config.close_range_leakage_cancellation).lower()});
+}}
+"""
+
+    return None
 
 
 class PluginSpec(PluginSpecBase):
