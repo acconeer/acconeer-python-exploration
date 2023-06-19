@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional
 
 import attrs
 import h5py
@@ -57,6 +57,7 @@ from acconeer.exptool.app.new import (
 from acconeer.exptool.app.new.ui.plugin_components import (
     AttrsConfigEditor,
     PidgetFactoryMapping,
+    PresentationType,
     pidgets,
 )
 
@@ -538,6 +539,7 @@ class ViewPlugin(DetectorViewPluginBase):
             title="Tank level indicator parameters",
             factory_mapping=self._get_processor_pidget_mapping(),
             config_type=RefAppConfig,
+            extra_presenter=_set_config_presenter,
             parent=self.scrolly_widget,
         )
         self.tank_level_config_editor.sig_update.connect(self._on_config_update)
@@ -699,6 +701,40 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _send_defaults_request(self) -> None:
         BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
+
+
+def _set_config_presenter(instance: Any, presentation_type: PresentationType) -> Optional[str]:
+    if isinstance(instance, RefAppConfig) and presentation_type is PresentationType.C_SET_CONFIG:
+        config: RefAppConfig = instance
+        distance_config = config.to_detector_config()
+
+        return f"""
+static void set_config(acc_ref_app_tank_level_config_t *config, tank_level_preset_config_t preset)
+{{
+    // This snippet is generated to be compatible with RSS A121 v1.0.0
+    // If there is a version missmatch the snippet might need some modification
+
+    (void)preset;
+
+    config->tank_range_start_m     = {config.start_m:.3f}f;
+    config->tank_range_end_m       = {config.end_m:.3f}f;
+    config->median_filter_length   = {config.median_filter_length}U;
+    config->num_medians_to_average = {config.num_medians_to_average}U;
+
+    acc_detector_distance_config_start_set(config->distance_config, {distance_config.start_m:.3f}f);
+    acc_detector_distance_config_end_set(config->distance_config, {distance_config.end_m:.3f}f);
+    acc_detector_distance_config_max_step_length_set(config->distance_config, {distance_config.max_step_length or 0}U);
+    acc_detector_distance_config_max_profile_set(config->distance_config, ACC_CONFIG_{distance_config.max_profile.name});
+    acc_detector_distance_config_num_frames_recorded_threshold_set(config->distance_config, {distance_config.num_frames_in_recorded_threshold}U);
+    acc_detector_distance_config_peak_sorting_set(config->distance_config, ACC_DETECTOR_DISTANCE_PEAK_SORTING_{distance_config.peaksorting_method.name});
+    acc_detector_distance_config_reflector_shape_set(config->distance_config, ACC_DETECTOR_DISTANCE_REFLECTOR_SHAPE_{distance_config.reflector_shape.name});
+    acc_detector_distance_config_threshold_sensitivity_set(config->distance_config, {distance_config.threshold_sensitivity:.3f}f);
+    acc_detector_distance_config_signal_quality_set(config->distance_config, {distance_config.signal_quality:.3f}f);
+    acc_detector_distance_config_close_range_leakage_cancellation_set(config->distance_config, {str(distance_config.close_range_leakage_cancellation).lower()});
+}}
+"""
+
+    return None
 
 
 class PluginSpec(PluginSpecBase):
