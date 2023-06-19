@@ -50,6 +50,7 @@ from acconeer.exptool.app.new import (
 from ._configs import (
     get_ceiling_config,
     get_long_range_config,
+    get_low_power_config,
     get_medium_range_config,
     get_short_range_config,
 )
@@ -83,6 +84,7 @@ class PluginPresetId(Enum):
     MEDIUM_RANGE = auto()
     LONG_RANGE = auto()
     CEILING = auto()
+    LOW_POWER = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
@@ -92,6 +94,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
         PluginPresetId.LONG_RANGE.value: lambda: get_long_range_config(),
         PluginPresetId.CEILING.value: lambda: get_ceiling_config(),
+        PluginPresetId.LOW_POWER.value: lambda: get_low_power_config(),
     }
 
     def __init__(
@@ -820,6 +823,11 @@ SMART_PRESENCE_PLUGIN = PluginSpec(
             name="Ceiling",
             description="Ceiling",
             preset_id=PluginPresetId.CEILING,
+        ),
+        PluginPresetBase(
+            name="Low power, Wake up",
+            description="Low power, Wake up",
+            preset_id=PluginPresetId.LOW_POWER,
         ),
     ],
     default_preset_id=PluginPresetId.MEDIUM_RANGE,
