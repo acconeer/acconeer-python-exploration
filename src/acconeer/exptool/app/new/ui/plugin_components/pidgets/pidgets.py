@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QLayout,
     QSlider,
     QSpinBox,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -390,24 +391,48 @@ class OptionalIntPidget(OptionalPidget):
 @attrs.frozen(kw_only=True, slots=False)
 class OptionalFloatPidgetFactory(OptionalPidgetFactory, FloatPidgetFactory):
     init_set_value: Optional[float] = None
+    """
+    The initial value of the spinbox (ignoring the None-ness of the pidget)
+    """
+
+    placeholder_text: Optional[str] = None
+    """
+    Text that will be displayed when the checkbox is unchecked (and data is None).
+    placeholder_text = None disables the placeholder text entierly
+    """
 
     def create(self, parent: QWidget) -> OptionalFloatPidget:
         return OptionalFloatPidget(self, parent)
 
 
 class OptionalFloatPidget(OptionalPidget):
+    _SPINBOX_INDEX = 0
+    _DUMMY_INDEX = 1
+
     def __init__(self, factory: OptionalFloatPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
+        self._container = QStackedWidget()
         self._spin_box = _PidgetDoubleSpinBox(
-            self._optional_widget,
+            self._container,
             decimals=factory.decimals,
             limits=factory.limits,
             suffix=factory.suffix,
             init_set_value=factory.init_set_value,
         )
-        self._optional_layout.addWidget(self._spin_box)
 
+        self._container.addWidget(self._spin_box)
+
+        if factory.placeholder_text is None:
+            self._dummy_spin_box = None
+        else:
+            self._dummy_spin_box = _PidgetDoubleSpinBox.placeholder_dummy(
+                self._container, factory.placeholder_text
+            )
+            self._dummy_spin_box.setEnabled(False)
+            self._container.addWidget(self._dummy_spin_box)
+
+        self._optional_layout.addWidget(self._container)
         self._none_checkbox.stateChanged.connect(self.__on_changed)
         self._spin_box.valueChanged.connect(self.__on_changed)
 
@@ -415,7 +440,12 @@ class OptionalFloatPidget(OptionalPidget):
         checked = self._none_checkbox.isChecked()
 
         with QtCore.QSignalBlocker(self):
-            self._spin_box.setEnabled(checked)
+            if self._dummy_spin_box is None:
+                self._spin_box.setEnabled(checked)
+            else:
+                self._container.setCurrentIndex(
+                    self._SPINBOX_INDEX if checked else self._DUMMY_INDEX
+                )
 
         value = self._spin_box.value() if checked else None
         self.sig_update.emit(value)
@@ -423,12 +453,16 @@ class OptionalFloatPidget(OptionalPidget):
     def set_data(self, value: Any) -> None:
         super().set_data(value)
 
-        with QtCore.QSignalBlocker(self):
-            if value is None:
-                self._spin_box.setEnabled(False)
-            else:
+        if value is not None:
+            with QtCore.QSignalBlocker(self):
                 self._spin_box.setValue(value)
-                self._spin_box.setEnabled(True)
+
+        if self._dummy_spin_box is None:
+            self._spin_box.setEnabled(value is not None)
+        else:
+            self._container.setCurrentIndex(
+                self._SPINBOX_INDEX if value is not None else self._DUMMY_INDEX
+            )
 
     def get_data(self) -> Optional[float]:
         if not self._none_checkbox.isChecked():
@@ -703,6 +737,18 @@ class _PidgetDoubleSpinBox(QDoubleSpinBox):
 
         if init_set_value is not None:
             self.setValue(init_set_value)
+
+    @classmethod
+    def placeholder_dummy(cls, parent: QWidget, placeholder_text: str) -> _PidgetDoubleSpinBox:
+        """
+        Create a spinbox that only displays a placeholder text
+        """
+        spin_box = _PidgetDoubleSpinBox(parent)
+        spin_box.setSpecialValueText(placeholder_text)
+        spin_box.setRange(0, 1)
+        spin_box.setValue(0)
+        spin_box.setReadOnly(True)
+        return spin_box
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         if self.hasFocus():

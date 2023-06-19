@@ -68,6 +68,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
             limits=(0.1, 1e4),
             decimals=1,
             init_set_value=10.0,
+            placeholder_text="- Hz",
             suffix="Hz",
             checkbox_label_text="Limit",
         ).create(self)
