@@ -12,8 +12,6 @@ import pytest
 from acconeer.exptool.a121.algo.smart_presence import _serializer
 from acconeer.exptool.a121.algo.smart_presence._ref_app import RefAppResult, _Mode
 
-from utils.test_utils import subsets_minus_empty_set  # type: ignore[import]
-
 
 @pytest.fixture
 def results() -> List[RefAppResult]:
@@ -52,8 +50,11 @@ def tmp_h5_file(tmp_path: Path) -> h5py.File:
     [
         (_serializer._ALL_REF_APP_RESULT_FIELDS, False),
         *[
-            (subset, True)
-            for subset in subsets_minus_empty_set(_serializer._ALL_REF_APP_RESULT_FIELDS)
+            (
+                tuple(e for e in _serializer._ALL_REF_APP_RESULT_FIELDS if e != drop_attribute),
+                True,
+            )
+            for drop_attribute in _serializer._ALL_REF_APP_RESULT_FIELDS
         ],
     ],
     ids=str,

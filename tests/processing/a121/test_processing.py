@@ -16,6 +16,7 @@ from . import (
     distance_test,
     presence_test,
     resources,
+    smart_presence_test,
     tank_level_test,
     touchless_button_test,
 )
@@ -104,6 +105,12 @@ def input_path(resource_name: str) -> Path:
             "input-distance-detector-5_to_200_cm_close_range_cancellation_disabled.h5",
         ),
         (
+            smart_presence_test.smart_presence_controller,
+            smart_presence_test.SmartPresenceResultH5Serializer,
+            smart_presence_test.smart_presence_result_comparator,
+            "smart_presence.h5",
+        ),
+        (
             tank_level_test.tank_level_controller,
             tank_level_test.TankLevelResultH5Serializer,
             tank_level_test.tank_level_result_comparator,
@@ -173,7 +180,11 @@ def test_input_output(
         if hasattr(algorithm, "process"):
             actual_results = [algorithm.process(result) for result in r.results]
         elif hasattr(algorithm, "get_next"):
-            actual_results = [algorithm.get_next() for _ in r.extended_results]
+            actual_results = [
+                algorithm.get_next()
+                for idx in range(r.num_sessions)
+                for _ in r.session(idx).extended_results
+            ]
         else:
             raise AttributeError("Algorithm does not have process() or get_next()")
 

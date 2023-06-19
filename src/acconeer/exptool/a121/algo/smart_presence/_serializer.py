@@ -2,10 +2,12 @@
 # All rights reserved
 from __future__ import annotations
 
+import typing as t
 from typing import List, Optional, Sequence
 
 import h5py
 import numpy as np
+import numpy.typing as npt
 
 from ._ref_app import RefAppResult, _Mode
 
@@ -44,6 +46,71 @@ def _deserialize_optional_uint(num: int) -> Optional[int]:
     return None if num == -1 else num
 
 
+def _stack_optional_arraylike(
+    sequence: t.Sequence[t.Optional[t.Union[t.List[t.Any], npt.NDArray[t.Any]]]],
+    dtype: t.Union[t.Type[float], t.Type[complex]] = float,
+) -> npt.NDArray[t.Any]:
+    """
+    Tries to create an NDArray from a sequence of Optional ArrayLikes, i.e.
+    a sequence that looks something like
+
+        [[1 2],
+         None,
+         [1 2 3 4],
+         []
+         ...
+        ]
+
+    ``None``/``[]`` are replaced with NaN-arrays that has the same dimensions as the
+    largest non-NaN array in the sequence:
+
+        [[1   2   NaN Nan],
+         [NaN NaN NaN NaN],
+         [1   2   3   4],
+         [NaN NaN NaN NaN]
+         ...
+        ]
+    """
+    SENTINELS = {float: np.NAN, complex: np.NAN + 1j * np.NAN}
+    dims = {np.ndim(x) for x in sequence if x is not None}
+
+    if len(dims) > 1:
+        raise ValueError(f"arrays in {sequence} are of different dimensions")
+
+    (dim,) = dims
+    if dim > 1:
+        raise ValueError("cannot handle arrays with ndim > 1")
+
+    lengths = {len(x) for x in sequence if x is not None}
+    length = max(lengths)
+
+    data_type = type(sequence[0][0]) if sequence[0] is not None and len(sequence[0]) > 0 else None
+    data_type = float if data_type == np.int64 else data_type
+
+    return np.stack(
+        [
+            np.full((length,), fill_value=SENTINELS[dtype], dtype=dtype)
+            if x is None or np.size(x) < 0
+            else np.pad(
+                np.array(x, dtype=data_type),
+                (0, length - len(x)),
+                "constant",
+                constant_values=(np.NaN, np.NaN),
+            )
+            for x in sequence
+        ]
+    )
+
+
+def _remove_nans(x: npt.ArrayLike) -> npt.ArrayLike:
+    if x is None:
+        return None
+
+    arr = np.array(x)
+
+    return arr[~np.isnan(arr)]  # type: ignore[no-any-return]
+
+
 class RefAppResultListH5Serializer:
     """
     Reads or writes a smart presence RefAppResult from/to a given h5py.Group
@@ -77,7 +144,7 @@ class RefAppResultListH5Serializer:
             self.group.create_dataset(
                 "zone_limits",
                 dtype=float,
-                data=np.array([res.zone_limits for res in results]),
+                data=_stack_optional_arraylike([res.zone_limits for res in results]),
                 track_times=False,
             )
 
@@ -102,8 +169,8 @@ class RefAppResultListH5Serializer:
         if "total_zone_detections" in self.fields:
             self.group.create_dataset(
                 "total_zone_detections",
-                dtype=int,
-                data=np.array([res.total_zone_detections for res in results]),
+                dtype=float,
+                data=_stack_optional_arraylike([res.total_zone_detections for res in results]),
                 track_times=False,
             )
 
@@ -118,8 +185,8 @@ class RefAppResultListH5Serializer:
         if "inter_zone_detections" in self.fields:
             self.group.create_dataset(
                 "inter_zone_detections",
-                dtype=int,
-                data=np.array([res.inter_zone_detections for res in results]),
+                dtype=float,
+                data=_stack_optional_arraylike([res.inter_zone_detections for res in results]),
                 track_times=False,
             )
 
@@ -144,8 +211,8 @@ class RefAppResultListH5Serializer:
         if "intra_zone_detections" in self.fields:
             self.group.create_dataset(
                 "intra_zone_detections",
-                dtype=int,
-                data=np.array([res.intra_zone_detections for res in results]),
+                dtype=float,
+                data=_stack_optional_arraylike([res.intra_zone_detections for res in results]),
                 track_times=False,
             )
 
@@ -214,15 +281,15 @@ class RefAppResultListH5Serializer:
 
         return [
             RefAppResult(
-                zone_limits=zone_limits,
+                zone_limits=_remove_nans(zone_limits),  # type: ignore[arg-type]
                 presence_detected=presence_detected,
                 max_presence_zone=_deserialize_optional_uint(max_presence_zone),
-                total_zone_detections=total_zone_detections,
+                total_zone_detections=_remove_nans(total_zone_detections),  # type: ignore[arg-type]
                 inter_presence_score=inter_presence_score,
-                inter_zone_detections=inter_zone_detections,
+                inter_zone_detections=_remove_nans(inter_zone_detections),  # type: ignore[arg-type]
                 max_inter_zone=_deserialize_optional_uint(max_inter_zone),
                 intra_presence_score=intra_presence_score,
-                intra_zone_detections=intra_zone_detections,
+                intra_zone_detections=_remove_nans(intra_zone_detections),  # type: ignore[arg-type]
                 max_intra_zone=_deserialize_optional_uint(max_intra_zone),
                 used_config=(
                     None if used_config is None else _Mode(used_config)  # type: ignore[arg-type]

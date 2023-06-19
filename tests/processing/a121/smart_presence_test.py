@@ -24,6 +24,9 @@ _FIELD_COMPARATORS = {
     "intra_presence_score": lambda a, b: np.isclose(a, b),
     "intra_zone_detections": lambda a, b: bool(np.equal(a, b).all()),
     "max_intra_zone": lambda a, b: a == b,
+    "used_config": lambda a, b: a == b,
+    "wake_up_detections": lambda a, b: bool(np.equal(a, b).all()),
+    "switch_delay": lambda a, b: a == b,
 }
 
 _SERIALIZED_TEST_FIELDS = tuple(_FIELD_COMPARATORS.keys())
@@ -47,12 +50,13 @@ def smart_presence_result_comparator(
 
 def smart_presence_controller(record: a121.H5Record) -> smart_presence.RefApp:
     algo_group = record.get_algo_group("smart_presence")
-    sensor_id, config = _load_algo_data(algo_group)
-    client = _ReplayingClient(record, cycled_session_idx=0)
+    sensor_id, config, context = _load_algo_data(algo_group)
+    client = _ReplayingClient(record)
     app = smart_presence.RefApp(
         client=client,
         sensor_id=sensor_id,
         ref_app_config=config,
+        ref_app_context=context,
     )
 
     app.start()
