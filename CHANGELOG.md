@@ -1,5 +1,20 @@
 # Changelog
 
+## v7.1.0
+
+### Added
+- New algorithm: Speed detector
+- Config load- & save for the majority of configs in the A121 App.
+- Export some configurations to C via the config save buttons.
+  + Sparse IQ
+  + Distance detector
+  + Presence detector
+  + Tank level
+- A121: Presence: Add context with estimated frame rate to presence detector
+
+### Changed
+- Breathing is now a reference application instead of an example
+
 ## v7.0.2
 
 ### Fixed

@@ -14,6 +14,18 @@ from packaging.version import Version
 
 
 VERSION_PATTERN = r"v?\d+\.\d+\.\d+"
+EMPTY_UNRELEASED_CHANGELOG = """# Unreleased Changelog
+
+## Unreleased
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+"""
 
 
 def utf8_subprocess_output(*args: str) -> str:
@@ -114,11 +126,7 @@ def main() -> None:
         print(f'Which does not match "{version_tag}".')
         status = False
 
-    empty_unreleased_changelog = (
-        "# Unreleased Changelog\n\n## Unreleased\n\n### Added\n\n### Changed\n\n### Fixed\n"
-    )
-
-    if unreleased_changelog.read_text() != empty_unreleased_changelog:
+    if unreleased_changelog.read_text() != EMPTY_UNRELEASED_CHANGELOG:
         print("Unreleased changelog is not cleared")
         status = False
 
