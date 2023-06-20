@@ -315,7 +315,7 @@ class AppModel(QObject):
         key = self._backend.put_task(task)
         self._backend_task_callbacks[key] = {
             "on_ok": on_ok,
-            "on_error": on_error,
+            "on_error": on_error or self.emit_error,
         }
 
         (name, _) = task
