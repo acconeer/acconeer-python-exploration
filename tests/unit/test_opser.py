@@ -15,12 +15,13 @@ import pytest
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, ResultContext
-from acconeer.exptool.a121.algo import (  # smart_presence,
+from acconeer.exptool.a121.algo import (
     bilateration,
     breathing,
     distance,
     phase_tracking,
     presence,
+    smart_presence,
     surface_velocity,
     tank_level,
     touchless_button,
@@ -31,6 +32,7 @@ from acconeer.exptool.a121.algo.breathing import _processor as breathing_process
 from acconeer.exptool.a121.algo.distance import _detector as distance_detector
 from acconeer.exptool.a121.algo.distance import _processors as distance_processors
 from acconeer.exptool.a121.algo.presence import _processors as presence_processors
+from acconeer.exptool.a121.algo.smart_presence import _ref_app as smart_presence_ref_app
 from acconeer.exptool.a121.algo.surface_velocity import _processor as surface_velocity_processor
 from acconeer.exptool.a121.algo.tank_level import _processor as tank_level_processor
 from acconeer.exptool.a121.algo.tank_level import _ref_app as tank_level_ref_app
@@ -343,6 +345,26 @@ SURFACE_VELOCITY = [
     surface_velocity_processor.ProcessorContext(),  # empty
 ]
 
+SMART_PRESENCE = [
+    smart_presence.RefAppResult(
+        zone_limits=_array(np.float_),
+        presence_detected=choice([True, False]),
+        max_presence_zone=4,
+        total_zone_detections=_array(np.int_),
+        inter_presence_score=random(),
+        inter_zone_detections=_array(np.int_),
+        max_inter_zone=None,
+        intra_presence_score=random(),
+        intra_zone_detections=_array(np.int_),
+        max_intra_zone=4,
+        used_config=smart_presence_ref_app._Mode.NOMINAL_CONFIG,
+        wake_up_detections=None,
+        switch_delay=choice([True, False]),
+        service_result=MOCK_SERVICE_RESULT,
+    ),
+    smart_presence.RefAppConfig(wake_up_mode=False),
+]
+
 TANK_LEVEL_PROCESSOR_EXTRA_RESULT = tank_level_processor.ProcessorExtraResult(
     level_and_time_for_plotting={"hello": _array(np.float_)}
 )
@@ -432,6 +454,7 @@ VIBRATION = [
         *DISTANCE,
         *PHASE_TRACKING,
         *PRESENCE,
+        *SMART_PRESENCE,
         *SURFACE_VELOCITY,
         *TANK_LEVEL,
         *TOUCHLESS_BUTTON,
