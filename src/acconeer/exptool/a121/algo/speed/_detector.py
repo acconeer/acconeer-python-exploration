@@ -120,6 +120,16 @@ class DetectorConfig(AlgoConfigBase):
         sweeps_per_frame = self.num_bins * NUM_SEGMENTS
 
         max_frame_rate = None
+        profile_3_direct_leakage_end = int(
+            2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_3] / PERCEIVED_WAVELENGTH
+        )
+
+        if self.start_point < profile_3_direct_leakage_end:
+            validation_results.append(
+                a121.ValidationWarning(
+                    self, "start_point", "Range includes direct leakage, risk for missed detection"
+                )
+            )
 
         if self.num_points == 1 and self.step_length is not None:
             validation_results.append(
@@ -222,9 +232,7 @@ class DetectorResult:
 
 class Detector(Controller[DetectorConfig, DetectorResult]):
     MIN_DIST_M = {
-        a121.Profile.PROFILE_1: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_1],
-        a121.Profile.PROFILE_2: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_2],
-        a121.Profile.PROFILE_3: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_3],
+        a121.Profile.PROFILE_3: None,
         a121.Profile.PROFILE_4: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_4],
         a121.Profile.PROFILE_5: 2 * ENVELOPE_FWHM_M[a121.Profile.PROFILE_5],
     }
