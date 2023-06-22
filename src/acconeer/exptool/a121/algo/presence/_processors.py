@@ -12,6 +12,7 @@ from numpy import cos, pi, sqrt, square
 from scipy.special import binom
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase, ProcessorBase
 from acconeer.exptool.a121.algo._utils import get_distances_m
 
@@ -78,20 +79,20 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    frame: npt.NDArray[np.complex_] = attrs.field()
-    abs_mean_sweep: npt.NDArray[np.float_] = attrs.field()
-    fast_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
-    slow_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field()
-    lp_noise: npt.NDArray[np.float_] = attrs.field()
+    frame: npt.NDArray[np.complex_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    abs_mean_sweep: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    fast_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    slow_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    lp_noise: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     presence_distance_index: int = attrs.field()
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     intra_presence_score: float = attrs.field()
-    intra: npt.NDArray[np.float_] = attrs.field()
+    intra: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     inter_presence_score: float = attrs.field()
-    inter: npt.NDArray[np.float_] = attrs.field()
+    inter: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
     extra_result: ProcessorExtraResult = attrs.field()

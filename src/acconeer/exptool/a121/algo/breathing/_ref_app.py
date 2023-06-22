@@ -102,7 +102,7 @@ class RefAppResult:
     app_state: AppState
     """Application state."""
 
-    distances_being_analyzed: Optional[tuple[int, int]] = None
+    distances_being_analyzed: Optional[Tuple[int, int]] = None
     """Range where breathing is being analyzed."""
 
     presence_result: PresenceProcessorResult

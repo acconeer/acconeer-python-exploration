@@ -13,7 +13,7 @@ import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
-from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
+from acconeer.exptool.a121._core.utils import attrs_ndarray_isclose, is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     ENVELOPE_FWHM_M,
@@ -195,13 +195,13 @@ class DetectorResult:
     intra_presence_score: float = attrs.field()
     """A measure of the amount of fast motion detected."""
 
-    intra_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
+    intra_depthwise_scores: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
     """The depthwise presence scores for fast motions."""
 
     inter_presence_score: float = attrs.field()
     """A measure of the amount of slow motion detected."""
 
-    inter_depthwise_scores: npt.NDArray[np.float_] = attrs.field()
+    inter_depthwise_scores: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
     """The depthwise presence scores for slow motions."""
 
     presence_distance: float = attrs.field()

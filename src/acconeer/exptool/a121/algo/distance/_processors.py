@@ -13,6 +13,7 @@ import numpy.typing as npt
 from scipy.signal import filtfilt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
@@ -94,10 +95,18 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
-    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
-    phase_jitter_comp_ref: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(default=None)
+    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    phase_jitter_comp_ref: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
     bg_noise_std: Optional[List[float]] = attrs.field(default=None)
     reference_temperature: Optional[int] = attrs.field(default=None)
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
@@ -109,20 +118,34 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    abs_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    used_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    distances_m: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    abs_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    used_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    distances_m: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    estimated_distances: Optional[list[float]] = attrs.field(default=None)
-    estimated_strengths: Optional[list[float]] = attrs.field(default=None)
+    estimated_distances: Optional[List[float]] = attrs.field(default=None)
+    estimated_strengths: Optional[List[float]] = attrs.field(default=None)
     near_edge_status: Optional[bool] = attrs.field(default=None)
-    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    recorded_threshold_noise_std: Optional[list[np.float_]] = attrs.field(default=None)
-    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
-    phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 

@@ -100,24 +100,38 @@ class DetectorContext(AlgoBase):
 
 @attrs.mutable(kw_only=True)
 class SingleSensorExtraContext(AlgoBase):
-    offset_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
-    noise_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
-    close_range_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(default=None)
+    offset_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    noise_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    close_range_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
     recorded_threshold_frames: Optional[List[List[npt.NDArray[np.complex_]]]] = attrs.field(
-        default=None
+        default=None, eq=utils.attrs_optional_ndarray_isclose
     )
 
 
 @attrs.mutable(kw_only=True)
 class SingleSensorContext(AlgoBase):
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
-    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(default=None)
-    phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    recorded_thresholds_mean_sweep: Optional[List[npt.NDArray[np.float_]]] = attrs.field(
-        default=None
+    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
     )
-    recorded_thresholds_noise_std: Optional[List[List[np.float_]]] = attrs.field(default=None)
-    bg_noise_std: Optional[List[List[float]]] = attrs.field(default=None)
+    phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    recorded_thresholds_mean_sweep: Optional[List[npt.NDArray[np.float_]]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    recorded_thresholds_noise_std: Optional[List[List[np.float_]]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    bg_noise_std: Optional[List[List[float]]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
     session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
         default=None
     )
@@ -387,10 +401,14 @@ class DetectorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
-    distances: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    distances: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
     """Estimated distances (m), sorted according to the selected peak sorting strategy."""
 
-    strengths: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    strengths: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
     """Estimated reflector strengths corresponding to the peak amplitude of the estimated
     distances.
     """
@@ -413,10 +431,10 @@ class DetectorResult:
     absolute accuracy.
     """
 
-    processor_results: list[ProcessorResult] = attrs.field()
+    processor_results: List[ProcessorResult] = attrs.field()
     """Processing result. Used for visualization in Exploration Tool."""
 
-    service_extended_result: list[dict[int, a121.Result]] = attrs.field()
+    service_extended_result: List[Dict[int, a121.Result]] = attrs.field()
     """Service extended result. Used for visualization in Exploration Tool."""
 
 

@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     AlgoProcessorConfigBase,
@@ -84,9 +85,13 @@ class ProcessorContext:
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     result_available: bool
-    time_series: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    lp_z_abs_db: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
-    freqs: npt.NDArray[np.float_]
+    time_series: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    lp_z_abs_db: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=utils.attrs_optional_ndarray_isclose
+    )
+    freqs: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     max_amplitude: float
     amplitude_threshold: float
     max_psd_ampl: Optional[float] = attrs.field(default=None)

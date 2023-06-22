@@ -12,6 +12,7 @@ import scipy
 from scipy.signal import welch
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase, ProcessorBase
 from acconeer.exptool.a121.algo._utils import (
     APPROX_BASE_STEP_LENGTH_M,
@@ -79,13 +80,13 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    max_bin_vertical_vs: npt.NDArray[np.float_] = attrs.field()
+    max_bin_vertical_vs: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     peak_width: float = attrs.field()
 
-    vertical_velocities: npt.NDArray[np.float_] = attrs.field()
-    psd: npt.NDArray[np.float_] = attrs.field()
+    vertical_velocities: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    psd: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     peak_idx: Optional[np.int_] = attrs.field()
-    psd_threshold: npt.NDArray[np.float_] = attrs.field()
+    psd_threshold: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
 
 
 @attrs.frozen(kw_only=True)

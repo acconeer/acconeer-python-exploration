@@ -542,7 +542,7 @@ def indent_strs(strs: list[str], level: int) -> list[str]:
 
 
 def ndarray_isclose(a: npt.ArrayLike, b: npt.ArrayLike) -> bool:
-    return bool(np.isclose(a, b).all())
+    return bool(np.isclose(a, b, equal_nan=True).all())
 
 
 def _dict_wrapper(f: Callable[[S, T], bool]) -> Callable[[dict[U, S], dict[U, T]], bool]:
