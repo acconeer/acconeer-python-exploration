@@ -130,6 +130,7 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorConfig, BreathingProces
         self.frame_rate = sensor_config.frame_rate
         self.time_series_length_s = processor_config.time_series_length_s
         self.time_series_length = int(self.time_series_length_s * self.frame_rate)
+        self.padded_time_series_length = 2 ** (int(np.log2(self.time_series_length)) + 1)
         self.analysis_overlap = int(self.time_series_length / 2)
         self.num_points = sensor_config.num_points
 
@@ -146,7 +147,7 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorConfig, BreathingProces
         self.sf = exponential_smoothing_coefficient(self.frame_rate, self.time_series_length_s)
 
         # PSD frequency vector.
-        self.frequencies = np.fft.rfftfreq(self.time_series_length, 1 / self.frame_rate)
+        self.frequencies = np.fft.rfftfreq(self.padded_time_series_length, 1 / self.frame_rate)
         self.time_vector = np.linspace(-self.HISTORY_S, 0, int(self.frame_rate * self.HISTORY_S))
 
         self.reinitialize_processor(0, self.num_points)
@@ -202,7 +203,9 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorConfig, BreathingProces
         windowed_breathing_motion_buffer = (
             self.breathing_motion_buffer * np.hamming(self.time_series_length)[:, np.newaxis]
         )
-        psd = np.fft.rfft(windowed_breathing_motion_buffer, axis=0, n=self.time_series_length)
+        psd = np.fft.rfft(
+            windowed_breathing_motion_buffer, axis=0, n=self.padded_time_series_length
+        )
         # Omit **2 to reduce processing as it does not alter the result.
         psd = np.abs(psd)
         assert self.lp_filt_ampl is not None
