@@ -214,16 +214,23 @@ class DetectorMetadata:
 class DetectorExtraResult:
 
     psd: npt.NDArray[np.float_]
+    """Full Power Spectral Density from the DFT"""
+
     velocities: npt.NDArray[np.float_]
+    """The frequency bins interpreted as speeds"""
+
     actual_thresholds: npt.NDArray[np.float_]
-    display_speed: np.float_ = attrs.field(default=0.0)
+    """The thresholds that was used in this frame"""
 
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
 
     speed_per_depth: npt.NDArray[np.float_]
+    """The measured speed for each depth"""
+
     extra_result: DetectorExtraResult
+    """Detailed results, used for plotting"""
 
     @property
     def max_speed(self) -> np.float_:

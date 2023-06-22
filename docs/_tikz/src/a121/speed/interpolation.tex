@@ -1,0 +1,56 @@
+\documentclass[tikz]{standalone}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{cmap}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{verbatim}
+\usepackage{bm}
+
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[cm]{sfmath}
+
+\usetikzlibrary{bending}
+\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{decorations.pathmorphing}
+\usetikzlibrary{fadings}
+\usetikzlibrary{shapes}
+\usetikzlibrary{calc}
+
+\definecolor{cblue}{rgb}{0.122, 0.467, 0.706}
+\definecolor{corange}{rgb}{1, 0.498, 0.055}
+\colorlet{lightgray}{black!20}
+
+\begin{document}
+\begin{tikzpicture}[scale = 3.0, font=\fontsize{8}{12}\selectfont]
+
+  % Define the coordinates for the data points
+  \coordinate (A) at (0,0);
+  \coordinate (B) at (1,1.5);
+  \coordinate (C) at (2,-0.5);
+
+
+  % Draw the curve
+  \draw [corange] (A) to [out=70,in=200] (B) to [out=20,in=100] (C);
+
+  % Draw dashed lines for interpolation
+  \draw [dashed] (A) -- (B);
+  \draw [dashed] (B) -- (C);
+
+  % Add label for the interpolated curve
+  %\node [red, above right] at (B) {Interpolated Curve};
+
+  % Calculate the maximum point of the interpolated curve
+  \coordinate (max) at (1.23,1.54);
+
+  % Draw a marker for the maximum point
+  \fill [black] (max) circle (1pt);
+  \node [black, above right] at (max) {Max};
+
+  % Draw the data points
+  \foreach \point in {A, B, C}
+    \draw [fill=cblue] (\point) circle (1pt);
+
+\end{tikzpicture}
+\end{document}
