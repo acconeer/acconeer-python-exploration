@@ -137,6 +137,27 @@ class DetectorConfig(AlgoConfigBase):
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
+        for res in Detector._get_sensor_config(self)._collect_validation_results():
+            res.source = self
+
+            if res.aspect == "num_points":
+                validation_results.append(
+                    a121.ValidationError(
+                        self,
+                        "start_m",
+                        "Range is too long. Increasing the range start reduces buffer usage.",
+                    )
+                )
+                validation_results.append(
+                    a121.ValidationError(
+                        self,
+                        "end_m",
+                        "Range is too long. Decreasing the range end reduces buffer usage.",
+                    )
+                )
+            else:
+                validation_results.append(res)
+
         if self.sweeps_per_frame <= Processor.NOISE_ESTIMATION_DIFF_ORDER:
             validation_results.append(
                 a121.ValidationError(
