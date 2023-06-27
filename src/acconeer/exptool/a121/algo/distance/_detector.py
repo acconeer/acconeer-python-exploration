@@ -144,7 +144,7 @@ class SingleSensorContext(AlgoBase):
             elif isinstance(v, a121.SensorCalibration):
                 sensor_calibration_group = group.create_group("sensor_calibration")
                 v.to_h5(sensor_calibration_group)
-            elif isinstance(v, (np.ndarray, float, int, np.int64)):
+            elif isinstance(v, (np.ndarray, float, int, np.integer)):
                 group.create_dataset(k, data=v, track_times=False)
             else:
                 raise RuntimeError(
