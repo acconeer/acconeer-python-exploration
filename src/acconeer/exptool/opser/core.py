@@ -86,6 +86,8 @@ class JsonPresentable(te.Protocol):
 
 @attrs.frozen
 class Persistor(abc.ABC):
+    PRIORITY: t.ClassVar[int] = 0
+
     parent_group: h5py.Group
     name: str
     type_tree: core.Node

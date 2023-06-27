@@ -31,11 +31,21 @@ class RegistryPersistor(core.Persistor):
         return __persistor
 
     @classmethod
+    def priority_higher_than(cls, __persistor: t.Type[core.Persistor]) -> int:
+        """Returns a priority that is higher than the priority of the specified persistor."""
+        try:
+            return cls._REGISTRY[__persistor.__name__].PRIORITY + 1
+        except KeyError:
+            raise RuntimeError(f"Persistor {__persistor} is not in the registry")
+
+    @classmethod
     def _get_applicable_persistors(cls, __type: type) -> t.List[t.Type[core.Persistor]]:
         """Retrieves the persistors that can handle the specified type"""
-        return [
-            persistor for persistor in cls._REGISTRY.values() if persistor.is_applicable(__type)
-        ]
+        return sorted(
+            (persistor for persistor in cls._REGISTRY.values() if persistor.is_applicable(__type)),
+            key=lambda p: p.PRIORITY,
+            reverse=True,
+        )
 
     @classmethod
     def registry_size(cls) -> int:
