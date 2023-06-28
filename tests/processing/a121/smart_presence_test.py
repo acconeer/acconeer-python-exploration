@@ -2,7 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import functools
 import typing as t
 
 import attrs
@@ -11,45 +10,10 @@ import numpy.typing as npt
 import typing_extensions as te
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core_ext import _ReplayingClient
 from acconeer.exptool.a121.algo import smart_presence
 from acconeer.exptool.a121.algo.smart_presence import _ref_app as smart_presence_ref_app
-from acconeer.exptool.a121.algo.smart_presence._serializer import RefAppResultListH5Serializer
-
-
-_FIELD_COMPARATORS = {
-    "zone_limits": lambda a, b: bool(np.isclose(a, b).all()),
-    "presence_detected": lambda a, b: a == b,
-    "max_presence_zone": lambda a, b: a == b,
-    "total_zone_detections": lambda a, b: bool(np.equal(a, b).all()),
-    "inter_presence_score": lambda a, b: np.isclose(a, b),
-    "inter_zone_detections": lambda a, b: bool(np.equal(a, b).all()),
-    "max_inter_zone": lambda a, b: a == b,
-    "intra_presence_score": lambda a, b: np.isclose(a, b),
-    "intra_zone_detections": lambda a, b: bool(np.equal(a, b).all()),
-    "max_intra_zone": lambda a, b: a == b,
-    "used_config": lambda a, b: a == b,
-    "wake_up_detections": lambda a, b: bool(np.equal(a, b).all()),
-    "switch_delay": lambda a, b: a == b,
-}
-
-_SERIALIZED_TEST_FIELDS = tuple(_FIELD_COMPARATORS.keys())
-SmartPresenceResultH5Serializer = functools.partial(
-    RefAppResultListH5Serializer,
-    fields=_SERIALIZED_TEST_FIELDS,
-    allow_missing_fields=False,
-)
-
-
-def smart_presence_result_comparator(
-    this: smart_presence.ProcessorResult, other: smart_presence.ProcessorResult
-) -> bool:
-    for field, comp in _FIELD_COMPARATORS.items():
-        lhs = getattr(this, field)
-        rhs = getattr(other, field)
-        if not comp(lhs, rhs):
-            return False
-    return True
 
 
 @attrs.frozen
@@ -58,17 +22,17 @@ class RefAppResultSlice:
     max_intra_zone: t.Optional[int]
     max_presence_zone: t.Optional[int]
 
-    zone_limits: npt.NDArray[np.float_] = attrs.field()
-    total_zone_detections: npt.NDArray[np.int_] = attrs.field()
-    inter_zone_detections: npt.NDArray[np.int_] = attrs.field()
-    intra_zone_detections: npt.NDArray[np.int_] = attrs.field()
-    wake_up_detections: t.Optional[npt.NDArray[np.int_]] = attrs.field()
+    zone_limits: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_eq)
+    inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_eq)
+    intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_eq)
+    wake_up_detections: t.Optional[npt.NDArray[np.int_]] = attrs.field(eq=utils.attrs_ndarray_eq)
 
     used_config: smart_presence_ref_app._Mode
     switch_delay: bool
     presence_detected: bool
-    inter_presence_score: float
-    intra_presence_score: float
+    inter_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
+    intra_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
 
     @classmethod
     def from_ref_app_result(cls, result: smart_presence.RefAppResult) -> te.Self:
@@ -84,8 +48,8 @@ class RefAppResultSlice:
             used_config=result.used_config,
             switch_delay=result.switch_delay,
             presence_detected=result.presence_detected,
-            inter_presence_score=result.inter_presence_score,
-            intra_presence_score=result.intra_presence_score,
+            inter_presence_score=float(result.inter_presence_score),
+            intra_presence_score=float(result.intra_presence_score),
         )
 
 

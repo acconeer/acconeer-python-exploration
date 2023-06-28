@@ -16,27 +16,26 @@ from acconeer.exptool.a121.algo.presence._configs import (
     get_medium_range_config,
     get_short_range_config,
 )
-from acconeer.exptool.a121.algo.presence._serializers import ProcessorResultListH5Serializer
 
 
 @attrs.frozen
 class ProcessorResultSlice:
-    intra_presence_score: float = attrs.field()
+    intra_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
     intra: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    inter_presence_score: float = attrs.field()
+    inter_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
     inter: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    presence_distance: float = attrs.field()
+    presence_distance: float = attrs.field(eq=utils.attrs_ndarray_isclose)
     presence_detected: bool = attrs.field()
 
     @classmethod
     def from_processor_result(cls, result: presence.ProcessorResult) -> te.Self:
         return cls(
-            intra_presence_score=result.intra_presence_score,
+            intra_presence_score=float(result.intra_presence_score),
             intra=result.intra,
-            inter_presence_score=result.inter_presence_score,
+            inter_presence_score=float(result.inter_presence_score),
             inter=result.inter,
             presence_distance=float(result.presence_distance),
-            presence_detected=result.presence_detected,
+            presence_detected=bool(result.presence_detected),
         )
 
 
@@ -49,18 +48,6 @@ class ProcessorWrapper:
 
     def process(self, result: a121.Result) -> ProcessorResultSlice:
         return ProcessorResultSlice.from_processor_result(self.processor.process(result))
-
-
-PresenceResultH5Serializer = ProcessorResultListH5Serializer
-
-
-def result_comparator(this: presence.ProcessorResult, other: presence.ProcessorResult) -> bool:
-    return bool(
-        np.isclose(this.inter_presence_score, other.inter_presence_score)
-        and np.isclose(this.intra_presence_score, other.intra_presence_score)
-        and this.presence_detected == other.presence_detected
-        and np.isclose(this.presence_distance, other.presence_distance)
-    )
 
 
 def presence_default(record: a121.H5Record) -> ProcessorWrapper:

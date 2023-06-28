@@ -570,6 +570,7 @@ def _optional_wrapper(f: Callable[[S, T], bool]) -> Callable[[Optional[S], Optio
 
 
 attrs_ndarray_eq = attrs.cmp_using(eq=np.array_equal)
+attrs_optional_ndarray_eq = attrs.cmp_using(eq=_optional_wrapper(np.array_equal))
 attrs_ndarray_isclose = attrs.cmp_using(eq=ndarray_isclose)
 attrs_optional_ndarray_isclose = attrs.cmp_using(eq=_optional_wrapper(ndarray_isclose))
 attrs_dict_ndarray_isclose = attrs.cmp_using(eq=_dict_wrapper(ndarray_isclose))

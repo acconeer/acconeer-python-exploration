@@ -1,27 +1,10 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
-import numpy as np
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import touchless_button
-from acconeer.exptool.a121.algo.touchless_button._serializers import (
-    ProcessorResultListH5Serializer,
-)
-
-
-TouchlessButtonResultH5Serializer = ProcessorResultListH5Serializer
-
-
-def result_comparator(
-    this: touchless_button.ProcessorResult,
-    other: touchless_button.ProcessorResult,
-) -> bool:
-    return bool(
-        np.all(this.detection_close == other.detection_close)
-        and np.all(this.detection_far == other.detection_far)
-    )
 
 
 def touchless_button_default(record: a121.H5Record) -> touchless_button.Processor:
