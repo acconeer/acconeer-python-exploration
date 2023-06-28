@@ -73,3 +73,26 @@ def get_long_range_config() -> DetectorConfig:
         inter_phase_boost=False,
         inter_frame_presence_timeout=3,
     )
+
+
+def get_low_power_config() -> DetectorConfig:
+    return DetectorConfig(
+        start_m=0.725,
+        end_m=1.505,
+        frame_rate=1,
+        sweeps_per_frame=16,
+        hwaas=8,
+        inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
+        intra_enable=True,
+        intra_detection_threshold=1.5,
+        intra_frame_time_const=0.15,
+        intra_output_time_const=0.3,
+        inter_enable=True,
+        inter_detection_threshold=1,
+        inter_frame_slow_cutoff=0.2,
+        inter_frame_fast_cutoff=5,
+        inter_frame_deviation_time_const=0.5,
+        inter_output_time_const=2,
+        inter_phase_boost=False,
+        inter_frame_presence_timeout=3,
+    )

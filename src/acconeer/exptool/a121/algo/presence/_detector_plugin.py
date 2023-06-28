@@ -45,7 +45,12 @@ from acconeer.exptool.app.new import (
 from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import disable_if, parameter_is
 from acconeer.exptool.app.new.ui.plugin_components.save_dialog import PresentationType
 
-from ._configs import get_long_range_config, get_medium_range_config, get_short_range_config
+from ._configs import (
+    get_long_range_config,
+    get_low_power_config,
+    get_medium_range_config,
+    get_short_range_config,
+)
 from ._detector import (
     Detector,
     DetectorConfig,
@@ -67,6 +72,7 @@ class PluginPresetId(Enum):
     SHORT_RANGE = auto()
     MEDIUM_RANGE = auto()
     LONG_RANGE = auto()
+    LOW_POWER = auto()
 
 
 class BackendPlugin(DetectorBackendPluginBase[SharedState]):
@@ -74,6 +80,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
         PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
         PluginPresetId.LONG_RANGE.value: lambda: get_long_range_config(),
+        PluginPresetId.LOW_POWER.value: lambda: get_low_power_config(),
     }
 
     def __init__(
@@ -749,6 +756,11 @@ PRESENCE_DETECTOR_PLUGIN = PluginSpec(
             name="Long range",
             description="Long range",
             preset_id=PluginPresetId.LONG_RANGE,
+        ),
+        PluginPresetBase(
+            name="Low power, Wake up",
+            description="Low power presence detection, which can be used as a trigger",
+            preset_id=PluginPresetId.LOW_POWER,
         ),
     ],
     default_preset_id=PluginPresetId.MEDIUM_RANGE,
