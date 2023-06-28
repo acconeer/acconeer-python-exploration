@@ -8,5 +8,6 @@
 ### Changed
 
 ### Fixed
+ - A111: convert_to_csv.py can now output metadata for the envelope service
 
 ### Removed

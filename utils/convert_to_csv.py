@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -136,7 +136,7 @@ class A111RecordTableConverter(TableConverter):
         rounded_depths = np.round(depths, decimals=6)
 
         if self._record.mode != et.a111.Mode.SPARSE:
-            return rounded_depths
+            return [rounded_depths]
         else:
             spf = self._record.sensor_config.sweeps_per_frame
             sweep_numbers = np.repeat(range(spf), repeats=num_points).astype(int)
