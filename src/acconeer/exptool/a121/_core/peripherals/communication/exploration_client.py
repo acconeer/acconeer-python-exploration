@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import time
@@ -98,6 +99,8 @@ class ExplorationClient(CommonClient):
         self._sensor_infos = {}
         self._system_info = None
         self._log_queue = []
+        self._closed = False
+        self._crashing = False
 
         self._protocol: Type[CommunicationProtocol] = ExplorationProtocol
         self._protocol_overridden = False
@@ -122,16 +125,30 @@ class ExplorationClient(CommonClient):
         if not self.session_is_started:
             raise ClientError("Session is not started.")
 
+    @contextlib.contextmanager
+    def _close_before_reraise(self) -> Iterator[None]:
+        try:
+            yield
+        except Exception:
+            self._crashing = True
+            self.close()
+            raise
+
     def _get_message_stream(self) -> Iterator[Message]:
         """returns an iterator of parsed messages"""
         while True:
-            header: dict[str, Any] = json.loads(self._link.recv_until(self._protocol.end_sequence))
+            with self._close_before_reraise():
+                header: dict[str, Any] = json.loads(
+                    self._link.recv_until(self._protocol.end_sequence)
+                )
+
             try:
                 payload_size = header["payload_size"]
             except KeyError:
                 payload = bytes()
             else:
-                payload = self._link.recv(payload_size)
+                with self._close_before_reraise():
+                    payload = self._link.recv(payload_size)
 
             resp = self._protocol.parse_message(header, payload)
             yield resp
@@ -200,25 +217,29 @@ class ExplorationClient(CommonClient):
 
         self._message_stream = self._get_message_stream()
 
-        self._link.send(self._protocol.get_system_info_command())
+        with self._close_before_reraise():
+            self._link.send(self._protocol.get_system_info_command())
+
         system_info_response = self._apply_messages_until_message_type_encountered(
             messages.SystemInfoResponse
         )
         self._system_info = system_info_response.system_info
 
-        self._link.send(self._protocol.get_sensor_info_command())
+        with self._close_before_reraise():
+            self._link.send(self._protocol.get_sensor_info_command())
+
         sensor_info_response = self._apply_messages_until_message_type_encountered(
             messages.SensorInfoResponse
         )
         self._sensor_infos = sensor_info_response.sensor_infos
 
         if self.server_info.connected_sensors == []:
-            self._link.disconnect()
+            self.close()
             raise ClientError("Exploration server is running but no sensors are detected.")
 
         sensor = self._system_info.get("sensor") if self._system_info else None
         if sensor != "a121":
-            self._link.disconnect()
+            self.close()
             raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
 
         if not self._protocol_overridden:
@@ -227,13 +248,8 @@ class ExplorationClient(CommonClient):
         self._update_baudrate()
 
     def _update_protocol_based_on_servers_rss_version(self) -> None:
-        try:
-            new_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
-        except Exception:
-            self.close()
-            raise
-        else:
-            self._protocol = new_protocol
+        with self._close_before_reraise():
+            self._protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
 
     def _update_baudrate(self) -> None:
         # Only Change baudrate for AdaptedSerialLink
@@ -261,7 +277,8 @@ class ExplorationClient(CommonClient):
         if baudrate_to_use == DEFAULT_BAUDRATE:
             return
 
-        self._link.send(self._protocol.set_baudrate_command(baudrate_to_use))
+        with self._close_before_reraise():
+            self._link.send(self._protocol.set_baudrate_command(baudrate_to_use))
 
         self._apply_messages_until_message_type_encountered(messages.SetBaudrateResponse)
         self._baudrate_ack_received = False
@@ -291,7 +308,8 @@ class ExplorationClient(CommonClient):
 
         self._calibrations_provided = get_calibrations_provided(config, calibrations)
 
-        self._link.send(self._protocol.setup_command(config, calibrations))
+        with self._close_before_reraise():
+            self._link.send(self._protocol.setup_command(config, calibrations))
 
         self._session_config = config
 
@@ -334,7 +352,10 @@ class ExplorationClient(CommonClient):
         self._session_is_started = True
 
         self._link.timeout = self._link_timeout
-        self._link.send(self._protocol.start_streaming_command())
+
+        with self._close_before_reraise():
+            self._link.send(self._protocol.start_streaming_command())
+
         self._apply_messages_until_message_type_encountered(messages.StartStreamingResponse)
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
@@ -367,36 +388,40 @@ class ExplorationClient(CommonClient):
     def stop_session(self) -> None:
         self._assert_session_started()
 
-        self._link.send(self._protocol.stop_streaming_command())
+        with self._close_before_reraise():
+            self._link.send(self._protocol.stop_streaming_command())
 
-        try:
-            self._apply_messages_until_message_type_encountered(
-                messages.StopStreamingResponse, timeout_s=self._link.timeout + 1
-            )
-            self._session_is_started = False
-        except Exception:
-            raise
-        finally:
-            self._link.timeout = self._default_link_timeout
+        self._apply_messages_until_message_type_encountered(
+            messages.StopStreamingResponse, timeout_s=self._link.timeout + 1
+        )
 
+        self._link.timeout = self._default_link_timeout
+        self._session_is_started = False
         self._recorder_stop_session()
-
         self._log_queue.clear()
 
     def close(self) -> None:
-        # TODO: Make sure this cleans up corner-cases (like lost connection)
-        #       to not hog resources.
+        if self._closed:
+            return
 
-        if self.session_is_started:
-            self.stop_session()
-
-        self._tick_unwrapper = TickUnwrapper()
-        self._system_info = None
-        self._sensor_infos = {}
-        self._message_stream = iter([])
-        self._metadata = None
-        self._log_queue.clear()
-        self._link.disconnect()
+        try:
+            if self.session_is_started:
+                if self._crashing:
+                    self._session_is_started = False
+                    self._recorder_stop_session()
+                else:
+                    self.stop_session()
+        except Exception:
+            raise
+        finally:
+            self._tick_unwrapper = TickUnwrapper()
+            self._system_info = None
+            self._sensor_infos = {}
+            self._message_stream = iter([])
+            self._metadata = None
+            self._log_queue.clear()
+            self._link.disconnect()
+            self._closed = True
 
     @property
     def connected(self) -> bool:
