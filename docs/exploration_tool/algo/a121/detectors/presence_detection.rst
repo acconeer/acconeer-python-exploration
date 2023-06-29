@@ -60,7 +60,7 @@ to not exceed this value, while still having it as long as possible.
 We want the step length as long as possible to reduce power consumption, but short enough to get good SNR in the whole range.
 Choosing a high number of
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.hwaas`
-will increase SNR. However, it will also affect the power consumption. Choose the highest possible HWAAS that still fulfills your power requirements. A good starting point is to use the deault value.
+will increase SNR. However, it will also affect the power consumption. Choose the highest possible HWAAS that still fulfills your power requirements. A good starting point is to use the default value.
 For better use of the intra-frame presence detector, increase the number of
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.sweeps_per_frame`.
 This will improve the sensitivity.
@@ -91,7 +91,7 @@ If the inter-frame presence score has declined during a complete timeout period,
 
 Advanced detector parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Antoher way to adjust overall sensitivity is to change the output time constants.
+Another way to adjust overall sensitivity is to change the output time constants.
 Increase time constants to get a more stable output or decrease for faster response.
 
 Fast motions - looking for a person walking towards or away from the sensor
@@ -200,12 +200,12 @@ to get a more stable metric:
    \bar{s}_\text{inter_dev}(f, d) = \alpha_\text{inter_dev} \cdot \bar{s}_\text{inter_dev}(f-1, d) + (1 - \alpha_\text{inter_dev}) \cdot s_\text{inter_dev}(f, d)
 
 This is the basis of the inter-frame presence detection.
-As with the intra-fram deviation, it's favorable to normalize this with the noise floor and, if relevant, apply a depth filter. Both are discussed in later sections.
+As with the intra-frame deviation, it's favorable to normalize this with the noise floor and, if relevant, apply a depth filter. Both are discussed in later sections.
 
 Inter-frame phase boost
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-To increase detection of very slow motions, we utlize the phase information in the Sparse IQ data.
+To increase detection of very slow motions, we utilize the phase information in the Sparse IQ data.
 The first step is to calculate the phase shift over time.
 Let :math:`u(f, d)` be the *mean sweep*:
 
@@ -289,7 +289,7 @@ Finally, apply an exponential smoothing filter with a smoothing factor :math:`\a
 
 This smoothing factor is set from a fixed time constant of 10 s.
 
-Both the intra-frame deviation, :math:`\bar{s}_\text{intra_dev}(f, d)`, and the inter-frame deviation, :math:`\bar{s}_\text{inter_dev}(f, d)`, as well as the amplitude in the ínter-frame phase boost is normalized by the noise estimate, :math:`\bar{n}(f, d)`, as:
+Both the intra-frame deviation, :math:`\bar{s}_\text{intra_dev}(f, d)`, and the inter-frame deviation, :math:`\bar{s}_\text{inter_dev}(f, d)`, as well as the amplitude in the inter-frame phase boost is normalized by the noise estimate, :math:`\bar{n}(f, d)`, as:
 
 .. math::
    \bar{s}(f, d) = \frac{
@@ -336,14 +336,14 @@ As a final step, the outputs are low pass filtered:
 .. math::
    \bar{v}(f) = \alpha_\text{output} \cdot \bar{v}(f-1) + (1 - \alpha_\text{output}) \cdot v(f)
 
-The smooting factors for the outputs are set through the
+The smoothing factors for the outputs are set through the
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.intra_output_time_const`
 and the
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.inter_output_time_const`
 parameters.
 
 When both detectors are enabled, presence is defined as either the intra-frame or the inter-frame being over the threshold.
-If both have detection, the faster nature of intra-frame presence compared to inter-fram presence makes it best practise to use this score to estimate distance.
+If both have detection, the faster nature of intra-frame presence compared to inter-frame presence makes it best practice to use this score to estimate distance.
 If only one part has detection we will use this for the distance estimate.
 The estimate is based on the peak value in the data. Let :math:`p` be the "present"/"not present" output and :math:`d_p` be the presence depth index output:
 
