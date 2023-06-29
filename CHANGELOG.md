@@ -2,6 +2,7 @@
 
 ### Added
 - Documentation for the speed detector
+- Examples for the speed detector
 
 ## v7.1.0
 
