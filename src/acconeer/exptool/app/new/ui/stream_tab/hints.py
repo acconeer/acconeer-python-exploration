@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import abc
-import platform
 import webbrowser
 from typing import List, Optional
 
@@ -81,31 +80,6 @@ class UserHintWidget(QWidget):
             webbrowser.open_new_tab(self._how_to_fix_url)
 
 
-class ConnectionHint(HintObject):
-    def __init__(self) -> None:
-        super().__init__(
-            "Stability warning",
-            "You may experience stability issues due to windows serial port driver",
-            r"https://docs.acconeer.com/en/latest/evk_setup/xc120_xe121.html",
-        )
-
-    @staticmethod
-    def _should_show(app_model: AppModel) -> bool:
-        if platform.system().lower() != "windows":
-            return False
-
-        if (
-            app_model.serial_connection_device is not None
-            and app_model.connection_interface == ConnectionInterface.SERIAL
-        ):
-            if app_model.serial_connection_device.name is not None:
-                if app_model.serial_connection_device.unflashed:
-                    return False
-                return "xc120" in app_model.serial_connection_device.name.lower()
-
-        return False
-
-
 class UnflashedDeviceHint(HintObject):
     def __init__(self) -> None:
         super().__init__(
@@ -175,4 +149,3 @@ class HintWidget(QWidget):
         # The second will have priority over the third...
         hint_widget.add_hint(InaccessibleDeviceHint())
         hint_widget.add_hint(UnflashedDeviceHint())
-        hint_widget.add_hint(ConnectionHint())
