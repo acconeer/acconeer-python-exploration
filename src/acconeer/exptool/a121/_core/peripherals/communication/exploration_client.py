@@ -153,10 +153,6 @@ class ExplorationClient(CommonClient):
             resp = self._protocol.parse_message(header, payload)
             yield resp
 
-    def _assert_deadline_not_reached(self, deadline: Optional[float]) -> None:
-        if deadline is not None and time.monotonic() > deadline:
-            raise ClientError("Client timed out.")
-
     def _apply_messages_until_message_type_encountered(
         self, message_type: Type[MessageT], timeout_s: Optional[float] = None
     ) -> MessageT:
@@ -188,7 +184,9 @@ class ExplorationClient(CommonClient):
             if type(message) == message_type:
                 return message
 
-            self._assert_deadline_not_reached(deadline)
+            if deadline is not None and time.monotonic() > deadline:
+                raise ClientError("Client timed out.")
+
         raise ClientError("No message received")
 
     def _connect_link(self) -> None:
