@@ -4,6 +4,8 @@
 
 ### Added
 - A121: Smart presence: Add wake up mode
+- A121: Client now raises an error if no sensors can be detected
+        on the server.
 
 ### Changed
 

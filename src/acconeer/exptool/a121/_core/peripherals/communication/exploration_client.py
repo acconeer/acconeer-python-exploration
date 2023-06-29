@@ -212,6 +212,10 @@ class ExplorationClient(CommonClient):
         )
         self._sensor_infos = sensor_info_response.sensor_infos
 
+        if self.server_info.connected_sensors == []:
+            self._link.disconnect()
+            raise ClientError("Exploration server is running but no sensors are detected.")
+
         sensor = self._system_info.get("sensor") if self._system_info else None
         if sensor != "a121":
             self._link.disconnect()
