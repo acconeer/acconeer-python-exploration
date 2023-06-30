@@ -116,6 +116,8 @@ class ExplorationClient(CommonClient):
             self._link = link_factory(self.client_info)
             self._connect_link()
 
+        self._connect_client()
+
     def _assert_connected(self) -> None:
         if not self.connected:
             raise ClientError("Client is not connected.")
@@ -224,6 +226,7 @@ class ExplorationClient(CommonClient):
             else:
                 raise
 
+    def _connect_client(self) -> None:
         self._message_stream = self._get_message_stream()
 
         system_info_response = self._send_command_and_wait_for_response(
