@@ -153,7 +153,15 @@ class ExplorationClient(CommonClient):
             resp = self._protocol.parse_message(header, payload)
             yield resp
 
-    def _apply_messages_until_message_type_encountered(
+    def _send_command_and_wait_for_response(
+        self, command: bytes, response_type: Type[MessageT], timeout_s: Optional[float] = None
+    ) -> MessageT:
+        with self._close_before_reraise():
+            self._link.send(command)
+
+        return self._wait_for_response(response_type, timeout_s)
+
+    def _wait_for_response(
         self, message_type: Type[MessageT], timeout_s: Optional[float] = None
     ) -> MessageT:
         """Retrieves and applies messages until a message of type ``message_type`` is encountered.
@@ -215,19 +223,15 @@ class ExplorationClient(CommonClient):
 
         self._message_stream = self._get_message_stream()
 
-        with self._close_before_reraise():
-            self._link.send(self._protocol.get_system_info_command())
-
-        system_info_response = self._apply_messages_until_message_type_encountered(
-            messages.SystemInfoResponse
+        system_info_response = self._send_command_and_wait_for_response(
+            self._protocol.get_system_info_command(),
+            messages.SystemInfoResponse,
         )
         self._system_info = system_info_response.system_info
 
-        with self._close_before_reraise():
-            self._link.send(self._protocol.get_sensor_info_command())
-
-        sensor_info_response = self._apply_messages_until_message_type_encountered(
-            messages.SensorInfoResponse
+        sensor_info_response = self._send_command_and_wait_for_response(
+            self._protocol.get_sensor_info_command(),
+            messages.SensorInfoResponse,
         )
         self._sensor_infos = sensor_info_response.sensor_infos
 
@@ -275,10 +279,9 @@ class ExplorationClient(CommonClient):
         if baudrate_to_use == DEFAULT_BAUDRATE:
             return
 
-        with self._close_before_reraise():
-            self._link.send(self._protocol.set_baudrate_command(baudrate_to_use))
-
-        self._apply_messages_until_message_type_encountered(messages.SetBaudrateResponse)
+        _ = self._send_command_and_wait_for_response(
+            self._protocol.set_baudrate_command(baudrate_to_use), messages.SetBaudrateResponse
+        )
         self._baudrate_ack_received = False
 
         self._link.baudrate = baudrate_to_use
@@ -306,12 +309,11 @@ class ExplorationClient(CommonClient):
 
         self._calibrations_provided = get_calibrations_provided(config, calibrations)
 
-        with self._close_before_reraise():
-            self._link.send(self._protocol.setup_command(config, calibrations))
-
+        message = self._send_command_and_wait_for_response(
+            self._protocol.setup_command(config, calibrations),
+            messages.SetupResponse,
+        )
         self._session_config = config
-
-        message = self._apply_messages_until_message_type_encountered(messages.SetupResponse)
         self._metadata = [
             {
                 sensor_id: metadata
@@ -350,18 +352,15 @@ class ExplorationClient(CommonClient):
         self._session_is_started = True
 
         self._link.timeout = self._link_timeout
-
-        with self._close_before_reraise():
-            self._link.send(self._protocol.start_streaming_command())
-
-        self._apply_messages_until_message_type_encountered(messages.StartStreamingResponse)
+        _ = self._send_command_and_wait_for_response(
+            self._protocol.start_streaming_command(),
+            messages.StartStreamingResponse,
+        )
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         self._assert_session_started()
 
-        result_message = self._apply_messages_until_message_type_encountered(
-            messages.ResultMessage
-        )
+        result_message = self._wait_for_response(messages.ResultMessage)
 
         if self._metadata is None:
             raise RuntimeError(f"{self} has no metadata")
@@ -386,11 +385,10 @@ class ExplorationClient(CommonClient):
     def stop_session(self) -> None:
         self._assert_session_started()
 
-        with self._close_before_reraise():
-            self._link.send(self._protocol.stop_streaming_command())
-
-        self._apply_messages_until_message_type_encountered(
-            messages.StopStreamingResponse, timeout_s=self._link.timeout + 1
+        _ = self._send_command_and_wait_for_response(
+            self._protocol.stop_streaming_command(),
+            messages.StopStreamingResponse,
+            timeout_s=self._link.timeout + 1,
         )
 
         self._link.timeout = self._default_link_timeout
