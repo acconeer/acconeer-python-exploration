@@ -207,8 +207,6 @@ class ExplorationClient(CommonClient):
             if "Permission denied" in str(exc):
                 text = "\n".join(
                     [
-                        str(exc),
-                        "",
                         "You are probably missing permissions to access the serial port.",
                         "",
                         "Run the setup script to fix it:",
