@@ -18,7 +18,6 @@ from acconeer.exptool.a121._core.entities import (
     Result,
     SensorCalibration,
     SensorConfig,
-    SensorInfo,
     ServerInfo,
     ServerLogMessage,
     SessionConfig,
@@ -40,7 +39,6 @@ from .exploration_protocol import (
     get_exploration_protocol,
     messages,
 )
-from .exploration_protocol.messages.system_info_response import SystemInfoDict
 from .links import AdaptedSerialLink, BufferedLink, NullLinkError
 from .message import Message, MessageT
 from .utils import autodetermine_client_link, get_calibrations_provided, link_factory
@@ -57,8 +55,7 @@ class ExplorationClient(CommonClient):
     _protocol: Type[CommunicationProtocol]
     _protocol_overridden: bool
     _tick_unwrapper: TickUnwrapper
-    _sensor_infos: dict[int, SensorInfo]
-    _system_info: Optional[SystemInfoDict]
+    _server_info: Optional[ServerInfo]
     _result_queue: list[list[dict[int, Result]]]
     _message_stream: Iterator[Message]
     _log_queue: list[ServerLogMessage]
@@ -95,8 +92,7 @@ class ExplorationClient(CommonClient):
         super().__init__(client_info)
         self._tick_unwrapper = TickUnwrapper()
         self._message_stream = iter([])
-        self._sensor_infos = {}
-        self._system_info = None
+        self._server_info = None
         self._log_queue = []
         self._closed = False
         self._crashing = False
@@ -228,32 +224,41 @@ class ExplorationClient(CommonClient):
 
     def _connect_client(self) -> None:
         self._message_stream = self._get_message_stream()
+        self._server_info = self._retrieve_server_info()
 
-        system_info_response = self._send_command_and_wait_for_response(
-            self._protocol.get_system_info_command(),
-            messages.SystemInfoResponse,
-        )
-        self._system_info = system_info_response.system_info
-
-        sensor_info_response = self._send_command_and_wait_for_response(
-            self._protocol.get_sensor_info_command(),
-            messages.SensorInfoResponse,
-        )
-        self._sensor_infos = sensor_info_response.sensor_infos
-
-        if self.server_info.connected_sensors == []:
-            self.close()
+        if self._server_info.connected_sensors == []:
+            self._link.disconnect()
             raise ClientError("Exploration server is running but no sensors are detected.")
-
-        sensor = self._system_info.get("sensor") if self._system_info else None
-        if sensor != "a121":
-            self.close()
-            raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
 
         if not self._protocol_overridden:
             self._update_protocol_based_on_servers_rss_version()
 
         self._update_baudrate()
+
+    def _retrieve_server_info(self) -> ServerInfo:
+        system_info_response = self._send_command_and_wait_for_response(
+            self._protocol.get_system_info_command(),
+            messages.SystemInfoResponse,
+        )
+
+        sensor = system_info_response.system_info.get("sensor")
+        if sensor != "a121":
+            self.close()
+            raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
+
+        sensor_info_response = self._send_command_and_wait_for_response(
+            self._protocol.get_sensor_info_command(),
+            messages.SensorInfoResponse,
+        )
+
+        return ServerInfo(
+            rss_version=system_info_response.system_info["rss_version"],
+            sensor_count=system_info_response.system_info["sensor_count"],
+            ticks_per_second=system_info_response.system_info["ticks_per_second"],
+            hardware_name=system_info_response.system_info.get("hw", None),
+            sensor_infos=sensor_info_response.sensor_infos,
+            max_baudrate=system_info_response.system_info.get("max_baudrate"),
+        )
 
     def _update_protocol_based_on_servers_rss_version(self) -> None:
         with self._close_before_reraise():
@@ -363,14 +368,14 @@ class ExplorationClient(CommonClient):
         if self._metadata is None:
             raise RuntimeError(f"{self} has no metadata")
 
-        if self._system_info is None:
+        if self._server_info is None:
             raise RuntimeError(f"{self} has no system info")
 
         if self._session_config is None:
             raise RuntimeError(f"{self} has no session config")
 
         extended_results = result_message.get_extended_results(
-            tps=self._system_info["ticks_per_second"],
+            tps=self._server_info.ticks_per_second,
             metadata=self._metadata,
             config_groups=self._session_config.groups,
         )
@@ -409,8 +414,7 @@ class ExplorationClient(CommonClient):
             raise
         finally:
             self._tick_unwrapper = TickUnwrapper()
-            self._system_info = None
-            self._sensor_infos = {}
+            self._server_info = None
             self._message_stream = iter([])
             self._metadata = None
             self._log_queue.clear()
@@ -419,21 +423,14 @@ class ExplorationClient(CommonClient):
 
     @property
     def connected(self) -> bool:
-        return self._sensor_infos != {} and self._system_info is not None
+        return self._server_info is not None
 
     @property
     def server_info(self) -> ServerInfo:
         self._assert_connected()
 
-        assert self._system_info is not None  # Should never happend if client is connected
-        return ServerInfo(
-            rss_version=self._system_info["rss_version"],
-            sensor_count=self._system_info["sensor_count"],
-            ticks_per_second=self._system_info["ticks_per_second"],
-            hardware_name=self._system_info.get("hw", None),
-            sensor_infos=self._sensor_infos,
-            max_baudrate=self._system_info.get("max_baudrate"),
-        )
+        assert self._server_info is not None  # Should never happend if client is connected
+        return self._server_info
 
 
 class TickUnwrapper:
