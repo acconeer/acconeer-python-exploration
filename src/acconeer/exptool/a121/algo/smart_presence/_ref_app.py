@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import warnings
 from enum import Enum
 from typing import Any, Optional, Tuple
@@ -375,7 +376,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             intra_zone_detections=processor_result.intra_zone_detections,
             max_intra_zone=processor_result.max_intra_zone,
             used_config=used_config,
-            wake_up_detections=self.wake_up_detections,
+            wake_up_detections=copy.deepcopy(self.wake_up_detections),
             switch_delay=self.delay_count > 0,
             service_result=result.service_result,
         )
