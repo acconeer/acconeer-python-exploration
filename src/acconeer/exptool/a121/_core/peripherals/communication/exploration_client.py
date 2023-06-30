@@ -114,20 +114,6 @@ class ExplorationClient(CommonClient):
 
         self._connect_client()
 
-    def _assert_connected(self) -> None:
-        if not self.connected:
-            raise ClientError("Client is not connected.")
-
-    def _assert_session_setup(self) -> None:
-        self._assert_connected()
-        if not self.session_is_setup:
-            raise ClientError("Session is not set up.")
-
-    def _assert_session_started(self) -> None:
-        self._assert_session_setup()
-        if not self.session_is_started:
-            raise ClientError("Session is not started.")
-
     @contextlib.contextmanager
     def _close_before_reraise(self) -> Iterator[None]:
         try:
