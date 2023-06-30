@@ -31,9 +31,14 @@ class ClientCreationError(Exception):
 class ClientABCWithGoodError(abc.ABC):
     def __new__(cls, *args: Any, **kwargs: Any) -> ClientABCWithGoodError:
         try:
-            return super().__new__(cls)  # , *args, **kwargs)
-        except TypeError as te:  # te here is the "Can't instantiate ..."-error
-            raise ClientCreationError("Client cannot be instantiated, use Client.open()") from te
+            return super().__new__(cls)
+        except TypeError:  # te here is the "Can't instantiate ..."-error
+            if cls == Client:
+                raise ClientCreationError(
+                    "Client cannot be instantiated, use Client.open()"
+                ) from None
+            else:
+                raise
 
 
 class Client(ClientABCWithGoodError):
