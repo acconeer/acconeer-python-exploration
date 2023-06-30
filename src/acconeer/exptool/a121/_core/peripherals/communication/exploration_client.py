@@ -114,78 +114,6 @@ class ExplorationClient(CommonClient):
 
         self._connect_client()
 
-    @contextlib.contextmanager
-    def _close_before_reraise(self) -> Iterator[None]:
-        try:
-            yield
-        except Exception:
-            self._crashing = True
-            self.close()
-            raise
-
-    def _get_message_stream(self) -> Iterator[Message]:
-        """returns an iterator of parsed messages"""
-        while True:
-            with self._close_before_reraise():
-                header: dict[str, Any] = json.loads(
-                    self._link.recv_until(self._protocol.end_sequence)
-                )
-
-            try:
-                payload_size = header["payload_size"]
-            except KeyError:
-                payload = bytes()
-            else:
-                with self._close_before_reraise():
-                    payload = self._link.recv(payload_size)
-
-            resp = self._protocol.parse_message(header, payload)
-            yield resp
-
-    def _send_command_and_wait_for_response(
-        self, command: bytes, response_type: Type[MessageT], timeout_s: Optional[float] = None
-    ) -> MessageT:
-        with self._close_before_reraise():
-            self._link.send(command)
-
-        return self._wait_for_response(response_type, timeout_s)
-
-    def _wait_for_response(
-        self, message_type: Type[MessageT], timeout_s: Optional[float] = None
-    ) -> MessageT:
-        """Retrieves and applies messages until a message of type ``message_type`` is encountered.
-
-        :param message_type: a subclass of ``Message``
-        :param timeout_s: Limit the time spent in this function
-        :raises ClientError:
-            if timeout_s is set and that amount of time has elapsed
-            without predicate evaluating to True
-        """
-        deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
-
-        if message_type in [messages.ErroneousMessage, messages.EmptyResultMessage]:
-            raise ClientError("Cannot wait for error messages")
-
-        for message in self._message_stream:
-            if type(message) == messages.LogMessage:
-                self._log_queue.append(message.message)
-            elif type(message) == messages.EmptyResultMessage:
-                raise RuntimeError("Received an empty Result from Server.")
-            elif type(message) == messages.ErroneousMessage:
-                last_error = ""
-                for log in self._log_queue:
-                    if log.level == "ERROR" and "exploration_server" not in log.module:
-                        last_error = f" ({log.log})"
-                raise ServerError(f"{message}{last_error}")
-
-            if type(message) == message_type:
-                return message
-
-            if deadline is not None and time.monotonic() > deadline:
-                raise ClientError("Client timed out.")
-
-        raise ClientError("No message received")
-
     def _connect_link(self) -> None:
         self._default_link_timeout = self._link.timeout
         self._link_timeout = self._default_link_timeout
@@ -220,6 +148,34 @@ class ExplorationClient(CommonClient):
             self._update_protocol_based_on_servers_rss_version()
 
         self._update_baudrate()
+
+    def _get_message_stream(self) -> Iterator[Message]:
+        """returns an iterator of parsed messages"""
+        while True:
+            with self._close_before_reraise():
+                header: dict[str, Any] = json.loads(
+                    self._link.recv_until(self._protocol.end_sequence)
+                )
+
+            try:
+                payload_size = header["payload_size"]
+            except KeyError:
+                payload = bytes()
+            else:
+                with self._close_before_reraise():
+                    payload = self._link.recv(payload_size)
+
+            resp = self._protocol.parse_message(header, payload)
+            yield resp
+
+    @contextlib.contextmanager
+    def _close_before_reraise(self) -> Iterator[None]:
+        try:
+            yield
+        except Exception:
+            self._crashing = True
+            self.close()
+            raise
 
     def _retrieve_server_info(self) -> ServerInfo:
         system_info_response = self._send_command_and_wait_for_response(
@@ -328,6 +284,50 @@ class ExplorationClient(CommonClient):
             return self._metadata
         else:
             return unextend(self._metadata)
+
+    def _send_command_and_wait_for_response(
+        self, command: bytes, response_type: Type[MessageT], timeout_s: Optional[float] = None
+    ) -> MessageT:
+        with self._close_before_reraise():
+            self._link.send(command)
+
+        return self._wait_for_response(response_type, timeout_s)
+
+    def _wait_for_response(
+        self, message_type: Type[MessageT], timeout_s: Optional[float] = None
+    ) -> MessageT:
+        """Retrieves and applies messages until a message of type ``message_type`` is encountered.
+
+        :param message_type: a subclass of ``Message``
+        :param timeout_s: Limit the time spent in this function
+        :raises ClientError:
+            if timeout_s is set and that amount of time has elapsed
+            without predicate evaluating to True
+        """
+        deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
+
+        if message_type in [messages.ErroneousMessage, messages.EmptyResultMessage]:
+            raise ClientError("Cannot wait for error messages")
+
+        for message in self._message_stream:
+            if type(message) == messages.LogMessage:
+                self._log_queue.append(message.message)
+            elif type(message) == messages.EmptyResultMessage:
+                raise RuntimeError("Received an empty Result from Server.")
+            elif type(message) == messages.ErroneousMessage:
+                last_error = ""
+                for log in self._log_queue:
+                    if log.level == "ERROR" and "exploration_server" not in log.module:
+                        last_error = f" ({log.log})"
+                raise ServerError(f"{message}{last_error}")
+
+            if type(message) == message_type:
+                return message
+
+            if deadline is not None and time.monotonic() > deadline:
+                raise ClientError("Client timed out.")
+
+        raise ClientError("No message received")
 
     def start_session(self) -> None:
         self._assert_session_setup()
