@@ -293,8 +293,6 @@ class ExplorationClient(CommonClient):
         _ = self._send_command_and_wait_for_response(
             self._protocol.set_baudrate_command(baudrate_to_use), messages.SetBaudrateResponse
         )
-        self._baudrate_ack_received = False
-
         self._link.baudrate = baudrate_to_use
 
     def setup_session(
