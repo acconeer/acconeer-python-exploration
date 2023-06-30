@@ -74,6 +74,8 @@ class ExplorationClient(CommonClient):
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> Client:
+        if mock is not None:
+            raise ClientCreationError
 
         client_info = ClientInfo._from_open(
             ip_address=ip_address,
@@ -90,9 +92,6 @@ class ExplorationClient(CommonClient):
         client_info: ClientInfo = ClientInfo(mock=None),
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> None:
-        if client_info.mock is not None:
-            raise ClientCreationError()
-
         super().__init__(client_info)
         self._tick_unwrapper = TickUnwrapper()
         self._message_stream = iter([])

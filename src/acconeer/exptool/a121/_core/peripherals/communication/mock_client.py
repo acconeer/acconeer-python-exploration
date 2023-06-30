@@ -91,6 +91,8 @@ class MockClient(CommonClient):
         override_baudrate: Optional[int] = None,
         _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> Client:
+        if mock is None:
+            raise ClientCreationError
 
         client_info = ClientInfo._from_open(
             mock=mock,
@@ -99,15 +101,11 @@ class MockClient(CommonClient):
         return cls(client_info=client_info)
 
     def __init__(self, client_info: ClientInfo = ClientInfo(mock=MockInfo())) -> None:
-
-        if client_info.mock is None:
-            raise ClientCreationError()
-
+        super().__init__(client_info)
         self._start_time = time.perf_counter()
         self._connected = False
         self._mock_update_rate = self.MAX_MOCK_UPDATE_RATE_HZ
         self._mock_next_data_time = 0.0
-        super().__init__(client_info)
 
     @classmethod
     def _sensor_config_to_metadata(
