@@ -103,7 +103,7 @@ class MockClient(CommonClient):
     def __init__(self, client_info: ClientInfo = ClientInfo(mock=MockInfo())) -> None:
         super().__init__(client_info)
         self._start_time = time.perf_counter()
-        self._connected = False
+        self._connected = True
         self._mock_update_rate = self.MAX_MOCK_UPDATE_RATE_HZ
         self._mock_next_data_time = 0.0
 
@@ -215,12 +215,6 @@ class MockClient(CommonClient):
                 result_dict[sensor_id] = self._sensor_config_to_result(sensor_id, sensor_config)
             result_list.append(result_dict)
         return result_list
-
-    def _open(self) -> None:
-        if not self._connected:
-            self._connected = True
-        else:
-            raise ClientError("Client is already connected")
 
     def setup_session(
         self,

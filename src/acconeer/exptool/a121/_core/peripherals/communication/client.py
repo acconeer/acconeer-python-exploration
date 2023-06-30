@@ -62,10 +62,9 @@ class Client(ClientABCWithGoodError):
         if len([e for e in [ip_address, serial_port, usb_device, mock] if e is not None]) > 1:
             raise ValueError("Only one connection can be selected")
 
-        client = None
         for subclass in cls.__registry:
             try:
-                client = subclass.open(
+                return subclass.open(
                     ip_address,
                     tcp_port,
                     serial_port,
@@ -75,11 +74,7 @@ class Client(ClientABCWithGoodError):
                     _override_protocol,
                 )
             except ClientCreationError:
-                pass
-
-        if client is not None:
-            client._open()
-            return client
+                continue
 
         # This should not happen since the current implementation
         # only has two clients which are mutual exclusive.
@@ -94,11 +89,6 @@ class Client(ClientABCWithGoodError):
             raise TypeError(f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}.")
         cls.__registry.append(subclass)
         return subclass
-
-    @abc.abstractmethod
-    def _open(self) -> None:
-        """Connects to client, called from open"""
-        ...
 
     @abc.abstractmethod
     def setup_session(

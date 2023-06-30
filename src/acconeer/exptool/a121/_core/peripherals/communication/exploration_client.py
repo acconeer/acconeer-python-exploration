@@ -109,6 +109,12 @@ class ExplorationClient(CommonClient):
             self._protocol_overridden = True
 
         self._link = link_factory(self.client_info)
+        try:
+            self._connect_link()
+        except NullLinkError:
+            self._client_info = autodetermine_client_link(self.client_info)
+            self._link = link_factory(self.client_info)
+            self._connect_link()
 
     def _assert_connected(self) -> None:
         if not self.connected:
@@ -282,14 +288,6 @@ class ExplorationClient(CommonClient):
         self._baudrate_ack_received = False
 
         self._link.baudrate = baudrate_to_use
-
-    def _open(self) -> None:
-        try:
-            self._connect_link()
-        except NullLinkError:
-            self._client_info = autodetermine_client_link(self.client_info)
-            self._link = link_factory(self.client_info)
-            self._connect_link()
 
     def setup_session(
         self,
