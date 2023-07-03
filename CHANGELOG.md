@@ -1,8 +1,20 @@
 # Changelog
 
+## v7.2.0
+
 ### Added
+- A121: Smart presence: Add wake up mode
+- A121: Client now raises an error if no sensors can be detected
+        on the server.
 - Documentation for the speed detector
 - Examples for the speed detector
+- Better handling of unexpected communication errors (lost connection, etc.)
+  in the A121 Client.
+
+### Fixed
+ - A111: convert_to_csv.py can now output metadata for the envelope service
+ - A121: Detach recorded if start_session fails
+ - A121: Validate start point in subsweep config
 
 ## v7.1.0
 
