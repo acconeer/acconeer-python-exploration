@@ -22,8 +22,8 @@ def integrationTestPythonVersionsForBuildScope = [
 @Field
 def integrationTestA121RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [branch: "master"],
-    (BuildScope.HOURLY)  : [tag: "a121-v1.0.0"],
-    (BuildScope.NIGHTLY) : [branch: "master", tag: "a121-v1.0.0"],
+    (BuildScope.HOURLY)  : [tag: "a121-v1.1.0"],
+    (BuildScope.NIGHTLY) : [branch: "master", tag: "a121-v1.1.0"],
 ]
 
 @Field
@@ -176,7 +176,7 @@ try {
                             [
                                 projectName: 'sw-main',
                                 artifactNames: ["out/internal_stash_binaries_sanitizer_a121.tgz"],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-v1.0.0']
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
                         )
                         sh 'mkdir stash'
                         sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
