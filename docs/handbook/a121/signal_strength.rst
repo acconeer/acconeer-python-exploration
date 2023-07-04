@@ -7,5 +7,5 @@ The number of samples used for averaging is called
 Using this parameter correctly is crucial for reaching the desired signal quality while limiting the memory usage.
 For static objects, the SNR grows linearly with HWAAS, but keep in mind that so does the measurement time.
 
-..
-    TODO: See section~\ref{sec:timing} for a detailed description of the timing in a frame.
+See :ref:`handbook-a121-fom-rlg` for definitions related to SNR,
+and :ref:`handbook-a121-timing` for a detailed description of the timing within a frame.

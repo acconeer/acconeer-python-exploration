@@ -5,6 +5,8 @@ Figure of Merits
 
 This page describes and defines Figure of Merits (FoM).
 
+.. _handbook-a121-fom-rlg:
+
 Radar loop gain (RLG)
 ---------------------
 
