@@ -50,3 +50,6 @@ stash/
 
 # git
 *.orig
+
+# Ruff
+.ruff_cache/
