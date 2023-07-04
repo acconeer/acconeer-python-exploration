@@ -171,6 +171,9 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         try:
             self._start_session(self._recorder)
         except Exception as exc:
+            recorder = self.client.detach_recorder()
+            if recorder is not None:
+                recorder.close()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not start") from exc
 
