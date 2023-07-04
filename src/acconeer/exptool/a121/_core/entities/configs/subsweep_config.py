@@ -177,6 +177,15 @@ class SubsweepConfig:
                 ]
             )
 
+        if self.start_point < -275:
+            validation_results.append(
+                ValidationError(
+                    self,
+                    "start_point",
+                    "Start point must be larger than or equal to -275",
+                )
+            )
+
         return validation_results
 
     def validate(self) -> None:
