@@ -139,7 +139,7 @@ This section presents results from testing the algorithm in various scenarios.
 Test setup
 ^^^^^^^^^^
 The tests were performed with an adult sitting, an adult lying down and an infant laying down.
-The data collection and processing was down with the breathing reference application, available in Exploration tool.
+The data collection and processing was done with the breathing reference application, available in Exploration tool.
 The following pictures illustrates the setup.
 
 .. image:: /_static/processing/a121_breathing_person.png
@@ -174,7 +174,7 @@ The results from the testing are reported in the following table.
    * - Adult lying down
      - 2.0
      - 8.7
-     - 0.9
+     - 9.0
    * - Infant lying down
      - 0.5
      - 18.4
