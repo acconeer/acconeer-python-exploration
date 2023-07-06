@@ -494,7 +494,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
-            self.sensor_id_pidget.set_selected_sensor(None, [])
+            self.sensor_id_pidget.set_data(None)
 
             return
 
@@ -502,7 +502,8 @@ class ViewPlugin(DetectorViewPluginBase):
 
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.config_editor.set_data(state.config)
-        self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
+        self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
+        self.sensor_id_pidget.set_data(state.sensor_id)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
         self.start_button.setEnabled(

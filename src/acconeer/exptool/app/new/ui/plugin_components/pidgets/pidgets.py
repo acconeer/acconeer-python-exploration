@@ -569,11 +569,14 @@ class SensorIdPidget(ComboboxPidget[int]):
             for displayed_text, user_data in items:
                 self._combobox.addItem(displayed_text, user_data)
 
-    def set_selected_sensor(self, sensor_id: Optional[int], sensor_list: list[int]) -> None:
-        if sensor_list != self._sensor_list:
-            self._sensor_list = sensor_list
-            self._update_items([(str(i), i) for i in sensor_list])
+    def set_selectable_sensors(self, sensor_list: list[int]) -> None:
+        if sensor_list == self._sensor_list:
+            return
 
+        self._sensor_list = sensor_list
+        self._update_items([(str(i), i) for i in sensor_list])
+
+    def set_data(self, sensor_id: Optional[int]) -> None:
         try:
             super().set_data(sensor_id)
         except ValueError:

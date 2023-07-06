@@ -40,14 +40,17 @@ class TwoSensorIdsEditor(QWidget):
         )
         self.sensor_ids = None
 
-    def set_selected_sensors(
-        self, sensor_ids: t.Optional[list[int]], sensor_list: list[int]
-    ) -> None:
+    def set_data(self, sensor_ids: t.Optional[list[int]]) -> None:
+        self.setEnabled(sensor_ids is not None)
         if sensor_ids:
             assert len(sensor_ids) == 2
             self.sensor_ids = sensor_ids
-            self._sensor_id_pidget_1.set_selected_sensor(sensor_ids[0], sensor_list)
-            self._sensor_id_pidget_2.set_selected_sensor(sensor_ids[1], sensor_list)
+            self._sensor_id_pidget_1.set_data(sensor_ids[0])
+            self._sensor_id_pidget_2.set_data(sensor_ids[1])
+
+    def set_selectable_sensors(self, sensor_list: list[int]) -> None:
+        self._sensor_id_pidget_1.set_selectable_sensors(sensor_list)
+        self._sensor_id_pidget_2.set_selectable_sensors(sensor_list)
 
     def handle_pidget_signal(self, sensor_id: int, sensor_id_position: int) -> None:
         if self.sensor_ids is not None:

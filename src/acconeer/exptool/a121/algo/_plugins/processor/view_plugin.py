@@ -147,10 +147,11 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
             and self.processor_config_editor.is_ready
         )
 
+        self.session_config_editor.set_selectable_sensors(self.app_model.connected_sensors)
         if app_model.backend_plugin_state:
-            self.session_config_editor.set_selected_sensor(
-                app_model.backend_plugin_state.session_config.sensor_id,
-                self.app_model.connected_sensors,
+            # Due to a race, the sensor id needs to be set here
+            self.session_config_editor._sensor_id_pidget.set_data(
+                app_model.backend_plugin_state.session_config.sensor_id
             )
 
     @classmethod

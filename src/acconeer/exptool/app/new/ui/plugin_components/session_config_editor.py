@@ -79,8 +79,8 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         self._sensor_config_editor.sig_update.connect(self._update_sole_sensor_config)
         self.layout().addWidget(self._sensor_config_editor)
 
-    def set_selected_sensor(self, sensor_id: Optional[int], sensor_list: list[int]) -> None:
-        self._sensor_id_pidget.set_selected_sensor(sensor_id, sensor_list)
+    def set_selectable_sensors(self, sensor_list: list[int]) -> None:
+        self._sensor_id_pidget.set_selectable_sensors(sensor_list)
 
     def set_read_only(self, read_only: bool) -> None:
         self._sensor_id_pidget.setEnabled(not read_only)
@@ -98,6 +98,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
             log.debug("could not update ui as SessionConfig is None")
             return
 
+        self._sensor_id_pidget.set_data(self._session_config.sensor_id)
         self._update_rate_pidget.set_data(self._session_config.update_rate)
         self._sensor_config_editor.set_data(self._session_config.sensor_config)
 

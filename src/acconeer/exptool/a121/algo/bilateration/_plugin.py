@@ -558,7 +558,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.config_editor.setEnabled(False)
             self.bilateration_config_editor.set_data(None)
             self.bilateration_config_editor.setEnabled(False)
-            self.two_sensor_id_editor.set_selected_sensors(None, [])
+            self.two_sensor_id_editor.set_data(None)
             self.message_box.setText("")
 
             return
@@ -573,9 +573,8 @@ class ViewPlugin(DetectorViewPluginBase):
             app_model.plugin_state == PluginState.LOADED_IDLE
         )
         self.bilateration_config_editor.set_data(state.bilateration_config)
-        self.two_sensor_id_editor.set_selected_sensors(
-            state.sensor_ids, app_model.connected_sensors
-        )
+        self.two_sensor_id_editor.set_selectable_sensors(app_model.connected_sensors)
+        self.two_sensor_id_editor.set_data(state.sensor_ids)
         self.two_sensor_id_editor.setEnabled(app_model.plugin_state.is_steady)
 
         detector_status = Detector.get_detector_status(
