@@ -389,7 +389,7 @@ class ViewPlugin(DetectorViewPluginBase):
                 name_label_text="Surface distance",
                 suffix=" m",
                 decimals=2,
-                limits=(0.1, 3),
+                limits=(0.1, None),
             ),
             "sensor_angle": pidgets.FloatPidgetFactory(
                 name_label_text="Sensor angle",
