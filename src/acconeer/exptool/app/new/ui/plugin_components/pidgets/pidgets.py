@@ -527,9 +527,9 @@ class ComboboxPidget(Pidget, Generic[T]):
         for displayed_text, user_data in factory.items:
             self._combobox.addItem(displayed_text, user_data)
 
-        self._combobox.currentIndexChanged.connect(self.__emit_data_of_combobox_item)
+        self._combobox.currentIndexChanged.connect(self._emit_data_of_combobox_item)
 
-    def __emit_data_of_combobox_item(self, index: int) -> None:
+    def _emit_data_of_combobox_item(self, index: int) -> None:
         data = self._combobox.itemData(index)
         self.sig_update.emit(data)
 
@@ -554,28 +554,44 @@ class SensorIdPidgetFactory(ComboboxPidgetFactory[int]):
 
 
 class SensorIdPidget(ComboboxPidget[int]):
+    def __init__(self, factory: SensorIdPidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+        self._sensor_id = 1
+        self.set_data(self._sensor_id)
+
+    def _emit_data_of_combobox_item(self, index: int) -> None:
+        data = self._combobox.itemData(index)
+
+        if data is None:
+            return
+
+        self._sensor_id = data
+        self.sig_update.emit(data)
+
     def set_selectable_sensors(self, sensor_list: list[int]) -> None:
         with QtCore.QSignalBlocker(self):
-            current_index = self._combobox.currentIndex()
-            current_data = self._combobox.currentData()
-
             self._combobox.clear()
 
             for sensor_id in sensor_list:
                 self._combobox.addItem(str(sensor_id), sensor_id)
 
-            if current_index == -1:
-                self._combobox.setCurrentIndex(-1)
-            else:
-                self.set_data(current_data)
+            self.set_data(self._sensor_id)
+
+        self.setEnabled(len(sensor_list) > 0)
 
     def set_data(self, sensor_id: int) -> None:
+        self._sensor_id = sensor_id
+
         try:
             super().set_data(sensor_id)
         except ValueError:
-            self.setEnabled(False)
-        else:
-            self.setEnabled(True)
+            with QtCore.QSignalBlocker(self):
+                self._combobox.setCurrentIndex(-1)
+
+            self._combobox.setPlaceholderText(f"{self._sensor_id} (unavailable)")
+
+    def get_data(self) -> int:
+        return self._sensor_id
 
 
 @attrs.frozen(kw_only=True, slots=False)

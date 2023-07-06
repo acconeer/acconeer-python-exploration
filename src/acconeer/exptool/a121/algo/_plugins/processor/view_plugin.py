@@ -148,11 +148,6 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         )
 
         self.session_config_editor.set_selectable_sensors(self.app_model.connected_sensors)
-        if app_model.backend_plugin_state:
-            # Due to a race, the sensor id needs to be set here
-            self.session_config_editor._sensor_id_pidget.set_data(
-                app_model.backend_plugin_state.session_config.sensor_id
-            )
 
     @classmethod
     def supports_multiple_subsweeps(self) -> bool:
