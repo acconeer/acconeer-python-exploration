@@ -62,6 +62,8 @@ Thresholds
 ----------
 
 To determine if any objects are present, the sweep is compared to a threshold.
+A peak is defined as a middle point that has greater amplitude than its two neighbouring points.
+For an object to be detected, it has to yield a peak where all three points are above the threshold.
 Three different thresholds can be employed, each suitable for different use-cases.
 
 Fixed threshold
