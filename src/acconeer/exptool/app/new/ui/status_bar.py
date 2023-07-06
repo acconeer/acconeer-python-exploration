@@ -7,18 +7,16 @@ import threading
 from typing import Optional
 
 import numpy as np
-import qtawesome as qta
 
 from PySide6 import QtCore
-from PySide6.QtGui import QPainter, QPaintEvent, QTextDocument
+from PySide6.QtGui import QTextDocument
 from PySide6.QtWidgets import (
-    QHBoxLayout,
+    QDialog,
     QLabel,
-    QMainWindow,
+    QPushButton,
     QStatusBar,
-    QStyle,
-    QStyleOption,
     QTextBrowser,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -168,66 +166,53 @@ class RSSVersionLabel(QLabel):
         self.setText(text)
 
 
-class VersionLabel(QWidget):
-    sig_version_outdated = QtCore.Signal()
+class VersionButton(QPushButton):
+    sig_payload = QtCore.Signal(
+        tuple
+    )  # tuple[changelog (str), latest version (str), outdated? (bool)]
 
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        h_layout = QHBoxLayout()
-        self.setLayout(h_layout)
-        h_layout.setContentsMargins(0, 0, 0, 0)
-        h_layout.setSpacing(0)
-
         et_version = get_module_version(acconeer.exptool)
-        et_version_text = f"ET: {et_version}"
-        et_version_label = QLabel(et_version_text, self)
-        h_layout.addWidget(et_version_label)
+        self._changelog_text: Optional[str] = None
 
-        def version_check(et_version: str) -> None:
-            version_outdated, latest_v = check_package_outdated("acconeer-exptool", et_version)
-            self.changelog = None
+        self.setFlat(True)
+        self.setText(f"ET: {et_version}")
 
-            if version_outdated:
-                self.changelog = get_latest_changelog()
-                self.setStyleSheet(
-                    f"QWidget{{background-color: {BUTTON_ICON_COLOR}; color: #e2e2e2}}"
-                )
+        self.clicked.connect(self._on_click)
+        self.sig_payload.connect(self._handle_payload)
 
-                self.setToolTip(
-                    "There is a new software version available!\n"
-                    f"The latest version is: {latest_v}. \n"
-                    "Click to view changelog."
-                )
-                self.sig_version_outdated.emit()
-                self.mousePressEvent = self._toggle_changelog  # type: ignore[method-assign,assignment]
+        self._version_thread = threading.Thread(target=lambda: self._get_payload(et_version))
+        self._version_thread.start()
 
-        self.sig_version_outdated.connect(self._create_changelog_window)
-        self.sig_version_outdated.connect(lambda: self._add_icon_to_version_label(self))
+    def _on_click(self) -> None:
+        if self._changelog_text is None:
+            return
 
-        version_thread = threading.Thread(target=lambda: version_check(et_version))
-        version_thread.start()
+        ChangelogDialog(markdown_text=self._changelog_text).exec()
 
-    def _create_changelog_window(self) -> None:
-        if self.changelog is not None:
-            self.cl_window = ChangelogWindow(self)
-            self.cl_window.set_text(self.changelog)
+    def _handle_payload(self, payload: tuple[str, str, bool]) -> None:
+        (changelog_text, latest_version, is_outdated) = payload
 
-    def _add_icon_to_version_label(self, version_widget: QWidget) -> None:
-        layout = version_widget.layout()
-        icon_widget = qta.IconWidget()
-        icon_widget.setIcon(REFRESH(color="#e2e2e2"))
-        layout.addWidget(icon_widget)
+        if not is_outdated:
+            return
 
-    def _toggle_changelog(self, label: QLabel) -> None:
-        if self.changelog is not None:
-            self.cl_window.setVisible(not self.cl_window.isVisible())
+        self._changelog_text = changelog_text
 
-    def paintEvent(self, pe: QPaintEvent) -> None:
-        o = QStyleOption()
-        o.initFrom(self)
-        p = QPainter(self)
-        self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Widget, o, p, self)
+        self.setIcon(REFRESH(color="#e2e2e2"))
+        self.setStyleSheet(
+            f"QPushButton{{ background-color: {BUTTON_ICON_COLOR}; color: #e2e2e2; }}"
+        )
+        self.setToolTip(
+            "There is a new software version available!\n"
+            f"The latest version is: {latest_version}. \n"
+            "Click to view changelog."
+        )
+
+    def _get_payload(self, et_version: str) -> None:
+        is_outdated, latest_version = check_package_outdated("acconeer-exptool", et_version)
+        self.sig_payload.emit((get_latest_changelog(), latest_version, is_outdated))
 
 
 class StatusBar(QStatusBar):
@@ -249,7 +234,7 @@ class StatusBar(QStatusBar):
         self.addPermanentWidget(JitterStatsLabel(app_model, self))
         self.addPermanentWidget(BackendCPUPercentLabel(app_model, self))
         self.addPermanentWidget(RSSVersionLabel(app_model, self))
-        self.addPermanentWidget(VersionLabel(app_model, self))
+        self.addPermanentWidget(VersionButton(app_model, self))
 
         font_families = [
             "Consolas",  # Windows
@@ -273,23 +258,17 @@ class StatusBar(QStatusBar):
         self.message_widget.clear()
 
 
-class ChangelogWindow(QMainWindow):
-    def __init__(self, parent: QWidget) -> None:
-        super().__init__()
+class ChangelogDialog(QDialog):
+    def __init__(self, markdown_text: str, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
 
-        self.setWindowTitle("Changelog")
-        self.text_browser = QTextBrowser()
-        self.setCentralWidget(self.text_browser)
-        self.set_center(parent.parentWidget().parentWidget())
-        self.showEvent = lambda _: self.set_center(parent.parentWidget().parentWidget())  # type: ignore[method-assign]
-
-    def set_text(self, text: str) -> None:
         document = QTextDocument()
-        document.setMarkdown(text)
-        self.text_browser.setDocument(document)
+        document.setMarkdown(markdown_text)
 
-    def set_center(self, main_window: QWidget) -> None:
-        fg = self.frameGeometry()
-        fg.moveCenter(main_window.geometry().center())
-        self.move(fg.topLeft())
-        self.resize(500, 400)
+        text_browser = QTextBrowser(self)
+        text_browser.setDocument(document)
+        text_browser.setMinimumWidth(round(document.idealWidth() * 1.1))
+        text_browser.setMinimumHeight(500)
+
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(text_browser)
