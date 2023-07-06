@@ -138,7 +138,11 @@ class Processor(ProcessorBase[ProcessorResult]):
     def process(self, result: a121.Result) -> ProcessorResult:
 
         if self.double_buffering:
-            frame = double_buffering_frame_filter(result.frame)
+            filter_output = double_buffering_frame_filter(result._frame)
+            if filter_output is None:
+                frame = result.frame
+            else:
+                frame = filter_output
         else:
             frame = result.frame
 

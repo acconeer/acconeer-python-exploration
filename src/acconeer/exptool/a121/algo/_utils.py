@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -39,7 +39,7 @@ RADIO_FREQUENCY = 60.5e9
 WAVELENGTH = SPEED_OF_LIGHT / RADIO_FREQUENCY
 PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 
-OUTLIER_STD_DEV_THRESHOLD = 4.0
+MEAN_ABS_DEV_OUTLIER_TH = 5
 
 
 def get_distances_m(
@@ -188,7 +188,7 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
     return int(_safe_ceil(ENVELOPE_FWHM_M[profile] / (APPROX_BASE_STEP_LENGTH_M * step_length)))
 
 
-def double_buffering_frame_filter(frame: npt.NDArray[np.complex_]) -> npt.NDArray[np.complex_]:
+def double_buffering_frame_filter(_frame: npt.NDArray[Any]) -> Optional[npt.NDArray[np.complex_]]:
     """
     Detects and removes outliers in data that appear when the double buffering mode is enabled,
     and returns the filtered frame.
@@ -202,36 +202,66 @@ def double_buffering_frame_filter(frame: npt.NDArray[np.complex_]) -> npt.NDArra
     by interpolating between the sample before and the sample two positions ahead.
     """
 
-    (n_s, n_d) = frame.shape
+    (n_s, n_d) = _frame.shape
     min_num_sweeps = 32
 
     if n_s < min_num_sweeps:
-        return frame
+        return None
 
-    # Detect outliers in the second order difference along sweeps.
-    frame_diff_abs = np.zeros((n_s, n_d))
-    frame_diff_abs[1:-1, :] = np.abs(np.diff(frame, axis=0, n=2))
-    diff_mean = np.mean(frame_diff_abs, axis=0, keepdims=True)
-    diff_std = np.std(frame_diff_abs, axis=0, keepdims=True)
-    outliers = frame_diff_abs > diff_mean + OUTLIER_STD_DEV_THRESHOLD * diff_std
+    frame_real = _frame["real"]
+    frame_imag = _frame["imag"]
+
+    # Second order difference along sweeps
+    frame_diff_real = np.zeros((n_s, n_d), dtype=np.int16)
+    frame_diff_imag = np.zeros((n_s, n_d), dtype=np.int16)
+    frame_diff_real[1:-1, :] = np.diff(frame_real, axis=0, n=2)
+    frame_diff_imag[1:-1, :] = np.diff(frame_imag, axis=0, n=2)
+
+    # Estimating magnitude using: abs(real) + abs(imag)
+    frame_diff_abs = np.abs(frame_diff_real) + np.abs(frame_diff_imag)
+
+    # Mean absolute deviation
+    frame_diff_mad = np.sum(frame_diff_abs, axis=0) // (n_s - 2)
+
+    # Detect outliers
+    threshold = MEAN_ABS_DEV_OUTLIER_TH * frame_diff_mad
+    outliers = frame_diff_abs > threshold
 
     # Perform filtering at each distance to remove outliers
-    filtered_frame = frame.copy()
+    filtered_frame_real = frame_real.copy()
+    filtered_frame_imag = frame_imag.copy()
     for d in range(n_d):
         if np.any(outliers[:, d]):
             args = np.where(outliers[:, d])[0]
             for idx in args:
                 if idx <= 1:
-                    # median filtering for the first two and the last two sweeps
-                    filtered_frame[idx, d] = np.median(filtered_frame[idx : idx + 4, d])
+                    # Median filtering for the first two and the last two sweeps
+                    filtered_frame_real[idx, d] = np.median(filtered_frame_real[idx : idx + 4, d])
+                    filtered_frame_imag[idx, d] = np.median(filtered_frame_imag[idx : idx + 4, d])
                 elif idx >= n_s - 2:
-                    filtered_frame[idx, d] = np.median(filtered_frame[idx - 3 : idx, d])
+                    filtered_frame_real[idx, d] = np.median(filtered_frame_real[idx - 3 : idx, d])
+                    filtered_frame_imag[idx, d] = np.median(filtered_frame_imag[idx - 3 : idx, d])
                 else:
-                    # interpolation for the remaining sweeps
-                    filtered_frame[idx, d] = (
-                        2 / 3 * filtered_frame[max(idx - 1, 0), d]
-                        + 1 / 3 * filtered_frame[min(idx + 2, n_s - 1), d]
+                    # Interpolation for the remaining sweeps
+                    filtered_frame_real[idx, d] = int(
+                        (
+                            2 * filtered_frame_real[max(idx - 1, 0), d]
+                            + filtered_frame_real[min(idx + 2, n_s - 1), d]
+                        )
+                        / 3
                     )
+                    filtered_frame_imag[idx, d] = int(
+                        (
+                            2 * filtered_frame_imag[max(idx - 1, 0), d]
+                            + filtered_frame_imag[min(idx + 2, n_s - 1), d]
+                        )
+                        / 3
+                    )
+
+    filtered_frame = np.empty((n_s, n_d), dtype=np.complex_)
+    filtered_frame.real = filtered_frame_real
+    filtered_frame.imag = filtered_frame_imag
+
     return filtered_frame
 
 
