@@ -17,9 +17,9 @@ class CollapsibleWidget(QWidget):
         self.widget.setVisible(False)
 
         self.arrow_button = QToolButton()
-        self.arrow_button.setToolButtonStyle(QtCore.Qt.ToolButtonTextBesideIcon)
+        self.arrow_button.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.arrow_button.setText(label)
-        self.arrow_button.setArrowType(QtCore.Qt.RightArrow)
+        self.arrow_button.setArrowType(QtCore.Qt.ArrowType.RightArrow)
         self.arrow_button.setCheckable(True)
         self.arrow_button.setChecked(False)
         self.arrow_button.toggled.connect(self._on_toggle)
@@ -31,7 +31,9 @@ class CollapsibleWidget(QWidget):
 
     def set_collapsed(self, collapsed: bool) -> None:
         self.widget.setVisible(not collapsed)
-        self.arrow_button.setArrowType(QtCore.Qt.RightArrow if collapsed else QtCore.Qt.DownArrow)
+        self.arrow_button.setArrowType(
+            QtCore.Qt.ArrowType.RightArrow if collapsed else QtCore.Qt.ArrowType.DownArrow
+        )
 
     def _on_toggle(self, checked: bool) -> None:
         self.set_collapsed(not checked)

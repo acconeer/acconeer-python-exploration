@@ -36,29 +36,29 @@ class SmartPerfCalcView(QWidget):
         self._layout.addWidget(self._perf_calc_view)
         self._layout.addWidget(self._extended_perf_calc_view)
 
-    def update(
+    def set_data(
         self,
         session_config: Optional[a121.SessionConfig] = None,
         metadata: Optional[Union[a121.Metadata, list[dict[int, a121.Metadata]]]] = None,
     ) -> None:
         if isinstance(metadata, list):
             self._layout.setCurrentIndex(1)
-            self._extended_perf_calc_view.update(session_config, metadata)
+            self._extended_perf_calc_view.set_data(session_config, metadata)
         else:
             self._layout.setCurrentIndex(0)
-            self._perf_calc_view.update(session_config, metadata)
+            self._perf_calc_view.set_data(session_config, metadata)
 
 
-class ExtendedPerfCalcView(GroupBox):
+class ExtendedPerfCalcView(GroupBox[QVBoxLayout]):
     def __init__(self, parent: QWidget) -> None:
         super().__init__("Performance calculations", QVBoxLayout, parent=parent)
 
         label = QLabel("No estimates available", self)
         label.setEnabled(False)
-        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.layout().addWidget(label)
 
-    def update(
+    def set_data(
         self,
         session_config: Optional[a121.SessionConfig] = None,
         extended_metadata: Optional[list[dict[int, a121.Metadata]]] = None,
@@ -86,9 +86,9 @@ class PerfCalcView(QGroupBox):
         average_current_label.setToolTip(tooltip)
         layout.addWidget(average_current_label, 0, 0)
 
-        self.update(None)
+        self.set_data(None)
 
-    def update(
+    def set_data(
         self,
         session_config: Optional[a121.SessionConfig] = None,
         metadata: Optional[a121.Metadata] = None,
@@ -120,7 +120,7 @@ class PerfCalcView(QGroupBox):
 class PerfCalcValueWidget(QLineEdit):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setAlignment(QtCore.Qt.AlignRight)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
         self.setFixedWidth(_WIDGET_WIDTH)
         self.setReadOnly(True)
-        self.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)

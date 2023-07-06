@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -20,11 +20,11 @@ class PortUpdater(QObject):
         serial_devices: Any = None
         usb_devices: Any = None
 
-        @Slot()  # type: ignore[misc]
+        @Slot()
         def start(self) -> None:
             self.timer_id = self.startTimer(500)
 
-        @Slot()  # type: ignore[misc]
+        @Slot()
         def stop(self) -> None:
             self.killTimer(self.timer_id)
 
@@ -40,21 +40,21 @@ class PortUpdater(QObject):
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
 
-        self.thread = QThread(self)
+        self._thread = QThread(self)
         self.worker = self.Worker()
-        self.thread.started.connect(self.worker.start)
-        self.thread.finished.connect(self.worker.stop)
+        self._thread.started.connect(self.worker.start)
+        self._thread.finished.connect(self.worker.stop)
         self.worker.sig_update.connect(self._on_update)
-        self.worker.moveToThread(self.thread)
+        self.worker.moveToThread(self._thread)
         self.signalling = False
 
     def start(self) -> None:
-        self.thread.start()
+        self._thread.start()
         self.signalling = True
 
     def stop(self) -> None:
-        self.thread.quit()
-        self.thread.wait()
+        self._thread.quit()
+        self._thread.wait()
         self.signalling = False
 
     def pause(self) -> None:

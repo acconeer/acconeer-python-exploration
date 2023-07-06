@@ -281,7 +281,7 @@ class PlotPlugin(DetectorPlotPluginBase):
             intra_color = et.utils.color_cycler(1)
             intra_color = f"{intra_color}50"
             self.nominal_intra_dashed_pen = pg.mkPen(
-                intra_color, width=2.5, style=QtCore.Qt.DashLine
+                intra_color, width=2.5, style=QtCore.Qt.PenStyle.DashLine
             )
             self.nominal_intra_pen = pg.mkPen(intra_color, width=2)
         else:
@@ -316,7 +316,7 @@ class PlotPlugin(DetectorPlotPluginBase):
             inter_color = et.utils.color_cycler(0)
             inter_color = f"{inter_color}50"
             self.nominal_inter_dashed_pen = pg.mkPen(
-                inter_color, width=2.5, style=QtCore.Qt.DashLine
+                inter_color, width=2.5, style=QtCore.Qt.PenStyle.DashLine
             )
             self.nominal_inter_pen = pg.mkPen(inter_color, width=2)
         else:
@@ -380,7 +380,7 @@ class PlotPlugin(DetectorPlotPluginBase):
                 intra_color = et.utils.color_cycler(1)
                 intra_color = f"{intra_color}50"
                 self.wake_up_intra_dashed_pen = pg.mkPen(
-                    intra_color, width=2.5, style=QtCore.Qt.DashLine
+                    intra_color, width=2.5, style=QtCore.Qt.PenStyle.DashLine
                 )
                 self.wake_up_intra_pen = pg.mkPen(intra_color, width=2)
 
@@ -391,7 +391,7 @@ class PlotPlugin(DetectorPlotPluginBase):
                 inter_color = et.utils.color_cycler(0)
                 inter_color = f"{inter_color}50"
                 self.wake_up_inter_dashed_pen = pg.mkPen(
-                    inter_color, width=2.5, style=QtCore.Qt.DashLine
+                    inter_color, width=2.5, style=QtCore.Qt.PenStyle.DashLine
                 )
                 self.wake_up_inter_pen = pg.mkPen(inter_color, width=2)
 

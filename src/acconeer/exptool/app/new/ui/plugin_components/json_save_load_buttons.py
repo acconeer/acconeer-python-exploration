@@ -69,14 +69,11 @@ class JsonSaveLoadButtons(QWidget):
     _ICON_SIZE = QSize(20, 20)
     _BUTTON_SIZE = QSize(35, 25)
     _ICON_TRANSIENT_CHECKMARK_DURATION_MS = 2000
-    _FILE_DIALOG_OPTIONS = dict(
-        filter="JSON (*.json)",
-        options=QFileDialog.Option.DontUseNativeDialog,
-    )
+    _FILE_DIALOG_FILTER = "JSON (*.json)"
 
     def __init__(
         self,
-        getter: t.Callable[[], JsonPresentable],
+        getter: t.Callable[[], t.Optional[JsonPresentable]],
         setter: t.Callable[[JsonPresentable], t.Any],
         encoder: t.Callable[[JsonPresentable], str],
         decoder: t.Callable[[str], JsonPresentable],
@@ -121,7 +118,7 @@ class JsonSaveLoadButtons(QWidget):
     @classmethod
     def from_editor_and_config_type(
         cls,
-        editor: DataEditor[JsonPresentable],
+        editor: DataEditor[t.Optional[JsonPresentable]],
         config_type: t.Type[JsonPresentable],
         extra_presenter: PresenterFunc = lambda i, t: None,
     ) -> JsonSaveLoadButtons:
@@ -146,6 +143,10 @@ class JsonSaveLoadButtons(QWidget):
 
     def _save_to_selected_file(self) -> None:
         model = self._getter()
+
+        if model is None:
+            raise RuntimeError
+
         filename = SaveDialogWithPreview.get_save_file_name(
             caption="Save to file",
             model=model,
@@ -154,7 +155,8 @@ class JsonSaveLoadButtons(QWidget):
                 set_config_presenter,
                 self._extra_presenter,
             ),
-            **self._FILE_DIALOG_OPTIONS,
+            filter=self._FILE_DIALOG_FILTER,
+            parent=self,
         )
 
         if filename:
@@ -163,7 +165,10 @@ class JsonSaveLoadButtons(QWidget):
 
     def _load_and_set_selected_file(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
-            caption="Load from file", **self._FILE_DIALOG_OPTIONS
+            self,
+            caption="Load from file",
+            filter=self._FILE_DIALOG_FILTER,
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
 
         if filename:

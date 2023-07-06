@@ -102,8 +102,8 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         if backend_plugin_state is None:
             self.session_config_editor.set_data(None)
             self.processor_config_editor.set_data(None)
-            self.metadata_view.update(None)
-            self.perf_calc_view.update()
+            self.metadata_view.set_data(None)
+            self.perf_calc_view.set_data()
         else:
             assert isinstance(backend_plugin_state, ProcessorBackendPluginSharedState)
             assert isinstance(
@@ -112,8 +112,8 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
 
             self.session_config_editor.set_data(backend_plugin_state.session_config)
             self.processor_config_editor.set_data(backend_plugin_state.processor_config)
-            self.metadata_view.update(backend_plugin_state.metadata)
-            self.perf_calc_view.update(
+            self.metadata_view.set_data(backend_plugin_state.metadata)
+            self.perf_calc_view.set_data(
                 backend_plugin_state.session_config,
                 backend_plugin_state.metadata,
             )

@@ -1,9 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import ctypes
 import importlib.resources
 import sys
+import typing as t
 
 import qdarktheme
 
@@ -41,9 +42,8 @@ def main() -> None:
         QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
     )
 
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
+    # The cast necessitated of a miss in the typing stubs.
+    app: QApplication = t.cast(QApplication, QApplication.instance()) or QApplication(sys.argv)
 
     app.setStyleSheet(qdarktheme.load_stylesheet("light"))
     app.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
@@ -81,7 +81,7 @@ def _pixmap_to_icon(pixmap: QtGui.QPixmap) -> QtGui.QIcon:
     size = max(pixmap.size().height(), pixmap.size().width())
 
     square_pixmap = QtGui.QPixmap(size, size)
-    square_pixmap.fill(QtGui.Qt.transparent)
+    square_pixmap.fill(QtGui.QRgba64.fromRgba(0, 0, 0, 0))
 
     painter = QtGui.QPainter(square_pixmap)
     painter.drawPixmap(
@@ -94,8 +94,8 @@ def _pixmap_to_icon(pixmap: QtGui.QPixmap) -> QtGui.QIcon:
     scaled_pixmap = square_pixmap.scaled(
         256,
         256,
-        aspectMode=QtGui.Qt.KeepAspectRatio,
-        mode=QtGui.Qt.SmoothTransformation,
+        aspectMode=QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+        mode=QtGui.Qt.TransformationMode.SmoothTransformation,
     )
 
     return QtGui.QIcon(scaled_pixmap)

@@ -8,7 +8,7 @@ import os
 import traceback
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional, Tuple
+from typing import Optional
 
 from requests import Response, Session
 from requests.cookies import RequestsCookieJar
@@ -68,7 +68,7 @@ class FlashThread(QThread):
 class AuthThread(QThread):
     license_loaded = Signal(DevLicense)
     auth_failed = Signal()
-    auth_done = Signal((RequestsCookieJar, Tuple[bool, Session, Response]))
+    auth_done = Signal(tuple)  # (RequestsCookieJar, Tuple[bool, Session, Response]))
 
     def __init__(
         self,

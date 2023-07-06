@@ -17,7 +17,7 @@ from acconeer.exptool.a121._core import Criticality
 
 from .data_editor import DataEditor
 from .json_save_load_buttons import JsonPresentable, JsonSaveLoadButtons
-from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetGroupHook, PidgetHook
+from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetHook, WidgetHook
 from .save_dialog import PresenterFunc
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import GroupBox
@@ -72,10 +72,11 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(11)
+
         group_box = GroupBox.vertical(
             title,
             right_header=(
-                JsonSaveLoadButtons.from_editor_and_config_type(self, config_type, extra_presenter)
+                JsonSaveLoadButtons.from_editor_and_config_type(self, config_type, extra_presenter)  # type: ignore[arg-type]
                 if save_load_buttons
                 else None
             ),
@@ -86,7 +87,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         self._pidget_mapping: dict[str, Pidget] = {}
         self._pidget_hooks: dict[str, Sequence[PidgetHook]] = {}
         self._group_widgets: list[QWidget] = []
-        self._group_hooks: list[Sequence[PidgetGroupHook]] = []
+        self._group_hooks: list[Sequence[WidgetHook]] = []
         self._erroneous_aspects = set()
 
         for pidget_group, factory_mapping in _to_group_factory_mapping(factory_mapping).items():

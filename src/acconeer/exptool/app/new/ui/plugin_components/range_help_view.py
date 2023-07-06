@@ -34,9 +34,9 @@ class RangeHelpView(QGroupBox):
         layout.addWidget(QLabel("Step", self), 0, 2)
         layout.addWidget(self._step, 1, 2)
 
-        self.update(None)
+        self.set_data(None)
 
-    def update(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
+    def set_data(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
         if subsweep_config:
             end_point = (
                 subsweep_config.start_point
@@ -59,4 +59,4 @@ class RangeHelpViewValueWidget(QLineEdit):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
         self.setEnabled(False)
-        self.setAlignment(QtCore.Qt.AlignRight)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)

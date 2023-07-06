@@ -63,19 +63,16 @@ class PluginSelectionButtonGroup(QButtonGroup):
 
         self.setExclusive(True)
 
-    def addButton(self, button: PluginSelectionButton) -> None:
-        super().addButton(button)
-
     def checkedButton(self) -> PluginSelectionButton:
         button = super().checkedButton()
         assert isinstance(button, PluginSelectionButton)
         return button
 
-    def buttons(self) -> list[PluginSelectionButton]:
+    def buttons(self) -> list[PluginSelectionButton]:  # type: ignore[override]
         buttons = super().buttons()
         assert isinstance(buttons, list)
         assert all(isinstance(e, PluginSelectionButton) for e in buttons)
-        return buttons
+        return buttons  # type: ignore[return-value]
 
 
 class PluginPresetButton(QPushButton):
@@ -176,6 +173,9 @@ class PluginSelection(QWidget):
                 label.setWordWrap(True)
                 group_box.layout().addWidget(label)
 
+    def layout(self) -> QVBoxLayout:
+        return super().layout()  # type: ignore[return-value]
+
     def _on_load_click(self) -> None:
         self.layout().addStretch(1)
 
@@ -215,11 +215,14 @@ class PlotPlaceholder(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().addStretch(1)
-        self.layout().addLayout(self._select_module_text())
-        self.layout().addWidget(self._teaser_text())
-        self.layout().addStretch(1)
+        layout = QVBoxLayout(self)
+
+        layout.addStretch(1)
+        layout.addLayout(self._select_module_text())
+        layout.addWidget(self._teaser_text())
+        layout.addStretch(1)
+
+        self.setLayout(layout)
 
     def _select_module_text(self) -> QHBoxLayout:
         h_box = QHBoxLayout()
@@ -231,7 +234,7 @@ class PlotPlaceholder(QWidget):
 
         label = QLabel("Select a module to begin", self)
         label.setStyleSheet("font-size: 20px;")
-        label.setAlignment(QtCore.Qt.AlignCenter)
+        label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         h_box.addWidget(icon_widget)
         h_box.addWidget(label)
@@ -244,7 +247,7 @@ class PlotPlaceholder(QWidget):
             "More detectors and example applications will\nbe released continuously.", self
         )
         teaser_label.setStyleSheet("font-size: 16px;")
-        teaser_label.setAlignment(QtCore.Qt.AlignCenter)
+        teaser_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         return teaser_label
 
@@ -297,7 +300,7 @@ class PluginPlotArea(QFrame):
             self.child_widget = pg.GraphicsLayoutWidget()
             self.plot_plugin = plugin.create_plot_plugin(
                 app_model=self.app_model,
-                plot_layout=self.child_widget.ci,
+                plot_layout=self.child_widget.ci,  # type: ignore[attr-defined]
             )
 
         self.layout().addWidget(self.child_widget)
@@ -313,7 +316,7 @@ class ControlPlaceholder(QWidget):
             icon = QSvgWidget(str(path), self)
 
         icon.setMaximumSize(60, 60)
-        icon.renderer().setAspectRatioMode(QtCore.Qt.KeepAspectRatio)
+        icon.renderer().setAspectRatioMode(QtCore.Qt.AspectRatioMode.KeepAspectRatio)
         effect = QGraphicsOpacityEffect(icon)
         effect.setOpacity(0.1)
         icon.setGraphicsEffect(effect)

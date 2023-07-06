@@ -13,11 +13,11 @@ class NullAppModel(AppModel):
         def connect(self, slot: t.Callable[..., t.Any]) -> None:
             pass
 
-    sig_notify: _NullSignal
-    sig_message_plot_plugin: _NullSignal
+    sig_notify: _NullSignal  # type: ignore[assignment]
+    sig_message_plot_plugin: _NullSignal  # type: ignore[assignment]
 
     def __init__(self) -> None:
         self.sig_notify = self._NullSignal()
         self.sig_message_plot_plugin = self._NullSignal()
-        self.sig_backend_state_changed = self._NullSignal()
-        self.sig_load_plugin = self._NullSignal()
+        self.sig_backend_state_changed = self._NullSignal()  # type: ignore[assignment]
+        self.sig_load_plugin = self._NullSignal()  # type: ignore[assignment]

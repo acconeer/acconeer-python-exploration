@@ -18,17 +18,19 @@ class StreamingMainWidget(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         top_bar = TopBar(app_model, self)
-        self.layout().addWidget(top_bar)
-        self.layout().setStretchFactor(top_bar, 0)
+        layout.addWidget(top_bar)
+        layout.setStretchFactor(top_bar, 0)
 
         working_area = WorkingArea(app_model, self)
-        self.layout().addWidget(working_area)
-        self.layout().setStretchFactor(working_area, 1)
+        layout.addWidget(working_area)
+        layout.setStretchFactor(working_area, 1)
+
+        self.setLayout(layout)
 
 
 class TopBar(QFrame):
@@ -38,36 +40,41 @@ class TopBar(QFrame):
         self.setObjectName("TopBar")
         self.setStyleSheet("QFrame#TopBar {background: #ebebeb;}")
 
-        self.setLayout(QHBoxLayout(self))
+        layout = QHBoxLayout(self)
 
-        self.layout().addWidget(GenerationSelection(app_model, self))
-        self.layout().addWidget(VerticalSeparator(self))
-        self.layout().addWidget(ClientConnectionWidget(app_model, self))
-        self.layout().addWidget(HintWidget(app_model, self))
-        self.layout().addStretch(1)
-        self.layout().addWidget(RecordingWidget(app_model, self))
+        layout.addWidget(GenerationSelection(app_model, self))
+        layout.addWidget(VerticalSeparator(self))
+        layout.addWidget(ClientConnectionWidget(app_model, self))
+        layout.addWidget(HintWidget(app_model, self))
+        layout.addStretch(1)
+        layout.addWidget(RecordingWidget(app_model, self))
+
+        self.setLayout(layout)
 
 
 class WorkingArea(QSplitter):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
+        layout = QHBoxLayout(self)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         left_area = PluginSelectionArea(app_model, self)
         left_area.setMinimumWidth(250)
         left_area.setMaximumWidth(350)
-        self.layout().addWidget(left_area)
-        self.layout().setStretchFactor(left_area, 0)
+        layout.addWidget(left_area)
+        layout.setStretchFactor(left_area, 0)
 
         plot_plugin_area = PluginPlotArea(app_model, self)
-        self.layout().addWidget(plot_plugin_area)
-        self.layout().setStretchFactor(plot_plugin_area, 1)
+        layout.addWidget(plot_plugin_area)
+        layout.setStretchFactor(plot_plugin_area, 1)
 
         right_area = PluginControlArea(app_model, self)
         right_area.setMinimumWidth(400)
         right_area.setMaximumWidth(450)
-        self.layout().addWidget(right_area)
-        self.layout().setStretchFactor(right_area, 0)
+        layout.addWidget(right_area)
+        layout.setStretchFactor(right_area, 0)
+
+        self.setLayout(layout)

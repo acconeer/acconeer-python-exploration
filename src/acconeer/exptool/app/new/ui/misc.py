@@ -24,8 +24,8 @@ class ExceptionWidget(QMessageBox):
     ) -> None:
         super().__init__(parent)
 
-        self.setIcon(QMessageBox.Warning)
-        self.setStandardButtons(QMessageBox.Ok)
+        self.setIcon(QMessageBox.Icon.Warning)
+        self.setStandardButtons(QMessageBox.StandardButton.Ok)
 
         self.setWindowTitle(title)
         self.setText(str(exc))
@@ -66,5 +66,5 @@ class VerticalSeparator(QWidget):
         self.layout().setContentsMargins(5, 5, 5, 5)
 
         frame = QFrame(self)
-        frame.setFrameShape(QFrame.VLine)
+        frame.setFrameShape(QFrame.Shape.VLine)
         self.layout().addWidget(frame)

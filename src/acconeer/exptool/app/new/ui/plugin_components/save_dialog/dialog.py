@@ -42,7 +42,7 @@ class SaveDialogWithPreview(QDialog):
         presenter: PresenterFunc,
         caption: str = "",
         filter: str = "All (*)",
-        options: QFileDialog.Option = QFileDialog.Option(),
+        options: QFileDialog.Option = QFileDialog.Option.DontUseNativeDialog,
         parent: t.Optional[QWidget] = None,
     ) -> t.Optional[str]:
         dialog = QFileDialog(caption=caption)

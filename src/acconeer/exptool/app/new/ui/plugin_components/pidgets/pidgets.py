@@ -212,7 +212,7 @@ class FloatSliderPidgetFactory(FloatPidgetFactory):
             if self.limits[0] <= 0:
                 raise ValueError("Lower limit must be > 0 when using log scale")
 
-    def create(self, parent: QWidget) -> FloatSliderPidget:
+    def create(self, parent: QWidget) -> FloatSliderPidget:  # type: ignore[override]
         return FloatSliderPidget(self, parent)
 
 
@@ -227,10 +227,10 @@ class FloatSliderPidget(Pidget):
             decimals=factory.decimals,
         )
         self.__spin_box.valueChanged.connect(self.__on_spin_box_changed)
-        self._body_layout.addWidget(self.__spin_box, 0, 1)
+        self._body_layout.addWidget(self.__spin_box, 0, 1)  # type: ignore[call-arg]
 
         slider_widget = QWidget(self._body_widget)
-        self._body_layout.addWidget(slider_widget, 1, 0, 1, -1)
+        self._body_layout.addWidget(slider_widget, 1, 0, 1, -1)  # type: ignore[call-arg]
         slider_widget.setLayout(QHBoxLayout(slider_widget))
         slider_widget.layout().setContentsMargins(11, 6, 11, 0)
 
@@ -252,7 +252,7 @@ class FloatSliderPidget(Pidget):
 
         if factory.limit_texts is not None:
             label_text_widget = QWidget(self._body_widget)
-            self._body_layout.addWidget(label_text_widget, 2, 0, 1, -1)
+            self._body_layout.addWidget(label_text_widget, 2, 0, 1, -1)  # type: ignore[call-arg]
             label_text_widget.setLayout(QHBoxLayout(label_text_widget))
             label_text_widget.layout().setContentsMargins(11, 0, 11, 0)
             label_text_widget.layout().setSpacing(0)
@@ -263,7 +263,7 @@ class FloatSliderPidget(Pidget):
                 label = QLabel(left, label_text_widget)
                 label_text_widget.layout().addWidget(label)
 
-            label_text_widget.layout().addStretch(1)
+            label_text_widget.layout().addStretch(1)  # type: ignore[attr-defined]
 
             if right is not None:
                 label = QLabel(right, label_text_widget)
@@ -343,7 +343,7 @@ class OptionalPidget(Pidget):
 class OptionalIntPidgetFactory(OptionalPidgetFactory, IntPidgetFactory):
     init_set_value: Optional[int] = None
 
-    def create(self, parent: QWidget) -> OptionalIntPidget:
+    def create(self, parent: QWidget) -> OptionalIntPidget:  # type: ignore[override]
         return OptionalIntPidget(self, parent)
 
 
@@ -401,7 +401,7 @@ class OptionalFloatPidgetFactory(OptionalPidgetFactory, FloatPidgetFactory):
     placeholder_text = None disables the placeholder text entierly
     """
 
-    def create(self, parent: QWidget) -> OptionalFloatPidget:
+    def create(self, parent: QWidget) -> OptionalFloatPidget:  # type: ignore[override]
         return OptionalFloatPidget(self, parent)
 
 
@@ -613,7 +613,7 @@ class EnumPidget(ComboboxPidget[EnumT]):
 
 @attrs.frozen(kw_only=True, slots=False)
 class OptionalEnumPidgetFactory(OptionalPidgetFactory, EnumPidgetFactory[EnumT]):
-    def create(self, parent: QWidget) -> OptionalEnumPidget:
+    def create(self, parent: QWidget) -> OptionalEnumPidget:  # type: ignore[override]
         return OptionalEnumPidget(self, parent)
 
 
@@ -693,7 +693,7 @@ class _PidgetSpinBox(QSpinBox):
 
         self.setKeyboardTracking(False)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self.setAlignment(QtCore.Qt.AlignRight)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
         self.setFixedWidth(_WIDGET_WIDTH)
 
         self.setRange(*_convert_int_limits_to_qt_range(limits))
@@ -725,7 +725,7 @@ class _PidgetDoubleSpinBox(QDoubleSpinBox):
 
         self.setKeyboardTracking(False)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self.setAlignment(QtCore.Qt.AlignRight)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
         self.setFixedWidth(_WIDGET_WIDTH)
 
         self.setRange(*_convert_float_limits_to_qt_range(limits))
@@ -770,7 +770,7 @@ class _PidgetFloatSlider(QSlider):
         decimals: int,
         log_scale: bool,
     ) -> None:
-        super().__init__(QtCore.Qt.Horizontal, parent)
+        super().__init__(QtCore.Qt.Orientation.Horizontal, parent)
 
         self.limits = limits
         self.decimals = decimals

@@ -210,7 +210,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
 
         font = QFont()
-        font.setPixelSize(16.0)
+        font.setPixelSize(16)
 
         # Presence plot.
         self.presence_plot = win.addPlot(row=0, col=0)

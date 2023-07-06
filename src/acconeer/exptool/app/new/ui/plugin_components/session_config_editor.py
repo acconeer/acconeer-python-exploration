@@ -49,7 +49,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
         self.session_group_box = GroupBox.vertical(
             "Session parameters",
-            JsonSaveLoadButtons.from_editor_and_config_type(self, a121.SessionConfig),
+            JsonSaveLoadButtons.from_editor_and_config_type(self, a121.SessionConfig),  # type: ignore[arg-type]
             parent=self,
         )
         self.session_group_box.layout().setSpacing(self.SPACING)

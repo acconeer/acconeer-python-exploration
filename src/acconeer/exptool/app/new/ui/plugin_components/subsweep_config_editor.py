@@ -153,7 +153,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         if self._subsweep_config == subsweep_config:
             return
 
-        self.range_help_view.update(subsweep_config)
+        self.range_help_view.set_data(subsweep_config)
         self._subsweep_config = subsweep_config
 
         self.setEnabled(self._subsweep_config is not None)

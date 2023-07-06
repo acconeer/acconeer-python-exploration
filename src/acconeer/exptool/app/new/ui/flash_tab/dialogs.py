@@ -52,10 +52,10 @@ class FlashDialog(QDialog):
         self.setMinimumWidth(250)
 
         vbox = QVBoxLayout(self)
-        vbox.setAlignment(Qt.AlignCenter)
+        vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.loading = QLabel()
-        self.loading.setAlignment(Qt.AlignCenter)
+        self.loading.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         loader_gif = None
         with importlib.resources.path(resources, "loader.gif") as path:
@@ -66,8 +66,10 @@ class FlashDialog(QDialog):
         vbox.addWidget(self.loading)
 
         self.flash_label = QLabel(self)
-        self.flash_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
-        self.flash_label.setAlignment(Qt.AlignCenter)
+        self.flash_label.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.MinimumExpanding
+        )
+        self.flash_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         vbox.addWidget(self.flash_label)
 
         self.ok_button = QPushButton(self)
@@ -202,9 +204,10 @@ class FlashLoginDialog(QDialog):
 
     def _on_remember_me_checked(self) -> None:
         if self.remember_me_box.isChecked() and not self.cookies_accepted:
-            self.cookies_accepted = CookieConsentDialog(self).exec()
+            exit_code = CookieConsentDialog(self).exec()
+            self.cookies_accepted = exit_code == 0
             if not self.cookies_accepted:
-                self.remember_me_box.setCheckState(Qt.Unchecked)
+                self.remember_me_box.setCheckState(Qt.CheckState.Unchecked)
 
     def _handle_login(self) -> None:
         self.login_status_label.setHidden(True)

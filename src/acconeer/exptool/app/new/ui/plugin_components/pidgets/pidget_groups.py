@@ -16,10 +16,10 @@ from .common import MaybeIterable, as_sequence
 from .pidgets import Pidget
 
 
-PidgetGroupHook = t.Callable[[QWidget, t.Mapping[str, Pidget]], None]
+WidgetHook = t.Callable[[QWidget, t.Mapping[str, Pidget]], None]
 
 
-def _hooks_converter(a: MaybeIterable[PidgetGroupHook]) -> t.Sequence[PidgetGroupHook]:
+def _hooks_converter(a: MaybeIterable[WidgetHook]) -> t.Sequence[WidgetHook]:
     return as_sequence(a)
 
 
@@ -30,7 +30,7 @@ class PidgetGroup(abc.ABC):
     _instance_id: uuid.UUID = attrs.field(factory=uuid.uuid4, init=False)
     """Unique ID for each instance. Enables using otherwise equal instances as hash keys"""
 
-    hooks: t.Sequence[PidgetGroupHook] = attrs.field(factory=tuple, converter=_hooks_converter)
+    hooks: t.Sequence[WidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
     """Sequence of hooks for this instance"""
 
     @abc.abstractmethod

@@ -16,6 +16,7 @@ nox.options.reuse_existing_virtualenvs = True
 BLACK_SPEC = "black==22.12.0"
 RUFF_SPEC = "ruff==0.0.270"
 MYPY_SPEC = "mypy==1.4.1"
+PYSIDE_SPEC = "PySide6==6.4.3"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 PYTEST_SPEC = "pytest==7.2"
@@ -96,7 +97,7 @@ def reformat(session):
 @nox.session
 @nox.parametrize("python", ["3.7"])
 def mypy(session):
-    session.install("-e", ".", MYPY_SPEC, PYTEST_SPEC)
+    session.install("-e", ".", MYPY_SPEC, PYTEST_SPEC, PYSIDE_SPEC)
     session.run("python", "-m", "mypy")
 
 

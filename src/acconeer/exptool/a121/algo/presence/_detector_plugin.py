@@ -296,7 +296,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         if not self.detector_config.intra_enable:
             intra_color = et.utils.color_cycler(1)
             intra_color = f"{intra_color}50"
-            intra_dashed_pen = pg.mkPen(intra_color, width=2.5, style=QtCore.Qt.DashLine)
+            intra_dashed_pen = pg.mkPen(intra_color, width=2.5, style=QtCore.Qt.PenStyle.DashLine)
             intra_pen = pg.mkPen(intra_color, width=2)
         else:
             intra_dashed_pen = et.utils.pg_pen_cycler(1, width=2.5, style="--")
@@ -329,7 +329,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         if not self.detector_config.inter_enable:
             inter_color = et.utils.color_cycler(0)
             inter_color = f"{inter_color}50"
-            inter_dashed_pen = pg.mkPen(inter_color, width=2.5, style=QtCore.Qt.DashLine)
+            inter_dashed_pen = pg.mkPen(inter_color, width=2.5, style=QtCore.Qt.PenStyle.DashLine)
             inter_pen = pg.mkPen(inter_color, width=2)
         else:
             inter_pen = et.utils.pg_pen_cycler(0)

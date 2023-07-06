@@ -1,6 +1,8 @@
 # Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
+# type: ignore
+
 from __future__ import annotations
 
 import copy
@@ -124,7 +126,7 @@ def qapplication() -> QApplication:
     ids=lambda ef: str(ef.editor_class.__name__),
 )
 def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
-    return request.param  # type: ignore[no-any-return]
+    return request.param
 
 
 @pytest.fixture(
@@ -254,7 +256,7 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
     ids=lambda ef: str(ef.editor_class.__name__),
 )
 def pidget_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
-    return request.param  # type: ignore[no-any-return]
+    return request.param
 
 
 @pytest.fixture(params=["pidget_editor_fixt", "config_editor_fixt"])

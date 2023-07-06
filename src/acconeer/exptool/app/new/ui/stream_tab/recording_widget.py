@@ -50,6 +50,8 @@ class RecordingCheckbox(QCheckBox):
 
 
 class FileButton(QPushButton):
+    """A practically abstract class (cannot be abstract due to meta class conflict)"""
+
     def __init__(
         self,
         app_model: AppModel,
@@ -78,6 +80,9 @@ class FileButton(QPushButton):
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
+    def _on_click(self) -> None:
+        raise NotImplementedError
+
 
 class LoadFileButton(FileButton):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
@@ -99,7 +104,7 @@ class LoadFileButton(FileButton):
             self,
             caption="Load from file",
             filter=_file_suffix_to_filter(".h5", ".npz"),
-            options=QFileDialog.DontUseNativeDialog,
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
 
         if not filename:
@@ -131,7 +136,7 @@ class SaveFileButton(FileButton):
             self,
             caption="Save to file",
             filter=_file_suffix_to_filter(self.app_model.saveable_file.suffix),
-            options=QFileDialog.DontUseNativeDialog,
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
 
         if not filename:

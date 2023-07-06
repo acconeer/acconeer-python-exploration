@@ -340,12 +340,6 @@ class FlashMainWidget(QWidget):
             and self.bin_file is not None
         )
 
-    def exec(self) -> None:
-        if self.app_model.connection_interface == ConnectionInterface.SOCKET:
-            self.app_model.set_connection_interface(ConnectionInterface.USB)
-
-        super().exec()
-
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.authenticating:
             self.auth_thread.terminate()

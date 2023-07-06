@@ -11,7 +11,10 @@ from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QLayout, QVBoxLayout, QWidget
 
 
-class GroupBox(QWidget):
+_T = t.TypeVar("_T", bound=QLayout)
+
+
+class GroupBox(QWidget, t.Generic[_T]):
     _HORIZONTAL_HEADER_MARGIN = 7
     _EXTRA_MARGIN_TO_AVOID_CLIPPING = 2
 
@@ -22,7 +25,7 @@ class GroupBox(QWidget):
     def __init__(
         self,
         left_header: t.Union[QWidget, str],
-        layout_type: t.Type[QLayout],
+        layout_type: t.Type[_T],
         right_header: t.Optional[QWidget] = None,
         *,
         parent: t.Optional[QWidget] = None,
@@ -54,8 +57,8 @@ class GroupBox(QWidget):
         right_header: t.Optional[QWidget] = None,
         *,
         parent: t.Optional[QWidget] = None,
-    ) -> GroupBox:
-        return cls(left_header, QVBoxLayout, right_header=right_header, parent=parent)
+    ) -> GroupBox[QVBoxLayout]:
+        return cls(left_header, QVBoxLayout, right_header=right_header, parent=parent)  # type: ignore[return-value,arg-type]
 
     @classmethod
     def grid(
@@ -64,12 +67,12 @@ class GroupBox(QWidget):
         right_header: t.Optional[QWidget] = None,
         *,
         parent: t.Optional[QWidget] = None,
-    ) -> GroupBox:
-        return cls(left_header, QGridLayout, right_header=None, parent=parent)
+    ) -> GroupBox[QGridLayout]:
+        return cls(left_header, QGridLayout, right_header=None, parent=parent)  # type: ignore[return-value,arg-type]
 
-    def layout(self) -> QLayout:
+    def layout(self) -> _T:
         """Returns the layout of the internal QFrame"""
-        return self._frame.layout()
+        return self._frame.layout()  # type: ignore[return-value]
 
     @staticmethod
     def _wrap_in_frame(widget: QWidget, frame_parent: t.Optional[QWidget] = None) -> QFrame:

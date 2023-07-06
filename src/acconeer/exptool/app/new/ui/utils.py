@@ -14,8 +14,8 @@ class ScrollAreaDecorator(QScrollArea):
         super().__init__()
 
         self.setWidgetResizable(True)
-        self.setFrameShape(QFrame.NoFrame)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.horizontalScrollBar().setEnabled(False)
 
         self.setWidget(decoratee)
@@ -43,4 +43,4 @@ class LayoutWrapper(QWidget):
 class HorizontalSeparator(QFrame):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setFrameShape(QFrame.HLine)
+        self.setFrameShape(QFrame.Shape.HLine)

@@ -39,18 +39,18 @@ class SmartMetadataView(QWidget):
         self._layout.addWidget(self._metadata_view)
         self._layout.addWidget(self._extended_metadata_view)
 
-    def update(
+    def set_data(
         self,
         metadata: Optional[Union[a121.Metadata, list[dict[int, a121.Metadata]]]] = None,
     ) -> None:
         if isinstance(metadata, list):
             self._metadata_view.setHidden(True)
             self._extended_metadata_view.setHidden(False)
-            self._extended_metadata_view.update(metadata)
+            self._extended_metadata_view.set_data(metadata)
         else:
             self._metadata_view.setHidden(False)
             self._extended_metadata_view.setHidden(True)
-            self._metadata_view.update(metadata)
+            self._metadata_view.set_data(metadata)
 
 
 class ExtendedMetadataView(QWidget):
@@ -86,7 +86,7 @@ class ExtendedMetadataView(QWidget):
         while self._tab_widget.count() > needed_widgets:
             self._tab_widget.removeTab(0)
 
-    def update(self, extended_metadata: Optional[list[dict[int, a121.Metadata]]]) -> None:
+    def set_data(self, extended_metadata: Optional[list[dict[int, a121.Metadata]]]) -> None:
         if extended_metadata is None:
             self._represent_none()
             return
@@ -101,7 +101,7 @@ class ExtendedMetadataView(QWidget):
             self._tab_widget.setTabText(i, f"G{group_id}:S{sensor_id}")
             metadata_view = self._tab_widget.widget(i)
             if isinstance(metadata_view, MetadataView):
-                metadata_view.update(metadata)
+                metadata_view.set_data(metadata)
             else:
                 raise RuntimeError(
                     "ExtendedMetadataView contains child widgets that are not MetadataViews."
@@ -113,47 +113,50 @@ class MetadataView(QGroupBox):
         super().__init__(parent)
 
         self.setTitle("Metadata")
-        self.setLayout(QGridLayout(self))
+        layout = QGridLayout(self)
 
         row = 0
 
         self.frame_data_length = MetadataValueWidget(self)
-        self.layout().addWidget(self.frame_data_length, row, 1)
+        layout.addWidget(self.frame_data_length, row, 1)
 
         frame_data_length_label = QLabel("Frame data length", self)
-        frame_data_length_label.setToolTip(a121.Metadata.frame_data_length.__doc__)
-        self.layout().addWidget(frame_data_length_label, row, 0)
+        frame_data_length_label.setToolTip(a121.Metadata.frame_data_length.__doc__ or "")
+        layout.addWidget(frame_data_length_label, row, 0)
 
         row += 1
 
         self.calibration_temperature = MetadataValueWidget(self)
-        self.layout().addWidget(self.calibration_temperature, row, 1)
+        layout.addWidget(self.calibration_temperature, row, 1)
 
         calibration_temperature_label = QLabel("Calibration temperature", self)
-        calibration_temperature_label.setToolTip(a121.Metadata.calibration_temperature.__doc__)
-        self.layout().addWidget(calibration_temperature_label, row, 0)
+        calibration_temperature_label.setToolTip(
+            a121.Metadata.calibration_temperature.__doc__ or ""
+        )
+        layout.addWidget(calibration_temperature_label, row, 0)
 
         row += 1
 
         self.max_sweep_rate = MetadataValueWidget(self)
-        self.layout().addWidget(self.max_sweep_rate, row, 1)
+        layout.addWidget(self.max_sweep_rate, row, 1)
 
         max_sweep_rate_label = QLabel("Max sweep rate", self)
-        max_sweep_rate_label.setToolTip(a121.Metadata.max_sweep_rate.__doc__)
-        self.layout().addWidget(max_sweep_rate_label, row, 0)
+        max_sweep_rate_label.setToolTip(a121.Metadata.max_sweep_rate.__doc__ or "")
+        layout.addWidget(max_sweep_rate_label, row, 0)
 
         row += 1
 
         self.high_speed_mode = MetadataValueWidget(self)
-        self.layout().addWidget(self.high_speed_mode, row, 1)
+        layout.addWidget(self.high_speed_mode, row, 1)
 
         high_speed_mode_label = QLabel("High speed mode", self)
-        high_speed_mode_label.setToolTip(a121.Metadata.high_speed_mode.__doc__)
-        self.layout().addWidget(high_speed_mode_label, row, 0)
+        high_speed_mode_label.setToolTip(a121.Metadata.high_speed_mode.__doc__ or "")
+        layout.addWidget(high_speed_mode_label, row, 0)
 
-        self.update(None)
+        self.setLayout(layout)
+        self.set_data(None)
 
-    def update(self, metadata: Optional[a121.Metadata]) -> None:
+    def set_data(self, metadata: Optional[a121.Metadata]) -> None:
         self.frame_data_length.setText(f"{metadata.frame_data_length}" if metadata else "-")
         self.calibration_temperature.setText(
             f"{metadata.calibration_temperature}" if metadata else "-"
@@ -179,7 +182,7 @@ class MetadataView(QGroupBox):
 class MetadataValueWidget(QLineEdit):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setAlignment(QtCore.Qt.AlignRight)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
         self.setFixedWidth(_WIDGET_WIDTH)
         self.setReadOnly(True)
-        self.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)

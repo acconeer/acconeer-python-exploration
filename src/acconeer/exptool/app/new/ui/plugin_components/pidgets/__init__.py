@@ -2,7 +2,7 @@
 # All rights reserved
 
 from . import hooks
-from .pidget_groups import CollapsiblePidgetGroup, FlatPidgetGroup, PidgetGroup, PidgetGroupHook
+from .pidget_groups import CollapsiblePidgetGroup, FlatPidgetGroup, PidgetGroup, WidgetHook
 from .pidgets import (
     CheckboxPidget,
     CheckboxPidgetFactory,

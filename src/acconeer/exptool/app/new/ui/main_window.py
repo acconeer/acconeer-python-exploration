@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
 
         self.setStatusBar(StatusBar(app_model, self))
         self.setWindowTitle("Acconeer Exploration Tool")
-        self.moveEvent = lambda _: self.saveGeometry()
+        self.moveEvent = lambda _: self.saveGeometry()  # type: ignore[method-assign,assignment]
 
         app_model.sig_error.connect(self.on_app_model_error)
 

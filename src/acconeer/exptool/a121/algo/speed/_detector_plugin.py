@@ -481,7 +481,7 @@ class ViewPlugin(DetectorViewPluginBase):
             not_handled = self.misc_error_view.handle_validation_results(not_handled)
 
             sensor_config = Detector._get_sensor_config(backend_plugin_state.config)
-            self.range_help_view.update(sensor_config.subsweep)
+            self.range_help_view.set_data(sensor_config.subsweep)
             self.sensor_config_status.set_data(sensor_config)
             assert not_handled == []
 

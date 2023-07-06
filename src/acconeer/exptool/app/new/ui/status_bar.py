@@ -174,7 +174,6 @@ class VersionLabel(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.parent = parent
         h_layout = QHBoxLayout()
         self.setLayout(h_layout)
         h_layout.setContentsMargins(0, 0, 0, 0)
@@ -201,7 +200,7 @@ class VersionLabel(QWidget):
                     "Click to view changelog."
                 )
                 self.sig_version_outdated.emit()
-                self.mousePressEvent = self._toggle_changelog
+                self.mousePressEvent = self._toggle_changelog  # type: ignore[method-assign,assignment]
 
         self.sig_version_outdated.connect(self._create_changelog_window)
         self.sig_version_outdated.connect(lambda: self._add_icon_to_version_label(self))
@@ -228,14 +227,12 @@ class VersionLabel(QWidget):
         o = QStyleOption()
         o.initFrom(self)
         p = QPainter(self)
-        self.style().drawPrimitive(QStyle.PE_Widget, o, p, self)
+        self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Widget, o, p, self)
 
 
 class StatusBar(QStatusBar):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
-
-        self.parent = parent
 
         app_model.sig_status_message.connect(self._on_app_model_status_message)
 
@@ -277,21 +274,21 @@ class StatusBar(QStatusBar):
 
 
 class ChangelogWindow(QMainWindow):
-    def __init__(self, parent: QWidget = None) -> None:
+    def __init__(self, parent: QWidget) -> None:
         super().__init__()
 
         self.setWindowTitle("Changelog")
         self.text_browser = QTextBrowser()
         self.setCentralWidget(self.text_browser)
-        self.set_center(parent.parent.parent)
-        self.showEvent = lambda _: self.set_center(parent.parent.parent)
+        self.set_center(parent.parentWidget().parentWidget())
+        self.showEvent = lambda _: self.set_center(parent.parentWidget().parentWidget())  # type: ignore[method-assign]
 
     def set_text(self, text: str) -> None:
         document = QTextDocument()
         document.setMarkdown(text)
         self.text_browser.setDocument(document)
 
-    def set_center(self, main_window: QMainWindow) -> None:
+    def set_center(self, main_window: QWidget) -> None:
         fg = self.frameGeometry()
         fg.moveCenter(main_window.geometry().center())
         self.move(fg.topLeft())

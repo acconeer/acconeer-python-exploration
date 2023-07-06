@@ -512,7 +512,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
             assert not_handled == []
 
-            self.range_helper.update(
+            self.range_helper.set_data(
                 ExampleApp._get_sensor_config(backend_plugin_state.config).subsweep
             )
 

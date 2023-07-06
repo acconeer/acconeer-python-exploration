@@ -109,7 +109,6 @@ module = [
     "psutil.*",
     "pyperclip.*",
     "pyqtgraph.*",
-    "PySide6.*",
     "pytest.*",
     "qdarktheme.*",
     "qtawesome.*",
