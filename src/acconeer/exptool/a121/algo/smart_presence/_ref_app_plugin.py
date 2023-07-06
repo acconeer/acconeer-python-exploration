@@ -20,7 +20,6 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo._base import AlgoBase
 from acconeer.exptool.a121.algo._plugins import (
     DetectorBackendPluginBase,
     DetectorPlotPluginBase,
@@ -67,15 +66,9 @@ from ._ref_app import (
 
 
 @attrs.mutable(kw_only=True)
-class PlotConfig(AlgoBase):
-    show_all_detected_zones: bool = attrs.field(default=False)
-
-
-@attrs.mutable(kw_only=True)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: RefAppConfig = attrs.field(factory=RefAppConfig)
-    plot_config: PlotConfig = attrs.field(factory=PlotConfig)
     ref_app_context: Optional[RefAppContext] = attrs.field(default=None)
 
 
@@ -110,10 +103,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def _load_from_cache(self, file: h5py.File) -> None:
         self.shared_state.config = RefAppConfig.from_json(file["config"][()])
-        self.shared_state.plot_config = PlotConfig.from_json(file["plot_config"][()])
-
-        show_all_detected_zones = self.shared_state.plot_config.show_all_detected_zones
-        self.shared_state.config.show_all_detected_zones = show_all_detected_zones
 
     @is_task
     def restore_defaults(self) -> None:
@@ -123,11 +112,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
     @is_task
     def update_sensor_id(self, *, sensor_id: int) -> None:
         self.shared_state.sensor_id = sensor_id
-        self.broadcast()
-
-    @is_task
-    def update_plot_config(self, *, config: PlotConfig) -> None:
-        self.shared_state.plot_config = config
         self.broadcast()
 
     def _sync_sensor_ids(self) -> None:
@@ -154,13 +138,11 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
     def save_to_cache(self, file: h5py.File) -> None:
         _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
-        _create_h5_string_dataset(file, "plot_config", self.shared_state.plot_config.to_json())
 
     @is_task
     def set_preset(self, preset_id: int) -> None:
         preset_config = self.PLUGIN_PRESETS[preset_id]
         self.shared_state.config = preset_config()
-        self.shared_state.plot_config = PlotConfig()
         self.broadcast()
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
@@ -200,7 +182,6 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
                 name="setup",
                 kwargs=dict(
                     ref_app_config=self.shared_state.config,
-                    plot_config=self.shared_state.plot_config,
                     estimated_frame_rate=self._ref_app_instance.detector.estimated_frame_rate,
                     nominal_zone_limits=nominal_zone_limits,
                     wake_up_zone_limits=self._ref_app_instance.ref_app_processor.zone_limits,
@@ -240,7 +221,6 @@ class PlotPlugin(DetectorPlotPluginBase):
     def setup(
         self,
         ref_app_config: RefAppConfig,
-        plot_config: PlotConfig,
         estimated_frame_rate: float,
         nominal_zone_limits: npt.NDArray[np.float_],
         wake_up_zone_limits: npt.NDArray[np.float_],
@@ -249,7 +229,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.nominal_config = ref_app_config.nominal_config
         self.wake_up_config = ref_app_config.wake_up_config
 
-        self.show_all_detected_zones = plot_config.show_all_detected_zones
+        self.show_all_detected_zones = self.ref_app_config.show_all_detected_zones
 
         self.history_length_s = 5
         self.time_fifo: List[float] = []
@@ -643,7 +623,10 @@ class ViewPlugin(DetectorViewPluginBase):
             factory_mapping={
                 "wake_up_mode": pidgets.CheckboxPidgetFactory(
                     name_label_text="Switch config on wake up"
-                )
+                ),
+                "show_all_detected_zones": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Show all detected zones",
+                ),
             },
             config_type=RefAppConfig,
             parent=self.scrolly_widget,
@@ -668,20 +651,6 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         self.nominal_config_editor.sig_update.connect(self._on_nominal_config_update)
         scrolly_layout.addWidget(self.nominal_config_editor)
-
-        self.plot_config_editor = AttrsConfigEditor(
-            title="Plot parameters",
-            factory_mapping={
-                "show_all_detected_zones": pidgets.CheckboxPidgetFactory(
-                    name_label_text="Show all detected zones",
-                )
-            },
-            config_type=PlotConfig,
-            save_load_buttons=False,
-            parent=self.scrolly_widget,
-        )
-        self.plot_config_editor.sig_update.connect(self._on_plot_config_update)
-        scrolly_layout.addWidget(self.plot_config_editor)
 
         self.sticky_widget.setLayout(sticky_layout)
         self.scrolly_widget.setLayout(scrolly_layout)
@@ -753,8 +722,6 @@ class ViewPlugin(DetectorViewPluginBase):
         self.nominal_config_editor.set_data(state.config.nominal_config)
         self.wake_up_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.wake_up_config_editor.set_data(state.config.wake_up_config)
-        self.plot_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.plot_config_editor.set_data(state.plot_config)
         self.sensor_id_pidget.set_selected_sensor(state.sensor_id, app_model.connected_sensors)
         self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
@@ -771,9 +738,6 @@ class ViewPlugin(DetectorViewPluginBase):
 
     def _on_wake_up_config_update(self, config: PresenceWakeUpConfig) -> None:
         BackendPlugin.update_wake_up_config.rpc(self.app_model.put_task, config=config)
-
-    def _on_plot_config_update(self, config: PlotConfig) -> None:
-        BackendPlugin.update_plot_config.rpc(self.app_model.put_task, config=config)
 
     def _send_defaults_request(self) -> None:
         BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
