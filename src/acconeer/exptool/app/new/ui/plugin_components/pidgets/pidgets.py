@@ -560,21 +560,19 @@ class SensorIdPidget(ComboboxPidget[int]):
         super().__init__(factory, parent)
         self._sensor_list = []
 
-    def _update_items(self, items: list[tuple[str, int]]) -> None:
-        with QtCore.QSignalBlocker(
-            self
-        ):  # Does not take into account when selected item is removed
-            self._combobox.clear()
-
-            for displayed_text, user_data in items:
-                self._combobox.addItem(displayed_text, user_data)
-
     def set_selectable_sensors(self, sensor_list: list[int]) -> None:
         if sensor_list == self._sensor_list:
             return
 
         self._sensor_list = sensor_list
-        self._update_items([(str(i), i) for i in sensor_list])
+
+        with QtCore.QSignalBlocker(
+            self
+        ):  # Does not take into account when selected item is removed
+            self._combobox.clear()
+
+            for sensor_id in sensor_list:
+                self._combobox.addItem(str(sensor_id), sensor_id)
 
     def set_data(self, sensor_id: int) -> None:
         try:
