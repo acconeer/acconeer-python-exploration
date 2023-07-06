@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
@@ -14,7 +12,6 @@ from . import pidgets
 class TwoSensorIdsEditor(QWidget):
 
     sig_update = Signal(object)
-    sensor_ids: t.Optional[list[int]]
 
     def __init__(self, name_label_texts: list[str]):
         super().__init__()
@@ -32,27 +29,21 @@ class TwoSensorIdsEditor(QWidget):
         self.layout().addWidget(self._sensor_id_pidget_1)
         self.layout().addWidget(self._sensor_id_pidget_2)
 
-        self._sensor_id_pidget_1.sig_update.connect(
-            lambda sensor_id: self.handle_pidget_signal(sensor_id, sensor_id_position=0)
-        )
-        self._sensor_id_pidget_2.sig_update.connect(
-            lambda sensor_id: self.handle_pidget_signal(sensor_id, sensor_id_position=1)
-        )
-        self.sensor_ids = None
+        self._sensor_id_pidget_1.sig_update.connect(lambda: self.sig_update.emit(self.sensor_ids))
+        self._sensor_id_pidget_2.sig_update.connect(lambda: self.sig_update.emit(self.sensor_ids))
 
-    def set_data(self, sensor_ids: t.Optional[list[int]]) -> None:
-        self.setEnabled(sensor_ids is not None)
-        if sensor_ids:
-            assert len(sensor_ids) == 2
-            self.sensor_ids = sensor_ids
-            self._sensor_id_pidget_1.set_data(sensor_ids[0])
-            self._sensor_id_pidget_2.set_data(sensor_ids[1])
+    @property
+    def sensor_ids(self) -> list[int]:
+        return [
+            self._sensor_id_pidget_1.get_data(),
+            self._sensor_id_pidget_2.get_data(),
+        ]
+
+    def set_data(self, sensor_ids: list[int]) -> None:
+        assert len(sensor_ids) == 2
+        self._sensor_id_pidget_1.set_data(sensor_ids[0])
+        self._sensor_id_pidget_2.set_data(sensor_ids[1])
 
     def set_selectable_sensors(self, sensor_list: list[int]) -> None:
         self._sensor_id_pidget_1.set_selectable_sensors(sensor_list)
         self._sensor_id_pidget_2.set_selectable_sensors(sensor_list)
-
-    def handle_pidget_signal(self, sensor_id: int, sensor_id_position: int) -> None:
-        if self.sensor_ids is not None:
-            self.sensor_ids[sensor_id_position] = sensor_id
-            self.sig_update.emit(self.sensor_ids)

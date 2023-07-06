@@ -558,7 +558,7 @@ class ViewPlugin(DetectorViewPluginBase):
             self.config_editor.setEnabled(False)
             self.bilateration_config_editor.set_data(None)
             self.bilateration_config_editor.setEnabled(False)
-            self.two_sensor_id_editor.set_data(None)
+            self.two_sensor_id_editor.setEnabled(False)
             self.message_box.setText("")
 
             return

@@ -576,7 +576,7 @@ class SensorIdPidget(ComboboxPidget[int]):
         self._sensor_list = sensor_list
         self._update_items([(str(i), i) for i in sensor_list])
 
-    def set_data(self, sensor_id: Optional[int]) -> None:
+    def set_data(self, sensor_id: int) -> None:
         try:
             super().set_data(sensor_id)
         except ValueError:

@@ -525,7 +525,7 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.config_editor.set_data(None)
             self.config_editor.setEnabled(False)
-            self.sensor_id_pidget.set_data(None)
+            self.sensor_id_pidget.setEnabled(False)
 
             return
 
