@@ -43,6 +43,7 @@ where you can also find the [FAQ](https://docs.acconeer.com/en/latest/exploratio
 ## Setting up your evaluation kit
 
 * [XC120 + XE121 (A121)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xc120_xe121.html)
+* [Raspberry Pi (A121 on XE121)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/raspberry_a121_xe121.html)
 * [Raspberry Pi (A111 on XC111+XR111 or XC112+XR112)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/raspberry_a111.html)
 * [XM112](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm112.html)
 * [XM122](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm122.html)

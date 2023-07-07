@@ -24,6 +24,7 @@
 "changelog.rst" "exploration_tool/changelog.rst"
 "evk_setup/find_serial_port.rst" "exploration_tool/evk_setup/find_serial_port.rst"
 "evk_setup/raspberry_a111.rst" "exploration_tool/evk_setup/raspberry_a111.rst"
+"evk_setup/raspberry_a121_xe121.rst" "exploration_tool/evk_setup/raspberry_a121_xe121.rst"
 "evk_setup/xm112.rst" "exploration_tool/evk_setup/xm112.rst"
 "evk_setup/xm122.rst" "exploration_tool/evk_setup/xm122.rst"
 "evk_setup/xm132.rst" "exploration_tool/evk_setup/xm132.rst"
