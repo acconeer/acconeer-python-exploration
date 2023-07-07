@@ -335,14 +335,14 @@ class ExplorationClient(CommonClient):
         if self.session_is_started:
             raise ClientError("Session is already started.")
 
-        self._recorder_start_session()
-        self._session_is_started = True
-
         self._link.timeout = self._link_timeout
         _ = self._send_command_and_wait_for_response(
             self._protocol.start_streaming_command(),
             messages.StartStreamingResponse,
         )
+
+        self._recorder_start_session()
+        self._session_is_started = True
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
         self._assert_session_started()
