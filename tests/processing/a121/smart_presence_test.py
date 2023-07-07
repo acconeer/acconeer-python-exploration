@@ -67,7 +67,7 @@ class RefAppWrapper:
 def smart_presence_controller(record: a121.H5Record) -> RefAppWrapper:
     algo_group = record.get_algo_group("smart_presence")
     sensor_id, config, context = smart_presence_ref_app._load_algo_data(algo_group)
-    client = _ReplayingClient(record)
+    client = _ReplayingClient(record, realtime_replay=False)
     app = RefAppWrapper(
         smart_presence.RefApp(
             client=client,

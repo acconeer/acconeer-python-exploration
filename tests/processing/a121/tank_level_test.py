@@ -50,7 +50,7 @@ class RefAppWrapper:
 def tank_level_controller(record: a121.H5Record) -> RefAppWrapper:
     algo_group = record.get_algo_group("tank_level")
     sensor_id, config, context = _load_algo_data(algo_group)
-    client = _ReplayingClient(record)
+    client = _ReplayingClient(record, realtime_replay=False)
     app = RefAppWrapper(
         tank_level.RefApp(
             client=client,

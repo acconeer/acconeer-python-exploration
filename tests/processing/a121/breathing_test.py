@@ -72,7 +72,7 @@ class RefAppWrapper:
 def breathing_controller(record: a121.Record) -> RefAppWrapper:
     algo_group = record.get_algo_group("breathing")
     sensor_id, config = _load_algo_data(algo_group)
-    client = _ReplayingClient(record)
+    client = _ReplayingClient(record, realtime_replay=False)
     app = RefAppWrapper(
         breathing.RefApp(
             client=client,

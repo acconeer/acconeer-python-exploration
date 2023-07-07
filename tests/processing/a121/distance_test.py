@@ -92,7 +92,7 @@ def distance_detector(record: a121.H5Record) -> DetectorWrapper:
     algo_group = record.get_algo_group("distance_detector")
     _, config, context = _load_algo_data(algo_group)
     sensor_ids = list(next(iter(record.session_config.groups)).keys())
-    client = _ReplayingClient(record)
+    client = _ReplayingClient(record, realtime_replay=False)
     detector = DetectorWrapper(
         distance.Detector(
             client=client,
