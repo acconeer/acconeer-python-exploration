@@ -28,12 +28,19 @@ class _StopReplay(Exception):
 
 
 class _ReplayingClient(Client):
-    def __init__(self, record: Record, *, cycled_session_idx: Optional[int] = None):
+    def __init__(
+        self,
+        record: Record,
+        *,
+        cycled_session_idx: Optional[int] = None,
+        realtime_replay: bool = True,
+    ):
         """
         :param record: The Record to replay from
         :param cycled_session_idx:
             If specified, cycle (reuse as next session) the session
             specified by 'cycled_session_idx'.
+        :param realtime_replay: If True, replays the data at the rate of recording
         """
         self._record = record
         self._is_started: bool = False
@@ -41,6 +48,7 @@ class _ReplayingClient(Client):
         self._origin_time: Optional[float] = None
         self._session_idx = 0
         self._cycled_session_idx = cycled_session_idx
+        self._realtime_replay = realtime_replay
 
     @property
     def _actual_session_idx(self) -> int:
@@ -100,15 +108,16 @@ class _ReplayingClient(Client):
 
         some_result = next(core_utils.iterate_extended_structure_values(result))
 
-        now = time.monotonic() - some_result.tick_time
+        if self._realtime_replay:
+            now = time.monotonic() - some_result.tick_time
 
-        if self._origin_time is None:
-            self._origin_time = now
+            if self._origin_time is None:
+                self._origin_time = now
 
-        delta = now - self._origin_time
+            delta = now - self._origin_time
 
-        if delta < 0:
-            time.sleep(-delta)
+            if delta < 0:
+                time.sleep(-delta)
 
         if self.session_config.extended:
             return result
