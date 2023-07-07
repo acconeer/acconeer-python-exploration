@@ -81,6 +81,7 @@ section-order = [
 
 [tool.mypy]
 packages = [
+    "acconeer.exptool._links",
     "acconeer.exptool.a121",
     "acconeer.exptool.app.new",
     "acconeer.exptool.setup",

@@ -1,7 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
-from acconeer.exptool.a111._clients.links import (  # type: ignore[import]
+from acconeer.exptool._links import (
     ExploreSerialLink,
     SocketLink,
     USBLink,

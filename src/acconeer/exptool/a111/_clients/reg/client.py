@@ -14,8 +14,7 @@ from time import sleep, time
 
 import numpy as np
 
-from acconeer.exptool import libft4222
-from acconeer.exptool.a111._clients import links
+from acconeer.exptool import _links, libft4222
 from acconeer.exptool.a111._clients.base import (
     BaseClient,
     ClientError,
@@ -178,9 +177,9 @@ class UARTClient(RegBaseClient):
         self._streaming_control_val = "uart_streaming"
 
         if platform.system().lower() in ["windows", "darwin"]:
-            self._link = links.SerialLink(port)
+            self._link = _links.SerialLink(port)
         else:
-            self._link = links.SerialProcessLink(port)
+            self._link = _links.SerialProcessLink(port)
 
     def _connect(self):
         self._link.timeout = self.CONNECT_ROUTINE_TIMEOUT
@@ -201,7 +200,7 @@ class UARTClient(RegBaseClient):
 
             try:
                 self._handshake()
-            except links.LinkError:
+            except _links.LinkError:
                 log.debug("handshake failed at {} baud".format(baudrate))
             else:
                 log.debug("handshake succeeded at {} baud".format(baudrate))
@@ -435,7 +434,7 @@ class PollingUARTClient(UARTClient):
 
         super().__init__(port, **kwargs)
         self._streaming_control_val = "no_streaming"
-        self._link = links.SerialLink(port)  # don't use link in separate process
+        self._link = _links.SerialLink(port)  # don't use link in separate process
 
     def _start_session(self):
         self._write_reg("main_control", "activate")

@@ -7,65 +7,66 @@ import platform
 import queue
 import signal
 import socket
+import threading as th
 import traceback
 from abc import ABCMeta, abstractmethod
 from time import sleep, time
+from typing import Optional, Tuple, Union
 
 import serial
 
-from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
-from acconeer.exptool.a111._clients.base import ClientError
+from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc  # type: ignore[import]
 
 
 try:
-    from acconeer.exptool._winusbcdc.usb_cdc import ComPort
+    from acconeer.exptool._winusbcdc.usb_cdc import ComPort  # type: ignore[import]
 except ImportError:
     ComPort = None
 
 log = logging.getLogger(__name__)
 
 
-class LinkError(ClientError):
+class LinkError(RuntimeError):
     pass
 
 
 class BaseLink(metaclass=ABCMeta):
-    DEFAULT_TIMEOUT = 2
+    DEFAULT_TIMEOUT = 2.0
 
     @abstractmethod
-    def __init__(self):
+    def __init__(self) -> None:
         self._timeout = self.DEFAULT_TIMEOUT
 
     @abstractmethod
-    def connect(self):
+    def connect(self) -> None:
         pass
 
     @abstractmethod
-    def recv(self, num_bytes):
+    def recv(self, num_bytes: int) -> bytes:
         pass
 
     @abstractmethod
-    def recv_until(self, bs):
+    def recv_until(self, bs: bytes) -> bytes:
         pass
 
     @abstractmethod
-    def send(self, data):
+    def send(self, data: bytes) -> None:
         pass
 
     @abstractmethod
-    def disconnect(self):
+    def disconnect(self) -> None:
         pass
 
     @property
-    def timeout(self):
+    def timeout(self) -> float:
         return self._timeout
 
     @timeout.setter
-    def timeout(self, val):
+    def timeout(self, val: float) -> None:
         self._timeout = val
         self._update_timeout()
 
-    def _update_timeout(self):
+    def _update_timeout(self) -> None:
         pass
 
 
@@ -73,18 +74,18 @@ class SocketLink(BaseLink):
     _CHUNK_SIZE = 4096
     _PORT = 6110
 
-    def __init__(self, host=None, port=None):
+    def __init__(self, host: Optional[str] = None, port: Optional[int] = None) -> None:
         super().__init__()
         self._host = host
-        self._sock = None
-        self._buf = None
-        self._port = self._PORT if (port is None) else port
+        self._sock: Optional[socket.socket] = None
+        self._buf: bytearray = bytearray()
+        self._port: int = self._PORT if (port is None) else port
 
-    def _update_timeout(self):
+    def _update_timeout(self) -> None:
         if self._sock is not None:
             self._sock.settimeout(self._timeout)
 
-    def connect(self):
+    def connect(self) -> None:
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._update_timeout()
 
@@ -97,7 +98,8 @@ class SocketLink(BaseLink):
 
         self._buf = bytearray()
 
-    def recv(self, num_bytes):
+    def recv(self, num_bytes: int) -> bytes:
+        assert self._sock is not None
         while len(self._buf) < num_bytes:
             try:
                 r = self._sock.recv(self._CHUNK_SIZE)
@@ -109,7 +111,8 @@ class SocketLink(BaseLink):
         self._buf = self._buf[num_bytes:]
         return data
 
-    def recv_until(self, bs):
+    def recv_until(self, bs: bytes) -> bytes:
+        assert self._sock is not None
         t0 = time()
         while True:
             try:
@@ -134,40 +137,43 @@ class SocketLink(BaseLink):
 
         return data
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
+        assert self._sock is not None
         self._sock.sendall(data)
 
-    def disconnect(self):
-        self._sock.shutdown(socket.SHUT_RDWR)
-        self._sock.close()
-        self._sock = None
-        self._buf = None
+    def disconnect(self) -> None:
+        if self._sock is not None:
+            self._sock.shutdown(socket.SHUT_RDWR)
+            self._sock.close()
+            self._sock = None
+        self._buf = bytearray()
 
 
 class BaseSerialLink(BaseLink):
-    def __init__(self, baudrate=115200):
+    def __init__(self, baudrate: int = 115200) -> None:
         super().__init__()
         self._timeout = self.DEFAULT_TIMEOUT
         self._baudrate = baudrate
 
 
 class SerialLink(BaseSerialLink):
-    def __init__(self, port=None, flowcontrol=False):
+    def __init__(self, port: Optional[str] = None, flowcontrol: bool = False) -> None:
         super().__init__()
         self._port = port
-        self._ser = None
+        self._ser: Optional[serial.Serial] = None
         self._flowcontrol = flowcontrol
 
-    def _update_timeout(self):
+    def _update_timeout(self) -> None:
         if self._ser is not None:
             self._ser.timeout = self._timeout
 
-    def send_break(self):
+    def send_break(self) -> None:
+        assert self._ser is not None
         self._ser.send_break()
         sleep(0.5)
         self._ser.flushInput()
 
-    def connect(self):
+    def connect(self) -> None:
         self._ser = serial.Serial()
         self._ser.baudrate = self._baudrate
         self._ser.port = self._port
@@ -178,7 +184,8 @@ class SerialLink(BaseSerialLink):
         if platform.system().lower() == "windows":
             self._ser.set_buffer_size(rx_size=10**6, tx_size=10**6)
 
-    def recv(self, num_bytes):
+    def recv(self, num_bytes: int) -> bytes:
+        assert self._ser is not None
         data = bytearray(self._ser.read(num_bytes))
 
         if not len(data) == num_bytes:
@@ -186,7 +193,8 @@ class SerialLink(BaseSerialLink):
 
         return data
 
-    def recv_until(self, bs):
+    def recv_until(self, bs: bytes) -> bytes:
+        assert self._ser is not None
         data = bytearray(self._ser.read_until(bs))
 
         if bs not in data:
@@ -194,19 +202,21 @@ class SerialLink(BaseSerialLink):
 
         return data
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
+        assert self._ser is not None
         self._ser.write(data)
 
-    def disconnect(self):
-        self._ser.close()
-        self._ser = None
+    def disconnect(self) -> None:
+        if self._ser is not None:
+            self._ser.close()
+            self._ser = None
 
     @property
-    def baudrate(self):
+    def baudrate(self) -> int:
         return self._baudrate
 
     @baudrate.setter
-    def baudrate(self, new_baudrate):
+    def baudrate(self, new_baudrate: int) -> None:
         self._baudrate = new_baudrate
 
         if self._ser is not None and self._ser.is_open:
@@ -218,14 +228,14 @@ class ExploreSerialLink(SerialLink):
     _SERIAL_PACKET_TIMEOUT = 0.01
     _SERIAL_WRITE_TIMEOUT = 1.0
 
-    def __init__(self, port, flowcontrol=True):
+    def __init__(self, port: str, flowcontrol: bool = True) -> None:
         super().__init__(port, flowcontrol)
-        self._buf = None
+        self._buf = bytearray()
 
-    def _update_timeout(self):
+    def _update_timeout(self) -> None:
         pass
 
-    def connect(self):
+    def connect(self) -> None:
         self._ser = serial.Serial(
             timeout=self._SERIAL_PACKET_TIMEOUT,
             write_timeout=self._SERIAL_WRITE_TIMEOUT,
@@ -242,7 +252,8 @@ class ExploreSerialLink(SerialLink):
 
         self.send_break()
 
-    def recv(self, num_bytes):
+    def recv(self, num_bytes: int) -> bytes:
+        assert self._ser is not None
         t0 = time()
         while len(self._buf) < num_bytes:
             if time() - t0 > self._timeout:
@@ -258,7 +269,8 @@ class ExploreSerialLink(SerialLink):
         self._buf = self._buf[num_bytes:]
         return data
 
-    def recv_until(self, bs):
+    def recv_until(self, bs: bytes) -> bytes:
+        assert self._ser is not None
         t0 = time()
         while True:
             try:
@@ -285,16 +297,18 @@ class ExploreSerialLink(SerialLink):
 
 
 class USBLink(BaseLink):
-    def __init__(self, vid=None, pid=None, serial=None):
+    def __init__(
+        self, vid: Optional[int] = None, pid: Optional[int] = None, serial: Optional[str] = None
+    ) -> None:
         super().__init__()
         self._vid = vid
         self._pid = pid
         self._serial = serial
 
-    def _update_timeout(self):
+    def _update_timeout(self) -> None:
         pass
 
-    def connect(self):
+    def connect(self) -> None:
         # First try 'ComPort', will be set if platorm == windows
         port_type = ComPort
         if ComPort is None:
@@ -312,12 +326,12 @@ class USBLink(BaseLink):
         self._buf = bytearray()
         self.send_break()
 
-    def send_break(self):
+    def send_break(self) -> None:
         self._port.send_break()
         sleep(0.5)
         self._port.reset_input_buffer()
 
-    def recv(self, num_bytes):
+    def recv(self, num_bytes: int) -> bytes:
         t0 = time()
         while len(self._buf) < num_bytes:
             if time() - t0 > self._timeout:
@@ -333,7 +347,7 @@ class USBLink(BaseLink):
         self._buf = self._buf[num_bytes:]
         return data
 
-    def recv_until(self, bs):
+    def recv_until(self, bs: bytes) -> bytes:
         t0 = time()
         while True:
             try:
@@ -358,23 +372,23 @@ class USBLink(BaseLink):
 
         return data
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
         self._port.write(data)
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         self._port.close()
         self._port = None
 
 
 class SerialProcessLink(BaseSerialLink):
-    def __init__(self, port=None):
+    def __init__(self, port: Optional[int] = None) -> None:
         super().__init__()
         self._port = port
-        self._process = None
+        self._process: Optional[mp.Process] = None
 
-    def connect(self):
-        self._recv_queue = mp.Queue()
-        self._send_queue = mp.Queue()
+    def connect(self) -> None:
+        self._recv_queue: "mp.Queue[bytes]" = mp.Queue()
+        self._send_queue: "mp.Queue[Union[Tuple[str, int], bytes]]" = mp.Queue()
         self._flow_event = mp.Event()
         self._error_event = mp.Event()
 
@@ -392,6 +406,9 @@ class SerialProcessLink(BaseSerialLink):
             args=args,
             daemon=True,
         )
+
+        if self._process is None:
+            raise LinkError("failed to create subprocess")
 
         self._process.start()
 
@@ -413,7 +430,7 @@ class SerialProcessLink(BaseSerialLink):
 
         self._buf = bytearray()
 
-    def recv(self, num_bytes):
+    def recv(self, num_bytes: int) -> bytes:
         self.__empty_queue_into_buf()
 
         t0 = time()
@@ -427,7 +444,7 @@ class SerialProcessLink(BaseSerialLink):
         self._buf = self._buf[num_bytes:]
         return data
 
-    def recv_until(self, bs):
+    def recv_until(self, bs: bytes) -> bytes:
         self.__empty_queue_into_buf()
 
         n = len(bs)
@@ -454,24 +471,25 @@ class SerialProcessLink(BaseSerialLink):
         self._buf = self._buf[i + n :]
         return data
 
-    def send(self, data):
+    def send(self, data: bytes) -> None:
         self._send_queue.put(data)
 
-    def disconnect(self):
-        if self._process.exitcode is None:
-            self._flow_event.clear()
-            self._process.join(1)
+    def disconnect(self) -> None:
+        if self._process is not None:
+            if self._process.exitcode is None:
+                self._flow_event.clear()
+                self._process.join(1)
 
-        if self._process.exitcode is None:
-            log.info("forcing disconnect...")
-            self._process.terminate()
-            self._process.join(1)
-            log.info("forced disconnect successful")
+            if self._process.exitcode is None:
+                log.info("forcing disconnect...")
+                self._process.terminate()
+                self._process.join(1)
+                log.info("forced disconnect successful")
 
-        if self._process.exitcode is None:
-            raise LinkError("failed to disconnect")
+            if self._process.exitcode is None:
+                raise LinkError("failed to disconnect")
 
-    def __empty_queue_into_buf(self):
+    def __empty_queue_into_buf(self) -> None:
         while True:
             try:
                 data = self._recv_queue.get_nowait()
@@ -480,7 +498,7 @@ class SerialProcessLink(BaseSerialLink):
 
             self._buf.extend(data)
 
-    def __get_into_buf(self):
+    def __get_into_buf(self) -> None:
         try:
             data = self._recv_queue.get(timeout=self._timeout)
         except queue.Empty:
@@ -491,11 +509,11 @@ class SerialProcessLink(BaseSerialLink):
         self._buf.extend(data)
 
     @property
-    def baudrate(self):
+    def baudrate(self) -> int:
         return self._baudrate
 
     @baudrate.setter
-    def baudrate(self, new_baudrate):
+    def baudrate(self, new_baudrate: int) -> None:
         self._baudrate = new_baudrate
 
         if self._process is not None and self._process.exitcode is None:
@@ -503,7 +521,14 @@ class SerialProcessLink(BaseSerialLink):
             self._send_queue.put(("baudrate", new_baudrate))
 
 
-def serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
+def serial_process_program(
+    port: int,
+    baud: int,
+    recv_q: "mp.Queue[bytes]",
+    send_q: "mp.Queue[Union[Tuple[str, int], bytes]]",
+    flow_event: th.Event,
+    error_event: th.Event,
+) -> None:
     log.debug("serial communication process started")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
@@ -521,7 +546,14 @@ def serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
     send_q.close()
 
 
-def _serial_process_program(port, baud, recv_q, send_q, flow_event, error_event):
+def _serial_process_program(
+    port: int,
+    baud: int,
+    recv_q: "mp.Queue[bytes]",
+    send_q: "mp.Queue[Union[Tuple[str, int], bytes]]",
+    flow_event: th.Event,
+    error_event: th.Event,
+) -> None:
     ser = serial.Serial(port=port, baudrate=baud, timeout=0, exclusive=True)
     flow_event.set()
     while flow_event.is_set():
