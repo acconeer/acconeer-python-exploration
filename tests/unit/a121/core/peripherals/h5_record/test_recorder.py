@@ -11,7 +11,7 @@ import pytest
 
 import acconeer.exptool
 from acconeer.exptool import a121
-from acconeer.exptool.utils import get_module_version  # type: ignore[import]
+from acconeer.exptool.utils import get_module_version
 
 
 def assert_record_equals(record_a: a121.Record, record_b: a121.Record) -> None:

@@ -13,8 +13,8 @@ from PySide6.QtWidgets import QApplication
 
 import pyqtgraph as pg
 
-from acconeer.exptool.app import resources  # type: ignore[attr-defined]
-from acconeer.exptool.utils import config_logging  # type: ignore[import]
+from acconeer.exptool.app import resources
+from acconeer.exptool.utils import config_logging
 
 from ._argument_parser import ExptoolArgumentParser
 from .app_model import AppModel

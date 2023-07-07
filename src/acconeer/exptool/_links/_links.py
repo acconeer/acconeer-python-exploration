@@ -10,16 +10,17 @@ import socket
 import threading as th
 import traceback
 from time import sleep, time
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import serial
 from typing_extensions import Protocol
 
-from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc  # type: ignore[import]
+from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
 
 
+ComPort: Any
 try:
-    from acconeer.exptool._winusbcdc.usb_cdc import ComPort  # type: ignore[import]
+    from acconeer.exptool._winusbcdc.usb_cdc import ComPort
 except ImportError:
     ComPort = None
 

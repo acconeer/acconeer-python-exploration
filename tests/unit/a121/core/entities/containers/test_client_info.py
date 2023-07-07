@@ -7,7 +7,7 @@ from typing import Any, Tuple
 import pytest
 
 from acconeer.exptool.a121 import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
-from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
+from acconeer.exptool.utils import SerialDevice, USBDevice
 
 
 CLIENT_INFO_PARAMETRIZE = [

@@ -12,7 +12,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException  # type: ignore[import]
+from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException
 from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121.algo._base import InputT, ResultT
 from acconeer.exptool.a121.algo._plugins.processor import SetupMessage

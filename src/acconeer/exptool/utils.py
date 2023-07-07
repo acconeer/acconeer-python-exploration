@@ -20,6 +20,7 @@ from typing import Any, Generic, List, Optional, TypeVar
 import attrs
 import numpy as np
 import serial.tools.list_ports
+import typing_extensions as te
 from packaging import version
 
 
@@ -57,14 +58,14 @@ class CommDevice(abc.ABC):
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> CommDevice:
+    def from_dict(cls, d: dict) -> te.Self:
         return cls(**d)
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> CommDevice:
+    def from_json(cls, json_str: str) -> te.Self:
         return cls.from_dict(json.loads(json_str))
 
     @abc.abstractmethod
@@ -360,8 +361,8 @@ def autodetect_serial_port():
     sys.exit()
 
 
-def get_usb_devices(only_accessible=False):
-    usb_devices = []
+def get_usb_devices(only_accessible: bool = False) -> List[USBDevice]:
+    usb_devices: List[USBDevice] = []
 
     if WinUsbPy is not None:
         winusbpy = WinUsbPy()
@@ -407,7 +408,7 @@ def get_usb_devices(only_accessible=False):
     return usb_devices
 
 
-def get_usb_device_by_serial(serial, only_accessible=False):
+def get_usb_device_by_serial(serial: str, only_accessible: bool = False) -> USBDevice:
     usb_devices = get_usb_devices(only_accessible=only_accessible)
     if serial is not None:
         for device in usb_devices:

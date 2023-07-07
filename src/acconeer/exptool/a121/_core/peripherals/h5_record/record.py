@@ -26,7 +26,7 @@ from acconeer.exptool.a121._core.entities import (
     SessionRecord,
     StackedResults,
 )
-from acconeer.exptool.utils import get_module_version  # type: ignore[import]
+from acconeer.exptool.utils import get_module_version
 
 from .session_schema import SessionSchema
 

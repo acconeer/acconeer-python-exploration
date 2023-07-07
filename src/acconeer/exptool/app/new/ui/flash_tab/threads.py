@@ -16,7 +16,7 @@ from requests.cookies import RequestsCookieJar
 from PySide6.QtCore import QThread, Signal
 
 from acconeer.exptool.app.new._exceptions import HandledException
-from acconeer.exptool.flash import (  # type: ignore[import]
+from acconeer.exptool.flash import (
     ET_DIR,
     DevLicense,
     clear_cookies,
@@ -26,7 +26,7 @@ from acconeer.exptool.flash import (  # type: ignore[import]
     get_cookies,
     login,
 )
-from acconeer.exptool.utils import CommDevice  # type: ignore[import]
+from acconeer.exptool.utils import CommDevice
 
 
 log = logging.getLogger(__name__)
@@ -72,10 +72,10 @@ class AuthThread(QThread):
 
     def __init__(
         self,
-        usr: Optional[str] = "",
-        pwd: Optional[str] = "",
+        usr: str = "",
+        pwd: str = "",
         do_login: bool = False,
-        dev_license: DevLicense = None,
+        dev_license: Optional[DevLicense] = None,
     ) -> None:
 
         super().__init__()

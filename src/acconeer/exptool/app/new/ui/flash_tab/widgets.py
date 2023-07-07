@@ -25,23 +25,23 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool.app import resources  # type: ignore[attr-defined]
+from acconeer.exptool.app import resources
 from acconeer.exptool.app.new._enums import ConnectionInterface
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui import utils as ui_utils
 from acconeer.exptool.app.new.ui.device_comboboxes import SerialPortComboBox, USBDeviceComboBox
 from acconeer.exptool.app.new.ui.plugin_components.utils import GroupBox
-from acconeer.exptool.flash import (  # type: ignore[import]
+from acconeer.exptool.flash import (
     DevLicense,
     clear_cookies,
     get_flash_download_name,
     get_flash_known_devices,
 )
-from acconeer.exptool.flash._products import (  # type: ignore[import]
+from acconeer.exptool.flash._products import (
     EVK_TO_PRODUCT_MAP,
     PRODUCT_NAME_TO_FLASH_MAP,
 )
-from acconeer.exptool.utils import CommDevice, SerialDevice  # type: ignore[import]
+from acconeer.exptool.utils import CommDevice
 
 from .dialogs import FlashDialog, FlashLoginDialog, LicenseAgreementDialog, UserMessageDialog
 from .threads import AuthThread, BinDownloadThread
@@ -277,6 +277,7 @@ class FlashMainWidget(QWidget):
 
     def _flash(self) -> None:
         assert self.bin_file is not None
+        assert self.flash_device is not None
 
         boot_description = self._get_boot_description(self.flash_device, self.device_name)
         if boot_description:
@@ -372,9 +373,9 @@ class FlashMainWidget(QWidget):
         self.downloaded_version_label.setEnabled(False)
         self.downloaded_version_label.setText("<Downloaded bin file version>")
 
-    def _get_boot_description(self, flash_device: SerialDevice, device_name: Optional[str]) -> Any:
+    def _get_boot_description(self, flash_device: CommDevice, device_name: Optional[str]) -> Any:
 
-        flash_device_name: str = device_name or flash_device.name
+        flash_device_name: Optional[str] = device_name or flash_device.name
         product: Optional[str] = None
 
         if flash_device_name in EVK_TO_PRODUCT_MAP.keys():

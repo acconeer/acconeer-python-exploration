@@ -25,7 +25,7 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
 )
 from acconeer.exptool.a121._core.mediators import Recorder, RecorderAttachable
-from acconeer.exptool.utils import get_module_version  # type: ignore[import]
+from acconeer.exptool.utils import get_module_version
 
 from .session_schema import SessionSchema
 from .utils import PathOrH5File, h5_file_factory

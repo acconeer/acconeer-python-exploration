@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import abc
-from typing import List, Optional
+from typing import Optional, Sequence
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import QComboBox, QWidget
 
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.utils import CommDevice  # type: ignore[import]
+from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice
 
 
 class CommDeviceComboBox(QComboBox):
@@ -51,7 +51,7 @@ class CommDeviceComboBox(QComboBox):
         pass
 
     @abc.abstractmethod
-    def _get_available_devices(self) -> List[CommDevice]:
+    def _get_available_devices(self) -> Sequence[CommDevice]:
         pass
 
     @abc.abstractmethod
@@ -63,10 +63,10 @@ class SerialPortComboBox(CommDeviceComboBox):
     def _on_change(self) -> None:
         self.app_model.set_serial_connection_device(self.currentData())
 
-    def _get_available_devices(self) -> List[CommDevice]:
+    def _get_available_devices(self) -> Sequence[SerialDevice]:
         return self.app_model.available_serial_devices
 
-    def _get_current_device(self) -> Optional[CommDevice]:
+    def _get_current_device(self) -> Optional[SerialDevice]:
         return self.app_model.serial_connection_device
 
 
@@ -74,8 +74,8 @@ class USBDeviceComboBox(CommDeviceComboBox):
     def _on_change(self) -> None:
         self.app_model.set_usb_connection_device(self.currentData())
 
-    def _get_available_devices(self) -> List[CommDevice]:
+    def _get_available_devices(self) -> Sequence[USBDevice]:
         return self.app_model.available_usb_devices
 
-    def _get_current_device(self) -> Optional[CommDevice]:
+    def _get_current_device(self) -> Optional[USBDevice]:
         return self.app_model.usb_connection_device

@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 import acconeer.exptool
 from acconeer.exptool.app.new import check_package_outdated, get_latest_changelog
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.utils import get_module_version  # type: ignore[import]
+from acconeer.exptool.utils import get_module_version
 
 from .icons import BUTTON_ICON_COLOR, REFRESH
 

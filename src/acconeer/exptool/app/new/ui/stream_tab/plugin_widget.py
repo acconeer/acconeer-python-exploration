@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool.app import resources  # type: ignore[attr-defined]
+from acconeer.exptool.app import resources
 from acconeer.exptool.app.new._enums import PluginFamily, PluginState
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase

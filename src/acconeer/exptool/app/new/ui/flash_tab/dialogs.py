@@ -25,14 +25,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool.app import resources  # type: ignore[attr-defined]
+from acconeer.exptool.app import resources
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
-from acconeer.exptool.flash import (  # type: ignore[import]
+from acconeer.exptool.flash import (
     BIN_FETCH_PROMPT,
     DevLicense,
     save_cookies,
 )
-from acconeer.exptool.utils import CommDevice  # type: ignore[import]
+from acconeer.exptool.utils import CommDevice
 
 from .threads import AuthThread, FlashThread
 

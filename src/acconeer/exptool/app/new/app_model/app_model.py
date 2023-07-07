@@ -11,7 +11,7 @@ import shutil
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from uuid import UUID
 
 import attrs
@@ -45,7 +45,7 @@ from acconeer.exptool.app.new.backend import (
     Task,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
-from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice  # type: ignore[import]
+from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice
 
 from .plugin_protocols import PlotPluginInterface
 from .port_updater import PortUpdater
@@ -236,8 +236,8 @@ class AppModel(QObject):
         self._connection_state = ConnectionState.DISCONNECTED
         self.connection_warning = None
         self._plugin_state = PluginState.UNLOADED
-        self._serial_connection_device = None
-        self._usb_connection_device = None
+        self._serial_connection_device: Optional[SerialDevice] = None
+        self._usb_connection_device: Optional[USBDevice] = None
         self.available_serial_devices = []
         self.available_usb_devices = []
 
@@ -456,8 +456,9 @@ class AppModel(QObject):
             serial_devices,
             self._persistent_state.serial_connection_device,
         )
-        self.set_serial_connection_device(serial_connection_device)
-        self.available_serial_devices = serial_devices
+        if serial_connection_device is None or isinstance(serial_connection_device, SerialDevice):
+            self.set_serial_connection_device(serial_connection_device)
+            self.available_serial_devices = serial_devices
 
         connect = False
 
@@ -479,11 +480,13 @@ class AppModel(QObject):
             usb_devices,
             self._persistent_state.usb_connection_device,
         )
-        self.set_usb_connection_device(usb_connection_device)
-        self.available_usb_devices = usb_devices
+        if usb_connection_device is None or isinstance(usb_connection_device, USBDevice):
+            self.set_usb_connection_device(usb_connection_device)
+            self.available_usb_devices = usb_devices
 
         if recognized:
             assert usb_connection_device is not None
+            assert isinstance(usb_connection_device, USBDevice)
             self.set_connection_interface(ConnectionInterface.USB)
             if self._is_usb_device_unflashed(usb_connection_device):
                 connect = False
@@ -511,8 +514,8 @@ class AppModel(QObject):
 
     def _select_new_device(
         self,
-        old_devices: list[CommDevice],
-        new_devices: list[CommDevice],
+        old_devices: Sequence[CommDevice],
+        new_devices: Sequence[CommDevice],
         current_port: Optional[CommDevice],
     ) -> Tuple[Optional[CommDevice], bool]:
         if self.connection_state != ConnectionState.DISCONNECTED:

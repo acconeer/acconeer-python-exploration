@@ -17,7 +17,7 @@ from acconeer.exptool.a121._core.entities import (
     USBInfo,
 )
 from acconeer.exptool.a121._core.utils import iterate_extended_structure
-from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
+from acconeer.exptool.utils import SerialDevice, USBDevice
 
 from .common_client import ClientError
 
