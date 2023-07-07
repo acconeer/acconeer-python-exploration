@@ -235,6 +235,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.time_fifo: List[float] = []
         self.intra_fifo: List[float] = []
         self.inter_fifo: List[float] = []
+        self.switch_data: Optional[RefAppResult] = None
 
         win = self.plot_layout
 
@@ -543,7 +544,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         if data.presence_detected:
             self.color_zones(data, show_all_zones, sectors)
             self.switch_data = data
-        elif data.switch_delay:
+        elif data.switch_delay and self.switch_data is not None:
             self.color_zones(self.switch_data, True, self.wake_up_sectors[1:])
 
         self.nominal_sectors[0].setPen(pg.mkPen(color_nominal, width=1))
