@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Any, Callable, Mapping, Optional, cast
+from typing import Any, Callable, Mapping, Optional
 
 import attrs
 import h5py
@@ -490,9 +490,24 @@ class ViewPlugin(DetectorViewPluginBase):
             ),
         }
 
-    def on_backend_state_update(self, backend_plugin_state: Optional[SharedState]) -> None:
-        if backend_plugin_state is not None and backend_plugin_state.config is not None:
-            results = backend_plugin_state.config._collect_validation_results()
+    def on_backend_state_update(self, state: Optional[SharedState]) -> None:
+        if state is None:
+            self.config_editor.set_data(None)
+            self.message_box.setText("")
+        else:
+            (sensor_id,) = state.sensor_ids
+            self.sensor_id_pidget.set_data(sensor_id)
+            self.config_editor.set_data(state.config)
+
+            self._update_sensor_configs_view(state.config, [sensor_id])
+
+            detector_status = Detector.get_detector_status(
+                state.config, state.context, state.sensor_ids
+            )
+
+            self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
+
+            results = state.config._collect_validation_results()
 
             not_handled = self.config_editor.handle_validation_results(results)
 
@@ -500,26 +515,10 @@ class ViewPlugin(DetectorViewPluginBase):
 
             assert not_handled == []
 
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        state = app_model.backend_plugin_state
-        if state is None:
-            self.start_button.setEnabled(False)
-            self.calibrate_detector_button.setEnabled(False)
-            self.stop_button.setEnabled(False)
-            self.defaults_button.setEnabled(False)
-
-            self.config_editor.set_data(None)
-            self.config_editor.setEnabled(False)
-            self.sensor_id_pidget.setEnabled(False)
-            self.message_box.setText("")
-
-            return
-
-        assert isinstance(state, SharedState)
-
+    def _update_sensor_configs_view(self, config: DetectorConfig, sensor_ids: list[int]) -> None:
         try:
             session_config, _ = Detector._detector_to_session_config_and_processor_specs(
-                state.config, state.sensor_ids
+                config, sensor_ids
             )
         except Exception:
             pass  # Since the session config is read only there is no gain in handling this error
@@ -538,41 +537,43 @@ class ViewPlugin(DetectorViewPluginBase):
 
             self.collapsible_widget.widget = self.sensor_config_editor_tabs
 
+    def on_app_model_update(self, app_model: AppModel) -> None:
         self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.config_editor.set_data(state.config)
+        self.sensor_id_pidget.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
 
-        (sensor_id,) = state.sensor_ids
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
-        self.sensor_id_pidget.set_data(sensor_id)
-        self.sensor_id_pidget.setEnabled(app_model.plugin_state.is_steady)
 
-        detector_status = Detector.get_detector_status(
-            state.config, state.context, state.sensor_ids
-        )
+        state = app_model.backend_plugin_state
 
-        self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
+        if state is None:
+            detector_ready = False
+            ready_to_measure = False
+        else:
+            detector_ready = Detector.get_detector_status(
+                state.config, state.context, state.sensor_ids
+            ).ready_to_start
 
-        app_model_ready = app_model.is_ready_for_session()
+            ready_to_measure = (
+                app_model.is_ready_for_session()
+                and self._config_valid(state.config)
+                and self.config_editor.is_ready
+            )
+
+        self.calibrate_detector_button.setEnabled(ready_to_measure)
+        self.start_button.setEnabled(detector_ready and ready_to_measure)
+
+    def _config_valid(self, config: Optional[DetectorConfig]) -> bool:
+        if config is None:
+            return False
 
         try:
-            cast(SharedState, app_model.backend_plugin_state).config.validate()
+            config.validate()
         except a121.ValidationError:
-            config_valid = False
+            return False
         else:
-            config_valid = True
-
-        self.calibrate_detector_button.setEnabled(
-            app_model_ready and config_valid and self.config_editor.is_ready
-        )
-        self.start_button.setEnabled(
-            app_model_ready
-            and config_valid
-            and detector_status.ready_to_start
-            and self.config_editor.is_ready
-        )
-        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
+            return True
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         BackendPlugin.update_sensor_ids.rpc(self.app_model.put_task, sensor_ids=[sensor_id])
