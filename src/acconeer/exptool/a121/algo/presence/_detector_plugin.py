@@ -43,6 +43,7 @@ from acconeer.exptool.app.new import (
     pidgets,
 )
 from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import disable_if, parameter_is
+from acconeer.exptool.app.new.ui.plugin_components.range_help_view import RangeHelpView
 from acconeer.exptool.app.new.ui.plugin_components.save_dialog import PresentationType
 
 from ._configs import (
@@ -457,6 +458,9 @@ class ViewPlugin(DetectorViewPluginBase):
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
         scrolly_layout.addWidget(sensor_selection_group)
 
+        self.range_helper = RangeHelpView()
+        scrolly_layout.addWidget(self.range_helper)
+
         self.config_editor = AttrsConfigEditor(
             title="Detector parameters",
             factory_mapping=self._get_pidget_mapping(),
@@ -619,6 +623,10 @@ class ViewPlugin(DetectorViewPluginBase):
             not_handled = self.misc_error_view.handle_validation_results(not_handled)
 
             assert not_handled == []
+
+            self.range_helper.set_data(
+                Detector._get_sensor_config(backend_plugin_state.config).subsweep
+            )
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
