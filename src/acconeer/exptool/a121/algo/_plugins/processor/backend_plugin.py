@@ -27,6 +27,7 @@ from acconeer.exptool.app.new import (
     PluginGeneration,
     is_task,
 )
+from acconeer.exptool.app.new.backend import StatusMessage
 
 
 CALIBRATION_NEEDED_MESSAGE = "Calibration needed - restart"
@@ -108,10 +109,20 @@ class GenericProcessorBackendPluginBase(
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         self.shared_state.session_config = record.session_config
-        algo_group = record.get_algo_group(self.key)  # noqa: F841
-        self.shared_state.processor_config = self.get_processor_config_cls().from_json(
-            algo_group["processor_config"][()]
-        )
+        try:
+            algo_group = record.get_algo_group(self.key)  # noqa: F841
+        except KeyError:
+            self.shared_state.processor_config = self.get_processor_config_cls()()
+            self.callback(
+                StatusMessage(
+                    status="Could not load algo group. "
+                    + "Falling back to default processor config"
+                )
+            )
+        else:
+            self.shared_state.processor_config = self.get_processor_config_cls().from_json(
+                algo_group["processor_config"][()]
+            )
 
     @is_task
     def update_session_config(self, *, session_config: a121.SessionConfig) -> None:
