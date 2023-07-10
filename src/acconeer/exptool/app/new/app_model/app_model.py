@@ -606,7 +606,8 @@ class AppModel(QObject):
         Additional conditions can be added in respective plugin.
         """
         return (
-            self.plugin_state == PluginState.LOADED_IDLE
+            self.backend_plugin_state is not None
+            and self.plugin_state == PluginState.LOADED_IDLE
             and self.connection_state == ConnectionState.CONNECTED
             and bool(self.connected_sensors)
         )
