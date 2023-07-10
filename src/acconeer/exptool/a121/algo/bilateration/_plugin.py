@@ -35,11 +35,11 @@ from acconeer.exptool.a121.algo.distance._detector_plugin import ViewPlugin as D
 from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
-    ConnectionState,
     GeneralMessage,
     GroupBox,
     HandledException,
     Message,
+    MiscErrorView,
     PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
@@ -479,6 +479,9 @@ class ViewPlugin(DetectorViewPluginBase):
 
         sticky_layout.addWidget(button_group)
 
+        self.misc_error_view = MiscErrorView(self.scrolly_widget)
+        scrolly_layout.addWidget(self.misc_error_view)
+
         sensor_selection_group = GroupBox.grid("Sensor selection", parent=self.scrolly_widget)
         self.two_sensor_id_editor = TwoSensorIdsEditor(name_label_texts=["Left", "Right"])
         sensor_selection_group.layout().addWidget(self.two_sensor_id_editor, 0, 0)
@@ -545,56 +548,79 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         return distance_pidget_mapping
 
-    def on_app_model_update(self, app_model: AppModel) -> None:
-        state = app_model.backend_plugin_state
-
+    def on_backend_state_update(self, state: Optional[SharedState]) -> None:
         if state is None:
-            self.start_button.setEnabled(False)
-            self.calibrate_detector_button.setEnabled(False)
-            self.stop_button.setEnabled(False)
-            self.defaults_button.setEnabled(False)
-
             self.config_editor.set_data(None)
-            self.config_editor.setEnabled(False)
             self.bilateration_config_editor.set_data(None)
-            self.bilateration_config_editor.setEnabled(False)
-            self.two_sensor_id_editor.setEnabled(False)
             self.message_box.setText("")
+        else:
+            self.config_editor.set_data(state.config)
+            self.bilateration_config_editor.set_data(state.bilateration_config)
+            self.two_sensor_id_editor.set_data(state.sensor_ids)
 
-            return
+            detector_status = Detector.get_detector_status(
+                state.config, state.context, state.sensor_ids
+            )
 
-        assert isinstance(state, SharedState)
+            self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
 
-        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+            (session_config, _) = Detector._detector_to_session_config_and_processor_specs(
+                state.config, state.sensor_ids
+            )
 
+            validation_results = (
+                state.config._collect_validation_results()
+                + state.bilateration_config._collect_validation_results(session_config)
+            )
+
+            not_handled = self.config_editor.handle_validation_results(validation_results)
+            not_handled = self.bilateration_config_editor.handle_validation_results(not_handled)
+            not_handled = self.misc_error_view.handle_validation_results(not_handled)
+            assert not_handled == []
+
+    def on_app_model_update(self, app_model: AppModel) -> None:
         self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.config_editor.set_data(state.config)
+        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        self.two_sensor_id_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.bilateration_config_editor.setEnabled(
             app_model.plugin_state == PluginState.LOADED_IDLE
         )
-        self.bilateration_config_editor.set_data(state.bilateration_config)
-        self.two_sensor_id_editor.set_selectable_sensors(app_model.connected_sensors)
-        self.two_sensor_id_editor.set_data(state.sensor_ids)
-        self.two_sensor_id_editor.setEnabled(app_model.plugin_state.is_steady)
-
-        detector_status = Detector.get_detector_status(
-            state.config, state.context, state.sensor_ids
-        )
-
-        self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
-
-        ready_for_session = (
-            app_model.plugin_state == PluginState.LOADED_IDLE
-            and app_model.connection_state == ConnectionState.CONNECTED
-        )
-        self.calibrate_detector_button.setEnabled(
-            ready_for_session
-            and not detector_status.detector_state == DetailedStatus.SENSOR_IDS_NOT_UNIQUE
-        )
-        self.start_button.setEnabled(
-            ready_for_session and detector_status.ready_to_start and self.config_editor.is_ready
-        )
         self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
+
+        self.two_sensor_id_editor.set_selectable_sensors(app_model.connected_sensors)
+
+        state = app_model.backend_plugin_state
+
+        if state is None:
+            detector_ready = False
+            ready_to_measure = False
+        else:
+            detector_ready = Detector.get_detector_status(
+                state.config, state.context, state.sensor_ids
+            ).ready_to_start
+
+            ready_to_measure = (
+                app_model.is_ready_for_session()
+                and self._config_valid(state)
+                and self.config_editor.is_ready
+                and self.bilateration_config_editor.is_ready
+            )
+
+        self.calibrate_detector_button.setEnabled(detector_ready)
+        self.start_button.setEnabled(detector_ready and ready_to_measure)
+
+    def _config_valid(self, state: SharedState) -> bool:
+        (session_config, _) = Detector._detector_to_session_config_and_processor_specs(
+            state.config, state.sensor_ids
+        )
+
+        try:
+            state.bilateration_config.validate(session_config)
+            state.config.validate()
+        except a121.ValidationResult:
+            return False
+        else:
+            return True
 
     def _on_config_update(self, config: DetectorConfig) -> None:
         BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)
