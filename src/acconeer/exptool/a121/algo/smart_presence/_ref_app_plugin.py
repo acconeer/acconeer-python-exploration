@@ -45,6 +45,7 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components.range_help_view import RangeHelpView
 
 from ._configs import (
     get_ceiling_config,
@@ -635,6 +636,10 @@ class ViewPlugin(DetectorViewPluginBase):
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
+        self.range_helper_wake_up = RangeHelpView()
+        self.range_helper_wake_up.setTitle("Wake up config, approx. selected range")
+        scrolly_layout.addWidget(self.range_helper_wake_up)
+
         self.wake_up_config_editor = AttrsConfigEditor(
             title="Wake up config parameters",
             factory_mapping=self._get_presence_wake_up_pidget_mapping(),
@@ -643,6 +648,10 @@ class ViewPlugin(DetectorViewPluginBase):
         )
         self.wake_up_config_editor.sig_update.connect(self._on_wake_up_config_update)
         scrolly_layout.addWidget(self.wake_up_config_editor)
+
+        self.range_helper_nominal = RangeHelpView()
+        self.range_helper_nominal.setTitle("Nominal config, approx. selected range")
+        scrolly_layout.addWidget(self.range_helper_nominal)
 
         self.nominal_config_editor = AttrsConfigEditor(
             title="Nominal config parameters",
@@ -694,9 +703,21 @@ class ViewPlugin(DetectorViewPluginBase):
 
             not_handled = self.misc_error_view.handle_validation_results(not_handled)
 
+            assert not_handled == []
+
             self.wake_up_config_editor.setHidden(not backend_plugin_state.config.wake_up_mode)
 
-            assert not_handled == []
+            self.range_helper_wake_up.setHidden(not backend_plugin_state.config.wake_up_mode)
+            if backend_plugin_state.config.wake_up_config is not None:
+                self.range_helper_wake_up.set_data(
+                    Detector._get_sensor_config(
+                        backend_plugin_state.config.wake_up_config
+                    ).subsweep
+                )
+
+            self.range_helper_nominal.set_data(
+                Detector._get_sensor_config(backend_plugin_state.config.nominal_config).subsweep
+            )
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         state = app_model.backend_plugin_state
