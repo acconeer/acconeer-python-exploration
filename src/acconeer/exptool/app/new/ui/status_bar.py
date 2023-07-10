@@ -3,8 +3,9 @@
 
 from __future__ import annotations
 
+import itertools
 import threading
-from typing import Optional
+from typing import Iterator, Optional
 
 import numpy as np
 
@@ -216,15 +217,20 @@ class VersionButton(QPushButton):
 
 
 class StatusBar(QStatusBar):
+    MAX_DISPLAY_TIME_MS = 3000
+
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        app_model.sig_status_message.connect(self._on_app_model_status_message)
+        self._status_messages: list[str] = []
+
+        app_model.sig_status_message.connect(lambda m: self._status_messages.append(m))
+        app_model.sig_status_message.connect(self._trigger_display)
 
         self.message_timer = QtCore.QTimer(self)
-        self.message_timer.setInterval(3000)
+        self.message_timer.setInterval(self.MAX_DISPLAY_TIME_MS)
         self.message_timer.setSingleShot(True)
-        self.message_timer.timeout.connect(self._on_timer)
+        self.message_timer.timeout.connect(self._trigger_display)
 
         self.message_widget = QLabel(self)
         self.addWidget(self.message_widget)
@@ -245,17 +251,34 @@ class StatusBar(QStatusBar):
         font_family = ", ".join(f'"{ff}"' for ff in font_families)
         self.setStyleSheet(f"QWidget{{font-family: {font_family};}}")
 
-    def _on_app_model_status_message(self, message: Optional[str]) -> None:
-        self.message_timer.stop()
+    def _trigger_display(self) -> None:
+        if self.message_timer.isActive():
+            return
 
-        if message:
-            self.message_widget.setText(message)
-            self.message_timer.start()
+        if self._status_messages:
+            (message, occurances) = next(self._rle_status_messages)
+
+            if occurances > 1:
+                self.message_widget.setText(f"{message} (x{occurances})")
+            else:
+                self.message_widget.setText(message)
+
+            self._status_messages = self._status_messages[occurances:]
+            self.message_timer.start(self._message_display_time)
         else:
             self.message_widget.clear()
 
-    def _on_timer(self) -> None:
-        self.message_widget.clear()
+    @property
+    def _rle_status_messages(self) -> Iterator[tuple[str, int]]:
+        return (
+            (message, len(list(group)))
+            for message, group in itertools.groupby(self._status_messages)
+        )
+
+    @property
+    def _message_display_time(self) -> int:
+        num_messages = len(list(self._rle_status_messages))
+        return int(self.MAX_DISPLAY_TIME_MS / (1 + 2 ** (num_messages - 5)))
 
 
 class ChangelogDialog(QDialog):

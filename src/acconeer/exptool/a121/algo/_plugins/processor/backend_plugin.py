@@ -203,7 +203,7 @@ class GenericProcessorBackendPluginBase(
 
     @staticmethod
     def _format_warning(s: str) -> str:
-        return f'<p style="color: #FD5200;"><b>Warning: {s}</b></p>'
+        return f'<b style="color: #FD5200;">Warning: {s}</b>'
 
 
 class ProcessorBackendPluginBase(
