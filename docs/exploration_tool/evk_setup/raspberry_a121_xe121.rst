@@ -15,11 +15,13 @@ At large, these are the steps you'll need to take:
 
 Setup
 -----
-Start a terminal window and type ”sudo raspi-config”, then:
+Start a terminal window and type ``sudo raspi-config``, then:
+
 * In Localisation Options, select the appropriate timezone.
 * In Interfacing Options, enable SPI and I2C and the SSH interfaces.
 
 Install libgpio2 by running::
+
    sudo apt install libgpiod2
 
 If you use a 64-bit version of the Raspberry Pi OS, then the following must be done
