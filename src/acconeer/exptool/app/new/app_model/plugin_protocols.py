@@ -1,20 +1,19 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
+
+import typing as t
 
 from typing_extensions import Protocol
 
 from acconeer.exptool.app.new.backend import GeneralMessage
 
 
-class _MessageHandler(Protocol):
+ViewPluginInterface = t.Any
+
+
+class PlotPluginInterface(Protocol):
     def handle_message(self, message: GeneralMessage) -> None:
         ...
 
-
-class ViewPluginInterface(_MessageHandler, Protocol):
-    pass
-
-
-class PlotPluginInterface(_MessageHandler, Protocol):
     def draw(self) -> None:
         ...
