@@ -7,7 +7,7 @@ import abc
 import logging
 from typing import Any, Generic, Optional, Type
 
-from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QPushButton, QVBoxLayout
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._base import ProcessorConfigT
@@ -32,8 +32,8 @@ log = logging.getLogger(__name__)
 
 
 class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
-    def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
-        super().__init__(app_model=app_model, view_widget=view_widget)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
         sticky_layout = QVBoxLayout()
         sticky_layout.setContentsMargins(0, 0, 0, 0)

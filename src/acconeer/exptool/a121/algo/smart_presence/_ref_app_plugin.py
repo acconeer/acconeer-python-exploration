@@ -13,7 +13,7 @@ import numpy as np
 import numpy.typing as npt
 
 from PySide6 import QtCore
-from PySide6.QtWidgets import QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QPushButton, QVBoxLayout
 
 import pyqtgraph as pg
 
@@ -584,8 +584,8 @@ class PlotPlugin(DetectorPlotPluginBase):
 
 
 class ViewPlugin(DetectorViewPluginBase):
-    def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
-        super().__init__(app_model=app_model, view_widget=view_widget)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
         self._log = logging.getLogger(__name__)
 
         sticky_layout = QVBoxLayout()
@@ -762,8 +762,8 @@ class PluginSpec(PluginSpecBase):
     ) -> BackendPlugin:
         return BackendPlugin(callback=callback, generation=self.generation, key=key)
 
-    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model, view_widget=view_widget)
+    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
+        return ViewPlugin(app_model=app_model)
 
     def create_plot_plugin(
         self, app_model: AppModel, plot_layout: pg.GraphicsLayout

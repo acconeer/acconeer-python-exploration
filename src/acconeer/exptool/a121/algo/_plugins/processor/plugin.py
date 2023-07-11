@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -7,8 +7,6 @@ import abc
 from typing import Callable, Generic
 
 import attrs
-
-from PySide6.QtWidgets import QWidget
 
 import pyqtgraph as pg
 
@@ -31,9 +29,7 @@ class ProcessorPluginSpec(
         pass
 
     @abc.abstractmethod
-    def create_view_plugin(
-        self, app_model: AppModel, view_widget: QWidget
-    ) -> ProcessorViewPluginBase[ProcessorConfigT]:
+    def create_view_plugin(self, app_model: AppModel) -> ProcessorViewPluginBase[ProcessorConfigT]:
         pass
 
     @abc.abstractmethod

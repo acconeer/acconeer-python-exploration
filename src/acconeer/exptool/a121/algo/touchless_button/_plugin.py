@@ -8,8 +8,6 @@ from typing import Callable, Type
 
 import numpy as np
 
-from PySide6.QtWidgets import QWidget
-
 import pyqtgraph as pg
 
 import acconeer.exptool as et
@@ -197,8 +195,8 @@ class PluginSpec(PluginSpecBase):
     ) -> BackendPlugin:
         return BackendPlugin(callback=callback, generation=self.generation, key=key)
 
-    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model, view_widget=view_widget)
+    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
+        return ViewPlugin(app_model=app_model)
 
     def create_plot_plugin(
         self, app_model: AppModel, plot_layout: pg.GraphicsLayout

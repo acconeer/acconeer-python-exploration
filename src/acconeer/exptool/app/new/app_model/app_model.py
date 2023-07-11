@@ -48,7 +48,7 @@ from acconeer.exptool.app.new.backend import (
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice  # type: ignore[import]
 
-from .plugin_protocols import PlotPluginInterface, ViewPluginInterface
+from .plugin_protocols import PlotPluginInterface
 from .port_updater import PortUpdater
 
 
@@ -82,7 +82,7 @@ class PluginSpec(Protocol):
     ) -> BackendPlugin[Any]:
         ...
 
-    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPluginInterface:
+    def create_view_plugin(self, app_model: AppModel) -> QWidget:
         ...
 
     def create_plot_plugin(

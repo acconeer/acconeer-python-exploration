@@ -355,10 +355,8 @@ class PluginControlArea(QWidget):
         if plugin_spec is None:
             self.child_widget = ControlPlaceholder()
         else:
-            self.child_widget = QWidget()
-            self.view_plugin = plugin_spec.create_view_plugin(
+            self.child_widget = plugin_spec.create_view_plugin(
                 app_model=self.app_model,
-                view_widget=self.child_widget,
             )
 
         self.layout().addWidget(self.child_widget)

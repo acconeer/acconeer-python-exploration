@@ -11,23 +11,24 @@ from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui import utils
 
 
-class ViewPluginBase:
-    def __init__(self, app_model: AppModel, view_widget: QWidget) -> None:
+class ViewPluginBase(QWidget):
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__()
+
         self.app_model = app_model
 
         self.app_model.sig_notify.connect(self.on_app_model_update)
         self.app_model.sig_backend_state_changed.connect(self.on_backend_state_update)
         self.app_model.sig_load_plugin.connect(self.on_load_plugin)
 
-        self.__view_widget = view_widget
-        self.__view_widget.setLayout(QVBoxLayout())
+        self.setLayout(QVBoxLayout())
 
         self._sticky_widget = QWidget()
         self._scrolly_widget = QWidget()
 
-        self.__view_widget.layout().addWidget(self._sticky_widget)
-        self.__view_widget.layout().addWidget(utils.HorizontalSeparator())
-        self.__view_widget.layout().addWidget(
+        self.layout().addWidget(self._sticky_widget)
+        self.layout().addWidget(utils.HorizontalSeparator())
+        self.layout().addWidget(
             utils.ScrollAreaDecorator(
                 utils.TopAlignDecorator(
                     self._scrolly_widget,

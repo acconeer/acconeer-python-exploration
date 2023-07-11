@@ -2,4 +2,4 @@
 # All rights reserved
 
 from .app_model import AppModel, PluginPresetSpec, PluginSpec
-from .plugin_protocols import PlotPluginInterface, ViewPluginInterface
+from .plugin_protocols import PlotPluginInterface

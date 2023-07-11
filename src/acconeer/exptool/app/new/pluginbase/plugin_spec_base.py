@@ -9,8 +9,6 @@ from typing import Any, Callable, List, Optional
 
 import attrs
 
-from PySide6.QtWidgets import QWidget
-
 import pyqtgraph as pg
 
 from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration
@@ -38,7 +36,7 @@ class PluginSpecBase(abc.ABC, PluginSpec):
         pass
 
     @abc.abstractmethod
-    def create_view_plugin(self, app_model: AppModel, view_widget: QWidget) -> ViewPluginBase:
+    def create_view_plugin(self, app_model: AppModel) -> ViewPluginBase:
         pass
 
     @abc.abstractmethod
