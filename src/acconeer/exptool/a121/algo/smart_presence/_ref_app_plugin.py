@@ -204,20 +204,14 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._ref_app_instance.get_next()
 
-        self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
+        self.callback(
+            GeneralMessage(name="plot", kwargs={"data": result}, recipient="plot_plugin")
+        )
 
 
 class PlotPlugin(DetectorPlotPluginBase):
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
-
-    def setup_from_message(self, message: GeneralMessage) -> None:
-        assert message.kwargs is not None
-        self.setup(**message.kwargs)
-
-    def update_from_message(self, message: GeneralMessage) -> None:
-        assert isinstance(message.data, RefAppResult)
-        self.update(message.data)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
     def setup(
         self,
@@ -445,7 +439,7 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         return sector_plot, sectors
 
-    def update(self, data: RefAppResult) -> None:
+    def draw_plot_job(self, *, data: RefAppResult) -> None:
         if data.used_config == _Mode.NOMINAL_CONFIG:
             inter_threshold = self.nominal_config.inter_detection_threshold
             intra_threshold = self.nominal_config.intra_detection_threshold
@@ -765,10 +759,8 @@ class PluginSpec(PluginSpecBase):
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 SMART_PRESENCE_PLUGIN = PluginSpec(

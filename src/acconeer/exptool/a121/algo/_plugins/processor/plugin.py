@@ -8,8 +8,6 @@ from typing import Callable, Generic
 
 import attrs
 
-import pyqtgraph as pg
-
 from acconeer.exptool.a121.algo._base import InputT, MetadataT, ProcessorConfigT, ResultT
 from acconeer.exptool.app.new import AppModel, Message, PluginSpecBase
 
@@ -34,6 +32,6 @@ class ProcessorPluginSpec(
 
     @abc.abstractmethod
     def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
+        self, app_model: AppModel
     ) -> GenericProcessorPlotPluginBase[ResultT, MetadataT]:
         pass

@@ -26,8 +26,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-import pyqtgraph as pg
-
 from acconeer.exptool.app import resources  # type: ignore[attr-defined]
 from acconeer.exptool.app.new._enums import PluginFamily, PluginState
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
@@ -211,9 +209,9 @@ class PluginSelectionArea(QWidget):
         self.layout().addWidget(PluginPresetPlaceholder(app_model, self))
 
 
-class PlotPlaceholder(QWidget):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
-        super().__init__(parent)
+class PlotPlaceholder(PlotPluginBase):
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model)
 
         layout = QVBoxLayout(self)
 
@@ -260,8 +258,7 @@ class PluginPlotArea(QFrame):
 
         self.app_model = app_model
 
-        self.child_widget = PlotPlaceholder()
-        self.plot_plugin: Optional[PlotPluginBase] = None
+        self.plot_plugin: PlotPluginBase = PlotPlaceholder(app_model)
 
         self.setObjectName("PluginPlotArea")
         self.setStyleSheet("QFrame#PluginPlotArea {background: #fff; border: 0;}")
@@ -270,7 +267,7 @@ class PluginPlotArea(QFrame):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().setSpacing(0)
-        self.layout().addWidget(self.child_widget)
+        self.layout().addWidget(self.plot_plugin)
 
         self.startTimer(int(1000 / self._FPS))
 
@@ -281,9 +278,6 @@ class PluginPlotArea(QFrame):
             raise RuntimeError(f"{type(app_model.plugin)} is not a PluginSpecBase.")
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        if self.plot_plugin is None:
-            return
-
         self.plot_plugin.draw()
 
     def _on_app_model_load_plugin(self, plugin: Optional[PluginSpecBase]) -> None:
@@ -291,19 +285,14 @@ class PluginPlotArea(QFrame):
             f"{self.__class__.__name__} is going to replace its plot_plugin "
             + f"({self.plot_plugin.__class__.__name__}) in favour of {plugin}"
         )
-        self.plot_plugin = None
-        self.child_widget.deleteLater()
+        self.plot_plugin.deleteLater()
 
         if plugin is None:
-            self.child_widget = PlotPlaceholder()
+            self.plot_plugin = PlotPlaceholder(self.app_model)
         else:
-            self.child_widget = pg.GraphicsLayoutWidget()
-            self.plot_plugin = plugin.create_plot_plugin(
-                app_model=self.app_model,
-                plot_layout=self.child_widget.ci,  # type: ignore[attr-defined]
-            )
+            self.plot_plugin = plugin.create_plot_plugin(app_model=self.app_model)
 
-        self.layout().addWidget(self.child_widget)
+        self.layout().addWidget(self.plot_plugin)
 
 
 class ControlPlaceholder(QWidget):

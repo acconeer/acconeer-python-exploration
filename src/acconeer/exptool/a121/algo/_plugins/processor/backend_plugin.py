@@ -248,4 +248,8 @@ class ProcessorBackendPluginBase(
             self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
 
         processor_result = self._processor_instance.process(result)
-        self.callback(GeneralMessage(name="plot", data=processor_result, recipient="plot_plugin"))
+        self.callback(
+            GeneralMessage(
+                name="plot", kwargs={"processor_result": processor_result}, recipient="plot_plugin"
+            )
+        )

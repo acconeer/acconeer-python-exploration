@@ -6,9 +6,11 @@ from __future__ import annotations
 import abc
 import logging
 from pathlib import Path
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Any, Callable, Generic, Optional, TypeVar
 
 import h5py
+
+from PySide6.QtWidgets import QVBoxLayout
 
 import pyqtgraph as pg
 
@@ -236,18 +238,30 @@ class A121ViewPluginBase(ViewPluginBase):
 
 
 class A121PlotPluginBase(PlotPluginBase):
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
+
+        self.plot_widget = pg.GraphicsLayoutWidget()
+        self.plot_layout = self.plot_widget.ci
+
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().addWidget(self.plot_widget)
+
         self._is_setup = False
-        self._plot_job: Optional[GeneralMessage] = None
+        self._plot_job: Optional[dict[str, Any]] = None
 
     def handle_message(self, message: GeneralMessage) -> None:
         if message.name == "setup":
             self.plot_layout.clear()
-            self.setup_from_message(message)
+
+            if message.kwargs is None:
+                raise RuntimeError("Plot message needs non-None kwargs")
+
+            self.setup(**message.kwargs)
             self._is_setup = True
         elif message.name == "plot":
-            self._plot_job = message
+            self._plot_job = message.kwargs
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
 
@@ -256,14 +270,14 @@ class A121PlotPluginBase(PlotPluginBase):
             return
 
         try:
-            self.update_from_message(self._plot_job)
+            self.draw_plot_job(**self._plot_job)
         finally:
             self._plot_job = None
 
     @abc.abstractmethod
-    def setup_from_message(self, message: GeneralMessage) -> None:
-        pass
+    def setup(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError("setup is abstact")
 
     @abc.abstractmethod
-    def update_from_message(self, message: GeneralMessage) -> None:
-        pass
+    def draw_plot_job(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError("put_plot_job is abstact")

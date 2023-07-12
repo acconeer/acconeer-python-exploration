@@ -279,15 +279,8 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
 
 class PlotPlugin(DetectorPlotPluginBase):
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
-
-    def setup_from_message(self, message: GeneralMessage) -> None:
-        assert message.kwargs is not None
-        self.setup(**message.kwargs)
-
-    def update_from_message(self, message: GeneralMessage) -> None:
-        self.update(**message.kwargs)  # type: ignore[arg-type]
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
     def setup(
         self,
@@ -367,7 +360,7 @@ class PlotPlugin(DetectorPlotPluginBase):
             self.obstacle_location_plot.plot(**feat_kw) for _ in range(Processor._MAX_NUM_OBJECTS)
         ]
 
-    def update(
+    def draw_plot_job(
         self, *, detector_result: Dict[int, DetectorResult], processor_result: ProcessorResult
     ) -> None:
         # Plot sweep data from both distance detectors.
@@ -647,10 +640,8 @@ class PluginSpec(PluginSpecBase):
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 BILATERATION_PLUGIN = PluginSpec(

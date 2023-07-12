@@ -191,7 +191,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._ref_app_instance.get_next()
 
-        self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
+        self.callback(
+            GeneralMessage(name="plot", kwargs={"result": result}, recipient="plot_plugin")
+        )
 
     @is_task
     def calibrate_detector(self) -> None:
@@ -232,19 +234,11 @@ class PlotPlugin(DetectorPlotPluginBase):
         ProcessorLevelStatus.OUT_OF_RANGE: "Out of range",
     }
 
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
         self.counter = 0
         self.bar_loc = 0
-
-    def setup_from_message(self, message: GeneralMessage) -> None:
-        assert message.kwargs is not None
-        self.setup(**message.kwargs)
-
-    def update_from_message(self, message: GeneralMessage) -> None:
-        assert isinstance(message.data, RefAppResult)
-        self.update(message.data)
 
     def setup(
         self,
@@ -358,8 +352,9 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.rect_plot.addItem(self.level_text_item)
         self.level_text_item.hide()
 
-    def update(
+    def draw_plot_job(
         self,
+        *,
         result: RefAppResult,
     ) -> None:
         # Get the first element as the plugin only supports single sensor operation.
@@ -738,10 +733,8 @@ class PluginSpec(PluginSpecBase):
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 TANK_LEVEL_PLUGIN = PluginSpec(

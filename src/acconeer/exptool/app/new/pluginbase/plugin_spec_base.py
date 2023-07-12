@@ -9,8 +9,6 @@ from typing import Any, Callable, List, Optional
 
 import attrs
 
-import pyqtgraph as pg
-
 from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.backend import BackendPlugin, Message
@@ -40,7 +38,5 @@ class PluginSpecBase(abc.ABC, PluginSpec):
         pass
 
     @abc.abstractmethod
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPluginBase:
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPluginBase:
         pass

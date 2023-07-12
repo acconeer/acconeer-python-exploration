@@ -20,8 +20,6 @@ from typing_extensions import Protocol
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 from PySide6.QtWidgets import QApplication, QWidget
 
-import pyqtgraph as pg
-
 from acconeer.exptool import a121
 from acconeer.exptool.app.new._enums import (
     ConnectionInterface,
@@ -85,9 +83,7 @@ class PluginSpec(Protocol):
     def create_view_plugin(self, app_model: AppModel) -> QWidget:
         ...
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPluginInterface:
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPluginInterface:
         ...
 
 

@@ -81,8 +81,8 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 
 
 class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
         (self.distances_m, _) = get_distances_m(sensor_config, metadata)
@@ -139,7 +139,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
         self.sweep_smooth_max = et.utils.SmoothMax()
         self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.2, tau_grow=0.1)
 
-    def update(self, processor_result: ProcessorResult) -> None:
+    def draw_plot_job(self, processor_result: ProcessorResult) -> None:
         assert processor_result is not None
         assert processor_result.threshold is not None
 
@@ -186,10 +186,8 @@ class PluginSpec(PluginSpecBase):
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 PHASE_TRACKING_PLUGIN = PluginSpec(

@@ -116,8 +116,8 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 
 
 class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
         self.detection_history_plot = self._create_detection_plot(self.plot_layout)
@@ -160,7 +160,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
 
         self.detection_history = np.full((2, 100), np.NaN)
 
-    def update(self, processor_result: ProcessorResult) -> None:
+    def draw_plot_job(self, processor_result: ProcessorResult) -> None:
         detection = np.array([processor_result.detection_close, processor_result.detection_far])
         self.detection_history = np.roll(self.detection_history, -1, axis=1)
         self.detection_history[:, -1] = detection
@@ -198,10 +198,8 @@ class PluginSpec(PluginSpecBase):
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 TOUCHLESS_BUTTON_PLUGIN = PluginSpec(

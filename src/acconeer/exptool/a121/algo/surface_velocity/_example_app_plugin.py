@@ -144,23 +144,19 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._example_app_instance.get_next()
 
-        self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
+        self.callback(
+            GeneralMessage(
+                name="plot", data={"example_app_result": result}, recipient="plot_plugin"
+            )
+        )
 
 
 class PlotPlugin(DetectorPlotPluginBase):
 
     _VELOCITY_Y_SCALE_MARGIN_M = 0.25
 
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
-
-    def setup_from_message(self, message: GeneralMessage) -> None:
-        assert message.kwargs is not None
-        self.setup(**message.kwargs)
-
-    def update_from_message(self, message: GeneralMessage) -> None:
-        assert isinstance(message.data, ExampleAppResult)
-        self.update(message.data)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
     def setup(
         self,
@@ -250,7 +246,7 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         self.psd_plot.setLogMode(x=False, y=True)
 
-    def update(self, example_app_result: ExampleAppResult) -> None:
+    def draw_plot_job(self, example_app_result: ExampleAppResult) -> None:
         processor_extra_result = example_app_result.processor_extra_result
 
         lim = self.velocity_smooth_limits.update(example_app_result.velocity)
@@ -548,10 +544,8 @@ class PluginSpec(PluginSpecBase):
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 SURFACE_VELOCITY_PLUGIN = PluginSpec(

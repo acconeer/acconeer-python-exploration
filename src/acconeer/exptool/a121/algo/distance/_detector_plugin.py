@@ -172,7 +172,11 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         assert self.client
         result = self._detector_instance.get_next()
 
-        self.callback(GeneralMessage(name="plot", data=result, recipient="plot_plugin"))
+        self.callback(
+            GeneralMessage(
+                name="plot", kwargs={"multi_sensor_result": result}, recipient="plot_plugin"
+            )
+        )
 
     @is_task
     def calibrate_detector(self) -> None:
@@ -210,15 +214,8 @@ class PlotPlugin(DetectorPlotPluginBase):
     _DISTANCE_HISTORY_LEN = 100
     _MAX_NUM_MINOR_PEAKS = 4
 
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
-
-    def setup_from_message(self, message: GeneralMessage) -> None:
-        assert message.kwargs is not None
-        self.setup(**message.kwargs)
-
-    def update_from_message(self, message: GeneralMessage) -> None:
-        self.update(message.data)  # type: ignore[arg-type]
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
 
     def setup(self, num_curves: int) -> None:
         self.num_curves = num_curves
@@ -296,7 +293,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.sweep_smooth_max = et.utils.SmoothMax()
         self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.5)
 
-    def update(self, multi_sensor_result: dict[int, DetectorResult]) -> None:
+    def draw_plot_job(self, *, multi_sensor_result: dict[int, DetectorResult]) -> None:
         # Get the first element as the plugin only supports single sensor operation.
         (result,) = list(multi_sensor_result.values())
 
@@ -715,10 +712,8 @@ class PluginSpec(PluginSpecBase):
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 DISTANCE_DETECTOR_PLUGIN = PluginSpec(

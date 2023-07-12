@@ -100,8 +100,8 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 
 
 class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
-    def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
-        super().__init__(plot_layout=plot_layout, app_model=app_model)
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
         self.smooth_max = et.utils.SmoothMax()
 
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
@@ -140,7 +140,7 @@ class PlotPlugin(ProcessorPlotPluginBase[ProcessorResult]):
             self.ft_plots.append(ft_plot)
             self.ft_im_list.append(ft_im)
 
-    def update(self, processor_result: ProcessorResult) -> None:
+    def draw_plot_job(self, processor_result: ProcessorResult) -> None:
         max_ = 0.0
 
         for i, result in enumerate(processor_result):
@@ -233,10 +233,8 @@ class PluginSpec(
     def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
         return ViewPlugin(app_model=app_model)
 
-    def create_plot_plugin(
-        self, app_model: AppModel, plot_layout: pg.GraphicsLayout
-    ) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model, plot_layout=plot_layout)
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
+        return PlotPlugin(app_model=app_model)
 
 
 SPARSE_IQ_PLUGIN = PluginSpec(

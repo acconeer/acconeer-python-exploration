@@ -3,18 +3,17 @@
 
 from __future__ import annotations
 
-import abc
 import typing as t
 
-import pyqtgraph as pg
+from PySide6.QtWidgets import QWidget
 
-from acconeer.exptool.app.new.app_model import AppModel, PlotPluginInterface
+from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.backend import GeneralMessage
 
 
-class PlotPluginBase(abc.ABC, PlotPluginInterface):
-    def __init__(self, app_model: AppModel, plot_layout: pg.GraphicsLayout) -> None:
-        self.plot_layout = plot_layout
+class PlotPluginBase(QWidget):
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__()
         self.app_model = app_model
 
         self.app_model.sig_message_plot_plugin.connect(self.handle_message)
@@ -35,10 +34,8 @@ class PlotPluginBase(abc.ABC, PlotPluginInterface):
     def on_backend_state_update(self, state: t.Optional[t.Any]) -> None:
         pass
 
-    @abc.abstractmethod
     def handle_message(self, message: GeneralMessage) -> None:
-        pass
+        ...
 
-    @abc.abstractmethod
     def draw(self) -> None:
-        pass
+        ...
