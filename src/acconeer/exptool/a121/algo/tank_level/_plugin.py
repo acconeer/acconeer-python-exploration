@@ -19,9 +19,8 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
-    DetectorBackendPluginBase,
-    DetectorPlotPluginBase,
-    DetectorViewPluginBase,
+    A121BackendPluginBase,
+    A121ViewPluginBase,
 )
 from acconeer.exptool.a121.algo.distance._detector import DetailedStatus, Detector
 from acconeer.exptool.a121.algo.distance._detector_plugin import ViewPlugin as DistanceViewPlugin
@@ -45,6 +44,7 @@ from acconeer.exptool.app.new import (
     GroupBox,
     HandledException,
     Message,
+    PgPlotPlugin,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
@@ -84,7 +84,7 @@ class TankLevelPreset:
     config: RefAppConfig = attrs.field()
 
 
-class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, TankLevelPreset] = {
         PluginPresetId.SMALL.value: TankLevelPreset(
@@ -225,7 +225,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.broadcast()
 
 
-class PlotPlugin(DetectorPlotPluginBase):
+class PlotPlugin(PgPlotPlugin):
 
     STATUS_MSG_MAP = {
         ProcessorLevelStatus.IN_RANGE: "In range",
@@ -472,7 +472,7 @@ class PlotPlugin(DetectorPlotPluginBase):
                     rect.setVisible(False)
 
 
-class ViewPlugin(DetectorViewPluginBase):
+class ViewPlugin(A121ViewPluginBase):
 
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",

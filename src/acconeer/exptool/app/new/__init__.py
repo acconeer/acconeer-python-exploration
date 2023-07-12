@@ -21,7 +21,13 @@ from .backend import (
     PluginStateMessage,
     is_task,
 )
-from .pluginbase import PlotPluginBase, PluginPresetBase, PluginSpecBase, ViewPluginBase
+from .pluginbase import (
+    PgPlotPlugin,
+    PlotPluginBase,
+    PluginPresetBase,
+    PluginSpecBase,
+    ViewPluginBase,
+)
 from .storage import get_temp_dir, get_temp_h5_path
 from .ui import (
     AttrsConfigEditor,

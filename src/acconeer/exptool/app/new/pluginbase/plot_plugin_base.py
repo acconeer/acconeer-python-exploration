@@ -3,18 +3,39 @@
 
 from __future__ import annotations
 
+import abc
+import logging
 import typing as t
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
+
+import pyqtgraph as pg
 
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.backend import GeneralMessage
 
 
+log = logging.getLogger(__name__)
+
+
 class PlotPluginBase(QWidget):
+    """
+    A basic widget with the following signals connected:
+
+    AppModel signal -> method
+    --------------------------------------
+    sig_notify -> on_app_model_update (no-op hook)
+    sig_load_plugin -> on_load_plugin
+    sig_message_plot_plugin -> handle_message
+    sig_backend_state_changed -> on_backend_state_update (no-op hook)
+    """
+
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
+
         self.app_model = app_model
+        self._is_setup = False
+        self._plot_job: t.Optional[dict[str, t.Any]] = None
 
         self.app_model.sig_message_plot_plugin.connect(self.handle_message)
         self.app_model.sig_notify.connect(self.on_app_model_update)
@@ -35,7 +56,54 @@ class PlotPluginBase(QWidget):
         pass
 
     def handle_message(self, message: GeneralMessage) -> None:
-        ...
+        if message.kwargs is None:
+            raise RuntimeError("Plot message needs non-None kwargs")
+
+        if message.name == "setup":
+            self.setup(**message.kwargs)
+            self._is_setup = True
+        elif message.name == "plot":
+            self._plot_job = message.kwargs
+        else:
+            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
 
     def draw(self) -> None:
-        ...
+        if not self._is_setup or self._plot_job is None:
+            return
+
+        try:
+            self.draw_plot_job(**self._plot_job)
+        finally:
+            self._plot_job = None
+
+    @abc.abstractmethod
+    def setup(self, *args: t.Any, **kwargs: t.Any) -> None:
+        raise NotImplementedError("setup is abstact")
+
+    @abc.abstractmethod
+    def draw_plot_job(self, *args: t.Any, **kwargs: t.Any) -> None:
+        raise NotImplementedError("draw_plot_job is abstact")
+
+
+class PgPlotPlugin(PlotPluginBase):
+    """
+    Expands PlotPluginBase by adding a pyqtgraph GraphicsLayout
+    to the widget. The GraphicsLayout is accessible via the
+    plot_layout attribute
+    """
+
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
+
+        self.plot_widget = pg.GraphicsLayoutWidget()
+        self.plot_layout = self.plot_widget.ci
+
+        self.setLayout(QVBoxLayout())
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.layout().addWidget(self.plot_widget)
+
+    def handle_message(self, message: GeneralMessage) -> None:
+        if message.name == "setup":
+            self.plot_layout.clear()
+
+        super().handle_message(message)

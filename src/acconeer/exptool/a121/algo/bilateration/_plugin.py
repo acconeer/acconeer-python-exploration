@@ -19,9 +19,8 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
-    DetectorBackendPluginBase,
-    DetectorPlotPluginBase,
-    DetectorViewPluginBase,
+    A121BackendPluginBase,
+    A121ViewPluginBase,
 )
 from acconeer.exptool.a121.algo.distance import (
     DetailedStatus,
@@ -40,6 +39,7 @@ from acconeer.exptool.app.new import (
     HandledException,
     Message,
     MiscErrorView,
+    PgPlotPlugin,
     PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
@@ -109,7 +109,7 @@ class BilaterationPreset:
     bilateration_config: ProcessorConfig = attrs.field()
 
 
-class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, BilaterationPreset] = {
         PluginPresetId.DEFAULT.value: BilaterationPreset(
@@ -278,7 +278,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.broadcast()
 
 
-class PlotPlugin(DetectorPlotPluginBase):
+class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
 
@@ -423,7 +423,7 @@ class PlotPlugin(DetectorPlotPluginBase):
             self.obstacle_location_half_curve[i].setData([], [])
 
 
-class ViewPlugin(DetectorViewPluginBase):
+class ViewPlugin(A121ViewPluginBase):
 
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",

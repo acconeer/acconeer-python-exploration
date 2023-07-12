@@ -19,9 +19,8 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
-    DetectorBackendPluginBase,
-    DetectorPlotPluginBase,
-    DetectorViewPluginBase,
+    A121BackendPluginBase,
+    A121ViewPluginBase,
 )
 from acconeer.exptool.app.new import (
     AppModel,
@@ -31,6 +30,7 @@ from acconeer.exptool.app.new import (
     GroupBox,
     Message,
     MiscErrorView,
+    PgPlotPlugin,
     PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
@@ -56,7 +56,7 @@ class PluginPresetId(Enum):
     DEFAULT = auto()
 
 
-class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], ExampleAppConfig]] = {
         PluginPresetId.DEFAULT.value: lambda: ExampleAppConfig()
@@ -151,7 +151,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         )
 
 
-class PlotPlugin(DetectorPlotPluginBase):
+class PlotPlugin(PgPlotPlugin):
 
     _VELOCITY_Y_SCALE_MARGIN_M = 0.25
 
@@ -326,7 +326,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         return velocity_history_plot
 
 
-class ViewPlugin(DetectorViewPluginBase):
+class ViewPlugin(A121ViewPluginBase):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
         self._log = logging.getLogger(__name__)

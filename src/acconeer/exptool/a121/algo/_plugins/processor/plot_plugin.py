@@ -9,17 +9,13 @@ from typing import Dict, Generic, List
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._base import MetadataT, ResultT
-from acconeer.exptool.a121.algo._plugins._a121 import A121PlotPluginBase
-from acconeer.exptool.app.new import AppModel
+from acconeer.exptool.app.new import PgPlotPlugin
 
 
 log = logging.getLogger(__name__)
 
 
-class GenericProcessorPlotPluginBase(A121PlotPluginBase, Generic[ResultT, MetadataT]):
-    def __init__(self, app_model: AppModel) -> None:
-        super().__init__(app_model=app_model)
-
+class GenericProcessorPlotPluginBase(PgPlotPlugin, Generic[ResultT, MetadataT]):
     @abc.abstractmethod
     def setup(self, metadata: MetadataT, sensor_config: a121.SensorConfig) -> None:
         pass

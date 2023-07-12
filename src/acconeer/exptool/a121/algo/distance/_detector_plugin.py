@@ -19,9 +19,8 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
-    DetectorBackendPluginBase,
-    DetectorPlotPluginBase,
-    DetectorViewPluginBase,
+    A121BackendPluginBase,
+    A121ViewPluginBase,
 )
 from acconeer.exptool.app.new import (
     AppModel,
@@ -32,6 +31,7 @@ from acconeer.exptool.app.new import (
     HandledException,
     Message,
     MiscErrorView,
+    PgPlotPlugin,
     PidgetFactoryMapping,
     PluginFamily,
     PluginGeneration,
@@ -77,7 +77,7 @@ class PluginPresetId(Enum):
     HIGH_ACCURACY = auto()
 
 
-class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
         PluginPresetId.BALANCED.value: lambda: DetectorConfig(),
@@ -208,7 +208,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         self.broadcast()
 
 
-class PlotPlugin(DetectorPlotPluginBase):
+class PlotPlugin(PgPlotPlugin):
 
     _DISTANCE_HISTORY_SPAN_MARGIN = 0.05
     _DISTANCE_HISTORY_LEN = 100
@@ -387,7 +387,7 @@ class PlotPlugin(DetectorPlotPluginBase):
         self.history_plot_legend.setPos(legend_x_pos, legend_y_pos)
 
 
-class ViewPlugin(DetectorViewPluginBase):
+class ViewPlugin(A121ViewPluginBase):
 
     sensor_config_editors: list[SensorConfigEditor]
 

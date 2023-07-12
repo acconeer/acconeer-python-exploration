@@ -6,23 +6,17 @@ from __future__ import annotations
 import abc
 import logging
 from pathlib import Path
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Callable, Generic, Optional, TypeVar
 
 import h5py
-
-from PySide6.QtWidgets import QVBoxLayout
-
-import pyqtgraph as pg
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new import (
     ApplicationClient,
-    AppModel,
     BackendPlugin,
     GeneralMessage,
     HandledException,
     Message,
-    PlotPluginBase,
     PluginGeneration,
     PluginState,
     PluginStateMessage,
@@ -235,49 +229,3 @@ class A121ViewPluginBase(ViewPluginBase):
 
     def _send_stop_request(self) -> None:
         A121BackendPluginBase.stop_session.rpc(self.app_model.put_task)
-
-
-class A121PlotPluginBase(PlotPluginBase):
-    def __init__(self, app_model: AppModel) -> None:
-        super().__init__(app_model=app_model)
-
-        self.plot_widget = pg.GraphicsLayoutWidget()
-        self.plot_layout = self.plot_widget.ci
-
-        self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().addWidget(self.plot_widget)
-
-        self._is_setup = False
-        self._plot_job: Optional[dict[str, Any]] = None
-
-    def handle_message(self, message: GeneralMessage) -> None:
-        if message.name == "setup":
-            self.plot_layout.clear()
-
-            if message.kwargs is None:
-                raise RuntimeError("Plot message needs non-None kwargs")
-
-            self.setup(**message.kwargs)
-            self._is_setup = True
-        elif message.name == "plot":
-            self._plot_job = message.kwargs
-        else:
-            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
-
-    def draw(self) -> None:
-        if not self._is_setup or self._plot_job is None:
-            return
-
-        try:
-            self.draw_plot_job(**self._plot_job)
-        finally:
-            self._plot_job = None
-
-    @abc.abstractmethod
-    def setup(self, *args: Any, **kwargs: Any) -> None:
-        raise NotImplementedError("setup is abstact")
-
-    @abc.abstractmethod
-    def draw_plot_job(self, *args: Any, **kwargs: Any) -> None:
-        raise NotImplementedError("put_plot_job is abstact")

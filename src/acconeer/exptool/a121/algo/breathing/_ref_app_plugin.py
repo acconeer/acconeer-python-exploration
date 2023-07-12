@@ -21,9 +21,8 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import APPROX_BASE_STEP_LENGTH_M
 from acconeer.exptool.a121.algo._plugins import (
-    DetectorBackendPluginBase,
-    DetectorPlotPluginBase,
-    DetectorViewPluginBase,
+    A121BackendPluginBase,
+    A121ViewPluginBase,
 )
 from acconeer.exptool.a121.algo.breathing import (
     AppState,
@@ -40,6 +39,7 @@ from acconeer.exptool.app.new import (
     GroupBox,
     Message,
     MiscErrorView,
+    PgPlotPlugin,
     PidgetGroupFactoryMapping,
     PluginFamily,
     PluginGeneration,
@@ -66,7 +66,7 @@ class PluginPresetId(Enum):
     INFANT = auto()
 
 
-class BackendPlugin(DetectorBackendPluginBase[SharedState]):
+class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
         PluginPresetId.SITTING.value: lambda: get_sitting_config(),
@@ -158,7 +158,7 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
         )
 
 
-class PlotPlugin(DetectorPlotPluginBase):
+class PlotPlugin(PgPlotPlugin):
 
     displayed_breathing_rate: Optional[str]
 
@@ -445,7 +445,7 @@ class PlotPlugin(DetectorPlotPluginBase):
             self.breathing_rate_text_item.setHtml(self.displayed_breathing_rate + " bpm")
 
 
-class ViewPlugin(DetectorViewPluginBase):
+class ViewPlugin(A121ViewPluginBase):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
         self._log = logging.getLogger(__name__)
