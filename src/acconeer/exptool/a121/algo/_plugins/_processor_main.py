@@ -15,7 +15,8 @@ from acconeer.exptool import a121
 from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException  # type: ignore[import]
 from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121.algo._base import InputT, ResultT
-from acconeer.exptool.app.new.backend import GeneralMessage
+from acconeer.exptool.a121.algo._plugins.processor import SetupMessage
+from acconeer.exptool.app.new.backend import PlotMessage
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase
 
 from ._null_app_model import NullAppModel
@@ -55,11 +56,7 @@ def processor_main(
 
     plot_plugin_widget = plot_plugin(NullAppModel())
     plot_plugin_widget.handle_message(
-        GeneralMessage(
-            kwargs=dict(session_config=session_config, metadata=metadata),
-            name="setup",
-            recipient="plot_plugin",
-        )
+        SetupMessage(session_config=session_config, metadata=metadata)
     )
 
     if _blinkstick_updater_cls is None:
@@ -103,9 +100,7 @@ def get_loop(
 
         processor_result = processor.process(result)  # type: ignore[arg-type]
 
-        plot_plugin_widget.handle_message(
-            GeneralMessage(data=processor_result, name="plot", recipient="plot_plugin")
-        )
+        plot_plugin_widget.handle_message(PlotMessage(result=processor_result))
         plot_plugin_widget.draw()
 
         if blinkstick_process is not None:

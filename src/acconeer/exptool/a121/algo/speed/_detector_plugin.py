@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Any, Callable, Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 import attrs
 import h5py
@@ -63,6 +63,15 @@ class SharedState:
 class PluginPresetId(Enum):
     DEFAULT = auto()
     TRAFFIC = auto()
+
+
+@attrs.frozen(kw_only=True)
+class SetupMessage(GeneralMessage):
+    detector_config: DetectorConfig
+    detector_metadata: DetectorMetadata
+    estimated_frame_rate: float
+    name: str = attrs.field(default="setup", init=False)
+    recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
@@ -139,15 +148,12 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         estimated_frame_rate = estimate_frame_rate(self.client, session_config)
 
         self._detector_instance.start(recorder)
+        assert self._detector_instance.detector_metadata is not None
         self.callback(
-            GeneralMessage(
-                name="setup",
-                kwargs=dict(
-                    detector_config=self.shared_state.config,
-                    detector_metadata=self._detector_instance.detector_metadata,
-                    estimated_frame_rate=estimated_frame_rate,
-                ),
-                recipient="plot_plugin",
+            SetupMessage(
+                detector_config=self.shared_state.config,
+                detector_metadata=self._detector_instance.detector_metadata,
+                estimated_frame_rate=estimated_frame_rate,
             )
         )
 
@@ -162,23 +168,24 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._detector_instance.get_next()
 
-        self.callback(
-            GeneralMessage(name="plot", kwargs={"data": result}, recipient="plot_plugin")
-        )
+        self.callback(backend.PlotMessage(result=result))
 
 
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
         self._is_setup = False
-        self._plot_job: Optional[dict[str, Any]] = None
+        self._plot_job: Optional[DetectorResult] = None
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
-        if message.name == "plot":
-            self._plot_job = message.kwargs
-        elif message.name == "setup":
-            assert message.kwargs is not None
-            self.setup(**message.kwargs)
+        if isinstance(message, backend.PlotMessage):
+            self._plot_job = message.result
+        elif isinstance(message, SetupMessage):
+            self.setup(
+                message.detector_config,
+                message.detector_metadata,
+                message.estimated_frame_rate,
+            )
             self._is_setup = True
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
@@ -188,7 +195,7 @@ class PlotPlugin(PgPlotPlugin):
             return
 
         try:
-            self.draw_plot_job(**self._plot_job)
+            self.draw_plot_job(self._plot_job)
         finally:
             self._plot_job = None
 

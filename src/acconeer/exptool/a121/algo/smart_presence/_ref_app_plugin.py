@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Any, Callable, List, Mapping, Optional, Tuple
+from typing import Callable, List, Mapping, Optional, Tuple
 
 import attrs
 import h5py
@@ -83,6 +83,16 @@ class PluginPresetId(Enum):
     LONG_RANGE = auto()
     CEILING = auto()
     LOW_POWER = auto()
+
+
+@attrs.frozen(kw_only=True)
+class SetupMessage(GeneralMessage):
+    ref_app_config: RefAppConfig
+    estimated_frame_rate: float
+    nominal_zone_limits: npt.NDArray[np.float_]
+    wake_up_zone_limits: npt.NDArray[np.float_]
+    name: str = attrs.field(default="setup", init=False)
+    recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
@@ -183,15 +193,11 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         # self._ref_app_instance.ref_app_processor.zone_limits will always be for
         # wake_up_config if wake_up_mode is enabled
         self.callback(
-            GeneralMessage(
-                name="setup",
-                kwargs=dict(
-                    ref_app_config=self.shared_state.config,
-                    estimated_frame_rate=self._ref_app_instance.detector.estimated_frame_rate,
-                    nominal_zone_limits=nominal_zone_limits,
-                    wake_up_zone_limits=self._ref_app_instance.ref_app_processor.zone_limits,
-                ),
-                recipient="plot_plugin",
+            SetupMessage(
+                ref_app_config=self.shared_state.config,
+                estimated_frame_rate=self._ref_app_instance.detector.estimated_frame_rate,
+                nominal_zone_limits=nominal_zone_limits,
+                wake_up_zone_limits=self._ref_app_instance.ref_app_processor.zone_limits,
             )
         )
 
@@ -208,23 +214,25 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._ref_app_instance.get_next()
 
-        self.callback(
-            GeneralMessage(name="plot", kwargs={"data": result}, recipient="plot_plugin")
-        )
+        self.callback(backend.PlotMessage(result=result))
 
 
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[dict[str, Any]] = None
+        self._plot_job: Optional[RefAppResult] = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
-        if message.name == "plot":
-            self._plot_job = message.kwargs
-        elif message.name == "setup":
-            assert message.kwargs is not None
-            self.setup(**message.kwargs)
+        if isinstance(message, backend.PlotMessage):
+            self._plot_job = message.result
+        elif isinstance(message, SetupMessage):
+            self.setup(
+                message.ref_app_config,
+                message.estimated_frame_rate,
+                message.nominal_zone_limits,
+                message.wake_up_zone_limits,
+            )
             self._is_setup = True
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
@@ -234,7 +242,7 @@ class PlotPlugin(PgPlotPlugin):
             return
 
         try:
-            self.draw_plot_job(**self._plot_job)
+            self.draw_plot_job(data=self._plot_job)
         finally:
             self._plot_job = None
 

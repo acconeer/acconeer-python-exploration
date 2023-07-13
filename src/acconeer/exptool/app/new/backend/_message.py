@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
+import typing as t
 from typing import Any, Optional, Union
 
 import attrs
@@ -10,6 +11,8 @@ from typing_extensions import Literal
 
 from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 
+
+_ResultT = t.TypeVar("_ResultT")
 
 RecipientLiteral = Union[Literal["plot_plugin"], Literal["view_plugin"]]
 
@@ -55,3 +58,10 @@ class GeneralMessage(Message):
     kwargs: Optional[dict[str, Any]] = attrs.field(default=None)
     exception: Optional[Exception] = attrs.field(default=None)
     traceback_format_exc: Optional[str] = attrs.field(default=None)
+
+
+@attrs.frozen(kw_only=True)
+class PlotMessage(GeneralMessage, t.Generic[_ResultT]):
+    result: _ResultT
+    name: str = attrs.field(default="plot", init=False)
+    recipient: RecipientLiteral = attrs.field(default="plot_plugin", init=False)

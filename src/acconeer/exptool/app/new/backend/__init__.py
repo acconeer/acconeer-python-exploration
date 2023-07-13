@@ -11,7 +11,9 @@ from ._message import (
     GeneralMessage,
     LogMessage,
     Message,
+    PlotMessage,
     PluginStateMessage,
+    RecipientLiteral,
     StatusMessage,
 )
 from ._model import Model

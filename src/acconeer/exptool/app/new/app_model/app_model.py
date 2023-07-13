@@ -39,6 +39,7 @@ from acconeer.exptool.app.new.backend import (
     LogMessage,
     Message,
     Model,
+    PlotMessage,
     PluginStateMessage,
     StatusMessage,
     Task,
@@ -188,7 +189,7 @@ class AppModel(QObject):
     sig_notify = Signal(object)
     sig_error = Signal(Exception, object)
     sig_load_plugin = Signal(object)
-    sig_message_plot_plugin = Signal(object)
+    sig_message_plot_plugin = Signal(PlotMessage)
     sig_message_view_plugin = Signal(object)
     sig_status_message = Signal(object)
     sig_rate_stats = Signal(float, bool, float, bool)

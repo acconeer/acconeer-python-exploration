@@ -10,7 +10,6 @@ import attrs
 import h5py
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121 import _core
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._base import (
     GenericProcessorBase,
@@ -21,13 +20,17 @@ from acconeer.exptool.a121.algo._base import (
 )
 from acconeer.exptool.a121.algo._plugins._a121 import A121BackendPluginBase
 from acconeer.exptool.app.new import (
+    PluginGeneration,
+)
+from acconeer.exptool.app.new.backend import (
     BackendLogger,
     GeneralMessage,
     Message,
-    PluginGeneration,
+    PlotMessage,
+    RecipientLiteral,
+    StatusMessage,
     is_task,
 )
-from acconeer.exptool.app.new.backend import StatusMessage
 
 
 CALIBRATION_NEEDED_MESSAGE = "Calibration needed - restart"
@@ -59,6 +62,14 @@ class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT]):
             return False
         else:
             return True
+
+
+@attrs.frozen(kw_only=True)
+class SetupMessage(GeneralMessage):
+    session_config: a121.SessionConfig
+    metadata: Union[a121.Metadata, list[dict[int, a121.Metadata]]]
+    name: str = attrs.field(default="setup", init=False)
+    recipient: RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
 
 class GenericProcessorBackendPluginBase(
@@ -160,16 +171,7 @@ class GenericProcessorBackendPluginBase(
 
         self.client.start_session()
 
-        the_first_sensor_config = next(
-            _core.utils.iterate_extended_structure_values(session_config.groups)
-        )
-        self.callback(
-            GeneralMessage(
-                name="setup",
-                kwargs=dict(metadata=metadata, sensor_config=the_first_sensor_config),
-                recipient="plot_plugin",
-            )
-        )
+        self.callback(SetupMessage(metadata=metadata, session_config=session_config))
 
     def end_session(self) -> None:
         if self.client is None:
@@ -245,8 +247,5 @@ class ProcessorBackendPluginBase(
             self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
 
         processor_result = self._processor_instance.process(result)
-        self.callback(
-            GeneralMessage(
-                name="plot", kwargs={"processor_result": processor_result}, recipient="plot_plugin"
-            )
-        )
+
+        self.callback(PlotMessage(result=processor_result))

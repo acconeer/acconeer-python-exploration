@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Any, Callable, Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 import attrs
 import h5py
@@ -58,6 +58,13 @@ class SharedState:
 
 class PluginPresetId(Enum):
     DEFAULT = auto()
+
+
+@attrs.frozen(kw_only=True)
+class SetupMessage(GeneralMessage):
+    example_app_config: ExampleAppConfig
+    name: str = attrs.field(default="setup", init=False)
+    recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
@@ -125,15 +132,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             example_app_config=self.shared_state.config,
         )
         self._example_app_instance.start(recorder)
-        self.callback(
-            GeneralMessage(
-                name="setup",
-                kwargs=dict(
-                    example_app_config=self.shared_state.config,
-                ),
-                recipient="plot_plugin",
-            )
-        )
+        self.callback(SetupMessage(example_app_config=self.shared_state.config))
 
     def end_session(self) -> None:
         if self._example_app_instance is None:
@@ -148,11 +147,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._example_app_instance.get_next()
 
-        self.callback(
-            GeneralMessage(
-                name="plot", data={"example_app_result": result}, recipient="plot_plugin"
-            )
-        )
+        self.callback(backend.PlotMessage(result=result))
 
 
 class PlotPlugin(PgPlotPlugin):
@@ -161,15 +156,17 @@ class PlotPlugin(PgPlotPlugin):
 
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[dict[str, Any]] = None
+        self._plot_job: Optional[ExampleAppResult] = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
-        if message.name == "plot":
-            self._plot_job = message.kwargs
-        elif message.name == "setup":
-            assert message.kwargs is not None
-            self.setup(**message.kwargs)
+        if isinstance(message, backend.PlotMessage):
+            if not isinstance(message.result, ExampleAppResult):
+                raise RuntimeError(f"Unexpected result type: {type(message.result)}")
+
+            self._plot_job = message.result
+        elif isinstance(message, SetupMessage):
+            self.setup(example_app_config=message.example_app_config)
             self._is_setup = True
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
@@ -179,7 +176,7 @@ class PlotPlugin(PgPlotPlugin):
             return
 
         try:
-            self.draw_plot_job(**self._plot_job)
+            self.draw_plot_job(self._plot_job)
         finally:
             self._plot_job = None
 

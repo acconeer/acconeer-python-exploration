@@ -48,6 +48,7 @@ from acconeer.exptool.app.new import (
     PluginState,
     PluginStateMessage,
     TwoSensorIdsEditor,
+    backend,
     icons,
     is_task,
     pidgets,
@@ -107,6 +108,15 @@ class PluginPresetId(Enum):
 class BilaterationPreset:
     detector_config: DetectorConfig = attrs.field()
     bilateration_config: ProcessorConfig = attrs.field()
+
+
+@attrs.frozen(kw_only=True)
+class SetupMessage(GeneralMessage):
+    bilateration_config: ProcessorConfig
+    num_curves: int
+    detector_config: DetectorConfig
+    name: str = attrs.field(default="setup", init=False)
+    recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
@@ -214,14 +224,10 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         )
 
         self.callback(
-            GeneralMessage(
-                name="setup",
-                kwargs={
-                    "bilateration_config": self.shared_state.bilateration_config,
-                    "num_curves": len(self._detector_instance.processor_specs),
-                    "detector_config": self.shared_state.config,
-                },
-                recipient="plot_plugin",
+            SetupMessage(
+                bilateration_config=self.shared_state.bilateration_config,
+                num_curves=len(self._detector_instance.processor_specs),
+                detector_config=self.shared_state.config,
             )
         )
 
@@ -240,13 +246,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         processor_result = self._processor_instance.process(result=detector_result)
 
         assert self.client is not None
-        self.callback(
-            GeneralMessage(
-                name="plot",
-                kwargs={"detector_result": detector_result, "processor_result": processor_result},
-                recipient="plot_plugin",
-            ),
-        )
+        self.callback(backend.PlotMessage(result=(detector_result, processor_result)))
 
     @is_task
     def calibrate_detector(self) -> None:
@@ -281,15 +281,18 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[dict[str, Any]] = None
+        self._plot_job: Optional[tuple[Dict[int, DetectorResult], ProcessorResult]] = None
         self._is_setup = False
 
-    def handle_message(self, message: GeneralMessage) -> None:
-        if message.name == "plot":
-            self._plot_job = message.kwargs
-        elif message.name == "setup":
-            assert message.kwargs is not None
-            self.setup(**message.kwargs)
+    def handle_message(self, message: backend.GeneralMessage) -> None:
+        if isinstance(message, backend.PlotMessage):
+            self._plot_job = message.result
+        elif isinstance(message, SetupMessage):
+            self.setup(
+                message.bilateration_config,
+                message.num_curves,
+                message.detector_config,
+            )
             self._is_setup = True
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
@@ -299,7 +302,8 @@ class PlotPlugin(PgPlotPlugin):
             return
 
         try:
-            self.draw_plot_job(**self._plot_job)
+            (detector_result, processor_result) = self._plot_job
+            self.draw_plot_job(detector_result=detector_result, processor_result=processor_result)
         finally:
             self._plot_job = None
 

@@ -88,6 +88,14 @@ class TankLevelPreset:
     config: RefAppConfig = attrs.field()
 
 
+@attrs.frozen(kw_only=True)
+class SetupMessage(GeneralMessage):
+    config: RefAppConfig
+    num_curves: int
+    name: str = attrs.field(default="setup", init=False)
+    recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
+
+
 class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     PLUGIN_PRESETS: Mapping[int, TankLevelPreset] = {
@@ -170,13 +178,9 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self._ref_app_instance.start(recorder)
 
         self.callback(
-            GeneralMessage(
-                name="setup",
-                kwargs={
-                    "config": self.shared_state.config,
-                    "num_curves": len(self._ref_app_instance._detector.processor_specs),
-                },
-                recipient="plot_plugin",
+            SetupMessage(
+                config=self.shared_state.config,
+                num_curves=len(self._ref_app_instance._detector.processor_specs),
             )
         )
 
@@ -195,9 +199,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._ref_app_instance.get_next()
 
-        self.callback(
-            GeneralMessage(name="plot", kwargs={"result": result}, recipient="plot_plugin")
-        )
+        self.callback(backend.PlotMessage(result=result))
 
     @is_task
     def calibrate_detector(self) -> None:
@@ -244,15 +246,14 @@ class PlotPlugin(PgPlotPlugin):
         self.counter = 0
         self.bar_loc = 0
 
-        self._plot_job: Optional[dict[str, Any]] = None
+        self._plot_job: Optional[RefAppResult] = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
-        if message.name == "plot":
-            self._plot_job = message.kwargs
-        elif message.name == "setup":
-            assert message.kwargs is not None
-            self.setup(**message.kwargs)
+        if isinstance(message, backend.PlotMessage):
+            self._plot_job = message.result
+        elif isinstance(message, SetupMessage):
+            self.setup(message.config, message.num_curves)
             self._is_setup = True
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
@@ -262,7 +263,7 @@ class PlotPlugin(PgPlotPlugin):
             return
 
         try:
-            self.draw_plot_job(**self._plot_job)
+            self.draw_plot_job(result=self._plot_job)
         finally:
             self._plot_job = None
 

@@ -6,6 +6,7 @@ from .backend_plugin import (
     ProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
     ProcessorPluginPreset,
+    SetupMessage,
 )
 from .plugin import ProcessorPluginSpec
 from .view_plugin import ProcessorViewPluginBase

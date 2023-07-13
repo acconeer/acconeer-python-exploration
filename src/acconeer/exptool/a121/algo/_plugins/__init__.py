@@ -9,4 +9,5 @@ from .processor import (
     ProcessorPluginPreset,
     ProcessorPluginSpec,
     ProcessorViewPluginBase,
+    SetupMessage,
 )

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Any, Callable, Optional, Type
+from typing import Callable, Optional, Type
 
 import numpy as np
 
@@ -18,6 +18,7 @@ from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginSharedState,
     ProcessorPluginPreset,
     ProcessorViewPluginBase,
+    SetupMessage,
 )
 from acconeer.exptool.a121.algo._utils import APPROX_BASE_STEP_LENGTH_M
 from acconeer.exptool.a121.algo.vibration import (
@@ -115,18 +116,20 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[dict[str, Any]] = None
+        self._plot_job: Optional[ProcessorResult] = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
-        if message.name == "plot":
-            self._plot_job = message.kwargs
-        elif message.name == "setup":
-            assert message.kwargs is not None
-            if isinstance(message.kwargs["metadata"], list):
+        if isinstance(message, backend.PlotMessage):
+            self._plot_job = message.result
+        elif isinstance(message, SetupMessage):
+            if isinstance(message.metadata, list):
                 raise RuntimeError("Metadata is unexpectedly extended")
 
-            self.setup(**message.kwargs)
+            self.setup(
+                metadata=message.metadata,
+                sensor_config=message.session_config.sensor_config,
+            )
             self._is_setup = True
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
@@ -136,7 +139,7 @@ class PlotPlugin(PgPlotPlugin):
             return
 
         try:
-            self.draw_plot_job(**self._plot_job)
+            self.draw_plot_job(processor_result=self._plot_job)
         finally:
             self._plot_job = None
 
