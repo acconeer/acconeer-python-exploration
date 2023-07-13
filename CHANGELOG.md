@@ -1,5 +1,9 @@
 # Changelog
 
+## v7.2.1
+
+This release only contains minor fixes and improvements.
+
 ## v7.2.0
 
 ### Added
