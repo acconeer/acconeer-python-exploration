@@ -24,31 +24,14 @@ ParamEnumT = TypeVar("ParamEnumT", bound="AlgoParamEnum")
 ResultT = TypeVar("ResultT")
 
 
-class GenericProcessorBase(abc.ABC, Generic[InputT, ProcessorConfigT, ResultT, MetadataT]):
-    def __init__(
-        self,
-        *,
-        sensor_config: a121.SensorConfig,
-        metadata: MetadataT,
-        processor_config: ProcessorConfigT,
-    ) -> None:
-        self.sensor_config = sensor_config
-        self.metadata: MetadataT = metadata
-        self.processor_config = processor_config
-
+class GenericProcessorBase(abc.ABC, Generic[InputT, ResultT]):
     @abc.abstractmethod
     def process(self, result: InputT) -> ResultT:
         ...
 
-    @abc.abstractmethod
-    def update_config(self, config: ProcessorConfigT) -> None:
-        ...
 
-
-ProcessorBase = GenericProcessorBase[a121.Result, ProcessorConfigT, ResultT, a121.Metadata]
-ExtendedProcessorBase = GenericProcessorBase[
-    List[Dict[int, a121.Result]], ProcessorConfigT, ResultT, List[Dict[int, a121.Metadata]]
-]
+ProcessorBase = GenericProcessorBase[a121.Result, ResultT]
+ExtendedProcessorBase = GenericProcessorBase[List[Dict[int, a121.Result]], ResultT]
 
 
 class Controller(abc.ABC, Generic[ConfigT, ResultT]):

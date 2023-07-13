@@ -95,9 +95,7 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
 
     def on_backend_state_update(
         self,
-        backend_plugin_state: Optional[
-            ProcessorBackendPluginSharedState[ProcessorConfigT, a121.Metadata]
-        ],
+        backend_plugin_state: Optional[ProcessorBackendPluginSharedState[ProcessorConfigT]],
     ) -> None:
         if backend_plugin_state is None:
             self.session_config_editor.set_data(None)

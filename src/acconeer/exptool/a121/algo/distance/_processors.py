@@ -149,7 +149,7 @@ class ProcessorResult:
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
     """Distance processor
 
     For all used subsweeps, the ``profile`` and ``step_length`` must be the same.
@@ -557,9 +557,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             recorded_threshold_mean_sweep=mean_sweep,
             recorded_threshold_noise_std=recorded_threshold_noise_std,
         )
-
-    def update_config(self, config: ProcessorConfig) -> None:
-        ...
 
     def _update_threshold(
         self, abs_sweep: npt.NDArray[np.float_], temperature: int

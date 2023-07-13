@@ -14,6 +14,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
+    ProcessorBackendPluginSharedState,
     ProcessorPlotPluginBase,
     ProcessorPluginPreset,
     ProcessorViewPluginBase,
@@ -59,8 +60,18 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
     }
 
     @classmethod
-    def get_processor_cls(cls) -> Type[Processor]:
-        return Processor
+    def get_processor(cls, state: ProcessorBackendPluginSharedState[ProcessorConfig]) -> Processor:
+        if state.metadata is None:
+            raise RuntimeError("metadata is None")
+
+        if isinstance(state.metadata, list):
+            raise RuntimeError("metadata is unexpectedly extended")
+
+        return Processor(
+            sensor_config=state.session_config.sensor_config,
+            processor_config=state.processor_config,
+            metadata=state.metadata,
+        )
 
     @classmethod
     def get_processor_config_cls(cls) -> Type[ProcessorConfig]:

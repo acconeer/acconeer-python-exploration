@@ -43,7 +43,7 @@ class SubsweepProcessorResult:
 ProcessorResult = t.List[SubsweepProcessorResult]
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
     def __init__(
         self,
         *,
@@ -85,9 +85,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             )
 
         return processor_result
-
-    def update_config(self, config: ProcessorConfig) -> None:
-        self.processor_config = config
 
 
 def get_sensor_config() -> a121.SensorConfig:

@@ -68,7 +68,7 @@ class ProcessorResult:
     peak_loc_m: Optional[float] = attrs.field(default=None)
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
     estimated_distance: Optional[float]
     prev_peak_loc_m: Optional[float]
 
@@ -188,9 +188,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             distance_history=distance_to_plot,
             peak_loc_m=peak_loc_m,
         )
-
-    def update_config(self, config: ProcessorConfig) -> None:
-        ...
 
 
 def get_sensor_config() -> a121.SensorConfig:

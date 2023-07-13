@@ -91,7 +91,7 @@ class BreathingProcessorResult:
     """Extra result, only used for visualization."""
 
 
-class BreathingProcessor(ProcessorBase[BreathingProcessorConfig, BreathingProcessorResult]):
+class BreathingProcessor(ProcessorBase[BreathingProcessorResult]):
     """Breathing rate processor."""
 
     SECONDS_IN_MINUTE: float = 60.0
@@ -303,9 +303,6 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorConfig, BreathingProces
         peak_loc = -b / (2 * a)
         return float(peak_loc)
 
-    def update_config(self, config: BreathingProcessorConfig) -> None:
-        raise NotImplementedError
-
 
 def get_presence_config() -> PresenceProcessorConfig:
     presence_config = PresenceProcessorConfig()
@@ -360,7 +357,7 @@ class ProcessorResult:
     """Breathing processor result."""
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
     """Breathing rate super-processor.
 
     Handles execution of the presence processor and the breathing processor.
@@ -523,6 +520,3 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         )
         center_point = int(self.base_presence_distance / self.metadata.base_step_length_m)
         return int(np.argmin(np.abs(measured_points - center_point)))
-
-    def update_config(self, config: ProcessorConfig) -> None:
-        raise NotImplementedError

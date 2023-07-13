@@ -126,7 +126,7 @@ class ProcessorResult:
     detection_far: Optional[bool] = attrs.field(default=None)
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
     """Touchless Button processor
 
     :param sensor_config: Sensor configuration
@@ -417,6 +417,3 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         keep_detection = curr_detection and nonsig_count <= patience
         detection = new_detection or keep_detection
         return bool(detection)
-
-    def update_config(self, config: ProcessorConfig) -> None:
-        raise NotImplementedError

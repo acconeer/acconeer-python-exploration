@@ -98,7 +98,7 @@ class ProcessorResult:
     extra_result: ProcessorExtraResult = attrs.field()
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
     # lp(f): low pass (filtered)
     # cut: cutoff frequency [Hz]
     # tc: time constant [s]
@@ -194,9 +194,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.inter_enable = processor_config.inter_enable
         self.inter_threshold = processor_config.inter_detection_threshold
 
-        self.update_config(processor_config)
-
-    def update_config(self, processor_config: ProcessorConfig) -> None:
         self.intra_enable = processor_config.intra_enable
         self.inter_enable = processor_config.inter_enable
         self.intra_threshold = processor_config.intra_detection_threshold

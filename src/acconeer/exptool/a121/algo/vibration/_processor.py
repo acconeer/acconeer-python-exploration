@@ -98,7 +98,7 @@ class ProcessorResult:
     max_psd_ampl_freq: Optional[float] = attrs.field(default=None)
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
 
     _OVER_SAMPLING_FACTOR = 2
     _WINDOW_BASE_LENGTH = 10
@@ -212,9 +212,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         ) / 2 + sensitivity
 
         return threshold
-
-    def update_config(self, config: ProcessorConfig) -> None:
-        ...
 
 
 def get_sensor_config() -> a121.SensorConfig:

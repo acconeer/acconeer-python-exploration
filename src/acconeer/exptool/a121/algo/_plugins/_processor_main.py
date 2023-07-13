@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Iterator, Optional, Type
+from typing import Any, Callable, Dict, Iterator, List, Optional, Type, Union
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
@@ -14,16 +14,21 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException  # type: ignore[import]
 from acconeer.exptool.a121 import algo
-from acconeer.exptool.a121.algo._base import InputT, MetadataT, ProcessorConfigT, ResultT
+from acconeer.exptool.a121.algo._base import InputT, MetadataT, ResultT
 
 from ._null_app_model import NullAppModel
 from .processor import GenericProcessorPlotPluginBase
 
 
+_ProcessorGetter = Callable[
+    [Union[a121.Metadata, List[Dict[int, a121.Metadata]]]],
+    algo.ProcessorBase[ResultT],
+]
+
+
 def processor_main(
     *,
-    processor_cls: Type[algo.GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT]],
-    processor_config_cls: Type[ProcessorConfigT],
+    processor_getter: _ProcessorGetter[ResultT],
     plot_plugin: Type[GenericProcessorPlotPluginBase[ResultT, MetadataT]],
     sensor_config_getter: Callable[[], a121.SensorConfig],
     _blinkstick_updater_cls: Optional[Any] = None,
@@ -40,13 +45,7 @@ def processor_main(
 
     metadata = client.setup_session(session_config)
 
-    processor_config = processor_config_cls()
-
-    processor = processor_cls(
-        sensor_config=sensor_config,
-        metadata=metadata,  # type: ignore[arg-type]
-        processor_config=processor_config,
-    )
+    processor = processor_getter(metadata)
 
     qapp = QApplication()
     pg.setConfigOption("background", "w")
@@ -88,7 +87,7 @@ def processor_main(
 
 def get_loop(
     client: a121.Client,
-    processor: algo.GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT],
+    processor: algo.GenericProcessorBase[InputT, ResultT],
     plot_plugin_widget: GenericProcessorPlotPluginBase[ResultT, MetadataT],
     blinkstick_process: Optional[BSThread],
 ) -> Iterator[bool]:

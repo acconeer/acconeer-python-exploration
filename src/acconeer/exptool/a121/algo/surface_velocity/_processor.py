@@ -97,7 +97,7 @@ class ProcessorResult:
     extra_result: ProcessorExtraResult = attrs.field()
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
 
     MIN_PEAK_VS = 0.1
 
@@ -179,8 +179,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         self.velocity_lp_coeff = processor_config.velocity_lp_coeff
 
         self.wait_n = 0
-
-        self.update_config(processor_config)
 
     @staticmethod
     def _dynamic_sf(static_sf: float, update_index: int) -> float:
@@ -394,6 +392,3 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
             distance_m=distance,
             extra_result=extra_result,
         )
-
-    def update_config(self, config: ProcessorConfig) -> None:
-        ...

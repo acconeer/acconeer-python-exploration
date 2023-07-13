@@ -52,7 +52,7 @@ class ProcessorResult:
         return max(np.min(self.speed_per_depth), np.max(self.speed_per_depth), key=np.abs)
 
 
-class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
+class Processor(ProcessorBase[ProcessorResult]):
     def __init__(
         self,
         *,
@@ -73,9 +73,6 @@ class Processor(ProcessorBase[ProcessorConfig, ProcessorResult]):
         assert sensor_config.continuous_sweep_mode is not None
 
         self.sweep_rate = sensor_config.sweep_rate
-
-    def update_config(self, processor_config: ProcessorConfig) -> None:
-        ...
 
     def get_welch(
         self, sweep: npt.NDArray[np.complex_]

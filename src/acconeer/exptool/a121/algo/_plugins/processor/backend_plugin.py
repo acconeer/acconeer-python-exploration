@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Generic, Mapping, Optional, Type
+from typing import Callable, Generic, Mapping, Optional, Type, Union
 
 import attrs
 import h5py
@@ -42,11 +42,13 @@ class ProcessorPluginPreset(Generic[ProcessorConfigT]):
 
 
 @attrs.mutable(kw_only=True)
-class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT, MetadataT]):
+class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT]):
     session_config: a121.SessionConfig = attrs.field()
     processor_config: ProcessorConfigT = attrs.field()
     replaying: bool = attrs.field(default=False)
-    metadata: Optional[MetadataT] = attrs.field(default=None)
+    metadata: Union[a121.Metadata, list[dict[int, a121.Metadata]], None] = attrs.field(
+        default=None
+    )
 
     @property
     def ready(self) -> bool:
@@ -61,11 +63,9 @@ class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT, MetadataT]):
 
 class GenericProcessorBackendPluginBase(
     Generic[InputT, ProcessorConfigT, ResultT, MetadataT],
-    A121BackendPluginBase[ProcessorBackendPluginSharedState[ProcessorConfigT, MetadataT]],
+    A121BackendPluginBase[ProcessorBackendPluginSharedState[ProcessorConfigT]],
 ):
-    _processor_instance: Optional[
-        GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT]
-    ]
+    _processor_instance: Optional[GenericProcessorBase[InputT, ResultT]]
     _started: bool
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], ProcessorPluginPreset[ProcessorConfigT]]] = {}
@@ -154,18 +154,15 @@ class GenericProcessorBackendPluginBase(
             self.client.attach_recorder(recorder)
 
         metadata = self.client.setup_session(session_config)
+        self.shared_state.metadata = metadata
+
+        self._processor_instance = self.get_processor(self.shared_state)
+
+        self.client.start_session()
+
         the_first_sensor_config = next(
             _core.utils.iterate_extended_structure_values(session_config.groups)
         )
-        self._processor_instance = self.get_processor_cls()(
-            sensor_config=the_first_sensor_config,  # FIXME: a bit scuffed but wth
-            metadata=metadata,  # type: ignore[arg-type]
-            processor_config=self.shared_state.processor_config,
-        )
-
-        self.shared_state.metadata = metadata  # type: ignore[assignment]
-        self.client.start_session()
-
         self.callback(
             GeneralMessage(
                 name="setup",
@@ -186,9 +183,9 @@ class GenericProcessorBackendPluginBase(
 
     @classmethod
     @abc.abstractmethod
-    def get_processor_cls(
-        cls,
-    ) -> Type[GenericProcessorBase[InputT, ProcessorConfigT, ResultT, MetadataT]]:
+    def get_processor(
+        cls, state: ProcessorBackendPluginSharedState[ProcessorConfigT]
+    ) -> GenericProcessorBase[InputT, ResultT]:
         pass
 
     @classmethod
