@@ -23,16 +23,24 @@ from ._null_app_model import NullAppModel
 
 
 _ProcessorGetter = Callable[
-    [Union[a121.Metadata, List[Dict[int, a121.Metadata]]]],
-    algo.ProcessorBase[ResultT],
+    [
+        a121.SessionConfig,
+        Union[a121.Metadata, List[Dict[int, a121.Metadata]]],
+    ],
+    algo.GenericProcessorBase[InputT, ResultT],
+]
+
+_SessionConfigGetter = Callable[
+    [int],  # sensor id
+    a121.SessionConfig,
 ]
 
 
 def processor_main(
     *,
-    processor_getter: _ProcessorGetter[ResultT],
+    processor_getter: _ProcessorGetter[InputT, ResultT],
     plot_plugin: Type[PlotPluginBase],
-    sensor_config_getter: Callable[[], a121.SensorConfig],
+    session_config_getter: _SessionConfigGetter,
     _blinkstick_updater_cls: Optional[Any] = None,
 ) -> None:
     parser = a121.ExampleArgumentParser()
@@ -42,12 +50,11 @@ def processor_main(
 
     client = a121.Client.open(**a121.get_client_args(args))
 
-    sensor_config = sensor_config_getter()
-    session_config = a121.SessionConfig({args.sensor: sensor_config})
+    session_config = session_config_getter(args.sensor)
 
     metadata = client.setup_session(session_config)
 
-    processor = processor_getter(metadata)
+    processor = processor_getter(session_config, metadata)
 
     qapp = QApplication()
     pg.setConfigOption("background", "w")
