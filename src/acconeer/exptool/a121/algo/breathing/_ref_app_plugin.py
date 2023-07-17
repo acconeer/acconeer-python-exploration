@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional
 
 import attrs
 import h5py
@@ -46,6 +46,7 @@ from acconeer.exptool.app.new import (
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
+    backend,
     icons,
     is_task,
     pidgets,
@@ -53,6 +54,9 @@ from acconeer.exptool.app.new import (
 from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget
 
 from ._ref_app import RefApp, RefAppConfig, RefAppResult, _load_algo_data, get_sensor_config
+
+
+log = logging.getLogger(__name__)
 
 
 @attrs.mutable(kw_only=True)
@@ -165,12 +169,35 @@ class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
         self.displayed_breathing_rate = None
+        self._plot_job: Optional[dict[str, Any]] = None
+        self._is_setup = False
+
+    def handle_message(self, message: backend.GeneralMessage) -> None:
+        if message.name == "plot":
+            self._plot_job = message.kwargs
+        elif message.name == "setup":
+            assert message.kwargs is not None
+            self.setup(**message.kwargs)
+            self._is_setup = True
+        else:
+            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
+
+    def draw(self) -> None:
+        if not self._is_setup or self._plot_job is None:
+            return
+
+        try:
+            self.draw_plot_job(**self._plot_job)
+        finally:
+            self._plot_job = None
 
     def setup(
         self,
         ref_app_config: RefAppConfig,
         sensor_config: a121.SensorConfig,
     ) -> None:
+        self.plot_layout.clear()
+
         self.distances = (
             sensor_config.start_point
             + np.arange(sensor_config.num_points) * sensor_config.step_length

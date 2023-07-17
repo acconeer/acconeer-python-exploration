@@ -14,10 +14,11 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException  # type: ignore[import]
 from acconeer.exptool.a121 import algo
-from acconeer.exptool.a121.algo._base import InputT, MetadataT, ResultT
+from acconeer.exptool.a121.algo._base import InputT, ResultT
+from acconeer.exptool.app.new.backend import GeneralMessage
+from acconeer.exptool.app.new.pluginbase import PlotPluginBase
 
 from ._null_app_model import NullAppModel
-from .processor import GenericProcessorPlotPluginBase
 
 
 _ProcessorGetter = Callable[
@@ -29,7 +30,7 @@ _ProcessorGetter = Callable[
 def processor_main(
     *,
     processor_getter: _ProcessorGetter[ResultT],
-    plot_plugin: Type[GenericProcessorPlotPluginBase[ResultT, MetadataT]],
+    plot_plugin: Type[PlotPluginBase],
     sensor_config_getter: Callable[[], a121.SensorConfig],
     _blinkstick_updater_cls: Optional[Any] = None,
 ) -> None:
@@ -53,7 +54,13 @@ def processor_main(
     pg.setConfigOptions(antialias=True)
 
     plot_plugin_widget = plot_plugin(NullAppModel())
-    plot_plugin_widget.setup(metadata, sensor_config)  # type: ignore[arg-type]
+    plot_plugin_widget.handle_message(
+        GeneralMessage(
+            kwargs=dict(session_config=session_config, metadata=metadata),
+            name="setup",
+            recipient="plot_plugin",
+        )
+    )
 
     if _blinkstick_updater_cls is None:
         bs_process = None
@@ -88,7 +95,7 @@ def processor_main(
 def get_loop(
     client: a121.Client,
     processor: algo.GenericProcessorBase[InputT, ResultT],
-    plot_plugin_widget: GenericProcessorPlotPluginBase[ResultT, MetadataT],
+    plot_plugin_widget: PlotPluginBase,
     blinkstick_process: Optional[BSThread],
 ) -> Iterator[bool]:
     while True:
@@ -96,7 +103,10 @@ def get_loop(
 
         processor_result = processor.process(result)  # type: ignore[arg-type]
 
-        plot_plugin_widget.draw_plot_job(processor_result)
+        plot_plugin_widget.handle_message(
+            GeneralMessage(data=processor_result, name="plot", recipient="plot_plugin")
+        )
+        plot_plugin_widget.draw()
 
         if blinkstick_process is not None:
             try:

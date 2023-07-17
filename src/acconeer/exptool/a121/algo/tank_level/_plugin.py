@@ -51,6 +51,7 @@ from acconeer.exptool.app.new import (
     PluginSpecBase,
     PluginState,
     PluginStateMessage,
+    backend,
     icons,
     is_task,
 )
@@ -60,6 +61,9 @@ from acconeer.exptool.app.new.ui.plugin_components import (
     PresentationType,
     pidgets,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 NO_DETECTION_TIMEOUT = 50
@@ -240,11 +244,34 @@ class PlotPlugin(PgPlotPlugin):
         self.counter = 0
         self.bar_loc = 0
 
+        self._plot_job: Optional[dict[str, Any]] = None
+        self._is_setup = False
+
+    def handle_message(self, message: backend.GeneralMessage) -> None:
+        if message.name == "plot":
+            self._plot_job = message.kwargs
+        elif message.name == "setup":
+            assert message.kwargs is not None
+            self.setup(**message.kwargs)
+            self._is_setup = True
+        else:
+            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
+
+    def draw(self) -> None:
+        if not self._is_setup or self._plot_job is None:
+            return
+
+        try:
+            self.draw_plot_job(**self._plot_job)
+        finally:
+            self._plot_job = None
+
     def setup(
         self,
         config: RefAppConfig,
         num_curves: int,
     ) -> None:
+        self.plot_layout.clear()
 
         self.num_curves = num_curves
         self.start_m = config.start_m

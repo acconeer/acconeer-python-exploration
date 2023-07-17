@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, List, Mapping, Optional, Tuple
+from typing import Any, Callable, List, Mapping, Optional, Tuple
 
 import attrs
 import h5py
@@ -41,6 +41,7 @@ from acconeer.exptool.app.new import (
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
+    backend,
     icons,
     is_task,
     pidgets,
@@ -64,6 +65,9 @@ from ._ref_app import (
     _load_algo_data,
     _Mode,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 @attrs.mutable(kw_only=True)
@@ -212,6 +216,27 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
+        self._plot_job: Optional[dict[str, Any]] = None
+        self._is_setup = False
+
+    def handle_message(self, message: backend.GeneralMessage) -> None:
+        if message.name == "plot":
+            self._plot_job = message.kwargs
+        elif message.name == "setup":
+            assert message.kwargs is not None
+            self.setup(**message.kwargs)
+            self._is_setup = True
+        else:
+            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
+
+    def draw(self) -> None:
+        if not self._is_setup or self._plot_job is None:
+            return
+
+        try:
+            self.draw_plot_job(**self._plot_job)
+        finally:
+            self._plot_job = None
 
     def setup(
         self,
@@ -220,6 +245,8 @@ class PlotPlugin(PgPlotPlugin):
         nominal_zone_limits: npt.NDArray[np.float_],
         wake_up_zone_limits: npt.NDArray[np.float_],
     ) -> None:
+        self.plot_layout.clear()
+
         self.ref_app_config = ref_app_config
         self.nominal_config = ref_app_config.nominal_config
         self.wake_up_config = ref_app_config.wake_up_config

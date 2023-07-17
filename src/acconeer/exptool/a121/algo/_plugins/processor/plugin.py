@@ -9,10 +9,9 @@ from typing import Callable, Generic
 import attrs
 
 from acconeer.exptool.a121.algo._base import InputT, MetadataT, ProcessorConfigT, ResultT
-from acconeer.exptool.app.new import AppModel, Message, PluginSpecBase
+from acconeer.exptool.app.new import AppModel, Message, PlotPluginBase, PluginSpecBase
 
 from .backend_plugin import GenericProcessorBackendPluginBase
-from .plot_plugin import GenericProcessorPlotPluginBase
 from .view_plugin import ProcessorViewPluginBase
 
 
@@ -31,7 +30,5 @@ class ProcessorPluginSpec(
         pass
 
     @abc.abstractmethod
-    def create_plot_plugin(
-        self, app_model: AppModel
-    ) -> GenericProcessorPlotPluginBase[ResultT, MetadataT]:
+    def create_plot_plugin(self, app_model: AppModel) -> PlotPluginBase:
         pass

@@ -38,6 +38,7 @@ from acconeer.exptool.app.new import (
     PluginPresetBase,
     PluginSpecBase,
     PluginState,
+    backend,
     icons,
     is_task,
     pidgets,
@@ -60,6 +61,9 @@ from ._detector import (
     DetectorResult,
     _load_algo_data,
 )
+
+
+log = logging.getLogger(__name__)
 
 
 @attrs.mutable(kw_only=True)
@@ -178,6 +182,27 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
+        self._plot_job: Optional[dict[str, Any]] = None
+        self._is_setup = False
+
+    def handle_message(self, message: backend.GeneralMessage) -> None:
+        if message.name == "plot":
+            self._plot_job = message.kwargs
+        elif message.name == "setup":
+            assert message.kwargs is not None
+            self.setup(**message.kwargs)
+            self._is_setup = True
+        else:
+            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
+
+    def draw(self) -> None:
+        if not self._is_setup or self._plot_job is None:
+            return
+
+        try:
+            self.draw_plot_job(**self._plot_job)
+        finally:
+            self._plot_job = None
 
     def setup(
         self,
@@ -185,6 +210,8 @@ class PlotPlugin(PgPlotPlugin):
         detector_metadata: DetectorMetadata,
         estimated_frame_rate: float,
     ) -> None:
+        self.plot_layout.clear()
+
         self.detector_config = detector_config
         self.distances = np.linspace(
             detector_metadata.start_m,

@@ -34,8 +34,6 @@ class PlotPluginBase(QWidget):
         super().__init__()
 
         self.app_model = app_model
-        self._is_setup = False
-        self._plot_job: t.Optional[dict[str, t.Any]] = None
 
         self.app_model.sig_message_plot_plugin.connect(self.handle_message)
         self.app_model.sig_notify.connect(self.on_app_model_update)
@@ -55,34 +53,37 @@ class PlotPluginBase(QWidget):
     def on_backend_state_update(self, state: t.Optional[t.Any]) -> None:
         pass
 
+    @abc.abstractmethod
     def handle_message(self, message: GeneralMessage) -> None:
-        if message.kwargs is None:
-            raise RuntimeError("Plot message needs non-None kwargs")
+        """Handles messages with recipient=="plot_plugin" from the BackendPlugin"""
+        pass
 
-        if message.name == "setup":
-            self.setup(**message.kwargs)
-            self._is_setup = True
-        elif message.name == "plot":
-            self._plot_job = message.kwargs
-        else:
-            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
-
+    @abc.abstractmethod
     def draw(self) -> None:
-        if not self._is_setup or self._plot_job is None:
-            return
+        """Gets called with a set frequency (see PluginPlotArea)"""
+        pass
 
-        try:
-            self.draw_plot_job(**self._plot_job)
-        finally:
-            self._plot_job = None
 
-    @abc.abstractmethod
-    def setup(self, *args: t.Any, **kwargs: t.Any) -> None:
-        raise NotImplementedError("setup is abstact")
+# def handle_message(self, message: GeneralMessage) -> None:
+#     if message.kwargs is None:
+#         raise RuntimeError("Plot message needs non-None kwargs")
 
-    @abc.abstractmethod
-    def draw_plot_job(self, *args: t.Any, **kwargs: t.Any) -> None:
-        raise NotImplementedError("draw_plot_job is abstact")
+#     if message.name == "setup":
+#         self.setup(**message.kwargs)
+#         self._is_setup = True
+#     elif message.name == "plot":
+#         self._plot_job = message.kwargs
+#     else:
+#         log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
+
+# def draw(self) -> None:
+#     if not self._is_setup or self._plot_job is None:
+#         return
+
+#     try:
+#         self.draw_plot_job(**self._plot_job)
+#     finally:
+#         self._plot_job = None
 
 
 class PgPlotPlugin(PlotPluginBase):
@@ -101,9 +102,3 @@ class PgPlotPlugin(PlotPluginBase):
         self.setLayout(QVBoxLayout())
         self.layout().setContentsMargins(0, 0, 0, 0)
         self.layout().addWidget(self.plot_widget)
-
-    def handle_message(self, message: GeneralMessage) -> None:
-        if message.name == "setup":
-            self.plot_layout.clear()
-
-        super().handle_message(message)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from .backend_plugin import (
@@ -6,11 +6,6 @@ from .backend_plugin import (
     ProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
     ProcessorPluginPreset,
-)
-from .plot_plugin import (
-    ExtendedProcessorPlotPluginBase,
-    GenericProcessorPlotPluginBase,
-    ProcessorPlotPluginBase,
 )
 from .plugin import ProcessorPluginSpec
 from .view_plugin import ProcessorViewPluginBase

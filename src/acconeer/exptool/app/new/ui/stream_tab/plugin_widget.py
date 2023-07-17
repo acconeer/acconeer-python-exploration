@@ -249,10 +249,10 @@ class PlotPlaceholder(PlotPluginBase):
 
         return teaser_label
 
-    def setup(self, *args: Any, **kwargs: Any) -> None:
+    def handle_message(self, message: Any) -> None:
         pass
 
-    def draw_plot_job(self, *args: Any, **kwargs: Any) -> None:
+    def draw(self) -> None:
         pass
 
 
