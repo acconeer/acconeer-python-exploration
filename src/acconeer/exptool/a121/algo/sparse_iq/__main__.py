@@ -11,20 +11,16 @@ from ._plugin import PlotPlugin
 
 def _processor_getter(
     session_config: a121.SessionConfig,
-    metadata: t.Union[a121.Metadata, t.List[t.Dict[int, a121.Metadata]]],
+    ignored_metadata: t.Union[a121.Metadata, t.List[t.Dict[int, a121.Metadata]]],
 ) -> Processor:
-    if isinstance(metadata, list):
-        raise RuntimeError("Metadata is unexpectedly extended")
-
     return Processor(
-        sensor_config=session_config.sensor_config,
-        metadata=metadata,
+        session_config=session_config,
         processor_config=ProcessorConfig(),
     )
 
 
 def _session_config_getter(sensor_id: int) -> a121.SessionConfig:
-    return a121.SessionConfig({sensor_id: get_sensor_config()})
+    return a121.SessionConfig({sensor_id: get_sensor_config()}, extended=True)
 
 
 processor_main(

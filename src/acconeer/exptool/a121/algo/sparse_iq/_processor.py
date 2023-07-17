@@ -11,7 +11,11 @@ import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils
-from acconeer.exptool.a121.algo import AlgoParamEnum, AlgoProcessorConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo import (
+    AlgoParamEnum,
+    AlgoProcessorConfigBase,
+    ExtendedProcessorBase,
+)
 
 
 class AmplitudeMethod(AlgoParamEnum):
@@ -40,30 +44,39 @@ class SubsweepProcessorResult:
     distance_velocity_map: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
 
 
-ProcessorResult = t.List[SubsweepProcessorResult]
+EntryResult = t.List[SubsweepProcessorResult]
+ProcessorResult = t.List[t.Dict[int, EntryResult]]
 
 
-class Processor(ProcessorBase[ProcessorResult]):
+class Processor(ExtendedProcessorBase[ProcessorResult]):
     def __init__(
         self,
         *,
-        sensor_config: a121.SensorConfig,
-        metadata: a121.Metadata,
+        session_config: a121.SessionConfig,
         processor_config: ProcessorConfig,
     ) -> None:
         self.processor_config = processor_config
-        self.processor_config.validate(sensor_config)
+        self.processor_config.validate(session_config)
+
+        self.windows = utils.map_over_extended_structure(
+            self._get_hanning_widow, session_config.groups
+        )
+
+    @staticmethod
+    def _get_hanning_widow(sensor_config: a121.SensorConfig) -> npt.NDArray[np.float_]:
         spf = sensor_config.sweeps_per_frame
-        self.window = np.hanning(spf)[:, None]
-        self.window /= np.sum(self.window)
+        window = np.hanning(spf)[:, None]
+        return window / np.sum(window)  # type: ignore[no-any-return]
 
-    def process(self, result: a121.Result) -> ProcessorResult:
-        subframes = result.subframes
+    def _process_entry(
+        self, result_hanning_window: t.Tuple[a121.Result, npt.NDArray[np.float_]]
+    ) -> EntryResult:
+        (result, hanning_window) = result_hanning_window
 
-        processor_result = []
+        entry_result = []
 
-        for subframe in subframes:
-            z_ft = np.fft.fftshift(np.fft.fft(subframe * self.window, axis=0), axes=(0,))
+        for subframe in result.subframes:
+            z_ft = np.fft.fftshift(np.fft.fft(subframe * hanning_window, axis=0), axes=(0,))
             abs_z_ft = np.abs(z_ft)
 
             amplitude_method = self.processor_config.amplitude_method
@@ -78,13 +91,18 @@ class Processor(ProcessorBase[ProcessorResult]):
 
             phases = np.angle(subframe.mean(axis=0))
 
-            processor_result.append(
+            entry_result.append(
                 SubsweepProcessorResult(
                     frame=subframe, amplitudes=ampls, phases=phases, distance_velocity_map=abs_z_ft
                 )
             )
 
-        return processor_result
+        return entry_result
+
+    def process(self, results: list[dict[int, a121.Result]]) -> ProcessorResult:
+        return utils.map_over_extended_structure(
+            self._process_entry, utils.zip_extended_structures(results, self.windows)
+        )
 
 
 def get_sensor_config() -> a121.SensorConfig:

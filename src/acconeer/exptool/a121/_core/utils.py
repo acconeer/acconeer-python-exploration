@@ -12,6 +12,7 @@ from typing import (
     Any,
     Callable,
     Generic,
+    Iterable,
     Iterator,
     Optional,
     Tuple,
@@ -378,7 +379,7 @@ def transpose_extended_structures(
     return product
 
 
-def create_extended_structure(items: Iterator[Tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:
+def create_extended_structure(items: Iterable[Tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:
     structure: list[dict[int, ValueT]] = []
     current_group_index: Optional[int] = None
     current_group: Optional[dict[int, ValueT]] = None

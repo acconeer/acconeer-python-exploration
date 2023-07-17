@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import abc
-from typing import Callable, Generic, Mapping, Optional, Type, Union
+import itertools
+from typing import Callable, Dict, Generic, List, Mapping, Optional, Type, Union
 
 import attrs
 import h5py
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils as core_utils
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._base import (
     GenericProcessorBase,
@@ -101,14 +103,34 @@ class GenericProcessorBackendPluginBase(
         pass
 
     def _sync_sensor_ids(self) -> None:
-        if self.client is not None:
-            sensor_ids = self.client.server_info.connected_sensors
+        if self.client is None:
+            return
 
-            if (
-                len(sensor_ids) > 0
-                and self.shared_state.session_config.sensor_id not in sensor_ids
-            ):
-                self.shared_state.session_config.sensor_id = sensor_ids[0]
+        available_sensor_ids = self.client.server_info.connected_sensors
+
+        if len(available_sensor_ids) == 0:
+            return
+
+        original_session_config = self.shared_state.session_config
+
+        adjusted_groups = core_utils.create_extended_structure(
+            (
+                group_idx,
+                sensor_id
+                if (sensor_id in available_sensor_ids)
+                else next(fallback_sensor_ids_iter),
+                sensor_config,
+            )
+            for (group_idx, sensor_id, sensor_config), fallback_sensor_ids_iter in zip(
+                core_utils.iterate_extended_structure(original_session_config.groups),
+                itertools.tee(available_sensor_ids, len(available_sensor_ids)),
+            )
+        )
+        self.shared_state.session_config = a121.SessionConfig(
+            adjusted_groups,
+            update_rate=original_session_config.update_rate,
+            extended=original_session_config.extended,
+        )
 
     def save_to_cache(self, file: h5py.File) -> None:
         _create_h5_string_dataset(
@@ -247,5 +269,53 @@ class ProcessorBackendPluginBase(
             self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
 
         processor_result = self._processor_instance.process(result)
+
+        self.callback(PlotMessage(result=processor_result))
+
+
+class ExtendedProcessorBackendPluginBase(
+    GenericProcessorBackendPluginBase[
+        List[Dict[int, a121.Result]], ProcessorConfigT, ResultT, List[Dict[int, a121.Metadata]]
+    ]
+):
+    @is_task
+    def restore_defaults(self) -> None:
+        self.shared_state = ProcessorBackendPluginSharedState(
+            session_config=a121.SessionConfig(self.get_default_sensor_config()),
+            processor_config=self.get_processor_config_cls()(),
+        )
+
+        self.broadcast()
+
+    @is_task
+    def set_preset(self, preset_id: int) -> None:
+        preset_config = self.PLUGIN_PRESETS[preset_id]
+        processor_preset = preset_config()
+        self.shared_state.session_config = processor_preset.session_config
+        self.shared_state.processor_config = processor_preset.processor_config
+        self.broadcast()
+
+    def get_next(self) -> None:
+        if self._processor_instance is None:
+            raise RuntimeError("Processor is None. 'start' needs to be called before 'get_next'")
+
+        assert self.client
+        result = self.client.get_next()
+        if isinstance(result, a121.Result):
+            results = [{self.client.session_config.sensor_id: result}]
+        else:
+            results = result
+
+        result_list = list(core_utils.iterate_extended_structure_values(results))
+        if any(r.data_saturated for r in result_list):
+            self.send_status_message(self._format_warning(DATA_SATURATED_MESSAGE))
+
+        if any(r.calibration_needed for r in result_list):
+            self.send_status_message(self._format_warning(CALIBRATION_NEEDED_MESSAGE))
+
+        if any(r.frame_delayed for r in result_list):
+            self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
+
+        processor_result = self._processor_instance.process(results)
 
         self.callback(PlotMessage(result=processor_result))

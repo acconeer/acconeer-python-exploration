@@ -3,22 +3,26 @@
 
 from __future__ import annotations
 
+import itertools
 import logging
 from enum import Enum, auto
-from typing import Callable, Optional, Tuple, Type
+from typing import Callable, Dict, List, Optional, Type, TypeVar
 
 import numpy as np
 import numpy.typing as npt
 
+from PySide6 import QtCore
 from PySide6.QtGui import QTransform
+from PySide6.QtWidgets import QTabWidget, QVBoxLayout
 
 import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import algo
+from acconeer.exptool.a121._core import utils as core_utils
 from acconeer.exptool.a121.algo._plugins import (
-    ProcessorBackendPluginBase,
+    ExtendedProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
     ProcessorPluginPreset,
     ProcessorPluginSpec,
@@ -28,8 +32,8 @@ from acconeer.exptool.a121.algo._plugins import (
 from acconeer.exptool.app.new import (
     AppModel,
     Message,
-    PgPlotPlugin,
     PidgetFactoryMapping,
+    PlotPluginBase,
     PluginFamily,
     PluginGeneration,
     PluginPresetBase,
@@ -49,11 +53,17 @@ from ._processor import (
 log = logging.getLogger(__name__)
 
 
+_T = TypeVar("_T")
+
+
 class PluginPresetId(Enum):
     DEFAULT = auto()
 
 
-class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
+SEMI_TRANSPARENT_BRUSH = pg.mkBrush(color=(0xFF, 0xFF, 0xFF, int(0.8 * 0xFF)))
+
+
+class BackendPlugin(ExtendedProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
 
     PLUGIN_PRESETS = {
         PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
@@ -64,16 +74,9 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
 
     @classmethod
     def get_processor(cls, state: ProcessorBackendPluginSharedState[ProcessorConfig]) -> Processor:
-        if state.metadata is None:
-            raise RuntimeError("metadata is None")
-
-        if isinstance(state.metadata, list):
-            raise RuntimeError("metadata is unexpectedly extended")
-
         return Processor(
-            sensor_config=state.session_config.sensor_config,
+            session_config=state.session_config,
             processor_config=state.processor_config,
-            metadata=state.metadata,
         )
 
     @classmethod
@@ -112,25 +115,48 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         return True
 
 
-class PlotPlugin(PgPlotPlugin):
+_Extended = List[Dict[int, _T]]
+
+
+class PlotPlugin(PlotPluginBase):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
+
         self.smooth_max = et.utils.SmoothMax()
         self._plot_job: Optional[ProcessorResult] = None
         self._is_setup = False
+        self.ampl_plot: Optional[pg.PlotItem] = None
+
+        self.ampl_curves: _Extended[list[pg.PlotDataItem]] = []
+        self.subsweeps_distances_m: _Extended[list[npt.NDArray[np.float_]]] = []
+
+        layout = QVBoxLayout()
+
+        self.amplitude_plot_widget = pg.GraphicsLayoutWidget()
+
+        self.tab_widget = QTabWidget()
+
+        layout.addWidget(self.amplitude_plot_widget, stretch=1)
+        layout.addWidget(self.tab_widget, stretch=2)
+
+        self.setLayout(layout)
+        self.setVisible(False)
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
         if isinstance(message, backend.PlotMessage):
             self._plot_job = message.result
         elif isinstance(message, SetupMessage):
-            if isinstance(message.metadata, list):
-                raise RuntimeError("Metadata is unexpectedly extended")
+            if isinstance(message.metadata, a121.Metadata):
+                metadata = [{message.session_config.sensor_id: message.metadata}]
+            else:
+                metadata = message.metadata
 
             self.setup(
-                metadata=message.metadata,
-                sensor_config=message.session_config.sensor_config,
+                metadatas=metadata,
+                session_config=message.session_config,
             )
             self._is_setup = True
+            self.setVisible(True)
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
 
@@ -143,128 +169,261 @@ class PlotPlugin(PgPlotPlugin):
         finally:
             self._plot_job = None
 
-    def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
-        self.plot_layout.clear()
-
-        self.ampl_plot = self._create_amplitude_plot(self.plot_layout, sensor_config.num_subsweeps)
-        self.plot_layout.nextRow()
-        self.phase_plot = self._create_phase_plot(self.plot_layout, sensor_config.num_subsweeps)
-        self.plot_layout.nextRow()
-
-        self.ampl_curves = []
-        self.phase_curves = []
-        self.ft_plots = []
-        self.ft_im_list = []
-        self.distances_m_list = []
-
-        vels, vel_res = algo.get_approx_fft_vels(metadata, sensor_config)
-
-        for i, subsweep in enumerate(sensor_config.subsweeps):
-            distances_m, step_length_m = algo.get_distances_m(subsweep, metadata)
-            self.distances_m_list.append(distances_m)
-
-            ampl_curve = self._create_amplitude_curve(i, distances_m)
-            self.ampl_plot.addItem(ampl_curve)
-            self.ampl_curves.append(ampl_curve)
-
-            phase_curve = self._create_phase_curve(i)
-            self.phase_plot.addItem(phase_curve)
-            self.phase_curves.append(phase_curve)
-
-            ft_plot, ft_im = self._create_fft_plot(
-                self.plot_layout,
-                distances_m=distances_m,
-                step_length_m=step_length_m,
-                vels=vels,
-                vel_res=vel_res,
-            )
-            self.ft_plots.append(ft_plot)
-            self.ft_im_list.append(ft_im)
-
     def draw_plot_job(self, processor_result: ProcessorResult) -> None:
+        if self.ampl_plot is None:
+            raise RuntimeError
+
         max_ = 0.0
 
-        for i, result in enumerate(processor_result):
-            ampls = result.amplitudes
-            self.ampl_curves[i].setData(self.distances_m_list[i], ampls)
-            self.phase_curves[i].setData(self.distances_m_list[i], result.phases)
-            dvm = result.distance_velocity_map
-            self.ft_im_list[i].updateImage(
-                dvm.T,
-                levels=(0, 1.05 * np.max(dvm)),
+        for (
+            plot_data_items,
+            entry_result,
+            subsweeps_distances_m,
+        ) in core_utils.iterate_extended_structure_values(
+            core_utils.zip3_extended_structures(
+                core_utils.zip3_extended_structures(
+                    self.ampl_curves, self.phase_curves, self.ft_images
+                ),
+                processor_result,
+                self.subsweeps_distances_m,
             )
+        ):
+            for (
+                amplitude_curve,
+                phase_curve,
+                ft_image,
+                subsweep_result,
+                subsweep_distances_m,
+            ) in zip(*plot_data_items, entry_result, subsweeps_distances_m):
+                ampls = subsweep_result.amplitudes
+                amplitude_curve.setData(subsweep_distances_m, ampls)
+                max_ = max(max_, np.max(ampls).item())
 
-            max_ = max(max_, np.max(ampls).item())
+                phase_curve.setData(subsweep_distances_m, subsweep_result.phases)
+
+                dvm = subsweep_result.distance_velocity_map
+                ft_image.updateImage(dvm.T, levels=(0, 1.05 * np.max(dvm)))
 
         self.ampl_plot.setYRange(0, self.smooth_max.update(max_))
 
-    @staticmethod
-    def _create_amplitude_curve(
-        cycle_num: int, depths_m: npt.NDArray[np.float_]
-    ) -> pg.PlotDataItem:
-        pen = et.utils.pg_pen_cycler(cycle_num)
+    def setup(
+        self, metadatas: list[dict[int, a121.Metadata]], session_config: a121.SessionConfig
+    ) -> None:
+        self.amplitude_plot_widget.ci.clear()
+        self.tab_widget.clear()
 
-        if len(depths_m) > 32:
-            return pg.PlotDataItem(pen=pen)
-        else:
-            brush = et.utils.pg_brush_cycler(cycle_num)
-            return pg.PlotDataItem(
-                pen=pen, symbol="o", symbolSize=5, symbolBrush=brush, symbolPen="k"
-            )
-
-    @staticmethod
-    def _create_phase_curve(cycle_num: int) -> pg.PlotDataItem:
-        brush = et.utils.pg_brush_cycler(cycle_num)
-        return pg.PlotDataItem(
-            pen=None, symbol="o", symbolSize=5, symbolBrush=brush, symbolPen="k"
+        self.subsweeps_distances_m = core_utils.map_over_extended_structure(
+            lambda args: self._get_distances_m(*args),
+            core_utils.zip_extended_structures(session_config.groups, metadatas),
         )
 
-    @staticmethod
-    def _create_amplitude_plot(parent: pg.GraphicsLayout, colspan: int) -> pg.PlotItem:
-        ampl_plot = parent.addPlot(colspan=colspan)
-        ampl_plot.setMenuEnabled(False)
-        ampl_plot.showGrid(x=True, y=True)
-        ampl_plot.setLabel("left", "Amplitude")
-        return ampl_plot
+        self._setup_amplitude(session_config)
+        self._setup_phase_and_dvm(session_config, metadatas)
 
     @staticmethod
-    def _create_phase_plot(parent: pg.GraphicsLayout, colspan: int) -> pg.PlotItem:
-        phase_plot = parent.addPlot(colspan=colspan)
-        phase_plot.setMenuEnabled(False)
-        phase_plot.showGrid(x=True, y=True)
-        phase_plot.setLabel("left", "Phase")
-        phase_plot.setYRange(-np.pi, np.pi)
-        phase_plot.getAxis("left").setTicks(et.utils.pg_phase_ticks)
-        return phase_plot
+    def _get_distances_m(
+        config: a121.SensorConfig, metadata: a121.Metadata
+    ) -> list[npt.NDArray[np.float_]]:
+        return [algo.get_distances_m(subsweep, metadata)[0] for subsweep in config.subsweeps]
+
+    def _setup_amplitude(self, session_config: a121.SessionConfig) -> None:
+        counter = itertools.count(0)
+
+        entry_serial_numbers = core_utils.map_over_extended_structure(
+            lambda _: next(counter), session_config.groups
+        )
+        shape = core_utils.extended_structure_shape(session_config.groups)
+        sensor_ids = [{sensor_id: sensor_id for sensor_id in group} for group in shape]
+        group_idxs = [
+            {sensor_id: group_idx for sensor_id in group} for group_idx, group in enumerate(shape)
+        ]
+
+        num_unique_sensors = len(set(core_utils.iterate_extended_structure_values(sensor_ids)))
+
+        config_placement = core_utils.zip3_extended_structures(
+            entry_serial_numbers, sensor_ids, group_idxs
+        )
+
+        self.ampl_curves = core_utils.map_over_extended_structure(
+            lambda args: self._create_amplitude_curves_for_subsweeps(
+                args[0],
+                *args[1],
+                num_groups=len(session_config.groups),
+                num_sensors=num_unique_sensors,
+            ),
+            core_utils.zip_extended_structures(session_config.groups, config_placement),
+        )
+
+        self.ampl_plot = self.amplitude_plot_widget.addPlot()
+        self.ampl_plot.setMenuEnabled(False)
+        self.ampl_plot.showGrid(x=True, y=True)
+        self.ampl_plot.setLabel("left", "Amplitude")
+        self.ampl_plot.setLabel("bottom", "Distance (m)")
+        if (
+            len(session_config.groups) > 1
+            or num_unique_sensors > 1
+            or any(
+                sensor_config.num_subsweeps > 1
+                for sensor_config in core_utils.iterate_extended_structure_values(
+                    session_config.groups
+                )
+            )
+        ):
+            self.ampl_plot.addLegend(brush=SEMI_TRANSPARENT_BRUSH)
+
+        for curves in core_utils.iterate_extended_structure_values(self.ampl_curves):
+            for curve in curves:
+                self.ampl_plot.addItem(curve)
 
     @staticmethod
-    def _create_fft_plot(
-        parent: pg.GraphicsLayout,
+    def _legend_label(
+        sensor_id: int,
+        group_idx: int,
+        subsweep_index: int,
+        num_groups: int,
+        num_sensors: int,
+        num_subsweeps: int,
+    ) -> str:
+        parts = []
+
+        if num_groups > 1:
+            if num_sensors > 1 or num_subsweeps > 1:
+                parts += [f"G{group_idx}"]
+            else:
+                parts += [f"Group {group_idx}"]
+
+        if num_sensors > 1:
+            if num_groups > 1 or num_subsweeps > 1:
+                parts += [f"S{sensor_id}"]
+            else:
+                parts += [f"Sensor {sensor_id}"]
+
+        if num_subsweeps > 1:
+            if num_groups > 1 or num_sensors > 1:
+                parts += [f"SS{subsweep_index + 1}"]
+            else:
+                parts += [f"Subsweep {subsweep_index + 1}"]
+
+        return ":".join(parts)
+
+    def _create_amplitude_curves_for_subsweeps(
+        self,
+        sensor_config: a121.SensorConfig,
+        entry_serial_number: int,
+        sensor_id: int,
+        group_idx: int,
         *,
-        distances_m: npt.NDArray[np.float_],
-        step_length_m: float,
-        vels: npt.NDArray[np.float_],
-        vel_res: float,
-    ) -> Tuple[pg.PlotItem, pg.ImageItem]:
-        transform = QTransform()
-        transform.translate(distances_m[0], vels[0] - 0.5 * vel_res)
-        transform.scale(step_length_m, vel_res)
+        num_groups: int,
+        num_sensors: int,
+    ) -> list[pg.PlotDataItem]:
+        subsweep_styles = [
+            QtCore.Qt.PenStyle.SolidLine,
+            QtCore.Qt.PenStyle.DashLine,
+            QtCore.Qt.PenStyle.DotLine,
+            QtCore.Qt.PenStyle.DashDotLine,
+        ]
 
-        im = pg.ImageItem(autoDownsample=True)
-        im.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
-        im.setTransform(transform)
+        return [
+            pg.PlotDataItem(
+                name=self._legend_label(
+                    sensor_id,
+                    group_idx,
+                    index,
+                    num_groups,
+                    num_sensors,
+                    sensor_config.num_subsweeps,
+                ),
+                pen=et.utils.pg_pen_cycler(entry_serial_number, style=subsweep_styles[index]),
+            )
+            for index, subsweep in enumerate(sensor_config.subsweeps)
+        ]
 
-        plot = parent.addPlot()
-        plot.setMenuEnabled(False)
-        plot.setLabel("bottom", "Distance (m)")
-        plot.setLabel("left", "Velocity (m/s)")
-        plot.addItem(im)
+    def _setup_phase_and_dvm(
+        self, session_config: a121.SessionConfig, metadatas: list[dict[int, a121.Metadata]]
+    ) -> None:
+        phase_curves = []
+        dvm_images = []
 
-        return plot, im
+        for group_idx, sensor_id, sensor_config in core_utils.iterate_extended_structure(
+            session_config.groups
+        ):
+            plot_widget = pg.GraphicsLayoutWidget()
+
+            phase_plot = plot_widget.addPlot(colspan=sensor_config.num_subsweeps)
+            phase_plot.setMenuEnabled(False)
+            phase_plot.showGrid(x=True, y=True)
+            phase_plot.setLabel("left", "Phase")
+            phase_plot.setYRange(-np.pi, np.pi)
+            phase_plot.getAxis("left").setTicks(et.utils.pg_phase_ticks)
+
+            if sensor_config.num_subsweeps > 1:
+                phase_plot.addLegend(brush=SEMI_TRANSPARENT_BRUSH)
+
+            subsweep_styles = [
+                dict(symbol="o", symbolSize=5),  # circle
+                dict(symbol="t1", symbolSize=5),  # triangle
+                dict(symbol="s", symbolSize=4),  # square
+                dict(symbol="d", symbolSize=6),  # diamond
+            ]
+
+            subsweep_phase_curves = [
+                pg.PlotDataItem(
+                    name=f"Subsweep {i + 1}",
+                    pen=None,
+                    **subsweep_styles[i],
+                    symbolBrush=et.utils.pg_brush_cycler(0),
+                    symbolPen="k",
+                )
+                for i in range(sensor_config.num_subsweeps)
+            ]
+
+            phase_curves.append((group_idx, sensor_id, subsweep_phase_curves))
+
+            for phase_curve in subsweep_phase_curves:
+                phase_plot.addItem(phase_curve)
+
+            plot_widget.nextRow()
+
+            subsweeps_distances_m = self.subsweeps_distances_m[group_idx][sensor_id]
+
+            metadata = metadatas[group_idx][sensor_id]
+            vels, vel_res = algo.get_approx_fft_vels(metadata, sensor_config)
+            images = []
+            for subsweep_index, subsweep_distances_m in enumerate(subsweeps_distances_m):
+                plot = plot_widget.addPlot()
+                plot.setMenuEnabled(False)
+                plot.setLabel("bottom", "Distance (m)")
+                plot.setLabel("left", "Velocity (m/s)")
+
+                if sensor_config.num_subsweeps > 1:
+                    plot.setTitle(f"Subsweep {subsweep_index + 1}")
+
+                transform = QTransform()
+                transform.translate(subsweep_distances_m[0], vels[0] - 0.5 * vel_res)
+                transform.scale(metadata.base_step_length_m, vel_res)
+
+                image = pg.ImageItem(autoDownsample=True)
+                image.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
+                image.setTransform(transform)
+
+                plot.addItem(image)
+                images.append(image)
+
+            dvm_images.append((group_idx, sensor_id, images))
+
+            self.tab_widget.addTab(plot_widget, f"G{group_idx}:S{sensor_id}")
+
+        self.phase_curves = core_utils.create_extended_structure(phase_curves)
+        self.ft_images = core_utils.create_extended_structure(dvm_images)
 
 
 class PluginSpec(
-    ProcessorPluginSpec[a121.Result, ProcessorConfig, ProcessorResult, a121.Metadata]
+    ProcessorPluginSpec[
+        List[Dict[int, a121.Result]],
+        ProcessorConfig,
+        ProcessorResult,
+        List[Dict[int, a121.Metadata]],
+    ]
 ):
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str

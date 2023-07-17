@@ -2,6 +2,7 @@
 # All rights reserved
 
 from .backend_plugin import (
+    ExtendedProcessorBackendPluginBase,
     GenericProcessorBackendPluginBase,
     ProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
