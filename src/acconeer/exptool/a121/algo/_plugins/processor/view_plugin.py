@@ -74,7 +74,9 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         scrolly_layout.addWidget(self.misc_error_view)
 
         self.session_config_editor = SessionConfigEditor(
-            self.supports_multiple_subsweeps(), self.scrolly_widget
+            self.supports_multiple_subsweeps(),
+            self.supports_multiple_sensors(),
+            self.scrolly_widget,
         )
         self.session_config_editor.sig_update.connect(self._on_session_config_update)
         scrolly_layout.addWidget(self.session_config_editor)
@@ -149,6 +151,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
 
     @classmethod
     def supports_multiple_subsweeps(self) -> bool:
+        return False
+
+    @classmethod
+    def supports_multiple_sensors(self) -> bool:
         return False
 
     @classmethod

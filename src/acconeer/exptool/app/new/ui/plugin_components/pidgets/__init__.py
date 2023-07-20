@@ -4,6 +4,7 @@
 from . import hooks
 from .pidget_groups import CollapsiblePidgetGroup, FlatPidgetGroup, PidgetGroup, WidgetHook
 from .pidgets import (
+    WIDGET_WIDTH,
     CheckboxPidget,
     CheckboxPidgetFactory,
     ComboboxPidget,
@@ -25,6 +26,7 @@ from .pidgets import (
     OptionalPidget,
     OptionalPidgetFactory,
     Pidget,
+    PidgetComboBox,
     PidgetFactory,
     PidgetHook,
     SensorIdPidget,

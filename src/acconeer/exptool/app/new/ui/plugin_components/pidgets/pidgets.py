@@ -521,7 +521,7 @@ class ComboboxPidget(Pidget, Generic[T]):
     def __init__(self, factory: ComboboxPidgetFactory[T], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self._combobox = _PidgetComboBox(self._body_widget)
+        self._combobox = PidgetComboBox(self._body_widget)
         self._body_layout.addWidget(self._combobox)
 
         for displayed_text, user_data in factory.items:
@@ -633,7 +633,7 @@ class OptionalEnumPidget(OptionalPidget):
     def __init__(self, factory: OptionalEnumPidgetFactory[EnumT], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self._combobox = _PidgetComboBox(self._body_widget)
+        self._combobox = PidgetComboBox(self._body_widget)
         self._body_layout.addWidget(self._combobox)
 
         for displayed_text, user_data in factory.items:
@@ -675,15 +675,15 @@ class OptionalEnumPidget(OptionalPidget):
             self._combobox.setCurrentIndex(index)
 
 
-_WIDGET_WIDTH = 125
+WIDGET_WIDTH = 125
 
 
-class _PidgetComboBox(QComboBox):
+class PidgetComboBox(QComboBox):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self.setFixedWidth(_WIDGET_WIDTH)
+        self.setFixedWidth(WIDGET_WIDTH)
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         if self.hasFocus():
@@ -706,7 +706,7 @@ class _PidgetSpinBox(QSpinBox):
         self.setKeyboardTracking(False)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
-        self.setFixedWidth(_WIDGET_WIDTH)
+        self.setFixedWidth(WIDGET_WIDTH)
 
         self.setRange(*_convert_int_limits_to_qt_range(limits))
 
@@ -738,7 +738,7 @@ class _PidgetDoubleSpinBox(QDoubleSpinBox):
         self.setKeyboardTracking(False)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
-        self.setFixedWidth(_WIDGET_WIDTH)
+        self.setFixedWidth(WIDGET_WIDTH)
 
         self.setRange(*_convert_float_limits_to_qt_range(limits))
         self.setDecimals(decimals)

@@ -114,6 +114,10 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     def supports_multiple_subsweeps(self) -> bool:
         return True
 
+    @classmethod
+    def supports_multiple_sensors(self) -> bool:
+        return True
+
 
 _Extended = List[Dict[int, _T]]
 
