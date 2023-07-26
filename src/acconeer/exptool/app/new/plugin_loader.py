@@ -10,6 +10,7 @@ def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a121.algo.bilateration._plugin import BILATERATION_PLUGIN
     from acconeer.exptool.a121.algo.breathing._ref_app_plugin import BREATHING_PLUGIN
     from acconeer.exptool.a121.algo.distance._detector_plugin import DISTANCE_DETECTOR_PLUGIN
+    from acconeer.exptool.a121.algo.hand_motion._example_app_plugin import HAND_MOTION_PLUGIN
     from acconeer.exptool.a121.algo.obstacle._detector_plugin import OBSTACLE_DETECTOR_PLUGIN
     from acconeer.exptool.a121.algo.obstacle_bilateration._plugin import (
         OBSTACLE_BILATERATION_PLUGIN,
@@ -31,6 +32,7 @@ def load_default_plugins() -> list[PluginSpec]:
         BILATERATION_PLUGIN,
         BREATHING_PLUGIN,
         DISTANCE_DETECTOR_PLUGIN,
+        HAND_MOTION_PLUGIN,
         OBSTACLE_BILATERATION_PLUGIN,
         OBSTACLE_DETECTOR_PLUGIN,
         PHASE_TRACKING_PLUGIN,

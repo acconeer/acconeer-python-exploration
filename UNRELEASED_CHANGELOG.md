@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Add hand motion detection algorithm for faucet applications
 
 ### Changed
 
