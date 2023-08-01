@@ -12,6 +12,7 @@ from typing import Any, Iterator, Optional, Tuple, Type, Union
 import attrs
 from serial.serialutil import SerialException
 
+from acconeer.exptool._links import BufferedLink, NullLinkError, SerialLink
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     Metadata,
@@ -39,7 +40,6 @@ from .exploration_protocol import (
     get_exploration_protocol,
     messages,
 )
-from .links import AdaptedSerialLink, BufferedLink, NullLinkError
 from .message import Message, MessageT
 from .utils import autodetermine_client_link, get_calibrations_provided, link_factory
 
@@ -207,8 +207,8 @@ class ExplorationClient(CommonClient):
             self._protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
 
     def _update_baudrate(self) -> None:
-        # Only Change baudrate for AdaptedSerialLink
-        if not isinstance(self._link, AdaptedSerialLink):
+        # Only Change baudrate for SerialLink
+        if not isinstance(self._link, SerialLink):
             return
 
         if self.client_info.serial is None:

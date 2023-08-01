@@ -9,6 +9,5 @@ from .exploration_protocol import (
     ServerError,
     get_exploration_protocol,
 )
-from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink
 from .message import Message, MessageT
 from .mock_client import MockClient

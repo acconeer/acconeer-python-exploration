@@ -8,6 +8,7 @@ from typing import List, Optional
 import attrs
 
 import acconeer.exptool as et
+from acconeer.exptool._links import BufferedLink, NullLink, SerialLink, SocketLink, USBLink
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     SensorCalibration,
@@ -15,12 +16,10 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
     USBInfo,
 )
-from acconeer.exptool.a121._core.mediators import BufferedLink
 from acconeer.exptool.a121._core.utils import iterate_extended_structure
 from acconeer.exptool.utils import SerialDevice, USBDevice  # type: ignore[import]
 
 from .common_client import ClientError
-from .links import AdaptedSerialLink, AdaptedSocketLink, AdaptedUSBLink, NullLink
 
 
 def get_one_serial_device() -> SerialDevice:
@@ -51,12 +50,10 @@ def get_one_usb_device(only_accessible: bool = False) -> USBDevice:
 def link_factory(client_info: ClientInfo) -> BufferedLink:
 
     if client_info.socket is not None:
-        return AdaptedSocketLink(
-            host=client_info.socket.ip_address, port=client_info.socket.tcp_port
-        )
+        return SocketLink(host=client_info.socket.ip_address, port=client_info.socket.tcp_port)
 
     if client_info.serial is not None:
-        return AdaptedSerialLink(
+        return SerialLink(
             port=client_info.serial.port,
         )
 
@@ -70,7 +67,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
             usb_device = get_one_usb_device()
 
         if usb_device is not None:
-            return AdaptedUSBLink(
+            return USBLink(
                 vid=usb_device.vid,
                 pid=usb_device.pid,
                 serial=usb_device.serial,
