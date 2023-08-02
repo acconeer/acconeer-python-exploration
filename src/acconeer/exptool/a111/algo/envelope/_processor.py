@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from enum import Enum
@@ -6,8 +6,6 @@ from enum import Enum
 import numpy as np
 
 import acconeer.exptool as et
-
-from .calibration import EnvelopeCalibration
 
 
 def get_sensor_config():
@@ -59,9 +57,6 @@ class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
         self._session_info = session_info
 
-        if calibration and self._session_info.get("data_length") != len(calibration.background[0]):
-            raise Exception("Invalid calibration. Clear calibration after changing configuration")
-
         self.processing_config = processing_config
 
         self.depths = et.a111.get_range_depths(sensor_config, session_info)
@@ -75,25 +70,10 @@ class Processor:
         self.history = np.zeros([history_length, num_sensors, num_depths])
 
         self.data_index = 0
-        self.calibration = calibration
 
     def process(self, data, data_info):
-        new_calibration = None
         bg = None
         output_data = data
-
-        if self.calibration is None:
-            if self.data_index < self.bg_buffer.shape[0]:
-                self.bg_buffer[self.data_index] = data
-            if self.data_index == self.bg_buffer.shape[0] - 1:
-                new_calibration = EnvelopeCalibration(self.bg_buffer.mean(axis=0))
-        else:
-            if self.processing_config.bg_mode == ProcessingConfiguration.BackgroundMode.SUBTRACT:
-                output_data = np.maximum(0, data - self.calibration.background)
-            else:
-                output_data = np.maximum(data, self.calibration.background)
-
-            bg = self.calibration.background
 
         self.history = np.roll(self.history, -1, axis=0)
         self.history[-1] = output_data
@@ -108,18 +88,7 @@ class Processor:
             "history": self.history,
             "peak_depths": filtered_peak_depths,
         }
-        if new_calibration is not None:
-            output["new_calibration"] = new_calibration
 
         self.data_index += 1
 
         return output
-
-    def update_calibration(self, new_calibration: EnvelopeCalibration):
-        if new_calibration and self._session_info.get("data_length") != len(
-            new_calibration.background[0]
-        ):
-            raise Exception("Invalid calibration. Clear calibration after changing configuration")
-
-        self.calibration = new_calibration
-        self.data_index = 0
