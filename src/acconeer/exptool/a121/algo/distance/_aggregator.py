@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoParamEnum
+from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoParamEnum
 from acconeer.exptool.a121.algo.distance._processors import (
     Processor,
     ProcessorConfig,
@@ -59,8 +59,6 @@ class Aggregator:
     Aggregates result, based on selected peak sorting strategy, from underlying Processor objects.
     """
 
-    MIN_PEAK_DIST_M = 0.005
-
     def __init__(
         self,
         session_config: a121.SessionConfig,
@@ -92,6 +90,7 @@ class Aggregator:
         processors_result = []
         dists: npt.NDArray[np.float_] = np.array([])
         strengths: npt.NDArray[np.float_] = np.array([])
+        profile_fwhms: npt.NDArray[np.float_] = np.array([])
 
         for spec, processor in zip(self.specs, self.processors):
             processor_result = processor.process(extended_result[spec.group_index][self.sensor_id])
@@ -101,9 +100,19 @@ class Aggregator:
                     (strengths, np.array(processor_result.estimated_strengths))
                 )
                 dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))
-        (dists_merged, strengths_merged) = self._merge_peaks(
-            self.MIN_PEAK_DIST_M, dists, strengths
-        )
+                profile_fwhms = np.concatenate(
+                    (
+                        profile_fwhms,
+                        np.ones_like(np.array(processor_result.estimated_distances))
+                        * ENVELOPE_FWHM_M[processor.profile],
+                    )
+                )
+        # Remove first element as the FWHM of the subsweep with greater profile is used when
+        # determining the distance for merging two peaks.
+        if profile_fwhms.shape[0] != 0:
+            profile_fwhms = np.delete(profile_fwhms, 0)
+
+        (dists_merged, strengths_merged) = self._merge_peaks(profile_fwhms, dists, strengths)
         (dists_sorted, strengths_sorted) = self._sort_peaks(
             dists_merged, strengths_merged, self.config.peak_sorting_method
         )
@@ -118,7 +127,7 @@ class Aggregator:
 
     @staticmethod
     def _merge_peaks(
-        min_peak_to_peak_dist: float,
+        profile_fwhms: npt.NDArray[np.float_],
         dists: npt.NDArray[np.float_],
         strengths: npt.NDArray[np.float_],
     ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
@@ -126,7 +135,7 @@ class Aggregator:
         distances_sorted = dists[sorting_order]
         strengths_sorted = strengths[sorting_order]
 
-        peak_cluster_idxs = np.where(min_peak_to_peak_dist < np.diff(distances_sorted))[0] + 1
+        peak_cluster_idxs = np.where(profile_fwhms < np.diff(distances_sorted))[0] + 1
         distances_merged = [
             np.mean(cluster)
             for cluster in np.split(distances_sorted, peak_cluster_idxs)
