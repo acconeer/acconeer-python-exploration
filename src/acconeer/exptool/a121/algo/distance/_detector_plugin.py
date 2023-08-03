@@ -206,7 +206,9 @@ class BackendPlugin(DetectorBackendPluginBase[SharedState]):
 
 class PlotPlugin(DetectorPlotPluginBase):
 
-    _DISTANCE_HISTORY_SPAN_MARGIN = 0.01
+    _DISTANCE_HISTORY_SPAN_MARGIN = 0.05
+    _DISTANCE_HISTORY_LEN = 100
+    _MAX_NUM_MINOR_PEAKS = 4
 
     def __init__(self, *, plot_layout: pg.GraphicsLayout, app_model: AppModel) -> None:
         super().__init__(plot_layout=plot_layout, app_model=app_model)
@@ -220,10 +222,15 @@ class PlotPlugin(DetectorPlotPluginBase):
 
     def setup(self, num_curves: int) -> None:
         self.num_curves = num_curves
-        self.distance_history = [np.NaN] * 100
+
+        self.main_peak_history = np.full(self._DISTANCE_HISTORY_LEN, fill_value=np.nan)
+        self.minor_peaks_history = np.full(
+            (self._MAX_NUM_MINOR_PEAKS, self._DISTANCE_HISTORY_LEN), fill_value=np.nan
+        )
 
         win = self.plot_layout
 
+        # Sweep plot
         self.sweep_plot = win.addPlot(row=0, col=0)
         self.sweep_plot.setMenuEnabled(False)
         self.sweep_plot.showGrid(x=True, y=True)
@@ -249,20 +256,43 @@ class PlotPlugin(DetectorPlotPluginBase):
         sweep_plot_legend.addItem(self.sweep_curves[0], "Sweep")
         sweep_plot_legend.addItem(self.threshold_curves[0], "Threshold")
 
+        # History plot
         self.dist_history_plot = win.addPlot(row=1, col=0)
         self.dist_history_plot.setMenuEnabled(False)
         self.dist_history_plot.showGrid(x=True, y=True)
         self.dist_history_plot.addLegend()
         self.dist_history_plot.setLabel("left", "Estimated distance (m)")
         self.dist_history_plot.addItem(pg.PlotDataItem())
-        self.dist_history_plot.setXRange(0, len(self.distance_history))
+        self.dist_history_plot.setXRange(0, self._DISTANCE_HISTORY_LEN)
 
-        pen = et.utils.pg_pen_cycler(0)
         brush = et.utils.pg_brush_cycler(0)
-        symbol_kw = dict(symbol="o", symbolSize=5, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
-        self.dist_history_curve = self.dist_history_plot.plot(**feat_kw)
+        symbol_kw_main = dict(
+            symbol="o", symbolSize=5, symbolBrush=brush, symbolPen=None, pen=None
+        )
+        feat_kw = dict(**symbol_kw_main)
+        self.main_peak_history_curve = self.dist_history_plot.plot(**feat_kw)
 
+        minor_colors = [et.utils.color_cycler(i) for i in range(1, self._MAX_NUM_MINOR_PEAKS)]
+        self.minor_peaks_history_curves = [
+            self.dist_history_plot.plot(
+                **dict(
+                    **dict(
+                        symbol="o",
+                        symbolSize=5,
+                        symbolBrush=pg.mkBrush(color),
+                        symbolPen=None,
+                        pen=None,
+                    ),
+                )
+            )
+            for color in minor_colors
+        ]
+
+        # History legend
+        self.history_plot_legend = pg.LegendItem()
+        self.dist_history_plot.addItem(self.history_plot_legend)
+
+        # Smoothing
         self.sweep_smooth_max = et.utils.SmoothMax()
         self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.5)
 
@@ -271,13 +301,27 @@ class PlotPlugin(DetectorPlotPluginBase):
         (result,) = list(multi_sensor_result.values())
 
         assert result.distances is not None
+        assert result.strengths is not None
 
-        self.distance_history.pop(0)
-        if len(result.distances) != 0:
-            self.distance_history.append(result.distances[0])
+        strengths = result.strengths
+        distances = result.distances
+
+        # Update main peak history
+        self.main_peak_history = np.roll(self.main_peak_history, shift=-1)
+        if len(distances) != 0:
+            self.main_peak_history[-1] = distances[0]
         else:
-            self.distance_history.append(np.nan)
+            self.main_peak_history[-1] = np.nan
 
+        # Update minor peaks history
+        num_minor_peaks = min(len(distances) - 1, self._MAX_NUM_MINOR_PEAKS)
+        new_history = np.full(self._MAX_NUM_MINOR_PEAKS, fill_value=np.nan)
+        self.minor_peaks_history = np.roll(self.minor_peaks_history, shift=-1)
+        if 0 < num_minor_peaks:
+            new_history[:num_minor_peaks] = np.array(distances[1 : 1 + num_minor_peaks])
+        self.minor_peaks_history[:, -1] = new_history
+
+        # Sweep plot
         max_val_in_plot = 0
         for idx, processor_result in enumerate(result.processor_results):
             assert processor_result.extra_result.used_threshold is not None
@@ -297,14 +341,53 @@ class PlotPlugin(DetectorPlotPluginBase):
 
         self.sweep_plot.setYRange(0, self.sweep_smooth_max.update(max_val_in_plot))
 
-        if np.any(~np.isnan(self.distance_history)):
-            self.dist_history_curve.setData(self.distance_history)
-            lims = self.distance_hist_smooth_lim.update(self.distance_history)
+        # History plot
+        self.history_plot_legend.clear()
+
+        if np.any(~np.isnan(self.main_peak_history)):
+            self.main_peak_history_curve.setData(self.main_peak_history)
+        else:
+            self.main_peak_history_curve.setData([0])
+
+        if 0 < strengths.size:
+            string_to_display = "Main peak strength : {:.1f} dBsm".format(strengths[0])
+            self.history_plot_legend.addItem(self.main_peak_history_curve, string_to_display)
+
+        for sec_peak_idx, curve in enumerate(self.minor_peaks_history_curves):
+            if np.any(~np.isnan(self.minor_peaks_history[sec_peak_idx, :])):
+                curve.setData(self.minor_peaks_history[sec_peak_idx, :])
+            else:
+                curve.setData([0])
+
+            if sec_peak_idx + 1 <= num_minor_peaks:
+                string_to_display = "Minor peak strength : {:.1f} dBsm".format(
+                    strengths[sec_peak_idx + 1]
+                )
+                self.history_plot_legend.addItem(curve, string_to_display)
+
+        # Update limits of the history plot
+        max_vals = []
+        min_vals = []
+        if np.any(~np.isnan(self.main_peak_history)):
+            max_vals.append(np.nanmax(self.main_peak_history))
+            min_vals.append(np.nanmin(self.main_peak_history))
+
+        if np.any(~np.isnan(self.minor_peaks_history)):
+            max_vals.append(np.nanmax(self.minor_peaks_history))
+            min_vals.append(np.nanmin(self.minor_peaks_history))
+
+        if min_vals:
+            lims = self.distance_hist_smooth_lim.update([min(min_vals), max(max_vals)])
             lower_lim = max(0.0, lims[0] - self._DISTANCE_HISTORY_SPAN_MARGIN)
             upper_lim = lims[1] + self._DISTANCE_HISTORY_SPAN_MARGIN
             self.dist_history_plot.setYRange(lower_lim, upper_lim)
-        else:
-            self.dist_history_curve.setData([])
+
+        # Update position of legend
+        y_range = self.dist_history_plot.getAxis("left").range
+        x_range = self.dist_history_plot.getAxis("bottom").range
+        legend_y_pos = (y_range[1] - y_range[0]) * 0.95 + y_range[0]
+        legend_x_pos = (x_range[1]) * 0.01
+        self.history_plot_legend.setPos(legend_x_pos, legend_y_pos)
 
 
 class ViewPlugin(DetectorViewPluginBase):
