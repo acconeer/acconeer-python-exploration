@@ -29,7 +29,8 @@ from acconeer.exptool.a121.algo import (
 
 
 DEFAULT_SC_BG_NUM_STD_DEV = 6.0
-DEFAULT_FIXED_THRESHOLD_VALUE = 100.0
+DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE = 100.0
+DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE = 0.0
 DEFAULT_THRESHOLD_SENSITIVITY = 0.5
 
 
@@ -47,11 +48,13 @@ class ProcessorMode(AlgoParamEnum):
 class ThresholdMethod(AlgoParamEnum):
     """Threshold methods.
     ``CFAR`` Constant False Alarm Rate.
-    ``FIXED`` Fixed threshold.
+    ``FIXED_AMPLITUDE`` Fixed amplitude threshold.
+    ``FIXED_STRENGTH`` Fixed strength threshold.
     ``RECORDED`` Recorded threshold."""
 
     CFAR = enum.auto()
-    FIXED = enum.auto()
+    FIXED_AMPLITUDE = enum.auto()
+    FIXED_STRENGTH = enum.auto()
     RECORDED = enum.auto()
 
 
@@ -85,7 +88,12 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         default=ReflectorShape.GENERIC, converter=ReflectorShape
     )
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
-    fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
+    fixed_amplitude_threshold_value: float = attrs.field(
+        default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE
+    )
+    fixed_strength_threshold_value: float = attrs.field(
+        default=DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE
+    )
 
     def _collect_validation_results(
         self, config: Optional[a121.SessionConfig]
@@ -416,9 +424,16 @@ class Processor(ProcessorBase[ProcessorResult]):
                 or self.context.recorded_threshold_noise_std is None
             ):
                 raise ValueError("Missing recorded threshold inputs in context")
-        elif self.threshold_method == ThresholdMethod.FIXED:
+        elif self.threshold_method == ThresholdMethod.FIXED_AMPLITUDE:
             self.threshold = np.full(
-                self.num_points_cropped, self.processor_config.fixed_threshold_value
+                self.num_points_cropped, self.processor_config.fixed_amplitude_threshold_value
+            )
+        elif self.threshold_method == ThresholdMethod.FIXED_STRENGTH:
+            self.threshold = self._calculate_fixed_strength_threshold(
+                self.range_subsweep_configs,
+                self.context.bg_noise_std,  # type: ignore[arg-type]
+                self.processor_config.reflector_shape,
+                self.processor_config.fixed_strength_threshold_value,
             )
         elif self.threshold_method == ThresholdMethod.CFAR:
             self.cfar_abs_noise = np.zeros(shape=self.num_points_cropped)
@@ -569,7 +584,10 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self.num_stds_in_threshold,
                 self.cfar_abs_noise,
             )
-        elif self.threshold_method == ThresholdMethod.FIXED:
+        elif (
+            self.threshold_method == ThresholdMethod.FIXED_AMPLITUDE
+            or self.threshold_method == ThresholdMethod.FIXED_STRENGTH
+        ):
             return self.threshold
         elif self.threshold_method == ThresholdMethod.RECORDED:
             assert self.context.reference_temperature is not None
@@ -665,6 +683,38 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         threshold += abs_noise_std * num_stds
         return threshold
+
+    def _calculate_fixed_strength_threshold(
+        self,
+        subsweeps: list[a121.SubsweepConfig],
+        bg_noise_std: list[float],
+        reflector_shape: ReflectorShape,
+        strength: float,
+    ) -> npt.NDArray[np.float_]:
+        """Calculates the threshold corresponding to a given RCS."""
+        distances_m = (
+            self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
+        ) * APPROX_BASE_STEP_LENGTH_M
+        processing_gain_db = 10 * np.log10(
+            self.calc_processing_gain(self.profile, self.step_length)
+        )
+        start_points = [subsweep.start_point for subsweep in subsweeps]
+        bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
+        profile = self.profile
+
+        threshold = []
+        for distance_m in distances_m:
+            subsweep_idx = np.sum(bpts_m < distance_m) - 1
+            sigma = bg_noise_std[subsweep_idx]
+            hwaas = subsweeps[subsweep_idx].hwaas
+
+            n_db = 20 * np.log10(sigma)
+            r_db = reflector_shape.exponent * 10 * np.log10(distance_m)
+            rlg_db = self.RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
+
+            threshold.append(10 ** ((processing_gain_db + n_db + rlg_db - r_db + strength) / 20))
+
+        return np.array(threshold)
 
     @classmethod
     def _convert_amplitudes_to_strengths(

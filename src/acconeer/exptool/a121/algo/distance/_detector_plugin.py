@@ -373,7 +373,7 @@ class PlotPlugin(PgPlotPlugin):
             self.main_peak_history_curve.setData([0])
 
         if 0 < strengths.size:
-            string_to_display = "Main peak strength : {:.1f} dBsm".format(strengths[0])
+            string_to_display = "Main peak strength : {:.1f}".format(strengths[0])
             self.history_plot_legend.addItem(self.main_peak_history_curve, string_to_display)
 
         for sec_peak_idx, curve in enumerate(self.minor_peaks_history_curves):
@@ -383,7 +383,7 @@ class PlotPlugin(PgPlotPlugin):
                 curve.setData([0])
 
             if sec_peak_idx + 1 <= num_minor_peaks:
-                string_to_display = "Minor peak strength : {:.1f} dBsm".format(
+                string_to_display = "Minor peak strength : {:.1f}".format(
                     strengths[sec_peak_idx + 1]
                 )
                 self.history_plot_legend.addItem(curve, string_to_display)
@@ -562,15 +562,22 @@ class ViewPlugin(A121ViewPluginBase):
                 enum_type=ThresholdMethod,
                 label_mapping={
                     ThresholdMethod.CFAR: "CFAR",
-                    ThresholdMethod.FIXED: "Fixed",
+                    ThresholdMethod.FIXED_AMPLITUDE: "Fixed amplitude",
+                    ThresholdMethod.FIXED_STRENGTH: "Fixed strength",
                     ThresholdMethod.RECORDED: "Recorded",
                 },
             ),
-            "fixed_threshold_value": pidgets.FloatPidgetFactory(
-                name_label_text="Fixed threshold value",
+            "fixed_amplitude_threshold_value": pidgets.FloatPidgetFactory(
+                name_label_text="Fixed amplitude threshold value",
                 decimals=1,
                 limits=(0, None),
-                hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),
+                hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED_AMPLITUDE)),
+            ),
+            "fixed_strength_threshold_value": pidgets.FloatPidgetFactory(
+                name_label_text="Fixed strength threshold value",
+                decimals=1,
+                hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED_STRENGTH)),
+                suffix="dBsm",
             ),
             "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
                 name_label_text="Num frames in rec. thr.",
@@ -581,7 +588,10 @@ class ViewPlugin(A121ViewPluginBase):
                 decimals=2,
                 limits=(0, 1),
                 show_limit_values=False,
-                hooks=disable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),
+                hooks=disable_if(
+                    parameter_is("threshold_method", ThresholdMethod.FIXED_AMPLITUDE),
+                    parameter_is("threshold_method", ThresholdMethod.FIXED_STRENGTH),
+                ),
             ),
             "signal_quality": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Signal quality",
@@ -721,7 +731,7 @@ static void set_config(acc_detector_distance_config_t *config, distance_preset_c
 
     acc_detector_distance_config_threshold_method_set(config, ACC_DETECTOR_DISTANCE_THRESHOLD_METHOD_{config.threshold_method.name});
     acc_detector_distance_config_num_frames_recorded_threshold_set(config, {config.num_frames_in_recorded_threshold}U);
-    acc_detector_distance_config_fixed_threshold_value_set(config, {config.fixed_threshold_value:.3f}f);
+    acc_detector_distance_config_fixed_threshold_value_set(config, {config.fixed_amplitude_threshold_value:.3f}f);
     acc_detector_distance_config_threshold_sensitivity_set(config, {config.threshold_sensitivity:.3f}f);
 
     acc_detector_distance_config_close_range_leakage_cancellation_set(config, {str(config.close_range_leakage_cancellation).lower()});

@@ -28,7 +28,8 @@ from acconeer.exptool.a121.algo import (
 
 from ._aggregator import Aggregator, AggregatorConfig, PeakSortingMethod, ProcessorSpec
 from ._processors import (
-    DEFAULT_FIXED_THRESHOLD_VALUE,
+    DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE,
+    DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE,
     DEFAULT_THRESHOLD_SENSITIVITY,
     MeasurementType,
     Processor,
@@ -338,8 +339,15 @@ class DetectorConfig(AlgoConfigBase):
     num_frames_in_recorded_threshold: int = attrs.field(default=100)
     """Number of frames used when calibrating threshold."""
 
-    fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_THRESHOLD_VALUE)
-    """Value of fixed threshold."""
+    fixed_amplitude_threshold_value: float = attrs.field(
+        default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE
+    )
+    """Value of fixed amplitude threshold."""
+
+    fixed_strength_threshold_value: float = attrs.field(
+        default=DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE
+    )
+    """Value of fixed strength threshold."""
 
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
     """Sensitivity of threshold. High sensitivity equals low detection threshold, low sensitivity
@@ -1015,7 +1023,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
             processor_config = ProcessorConfig(
                 threshold_method=config.threshold_method,
-                fixed_threshold_value=config.fixed_threshold_value,
+                fixed_amplitude_threshold_value=config.fixed_amplitude_threshold_value,
+                fixed_strength_threshold_value=config.fixed_strength_threshold_value,
                 threshold_sensitivity=config.threshold_sensitivity,
             )
 
