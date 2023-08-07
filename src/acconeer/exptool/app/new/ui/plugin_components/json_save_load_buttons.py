@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import enum
 import json
 import traceback
 import typing as t
@@ -26,14 +27,22 @@ from .save_dialog import (
 )
 
 
+_ICON_SIZE = QSize(20, 20)
+_BUTTON_SIZE = QSize(35, 25)
+_FILE_DIALOG_FILTER = "JSON (*.json)"
+
+
 @te.runtime_checkable
 class JsonPresentable(te.Protocol):
     def to_json(self) -> str:
         ...
 
     @classmethod
-    def from_json(self, json: str) -> JsonPresentable:
+    def from_json(self, json_str: str) -> JsonPresentable:
         ...
+
+
+_JsonPresentableT = t.TypeVar("_JsonPresentableT", bound=JsonPresentable)
 
 
 def _none_coalescing_chain(*funcs: PresenterFunc) -> PresenterFunc:
@@ -65,81 +74,91 @@ def _json_presentation(instance: t.Any, t: PresentationType) -> t.Optional[str]:
     return None
 
 
-class JsonSaveLoadButtons(QWidget):
-    _ICON_SIZE = QSize(20, 20)
-    _BUTTON_SIZE = QSize(35, 25)
-    _ICON_TRANSIENT_CHECKMARK_DURATION_MS = 2000
-    _FILE_DIALOG_FILTER = "JSON (*.json)"
+def _show_transient_checkmark(button: QPushButton, duration_ms: int = 2000) -> None:
+    """Temporarily changes the icon of button to a checkmark"""
+    original_icon = button.icon()
+    button.setIcon(CHECKMARK())
+    QTimer.singleShot(duration_ms, lambda: button.setIcon(original_icon))
 
+
+def _handle_exception_with_popup(
+    f: t.Callable[..., t.Any], header: str, parent: QWidget
+) -> t.Callable[..., t.Any]:
+    """Decorates the function "f" by displaying any raised exception in an ExceptionWidget"""
+
+    def wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            ExceptionWidget(
+                parent=parent,
+                exc=HandledException(
+                    header + "\n" + f"The following exception was raised: {e!r}\n"
+                ),
+                traceback_str=traceback.format_exc(),
+            ).exec()
+
+    return wrapper
+
+
+class _JsonLoadButton(QPushButton):
     def __init__(
         self,
-        getter: t.Callable[[], t.Optional[JsonPresentable]],
         setter: t.Callable[[JsonPresentable], t.Any],
-        encoder: t.Callable[[JsonPresentable], str],
         decoder: t.Callable[[str], JsonPresentable],
-        extra_presenter: PresenterFunc,
         parent: t.Optional[QWidget] = None,
     ) -> None:
-        super().__init__(parent=parent)
+        super().__init__(FOLDER_OPEN(), "", parent=parent)
 
-        self._getter = getter
         self._setter = setter
-        self._encoder = encoder
         self._decoder = decoder
-        self._extra_presenter = extra_presenter
 
-        self._save = QPushButton(SAVE(), "")
-        self._save.setFixedSize(self._BUTTON_SIZE)
-        self._save.setIconSize(self._ICON_SIZE)
-        self._save.setToolTip("Save the current config to file")
-        self._save.clicked.connect(
-            self._except_errors(
-                self._save_to_selected_file,
-                header="Could not save config to file.",
-            )
-        )
-
-        self._load = QPushButton(FOLDER_OPEN(), "")
-        self._load.setFixedSize(self._BUTTON_SIZE)
-        self._load.setIconSize(self._ICON_SIZE)
-        self._load.setToolTip("Load a config from file")
-        self._load.clicked.connect(
-            self._except_errors(
+        self.setFixedSize(_BUTTON_SIZE)
+        self.setIconSize(_ICON_SIZE)
+        self.setToolTip("Load a config from file")
+        self.clicked.connect(
+            _handle_exception_with_popup(
                 self._load_and_set_selected_file,
                 header="Could not load config from file.",
+                parent=self,
             )
         )
 
-        self.setLayout(QHBoxLayout())
-        self.layout().setContentsMargins(5, 5, 5, 8)
-        self.layout().addWidget(self._save)
-        self.layout().addWidget(self._load)
-
-    @classmethod
-    def from_editor_and_config_type(
-        cls,
-        editor: DataEditor[t.Optional[JsonPresentable]],
-        config_type: t.Type[JsonPresentable],
-        extra_presenter: PresenterFunc = lambda i, t: None,
-    ) -> JsonSaveLoadButtons:
-        """
-        Creates a JsonSaveLoadButtons instance with a built-in JSON preview
-
-        :param editor: The editor to bind the save/load buttons to
-        :param config_type: The type (class) of the config
-        :param extra_presenter:
-            A PresenterFunc hooks into preview presentation creation.
-            This function should always return None if its arguments aren't handled.
-        """
-        buttons = cls(
-            editor.get_data,
-            editor.sig_update.emit,
-            config_type.to_json,
-            config_type.from_json,
-            extra_presenter,
+    def _load_and_set_selected_file(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            caption="Load from file",
+            filter=_FILE_DIALOG_FILTER,
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
-        editor.sig_update.connect(lambda model: buttons._save.setEnabled(model is not None))
-        return buttons
+
+        if filename:
+            self._setter(self._decoder(Path(filename).read_text()))
+            _show_transient_checkmark(self)
+
+
+class _JsonSaveButton(QPushButton):
+    def __init__(
+        self,
+        getter: t.Callable[[], t.Optional[_JsonPresentableT]],
+        encoder: t.Callable[[_JsonPresentableT], str],
+        extra_presenter: PresenterFunc,
+    ) -> None:
+        super().__init__(SAVE(), "")
+        self._getter = getter
+        self._encoder = encoder
+        self._extra_presenter = extra_presenter
+
+        self.setFixedSize(_BUTTON_SIZE)
+        self.setIconSize(_ICON_SIZE)
+        self.setToolTip("Save the current config to file")
+        self.clicked.connect(
+            _handle_exception_with_popup(
+                self._save_to_selected_file,
+                header="Could not save config to file.",
+                parent=self,
+            )
+        )
 
     def _save_to_selected_file(self) -> None:
         model = self._getter()
@@ -155,45 +174,51 @@ class JsonSaveLoadButtons(QWidget):
                 set_config_presenter,
                 self._extra_presenter,
             ),
-            filter=self._FILE_DIALOG_FILTER,
+            filter=_FILE_DIALOG_FILTER,
             parent=self,
         )
 
         if filename:
             Path(filename).with_suffix(".json").write_text(self._encoder(model))
-            self._show_transient_checkmark(self._save)
+            _show_transient_checkmark(self)
 
-    def _load_and_set_selected_file(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(
-            self,
-            caption="Load from file",
-            filter=self._FILE_DIALOG_FILTER,
-            options=QFileDialog.Option.DontUseNativeDialog,
+
+class JsonButtonOperations(enum.Flag):
+    SAVE = enum.auto()
+    LOAD = enum.auto()
+
+
+def create_json_save_load_buttons(
+    editor: DataEditor[t.Optional[_JsonPresentableT]],
+    config_type: t.Type[_JsonPresentableT],
+    operations: JsonButtonOperations = JsonButtonOperations.SAVE | JsonButtonOperations.LOAD,
+    extra_presenter: PresenterFunc = lambda i, t: None,
+) -> QWidget:
+    """
+    Creates buttons for saving/loading configs to/from json.
+
+    :param editor: The editor to bind the save/load buttons to
+    :param config_type: The type (class) of the config
+    :param operations:
+        Defines what operations the button(s) should perform.
+        This directly maps to which buttons are created.
+    :param extra_presenter:
+        A PresenterFunc hooks into save preview presentation creation.
+        This function should always return None if its arguments aren't handled.
+    """
+    wrapper = QWidget()
+    wrapper.setLayout(QHBoxLayout())
+    wrapper.layout().setContentsMargins(5, 5, 5, 8)
+
+    if operations & JsonButtonOperations.SAVE:
+        wrapper.layout().addWidget(
+            _JsonSaveButton(
+                editor.get_data,
+                config_type.to_json,
+                extra_presenter=extra_presenter,
+            )
         )
+    if operations & JsonButtonOperations.LOAD:
+        wrapper.layout().addWidget(_JsonLoadButton(editor.sig_update.emit, config_type.from_json))
 
-        if filename:
-            self._setter(self._decoder(Path(filename).read_text()))
-            self._show_transient_checkmark(self._load)
-
-    @classmethod
-    def _show_transient_checkmark(cls, button: QPushButton) -> None:
-        original_icon = button.icon()
-        button.setIcon(CHECKMARK())
-        QTimer.singleShot(
-            cls._ICON_TRANSIENT_CHECKMARK_DURATION_MS, lambda: button.setIcon(original_icon)
-        )
-
-    def _except_errors(self, f: t.Callable[..., t.Any], header: str) -> t.Callable[..., t.Any]:
-        def wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
-            try:
-                return f(*args, **kwargs)
-            except Exception as e:
-                ExceptionWidget(
-                    parent=self,
-                    exc=HandledException(
-                        header + "\n" + f"The following exception was raised: {e!r}\n"
-                    ),
-                    traceback_str=traceback.format_exc(),
-                ).exec()
-
-        return wrapper
+    return wrapper

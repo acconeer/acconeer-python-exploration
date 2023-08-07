@@ -15,7 +15,7 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .data_editor import DataEditor
-from .json_save_load_buttons import JsonSaveLoadButtons
+from .json_save_load_buttons import create_json_save_load_buttons
 from .sensor_config_editor import SensorConfigEditor
 from .utils import GroupBox
 
@@ -49,7 +49,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
         self.session_group_box = GroupBox.vertical(
             "Session parameters",
-            JsonSaveLoadButtons.from_editor_and_config_type(self, a121.SessionConfig),  # type: ignore[arg-type]
+            create_json_save_load_buttons(self, a121.SessionConfig),
             parent=self,
         )
         self.session_group_box.layout().setSpacing(self.SPACING)
@@ -75,7 +75,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         self._update_rate_pidget.sig_update.connect(self._update_update_rate)
         self.session_group_box.layout().addWidget(self._update_rate_pidget)
 
-        self._sensor_config_editor = SensorConfigEditor(supports_multiple_subsweeps, self)
+        self._sensor_config_editor = SensorConfigEditor(supports_multiple_subsweeps, parent=self)
         self._sensor_config_editor.sig_update.connect(self._update_sole_sensor_config)
         self.layout().addWidget(self._sensor_config_editor)
 

@@ -16,6 +16,7 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .data_editor import DataEditor
+from .json_save_load_buttons import JsonButtonOperations, create_json_save_load_buttons
 from .subsweep_config_editor import SubsweepConfigEditor
 from .types import PidgetFactoryMapping
 from .utils import GroupBox
@@ -130,7 +131,10 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
     }
 
     def __init__(
-        self, supports_multiple_subsweeps: bool = False, parent: Optional[QWidget] = None
+        self,
+        supports_multiple_subsweeps: bool = False,
+        json_button_operations: JsonButtonOperations = JsonButtonOperations(0),
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent=parent)
 
@@ -145,7 +149,15 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(0, 0, 0, 0)
 
-        self.sensor_group_box = GroupBox.vertical("Sensor parameters", parent=self)
+        self.sensor_group_box = GroupBox.vertical(
+            "Sensor parameters",
+            right_header=create_json_save_load_buttons(
+                self,
+                a121.SensorConfig,
+                operations=json_button_operations,
+            ),
+            parent=self,
+        )
         self.sensor_group_box.layout().setSpacing(self.SPACING)
         self.layout().addWidget(self.sensor_group_box)
 
