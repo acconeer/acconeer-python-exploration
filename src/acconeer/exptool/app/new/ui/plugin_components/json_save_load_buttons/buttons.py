@@ -231,7 +231,7 @@ def create_json_save_load_buttons_from_type(
     config_type: t.Type[_JsonPresentableT],
     operations: JsonButtonOperations = JsonButtonOperations.SAVE | JsonButtonOperations.LOAD,
     extra_presenter: PresenterFunc = lambda i, t: None,
-) -> QWidget:
+) -> t.Optional[QWidget]:
     """
     Utility variation of "create_json_save_load_buttons".
 
@@ -239,12 +239,16 @@ def create_json_save_load_buttons_from_type(
     :param operations:
         Defines what operations the button(s) should perform.
         This directly maps to which buttons are created.
+        If no operations are specified, None will be returned.
 
     See create_json_save_load_buttons for the other parameters.
     """
-    return create_json_save_load_buttons(
-        editor,
-        encoder=config_type.to_json if (operations & JsonButtonOperations.SAVE) else None,
-        decoder=config_type.from_json if (operations & JsonButtonOperations.LOAD) else None,
-        extra_presenter=extra_presenter,
-    )
+    if operations == JsonButtonOperations(0):
+        return None
+    else:
+        return create_json_save_load_buttons(
+            editor,
+            encoder=config_type.to_json if (operations & JsonButtonOperations.SAVE) else None,
+            decoder=config_type.from_json if (operations & JsonButtonOperations.LOAD) else None,
+            extra_presenter=extra_presenter,
+        )

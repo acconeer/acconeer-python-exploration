@@ -38,17 +38,18 @@ class GroupBox(QWidget, t.Generic[_T]):
         self._frame.setLayout(layout_type())
         super().layout().addWidget(self._frame)
 
-        if isinstance(left_header, str):
-            left_header = QLabel(f"<b>{left_header}</b>")
-
         # Header widgets are not added to the layout as their positions are handled manually
-        self._header_frames = {
-            self._Position.LEFT: self._wrap_in_frame(left_header, frame_parent=self)
-        }
-        if right_header is not None:
-            self._header_frames[self._Position.RIGHT] = self._wrap_in_frame(
-                right_header, frame_parent=self
+        self._header_frames = {}
+
+        if isinstance(left_header, QWidget):
+            self._header_frames[self._Position.LEFT] = self._wrap_in_frame(left_header)
+        elif isinstance(left_header, str) and left_header != "":
+            self._header_frames[self._Position.LEFT] = self._wrap_in_frame(
+                QLabel(f"<b>{left_header}</b>"),
             )
+
+        if right_header is not None:
+            self._header_frames[self._Position.RIGHT] = self._wrap_in_frame(right_header)
 
     @classmethod
     def vertical(
@@ -74,8 +75,7 @@ class GroupBox(QWidget, t.Generic[_T]):
         """Returns the layout of the internal QFrame"""
         return self._frame.layout()  # type: ignore[return-value]
 
-    @staticmethod
-    def _wrap_in_frame(widget: QWidget, frame_parent: t.Optional[QWidget] = None) -> QFrame:
+    def _wrap_in_frame(self, widget: QWidget) -> QFrame:
         """
         Header widgets are wrapped in a frame to
         make sure the header widgets have an opaque background
@@ -84,7 +84,7 @@ class GroupBox(QWidget, t.Generic[_T]):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(widget)
 
-        frame = QFrame(parent=frame_parent)
+        frame = QFrame(parent=self)
         frame.setFrameShape(QFrame.Shape.NoFrame)
         frame.setLayout(layout)
 
@@ -93,6 +93,9 @@ class GroupBox(QWidget, t.Generic[_T]):
     def resizeEvent(self, event: QResizeEvent) -> None:
         """Handles positioning of header frame widgets manually"""
         super().resizeEvent(event)
+
+        if self._header_frames == {}:
+            return
 
         greatest_center_y = max(
             frame.rect().center().y() for frame in self._header_frames.values()
