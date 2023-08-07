@@ -108,19 +108,19 @@ def parameter_within(aspect: str, range: t.Tuple[float, float]) -> PidgetMapping
     return inner
 
 
-def enable_if(predicate: PidgetMappingPredicate) -> WidgetHook:
-    """Enables the instance this hook is assigned to if the predicate evaluates to "True" """
+def enable_if(*predicates: PidgetMappingPredicate) -> WidgetHook:
+    """Enables the instance this hook is assigned to if all the predicates evaluates to "True" """
 
     def inner(inst: QWidget, mapping: PidgetMapping) -> None:
-        inst.setEnabled(predicate(mapping))
+        inst.setEnabled(all(predicate(mapping) for predicate in predicates))
 
     return inner
 
 
-def disable_if(predicate: PidgetMappingPredicate) -> WidgetHook:
-    """Negation of "enable_if" """
+def disable_if(*predicates: PidgetMappingPredicate) -> WidgetHook:
+    """Negation of "enable_if" (all predicates should evaluate to False)"""
 
     def inner(inst: QWidget, mapping: PidgetMapping) -> None:
-        inst.setEnabled(not predicate(mapping))
+        inst.setEnabled(not any(predicate(mapping) for predicate in predicates))
 
     return inner
