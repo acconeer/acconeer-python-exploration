@@ -44,6 +44,9 @@ from acconeer.exptool.app.new import (
     pidgets,
 )
 from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
+from acconeer.exptool.app.new.ui.plugin_components.json_save_load_buttons import (
+    JsonButtonOperations,
+)
 from acconeer.exptool.app.new.ui.plugin_components.range_help_view import RangeHelpView
 from acconeer.exptool.app.new.ui.stream_tab.plugin_widget import PluginPlotArea
 
@@ -421,7 +424,9 @@ class ViewPlugin(A121ViewPluginBase):
 
         scrolly_layout.addWidget(self.config_editor)
 
-        self.sensor_config_status = SensorConfigEditor()
+        self.sensor_config_status = SensorConfigEditor(
+            json_button_operations=JsonButtonOperations.SAVE
+        )
         self.sensor_config_status.set_read_only(True)
         collapsible_widget = CollapsibleWidget(
             "Current sensor settings", self.sensor_config_status, self.scrolly_widget

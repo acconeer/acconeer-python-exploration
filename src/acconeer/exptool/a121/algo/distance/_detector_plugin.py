@@ -45,6 +45,9 @@ from acconeer.exptool.app.new import (
     pidgets,
 )
 from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
+from acconeer.exptool.app.new.ui.plugin_components.json_save_load_buttons import (
+    JsonButtonOperations,
+)
 from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import (
     disable_if,
     enable_if,
@@ -490,7 +493,9 @@ class ViewPlugin(A121ViewPluginBase):
         self.range_labels = ["Close range", "Far range"]
 
         for label in self.range_labels:
-            sensor_config_editor = SensorConfigEditor()
+            sensor_config_editor = SensorConfigEditor(
+                json_button_operations=JsonButtonOperations.SAVE
+            )
             sensor_config_editor.set_read_only(True)
             self.sensor_config_editors.append(sensor_config_editor)
             self.sensor_config_editor_tabs.addTab(sensor_config_editor, label)
