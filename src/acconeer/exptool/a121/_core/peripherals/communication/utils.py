@@ -8,7 +8,7 @@ from typing import List, Optional
 import attrs
 
 import acconeer.exptool as et
-from acconeer.exptool._links import BufferedLink, NullLink, SerialLink, SocketLink, USBLink
+from acconeer.exptool._links import BufferedLink, ExploreSerialLink, NullLink, SocketLink, USBLink
 from acconeer.exptool.a121._core.entities import (
     ClientInfo,
     SensorCalibration,
@@ -53,7 +53,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
         return SocketLink(host=client_info.socket.ip_address, port=client_info.socket.tcp_port)
 
     if client_info.serial is not None:
-        return SerialLink(
+        return ExploreSerialLink(
             port=client_info.serial.port,
         )
 
