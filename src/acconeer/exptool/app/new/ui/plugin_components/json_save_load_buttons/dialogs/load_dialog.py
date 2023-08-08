@@ -32,7 +32,7 @@ class _JsonEditor(QWidget):
         self.setLayout(layout)
 
 
-class LoadDialog(QDialog):
+class LoadDialogWithJsonEditor(QDialog):
     def __init__(
         self,
         dialog: QFileDialog,

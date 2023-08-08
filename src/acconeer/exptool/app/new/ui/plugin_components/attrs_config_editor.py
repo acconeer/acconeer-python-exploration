@@ -16,9 +16,8 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from .data_editor import DataEditor
-from .json_save_load_buttons import JsonPresentable, create_json_save_load_buttons
+from .json_save_load_buttons import JsonPresentable, PresenterFunc, create_json_save_load_buttons
 from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetHook, WidgetHook
-from .save_dialog import PresenterFunc
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import GroupBox
 

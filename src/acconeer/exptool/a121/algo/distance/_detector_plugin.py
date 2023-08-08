@@ -47,13 +47,13 @@ from acconeer.exptool.app.new import (
 from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
 from acconeer.exptool.app.new.ui.plugin_components.json_save_load_buttons import (
     JsonButtonOperations,
+    PresentationType,
 )
 from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import (
     disable_if,
     enable_if,
     parameter_is,
 )
-from acconeer.exptool.app.new.ui.plugin_components.save_dialog import PresentationType
 
 from ._configs import get_high_accuracy_detector_config
 from ._detector import (

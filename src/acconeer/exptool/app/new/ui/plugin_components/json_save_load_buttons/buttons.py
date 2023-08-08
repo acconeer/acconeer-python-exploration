@@ -17,10 +17,10 @@ from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.ui.icons import CHECKMARK, FOLDER_OPEN, SAVE
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
+from acconeer.exptool.app.new.ui.plugin_components.data_editor import DataEditor
 
-from .data_editor import DataEditor
-from .load_dialog import LoadDialog
-from .save_dialog import (
+from .dialogs import (
+    LoadDialogWithJsonEditor,
     PresentationType,
     PresenterFunc,
     SaveDialogWithPreview,
@@ -126,7 +126,7 @@ class _JsonLoadButton(QPushButton):
         )
 
     def _load_and_set_selected_file(self) -> None:
-        contents = LoadDialog.get_load_contents(
+        contents = LoadDialogWithJsonEditor.get_load_contents(
             caption="Load from file",
             filter=_FILE_DIALOG_FILTER,
             parent=self,

@@ -43,9 +43,9 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components.json_save_load_buttons import PresentationType
 from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import disable_if, parameter_is
 from acconeer.exptool.app.new.ui.plugin_components.range_help_view import RangeHelpView
-from acconeer.exptool.app.new.ui.plugin_components.save_dialog import PresentationType
 
 from ._configs import (
     get_long_range_config,
