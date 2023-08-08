@@ -48,6 +48,7 @@ class LoadDialogWithJsonEditor(QDialog):
 
         self._dialog = dialog
         self._dialog.accepted.connect(self._set_selected_file_contents)
+        self._dialog.rejected.connect(self.reject)
 
         layout = QHBoxLayout()
         layout.addWidget(self._dialog, stretch=1)
