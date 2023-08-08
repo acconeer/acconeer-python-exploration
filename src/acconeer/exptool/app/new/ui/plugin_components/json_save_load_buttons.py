@@ -12,13 +12,14 @@ from pathlib import Path
 import typing_extensions as te
 
 from PySide6.QtCore import QSize, QTimer
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.ui.icons import CHECKMARK, FOLDER_OPEN, SAVE
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 
 from .data_editor import DataEditor
+from .load_dialog import LoadDialog
 from .save_dialog import (
     PresentationType,
     PresenterFunc,
@@ -115,25 +116,24 @@ class _JsonLoadButton(QPushButton):
 
         self.setFixedSize(_BUTTON_SIZE)
         self.setIconSize(_ICON_SIZE)
-        self.setToolTip("Load a config from file")
+        self.setToolTip("Load a config from file/clipboard")
         self.clicked.connect(
             _handle_exception_with_popup(
                 self._load_and_set_selected_file,
-                header="Could not load config from file.",
+                header="Could not load config from file/clipboard",
                 parent=self,
             )
         )
 
     def _load_and_set_selected_file(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(
-            self,
+        contents = LoadDialog.get_load_contents(
             caption="Load from file",
             filter=_FILE_DIALOG_FILTER,
-            options=QFileDialog.Option.DontUseNativeDialog,
+            parent=self,
         )
 
-        if filename:
-            self._setter(self._decoder(Path(filename).read_text()))
+        if contents:
+            self._setter(self._decoder(contents))
             _show_transient_checkmark(self)
 
 
