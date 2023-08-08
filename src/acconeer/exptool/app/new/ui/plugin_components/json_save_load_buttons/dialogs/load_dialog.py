@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .syntax_highlight import SyntaxHighlighter
+
 
 class _JsonEditor(QWidget):
     def __init__(self, submit_slot: t.Callable[[str], t.Any]) -> None:
@@ -22,6 +24,8 @@ class _JsonEditor(QWidget):
 
         self.text_edit = QTextEdit()
         self.text_edit.setPlaceholderText("Input JSON here")
+        self.text_edit.setFontFamily("monospace")
+        self._syntax_highlight = SyntaxHighlighter.json(self.text_edit.document())
 
         self.load_button = QPushButton("Load JSON")
         self.load_button.clicked.connect(lambda: submit_slot(self.text_edit.toPlainText()))
