@@ -44,8 +44,9 @@ log = logging.getLogger(__name__)
 
 class FlashDialog(QDialog):
     flash_done = Signal()
+    opened = Signal()
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setWindowTitle("Flash tool")
@@ -90,6 +91,7 @@ class FlashDialog(QDialog):
 
         self.flash_thread.start()
         self._flashing = True
+        self.opened.emit()
         self.exec()
 
     def _flash_start(self) -> None:
@@ -115,8 +117,8 @@ class FlashDialog(QDialog):
     def _flash_failed(self, exception: Exception, traceback_str: Optional[str]) -> None:
         self.flash_done.emit()
         self.flash_label.setText("Flashing failed!")
-        ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
         self.ok_button.setHidden(False)
+        ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
 
     def _on_ok_click(self) -> None:
         self.close()
@@ -129,7 +131,7 @@ class FlashDialog(QDialog):
 
 
 class FlashLoginDialog(QDialog):
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.cookies: Optional[RequestsCookieJar] = None
@@ -227,13 +229,13 @@ class FlashLoginDialog(QDialog):
         self.logging_in = True
 
     def _login_start(self) -> None:
-        self.login_button.setEnabled(False)
+        self.setEnabled(False)
         self._show_login_progress()
 
     def _login_stop(self) -> None:
         self.logging_in = False
         self._hide_login_progress()
-        self.login_button.setEnabled(True)
+        self.setEnabled(True)
 
     def _login_done(
         self, auth_info: Tuple[RequestsCookieJar, Tuple[bool, Session, Response]]
@@ -273,7 +275,7 @@ class FlashLoginDialog(QDialog):
 
 
 class CookieConsentDialog(QDialog):
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setWindowTitle("Cookie consent")
@@ -316,7 +318,7 @@ class CookieConsentDialog(QDialog):
 
 
 class LicenseAgreementDialog(QDialog):
-    def __init__(self, license: DevLicense, parent: QWidget) -> None:
+    def __init__(self, license: DevLicense, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         self.setMinimumWidth(800)
@@ -369,7 +371,11 @@ class LicenseAgreementDialog(QDialog):
 
 class UserMessageDialog(QDialog):
     def __init__(
-        self, title: str, message: Optional[str], confirmation: str, parent: QWidget
+        self,
+        title: str,
+        message: Optional[str],
+        confirmation: str,
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
 
