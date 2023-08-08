@@ -1005,6 +1005,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                         threshold_method=ThresholdMethod.RECORDED,
                         measurement_type=MeasurementType.CLOSE_RANGE,
                         threshold_sensitivity=config.threshold_sensitivity,
+                        reflector_shape=config.reflector_shape,
                     ),
                     group_index=group_index,
                     subsweep_indexes=[0, 1],
@@ -1026,6 +1027,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 fixed_amplitude_threshold_value=config.fixed_amplitude_threshold_value,
                 fixed_strength_threshold_value=config.fixed_strength_threshold_value,
                 threshold_sensitivity=config.threshold_sensitivity,
+                reflector_shape=config.reflector_shape,
             )
 
             for subsweep_indexes in processor_specs_subsweep_indexes:
