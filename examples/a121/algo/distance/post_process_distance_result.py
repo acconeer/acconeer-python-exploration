@@ -63,7 +63,7 @@ def main():
     axs[0].grid()
 
     axs[1].set_xlabel("Distance (m)")
-    axs[1].set_ylabel("RCS (dBsm)")
+    axs[1].set_ylabel("Strength")
     axs[1].grid()
 
     plt.legend()
