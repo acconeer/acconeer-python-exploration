@@ -349,12 +349,12 @@ class LicenseAgreementDialog(QDialog):
 
         self.setLayout(layout)
 
-        self._set_license_text(license)
+        self.set_license_text(license)
 
     def _on_accept_check(self) -> None:
         self.accept_button.setEnabled(self.accept_box.isChecked())
 
-    def _set_license_text(self, license: DevLicense) -> None:
+    def set_license_text(self, license: DevLicense) -> None:
         self.setWindowTitle(license.get_header())
 
         self.license_text.insertHtml(license.get_subheader_element())
@@ -368,7 +368,9 @@ class LicenseAgreementDialog(QDialog):
 
 
 class UserMessageDialog(QDialog):
-    def __init__(self, title: str, message: str, confirmation: str, parent: QWidget) -> None:
+    def __init__(
+        self, title: str, message: Optional[str], confirmation: str, parent: QWidget
+    ) -> None:
         super().__init__(parent)
 
         self.setMinimumWidth(450)
@@ -392,9 +394,10 @@ class UserMessageDialog(QDialog):
         self.setLayout(layout)
 
         self.setWindowTitle(title)
-        self._set_message(message)
+        if message is not None:
+            self.set_message(message)
 
-    def _set_message(self, message: str) -> None:
+    def set_message(self, message: str) -> None:
         self.message_text.insertHtml(message)
         self.message_text.moveCursor(QTextCursor.MoveOperation.Start)
 

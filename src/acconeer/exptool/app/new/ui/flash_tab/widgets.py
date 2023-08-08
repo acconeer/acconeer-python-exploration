@@ -64,6 +64,7 @@ class FlashMainWidget(QWidget):
         self.app_model = app_model
 
         self.bin_file: Optional[str] = None
+        self._auth_info: Optional[Tuple[RequestsCookieJar, Tuple[bool, Session, Response]]] = None
 
         self.authenticating = False
         self.downloading_firmware = False
@@ -74,11 +75,10 @@ class FlashMainWidget(QWidget):
 
         self.file_label = QLineEdit(self)
         self.file_label.setReadOnly(True)
-        self.file_label.setEnabled(False)
-        self.file_label.setPlaceholderText("<Select a bin file>")
+        self._reset_file_label()
 
-        self.get_latest_button = QPushButton("Get latest bin file", self)
-        self.get_latest_button.clicked.connect(self._get_latest_bin_file)
+        self._get_latest_button = QPushButton("Get latest bin file", self)
+        self._get_latest_button.clicked.connect(self._get_latest_bin_file)
 
         self.downloaded_version_label = QLineEdit(self)
         self.downloaded_version_label.setReadOnly(True)
@@ -130,7 +130,7 @@ class FlashMainWidget(QWidget):
         # Grid layout:                                  row, col, rspan, cspan
         button_layout.addWidget(browse_button,                 0,   0,   1,     3)    # noqa: E241
         button_layout.addWidget(self.file_label,               0,   3,   1,     9)    # noqa: E241
-        button_layout.addWidget(self.get_latest_button,        1,   0,   1,     3)    # noqa: E241
+        button_layout.addWidget(self._get_latest_button,       1,   0,   1,     3)    # noqa: E241
         button_layout.addWidget(self.downloaded_version_label, 1,   3,   1,     9)    # noqa: E241
         button_layout.addWidget(self.interface_dd,             2,   0,   1,     3)    # noqa: E241
         button_layout.addWidget(self.stacked,                  2,   3,   1,     6)    # noqa: E241
@@ -152,11 +152,29 @@ class FlashMainWidget(QWidget):
 
         self.setLayout(layout)
 
-        self.browse_file_dialog = QFileDialog(None)
-        self.browse_file_dialog.setNameFilter("Bin files (*.bin)")
+        self._browse_file_dialog = QFileDialog(self)
+        self._browse_file_dialog.setNameFilter("Bin files (*.bin)")
+        self._browse_file_dialog.accepted.connect(self._browse_file_accepted)
+        self._browse_file_dialog.finished.connect(self._browse_file_finised)
 
-        self.flash_dialog = FlashDialog(self)
-        self.flash_dialog.flash_done.connect(self._flash_done)
+        self._login_dialog = FlashLoginDialog(self)
+        self._login_dialog.accepted.connect(self._login_accept)
+        self._login_dialog.rejected.connect(self._login_rejected)
+
+        self._license_agreement_dialog = LicenseAgreementDialog(self.dev_license, self)
+        self._license_agreement_dialog.accepted.connect(self._license_accepted)
+        self._license_agreement_dialog.rejected.connect(self._license_rejected)
+
+        self._user_msg_dialog = UserMessageDialog(
+            "Bootloader description",
+            None,
+            "Got it! The board is in bootloader mode",
+            self,
+        )
+        self._user_msg_dialog.finished.connect(self._user_msg_dialog_finished)
+
+        self._flash_dialog = FlashDialog(self)
+        self._flash_dialog.flash_done.connect(self._flash_done)
 
         app_model.sig_notify.connect(self._on_app_model_update)
 
@@ -175,6 +193,37 @@ class FlashMainWidget(QWidget):
         else:
             return self.device_name_selection
 
+    def _license_accepted(self) -> None:
+        device_download_name = get_flash_download_name(self.flash_device, self.device_name)
+
+        assert self._auth_info is not None
+        cookies, content = self._auth_info
+
+        self.download_thread = BinDownloadThread(
+            device_download_name, cookies, content[1], content[2]
+        )
+
+        self.download_thread.started.connect(self._download_start)
+        self.download_thread.finished.connect(self.download_thread.deleteLater)
+        self.download_thread.finished.connect(self._download_stop)
+        self.download_thread.download_done.connect(self._download_done)
+        self.download_thread.download_failed.connect(self._download_failed)
+
+        self.downloading_firmware = True
+        self.download_thread.start()
+
+    def _license_rejected(self) -> None:
+        self._get_latest_button.setEnabled(True)
+
+    def _login_accept(self) -> None:
+        (cookies, content) = self._login_dialog.get_auth_info()
+        self._show_login_status()
+        if cookies is not None and content is not None:
+            self._init_download((cookies, content))
+
+    def _login_rejected(self) -> None:
+        self._get_latest_button.setEnabled(True)
+
     def _get_latest_bin_file(self) -> None:
         self.auth_thread = AuthThread(dev_license=self.dev_license)
         self.auth_thread.started.connect(self._auth_start)
@@ -188,6 +237,7 @@ class FlashMainWidget(QWidget):
         self.auth_thread.start()
 
     def _auth_start(self) -> None:
+        self._get_latest_button.setEnabled(False)
         self._show_download_progress("Authenticating...")
 
     def _auth_stop(self) -> None:
@@ -196,46 +246,23 @@ class FlashMainWidget(QWidget):
 
     def _license_loaded(self, dev_license: DevLicense) -> None:
         self.dev_license = dev_license
+        self._license_agreement_dialog.set_license_text(self.dev_license)
 
     def _auth_done(
         self, auth_info: Tuple[RequestsCookieJar, Tuple[bool, Session, Response]]
     ) -> None:
-        self._show_login_status(_LOGGED_IN_MSG)
-
-        cookies, content = auth_info
-        self._init_download(cookies, content)
+        self._show_login_status()
+        self._init_download(auth_info)
 
     def _auth_failed(self) -> None:
-        login_dialog = FlashLoginDialog(self)
-        authenticated = login_dialog.exec()
-
-        if authenticated:
-            self._show_login_status(_LOGGED_IN_MSG)
-            cookies, content = login_dialog.get_auth_info()
-            if cookies is not None and content is not None:
-                self._init_download(cookies, content)
+        self._login_dialog.open()
 
     def _init_download(
-        self, cookies: RequestsCookieJar, content: Tuple[bool, Session, Response]
+        self, auth_info: Tuple[RequestsCookieJar, Tuple[bool, Session, Response]]
     ) -> None:
-
-        license_agreement_dialog = LicenseAgreementDialog(self.dev_license, self)
-        license_accepted = license_agreement_dialog.exec()
-        device_download_name = get_flash_download_name(self.flash_device, self.device_name)
-
-        if license_accepted:
-            self.download_thread = BinDownloadThread(
-                device_download_name, cookies, content[1], content[2]
-            )
-
-            self.download_thread.started.connect(self._download_start)
-            self.download_thread.finished.connect(self.download_thread.deleteLater)
-            self.download_thread.finished.connect(self._download_stop)
-            self.download_thread.download_done.connect(self._download_done)
-            self.download_thread.download_failed.connect(self._download_failed)
-
-            self.downloading_firmware = True
-            self.download_thread.start()
+        self._get_latest_button.setEnabled(False)
+        self._auth_info = auth_info
+        self._license_agreement_dialog.open()
 
     def _download_start(self) -> None:
         self._show_download_progress("Downloading image file...")
@@ -243,25 +270,33 @@ class FlashMainWidget(QWidget):
     def _download_stop(self) -> None:
         self._hide_download_progress()
         self.downloading_firmware = False
+        self._get_latest_button.setEnabled(True)
 
     def _download_done(self, bin_file: str, version: str) -> None:
         self.bin_file = bin_file
         self._set_version(version)
         self.downloading_firmware = False
+        self._reset_file_label()
         self._draw()
 
     def _download_failed(self, error_msg: str) -> None:
         self.bin_file = None
         log.error(f"Failed to download firmware: {error_msg}")
+        self._reset_file_label()
+        self._draw()
+
+    def _browse_file_accepted(self) -> None:
+        filenames = self._browse_file_dialog.selectedFiles()
+        self.bin_file = filenames[0]
+        self._reset_download_version()
+        self.file_label.setText(self.bin_file if self.bin_file else "")
+        self.file_label.setEnabled(self.bin_file is not None)
+
+    def _browse_file_finised(self) -> None:
         self._draw()
 
     def _browse_file(self) -> None:
-        if self.browse_file_dialog.exec():
-            filenames = self.browse_file_dialog.selectedFiles()
-            self.bin_file = filenames[0]
-            self._reset_download_version()
-
-        self._draw()
+        self._browse_file_dialog.open()
 
     def _show_download_progress(self, text: str) -> None:
         self.download_movie.start()
@@ -275,21 +310,23 @@ class FlashMainWidget(QWidget):
         self.download_status_label.setHidden(True)
         self.adjustSize()
 
+    def _user_msg_dialog_finished(self) -> None:
+        assert self.bin_file is not None
+        assert self.flash_device is not None
+        self.app_model.set_port_updates_pause(True)
+        self._flash_dialog.flash(self.bin_file, self.flash_device, self.device_name)
+
     def _flash(self) -> None:
         assert self.bin_file is not None
         assert self.flash_device is not None
 
         boot_description = self._get_boot_description(self.flash_device, self.device_name)
         if boot_description:
-            UserMessageDialog(
-                "Bootloader description",
-                boot_description,
-                "Got it! The board is in bootloader mode",
-                self,
-            ).exec()
-
-        self.app_model.set_port_updates_pause(True)
-        self.flash_dialog.flash(self.bin_file, self.flash_device, self.device_name)
+            self._user_msg_dialog.set_message(boot_description)
+            self._user_msg_dialog.open()
+        else:
+            self.app_model.set_port_updates_pause(True)
+            self._flash_dialog.flash(self.bin_file, self.flash_device, self.device_name)
 
     def _flash_done(self) -> None:
         self.app_model.set_port_updates_pause(False)
@@ -324,7 +361,7 @@ class FlashMainWidget(QWidget):
                     self.device_selection.setCurrentIndex(current_index)
 
             enable_select = not self.authenticating and not self.downloading_firmware
-            self.get_latest_button.setEnabled(enable_select)
+            self._get_latest_button.setEnabled(enable_select)
         else:
             self.device_selection.clear()
             self.device_selection.setEnabled(False)
@@ -332,8 +369,6 @@ class FlashMainWidget(QWidget):
         self._draw()
 
     def _draw(self) -> None:
-        self.file_label.setText(self.bin_file if self.bin_file else "")
-        self.file_label.setEnabled(self.bin_file is not None)
         self.flash_button.setEnabled(
             not self.authenticating
             and not self.downloading_firmware
@@ -351,11 +386,9 @@ class FlashMainWidget(QWidget):
             self.download_thread.wait()
         super().closeEvent(event)
 
-    def _show_login_status(self, msg: str, disable_logout: bool = False) -> None:
-        self.logged_in_label.setText(msg)
+    def _show_login_status(self) -> None:
         self.logged_in_label.setHidden(False)
         self.logout_button.setHidden(False)
-        self.logout_button.setEnabled(not disable_logout)
 
     def _hide_login_status(self) -> None:
         self.logged_in_label.setHidden(True)
@@ -363,7 +396,7 @@ class FlashMainWidget(QWidget):
 
     def _logout(self) -> None:
         clear_cookies()
-        self._show_login_status("Currently not logged in", disable_logout=True)
+        self._show_login_status()
 
     def _set_version(self, version: str) -> None:
         self.downloaded_version_label.setText(version)
@@ -372,6 +405,10 @@ class FlashMainWidget(QWidget):
     def _reset_download_version(self) -> None:
         self.downloaded_version_label.setEnabled(False)
         self.downloaded_version_label.setText("<Downloaded bin file version>")
+
+    def _reset_file_label(self) -> None:
+        self.file_label.setText("<Select a bin file>")
+        self.file_label.setEnabled(False)
 
     def _get_boot_description(self, flash_device: CommDevice, device_name: Optional[str]) -> Any:
 
