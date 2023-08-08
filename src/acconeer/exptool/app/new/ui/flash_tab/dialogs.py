@@ -204,8 +204,9 @@ class FlashLoginDialog(QDialog):
 
     def _on_remember_me_checked(self) -> None:
         if self.remember_me_box.isChecked() and not self.cookies_accepted:
-            exit_code = CookieConsentDialog(self).exec()
-            self.cookies_accepted = exit_code == 0
+            cookie_dialog = CookieConsentDialog(self)
+            cookie_dialog.exec()
+            self.cookies_accepted = cookie_dialog.result() == QDialog.DialogCode.Accepted
             if not self.cookies_accepted:
                 self.remember_me_box.setCheckState(Qt.CheckState.Unchecked)
 
