@@ -16,7 +16,7 @@ from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
 from .data_editor import DataEditor
-from .json_save_load_buttons import JsonButtonOperations, create_json_save_load_buttons
+from .json_save_load_buttons import JsonButtonOperations, create_json_save_load_buttons_from_type
 from .subsweep_config_editor import SubsweepConfigEditor
 from .types import PidgetFactoryMapping
 from .utils import GroupBox
@@ -151,7 +151,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
 
         self.sensor_group_box = GroupBox.vertical(
             "Sensor parameters",
-            right_header=create_json_save_load_buttons(
+            right_header=create_json_save_load_buttons_from_type(
                 self,
                 a121.SensorConfig,
                 operations=json_button_operations,

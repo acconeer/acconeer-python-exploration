@@ -39,7 +39,7 @@ class JsonPresentable(te.Protocol):
         ...
 
     @classmethod
-    def from_json(self, json_str: str) -> JsonPresentable:
+    def from_json(self, json_str: str) -> te.Self:
         ...
 
 
@@ -183,25 +183,22 @@ class _JsonSaveButton(QPushButton):
             _show_transient_checkmark(self)
 
 
-class JsonButtonOperations(enum.Flag):
-    SAVE = enum.auto()
-    LOAD = enum.auto()
-
-
 def create_json_save_load_buttons(
     editor: DataEditor[t.Optional[_JsonPresentableT]],
-    config_type: t.Type[_JsonPresentableT],
-    operations: JsonButtonOperations = JsonButtonOperations.SAVE | JsonButtonOperations.LOAD,
+    encoder: t.Optional[t.Callable[[_JsonPresentableT], str]] = None,
+    decoder: t.Optional[t.Callable[[str], _JsonPresentableT]] = None,
     extra_presenter: PresenterFunc = lambda i, t: None,
 ) -> QWidget:
     """
     Creates buttons for saving/loading configs to/from json.
 
     :param editor: The editor to bind the save/load buttons to
-    :param config_type: The type (class) of the config
-    :param operations:
-        Defines what operations the button(s) should perform.
-        This directly maps to which buttons are created.
+    :param encoder:
+        A function that formats the model as a json string.
+        If omitted or None, the Save button will not be created.
+    :param decoder:
+        A function that parses a json string produced by encoder
+        If omitted or None, the Load button will not be created.
     :param extra_presenter:
         A PresenterFunc hooks into save preview presentation creation.
         This function should always return None if its arguments aren't handled.
@@ -210,15 +207,44 @@ def create_json_save_load_buttons(
     wrapper.setLayout(QHBoxLayout())
     wrapper.layout().setContentsMargins(5, 5, 5, 8)
 
-    if operations & JsonButtonOperations.SAVE:
+    if encoder is not None:
         wrapper.layout().addWidget(
             _JsonSaveButton(
                 editor.get_data,
-                config_type.to_json,
+                encoder,
                 extra_presenter=extra_presenter,
             )
         )
-    if operations & JsonButtonOperations.LOAD:
-        wrapper.layout().addWidget(_JsonLoadButton(editor.sig_update.emit, config_type.from_json))
+    if decoder is not None:
+        wrapper.layout().addWidget(_JsonLoadButton(editor.sig_update.emit, decoder))
 
     return wrapper
+
+
+class JsonButtonOperations(enum.Flag):
+    SAVE = enum.auto()
+    LOAD = enum.auto()
+
+
+def create_json_save_load_buttons_from_type(
+    editor: DataEditor[t.Optional[_JsonPresentableT]],
+    config_type: t.Type[_JsonPresentableT],
+    operations: JsonButtonOperations = JsonButtonOperations.SAVE | JsonButtonOperations.LOAD,
+    extra_presenter: PresenterFunc = lambda i, t: None,
+) -> QWidget:
+    """
+    Utility variation of "create_json_save_load_buttons".
+
+    :param config_type: The type (class) of the config
+    :param operations:
+        Defines what operations the button(s) should perform.
+        This directly maps to which buttons are created.
+
+    See create_json_save_load_buttons for the other parameters.
+    """
+    return create_json_save_load_buttons(
+        editor,
+        encoder=config_type.to_json if (operations & JsonButtonOperations.SAVE) else None,
+        decoder=config_type.from_json if (operations & JsonButtonOperations.LOAD) else None,
+        extra_presenter=extra_presenter,
+    )

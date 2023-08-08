@@ -16,7 +16,11 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from .data_editor import DataEditor
-from .json_save_load_buttons import JsonPresentable, PresenterFunc, create_json_save_load_buttons
+from .json_save_load_buttons import (
+    JsonPresentable,
+    PresenterFunc,
+    create_json_save_load_buttons_from_type,
+)
 from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetHook, WidgetHook
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import GroupBox
@@ -75,7 +79,9 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         group_box = GroupBox.vertical(
             title,
             right_header=(
-                create_json_save_load_buttons(self, config_type, extra_presenter=extra_presenter)
+                create_json_save_load_buttons_from_type(
+                    self, config_type, extra_presenter=extra_presenter
+                )
                 if save_load_buttons
                 else None
             ),

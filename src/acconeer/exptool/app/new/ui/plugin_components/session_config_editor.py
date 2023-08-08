@@ -23,6 +23,13 @@ from .utils import GroupBox
 log = logging.getLogger(__name__)
 
 
+def session_or_sensor_config_json_to_session_config(json_str: str) -> a121.SessionConfig:
+    try:
+        return a121.SessionConfig.from_json(json_str)
+    except KeyError:
+        return a121.SessionConfig(a121.SensorConfig.from_json(json_str))
+
+
 class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
     _session_config: Optional[a121.SessionConfig]
     _server_info: Optional[a121.ServerInfo]
@@ -49,7 +56,11 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
         self.session_group_box = GroupBox.vertical(
             "Session parameters",
-            create_json_save_load_buttons(self, a121.SessionConfig),
+            create_json_save_load_buttons(
+                self,
+                encoder=a121.SessionConfig.to_json,
+                decoder=session_or_sensor_config_json_to_session_config,
+            ),
             parent=self,
         )
         self.session_group_box.layout().setSpacing(self.SPACING)
