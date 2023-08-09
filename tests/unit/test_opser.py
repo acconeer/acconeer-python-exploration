@@ -291,6 +291,7 @@ PHASE_TRACKING = [
         rel_time_stamps=_array(np.float_),
         distance_history=_array(np.float_),
         peak_loc_m=13.37,
+        iq_history=_array(np.complex_),
     ),
 ]
 

@@ -66,6 +66,7 @@ class ProcessorResult:
     rel_time_stamps: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     distance_history: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
     peak_loc_m: Optional[float] = attrs.field(default=None)
+    iq_history: npt.NDArray[np.complex_] = attrs.field(eq=utils.attrs_ndarray_isclose)
 
 
 class Processor(ProcessorBase[ProcessorResult]):
@@ -75,6 +76,7 @@ class Processor(ProcessorBase[ProcessorResult]):
     M_TO_MM = 1000
     TIME_HORIZON_S = 10.0
     LP_COEFF = 0.75
+    NUM_POINTS_IN_IQ_HISTORY = 50
 
     def __init__(
         self,
@@ -107,6 +109,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         self.max_num_points_to_plot = int(sensor_config.sweep_rate * self.TIME_HORIZON_S)
         self.distance_history: npt.NDArray[np.float_] = np.array([])
+        self.iq_history: npt.NDArray[np.complex_] = np.full(
+            self.NUM_POINTS_IN_IQ_HISTORY, np.nan, dtype=np.complex_
+        )
 
         self.last_sweep_prev_frame = None
 
@@ -120,6 +125,8 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.lp_abs_sweep = abs_sweep
 
         self.lp_abs_sweep = self.lp_abs_sweep * self.LP_COEFF + abs_sweep * (1 - self.LP_COEFF)
+
+        self.iq_history = np.roll(self.iq_history, shift=1)
 
         if self.threshold < np.max(self.lp_abs_sweep):
             peak_loc_p = np.argmax(self.lp_abs_sweep)
@@ -168,6 +175,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             )
 
             self.last_sweep_prev_frame = sweeps_at_peak_ampl_dist[-1]
+            self.iq_history[0] = np.mean(frame[:, peak_loc_p])
         else:
             # Reset variables as no peak is detected.
             peak_loc_m = None
@@ -176,6 +184,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             rel_time_to_plot = np.array([])
             self.distance_history = np.array([])
             self.last_sweep_prev_frame = None
+            self.iq_history = np.full(self.NUM_POINTS_IN_IQ_HISTORY, np.nan, dtype=np.complex_)
 
         self.sweep_index += 1
         self.prev_peak_loc_m = peak_loc_m
@@ -187,6 +196,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             rel_time_stamps=rel_time_to_plot,
             distance_history=distance_to_plot,
             peak_loc_m=peak_loc_m,
+            iq_history=self.iq_history,
         )
 
 
@@ -200,7 +210,7 @@ def get_sensor_config() -> a121.SensorConfig:
         hwaas=4,
         phase_enhancement=True,
         continuous_sweep_mode=True,
-        sweeps_per_frame=25,
+        sweeps_per_frame=5,
         sweep_rate=500,
         double_buffering=True,
         inter_sweep_idle_state=a121.IdleState.READY,

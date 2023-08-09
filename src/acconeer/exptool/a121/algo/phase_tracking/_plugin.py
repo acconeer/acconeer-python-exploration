@@ -130,6 +130,9 @@ class PlotPlugin(PgPlotPlugin):
     def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
         self.plot_layout.clear()
 
+        assert sensor_config.sweeps_per_frame is not None
+        assert sensor_config.sweep_rate is not None
+
         (self.distances_m, _) = get_distances_m(sensor_config, metadata)
 
         pens = [et.utils.pg_pen_cycler(i) for i in range(3)]
@@ -172,7 +175,7 @@ class PlotPlugin(PgPlotPlugin):
         argument_plot.addItem(self.argument_vertical_line)
 
         # history plot
-        self.history_plot = self.plot_layout.addPlot(row=2, col=0)
+        self.history_plot = self.plot_layout.addPlot(row=0, col=1)
         self.history_plot.setMenuEnabled(False)
         self.history_plot.showGrid(x=True, y=True)
         self.history_plot.addLegend()
@@ -184,6 +187,20 @@ class PlotPlugin(PgPlotPlugin):
         self.sweep_smooth_max = et.utils.SmoothMax()
         self.distance_hist_smooth_lim = et.utils.SmoothLimits(tau_decay=0.2, tau_grow=0.1)
 
+        # IQ plot
+        self.iq_plot = self.plot_layout.addPlot(row=1, col=1)
+        self.iq_plot.setMenuEnabled(False)
+        self.iq_plot.setMouseEnabled(x=False, y=False)
+        self.iq_plot.hideButtons()
+        et.utils.pg_setup_polar_plot(self.iq_plot, 1)
+        self.iq_curve = self.iq_plot.plot(pen=et.utils.pg_pen_cycler())
+        self.iq_scatter = pg.ScatterPlotItem(brush=pg.mkBrush(et.utils.color_cycler()), size=15)
+        self.iq_plot.addItem(self.iq_scatter)
+
+        self.smooth_max = et.utils.SmoothMax(
+            sensor_config.sweep_rate / sensor_config.sweeps_per_frame
+        )
+
     def draw_plot_job(self, processor_result: ProcessorResult) -> None:
         assert processor_result is not None
         assert processor_result.threshold is not None
@@ -194,6 +211,7 @@ class PlotPlugin(PgPlotPlugin):
         peak_loc = processor_result.peak_loc_m
         history = processor_result.distance_history
         rel_time_stamps = processor_result.rel_time_stamps
+        iq_history = processor_result.iq_history
 
         # update sweep plot
         self.sweeps_curve[0].setData(self.distances_m, sweep)
@@ -220,6 +238,15 @@ class PlotPlugin(PgPlotPlugin):
             lims = self.distance_hist_smooth_lim.update(history)
             self.history_plot.setYRange(lims[0], lims[1])
         self.history_plot.setXRange(-Processor.TIME_HORIZON_S, 0)
+
+        if not np.all(np.isnan(iq_history)):
+            m = self.smooth_max.update(np.abs(iq_history))
+            norm_iq_history = iq_history / m
+            self.iq_curve.setData(norm_iq_history.real, norm_iq_history.imag)
+            self.iq_scatter.setData([norm_iq_history[0].real], [norm_iq_history[0].imag])
+        else:
+            self.iq_curve.setData([], [])
+            self.iq_scatter.setData([], [])
 
 
 class PluginSpec(PluginSpecBase):
