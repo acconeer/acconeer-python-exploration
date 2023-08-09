@@ -339,9 +339,7 @@ class DetectorConfig(AlgoConfigBase):
     num_frames_in_recorded_threshold: int = attrs.field(default=100)
     """Number of frames used when calibrating threshold."""
 
-    fixed_amplitude_threshold_value: float = attrs.field(
-        default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE
-    )
+    fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE)
     """Value of fixed amplitude threshold."""
 
     fixed_strength_threshold_value: float = attrs.field(
@@ -1024,7 +1022,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
             processor_config = ProcessorConfig(
                 threshold_method=config.threshold_method,
-                fixed_amplitude_threshold_value=config.fixed_amplitude_threshold_value,
+                fixed_threshold_value=config.fixed_threshold_value,
                 fixed_strength_threshold_value=config.fixed_strength_threshold_value,
                 threshold_sensitivity=config.threshold_sensitivity,
                 reflector_shape=config.reflector_shape,

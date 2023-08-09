@@ -562,16 +562,16 @@ class ViewPlugin(A121ViewPluginBase):
                 enum_type=ThresholdMethod,
                 label_mapping={
                     ThresholdMethod.CFAR: "CFAR",
-                    ThresholdMethod.FIXED_AMPLITUDE: "Fixed amplitude",
+                    ThresholdMethod.FIXED: "Fixed amplitude",
                     ThresholdMethod.FIXED_STRENGTH: "Fixed strength",
                     ThresholdMethod.RECORDED: "Recorded",
                 },
             ),
-            "fixed_amplitude_threshold_value": pidgets.FloatPidgetFactory(
+            "fixed_threshold_value": pidgets.FloatPidgetFactory(
                 name_label_text="Fixed amplitude threshold value",
                 decimals=1,
                 limits=(0, None),
-                hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED_AMPLITUDE)),
+                hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),
             ),
             "fixed_strength_threshold_value": pidgets.FloatPidgetFactory(
                 name_label_text="Fixed strength threshold value",
@@ -589,7 +589,7 @@ class ViewPlugin(A121ViewPluginBase):
                 limits=(0, 1),
                 show_limit_values=False,
                 hooks=disable_if(
-                    parameter_is("threshold_method", ThresholdMethod.FIXED_AMPLITUDE),
+                    parameter_is("threshold_method", ThresholdMethod.FIXED),
                     parameter_is("threshold_method", ThresholdMethod.FIXED_STRENGTH),
                 ),
             ),
@@ -731,7 +731,7 @@ static void set_config(acc_detector_distance_config_t *config, distance_preset_c
 
     acc_detector_distance_config_threshold_method_set(config, ACC_DETECTOR_DISTANCE_THRESHOLD_METHOD_{config.threshold_method.name});
     acc_detector_distance_config_num_frames_recorded_threshold_set(config, {config.num_frames_in_recorded_threshold}U);
-    acc_detector_distance_config_fixed_threshold_value_set(config, {config.fixed_amplitude_threshold_value:.3f}f);
+    acc_detector_distance_config_fixed_threshold_value_set(config, {config.fixed_threshold_value:.3f}f);
     acc_detector_distance_config_threshold_sensitivity_set(config, {config.threshold_sensitivity:.3f}f);
 
     acc_detector_distance_config_close_range_leakage_cancellation_set(config, {str(config.close_range_leakage_cancellation).lower()});

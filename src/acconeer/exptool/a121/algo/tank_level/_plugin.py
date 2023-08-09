@@ -613,7 +613,7 @@ class ViewPlugin(A121ViewPluginBase):
             "reflector_shape",
             "peaksorting_method",
             "threshold_method",
-            "fixed_amplitude_threshold_value",
+            "fixed_threshold_value",
             "fixed_strength_threshold_value",
             "num_frames_in_recorded_threshold",
             "threshold_sensitivity",

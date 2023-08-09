@@ -53,7 +53,7 @@ class ThresholdMethod(AlgoParamEnum):
     ``RECORDED`` Recorded threshold."""
 
     CFAR = enum.auto()
-    FIXED_AMPLITUDE = enum.auto()
+    FIXED = enum.auto()
     FIXED_STRENGTH = enum.auto()
     RECORDED = enum.auto()
 
@@ -88,9 +88,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         default=ReflectorShape.GENERIC, converter=ReflectorShape
     )
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
-    fixed_amplitude_threshold_value: float = attrs.field(
-        default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE
-    )
+    fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE)
     fixed_strength_threshold_value: float = attrs.field(
         default=DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE
     )
@@ -424,9 +422,9 @@ class Processor(ProcessorBase[ProcessorResult]):
                 or self.context.recorded_threshold_noise_std is None
             ):
                 raise ValueError("Missing recorded threshold inputs in context")
-        elif self.threshold_method == ThresholdMethod.FIXED_AMPLITUDE:
+        elif self.threshold_method == ThresholdMethod.FIXED:
             self.threshold = np.full(
-                self.num_points_cropped, self.processor_config.fixed_amplitude_threshold_value
+                self.num_points_cropped, self.processor_config.fixed_threshold_value
             )
         elif self.threshold_method == ThresholdMethod.FIXED_STRENGTH:
             self.threshold = self._calculate_fixed_strength_threshold(
@@ -585,7 +583,7 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self.cfar_abs_noise,
             )
         elif (
-            self.threshold_method == ThresholdMethod.FIXED_AMPLITUDE
+            self.threshold_method == ThresholdMethod.FIXED
             or self.threshold_method == ThresholdMethod.FIXED_STRENGTH
         ):
             return self.threshold
