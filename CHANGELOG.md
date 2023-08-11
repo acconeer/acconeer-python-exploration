@@ -1,5 +1,14 @@
 # Changelog
 
+## v7.3.0
+
+### Added
+* A121: Distance: Add fixed strength threshold
+* A121: Distance: Visualize multiple time series in history plot
+
+### Changed
+* Move links.py from a111 folder to root folder
+
 ## v7.2.1
 
 This release only contains minor fixes and improvements.
