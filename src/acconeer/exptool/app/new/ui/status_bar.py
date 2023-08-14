@@ -180,6 +180,7 @@ class VersionButton(QPushButton):
 
         self.setFlat(True)
         self.setText(f"ET: {et_version}")
+        self.setStyleSheet("color: #4d5157;")
 
         self.clicked.connect(self._on_click)
         self.sig_payload.connect(self._handle_payload)
