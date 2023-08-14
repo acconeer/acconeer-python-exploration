@@ -11,6 +11,7 @@ import attrs
 import h5py
 import numpy as np
 
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QLabel, QPushButton, QTabWidget, QVBoxLayout
 
 import pyqtgraph as pg
@@ -279,6 +280,21 @@ class PlotPlugin(PgPlotPlugin):
         sweep_plot_legend.addItem(self.sweep_curves[0], "Sweep")
         sweep_plot_legend.addItem(self.threshold_curves[0], "Threshold")
 
+        font = QFont()
+        font.setPixelSize(16)
+        self.sweep_text_item = pg.TextItem(
+            fill=pg.mkColor(0xFF, 0x7F, 0x0E, 200),
+            anchor=(0.5, 0),
+            color=pg.mkColor(0xFF, 0xFF, 0xFF, 200),
+        )
+        self.sweep_text_item.setFont(font)
+        self.sweep_text_item.hide()
+        self.sweep_plot.addItem(self.sweep_text_item)
+
+        self.sweep_main_peak_line = pg.InfiniteLine(pen=pg.mkPen("k", width=1.5, dash=[2, 8]))
+        self.sweep_main_peak_line.hide()
+        self.sweep_plot.addItem(self.sweep_main_peak_line)
+
         # History plot
         self.dist_history_plot = win.addPlot(row=1, col=0)
         self.dist_history_plot.setMenuEnabled(False)
@@ -363,6 +379,22 @@ class PlotPlugin(PgPlotPlugin):
                 max_val_in_plot = max_val_in_subsweep
 
         self.sweep_plot.setYRange(0, self.sweep_smooth_max.update(max_val_in_plot))
+
+        if len(distances) != 0:
+            text_y_pos = self.sweep_plot.getAxis("left").range[1] * 0.95
+            text_x_pos = (
+                self.sweep_plot.getAxis("bottom").range[1]
+                + self.sweep_plot.getAxis("bottom").range[0]
+            ) / 2.0
+            self.sweep_text_item.setPos(text_x_pos, text_y_pos)
+            self.sweep_text_item.setHtml("Main peak distance: {:.3f} m".format(distances[0]))
+            self.sweep_text_item.show()
+
+            self.sweep_main_peak_line.setPos(distances[0])
+            self.sweep_main_peak_line.show()
+        else:
+            self.sweep_text_item.hide()
+            self.sweep_main_peak_line.hide()
 
         # History plot
         self.history_plot_legend.clear()
