@@ -219,7 +219,7 @@ class SerialLink(BaseSerialLink):
     def send_break(self) -> None:
         assert self._ser is not None
         self._ser.send_break()
-        sleep(0.5)
+        sleep(1.0)
         self._ser.flushInput()
 
     def connect(self) -> None:
@@ -374,7 +374,7 @@ class USBLink(BaseLink):
 
     def send_break(self) -> None:
         self._port.send_break()
-        sleep(0.5)
+        sleep(1.0)
         self._port.reset_input_buffer()
 
     def recv(self, num_bytes: int) -> bytes:
