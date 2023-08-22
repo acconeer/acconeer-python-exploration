@@ -178,8 +178,15 @@ try {
                                 artifactNames: ["out/internal_stash_binaries_sanitizer_a121.tgz"],
                             ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
                         )
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ["out/internal_stash_python_libs.tgz"],
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
+                        )
                         sh 'mkdir stash'
                         sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
+                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
                     }
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
