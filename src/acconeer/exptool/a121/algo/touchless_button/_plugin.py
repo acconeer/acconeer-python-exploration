@@ -29,6 +29,8 @@ from acconeer.exptool.a121.algo.touchless_button import (
     get_close_and_far_sensor_config,
     get_close_processor_config,
     get_close_sensor_config,
+    get_far_processor_config,
+    get_far_sensor_config,
 )
 from acconeer.exptool.app.new import (
     AppModel,
@@ -53,6 +55,7 @@ log = logging.getLogger(__name__)
 
 class PluginPresetId(Enum):
     CLOSE_RANGE = auto()
+    FAR_RANGE = auto()
     CLOSE_AND_FAR_RANGE = auto()
 
 
@@ -62,6 +65,10 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
         PluginPresetId.CLOSE_RANGE.value: lambda: ProcessorPluginPreset(
             session_config=a121.SessionConfig(get_close_sensor_config()),
             processor_config=get_close_processor_config(),
+        ),
+        PluginPresetId.FAR_RANGE.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_far_sensor_config()),
+            processor_config=get_far_processor_config(),
         ),
         PluginPresetId.CLOSE_AND_FAR_RANGE.value: lambda: ProcessorPluginPreset(
             session_config=a121.SessionConfig(get_close_and_far_sensor_config()),
@@ -275,6 +282,11 @@ TOUCHLESS_BUTTON_PLUGIN = PluginSpec(
             name="Close range",
             description="Close range",
             preset_id=PluginPresetId.CLOSE_RANGE,
+        ),
+        PluginPresetBase(
+            name="Far range",
+            description="Far range",
+            preset_id=PluginPresetId.FAR_RANGE,
         ),
         PluginPresetBase(
             name="Close and far range",
