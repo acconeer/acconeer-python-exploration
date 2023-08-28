@@ -98,6 +98,11 @@ def input_path(resource_name: str) -> Path:
             "input-distance-detector-5_to_200_cm_close_range_cancellation_disabled.h5",
         ),
         (
+            distance_test.distance_detector,
+            t.List[distance_test.ResultSlice],
+            "corner-reflector.h5",
+        ),
+        (
             smart_presence_test.smart_presence_controller,
             t.List[smart_presence_test.RefAppResultSlice],
             "smart_presence.h5",
