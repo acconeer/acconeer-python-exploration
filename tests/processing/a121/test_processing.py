@@ -15,9 +15,9 @@ from acconeer.exptool.a121.algo import touchless_button
 
 from . import (
     breathing_test,
+    data_files,
     distance_test,
     presence_test,
-    resources,
     smart_presence_test,
     tank_level_test,
     touchless_button_test,
@@ -30,13 +30,16 @@ AlgorithmFactory = t.Callable[[a121.H5Record], t.Any]
 @pytest.fixture
 def output_path(input_path: Path, algorithm_factory: AlgorithmFactory) -> Path:
     """Returns the output path, that is based on the input path."""
-    return input_path.with_name(f"{input_path.stem}-{algorithm_factory.__name__}-output.h5")
+    output_file_name = f"{input_path.stem}-{algorithm_factory.__name__}-output.h5"
+    data_files_dir = input_path.parent / ".."
+
+    return data_files_dir / "expected_output" / output_file_name
 
 
 @pytest.fixture
 def input_path(resource_name: str) -> Path:
-    """Returns the input path, given a resource name (in the "resources" package)"""
-    with importlib.resources.path(resources, resource_name) as path:
+    """Returns the input path, given a resource name (in the "data_files" package)"""
+    with importlib.resources.path(data_files.recorded_data, resource_name) as path:
         return path
 
 
