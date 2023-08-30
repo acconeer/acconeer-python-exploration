@@ -701,7 +701,7 @@ class ViewPlugin(A121ViewPluginBase):
             {
                 pidgets.FlatPidgetGroup(): {
                     "num_zones": pidgets.IntPidgetFactory(
-                        name_label_text="Number of zones", limits=(1, None)
+                        name_label_text="Number of zones:", limits=(1, None)
                     )
                 }
             }
@@ -715,7 +715,7 @@ class ViewPlugin(A121ViewPluginBase):
             {
                 pidgets.FlatPidgetGroup(): {
                     "num_zones_for_wake_up": pidgets.IntPidgetFactory(
-                        name_label_text="Number zones for wake up", limits=(1, None)
+                        name_label_text="Number zones for wake up:s:", limits=(1, None)
                     )
                 }
             }

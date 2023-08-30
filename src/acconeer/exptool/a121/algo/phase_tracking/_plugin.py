@@ -86,7 +86,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         # Note: Incomplete mapping
         return {
             "threshold": pidgets.FloatPidgetFactory(
-                name_label_text="Threshold",
+                name_label_text="Threshold:",
                 decimals=1,
                 limits=(0.0, 10000),
             ),

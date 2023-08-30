@@ -49,7 +49,7 @@ def _hooks_converter(a: MaybeIterable[PidgetHook]) -> Sequence[PidgetHook]:
 
 @attrs.frozen(kw_only=True, slots=False)
 class PidgetFactory(abc.ABC):
-    name_label_text: str
+    name_label_text: str = attrs.field()
     name_label_tooltip: Optional[str] = None
     note_label_text: Optional[str] = None
     hooks: Sequence[PidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
@@ -57,6 +57,16 @@ class PidgetFactory(abc.ABC):
     @abc.abstractmethod
     def create(self, parent: QWidget) -> Pidget:
         ...
+
+    @name_label_text.validator
+    def check_for_whitespaces(self, attribute: Any, value: str) -> None:
+        if value != value.strip():
+            raise ValueError("Labels cannot start or end with a whitespace")
+
+    @name_label_text.validator
+    def check_label_text_format(self, attribute: Any, value: str) -> None:
+        if len(value) > 0 and value[-1] != ":":
+            raise ValueError("Labels have to end with ':'")
 
 
 class Pidget(DataEditor[Any]):
@@ -473,8 +483,15 @@ class OptionalFloatPidget(OptionalPidget):
 
 @attrs.frozen(kw_only=True, slots=False)
 class CheckboxPidgetFactory(PidgetFactory):
+    name_label_text: str = attrs.field()
+
     def create(self, parent: QWidget) -> CheckboxPidget:
         return CheckboxPidget(self, parent)
+
+    @name_label_text.validator
+    def check_for_whitespaces(self, attribute: Any, value: str) -> None:
+        if value != value.strip():
+            raise ValueError("Labels cannot start or end with a whitespace")
 
 
 class CheckboxPidget(Pidget):

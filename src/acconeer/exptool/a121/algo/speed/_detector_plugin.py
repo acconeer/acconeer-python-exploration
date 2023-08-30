@@ -440,20 +440,20 @@ class ViewPlugin(A121ViewPluginBase):
     def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
         service_parameters = {
             "start_point": pidgets.IntPidgetFactory(
-                name_label_text="Start point",
+                name_label_text="Start point:",
             ),
             "num_points": pidgets.IntPidgetFactory(
-                name_label_text="Number of points",
+                name_label_text="Number of points:",
                 limits=(1, 100),
             ),
             "step_length": pidgets.OptionalIntPidgetFactory(
-                name_label_text="Step length",
+                name_label_text="Step length:",
                 checkbox_label_text="Override",
                 limits=(1, None),
                 init_set_value=72,
             ),
             "profile": pidgets.OptionalEnumPidgetFactory(
-                name_label_text="Profile",
+                name_label_text="Profile:",
                 checkbox_label_text="Override",
                 enum_type=a121.Profile,
                 label_mapping={
@@ -465,38 +465,38 @@ class ViewPlugin(A121ViewPluginBase):
                 },
             ),
             "sweep_rate": pidgets.OptionalIntPidgetFactory(
-                name_label_text="Sweep rate",
+                name_label_text="Sweep rate:",
                 suffix=" Hz",
                 checkbox_label_text="Override",
                 limits=(1, 134000),
                 init_set_value=10000,
             ),
             "frame_rate": pidgets.OptionalFloatPidgetFactory(
-                name_label_text="Frame rate",
+                name_label_text="Frame rate:",
                 suffix=" Hz",
                 checkbox_label_text="Override",
                 limits=(1, 200),
                 init_set_value=20.0,
             ),
             "hwaas": pidgets.OptionalIntPidgetFactory(
-                name_label_text="HWAAS",
+                name_label_text="HWAAS:",
                 checkbox_label_text="Override",
                 limits=(1, 511),
                 init_set_value=4,
             ),
             "num_bins": pidgets.IntPidgetFactory(
-                name_label_text="Number of bins",
+                name_label_text="Number of bins:",
                 limits=(3, 4095),
             ),
         }
         processing_parameters = {
             "max_speed": pidgets.FloatPidgetFactory(
-                name_label_text="Max speed",
+                name_label_text="Max speed:",
                 suffix=" m/s",
                 limits=(0, 150.0),
             ),
             "threshold": pidgets.FloatPidgetFactory(
-                name_label_text="Detection threshold",
+                name_label_text="Detection threshold:",
                 limits=(1.0, 10000.0),
             ),
         }

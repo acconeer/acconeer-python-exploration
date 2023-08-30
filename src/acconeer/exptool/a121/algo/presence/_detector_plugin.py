@@ -506,17 +506,17 @@ class ViewPlugin(A121ViewPluginBase):
     def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
         service_parameters = {
             "start_m": pidgets.FloatPidgetFactory(
-                name_label_text="Range start",
+                name_label_text="Range start:",
                 suffix=" m",
                 decimals=3,
             ),
             "end_m": pidgets.FloatPidgetFactory(
-                name_label_text="Range end",
+                name_label_text="Range end:",
                 suffix=" m",
                 decimals=3,
             ),
             "profile": pidgets.OptionalEnumPidgetFactory(
-                name_label_text="Profile",
+                name_label_text="Profile:",
                 checkbox_label_text="Override",
                 enum_type=a121.Profile,
                 label_mapping={
@@ -528,28 +528,28 @@ class ViewPlugin(A121ViewPluginBase):
                 },
             ),
             "step_length": pidgets.OptionalIntPidgetFactory(
-                name_label_text="Step length",
+                name_label_text="Step length:",
                 checkbox_label_text="Override",
                 limits=(1, None),
                 init_set_value=24,
             ),
             "frame_rate": pidgets.FloatPidgetFactory(
-                name_label_text="Frame rate",
+                name_label_text="Frame rate:",
                 suffix=" Hz",
                 decimals=1,
                 limits=(1, 100),
             ),
             "sweeps_per_frame": pidgets.IntPidgetFactory(
-                name_label_text="Sweeps per frame",
+                name_label_text="Sweeps per frame:",
                 limits=(1, 4095),
             ),
             "hwaas": pidgets.IntPidgetFactory(
-                name_label_text="HWAAS",
+                name_label_text="HWAAS:",
                 limits=(1, 511),
             ),
             "inter_frame_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
-                name_label_text="Inter frame idle state",
+                name_label_text="Inter frame idle state:",
                 label_mapping={
                     a121.IdleState.DEEP_SLEEP: "Deep sleep",
                     a121.IdleState.SLEEP: "Sleep",
@@ -559,18 +559,18 @@ class ViewPlugin(A121ViewPluginBase):
         }
         intra_parameters = {
             "intra_detection_threshold": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Intra detection threshold",
+                name_label_text="Intra detection threshold:",
                 decimals=2,
                 limits=(0, 5),
             ),
             "intra_frame_time_const": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Intra time constant",
+                name_label_text="Intra time constant:",
                 suffix=" s",
                 decimals=2,
                 limits=(0, 1),
             ),
             "intra_output_time_const": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Intra output time constant",
+                name_label_text="Intra output time constant:",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
@@ -582,40 +582,40 @@ class ViewPlugin(A121ViewPluginBase):
                 name_label_text="Enable phase boost"
             ),
             "inter_detection_threshold": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Inter detection threshold",
+                name_label_text="Inter detection threshold:",
                 decimals=2,
                 limits=(0, 5),
             ),
             "inter_frame_fast_cutoff": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Inter fast cutoff freq.",
+                name_label_text="Inter fast cutoff freq.:",
                 suffix=" Hz",
                 decimals=2,
                 limits=(1, 50),
                 log_scale=True,
             ),
             "inter_frame_slow_cutoff": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Inter slow cutoff freq.",
+                name_label_text="Inter slow cutoff freq.:",
                 suffix=" Hz",
                 decimals=2,
                 limits=(0.01, 1),
                 log_scale=True,
             ),
             "inter_frame_deviation_time_const": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Inter time constant",
+                name_label_text="Inter time constant:",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
             "inter_output_time_const": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Inter output time constant",
+                name_label_text="Inter output time constant:",
                 suffix=" s",
                 decimals=2,
                 limits=(0.01, 20),
                 log_scale=True,
             ),
             "inter_frame_presence_timeout": pidgets.OptionalIntPidgetFactory(
-                name_label_text="Presence timeout",
+                name_label_text="Presence timeout:",
                 checkbox_label_text="Enable",
                 suffix=" s",
                 limits=(1, 30),

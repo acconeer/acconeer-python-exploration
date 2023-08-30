@@ -585,21 +585,21 @@ class ViewPlugin(A121ViewPluginBase):
     def _get_processor_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
             "median_filter_length": pidgets.IntPidgetFactory(
-                name_label_text="Median filter length",
+                name_label_text="Median filter length:",
                 limits=(1, 10),
             ),
             "num_medians_to_average": pidgets.IntPidgetFactory(
-                name_label_text="Num measurements averaged",
+                name_label_text="Num measurements averaged:",
                 limits=(1, 10),
             ),
             "start_m": pidgets.FloatPidgetFactory(
-                name_label_text="Tank start",
+                name_label_text="Tank start:",
                 suffix=" m",
                 decimals=3,
                 limits=(0.03, 20),
             ),
             "end_m": pidgets.FloatPidgetFactory(
-                name_label_text="Tank end",
+                name_label_text="Tank end:",
                 suffix=" m",
                 decimals=3,
                 limits=(0.05, 20),
@@ -622,7 +622,7 @@ class ViewPlugin(A121ViewPluginBase):
 
         return {
             "max_step_length": pidgets.OptionalIntPidgetFactory(
-                name_label_text="Max step length",
+                name_label_text="Max step length:",
                 checkbox_label_text="Set",
                 limits=(1, None),
                 init_set_value=1,

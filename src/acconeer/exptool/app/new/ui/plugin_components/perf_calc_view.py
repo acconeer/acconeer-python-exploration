@@ -82,7 +82,7 @@ class PerfCalcView(QGroupBox):
 
         self.average_current = PerfCalcValueWidget(self)
         layout.addWidget(self.average_current, 0, 1)
-        average_current_label = QLabel("Estimated avg. current", self)
+        average_current_label = QLabel("Estimated avg. current:", self)
         average_current_label.setToolTip(tooltip)
         layout.addWidget(average_current_label, 0, 0)
 

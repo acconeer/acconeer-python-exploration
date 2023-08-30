@@ -120,7 +120,7 @@ class MetadataView(QGroupBox):
         self.frame_data_length = MetadataValueWidget(self)
         layout.addWidget(self.frame_data_length, row, 1)
 
-        frame_data_length_label = QLabel("Frame data length", self)
+        frame_data_length_label = QLabel("Frame data length:", self)
         frame_data_length_label.setToolTip(a121.Metadata.frame_data_length.__doc__ or "")
         layout.addWidget(frame_data_length_label, row, 0)
 
@@ -129,7 +129,7 @@ class MetadataView(QGroupBox):
         self.calibration_temperature = MetadataValueWidget(self)
         layout.addWidget(self.calibration_temperature, row, 1)
 
-        calibration_temperature_label = QLabel("Calibration temperature", self)
+        calibration_temperature_label = QLabel("Calibration temperature:", self)
         calibration_temperature_label.setToolTip(
             a121.Metadata.calibration_temperature.__doc__ or ""
         )
@@ -140,7 +140,7 @@ class MetadataView(QGroupBox):
         self.max_sweep_rate = MetadataValueWidget(self)
         layout.addWidget(self.max_sweep_rate, row, 1)
 
-        max_sweep_rate_label = QLabel("Max sweep rate", self)
+        max_sweep_rate_label = QLabel("Max sweep rate:", self)
         max_sweep_rate_label.setToolTip(a121.Metadata.max_sweep_rate.__doc__ or "")
         layout.addWidget(max_sweep_rate_label, row, 0)
 
@@ -149,7 +149,7 @@ class MetadataView(QGroupBox):
         self.high_speed_mode = MetadataValueWidget(self)
         layout.addWidget(self.high_speed_mode, row, 1)
 
-        high_speed_mode_label = QLabel("High speed mode", self)
+        high_speed_mode_label = QLabel("High speed mode:", self)
         high_speed_mode_label.setToolTip(a121.Metadata.high_speed_mode.__doc__ or "")
         layout.addWidget(high_speed_mode_label, row, 0)
 

@@ -105,34 +105,34 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 
         return {
             "sensitivity_close": pidgets.FloatPidgetFactory(
-                name_label_text="Sensitivity (close range)",
+                name_label_text="Sensitivity (close range):",
                 decimals=1,
                 limits=(0.1, 4),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.FAR_RANGE)),
             ),
             "patience_close": pidgets.IntPidgetFactory(
-                name_label_text="Patience (close range)",
+                name_label_text="Patience (close range):",
                 limits=(0, None),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.FAR_RANGE)),
             ),
             "sensitivity_far": pidgets.FloatPidgetFactory(
-                name_label_text="Sensitivity (far range)",
+                name_label_text="Sensitivity (far range):",
                 decimals=1,
                 limits=(0.1, 4),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.CLOSE_RANGE)),
             ),
             "patience_far": pidgets.IntPidgetFactory(
-                name_label_text="Patience (far range)",
+                name_label_text="Patience (far range):",
                 limits=(0, None),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.CLOSE_RANGE)),
             ),
             "calibration_duration_s": pidgets.FloatPidgetFactory(
-                name_label_text="Calibration duration",
+                name_label_text="Calibration duration:",
                 suffix="s",
                 limits=(0, None),
             ),
             "calibration_interval_s": pidgets.FloatPidgetFactory(
-                name_label_text="Calibration interval",
+                name_label_text="Calibration interval:",
                 suffix="s",
                 limits=(1, None),
             ),

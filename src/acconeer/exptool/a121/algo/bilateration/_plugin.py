@@ -532,22 +532,22 @@ class ViewPlugin(A121ViewPluginBase):
     def _get_processor_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
             "sensor_spacing_m": pidgets.FloatPidgetFactory(
-                name_label_text="Sensor spacing",
+                name_label_text="Sensor spacing:",
                 suffix=" m",
                 decimals=3,
             ),
             "max_anticipated_velocity_mps": pidgets.FloatPidgetFactory(
-                name_label_text="Max anticipated velocity",
+                name_label_text="Max anticipated velocity:",
                 suffix=" m/s",
                 decimals=1,
             ),
             "dead_reckoning_duration_s": pidgets.FloatPidgetFactory(
-                name_label_text="Dead reckoning duration",
+                name_label_text="Dead reckoning duration:",
                 suffix=" s",
                 decimals=1,
             ),
             "sensitivity": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Sensitivity",
+                name_label_text="Sensitivity:",
                 decimals=2,
                 limits=(0.001, 1),
                 show_limit_values=False,
@@ -561,7 +561,7 @@ class ViewPlugin(A121ViewPluginBase):
 
         # Bilateration requires an update rate, so replace the optional float with a mandatory
         distance_pidget_mapping["update_rate"] = pidgets.FloatPidgetFactory(
-            name_label_text="Update rate",
+            name_label_text="Update rate:",
             decimals=1,
             limits=(1, None),
         )

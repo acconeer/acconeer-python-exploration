@@ -544,12 +544,12 @@ class ViewPlugin(A121ViewPluginBase):
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {
             "start_m": pidgets.FloatPidgetFactory(
-                name_label_text="Range start",
+                name_label_text="Range start:",
                 suffix=" m",
                 decimals=3,
             ),
             "end_m": pidgets.FloatPidgetFactory(
-                name_label_text="Range end",
+                name_label_text="Range end:",
                 suffix=" m",
                 decimals=3,
             ),
@@ -557,13 +557,13 @@ class ViewPlugin(A121ViewPluginBase):
                 name_label_text="Enable close range leakage cancellation"
             ),
             "max_step_length": pidgets.OptionalIntPidgetFactory(
-                name_label_text="Max step length",
+                name_label_text="Max step length:",
                 checkbox_label_text="Set",
                 limits=(1, None),
                 init_set_value=12,
             ),
             "max_profile": pidgets.EnumPidgetFactory(
-                name_label_text="Max profile",
+                name_label_text="Max profile:",
                 enum_type=a121.Profile,
                 label_mapping={
                     a121.Profile.PROFILE_1: "1 (shortest)",
@@ -574,7 +574,7 @@ class ViewPlugin(A121ViewPluginBase):
                 },
             ),
             "reflector_shape": pidgets.EnumPidgetFactory(
-                name_label_text="Reflector shape",
+                name_label_text="Reflector shape:",
                 enum_type=ReflectorShape,
                 label_mapping={
                     ReflectorShape.GENERIC: "Generic",
@@ -582,7 +582,7 @@ class ViewPlugin(A121ViewPluginBase):
                 },
             ),
             "peaksorting_method": pidgets.EnumPidgetFactory(
-                name_label_text="Peak sorting method",
+                name_label_text="Peak sorting method:",
                 enum_type=PeakSortingMethod,
                 label_mapping={
                     PeakSortingMethod.CLOSEST: "Closest",
@@ -590,7 +590,7 @@ class ViewPlugin(A121ViewPluginBase):
                 },
             ),
             "threshold_method": pidgets.EnumPidgetFactory(
-                name_label_text="Threshold method",
+                name_label_text="Threshold method:",
                 enum_type=ThresholdMethod,
                 label_mapping={
                     ThresholdMethod.CFAR: "CFAR",
@@ -600,23 +600,23 @@ class ViewPlugin(A121ViewPluginBase):
                 },
             ),
             "fixed_threshold_value": pidgets.FloatPidgetFactory(
-                name_label_text="Fixed amplitude threshold value",
+                name_label_text="Fixed amplitude threshold value:",
                 decimals=1,
                 limits=(0, None),
                 hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED)),
             ),
             "fixed_strength_threshold_value": pidgets.FloatPidgetFactory(
-                name_label_text="Fixed strength threshold value",
+                name_label_text="Fixed strength threshold value:",
                 decimals=1,
                 hooks=enable_if(parameter_is("threshold_method", ThresholdMethod.FIXED_STRENGTH)),
                 suffix="dBsm",
             ),
             "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
-                name_label_text="Num frames in rec. thr.",
+                name_label_text="Num frames in rec. thr.:",
                 limits=(1, None),
             ),
             "threshold_sensitivity": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Threshold sensitivity",
+                name_label_text="Threshold sensitivity:",
                 decimals=2,
                 limits=(0, 1),
                 show_limit_values=False,
@@ -626,14 +626,14 @@ class ViewPlugin(A121ViewPluginBase):
                 ),
             ),
             "signal_quality": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Signal quality",
+                name_label_text="Signal quality:",
                 decimals=1,
                 limits=(-10, 35),
                 show_limit_values=False,
                 limit_texts=("Less power", "Higher quality"),
             ),
             "update_rate": pidgets.OptionalFloatPidgetFactory(
-                name_label_text="Update rate",
+                name_label_text="Update rate:",
                 checkbox_label_text="Set",
                 limits=(1, None),
                 init_set_value=20,
