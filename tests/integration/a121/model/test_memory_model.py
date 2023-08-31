@@ -9,7 +9,13 @@ from typing import Dict, Optional
 import pytest
 import yaml
 
-from acconeer.exptool.a121 import SensorConfig, SubsweepConfig
+from acconeer.exptool.a121 import SensorConfig, SessionConfig, SubsweepConfig
+from acconeer.exptool.a121.algo.distance import (
+    DetectorConfig as DistanceConfig,
+)
+from acconeer.exptool.a121.algo.distance import (
+    ThresholdMethod,
+)
 from acconeer.exptool.a121.model import memory
 
 
@@ -71,10 +77,47 @@ def test_service_memory_model(config, application, test_case):
         pytest.skip("No memory reference")
     else:
         mem_usage = mem_usage[test_case_key]
-        rss_heap_mem = memory.service_rss_heap_memory(config)
-        external_heap_mem = memory.service_external_heap_memory(config)
-        heap_mem = memory.service_heap_memory(config)
 
-        assert rss_heap_mem + external_heap_mem == heap_mem
-        assert math.isclose(mem_usage["rss_heap"], rss_heap_mem, abs_tol=10)
-        assert math.isclose(mem_usage["app_heap"], external_heap_mem, abs_tol=10)
+        session_config = SessionConfig(config)
+        session_rss_heap_mem = memory.session_rss_heap_memory(session_config)
+        session_external_heap_mem = memory.session_external_heap_memory(session_config)
+        session_heap_mem = memory.session_heap_memory(session_config)
+
+        assert session_rss_heap_mem + session_external_heap_mem == session_heap_mem
+        assert math.isclose(mem_usage["rss_heap"], session_rss_heap_mem, rel_tol=0.05)
+        assert math.isclose(mem_usage["app_heap"], session_external_heap_mem, rel_tol=0.05)
+
+
+@pytest.mark.parametrize(
+    "config,test_case",
+    [
+        pytest.param(
+            DistanceConfig(start_m=0.1, end_m=3.0, threshold_method=ThresholdMethod.CFAR),
+            "default",
+        ),
+        pytest.param(
+            DistanceConfig(start_m=0.05, end_m=0.2, threshold_method=ThresholdMethod.RECORDED),
+            "close_range",
+        ),
+        pytest.param(
+            DistanceConfig(start_m=2.0, end_m=4.0, threshold_method=ThresholdMethod.CFAR),
+            "long_range",
+        ),
+    ],
+)
+def test_distance_memory_model(config, test_case):
+    mem_usage = memory_usage("example_detector_distance")
+    test_case_key = test_case + "-internal_xm125"
+
+    if mem_usage is None:
+        pytest.skip("No memory reference")
+    else:
+        mem_usage = mem_usage[test_case_key]
+
+        distance_rss_heap_mem = memory.distance_rss_heap_memory(config)
+        distance_ext_heap_mem = memory.distance_external_heap_memory(config)
+        distance_heap_mem = memory.distance_heap_memory(config)
+
+        assert distance_rss_heap_mem + distance_ext_heap_mem == distance_heap_mem
+        assert math.isclose(mem_usage["rss_heap"], distance_rss_heap_mem, rel_tol=0.05)
+        assert math.isclose(mem_usage["app_heap"], distance_ext_heap_mem, rel_tol=0.05)

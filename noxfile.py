@@ -186,6 +186,7 @@ def test(session):
                 ]
             )
         elif "a121" in args.integration_args:
+            install_extras |= {"algo"}
             pytest_commands.extend(
                 [
                     ["-p", "no:pytest-qt", "tests/integration/a121", *real_args],

@@ -650,6 +650,25 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             # Grab temperature from first group as it is the same for all.
             context.reference_temperature = extended_result[0][sensor_id].temperature
 
+    @staticmethod
+    def _get_calibrate_noise_session_config(
+        session_config: a121.SessionConfig, sensor_ids: List[int]
+    ) -> a121.SessionConfig:
+        noise_session_config = copy.deepcopy(session_config)
+
+        for sensor_id in sensor_ids:
+            for group in noise_session_config.groups:
+                group[sensor_id].sweeps_per_frame = 1
+                for subsweep in group[sensor_id].subsweeps:
+                    subsweep.enable_tx = False
+                    subsweep.step_length = 1
+                    subsweep.start_point = 0
+                    # Set num_points to a high number to get sufficient number of data points to
+                    # estimate the standard deviation.
+                    subsweep.num_points = 220
+
+        return noise_session_config
+
     def _calibrate_noise(self) -> None:
         """Estimates the standard deviation of the noise in each subsweep by setting enable_tx to
         False and collecting data, used to calculate the deviation.
@@ -662,18 +681,9 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         record_threshold() is that it is used when calculating the threshold.
         """
 
-        session_config = copy.deepcopy(self.session_config)
-
-        for sensor_id in self.sensor_ids:
-            for group in session_config.groups:
-                group[sensor_id].sweeps_per_frame = 1
-                for subsweep in group[sensor_id].subsweeps:
-                    subsweep.enable_tx = False
-                    subsweep.step_length = 1
-                    subsweep.start_point = 0
-                    # Set num_points to a high number to get sufficient number of data points to
-                    # estimate the standard deviation.
-                    subsweep.num_points = 220
+        session_config = self._get_calibrate_noise_session_config(
+            self.session_config, self.sensor_ids
+        )
 
         extended_metadata = self.client.setup_session(session_config)
         assert isinstance(extended_metadata, list)
@@ -705,12 +715,9 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 result = res[sensor_id]
                 context.extra_context.noise_frames[i].append(result._frame)
 
-    def _calibrate_offset(self) -> None:
-        """Estimates sensor offset error based on loopback measurement."""
-
-        self._validate_ready_for_calibration()
-
-        sensor_config = a121.SensorConfig(
+    @staticmethod
+    def _get_calibrate_offset_sensor_config() -> a121.SensorConfig:
+        return a121.SensorConfig(
             start_point=-30,
             num_points=50,
             step_length=1,
@@ -720,6 +727,13 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             enable_loopback=True,
             phase_enhancement=True,
         )
+
+    def _calibrate_offset(self) -> None:
+        """Estimates sensor offset error based on loopback measurement."""
+
+        self._validate_ready_for_calibration()
+
+        sensor_config = self._get_calibrate_offset_sensor_config()
 
         session_config = a121.SessionConfig(
             {sensor_id: sensor_config for sensor_id in self.sensor_ids}, extended=True
