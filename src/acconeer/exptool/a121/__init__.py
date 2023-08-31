@@ -1,7 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
-SDK_VERSION = "1.1.0"
+SDK_VERSION = "1.2.0"
 
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (

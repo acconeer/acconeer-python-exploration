@@ -1,13 +1,18 @@
 # Changelog
 
+## v7.4.0
+
+### Added
+- Basic multisensor support in the SparseIQ plugin.
+
 ## v7.3.0
 
 ### Added
-* A121: Distance: Add fixed strength threshold
-* A121: Distance: Visualize multiple time series in history plot
+- A121: Distance: Add fixed strength threshold
+- A121: Distance: Visualize multiple time series in history plot
 
 ### Changed
-* Move links.py from a111 folder to root folder
+- Move links.py from a111 folder to root folder
 
 ## v7.2.1
 
@@ -25,9 +30,9 @@ This release only contains minor fixes and improvements.
   in the A121 Client.
 
 ### Fixed
- - A111: convert_to_csv.py can now output metadata for the envelope service
- - A121: Detach recorded if start_session fails
- - A121: Validate start point in subsweep config
+- A111: convert_to_csv.py can now output metadata for the envelope service
+- A121: Detach recorded if start_session fails
+- A121: Validate start point in subsweep config
 
 ## v7.1.0
 
