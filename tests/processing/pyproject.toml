@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=60.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exptool_a121_test"
+authors = [
+    {name = "Acconeer AB", email = "tools@acconeer.com"}
+]
+description = "Acconeer Exptool test datafiles"
+license = {text = "BSD 3-Clause Clear License"}
+version = "0.0.0"
+
+[tool.setuptools.package-dir]
+exptool_a121_test = "a121"
