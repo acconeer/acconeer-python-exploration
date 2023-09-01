@@ -9,4 +9,4 @@ from ._configs import (
     get_far_processor_config,
     get_far_sensor_config,
 )
-from ._processor import MeasurementType, Processor, ProcessorConfig, ProcessorResult
+from ._processor import MeasurementType, Processor, ProcessorConfig, ProcessorResult, RangeResult

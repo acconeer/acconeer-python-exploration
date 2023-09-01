@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, Optional, Type
+from typing import Any, Callable, List, Optional, Type, Union
 
 import numpy as np
+import numpy.typing as npt
 
 import pyqtgraph as pg
 
@@ -25,6 +26,7 @@ from acconeer.exptool.a121.algo.touchless_button import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
+    RangeResult,
     get_close_and_far_processor_config,
     get_close_and_far_sensor_config,
     get_close_processor_config,
@@ -60,7 +62,6 @@ class PluginPresetId(Enum):
 
 
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
-
     PLUGIN_PRESETS = {
         PluginPresetId.CLOSE_RANGE.value: lambda: ProcessorPluginPreset(
             session_config=a121.SessionConfig(get_close_sensor_config()),
@@ -102,7 +103,6 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
-
         return {
             "sensitivity_close": pidgets.FloatPidgetFactory(
                 name_label_text="Sensitivity (close range):",
@@ -157,6 +157,12 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 
 
 class PlotPlugin(PgPlotPlugin):
+    score_history_close: Optional[npt.NDArray[np.float_]]
+    score_history_far: Optional[npt.NDArray[np.float_]]
+    score_history_curves_close: Optional[npt.NDArray[np.object_]]
+    score_history_curves_far: Optional[npt.NDArray[np.object_]]
+    score_history_curves: Union[List[npt.NDArray[Any]], npt.NDArray[Any]]
+
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
         self._plot_job: Optional[ProcessorResult] = None
@@ -172,6 +178,7 @@ class PlotPlugin(PgPlotPlugin):
             self.setup(
                 metadata=message.metadata,
                 sensor_config=message.session_config.sensor_config,
+                processor_config=message.processor_config,
             )
             self._is_setup = True
         else:
@@ -186,7 +193,12 @@ class PlotPlugin(PgPlotPlugin):
         finally:
             self._plot_job = None
 
-    def setup(self, metadata: a121.Metadata, sensor_config: a121.SensorConfig) -> None:
+    def setup(
+        self,
+        metadata: a121.Metadata,
+        sensor_config: a121.SensorConfig,
+        processor_config: ProcessorConfig,
+    ) -> None:
         self.plot_layout.clear()
 
         self.detection_history_plot = self._create_detection_plot(self.plot_layout)
@@ -229,33 +241,181 @@ class PlotPlugin(PgPlotPlugin):
 
         self.detection_history = np.full((2, 100), np.NaN)
 
+        self.score_history_plot = self._create_score_plot(self.plot_layout)
+        score_plot_legend = self.score_history_plot.legend
+        self.score_smooth_max = et.utils.SmoothMax()
+
+        self.threshold_history_curve_close = self.score_history_plot.plot(
+            pen=et.utils.pg_pen_cycler(1, width=2.5, style="--"),
+        )
+        self.threshold_history_curve_far = self.score_history_plot.plot(
+            pen=et.utils.pg_pen_cycler(0, width=2.5, style="--"),
+        )
+
+        self.threshold_history = np.full((2, 100), np.NaN)
+
+        cycle_index = 2  # To not have same colors as thresholds
+        if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+            measurement_type = "Close"
+            score_plot_legend.addItem(self.threshold_history_curve_close, "Close range threshold")
+        elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
+            measurement_type = "Far"
+            score_plot_legend.addItem(self.threshold_history_curve_far, "Far range threshold")
+
+        if processor_config.measurement_type != MeasurementType.CLOSE_AND_FAR_RANGE:
+            score_history = np.full((sensor_config.subsweep.num_points, 100), np.NaN)
+            score_history_curves = np.empty((sensor_config.subsweep.num_points,), dtype=object)
+            for i in range(sensor_config.subsweep.num_points):
+                score_history_curves[i] = pg.ScatterPlotItem(
+                    brush=et.utils.pg_brush_cycler(cycle_index),
+                    name=f"{measurement_type} range, point {i}",
+                )
+                self.score_history_plot.addItem(score_history_curves[i])
+                cycle_index += 1
+
+            if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+                self.score_history_close = score_history
+                self.score_history_curves_close = score_history_curves
+                self.score_history_far = None
+                self.score_history_curves_far = None
+            elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
+                self.score_history_close = None
+                self.score_history_curves_close = None
+                self.score_history_far = score_history
+                self.score_history_curves_far = score_history_curves
+
+        elif processor_config.measurement_type == MeasurementType.CLOSE_AND_FAR_RANGE:
+            score_plot_legend.addItem(self.threshold_history_curve_close, "Close range threshold")
+            score_plot_legend.addItem(self.threshold_history_curve_far, "Far range threshold")
+            self.score_history_close = np.full(
+                (sensor_config.subsweeps[0].num_points, 100), np.NaN
+            )
+            self.score_history_far = np.full((sensor_config.subsweeps[1].num_points, 100), np.NaN)
+            self.score_history_curves_close = np.empty(
+                (sensor_config.subsweeps[0].num_points,), dtype=object
+            )
+            self.score_history_curves_far = np.empty(
+                (sensor_config.subsweeps[1].num_points,), dtype=object
+            )
+
+            range_labels = ["Close", "Far"]
+            for n, subsweep in enumerate(sensor_config.subsweeps):
+                measurement_type = range_labels[n]
+                score_history_curve_list = [
+                    self.score_history_curves_close,
+                    self.score_history_curves_far,
+                ]
+                for i in range(subsweep.num_points):
+                    score_history_curve_list[n][i] = pg.ScatterPlotItem(
+                        brush=et.utils.pg_brush_cycler(cycle_index),
+                        name=f"{measurement_type} range, point {i}",
+                    )
+                    self.score_history_plot.addItem(score_history_curve_list[n][i])
+                    cycle_index += 1
+            self.score_history_curves_close = score_history_curve_list[0]
+            self.score_history_curves_far = score_history_curve_list[1]
+
     def draw_plot_job(self, processor_result: ProcessorResult) -> None:
-        detection = np.array([processor_result.detection_close, processor_result.detection_far])
+        def is_none_or_detection(x: Optional[RangeResult]) -> Optional[bool]:
+            return x.detection if x is not None else None
+
+        detection = np.array(
+            [
+                is_none_or_detection(processor_result.close),
+                is_none_or_detection(processor_result.far),
+            ]
+        )
         self.detection_history = np.roll(self.detection_history, -1, axis=1)
         self.detection_history[:, -1] = detection
 
         self.detection_history_curve_close.setData(self.detection_history[0])
         self.detection_history_curve_far.setData(self.detection_history[1])
 
-        if processor_result.detection_close:
-            self.close_text_item.show()
-        else:
-            self.close_text_item.hide()
+        if processor_result.close is not None:
+            if processor_result.close.detection:
+                self.close_text_item.show()
+            else:
+                self.close_text_item.hide()
 
-        if processor_result.detection_far:
-            self.far_text_item.show()
-        else:
-            self.far_text_item.hide()
+        if processor_result.far is not None:
+            if processor_result.far.detection:
+                self.far_text_item.show()
+            else:
+                self.far_text_item.hide()
+
+        max_val = 0.0
+
+        def is_none_or_threshold(x: Optional[RangeResult]) -> Optional[float]:
+            return x.threshold if x is not None else None
+
+        threshold = np.array(
+            [
+                is_none_or_threshold(processor_result.close),
+                is_none_or_threshold(processor_result.far),
+            ]
+        )
+        if np.nanmax(np.array(threshold, dtype=float)) > max_val:
+            max_val = np.nanmax(np.array(threshold, dtype=float))
+        self.threshold_history = np.roll(self.threshold_history, -1, axis=1)
+        self.threshold_history[:, -1] = threshold
+
+        self.threshold_history_curve_close.setData(self.threshold_history[0])
+        self.threshold_history_curve_far.setData(self.threshold_history[1])
+
+        if self.score_history_close is not None:
+            self.score_history_close = np.roll(self.score_history_close, -1, axis=1)
+            assert processor_result.close is not None
+            # Plot the second highest score
+            self.score_history_close[:, -1] = np.sort(processor_result.close.score, axis=0)[-2, :]
+
+            assert self.score_history_curves_close is not None
+            for i, curve in enumerate(self.score_history_curves_close):
+                # Assign x-values so that setData() doesn't give error when y-values are NaN
+                curve.setData(np.arange(0, 100), self.score_history_close[i, :].flatten())
+
+            if np.max(processor_result.close.score) > max_val:
+                max_val = np.max(processor_result.close.score)
+
+        if self.score_history_far is not None:
+            self.score_history_far = np.roll(self.score_history_far, -1, axis=1)
+            assert processor_result.far is not None
+            # Plot the second highest score
+            self.score_history_far[:, -1] = np.sort(processor_result.far.score, axis=0)[-2, :]
+
+            assert self.score_history_curves_far is not None
+            for i, curve in enumerate(self.score_history_curves_far):
+                # Assign x-values so that setData() doesn't give error when y-values are NaN
+                curve.setData(np.arange(0, 100), self.score_history_far[i, :].flatten())
+
+            if np.max(processor_result.far.score) > max_val:
+                max_val = np.max(processor_result.far.score)
+
+        if max_val != 0.0:
+            self.score_history_plot.setYRange(0.0, self.score_smooth_max.update(max_val))
 
     @staticmethod
     def _create_detection_plot(parent: pg.GraphicsLayout) -> pg.PlotItem:
-        detection_history_plot = parent.addPlot()
+        detection_history_plot = parent.addPlot(row=0, col=0)
+        detection_history_plot.setTitle("Detection")
+        detection_history_plot.setLabel(axis="bottom", text="Frames")
         detection_history_plot.setMenuEnabled(False)
         detection_history_plot.setMouseEnabled(x=False, y=False)
         detection_history_plot.hideButtons()
         detection_history_plot.showGrid(x=True, y=True, alpha=0.5)
         detection_history_plot.setYRange(-0.1, 1.8)
         return detection_history_plot
+
+    @staticmethod
+    def _create_score_plot(parent: pg.GraphicsLayout) -> pg.PlotItem:
+        score_history_plot = parent.addPlot(row=1, col=0)
+        score_history_plot.setTitle("Detection score")
+        score_history_plot.setLabel(axis="bottom", text="Frames")
+        score_history_plot.addLegend()
+        score_history_plot.setMenuEnabled(False)
+        score_history_plot.setMouseEnabled(x=False, y=False)
+        score_history_plot.hideButtons()
+        score_history_plot.showGrid(x=True, y=True, alpha=0.5)
+        return score_history_plot
 
 
 class PluginSpec(PluginSpecBase):
@@ -276,7 +436,7 @@ TOUCHLESS_BUTTON_PLUGIN = PluginSpec(
     key="touchless_button",
     title="Touchless button",
     description="Detect tap/wave motion and register as button press.",
-    family=PluginFamily.EXAMPLE_APP,
+    family=PluginFamily.REF_APP,
     presets=[
         PluginPresetBase(
             name="Close range",

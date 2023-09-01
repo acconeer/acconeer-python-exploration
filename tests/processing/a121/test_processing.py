@@ -11,7 +11,6 @@ import h5py
 import pytest
 
 from acconeer.exptool import a121, opser
-from acconeer.exptool.a121.algo import touchless_button
 
 from . import (
     breathing_test,
@@ -127,27 +126,27 @@ def input_path(resource_name: str) -> Path:
         ),
         (
             touchless_button_test.touchless_button_default,
-            t.List[touchless_button.ProcessorResult],
+            t.List[touchless_button_test.ResultSlice],
             "input-touchless_button_default.h5",
         ),
         (
             touchless_button_test.touchless_button_both_ranges,
-            t.List[touchless_button.ProcessorResult],
+            t.List[touchless_button_test.ResultSlice],
             "input-touchless_button_both_ranges.h5",
         ),
         (
             touchless_button_test.touchless_button_patience,
-            t.List[touchless_button.ProcessorResult],
+            t.List[touchless_button_test.ResultSlice],
             "input-touchless_button_both_ranges.h5",
         ),
         (
             touchless_button_test.touchless_button_sensitivity,
-            t.List[touchless_button.ProcessorResult],
+            t.List[touchless_button_test.ResultSlice],
             "input-touchless_button_both_ranges.h5",
         ),
         (
             touchless_button_test.touchless_button_calibration,
-            t.List[touchless_button.ProcessorResult],
+            t.List[touchless_button_test.ResultSlice],
             "input-touchless_button_calibration.h5",
         ),
         (

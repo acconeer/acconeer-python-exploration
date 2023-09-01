@@ -4,19 +4,23 @@
 from __future__ import annotations
 
 import enum
-from typing import Optional
+from typing import List, Optional, TypeVar
 
 import attrs
 import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import (
     AlgoParamEnum,
     AlgoProcessorConfigBase,
     ProcessorBase,
     double_buffering_frame_filter,
 )
+
+
+T = TypeVar("T", float, npt.NDArray[np.float_])
 
 
 class MeasurementType(AlgoParamEnum):
@@ -27,7 +31,6 @@ class MeasurementType(AlgoParamEnum):
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
-
     measurement_type: MeasurementType = attrs.field(
         default=MeasurementType.CLOSE_RANGE,
         converter=MeasurementType,
@@ -122,8 +125,26 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    detection_close: Optional[bool] = attrs.field(default=None)
-    detection_far: Optional[bool] = attrs.field(default=None)
+    close: Optional[RangeResult] = attrs.field(default=None)
+    """Returns the ``RangeResult`` for close range. ``None`` if range is not activated."""
+
+    far: Optional[RangeResult] = attrs.field(default=None)
+    """Returns the ``RangeResult`` for far range. ``None`` if range is not activated."""
+
+
+@attrs.frozen(kw_only=True)
+class RangeResult:
+    detection: bool = attrs.field()
+    """Detection in current range. ``True`` if detection and ``False`` if no detection."""
+
+    threshold: float = attrs.field()
+    """Detection score threshold.
+    Depends on the sensitivity parameter for the current range, the threshold is
+    equal to 10 / *sensitivity*."""
+
+    score: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_optional_ndarray_isclose)
+    """Detection score for each point and sweep in current range.
+    The output has the shape of (sweeps per frame, number of points in current subsweep)."""
 
 
 class Processor(ProcessorBase[ProcessorResult]):
@@ -141,7 +162,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
     ) -> None:
-
         self._sensor_config = sensor_config
         self._metadata = metadata
         self._processor_config = processor_config
@@ -185,7 +205,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         elif not np.any(np.isnan(self._cfar_ref_buf)):
             y = self._calc_variance(frame)
 
-        significant = y > 1 / sensitivity * 10
+        threshold = self._get_threshold_from_sensitivity(sensitivity)
+        significant = y > threshold
         detection_depth, counts = np.unique(np.where(significant)[1], return_counts=True)
 
         if self._processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
@@ -197,7 +218,19 @@ class Processor(ProcessorBase[ProcessorResult]):
                 counts=counts,
                 measurement_type=MeasurementType.CLOSE_RANGE,
             )
-            return ProcessorResult(detection_close=self._detection_close)
+            if self._processor_config.sensitivity_close is None:
+                threshold_close = None
+            else:
+                threshold_close = self._get_threshold_from_sensitivity(
+                    self._processor_config.sensitivity_close
+                )
+            return ProcessorResult(
+                close=RangeResult(
+                    detection=self._detection_close,
+                    threshold=threshold_close,
+                    score=y,
+                )
+            )
 
         if self._processor_config.measurement_type == MeasurementType.FAR_RANGE:
             self._detection_far = self._process_single_range(
@@ -208,13 +241,44 @@ class Processor(ProcessorBase[ProcessorResult]):
                 counts=counts,
                 measurement_type=MeasurementType.FAR_RANGE,
             )
-            return ProcessorResult(detection_far=self._detection_far)
+            if self._processor_config.sensitivity_far is None:
+                threshold_far = None
+            else:
+                threshold_far = self._get_threshold_from_sensitivity(
+                    self._processor_config.sensitivity_far
+                )
+            return ProcessorResult(
+                far=RangeResult(
+                    detection=self._detection_far,
+                    threshold=threshold_far,
+                    score=y,
+                )
+            )
 
         if self._processor_config.measurement_type == MeasurementType.CLOSE_AND_FAR_RANGE:
-            return self._process_multiple_ranges(
+            [self._detection_close, self._detection_far] = self._process_multiple_ranges(
                 frame=frame,
                 detection_depth=detection_depth,
                 counts=counts,
+            )
+            score_close, score_far = np.split(
+                y, [self._sensor_config.subsweeps[0].num_points], axis=1
+            )
+            return ProcessorResult(
+                close=RangeResult(
+                    detection=self._detection_close,
+                    threshold=self._get_threshold_from_sensitivity(
+                        self._processor_config.sensitivity_close
+                    ),
+                    score=score_close,
+                ),
+                far=RangeResult(
+                    detection=self._detection_far,
+                    threshold=self._get_threshold_from_sensitivity(
+                        self._processor_config.sensitivity_far
+                    ),
+                    score=score_far,
+                ),
             )
 
         raise AssertionError
@@ -271,7 +335,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         counts: npt.NDArray[np.int_],
         measurement_type: MeasurementType,
     ) -> bool:
-
         if measurement_type == MeasurementType.CLOSE_RANGE:
             index = 0
         elif measurement_type == MeasurementType.FAR_RANGE:
@@ -315,8 +378,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         frame: npt.NDArray[np.complex_],
         detection_depth: npt.NDArray[np.float_],
         counts: npt.NDArray[np.int_],
-    ) -> ProcessorResult:
-
+    ) -> List[bool]:
         if detection_depth[counts > 1].size > 0:
             if (
                 np.where(
@@ -364,24 +426,21 @@ class Processor(ProcessorBase[ProcessorResult]):
 
             self._cfar_guard_buf = frame
 
-        self._detection_close = self._get_detection(
+        detection_close = self._get_detection(
             self._detection_close,
             self._sig_count[0],
             self._nonsig_count[0],
             self._processor_config.patience_close,
         )
 
-        self._detection_far = self._get_detection(
+        detection_far = self._get_detection(
             self._detection_far,
             self._sig_count[1],
             self._nonsig_count[1],
             self._processor_config.patience_far,
         )
 
-        return ProcessorResult(
-            detection_close=self._detection_close,
-            detection_far=self._detection_far,
-        )
+        return [detection_close, detection_far]
 
     def _get_sensitivity(self) -> npt.NDArray[np.float_]:
         if self._processor_config.measurement_type == MeasurementType.FAR_RANGE:
@@ -412,6 +471,11 @@ class Processor(ProcessorBase[ProcessorResult]):
         self._cfar_ref_buf = np.roll(self._cfar_ref_buf, -self._sweeps_per_frame, axis=0)
         self._cfar_ref_buf[-self._sweeps_per_frame :, :] = self._cfar_guard_buf
         self._frames_since_last_cal = 0
+
+    @staticmethod
+    def _get_threshold_from_sensitivity(sensitivity: T) -> T:
+        threshold = 1 / sensitivity * 10
+        return threshold
 
     @staticmethod
     def _get_detection(

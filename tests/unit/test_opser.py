@@ -410,12 +410,20 @@ TANK_LEVEL = [
 TOUCHLESS_BUTTON = [
     touchless_button.ProcessorConfig(),
     touchless_button.ProcessorResult(
-        detection_close=True,
-        detection_far=False,
+        close=touchless_button.RangeResult(
+            detection=True,
+            threshold=random(),
+            score=_array(np.float_),
+        ),
+        far=touchless_button.RangeResult(
+            detection=False,
+            threshold=random(),
+            score=_array(np.float_),
+        ),
     ),
     touchless_button.ProcessorResult(
-        detection_close=None,
-        detection_far=None,
+        close=None,
+        far=None,
     ),
 ]
 

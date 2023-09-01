@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
-from ._processor import ProcessorResult
+from ._processor import ProcessorResult, RangeResult
 
 
 class Easing:
@@ -30,8 +30,11 @@ class BlinkstickUpdater:
 
         stick.set_max_rgb_value(150)
 
-        v_close = self.e_close.update(float(bool(data.detection_close)), dt)
-        v_far = self.e_far.update(float(bool(data.detection_far)), dt)
+        def is_none_or_detection(x: Optional[RangeResult]) -> Optional[bool]:
+            return x.detection if x is not None else None
+
+        v_close = self.e_close.update(float(bool(is_none_or_detection(data.close))), dt)
+        v_far = self.e_far.update(float(bool(is_none_or_detection(data.far))), dt)
 
         stick.set_color(blue=255 * v_far, index=0)
         stick.set_color(blue=255 * v_far, index=1)
