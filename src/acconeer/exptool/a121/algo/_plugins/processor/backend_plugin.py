@@ -67,8 +67,9 @@ class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT]):
 
 
 @attrs.frozen(kw_only=True)
-class SetupMessage(GeneralMessage):
+class SetupMessage(GeneralMessage, Generic[ProcessorConfigT]):
     session_config: a121.SessionConfig
+    processor_config: ProcessorConfigT
     metadata: Union[a121.Metadata, list[dict[int, a121.Metadata]]]
     name: str = attrs.field(default="setup", init=False)
     recipient: RecipientLiteral = attrs.field(default="plot_plugin", init=False)
@@ -193,7 +194,13 @@ class GenericProcessorBackendPluginBase(
 
         self.client.start_session()
 
-        self.callback(SetupMessage(metadata=metadata, session_config=session_config))
+        self.callback(
+            SetupMessage(
+                metadata=metadata,
+                session_config=session_config,
+                processor_config=self.shared_state.processor_config,
+            )
+        )
 
     def end_session(self) -> None:
         if self.client is None:

@@ -14,7 +14,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool._bs_thread import BSThread, BSThreadDiedException
 from acconeer.exptool.a121 import algo
-from acconeer.exptool.a121.algo._base import InputT, ResultT
+from acconeer.exptool.a121.algo._base import InputT, ProcessorConfigT, ResultT
 from acconeer.exptool.a121.algo._plugins.processor import SetupMessage
 from acconeer.exptool.app.new.backend import PlotMessage
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase
@@ -25,6 +25,7 @@ from ._null_app_model import NullAppModel
 _ProcessorGetter = Callable[
     [
         a121.SessionConfig,
+        ProcessorConfigT,
         Union[a121.Metadata, List[Dict[int, a121.Metadata]]],
     ],
     algo.GenericProcessorBase[InputT, ResultT],
@@ -38,9 +39,10 @@ _SessionConfigGetter = Callable[
 
 def processor_main(
     *,
-    processor_getter: _ProcessorGetter[InputT, ResultT],
+    processor_getter: _ProcessorGetter[ProcessorConfigT, InputT, ResultT],
     plot_plugin: Type[PlotPluginBase],
     session_config_getter: _SessionConfigGetter,
+    processor_config_getter: Callable[[], ProcessorConfigT],
     _blinkstick_updater_cls: Optional[Any] = None,
 ) -> None:
     parser = a121.ExampleArgumentParser()
@@ -54,7 +56,8 @@ def processor_main(
 
     metadata = client.setup_session(session_config)
 
-    processor = processor_getter(session_config, metadata)
+    processor_config = processor_config_getter()
+    processor = processor_getter(session_config, processor_config, metadata)
 
     qapp = QApplication()
     pg.setConfigOption("background", "w")
@@ -63,7 +66,11 @@ def processor_main(
 
     plot_plugin_widget = plot_plugin(NullAppModel())
     plot_plugin_widget.handle_message(
-        SetupMessage(session_config=session_config, metadata=metadata)
+        SetupMessage(
+            session_config=session_config,
+            metadata=metadata,
+            processor_config=processor_config,
+        )
     )
 
     if _blinkstick_updater_cls is None:

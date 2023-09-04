@@ -12,6 +12,7 @@ from ._plugin import PlotPlugin
 
 def _processor_getter(
     session_config: a121.SessionConfig,
+    processor_config: ProcessorConfig,
     metadata: t.Union[a121.Metadata, t.List[t.Dict[int, a121.Metadata]]],
 ) -> Processor:
     if isinstance(metadata, list):
@@ -20,7 +21,7 @@ def _processor_getter(
     return Processor(
         sensor_config=session_config.sensor_config,
         metadata=metadata,
-        processor_config=ProcessorConfig(),
+        processor_config=processor_config,
     )
 
 
@@ -32,4 +33,5 @@ processor_main(
     processor_getter=_processor_getter,
     plot_plugin=PlotPlugin,
     session_config_getter=_session_config_getter,
+    processor_config_getter=ProcessorConfig,
 )
