@@ -193,13 +193,15 @@ def double_buffering_frame_filter(_frame: npt.NDArray[Any]) -> Optional[npt.NDAr
     Detects and removes outliers in data that appear when the double buffering mode is enabled,
     and returns the filtered frame.
 
-    The filter is applied only when there are 32 or more sweeps per frame.
+    Outliers are detected along the sweep dimension using the second order difference. For
+    reliable outlier detection, the filter is applied only when there are 32 or more sweeps per frame.
 
     The disturbance caused by enabling the double buffering mode can appear in multiple sweeps
-    but, according to observations, is limited to a maximum of two consecutive sweeps.
+    but, according to observations, is limited to a maximum of two consecutive sweeps. Therefore, the
+    function removes outliers by interpolating between the sample before and the sample two positions
+    ahead.
 
-    Outliers are detected along the sweep dimension using the second order difference and removed
-    by interpolating between the sample before and the sample two positions ahead.
+    The function does not correct disturbances that may appear in the initial or final sweeps.
     """
 
     (n_s, n_d) = _frame.shape
