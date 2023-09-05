@@ -1216,6 +1216,14 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         else:
             return []
 
+    @staticmethod
+    def remove_dup(breakpoints: List[int]) -> List[int]:
+        unique_bps = sorted(set(breakpoints[1:]))
+
+        unique_bps = [breakpoints[0]] + unique_bps
+
+        return unique_bps
+
     @classmethod
     def _create_group_plan(
         cls,
@@ -1228,6 +1236,9 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         """Creates a group plan."""
         step_length = cls._limit_step_length(profile, config.max_step_length)
         breakpoints = cls._m_to_points(breakpoints_m, step_length)
+
+        breakpoints = Detector.remove_dup(breakpoints)
+
         hwaas = cls._calculate_hwaas(
             profile,
             breakpoints,
