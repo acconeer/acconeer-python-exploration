@@ -34,7 +34,7 @@ def integrationTestA111RssVersionsForBuildScope = [
 ]
 
 @Field
-def memoryModelTestA121RssVersionForBuildScope = [
+def modelTestA121RssVersionForBuildScope = [
     (BuildScope.SANITY)  : [],
     (BuildScope.HOURLY)  : [branch: "master"],
     (BuildScope.NIGHTLY) : [branch: "master"],
@@ -93,7 +93,7 @@ try {
     def integrationTestPythonVersions = integrationTestPythonVersionsForBuildScope[buildScope]
     def integrationTestA121RssVersions = integrationTestA121RssVersionsForBuildScope[buildScope]
     def integrationTestA111RssVersions = integrationTestA111RssVersionsForBuildScope[buildScope]
-    def memoryModelTestA121RssVersion = memoryModelTestA121RssVersionForBuildScope[buildScope]
+    def modelTestA121RssVersion = modelTestA121RssVersionForBuildScope[buildScope]
 
     stage('Report start to Gerrit') {
         gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}, Scope: ${buildScope}"
@@ -150,10 +150,10 @@ try {
         }
     }
 
-    parallel_steps["Memory Model Regression Tests (${memoryModelTestA121RssVersion})"] = {
+    parallel_steps["Model Regression Tests (${modelTestA121RssVersion})"] = {
         node('docker') {
             ws('workspace/exptool') {
-                memoryModelTestA121RssVersion.each { rssVersion ->
+                modelTestA121RssVersion.each { rssVersion ->
                     stage('Setup') {
                         findBuildAndCopyArtifacts(
                             [
@@ -164,7 +164,7 @@ try {
                         sh 'mkdir -p stash'
                         sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
                     }
-                    stage("Memory Model Regression Test (rss=${memoryModelTestA121RssVersion})") {
+                    stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
                         printNodeInfo()
                         checkoutAndCleanup()
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
