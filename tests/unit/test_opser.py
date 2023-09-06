@@ -612,3 +612,15 @@ def test_registering_persistors_is_idempotent() -> None:
     opser.register_json_presentable(a121.SessionConfig)
 
     assert original_registry_size == RegistryPersistor.registry_size()
+
+
+def test_ragged_numpy_array_persistor_should_not_be_able_to_store_mutlidim_ragged_arrays(
+    tmp_h5_file: h5py.File,
+) -> None:
+    data = [np.zeros((1, 1))]
+    with pytest.raises(opser.core.SaveError):
+        opser.optimizing_persistors.RaggedNumpyArrayPersistor(
+            parent_group=tmp_h5_file,
+            name="test",
+            type_tree=opser.core.create_type_tree(type(data)),
+        ).save(data)
