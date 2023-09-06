@@ -123,7 +123,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         self.sweep_rate = self.sensor_config.sweep_rate
 
-        self.distances, _ = get_distances_m(self.sensor_config, metadata)
+        self.distances = get_distances_m(self.sensor_config, metadata)
         self.num_distances = self.distances.size
         self.sweeps_per_frame = self.sensor_config.sweeps_per_frame
 

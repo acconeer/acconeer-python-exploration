@@ -228,7 +228,7 @@ class PlotPlugin(PlotPluginBase):
     def _get_distances_m(
         config: a121.SensorConfig, metadata: a121.Metadata
     ) -> list[npt.NDArray[np.float_]]:
-        return [algo.get_distances_m(subsweep, metadata)[0] for subsweep in config.subsweeps]
+        return [algo.get_distances_m(subsweep, metadata) for subsweep in config.subsweeps]
 
     def _setup_amplitude(self, session_config: a121.SessionConfig) -> None:
         counter = itertools.count(0)

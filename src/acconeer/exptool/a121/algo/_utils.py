@@ -42,13 +42,34 @@ PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 MEAN_ABS_DEV_OUTLIER_TH = 5
 
 
+def _subsweep_distances(
+    subsweep: a121.SubsweepConfig, metadata: a121.Metadata
+) -> npt.NDArray[np.float_]:
+    points = np.arange(subsweep.num_points) * subsweep.step_length + subsweep.start_point
+    distances_m = np.array(points, dtype=float) * metadata.base_step_length_m
+    return distances_m
+
+
 def get_distances_m(
     config: Union[a121.SensorConfig, a121.SubsweepConfig], metadata: a121.Metadata
-) -> Tuple[npt.NDArray[np.float_], float]:
-    points = np.arange(config.num_points) * config.step_length + config.start_point
-    distances_m = points * metadata.base_step_length_m
-    step_length_m = config.step_length * metadata.base_step_length_m
-    return distances_m, step_length_m
+) -> npt.NDArray[np.float_]:
+    """
+    Returns an array of all distances measured by the config.
+    The distances are returned in the same order as found in the result frame (acconeer.exptool.a121.Result.frame)
+    """
+
+    if isinstance(config, a121.SensorConfig):
+        # Go through all subsweeps
+        all_distances = []
+        for subsweep in config.subsweeps:
+            distances_m = _subsweep_distances(subsweep, metadata)
+            all_distances += list(distances_m)
+        ret = np.array(all_distances)
+    else:
+        # We are already a subsweep
+        ret = _subsweep_distances(config, metadata)
+
+    return ret
 
 
 def get_approx_fft_vels(

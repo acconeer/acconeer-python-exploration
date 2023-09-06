@@ -133,7 +133,7 @@ class PlotPlugin(PgPlotPlugin):
         assert sensor_config.sweeps_per_frame is not None
         assert sensor_config.sweep_rate is not None
 
-        (self.distances_m, _) = get_distances_m(sensor_config, metadata)
+        self.distances_m = get_distances_m(sensor_config, metadata)
 
         pens = [et.utils.pg_pen_cycler(i) for i in range(3)]
         brush = et.utils.pg_brush_cycler(0)

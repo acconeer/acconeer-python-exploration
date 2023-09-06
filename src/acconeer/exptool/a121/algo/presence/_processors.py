@@ -142,7 +142,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         assert self.sensor_config.frame_rate is not None
 
         self.sweeps_per_frame = self.sensor_config.sweeps_per_frame
-        self.distances, _ = get_distances_m(self.sensor_config, metadata)
+        self.distances = get_distances_m(self.sensor_config, metadata)
         self.num_distances = self.distances.size
         if context.estimated_frame_rate is not None:
             self.f = context.estimated_frame_rate
