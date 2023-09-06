@@ -382,6 +382,9 @@ class SausageableAttrsPersistor(core.Persistor):
     def save(self, data: t.Any) -> None:
         (attrs_type_tree,) = self.type_tree.children.values()
 
+        if not isinstance(data, list):
+            raise core.TypeMissmatchError
+
         for attribute_name, attribute_type_tree in attrs_type_tree.children.items():
             RegistryPersistor(
                 self.require_own_group(),
