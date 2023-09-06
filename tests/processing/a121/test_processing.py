@@ -106,6 +106,11 @@ def input_path(resource_name: str) -> Path:
             "corner-reflector.h5",
         ),
         (
+            distance_test.distance_detector,
+            t.List[distance_test.ResultSlice],
+            "distance_fixed_strength.h5",
+        ),
+        (
             smart_presence_test.smart_presence_controller,
             t.List[smart_presence_test.RefAppResultSlice],
             "smart_presence.h5",
