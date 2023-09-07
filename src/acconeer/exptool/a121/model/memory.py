@@ -18,6 +18,12 @@ from acconeer.exptool.a121.algo.distance import (
     MeasurementType,
     ThresholdMethod,
 )
+from acconeer.exptool.a121.algo.presence import (
+    Detector as PresenceDetector,
+)
+from acconeer.exptool.a121.algo.presence import (
+    DetectorConfig as PresenceConfig,
+)
 
 
 OVERHEAD = 68
@@ -26,10 +32,12 @@ BYTES_PER_POINT = 4
 MAX_NUM_POINTS = 4095
 
 RSS_HEAP_PER_SUBSWEEP = 232
-RSS_HEAP_PER_SENSOR = 512
+RSS_HEAP_PER_SENSOR = 528
 RSS_HEAP_PER_CONFIG = 472
 
 SIZE_OF_FLOAT = 4
+
+PRESENCE_HEAP_OVERHEAD = 256
 
 DISTANCE_HEAP_OVERHEAD = 708
 DISTANCE_HEAP_PER_PROCESSOR = 224
@@ -69,6 +77,34 @@ def session_rss_heap_memory(config: SessionConfig) -> int:
 
 def session_heap_memory(config: SessionConfig) -> int:
     return session_external_heap_memory(config) + session_rss_heap_memory(config)
+
+
+def presence_external_heap_memory(config: PresenceConfig) -> int:
+    sensor_cfg = PresenceDetector._get_sensor_config(config)
+
+    session_ext_heap = session_external_heap_memory(SessionConfig(sensor_cfg))
+    prec_ext_heap = sensor_cfg.num_points * 2 * SIZE_OF_FLOAT
+
+    return session_ext_heap + prec_ext_heap
+
+
+def presence_rss_heap_memory(config: PresenceConfig) -> int:
+    sensor_cfg = PresenceDetector._get_sensor_config(config)
+
+    PREC_FILTER_PARAMS = 13
+
+    prec_rss_heap = sensor_cfg.num_points * PREC_FILTER_PARAMS * SIZE_OF_FLOAT
+
+    return (
+        PRESENCE_HEAP_OVERHEAD
+        + prec_rss_heap
+        + RSS_HEAP_PER_SENSOR
+        + _sweep_rss_heap_memory(sensor_cfg)
+    )
+
+
+def presence_heap_memory(config: PresenceConfig) -> int:
+    return presence_external_heap_memory(config) + presence_rss_heap_memory(config)
 
 
 def distance_external_heap_memory(config: DistanceConfig) -> int:

@@ -16,6 +16,7 @@ from acconeer.exptool.a121.algo.distance import (
 from acconeer.exptool.a121.algo.distance import (
     ThresholdMethod,
 )
+from acconeer.exptool.a121.algo.presence import _configs as PresenceConfigs
 from acconeer.exptool.a121.model import memory
 
 
@@ -86,6 +87,41 @@ def test_service_memory_model(config, application, test_case):
         assert session_rss_heap_mem + session_external_heap_mem == session_heap_mem
         assert math.isclose(mem_usage["rss_heap"], session_rss_heap_mem, rel_tol=0.05)
         assert math.isclose(mem_usage["app_heap"], session_external_heap_mem, rel_tol=0.05)
+
+
+@pytest.mark.parametrize(
+    "config,test_case",
+    [
+        pytest.param(
+            PresenceConfigs.get_short_range_config(),
+            "short_range",
+        ),
+        pytest.param(
+            PresenceConfigs.get_medium_range_config(),
+            "default",
+        ),
+        pytest.param(
+            PresenceConfigs.get_long_range_config(),
+            "long_range",
+        ),
+    ],
+)
+def test_presence_memory_model(config, test_case):
+    mem_usage = memory_usage("example_detector_presence")
+    test_case_key = test_case + "-internal_xm125"
+
+    if mem_usage is None:
+        pytest.skip("No memory reference")
+    else:
+        mem_usage = mem_usage[test_case_key]
+
+        presence_rss_heap_mem = memory.presence_rss_heap_memory(config)
+        presence_ext_heap_mem = memory.presence_external_heap_memory(config)
+        presence_heap_mem = memory.presence_heap_memory(config)
+
+        assert presence_rss_heap_mem + presence_ext_heap_mem == presence_heap_mem
+        assert math.isclose(mem_usage["rss_heap"], presence_rss_heap_mem, rel_tol=0.05)
+        assert math.isclose(mem_usage["app_heap"], presence_ext_heap_mem, rel_tol=0.05)
 
 
 @pytest.mark.parametrize(
