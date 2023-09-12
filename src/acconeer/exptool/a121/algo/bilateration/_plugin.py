@@ -453,6 +453,8 @@ class ViewPlugin(A121ViewPluginBase):
 
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
+        DetailedStatus.END_LESSER_THAN_START: "'Range end' point must be greater than 'Range "
+        + "start'.",
         DetailedStatus.SENSOR_IDS_NOT_UNIQUE: "Select two different sensor IDs.",
         DetailedStatus.CONTEXT_MISSING: "Run detector calibration.",
         DetailedStatus.CALIBRATION_MISSING: "Run detector calibration.",
@@ -614,18 +616,21 @@ class ViewPlugin(A121ViewPluginBase):
             detector_ready = False
             ready_to_measure = False
         else:
-            detector_ready = Detector.get_detector_status(
+            detector_status = Detector.get_detector_status(
                 state.config, state.context, state.sensor_ids
-            ).ready_to_start
+            )
+            detector_ready = detector_status.ready_to_start
+            detector_state = detector_status.detector_state
 
             ready_to_measure = (
                 app_model.is_ready_for_session()
                 and self._config_valid(state)
                 and self.config_editor.is_ready
                 and self.bilateration_config_editor.is_ready
+                and detector_state is not DetailedStatus.SENSOR_IDS_NOT_UNIQUE
             )
 
-        self.calibrate_detector_button.setEnabled(detector_ready)
+        self.calibrate_detector_button.setEnabled(ready_to_measure)
         self.start_button.setEnabled(detector_ready and ready_to_measure)
 
     def _config_valid(self, state: SharedState) -> bool:
