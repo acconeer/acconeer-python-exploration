@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import sys
@@ -13,7 +13,7 @@ HERE = Path(__file__).parent
 path = (HERE / ".." / ".." / "utils").resolve()
 sys.path.append(path.as_posix())
 
-from convert_to_csv import A111RecordTableConverter  # noqa: E402
+from convert_h5 import A111RecordTableConverter  # noqa: E402
 
 
 @pytest.mark.parametrize("test_file", (HERE / ".." / "processing" / "a111").glob("**/input.h5"))

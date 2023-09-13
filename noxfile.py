@@ -17,6 +17,7 @@ BLACK_SPEC = "black==22.12.0"
 RUFF_SPEC = "ruff==0.0.270"
 MYPY_SPEC = "mypy==1.4.1"
 PYSIDE_SPEC = "PySide6==6.4.3"
+PANDAS_SPEC = "pandas==1.3.5"
 PIP_SPEC = "pip>=21.3"
 PYTEST_MOCK_SPEC = "pytest-mock==3.3.1"
 PYTEST_SPEC = "pytest==7.2"
@@ -161,7 +162,7 @@ def docs_autobuild(session):
 def test(session):
     args = Parser().parse_args(session.posargs)
 
-    install_deps = {PYTEST_SPEC, PYTEST_XDIST_SPEC}
+    install_deps = {PYTEST_SPEC, PYTEST_XDIST_SPEC, PANDAS_SPEC}
     install_extras = set()
     pytest_commands = []
 

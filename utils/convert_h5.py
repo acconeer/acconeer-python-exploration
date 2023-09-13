@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import abc
 import argparse
-import csv
 import json
 import os
+from pathlib import Path
 from typing import Union
 
 import numpy as np
+import pandas as pd
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
@@ -32,7 +33,7 @@ DESCRIPTION = """This is a command line utility that lets you convert
 e.g. Microsoft Excel.
 
 example usage:
-  python3 convert_to_csv.py -v ~/my_data_file.h5 ~/my_output_file.csv
+  python3 convert_h5.py -v ~/my_data_file.h5 ~/my_output_file.csv
 """
 
 
@@ -49,11 +50,15 @@ class ConvertToCsvArgumentParser(argparse.ArgumentParser):
         )
         self.add_argument(
             "input_file",
+            type=Path,
             help='The input file with file endings ".h5" or ".npz" (only A111).',
         )
         self.add_argument(
             "output_file",
-            help="The output file to which csv-data will be written.",
+            type=Path,
+            nargs="?",
+            default=None,
+            help="The output file to which h5-data will be written.",
         )
         self.add_argument(
             "--index",
@@ -377,7 +382,7 @@ def _check_files(input_file, output_file, force):
 
     if os.path.exists(output_file) and not force:
         print(f'The output file ("{output_file}") already exists.')
-        print('If you know what you are doing; overwrite it with "-f".')
+        print('Overwrite existing file with "-f" or give different name for output file.')
         exit(1)
 
 
@@ -402,10 +407,15 @@ def main():
     parser = ConvertToCsvArgumentParser()
     args = parser.parse_args()
 
-    # Convert to real delimiter given to csv module
-    delimiter = {"c": ",", "t": "\t"}.get(args.delimiter)
+    input_stem = args.input_file.stem
+    output_file = args.output_file
+    output_suffix = (
+        ".xlsx" if output_file is None or output_file.suffix == "" else output_file.suffix
+    )
+    output_stem = Path(input_stem if output_file is None else output_file.stem)
+    output_file = output_stem.with_suffix(output_suffix)
 
-    _check_files(args.input_file, args.output_file, args.force)
+    _check_files(args.input_file, output_file, args.force)
     print(f"Reading from {args.input_file!r} ... \n")
     record, generation = load_file(args.input_file)
     sensor = get_default_sensor_id_or_index(args, generation)
@@ -424,18 +434,18 @@ def main():
     if args.sweep_as_column:
         data_table = data_table.T
 
-    with open(args.output_file, "w") as f:
-        writer = csv.writer(f, delimiter=delimiter)
+    # Create a Pandas DataFrame from the data
+    df_data = pd.DataFrame(data_table)
 
-        if args.add_sweep_metadata:
-            metadata_rows = table_converter.get_metadata_rows(sensor=sensor)
-            print(f"Writing {len(metadata_rows)} rows of metadata ...")
-            for row in metadata_rows:
-                writer.writerow(row)
+    # Save the DataFrame to a CSV or excel file
+    if output_suffix == ".xlsx":
+        df_data.to_excel(output_file, sheet_name="Data", index=False, header=True)
 
-        print(f"Writing data with shape {data_table.shape} ...")
-        for row in data_table:
-            writer.writerow(row)
+    if output_suffix == ".csv":
+        df_data.to_csv(output_file, index=False, header=True)
+
+    if output_suffix == ".tsv":
+        df_data.to_csv(output_file, index=False, header=True, sep="\t")
 
     print("Success!")
 
