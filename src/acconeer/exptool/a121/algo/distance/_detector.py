@@ -415,7 +415,7 @@ class DetectorResult:
     strengths: Optional[npt.NDArray[np.float_]] = attrs.field(
         default=None, eq=utils.attrs_optional_ndarray_isclose
     )
-    """Estimated reflector strengths corresponding to the peak amplitude of the estimated
+    """Estimated reflector strengths (dB) corresponding to the peak amplitude of the estimated
     distances.
     """
 
