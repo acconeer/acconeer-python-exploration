@@ -22,8 +22,9 @@ from acconeer.exptool.app.new.app_model import AppModel
 
 from .flash_tab import FlashMainWidget
 from .help_tab import HelpMainWidget
-from .icons import FLASH, HELP, RECORD
+from .icons import FLASH, GAUGE, HELP, RECORD
 from .misc import ExceptionWidget
+from .resource_tab import ResourceMainWidget
 from .status_bar import StatusBar
 from .stream_tab import StreamingMainWidget
 from .utils import LayoutWrapper, TopAlignDecorator
@@ -36,6 +37,7 @@ class _IconButton(QToolButton):
         text: str,
         is_active: bool,
         icon_size: int = 30,
+        tooltip: str = "",
     ) -> None:
         super().__init__()
 
@@ -50,6 +52,8 @@ class _IconButton(QToolButton):
         self.setIcon(icon)
         self.setText(text)
         self.setChecked(is_active)
+        if tooltip:
+            self.setToolTip(tooltip)
 
 
 class _PagedLayout(QSplitter):
@@ -71,7 +75,7 @@ class _PagedLayout(QSplitter):
     def __init__(
         self,
         app_model: AppModel,
-        pages: t.Iterable[t.Tuple[QIcon, str, QWidget]],
+        pages: t.Iterable[t.Tuple[QIcon, str, QWidget, str]],
         *,
         index_button_width: int = 60,
     ) -> None:
@@ -84,8 +88,8 @@ class _PagedLayout(QSplitter):
 
         self._page_widget = QStackedWidget()
 
-        for i, (icon, text, page) in enumerate(pages):
-            index_button = _IconButton(icon, text, is_active=i == 0)
+        for i, (icon, text, page, tooltip) in enumerate(pages):
+            index_button = _IconButton(icon, text, is_active=i == 0, tooltip=tooltip)
 
             self._index_button_group.addButton(index_button, id=i)
             self._index_button_layout.addWidget(index_button)
@@ -112,9 +116,10 @@ class MainWindow(QMainWindow):
             _PagedLayout(
                 app_model,
                 [
-                    (RECORD(), "Stream", StreamingMainWidget(app_model, self)),
-                    (FLASH(), "Flash", FlashMainWidget(app_model, self)),
-                    (HELP(), "Help", HelpMainWidget(self)),
+                    (RECORD(), "Stream", StreamingMainWidget(app_model, self), ""),
+                    (FLASH(), "Flash", FlashMainWidget(app_model, self), ""),
+                    (GAUGE(), "RC", ResourceMainWidget(), "Resource Calculator"),
+                    (HELP(), "Help", HelpMainWidget(self), ""),
                 ],
             )
         )
