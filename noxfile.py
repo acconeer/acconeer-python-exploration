@@ -29,7 +29,7 @@ SPHINX_HTML_ARGS = ("-b", "html", SPHINX_SOURCE_DIR, SPHINX_OUTPUT_DIR)
 
 
 class Parser(argparse.ArgumentParser):
-    KNOWN_TEST_GROUPS = ["unit", "integration", "app"]
+    KNOWN_TEST_GROUPS = ["unit", "integration", "app", "model"]
     DEFAULT_TEST_GROUPS = ["unit", "integration"]
 
     KNOWN_DOCS_BUILDERS = ["html", "latexpdf", "rediraffecheckdiff", "rediraffewritediff"]
@@ -215,6 +215,10 @@ def test(session):
                 ["--timeout=120", "--timeout_method=thread", "tests/gui"],
             ]
         )
+
+    if "model" in args.test_groups:
+        install_extras |= {"algo"}
+        pytest_commands.append(["-p", "no:pytest-qt", "tests/model"])
 
     # Override pytest command:
 

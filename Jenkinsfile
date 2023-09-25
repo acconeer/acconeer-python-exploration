@@ -33,6 +33,12 @@ def integrationTestA111RssVersionsForBuildScope = [
     (BuildScope.NIGHTLY) : [branch: "master", tag: "a111-v2.15.2"],
 ]
 
+@Field
+def memoryModelTestA121RssVersionForBuildScope = [
+    (BuildScope.SANITY)  : [],
+    (BuildScope.HOURLY)  : [branch: "master"],
+    (BuildScope.NIGHTLY) : [branch: "master"],
+]
 
 String dockerArgs(env_map) {
   return "--hostname ${env_map.NODE_NAME}" +
@@ -87,6 +93,7 @@ try {
     def integrationTestPythonVersions = integrationTestPythonVersionsForBuildScope[buildScope]
     def integrationTestA121RssVersions = integrationTestA121RssVersionsForBuildScope[buildScope]
     def integrationTestA111RssVersions = integrationTestA111RssVersionsForBuildScope[buildScope]
+    def memoryModelTestA121RssVersion = memoryModelTestA121RssVersionForBuildScope[buildScope]
 
     stage('Report start to Gerrit') {
         gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}, Scope: ${buildScope}"
@@ -137,6 +144,32 @@ try {
                     checkoutAndCleanup()
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh '''nox -s "mypy(python='3.7')"'''
+                    }
+                }
+            }
+        }
+    }
+
+    parallel_steps["Memory Model Regression Tests (${memoryModelTestA121RssVersion})"] = {
+        node('docker') {
+            ws('workspace/exptool') {
+                memoryModelTestA121RssVersion.each { rssVersion ->
+                    stage('Setup') {
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ["out/internal_stash_python_libs.tgz"],
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
+                        )
+                        sh 'mkdir -p stash'
+                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
+                    }
+                    stage("Memory Model Regression Test (rss=${memoryModelTestA121RssVersion})") {
+                        printNodeInfo()
+                        checkoutAndCleanup()
+                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                            sh '''nox -s test -p 3.7 -- --test-groups model'''
+                        }
                     }
                 }
             }
