@@ -45,6 +45,7 @@ See the corresponding setup guide for your module:
 - :doc:`/exploration_tool/evk_setup/xm122`
 - :doc:`/exploration_tool/evk_setup/xm132`
 - :doc:`/exploration_tool/evk_setup/xc120_xe121`
+- :doc:`/exploration_tool/evk_setup/xm125`
 
 Linux setup
 -----------

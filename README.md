@@ -38,10 +38,11 @@ where you can also find the [FAQ](https://docs.acconeer.com/en/latest/exploratio
 
 ## News
 
-* v6.0.0 released. See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html).
+* v7.4.0 released. See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html).
 
 ## Setting up your evaluation kit
 
+* [XM125](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xm125.html)
 * [XC120 + XE121 (A121)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/xc120_xe121.html)
 * [Raspberry Pi (A121 on XE121)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/raspberry_a121_xe121.html)
 * [Raspberry Pi (A111 on XC111+XR111 or XC112+XR112)](https://docs.acconeer.com/en/latest/exploration_tool/evk_setup/raspberry_a111.html)
