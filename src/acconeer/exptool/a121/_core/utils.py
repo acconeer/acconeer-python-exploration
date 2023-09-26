@@ -14,7 +14,9 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
+    Mapping,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -308,7 +310,7 @@ def zip3_extended_structures(
 
 
 def iterate_extended_structure(
-    structure: list[dict[int, ValueT]]
+    structure: Sequence[Mapping[int, ValueT]]
 ) -> Iterator[Tuple[int, int, ValueT]]:
     """Iterates over the elements of the extended structure.
 
@@ -345,7 +347,9 @@ def extended_structure_entry_count(structure: list[dict[int, Any]]) -> int:
     return sum(len(group) for group in structure)
 
 
-def iterate_extended_structure_values(structure: list[dict[int, ValueT]]) -> Iterator[ValueT]:
+def iterate_extended_structure_values(
+    structure: Sequence[Mapping[int, ValueT]]
+) -> Iterator[ValueT]:
     """Iterates like `iterate_extended_structure` but throws away group id and sensor id."""
     for _, _, value in iterate_extended_structure(structure):
         yield value
