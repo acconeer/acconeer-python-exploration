@@ -31,6 +31,7 @@ from acconeer.exptool.utils import get_module_version
 
 from .event_system import EventBroker
 from .services import (
+    distance_config_input,
     memory_breakdown_output,
     power_consumption_vs_rate_output,
     power_curve_output,
@@ -269,6 +270,11 @@ class ResourceMainWidget(QMainWindow):
                 on_trigger=lambda: self._add_dock_widget(self._create_session_config_input()),
             ),
             self._create_action(
+                COG(),
+                "Distance config",
+                lambda: self._add_dock_widget(self._create_distance_config_input()),
+            ),
+            self._create_action(
                 CHART_BAR(),
                 button_label="Power curve",
                 on_trigger=lambda: self._add_dock_widget(self._create_power_curve_output()),
@@ -322,6 +328,16 @@ class ResourceMainWidget(QMainWindow):
 
     def _create_memory_breakdown_output(self) -> _DockWidget:
         service = memory_breakdown_output.MemoryBreakdownOutput(self._broker)
+        return _DockWidget(
+            service.window_title,
+            service.description,
+            service,
+            service.uninstall_function,
+            parent=self,
+        )
+
+    def _create_distance_config_input(self) -> _DockWidget:
+        service = distance_config_input.DistanceConfigInput(self._broker)
         return _DockWidget(
             service.window_title,
             service.description,

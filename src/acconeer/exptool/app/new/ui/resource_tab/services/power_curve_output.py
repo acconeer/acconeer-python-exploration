@@ -8,6 +8,7 @@ import operator
 import typing as t
 
 import attrs
+import typing_extensions as te
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
@@ -29,6 +30,7 @@ from acconeer.exptool.app.new.ui.resource_tab.event_system import (
     IdentifiedServiceUninstalledEvent,
 )
 
+from .distance_config_input import DistanceConfigEvent
 from .session_config_input import SessionConfigEvent
 
 
@@ -135,10 +137,12 @@ class _EnergyRegionPlot(QWidget):
         profile_duration_s: float,
         session_config: a121.SessionConfig,
         lower_power_state: t.Optional[power.Sensor.LowerPowerState],
+        algorithm: power.algo.Algorithm,
     ) -> None:
         super().__init__()
 
         self._state = self._State(profile_duration_s, session_config, lower_power_state)
+        self._algorithm: te.Final[power.algo.Algorithm] = algorithm
 
         self._plot_widget = pg.plot()
         self._plot_widget.getPlotItem().setLabel("left", "Sensor + XM125", units="A")
@@ -177,6 +181,7 @@ class _EnergyRegionPlot(QWidget):
             self._state.session_config,
             lower_power_state=self._state.lower_power_state,
             duration=self._state.profile_duration_s,
+            algorithm=self._algorithm,
         )
 
         self._plot_widget.clear()
@@ -200,6 +205,7 @@ class EnergyRegionOutput(QTabWidget):
     INTERESTS: t.ClassVar[set[type]] = {
         SessionConfigEvent,
         IdentifiedServiceUninstalledEvent,
+        DistanceConfigEvent,
     }
     description: t.ClassVar[str] = "\n\n".join(
         [
@@ -223,6 +229,8 @@ class EnergyRegionOutput(QTabWidget):
     def handle_event(self, event: t.Any) -> None:
         if isinstance(event, SessionConfigEvent):
             self._handle_session_config_event(event)
+        elif isinstance(event, DistanceConfigEvent):
+            self._handle_distance_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
         else:
@@ -240,6 +248,7 @@ class EnergyRegionOutput(QTabWidget):
                 seconds_in_x_axis,
                 event.session_config,
                 event.lower_power_state,
+                power.algo.SparseIq(),
             )
             self._tabs[event.service_id] = plot_widget
 
@@ -247,6 +256,33 @@ class EnergyRegionOutput(QTabWidget):
         else:
             self._tabs[event.service_id].evolve_current_state(
                 session_config=event.session_config,
+                lower_power_state=event.lower_power_state,
+            )
+
+        self._tabs[event.service_id].plot_current_state()
+
+    def _handle_distance_config_event(self, event: DistanceConfigEvent) -> None:
+        session_config = event.translated_session_config
+
+        if event.service_id not in self._tabs:
+            configured_rate = power.configured_rate(event.translated_session_config)
+            if configured_rate is None:
+                seconds_in_x_axis = _SECONDS_IF_RATE_UNSET
+            else:
+                seconds_in_x_axis = 1 / configured_rate
+
+            plot_widget = _EnergyRegionPlot(
+                seconds_in_x_axis,
+                session_config,
+                event.lower_power_state,
+                power.algo.Distance(),
+            )
+            self._tabs[event.service_id] = plot_widget
+
+            self.addTab(plot_widget, event.service_id)
+        else:
+            self._tabs[event.service_id].evolve_current_state(
+                session_config=session_config,
                 lower_power_state=event.lower_power_state,
             )
 

@@ -7,6 +7,8 @@ import copy
 import itertools
 import typing as t
 
+import typing_extensions as te
+
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
@@ -21,6 +23,7 @@ from acconeer.exptool.app.new.ui.resource_tab.event_system import (
 )
 from acconeer.exptool.utils import pg_pen_cycler
 
+from .distance_config_input import DistanceConfigEvent
 from .session_config_input import SessionConfigEvent
 
 
@@ -47,8 +50,10 @@ def incremental_plot(
 
 
 class _PowerConsumptionVsRatePlot(pg.PlotWidget):
-    def __init__(self) -> None:
+    def __init__(self, algorithm: power.algo.Algorithm) -> None:
         super().__init__()
+
+        self._algorithm: te.Final[power.algo.Algorithm] = algorithm
 
         self.getPlotItem().setLabel("bottom", "Update rate", units="Hz")
         self.getPlotItem().setLabel("left", "Sensor + XM125", units="A")
@@ -97,7 +102,8 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             config_copy.update_rate = update_rate
 
         if inter_frame_idle_state is not None:
-            config_copy.sensor_config.inter_frame_idle_state = inter_frame_idle_state
+            last_sensor_config = list(config_copy.groups[-1].values())[-1]
+            last_sensor_config.inter_frame_idle_state = inter_frame_idle_state
 
         return config_copy
 
@@ -149,11 +155,15 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
                 reused_curve.setData(xs, ys)
                 return (reused_curve, False)
 
-    def update_power_curves(self, event: SessionConfigEvent) -> None:
+    def update_power_curves(
+        self,
+        config: a121.SessionConfig,
+        lower_power_state: t.Optional[power.Sensor.LowerPowerState],
+    ) -> None:
         self._plot_increment_timer.stop()
         self.clear()
 
-        configured_rate = power.configured_rate(event.session_config)
+        configured_rate = power.configured_rate(config)
 
         if configured_rate is None:
             self.disableAutoRange()
@@ -169,6 +179,11 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             self.addItem(text_item)
             return
 
+        update_rates = self._get_update_rates(configured_rate)
+
+        self.enableAutoRange()
+        self.setXRange(min(update_rates), max(update_rates))
+
         self._ready_curve = None
         self._sleep_curve = None
         self._deep_sleep_curve = None
@@ -180,36 +195,31 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
                 [configured_rate],
                 [
                     power.converged_average_current(
-                        event.session_config,
-                        lower_power_state=event.lower_power_state,
+                        config,
+                        lower_power_state=lower_power_state,
                         absolute_tolerance=1e-3,
+                        algorithm=self._algorithm,
                     )
                 ],
                 name="Current config",
             )
         )
 
-        update_rates = self._get_update_rates(configured_rate)
-
-        self.enableAutoRange()
-        self.setXRange(min(update_rates), max(update_rates))
-
         if any(
             sensor_config.inter_frame_idle_state == a121.IdleState.READY
-            for sensor_config in core_utils.iterate_extended_structure_values(
-                event.session_config.groups
-            )
+            for sensor_config in core_utils.iterate_extended_structure_values(config.groups)
         ):
 
             def ready_f(update_rate: float) -> float:
                 return power.converged_average_current(
                     self._evolve_config(
-                        event.session_config,
+                        config,
                         update_rate=update_rate,
                         inter_frame_idle_state=a121.IdleState.READY,
                     ),
                     lower_power_state=None,
                     absolute_tolerance=1e-3,
+                    algorithm=self._algorithm,
                 )
 
             self._ready_plotter = incremental_plot(update_rates, ready_f, ordering_strategy=range)
@@ -217,7 +227,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         def sleep_f(update_rate: float) -> float:
             return power.converged_average_current(
                 self._evolve_config(
-                    event.session_config,
+                    config,
                     update_rate=update_rate,
                     inter_frame_idle_state=a121.IdleState.SLEEP,
                 ),
@@ -230,12 +240,13 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         def deep_sleep_f(update_rate: float) -> float:
             return power.converged_average_current(
                 self._evolve_config(
-                    event.session_config,
+                    config,
                     update_rate=update_rate,
                     inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
                 ),
                 lower_power_state=None,
                 absolute_tolerance=1e-3,
+                algorithm=self._algorithm,
             )
 
         self._deep_sleep_plotter = incremental_plot(
@@ -244,9 +255,10 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
 
         def hibernate_f(update_rate: float) -> float:
             return power.converged_average_current(
-                self._evolve_config(event.session_config, update_rate=update_rate),
+                self._evolve_config(config, update_rate=update_rate),
                 lower_power_state=power.Sensor.PowerState.HIBERNATE,
                 absolute_tolerance=1e-3,
+                algorithm=self._algorithm,
             )
 
         self._hibernate_plotter = incremental_plot(
@@ -255,12 +267,14 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
 
         def off_f(update_rate: float) -> float:
             return power.converged_average_current(
-                self._evolve_config(event.session_config, update_rate=update_rate),
+                self._evolve_config(config, update_rate=update_rate),
                 lower_power_state=power.Sensor.PowerState.OFF,
                 absolute_tolerance=1e-3,
+                algorithm=self._algorithm,
             )
 
         self._off_plotter = incremental_plot(update_rates, off_f, ordering_strategy=range)
+
         self._plot_increment_timer.start(10)
 
 
@@ -268,6 +282,7 @@ class PowerConsumptionVsRateOutput(QWidget):
     INTERESTS: t.ClassVar[set[type]] = {
         SessionConfigEvent,
         IdentifiedServiceUninstalledEvent,
+        DistanceConfigEvent,
     }
     description: t.ClassVar[str] = "\n\n".join(
         [
@@ -299,6 +314,8 @@ class PowerConsumptionVsRateOutput(QWidget):
     def handle_event(self, event: t.Any) -> None:
         if isinstance(event, SessionConfigEvent):
             self._handle_session_config_event(event)
+        elif isinstance(event, DistanceConfigEvent):
+            self._handle_distance_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
         else:
@@ -306,11 +323,24 @@ class PowerConsumptionVsRateOutput(QWidget):
 
     def _handle_session_config_event(self, event: SessionConfigEvent) -> None:
         if event.service_id not in self._tabs:
-            plot_widget = _PowerConsumptionVsRatePlot()
+            plot_widget = _PowerConsumptionVsRatePlot(algorithm=power.algo.SparseIq())
             self._tabs[event.service_id] = plot_widget
             self._tab_widget.addTab(plot_widget, event.service_id)
 
-        self._tabs[event.service_id].update_power_curves(event)
+        self._tabs[event.service_id].update_power_curves(
+            event.session_config, event.lower_power_state
+        )
+
+    def _handle_distance_config_event(self, event: DistanceConfigEvent) -> None:
+        if event.service_id not in self._tabs:
+            plot_widget = _PowerConsumptionVsRatePlot(algorithm=power.algo.Distance())
+            self._tabs[event.service_id] = plot_widget
+
+            self._tab_widget.addTab(plot_widget, event.service_id)
+
+        self._tabs[event.service_id].update_power_curves(
+            event.translated_session_config, event.lower_power_state
+        )
 
     def _handle_identified_service_uninstalled_event(
         self, event: IdentifiedServiceUninstalledEvent

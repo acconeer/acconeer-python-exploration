@@ -15,11 +15,13 @@ from acconeer.exptool.app.new.ui.resource_tab.event_system import (
     IdentifiedServiceUninstalledEvent,
 )
 
+from .distance_config_input import DistanceConfigEvent
 from .session_config_input import SessionConfigEvent
 
 
 class MemoryBreakdownOutput(QTextEdit):
     INTERESTS: t.ClassVar[set[type]] = {
+        DistanceConfigEvent,
         SessionConfigEvent,
         IdentifiedServiceUninstalledEvent,
     }
@@ -42,6 +44,8 @@ class MemoryBreakdownOutput(QTextEdit):
     def handle_event(self, event: t.Any) -> None:
         if isinstance(event, SessionConfigEvent):
             self._handle_session_config_event(event)
+        elif isinstance(event, DistanceConfigEvent):
+            self._handle_distance_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
         else:
@@ -51,6 +55,14 @@ class MemoryBreakdownOutput(QTextEdit):
         self._memory_numbers[event.service_id] = (
             memory.session_rss_heap_memory(event.session_config),
             memory.session_external_heap_memory(event.session_config),
+        )
+
+        self._show_memory_numbers()
+
+    def _handle_distance_config_event(self, event: DistanceConfigEvent) -> None:
+        self._memory_numbers[event.service_id] = (
+            memory.distance_rss_heap_memory(event.config),
+            memory.distance_external_heap_memory(event.config),
         )
 
         self._show_memory_numbers()
