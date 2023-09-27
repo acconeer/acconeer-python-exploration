@@ -13,7 +13,11 @@ from scipy.signal import welch
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils
-from acconeer.exptool.a121.algo import AlgoProcessorConfigBase, ProcessorBase
+from acconeer.exptool.a121.algo import (
+    AlgoProcessorConfigBase,
+    ProcessorBase,
+    double_buffering_frame_filter,
+)
 from acconeer.exptool.a121.algo._utils import (
     APPROX_BASE_STEP_LENGTH_M,
     PERCEIVED_WAVELENGTH,
@@ -107,16 +111,11 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_index: Optional[int] = None,
         context: Optional[ProcessorContext] = None,
     ) -> None:
-        if subsweep_index is None:
-            subsweep_index = 0
-
         self.sensor_config = sensor_config
         self.metadata = metadata
         self.processor_config = processor_config
-        self.subsweep_index = subsweep_index
 
         # Will never happen because checked in _collect_validation_results
         assert self.sensor_config.sweep_rate is not None
@@ -324,7 +323,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         return vertical_v, peak_idx
 
     def process(self, result: a121.Result) -> ProcessorResult:
-        data_segment = result.subframes[self.subsweep_index]
+        data_segment = double_buffering_frame_filter(result._frame)
 
         self.time_series = np.roll(self.time_series, axis=0, shift=-self.sweeps_per_frame)
         self.time_series[-self.sweeps_per_frame :, :] = data_segment
