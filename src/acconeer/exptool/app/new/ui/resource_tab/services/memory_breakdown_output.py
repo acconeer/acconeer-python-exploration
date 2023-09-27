@@ -16,6 +16,7 @@ from acconeer.exptool.app.new.ui.resource_tab.event_system import (
 )
 
 from .distance_config_input import DistanceConfigEvent
+from .presence_config_input import PresenceConfigEvent
 from .session_config_input import SessionConfigEvent
 
 
@@ -23,6 +24,7 @@ class MemoryBreakdownOutput(QTextEdit):
     INTERESTS: t.ClassVar[set[type]] = {
         DistanceConfigEvent,
         SessionConfigEvent,
+        PresenceConfigEvent,
         IdentifiedServiceUninstalledEvent,
     }
     description: t.ClassVar[str] = "Tabulates heap memory consumption of configurations"
@@ -46,6 +48,8 @@ class MemoryBreakdownOutput(QTextEdit):
             self._handle_session_config_event(event)
         elif isinstance(event, DistanceConfigEvent):
             self._handle_distance_config_event(event)
+        elif isinstance(event, PresenceConfigEvent):
+            self._handle_presence_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
         else:
@@ -63,6 +67,14 @@ class MemoryBreakdownOutput(QTextEdit):
         self._memory_numbers[event.service_id] = (
             memory.distance_rss_heap_memory(event.config),
             memory.distance_external_heap_memory(event.config),
+        )
+
+        self._show_memory_numbers()
+
+    def _handle_presence_config_event(self, event: PresenceConfigEvent) -> None:
+        self._memory_numbers[event.service_id] = (
+            memory.presence_rss_heap_memory(event.config),
+            memory.presence_external_heap_memory(event.config),
         )
 
         self._show_memory_numbers()

@@ -24,6 +24,7 @@ from acconeer.exptool.app.new.ui.resource_tab.event_system import (
 from acconeer.exptool.utils import pg_pen_cycler
 
 from .distance_config_input import DistanceConfigEvent
+from .presence_config_input import PresenceConfigEvent
 from .session_config_input import SessionConfigEvent
 
 
@@ -283,6 +284,7 @@ class PowerConsumptionVsRateOutput(QWidget):
         SessionConfigEvent,
         IdentifiedServiceUninstalledEvent,
         DistanceConfigEvent,
+        PresenceConfigEvent,
     }
     description: t.ClassVar[str] = "\n\n".join(
         [
@@ -316,6 +318,8 @@ class PowerConsumptionVsRateOutput(QWidget):
             self._handle_session_config_event(event)
         elif isinstance(event, DistanceConfigEvent):
             self._handle_distance_config_event(event)
+        elif isinstance(event, PresenceConfigEvent):
+            self._handle_presence_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
         else:
@@ -334,6 +338,17 @@ class PowerConsumptionVsRateOutput(QWidget):
     def _handle_distance_config_event(self, event: DistanceConfigEvent) -> None:
         if event.service_id not in self._tabs:
             plot_widget = _PowerConsumptionVsRatePlot(algorithm=power.algo.Distance())
+            self._tabs[event.service_id] = plot_widget
+
+            self._tab_widget.addTab(plot_widget, event.service_id)
+
+        self._tabs[event.service_id].update_power_curves(
+            event.translated_session_config, event.lower_power_state
+        )
+
+    def _handle_presence_config_event(self, event: PresenceConfigEvent) -> None:
+        if event.service_id not in self._tabs:
+            plot_widget = _PowerConsumptionVsRatePlot(algorithm=power.algo.Presence())
             self._tabs[event.service_id] = plot_widget
 
             self._tab_widget.addTab(plot_widget, event.service_id)

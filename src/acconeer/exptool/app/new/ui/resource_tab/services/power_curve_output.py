@@ -31,6 +31,7 @@ from acconeer.exptool.app.new.ui.resource_tab.event_system import (
 )
 
 from .distance_config_input import DistanceConfigEvent
+from .presence_config_input import PresenceConfigEvent
 from .session_config_input import SessionConfigEvent
 
 
@@ -206,6 +207,7 @@ class EnergyRegionOutput(QTabWidget):
         SessionConfigEvent,
         IdentifiedServiceUninstalledEvent,
         DistanceConfigEvent,
+        PresenceConfigEvent,
     }
     description: t.ClassVar[str] = "\n\n".join(
         [
@@ -231,6 +233,8 @@ class EnergyRegionOutput(QTabWidget):
             self._handle_session_config_event(event)
         elif isinstance(event, DistanceConfigEvent):
             self._handle_distance_config_event(event)
+        elif isinstance(event, PresenceConfigEvent):
+            self._handle_presence_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
         else:
@@ -276,6 +280,33 @@ class EnergyRegionOutput(QTabWidget):
                 session_config,
                 event.lower_power_state,
                 power.algo.Distance(),
+            )
+            self._tabs[event.service_id] = plot_widget
+
+            self.addTab(plot_widget, event.service_id)
+        else:
+            self._tabs[event.service_id].evolve_current_state(
+                session_config=session_config,
+                lower_power_state=event.lower_power_state,
+            )
+
+        self._tabs[event.service_id].plot_current_state()
+
+    def _handle_presence_config_event(self, event: PresenceConfigEvent) -> None:
+        session_config = event.translated_session_config
+
+        if event.service_id not in self._tabs:
+            configured_rate = power.configured_rate(event.translated_session_config)
+            if configured_rate is None:
+                seconds_in_x_axis = _SECONDS_IF_RATE_UNSET
+            else:
+                seconds_in_x_axis = 1 / configured_rate
+
+            plot_widget = _EnergyRegionPlot(
+                seconds_in_x_axis,
+                session_config,
+                event.lower_power_state,
+                power.algo.Presence(),
             )
             self._tabs[event.service_id] = plot_widget
 
