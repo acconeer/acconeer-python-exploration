@@ -85,7 +85,7 @@ class Processor(ExtendedProcessorBase[ProcessorResult]):
             elif amplitude_method == AmplitudeMethod.NONCOHERENT:
                 ampls = np.abs(subframe).mean(axis=0)
             elif amplitude_method == AmplitudeMethod.FFT_MAX:
-                ampls = abs_z_ft.mean(axis=0)
+                ampls = abs_z_ft.max(axis=0)
             else:
                 raise RuntimeError(f"Unknown AmplitudeMethod: {amplitude_method}")
 
