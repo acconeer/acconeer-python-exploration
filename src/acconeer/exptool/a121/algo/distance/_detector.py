@@ -22,6 +22,7 @@ from acconeer.exptool.a121.algo import (
     AlgoBase,
     AlgoConfigBase,
     Controller,
+    calculate_loopback_peak_location,
     get_distance_filter_edge_margin,
     select_prf,
 )
@@ -40,7 +41,6 @@ from ._processors import (
     ReflectorShape,
     ThresholdMethod,
     calculate_bg_noise_std,
-    calculate_loopback_peak_location,
 )
 
 

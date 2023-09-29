@@ -23,6 +23,7 @@ from acconeer.exptool.a121.algo import (
     find_peaks,
     get_distance_filter_coeffs,
     get_distance_filter_edge_margin,
+    get_distance_offset,
     get_temperature_adjustment_factors,
     interpolate_peaks,
 )
@@ -446,10 +447,7 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self.profile, self.step_length
             )
 
-        if self.context.loopback_peak_location_m is not None:
-            self.offset_m = calculate_offset(self.context.loopback_peak_location_m, self.profile)
-        else:
-            self.offset_m = 0.0
+        self.offset_m = get_distance_offset(self.context.loopback_peak_location_m, self.profile)
 
     @classmethod
     def _calc_cfar_window_length(cls, profile: a121.Profile, step_length: int) -> int:
@@ -804,35 +802,3 @@ def calculate_bg_noise_std(
     abs_sweep = abs_sweep[filt_margin:-filt_margin]
 
     return float(np.sqrt(np.mean(np.square(abs_sweep))))
-
-
-def calculate_offset(peak_location: float, profile: a121.Profile) -> float:
-
-    # Intercept and offset term of offset compensation.
-    OFFSET_COMPENSATION_COEFFS = {
-        a121.Profile.PROFILE_1: (0.76520069, 0.01146756),
-        a121.Profile.PROFILE_2: (0.88898859, 0.02202941),
-        a121.Profile.PROFILE_3: (0.92195011, 0.01356246),
-        a121.Profile.PROFILE_4: (0.90674059, 0.01593211),
-        a121.Profile.PROFILE_5: (1.08015653, 0.00390931),
-    }
-
-    p = OFFSET_COMPENSATION_COEFFS[profile]
-    return p[0] * peak_location + p[1]
-
-
-def calculate_loopback_peak_location(result: a121.Result, config: a121.SensorConfig) -> float:
-    (B, A) = get_distance_filter_coeffs(config.profile, config.step_length)
-    sweep = np.squeeze(result.frame, axis=0)
-    abs_sweep = np.abs(filtfilt(B, A, sweep))
-    peak_idx = [int(np.argmax(abs_sweep))]
-
-    (estimated_dist, _) = interpolate_peaks(
-        abs_sweep=abs_sweep,
-        peak_idxs=peak_idx,
-        start_point=config.start_point,
-        step_length=config.step_length,
-        step_length_m=APPROX_BASE_STEP_LENGTH_M,
-    )
-
-    return estimated_dist[0]

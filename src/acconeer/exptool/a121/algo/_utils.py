@@ -8,7 +8,7 @@ from typing import Any, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
-from scipy.signal import butter
+from scipy.signal import butter, filtfilt
 
 from acconeer.exptool import a121
 
@@ -40,6 +40,26 @@ WAVELENGTH = SPEED_OF_LIGHT / RADIO_FREQUENCY
 PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 
 MEAN_ABS_DEV_OUTLIER_TH = 5
+
+
+def get_distance_offset(peak_location: Optional[float], profile: a121.Profile) -> float:
+    """
+    Returns the distance offset in meters based on a loopback measurement.
+    """
+
+    if peak_location is None:
+        return 0.0
+
+    OFFSET_COMPENSATION_COEFFS = {
+        a121.Profile.PROFILE_1: (0.76520069, 0.01146756),
+        a121.Profile.PROFILE_2: (0.88898859, 0.02202941),
+        a121.Profile.PROFILE_3: (0.92195011, 0.01356246),
+        a121.Profile.PROFILE_4: (0.90674059, 0.01593211),
+        a121.Profile.PROFILE_5: (1.08015653, 0.00390931),
+    }
+
+    p = OFFSET_COMPENSATION_COEFFS[profile]
+    return p[0] * peak_location + p[1]
 
 
 def _subsweep_distances(
@@ -122,6 +142,27 @@ def interpolate_peaks(
     return estimated_distances, estimated_amplitudes
 
 
+def calculate_loopback_peak_location(result: a121.Result, config: a121.SensorConfig) -> float:
+    """
+    Calculate the distance tot peak of the loopback using interpolation.
+    """
+
+    (B, A) = get_distance_filter_coeffs(config.profile, config.step_length)
+    sweep = np.squeeze(result.frame, axis=0)
+    abs_sweep = np.abs(filtfilt(B, A, sweep))
+    peak_idx = [int(np.argmax(abs_sweep))]
+
+    (estimated_dist, _) = interpolate_peaks(
+        abs_sweep=abs_sweep,
+        peak_idxs=peak_idx,
+        start_point=config.start_point,
+        step_length=config.step_length,
+        step_length_m=APPROX_BASE_STEP_LENGTH_M,
+    )
+
+    return estimated_dist[0]
+
+
 def find_peaks(abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.float_]) -> list[int]:
     """Identifies peaks above threshold.
 
@@ -171,7 +212,7 @@ def find_peaks(abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.floa
 
 
 def get_temperature_adjustment_factors(
-    temperature_diff: int, profile: a121.Profile
+    temperature_diff: float, profile: a121.Profile
 ) -> Tuple[float, float]:
     """Calculate temperature compensation for mean sweep and background noise(tx off) standard
     deviation.
