@@ -41,14 +41,6 @@ class ConvertToCsvArgumentParser(argparse.ArgumentParser):
     def __init__(self) -> None:
         super().__init__(description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter)
         self.add_argument(
-            "-d",
-            "--delimiter",
-            choices=["c", "t"],
-            dest="delimiter",
-            default="c",
-            help="Delimiter for the output data. Default is comma. 't' is for tab, 'c' for comma",
-        )
-        self.add_argument(
             "input_file",
             type=Path,
             help='The input file with file endings ".h5" or ".npz" (only A111).',
