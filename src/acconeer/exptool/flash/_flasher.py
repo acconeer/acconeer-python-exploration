@@ -104,7 +104,10 @@ def find_flash_device(
     found_devices = []
     flash_device = None
 
-    device_name = "XE125" if device_name == "XM125" else device_name
+    if device_name == "XM125":
+        device_name = "XE125"
+    elif device_name == "XM126":
+        device_name = "XB122"
 
     if use_serial:
         all_devices.extend(et.utils.get_serial_devices())

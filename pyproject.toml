@@ -84,6 +84,7 @@ packages = [
     "acconeer.exptool._links",
     "acconeer.exptool.a121",
     "acconeer.exptool.app.new",
+    "acconeer.exptool.flash._mcumgruart",
     "acconeer.exptool.setup",
     "acconeer.exptool.opser",
     "utils.convert_h5",
@@ -105,6 +106,7 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
+    "cbor2.*",
     "dirty_equals.*",
     "h5py.*",
     "platformdirs.*",
