@@ -10,12 +10,15 @@ import attrs
 from PySide6.QtWidgets import QVBoxLayout
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo.presence import _configs as presence_configs
 from acconeer.exptool.a121.algo.presence._detector import Detector, DetectorConfig
 from acconeer.exptool.a121.algo.presence._pidget_mapping import get_pidget_mapping
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.plugin_components import AttrsConfigEditor, GroupBox, pidgets
 from acconeer.exptool.app.new.ui.resource_tab.event_system import EventBroker
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper, ScrollAreaDecorator, TopAlignDecorator
+
+from ._preset_selection import create_plugin_selection_widget
 
 
 @attrs.frozen
@@ -73,9 +76,42 @@ class PresenceConfigInput(ScrollAreaDecorator):
         wrapped_power_state_selection = GroupBox.vertical(left_header="")
         wrapped_power_state_selection.layout().addWidget(self.power_state_selection)
 
+        preset_selection = create_plugin_selection_widget(
+            "Presets",
+            (
+                "Short range",
+                [
+                    lambda: self.editor.set_data(presence_configs.get_short_range_config()),
+                    self._offer_event_if_config_is_valid,
+                ],
+            ),
+            (
+                "Medium range",
+                [
+                    lambda: self.editor.set_data(presence_configs.get_medium_range_config()),
+                    self._offer_event_if_config_is_valid,
+                ],
+            ),
+            (
+                "Long range",
+                [
+                    lambda: self.editor.set_data(presence_configs.get_long_range_config()),
+                    self._offer_event_if_config_is_valid,
+                ],
+            ),
+            (
+                "Low power, Wake up",
+                [
+                    lambda: self.editor.set_data(presence_configs.get_low_power_config()),
+                    self._offer_event_if_config_is_valid,
+                ],
+            ),
+        )
+
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(wrapped_power_state_selection)
         layout.addWidget(self.editor)
+        layout.addWidget(preset_selection)
 
         (self.uninstall_function, self._id) = broker.install_identified_service(self, "presence")
         self._offer_event_if_config_is_valid()

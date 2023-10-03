@@ -10,12 +10,15 @@ import attrs
 from PySide6.QtWidgets import QVBoxLayout
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo.distance._configs import get_high_accuracy_detector_config
 from acconeer.exptool.a121.algo.distance._detector import Detector, DetectorConfig
 from acconeer.exptool.a121.algo.distance._pidget_mapping import get_pidget_mapping
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.plugin_components import AttrsConfigEditor, GroupBox, pidgets
 from acconeer.exptool.app.new.ui.resource_tab.event_system import EventBroker
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper, ScrollAreaDecorator, TopAlignDecorator
+
+from ._preset_selection import create_plugin_selection_widget
 
 
 @attrs.frozen
@@ -77,9 +80,28 @@ class DistanceConfigInput(ScrollAreaDecorator):
         wrapped_power_state_selection = GroupBox.vertical(left_header="")
         wrapped_power_state_selection.layout().addWidget(self.power_state_selection)
 
+        preset_selection = create_plugin_selection_widget(
+            "Presets",
+            (
+                "Balanced",
+                [
+                    lambda: self.editor.set_data(DetectorConfig()),
+                    self._offer_event_if_config_is_valid,
+                ],
+            ),
+            (
+                "High accuracy",
+                [
+                    lambda: self.editor.set_data(get_high_accuracy_detector_config()),
+                    self._offer_event_if_config_is_valid,
+                ],
+            ),
+        )
+
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(wrapped_power_state_selection)
         layout.addWidget(self.editor)
+        layout.addWidget(preset_selection)
 
         (self.uninstall_function, self._id) = broker.install_identified_service(self, "distance")
         self._offer_event_if_config_is_valid()
