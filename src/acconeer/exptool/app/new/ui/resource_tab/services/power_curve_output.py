@@ -25,6 +25,7 @@ import pyqtgraph as pg
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.model import power
+from acconeer.exptool.app.new.ui.icons import WARNING_YELLOW
 from acconeer.exptool.app.new.ui.resource_tab.event_system import (
     EventBroker,
     IdentifiedServiceUninstalledEvent,
@@ -200,6 +201,29 @@ class _EnergyRegionPlot(QWidget):
         self._plot_widget.addItem(hline_item)
 
         self._plot_widget.setYRange(0, 0.1)
+
+        rate = power.configured_rate(self._state.session_config)
+        if rate is None:
+            return
+
+        active = power.group_active(
+            self._state.session_config,
+            self._state.lower_power_state,
+            algorithm=self._algorithm,
+        )
+        if active.duration > 1 / rate:
+            rate_warning_text = pg.InfiniteLine(
+                pos=0.10,
+                angle=0,
+                label=f"Cannot keep rate.\nMaximum rate is approx.\n{1 / active.duration:.0f} Hz",
+                labelOpts={
+                    "color": "#000",
+                    "fill": WARNING_YELLOW,
+                    "border": "#000",
+                },
+                pen=pg.mkPen(None),
+            )
+            self._plot_widget.addItem(rate_warning_text)
 
 
 class EnergyRegionOutput(QTabWidget):

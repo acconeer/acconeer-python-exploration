@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import functools
 import itertools
 import typing as t
 
@@ -17,6 +18,7 @@ import pyqtgraph as pg
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils as core_utils
 from acconeer.exptool.a121.model import power
+from acconeer.exptool.app.new.ui.icons import WARNING_YELLOW
 from acconeer.exptool.app.new.ui.resource_tab.event_system import (
     EventBroker,
     IdentifiedServiceUninstalledEvent,
@@ -156,6 +158,20 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
                 reused_curve.setData(xs, ys)
                 return (reused_curve, False)
 
+    @staticmethod
+    def _will_keep_rate(
+        config: a121.SessionConfig,
+        lower_power_state: t.Optional[power.Sensor.LowerPowerState],
+        algorithm: power.algo.Algorithm,
+    ) -> bool:
+        rate = power.configured_rate(config)
+
+        if rate is None:
+            return True
+
+        active = power.group_active(config, lower_power_state, algorithm)
+        return active.duration < 1 / rate
+
     def update_power_curves(
         self,
         config: a121.SessionConfig,
@@ -206,18 +222,26 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             )
         )
 
+        curves_that_wont_keep_rate = []
         if any(
             sensor_config.inter_frame_idle_state == a121.IdleState.READY
             for sensor_config in core_utils.iterate_extended_structure_values(config.groups)
         ):
 
+            ready_config_evolver = functools.partial(
+                self._evolve_config,
+                inter_frame_idle_state=a121.IdleState.READY,
+            )
+            if not self._will_keep_rate(
+                ready_config_evolver(config, update_rate=max(update_rates)),
+                lower_power_state=None,
+                algorithm=self._algorithm,
+            ):
+                curves_that_wont_keep_rate += ["Ready"]
+
             def ready_f(update_rate: float) -> float:
                 return power.converged_average_current(
-                    self._evolve_config(
-                        config,
-                        update_rate=update_rate,
-                        inter_frame_idle_state=a121.IdleState.READY,
-                    ),
+                    ready_config_evolver(config, update_rate=update_rate),
                     lower_power_state=None,
                     absolute_tolerance=1e-3,
                     algorithm=self._algorithm,
@@ -225,26 +249,41 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
 
             self._ready_plotter = incremental_plot(update_rates, ready_f, ordering_strategy=range)
 
+        sleep_config_evolver = functools.partial(
+            self._evolve_config,
+            inter_frame_idle_state=a121.IdleState.SLEEP,
+        )
+        if not self._will_keep_rate(
+            sleep_config_evolver(config, update_rate=max(update_rates)),
+            lower_power_state=None,
+            algorithm=self._algorithm,
+        ):
+            curves_that_wont_keep_rate += ["Sleep"]
+
         def sleep_f(update_rate: float) -> float:
             return power.converged_average_current(
-                self._evolve_config(
-                    config,
-                    update_rate=update_rate,
-                    inter_frame_idle_state=a121.IdleState.SLEEP,
-                ),
+                sleep_config_evolver(config, update_rate=update_rate),
                 lower_power_state=None,
                 absolute_tolerance=1e-3,
+                algorithm=self._algorithm,
             )
 
         self._sleep_plotter = incremental_plot(update_rates, sleep_f, ordering_strategy=range)
 
+        deep_sleep_config_evolver = functools.partial(
+            self._evolve_config,
+            inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
+        )
+        if not self._will_keep_rate(
+            deep_sleep_config_evolver(config, update_rate=max(update_rates)),
+            lower_power_state=None,
+            algorithm=self._algorithm,
+        ):
+            curves_that_wont_keep_rate += ["Deep Sleep"]
+
         def deep_sleep_f(update_rate: float) -> float:
             return power.converged_average_current(
-                self._evolve_config(
-                    config,
-                    update_rate=update_rate,
-                    inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
-                ),
+                deep_sleep_config_evolver(config, update_rate=update_rate),
                 lower_power_state=None,
                 absolute_tolerance=1e-3,
                 algorithm=self._algorithm,
@@ -253,6 +292,13 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         self._deep_sleep_plotter = incremental_plot(
             update_rates, deep_sleep_f, ordering_strategy=range
         )
+
+        if not self._will_keep_rate(
+            self._evolve_config(config, update_rate=max(update_rates)),
+            lower_power_state=power.Sensor.PowerState.HIBERNATE,
+            algorithm=self._algorithm,
+        ):
+            curves_that_wont_keep_rate += ["Hibernate"]
 
         def hibernate_f(update_rate: float) -> float:
             return power.converged_average_current(
@@ -266,6 +312,13 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             update_rates, hibernate_f, ordering_strategy=range
         )
 
+        if not self._will_keep_rate(
+            self._evolve_config(config, update_rate=max(update_rates)),
+            lower_power_state=power.Sensor.PowerState.OFF,
+            algorithm=self._algorithm,
+        ):
+            curves_that_wont_keep_rate += ["Off"]
+
         def off_f(update_rate: float) -> float:
             return power.converged_average_current(
                 self._evolve_config(config, update_rate=update_rate),
@@ -275,6 +328,24 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             )
 
         self._off_plotter = incremental_plot(update_rates, off_f, ordering_strategy=range)
+
+        if curves_that_wont_keep_rate:
+            rate_warning_text = pg.InfiniteLine(
+                pos=0.003,
+                angle=0,
+                label=(
+                    "The following curves cannot keep\n"
+                    + "rate at some point in the plot:\n\n"
+                    + "\n".join(f" - {name}" for name in curves_that_wont_keep_rate)
+                ),
+                labelOpts={
+                    "color": "#0008",
+                    "fill": pg.mkBrush(WARNING_YELLOW + "88"),
+                    "border": "#0008",
+                },
+                pen=pg.mkPen(None),
+            )
+            self.addItem(rate_warning_text)
 
         self._plot_increment_timer.start(10)
 

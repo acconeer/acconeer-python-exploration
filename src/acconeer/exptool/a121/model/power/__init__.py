@@ -7,6 +7,8 @@ from .api import (
     converged_average_current,
     frame_active,
     frame_idle,
+    group_active,
+    group_idle,
     power_state,
     session,
     subsweep_active,
