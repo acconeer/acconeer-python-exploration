@@ -78,7 +78,7 @@ class PGUpdater:
         self.intra_history = np.zeros(self.history_length_n)
         self.inter_history = np.zeros(self.history_length_n)
 
-        self.distances, _ = get_distances_m(self.sensor_config, metadata)
+        self.distances = get_distances_m(self.sensor_config, metadata)
 
         self.setup_is_done = False
 

@@ -58,7 +58,7 @@ def main():
 
 class PGUpdater:
     def __init__(self, sensor_config: a121.SensorConfig, metadata: a121.Metadata):
-        (self.distances_m, _) = get_distances_m(sensor_config, metadata)
+        self.distances_m = get_distances_m(sensor_config, metadata)
 
     def setup(self, win):
         pens = [et.utils.pg_pen_cycler(i) for i in range(3)]
