@@ -5,6 +5,7 @@ from . import pidgets
 from .attrs_config_editor import AttrsConfigEditor
 from .collapsible_widget import CollapsibleWidget
 from .data_editor import DataEditor
+from .goto_resource_tab_button import GotoResourceTabButton
 from .json_save_load_buttons import PresentationType, PresenterFunc
 from .metadata_view import ExtendedMetadataView, MetadataView, SmartMetadataView
 from .misc_error_view import MiscErrorView

@@ -40,6 +40,7 @@ from acconeer.exptool.app.new import (
     backend,
     pidgets,
 )
+from acconeer.exptool.app.new.ui.plugin_components import GotoResourceTabButton
 
 from ._processor import (
     AmplitudeMethod,
@@ -89,6 +90,17 @@ class BackendPlugin(ExtendedProcessorBackendPluginBase[ProcessorConfig, Processo
 
 
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__(app_model=app_model)
+
+        goto_resource_button = GotoResourceTabButton()
+        goto_resource_button.clicked.connect(
+            lambda: app_model.sig_resource_tab_input_block_requested.emit(
+                self.session_config_editor.get_data()
+            )
+        )
+        self.scrolly_layout.insertWidget(0, goto_resource_button)
+
     @classmethod
     def get_pidget_mapping(cls) -> PidgetFactoryMapping:
         return {

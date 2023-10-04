@@ -105,6 +105,13 @@ class _PagedLayout(QSplitter):
     def _on_app_model_update(self, app_model: AppModel) -> None:
         self._index_button_widget.setEnabled(app_model.plugin_state.is_steady)
 
+    def setCurrentWidget(self, widget: QWidget) -> None:
+        idx = self._page_widget.indexOf(widget)
+        if idx == -1:
+            raise ValueError(f"Passed widget is not part of {type(self).__name__}")
+
+        self._index_button_group.button(idx).click()
+
 
 class MainWindow(QMainWindow):
     def __init__(self, app_model: AppModel) -> None:
@@ -112,17 +119,23 @@ class MainWindow(QMainWindow):
 
         self.resize(1280, 720)
 
-        self.setCentralWidget(
-            _PagedLayout(
-                app_model,
-                [
-                    (RECORD(), "Stream", StreamingMainWidget(app_model, self), ""),
-                    (FLASH(), "Flash", FlashMainWidget(app_model, self), ""),
-                    (GAUGE(), "RC", ResourceMainWidget(), "Resource Calculator"),
-                    (HELP(), "Help", HelpMainWidget(self), ""),
-                ],
-            )
+        resource_widget = ResourceMainWidget()
+        paged_layout = _PagedLayout(
+            app_model,
+            [
+                (RECORD(), "Stream", StreamingMainWidget(app_model, self), ""),
+                (FLASH(), "Flash", FlashMainWidget(app_model, self), ""),
+                (GAUGE(), "RC", resource_widget, "Resource Calculator"),
+                (HELP(), "Help", HelpMainWidget(self), ""),
+            ],
         )
+
+        app_model.sig_resource_tab_input_block_requested.connect(resource_widget.spawn_input_block)
+        app_model.sig_resource_tab_input_block_requested.connect(
+            lambda: paged_layout.setCurrentWidget(resource_widget)
+        )
+
+        self.setCentralWidget(paged_layout)
 
         self.setStatusBar(StatusBar(app_model, self))
         self.setWindowTitle("Acconeer Exploration Tool")

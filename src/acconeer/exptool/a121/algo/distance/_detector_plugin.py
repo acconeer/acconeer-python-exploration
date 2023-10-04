@@ -45,7 +45,11 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
+from acconeer.exptool.app.new.ui.plugin_components import (
+    CollapsibleWidget,
+    GotoResourceTabButton,
+    SensorConfigEditor,
+)
 from acconeer.exptool.app.new.ui.plugin_components.json_save_load_buttons import (
     JsonButtonOperations,
     PresentationType,
@@ -458,11 +462,6 @@ class ViewPlugin(A121ViewPluginBase):
         super().__init__(app_model=app_model)
         self._log = logging.getLogger(__name__)
 
-        sticky_layout = QVBoxLayout()
-        sticky_layout.setContentsMargins(0, 0, 0, 0)
-        scrolly_layout = QVBoxLayout()
-        scrolly_layout.setContentsMargins(0, 0, 0, 0)
-
         self.start_button = QPushButton(icons.PLAY(), "Start measurement")
         self.start_button.setShortcut("space")
         self.start_button.setToolTip("Starts the session.\n\nShortcut: Space")
@@ -489,10 +488,7 @@ class ViewPlugin(A121ViewPluginBase):
         button_group.layout().addWidget(self.defaults_button, 3, 0, 1, -1)
         button_group.layout().addWidget(self.message_box, 4, 0, 1, -1)
 
-        sticky_layout.addWidget(button_group)
-
         self.misc_error_view = MiscErrorView(self.scrolly_widget)
-        scrolly_layout.addWidget(self.misc_error_view)
 
         sensor_selection_group = GroupBox.vertical("Sensor selection", parent=self.scrolly_widget)
         self.sensor_id_pidget = pidgets.SensorIdPidgetFactory(items=[]).create(
@@ -500,7 +496,6 @@ class ViewPlugin(A121ViewPluginBase):
         )
         self.sensor_id_pidget.sig_update.connect(self._on_sensor_id_update)
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
-        scrolly_layout.addWidget(sensor_selection_group)
 
         self.config_editor = AttrsConfigEditor(
             title="Detector parameters",
@@ -510,7 +505,13 @@ class ViewPlugin(A121ViewPluginBase):
             parent=self.scrolly_widget,
         )
         self.config_editor.sig_update.connect(self._on_config_update)
-        scrolly_layout.addWidget(self.config_editor)
+
+        goto_resource_tab_button = GotoResourceTabButton()
+        goto_resource_tab_button.clicked.connect(
+            lambda: app_model.sig_resource_tab_input_block_requested.emit(
+                self.config_editor.get_data()
+            )
+        )
 
         self.sensor_config_editor_tabs = QTabWidget()
         self.sensor_config_editor_tabs.setStyleSheet("QTabWidget::pane { padding: 5px;}")
@@ -528,6 +529,19 @@ class ViewPlugin(A121ViewPluginBase):
         self.collapsible_widget = CollapsibleWidget(
             "Sensor config info", self.sensor_config_editor_tabs, self.scrolly_widget
         )
+
+        sticky_layout = QVBoxLayout()
+        sticky_layout.setContentsMargins(0, 0, 0, 0)
+
+        sticky_layout.addWidget(button_group)
+
+        scrolly_layout = QVBoxLayout()
+        scrolly_layout.setContentsMargins(0, 0, 0, 0)
+
+        scrolly_layout.addWidget(goto_resource_tab_button)
+        scrolly_layout.addWidget(self.misc_error_view)
+        scrolly_layout.addWidget(sensor_selection_group)
+        scrolly_layout.addWidget(self.config_editor)
         scrolly_layout.addWidget(self.collapsible_widget)
 
         self.sticky_widget.setLayout(sticky_layout)

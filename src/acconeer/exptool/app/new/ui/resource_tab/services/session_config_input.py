@@ -30,7 +30,7 @@ class SessionConfigInput(ScrollAreaDecorator):
         + "Additionally, you can specify a lower power state."
     )
 
-    def __init__(self, broker: EventBroker) -> None:
+    def __init__(self, broker: EventBroker, initial_config: a121.SessionConfig) -> None:
         layout = QVBoxLayout()
         super().__init__(TopAlignDecorator(LayoutWrapper(layout)))
         self.setMinimumWidth(200)
@@ -54,7 +54,7 @@ class SessionConfigInput(ScrollAreaDecorator):
 
         self.editor = SessionConfigEditor(supports_multiple_subsweeps=True)
         self.editor._sensor_ids_editor.hide()
-        self.editor.set_data(a121.SessionConfig())
+        self.editor.set_data(initial_config)
         self.editor.sig_update.connect(self.editor.set_data)
         self.editor.sig_update.connect(self._display_validation_results)
         self.editor.sig_update.connect(self._offer_event_if_config_is_valid)

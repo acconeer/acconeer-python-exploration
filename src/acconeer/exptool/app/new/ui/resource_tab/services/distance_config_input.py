@@ -43,7 +43,7 @@ class DistanceConfigInput(ScrollAreaDecorator):
         + "Additionally, you can specify a lower power state."
     )
 
-    def __init__(self, broker: EventBroker) -> None:
+    def __init__(self, broker: EventBroker, initial_config: DetectorConfig) -> None:
         layout = QVBoxLayout()
         super().__init__(TopAlignDecorator(LayoutWrapper(layout)))
 
@@ -72,7 +72,7 @@ class DistanceConfigInput(ScrollAreaDecorator):
             factory_mapping=get_pidget_mapping(),
             config_type=DetectorConfig,
         )
-        self.editor.set_data(DetectorConfig())
+        self.editor.set_data(initial_config)
         self.editor.sig_update.connect(self.editor.set_data)
         self.editor.sig_update.connect(self._display_validation_results)
         self.editor.sig_update.connect(self._offer_event_if_config_is_valid)

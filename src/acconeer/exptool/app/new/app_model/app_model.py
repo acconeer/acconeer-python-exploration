@@ -196,6 +196,8 @@ class AppModel(QObject):
     sig_backend_cpu_percent = Signal(int)
     sig_frame_count = Signal(object)
     sig_backend_state_changed = Signal(object)
+    sig_resource_tab_input_block_requested = Signal(object)
+    """Emit a config object to spawn an input block in the resource tab"""
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]

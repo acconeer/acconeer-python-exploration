@@ -35,10 +35,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
 
-        sticky_layout = QVBoxLayout()
-        sticky_layout.setContentsMargins(0, 0, 0, 0)
-        scrolly_layout = QVBoxLayout()
-        scrolly_layout.setContentsMargins(0, 0, 0, 0)
+        self.sticky_layout = QVBoxLayout()
+        self.sticky_layout.setContentsMargins(0, 0, 0, 0)
+        self.scrolly_layout = QVBoxLayout()
+        self.scrolly_layout.setContentsMargins(0, 0, 0, 0)
 
         self.start_button = QPushButton(icons.PLAY(), "Start measurement")
         self.stop_button = QPushButton(icons.STOP(), "Stop")
@@ -53,13 +53,13 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
         button_group = GroupBox.grid("Controls", parent=self.sticky_widget)
         button_group.layout().addWidget(self.start_button, 0, 0)
         button_group.layout().addWidget(self.stop_button, 0, 1)
-        sticky_layout.addWidget(button_group)
+        self.sticky_layout.addWidget(button_group)
 
         self.metadata_view = SmartMetadataView(parent=self.scrolly_widget)
-        scrolly_layout.addWidget(self.metadata_view)
+        self.scrolly_layout.addWidget(self.metadata_view)
 
         self.perf_calc_view = SmartPerfCalcView(parent=self.scrolly_widget)
-        scrolly_layout.addWidget(self.perf_calc_view)
+        self.scrolly_layout.addWidget(self.perf_calc_view)
 
         self.processor_config_editor = AttrsConfigEditor(
             title="Processor parameters",
@@ -68,10 +68,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
             parent=self.scrolly_widget,
         )
         self.processor_config_editor.sig_update.connect(self._on_processor_config_update)
-        scrolly_layout.addWidget(self.processor_config_editor)
+        self.scrolly_layout.addWidget(self.processor_config_editor)
 
         self.misc_error_view = MiscErrorView(self.scrolly_widget)
-        scrolly_layout.addWidget(self.misc_error_view)
+        self.scrolly_layout.addWidget(self.misc_error_view)
 
         self.session_config_editor = SessionConfigEditor(
             self.supports_multiple_subsweeps(),
@@ -79,10 +79,10 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
             self.scrolly_widget,
         )
         self.session_config_editor.sig_update.connect(self._on_session_config_update)
-        scrolly_layout.addWidget(self.session_config_editor)
+        self.scrolly_layout.addWidget(self.session_config_editor)
 
-        self.sticky_widget.setLayout(sticky_layout)
-        self.scrolly_widget.setLayout(scrolly_layout)
+        self.sticky_widget.setLayout(self.sticky_layout)
+        self.scrolly_widget.setLayout(self.scrolly_layout)
 
     def _on_session_config_update(self, session_config: a121.SessionConfig) -> None:
         ProcessorBackendPluginBase.update_session_config.rpc(

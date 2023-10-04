@@ -25,10 +25,13 @@ from PySide6.QtWidgets import (
 )
 
 import acconeer.exptool
+from acconeer.exptool import a121
+from acconeer.exptool.a121.algo import distance, presence
 from acconeer.exptool.app.new.storage import get_config_dir
 from acconeer.exptool.app.new.ui.icons import CHART_BAR, CHART_LINE, CLOSE, COG, INFO, MEMORY
 from acconeer.exptool.utils import get_module_version
 
+from .animation import run_blink_animation
 from .event_system import EventBroker
 from .services import (
     distance_config_input,
@@ -219,7 +222,7 @@ class ResourceMainWidget(QMainWindow):
             target=power_curve,
             new_widget=self._create_power_consumption_vs_rate_output(),
         )
-        self._add_dock_widget(self._create_session_config_input())
+        self.spawn_input_block(a121.SessionConfig(), animate=False)
 
     def showEvent(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().showEvent(*args, **kwargs)
@@ -241,6 +244,20 @@ class ResourceMainWidget(QMainWindow):
             user_understandings.tab_brief = pressed_button == QMessageBox.StandardButton.Ok
 
         user_understandings.save()
+
+    def spawn_input_block(self, config: t.Any, animate: bool = True) -> None:
+        if isinstance(config, a121.SessionConfig):
+            dock_widget = self._create_session_config_input(config)
+        elif isinstance(config, distance.DetectorConfig):
+            dock_widget = self._create_distance_config_input(config)
+        elif isinstance(config, presence.DetectorConfig):
+            dock_widget = self._create_presence_config_input(config)
+        else:
+            return
+
+        self._add_dock_widget(dock_widget)
+        if animate:
+            run_blink_animation(dock_widget)
 
     def _add_dock_widget(self, dockwidget: QDockWidget) -> None:
         super().addDockWidget(_ALLOWED_DOCK_AREA, dockwidget)
@@ -268,17 +285,21 @@ class ResourceMainWidget(QMainWindow):
             self._create_action(
                 COG(),
                 button_label="Sparse IQ config",
-                on_trigger=lambda: self._add_dock_widget(self._create_session_config_input()),
+                on_trigger=lambda: self.spawn_input_block(a121.SessionConfig(), animate=False),
             ),
             self._create_action(
                 COG(),
                 "Distance config",
-                lambda: self._add_dock_widget(self._create_distance_config_input()),
+                on_trigger=lambda: self.spawn_input_block(
+                    distance.DetectorConfig(), animate=False
+                ),
             ),
             self._create_action(
                 COG(),
                 "Presence config",
-                lambda: self._add_dock_widget(self._create_presence_config_input()),
+                on_trigger=lambda: self.spawn_input_block(
+                    presence.DetectorConfig(), animate=False
+                ),
             ),
             self._create_action(
                 CHART_BAR(),
@@ -302,8 +323,8 @@ class ResourceMainWidget(QMainWindow):
         for action in actions:
             toolbar.addAction(action)
 
-    def _create_session_config_input(self) -> _DockWidget:
-        service = session_config_input.SessionConfigInput(self._broker)
+    def _create_session_config_input(self, config: a121.SessionConfig) -> _DockWidget:
+        service = session_config_input.SessionConfigInput(self._broker, config)
         return _DockWidget(
             service.window_title,
             service.description,
@@ -342,8 +363,8 @@ class ResourceMainWidget(QMainWindow):
             parent=self,
         )
 
-    def _create_distance_config_input(self) -> _DockWidget:
-        service = distance_config_input.DistanceConfigInput(self._broker)
+    def _create_distance_config_input(self, config: distance.DetectorConfig) -> _DockWidget:
+        service = distance_config_input.DistanceConfigInput(self._broker, config)
         return _DockWidget(
             service.window_title,
             service.description,
@@ -352,8 +373,8 @@ class ResourceMainWidget(QMainWindow):
             parent=self,
         )
 
-    def _create_presence_config_input(self) -> _DockWidget:
-        service = presence_config_input.PresenceConfigInput(self._broker)
+    def _create_presence_config_input(self, config: presence.DetectorConfig) -> _DockWidget:
+        service = presence_config_input.PresenceConfigInput(self._broker, config)
         return _DockWidget(
             service.window_title,
             service.description,
