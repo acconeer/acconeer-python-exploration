@@ -400,7 +400,9 @@ class PowerConsumptionVsRateOutput(QWidget):
         if event.service_id not in self._tabs:
             plot_widget = _PowerConsumptionVsRatePlot(algorithm=power.algo.SparseIq())
             self._tabs[event.service_id] = plot_widget
+
             self._tab_widget.addTab(plot_widget, event.service_id)
+            self._tab_widget.setCurrentWidget(plot_widget)
 
         self._tabs[event.service_id].update_power_curves(
             event.session_config, event.lower_power_state
@@ -412,6 +414,7 @@ class PowerConsumptionVsRateOutput(QWidget):
             self._tabs[event.service_id] = plot_widget
 
             self._tab_widget.addTab(plot_widget, event.service_id)
+            self._tab_widget.setCurrentWidget(plot_widget)
 
         self._tabs[event.service_id].update_power_curves(
             event.translated_session_config, event.lower_power_state
@@ -423,6 +426,7 @@ class PowerConsumptionVsRateOutput(QWidget):
             self._tabs[event.service_id] = plot_widget
 
             self._tab_widget.addTab(plot_widget, event.service_id)
+            self._tab_widget.setCurrentWidget(plot_widget)
 
         self._tabs[event.service_id].update_power_curves(
             event.translated_session_config, event.lower_power_state

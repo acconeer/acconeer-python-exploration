@@ -281,6 +281,7 @@ class EnergyRegionOutput(QTabWidget):
             self._tabs[event.service_id] = plot_widget
 
             self.addTab(plot_widget, event.service_id)
+            self.setCurrentWidget(plot_widget)
         else:
             self._tabs[event.service_id].evolve_current_state(
                 session_config=event.session_config,
@@ -308,6 +309,7 @@ class EnergyRegionOutput(QTabWidget):
             self._tabs[event.service_id] = plot_widget
 
             self.addTab(plot_widget, event.service_id)
+            self.setCurrentWidget(plot_widget)
         else:
             self._tabs[event.service_id].evolve_current_state(
                 session_config=session_config,
@@ -335,6 +337,7 @@ class EnergyRegionOutput(QTabWidget):
             self._tabs[event.service_id] = plot_widget
 
             self.addTab(plot_widget, event.service_id)
+            self.setCurrentWidget(plot_widget)
         else:
             self._tabs[event.service_id].evolve_current_state(
                 session_config=session_config,
