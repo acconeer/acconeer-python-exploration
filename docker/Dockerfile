@@ -7,6 +7,7 @@ RUN apt-get update -qq \
     && add-apt-repository ppa:deadsnakes/ppa -y \
     && apt-get update -qq \
     && apt-get install --no-install-recommends -qq \
+        build-essential \
         git \
         graphviz \
         latexmk \
