@@ -86,6 +86,7 @@ packages = [
     "acconeer.exptool.app.new",
     "acconeer.exptool.setup",
     "acconeer.exptool.opser",
+    "utils.convert_h5",
     "tests.unit.a121",
     "tests.app",
 ]

@@ -7,10 +7,12 @@ import abc
 import argparse
 import json
 import os
+import typing as t
 from pathlib import Path
 from typing import Union
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 import acconeer.exptool as et
@@ -19,7 +21,7 @@ from acconeer.exptool.a121 import _core, algo
 
 
 try:
-    import prettyprinter
+    import prettyprinter  # type: ignore[import]
 
     prettyprinter.install_extras(["attrs"])
 
@@ -95,11 +97,11 @@ class ConvertToCsvArgumentParser(argparse.ArgumentParser):
 
 class TableConverter:
     @abc.abstractmethod
-    def convert(self, sensor: int) -> np.ndarray:
+    def convert(self, sensor: int) -> npt.NDArray[t.Any]:
         pass
 
     @abc.abstractmethod
-    def get_metadata_rows(self, sensor: int) -> list[np.ndarray]:
+    def get_metadata_rows(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         pass
 
     @abc.abstractmethod
@@ -107,14 +109,14 @@ class TableConverter:
         pass
 
     @staticmethod
-    def format_cell_value(v):
+    def format_cell_value(v: t.Any) -> str:
         if np.imag(v):
             return f"{np.real(v):0}{np.imag(v):+}j"
         else:
             return str(v)
 
     @classmethod
-    def from_record(cls, record: Union[et.a111.recording.Record, a121.Record]) -> "TableConverter":
+    def from_record(cls, record: Union[et.a111.recording.Record, a121.Record]) -> TableConverter:
         if isinstance(record, et.a111.recording.Record):
             return A111RecordTableConverter(record)
         elif isinstance(record, a121.Record):
@@ -127,7 +129,7 @@ class A111RecordTableConverter(TableConverter):
     def __init__(self, record: et.a111.recording.Record) -> None:
         self._record = record
 
-    def get_metadata_rows(self, sensor: int) -> list[np.ndarray]:
+    def get_metadata_rows(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         depths = et.a111.get_range_depths(self._record.sensor_config, self._record.session_info)
         num_points = len(depths)
         rounded_depths = np.round(depths, decimals=6)
@@ -140,7 +142,7 @@ class A111RecordTableConverter(TableConverter):
             depths_header = np.tile(rounded_depths, spf)
             return [sweep_numbers, depths_header]
 
-    def convert(self, sensor: int) -> np.ndarray:
+    def convert(self, sensor: int) -> npt.NDArray[t.Any]:
         """Converts data of a single sensor
 
         :param sensor: The sensor index
@@ -165,7 +167,7 @@ class A111RecordTableConverter(TableConverter):
 
         return np.array(dest_rows)
 
-    def print_information(self, verbose: bool) -> None:
+    def print_information(self, verbose: bool = False) -> None:
         config_dump = self.parse_config_dump(self._record.sensor_config_dump)
         print("=== Session info " + "=" * 43)
         for k, v in config_dump.items():
@@ -229,7 +231,7 @@ class A111RecordTableConverter(TableConverter):
             print("Note: " + str(record.note))
 
     @staticmethod
-    def parse_config_dump(config: str):
+    def parse_config_dump(config: str) -> t.Any:
         context = {"null": None, "true": True, "false": False}
         return eval(config, context)
 
@@ -240,10 +242,10 @@ class A121RecordTableConverter(TableConverter):
 
     def _results_of_sensor_id(self, sensor_id: int) -> list[a121.Result]:
         return [
-            ext_result.get(sensor_id)
+            ext_result[sensor_id]
             for ext_result_group in self._record.extended_results
             for ext_result in ext_result_group
-            if ext_result.get(sensor_id) is not None
+            if sensor_id in ext_result
         ]
 
     def _unique_sensor_configs_of_sensor_id(self, sensor_id: int) -> list[a121.SensorConfig]:
@@ -264,7 +266,7 @@ class A121RecordTableConverter(TableConverter):
     def _convert_single_sensor_config(
         self,
         sensor: int,
-    ) -> np.ndarray:
+    ) -> npt.NDArray[t.Any]:
         """This function handles the case where the sensor at "sensor ID" is configured
         with a single unique `SensorConfig`, possibly in multiple groups.
 
@@ -278,7 +280,7 @@ class A121RecordTableConverter(TableConverter):
             ]
         )
 
-    def _convert_multiple_sensor_config(self, sensor: int) -> np.ndarray:
+    def _convert_multiple_sensor_config(self, sensor: int) -> npt.NDArray[t.Any]:
         """
         This function handles the case where the sensor at "sensor ID" is configured
         with a multiple unique `SensorConfig` across groups.
@@ -293,7 +295,7 @@ class A121RecordTableConverter(TableConverter):
             + "If this is a feature that you are interested in, please get in contact with us!"
         )
 
-    def convert(self, sensor: int) -> np.ndarray:
+    def convert(self, sensor: int) -> npt.NDArray[t.Any]:
         """Converts data of a single sensor
 
         :param sensor: The sensor index
@@ -309,7 +311,7 @@ class A121RecordTableConverter(TableConverter):
 
         raise ValueError(f"This record contains no data of sensor with id = {sensor}")
 
-    def _get_metadata_rows_single_sensor_config(self, sensor: int) -> list[np.ndarray]:
+    def _get_metadata_rows_single_sensor_config(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         (sensor_config,) = self._unique_sensor_configs_of_sensor_id(sensor)
         (metadata,) = (
             meta
@@ -326,7 +328,7 @@ class A121RecordTableConverter(TableConverter):
         depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
         return [sweep_numbers, depths_header]
 
-    def _get_metadata_rows_multiple_sensor_config(self, sensor: int) -> list[np.ndarray]:
+    def _get_metadata_rows_multiple_sensor_config(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         raise NotImplementedError(
             "This record contains data where a single sensor has multiple configuration through\n"
             + "the use of groups. Exporting this kind of record is not possible at the moment.\n"
@@ -334,7 +336,7 @@ class A121RecordTableConverter(TableConverter):
             + "If this is a feature that you are interested in, please get in contact with us!"
         )
 
-    def get_metadata_rows(self, sensor: int) -> list[np.ndarray]:
+    def get_metadata_rows(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         unique_sensor_configs = self._unique_sensor_configs_of_sensor_id(sensor)
 
         if len(unique_sensor_configs) == 1:
@@ -367,7 +369,7 @@ class A121RecordTableConverter(TableConverter):
         print("=" * 60)
 
 
-def _check_files(input_file, output_file, force):
+def _check_files(input_file: Path, output_file: Path, force: bool) -> None:
     if not os.path.exists(input_file):
         print(f'The input file ("{input_file}") can not be found.')
         exit(1)
@@ -379,23 +381,27 @@ def _check_files(input_file, output_file, force):
 
 
 def load_file(input_file: str) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
-    for loader, generation in [(a121.load_record, "a121"), (et.a111.recording.load, "a111")]:
-        try:
-            return loader(input_file), generation
-        except Exception:
-            pass
+    try:
+        return a121.load_record(input_file), "a121"
+    except Exception:
+        pass
+
+    try:
+        return et.a111.recording.load(input_file), "a111"
+    except Exception:
+        pass
 
     raise Exception("The specified file was neither A111 or A121. Cannot load.")
 
 
 def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: str) -> int:
     try:
-        return namespace.sensor
+        return int(namespace.sensor)
     except AttributeError:
         return 1 if generation == "a121" else 0
 
 
-def main():
+def main() -> None:
     parser = ConvertToCsvArgumentParser()
     args = parser.parse_args()
 
