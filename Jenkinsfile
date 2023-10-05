@@ -165,8 +165,6 @@ try {
                         sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
                     }
                     stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
-                        printNodeInfo()
-                        checkoutAndCleanup()
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
                             sh '''nox -s test -p 3.7 -- --test-groups model'''
                         }
