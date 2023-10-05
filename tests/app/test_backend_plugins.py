@@ -9,6 +9,8 @@ import pytest
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo.bilateration._plugin import BILATERATION_PLUGIN
+from acconeer.exptool.a121.algo.obstacle._detector_plugin import OBSTACLE_DETECTOR_PLUGIN
+from acconeer.exptool.a121.algo.obstacle_bilateration._plugin import OBSTACLE_BILATERATION_PLUGIN
 from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
 from acconeer.exptool.a121.algo.smart_presence._ref_app_plugin import SMART_PRESENCE_PLUGIN
 from acconeer.exptool.a121.algo.speed._detector_plugin import SPEED_DETECTOR_PLUGIN
@@ -62,7 +64,7 @@ class TestBackendPlugins:
 
     @pytest.fixture
     def extra_tasks(self, plugin: PluginSpec) -> t.Iterable[Task]:
-        if plugin is BILATERATION_PLUGIN:
+        if plugin is BILATERATION_PLUGIN or plugin is OBSTACLE_BILATERATION_PLUGIN:
             return [
                 ("update_sensor_ids", dict(sensor_ids=[1, 2])),
             ]
@@ -136,7 +138,12 @@ class TestBackendPlugins:
             # the session is stopped
             pass
 
-        if plugin in [PRESENCE_DETECTOR_PLUGIN, SMART_PRESENCE_PLUGIN, SPEED_DETECTOR_PLUGIN]:
+        if plugin in [
+            OBSTACLE_DETECTOR_PLUGIN,
+            PRESENCE_DETECTOR_PLUGIN,
+            SMART_PRESENCE_PLUGIN,
+            SPEED_DETECTOR_PLUGIN,
+        ]:
             pytest.xfail(
                 "Presence- & presence-based algorithms have an "
                 + "untestable 'load_from_file' task because of 'estimated_frame_rate'. "
