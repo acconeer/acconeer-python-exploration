@@ -2,7 +2,6 @@
 # All rights reserved
 
 import argparse
-import configparser
 import datetime
 import fnmatch
 import re
@@ -10,6 +9,12 @@ import subprocess
 import sys
 from enum import Enum, auto
 from pathlib import Path
+
+
+if sys.version_info < (3, 11):
+    import tomli as toml
+else:
+    import tomllib as toml
 
 
 class Status(Enum):
@@ -392,15 +397,12 @@ def main():
     )
 
     args = arg_parser.parse_args()
-    config = configparser.ConfigParser()
-    config.read("setup.cfg")
-    section = "check_copyright"
+    with open("pyproject.toml", "rb") as fp:
+        config = toml.load(fp)["tool"]["check_copyright"]
 
-    ignore_files = config.get(section, "ignore_files", fallback="")
-    ignore_files = [s.strip() for s in ignore_files.split(",")]
-    ignore_files = [s for s in ignore_files if s]
+    ignore_files = config.get("ignore_files", [])
 
-    docs_conf_file = config.get(section, "docs_conf_file")
+    docs_conf_file = config["docs_conf_file"]
 
     current_year = args.year
 

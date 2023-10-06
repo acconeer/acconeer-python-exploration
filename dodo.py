@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 """
 This is the configuration file for "doit" (https://pydoit.org/)
@@ -37,13 +37,13 @@ def task_integration_test():
 
 
 def task_test():
-    """Unit & integration test session (nox) on different Python versions"""
+    """Unit & integration tests on different Python versions"""
     for py_ver in PYTHON_VERSIONS:
         yield {
             "name": py_ver,
             "actions": [
-                f'nox -s "test(python={py_ver!r})" -- '
-                + "--test-groups unit integration app doctest "
-                + "--editable"
+                f"hatch run test.py{py_ver}:unit",
+                f"hatch run test.py{py_ver}:processing",
+                f"hatch run test.py{py_ver}:doctest",
             ],
         }

@@ -19,9 +19,9 @@ fi
 a111_pid=$!
 
 if [ -n "$port" ]; then
-  nox -s "test(python='$python_version')" -- --editable --test-groups integration --integration-args a111 --socket localhost 1 --port "$port"
+  hatch run +py=$python_version test:integration-a111 --socket localhost 1 --port "$port"
 else
-  nox -s "test(python='$python_version')" -- --editable --test-groups integration --integration-args a111 --socket localhost 1
+  hatch run +py=$python_version test:integration-a111 --socket localhost 1
 fi
 a111_test_exit_code=$?
 

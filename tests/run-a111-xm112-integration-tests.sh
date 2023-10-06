@@ -9,5 +9,5 @@ short_hostname=$(hostname -s)
 echo -e "Running on host: $short_hostname\n"
 
 echo "Running A111 integration tests"
-nox -s "test(python='$python_version')" -- --test-groups integration --integration-args a111 --uart --spi
+hatch run +py=$python_version test:integration-a111 --uart --spi
 exit $?

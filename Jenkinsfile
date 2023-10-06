@@ -121,7 +121,7 @@ try {
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     sh 'python3 -V'
-                    sh 'nox -s lint'
+                    sh 'hatch run lint:check'
                 }
             }
         }
@@ -138,8 +138,10 @@ try {
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh 'python3 -V'
-                        sh 'python3 -m build'
-                        sh 'nox -s docs -- --docs-builders html latexpdf rediraffecheckdiff'
+                        sh 'hatch build'
+                        sh 'hatch run docs:html'
+                        sh 'hatch run docs:latexpdf'
+                        sh 'hatch run docs:rediraffe-check'
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
                     archiveArtifacts artifacts: 'docs/_build/latex/*.pdf', allowEmptyArchive: true
@@ -156,7 +158,7 @@ try {
                     printNodeInfo()
                     checkoutAndCleanup()
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        sh '''nox -s "mypy(python='3.8')"'''
+                        sh 'hatch run mypy:check'
                     }
                 }
             }
@@ -182,7 +184,7 @@ try {
                     }
                     stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            sh '''nox -s test -p 3.8 -- --test-groups model'''
+                            sh 'hatch run +py=3.8 test:model'
                         }
                     }
                 }

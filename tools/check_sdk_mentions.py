@@ -1,18 +1,24 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 """This is a script that checks whether version-strings in the docs are up to date"""
 
 from __future__ import annotations
 
-import configparser
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List
 
 
 EXPTOOL_ROOT = Path(__file__).resolve().parents[1]
-CONFIG_SECTION = "check_sdk_mentions"
+CONFIG_SECTION = "tool.check_sdk_mentions"
+
+
+if sys.version_info < (3, 11):
+    import tomli as toml
+else:
+    import tomllib as toml
 
 
 def get_single_match_in_file(pattern: str, file: Path) -> str:
@@ -59,15 +65,10 @@ def parse_comma_separated_list(comma_separated_list: str) -> List[str]:
     return [s for s in elements if s]
 
 
-def get_options_from_config(config_file: str = "setup.cfg") -> Dict[str, List[str]]:
-    """Loads section CONFIG_SECTION from setup.cfg. raises if it is not present"""
-    config = configparser.ConfigParser()
-    config.read(config_file)
-
-    if CONFIG_SECTION not in config.sections():
-        raise Exception(f'Section "[{CONFIG_SECTION}]" not found in "{config_file}"')
-
-    return {k: parse_comma_separated_list(v) for k, v in config.items(CONFIG_SECTION)}
+def get_options_from_config() -> Dict[str, List[str]]:
+    with open("pyproject.toml", "rb") as fp:
+        _, section_name = CONFIG_SECTION.split(".")
+        return toml.load(fp)["tool"][section_name]
 
 
 def check_docs_against_sdk_version(sdk_version: str, pattern_for_docs: str):
@@ -89,7 +90,7 @@ def check_docs_against_sdk_version(sdk_version: str, pattern_for_docs: str):
                 "There seems to be an outdated SDK version reference here:\n\n"
                 + f"    {location}\n\n"
                 + 'If you have recently added a semantic-versioning string ("X.Y.Z"), that you\n'
-                + 'Do not want to track, make sure to add its source code line to "setup.cfg",\n'
+                + 'Do not want to track, make sure to add its source code line to "pyproject.toml",\n'
                 + f"under [{CONFIG_SECTION}]"
             )
 

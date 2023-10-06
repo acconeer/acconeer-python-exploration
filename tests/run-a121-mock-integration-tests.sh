@@ -19,9 +19,9 @@ fi
 a121_pid=$!
 
 if [ -n "$port" ]; then
-  nox -s "test(python='$python_version')" -- --editable --test-groups integration --integration-args a121 --port "$port"
+  hatch run +py=$python_version test:integration-a121 --port "$port"
 else
-  nox -s "test(python='$python_version')" -- --editable --test-groups integration --integration-args a121
+  hatch run +py=$python_version test:integration-a121
 fi
 a121_test_exit_code=$?
 

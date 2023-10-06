@@ -1,15 +1,187 @@
 [build-system]
-requires = [
-    "setuptools>=60.0.3",
-    "setuptools_scm>=6.4,!=7.0.0",
-    "wheel>=0.37.0",
-]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-fallback_version = "0.0.0"
-write_to = "src/acconeer/exptool/_version.py"
-write_to_template = "__version__ = \"{version}\"\n"
+[project]
+name = "acconeer-exptool"
+description = "Acconeer Exploration Tool"
+dynamic = ["version"]
+readme = "README.md"
+license = "BSD-3-Clause-Clear"
+requires-python = ">=3.8"
+authors = [
+    { name = "Acconeer AB", email = "tools@acconeer.com" },
+]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "attrs>=22.1.0",
+    "cbor2",
+    "h5py>=3.8,<4",
+    "numpy>=1.20",
+    "pandas>=1.3.5",
+    "packaging",
+    "pyserial>=3.5",
+    "pyusb>=1.2.1",
+    "pyyaml",
+    "requests>=2.0,<3",
+    "result==0.16.1",
+    "typing-extensions>=4,<5",
+    "textual==0.1.18",
+    "XlsxWriter>=3.1.9",
+    "exceptiongroup==1.1.1",
+    "attributes-doc==0.3.0",
+]
+
+[project.urls]
+Documentation = "https://docs.acconeer.com"
+Homepage = "https://github.com/acconeer/acconeer-python-exploration"
+Source = "https://github.com/acconeer/acconeer-python-exploration"
+Tracker = "https://github.com/acconeer/acconeer-python-exploration/issues"
+
+[project.optional-dependencies]
+algo = [
+    "scipy",
+]
+app = [
+    "acconeer-exptool[algo]",
+    "bs4",
+    "docutils>=0.17,!=0.18",
+    "matplotlib>3.5.1",
+    "platformdirs",
+    "psutil",
+    "pyperclip",
+    "pyside6!=6.3.0,!=6.3.2,!=6.5.*",
+    "pyqtdarktheme",
+    "pyqtgraph>=0.12.4",
+    "qtawesome",
+    "qtpy>=2.3.0",
+]
+docs = [
+    "acconeer-exptool[algo]",
+    "docutils>=0.17,!=0.18",
+    "myst-parser>=2.0.0",
+    "sphinx>=7.2.6",
+    "sphinx-design",
+    "pydata-sphinx-theme==0.14.3",
+    "sphinxext-rediraffe",
+    "sphinx-notfound-page>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/acconeer",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/acconeer",
+]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/acconeer/exptool/_version.py"
+
+
+[tool.hatch.envs.app]
+features = ["app"]
+
+[tool.hatch.envs.app.scripts]
+launcher = "python -m acconeer.exptool.app"
+new = "python -m acconeer.exptool.app.new"
+old = "python -m acconeer.exptool.app.old"
+
+
+[tool.hatch.envs.lint]
+detached = true
+dependencies = [
+    "ruff==0.1.6",
+    "packaging",
+    'tomli; python_version < "3.11"',
+]
+
+[tool.hatch.envs.lint.scripts]
+check = [
+    "python tools/check_permissions.py",
+    "python tools/check_whitespace.py",
+    "python tools/check_line_length.py",
+    "python tools/check_sdk_mentions.py",
+    "python tools/check_changelog.py",
+    "python tools/check_copyright.py",
+    "python -m ruff format --diff .",
+    "python -m ruff .",
+]
+reformat = [
+    "python tools/check_copyright.py --update-year",
+    "python -m ruff format .",
+    "python -m ruff --fix .",
+]
+
+
+[tool.hatch.envs.mypy]
+features = ["app"]
+dependencies = [
+    "mypy==1.7.0",
+    "pytest==7.2",
+    "pandas==1.3.5",
+    "pandas-stubs",
+    "PySide6==6.6.2",
+]
+
+[[tool.hatch.envs.mypy.matrix]]
+python = ["3.8"]
+
+[tool.hatch.envs.mypy.scripts]
+check = "python -m mypy"
+
+
+[tool.hatch.envs.test]
+features = ["app"]
+dependencies = [
+    "pytest==7.2",
+    "pytest-xdist==3.1.0",
+    "pandas>=1.3.5",
+    "pytest-mock==3.3.1",
+    "dirty-equals==0.5.0",
+]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.test.scripts]
+pytest = "python -m pytest {args}"
+xdist = "pytest -n auto {args}"
+
+app = "pytest tests/app"
+unit = "xdist tests/unit {args}"
+processing = "xdist tests/processing -n auto {args}"
+doctest = "xdist --doctest-modules src/acconeer/exptool"
+model = "xdist tests/model {args}"
+integration-a111 = "pytest tests/integration/a111 {args}"
+integration-a121 = "pytest tests/integration/a121 {args}"
+
+
+[tool.hatch.envs.docs]
+features = ["docs"]
+dependencies = ["sphinx_autobuild"]
+
+[tool.hatch.envs.docs.scripts]
+autobuild = 'python -m sphinx_autobuild -b html docs docs/_build --watch src'
+html = 'python -m sphinx -W -b html docs docs/_build'
+latexpdf = 'python -m sphinx -M latexpdf docs docs/_build'
+rediraffe-write = 'python -m sphinx -b rediraffewritediff docs docs/_build'
+rediraffe-check = 'python -m sphinx -b rediraffecheckdiff docs docs/_build'
+
 
 [tool.ruff]
 line-length = 99
@@ -128,3 +300,25 @@ doctest_optionflags = [
     "ELLIPSIS",
     "NORMALIZE_WHITESPACE",
 ]
+
+[tool.check_line_length]
+line_length = 80
+include = [
+    "LICENSE.md",
+    "CHANGELOG.md",
+]
+
+[tool.check_sdk_mentions]
+ignore_lines = []
+include = [
+    "README.md",
+    "docs/**/*.rst",
+    "Jenkinsfile",
+    "src/acconeer/exptool/app/new/ui/resource_tab/*.py",
+]
+
+[tool.check_copyright]
+ignore_files = [
+    "src/acconeer/exptool/_winusbcdc/*",
+]
+docs_conf_file = "docs/conf.py"

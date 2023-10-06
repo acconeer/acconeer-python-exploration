@@ -1,21 +1,23 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
-import configparser
 import fnmatch
 import subprocess
 import sys
 
 
-def main():
-    config = configparser.ConfigParser()
-    config.read("setup.cfg")
-    section = "check_line_length"
+if sys.version_info < (3, 11):
+    import tomli as toml
+else:
+    import tomllib as toml
 
-    line_length = int(config.get(section, "line_length"))
-    include = config.get(section, "include", fallback="")
-    include = [s.strip() for s in include.split(",")]
-    include = [s for s in include if s]
+
+def main():
+    with open("pyproject.toml", "rb") as fp:
+        config = toml.load(fp)["tool"]["check_line_length"]
+
+    line_length = config["line_length"]
+    include = config["include"]
 
     p = subprocess.run(
         ["git", "ls-files"],
