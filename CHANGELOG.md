@@ -1,5 +1,19 @@
 # Changelog
 
+## v7.5.0
+
+### Added
+- New tab: Resource Calculator.
+  Visualizes power- and memory consumption for different configurations,
+  enabling quick-and-easy comparisons.
+  Supports Sparse IQ, Distance- and Presence detector.
+
+### Changed
+- Rename covert\_to\_csv.py to convert\_h5.py
+
+### Fixed
+- Distance: Remove duplicate breakpoints
+
 ## v7.4.0
 
 ### Added
