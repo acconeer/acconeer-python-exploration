@@ -404,6 +404,7 @@ class UserMessageDialog(QDialog):
             self.set_message(message)
 
     def set_message(self, message: str) -> None:
+        self.message_text.clear()
         self.message_text.insertHtml(message)
         self.message_text.moveCursor(QTextCursor.MoveOperation.Start)
 
