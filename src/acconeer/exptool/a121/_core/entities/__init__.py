@@ -14,9 +14,7 @@ from .configs import (
     ValidationWarning,
 )
 from .containers import (
-    ClientInfo,
     Metadata,
-    MockInfo,
     PersistentRecord,
     Record,
     RecordException,
@@ -24,13 +22,10 @@ from .containers import (
     ResultContext,
     SensorCalibration,
     SensorInfo,
-    SerialInfo,
     ServerInfo,
     ServerLogMessage,
     SessionRecord,
-    SocketInfo,
     StackedResults,
-    USBInfo,
     complex_array_to_int16_complex,
     int16_complex_array_to_complex,
 )

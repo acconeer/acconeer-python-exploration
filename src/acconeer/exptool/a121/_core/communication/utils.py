@@ -8,13 +8,15 @@ from typing import List, Optional
 import attrs
 
 import acconeer.exptool as et
+from acconeer.exptool._core.entities import (
+    ClientInfo,
+    SerialInfo,
+    USBInfo,
+)
 from acconeer.exptool._links import BufferedLink, ExploreSerialLink, NullLink, SocketLink, USBLink
 from acconeer.exptool.a121._core.entities import (
-    ClientInfo,
     SensorCalibration,
-    SerialInfo,
     SessionConfig,
-    USBInfo,
 )
 from acconeer.exptool.a121._core.utils import iterate_extended_structure
 from acconeer.exptool.utils import SerialDevice, USBDevice

@@ -8,10 +8,10 @@ import warnings
 from typing import Any, Iterator, Optional, Union
 
 import acconeer.exptool.a121._core.utils as core_utils
+from acconeer.exptool._core import ClientInfo
 from acconeer.exptool.a121 import (
     Client,
     ClientError,
-    ClientInfo,
     Metadata,
     Record,
     Recorder,

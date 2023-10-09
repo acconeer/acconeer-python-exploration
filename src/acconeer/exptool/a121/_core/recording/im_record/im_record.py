@@ -7,9 +7,9 @@ from typing import Iterator, Optional, Sequence
 
 import attrs
 
+from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
-    ClientInfo,
     Metadata,
     Record,
     RecordException,

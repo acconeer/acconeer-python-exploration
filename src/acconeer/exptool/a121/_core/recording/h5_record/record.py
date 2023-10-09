@@ -12,9 +12,9 @@ import numpy as np
 from packaging.version import Version
 
 import acconeer.exptool
+from acconeer.exptool._core import ClientInfo
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
-    ClientInfo,
     Metadata,
     PersistentRecord,
     RecordException,

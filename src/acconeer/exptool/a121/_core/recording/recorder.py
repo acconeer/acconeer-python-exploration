@@ -7,8 +7,8 @@ from typing import Any, Optional
 
 import typing_extensions as te
 
+from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
-    ClientInfo,
     Metadata,
     Result,
     SensorCalibration,

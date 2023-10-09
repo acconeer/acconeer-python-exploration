@@ -11,10 +11,10 @@ import numpy as np
 import numpy.typing as npt
 from typing_extensions import Concatenate, ParamSpec
 
+from acconeer.exptool._core.entities.client_info import ClientInfo
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities.configs import SessionConfig
 
-from .client_info import ClientInfo
 from .metadata import Metadata
 from .result import Result
 from .sensor_calibration import SensorCalibration

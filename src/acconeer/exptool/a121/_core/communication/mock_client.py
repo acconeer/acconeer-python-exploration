@@ -10,11 +10,13 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.entities import (
+    ClientInfo,
+    MockInfo,
+)
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
-    ClientInfo,
     Metadata,
-    MockInfo,
     Profile,
     Result,
     ResultContext,

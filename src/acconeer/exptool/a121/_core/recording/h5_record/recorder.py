@@ -14,10 +14,10 @@ import h5py
 import numpy as np
 
 import acconeer.exptool
+from acconeer.exptool._core import ClientInfo
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
-    ClientInfo,
     Metadata,
     Result,
     SensorCalibration,

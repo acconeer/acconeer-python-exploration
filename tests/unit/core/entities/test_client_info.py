@@ -6,7 +6,7 @@ from typing import Any, Tuple
 
 import pytest
 
-from acconeer.exptool.a121 import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
+from acconeer.exptool._core import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
 from acconeer.exptool.utils import SerialDevice, USBDevice
 
 

@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from typing import Optional, Union
 
+from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
-    ClientInfo,
     Metadata,
     Result,
     SensorCalibration,

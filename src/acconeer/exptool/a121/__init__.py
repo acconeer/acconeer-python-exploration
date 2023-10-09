@@ -3,19 +3,20 @@
 
 SDK_VERSION = "1.3.0"
 
+# Make these visible under the a121 package to not break api
+from acconeer.exptool._core.entities import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
+
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
     _H5PY_STR_DTYPE,
     PRF,
     Client,
     ClientError,
-    ClientInfo,
     H5Record,
     H5Recorder,
     IdleState,
     InMemoryRecord,
     Metadata,
-    MockInfo,
     PersistentRecord,
     Profile,
     Record,
@@ -25,14 +26,11 @@ from ._core import (
     SensorCalibration,
     SensorConfig,
     SensorInfo,
-    SerialInfo,
     ServerError,
     ServerInfo,
     SessionConfig,
-    SocketInfo,
     StackedResults,
     SubsweepConfig,
-    USBInfo,
     ValidationError,
     ValidationResult,
     ValidationWarning,
