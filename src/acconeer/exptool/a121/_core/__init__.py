@@ -34,12 +34,12 @@ from .entities import (
     complex_array_to_int16_complex,
     int16_complex_array_to_complex,
 )
-from .mediators import Recorder
 from .recording import (
     _H5PY_STR_DTYPE,
     H5Record,
     H5Recorder,
     InMemoryRecord,
+    Recorder,
     RecordError,
     load_record,
     open_record,

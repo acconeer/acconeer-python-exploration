@@ -15,7 +15,7 @@ from acconeer.exptool.a121._core.entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import Recorder
+from acconeer.exptool.a121._core.recording import Recorder
 
 from .communication_protocol import CommunicationProtocol
 

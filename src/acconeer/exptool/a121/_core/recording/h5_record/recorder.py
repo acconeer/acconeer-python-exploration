@@ -24,7 +24,7 @@ from acconeer.exptool.a121._core.entities import (
     ServerInfo,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import Recorder, RecorderAttachable
+from acconeer.exptool.a121._core.recording.recorder import Recorder, RecorderAttachable
 from acconeer.exptool.utils import get_module_version
 
 from .session_schema import SessionSchema

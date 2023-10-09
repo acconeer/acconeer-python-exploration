@@ -12,7 +12,7 @@ from acconeer.exptool.a121._core.entities import (
     SensorCalibration,
     SessionConfig,
 )
-from acconeer.exptool.a121._core.mediators import Recorder
+from acconeer.exptool.a121._core.recording import Recorder
 from acconeer.exptool.a121._core.utils import unextend
 
 from .client import Client, ClientError

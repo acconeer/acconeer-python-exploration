@@ -18,6 +18,8 @@ from acconeer.exptool.a121._core.entities import (
 
 
 class RecorderAttachable(te.Protocol):
+    """Dependecy Inversion interface for clients"""
+
     def attach_recorder(self, recorder: Recorder) -> None:
         ...
 
@@ -26,6 +28,8 @@ class RecorderAttachable(te.Protocol):
 
 
 class Recorder(te.Protocol):
+    """The interface a Recorder needs to follow"""
+
     def _start(
         self,
         *,
