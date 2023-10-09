@@ -100,8 +100,8 @@ def test_sample_whole_record(
         for i in range(ref_record.num_sessions):
             session = ref_record.session(i)
             recorder._start_session(
-                session_config=session.session_config,
-                extended_metadata=session.extended_metadata,
+                config=session.session_config,
+                metadata=session.extended_metadata,
                 calibrations=session.calibrations,
                 calibrations_provided=session.calibrations_provided,
             )

@@ -82,8 +82,8 @@ def save_record_to_h5(path_or_file: PathOrH5File, record: Record) -> None:
         )
         for session in (record.session(i) for i in range(record.num_sessions)):
             r._start_session(
-                session_config=session.session_config,
-                extended_metadata=session.extended_metadata,
+                config=session.session_config,
+                metadata=session.extended_metadata,
                 calibrations=session.calibrations,
                 calibrations_provided=session.calibrations_provided,
             )

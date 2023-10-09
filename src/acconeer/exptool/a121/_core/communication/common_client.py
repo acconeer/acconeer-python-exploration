@@ -93,8 +93,8 @@ class CommonClient(Client, register=False):
                 calibrations_provided = None
 
             self._recorder._start_session(
-                session_config=self.session_config,
-                extended_metadata=self.extended_metadata,
+                config=self.session_config,
+                metadata=self.extended_metadata,
                 calibrations=calibrations,
                 calibrations_provided=calibrations_provided,
             )

@@ -177,36 +177,36 @@ class H5Recorder(Recorder):
     def _start_session(
         self,
         *,
-        session_config: SessionConfig,
-        extended_metadata: list[dict[int, Metadata]],
-        calibrations: Optional[dict[int, SensorCalibration]],
-        calibrations_provided: Optional[dict[int, bool]],
+        config: SessionConfig,
+        metadata: list[dict[int, Metadata]],
+        calibrations: Optional[dict[int, SensorCalibration]] = None,
+        calibrations_provided: Optional[dict[int, bool]] = None,
     ) -> None:
         self._current_session_group = self._schema.create_next_session_group(self.file)
 
         self._current_session_group.create_dataset(
             "session_config",
-            data=session_config.to_json(),
+            data=config.to_json(),
             dtype=_H5PY_STR_DTYPE,
             track_times=False,
         )
 
-        for i, metadata_group_dict in enumerate(extended_metadata):
+        for i, metadata_group_dict in enumerate(metadata):
             group_group = self._current_session_group.create_group(f"group_{i}")
 
-            for entry_id, (sensor_id, metadata) in enumerate(metadata_group_dict.items()):
+            for entry_id, (sensor_id, single_metadata) in enumerate(metadata_group_dict.items()):
                 entry_group = group_group.create_group(f"entry_{entry_id}")
                 entry_group.create_dataset("sensor_id", data=sensor_id, track_times=False)
 
                 entry_group.create_dataset(
                     "metadata",
-                    data=metadata.to_json(),
+                    data=single_metadata.to_json(),
                     dtype=_H5PY_STR_DTYPE,
                     track_times=False,
                 )
 
                 result_group = entry_group.create_group("result")
-                self._create_result_datasets(result_group, metadata)
+                self._create_result_datasets(result_group, single_metadata)
 
         if (calibrations is None) != (calibrations_provided is None):
             raise ValueError(
