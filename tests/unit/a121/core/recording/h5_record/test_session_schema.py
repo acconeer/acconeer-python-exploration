@@ -7,7 +7,7 @@ from pathlib import Path
 import h5py
 import pytest
 
-from acconeer.exptool.a121._core.peripherals.h5_record import SessionSchema
+from acconeer.exptool.a121._core.recording.h5_record import SessionSchema
 
 
 @pytest.fixture

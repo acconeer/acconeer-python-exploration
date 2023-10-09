@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from pathlib import Path
@@ -10,7 +10,7 @@ import pytest
 
 from acconeer.exptool import a111
 from acconeer.exptool.a111._clients.mock.client import MockClient
-from acconeer.exptool.a121._core.peripherals.h5_record import _H5PY_STR_DTYPE
+from acconeer.exptool.a121._core.recording.h5_record import _H5PY_STR_DTYPE
 
 
 @pytest.fixture

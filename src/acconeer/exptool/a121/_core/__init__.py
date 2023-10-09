@@ -35,7 +35,7 @@ from .entities import (
     int16_complex_array_to_complex,
 )
 from .mediators import Recorder
-from .peripherals import (
+from .recording import (
     _H5PY_STR_DTYPE,
     H5Record,
     H5Recorder,

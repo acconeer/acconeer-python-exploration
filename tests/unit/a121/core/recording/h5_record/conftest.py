@@ -14,7 +14,7 @@ import pytest
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, SensorInfo
-from acconeer.exptool.a121._core.peripherals.h5_record import _H5PY_STR_DTYPE
+from acconeer.exptool.a121._core.recording.h5_record import _H5PY_STR_DTYPE
 
 
 @pytest.fixture
