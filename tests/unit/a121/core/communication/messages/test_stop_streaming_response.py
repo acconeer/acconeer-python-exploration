@@ -6,14 +6,16 @@ import typing as t
 
 import pytest
 
-from acconeer.exptool.a121._core.peripherals import ExplorationProtocol
-from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol import messages
+from acconeer.exptool.a121._core.communication.exploration_protocol import (
+    ExplorationProtocol,
+    messages,
+)
 
 
-class TestSetBaudrateResponse:
+class TestStopStreamingResponse:
     @pytest.fixture
     def valid_server_response(self) -> dict[str, t.Any]:
-        return {"status": "ok", "payload_size": 0, "message": "set baudrate"}
+        return {"status": "stop", "payload_size": 0, "message": "Stop streaming."}
 
     @pytest.fixture
     def invalid_server_response(self) -> dict[str, t.Any]:
@@ -24,12 +26,9 @@ class TestSetBaudrateResponse:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
-            == messages.SetBaudrateResponse
+            == messages.StopStreamingResponse
         )
-        _ = messages.SetBaudrateResponse.parse(valid_server_response, bytes())
+        _ = messages.StopStreamingResponse.parse(valid_server_response, bytes())
 
         with pytest.raises(messages.ParseError):
-            messages.SetBaudrateResponse.parse(invalid_server_response, bytes())
-
-    def test_apply(self) -> None:
-        pytest.skip("SetBaudrateResponse has a NO-OP apply")
+            messages.StopStreamingResponse.parse(invalid_server_response, bytes())

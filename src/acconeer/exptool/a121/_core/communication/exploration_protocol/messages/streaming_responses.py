@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import typing as t
 
 import typing_extensions as te
 
-from acconeer.exptool.a121._core.peripherals.communication.message import Message
+from acconeer.exptool.a121._core.communication.message import Message
 
 from .parse_error import ParseError
 

@@ -1,6 +1,11 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
+from .communication import (
+    Client,
+    ClientError,
+    ServerError,
+)
 from .entities import (
     INT_16_COMPLEX,
     PRF,
@@ -32,13 +37,10 @@ from .entities import (
 from .mediators import Recorder
 from .peripherals import (
     _H5PY_STR_DTYPE,
-    Client,
-    ClientError,
     H5Record,
     H5Recorder,
     InMemoryRecord,
     RecordError,
-    ServerError,
     load_record,
     open_record,
     save_record,

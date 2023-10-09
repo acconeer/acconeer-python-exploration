@@ -8,10 +8,9 @@ from typing import Dict, Optional
 import attrs
 from numpy import nan
 
-from acconeer.exptool.a121._core import PRF, Profile
 from acconeer.exptool.a121._core.utils import zip_extended_structures
 
-from ._core import IdleState, Metadata, SensorConfig, SessionConfig
+from ._core.entities import PRF, IdleState, Metadata, Profile, SensorConfig, SessionConfig
 
 
 _POINT_OVERHEAD_DURATIONS_NS: Dict[PRF, Dict[Profile, float]] = {

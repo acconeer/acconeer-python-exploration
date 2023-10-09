@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional, Union
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol import (
+from acconeer.exptool.a121._core.communication.exploration_protocol import (
     ExplorationProtocol,
     ExplorationProtocol_No_5_2MHz_PRF,
     ExplorationProtocol_No_15_6MHz_PRF,

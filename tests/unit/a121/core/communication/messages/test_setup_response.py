@@ -6,8 +6,10 @@ import typing as t
 
 import pytest
 
-from acconeer.exptool.a121._core.peripherals import ExplorationProtocol
-from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol import messages
+from acconeer.exptool.a121._core.communication.exploration_protocol import (
+    ExplorationProtocol,
+    messages,
+)
 
 
 class TestSetupResponse:

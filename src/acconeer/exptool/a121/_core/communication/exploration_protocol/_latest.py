@@ -6,11 +6,11 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
-from acconeer.exptool.a121._core.entities import PRF, IdleState, SensorCalibration, SessionConfig
-from acconeer.exptool.a121._core.peripherals.communication.communication_protocol import (
+from acconeer.exptool.a121._core.communication.communication_protocol import (
     CommunicationProtocol,
 )
-from acconeer.exptool.a121._core.peripherals.communication.message import Message
+from acconeer.exptool.a121._core.communication.message import Message
+from acconeer.exptool.a121._core.entities import PRF, IdleState, SensorCalibration, SessionConfig
 from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
 from . import messages

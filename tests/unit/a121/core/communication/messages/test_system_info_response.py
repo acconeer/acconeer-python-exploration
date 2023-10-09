@@ -6,23 +6,24 @@ import typing as t
 
 import pytest
 
-from acconeer.exptool.a121._core.peripherals import ExplorationProtocol
-from acconeer.exptool.a121._core.peripherals.communication.exploration_protocol import messages
+from acconeer.exptool.a121._core.communication.exploration_protocol import (
+    ExplorationProtocol,
+    messages,
+)
 
 
-class TestGetSensorInfoResponse:
+class TestGetSystemInfoReponse:
     @pytest.fixture
     def valid_server_response(self) -> dict[str, t.Any]:
         return {
             "status": "ok",
-            "payload_size": 0,
-            "sensor_info": [
-                {"connected": True},
-                {"connected": False},
-                {"connected": True},
-                {"connected": False},
-                {"connected": False},
-            ],
+            "system_info": {
+                "rss_version": "v2.9.0",
+                "sensor": "sensor_version",
+                "sensor_count": 5,
+                "ticks_per_second": 1000000,
+                "hw": "linux",
+            },
         }
 
     @pytest.fixture
@@ -34,9 +35,9 @@ class TestGetSensorInfoResponse:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
-            == messages.SensorInfoResponse
+            == messages.SystemInfoResponse
         )
-        _ = messages.SensorInfoResponse.parse(valid_server_response, bytes())
+        _ = messages.SystemInfoResponse.parse(valid_server_response, bytes())
 
         with pytest.raises(messages.ParseError):
-            messages.SensorInfoResponse.parse(invalid_server_response, bytes())
+            messages.SystemInfoResponse.parse(invalid_server_response, bytes())

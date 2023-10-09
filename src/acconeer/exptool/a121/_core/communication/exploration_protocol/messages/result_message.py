@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import typing_extensions as te
 
+from acconeer.exptool.a121._core.communication.message import Message
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
     Metadata,
@@ -17,7 +18,6 @@ from acconeer.exptool.a121._core.entities import (
     ResultContext,
     SensorConfig,
 )
-from acconeer.exptool.a121._core.peripherals.communication.message import Message
 from acconeer.exptool.a121._core.utils import map_over_extended_structure, zip3_extended_structures
 
 from .parse_error import ParseError
