@@ -531,17 +531,6 @@ def unwrap_ticks(
     return ticks, max(ticks)
 
 
-def pretty_dict_line_strs(d: dict[str, Any], indent: int = 2, width: int = 24) -> list[str]:
-    lines = []
-    for k, v in d.items():
-        if isinstance(v, enum.Enum):
-            v = v.name
-
-        lines.append(f"{'':<{indent}}{k + ' ':.<{width}} {v}")
-
-    return lines
-
-
 def indent_strs(strs: list[str], level: int) -> list[str]:
     return ["  " * level + s for s in strs]
 

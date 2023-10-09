@@ -10,6 +10,7 @@ from typing import Any, Iterator, Optional, TypeVar, Union, overload
 
 import numpy as np
 
+from acconeer.exptool._core.class_creation import pretty_dict_line_strs
 from acconeer.exptool.a121._core import utils
 
 from .config_enums import PRF, IdleState, Profile
@@ -595,7 +596,7 @@ class SensorConfig:
 
         d = self.to_dict()
         del d["subsweeps"]
-        lines.extend(utils.pretty_dict_line_strs(d))
+        lines.extend(pretty_dict_line_strs(d))
 
         lines.append("  subsweeps:")
         for i, subsweep in enumerate(self.subsweeps):

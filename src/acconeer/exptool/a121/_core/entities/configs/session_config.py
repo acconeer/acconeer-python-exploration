@@ -9,6 +9,7 @@ from typing import Any, Optional, Union
 
 import numpy as np
 
+from acconeer.exptool._core.class_creation import pretty_dict_line_strs
 from acconeer.exptool.a121._core import utils
 
 from .sensor_config import SensorConfig
@@ -273,7 +274,7 @@ class SessionConfig:
 
         d = self.to_dict()
         del d["groups"]
-        lines.extend(utils.pretty_dict_line_strs(d))
+        lines.extend(pretty_dict_line_strs(d))
 
         lines.append("  groups:")
         for group_idx, group_dict in enumerate(self.groups):

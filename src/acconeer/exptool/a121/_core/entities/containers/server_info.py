@@ -9,6 +9,7 @@ from typing import Any, Optional
 import attrs
 import packaging.version
 
+from acconeer.exptool._core.class_creation import pretty_dict_line_strs
 from acconeer.exptool.a121._core import utils
 
 
@@ -37,7 +38,7 @@ class SensorInfo:
         index_str = "" if index is None else f" @ slot {index}"
         return [
             f"{type(self).__name__}{index_str}:",
-            *utils.pretty_dict_line_strs(self.to_dict()),
+            *pretty_dict_line_strs(self.to_dict()),
         ]
 
     def __str__(self) -> str:
@@ -97,7 +98,7 @@ class ServerInfo:
         return "\n".join(
             [
                 f"{type(self).__name__}:",
-                *utils.pretty_dict_line_strs(d),
+                *pretty_dict_line_strs(d),
                 "  sensor_infos:",
                 *sensor_infos_strs,
             ]

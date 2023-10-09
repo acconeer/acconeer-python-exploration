@@ -9,12 +9,12 @@ import warnings
 
 import attrs
 
+from acconeer.exptool._core.class_creation import pretty_dict_line_strs
 from acconeer.exptool.a121._core.utils import (
     EntityJSONEncoder,
     convert_value,
     is_divisor_of,
     is_multiple_of,
-    pretty_dict_line_strs,
 )
 
 from .config_enums import PRF, Profile
