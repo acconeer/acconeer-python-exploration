@@ -12,6 +12,7 @@ from typing import Any, Iterator, Optional, Tuple, Type, Union
 import attrs
 from serial.serialutil import SerialException
 
+from acconeer.exptool._core.communication.message import Message, MessageT
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool._links import BufferedLink, ExploreSerialLink, NullLinkError
 from acconeer.exptool.a121._core.entities import (
@@ -33,14 +34,12 @@ from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
 from .client import Client, ClientCreationError, ClientError
 from .common_client import CommonClient
-from .communication_protocol import CommunicationProtocol
 from .exploration_protocol import (
     ExplorationProtocol,
     ServerError,
     get_exploration_protocol,
     messages,
 )
-from .message import Message, MessageT
 from .utils import autodetermine_client_link, get_calibrations_provided, link_factory
 
 
@@ -51,7 +50,7 @@ class ExplorationClient(CommonClient, register=True):
     _link: BufferedLink
     _default_link_timeout: float
     _link_timeout: float
-    _protocol: Type[CommunicationProtocol]
+    _protocol: Type[ExplorationProtocol]
     _protocol_overridden: bool
     _tick_unwrapper: TickUnwrapper
     _server_info: Optional[ServerInfo]
@@ -85,7 +84,7 @@ class ExplorationClient(CommonClient, register=True):
     def __init__(
         self,
         client_info: ClientInfo = ClientInfo(mock=None),
-        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
+        _override_protocol: Optional[Type[ExplorationProtocol]] = None,
     ) -> None:
         super().__init__(client_info)
         self._tick_unwrapper = TickUnwrapper()
@@ -95,7 +94,7 @@ class ExplorationClient(CommonClient, register=True):
         self._closed = False
         self._crashing = False
 
-        self._protocol: Type[CommunicationProtocol] = ExplorationProtocol
+        self._protocol = ExplorationProtocol
         self._protocol_overridden = False
 
         if _override_protocol is not None:

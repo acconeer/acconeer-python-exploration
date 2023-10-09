@@ -1,18 +1,19 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Any, Optional
+import typing as t
 
-from typing_extensions import Protocol
-
-from acconeer.exptool.a121._core.entities import SensorCalibration, SessionConfig
+import typing_extensions as te
 
 from .message import Message
 
 
-class CommunicationProtocol(Protocol):
+_ConfigT = t.TypeVar("_ConfigT", contravariant=True)
+
+
+class CommunicationProtocol(te.Protocol[_ConfigT]):
     end_sequence: bytes
 
     @classmethod
@@ -26,11 +27,7 @@ class CommunicationProtocol(Protocol):
         ...
 
     @classmethod
-    def setup_command(
-        cls,
-        session_config: SessionConfig,
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
-    ) -> bytes:
+    def setup_command(cls, config: _ConfigT) -> bytes:
         """The `setup` command."""
         ...
 
@@ -49,6 +46,6 @@ class CommunicationProtocol(Protocol):
         ...
 
     @classmethod
-    def parse_message(cls, header: dict[str, Any], payload: bytes) -> Message:
+    def parse_message(cls, header: dict[str, t.Any], payload: bytes) -> Message:
         """Parses any supported Message given a header and a payload"""
         ...

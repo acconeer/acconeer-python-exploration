@@ -9,5 +9,4 @@ from .exploration_protocol import (
     ServerError,
     get_exploration_protocol,
 )
-from .message import Message, MessageT
 from .mock_client import MockClient

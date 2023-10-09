@@ -7,7 +7,7 @@ import typing as t
 import attrs
 import typing_extensions as te
 
-from acconeer.exptool.a121._core.communication.message import Message
+from acconeer.exptool._core.communication.message import Message
 
 from .parse_error import ParseError
 
