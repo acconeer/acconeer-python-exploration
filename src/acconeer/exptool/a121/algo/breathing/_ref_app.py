@@ -143,7 +143,9 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         if self.started:
             raise RuntimeError("Already started")
 
-        self.metadata = self.client.setup_session(self.sensor_config)
+        self.metadata = self.client.setup_session(
+            a121.SessionConfig({self.sensor_id: self.sensor_config})
+        )
 
         assert not isinstance(self.metadata, list)
 
