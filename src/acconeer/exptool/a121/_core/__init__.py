@@ -1,9 +1,10 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
+from acconeer.exptool._core.communication.client import ClientError
+
 from .communication import (
     Client,
-    ClientError,
     ServerError,
 )
 from .entities import (

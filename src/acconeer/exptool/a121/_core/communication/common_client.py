@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Optional, Union
 
+from acconeer.exptool._core.communication.client import ClientError
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -15,40 +16,17 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.recording import Recorder
 from acconeer.exptool.a121._core.utils import unextend
 
-from .client import Client, ClientError
+from .client import Client
 
 
 class CommonClient(Client, register=False):
-    _client_info: ClientInfo
-    _calibrations_provided: dict[int, bool]
     _metadata: Optional[list[dict[int, Metadata]]]
-    _recorder: Optional[Recorder]
-    _sensor_calibrations: Optional[dict[int, SensorCalibration]]
-    _session_config: Optional[SessionConfig]
-    _session_is_started: bool
-
-    def _assert_connected(self) -> None:
-        if not self.connected:
-            raise ClientError("Client is not connected.")
-
-    def _assert_session_setup(self) -> None:
-        self._assert_connected()
-        if not self.session_is_setup:
-            raise ClientError("Session is not set up.")
-
-    def _assert_session_started(self) -> None:
-        self._assert_session_setup()
-        if not self.session_is_started:
-            raise ClientError("Session is not started.")
 
     def __init__(self, client_info: ClientInfo) -> None:
-        self._client_info = client_info
-        self._calibrations_provided = {}
-        self._metadata = None
-        self._recorder = None
-        self._sensor_calibrations = None
-        self._session_is_started = False
-        self._session_config = None
+        super().__init__(client_info)
+        self._sensor_calibrations: Optional[dict[int, SensorCalibration]] = None
+        self._calibrations_provided: dict[int, bool] = {}
+        self._session_config: Optional[SessionConfig] = None
 
     def attach_recorder(self, recorder: Recorder) -> None:
         if self.session_is_started:
@@ -103,9 +81,9 @@ class CommonClient(Client, register=False):
         if self._recorder is not None:
             self._recorder._stop_session()
 
-    def _recorder_sample(self, extended_results: list[dict[int, Result]]) -> None:
+    def _recorder_sample(self, result: list[dict[int, Result]]) -> None:
         if self._recorder is not None:
-            self._recorder._sample(extended_results)
+            self._recorder._sample(result)
 
     def _return_results(
         self, extended_results: list[dict[int, Result]]
@@ -114,18 +92,6 @@ class CommonClient(Client, register=False):
             return extended_results
         else:
             return unextend(extended_results)
-
-    @property
-    def session_is_setup(self) -> bool:
-        return self._metadata is not None
-
-    @property
-    def session_is_started(self) -> bool:
-        return self._session_is_started
-
-    @property
-    def client_info(self) -> ClientInfo:
-        return self._client_info
 
     @property
     def session_config(self) -> SessionConfig:

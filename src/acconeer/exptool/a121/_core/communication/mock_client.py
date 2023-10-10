@@ -8,8 +8,10 @@ from typing import Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
+import typing_extensions as te
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.communication import ClientCreationError, ClientError
 from acconeer.exptool._core.entities import (
     ClientInfo,
     MockInfo,
@@ -30,7 +32,6 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.utils import unextend
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
-from .client import Client, ClientCreationError, ClientError
 from .common_client import CommonClient
 from .utils import get_calibrations_provided
 
@@ -89,7 +90,7 @@ class MockClient(CommonClient, register=True):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
-    ) -> Client:
+    ) -> te.Self:
         if mock is None:
             raise ClientCreationError
 
@@ -215,7 +216,7 @@ class MockClient(CommonClient, register=True):
             result_list.append(result_dict)
         return result_list
 
-    def setup_session(
+    def setup_session(  # type: ignore[override]
         self,
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
@@ -263,7 +264,7 @@ class MockClient(CommonClient, register=True):
         self._start_time = time.perf_counter()
         self._mock_next_data_time = self._start_time
 
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:
+    def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         self._assert_session_started()
 
         if self._metadata is None:

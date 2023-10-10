@@ -4,9 +4,9 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, List, Optional, Type, Union
+import typing as t
 
-from acconeer.exptool._core.entities import ClientInfo
+from acconeer.exptool._core.communication import client
 from acconeer.exptool.a121._core.entities import (
     Metadata,
     Result,
@@ -18,84 +18,22 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.recording import Recorder
 
 
-class ClientError(Exception):
-    pass
-
-
-class ClientCreationError(Exception):
-    pass
-
-
-class ClientABCWithGoodError(abc.ABC):
-    def __new__(cls, *args: Any, **kwargs: Any) -> ClientABCWithGoodError:
-        try:
-            return super().__new__(cls)
-        except TypeError:  # te here is the "Can't instantiate ..."-error
-            if cls == Client:
-                raise ClientCreationError(
-                    "Client cannot be instantiated, use Client.open()"
-                ) from None
-            else:
-                raise
-
-
-class Client(ClientABCWithGoodError):
-
-    __registry: List[Type[Client]] = []
-
-    @classmethod
-    def open(
-        cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
-    ) -> Client:
-        """
-        Open a new client
-        """
-        if len([e for e in [ip_address, serial_port, usb_device, mock] if e is not None]) > 1:
-            raise ValueError("Only one connection can be selected")
-
-        for subclass in cls.__registry:
-            try:
-                return subclass.open(
-                    ip_address,
-                    tcp_port,
-                    serial_port,
-                    usb_device,
-                    mock,
-                    override_baudrate,
-                )
-            except ClientCreationError:
-                continue
-
-        # This should not happen since the current implementation
-        # only has two clients which are mutual exclusive.
-        # * The mock client (mock is not None)
-        # * The exploration client (mock is None)
-        raise ClientCreationError("No client could be created")
-
-    @classmethod
-    def __init_subclass__(cls, *, register: bool, **kwargs: Any) -> None:
-        """
-        Registers a subclass if register == True
-
-        Subclasses specifies whether they should be registered in the
-        "inherintance list"; class ClientSubclass(Client, register=True)
-        """
-        super.__init_subclass__(**kwargs)
-        if register:
-            cls.__registry.append(cls)
-
+class Client(
+    client.Client[
+        SessionConfig,  # Config type
+        t.List[t.Dict[int, Metadata]],  # Metadata type
+        t.List[t.Dict[int, Result]],  # Result type
+        ServerInfo,  # Server info type
+        Recorder,  # Recorder type
+    ],
+    register=False,
+):
     @abc.abstractmethod
-    def setup_session(
+    def setup_session(  # type: ignore[override]
         self,
-        config: Union[SensorConfig, SessionConfig],
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
-    ) -> Union[Metadata, list[dict[int, Metadata]]]:
+        config: t.Union[SensorConfig, SessionConfig],
+        calibrations: t.Optional[dict[int, SensorCalibration]] = None,
+    ) -> t.Union[Metadata, list[dict[int, Metadata]]]:
         """Sets up the session specified by ``config``.
 
         :param config: The session to set up.
@@ -110,19 +48,7 @@ class Client(ClientABCWithGoodError):
         ...
 
     @abc.abstractmethod
-    def start_session(self) -> None:
-        """Starts the already set up session.
-
-        After this call, the server starts streaming data to the client.
-
-        :param recorder:
-            An optional ``Recorder``, which samples every ``get_next()``
-        :raises: ``ClientError`` if ``Client``'s  session is not set up.
-        """
-        ...
-
-    @abc.abstractmethod
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:
+    def get_next(self) -> t.Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         """Gets results from the server.
 
         :returns:
@@ -131,60 +57,6 @@ class Client(ClientABCWithGoodError):
         :raises:
             ``ClientError`` if ``Client``'s session is not started.
         """
-        ...
-
-    @abc.abstractmethod
-    def stop_session(self) -> None:
-        """Stops an on-going session
-
-        :raises:
-            ``ClientError`` if ``Client``'s session is not started.
-        """
-        ...
-
-    @abc.abstractmethod
-    def attach_recorder(self, recorder: Recorder) -> None:
-        """Attaches a recorder to this client."""
-        ...
-
-    @abc.abstractmethod
-    def detach_recorder(self) -> Optional[Recorder]:
-        """Detaches and returns the attached recorder (if present)."""
-        ...
-
-    @abc.abstractmethod
-    def close(self) -> None:
-        """Closes the connection to the host"""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def connected(self) -> bool:
-        """Whether this Client is connected."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def session_is_setup(self) -> bool:
-        """Whether this Client has a session set up."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def session_is_started(self) -> bool:
-        """Whether this Client's session is started."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def server_info(self) -> ServerInfo:
-        """The ``ServerInfo``."""
-        ...
-
-    @property
-    @abc.abstractmethod
-    def client_info(self) -> ClientInfo:
-        """The ``ClientInfo``."""
         ...
 
     @property
@@ -239,5 +111,5 @@ class Client(ClientABCWithGoodError):
     def __enter__(self) -> Client:
         return self
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(self, *_: t.Any) -> None:
         self.close()

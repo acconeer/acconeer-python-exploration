@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.communication import ClientError
 
 
 CLIENT_PARAMETRIZE = [
@@ -47,7 +48,7 @@ class CanAttachAndDetachRecorder:
     def test_can_only_have_one_recorder_attached_at_a_time(self, client, h5_recorder):
         client.attach_recorder(h5_recorder)
 
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             client.attach_recorder(h5_recorder)
 
 
@@ -55,11 +56,11 @@ class CannotPlayAroundWithRecorder:
     """Mixin test cases for Client's Recorder handling in all sad paths"""
 
     def test_cannot_attach_a_recorder(self, client, h5_recorder):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             client.attach_recorder(h5_recorder)
 
     def test_cannot_detach_a_recorder(self, client, h5_recorder):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             client.detach_recorder()
 
 
@@ -78,23 +79,23 @@ class TestAClosedClient(CannotPlayAroundWithRecorder):
         assert not client.session_is_started
 
     def test_cannot_be_started(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             client.start_session()
 
     def test_cannot_get_next_result(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.get_next()
 
     def test_doesnt_have_server_info(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.server_info
 
     def test_doesnt_have_session_config(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.session_config
 
     def test_doesnt_have_any_metadata(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.extended_metadata
 
 
@@ -116,19 +117,19 @@ class TestAConnectedClient(CanAttachAndDetachRecorder):
         assert not client.session_is_started
 
     def test_cannot_start_session(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             client.start_session()
 
     def test_cannot_get_next(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.get_next()
 
     def test_cannot_access_session_config(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.session_config
 
     def test_cannot_access_metadata(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.extended_metadata
 
 
@@ -155,7 +156,7 @@ class TestASetupClient(CanAttachAndDetachRecorder):
         assert client.extended_metadata is not None
 
     def test_cannot_get_next(self, client):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             _ = client.get_next()
 
     def test_can_be_setup_again(self, client):
@@ -336,7 +337,7 @@ class TestAStartedClient(CannotPlayAroundWithRecorder):
         assert not client.session_is_started
 
     def test_cannot_start_again(self, client_with_recorder):
-        with pytest.raises(a121.ClientError):
+        with pytest.raises(ClientError):
             client_with_recorder.start_session()
 
     def test_can_stop_and_start_to_create_new_sessions_in_the_recorder(

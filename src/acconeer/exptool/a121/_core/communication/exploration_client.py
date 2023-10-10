@@ -7,17 +7,20 @@ import contextlib
 import json
 import logging
 import time
-from typing import Any, Iterator, Optional, Tuple, Type, Union
+from typing import Any, Iterator, Optional, Tuple, Type, TypeVar, Union
 
 import attrs
+import typing_extensions as te
 from serial.serialutil import SerialException
 
-from acconeer.exptool._core.communication.links import (
+from acconeer.exptool._core.communication import (
     BufferedLink,
+    ClientCreationError,
+    ClientError,
     ExploreSerialLink,
+    Message,
     NullLinkError,
 )
-from acconeer.exptool._core.communication.message import Message, MessageT
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -36,7 +39,6 @@ from acconeer.exptool.a121._core.utils import (
 )
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
-from .client import Client, ClientCreationError, ClientError
 from .common_client import CommonClient
 from .exploration_protocol import (
     ExplorationProtocol,
@@ -47,6 +49,7 @@ from .exploration_protocol import (
 from .utils import autodetermine_client_link, get_calibrations_provided, link_factory
 
 
+_MessageT = TypeVar("_MessageT", bound=Message)
 log = logging.getLogger(__name__)
 
 
@@ -71,7 +74,7 @@ class ExplorationClient(CommonClient, register=True):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
-    ) -> Client:
+    ) -> te.Self:
         if mock is not None:
             raise ClientCreationError
 
@@ -238,7 +241,7 @@ class ExplorationClient(CommonClient, register=True):
         )
         self._link.baudrate = baudrate_to_use
 
-    def setup_session(
+    def setup_session(  # type: ignore[override]
         self,
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
@@ -287,16 +290,16 @@ class ExplorationClient(CommonClient, register=True):
             return unextend(self._metadata)
 
     def _send_command_and_wait_for_response(
-        self, command: bytes, response_type: Type[MessageT], timeout_s: Optional[float] = None
-    ) -> MessageT:
+        self, command: bytes, response_type: Type[_MessageT], timeout_s: Optional[float] = None
+    ) -> _MessageT:
         with self._close_before_reraise():
             self._link.send(command)
 
         return self._wait_for_response(response_type, timeout_s)
 
     def _wait_for_response(
-        self, message_type: Type[MessageT], timeout_s: Optional[float] = None
-    ) -> MessageT:
+        self, message_type: Type[_MessageT], timeout_s: Optional[float] = None
+    ) -> _MessageT:
         """Retrieves and applies messages until a message of type ``message_type`` is encountered.
 
         :param message_type: a subclass of ``Message``
@@ -345,7 +348,7 @@ class ExplorationClient(CommonClient, register=True):
         self._recorder_start_session()
         self._session_is_started = True
 
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:
+    def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         self._assert_session_started()
 
         result_message = self._wait_for_response(messages.ResultMessage)

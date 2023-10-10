@@ -9,9 +9,9 @@ from typing import Any, Iterator, Optional, Union
 
 import acconeer.exptool.a121._core.utils as core_utils
 from acconeer.exptool._core import ClientInfo
+from acconeer.exptool._core.communication.client import ClientError
 from acconeer.exptool.a121 import (
     Client,
-    ClientError,
     Metadata,
     Record,
     Recorder,
@@ -74,7 +74,7 @@ class _ReplayingClient(Client, register=False):
     def _open(self) -> None:
         pass
 
-    def setup_session(
+    def setup_session(  # type: ignore[override]
         self,
         config: Union[SensorConfig, SessionConfig],
         calibrations: Optional[dict[int, SensorCalibration]] = None,
@@ -95,7 +95,7 @@ class _ReplayingClient(Client, register=False):
         self._is_started = True
         self._origin_time = None
 
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:
+    def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         if not self.session_is_setup:
             raise ClientError("Session is not set up.")
 

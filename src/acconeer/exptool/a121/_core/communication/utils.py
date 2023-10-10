@@ -10,6 +10,7 @@ import attrs
 import acconeer.exptool as et
 from acconeer.exptool._core.communication import (
     BufferedLink,
+    ClientError,
     ExploreSerialLink,
     NullLink,
     SocketLink,
@@ -26,8 +27,6 @@ from acconeer.exptool.a121._core.entities import (
 )
 from acconeer.exptool.a121._core.utils import iterate_extended_structure
 from acconeer.exptool.utils import SerialDevice, USBDevice
-
-from .common_client import ClientError
 
 
 def get_one_serial_device() -> SerialDevice:
