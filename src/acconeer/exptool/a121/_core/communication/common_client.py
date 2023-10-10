@@ -18,7 +18,7 @@ from acconeer.exptool.a121._core.utils import unextend
 from .client import Client, ClientError
 
 
-class CommonClient(Client):
+class CommonClient(Client, register=False):
     _client_info: ClientInfo
     _calibrations_provided: dict[int, bool]
     _metadata: Optional[list[dict[int, Metadata]]]

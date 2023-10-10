@@ -35,8 +35,7 @@ from .common_client import CommonClient
 from .utils import get_calibrations_provided
 
 
-@Client._register
-class MockClient(CommonClient):
+class MockClient(CommonClient, register=True):
 
     TICKS_PER_SECOND = 1000000
     CALIBRATION_TEMPERATURE = 25

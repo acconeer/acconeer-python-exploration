@@ -27,7 +27,7 @@ class _StopReplay(Exception):
     pass
 
 
-class _ReplayingClient(Client):
+class _ReplayingClient(Client, register=False):
     def __init__(
         self,
         record: Record,

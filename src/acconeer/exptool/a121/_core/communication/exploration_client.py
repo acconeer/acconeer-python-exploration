@@ -47,8 +47,7 @@ from .utils import autodetermine_client_link, get_calibrations_provided, link_fa
 log = logging.getLogger(__name__)
 
 
-@Client._register
-class ExplorationClient(CommonClient):
+class ExplorationClient(CommonClient, register=True):
     _link: BufferedLink
     _default_link_timeout: float
     _link_timeout: float

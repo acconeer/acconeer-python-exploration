@@ -79,12 +79,16 @@ class Client(ClientABCWithGoodError):
         raise ClientCreationError("No client could be created")
 
     @classmethod
-    def _register(cls, subclass: Type[Client]) -> Type[Client]:
-        """Registers a subclass"""
-        if not issubclass(subclass, cls):
-            raise TypeError(f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}.")
-        cls.__registry.append(subclass)
-        return subclass
+    def __init_subclass__(cls, *, register: bool, **kwargs: Any) -> None:
+        """
+        Registers a subclass if register == True
+
+        Subclasses specifies whether they should be registered in the
+        "inherintance list"; class ClientSubclass(Client, register=True)
+        """
+        super.__init_subclass__(**kwargs)
+        if register:
+            cls.__registry.append(cls)
 
     @abc.abstractmethod
     def setup_session(
