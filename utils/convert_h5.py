@@ -9,7 +9,7 @@ import json
 import os
 import typing as t
 from pathlib import Path
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -369,15 +369,36 @@ class A121RecordTableConverter(TableConverter):
         print("=" * 60)
 
 
-def _check_files(input_file: Path, output_file: Path, force: bool) -> None:
-    if not os.path.exists(input_file):
-        print(f'The input file ("{input_file}") can not be found.')
-        exit(1)
+def _check_files(
+    input_file: Path, output_file: Union[Path, None], force: bool
+) -> Tuple[bool, str, Path, str, str]:
 
-    if os.path.exists(output_file) and not force:
-        print(f'The output file ("{output_file}") already exists.')
-        print('Overwrite existing file with "-f" or give different name for output file.')
-        exit(1)
+    files_ok = True
+    exit_text = ""
+    to_csv_sep = ","
+    output_suffix = (
+        ".xlsx" if output_file is None or output_file.suffix == "" else output_file.suffix
+    )
+
+    if output_suffix == ".tsv":
+        to_csv_sep = "\t"
+    output_stem = Path(input_file.stem if output_file is None else output_file.stem)
+    output_stem = input_file.stem if output_stem is None else output_stem
+    new_output_file = output_stem.with_suffix(output_suffix)
+
+    if not os.path.exists(input_file):
+        exit_text = str(f'The input file ("{input_file}") can not be found.')
+        files_ok = False
+
+    if os.path.exists(new_output_file) and not force:
+        exit_text_0 = str(f'The output file ("{output_file}") already exists.')
+        exit_text_1 = str(
+            'Overwrite existing file with "-f" or give different name for output file.'
+        )
+        exit_text = exit_text_0 + "\n" + exit_text_1
+        files_ok = False
+
+    return files_ok, exit_text, output_stem, output_suffix, to_csv_sep
 
 
 def load_file(input_file: str) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
@@ -401,25 +422,56 @@ def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: st
         return 1 if generation == "a121" else 0
 
 
+def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
+    df_config = pd.DataFrame()
+    sensor_config = session_config.sensor_config
+    update_rate = "Max" if session_config.update_rate is None else session_config.update_rate
+    frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
+    sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
+    configs = {
+        "extended": session_config.extended,
+        "update_rate": update_rate,
+        "sweep_rate": sweep_rate,
+        "frame_rate": frame_rate,
+        "sensor_id": session_config.sensor_id,
+        "continuous_sweep_mode": sensor_config.continuous_sweep_mode,
+        "double_buffering": sensor_config.double_buffering,
+        "inter_frame_idle_state": sensor_config.inter_frame_idle_state,
+        "inter_sweep_idle_state": sensor_config.inter_sweep_idle_state,
+        "sweeps_per_frame": sensor_config.sweeps_per_frame,
+        "start_point": sensor_config.subsweep.start_point,
+        "num_points": sensor_config.subsweep.num_points,
+        "step_length": sensor_config.subsweep.step_length,
+        "profile": sensor_config.subsweep.profile,
+        "hwaas": sensor_config.subsweep.hwaas,
+        "receiver_gain": sensor_config.subsweep.receiver_gain,
+        "enable_tx": sensor_config.subsweep.enable_tx,
+        "enable_loopback": sensor_config.subsweep.enable_loopback,
+        "phase_enhancement": sensor_config.subsweep.phase_enhancement,
+        "prf": sensor_config.subsweep.prf,
+    }
+
+    configs_array = np.array(list(configs.items()), dtype=object)
+    df_config = pd.DataFrame(configs_array)
+    return df_config
+
+
 def main() -> None:
     parser = ConvertToCsvArgumentParser()
     args = parser.parse_args()
 
-    input_stem = args.input_file.stem
-    output_file = args.output_file
-    output_suffix = (
-        ".xlsx" if output_file is None or output_file.suffix == "" else output_file.suffix
+    # File checking and formatting from args
+    files_ok, exit_text, output_stem, output_suffix, to_csv_sep = _check_files(
+        args.input_file, args.output_file, args.force
     )
-    output_stem = Path(input_stem if output_file is None else output_file.stem)
-    output_file = output_stem.with_suffix(output_suffix)
-
-    _check_files(args.input_file, output_file, args.force)
-    print(f"Reading from {args.input_file!r} ... \n")
-    record, generation = load_file(args.input_file)
+    input_file = args.input_file
+    if not (files_ok):
+        print(exit_text)
+        exit(1)
+    print(f"Reading from {input_file!r} ... \n")
+    record, generation = load_file(input_file)
     sensor = get_default_sensor_id_or_index(args, generation)
-
     table_converter = TableConverter.from_record(record)
-
     try:
         data_table = table_converter.convert(sensor=sensor)
     except Exception as e:
@@ -435,15 +487,34 @@ def main() -> None:
     # Create a Pandas DataFrame from the data
     df_data = pd.DataFrame(data_table)
 
+    # Create a Pandas DataFrame from the configurations
+    if isinstance(record, a121.Record):
+        df_config = configs_as_dataframe(record.session_config)
+    else:
+        df_config = pd.DataFrame()
+
+    # Create a Pandas DataFrame from the configurations
+    df_all = [df_data, df_config]
+    sheet_name = ["Sparse IQ data", "Configurations"]
+
     # Save the DataFrame to a CSV or excel file
     if output_suffix == ".xlsx":
-        df_data.to_excel(output_file, sheet_name="Data", index=False, header=True)
+        # Write each DataFrame to a separate sheet using to_excel
+        for idx, df in enumerate(df_all):
+            df.to_excel(
+                Path(str(output_stem) + "_" + sheet_name[idx] + output_suffix),
+                sheet_name=sheet_name[idx],
+                index_label="Index",
+            )
 
-    if output_suffix == ".csv":
-        df_data.to_csv(output_file, index=False, header=True)
-
-    if output_suffix == ".tsv":
-        df_data.to_csv(output_file, index=False, header=True, sep="\t")
+    if output_suffix == ".csv" or output_suffix == ".tsv":
+        # Write each DataFrame to a separate sheet using to_csv
+        for idx, df in enumerate(df_all):
+            df.to_csv(
+                Path(str(output_stem) + "_" + sheet_name[idx] + output_suffix),
+                sep=to_csv_sep,
+                index_label="Index",
+            )
 
     print("Success!")
 
