@@ -57,6 +57,13 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    A121 <api/a121>
 
 .. toctree::
+   :caption: Resource calculator
+   :maxdepth: 1
+   :hidden:
+
+   Resource Calculator <resource_calc>
+
+.. toctree::
    :caption: File format reference
    :maxdepth: 1
    :hidden:
