@@ -69,7 +69,6 @@ class ExplorationClient(CommonClient):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
-        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> Client:
         if mock is not None:
             raise ClientCreationError
@@ -82,7 +81,7 @@ class ExplorationClient(CommonClient):
             usb_device=usb_device,
         )
 
-        return cls(client_info=client_info, _override_protocol=_override_protocol)
+        return cls(client_info=client_info)
 
     def __init__(
         self,

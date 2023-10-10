@@ -17,8 +17,6 @@ from acconeer.exptool.a121._core.entities import (
 )
 from acconeer.exptool.a121._core.recording import Recorder
 
-from .communication_protocol import CommunicationProtocol
-
 
 class ClientError(Exception):
     pass
@@ -54,7 +52,6 @@ class Client(ClientABCWithGoodError):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
-        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> Client:
         """
         Open a new client
@@ -71,7 +68,6 @@ class Client(ClientABCWithGoodError):
                     usb_device,
                     mock,
                     override_baudrate,
-                    _override_protocol,
                 )
             except ClientCreationError:
                 continue

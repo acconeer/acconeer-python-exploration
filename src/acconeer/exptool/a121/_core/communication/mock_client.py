@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -32,7 +32,6 @@ from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
 from .client import Client, ClientCreationError, ClientError
 from .common_client import CommonClient
-from .communication_protocol import CommunicationProtocol
 from .utils import get_calibrations_provided
 
 
@@ -91,7 +90,6 @@ class MockClient(CommonClient):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
-        _override_protocol: Optional[Type[CommunicationProtocol]] = None,
     ) -> Client:
         if mock is None:
             raise ClientCreationError
