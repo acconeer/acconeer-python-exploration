@@ -329,8 +329,16 @@ class Detector:
         self.v_current = v_current
 
     def get_obstacle_angle(self, v_measured: float) -> float:
-        """Convert the measured speed of an object to an angle"""
-        return float(np.arccos(v_measured / self.v_current))
+        """
+        Convert the measured speed of an object to an angle.
+
+        The convention is that a robot moving forward has a positive robot speed
+        and an object moving towards from the sensor has a negative measured speed.
+        Therefore, for an object straight in front of the sensor, v_measured is
+        approximately -v_current and the obstacle angle is positive and close
+        to zero.
+        """
+        return float(np.arccos(-v_measured / self.v_current))
 
     def stop(self) -> Any:
         """Stops the measurement session."""

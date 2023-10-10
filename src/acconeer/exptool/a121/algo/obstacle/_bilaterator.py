@@ -22,9 +22,11 @@ DISTANCE_LIMIT_FACTOR = 1.2
 
 
 class Bilaterator:
-    """Bilateration class that aggregates the output from two obstacle detectors
+    """
+    Bilateration class that aggregates the output from two obstacle detectors
 
-    Aggregates result, based on selected peak sorting strategy, from underlying Processors objects.
+    The convention is positive bilateration angle if the distance is greater
+    to the second sensor.
     """
 
     def __init__(self, sensor_seperation: float):
@@ -37,7 +39,7 @@ class Bilaterator:
         if not target_list_1 or not target_list_2:
             return BilateratorResult(beta_degs=[], velocities_m_s=[], distances_m=[])
 
-        dist_diff = target_list_1[0].distance - target_list_2[0].distance
+        dist_diff = target_list_2[0].distance - target_list_1[0].distance
         dist_mean = (target_list_1[0].distance + target_list_2[0].distance) / 2
         velocity_mean = (target_list_1[0].velocity + target_list_2[0].velocity) / 2
 
