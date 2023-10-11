@@ -317,7 +317,12 @@ class Detector:
         if self.detector_config.enable_bilateration:
             target_list_1 = processor_results[self.sensor_ids[0]].targets
             target_list_2 = processor_results[self.sensor_ids[1]].targets
-            bilateration_result = self.bilaterator.process(target_list_1, target_list_2)
+            time_offset = (
+                results[1][self.sensor_ids[1]].tick_time - results[0][self.sensor_ids[0]].tick_time
+            )
+            bilateration_result = self.bilaterator.process(
+                target_list_1, target_list_2, time_offset
+            )
         else:
             bilateration_result = None
 

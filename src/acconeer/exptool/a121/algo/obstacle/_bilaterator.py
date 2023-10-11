@@ -33,14 +33,18 @@ class Bilaterator:
         self.sensor_seperation = sensor_seperation
 
     def process(
-        self, target_list_1: list[Target], target_list_2: list[Target]
+        self, target_list_1: list[Target], target_list_2: list[Target], time_offset: float
     ) -> BilateratorResult:
 
         if not target_list_1 or not target_list_2:
             return BilateratorResult(beta_degs=[], velocities_m_s=[], distances_m=[])
 
-        dist_diff = target_list_2[0].distance - target_list_1[0].distance
-        dist_mean = (target_list_1[0].distance + target_list_2[0].distance) / 2
+        # Correct the range to sensor 1 due to time delay during measurements
+        dist1 = target_list_1[0].distance + target_list_1[0].velocity * time_offset
+        dist2 = target_list_2[0].distance
+
+        dist_diff = dist2 - dist1
+        dist_mean = (dist1 + dist2) / 2
         velocity_mean = (target_list_1[0].velocity + target_list_2[0].velocity) / 2
 
         if np.abs(dist_diff) > DISTANCE_LIMIT_FACTOR * self.sensor_seperation:
