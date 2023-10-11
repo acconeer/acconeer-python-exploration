@@ -1,5 +1,13 @@
 # Changelog
 
+## v7.5.1
+
+###
+- Mention resource calculator in docs
+
+### Changed
+- Bump SDK version for A121
+
 ## v7.5.0
 
 ### Added
