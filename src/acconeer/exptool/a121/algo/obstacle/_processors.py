@@ -142,7 +142,6 @@ class SubsweepProcessor:
         self.num_points = sensor_config.num_points
         self.dv = (
             PERCEIVED_WAVELENGTH
-            / 2
             / self.sensor_config.sweeps_per_frame
             * self.sensor_config.sweep_rate
         )
