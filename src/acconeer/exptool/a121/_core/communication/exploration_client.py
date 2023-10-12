@@ -39,7 +39,7 @@ from acconeer.exptool.a121._core.utils import (
 )
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
-from .common_client import CommonClient
+from .client import Client
 from .exploration_protocol import (
     ExplorationProtocol,
     ServerError,
@@ -53,7 +53,7 @@ _MessageT = TypeVar("_MessageT", bound=Message)
 log = logging.getLogger(__name__)
 
 
-class ExplorationClient(CommonClient, register=True):
+class ExplorationClient(Client, register=True):
     _link: BufferedLink
     _default_link_timeout: float
     _link_timeout: float

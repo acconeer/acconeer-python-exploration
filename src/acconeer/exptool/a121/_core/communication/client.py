@@ -6,7 +6,9 @@ from __future__ import annotations
 import abc
 import typing as t
 
-from acconeer.exptool._core.communication import client
+from acconeer.exptool._core.communication import Client as BaseClient
+from acconeer.exptool._core.communication import ClientError
+from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
     Metadata,
     Result,
@@ -16,10 +18,11 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
 )
 from acconeer.exptool.a121._core.recording import Recorder
+from acconeer.exptool.a121._core.utils import unextend
 
 
 class Client(
-    client.Client[
+    BaseClient[
         SessionConfig,  # Config type
         t.List[t.Dict[int, Metadata]],  # Metadata type
         t.List[t.Dict[int, Result]],  # Result type
@@ -28,6 +31,74 @@ class Client(
     ],
     register=False,
 ):
+    def __init__(self, client_info: ClientInfo) -> None:
+        super().__init__(client_info)
+        self._sensor_calibrations: t.Optional[dict[int, SensorCalibration]] = None
+        self._calibrations_provided: dict[int, bool] = {}
+        self._session_config: t.Optional[SessionConfig] = None
+
+    def _return_results(
+        self, extended_results: list[dict[int, Result]]
+    ) -> t.Union[Result, list[dict[int, Result]]]:
+        if self.session_config.extended:
+            return extended_results
+        else:
+            return unextend(extended_results)
+
+    @property
+    def session_config(self) -> SessionConfig:
+        """The :class:`SessionConfig` for the current session"""
+        self._assert_session_setup()
+        assert self._session_config is not None  # Should never happen if session is setup
+        return self._session_config
+
+    @property
+    def extended_metadata(self) -> list[dict[int, Metadata]]:
+        """The extended :class:`Metadata` for the current session"""
+        self._assert_session_setup()
+        assert self._metadata is not None  # Should never happen if session is setup
+        return self._metadata
+
+    @property
+    def calibrations(self) -> dict[int, SensorCalibration]:
+        """
+        Returns a dict with a :class:`SensorCalibration` per used
+        sensor for the current session:
+
+        For example, if session_setup was called with
+
+        .. code-block:: python
+
+            client.setup_session(
+                SessionConfig({1: SensorConfig(), 3: SensorConfig()}),
+            )
+
+        this attribute will return {1: SensorCalibration(...), 3: SensorCalibration(...)}
+        """
+        self._assert_session_setup()
+
+        if not self._sensor_calibrations:
+            raise ClientError("Server did not provide calibration")
+
+        return self._sensor_calibrations
+
+    @property
+    def calibrations_provided(self) -> dict[int, bool]:
+        """
+        Returns whether a calibration was provided for each sensor in
+        setup_session. For example, if setup_session was called with
+
+        .. code-block:: python
+
+            client.setup_session(
+                SessionConfig({1: SensorConfig(), 2: SensorConfig()}),
+                calibrations={2: SensorCalibration(...)},
+            )
+
+        this attribute will return ``{1: False, 2: True}``
+        """
+        return self._calibrations_provided
+
     @abc.abstractmethod
     def setup_session(  # type: ignore[override]
         self,
@@ -59,54 +130,35 @@ class Client(
         """
         ...
 
-    @property
-    @abc.abstractmethod
-    def session_config(self) -> SessionConfig:
-        """The :class:`SessionConfig` for the current session"""
-        ...
+    def _recorder_start(self, recorder: Recorder) -> None:
+        recorder._start(
+            client_info=self.client_info,
+            server_info=self.server_info,
+        )
 
-    @property
-    @abc.abstractmethod
-    def extended_metadata(self) -> list[dict[int, Metadata]]:
-        """The extended :class:`Metadata` for the current session"""
-        ...
+    def _recorder_start_session(self) -> None:
+        if self._recorder is not None:
+            calibrations_provided: t.Optional[dict[int, bool]] = self.calibrations_provided
+            try:
+                calibrations = self.calibrations
+            except ClientError:
+                calibrations = None
+                calibrations_provided = None
 
-    @property
-    @abc.abstractmethod
-    def calibrations(self) -> dict[int, SensorCalibration]:
-        """
-        Returns a dict with a :class:`SensorCalibration` per used
-        sensor for the current session:
-
-        For example, if session_setup was called with
-
-        .. code-block:: python
-
-            client.setup_session(
-                SessionConfig({1: SensorConfig(), 3: SensorConfig()}),
+            self._recorder._start_session(
+                config=self.session_config,
+                metadata=self.extended_metadata,
+                calibrations=calibrations,
+                calibrations_provided=calibrations_provided,
             )
 
-        this attribute will return {1: SensorCalibration(...), 3: SensorCalibration(...)}
-        """
-        ...
+    def _recorder_sample(self, result: list[dict[int, Result]]) -> None:
+        if self._recorder is not None:
+            self._recorder._sample(result)
 
-    @property
-    @abc.abstractmethod
-    def calibrations_provided(self) -> dict[int, bool]:
-        """
-        Returns whether a calibration was provided for each sensor in
-        setup_session. For example, if setup_session was called with
-
-        .. code-block:: python
-
-            client.setup_session(
-                SessionConfig({1: SensorConfig(), 2: SensorConfig()}),
-                calibrations={2: SensorCalibration(...)},
-            )
-
-        this attribute will return ``{1: False, 2: True}``
-        """
-        ...
+    def _recorder_stop_session(self) -> None:
+        if self._recorder is not None:
+            self._recorder._stop_session()
 
     def __enter__(self) -> Client:
         return self

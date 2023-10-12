@@ -14,7 +14,6 @@ from acconeer.exptool.a121 import (
     Client,
     Metadata,
     Record,
-    Recorder,
     Result,
     SensorCalibration,
     SensorConfig,
@@ -134,12 +133,6 @@ class _ReplayingClient(Client, register=False):
 
         self._session_idx += 1
         self._is_started = False
-
-    def attach_recorder(self, recorder: Recorder) -> None:
-        pass
-
-    def detach_recorder(self) -> Optional[Recorder]:
-        return None
 
     def close(self) -> None:
         pass

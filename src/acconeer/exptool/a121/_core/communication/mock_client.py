@@ -32,11 +32,11 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.utils import unextend
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
-from .common_client import CommonClient
+from .client import Client
 from .utils import get_calibrations_provided
 
 
-class MockClient(CommonClient, register=True):
+class MockClient(Client, register=True):
 
     TICKS_PER_SECOND = 1000000
     CALIBRATION_TEMPERATURE = 25

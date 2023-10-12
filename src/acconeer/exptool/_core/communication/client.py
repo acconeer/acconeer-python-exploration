@@ -16,6 +16,7 @@ _MetadataT = t.TypeVar("_MetadataT")
 _ResultT = t.TypeVar("_ResultT")
 _ServerInfoT = t.TypeVar("_ServerInfoT")
 
+
 _RecorderT = t.TypeVar("_RecorderT")
 
 
@@ -108,6 +109,52 @@ class Client(
         if register:
             cls.__registry.append(cls)
 
+    def attach_recorder(self, recorder: _RecorderT) -> None:
+        if self.session_is_started:
+            raise ClientError("Cannot attach a recorder when session is started.")
+
+        if not self.connected:
+            raise ClientError("Cannot attach a recorder to a closed client")
+
+        if self._recorder is not None:
+            raise ClientError(
+                "Client already has a recorder attached. "
+                + "Try detaching the current recorder before attaching a new recorder."
+            )
+
+        self._recorder = recorder
+        self._recorder_start(recorder)
+
+    @abc.abstractmethod
+    def _recorder_start(self, recorder: _RecorderT) -> None:
+        ...
+
+    @abc.abstractmethod
+    def _recorder_start_session(self) -> None:
+        ...
+
+    @abc.abstractmethod
+    def _recorder_sample(self, result: _ResultT) -> None:
+        ...
+
+    @abc.abstractmethod
+    def _recorder_stop_session(self) -> None:
+        ...
+
+    def detach_recorder(self) -> t.Optional[_RecorderT]:
+        if self.session_is_started:
+            raise ClientError("Cannot detach a recorder when session is started.")
+
+        if not self.connected:
+            raise ClientError("Cannot detach a recorder from a closed client")
+
+        if self._recorder is None:
+            return None
+        else:
+            previously_attached_recorder = self._recorder
+            self._recorder = None
+            return previously_attached_recorder
+
     @abc.abstractmethod
     def setup_session(self, config: _ConfigT) -> _MetadataT:
         ...
@@ -138,14 +185,6 @@ class Client(
     @abc.abstractmethod
     def close(self) -> None:
         """Closes the connection to the host"""
-        ...
-
-    @abc.abstractmethod
-    def attach_recorder(self, recorder: _RecorderT) -> None:
-        ...
-
-    @abc.abstractmethod
-    def detach_recorder(self) -> t.Optional[_RecorderT]:
         ...
 
     @property
