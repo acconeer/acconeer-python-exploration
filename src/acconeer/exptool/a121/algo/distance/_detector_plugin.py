@@ -402,7 +402,7 @@ class PlotPlugin(PgPlotPlugin):
             self.main_peak_history_curve.setData([0])
 
         if 0 < strengths.size:
-            string_to_display = "Main peak strength : {:.1f}".format(strengths[0])
+            string_to_display = "Main peak strength : {:.1f} dB".format(strengths[0])
             self.history_plot_legend.addItem(self.main_peak_history_curve, string_to_display)
 
         for sec_peak_idx, curve in enumerate(self.minor_peaks_history_curves):
@@ -412,7 +412,7 @@ class PlotPlugin(PgPlotPlugin):
                 curve.setData([0])
 
             if sec_peak_idx + 1 <= num_minor_peaks:
-                string_to_display = "Minor peak strength : {:.1f}".format(
+                string_to_display = "Minor peak strength : {:.1f} dB".format(
                     strengths[sec_peak_idx + 1]
                 )
                 self.history_plot_legend.addItem(curve, string_to_display)
