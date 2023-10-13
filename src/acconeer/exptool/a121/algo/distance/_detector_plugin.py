@@ -85,6 +85,8 @@ class PluginPresetId(Enum):
 @attrs.frozen(kw_only=True)
 class SetupMessage(GeneralMessage):
     num_curves: int
+    start_m: float
+    end_m: float
     name: str = attrs.field(default="setup", init=False)
     recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
@@ -163,7 +165,13 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             context=self.shared_state.context,
         )
         self._detector_instance.start(recorder)
-        self.callback(SetupMessage(num_curves=len(self._detector_instance.processor_specs)))
+        self.callback(
+            SetupMessage(
+                num_curves=len(self._detector_instance.processor_specs),
+                start_m=self.shared_state.config.start_m,
+                end_m=self.shared_state.config.end_m,
+            )
+        )
 
     def end_session(self) -> None:
         assert self._detector_instance
@@ -225,7 +233,7 @@ class PlotPlugin(PgPlotPlugin):
         if isinstance(message, backend.PlotMessage):
             self._plot_job = message.result
         elif isinstance(message, SetupMessage):
-            self.setup(message.num_curves)
+            self.setup(message.num_curves, message.start_m, message.end_m)
             self._is_setup = True
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
@@ -239,10 +247,12 @@ class PlotPlugin(PgPlotPlugin):
         finally:
             self._plot_job = None
 
-    def setup(self, num_curves: int) -> None:
+    def setup(self, num_curves: int, start_m: float, end_m: float) -> None:
         self.plot_layout.clear()
 
         self.num_curves = num_curves
+        self.start_m = start_m
+        self.end_m = end_m
 
         self.main_peak_history = np.full(self._DISTANCE_HISTORY_LEN, fill_value=np.nan)
         self.minor_peaks_history = np.full(
@@ -430,9 +440,11 @@ class PlotPlugin(PgPlotPlugin):
 
         if min_vals:
             lims = self.distance_hist_smooth_lim.update([min(min_vals), max(max_vals)])
-            lower_lim = max(0.0, lims[0] - self._DISTANCE_HISTORY_SPAN_MARGIN)
-            upper_lim = lims[1] + self._DISTANCE_HISTORY_SPAN_MARGIN
-            self.dist_history_plot.setYRange(lower_lim, upper_lim)
+        else:
+            lims = self.distance_hist_smooth_lim.update([self.start_m, self.end_m])
+        lower_lim = max(0.0, lims[0] - self._DISTANCE_HISTORY_SPAN_MARGIN)
+        upper_lim = lims[1] + self._DISTANCE_HISTORY_SPAN_MARGIN
+        self.dist_history_plot.setYRange(lower_lim, upper_lim)
 
         # Update position of legend
         y_range = self.dist_history_plot.getAxis("left").range
