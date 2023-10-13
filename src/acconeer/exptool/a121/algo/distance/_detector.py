@@ -316,7 +316,7 @@ class DetectorConfig(AlgoConfigBase):
     A lower profile improves the radial resolution.
     """
 
-    close_range_leakage_cancellation: bool = attrs.field(default=True)
+    close_range_leakage_cancellation: bool = attrs.field(default=False)
     """Enable close range leakage cancellation logic.
 
     Close range leakage cancellation refers to the process of measuring close to the

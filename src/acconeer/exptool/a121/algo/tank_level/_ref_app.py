@@ -49,6 +49,7 @@ class RefAppConfig(DetectorConfig):
             end_m=self.end_m * 1.05,
             max_step_length=self.max_step_length,
             max_profile=self.max_profile,
+            close_range_leakage_cancellation=True,
             signal_quality=self.signal_quality,
             threshold_method=self.threshold_method,
             peaksorting_method=self.peaksorting_method,
