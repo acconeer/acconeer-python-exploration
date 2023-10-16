@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import attrs
+from serial.serialutil import SerialException
 
 import acconeer.exptool
 from acconeer.exptool._core.communication.comm_devices import (
@@ -22,6 +23,7 @@ from . import (
     ExploreSerialLink,
     LinkError,
     NullLink,
+    NullLinkError,
     SocketLink,
     USBLink,
 )
@@ -58,7 +60,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
     return NullLink()
 
 
-def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
+def autodetermine_client_info(client_info: ClientInfo) -> ClientInfo:
     error_message = ""
     try:
         usb_info = client_info.usb
@@ -85,3 +87,35 @@ def autodetermine_client_link(client_info: ClientInfo) -> ClientInfo:
         error_message += f"\nSerial: {str(exc)}"
 
     raise LinkError(f"Cannot auto detect:{error_message}")
+
+
+def ensure_connected_link(client_info: ClientInfo) -> tuple[BufferedLink, ClientInfo]:
+    """
+    Tries connecting a link defined by the given ClientInfo
+    before trying to autodetermine a link which can be used.
+
+    Returns the connected link and a new ClientInfo that describes the connected link.
+    """
+    link = link_factory(client_info)
+
+    try:
+        link.connect()
+        return link, client_info
+    except NullLinkError:
+        new_client_info = autodetermine_client_info(client_info)
+        return ensure_connected_link(new_client_info)
+    except SerialException as exc:
+        if "Permission denied" in str(exc):
+            text = "\n".join(
+                [
+                    "You are probably missing permissions to access the serial port.",
+                    "",
+                    "Run the setup script to fix it:",
+                    "$ python -m acconeer.exptool.setup",
+                    "",
+                    "Reboot for the changes to take effect.",
+                ]
+            )
+            raise LinkError(text) from exc
+        else:
+            raise

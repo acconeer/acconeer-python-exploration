@@ -11,7 +11,6 @@ from typing import Any, Iterator, Optional, Tuple, Type, TypeVar, Union
 
 import attrs
 import typing_extensions as te
-from serial.serialutil import SerialException
 
 from acconeer.exptool._core.communication import (
     BufferedLink,
@@ -19,12 +18,8 @@ from acconeer.exptool._core.communication import (
     ClientError,
     ExploreSerialLink,
     Message,
-    NullLinkError,
 )
-from acconeer.exptool._core.communication.links.helpers import (
-    autodetermine_client_link,
-    link_factory,
-)
+from acconeer.exptool._core.communication.links.helpers import ensure_connected_link
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -110,34 +105,9 @@ class ExplorationClient(Client, register=True):
             self._protocol = _override_protocol
             self._protocol_overridden = True
 
-        self._link = link_factory(self.client_info)
-        try:
-            self._connect_link()
-        except NullLinkError:
-            self._client_info = autodetermine_client_link(self.client_info)
-            self._link = link_factory(self.client_info)
-            self._connect_link()
+        (self._link, self._client_info) = ensure_connected_link(self.client_info)
 
         self._connect_client()
-
-    def _connect_link(self) -> None:
-        try:
-            self._link.connect()
-        except SerialException as exc:
-            if "Permission denied" in str(exc):
-                text = "\n".join(
-                    [
-                        "You are probably missing permissions to access the serial port.",
-                        "",
-                        "Run the setup script to fix it:",
-                        "$ python -m acconeer.exptool.setup",
-                        "",
-                        "Reboot for the changes to take effect.",
-                    ]
-                )
-                raise ClientError(text) from exc
-            else:
-                raise
 
     def _connect_client(self) -> None:
         self._message_stream = self._get_message_stream()
