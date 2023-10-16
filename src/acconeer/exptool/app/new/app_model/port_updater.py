@@ -9,7 +9,10 @@ from PySide6.QtCore import QObject, QThread, QTimerEvent, Signal, Slot
 
 
 if not TYPE_CHECKING:
-    from acconeer.exptool.utils import get_serial_devices, get_usb_devices
+    from acconeer.exptool._core.communication.comm_devices import (
+        get_serial_devices,
+        get_usb_devices,
+    )
 
 
 class PortUpdater(QObject):

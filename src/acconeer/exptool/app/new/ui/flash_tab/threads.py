@@ -15,6 +15,7 @@ from requests.cookies import RequestsCookieJar
 
 from PySide6.QtCore import QThread, Signal
 
+from acconeer.exptool._core.communication.comm_devices import CommDevice
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.flash import (
     ET_DIR,
@@ -26,7 +27,6 @@ from acconeer.exptool.flash import (
     get_cookies,
     login,
 )
-from acconeer.exptool.utils import CommDevice
 
 
 log = logging.getLogger(__name__)

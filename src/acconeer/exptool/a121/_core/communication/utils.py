@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 import attrs
 
-import acconeer.exptool as et
+import acconeer.exptool._core.communication.comm_devices
 from acconeer.exptool._core.communication import (
     BufferedLink,
     ClientError,
@@ -15,6 +15,10 @@ from acconeer.exptool._core.communication import (
     NullLink,
     SocketLink,
     USBLink,
+)
+from acconeer.exptool._core.communication.comm_devices import (
+    get_one_serial_device,
+    get_one_usb_device,
 )
 from acconeer.exptool._core.entities import (
     ClientInfo,
@@ -26,32 +30,6 @@ from acconeer.exptool.a121._core.entities import (
     SessionConfig,
 )
 from acconeer.exptool.a121._core.utils import iterate_extended_structure
-from acconeer.exptool.utils import SerialDevice, USBDevice
-
-
-def get_one_serial_device() -> SerialDevice:
-    acconeer_serial_devices: List[SerialDevice] = [
-        device for device in et.utils.get_serial_devices() if device.name is not None
-    ]
-
-    if not acconeer_serial_devices:
-        raise ClientError("No serial devices detected. Cannot auto detect.")
-    elif len(acconeer_serial_devices) > 1:
-        devices_string = "".join([f" - {dev}\n" for dev in acconeer_serial_devices])
-        raise ClientError("There are multiple devices detected. Specify one:\n" + devices_string)
-    else:
-        return acconeer_serial_devices[0]
-
-
-def get_one_usb_device(only_accessible: bool = False) -> USBDevice:
-    usb_devices = et.utils.get_usb_devices(only_accessible=only_accessible)
-    if not usb_devices:
-        raise ClientError("No USB devices detected. Cannot auto detect.")
-    elif len(usb_devices) > 1:
-        devices_string = "".join([f" - {dev}\n" for dev in usb_devices])
-        raise ClientError("There are multiple devices detected. Specify one:\n" + devices_string)
-    else:
-        return usb_devices[0]
 
 
 def link_factory(client_info: ClientInfo) -> BufferedLink:
@@ -67,8 +45,10 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
     if client_info.usb is not None:
         usb_device = None
         if client_info.usb.serial_number is not None:
-            usb_device = et.utils.get_usb_device_by_serial(
-                client_info.usb.serial_number, only_accessible=False
+            usb_device = (
+                acconeer.exptool._core.communication.comm_devices.get_usb_device_by_serial(
+                    client_info.usb.serial_number, only_accessible=False
+                )
             )
         else:
             usb_device = get_one_usb_device()

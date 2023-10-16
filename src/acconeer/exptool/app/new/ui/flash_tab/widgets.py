@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from acconeer.exptool._core.communication.comm_devices import CommDevice
 from acconeer.exptool.app import resources
 from acconeer.exptool.app.new._enums import ConnectionInterface
 from acconeer.exptool.app.new.app_model import AppModel
@@ -41,7 +42,6 @@ from acconeer.exptool.flash._products import (
     EVK_TO_PRODUCT_MAP,
     PRODUCT_NAME_TO_FLASH_MAP,
 )
-from acconeer.exptool.utils import CommDevice
 
 from .dialogs import FlashDialog, FlashLoginDialog, LicenseAgreementDialog, UserMessageDialog
 from .threads import AuthThread, BinDownloadThread

@@ -10,6 +10,7 @@ import serial
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
+from acconeer.exptool._core.communication.comm_devices import get_usb_devices
 from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
 from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
 from acconeer.exptool.flash._xc120._bootloader_comm import BLCommunication
@@ -18,7 +19,6 @@ from acconeer.exptool.flash._xc120._meta import (
     ACCONEER_XC120_BOOTLOADER_PID,
     ACCONEER_XC120_EXPLORATION_SERVER_PID,
 )
-from acconeer.exptool.utils import get_usb_devices
 
 
 try:

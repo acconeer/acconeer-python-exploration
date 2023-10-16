@@ -11,6 +11,7 @@ import tempfile
 import time
 
 import acconeer.exptool as et
+from acconeer.exptool._core.communication import comm_devices
 from acconeer.exptool.flash._bin_fetcher import (
     BIN_FETCH_PROMPT,
     clear_cookies,
@@ -78,14 +79,14 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
             raise ValueError("Unknown device type")
         serial_device_name = serial_device_name.upper()
         if (
-            isinstance(flash_device, et.utils.USBDevice)
+            isinstance(flash_device, comm_devices.USBDevice)
             and flash_device.pid in PRODUCT_PID_TO_FLASH_MAP.keys()
         ):
             PRODUCT_PID_TO_FLASH_MAP[flash_device.pid].flash(
                 flash_device, serial_device_name, image_path, progress_callback
             )
         elif (
-            isinstance(flash_device, et.utils.SerialDevice)
+            isinstance(flash_device, comm_devices.SerialDevice)
             and serial_device_name in PRODUCT_NAME_TO_FLASH_MAP.keys()
         ):
             PRODUCT_NAME_TO_FLASH_MAP[serial_device_name].flash(
@@ -110,14 +111,14 @@ def find_flash_device(
         device_name = "XB122"
 
     if use_serial:
-        all_devices.extend(et.utils.get_serial_devices())
+        all_devices.extend(comm_devices.get_serial_devices())
 
     if use_usb:
-        all_devices.extend(et.utils.get_usb_devices())
+        all_devices.extend(comm_devices.get_usb_devices())
 
     if port is not None:
         for device in all_devices:
-            if isinstance(device, et.utils.SerialDevice):
+            if isinstance(device, comm_devices.SerialDevice):
                 if port == device.port:
                     return device
 
@@ -359,8 +360,8 @@ def main():
     et.utils.config_logging(args)
 
     if args.operation == "list":
-        usb_devices = et.utils.get_usb_devices()
-        serial_devices = et.utils.get_serial_devices()
+        usb_devices = comm_devices.get_usb_devices()
+        serial_devices = comm_devices.get_serial_devices()
         if not usb_devices and not serial_devices:
             print("No devices available")
         else:

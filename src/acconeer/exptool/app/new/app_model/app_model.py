@@ -21,6 +21,7 @@ from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 from PySide6.QtWidgets import QApplication, QWidget
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.communication.comm_devices import CommDevice, SerialDevice, USBDevice
 from acconeer.exptool.app.new._enums import (
     ConnectionInterface,
     ConnectionState,
@@ -45,7 +46,6 @@ from acconeer.exptool.app.new.backend import (
     Task,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
-from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice
 
 from .plugin_protocols import PlotPluginInterface
 from .port_updater import PortUpdater

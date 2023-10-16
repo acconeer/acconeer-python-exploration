@@ -12,8 +12,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import cbor2
 import serial
 
+from acconeer.exptool._core.communication.comm_devices import SerialDevice
 from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
-from acconeer.exptool.utils import SerialDevice
 
 
 MCUMGR_DEFAULT_BAUDRATE = 115200

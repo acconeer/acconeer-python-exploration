@@ -8,8 +8,8 @@ from typing import Optional, Sequence
 from PySide6 import QtCore
 from PySide6.QtWidgets import QComboBox, QWidget
 
+from acconeer.exptool._core.communication.comm_devices import CommDevice, SerialDevice, USBDevice
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.utils import CommDevice, SerialDevice, USBDevice
 
 
 class CommDeviceComboBox(QComboBox):

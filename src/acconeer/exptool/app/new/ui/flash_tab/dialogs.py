@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from acconeer.exptool._core.communication.comm_devices import CommDevice
 from acconeer.exptool.app import resources
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
 from acconeer.exptool.flash import (
@@ -32,7 +33,6 @@ from acconeer.exptool.flash import (
     DevLicense,
     save_cookies,
 )
-from acconeer.exptool.utils import CommDevice
 
 from .threads import AuthThread, FlashThread
 

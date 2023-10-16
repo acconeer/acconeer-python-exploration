@@ -6,8 +6,9 @@ from typing import Any, Tuple
 
 import pytest
 
+from acconeer.exptool import USBDevice
 from acconeer.exptool._core import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
-from acconeer.exptool.utils import SerialDevice, USBDevice
+from acconeer.exptool._core.communication.comm_devices import SerialDevice
 
 
 CLIENT_INFO_PARAMETRIZE = [
