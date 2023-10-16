@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
+import abc
 import logging
 import multiprocessing as mp
 import platform
@@ -13,7 +14,6 @@ from time import sleep, time
 from typing import Any, Optional, Tuple, Union
 
 import serial
-from typing_extensions import Protocol
 
 from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
 
@@ -35,38 +35,54 @@ class NullLinkError(RuntimeError):
     pass
 
 
-class BufferedLink(Protocol):
-    def connect(self) -> None:
-        """Establishes a connection."""
-        ...
+class BufferedLink(abc.ABC):
+    DEFAULT_TIMEOUT: float = 2.0
+
+    def __init__(self) -> None:
+        self._timeout = self.DEFAULT_TIMEOUT
 
     @property
     def timeout(self) -> float:
         """Return link timout."""
-        ...
+        return self._timeout
 
     @timeout.setter
     def timeout(self, timeout: float) -> None:
         """Set return link timeout."""
-        ...
+        self._timeout = timeout
+        self._update_timeout()
 
+    @abc.abstractmethod
+    def _update_timeout(self) -> None:
+        """Propagates the newly set timeout (found in self._timeout)"""
+        pass
+
+    @abc.abstractmethod
+    def connect(self) -> None:
+        """Establishes a connection."""
+        pass
+
+    @abc.abstractmethod
     def recv(self, num_bytes: int) -> bytes:
         """Recieves `num_bytes` bytes."""
-        ...
+        pass
 
-    def send(self, bytes_: bytes) -> None:
-        """Sends all `bytes_` over the link."""
-        ...
-
-    def disconnect(self) -> None:
-        """Tears down the connection."""
-        ...
-
+    @abc.abstractmethod
     def recv_until(self, byte_sequence: bytes) -> bytes:
         """Collects all bytes until `byte_sequence` is encountered,
         returning what was collected
         """
-        ...
+        pass
+
+    @abc.abstractmethod
+    def send(self, bytes_: bytes) -> None:
+        """Sends all `bytes_` over the link."""
+        pass
+
+    @abc.abstractmethod
+    def disconnect(self) -> None:
+        """Tears down the connection."""
+        pass
 
 
 class NullLink(BufferedLink):
@@ -87,6 +103,9 @@ class NullLink(BufferedLink):
     def timeout(self, timeout: float) -> None:
         raise self.ERROR
 
+    def _update_timeout(self) -> None:
+        pass
+
     def recv(self, num_bytes: int) -> bytes:
         raise self.ERROR
 
@@ -100,26 +119,7 @@ class NullLink(BufferedLink):
         raise self.ERROR
 
 
-class BaseLink(BufferedLink):
-    DEFAULT_TIMEOUT = 2.0
-
-    def __init__(self) -> None:
-        self._timeout = self.DEFAULT_TIMEOUT
-
-    @property
-    def timeout(self) -> float:
-        return self._timeout
-
-    @timeout.setter
-    def timeout(self, val: float) -> None:
-        self._timeout = val
-        self._update_timeout()
-
-    def _update_timeout(self) -> None:
-        pass
-
-
-class SocketLink(BaseLink):
+class SocketLink(BufferedLink):
     _CHUNK_SIZE = 4096
     _PORT = 6110
 
@@ -198,7 +198,7 @@ class SocketLink(BaseLink):
         self._buf = bytearray()
 
 
-class BaseSerialLink(BaseLink):
+class BaseSerialLink(BufferedLink):
     def __init__(self, baudrate: int = 115200) -> None:
         super().__init__()
         self._timeout = self.DEFAULT_TIMEOUT
@@ -345,7 +345,7 @@ class ExploreSerialLink(SerialLink):
         return data
 
 
-class USBLink(BaseLink):
+class USBLink(BufferedLink):
     def __init__(
         self, vid: Optional[int] = None, pid: Optional[int] = None, serial: Optional[str] = None
     ) -> None:
@@ -353,6 +353,10 @@ class USBLink(BaseLink):
         self._vid = vid
         self._pid = pid
         self._serial = serial
+
+    def _update_timeout(self) -> None:
+        # timeout is manually handled in recv/recv_until
+        pass
 
     def connect(self) -> None:
         # First try 'ComPort', will be set if platorm == windows
@@ -431,6 +435,9 @@ class SerialProcessLink(BaseSerialLink):
         super().__init__()
         self._port = port
         self._process: Optional[mp.Process] = None
+
+    def _update_timeout(self) -> None:
+        pass
 
     def connect(self) -> None:
         self._recv_queue: "mp.Queue[bytes]" = mp.Queue()
