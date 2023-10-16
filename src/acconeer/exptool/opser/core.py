@@ -158,10 +158,14 @@ class Persistor(abc.ABC):
             raise WrongH5ObjectError(self.parent_group, obj, expected_type=h5py.Dataset)
 
     def require_own_group(self) -> h5py.Group:
-        return self.parent_group.require_group(self.name)
+        group = self.parent_group.require_group(self.name)
+        group.attrs["persistor"] = f"{type(self).__name__}"
+        return group
 
     def create_own_dataset(self, data: t.Any, *, dtype: t.Any = None) -> h5py.Dataset:
-        return self.parent_group.create_dataset(self.name, data=data, dtype=dtype)
+        dataset = self.parent_group.create_dataset(self.name, data=data, dtype=dtype)
+        dataset.attrs["persistor"] = f"{type(self).__name__}"
+        return dataset
 
     @classmethod
     @abc.abstractmethod
