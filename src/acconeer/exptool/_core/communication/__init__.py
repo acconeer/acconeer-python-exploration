@@ -14,3 +14,4 @@ from .links import (
     USBLink,
 )
 from .message import Message
+from .message_stream import MessageStream

@@ -3,11 +3,8 @@
 
 from __future__ import annotations
 
-import contextlib
-import json
 import logging
-import time
-from typing import Any, Iterator, Optional, Tuple, Type, TypeVar, Union
+from typing import NoReturn, Optional, Tuple, Type, TypeVar, Union
 
 import attrs
 import typing_extensions as te
@@ -18,6 +15,7 @@ from acconeer.exptool._core.communication import (
     ClientError,
     ExploreSerialLink,
     Message,
+    MessageStream,
 )
 from acconeer.exptool._core.communication.links.helpers import ensure_connected_link
 from acconeer.exptool._core.entities import ClientInfo
@@ -58,7 +56,6 @@ class ExplorationClient(Client, register=True):
     _tick_unwrapper: TickUnwrapper
     _server_info: Optional[ServerInfo]
     _result_queue: list[list[dict[int, Result]]]
-    _message_stream: Iterator[Message]
     _log_queue: list[ServerLogMessage]
 
     @classmethod
@@ -91,7 +88,6 @@ class ExplorationClient(Client, register=True):
     ) -> None:
         super().__init__(client_info)
         self._tick_unwrapper = TickUnwrapper()
-        self._message_stream = iter([])
         self._server_info = None
         self._log_queue = []
         self._closed = False
@@ -100,8 +96,13 @@ class ExplorationClient(Client, register=True):
         self._protocol = ExplorationProtocol
 
         (self._link, self._client_info) = ensure_connected_link(self.client_info)
+        self._server_stream = MessageStream(
+            self._link,
+            self._protocol,
+            message_handler=self._handle_messages,
+            link_error_callback=self._close_before_reraise,
+        )
 
-        self._message_stream = self._get_message_stream()
         self._server_info = self._retrieve_server_info()
 
         if self._server_info.connected_sensors == []:
@@ -109,55 +110,32 @@ class ExplorationClient(Client, register=True):
             raise ClientError("Exploration server is running but no sensors are detected.")
 
         if _override_protocol is None:
-            self._protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+            most_suitable_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+
+            self._server_stream.protocol = most_suitable_protocol
+            self._protocol = most_suitable_protocol
         else:
+            self._server_stream.protocol = _override_protocol
             self._protocol = _override_protocol
 
         self._update_baudrate()
 
-    def _get_message_stream(self) -> Iterator[Message]:
-        """returns an iterator of parsed messages"""
-        while True:
-            with self._close_before_reraise():
-                header: dict[str, Any] = json.loads(
-                    self._link.recv_until(self._protocol.end_sequence)
-                )
-
-            try:
-                payload_size = header["payload_size"]
-            except KeyError:
-                payload = bytes()
-            else:
-                with self._close_before_reraise():
-                    payload = self._link.recv(payload_size)
-
-            resp = self._protocol.parse_message(header, payload)
-            yield resp
-
-    @contextlib.contextmanager
-    def _close_before_reraise(self) -> Iterator[None]:
-        try:
-            yield
-        except Exception:
-            self._crashing = True
-            self.close()
-            raise
+    def _close_before_reraise(self, exception: Exception) -> NoReturn:
+        self._crashing = True
+        self.close()
+        raise exception
 
     def _retrieve_server_info(self) -> ServerInfo:
-        system_info_response = self._send_command_and_wait_for_response(
-            self._protocol.get_system_info_command(),
-            messages.SystemInfoResponse,
-        )
+        self._server_stream.send_command(self._protocol.get_system_info_command())
+        system_info_response = self._server_stream.wait_for_message(messages.SystemInfoResponse)
 
         sensor = system_info_response.system_info.get("sensor")
         if sensor != "a121":
             self.close()
             raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
 
-        sensor_info_response = self._send_command_and_wait_for_response(
-            self._protocol.get_sensor_info_command(),
-            messages.SensorInfoResponse,
-        )
+        self._server_stream.send_command(self._protocol.get_sensor_info_command())
+        sensor_info_response = self._server_stream.wait_for_message(messages.SensorInfoResponse)
 
         return ServerInfo(
             rss_version=system_info_response.system_info["rss_version"],
@@ -194,9 +172,9 @@ class ExplorationClient(Client, register=True):
         if baudrate_to_use == DEFAULT_BAUDRATE:
             return
 
-        _ = self._send_command_and_wait_for_response(
-            self._protocol.set_baudrate_command(baudrate_to_use), messages.SetBaudrateResponse
-        )
+        self._server_stream.send_command(self._protocol.set_baudrate_command(baudrate_to_use))
+        _ = self._server_stream.wait_for_message(messages.SetBaudrateResponse)
+
         self._link.baudrate = baudrate_to_use
 
     def setup_session(  # type: ignore[override]
@@ -213,71 +191,38 @@ class ExplorationClient(Client, register=True):
         config.validate()
 
         self._calibrations_provided = get_calibrations_provided(config, calibrations)
-
-        message = self._send_command_and_wait_for_response(
-            self._protocol.setup_command(config, calibrations),
-            messages.SetupResponse,
-        )
         self._session_config = config
+
+        self._server_stream.send_command(self._protocol.setup_command(config, calibrations))
+        setup_response = self._server_stream.wait_for_message(messages.SetupResponse)
+
         self._metadata = [
             {
                 sensor_id: metadata
                 for metadata, sensor_id in zip(metadata_group, config_group.keys())
             }
             for metadata_group, config_group in zip(
-                message.grouped_metadatas, self._session_config.groups
+                setup_response.grouped_metadatas, self._session_config.groups
             )
         ]
-        self._sensor_calibrations = message.sensor_calibrations
+        self._sensor_calibrations = setup_response.sensor_calibrations
 
         if self.session_config.extended:
             return self._metadata
         else:
             return unextend(self._metadata)
 
-    def _send_command_and_wait_for_response(
-        self, command: bytes, response_type: Type[_MessageT], timeout_s: Optional[float] = None
-    ) -> _MessageT:
-        with self._close_before_reraise():
-            self._link.send(command)
-
-        return self._wait_for_response(response_type, timeout_s)
-
-    def _wait_for_response(
-        self, message_type: Type[_MessageT], timeout_s: Optional[float] = None
-    ) -> _MessageT:
-        """Retrieves and applies messages until a message of type ``message_type`` is encountered.
-
-        :param message_type: a subclass of ``Message``
-        :param timeout_s: Limit the time spent in this function
-        :raises ClientError:
-            if timeout_s is set and that amount of time has elapsed
-            without predicate evaluating to True
-        """
-        deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
-
-        if message_type in [messages.ErroneousMessage, messages.EmptyResultMessage]:
-            raise ClientError("Cannot wait for error messages")
-
-        for message in self._message_stream:
-            if type(message) == messages.LogMessage:
-                self._log_queue.append(message.message)
-            elif type(message) == messages.EmptyResultMessage:
-                raise RuntimeError("Received an empty Result from Server.")
-            elif type(message) == messages.ErroneousMessage:
-                last_error = ""
-                for log in self._log_queue:
-                    if log.level == "ERROR" and "exploration_server" not in log.module:
-                        last_error = f" ({log.log})"
-                raise ServerError(f"{message}{last_error}")
-
-            if type(message) == message_type:
-                return message
-
-            if deadline is not None and time.monotonic() > deadline:
-                raise ClientError("Client timed out.")
-
-        raise ClientError("No message received")
+    def _handle_messages(self, message: Message) -> None:
+        if type(message) is messages.LogMessage:
+            self._log_queue.append(message.message)
+        elif type(message) is messages.EmptyResultMessage:
+            raise RuntimeError("Received an empty Result from Server.")
+        elif type(message) is messages.ErroneousMessage:
+            last_error = ""
+            for log in self._log_queue:
+                if log.level == "ERROR" and "exploration_server" not in log.module:
+                    last_error = f" ({log.log})"
+            raise ServerError(f"{message}{last_error}")
 
     def start_session(self) -> None:
         self._assert_session_setup()
@@ -300,10 +245,8 @@ class ExplorationClient(Client, register=True):
 
         self._link.timeout = timeout
 
-        _ = self._send_command_and_wait_for_response(
-            self._protocol.start_streaming_command(),
-            messages.StartStreamingResponse,
-        )
+        self._server_stream.send_command(self._protocol.start_streaming_command())
+        _ = self._server_stream.wait_for_message(messages.StartStreamingResponse)
 
         self._recorder_start_session()
         self._session_is_started = True
@@ -311,7 +254,7 @@ class ExplorationClient(Client, register=True):
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         self._assert_session_started()
 
-        result_message = self._wait_for_response(messages.ResultMessage)
+        result_message = self._server_stream.wait_for_message(messages.ResultMessage)
 
         if self._metadata is None:
             raise RuntimeError(f"{self} has no metadata")
@@ -336,8 +279,8 @@ class ExplorationClient(Client, register=True):
     def stop_session(self) -> None:
         self._assert_session_started()
 
-        _ = self._send_command_and_wait_for_response(
-            self._protocol.stop_streaming_command(),
+        self._server_stream.send_command(self._protocol.stop_streaming_command())
+        _ = self._server_stream.wait_for_message(
             messages.StopStreamingResponse,
             timeout_s=self._link.timeout + 1,
         )
@@ -363,7 +306,6 @@ class ExplorationClient(Client, register=True):
         finally:
             self._tick_unwrapper = TickUnwrapper()
             self._server_info = None
-            self._message_stream = iter([])
             self._metadata = None
             self._log_queue.clear()
             self._link.disconnect()
