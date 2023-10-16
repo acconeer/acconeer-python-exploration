@@ -55,7 +55,6 @@ log = logging.getLogger(__name__)
 
 class ExplorationClient(Client, register=True):
     _link: BufferedLink
-    _default_link_timeout: float
     _link_timeout: float
     _protocol: Type[ExplorationProtocol]
     _protocol_overridden: bool
@@ -119,8 +118,7 @@ class ExplorationClient(Client, register=True):
         self._connect_client()
 
     def _connect_link(self) -> None:
-        self._default_link_timeout = self._link.timeout
-        self._link_timeout = self._default_link_timeout
+        self._link_timeout = self._link.DEFAULT_TIMEOUT
 
         try:
             self._link.connect()
@@ -278,9 +276,9 @@ class ExplorationClient(Client, register=True):
             # timeout.
             timeout_duration = max(pc.update_duration, 1 / pc.update_rate)
             # Increase timeout if update rate is very low, otherwise keep default
-            self._link_timeout = max(1.5 * timeout_duration + 1.0, self._default_link_timeout)
+            self._link_timeout = max(1.5 * timeout_duration + 1.0, self._link.DEFAULT_TIMEOUT)
         except Exception:
-            self._link_timeout = self._default_link_timeout
+            self._link_timeout = self._link.DEFAULT_TIMEOUT
 
         self._link.timeout = self._link_timeout
 
@@ -382,7 +380,7 @@ class ExplorationClient(Client, register=True):
             timeout_s=self._link.timeout + 1,
         )
 
-        self._link.timeout = self._default_link_timeout
+        self._link.timeout = self._link.DEFAULT_TIMEOUT
         self._session_is_started = False
         self._recorder_stop_session()
         self._log_queue.clear()
