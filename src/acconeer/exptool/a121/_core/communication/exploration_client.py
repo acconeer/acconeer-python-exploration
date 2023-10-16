@@ -12,9 +12,13 @@ from typing import Any, Iterator, Optional, Tuple, Type, Union
 import attrs
 from serial.serialutil import SerialException
 
+from acconeer.exptool._core.communication.links import (
+    BufferedLink,
+    ExploreSerialLink,
+    NullLinkError,
+)
 from acconeer.exptool._core.communication.message import Message, MessageT
 from acconeer.exptool._core.entities import ClientInfo
-from acconeer.exptool._links import BufferedLink, ExploreSerialLink, NullLinkError
 from acconeer.exptool.a121._core.entities import (
     Metadata,
     Result,

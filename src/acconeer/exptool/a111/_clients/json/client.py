@@ -10,7 +10,7 @@ from time import time
 
 import numpy as np
 
-from acconeer.exptool import _links
+from acconeer.exptool._core.communication import links
 from acconeer.exptool.a111._clients.base import (
     BaseClient,
     ClientError,
@@ -56,7 +56,7 @@ class JsonProtocolBase:
 
         try:
             header, _ = self._recv_frame()
-        except _links.LinkError as e:
+        except links.LinkError as e:
             raise ClientError("no response from server") from e
 
         log.debug("connected and got a response")
@@ -298,7 +298,7 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         self._send_cmd({"cmd": "get_system_info"})
         try:
             header, _ = self._recv_frame()
-        except _links.LinkError as e:
+        except links.LinkError as e:
             raise ClientError("no response from server") from e
 
         if header["status"] != "ok":
@@ -312,7 +312,7 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         self._send_cmd(set_baudrate_cmd)
         try:
             header, _ = self._recv_frame()
-        except _links.LinkError as e:
+        except links.LinkError as e:
             raise ClientError("no response from server") from e
 
         if header["status"] == "ok":
@@ -496,9 +496,9 @@ class SocketClient(BaseClient):
         super().__init__(**kwargs)
 
         if serial_link:
-            self._link = _links.ExploreSerialLink(host)
+            self._link = links.ExploreSerialLink(host)
         else:
-            self._link = _links.SocketLink(host, port)
+            self._link = links.SocketLink(host, port)
         self._protocol = None
         self._override_baudrate = override_baudrate
 
@@ -533,7 +533,7 @@ class SocketClient(BaseClient):
             # the baudrate is overriden with a value > 0
             # if the server reports max_baudrate > 0
             baudrate = self._override_baudrate or system_info.get("max_baudrate")
-            if isinstance(self._link, _links.ExploreSerialLink) and baudrate:
+            if isinstance(self._link, links.ExploreSerialLink) and baudrate:
                 self._protocol._set_baudrate(baudrate)
 
         return info
@@ -580,7 +580,7 @@ class SocketClient(BaseClient):
 
     @property
     def description(self):
-        if isinstance(self._link, _links.ExploreSerialLink):
+        if isinstance(self._link, links.ExploreSerialLink):
             return f"UART ({self._link._port})"
         else:
             return f"socket ({self._link._host})"

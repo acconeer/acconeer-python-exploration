@@ -7,7 +7,7 @@ from typing import List, Type, Union
 
 import pytest
 
-from acconeer.exptool import _links
+from acconeer.exptool._core.communication import links
 from acconeer.exptool.a111._clients.client_factory import ClientFactory
 from acconeer.exptool.a111._clients.json.client import SocketClient
 from acconeer.exptool.a111._clients.reg.client import SPIClient, UARTClient
@@ -104,25 +104,25 @@ def test_try_infer_protocol_from_kwargs(kwargs, expected_protocols_enum):
         # Only host => infer SocketClient
         (
             dict(host="host"),
-            [("", SocketClient), ("_link", _links.SocketLink)],
+            [("", SocketClient), ("_link", links.SocketLink)],
             [("_link._host", "host")],
         ),
         # Exploration over socket
         (
             dict(protocol="exploration", link="socket", host="host"),
-            [("", SocketClient), ("_link", _links.SocketLink)],
+            [("", SocketClient), ("_link", links.SocketLink)],
             [("_link._host", "host")],
         ),
         # Exploration over UART
         (
             dict(protocol="exploration", link="uart", serial_port="port"),
-            [("", SocketClient), ("_link", _links.ExploreSerialLink)],
+            [("", SocketClient), ("_link", links.ExploreSerialLink)],
             [("_link._port", "port")],
         ),
         # Streaming over socket
         (
             dict(protocol="streaming", link="socket", host="host"),
-            [("", SocketClient), ("_link", _links.SocketLink)],
+            [("", SocketClient), ("_link", links.SocketLink)],
             [("_link._host", "host")],
         ),
         # Module over UART
@@ -130,7 +130,7 @@ def test_try_infer_protocol_from_kwargs(kwargs, expected_protocols_enum):
             dict(protocol="module", link="uart", serial_port="port"),
             [
                 ("", UARTClient),
-                ("_link", [_links.SerialLink, _links.SerialProcessLink]),
+                ("_link", [links.SerialLink, links.SerialProcessLink]),
             ],
             [("_link._port", "port")],
         ),
