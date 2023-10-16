@@ -55,7 +55,6 @@ log = logging.getLogger(__name__)
 
 class ExplorationClient(Client, register=True):
     _link: BufferedLink
-    _link_timeout: float
     _protocol: Type[ExplorationProtocol]
     _protocol_overridden: bool
     _tick_unwrapper: TickUnwrapper
@@ -118,8 +117,6 @@ class ExplorationClient(Client, register=True):
         self._connect_client()
 
     def _connect_link(self) -> None:
-        self._link_timeout = self._link.DEFAULT_TIMEOUT
-
         try:
             self._link.connect()
         except SerialException as exc:
@@ -269,18 +266,6 @@ class ExplorationClient(Client, register=True):
             )
         ]
         self._sensor_calibrations = message.sensor_calibrations
-        pc = _SessionPerformanceCalc(config, self._metadata)
-
-        try:
-            # Use max of the calculate duration and update/frame rate to guarantee sufficient
-            # timeout.
-            timeout_duration = max(pc.update_duration, 1 / pc.update_rate)
-            # Increase timeout if update rate is very low, otherwise keep default
-            self._link_timeout = max(1.5 * timeout_duration + 1.0, self._link.DEFAULT_TIMEOUT)
-        except Exception:
-            self._link_timeout = self._link.DEFAULT_TIMEOUT
-
-        self._link.timeout = self._link_timeout
 
         if self.session_config.extended:
             return self._metadata
@@ -337,7 +322,21 @@ class ExplorationClient(Client, register=True):
         if self.session_is_started:
             raise ClientError("Session is already started.")
 
-        self._link.timeout = self._link_timeout
+        assert self._session_config is not None
+
+        pc = _SessionPerformanceCalc(self._session_config, self._metadata)
+
+        try:
+            # Use max of the calculate duration and update/frame rate to guarantee sufficient
+            # timeout.
+            timeout_duration = max(pc.update_duration, 1 / pc.update_rate)
+            # Increase timeout if update rate is very low, otherwise keep default
+            timeout = max(1.5 * timeout_duration + 1.0, self._link.DEFAULT_TIMEOUT)
+        except Exception:
+            timeout = self._link.DEFAULT_TIMEOUT
+
+        self._link.timeout = timeout
+
         _ = self._send_command_and_wait_for_response(
             self._protocol.start_streaming_command(),
             messages.StartStreamingResponse,
