@@ -3,6 +3,7 @@
 
 from .client_info import (
     ClientInfo,
+    ClientInfoCreationError,
     MockInfo,
     SerialInfo,
     SocketInfo,

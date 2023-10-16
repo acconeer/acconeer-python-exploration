@@ -21,6 +21,10 @@ from acconeer.exptool._core.communication import (
     Message,
     NullLinkError,
 )
+from acconeer.exptool._core.communication.links.helpers import (
+    autodetermine_client_link,
+    link_factory,
+)
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -46,7 +50,7 @@ from .exploration_protocol import (
     get_exploration_protocol,
     messages,
 )
-from .utils import autodetermine_client_link, get_calibrations_provided, link_factory
+from .utils import get_calibrations_provided
 
 
 _MessageT = TypeVar("_MessageT", bound=Message)
