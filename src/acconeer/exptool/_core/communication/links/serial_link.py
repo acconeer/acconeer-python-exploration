@@ -1,201 +1,22 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
-import abc
 import logging
 import multiprocessing as mp
 import platform
 import queue
 import signal
-import socket
 import threading as th
 import traceback
 from time import sleep, time
-from typing import Any, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import serial
 
-from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
+from .buffered_link import BufferedLink, LinkError
 
-
-ComPort: Any
-try:
-    from acconeer.exptool._winusbcdc.usb_cdc import ComPort
-except ImportError:
-    ComPort = None
 
 log = logging.getLogger(__name__)
-
-
-class LinkError(RuntimeError):
-    pass
-
-
-class NullLinkError(RuntimeError):
-    pass
-
-
-class BufferedLink(abc.ABC):
-    DEFAULT_TIMEOUT: float = 2.0
-
-    def __init__(self) -> None:
-        self._timeout = self.DEFAULT_TIMEOUT
-
-    @property
-    def timeout(self) -> float:
-        """Return link timout."""
-        return self._timeout
-
-    @timeout.setter
-    def timeout(self, timeout: float) -> None:
-        """Set return link timeout."""
-        self._timeout = timeout
-        self._update_timeout()
-
-    @abc.abstractmethod
-    def _update_timeout(self) -> None:
-        """Propagates the newly set timeout (found in self._timeout)"""
-        pass
-
-    @abc.abstractmethod
-    def connect(self) -> None:
-        """Establishes a connection."""
-        pass
-
-    @abc.abstractmethod
-    def recv(self, num_bytes: int) -> bytes:
-        """Recieves `num_bytes` bytes."""
-        pass
-
-    @abc.abstractmethod
-    def recv_until(self, byte_sequence: bytes) -> bytes:
-        """Collects all bytes until `byte_sequence` is encountered,
-        returning what was collected
-        """
-        pass
-
-    @abc.abstractmethod
-    def send(self, bytes_: bytes) -> None:
-        """Sends all `bytes_` over the link."""
-        pass
-
-    @abc.abstractmethod
-    def disconnect(self) -> None:
-        """Tears down the connection."""
-        pass
-
-
-class NullLink(BufferedLink):
-    ERROR = NullLinkError("Link is undetermined.")
-    """Link null object.
-
-    :raises: ``RuntimeError`` if any of its methods is called.
-    """
-
-    def connect(self) -> None:
-        raise self.ERROR
-
-    @property
-    def timeout(self) -> float:
-        raise self.ERROR
-
-    @timeout.setter
-    def timeout(self, timeout: float) -> None:
-        raise self.ERROR
-
-    def _update_timeout(self) -> None:
-        pass
-
-    def recv(self, num_bytes: int) -> bytes:
-        raise self.ERROR
-
-    def send(self, bytes_: bytes) -> None:
-        raise self.ERROR
-
-    def disconnect(self) -> None:
-        raise self.ERROR
-
-    def recv_until(self, byte_sequence: bytes) -> bytes:
-        raise self.ERROR
-
-
-class SocketLink(BufferedLink):
-    _CHUNK_SIZE = 4096
-    _PORT = 6110
-
-    def __init__(self, host: Optional[str] = None, port: Optional[int] = None) -> None:
-        super().__init__()
-        self._host = host
-        self._sock: Optional[socket.socket] = None
-        self._buf: bytearray = bytearray()
-        self._port: int = self._PORT if (port is None) else port
-
-    def _update_timeout(self) -> None:
-        if self._sock is not None:
-            self._sock.settimeout(self._timeout)
-
-    def connect(self) -> None:
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._update_timeout()
-
-        try:
-            self._sock.connect((self._host, self._port))
-        except OSError as e:
-            self._sock.close()
-            self._sock = None
-            raise LinkError("failed to connect") from e
-
-        self._buf = bytearray()
-
-    def recv(self, num_bytes: int) -> bytes:
-        assert self._sock is not None
-        while len(self._buf) < num_bytes:
-            try:
-                r = self._sock.recv(self._CHUNK_SIZE)
-            except OSError as e:
-                raise LinkError from e
-            self._buf.extend(r)
-
-        data = self._buf[:num_bytes]
-        self._buf = self._buf[num_bytes:]
-        return data
-
-    def recv_until(self, bs: bytes) -> bytes:
-        assert self._sock is not None
-        t0 = time()
-        while True:
-            try:
-                i = self._buf.index(bs)
-            except ValueError:
-                pass
-            else:
-                break
-
-            if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
-
-            try:
-                r = self._sock.recv(self._CHUNK_SIZE)
-            except OSError as e:
-                raise LinkError from e
-            self._buf.extend(r)
-
-        i += 1
-        data = self._buf[:i]
-        self._buf = self._buf[i:]
-
-        return data
-
-    def send(self, data: bytes) -> None:
-        assert self._sock is not None
-        self._sock.sendall(data)
-
-    def disconnect(self) -> None:
-        if self._sock is not None:
-            self._sock.shutdown(socket.SHUT_RDWR)
-            self._sock.close()
-            self._sock = None
-        self._buf = bytearray()
 
 
 class BaseSerialLink(BufferedLink):
@@ -343,91 +164,6 @@ class ExploreSerialLink(SerialLink):
         self._buf = self._buf[i:]
 
         return data
-
-
-class USBLink(BufferedLink):
-    def __init__(
-        self, vid: Optional[int] = None, pid: Optional[int] = None, serial: Optional[str] = None
-    ) -> None:
-        super().__init__()
-        self._vid = vid
-        self._pid = pid
-        self._serial = serial
-
-    def _update_timeout(self) -> None:
-        # timeout is manually handled in recv/recv_until
-        pass
-
-    def connect(self) -> None:
-        # First try 'ComPort', will be set if platorm == windows
-        port_type = ComPort
-        if ComPort is None:
-            # Fallback to  'PyUsbCdc', will be used if platform != windows
-            port_type = PyUsbCdc
-
-        if self._vid and self._pid:
-            self._port = port_type(vid=self._vid, pid=self._pid, serial=self._serial, start=False)
-        else:
-            raise LinkError("Must have vid and pid for usb device")
-
-        if not self._port.open():
-            raise LinkError(f"Unable to connect to port (vid={self._vid}, pid={self._pid}")
-
-        self._buf = bytearray()
-        self.send_break()
-
-    def send_break(self) -> None:
-        self._port.send_break()
-        sleep(1.0)
-        self._port.reset_input_buffer()
-
-    def recv(self, num_bytes: int) -> bytes:
-        t0 = time()
-        while len(self._buf) < num_bytes:
-            if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
-
-            try:
-                r = bytearray(self._port.read())
-            except OSError as e:
-                raise LinkError from e
-            self._buf.extend(r)
-
-        data = self._buf[:num_bytes]
-        self._buf = self._buf[num_bytes:]
-        return data
-
-    def recv_until(self, bs: bytes) -> bytes:
-        t0 = time()
-        while True:
-            try:
-                i = self._buf.index(bs)
-            except ValueError:
-                pass
-            else:
-                break
-
-            if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
-
-            try:
-                r = bytearray(self._port.read())
-            except OSError as e:
-                raise LinkError from e
-            self._buf.extend(r)
-
-        i += 1
-        data = self._buf[:i]
-        self._buf = self._buf[i:]
-
-        return data
-
-    def send(self, data: bytes) -> None:
-        self._port.write(data)
-
-    def disconnect(self) -> None:
-        self._port.close()
-        self._port = None
 
 
 class SerialProcessLink(BaseSerialLink):
