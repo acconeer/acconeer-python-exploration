@@ -55,7 +55,6 @@ log = logging.getLogger(__name__)
 class ExplorationClient(Client, register=True):
     _link: BufferedLink
     _protocol: Type[ExplorationProtocol]
-    _protocol_overridden: bool
     _tick_unwrapper: TickUnwrapper
     _server_info: Optional[ServerInfo]
     _result_queue: list[list[dict[int, Result]]]
@@ -99,17 +98,9 @@ class ExplorationClient(Client, register=True):
         self._crashing = False
 
         self._protocol = ExplorationProtocol
-        self._protocol_overridden = False
-
-        if _override_protocol is not None:
-            self._protocol = _override_protocol
-            self._protocol_overridden = True
 
         (self._link, self._client_info) = ensure_connected_link(self.client_info)
 
-        self._connect_client()
-
-    def _connect_client(self) -> None:
         self._message_stream = self._get_message_stream()
         self._server_info = self._retrieve_server_info()
 
@@ -117,8 +108,10 @@ class ExplorationClient(Client, register=True):
             self._link.disconnect()
             raise ClientError("Exploration server is running but no sensors are detected.")
 
-        if not self._protocol_overridden:
-            self._update_protocol_based_on_servers_rss_version()
+        if _override_protocol is None:
+            self._protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
+        else:
+            self._protocol = _override_protocol
 
         self._update_baudrate()
 
@@ -174,10 +167,6 @@ class ExplorationClient(Client, register=True):
             sensor_infos=sensor_info_response.sensor_infos,
             max_baudrate=system_info_response.system_info.get("max_baudrate"),
         )
-
-    def _update_protocol_based_on_servers_rss_version(self) -> None:
-        with self._close_before_reraise():
-            self._protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
 
     def _update_baudrate(self) -> None:
         # Only Change baudrate for ExploreSerialLink
