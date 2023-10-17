@@ -21,6 +21,7 @@ from . import (
     surface_velocity_test,
     tank_level_test,
     touchless_button_test,
+    vibration_test,
 )
 
 
@@ -174,6 +175,11 @@ def input_path(resource_name: str) -> Path:
             surface_velocity_test.surface_velocity_controller,
             t.List[surface_velocity_test.ResultSlice],
             "input_surface_velocity_default.h5",
+        ),
+        (
+            vibration_test.vibration_controller,
+            t.List[vibration_test.ResultSlice],
+            "vibration.h5",
         ),
     ],
 )

@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Optional
 
 import attrs
+import h5py
 import numpy as np
 import numpy.typing as npt
 
@@ -233,3 +234,8 @@ def get_sensor_config() -> a121.SensorConfig:
         inter_frame_idle_state=a121.IdleState.READY,
         inter_sweep_idle_state=a121.IdleState.READY,
     )
+
+
+def _load_algo_data(algo_group: h5py.Group) -> ProcessorConfig:
+    processor_config = ProcessorConfig.from_json(algo_group["processor_config"][()])
+    return processor_config
