@@ -4,38 +4,17 @@
 from __future__ import annotations
 
 from enum import Enum, unique
-from typing import Optional, Type, TypeVar
+from typing import Optional, TypeVar
+
+from acconeer.exptool._core.class_creation.enum import (
+    find_by_first_element_in_value,
+    find_by_lowercase_name,
+    find_by_name,
+    find_by_value,
+)
 
 
 T = TypeVar("T", bound=Enum)
-
-
-def find_by_value(enum: Type[T], value: object) -> Optional[T]:
-    for member in enum:
-        if member.value == value:
-            return member
-    return None
-
-
-def find_by_first_element_in_value(enum: Type[T], value: object) -> Optional[T]:
-    for member in enum:
-        if member.value[0] == value:
-            return member
-    return None
-
-
-def find_by_name(enum: Type[T], name: object) -> Optional[T]:
-    for member in enum:
-        if member.name == name:
-            return member
-    return None
-
-
-def find_by_lowercase_name(enum: Type[T], lowercase_name: object) -> Optional[T]:
-    for member in enum:
-        if member.name.lower() == lowercase_name:
-            return member
-    return None
 
 
 @unique

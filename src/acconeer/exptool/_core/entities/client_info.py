@@ -9,7 +9,7 @@ from typing import Any, ClassVar, List, Optional, Type, Union
 
 import attrs
 
-from acconeer.exptool._core.class_creation import pretty_dict_line_strs
+from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 
 
 class ClientInfoCreationError(Exception):

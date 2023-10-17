@@ -1,8 +1,6 @@
 # Copyright (c) Acconeer AB, 2023
 # All rights reserved
-"""
-This module contains utility functions for class creation
-"""
+
 from __future__ import annotations
 
 import enum

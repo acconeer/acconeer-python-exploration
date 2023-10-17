@@ -10,7 +10,7 @@ from typing import Any, Iterator, Optional, TypeVar, Union, overload
 
 import numpy as np
 
-from acconeer.exptool._core.class_creation import pretty_dict_line_strs
+from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 from acconeer.exptool.a121._core import utils
 
 from .config_enums import PRF, IdleState, Profile

@@ -9,7 +9,7 @@ from typing import Any, Optional
 import attrs
 import packaging.version
 
-from acconeer.exptool._core.class_creation import pretty_dict_line_strs
+from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 from acconeer.exptool.a121._core import utils
 
 
