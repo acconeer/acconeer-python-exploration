@@ -1,11 +1,10 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
-from acconeer.exptool._core.communication.client import ClientError
+from acconeer.exptool._core.communication.client import ClientError, ServerError
 
 from .communication import (
     Client,
-    ServerError,
 )
 from .entities import (
     INT_16_COMPLEX,

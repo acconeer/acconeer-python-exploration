@@ -4,7 +4,7 @@
 SDK_VERSION = "1.3.0"
 
 # Make these visible under the a121 package to not break api
-from acconeer.exptool._core.communication.client import ClientError
+from acconeer.exptool._core.communication.client import ClientError, ServerError
 from acconeer.exptool._core.entities import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
 
 from ._cli import ExampleArgumentParser, get_client_args
@@ -26,7 +26,6 @@ from ._core import (
     SensorCalibration,
     SensorConfig,
     SensorInfo,
-    ServerError,
     ServerInfo,
     SessionConfig,
     StackedResults,

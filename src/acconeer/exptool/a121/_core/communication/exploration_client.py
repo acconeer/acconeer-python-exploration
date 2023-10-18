@@ -17,6 +17,7 @@ from acconeer.exptool._core.communication import (
     Message,
     MessageStream,
 )
+from acconeer.exptool._core.communication.client import ServerError
 from acconeer.exptool._core.communication.communication_protocol import messages
 from acconeer.exptool._core.communication.communication_protocol.messages.log_message import (
     ServerLog,
@@ -42,7 +43,6 @@ from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 from .client import Client
 from .exploration_protocol import (
     ExplorationProtocol,
-    ServerError,
     get_exploration_protocol,
 )
 from .exploration_protocol import (
