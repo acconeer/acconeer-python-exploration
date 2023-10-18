@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import typing as t
 
-from .message import Message
+from .messages import Message
 
 
 _ConfigT = t.TypeVar("_ConfigT", contravariant=True)
