@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import typing_extensions as te
 
-from acconeer.exptool._core.communication import Message
+from acconeer.exptool._core.communication import Message, ParseError
 from acconeer.exptool.a121._core.entities import (
     INT_16_COMPLEX,
     Metadata,
@@ -19,8 +19,6 @@ from acconeer.exptool.a121._core.entities import (
     SensorConfig,
 )
 from acconeer.exptool.a121._core.utils import map_over_extended_structure, zip3_extended_structures
-
-from .parse_error import ParseError
 
 
 class ResultInfoDict(te.TypedDict):

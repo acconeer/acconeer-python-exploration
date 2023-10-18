@@ -2,7 +2,7 @@
 # All rights reserved
 
 from .client import Client, ClientCreationError, ClientError
-from .communication_protocol import CommunicationProtocol, Message
+from .communication_protocol import CommunicationProtocol, Message, ParseError
 from .links import (
     BufferedLink,
     ExploreSerialLink,

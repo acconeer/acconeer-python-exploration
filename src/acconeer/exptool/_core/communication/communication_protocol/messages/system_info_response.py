@@ -7,9 +7,7 @@ import typing as t
 import attrs
 import typing_extensions as te
 
-from acconeer.exptool._core.communication import Message
-
-from .parse_error import ParseError
+from .message import Message, ParseError
 
 
 class SystemInfoDict(te.TypedDict):

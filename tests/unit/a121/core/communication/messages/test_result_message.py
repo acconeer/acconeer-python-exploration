@@ -6,9 +6,12 @@ import typing as t
 
 import pytest
 
+from acconeer.exptool._core.communication.communication_protocol import messages
 from acconeer.exptool.a121._core.communication.exploration_protocol import (
     ExplorationProtocol,
-    messages,
+)
+from acconeer.exptool.a121._core.communication.exploration_protocol import (
+    messages as a121_messages,
 )
 
 
@@ -47,12 +50,12 @@ class TestResultMessage:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_message, server_payload))
-            == messages.ResultMessage
+            == a121_messages.ResultMessage
         )
-        _ = messages.ResultMessage.parse(valid_server_message, server_payload)
+        _ = a121_messages.ResultMessage.parse(valid_server_message, server_payload)
 
         with pytest.raises(messages.ParseError):
-            messages.ResultMessage.parse(invalid_server_message, server_payload)
+            a121_messages.ResultMessage.parse(invalid_server_message, server_payload)
 
     def test_apply(self) -> None:
         pytest.skip("Hard to unit test. Relies on system tests for correctness.")

@@ -6,9 +6,9 @@ import typing as t
 
 import pytest
 
+from acconeer.exptool._core.communication.communication_protocol import messages
 from acconeer.exptool.a121._core.communication.exploration_protocol import (
     ExplorationProtocol,
-    messages,
 )
 
 

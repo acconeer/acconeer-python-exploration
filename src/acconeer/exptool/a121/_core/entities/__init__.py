@@ -23,7 +23,6 @@ from .containers import (
     SensorCalibration,
     SensorInfo,
     ServerInfo,
-    ServerLogMessage,
     SessionRecord,
     StackedResults,
     complex_array_to_int16_complex,

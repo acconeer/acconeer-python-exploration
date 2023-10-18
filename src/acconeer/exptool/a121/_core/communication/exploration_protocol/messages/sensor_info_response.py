@@ -7,10 +7,8 @@ import typing as t
 import attrs
 import typing_extensions as te
 
-from acconeer.exptool._core.communication import Message
+from acconeer.exptool._core.communication import Message, ParseError
 from acconeer.exptool.a121._core.entities import SensorInfo
-
-from .parse_error import ParseError
 
 
 class SensorInfoHeader(te.TypedDict):

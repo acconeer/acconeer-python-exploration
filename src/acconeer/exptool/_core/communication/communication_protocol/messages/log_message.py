@@ -7,10 +7,7 @@ import typing as t
 import attrs
 import typing_extensions as te
 
-from acconeer.exptool._core.communication import Message
-from acconeer.exptool.a121._core.entities import ServerLogMessage
-
-from .parse_error import ParseError
+from .message import Message, ParseError
 
 
 LogLevelStr = t.Union[
@@ -31,7 +28,7 @@ class LogMessageHeader(te.TypedDict):
 
 @attrs.frozen
 class LogMessage(Message):
-    message: ServerLogMessage
+    message: ServerLog
 
     @classmethod
     def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> LogMessage:
@@ -39,7 +36,7 @@ class LogMessage(Message):
 
         if header["status"] == "log":
             return cls(
-                ServerLogMessage(
+                ServerLog(
                     level=header["level"],
                     timestamp=header["timestamp"],
                     module=header["module"],
@@ -47,3 +44,11 @@ class LogMessage(Message):
                 )
             )
         raise ParseError
+
+
+@attrs.frozen(kw_only=True)
+class ServerLog:
+    level: str
+    timestamp: int
+    module: str
+    log: str

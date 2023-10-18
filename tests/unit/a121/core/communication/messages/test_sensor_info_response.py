@@ -6,9 +6,12 @@ import typing as t
 
 import pytest
 
+from acconeer.exptool._core.communication.communication_protocol import messages
 from acconeer.exptool.a121._core.communication.exploration_protocol import (
     ExplorationProtocol,
-    messages,
+)
+from acconeer.exptool.a121._core.communication.exploration_protocol import (
+    messages as a121_messages,
 )
 
 
@@ -36,9 +39,9 @@ class TestGetSensorInfoResponse:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
-            == messages.SensorInfoResponse
+            == a121_messages.SensorInfoResponse
         )
-        _ = messages.SensorInfoResponse.parse(valid_server_response, bytes())
+        _ = a121_messages.SensorInfoResponse.parse(valid_server_response, bytes())
 
         with pytest.raises(messages.ParseError):
-            messages.SensorInfoResponse.parse(invalid_server_response, bytes())
+            a121_messages.SensorInfoResponse.parse(invalid_server_response, bytes())

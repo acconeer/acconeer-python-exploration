@@ -7,10 +7,11 @@ import json
 from typing import Any, Optional
 
 from acconeer.exptool._core.communication import CommunicationProtocol, Message
+from acconeer.exptool._core.communication.communication_protocol import messages
 from acconeer.exptool.a121._core.entities import PRF, IdleState, SensorCalibration, SessionConfig
 from acconeer.exptool.a121._core.utils import map_over_extended_structure
 
-from . import messages
+from .messages import EmptyResultMessage, ResultMessage, SensorInfoResponse, SetupResponse
 
 
 class ExplorationProtocolError(Exception):
@@ -35,14 +36,14 @@ class ExplorationProtocol(CommunicationProtocol[SessionConfig]):
     @classmethod
     def parse_message(cls, header: dict[str, Any], payload: bytes) -> Message:
         PARSERS = [
-            messages.EmptyResultMessage.parse,
+            EmptyResultMessage.parse,
             messages.SetBaudrateResponse.parse,
             messages.ErroneousMessage.parse,
             messages.LogMessage.parse,
-            messages.ResultMessage.parse,
+            ResultMessage.parse,
             messages.SystemInfoResponse.parse,
-            messages.SensorInfoResponse.parse,
-            messages.SetupResponse.parse,
+            SensorInfoResponse.parse,
+            SetupResponse.parse,
             messages.StartStreamingResponse.parse,
             messages.StopStreamingResponse.parse,
         ]

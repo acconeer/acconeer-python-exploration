@@ -22,3 +22,7 @@ class Message(abc.ABC):
         :returns: A freshly parsed Message
         """
         ...
+
+
+class ParseError(Exception):
+    pass

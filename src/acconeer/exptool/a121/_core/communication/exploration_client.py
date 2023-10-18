@@ -17,6 +17,10 @@ from acconeer.exptool._core.communication import (
     Message,
     MessageStream,
 )
+from acconeer.exptool._core.communication.communication_protocol import messages
+from acconeer.exptool._core.communication.communication_protocol.messages.log_message import (
+    ServerLog,
+)
 from acconeer.exptool._core.communication.links.helpers import ensure_connected_link
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
@@ -25,7 +29,6 @@ from acconeer.exptool.a121._core.entities import (
     SensorCalibration,
     SensorConfig,
     ServerInfo,
-    ServerLogMessage,
     SessionConfig,
 )
 from acconeer.exptool.a121._core.utils import (
@@ -41,7 +44,9 @@ from .exploration_protocol import (
     ExplorationProtocol,
     ServerError,
     get_exploration_protocol,
-    messages,
+)
+from .exploration_protocol import (
+    messages as a121_messages,
 )
 from .utils import get_calibrations_provided
 
@@ -56,7 +61,7 @@ class ExplorationClient(Client, register=True):
     _tick_unwrapper: TickUnwrapper
     _server_info: Optional[ServerInfo]
     _result_queue: list[list[dict[int, Result]]]
-    _log_queue: list[ServerLogMessage]
+    _log_queue: list[ServerLog]
 
     @classmethod
     def open(
@@ -135,7 +140,9 @@ class ExplorationClient(Client, register=True):
             raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
 
         self._server_stream.send_command(self._protocol.get_sensor_info_command())
-        sensor_info_response = self._server_stream.wait_for_message(messages.SensorInfoResponse)
+        sensor_info_response = self._server_stream.wait_for_message(
+            a121_messages.SensorInfoResponse
+        )
 
         return ServerInfo(
             rss_version=system_info_response.system_info["rss_version"],
@@ -194,7 +201,7 @@ class ExplorationClient(Client, register=True):
         self._session_config = config
 
         self._server_stream.send_command(self._protocol.setup_command(config, calibrations))
-        setup_response = self._server_stream.wait_for_message(messages.SetupResponse)
+        setup_response = self._server_stream.wait_for_message(a121_messages.SetupResponse)
 
         self._metadata = [
             {
@@ -215,7 +222,7 @@ class ExplorationClient(Client, register=True):
     def _handle_messages(self, message: Message) -> None:
         if type(message) is messages.LogMessage:
             self._log_queue.append(message.message)
-        elif type(message) is messages.EmptyResultMessage:
+        elif type(message) is a121_messages.EmptyResultMessage:
             raise RuntimeError("Received an empty Result from Server.")
         elif type(message) is messages.ErroneousMessage:
             last_error = ""
@@ -254,7 +261,7 @@ class ExplorationClient(Client, register=True):
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         self._assert_session_started()
 
-        result_message = self._server_stream.wait_for_message(messages.ResultMessage)
+        result_message = self._server_stream.wait_for_message(a121_messages.ResultMessage)
 
         if self._metadata is None:
             raise RuntimeError(f"{self} has no metadata")
