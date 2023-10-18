@@ -18,8 +18,6 @@ class ExplorationProtocolError(Exception):
 
 
 class ExplorationProtocol(CommunicationProtocol[SessionConfig]):
-    end_sequence: bytes = b"\n"
-
     PRF_MAPPING = {
         PRF.PRF_19_5_MHz: "19_5_MHz",
         PRF.PRF_15_6_MHz: "15_6_MHz",
@@ -58,26 +56,6 @@ class ExplorationProtocol(CommunicationProtocol[SessionConfig]):
                 return response
 
         raise RuntimeError(f"Could not parse response with header:\n{header}")
-
-    @classmethod
-    def get_system_info_command(cls) -> bytes:
-        return b'{"cmd":"get_system_info"}\n'
-
-    @classmethod
-    def get_sensor_info_command(cls) -> bytes:
-        return b'{"cmd":"get_sensor_info"}\n'
-
-    @classmethod
-    def start_streaming_command(cls) -> bytes:
-        return b'{"cmd":"start_streaming"}\n'
-
-    @classmethod
-    def stop_streaming_command(cls) -> bytes:
-        return b'{"cmd":"stop_streaming"}\n'
-
-    @classmethod
-    def set_baudrate_command(cls, baudrate: int) -> bytes:
-        return b'{"cmd":"set_uart_baudrate","baudrate":' + str(baudrate).encode("ascii") + b"}\n"
 
     @classmethod
     def setup_command(

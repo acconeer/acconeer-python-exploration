@@ -3,9 +3,8 @@
 
 from __future__ import annotations
 
+import abc
 import typing as t
-
-import typing_extensions as te
 
 from .message import Message
 
@@ -13,39 +12,38 @@ from .message import Message
 _ConfigT = t.TypeVar("_ConfigT", contravariant=True)
 
 
-class CommunicationProtocol(te.Protocol[_ConfigT]):
-    end_sequence: bytes
+class CommunicationProtocol(abc.ABC, t.Generic[_ConfigT]):
+    end_sequence: t.ClassVar[bytes] = b"\n"
+
+    @classmethod
+    @abc.abstractmethod
+    def setup_command(cls, config: _ConfigT) -> bytes:
+        """The `setup` command."""
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    def parse_message(cls, header: dict[str, t.Any], payload: bytes) -> Message:
+        """Parses any supported Message given a header and a payload"""
+        pass
 
     @classmethod
     def get_system_info_command(cls) -> bytes:
         """The `get_system_info` command."""
-        ...
+        return b'{"cmd":"get_system_info"}\n'
 
     @classmethod
     def get_sensor_info_command(cls) -> bytes:
-        """The `get_sensor_info` command."""
-        ...
-
-    @classmethod
-    def setup_command(cls, config: _ConfigT) -> bytes:
-        """The `setup` command."""
-        ...
+        return b'{"cmd":"get_sensor_info"}\n'
 
     @classmethod
     def start_streaming_command(cls) -> bytes:
-        """The `start_streaming` command."""
-        ...
+        return b'{"cmd":"start_streaming"}\n'
 
     @classmethod
     def stop_streaming_command(cls) -> bytes:
-        """The `stop_streaming` command"""
-        ...
+        return b'{"cmd":"stop_streaming"}\n'
 
     @classmethod
     def set_baudrate_command(cls, baudrate: int) -> bytes:
-        ...
-
-    @classmethod
-    def parse_message(cls, header: dict[str, t.Any], payload: bytes) -> Message:
-        """Parses any supported Message given a header and a payload"""
-        ...
+        return b'{"cmd":"set_uart_baudrate","baudrate":' + str(baudrate).encode("ascii") + b"}\n"
