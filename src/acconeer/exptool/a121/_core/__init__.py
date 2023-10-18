@@ -2,12 +2,16 @@
 # All rights reserved
 
 from acconeer.exptool._core.communication.client import ClientError, ServerError
+from acconeer.exptool._core.int_16_complex import (
+    INT_16_COMPLEX,
+    complex_array_to_int16_complex,
+    int16_complex_array_to_complex,
+)
 
 from .communication import (
     Client,
 )
 from .entities import (
-    INT_16_COMPLEX,
     PRF,
     Criticality,
     IdleState,
@@ -26,8 +30,6 @@ from .entities import (
     ValidationError,
     ValidationResult,
     ValidationWarning,
-    complex_array_to_int16_complex,
-    int16_complex_array_to_complex,
 )
 from .recording import (
     _H5PY_STR_DTYPE,

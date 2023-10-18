@@ -13,7 +13,8 @@ import numpy.typing as npt
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core.entities import INT_16_COMPLEX, SensorInfo
+from acconeer.exptool._core.int_16_complex import INT_16_COMPLEX
+from acconeer.exptool.a121._core.entities import SensorInfo
 from acconeer.exptool.a121._core.recording.h5_record import _H5PY_STR_DTYPE
 
 

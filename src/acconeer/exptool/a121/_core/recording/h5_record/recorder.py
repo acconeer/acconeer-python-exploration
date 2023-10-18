@@ -15,9 +15,9 @@ import numpy as np
 
 import acconeer.exptool
 from acconeer.exptool._core import ClientInfo
+from acconeer.exptool._core.int_16_complex import INT_16_COMPLEX
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
-    INT_16_COMPLEX,
     Metadata,
     Result,
     SensorCalibration,

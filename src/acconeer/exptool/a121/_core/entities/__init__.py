@@ -1,6 +1,12 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
+from acconeer.exptool._core.int_16_complex import (
+    INT_16_COMPLEX,
+    complex_array_to_int16_complex,
+    int16_complex_array_to_complex,
+)
+
 from .configs import (
     PRF,
     Criticality,
@@ -25,7 +31,4 @@ from .containers import (
     ServerInfo,
     SessionRecord,
     StackedResults,
-    complex_array_to_int16_complex,
-    int16_complex_array_to_complex,
 )
-from .dtypes import INT_16_COMPLEX

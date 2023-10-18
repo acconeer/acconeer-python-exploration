@@ -8,3 +8,8 @@ from .entities import (
     SocketInfo,
     USBInfo,
 )
+from .int_16_complex import (
+    INT_16_COMPLEX,
+    complex_array_to_int16_complex,
+    int16_complex_array_to_complex,
+)

@@ -6,6 +6,10 @@ SDK_VERSION = "1.3.0"
 # Make these visible under the a121 package to not break api
 from acconeer.exptool._core.communication.client import ClientError, ServerError
 from acconeer.exptool._core.entities import ClientInfo, MockInfo, SerialInfo, SocketInfo, USBInfo
+from acconeer.exptool._core.int_16_complex import (
+    complex_array_to_int16_complex,
+    int16_complex_array_to_complex,
+)
 
 from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
@@ -33,8 +37,6 @@ from ._core import (
     ValidationError,
     ValidationResult,
     ValidationWarning,
-    complex_array_to_int16_complex,
-    int16_complex_array_to_complex,
     iterate_extended_structure,
     iterate_extended_structure_values,
     load_record,

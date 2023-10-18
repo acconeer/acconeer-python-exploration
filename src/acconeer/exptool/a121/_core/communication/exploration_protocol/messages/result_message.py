@@ -11,8 +11,8 @@ import numpy.typing as npt
 import typing_extensions as te
 
 from acconeer.exptool._core.communication import Message, ParseError
+from acconeer.exptool._core.int_16_complex import INT_16_COMPLEX
 from acconeer.exptool.a121._core.entities import (
-    INT_16_COMPLEX,
     Metadata,
     Result,
     ResultContext,
