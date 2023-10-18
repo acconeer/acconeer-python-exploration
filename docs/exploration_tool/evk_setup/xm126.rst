@@ -1,0 +1,71 @@
+.. _setup_xm126:
+
+Setting up your XM126
+=====================
+
+For detailed instructions, visit our `developer page <https://developer.acconeer.com/>`_.
+
+.. include:: find_serial_port.rst
+
+.. include:: windows_com_port_drivers.rst
+- XM126: `FTDI <https://ftdichip.com/drivers/vcp-drivers/>`_
+
+Flashing
+--------
+
+The most convenient method to prepare the XM126 board for flashing is to let the Exploration Tool Application
+automatically download the latest binary file.
+
+Automatically download and flash using the GUI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Start the Exploration Tool Application::
+
+   python -m acconeer.exptool.app
+
+To automatically download the latest binary file:
+
+1. Open the **Flash tool** by selecting the **Flash tab** in the tab selection
+2. Click the **Get latest binary** tab
+3. Click the **Get latest bin file** button
+
+.. figure:: /_static/gui/flash_tool_dialog_xm126.png
+   :align: center
+   :width: 80%
+
+|
+
+Once the binary file has been downloaded it is possible to start flashing the board by clicking the **Flash** button
+in the **Flash tool**.
+
+Automatically download and flash using the CLI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run the following command from the CLI::
+
+   python -m acconeer.exptool.flash flash -d XM126 -f
+
+
+Manually download and flash
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Start by downloading the latest ``xm126_exploration_server`` package from our `developer page <https://developer.acconeer.com/>`_.
+
+Start the Exploration Tool Application::
+
+   python -m acconeer.exptool.app
+
+and flash XM126 with the downloaded binary file:
+
+1. Open the **Flash tool** by selecting the **Flash tab** in the tab selection
+2. Click the **Browse** tab
+3. Click the **Browse** button and select the downloaded file
+4. Start flashing the board by clicking the **Flash** button
+
+.. figure:: /_static/gui/flash_tool_dialog_manual_xm126.png
+   :align: center
+   :width: 80%
+
+or by using the following command::
+
+   python -m acconeer.exptool.flash flash -d XM126 -i app_update.bin

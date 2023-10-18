@@ -37,6 +37,7 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    XM112 <evk_setup/xm112>
    XM122 <evk_setup/xm122>
    XM125 <evk_setup/xm125>
+   XM126 <evk_setup/xm126>
    XM132 <evk_setup/xm132>
    RPi + XC112/XR112 <evk_setup/raspberry_a111>
 

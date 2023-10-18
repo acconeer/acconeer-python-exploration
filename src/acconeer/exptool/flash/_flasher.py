@@ -305,7 +305,7 @@ def main():
         dest="device",
         help="Device type. Only used if device type can't be autodetected.",
         type=str.upper,
-        choices=["XC120", "XE125", "XM125"],
+        choices=["XC120", "XE125", "XM125", "XM126"],
     )
     subparser.add_argument(
         "--serial-number",
