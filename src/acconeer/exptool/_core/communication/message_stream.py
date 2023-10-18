@@ -6,9 +6,8 @@ import json
 import time
 import typing as t
 
-from .communication_protocol import CommunicationProtocol
+from .communication_protocol import CommunicationProtocol, Message
 from .links import BufferedLink
-from .message import Message
 
 
 _MessageT = t.TypeVar("_MessageT", bound=Message)

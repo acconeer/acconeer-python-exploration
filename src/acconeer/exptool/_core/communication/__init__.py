@@ -2,7 +2,7 @@
 # All rights reserved
 
 from .client import Client, ClientCreationError, ClientError
-from .communication_protocol import CommunicationProtocol
+from .communication_protocol import CommunicationProtocol, Message
 from .links import (
     BufferedLink,
     ExploreSerialLink,
@@ -13,5 +13,4 @@ from .links import (
     SocketLink,
     USBLink,
 )
-from .message import Message
 from .message_stream import MessageStream
