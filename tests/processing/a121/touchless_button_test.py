@@ -41,60 +41,11 @@ class ProcessorWrapper:
         return ResultSlice.from_processor_result(self.processor.process(result))
 
 
-def touchless_button_default(record: a121.H5Record) -> ProcessorWrapper:
-    return ProcessorWrapper(
-        touchless_button.Processor(
-            sensor_config=record.session_config.sensor_config,
-            processor_config=touchless_button.ProcessorConfig(),
-            metadata=utils.unextend(record.extended_metadata),
-        )
+def touchless_button_wrapper(record: a121.H5Record) -> ProcessorWrapper:
+    algo_group = record.get_algo_group("touchless_button")
+    processor_config = touchless_button.ProcessorConfig.from_json(
+        algo_group["processor_config"][()]
     )
-
-
-def touchless_button_both_ranges(record: a121.H5Record) -> ProcessorWrapper:
-    processor_config = touchless_button.ProcessorConfig()
-    processor_config.measurement_type = touchless_button.MeasurementType.CLOSE_AND_FAR_RANGE
-    return ProcessorWrapper(
-        touchless_button.Processor(
-            sensor_config=record.session_config.sensor_config,
-            processor_config=processor_config,
-            metadata=utils.unextend(record.extended_metadata),
-        )
-    )
-
-
-def touchless_button_sensitivity(record: a121.H5Record) -> ProcessorWrapper:
-    processor_config = touchless_button.ProcessorConfig()
-    processor_config.measurement_type = touchless_button.MeasurementType.CLOSE_AND_FAR_RANGE
-    processor_config.sensitivity_close = 2.2
-    processor_config.sensitivity_far = 2.3
-    return ProcessorWrapper(
-        touchless_button.Processor(
-            sensor_config=record.session_config.sensor_config,
-            processor_config=processor_config,
-            metadata=utils.unextend(record.extended_metadata),
-        )
-    )
-
-
-def touchless_button_patience(record: a121.H5Record) -> ProcessorWrapper:
-    processor_config = touchless_button.ProcessorConfig()
-    processor_config.measurement_type = touchless_button.MeasurementType.CLOSE_AND_FAR_RANGE
-    processor_config.patience_close = 6
-    processor_config.patience_far = 6
-    return ProcessorWrapper(
-        touchless_button.Processor(
-            sensor_config=record.session_config.sensor_config,
-            processor_config=processor_config,
-            metadata=utils.unextend(record.extended_metadata),
-        )
-    )
-
-
-def touchless_button_calibration(record: a121.H5Record) -> ProcessorWrapper:
-    processor_config = touchless_button.ProcessorConfig()
-    processor_config.measurement_type = touchless_button.MeasurementType.CLOSE_AND_FAR_RANGE
-    processor_config.calibration_interval_s = 23
     return ProcessorWrapper(
         touchless_button.Processor(
             sensor_config=record.session_config.sensor_config,
