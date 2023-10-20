@@ -8,6 +8,7 @@ import typing as t
 import warnings
 
 import attrs
+from attributes_doc import attributes_doc
 
 from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 from acconeer.exptool.a121._core.utils import (
@@ -57,6 +58,7 @@ def _copy_docstring_from(thing: t.Any) -> t.Callable[[_T], _T]:
     return inner
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class SubsweepConfig:
     """Subsweep configuration
@@ -68,49 +70,106 @@ class SubsweepConfig:
 
     MAX_HWAAS = 511
 
-    _start_point: int = attrs.field(
-        default=80,
-        converter=int_converter,
-    )
-    _num_points: int = attrs.field(
+    start_point: int = attrs.field(default=80, converter=int_converter)
+    """Starting point of the sweep
+
+    The starting point of the sweep. The corresponding start in millimeter is approximately
+    ``start_point`` * 2.5 mm.
+    """
+
+    num_points: int = attrs.field(
         default=160,
         converter=int_converter,
         validator=[attrs.validators.ge(1)],
     )
-    _step_length: int = attrs.field(
-        default=1,
-        converter=int_converter,
-    )
-    _profile: Profile = attrs.field(
-        default=Profile.PROFILE_3,
-        converter=profile_converter,
-    )
-    _hwaas: int = attrs.field(
+    """Number of data points to measure
+
+    The number of data points to measure in a sweep.
+    """
+
+    step_length: int = attrs.field(default=1, converter=int_converter)
+    """Step length in a sweep
+
+    This sets the number of steps to have between each data point.
+
+    The corresponding distance between each data point is ``step_length`` * 2.5 mm.
+    """
+
+    profile: Profile = attrs.field(default=Profile.PROFILE_3, converter=profile_converter)
+    """Profile
+
+    Each profile consists of a number of settings for the sensor that configures the RX and TX
+    paths. Lower profiles have higher depth resolution while higher profiles have higher radar
+    loop gain.
+    """
+
+    hwaas: int = attrs.field(
         default=8,
         converter=int_converter,
         validator=[attrs.validators.ge(1), attrs.validators.le(511)],
     )
-    _receiver_gain: int = attrs.field(
+    """Hardware accelerated average samples (HWAAS)
+
+    Each data point can be sampled several times and the sensor hardware then produces an
+    average value of those samples. The time needed to measure a sweep is roughly proportional
+    to the number of averaged samples. Hence, if there is a need to obtain a higher update
+    rate, HWAAS could be decreased but this leads to lower SNR.
+
+    HWAAS must be between 1 and 511 inclusive.
+    """
+
+    receiver_gain: int = attrs.field(
         default=16,
         converter=int_converter,
         validator=[attrs.validators.ge(0), attrs.validators.le(23)],
     )
-    _enable_tx: bool = attrs.field(
-        default=True,
-        converter=bool,
-    )
-    _enable_loopback: bool = attrs.field(
-        default=False,
-        converter=bool,
-    )
-    _phase_enhancement: bool = attrs.field(
-        default=False,
-        converter=bool,
-    )
+    """Receiver gain setting
+
+    Must be a value between 0 and 23 inclusive where 23 is the highest gain and 0 the lowest.
+
+    Lower gain gives higher SNR. However, too low gain may result in quantization, lowering
+    SNR. Too high gain may result in saturation, corrupting the data.
+    """
+
+    enable_tx: bool = attrs.field(default=True, converter=bool)
+    """Enable or disable the transmitter
+
+    If set to True, TX is enabled. This will enable the radio transmitter. By turning the
+    transmitter off the RX noise floor can be measured.
+    """
+
+    enable_loopback: bool = attrs.field(default=False, converter=bool)
+    """Enable or disable loopback
+
+    Enabling loopback will activate an internal route between TX and RX in the sensor.
+    The signal will take this route instead of being transmitted out of the sensor.
+
+    Note, loopback can't be enabled together with profile 2.
+    """
+
+    phase_enhancement: bool = attrs.field(default=False, converter=bool)
+    """Enable or disable phase enhancement
+
+    If enabled, the data phase will be enhanced such that coherent distance filtering can be
+    applied. Given a single reflection from an object, the phase will appear as "flat" around
+    the amplitude peak.
+
+    Enabling the phase enhancement increases the processing execution time.
+    """
+
     _prf: PRF = attrs.field(
         default=PRF.PRF_15_6_MHz,
         converter=prf_converter,
     )
+
+    @property
+    @_copy_docstring_from(PRF)
+    def prf(self) -> PRF:
+        return self._prf
+
+    @prf.setter
+    def prf(self, value: PRF) -> None:
+        self._prf = PRF(value)
 
     def _collect_validation_results(self) -> list[ValidationResult]:
         APPROX_BASE_STEP_LENGTH = 2.5e-3
@@ -199,159 +258,13 @@ class SubsweepConfig:
             except ValidationWarning as vw:
                 warnings.warn(vw.message)
 
-    @property
-    def start_point(self) -> int:
-        """Starting point of the sweep
-
-        The starting point of the sweep. The corresponding start in millimeter is approximately
-        ``start_point`` * 2.5 mm.
-        """
-
-        return self._start_point
-
-    @start_point.setter
-    def start_point(self, value: int) -> None:
-        self._start_point = value
-
-    @property
-    def num_points(self) -> int:
-        """Number of data points to measure
-
-        The number of data points to measure in a sweep.
-        """
-
-        return self._num_points
-
-    @num_points.setter
-    def num_points(self, value: int) -> None:
-        self._num_points = value
-
-    @property
-    def step_length(self) -> int:
-        """Step length in a sweep
-
-        This sets the number of steps to have between each data point.
-
-        The corresponding distance between each data point is ``step_length`` * 2.5 mm.
-        """
-
-        return self._step_length
-
-    @step_length.setter
-    def step_length(self, value: int) -> None:
-        self._step_length = value
-
     @staticmethod
-    @_step_length.validator
+    @step_length.validator
     def step_length_validator(instance: t.Any, _: t.Any, step_length: int) -> None:
         if not (
             is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
         ):
             raise ValueError(f"Step length must be a divisor or multiple of {SPARSE_IQ_PPC}")
-
-    @property
-    def profile(self) -> Profile:
-        """Profile
-
-        Each profile consists of a number of settings for the sensor that configures the RX and TX
-        paths. Lower profiles have higher depth resolution while higher profiles have higher radar
-        loop gain.
-        """
-
-        return self._profile
-
-    @profile.setter
-    def profile(self, value: Profile) -> None:
-        self._profile = value
-
-    @property
-    def hwaas(self) -> int:
-        """Hardware accelerated average samples (HWAAS)
-
-        Each data point can be sampled several times and the sensor hardware then produces an
-        average value of those samples. The time needed to measure a sweep is roughly proportional
-        to the number of averaged samples. Hence, if there is a need to obtain a higher update
-        rate, HWAAS could be decreased but this leads to lower SNR.
-
-        HWAAS must be between 1 and 511 inclusive.
-        """
-
-        return self._hwaas
-
-    @hwaas.setter
-    def hwaas(self, value: int) -> None:
-        self._hwaas = value
-
-    @property
-    def receiver_gain(self) -> int:
-        """Receiver gain setting
-
-        Must be a value between 0 and 23 inclusive where 23 is the highest gain and 0 the lowest.
-
-        Lower gain gives higher SNR. However, too low gain may result in quantization, lowering
-        SNR. Too high gain may result in saturation, corrupting the data.
-        """
-
-        return self._receiver_gain
-
-    @receiver_gain.setter
-    def receiver_gain(self, value: int) -> None:
-        self._receiver_gain = value
-
-    @property
-    def enable_tx(self) -> bool:
-        """Enable or disable the transmitter
-
-        If set to True, TX is enabled. This will enable the radio transmitter. By turning the
-        transmitter off the RX noise floor can be measured.
-        """
-
-        return self._enable_tx
-
-    @enable_tx.setter
-    def enable_tx(self, value: bool) -> None:
-        self._enable_tx = value
-
-    @property
-    def enable_loopback(self) -> bool:
-        """Enable or disable loopback
-
-        Enabling loopback will activate an internal route between TX and RX in the sensor.
-        The signal will take this route instead of being transmitted out of the sensor.
-
-        Note, loopback can't be enabled together with profile 2.
-        """
-        return self._enable_loopback
-
-    @enable_loopback.setter
-    def enable_loopback(self, value: bool) -> None:
-        self._enable_loopback = value
-
-    @property
-    def phase_enhancement(self) -> bool:
-        """Enable or disable phase enhancement
-
-        If enabled, the data phase will be enhanced such that coherent distance filtering can be
-        applied. Given a single reflection from an object, the phase will appear as "flat" around
-        the amplitude peak.
-
-        Enabling the phase enhancement increases the processing execution time.
-        """
-
-        return self._phase_enhancement
-
-    @phase_enhancement.setter
-    def phase_enhancement(self, value: bool) -> None:
-        self._phase_enhancement = value
-
-    @property
-    @_copy_docstring_from(PRF)
-    def prf(self) -> PRF:
-        return self._prf
-
-    @prf.setter
-    def prf(self, value: PRF) -> None:
-        self._prf = PRF(value)
 
     def to_dict(self) -> dict[str, t.Any]:
         return {k.strip("_"): v for k, v in attrs.asdict(self).items()}
