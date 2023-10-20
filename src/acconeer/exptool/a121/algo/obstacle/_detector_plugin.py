@@ -255,7 +255,7 @@ class PlotPlugin(PgPlotPlugin):
         self.bin0_plot = win.addPlot(
             row=1,
             col=0,
-            title="Zeroth bin",
+            title="Static objects (Zeroth FFT bin)",
         )
 
         self.bin0_plot.showGrid(x=True, y=True)
@@ -285,7 +285,7 @@ class PlotPlugin(PgPlotPlugin):
         self.other_bins_plot = win.addPlot(
             row=1,
             col=1,
-            title="Other bins",
+            title="Moving objects (Other FFT bins)",
         )
 
         self.other_bins_plot.showGrid(x=True, y=True)
