@@ -8,6 +8,8 @@ import typing as t
 
 import typing_extensions as te
 
+from acconeer.exptool._core.docstrings import get_attribute_docstring, get_docstring
+
 
 _T = t.TypeVar("_T")
 
@@ -26,7 +28,7 @@ def delegate_field(
     descriptor: t.Any,
     type_: type[_T],
     *,
-    doc: t.Optional[str] = None,
+    doc: t.Union[str, type, None] = None,
     error_format: t.Optional[str] = None,
 ) -> Descriptor[_T]:
     """
@@ -68,7 +70,11 @@ def delegate_field(
     :param type_:
             The type of the resulting property.
     :param doc:
-            If str: this will be the property's docstring. An empty string will set __doc__ = None.
+            If str:             This will be the property's docstring. An empty
+                                string will set __doc__ = None.
+            If a class (type):  Will attempt to find a docstring in the class,
+                                using the descriptor name.
+                                If no docstring can be found, an error will be raised.
             If omitted or None: Uses descriptor.__doc__ unless
                                 it's None (which will result in an error)
     :param error_format:
@@ -143,17 +149,20 @@ def _with_return_type_annotation(
     return f
 
 
-def _determine_docstring(doc: t.Optional[str], descriptor: Descriptor[t.Any]) -> t.Optional[str]:
-    """
-    Determines docstring.
-    If `doc` is a string, that will be used as the docstring (empty string results
-    in no docstring)
-    If `doc` is None, an effort will be made to search a the docstring in the descriptor.
-    """
+def _determine_docstring(
+    doc: t.Union[str, type, None], descriptor: Descriptor[t.Any]
+) -> t.Optional[str]:
+    """See behaviour of "doc" parameter in delegate_field."""
     if isinstance(doc, str):
         return None if doc == "" else doc
-    elif doc is None and getattr(descriptor, "__doc__", None) is not None:
-        return getattr(descriptor, "__doc__", None)
+    elif doc is None and get_docstring(descriptor) is not None:
+        return get_docstring(descriptor)
+    elif isinstance(doc, type):
+        descriptor_name = _descriptor_given_name(descriptor)
+        if descriptor_name is not None:
+            docstring = get_attribute_docstring(doc, descriptor_name)
+            if docstring is not None:
+                return docstring
 
     raise RuntimeError(
         f"Could not automatically find docstring for {descriptor}. "
