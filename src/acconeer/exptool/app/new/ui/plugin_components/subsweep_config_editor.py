@@ -12,6 +12,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
@@ -51,51 +52,51 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
     SUBSWEEP_CONFIG_FACTORIES: PidgetFactoryMapping = {
         "start_point": pidgets.IntPidgetFactory(
             name_label_text="Start point:",
-            name_label_tooltip=a121.SubsweepConfig.start_point.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "start_point"),
         ),
         "num_points": pidgets.IntPidgetFactory(
             name_label_text="Number of points:",
-            name_label_tooltip=a121.SubsweepConfig.num_points.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "num_points"),
             limits=(1, 4095),
         ),
         "step_length": pidgets.IntPidgetFactory(
             name_label_text="Step length:",
-            name_label_tooltip=a121.SubsweepConfig.step_length.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "step_length"),
             limits=(1, None),
         ),
         "hwaas": pidgets.IntPidgetFactory(
             name_label_text="HWAAS:",
-            name_label_tooltip=a121.SubsweepConfig.hwaas.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "hwaas"),
             limits=(1, 511),
         ),
         "receiver_gain": pidgets.IntPidgetFactory(
             name_label_text="Receiver gain:",
-            name_label_tooltip=a121.SubsweepConfig.receiver_gain.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "receiver_gain"),
             limits=(0, 23),
         ),
         "profile": pidgets.EnumPidgetFactory(
             enum_type=a121.Profile,
             name_label_text="Profile:",
-            name_label_tooltip=a121.SubsweepConfig.profile.__doc__,  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "profile"),  # type: ignore[arg-type]
             label_mapping=PROFILE_LABEL_MAP,
         ),
         "prf": pidgets.EnumPidgetFactory(
             enum_type=a121.PRF,
             name_label_text="PRF:",
-            name_label_tooltip=a121.SubsweepConfig.prf.__doc__,  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "prf"),  # type: ignore[arg-type]
             label_mapping=PRF_LABEL_MAP,
         ),
         "enable_tx": pidgets.CheckboxPidgetFactory(
             name_label_text="Enable transmitter",
-            name_label_tooltip=a121.SubsweepConfig.enable_tx.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "enable_tx"),
         ),
         "enable_loopback": pidgets.CheckboxPidgetFactory(
             name_label_text="Enable loopback",
-            name_label_tooltip=a121.SubsweepConfig.enable_loopback.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "enable_loopback"),
         ),
         "phase_enhancement": pidgets.CheckboxPidgetFactory(
             name_label_text="Phase enhancement",
-            name_label_tooltip=a121.SubsweepConfig.phase_enhancement.__doc__,
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "phase_enhancement"),
         ),
     }
     ADVANCED_PARAMETERS = {
