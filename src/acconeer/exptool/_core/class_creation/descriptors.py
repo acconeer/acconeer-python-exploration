@@ -36,31 +36,32 @@ def delegate_field(
 
     Example:
 
-        @attrs.mutable
-        class Wheel:
-            rpm: float
-            angle: float
+    >>> import attrs
+    >>>
+    >>> @attrs.mutable
+    ... class Wheel:
+    ...     rpm: float
+    ...     angle: float
+    >>>
+    >>> @attrs.mutable
+    ... class Bike:
+    ...     front_wheel: Wheel
+    ...     back_wheel: Wheel
+    ...
+    ...     # Note the missing type annotations here
+    ...     rpm = delegate_field("back_wheel", Wheel.rpm, type_=float, doc="Rpm of the back wheel")
+    ...     angle = delegate_field("front_wheel", Wheel.angle, type_=float, doc="Angle of the front wheel")
+    >>>
+    >>> b = Bike(Wheel(0, 0), Wheel(0, 0))
+    >>> b.rpm = 70
+    >>> b.angle = 45
+    >>> b
+    Bike(front_wheel=Wheel(rpm=0, angle=45), back_wheel=Wheel(rpm=70, angle=0))
 
-        @attrs.mutable
-        class Bike:
-            front_wheel: Wheel
-            back_wheel: Wheel
-
-            # Note the missing type annotations here
-            rpm = delegate_field("back_wheel", Wheel.rpm, type_=float, doc="Rpm of the back wheel")
-            angle = delegate_field("front_wheel", Wheel.angle, type_=float, doc="Angle of the front wheel")
-
-        b = Bike(Wheel(0, 0), Wheel(0, 0))
-
-        b.rpm = 70
-        b.angle = 45
-        b
-        # Bike(front_wheel=Wheel(rpm=0, angle=45), back_wheel=Wheel(rpm=70, angle=0))
-
-        b.rpm.__doc__
-        # 'Rpm of the back wheel'
-        b.angle.__doc__
-        # 'Angle of the front wheel'
+    >>> Bike.rpm.__doc__
+    'Rpm of the back wheel'
+    >>> Bike.angle.__doc__
+    'Angle of the front wheel'
 
     :param delegate_name:
             Name of the the attribute that holds an object to delegate to

@@ -154,12 +154,10 @@ def map_over_extended_structure(
 
     Example:
 
-        structure = [{1: "one"}, {2: "two"}]        # KeyT = int, ValueT = str
-        func = str.encode                           # ValueT = str, T = bytes
-
-        # Result
-        result = [{1: b"one"}, {2: b"two"}]         # KeyT = int, T = bytes
-
+    >>> structure = [{1: "one"}, {2: "two"}]            # KeyT = int, ValueT = str
+    >>> func = str.encode                               # ValueT = str, T = bytes
+    >>> map_over_extended_structure(func, structure)
+    [{1: b'one'}, {2: b'two'}]
     """
     return [{k: func(v) for k, v in d.items()} for d in structure]
 
@@ -174,12 +172,10 @@ def zip_extended_structures(
 
     Example:
 
-        structure_a = [{1: a_1, 2: a_2}, {1: a_3}]
-
-        structure_b = [{1: b_1, 2: b_2}, {1: b_3}]
-
-        result: [{1: (a_1, b_1), 2: (a_2, b_2)}, 1: {(a_3, b_3)}]
-
+    >>> a = [{1: "a_1", 2: "a_2"}, {1: "a_3"}]
+    >>> b = [{1: "b_1", 2: "b_2"}, {1: "b_3"}]
+    >>> zip_extended_structures(a, b)
+    [{1: ('a_1', 'b_1'), 2: ('a_2', 'b_2')}, {1: ('a_3', 'b_3')}]
     """
     res = []
     try:
@@ -208,14 +204,11 @@ def zip3_extended_structures(
 
     Example:
 
-        structure_a = [{1: a_1, 2: a_2}, {1: a_3}]
-
-        structure_b = [{1: b_1, 2: b_2}, {1: b_3}]
-
-        structure_c = [{1: c_1, 2: c_2}, {1: c_3}]
-
-        result: [{1: (a_1, b_1, c_1), 2: (a_2, b_2, c_2)}, {1: (a_3, b_3, c_3)}]
-
+    >>> a = [{1: "a_1", 2: "a_2"}, {1: "a_3"}]
+    >>> b = [{1: "b_1", 2: "b_2"}, {1: "b_3"}]
+    >>> c = [{1: "c_1", 2: "c_2"}, {1: "c_3"}]
+    >>> zip3_extended_structures(a, b, c)
+    [{1: ('a_1', 'b_1', 'c_1'), 2: ('a_2', 'b_2', 'c_2')}, {1: ('a_3', 'b_3', 'c_3')}]
     """
     res = []
     try:
@@ -367,14 +360,17 @@ def parse_rss_version(rss_version: str) -> packaging.version.Version:
 
     Examples:
 
-        "a121-v1.2.3" ->
-            Version("1.2.3")
-        "a121-v1.2.3-rc4" ->
-            Version("1.2.3rc4")
-        "a121-v1.2.3-123-g0e03503be1" ->
-            Version("1.2.4.dev123+g0e03503be1")
-        "a121-v1.2.3-rc4-123-g0e03503be1" ->
-            Version("1.2.3rc5.dev123+g0e03503be1")
+    >>> parse_rss_version("a121-v1.2.3")
+    <Version('1.2.3')>
+
+    >>> parse_rss_version("a121-v1.2.3-rc4")
+    <Version('1.2.3rc4')>
+
+    >>> parse_rss_version("a121-v1.2.3-123-g0e03503be1")
+    <Version('1.2.4.dev123+g0e03503be1')>
+
+    >>> parse_rss_version("a121-v1.2.3-rc4-123-g0e03503be1")
+    <Version('1.2.3rc5.dev123+g0e03503be1')>
 
     Read more: https://packaging.pypa.io/en/latest/version.html
     """

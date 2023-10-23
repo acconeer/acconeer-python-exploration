@@ -122,3 +122,10 @@ module = [
     "serial.*",
 ]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--ignore=src/acconeer/exptool/_winusbcdc --ignore=src/acconeer/exptool/a111"
+doctest_optionflags = [
+    "ELLIPSIS",
+    "NORMALIZE_WHITESPACE",
+]

@@ -30,8 +30,8 @@ SPHINX_HTML_ARGS = ("-b", "html", SPHINX_SOURCE_DIR, SPHINX_OUTPUT_DIR)
 
 
 class Parser(argparse.ArgumentParser):
-    KNOWN_TEST_GROUPS = ["unit", "integration", "app", "model"]
-    DEFAULT_TEST_GROUPS = ["unit", "integration"]
+    KNOWN_TEST_GROUPS = ["unit", "integration", "app", "model", "doctest"]
+    DEFAULT_TEST_GROUPS = ["unit", "integration", "doctest"]
 
     KNOWN_DOCS_BUILDERS = ["html", "latexpdf", "rediraffecheckdiff", "rediraffewritediff"]
     DEFAULT_DOCS_BUILDERS = ["html"]
@@ -220,6 +220,10 @@ def test(session):
     if "model" in args.test_groups:
         install_extras |= {"algo"}
         pytest_commands.append(["-p", "no:pytest-qt", "tests/model"])
+
+    if "doctest" in args.test_groups:
+        install_extras |= {"app"}
+        pytest_commands.append(["--doctest-modules", "src/acconeer/exptool/"])
 
     # Override pytest command:
 
