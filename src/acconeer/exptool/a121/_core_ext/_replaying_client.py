@@ -41,6 +41,7 @@ class _ReplayingClient(Client, register=False):
             specified by 'cycled_session_idx'.
         :param realtime_replay: If True, replays the data at the rate of recording
         """
+        super().__init__(record.client_info)
         self._record = record
         self._is_started: bool = False
         self._result_iterator: Iterator[list[dict[int, Result]]] = iter([])
