@@ -106,6 +106,7 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
+    "attributes_doc.*",
     "cbor2.*",
     "dirty_equals.*",
     "h5py.*",
