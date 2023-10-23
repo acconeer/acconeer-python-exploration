@@ -416,7 +416,7 @@ class PlotPlugin(PlotPluginBase):
 
                 transform = QTransform()
                 transform.translate(subsweep_distances_m[0], vels[0] - 0.5 * vel_res)
-                transform.scale(metadata.base_step_length_m, vel_res)
+                transform.scale(metadata.base_step_length_m * sensor_config.step_length, vel_res)
 
                 image = pg.ImageItem(autoDownsample=True)
                 image.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
