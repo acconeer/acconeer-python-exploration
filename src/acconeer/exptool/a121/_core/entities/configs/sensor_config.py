@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 import warnings
-from typing import Any, Iterator, Optional, TypeVar, Union, overload
+from typing import Any, Optional, TypeVar
 
 import numpy as np
 
+from acconeer.exptool._core.class_creation.descriptors import Descriptor, delegate_field
 from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 from acconeer.exptool.a121._core import utils
 
@@ -26,46 +26,14 @@ _TOO_MANY_SUBSWEEPS_ERROR_FORMAT = (
 )
 
 
-class SubsweepProxyProperty(utils.ProxyProperty[T]):
-    def __init__(self, prop: Any) -> None:
-        super().__init__(
-            accessor=lambda sensor_config: sensor_config.subsweep,
-            prop=prop,
-        )
-
-    @contextlib.contextmanager
-    def _more_helpful_accessor_errors(self) -> Iterator[None]:
-        try:
-            yield
-        except AttributeError:
-            # this should only be None if "property" isn't used as a decorator
-            # "fget" is the function that gets decorated with "@property"
-            # while "fset" is the function that gets decorated with "@<property name>.setter"
-            assert self._property.fget is not None
-
-            raise AttributeError(
-                _TOO_MANY_SUBSWEEPS_ERROR_FORMAT.format(self._property.fget.__name__)
-            ) from None
-
-    @overload
-    def __get__(self, obj: None, objtype: Optional[type] = ...) -> utils.ProxyProperty[T]:
-        ...
-
-    @overload
-    def __get__(self, obj: Any, objtype: Optional[type] = ...) -> T:
-        ...
-
-    def __get__(
-        self,
-        obj: Optional[Any],
-        objtype: Optional[type] = None,
-    ) -> Union[T, utils.ProxyProperty[T]]:
-        with self._more_helpful_accessor_errors():
-            return super().__get__(obj, objtype)
-
-    def __set__(self, obj: Any, value: T) -> None:
-        with self._more_helpful_accessor_errors():
-            return super().__set__(obj, value)
+def subsweep_delegate_field(descriptor: Any, type_: type[T]) -> Descriptor[T]:
+    return delegate_field(
+        "subsweep",
+        descriptor,
+        type_=type_,
+        doc=SubsweepConfig,
+        error_format=_TOO_MANY_SUBSWEEPS_ERROR_FORMAT.format("{descriptor_name}"),
+    )
 
 
 @utils.no_dynamic_member_creation
@@ -140,16 +108,16 @@ class SensorConfig:
     _inter_frame_idle_state: IdleState
     _inter_sweep_idle_state: IdleState
 
-    start_point = SubsweepProxyProperty[int](SubsweepConfig.start_point)
-    num_points = SubsweepProxyProperty[int](SubsweepConfig.num_points)
-    step_length = SubsweepProxyProperty[int](SubsweepConfig.step_length)
-    profile = SubsweepProxyProperty[Profile](SubsweepConfig.profile)
-    hwaas = SubsweepProxyProperty[int](SubsweepConfig.hwaas)
-    receiver_gain = SubsweepProxyProperty[int](SubsweepConfig.receiver_gain)
-    enable_tx = SubsweepProxyProperty[bool](SubsweepConfig.enable_tx)
-    enable_loopback = SubsweepProxyProperty[bool](SubsweepConfig.enable_loopback)
-    phase_enhancement = SubsweepProxyProperty[bool](SubsweepConfig.phase_enhancement)
-    prf = SubsweepProxyProperty[PRF](SubsweepConfig.prf)
+    start_point = subsweep_delegate_field(SubsweepConfig.start_point, type_=int)
+    num_points = subsweep_delegate_field(SubsweepConfig.num_points, type_=int)
+    step_length = subsweep_delegate_field(SubsweepConfig.step_length, type_=int)
+    profile = subsweep_delegate_field(SubsweepConfig.profile, type_=Profile)
+    hwaas = subsweep_delegate_field(SubsweepConfig.hwaas, type_=int)
+    receiver_gain = subsweep_delegate_field(SubsweepConfig.receiver_gain, type_=int)
+    enable_tx = subsweep_delegate_field(SubsweepConfig.enable_tx, type_=bool)
+    enable_loopback = subsweep_delegate_field(SubsweepConfig.enable_loopback, type_=bool)
+    phase_enhancement = subsweep_delegate_field(SubsweepConfig.phase_enhancement, type_=bool)
+    prf = subsweep_delegate_field(SubsweepConfig.prf, type_=PRF)
 
     def __init__(
         self,
