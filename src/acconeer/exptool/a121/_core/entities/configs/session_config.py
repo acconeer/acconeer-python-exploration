@@ -67,7 +67,16 @@ class SessionConfig:
     A session config with multiple sensor configs (in a single group or multiple) is considered
     "extended". This is reflected in the shape of some return types. A SessionConfig with a single
     SensorConfig is not extended, but the return values can be passed as extended with the keyword
-    argument ``extended=True``.
+    argument ``extended=True``, see below:
+
+    >>> SessionConfig([{1: SensorConfig()}])
+    SessionConfig(groups=[{1: ...}], ..., extended=False)
+
+    >>> SessionConfig([{1: SensorConfig(), 2: SensorConfig()}])
+    SessionConfig(groups=[{1: ..., 2: ...}], ..., extended=True)
+
+    >>> SessionConfig([{1: SensorConfig()}], extended=True)
+    SessionConfig(groups=[{1: ...}], ..., extended=True)
 
     :param arg: The sensor configuration(s).
     :param extended:
