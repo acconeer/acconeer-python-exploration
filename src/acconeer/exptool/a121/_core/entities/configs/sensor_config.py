@@ -575,3 +575,17 @@ class SensorConfig:
 
     def __str__(self) -> str:
         return "\n".join(self._pretty_str_lines())
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}("
+            + f"subsweeps={self.subsweeps}, "
+            + f"sweeps_per_frame={self.sweeps_per_frame}, "
+            + f"sweep_rate={self.sweep_rate}, "
+            + f"frame_rate={self.frame_rate}, "
+            + f"continuous_sweep_mode={self.continuous_sweep_mode}, "
+            + f"double_buffering={self.double_buffering}, "
+            + f"inter_frame_idle_state={self.inter_frame_idle_state}, "
+            + f"inter_sweep_idle_state={self.inter_sweep_idle_state}"
+            + ")"
+        )

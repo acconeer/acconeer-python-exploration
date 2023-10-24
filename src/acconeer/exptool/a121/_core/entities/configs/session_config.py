@@ -218,6 +218,13 @@ class SessionConfig:
     def __eq__(self, other: Any) -> bool:
         return type(self) == type(other) and self.to_dict() == other.to_dict()
 
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}("
+            + f"groups={self.groups}, update_rate={self.update_rate}, extended={self.extended}"
+            + ")"
+        )
+
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"groups": [], "extended": self.extended}
         for group_dict in self._groups:
