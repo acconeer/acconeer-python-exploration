@@ -6,9 +6,14 @@ import math
 from typing import Any, Optional
 
 import attrs
+import numpy as np
+import numpy.typing as npt
 import typing_extensions as te
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.class_creation.attrs import (
+    attrs_ndarray_isclose,
+)
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import vibration
 from acconeer.exptool.a121.algo.vibration._processor import _load_algo_data
@@ -16,29 +21,61 @@ from acconeer.exptool.a121.algo.vibration._processor import _load_algo_data
 
 @attrs.frozen
 class ResultSlice:
-    max_psd_ampl: Optional[float] = attrs.field()
-    max_psd_ampl_freq: Optional[float] = attrs.field()
+    _REL_TOL = 1e-9
+
+    max_displacement: Optional[float] = attrs.field()
+    max_displacement_freq: Optional[float] = attrs.field()
+    max_sweep_amplitude: float
+    lp_displacements: Optional[npt.NDArray[np.float_]] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_displacements_freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    time_series_std: Optional[float] = attrs.field()
 
     @classmethod
     def from_processor_result(cls, result: vibration.ProcessorResult) -> te.Self:
         return cls(
-            max_psd_ampl=result.max_psd_ampl,
-            max_psd_ampl_freq=result.max_psd_ampl_freq,
+            max_displacement=result.max_displacement,
+            max_displacement_freq=result.max_displacement_freq,
+            max_sweep_amplitude=result.max_sweep_amplitude,
+            lp_displacements=result.lp_displacements,
+            lp_displacements_freqs=result.lp_displacements_freqs,
+            time_series_std=result.time_series_std,
         )
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            # Handle NoneType values
-            equality = (
-                self.max_psd_ampl == other.max_psd_ampl
-                and self.max_psd_ampl_freq == other.max_psd_ampl_freq
-            )
 
-            if not equality:
-                # Handle real values
+            if other.max_displacement is None:
+                # Handle NoneType values
                 equality = math.isclose(
-                    self.max_psd_ampl, other.max_psd_ampl, rel_tol=1e-9
-                ) and math.isclose(self.max_psd_ampl_freq, other.max_psd_ampl_freq, rel_tol=1e-9)
+                    self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
+                ) and math.isclose(
+                    self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL
+                )
+            else:
+                equality = (
+                    math.isclose(
+                        self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
+                    )
+                    and math.isclose(
+                        self.max_displacement, other.max_displacement, rel_tol=self._REL_TOL
+                    )
+                    and math.isclose(
+                        self.max_displacement_freq,
+                        other.max_displacement_freq,
+                        rel_tol=self._REL_TOL,
+                    )
+                    and math.isclose(
+                        self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL
+                    )
+                    and np.allclose(
+                        self.lp_displacements, other.lp_displacements, rtol=self._REL_TOL
+                    )
+                    and np.allclose(
+                        self.lp_displacements_freqs,
+                        other.lp_displacements_freqs,
+                        rtol=self._REL_TOL,
+                    )
+                )
 
             return equality
         else:

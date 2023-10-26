@@ -179,6 +179,11 @@ def input_path(resource_name: str) -> Path:
         (
             vibration_test.vibration_controller,
             t.List[vibration_test.ResultSlice],
+            "vibration_cont_sweep.h5",
+        ),
+        (
+            vibration_test.vibration_controller,
+            t.List[vibration_test.ResultSlice],
             "vibration.h5",
         ),
     ],

@@ -25,6 +25,7 @@ from acconeer.exptool.a121.algo.vibration import (
     Processor,
     ProcessorConfig,
     ProcessorResult,
+    ReportedDisplacement,
     get_sensor_config,
 )
 from acconeer.exptool.app.new import (
@@ -95,16 +96,24 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
                 limits=(0, 1),
                 decimals=2,
             ),
-            "sensitivity": pidgets.FloatSliderPidgetFactory(
-                name_label_text="Threshold sensitivity:",
-                suffix="dB",
-                limits=(0, 30),
+            "threshold_margin": pidgets.FloatSliderPidgetFactory(
+                name_label_text="Threshold margin:",
+                suffix="um",
+                limits=(0, 100),
                 decimals=1,
             ),
             "amplitude_threshold": pidgets.FloatPidgetFactory(
-                name_label_text="Minimum amplitude:",
+                name_label_text="Amplitude threshold:",
                 decimals=0,
                 limits=(0, None),
+            ),
+            "reported_displacement_mode": pidgets.EnumPidgetFactory(
+                name_label_text="Displacement mode:",
+                enum_type=ReportedDisplacement,
+                label_mapping={
+                    ReportedDisplacement.AMPLITUDE: "Amplitude",
+                    ReportedDisplacement.PEAK2PEAK: "Peak to peak",
+                },
             ),
         }
 
@@ -148,24 +157,28 @@ class PlotPlugin(PgPlotPlugin):
 
         self.meas_dist_m = sensor_config.start_point * APPROX_BASE_STEP_LENGTH_M
 
-        pen = et.utils.pg_pen_cycler(0)
+        pen_blue = et.utils.pg_pen_cycler(0)
+        pen_orange = et.utils.pg_pen_cycler(1)
         brush = et.utils.pg_brush_cycler(0)
         brush_dot = et.utils.pg_brush_cycler(1)
         symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
+        feat_kw_blue = dict(pen=pen_blue, **symbol_kw)
+        feat_kw_orange = dict(pen=pen_orange)
         symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
 
         # presence plot
-        self.presence_plot = pg.PlotItem()
-        self.presence_plot.setMenuEnabled(False)
-        self.presence_plot.showGrid(x=False, y=True)
-        self.presence_plot.setLabel("left", "Max amplitude")
-        self.presence_plot.setLabel("bottom", "Distance (m)")
-        self.presence_plot.setXRange(self.meas_dist_m - 0.001, self.meas_dist_m + 0.001)
-        self.presence_curve = self.presence_plot.plot(**dict(pen=pen, **symbol_dot_kw))
+        self.object_detection_plot = pg.PlotItem()
+        self.object_detection_plot.setMenuEnabled(False)
+        self.object_detection_plot.showGrid(x=False, y=True)
+        self.object_detection_plot.setLabel("left", "Max amplitude")
+        self.object_detection_plot.setLabel("bottom", "Distance (m)")
+        self.object_detection_plot.setXRange(self.meas_dist_m - 0.001, self.meas_dist_m + 0.001)
+        self.presence_curve = self.object_detection_plot.plot(
+            **dict(pen=pen_blue, **symbol_dot_kw)
+        )
 
-        self.presence_threshold = pg.InfiniteLine(pen=pen, angle=0)
-        self.presence_plot.addItem(self.presence_threshold)
+        self.presence_threshold = pg.InfiniteLine(pen=pen_blue, angle=0)
+        self.object_detection_plot.addItem(self.presence_threshold)
         self.presence_threshold.show()
 
         self.smooth_max_presence = et.utils.SmoothMax(tau_decay=10.0)
@@ -174,13 +187,23 @@ class PlotPlugin(PgPlotPlugin):
         self.time_series_plot = pg.PlotItem()
         self.time_series_plot.setMenuEnabled(False)
         self.time_series_plot.showGrid(x=True, y=True)
-        self.time_series_plot.setLabel("left", "Displacement (mm)")
+        self.time_series_plot.setLabel("left", "Displacement (<font>&mu;</font>m)")
         self.time_series_plot.setLabel("bottom", "History")
-        self.time_series_curve = self.time_series_plot.plot(**feat_kw)
+        self.time_series_curve = self.time_series_plot.plot(**feat_kw_blue)
+
+        self.time_series_plot.setYRange(-1000, 1000)
+        self.time_series_plot.setXRange(0, 1024)
+
+        self.text_item_time_series = pg.TextItem(
+            fill=pg.mkColor(0xFF, 0x7F, 0x0E, 200),
+            anchor=(0.5, 0),
+        )
+        self.text_item_time_series.hide()
+        self.time_series_plot.addItem(self.text_item_time_series)
 
         sublayout = self.plot_layout.addLayout(row=0, col=0)
         sublayout.layout.setColumnStretchFactor(1, 5)
-        sublayout.addItem(self.presence_plot, row=0, col=0)
+        sublayout.addItem(self.object_detection_plot, row=0, col=0)
         sublayout.addItem(self.time_series_plot, row=0, col=1)
 
         self.smooth_lim_time_series = et.utils.SmoothLimits(tau_decay=0.5, tau_grow=0.1)
@@ -188,64 +211,98 @@ class PlotPlugin(PgPlotPlugin):
         self.fft_plot = self.plot_layout.addPlot(col=0, row=1)
         self.fft_plot.setMenuEnabled(False)
         self.fft_plot.showGrid(x=True, y=True)
-        self.fft_plot.setLabel("left", "Power (dB)")
+        self.fft_plot.setLabel("left", "Displacement (<font>&mu;</font>m)")
         self.fft_plot.setLabel("bottom", "Frequency (Hz)")
+        self.fft_plot.setLogMode(False, True)
         self.fft_plot.addItem(pg.PlotDataItem())
         self.fft_curve = [
-            self.fft_plot.plot(**feat_kw),
-            self.fft_plot.plot(**dict(pen=pen, **symbol_dot_kw)),
+            self.fft_plot.plot(**feat_kw_blue),
+            self.fft_plot.plot(**feat_kw_orange),
+            self.fft_plot.plot(**dict(pen=pen_blue, **symbol_dot_kw)),
         ]
 
-        self.text_item = pg.TextItem(
+        self.text_item_fft = pg.TextItem(
             fill=pg.mkColor(0xFF, 0x7F, 0x0E, 200),
             anchor=(0.5, 0),
         )
-        self.text_item.hide()
-        self.fft_plot.addItem(self.text_item)
+        self.text_item_fft.hide()
+        self.fft_plot.addItem(self.text_item_fft)
 
         self.smooth_max_fft = et.utils.SmoothMax()
 
     def draw_plot_job(self, processor_result: ProcessorResult) -> None:
+        # Extra result
+        time_series = processor_result.extra_result.zm_time_series
+        lp_displacements_threshold = processor_result.extra_result.lp_displacements_threshold
+        amplitude_threshold = processor_result.extra_result.amplitude_threshold
 
-        time_series = processor_result.time_series
-        z_abs_db = processor_result.lp_z_abs_db
-        freqs = processor_result.freqs
-        max_amplitude = processor_result.max_amplitude
-        amplitude_threshold = processor_result.amplitude_threshold
-        max_psd_ampl = processor_result.max_psd_ampl
-        max_psd_ampl_freq = processor_result.max_psd_ampl_freq
+        # Processor result
+        lp_displacements = processor_result.lp_displacements
+        lp_displacements_freqs = processor_result.lp_displacements_freqs
+        max_amplitude = processor_result.max_sweep_amplitude
+        max_displacement = processor_result.max_displacement
+        max_displacement_freq = processor_result.max_displacement_freq
+        time_series_std = processor_result.time_series_std
 
-        # plot object presence metric.
+        # Plot object presence metric
         self.presence_curve.setData([self.meas_dist_m], [max_amplitude])
         self.presence_threshold.setValue(amplitude_threshold)
         lim = self.smooth_max_presence.update(max_amplitude)
-        self.presence_plot.setYRange(0, max(1000.0, lim))
+        self.object_detection_plot.setYRange(0, max(1000.0, lim))
 
-        if processor_result.result_available:
-            # plot time series and psd as object is present.
-            self.time_series_curve.setData(time_series)
+        # Plot time series
+        if time_series is not None and amplitude_threshold < max_amplitude:
+            assert time_series_std is not None
             lim = self.smooth_lim_time_series.update(time_series)
             self.time_series_plot.setYRange(lim[0], lim[1])
+            self.time_series_plot.setXRange(0, time_series.shape[0])
 
-            assert z_abs_db is not None
-            self.fft_curve[0].setData(freqs, z_abs_db)
-            lim = self.smooth_max_fft.update(np.max(z_abs_db))
-            self.fft_plot.setYRange(0, lim)
+            self.text_item_time_series.setPos(time_series.size / 2, lim[1] * 0.95)
+            time_series_std_str = "{:.0f}".format(time_series_std)
+            html_format = (
+                '<div style="text-align: center">'
+                '<span style="color: #FFFFFF;font-size:15pt;">'
+                "{}</span></div>".format("STD : " + time_series_std_str + "<font>&mu;</font>m")
+            )
+            self.text_item_time_series.setHtml(html_format)
+            self.text_item_time_series.hide()  # do not display std(for now)
+            self.time_series_curve.setData(time_series)
 
-            if max_psd_ampl_freq is not None:
-                self.fft_curve[1].setData([max_psd_ampl_freq], [max_psd_ampl])
-                # Place text box centered at the top of the plotting window.
-                self.text_item.setPos(max(freqs) / 2, lim * 0.95)
+        # Plot spectrum
+        if lp_displacements is not None:
+            assert time_series is not None
+            assert lp_displacements is not None
+
+            self.fft_curve[0].setData(lp_displacements_freqs, lp_displacements)
+            self.fft_curve[1].setData(lp_displacements_freqs, lp_displacements_threshold)
+            lim = self.smooth_max_fft.update(np.max(lp_displacements))
+            self.fft_plot.setYRange(-1, np.log10(lim))
+
+            if max_displacement_freq is not None and max_displacement is not None:
+                self.fft_curve[2].setData([max_displacement_freq], [max_displacement])
+
+                # Place text box centered at the top of the plotting window
+                self.text_item_fft.setPos(max(lp_displacements_freqs) / 2, np.log10(lim) * 0.95)
+                max_displacement_str = "{:.0f}".format(max_displacement)
+                max_displacement_freq_str = "{:.1f}".format(max_displacement_freq)
                 html_format = (
                     '<div style="text-align: center">'
                     '<span style="color: #FFFFFF;font-size:15pt;">'
-                    "{}</span></div>".format("Detected Frequency: " + str(int(max_psd_ampl_freq)))
+                    "{}</span></div>".format(
+                        "Frequency: "
+                        + max_displacement_freq_str
+                        + " Hz"
+                        + "<br>"
+                        + "Displacement: "
+                        + max_displacement_str
+                        + "<font>&mu;</font>m"
+                    )
                 )
-                self.text_item.setHtml(html_format)
-                self.text_item.show()
+                self.text_item_fft.setHtml(html_format)
+                self.text_item_fft.show()
             else:
-                self.fft_curve[1].setData([], [])
-                self.text_item.hide()
+                self.fft_curve[2].setData([], [])
+                self.text_item_fft.hide()
 
 
 class PluginSpec(PluginSpecBase):

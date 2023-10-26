@@ -5,7 +5,9 @@ from ._processor import (
     Processor,
     ProcessorConfig,
     ProcessorContext,
+    ProcessorExtraResult,
     ProcessorResult,
+    ReportedDisplacement,
     _load_algo_data,
     get_sensor_config,
 )

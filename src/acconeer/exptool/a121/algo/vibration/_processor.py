@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import enum
 from typing import Optional
 
 import attrs
@@ -16,11 +17,23 @@ from acconeer.exptool._core.class_creation.attrs import (
     attrs_optional_ndarray_isclose,
 )
 from acconeer.exptool.a121.algo import (
-    APPROX_BASE_STEP_LENGTH_M,
+    PERCEIVED_WAVELENGTH,
+    AlgoParamEnum,
     AlgoProcessorConfigBase,
     ProcessorBase,
     double_buffering_frame_filter,
 )
+from acconeer.exptool.utils import is_power_of_2
+
+
+class ReportedDisplacement(AlgoParamEnum):
+    """Selects how displacement is reported."""
+
+    AMPLITUDE = enum.auto()
+    """Report displacement as amplitude."""
+
+    PEAK2PEAK = enum.auto()
+    """Report displacement as peak to peak."""
 
 
 @attrs.mutable(kw_only=True)
@@ -31,16 +44,31 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     lp_coeff: float = attrs.field(default=0.95)
     """Specify filter coefficient of exponential filter."""
 
-    sensitivity: float = attrs.field(default=10.0)
-    """Specify threshold sensitivity."""
+    threshold_margin: float = attrs.field(default=10.0)
+    """Specify threshold margin (micro meter)."""
 
     amplitude_threshold: float = attrs.field(default=100.0)
     """Specify minimum amplitude for calculating vibration."""
+
+    reported_displacement_mode: ReportedDisplacement = attrs.field(
+        default=ReportedDisplacement.AMPLITUDE,
+        converter=ReportedDisplacement,
+    )
+    """Selects whether to report the amplitude or peak to peak of the estimated frequency."""
 
     def _collect_validation_results(
         self, config: a121.SessionConfig
     ) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
+
+        if not is_power_of_2(self.time_series_length):
+            validation_results.append(
+                a121.ValidationWarning(
+                    self,
+                    "time_series_length",
+                    "Should be power of 2 for efficient usage of fast fourier transform",
+                )
+            )
 
         if config.sensor_config.sweep_rate is None:
             validation_results.append(
@@ -60,21 +88,15 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                 )
             )
 
-        if not config.sensor_config.double_buffering:
-            validation_results.append(
-                a121.ValidationError(
-                    config.sensor_config,
-                    "double_buffering",
-                    "Must be enabled",
-                )
-            )
-
-        if not config.sensor_config.continuous_sweep_mode:
+        if (
+            config.sensor_config.continuous_sweep_mode
+            and not config.sensor_config.double_buffering
+        ):
             validation_results.append(
                 a121.ValidationError(
                     config.sensor_config,
                     "continuous_sweep_mode",
-                    "Must be enabled",
+                    "Continuous sweep mode requires double buffering to be enabled",
                 )
             )
 
@@ -87,26 +109,55 @@ class ProcessorContext:
 
 
 @attrs.frozen(kw_only=True)
-class ProcessorResult:
-    result_available: bool
-    time_series: Optional[npt.NDArray[np.float_]] = attrs.field(
-        default=None, eq=attrs_optional_ndarray_isclose
-    )
-    lp_z_abs_db: Optional[npt.NDArray[np.float_]] = attrs.field(
-        default=None, eq=attrs_optional_ndarray_isclose
-    )
-    freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    max_amplitude: float
+class ProcessorExtraResult:
     amplitude_threshold: float
-    max_psd_ampl: Optional[float] = attrs.field(default=None)
-    max_psd_ampl_freq: Optional[float] = attrs.field(default=None)
+    """Amplitude threshold."""
+
+    zm_time_series: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=attrs_optional_ndarray_isclose
+    )
+    """Time series being analyzed."""
+
+    lp_displacements_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=attrs_optional_ndarray_isclose
+    )
+    """Threshold used for detecting significant frequencies."""
+
+
+@attrs.frozen(kw_only=True)
+class ProcessorResult:
+    max_sweep_amplitude: float
+    """Max amplitude in sweep.
+
+    Used to determine whether an object is in front of the sensor.
+    """
+
+    lp_displacements: Optional[npt.NDArray[np.float_]] = attrs.field(
+        default=None, eq=attrs_optional_ndarray_isclose
+    )
+    """Array of estimated displacement (um) per frequency."""
+
+    lp_displacements_freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    """Array of frequencies where displacement is estimated (Hz)."""
+
+    max_displacement: Optional[float] = attrs.field(default=None)
+    """Largest detected displacement (um)."""
+
+    max_displacement_freq: Optional[float] = attrs.field(default=None)
+    """Frequency of largest detected displacement (Hz)."""
+
+    time_series_std: Optional[float] = attrs.field(default=None)
+    """Time series std(standard deviation)."""
+
+    extra_result: ProcessorExtraResult
+    """Extra result, used for plotting only."""
 
 
 class Processor(ProcessorBase[ProcessorResult]):
 
-    _OVER_SAMPLING_FACTOR = 2
     _WINDOW_BASE_LENGTH = 10
     _HALF_GUARD_BASE_LENGTH = 5
+    _CFAR_MARGIN = _WINDOW_BASE_LENGTH + _HALF_GUARD_BASE_LENGTH
 
     def __init__(
         self,
@@ -117,91 +168,174 @@ class Processor(ProcessorBase[ProcessorResult]):
         subsweep_indexes: Optional[list[int]] = None,
         context: Optional[ProcessorContext] = None,
     ) -> None:
-
+        # Check sensor config and processor config
+        assert sensor_config.sweep_rate is not None
         processor_config.validate(sensor_config)
 
-        # Should never happen, checked in validate
-        assert sensor_config.sweep_rate is not None
-
-        self.double_buffering = sensor_config.double_buffering
-        self.spf = sensor_config.sweeps_per_frame
+        # Constants
+        self.continuous_data_acquisition = (
+            sensor_config.double_buffering & sensor_config.continuous_sweep_mode
+        )
         self.lp_coeffs = processor_config.lp_coeff
-        self.sensitivity = processor_config.sensitivity
+        self.sensitivity = processor_config.threshold_margin
         self.time_series_length = processor_config.time_series_length
         self.amplitude_threshold = processor_config.amplitude_threshold
+        self.spf = sensor_config.sweeps_per_frame
+        self.reported_displacement_mode = processor_config.reported_displacement_mode
 
-        self.time_series = np.zeros(shape=processor_config.time_series_length)
+        if self.continuous_data_acquisition:
+            self.psd_to_radians_conversion_factor = 2.0 / float(self.time_series_length)
+        else:
+            self.psd_to_radians_conversion_factor = 2.0 / float(self.spf)
+
+        self.radians_to_displacement = PERCEIVED_WAVELENGTH * 10**6 / (2 * np.pi)
+
         self.freq = np.fft.rfftfreq(
-            self._OVER_SAMPLING_FACTOR * processor_config.time_series_length,
+            processor_config.time_series_length,
             1 / sensor_config.sweep_rate,
         )[1:]
-        self.lp_z_abs_db = np.zeros_like(self.freq)
-        self.window_length = self._WINDOW_BASE_LENGTH * self._OVER_SAMPLING_FACTOR
-        self.half_guard_length = self._HALF_GUARD_BASE_LENGTH * self._OVER_SAMPLING_FACTOR
+
+        # Variables
+        self.time_series = np.zeros(shape=processor_config.time_series_length)
+        self.lp_displacements = np.zeros_like(self.freq)
+
+        self.has_init = False
 
     def process(self, result: a121.Result) -> ProcessorResult:
 
-        if self.double_buffering:
+        # Determine if an object is in front of the sensor
+        max_sweep_amplitude = float(np.max(np.abs(result.frame)))
+
+        if max_sweep_amplitude < self.amplitude_threshold:
+            self.has_init = False
+            # No object found -> Return
+            return ProcessorResult(
+                max_sweep_amplitude=max_sweep_amplitude,
+                lp_displacements_freqs=self.freq,
+                extra_result=ProcessorExtraResult(
+                    amplitude_threshold=self.amplitude_threshold,
+                ),
+            )
+
+        # Handle frame based on whether or not continuous sweep mode is used
+        if self.continuous_data_acquisition:
             filter_output = double_buffering_frame_filter(result._frame)
             if filter_output is None:
                 frame = result.frame
             else:
                 frame = filter_output
+            self.time_series = np.roll(self.time_series, -self.spf)
+            self.time_series[-self.spf :] = np.angle(frame.squeeze(axis=1))
+            self.time_series = np.unwrap(self.time_series)
         else:
             frame = result.frame
+            self.time_series = np.unwrap(np.angle(frame.squeeze(axis=1)))
 
-        max_amplitude = float(np.max(np.abs(frame)))
+        # Calculate zero mean time series
+        zm_time_series = self.time_series - np.mean(self.time_series)
 
-        if max_amplitude < self.amplitude_threshold:
-            return ProcessorResult(
-                result_available=False,
-                max_amplitude=max_amplitude,
-                amplitude_threshold=self.amplitude_threshold,
-                freqs=self.freq,
-            )
-
-        new_data_segment = np.angle(frame.squeeze(axis=1))
-
-        self.time_series = np.roll(self.time_series, -self.spf)
-        self.time_series[-self.spf :] = new_data_segment
-        self.time_series = np.unwrap(self.time_series)
-
+        # Estimate displacement per frequency
         z_abs = np.abs(
             np.fft.rfft(
-                self.time_series - np.mean(self.time_series),
-                n=self.time_series_length * self._OVER_SAMPLING_FACTOR,
+                zm_time_series,
+                n=self.time_series_length,
             )
         )[1:]
-        z_abs_db = 20 * np.log10(z_abs)
-        self.lp_z_abs_db = self.lp_z_abs_db * self.lp_coeffs + z_abs_db * (1 - self.lp_coeffs)
 
-        presented_time_series = (
-            (self.time_series - np.mean(self.time_series)) * APPROX_BASE_STEP_LENGTH_M * 1000
-        )
-
-        threshold = self._calculate_cfar_threshold(
-            self.lp_z_abs_db, self.sensitivity, self.window_length, self.half_guard_length
-        )
-        # Find index of values over threshold
-        idx_over_threshold = np.where(threshold < self.lp_z_abs_db)[0]
-        if idx_over_threshold.shape[0] != 0:
-            psd_ampls_over_threshold = self.lp_z_abs_db[idx_over_threshold]
-            max_psd_ampl = np.max(psd_ampls_over_threshold)
-            max_psd_ampl_freq = self.freq[idx_over_threshold[np.argmax(psd_ampls_over_threshold)]]
+        if self.reported_displacement_mode is ReportedDisplacement.AMPLITUDE:
+            displacements = (
+                z_abs * self.psd_to_radians_conversion_factor * self.radians_to_displacement
+            )
+        elif self.reported_displacement_mode is ReportedDisplacement.PEAK2PEAK:
+            displacements = (
+                z_abs * self.psd_to_radians_conversion_factor * self.radians_to_displacement * 2.0
+            )
         else:
-            max_psd_ampl = None
-            max_psd_ampl_freq = None
+            raise RuntimeError("Invalid reported displacement")
+
+        if not self.has_init:
+            self.lp_displacements = displacements
+            self.has_init = True
+        else:
+            self.lp_displacements = self.lp_displacements * self.lp_coeffs + displacements * (
+                1 - self.lp_coeffs
+            )
+
+        # Convert time series to um and calculate std
+        zm_time_series_um = zm_time_series * self.radians_to_displacement
+        time_series_rms = np.sqrt(np.mean(zm_time_series_um**2))
+
+        # Identify peaks in spectrum
+        lp_displacements_threshold = self._calculate_cfar_threshold(
+            self.lp_displacements,
+            self.sensitivity,
+            self._WINDOW_BASE_LENGTH,
+            self._HALF_GUARD_BASE_LENGTH,
+        )
+
+        lp_displacements_threshold = self._extend_cfar_threshold(lp_displacements_threshold)
+
+        # Compare displacements to threshold and exclude first point as it does not form a peak
+        idx_over_threshold = (
+            np.where(lp_displacements_threshold[1:] < self.lp_displacements[1:])[0] + 1
+        )
+
+        if len(idx_over_threshold) != 0:
+            displacements_over_threshold = self.lp_displacements[idx_over_threshold]
+            max_displacement = np.max(displacements_over_threshold)
+            max_displacement_freq = self.freq[
+                idx_over_threshold[np.argmax(displacements_over_threshold)]
+            ]
+        else:
+            max_displacement = None
+            max_displacement_freq = None
 
         return ProcessorResult(
-            result_available=True,
-            time_series=presented_time_series,
-            lp_z_abs_db=self.lp_z_abs_db,
-            freqs=self.freq,
-            max_amplitude=max_amplitude,
-            amplitude_threshold=self.amplitude_threshold,
-            max_psd_ampl=max_psd_ampl,
-            max_psd_ampl_freq=max_psd_ampl_freq,
+            time_series_std=time_series_rms,
+            lp_displacements_freqs=self.freq,
+            lp_displacements=self.lp_displacements,
+            max_sweep_amplitude=max_sweep_amplitude,
+            max_displacement=max_displacement,
+            max_displacement_freq=max_displacement_freq,
+            extra_result=ProcessorExtraResult(
+                zm_time_series=zm_time_series_um,
+                amplitude_threshold=self.amplitude_threshold,
+                lp_displacements_threshold=lp_displacements_threshold,
+            ),
         )
+
+    @classmethod
+    def _extend_cfar_threshold(cls, threshold: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
+        """Extends CFAR threshold using extrapolation
+
+        The head of the threshold is extended using linear extrapolation, based on the first points
+        of the original threshold.
+
+        The tail of the threshold is extended using the average of the last threshold values of the
+        original threshold.
+        """
+        head_slope_multiplier = 2.0
+        head_slope_calculation_width = 3
+        tail_mean_calculation_width = 10
+
+        # Extend head
+        base_offset = threshold[cls._CFAR_MARGIN]
+        mean_slope = (
+            np.mean(
+                np.diff(
+                    threshold[cls._CFAR_MARGIN : cls._CFAR_MARGIN + head_slope_calculation_width]
+                )
+            )
+            * head_slope_multiplier
+        )
+        threshold[: cls._CFAR_MARGIN] = base_offset + mean_slope * np.arange(-cls._CFAR_MARGIN, 0)
+
+        # Extend tail
+        threshold[-cls._CFAR_MARGIN :] = np.mean(
+            threshold[-cls._CFAR_MARGIN - tail_mean_calculation_width : -cls._CFAR_MARGIN]
+        )
+
+        return threshold
 
     @staticmethod
     def _calculate_cfar_threshold(
@@ -218,7 +352,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         threshold[margin:-margin] = (
             filt_psd[:length_after_filtering] + filt_psd[-length_after_filtering:]
         ) / 2 + sensitivity
-
         return threshold
 
 

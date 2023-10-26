@@ -429,28 +429,32 @@ TOUCHLESS_BUTTON = [
 ]
 
 
+VIBRATION_PROCESSOR_EXTRA_RESULT = vibration.ProcessorExtraResult(
+    amplitude_threshold=random(),
+    zm_time_series=_array(np.float_),
+    lp_displacements_threshold=_array(np.float_),
+)
+
 VIBRATION = [
     vibration.ProcessorConfig(),
     vibration.ProcessorContext(),  # empty
     vibration.ProcessorResult(
-        result_available=True,
-        time_series=_array(np.float_),
-        lp_z_abs_db=_array(np.float_),
-        freqs=_array(np.float_),
-        max_amplitude=random(),
-        amplitude_threshold=random(),
-        max_psd_ampl=random(),
-        max_psd_ampl_freq=random(),
+        lp_displacements=_array(np.float_),
+        lp_displacements_freqs=_array(np.float_),
+        max_sweep_amplitude=random(),
+        max_displacement=random(),
+        max_displacement_freq=random(),
+        time_series_std=random(),
+        extra_result=VIBRATION_PROCESSOR_EXTRA_RESULT,
     ),
     vibration.ProcessorResult(
-        result_available=True,
-        time_series=None,
-        lp_z_abs_db=None,
-        freqs=_array(np.float_),
-        max_amplitude=random(),
-        amplitude_threshold=random(),
-        max_psd_ampl=None,
-        max_psd_ampl_freq=None,
+        lp_displacements=None,
+        lp_displacements_freqs=_array(np.float_),
+        max_sweep_amplitude=random(),
+        max_displacement=None,
+        max_displacement_freq=None,
+        time_series_std=None,
+        extra_result=VIBRATION_PROCESSOR_EXTRA_RESULT,
     ),
 ]
 
