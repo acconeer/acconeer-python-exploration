@@ -316,6 +316,18 @@ Configuration parameters
     :undoc-members:
     :exclude-members: validate, from_dict, from_json, to_dict, to_json
 
+.. autoclass:: acconeer.exptool.a121.algo.smart_presence._ref_app.PresenceZoneConfig
+    :members:
+    :inherited-members:
+    :undoc-members:
+    :exclude-members: validate, from_dict, from_json, to_dict, to_json
+
+.. autoclass:: acconeer.exptool.a121.algo.smart_presence._ref_app.PresenceWakeUpConfig
+    :members:
+    :inherited-members:
+    :undoc-members:
+    :exclude-members: validate, from_dict, from_json, to_dict, to_json
+
 Reference app result
 --------------------
 .. autoclass:: acconeer.exptool.a121.algo.smart_presence._ref_app.RefAppResult
