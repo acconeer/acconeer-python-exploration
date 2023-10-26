@@ -16,6 +16,7 @@ import numpy as np
 import acconeer.exptool
 from acconeer.exptool._core import ClientInfo
 from acconeer.exptool._core.int_16_complex import INT_16_COMPLEX
+from acconeer.exptool._core.recording.h5_session_schema import SessionSchema
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -27,7 +28,6 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.recording.recorder import Recorder, RecorderAttachable
 from acconeer.exptool.utils import get_module_version
 
-from .session_schema import SessionSchema
 from .utils import PathOrH5File, h5_file_factory
 
 

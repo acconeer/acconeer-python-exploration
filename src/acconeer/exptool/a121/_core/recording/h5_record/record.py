@@ -13,6 +13,7 @@ from packaging.version import Version
 
 import acconeer.exptool
 from acconeer.exptool._core import ClientInfo
+from acconeer.exptool._core.recording.h5_session_schema import SessionSchema
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -27,8 +28,6 @@ from acconeer.exptool.a121._core.entities import (
     StackedResults,
 )
 from acconeer.exptool.utils import get_module_version
-
-from .session_schema import SessionSchema
 
 
 T = TypeVar("T")

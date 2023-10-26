@@ -1,13 +1,23 @@
 # Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
+import contextlib
 import typing as t
+import uuid
 from pathlib import Path
 
 import h5py
 import pytest
 
-from acconeer.exptool.a121._core.recording.h5_record import SessionSchema
+from acconeer.exptool._core.recording.h5_session_schema import SessionSchema
+
+
+@pytest.fixture
+def tmp_file_path(tmp_path: Path) -> Path:
+    with contextlib.suppress(FileExistsError):
+        tmp_path.mkdir(parents=True)
+
+    return tmp_path / str(uuid.uuid4())
 
 
 @pytest.fixture
