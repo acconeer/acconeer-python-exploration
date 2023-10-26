@@ -12,6 +12,7 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils
@@ -287,6 +288,7 @@ class SingleSensorContext(AlgoBase):
         return SingleSensorContext(**context_dict)
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.25)
