@@ -87,6 +87,7 @@ Client
     :undoc-members:
     :member-order: groupwise
     :inherited-members:
+    :exclude-members: attach_recorder, detach_recorder
 
 Recording
 ---------
