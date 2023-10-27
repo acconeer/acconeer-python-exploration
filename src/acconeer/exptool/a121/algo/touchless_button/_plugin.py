@@ -14,6 +14,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
@@ -106,39 +107,50 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         return {
             "sensitivity_close": pidgets.FloatPidgetFactory(
                 name_label_text="Sensitivity (close range):",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "sensitivity_close"),
                 decimals=1,
                 limits=(0.1, 4),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.FAR_RANGE)),
             ),
             "patience_close": pidgets.IntPidgetFactory(
                 name_label_text="Patience (close range):",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "patience_close"),
                 limits=(0, None),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.FAR_RANGE)),
             ),
             "sensitivity_far": pidgets.FloatPidgetFactory(
                 name_label_text="Sensitivity (far range):",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "sensitivity_far"),
                 decimals=1,
                 limits=(0.1, 4),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.CLOSE_RANGE)),
             ),
             "patience_far": pidgets.IntPidgetFactory(
                 name_label_text="Patience (far range):",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "patience_far"),
                 limits=(0, None),
                 hooks=disable_if(parameter_is("measurement_type", MeasurementType.CLOSE_RANGE)),
             ),
             "calibration_duration_s": pidgets.FloatPidgetFactory(
                 name_label_text="Calibration duration:",
+                name_label_tooltip=get_attribute_docstring(
+                    ProcessorConfig, "calibration_duration_s"
+                ),
                 suffix="s",
                 limits=(0, None),
             ),
             "calibration_interval_s": pidgets.FloatPidgetFactory(
                 name_label_text="Calibration interval:",
+                name_label_tooltip=get_attribute_docstring(
+                    ProcessorConfig, "calibration_interval_s"
+                ),
                 suffix="s",
                 limits=(1, None),
             ),
             "measurement_type": pidgets.EnumPidgetFactory(
                 enum_type=MeasurementType,
                 name_label_text="Range:",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "measurement_type"),  # type: ignore[arg-type]
                 label_mapping={
                     MeasurementType.CLOSE_RANGE: "Close",
                     MeasurementType.FAR_RANGE: "Far",

@@ -9,6 +9,7 @@ from typing import List, Optional, TypeVar
 import attrs
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import utils
@@ -29,6 +30,7 @@ class MeasurementType(AlgoParamEnum):
     CLOSE_AND_FAR_RANGE = enum.auto()
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
     measurement_type: MeasurementType = attrs.field(
@@ -36,9 +38,11 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         converter=MeasurementType,
     )
     """The measurement type.
-    ``CLOSE_RANGE`` corresponds to a range of approximate 0 cm - 5 cm.
-    ``FAR_RANGE`` corresponds to approximate 0 cm - 24 cm.
-    ``CLOSE_AND_FAR_RANGE`` gives two detection outputs, one for each range."""
+    This decides which of the other paramteres to take into consideration.
+    ``CLOSE_RANGE`` will apply the close range parameters onto the sweep.
+    ``FAR_RANGE`` will apply the far range parameters onto the sweep.
+    ``CLOSE_AND_FAR_RANGE`` will apply the parameters for close range onto the first subsweep and
+    the parameters for far range onto the second subsweep."""
 
     sensitivity_close: float = attrs.field(default=1.9)
     """Sensitivity for close range detection. High sensitivity equals low detection threshold,
