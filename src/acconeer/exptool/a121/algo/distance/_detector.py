@@ -292,18 +292,28 @@ class SingleSensorContext(AlgoBase):
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.25)
-    """Start point of measurement interval in meters."""
+    """Start of measurement range in meters."""
 
     end_m: float = attrs.field(default=3.0)
-    """End point of measurement interval in meters."""
+    """End of measurement range in meters."""
 
     max_step_length: Optional[int] = attrs.field(default=None)
-    """Used to limit step length. If no argument is provided, the step length is automatically
-    calculated based on the profile."""
+    """If set, limits the step length.
+
+    If no argument is provided, the step length is automatically calculated based on the profile.
+
+    Reducing the step length increases SNR through more efficient distance filtering, while
+    increasing the measurement time and the processing load.
+    """
 
     max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
-    """Specifies the longest allowed profile. If no argument is provided, the highest possible
-    profile without interference of direct leakage is used to maximize SNR."""
+    """Specifies the longest allowed profile.
+
+    If no argument is provided, the highest possible profile without interference of direct
+    leakage is used to maximize SNR.
+
+    A lower profile improves the radial resolution.
+    """
 
     close_range_leakage_cancellation: bool = attrs.field(default=True)
     """Enable close range leakage cancellation logic.
@@ -317,8 +327,9 @@ class DetectorConfig(AlgoConfigBase):
     """
 
     signal_quality: float = attrs.field(default=15.0)
-    """Signal quality. High quality equals higher HWAAS and better SNR but increase power
-    consumption."""
+    """Signal quality (dB).
+
+    High quality equals higher HWAAS and better SNR but increases power consumption."""
 
     threshold_method: ThresholdMethod = attrs.field(
         default=ThresholdMethod.CFAR,
@@ -330,7 +341,11 @@ class DetectorConfig(AlgoConfigBase):
         default=PeakSortingMethod.STRONGEST,
         converter=PeakSortingMethod,
     )
-    """Sorting method of estimated distances."""
+    """Sorting method of estimated distances.
+
+    The distance estimates are sorted according to the selected strategy, before being return
+    by th application.
+    """
 
     reflector_shape: ReflectorShape = attrs.field(
         default=ReflectorShape.GENERIC,
@@ -339,7 +354,11 @@ class DetectorConfig(AlgoConfigBase):
     """Reflector shape."""
 
     num_frames_in_recorded_threshold: int = attrs.field(default=100)
-    """Number of frames used when calibrating threshold."""
+    """Number of frames used when calibrating threshold.
+
+    A lower number reduce calibration time and a higher number results in a more statistically
+    significant threshold.
+    """
 
     fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE)
     """Value of fixed amplitude threshold."""
@@ -350,8 +369,10 @@ class DetectorConfig(AlgoConfigBase):
     """Value of fixed strength threshold."""
 
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
-    """Sensitivity of threshold. High sensitivity equals low detection threshold, low sensitivity
-    equals high detection threshold."""
+    """Sensitivity of threshold.
+
+    High sensitivity equals low detection threshold, low sensitivity equals high detection
+    threshold."""
 
     update_rate: Optional[float] = attrs.field(default=50.0)
     """Sets the detector update rate."""
