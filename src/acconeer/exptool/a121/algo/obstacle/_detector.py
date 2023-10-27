@@ -10,6 +10,7 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._core.entities.configs.config_enums import PRF
@@ -58,6 +59,7 @@ class SingleSensorContext(AlgoBase):
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.15)
@@ -67,20 +69,21 @@ class DetectorConfig(AlgoConfigBase):
     """End point of measurement interval in meters."""
 
     step_length: int = attrs.field(default=2)
-    """Used to limit step length. """
+    """Used to set step length. In unit approx. 2.5 mm."""
 
     hwaas: int = attrs.field(default=12)
     """Hardware averaging. Higher gives better SNR but increase power
     consumption and lower sweep rate."""
 
     profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_3, converter=a121.Profile)
-    """Profile, 1-5. Higher equals better SNR and lower increase resolution."""
+    """Profile, 1-5. Higher equals better SNR and lower increase resolution.
+    A recommendation is Profile 1 closer than 20 cm and Profile 3 beyond."""
 
     max_robot_speed: float = attrs.field(default=0.5)
     """Sets the sweep rate after the maximum robot speed in meters per second"""
 
     sweeps_per_frame: int = attrs.field(default=16)
-    """Number of sweeps per frame."""
+    """Number of sweeps per frame. The length of the FFT to estimate speed or angle."""
 
     num_frames_in_recorded_threshold: int = attrs.field(default=50)
     """Number of frames used when calibrating threshold."""

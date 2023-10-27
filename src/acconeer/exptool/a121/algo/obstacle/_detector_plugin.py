@@ -18,6 +18,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121, opser
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
@@ -484,25 +485,30 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range start:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "start_m"),
                 suffix=" m",
                 decimals=3,
             ),
             "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Range end:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "end_m"),
                 suffix=" m",
                 decimals=3,
             ),
             "step_length": pidgets.IntPidgetFactory(
                 name_label_text="Step length (in unit 2.5 mm):",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "step_length"),
                 suffix=" ",
             ),
             "max_robot_speed": pidgets.FloatPidgetFactory(
                 name_label_text="Max robot speed:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "max_robot_speed"),
                 suffix=" m/s",
                 decimals=3,
             ),
             "profile": pidgets.EnumPidgetFactory(
                 name_label_text="Profile:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "profile"),  # type: ignore[arg-type]
                 enum_type=a121.Profile,
                 label_mapping={
                     a121.Profile.PROFILE_1: "1 (best resolution)",
@@ -514,28 +520,36 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="Hardware averaging (HWAAS):",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "HWAAS"),
                 suffix=" ",
             ),
             "num_std_threshold": pidgets.FloatPidgetFactory(
                 name_label_text="Noise threshold:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "num_std_threshold"),
                 suffix=" ",
                 decimals=3,
             ),
             "num_mean_threshold": pidgets.FloatPidgetFactory(
                 name_label_text="Mean threshold:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "num_mean_threshold"),
                 suffix=" ",
                 decimals=3,
             ),
             "num_frames_in_recorded_threshold": pidgets.IntPidgetFactory(
                 name_label_text="Nbr frames used to determine treshold:",
+                name_label_tooltip=get_attribute_docstring(
+                    DetectorConfig, "num_frames_in_recorded_threshold"
+                ),
                 suffix=" ",
             ),
             "sweeps_per_frame": pidgets.IntPidgetFactory(
                 name_label_text="Number of sweeps per frame:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "sweeps_per_frame"),
                 suffix=" ",
             ),
             "update_rate": pidgets.FloatPidgetFactory(
                 name_label_text="Detector update rate:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "update_rate"),
                 suffix=" Hz",
                 decimals=1,
             ),
