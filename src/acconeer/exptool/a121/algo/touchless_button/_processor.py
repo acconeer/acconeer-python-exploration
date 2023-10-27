@@ -180,7 +180,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         frame_rate = sensor_config.sweep_rate / sensor_config.sweeps_per_frame
         self._cal_interval_frames = int(processor_config.calibration_interval_s * frame_rate)
 
-        self._calibrate()
+        self._reset_background()
 
         self._detection_close = False
         self._detection_far = False
@@ -205,8 +205,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensitivity = self._get_sensitivity()
 
         if self._frames_since_last_cal > self._cal_interval_frames:
-            self._calibrate()
-        elif not np.any(np.isnan(self._cfar_ref_buf)):
+            self._reset_background()
+        elif not np.any(np.isnan(self._dynamic_background)):
             y = self._calc_variance(frame)
 
         threshold = self._get_threshold_from_sensitivity(sensitivity)
@@ -287,9 +287,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         raise AssertionError
 
-    def _calibrate(self) -> None:
+    def _reset_background(self) -> None:
         assert self._sensor_config.sweep_rate is not None
-        self._cfar_ref_buf = np.full(
+        self._dynamic_background = np.full(
             (
                 int(
                     self._processor_config.calibration_duration_s * self._sensor_config.sweep_rate
@@ -299,7 +299,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             np.nan,
             dtype="complex",
         )
-        self._cfar_guard_buf = np.full(
+        self._dynamic_background_guard = np.full(
             (self._sweeps_per_frame, self._metadata.sweep_data_length),
             np.nan,
             dtype="complex",
@@ -310,10 +310,10 @@ class Processor(ProcessorBase[ProcessorResult]):
         xn = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
         y = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
 
-        arg_norm = np.mean(self._cfar_ref_buf, axis=0)
+        arg_norm = np.mean(self._dynamic_background, axis=0)
         arg_norm = np.conj(arg_norm) / np.abs(arg_norm)
 
-        arg_norm_ref = self._cfar_ref_buf * arg_norm
+        arg_norm_ref = self._dynamic_background * arg_norm
         ref_ampls = np.abs(arg_norm_ref)
         ampl_mean = np.mean(ref_ampls, axis=0)
         ampl_std = np.std(ref_ampls, axis=0)
@@ -350,7 +350,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         if detection_depth[counts > 1].size > 0:
             self._sig_count[index] += 1
             self._nonsig_count[index] = 0
-            self._cfar_guard_buf = np.full(
+            self._dynamic_background_guard = np.full(
                 (
                     self._sensor_config.sweeps_per_frame,
                     self._metadata.sweep_data_length,
@@ -363,10 +363,10 @@ class Processor(ProcessorBase[ProcessorResult]):
             self._sig_count[index] = 0
             self._nonsig_count[index] += 1
 
-            if not np.isnan(self._cfar_guard_buf).any():
-                self._update_cfar_buffer()
+            if not np.isnan(self._dynamic_background_guard).any():
+                self._update_background()
 
-            self._cfar_guard_buf = frame
+            self._dynamic_background_guard = frame
 
         detection = self._get_detection(
             detection,
@@ -409,7 +409,7 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self._sig_count[1] = 0
                 self._nonsig_count[1] += 1
 
-            self._cfar_guard_buf = np.full(
+            self._dynamic_background_guard = np.full(
                 (
                     self._sensor_config.sweeps_per_frame,
                     self._metadata.sweep_data_length,
@@ -425,10 +425,10 @@ class Processor(ProcessorBase[ProcessorResult]):
             self._sig_count[1] = 0
             self._nonsig_count[1] += 1
 
-            if not np.isnan(self._cfar_guard_buf).any():
-                self._update_cfar_buffer()
+            if not np.isnan(self._dynamic_background_guard).any():
+                self._update_background()
 
-            self._cfar_guard_buf = frame
+            self._dynamic_background_guard = frame
 
         detection_close = self._get_detection(
             self._detection_close,
@@ -471,9 +471,11 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         raise AssertionError
 
-    def _update_cfar_buffer(self) -> None:
-        self._cfar_ref_buf = np.roll(self._cfar_ref_buf, -self._sweeps_per_frame, axis=0)
-        self._cfar_ref_buf[-self._sweeps_per_frame :, :] = self._cfar_guard_buf
+    def _update_background(self) -> None:
+        self._dynamic_background = np.roll(
+            self._dynamic_background, -self._sweeps_per_frame, axis=0
+        )
+        self._dynamic_background[-self._sweeps_per_frame :, :] = self._dynamic_background_guard
         self._frames_since_last_cal = 0
 
     @staticmethod
