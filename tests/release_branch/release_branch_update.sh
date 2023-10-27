@@ -1,15 +1,23 @@
 #!/bin/bash
 
-# Usage: release_branch_update.sh [OPTION]...
-#
-# Options:
-#    -p    push updated branch to remote origin
+usage() {
+    echo "Usage: release_branch_update.sh [OPTION] branch_1 [branch_2, ...]"
+    echo
+    echo "Options:"
+    echo "    -p    push updated branch to remote origin"
+}
 
 
-# Option parser.
-push_branch=0
-if getopts "p:" arg; then
-    push_branch=1
+# Option parsing
+getopts ":p" arg && push_branch=1 || push_branch=0
+
+positional_args=${@:$OPTIND:$#}
+
+if [ -z "$positional" ]; then
+    echo "Need to specify at least one branch."
+    echo
+    usage
+    exit 1
 fi
 
 # Include helpers.
@@ -17,7 +25,7 @@ source tests/release_branch/release_branch_utils.sh
 
 
 # List of branches to update.
-release_branches=("public_rss_release_a121")
+release_branches=$positional_args
 
 # Branch to be merged into the release branches.
 source_branch="master"

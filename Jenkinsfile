@@ -347,15 +347,16 @@ try {
                 checkoutAndCleanup(lfs: false)
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                    withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f')]) {
+                    withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f'),
+                                     string(variable: 'release_branches', credentialsId: 'release_branch_update_branches')]) {
                         if (buildScope == BuildScope.NIGHTLY) {
-                            sh '''#!/bin/bash
+                            sh """#!/bin/bash
 
-                                git config user.name "Jenkins Builder"
-                                git config user.email "ai@acconeer.com"
+                                git config user.name 'Jenkins Builder'
+                                git config user.email 'ai@acconeer.com'
 
-                                tests/release_branch/release_branch_update.sh -p
-                            '''
+                                tests/release_branch/release_branch_update.sh -p $release_branches
+                            """
                         } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
                             sh 'tests/release_branch/release_branch_push.sh'
                         }
