@@ -42,8 +42,11 @@ _DURATION_SB_RANGE = (1e-4, 100)
 _DURATION_SB_STEP = 5e-3
 
 _X_AXIS_SPINBOX_LABEL = "X-axis length"
+_MU = "\u00b5"
 
-_A_to_mA = _s_to_ms = 1000
+_A_to_mA = _s_to_ms = _mA_to_uA = 1000
+
+_mA = 1e-3
 
 
 class PowerCurveBarGraphItem(pg.BarGraphItem):
@@ -185,6 +188,18 @@ class _EnergyRegionPlot(QWidget):
             duration=self._state.profile_duration_s,
             algorithm=self._algorithm,
         )
+        approx_avg_current = power.converged_average_current(
+            self._state.session_config,
+            lower_power_state=self._state.lower_power_state,
+            absolute_tolerance=0.01 * _mA,
+            algorithm=self._algorithm,
+        )
+
+        if approx_avg_current > 1 * _mA:
+            approx_avg_current_formatted = f"{approx_avg_current * _A_to_mA:.0f} mA"
+        else:
+            milliampere = round(approx_avg_current * _A_to_mA, 2)
+            approx_avg_current_formatted = f"{milliampere * _mA_to_uA:.0f} {_MU}A"
 
         self._plot_widget.clear()
 
@@ -192,10 +207,10 @@ class _EnergyRegionPlot(QWidget):
         self._plot_widget.addItem(bar_item)
 
         hline_item = pg.InfiniteLine(
-            pos=session_profile.average_current,
+            pos=approx_avg_current,
             angle=0,
             pen={"color": "#222", "style": Qt.PenStyle.DashLine, "width": 2},
-            label=f"Average current ({session_profile.average_current * _A_to_mA:.0f} mA)",
+            label=f"Approx. avg. current ({approx_avg_current_formatted})",
             labelOpts={"color": "#222"},
         )
         self._plot_widget.addItem(hline_item)
