@@ -1,7 +1,9 @@
 Touchless button
 =====================
 
-The purpose of the touchless button reference application is to employ the A121 sensor as a contactless button. This algorithm proves useful in scenarios where registering a button press is needed without physically touching a surface. A prime example would be in public spaces. Moreover, the algorithm is designed to automatically recalibrate itself when static objects obstruct the sensor, preventing prolonged and erroneous detections.
+The purpose of the touchless button reference application is to employ the A121 sensor as a contactless button. This algorithm proves useful in scenarios where registering a button press is needed without physically touching a surface. A prime example would be in public spaces.
+
+Moreover, the algorithm is designed to automatically recalibrate itself when static objects obstruct the sensor, preventing prolonged and erroneous detections. An initial calibration of the background is performed before starting to detect button presses. As long as no presses are detected the background will be continuously updated. If a button press is detected for a long period of time (:attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.calibration_interval_s` seconds), the background will be reset since this is considered a change in the environment. If the initial calibration is done with something in front of the sensor, this will most likely cause false detects when removed, but the calibration will be reset and a new calibration will be performed. The algorithm is very dynamic to be able to adapt to changes in the environment.
 
 Measurement Range and Presets
 ------------------------------
