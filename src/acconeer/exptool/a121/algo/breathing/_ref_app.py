@@ -9,6 +9,7 @@ from typing import Any, Optional, Tuple
 import attrs
 import h5py
 import numpy as np
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
@@ -35,6 +36,7 @@ def get_presence_config() -> PresenceProcessorConfig:
     return presence_config
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class RefAppConfig(AlgoConfigBase):
     use_presence_processor: bool = attrs.field(default=True)

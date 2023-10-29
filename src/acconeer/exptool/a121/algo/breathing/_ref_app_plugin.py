@@ -18,6 +18,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import APPROX_BASE_STEP_LENGTH_M
 from acconeer.exptool.a121.algo._plugins import (
@@ -53,7 +54,13 @@ from acconeer.exptool.app.new import (
 )
 from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget
 
-from ._ref_app import RefApp, RefAppConfig, RefAppResult, _load_algo_data, get_sensor_config
+from ._ref_app import (
+    RefApp,
+    RefAppConfig,
+    RefAppResult,
+    _load_algo_data,
+    get_sensor_config,
+)
 
 
 log = logging.getLogger(__name__)
@@ -562,23 +569,40 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             pidgets.FlatPidgetGroup(): {
                 "start_m": pidgets.FloatPidgetFactory(
-                    name_label_text="Start:", suffix=" m", decimals=1, limits=(0, None)
+                    name_label_text="Start:",
+                    suffix=" m",
+                    decimals=1,
+                    limits=(0, None),
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "start_m"),
                 ),
                 "end_m": pidgets.FloatPidgetFactory(
-                    name_label_text="End:", suffix=" m", decimals=1, limits=(0, None)
+                    name_label_text="End:",
+                    suffix=" m",
+                    decimals=1,
+                    limits=(0, None),
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "end_m"),
                 ),
                 "num_distances_to_analyze": pidgets.IntPidgetFactory(
                     name_label_text="Number of distances to analyze:",
                     limits=(1, 64),
+                    name_label_tooltip=get_attribute_docstring(
+                        RefAppConfig, "num_distances_to_analyze"
+                    ),
                 ),
                 "distance_determination_duration": pidgets.FloatPidgetFactory(
                     name_label_text="Duration to determine distance:",
                     suffix=" s",
                     decimals=1,
                     limits=(1, None),
+                    name_label_tooltip=get_attribute_docstring(
+                        RefAppConfig, "distance_determination_duration"
+                    ),
                 ),
                 "use_presence_processor": pidgets.CheckboxPidgetFactory(
-                    name_label_text="Use presence processor to determine distance:"
+                    name_label_text="Use presence processor to determine distance:",
+                    name_label_tooltip=get_attribute_docstring(
+                        RefAppConfig, "use_presence_processor"
+                    ),
                 ),
             }
         }
@@ -591,14 +615,17 @@ class ViewPlugin(A121ViewPluginBase):
                     name_label_text="Frame rate:",
                     suffix=" Hz",
                     decimals=1,
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "frame_rate"),
                 ),
                 "sweeps_per_frame": pidgets.IntPidgetFactory(
                     name_label_text="Sweeps per frame:",
                     limits=(1, 64),
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "sweeps_per_frame"),
                 ),
                 "hwaas": pidgets.IntPidgetFactory(
                     name_label_text="HWAAS:",
                     limits=(1, 511),
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "hwaas"),
                 ),
                 "profile": pidgets.EnumPidgetFactory(
                     name_label_text="Profile:",
@@ -610,6 +637,7 @@ class ViewPlugin(A121ViewPluginBase):
                         a121.Profile.PROFILE_4: "4",
                         a121.Profile.PROFILE_5: "5 (longest)",
                     },
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "profile"),  # type: ignore[arg-type]
                 ),
             }
         }
@@ -623,17 +651,26 @@ class ViewPlugin(A121ViewPluginBase):
                     suffix=" bpm",
                     limits=(2, None),
                     decimals=1,
+                    name_label_tooltip=get_attribute_docstring(
+                        BreathingProcessorConfig, "lowest_breathing_rate"
+                    ),
                 ),
                 "highest_breathing_rate": pidgets.FloatPidgetFactory(
                     name_label_text="Highest anticipated breathing rate:",
                     suffix=" bpm",
                     limits=(2, None),
                     decimals=1,
+                    name_label_tooltip=get_attribute_docstring(
+                        BreathingProcessorConfig, "highest_breathing_rate"
+                    ),
                 ),
                 "time_series_length_s": pidgets.FloatPidgetFactory(
                     name_label_text="Time series length:",
                     suffix=" s",
                     decimals=1,
+                    name_label_tooltip=get_attribute_docstring(
+                        BreathingProcessorConfig, "time_series_length_s"
+                    ),
                 ),
             }
         }

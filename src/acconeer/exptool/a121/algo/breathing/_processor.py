@@ -8,6 +8,7 @@ from typing import List, Optional
 import attrs
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 from scipy.signal import butter
 
 from acconeer.exptool import a121
@@ -42,6 +43,7 @@ class AppState(AlgoParamEnum):
     """Estimating breathing rate."""
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class BreathingProcessorConfig(AlgoProcessorConfigBase):
     lowest_breathing_rate: float = attrs.field(default=6.0)
