@@ -10,7 +10,7 @@ import numpy.typing as npt
 import typing_extensions as te
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_eq, attrs_ndarray_isclose
 from acconeer.exptool.a121._core_ext import _ReplayingClient
 from acconeer.exptool.a121.algo import smart_presence
 from acconeer.exptool.a121.algo.smart_presence import _ref_app as smart_presence_ref_app
@@ -22,17 +22,17 @@ class RefAppResultSlice:
     max_intra_zone: t.Optional[int]
     max_presence_zone: t.Optional[int]
 
-    zone_limits: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_eq)
-    inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_eq)
-    intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_eq)
-    wake_up_detections: t.Optional[npt.NDArray[np.int_]] = attrs.field(eq=utils.attrs_ndarray_eq)
+    zone_limits: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
+    inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
+    intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
+    wake_up_detections: t.Optional[npt.NDArray[np.int_]] = attrs.field(eq=attrs_ndarray_eq)
 
     used_config: smart_presence_ref_app._Mode
     switch_delay: bool
     presence_detected: bool
-    inter_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
-    intra_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
+    inter_presence_score: float = attrs.field(eq=attrs_ndarray_isclose)
+    intra_presence_score: float = attrs.field(eq=attrs_ndarray_isclose)
 
     @classmethod
     def from_ref_app_result(cls, result: smart_presence.RefAppResult) -> te.Self:

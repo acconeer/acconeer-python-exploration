@@ -22,9 +22,6 @@ from typing import (
     Union,
 )
 
-import attrs
-import numpy as np
-import numpy.typing as npt
 import packaging.version
 
 
@@ -453,41 +450,6 @@ def unwrap_ticks(
 
 def indent_strs(strs: list[str], level: int) -> list[str]:
     return ["  " * level + s for s in strs]
-
-
-def ndarray_isclose(a: npt.ArrayLike, b: npt.ArrayLike) -> bool:
-    return bool(np.isclose(a, b, equal_nan=True).all())
-
-
-def _dict_wrapper(f: Callable[[S, T], bool]) -> Callable[[dict[U, S], dict[U, T]], bool]:
-    def wrapper(a: dict[U, S], b: dict[U, T]) -> bool:
-        if a.keys() != b.keys():
-            return False
-
-        for key in a:
-            if not f(a[key], b[key]):
-                return False
-
-        return True
-
-    return wrapper
-
-
-def _optional_wrapper(f: Callable[[S, T], bool]) -> Callable[[Optional[S], Optional[T]], bool]:
-    def wrapper(a: Optional[S], b: Optional[T]) -> bool:
-        if a is None or b is None:
-            return a is b
-        else:
-            return f(a, b)
-
-    return wrapper
-
-
-attrs_ndarray_eq = attrs.cmp_using(eq=np.array_equal)
-attrs_optional_ndarray_eq = attrs.cmp_using(eq=_optional_wrapper(np.array_equal))
-attrs_ndarray_isclose = attrs.cmp_using(eq=ndarray_isclose)
-attrs_optional_ndarray_isclose = attrs.cmp_using(eq=_optional_wrapper(ndarray_isclose))
-attrs_dict_ndarray_isclose = attrs.cmp_using(eq=_dict_wrapper(ndarray_isclose))
 
 
 def no_dynamic_member_creation(cls: Type[T]) -> Type[T]:

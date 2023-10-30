@@ -10,6 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_eq, attrs_ndarray_isclose
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import (
     AlgoParamEnum,
@@ -38,10 +39,10 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class SubsweepProcessorResult:
-    frame: npt.NDArray[np.complex_] = attrs.field(eq=utils.attrs_ndarray_eq)
-    amplitudes: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    phases: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    distance_velocity_map: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    frame: npt.NDArray[np.complex_] = attrs.field(eq=attrs_ndarray_eq)
+    amplitudes: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    phases: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    distance_velocity_map: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 EntryResult = t.List[SubsweepProcessorResult]

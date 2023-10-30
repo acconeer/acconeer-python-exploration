@@ -12,7 +12,7 @@ import numpy.typing as npt
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121.algo import (
     AlgoParamEnum,
     AlgoProcessorConfigBase,
@@ -146,7 +146,7 @@ class RangeResult:
     Depends on the sensitivity parameter for the current range, the threshold is
     equal to 10 / *sensitivity*."""
 
-    score: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_optional_ndarray_isclose)
+    score: npt.NDArray[np.float_] = attrs.field(eq=attrs_optional_ndarray_isclose)
     """Detection score for each point and sweep in current range.
     The output has the shape of (sweeps per frame, number of points in current subsweep)."""
 

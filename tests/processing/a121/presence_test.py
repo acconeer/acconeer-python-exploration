@@ -9,6 +9,7 @@ import numpy.typing as npt
 import typing_extensions as te
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import presence
 from acconeer.exptool.a121.algo.presence._configs import (
@@ -20,11 +21,11 @@ from acconeer.exptool.a121.algo.presence._configs import (
 
 @attrs.frozen
 class ProcessorResultSlice:
-    intra_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
-    intra: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    inter_presence_score: float = attrs.field(eq=utils.attrs_ndarray_isclose)
-    inter: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    presence_distance: float = attrs.field(eq=utils.attrs_ndarray_isclose)
+    intra_presence_score: float = attrs.field(eq=attrs_ndarray_isclose)
+    intra: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    inter_presence_score: float = attrs.field(eq=attrs_ndarray_isclose)
+    inter: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    presence_distance: float = attrs.field(eq=attrs_ndarray_isclose)
     presence_detected: bool = attrs.field()
 
     @classmethod

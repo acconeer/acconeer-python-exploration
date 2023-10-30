@@ -13,8 +13,9 @@ import numpy.typing as npt
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
-from acconeer.exptool.a121._core.utils import attrs_ndarray_isclose, is_divisor_of, is_multiple_of
+from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     ENVELOPE_FWHM_M,

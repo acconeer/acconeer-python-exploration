@@ -9,8 +9,8 @@ import attrs
 import numpy as np
 import numpy.typing as npt
 
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_eq
 from acconeer.exptool._core.int_16_complex import int16_complex_array_to_complex
-from acconeer.exptool.a121._core.utils import attrs_ndarray_eq
 
 from .result import Result, ResultContext
 from .utils import get_subsweeps_from_frame

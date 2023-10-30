@@ -9,7 +9,7 @@ import numpy as np
 import typing_extensions as te
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121._core_ext import _ReplayingClient
 from acconeer.exptool.a121.algo import tank_level
 from acconeer.exptool.a121.algo.tank_level._ref_app import _load_algo_data
@@ -24,7 +24,7 @@ class RefAppResultSlice:
     peak_detected: t.Optional[bool]
     peak_status: t.Optional[tank_level.ProcessorLevelStatus]
     level: t.Optional[float] = attrs.field(
-        converter=_nan_is_none, eq=utils.attrs_optional_ndarray_isclose
+        converter=_nan_is_none, eq=attrs_optional_ndarray_isclose
     )
 
     @classmethod

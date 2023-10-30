@@ -10,6 +10,7 @@ import numpy.typing as npt
 import typing_extensions as te
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._core_ext import _ReplayingClient
 from acconeer.exptool.a121.algo import distance
@@ -18,12 +19,8 @@ from acconeer.exptool.a121.algo.distance._detector import _load_algo_data
 
 @attrs.frozen
 class ResultSlice:
-    distances: t.Optional[npt.NDArray[np.float_]] = attrs.field(
-        eq=utils.attrs_optional_ndarray_isclose
-    )
-    strengths: t.Optional[npt.NDArray[np.float_]] = attrs.field(
-        eq=utils.attrs_optional_ndarray_isclose
-    )
+    distances: t.Optional[npt.NDArray[np.float_]] = attrs.field(eq=attrs_optional_ndarray_isclose)
+    strengths: t.Optional[npt.NDArray[np.float_]] = attrs.field(eq=attrs_optional_ndarray_isclose)
     near_edge_status: t.Optional[bool]
 
     @property

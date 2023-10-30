@@ -11,7 +11,7 @@ import numpy.typing as npt
 from scipy.signal import butter
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121.algo import (
     ENVELOPE_FWHM_M,
     AlgoParamEnum,
@@ -72,14 +72,12 @@ class BreathingProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class BreathingProcessorExtraResult:
-    psd: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    frequencies: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    breathing_motion: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    time_vector: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    breathing_rate_history: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    all_breathing_rate_history: npt.NDArray[np.float_] = attrs.field(
-        eq=utils.attrs_ndarray_isclose
-    )
+    psd: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    frequencies: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    breathing_motion: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    time_vector: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    breathing_rate_history: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    all_breathing_rate_history: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 @attrs.mutable(kw_only=True)

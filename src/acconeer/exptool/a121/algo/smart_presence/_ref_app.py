@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._base import AlgoBase, AlgoBaseT
@@ -124,7 +124,7 @@ class RefAppContext(AlgoBase):
 
 @attrs.frozen(kw_only=True)
 class RefAppResult:
-    zone_limits: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    zone_limits: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
     "The upper limit for each zone."
 
     presence_detected: bool = attrs.field()
@@ -133,13 +133,13 @@ class RefAppResult:
     max_presence_zone: Optional[int] = attrs.field()
     """The zone for maximum presence score if presence detected, else None."""
 
-    total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_isclose)
     """Detection result for all zones."""
 
     inter_presence_score: float = attrs.field()
     """A measure of the amount of slow motion detected."""
 
-    inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_isclose)
     """Slow motion presence detection result for all zones."""
 
     max_inter_zone: Optional[int] = attrs.field()
@@ -148,7 +148,7 @@ class RefAppResult:
     intra_presence_score: float = attrs.field()
     """A measure of the amount of fast motion detected."""
 
-    intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_isclose)
     """Fast motion presence detection result for all zones."""
 
     max_intra_zone: Optional[int] = attrs.field()

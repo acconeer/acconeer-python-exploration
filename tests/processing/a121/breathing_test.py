@@ -10,7 +10,10 @@ import numpy.typing as npt
 import typing_extensions as te
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import (
+    attrs_ndarray_eq,
+    attrs_optional_ndarray_isclose,
+)
 from acconeer.exptool.a121._core_ext import _ReplayingClient
 from acconeer.exptool.a121.algo import breathing
 from acconeer.exptool.a121.algo.breathing._ref_app import _load_algo_data
@@ -24,13 +27,13 @@ class ProcessorResultSlice:
 @attrs.frozen
 class RefAppResultSlice:
     app_state: breathing.AppState
-    _distances_being_analyzed: npt.NDArray[np.int_] = attrs.field(eq=utils.attrs_ndarray_eq)
+    _distances_being_analyzed: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
     """
     Originally t.Optional[t.Tuple[int, int]]
     None             |-> np.array([])
     Tuple[int, int]  |-> np.array([x, y])
     """
-    breathing_rate: t.Optional[float] = attrs.field(eq=utils.attrs_optional_ndarray_isclose)
+    breathing_rate: t.Optional[float] = attrs.field(eq=attrs_optional_ndarray_isclose)
     """
     <float> |-> ProcessorResult(breathing_rate=<float>)
     NaN     |-> ProcessorResult(breathing_rate=None)

@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoProcessorConfigBase, ProcessorBase
 
 
@@ -60,13 +60,13 @@ class ProcessorContext:
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    lp_abs_sweep: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    angle_sweep: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    lp_abs_sweep: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    angle_sweep: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
     threshold: Optional[float] = attrs.field(default=None)
-    rel_time_stamps: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
-    distance_history: npt.NDArray[np.float_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    rel_time_stamps: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    distance_history: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
     peak_loc_m: Optional[float] = attrs.field(default=None)
-    iq_history: npt.NDArray[np.complex_] = attrs.field(eq=utils.attrs_ndarray_isclose)
+    iq_history: npt.NDArray[np.complex_] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 class Processor(ProcessorBase[ProcessorResult]):

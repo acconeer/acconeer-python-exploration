@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import utils
+from acconeer.exptool._core.class_creation.attrs import attrs_dict_ndarray_isclose
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase
 from acconeer.exptool.a121.algo.distance import DetectorResult
 
@@ -36,7 +36,7 @@ class ProcessorExtraResult:
     """
 
     level_and_time_for_plotting: Dict[str, npt.NDArray[np.float_]] = attrs.field(
-        eq=utils.attrs_dict_ndarray_isclose
+        eq=attrs_dict_ndarray_isclose
     )
 
 
