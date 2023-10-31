@@ -5,7 +5,8 @@ Installation and setup
 
 Install
 -------
-Install from PyPI::
+Install from PyPI
+^^^^^^^^^^^^^^^^^
 
     python -m pip install --upgrade acconeer-exptool[app]
 
@@ -32,6 +33,10 @@ Run the following command in the newly created directory::
    Any edit to the source code requires reinstalling ``acconeer-exptool`` unless you are using an editable install::
 
      python -m pip install -e .[app]
+
+Install Windows executable
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+You can download an executable version of `Exploration Tool for Windows <https://developer.acconeer.com/download/portable_exploration_tool-zip/>`_.
 
 Windows Setup
 -------------
@@ -60,7 +65,7 @@ This is done in order for your machine to work at its best with Exploration Tool
 
 
 Serial port permissions
-"""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^
 
 If you are running Linux together with an XM112, XM122, or XM132 module through UART, you probably need permission to access the serial port. Access is obtained by adding yourself to the ``dialout`` group::
 
@@ -72,7 +77,7 @@ Reboot for the changes to take effect.
    If you have ``ModemManager`` installed and running it might try to connect to the module, which has proven to cause problems. If you are having issues, try disabling the ``ModemManager`` service.
 
 USB permissions
-"""""""""""""""
+^^^^^^^^^^^^^^^
 
 If you are using Linux together with an XC120, the USB communication is preferred over serial port communication. To be able to access the USB device. Either run the scripts with ``sudo`` or create an `udev` rule as follows. Create and edit::
 
@@ -88,7 +93,7 @@ with the following content::
 This method is confirmed to work for ***Ubuntu 20.04**.
 
 SPI permissions
-"""""""""""""""
+^^^^^^^^^^^^^^^
 
 If you are using Linux together with an XM112, you probably need permission to access the SPI bridge USB device. Either run the scripts with ``sudo`` or create an `udev` rule as follows. Create and edit::
 
@@ -101,7 +106,7 @@ with the following content::
 This method is confirmed to work for ***Ubuntu 20.04**.
 
 Ubuntu 20.04
-""""""""""""
+^^^^^^^^^^^^
 
 To run the application on Ubuntu 20.04, ``libxcb-xinerama0-dev`` and ``libusb-1.0-0`` needs to be installed::
 
