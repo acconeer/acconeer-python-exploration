@@ -42,7 +42,7 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.components.range_help_view import RangeHelpView
+from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
 
 from ._example_app import ExampleApp, ExampleAppConfig, ExampleAppResult, _load_algo_data
 

@@ -47,7 +47,7 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.components.range_help_view import RangeHelpView
+from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
 
 from ._configs import (
     get_ceiling_config,

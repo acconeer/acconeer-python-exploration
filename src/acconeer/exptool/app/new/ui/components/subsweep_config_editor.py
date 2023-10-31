@@ -16,9 +16,9 @@ from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._core import Criticality
 
 from . import pidgets
+from .a121 import RangeHelpView
 from .collapsible_widget import CollapsibleWidget
 from .data_editor import DataEditor
-from .range_help_view import RangeHelpView
 from .types import PidgetFactoryMapping
 
 

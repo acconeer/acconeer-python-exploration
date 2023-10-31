@@ -3,3 +3,4 @@
 
 from .metadata_view import ExtendedMetadataView, MetadataView, SmartMetadataView
 from .perf_calc_view import ExtendedPerfCalcView, PerfCalcView, SmartPerfCalcView
+from .range_help_view import RangeHelpView
