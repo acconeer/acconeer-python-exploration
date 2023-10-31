@@ -355,7 +355,7 @@ try {
                                 git config user.name 'Jenkins Builder'
                                 git config user.email 'ai@acconeer.com'
 
-                                tests/release_branch/release_branch_update.sh -p $release_branches
+                                tests/release_branch/release_branch_update.sh -p ${release_branches}
                             """
                         } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
                             sh 'tests/release_branch/release_branch_push.sh'
