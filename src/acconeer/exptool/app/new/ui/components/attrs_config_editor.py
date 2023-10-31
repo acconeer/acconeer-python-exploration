@@ -16,6 +16,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 
 from .data_editor import DataEditor
+from .group_box import GroupBox
 from .json_save_load_buttons import (
     JsonPresentable,
     PresenterFunc,
@@ -23,7 +24,6 @@ from .json_save_load_buttons import (
 )
 from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetHook, WidgetHook
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
-from .utils import GroupBox
 
 
 T = TypeVar("T", bound=JsonPresentable)

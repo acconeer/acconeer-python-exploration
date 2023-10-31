@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import _core
-from acconeer.exptool.app.new.ui.components.utils import GroupBox
+from acconeer.exptool.app.new.ui.components.group_box import GroupBox
 
 
 _WIDGET_WIDTH = 125

@@ -15,12 +15,12 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality
 from acconeer.exptool.app.new.ui.components import pidgets
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
+from acconeer.exptool.app.new.ui.components.group_box import GroupBox
 from acconeer.exptool.app.new.ui.components.json_save_load_buttons import (
     JsonButtonOperations,
     create_json_save_load_buttons_from_type,
 )
 from acconeer.exptool.app.new.ui.components.types import PidgetFactoryMapping
-from acconeer.exptool.app.new.ui.components.utils import GroupBox
 
 from .subsweep_config_editor import SubsweepConfigEditor
 
