@@ -10,6 +10,7 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
@@ -41,6 +42,7 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
     return IdleState(idle_state)
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.3)
@@ -52,16 +54,12 @@ class DetectorConfig(AlgoConfigBase):
     profile: Optional[a121.Profile] = attrs.field(
         default=None, converter=optional_profile_converter
     )
-    """
-    Sets the profile. If no argument is provided, the highest possible
-    profile without interference of direct leakage is used to maximize SNR.
-    """
+    """Sets the profile. If no argument is provided, the highest possible
+    profile without interference of direct leakage is used to maximize SNR."""
 
     step_length: Optional[int] = attrs.field(default=None)
-    """
-    Step length in points. If no argument is provided, the step length is automatically
-    calculated based on the profile.
-    """
+    """Step length in points. If no argument is provided, the step length is automatically
+    calculated based on the profile."""
 
     frame_rate: float = attrs.field(default=12.0)
     """Frame rate in Hz."""
@@ -78,10 +76,8 @@ class DetectorConfig(AlgoConfigBase):
     """Sets the inter frame idle state."""
 
     intra_enable: bool = attrs.field(default=True)
-    """
-    Enables the intra-frame presence detection used for detecting
-    faster movements inside frames.
-    """
+    """Enables the intra-frame presence detection used for detecting
+    faster movements inside frames."""
 
     intra_detection_threshold: float = attrs.field(default=1.3)
     """Detection threshold for the intra-frame presence detection."""
@@ -93,19 +89,15 @@ class DetectorConfig(AlgoConfigBase):
     """Time constant for the output in the intra-frame part."""
 
     inter_enable: bool = attrs.field(default=True)
-    """
-    Enables the inter-frame presence detection used for detecting
-    slower movements between frames
-    """
+    """Enables the inter-frame presence detection used for detecting
+    slower movements between frames."""
 
     inter_detection_threshold: float = attrs.field(default=1)
     """Detection threshold for the inter-frame presence detection."""
 
     inter_frame_fast_cutoff: float = attrs.field(default=6.0)
-    """
-    Cutoff frequency of the low pass filter for the fast filtered absolute sweep mean.
-    No filtering is applied if the cutoff is set over half the frame rate (Nyquist limit).
-    """
+    """Cutoff frequency of the low pass filter for the fast filtered absolute sweep mean.
+    No filtering is applied if the cutoff is set over half the frame rate (Nyquist limit)."""
 
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     """Cutoff frequency of the low pass filter for the slow filtered absolute sweep mean."""
@@ -120,10 +112,8 @@ class DetectorConfig(AlgoConfigBase):
     """Enables the inter-frame phase boost. Used to increase slow motion detection."""
 
     inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
-    """
-    Number of seconds the inter-frame presence score needs to decrease before exponential
-    scaling starts for faster decline.
-    """
+    """Number of seconds the inter-frame presence score needs to decrease before exponential
+    scaling starts for faster decline."""
 
     @step_length.validator
     def _validate_step_length(self, _: Any, step_length: int) -> None:
