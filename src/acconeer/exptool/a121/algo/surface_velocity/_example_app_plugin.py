@@ -17,6 +17,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
@@ -406,36 +407,43 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "surface_distance": pidgets.FloatPidgetFactory(
                 name_label_text="Surface distance:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "surface_distance"),
                 suffix=" m",
                 decimals=2,
                 limits=(0.1, None),
             ),
             "sensor_angle": pidgets.FloatPidgetFactory(
                 name_label_text="Sensor angle:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "sensor_angle"),
                 suffix=" degrees",
                 decimals=1,
                 limits=(0, 89),
             ),
             "num_points": pidgets.IntPidgetFactory(
                 name_label_text="Number of distance points:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "num_points"),
                 limits=(1, None),
             ),
             "sweep_rate": pidgets.FloatPidgetFactory(
                 name_label_text="Sweep rate:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "sweep_rate"),
                 suffix=" Hz",
                 decimals=1,
                 limits=(100, None),
             ),
             "sweeps_per_frame": pidgets.IntPidgetFactory(
                 name_label_text="Sweeps per frame:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "sweeps_per_frame"),
                 limits=(64, 2048),
             ),
             "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="HWAAS:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "hwaas"),
                 limits=(1, 511),
             ),
             "profile": pidgets.OptionalEnumPidgetFactory(
                 name_label_text="Profile:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "profile"),
                 checkbox_label_text="Override",
                 enum_type=a121.Profile,
                 label_mapping={
@@ -448,10 +456,12 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "step_length": pidgets.IntPidgetFactory(
                 name_label_text="Step length:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "step_length"),
                 limits=(1, None),
             ),
             "frame_rate": pidgets.OptionalFloatPidgetFactory(
                 name_label_text="Frame rate:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "frame_rate"),
                 checkbox_label_text="Limit",
                 suffix=" Hz",
                 decimals=1,
@@ -460,13 +470,20 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "continuous_sweep_mode": pidgets.CheckboxPidgetFactory(
                 name_label_text="Continuos sweep mode",
+                name_label_tooltip=get_attribute_docstring(
+                    ExampleAppConfig, "continuous_sweep_mode"
+                ),
             ),
             "double_buffering": pidgets.CheckboxPidgetFactory(
                 name_label_text="Double buffering",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "double_buffering"),
             ),
             "inter_frame_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
                 name_label_text="Inter frame idle state:",
+                name_label_tooltip=get_attribute_docstring(  # type: ignore[arg-type]
+                    ExampleAppConfig, "inter_frame_idle_state"
+                ),
                 label_mapping={
                     a121.IdleState.DEEP_SLEEP: "Deep sleep",
                     a121.IdleState.SLEEP: "Sleep",
@@ -476,6 +493,9 @@ class ViewPlugin(A121ViewPluginBase):
             "inter_sweep_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
                 name_label_text="Inter sweep idle state:",
+                name_label_tooltip=get_attribute_docstring(  # type: ignore[arg-type]
+                    ExampleAppConfig, "inter_sweep_idle_state"
+                ),
                 label_mapping={
                     a121.IdleState.DEEP_SLEEP: "Deep sleep",
                     a121.IdleState.SLEEP: "Sleep",
@@ -484,37 +504,47 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "time_series_length": pidgets.IntPidgetFactory(
                 name_label_text="Time series length:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "time_series_length"),
                 limits=(64, None),
             ),
             "psd_lp_coeff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="PSD time filtering coeff.:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "psd_lp_coeff"),
                 limits=(0, 1),
                 decimals=3,
             ),
             "slow_zone": pidgets.IntPidgetFactory(
                 name_label_text="Slow zone half length:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "slow_zone"),
                 limits=(0, 20),
             ),
             "velocity_lp_coeff": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Velocity time filtering coeff.\nper time series:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "velocity_lp_coeff"),
                 limits=(0, 1),
                 decimals=3,
             ),
             "cfar_win": pidgets.IntPidgetFactory(
                 name_label_text="CFAR window length:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "cfar_win"),
                 limits=(0, 20),
             ),
             "cfar_guard": pidgets.IntPidgetFactory(
                 name_label_text="CFAR guard length:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "cfar_guard"),
                 limits=(0, 20),
             ),
             "cfar_sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Threshold sensitivity:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "cfar_sensitivity"),
                 decimals=2,
                 limits=(0.01, 1),
             ),
             "max_peak_interval_s": pidgets.FloatPidgetFactory(
                 name_label_text="Max peak interval:",
+                name_label_tooltip=get_attribute_docstring(
+                    ExampleAppConfig, "max_peak_interval_s"
+                ),
                 decimals=1,
                 limits=(0, 20),
                 suffix=" s",

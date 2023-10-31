@@ -9,6 +9,7 @@ from typing import Any, Optional, Tuple
 import attrs
 import h5py
 import numpy as np
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
@@ -39,16 +40,15 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
     return IdleState(idle_state)
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class ExampleAppConfig(AlgoConfigBase):
     surface_distance: float = attrs.field(default=1)
     """Perpendicular distance from the water surface to the sensor in meters."""
 
     sensor_angle: float = attrs.field(default=45)
-    """
-    Sensor angle in degrees. 0 degrees is defined as the sensor
-    facing straight down to the surface.
-    """
+    """Sensor angle in degrees. 0 degrees is defined as the sensor
+    facing straight down to the surface."""
 
     num_points: int = attrs.field(default=4)
     """Number of data points in the measurement."""
@@ -59,10 +59,8 @@ class ExampleAppConfig(AlgoConfigBase):
     profile: Optional[a121.Profile] = attrs.field(
         default=None, converter=optional_profile_converter
     )
-    """
-    Sets the profile. If no argument is provided, the highest possible
-    profile without interference of direct leakage is used to maximize SNR.
-    """
+    """Sets the profile. If no argument is provided, the highest possible
+    profile without interference of direct leakage is used to maximize SNR."""
 
     frame_rate: Optional[float] = attrs.field(default=None)
     """Frame rate in Hz."""
@@ -93,7 +91,7 @@ class ExampleAppConfig(AlgoConfigBase):
     """Sets the inter sweep idle state."""
 
     time_series_length: int = attrs.field(default=512)
-    """Length of time series."""
+    """Number of sweeps in the time series."""
 
     psd_lp_coeff: float = attrs.field(default=0.75)
     """Filter coefficient for the exponential filter of psd over time."""
@@ -102,30 +100,22 @@ class ExampleAppConfig(AlgoConfigBase):
     """Sensitivity of the CFAR threshold. Low sensitivity will set a high threshold."""
 
     cfar_guard: int = attrs.field(default=6)
-    """
-    Number of frequency bins around the point of interest that
-    is omitted when calculating the CFAR threshold.
-    """
+    """Number of frequency bins around the point of interest that
+    is omitted when calculating the CFAR threshold."""
 
     cfar_win: int = attrs.field(default=6)
-    """
-    Number of frequency bins next to the CFAR guard from
-    which the threshold level will be calculated.
-    """
+    """Number of frequency bins next to the CFAR guard from
+    which the threshold level will be calculated."""
 
     slow_zone: int = attrs.field(default=3)
     """Half size of the number of frequency bins that are regarded as the slow zone."""
 
     velocity_lp_coeff: float = attrs.field(default=0.98)
-    """
-    Filter coefficient for the exponential filter of the velocity estimate.
-    """
+    """Filter coefficient for the exponential filter of the velocity estimate."""
 
     max_peak_interval_s: float = attrs.field(default=4)
-    """
-    Maximal number of seconds that is tolerated between
-    peaks before the estimated velocity starts decreasing.
-    """
+    """Maximal number of seconds that is tolerated between
+    peaks before the estimated velocity starts decreasing."""
 
     @step_length.validator
     def _validate_step_length(self, _: Any, step_length: int) -> None:
