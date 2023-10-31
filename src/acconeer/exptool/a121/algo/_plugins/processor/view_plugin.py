@@ -19,10 +19,13 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PidgetFactoryMapping,
     PluginState,
-    SessionConfigEditor,
     icons,
 )
-from acconeer.exptool.app.new.ui.components.a121 import SmartMetadataView, SmartPerfCalcView
+from acconeer.exptool.app.new.ui.components.a121 import (
+    SessionConfigEditor,
+    SmartMetadataView,
+    SmartPerfCalcView,
+)
 
 from .backend_plugin import ProcessorBackendPluginBase, ProcessorBackendPluginSharedState
 

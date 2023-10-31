@@ -14,12 +14,11 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._core import Criticality
-
-from . import pidgets
-from .a121 import RangeHelpView
-from .collapsible_widget import CollapsibleWidget
-from .data_editor import DataEditor
-from .types import PidgetFactoryMapping
+from acconeer.exptool.app.new.ui.components import pidgets
+from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
+from acconeer.exptool.app.new.ui.components.collapsible_widget import CollapsibleWidget
+from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
+from acconeer.exptool.app.new.ui.components.types import PidgetFactoryMapping
 
 
 log = logging.getLogger(__name__)

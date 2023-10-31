@@ -9,7 +9,6 @@ from .components import (
     MiscErrorView,
     PidgetFactoryMapping,
     PidgetGroupFactoryMapping,
-    SessionConfigEditor,
     TwoSensorIdsEditor,
     pidgets,
 )

@@ -18,13 +18,15 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core import Criticality, utils
+from acconeer.exptool.app.new.ui.components import pidgets
+from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
+from acconeer.exptool.app.new.ui.components.json_save_load_buttons import (
+    create_json_save_load_buttons,
+)
+from acconeer.exptool.app.new.ui.components.utils import GroupBox
 from acconeer.exptool.app.new.ui.icons import PLUS, REMOVE
 
-from . import pidgets
-from .data_editor import DataEditor
-from .json_save_load_buttons import create_json_save_load_buttons
 from .sensor_config_editor import SensorConfigEditor
-from .utils import GroupBox
 
 
 log = logging.getLogger(__name__)

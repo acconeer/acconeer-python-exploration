@@ -8,9 +8,6 @@ from .data_editor import DataEditor
 from .goto_resource_tab_button import GotoResourceTabButton
 from .json_save_load_buttons import PresentationType, PresenterFunc
 from .misc_error_view import MiscErrorView
-from .sensor_config_editor import SensorConfigEditor
-from .session_config_editor import SessionConfigEditor
-from .subsweep_config_editor import SubsweepConfigEditor
 from .two_sensor_ids_editor import TwoSensorIdsEditor
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 from .utils import GroupBox

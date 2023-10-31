@@ -11,7 +11,8 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.model import power
-from acconeer.exptool.app.new.ui.components import GroupBox, SessionConfigEditor, pidgets
+from acconeer.exptool.app.new.ui.components import GroupBox, pidgets
+from acconeer.exptool.app.new.ui.components.a121 import SessionConfigEditor
 from acconeer.exptool.app.new.ui.resource_tab.event_system import EventBroker
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper, ScrollAreaDecorator, TopAlignDecorator
 

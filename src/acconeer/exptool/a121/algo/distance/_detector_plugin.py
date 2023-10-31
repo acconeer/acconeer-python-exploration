@@ -48,8 +48,8 @@ from acconeer.exptool.app.new import (
 from acconeer.exptool.app.new.ui.components import (
     CollapsibleWidget,
     GotoResourceTabButton,
-    SensorConfigEditor,
 )
+from acconeer.exptool.app.new.ui.components.a121 import SensorConfigEditor
 from acconeer.exptool.app.new.ui.components.json_save_load_buttons import (
     JsonButtonOperations,
     PresentationType,

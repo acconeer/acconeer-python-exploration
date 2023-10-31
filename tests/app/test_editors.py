@@ -81,42 +81,51 @@ def qapplication() -> QApplication:
             read_ui=lambda ace: ace._pidget_mapping["a"].get_data(),
         ),
         EditorFixture(
-            editor_class=pc.SessionConfigEditor,
+            editor_class=pc.a121.SessionConfigEditor,
             data_prototype=a121.SessionConfig(),
-            good_ui_edit=partial(pc.SessionConfigEditor._update_update_rate, value=1.0),
-            bad_ui_edit=partial(pc.SessionConfigEditor._update_update_rate, value=-1.0),
+            good_ui_edit=partial(pc.a121.SessionConfigEditor._update_update_rate, value=1.0),
+            bad_ui_edit=partial(pc.a121.SessionConfigEditor._update_update_rate, value=-1.0),
             noop_ui_edit=partial(
-                pc.SessionConfigEditor._update_update_rate, value=a121.SessionConfig().update_rate
+                pc.a121.SessionConfigEditor._update_update_rate,
+                value=a121.SessionConfig().update_rate,
             ),
             read_ui=lambda sce: sce._update_rate_pidget.get_data(),
         ),
         EditorFixture(
-            editor_class=pc.SensorConfigEditor,
+            editor_class=pc.a121.SensorConfigEditor,
             data_prototype=a121.SensorConfig(),
             good_ui_edit=partial(
-                pc.SensorConfigEditor._update_sensor_config_aspect, aspect="frame_rate", value=1.0
+                pc.a121.SensorConfigEditor._update_sensor_config_aspect,
+                aspect="frame_rate",
+                value=1.0,
             ),
             bad_ui_edit=partial(
-                pc.SensorConfigEditor._update_sensor_config_aspect, aspect="frame_rate", value=-1.0
+                pc.a121.SensorConfigEditor._update_sensor_config_aspect,
+                aspect="frame_rate",
+                value=-1.0,
             ),
             noop_ui_edit=partial(
-                pc.SensorConfigEditor._update_sensor_config_aspect,
+                pc.a121.SensorConfigEditor._update_sensor_config_aspect,
                 aspect="frame_rate",
                 value=a121.SensorConfig().frame_rate,
             ),
             read_ui=lambda sce: sce._sensor_config_pidgets["frame_rate"].get_data(),
         ),
         EditorFixture(
-            editor_class=pc.SubsweepConfigEditor,
+            editor_class=pc.a121.SubsweepConfigEditor,
             data_prototype=a121.SubsweepConfig(),
             good_ui_edit=partial(
-                pc.SubsweepConfigEditor._update_subsweep_config_aspect, aspect="hwaas", value=5
+                pc.a121.SubsweepConfigEditor._update_subsweep_config_aspect,
+                aspect="hwaas",
+                value=5,
             ),
             bad_ui_edit=partial(
-                pc.SubsweepConfigEditor._update_subsweep_config_aspect, aspect="hwaas", value=-1
+                pc.a121.SubsweepConfigEditor._update_subsweep_config_aspect,
+                aspect="hwaas",
+                value=-1,
             ),
             noop_ui_edit=partial(
-                pc.SubsweepConfigEditor._update_subsweep_config_aspect,
+                pc.a121.SubsweepConfigEditor._update_subsweep_config_aspect,
                 aspect="hwaas",
                 value=a121.SubsweepConfig().hwaas,
             ),

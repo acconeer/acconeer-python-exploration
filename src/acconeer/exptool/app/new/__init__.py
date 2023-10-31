@@ -35,7 +35,6 @@ from .ui import (
     MiscErrorView,
     PidgetFactoryMapping,
     PidgetGroupFactoryMapping,
-    SessionConfigEditor,
     TwoSensorIdsEditor,
     icons,
     pidgets,
