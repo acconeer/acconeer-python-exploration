@@ -16,7 +16,7 @@ import pytest
 
 from PySide6.QtWidgets import QApplication
 
-import acconeer.exptool.app.new.ui.plugin_components as pc
+import acconeer.exptool.app.new.ui.components as pc
 from acconeer.exptool import a121
 
 

@@ -15,9 +15,9 @@ from PySide6.QtCore import QSize, QTimer
 from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
 
 from acconeer.exptool.app.new._exceptions import HandledException
+from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
 from acconeer.exptool.app.new.ui.icons import CHECKMARK, FOLDER_OPEN, SAVE
 from acconeer.exptool.app.new.ui.misc import ExceptionWidget
-from acconeer.exptool.app.new.ui.plugin_components.data_editor import DataEditor
 
 from .dialogs import (
     LoadDialogWithJsonEditor,

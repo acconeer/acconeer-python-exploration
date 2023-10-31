@@ -43,11 +43,11 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget, SensorConfigEditor
-from acconeer.exptool.app.new.ui.plugin_components.json_save_load_buttons import (
+from acconeer.exptool.app.new.ui.components import CollapsibleWidget, SensorConfigEditor
+from acconeer.exptool.app.new.ui.components.json_save_load_buttons import (
     JsonButtonOperations,
 )
-from acconeer.exptool.app.new.ui.plugin_components.range_help_view import RangeHelpView
+from acconeer.exptool.app.new.ui.components.range_help_view import RangeHelpView
 from acconeer.exptool.app.new.ui.stream_tab.plugin_widget import PluginPlotArea
 
 from ._configs import get_default_config, get_traffic_config

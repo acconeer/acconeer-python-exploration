@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
-from acconeer.exptool.app.new.ui.plugin_components import PidgetFactoryMapping, pidgets
-from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import (
+from acconeer.exptool.app.new.ui.components import PidgetFactoryMapping, pidgets
+from acconeer.exptool.app.new.ui.components.pidgets.hooks import (
     disable_if,
     enable_if,
     parameter_is,

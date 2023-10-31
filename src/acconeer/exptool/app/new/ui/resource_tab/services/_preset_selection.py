@@ -7,7 +7,7 @@ import typing as t
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout
 
-from acconeer.exptool.app.new.ui.plugin_components import GroupBox
+from acconeer.exptool.app.new.ui.components import GroupBox
 
 
 def create_plugin_selection_widget(

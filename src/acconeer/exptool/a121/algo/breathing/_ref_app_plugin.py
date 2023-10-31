@@ -52,7 +52,7 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components import CollapsibleWidget
+from acconeer.exptool.app.new.ui.components import CollapsibleWidget
 
 from ._ref_app import (
     RefApp,

@@ -55,7 +55,7 @@ from acconeer.exptool.app.new import (
     icons,
     is_task,
 )
-from acconeer.exptool.app.new.ui.plugin_components import (
+from acconeer.exptool.app.new.ui.components import (
     AttrsConfigEditor,
     PidgetFactoryMapping,
     PresentationType,

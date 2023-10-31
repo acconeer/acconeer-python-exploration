@@ -46,7 +46,7 @@ from acconeer.exptool.app.new import (
     is_task,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components import SensorConfigEditor
+from acconeer.exptool.app.new.ui.components import SensorConfigEditor
 
 from ._detector import (
     DetailedStatus,

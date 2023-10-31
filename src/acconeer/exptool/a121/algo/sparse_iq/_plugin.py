@@ -40,7 +40,7 @@ from acconeer.exptool.app.new import (
     backend,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components import GotoResourceTabButton
+from acconeer.exptool.app.new.ui.components import GotoResourceTabButton
 
 from ._processor import (
     AmplitudeMethod,

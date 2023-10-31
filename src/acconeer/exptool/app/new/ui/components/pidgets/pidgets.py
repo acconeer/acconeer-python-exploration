@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool.a121._core.entities import Criticality
-from acconeer.exptool.app.new.ui.plugin_components.data_editor import DataEditor
+from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
 
 from .common import MaybeIterable, as_sequence
 

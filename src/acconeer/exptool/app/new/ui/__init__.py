@@ -1,10 +1,9 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
-from . import icons, plugin_components, utils
+from . import components, icons, utils
 from .app_model_viewer import AppModelViewer
-from .main_window import MainWindow
-from .plugin_components import (
+from .components import (
     AttrsConfigEditor,
     GroupBox,
     MiscErrorView,
@@ -16,3 +15,4 @@ from .plugin_components import (
     TwoSensorIdsEditor,
     pidgets,
 )
+from .main_window import MainWindow

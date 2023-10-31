@@ -10,7 +10,7 @@ import attrs
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from acconeer.exptool.app.new.ui.plugin_components.collapsible_widget import CollapsibleWidget
+from acconeer.exptool.app.new.ui.components.collapsible_widget import CollapsibleWidget
 
 from .common import MaybeIterable, as_sequence
 from .pidgets import Pidget

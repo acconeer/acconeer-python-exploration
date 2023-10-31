@@ -47,7 +47,7 @@ from acconeer.exptool.app.new import (
     backend,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.plugin_components.pidgets.hooks import (
+from acconeer.exptool.app.new.ui.components.pidgets.hooks import (
     disable_if,
     parameter_is,
 )

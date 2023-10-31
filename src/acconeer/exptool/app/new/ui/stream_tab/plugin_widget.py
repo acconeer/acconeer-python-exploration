@@ -30,8 +30,8 @@ from acconeer.exptool.app import resources
 from acconeer.exptool.app.new._enums import PluginFamily, PluginState
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
+from acconeer.exptool.app.new.ui.components.utils import GroupBox
 from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD
-from acconeer.exptool.app.new.ui.plugin_components.utils import GroupBox
 from acconeer.exptool.app.new.ui.utils import (
     HorizontalSeparator,
     ScrollAreaDecorator,

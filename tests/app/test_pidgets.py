@@ -7,7 +7,7 @@ import typing as t
 
 import pytest
 
-from acconeer.exptool.app.new.ui.plugin_components import pidgets
+from acconeer.exptool.app.new.ui.components import pidgets
 
 
 def _class_is_ABC(c: type) -> bool:

@@ -14,7 +14,7 @@ from acconeer.exptool.a121.algo.distance._configs import get_high_accuracy_detec
 from acconeer.exptool.a121.algo.distance._detector import Detector, DetectorConfig
 from acconeer.exptool.a121.algo.distance._pidget_mapping import get_pidget_mapping
 from acconeer.exptool.a121.model import power
-from acconeer.exptool.app.new.ui.plugin_components import AttrsConfigEditor, GroupBox, pidgets
+from acconeer.exptool.app.new.ui.components import AttrsConfigEditor, GroupBox, pidgets
 from acconeer.exptool.app.new.ui.resource_tab.event_system import EventBroker
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper, ScrollAreaDecorator, TopAlignDecorator
 
