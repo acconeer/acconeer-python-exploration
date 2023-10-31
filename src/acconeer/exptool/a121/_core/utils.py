@@ -6,7 +6,6 @@ from __future__ import annotations
 import enum
 import itertools
 import json
-import re
 from functools import wraps
 from typing import (
     Any,
@@ -23,6 +22,8 @@ from typing import (
 )
 
 import packaging.version
+
+from acconeer.exptool._core import version_parsing
 
 
 S = TypeVar("S")
@@ -341,71 +342,13 @@ def parse_rss_version(rss_version: str) -> packaging.version.Version:
     The RSS version string is on a 'git describe'-like format:
 
         a121-vA.B.C<-rcD><-E-gF>
-
-    where
-
-        A: major, B: minor, C: micro,
-        D: release candidate,
-        E: additional commits since tag, F: commit SHA
-
-    The concept of 'additional commits since tag' (E) doesn't have an
-    equivalent in packaging.version.Version. Instead, when E is present,
-    the smallest version part (D if present, otherwise C) is bumped and
-    E is presented as a development prerelease.
-
-    The commit SHA (F), if present, is translated to a 'local segment'.
-
-    Examples:
-
-    >>> parse_rss_version("a121-v1.2.3")
-    <Version('1.2.3')>
-
-    >>> parse_rss_version("a121-v1.2.3-rc4")
-    <Version('1.2.3rc4')>
-
-    >>> parse_rss_version("a121-v1.2.3-123-g0e03503be1")
-    <Version('1.2.4.dev123+g0e03503be1')>
-
-    >>> parse_rss_version("a121-v1.2.3-rc4-123-g0e03503be1")
-    <Version('1.2.3rc5.dev123+g0e03503be1')>
-
-    Read more: https://packaging.pypa.io/en/latest/version.html
     """
+    (release_line, version) = version_parsing.parse_rss_version(rss_version)
 
-    pattern = (
-        r"a121-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)"
-        r"(?:-(?P<pre_phase>rc)(?P<pre_number>\d+))?"
-        r"(?:-(?P<dev_number>\d+)-(?P<dev_commit>g\w+))?"
-        r"(?:-(dirty))?"
-    )
-    match = re.fullmatch(pattern, rss_version)
-    if not match:
-        raise ValueError("Not a valid RSS version")
+    if release_line != "a121":
+        raise ValueError("Not a valid RSS A121 version")
 
-    groups = match.groupdict()
-
-    is_prerelease = groups["pre_number"] is not None
-    is_devrelease = groups["dev_number"] is not None
-
-    release_segment = ""
-    pre_segment = ""
-    dev_segment = ""
-
-    if is_devrelease:
-        dev_segment = f".dev{groups['dev_number']}+{groups['dev_commit']}"
-
-        if is_prerelease:
-            groups["pre_number"] = int(groups["pre_number"]) + 1
-        else:
-            groups["micro"] = int(groups["micro"]) + 1
-
-    if is_prerelease:
-        pre_segment = f"{groups['pre_phase']}{groups['pre_number']}"
-
-    release_segment = f"{groups['major']}.{groups['minor']}.{groups['micro']}"
-
-    version = release_segment + pre_segment + dev_segment
-    return packaging.version.Version(version)
+    return version
 
 
 def unwrap_ticks(
