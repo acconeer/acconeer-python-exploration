@@ -10,7 +10,6 @@ from .components import (
     PidgetFactoryMapping,
     PidgetGroupFactoryMapping,
     SessionConfigEditor,
-    SmartPerfCalcView,
     TwoSensorIdsEditor,
     pidgets,
 )

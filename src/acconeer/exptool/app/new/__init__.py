@@ -36,7 +36,6 @@ from .ui import (
     PidgetFactoryMapping,
     PidgetGroupFactoryMapping,
     SessionConfigEditor,
-    SmartPerfCalcView,
     TwoSensorIdsEditor,
     icons,
     pidgets,

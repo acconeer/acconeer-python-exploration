@@ -20,10 +20,9 @@ from acconeer.exptool.app.new import (
     PidgetFactoryMapping,
     PluginState,
     SessionConfigEditor,
-    SmartPerfCalcView,
     icons,
 )
-from acconeer.exptool.app.new.ui.components.a121 import SmartMetadataView
+from acconeer.exptool.app.new.ui.components.a121 import SmartMetadataView, SmartPerfCalcView
 
 from .backend_plugin import ProcessorBackendPluginBase, ProcessorBackendPluginSharedState
 
