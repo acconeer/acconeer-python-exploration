@@ -12,6 +12,7 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
@@ -45,6 +46,7 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
     return IdleState(idle_state)
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class PresenceZoneConfig(DetectorConfig):
     num_zones: int = attrs.field(default=7)
@@ -55,6 +57,7 @@ class PresenceZoneConfig(DetectorConfig):
         return super()._collect_validation_results()
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class PresenceWakeUpConfig(PresenceZoneConfig):
     num_zones_for_wake_up: int = attrs.field(default=1)
@@ -75,6 +78,7 @@ class PresenceWakeUpConfig(PresenceZoneConfig):
         return validation_results
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class RefAppConfig(AlgoConfigBase):
     nominal_config: PresenceZoneConfig = attrs.field(factory=PresenceZoneConfig)
@@ -87,6 +91,7 @@ class RefAppConfig(AlgoConfigBase):
     """Switch between two configurations based on presence detection."""
 
     show_all_detected_zones: bool = attrs.field(default=False)
+    """Visualize all detected zones in the circle sector."""
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []

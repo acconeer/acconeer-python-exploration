@@ -19,6 +19,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
@@ -653,10 +654,14 @@ class ViewPlugin(A121ViewPluginBase):
             title="Ref App parameters",
             factory_mapping={
                 "wake_up_mode": pidgets.CheckboxPidgetFactory(
-                    name_label_text="Switch config on wake up"
+                    name_label_text="Switch config on wake up",
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "wake_up_mode"),
                 ),
                 "show_all_detected_zones": pidgets.CheckboxPidgetFactory(
                     name_label_text="Show all detected zones",
+                    name_label_tooltip=get_attribute_docstring(
+                        RefAppConfig, "show_all_detected_zones"
+                    ),
                 ),
             },
             config_type=RefAppConfig,
@@ -701,7 +706,11 @@ class ViewPlugin(A121ViewPluginBase):
             {
                 pidgets.FlatPidgetGroup(): {
                     "num_zones": pidgets.IntPidgetFactory(
-                        name_label_text="Number of zones:", limits=(1, None)
+                        name_label_text="Number of zones:",
+                        limits=(1, None),
+                        name_label_tooltip=get_attribute_docstring(
+                            PresenceZoneConfig, "num_zones"
+                        ),
                     )
                 }
             }
@@ -715,7 +724,11 @@ class ViewPlugin(A121ViewPluginBase):
             {
                 pidgets.FlatPidgetGroup(): {
                     "num_zones_for_wake_up": pidgets.IntPidgetFactory(
-                        name_label_text="Number zones for wake up:s:", limits=(1, None)
+                        name_label_text="Number zones for wake up:s:",
+                        limits=(1, None),
+                        name_label_tooltip=get_attribute_docstring(
+                            PresenceWakeUpConfig, "num_zones_for_wake_up"
+                        ),
                     )
                 }
             }
