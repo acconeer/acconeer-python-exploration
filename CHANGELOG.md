@@ -1,5 +1,11 @@
 # Changelog
 
+## v7.6.1
+
+### Fixed
+- Bug in Sparse IQ where selecting multiple subsweeps
+  resulted in an uncaught exception
+
 ## v7.6.0
 
 ### Added
