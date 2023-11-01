@@ -406,6 +406,7 @@ class PlotPlugin(PlotPluginBase):
             vels, vel_res = algo.get_approx_fft_vels(metadata, sensor_config)
             images = []
             for subsweep_index, subsweep_distances_m in enumerate(subsweeps_distances_m):
+                step_length = sensor_config.subsweeps[subsweep_index].step_length
                 plot = plot_widget.addPlot()
                 plot.setMenuEnabled(False)
                 plot.setLabel("bottom", "Distance (m)")
@@ -416,7 +417,7 @@ class PlotPlugin(PlotPluginBase):
 
                 transform = QTransform()
                 transform.translate(subsweep_distances_m[0], vels[0] - 0.5 * vel_res)
-                transform.scale(metadata.base_step_length_m * sensor_config.step_length, vel_res)
+                transform.scale(metadata.base_step_length_m * step_length, vel_res)
 
                 image = pg.ImageItem(autoDownsample=True)
                 image.setLookupTable(et.utils.pg_mpl_cmap("viridis"))
