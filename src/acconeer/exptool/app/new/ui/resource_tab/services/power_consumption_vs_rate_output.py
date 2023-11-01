@@ -359,7 +359,7 @@ class PowerConsumptionVsRateOutput(QWidget):
     }
     description: t.ClassVar[str] = "\n\n".join(
         [
-            "Comparse power consumption and rate for differend power- & idle states.",
+            "Compares power consumption and rate for different power- & inter frame idle states.",
             "NOTE: A curve flatlining means that the rate is the maximum for that power state.",
         ]
     )
