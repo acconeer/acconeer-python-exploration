@@ -10,6 +10,7 @@ from pathlib import Path
 
 import attrs
 import typing_extensions as te
+from packaging.version import Version
 
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction, QIcon, QMouseEvent
@@ -93,7 +94,14 @@ class _UserUnderstandings:
         """Returns a persisted instance or creates a new instance"""
         try:
             with cls._PATH.open("r") as file:
-                return cls(**json.load(file))
+                cached = cls(**json.load(file))
+
+                if Version(cached.lib_version) < Version("v7.6.1"):
+                    # v7.6.1 slightly modified the approximate disclaimer text to
+                    # emphasize that the numbers displayed are not measurements.
+                    cached.data_is_approximate = False
+
+                return cached
         except (FileNotFoundError, json.JSONDecodeError):
             return cls(
                 data_is_approximate=False,
