@@ -342,6 +342,16 @@ class ResourceMainWidget(QMainWindow):
             )
         )
 
+        toolbar.addSeparator()
+
+        toolbar.addAction(
+            self._create_action(
+                INFO(),
+                button_label="Info",
+                on_trigger=lambda: self._show_info_popup(),
+            )
+        )
+
     def _create_session_config_input(self, config: a121.SessionConfig) -> _DockWidget:
         service = session_config_input.SessionConfigInput(self._broker, config)
         return _DockWidget(
@@ -401,3 +411,6 @@ class ResourceMainWidget(QMainWindow):
             service.uninstall_function,
             parent=self,
         )
+
+    def _show_info_popup(self) -> None:
+        QMessageBox.information(self, "Resource Calculator", _TAB_BRIEF_DESCRIPTION)
