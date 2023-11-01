@@ -130,7 +130,7 @@ class SessionConfig:
 
     @property
     def update_rate(self) -> Optional[float]:
-        """The update rate limit in Hz
+        """The server update rate limit in Hz
 
         Must be > 0 or None, where None means unlimited.
         """
