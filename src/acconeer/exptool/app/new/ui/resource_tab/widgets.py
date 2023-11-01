@@ -284,14 +284,14 @@ class ResourceMainWidget(QMainWindow):
         toolbar.addAction(
             self._create_action(
                 COG(),
-                button_label="Sparse IQ config",
+                button_label="New Sparse IQ config",
                 on_trigger=lambda: self.spawn_input_block(a121.SessionConfig(), animate=False),
             )
         )
         toolbar.addAction(
             self._create_action(
                 COG(),
-                "Distance config",
+                "New Distance config",
                 on_trigger=lambda: self.spawn_input_block(
                     distance.DetectorConfig(), animate=False
                 ),
@@ -300,7 +300,7 @@ class ResourceMainWidget(QMainWindow):
         toolbar.addAction(
             self._create_action(
                 COG(),
-                "Presence config",
+                "New Presence config",
                 on_trigger=lambda: self.spawn_input_block(
                     presence.DetectorConfig(), animate=False
                 ),
