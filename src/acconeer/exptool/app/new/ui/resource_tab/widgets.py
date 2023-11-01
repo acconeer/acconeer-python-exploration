@@ -208,7 +208,7 @@ class ResourceMainWidget(QMainWindow):
         toolbar.setFloatable(False)
         toolbar.setMovable(False)
 
-        self._add_spawn_buttons(toolbar)
+        self._populate_palette(toolbar)
         self.setCentralWidget(toolbar)
 
         # Default loadout
@@ -280,48 +280,59 @@ class ResourceMainWidget(QMainWindow):
         action.triggered.connect(on_trigger)
         return action
 
-    def _add_spawn_buttons(self, toolbar: QToolBar) -> None:
-        actions = [
+    def _populate_palette(self, toolbar: QToolBar) -> None:
+        toolbar.addAction(
             self._create_action(
                 COG(),
                 button_label="Sparse IQ config",
                 on_trigger=lambda: self.spawn_input_block(a121.SessionConfig(), animate=False),
-            ),
+            )
+        )
+        toolbar.addAction(
             self._create_action(
                 COG(),
                 "Distance config",
                 on_trigger=lambda: self.spawn_input_block(
                     distance.DetectorConfig(), animate=False
                 ),
-            ),
+            )
+        )
+        toolbar.addAction(
             self._create_action(
                 COG(),
                 "Presence config",
                 on_trigger=lambda: self.spawn_input_block(
                     presence.DetectorConfig(), animate=False
                 ),
-            ),
+            )
+        )
+
+        toolbar.addSeparator()
+
+        toolbar.addAction(
             self._create_action(
                 CHART_BAR(),
                 button_label="Power curve",
                 on_trigger=lambda: self._add_dock_widget(self._create_power_curve_output()),
-            ),
+            )
+        )
+
+        toolbar.addAction(
             self._create_action(
                 CHART_LINE(),
                 button_label="Power consumption vs. Rate",
                 on_trigger=lambda: self._add_dock_widget(
                     self._create_power_consumption_vs_rate_output()
                 ),
-            ),
+            )
+        )
+        toolbar.addAction(
             self._create_action(
                 MEMORY(),
                 button_label="Memory breakdown",
                 on_trigger=lambda: self._add_dock_widget(self._create_memory_breakdown_output()),
-            ),
-        ]
-
-        for action in actions:
-            toolbar.addAction(action)
+            )
+        )
 
     def _create_session_config_input(self, config: a121.SessionConfig) -> _DockWidget:
         service = session_config_input.SessionConfigInput(self._broker, config)
