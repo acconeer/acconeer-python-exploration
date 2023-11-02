@@ -14,6 +14,7 @@ from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._core.entities.configs.config_enums import PRF
+from acconeer.exptool.a121._core.utils import map_over_extended_structure
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
@@ -22,6 +23,15 @@ from acconeer.exptool.a121.algo import (
     AlgoConfigBase,
     PeakSortingMethod,
     calculate_loopback_peak_location,
+)
+from acconeer.exptool.a121.algo.touchless_button import (
+    MeasurementType,
+)
+from acconeer.exptool.a121.algo.touchless_button import (
+    Processor as TouchlessbuttonProcessor,
+)
+from acconeer.exptool.a121.algo.touchless_button import (
+    ProcessorConfig as TouchlessbuttonProcessorConfig,
 )
 
 from ._bilaterator import (
@@ -109,6 +119,12 @@ class DetectorConfig(AlgoConfigBase):
         converter=PeakSortingMethod,
     )
     """Sorting method of targets."""
+    enable_close_proximity_detection: bool = attrs.field(default=False)
+    """Enable close proximity detection. Utilises the first subsweep to control the activity very close to the
+     sensor. Extends the result with the flag ´close_proximity_trig´ which is ´True´ if an object
+     suddenly appears close to the sensor. If ´subsweep_configurations´ is not set, then the detector
+     will automatically add an additional subsweep for the close proximity functionality, otherwise
+     the first subsweep will be utilised. """
 
     dead_reckoning_duration_s: float = attrs.field(default=0.5)
     """Specify the duration (s) of the Kalman filter to perform dead reckoning before stop
@@ -161,6 +177,7 @@ class DetectorResult:
     current_velocity: float = attrs.field(default=None)
     processor_results: Dict[int, ProcessorResult] = attrs.field(default=None)
     bilateration_result: Optional[BilateratorResult] = attrs.field(default=None)
+    close_proximity_trig: Optional[Dict[int, bool]] = attrs.field(default=None)
 
 
 @attrs.mutable(kw_only=True)
@@ -203,7 +220,6 @@ class Detector:
         self.detector_config = detector_config
 
         self.started = False
-
         if context is None or not bool(context.single_sensor_contexts):
             self.context = DetectorContext(
                 single_sensor_contexts={
@@ -268,12 +284,56 @@ class Detector:
         self.processors: Dict[int, Processor] = {}
         group = []
         for s_id in self.sensor_ids:
+            group.append({s_id: sensor_config})
+
+        self.session_config = a121.SessionConfig(
+            group,
+            extended=True,
+            update_rate=self.detector_config.update_rate,
+        )
+
+        self.metadata = self.client.setup_session(self.session_config)
+
+        if self.detector_config.enable_close_proximity_detection is True:
+            self.close_proximity_processors: Dict[int, TouchlessbuttonProcessor] = {}
+            assert isinstance(self.metadata, list)
+            (
+                self.metadata_first_subsweep,
+                self.metadata_rest_subsweep,
+            ) = self.split_metadata(self.metadata)
+            merged_metadata_first_subsweep = {}
+            for m in self.metadata_first_subsweep:
+                merged_metadata_first_subsweep.update(m)
+            (
+                self.sensor_config_first_subsweep,
+                self.sensor_config_rest_subsweep,
+            ) = self.split_sensor_config(sensor_config)
+
+        for s_id in self.sensor_ids:
             sens_context = self.context.single_sensor_contexts[s_id]
 
             mean_sweeps: list[npt.NDArray[np.float_]] = []
             std_sweeps: list[npt.NDArray[np.float_]] = []
 
-            for subsweep_idx in range(sensor_config.num_subsweeps):
+            if self.detector_config.enable_close_proximity_detection is True:
+                obstacle_proc_sensor_config = self.sensor_config_rest_subsweep
+
+                close_proximity_config = TouchlessbuttonProcessorConfig(
+                    sensitivity_close=1.9,
+                    patience_close=2,
+                    calibration_duration_s=1,
+                    calibration_interval_s=10,
+                    measurement_type=MeasurementType.CLOSE_RANGE,
+                )
+                self.close_proximity_processors[s_id] = TouchlessbuttonProcessor(
+                    sensor_config=self.sensor_config_first_subsweep,
+                    metadata=merged_metadata_first_subsweep[s_id],
+                    processor_config=close_proximity_config,
+                )
+            else:
+                obstacle_proc_sensor_config = sensor_config
+
+            for subsweep_idx in range(obstacle_proc_sensor_config.num_subsweeps):
                 ssc = sens_context.subsweep_contexts[subsweep_idx]
                 mean_sweeps.append(ssc.mean_sweep)
                 std_sweeps.append(ssc.std_sweep)
@@ -297,18 +357,10 @@ class Detector:
             )
 
             self.processors[s_id] = Processor(
-                sensor_config=sensor_config,
+                sensor_config=obstacle_proc_sensor_config,
                 processor_config=pc,
                 context=proc_context,
             )
-
-            group.append({s_id: sensor_config})
-
-        self.session_config = a121.SessionConfig(
-            group, extended=True, update_rate=self.detector_config.update_rate
-        )
-
-        self.client.setup_session(self.session_config)
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
@@ -337,15 +389,29 @@ class Detector:
         results = self.client.get_next()
         assert isinstance(results, list)
 
-        processor_results: Dict[int, ProcessorResult] = {}
+        if self.detector_config.enable_close_proximity_detection is True:
+            first_subsweep_results, rest_subsweep_results = self.split_result(results)
+            close_proximity_results = {}
+            assert self.close_proximity_processors is not None
+            for r in first_subsweep_results:
+                (sens_id,) = r.keys()  # get the only sensor-id in that dict.
+                close_result = self.close_proximity_processors[sens_id].process(r[sens_id]).close
+                assert close_result is not None
+                close_proximity_results[sens_id] = close_result.detection
 
-        for r in results:
+        else:
+            rest_subsweep_results = results
+            close_proximity_results = None
+
+        obstacle_proc_results: Dict[int, ProcessorResult] = {}
+
+        for r in rest_subsweep_results:
             sens_id = list(r.keys())[0]  # get the only sensor-id in that dict.
-            processor_results[sens_id] = self.processors[sens_id].process(r[sens_id])
+            obstacle_proc_results[sens_id] = self.processors[sens_id].process(r[sens_id])
 
         if self.detector_config.enable_bilateration:
-            target_list_1 = processor_results[self.sensor_ids[0]].targets
-            target_list_2 = processor_results[self.sensor_ids[1]].targets
+            target_list_1 = obstacle_proc_results[self.sensor_ids[0]].targets
+            target_list_2 = obstacle_proc_results[self.sensor_ids[1]].targets
             time_offset = (
                 results[1][self.sensor_ids[1]].tick_time - results[0][self.sensor_ids[0]].tick_time
             )
@@ -357,9 +423,120 @@ class Detector:
 
         return DetectorResult(
             current_velocity=self.v_current,
-            processor_results=processor_results,
+            processor_results=obstacle_proc_results,
             bilateration_result=bilateration_result,
+            close_proximity_trig=close_proximity_results,
         )
+
+    def split_metadata(
+        self, metadata: List[Dict[int, a121.Metadata]]
+    ) -> Tuple[List[Dict[int, a121.Metadata]], List[Dict[int, a121.Metadata]]]:
+        first_subsweep_metadata_list = map_over_extended_structure(
+            self.first_subsweep_metadata,
+            metadata,
+        )
+        rest_subsweep_metadata_list = map_over_extended_structure(
+            self.rest_subsweep_metadata,
+            metadata,
+        )
+        return first_subsweep_metadata_list, rest_subsweep_metadata_list
+
+    def first_subsweep_metadata(self, metadata: a121.Metadata) -> a121.Metadata:
+        num_points_first_subsweep = metadata.subsweep_data_length[0]
+        frame_data_length = num_points_first_subsweep * metadata.frame_shape[0]
+        first_subsweep_metadata = a121.Metadata(
+            frame_data_length=frame_data_length,
+            sweep_data_length=num_points_first_subsweep,
+            subsweep_data_offset=np.array([0]),
+            subsweep_data_length=np.array([num_points_first_subsweep]),
+            calibration_temperature=metadata.calibration_temperature,
+            tick_period=metadata.tick_period,
+            base_step_length_m=metadata.base_step_length_m,
+            max_sweep_rate=metadata.max_sweep_rate,
+            high_speed_mode=metadata.high_speed_mode,
+        )
+        return first_subsweep_metadata
+
+    def rest_subsweep_metadata(self, metadata: a121.Metadata) -> a121.Metadata:
+        num_points_first_subsweep = metadata.subsweep_data_length[0]
+        frame_data_length = (
+            metadata.frame_data_length - num_points_first_subsweep * metadata.frame_shape[0]
+        )
+        rest_subsweep_metadata = a121.Metadata(
+            frame_data_length=frame_data_length,
+            sweep_data_length=metadata.frame_shape[0] - num_points_first_subsweep,
+            subsweep_data_offset=metadata.subsweep_data_offset[1:] - num_points_first_subsweep,
+            subsweep_data_length=metadata.subsweep_data_length[1:],
+            calibration_temperature=metadata.calibration_temperature,
+            tick_period=metadata.tick_period,
+            base_step_length_m=metadata.base_step_length_m,
+            max_sweep_rate=metadata.max_sweep_rate,
+            high_speed_mode=metadata.high_speed_mode,
+        )
+        return rest_subsweep_metadata
+
+    def split_sensor_config(
+        self, sensor_config: a121.SensorConfig
+    ) -> Tuple[a121.SensorConfig, a121.SensorConfig]:
+        first_subsweep_sensor_config = a121.SensorConfig(
+            subsweeps=[sensor_config.subsweeps[0]],
+            sweeps_per_frame=sensor_config.sweeps_per_frame,
+            sweep_rate=sensor_config.sweep_rate,
+            inter_sweep_idle_state=sensor_config.inter_sweep_idle_state,
+            inter_frame_idle_state=sensor_config.inter_frame_idle_state,
+        )
+        rest_subsweep_sensor_config = a121.SensorConfig(
+            subsweeps=sensor_config.subsweeps[1:],
+            sweeps_per_frame=sensor_config.sweeps_per_frame,
+            sweep_rate=sensor_config.sweep_rate,
+            inter_sweep_idle_state=sensor_config.inter_sweep_idle_state,
+            inter_frame_idle_state=sensor_config.inter_frame_idle_state,
+        )
+
+        return first_subsweep_sensor_config, rest_subsweep_sensor_config
+
+    def split_result(
+        self, results: List[Dict[int, a121.Result]]
+    ) -> Tuple[List[Dict[int, a121.Result]], List[Dict[int, a121.Result]]]:
+        first_subsweep_results = map_over_extended_structure(
+            self.first_subsweep_result,
+            results,
+        )
+        rest_subsweep_results = map_over_extended_structure(self.rest_subsweep_result, results)
+
+        return first_subsweep_results, rest_subsweep_results
+
+    def first_subsweep_result(self, result: a121.Result) -> a121.Result:
+        num_points_first_subsweep = result._context.metadata.subsweep_data_length[0]
+        first_subsweep_result = a121.Result(
+            data_saturated=result.data_saturated,
+            frame_delayed=result.frame_delayed,
+            calibration_needed=result.calibration_needed,
+            temperature=result.temperature,
+            frame=result._frame[:, 0:num_points_first_subsweep],
+            tick=result.tick,
+            context=a121._core.entities.ResultContext(
+                metadata=self.first_subsweep_metadata(result._context.metadata),
+                ticks_per_second=result._context.ticks_per_second,
+            ),
+        )
+        return first_subsweep_result
+
+    def rest_subsweep_result(self, result: a121.Result) -> a121.Result:
+        num_points_first_subsweep = result._context.metadata.subsweep_data_length[0]
+        rest_subsweep_result = a121.Result(
+            data_saturated=result.data_saturated,
+            frame_delayed=result.frame_delayed,
+            calibration_needed=result.calibration_needed,
+            temperature=result.temperature,
+            frame=result._frame[:, num_points_first_subsweep:],
+            tick=result.tick,
+            context=a121._core.entities.ResultContext(
+                metadata=self.rest_subsweep_metadata(result._context.metadata),
+                ticks_per_second=result._context.ticks_per_second,
+            ),
+        )
+        return rest_subsweep_result
 
     def update_robot_speed(self, v_current: float) -> None:
         self.v_current = v_current
@@ -413,13 +590,25 @@ class Detector:
     @classmethod
     def _get_sensor_config(cls, detector_config: DetectorConfig) -> a121.SensorConfig:
         if detector_config.subsweep_configurations is None:
+            subsweeps = []
+            if detector_config.enable_close_proximity_detection is True:
+                close_proximity_subsweep = a121.SubsweepConfig(
+                    start_point=8,
+                    num_points=2,
+                    step_length=6,
+                    profile=a121.Profile.PROFILE_1,
+                    hwaas=40,
+                    prf=PRF.PRF_15_6_MHz,
+                )
+                subsweeps.append(close_proximity_subsweep)
+
             start_p = int(detector_config.start_m / APPROX_BASE_STEP_LENGTH_M)
             num_p = int(
                 (detector_config.end_m - detector_config.start_m)
                 / (APPROX_BASE_STEP_LENGTH_M * detector_config.step_length)
             )
 
-            subsweeps = [
+            subsweeps.append(
                 a121.SubsweepConfig(
                     start_point=start_p,
                     num_points=num_p,
@@ -428,7 +617,7 @@ class Detector:
                     hwaas=detector_config.hwaas,
                     prf=PRF.PRF_15_6_MHz,
                 )
-            ]
+            )
 
         else:
             subsweeps = detector_config.subsweep_configurations
@@ -497,6 +686,12 @@ class Detector:
         self._validate_ready_for_calibration()
 
         sensor_config = self._get_sensor_config(self.detector_config)
+
+        if self.detector_config.enable_close_proximity_detection:
+            _, sensor_config = self.split_sensor_config(
+                sensor_config
+            )  # Don't use first subsweep for calibration
+
         session_config = a121.SessionConfig(
             {sensor_id: sensor_config for sensor_id in self.sensor_ids}, extended=True
         )

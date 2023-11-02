@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -32,7 +32,9 @@ from acconeer.exptool.a121.algo.obstacle import (
     DetectorResult,
 )
 from acconeer.exptool.a121.algo.obstacle._detector import _load_algo_data
-from acconeer.exptool.a121.algo.obstacle._detector_plugin import ViewPlugin as ObstacleViewPlugin
+from acconeer.exptool.a121.algo.obstacle._detector_plugin import (
+    ViewPlugin as ObstacleViewPlugin,
+)
 from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
@@ -89,7 +91,10 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     def __init__(
-        self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
+        self,
+        callback: Callable[[Message], None],
+        generation: PluginGeneration,
+        key: str,
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key)
 
@@ -265,8 +270,10 @@ class PlotPlugin(PgPlotPlugin):
 
         self.fftmap_plots: list[pg.PlotItem] = []
         self.fftmap_images: list[pg.ImageItem] = []
+        self.range_hist_plots: list[pg.PlotItem] = []
         self.range_hist_curves: list[pg.PlotDataItem] = []
         self.angle_hist_curves: list[pg.PlotDataItem] = []
+        self.close_proximity_text_items: list[pg.TextItem] = []
 
         self.obst_vel_ys = 2 * [np.nan * np.ones(PLOT_HISTORY_FRAMES)]
         self.obst_dist_ys = 2 * [np.nan * np.ones(PLOT_HISTORY_FRAMES)]
@@ -305,13 +312,29 @@ class PlotPlugin(PgPlotPlugin):
             sublayout.layout.setColumnStretchFactor(0, 1)
             sublayout.addItem(self.angle_hist, row=0, col=0)
 
-            self.range_hist = pg.PlotItem(title="Range history")
-            self.range_hist.showGrid(x=True, y=True)
-            self.range_hist.setLabel("bottom", "Time (frames)")
-            self.range_hist.setLabel("left", "Range (cm)")
-            self.range_hist.setXRange(-100, 0)
-            self.range_hist.addLegend()
-            self.range_hist_curves.append(self.range_hist.plot(symbolSize=5, symbol="o"))
+            range_hist = pg.PlotItem(title="Range history")
+            range_hist.showGrid(x=True, y=True)
+            range_hist.setLabel("bottom", "Time (frames)")
+            range_hist.setLabel("left", "Range (cm)")
+            range_hist.setXRange(-100, 0)
+            range_hist.addLegend()
+            self.range_hist_plots.append(range_hist)
+            self.range_hist_curves.append(range_hist.plot(symbolSize=5, symbol="o"))
+
+            close_proximity_html = (
+                '<p style="text-align: center; color: white; font-size: 10pt;">{}</p>'.format(
+                    "Close proximity detection",
+                )
+            )
+
+            close_proximity_text_item = pg.TextItem(
+                html=close_proximity_html,
+                fill=pg.mkColor(0xFF, 0x7F, 0x0E),
+                anchor=(0.5, 0),
+            )
+            self.close_proximity_text_items.append(close_proximity_text_item)
+            range_hist.addItem(close_proximity_text_item)
+            close_proximity_text_item.hide()
 
             sublayout = win.addLayout(
                 row=2,
@@ -320,7 +343,7 @@ class PlotPlugin(PgPlotPlugin):
             )
 
             sublayout.layout.setColumnStretchFactor(0, 1)
-            sublayout.addItem(self.range_hist, row=0, col=0)
+            sublayout.addItem(range_hist, row=0, col=0)
 
         self.bil_hist_plot = pg.PlotItem(title="Bilateration history")
 
@@ -344,6 +367,7 @@ class PlotPlugin(PgPlotPlugin):
 
         for i_s in range(2):
             pr = detector_result.processor_results[self.sensor_ids[i_s]]
+            er = pr.subsweeps_extra_results[0]
 
             fftmap = pr.subsweeps_extra_results[0].fft_map
 
@@ -352,7 +376,8 @@ class PlotPlugin(PgPlotPlugin):
 
             transform = QTransform()
             transform.translate(
-                r[0], -100 * pr.extra_result.dv * spf / 2 - 0.5 * 100 * pr.extra_result.dv
+                r[0],
+                -100 * pr.extra_result.dv * spf / 2 - 0.5 * 100 * pr.extra_result.dv,
             )
             transform.scale(r[1] - r[0], 100 * pr.extra_result.dv)
 
@@ -381,6 +406,10 @@ class PlotPlugin(PgPlotPlugin):
             self.obst_dist_ys[i_s] = np.roll(self.obst_dist_ys[i_s], -1)
             self.obst_dist_ys[i_s][-1] = 100 * r_targets  # m -> cm
 
+            min_range = 100 * er.r[0]
+            max_range = 100 * er.r[-1]
+            self.range_hist_plots[i_s].setYRange(min_range, max_range)
+
             if np.isnan(self.obst_dist_ys[i_s]).all():
                 self.range_hist_curves[i_s].setVisible(False)
             else:
@@ -388,6 +417,11 @@ class PlotPlugin(PgPlotPlugin):
                 self.range_hist_curves[i_s].setData(
                     self.hist_x, self.obst_dist_ys[i_s], connect="finite"
                 )
+
+            if detector_result.close_proximity_trig:
+                close_prox = detector_result.close_proximity_trig[self.sensor_ids[i_s]]
+                self.close_proximity_text_items[i_s].setPos(-50, max_range)
+                self.close_proximity_text_items[i_s].setVisible(close_prox)
 
         assert isinstance(detector_result.bilateration_result, BilateratorResult)
 
@@ -521,7 +555,11 @@ class ViewPlugin(A121ViewPluginBase):
         visual_policies.apply_enabled_policy(
             visual_policies.config_editor_enabled,
             app_model,
-            widgets=[self.config_editor, self.defaults_button, self.two_sensor_id_editor],
+            widgets=[
+                self.config_editor,
+                self.defaults_button,
+                self.two_sensor_id_editor,
+            ],
         )
 
         self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))

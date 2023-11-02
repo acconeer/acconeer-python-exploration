@@ -343,6 +343,20 @@ class PlotPlugin(PgPlotPlugin):
         self.range_hist_plot.addLegend()
         self.range_hist_curves = [self.range_hist_plot.plot(symbolSize=5, symbol="o")]
 
+        close_proximity_html = (
+            '<p style="text-align: center; color: white; font-size: 10pt;">{}</p>'.format(
+                "Close proximity detection",
+            )
+        )
+
+        self.close_proximity_text_item = pg.TextItem(
+            html=close_proximity_html,
+            fill=pg.mkColor(0xFF, 0x7F, 0x0E),
+            anchor=(0.5, 0),
+        )
+        self.range_hist_plot.addItem(self.close_proximity_text_item)
+        self.close_proximity_text_item.hide()
+
     def draw_plot_job(self, multi_sensor_result: DetectorResult) -> None:
         # Get the first element as the plugin only supports single sensor operation.
 
@@ -392,7 +406,9 @@ class PlotPlugin(PgPlotPlugin):
                 self.hist_x, self.obst_vel_ys[0], connect="finite"
             )
 
-        self.range_hist_plot.setYRange(100 * er.r[0], 100 * er.r[-1])
+        min_range = 100 * er.r[0]
+        max_range = 100 * er.r[-1]
+        self.range_hist_plot.setYRange(min_range, max_range)
         r = pr.targets[0].distance if pr.targets else np.nan
 
         self.obst_dist_ys[0] = np.roll(self.obst_dist_ys[0], -1)
@@ -403,6 +419,12 @@ class PlotPlugin(PgPlotPlugin):
         else:
             self.range_hist_curves[0].setVisible(True)
             self.range_hist_curves[0].setData(self.hist_x, self.obst_dist_ys[0], connect="finite")
+
+        if multi_sensor_result.close_proximity_trig:
+            close_prox = list(multi_sensor_result.close_proximity_trig.values())
+            self.range_hist_plot.getAxis("left")
+            self.close_proximity_text_item.setPos(-50, max_range)
+            self.close_proximity_text_item.setVisible(close_prox[0])
 
 
 class ViewPlugin(A121ViewPluginBase):
@@ -575,6 +597,12 @@ class ViewPlugin(A121ViewPluginBase):
                 limits=(0.001, 1),
                 show_limit_values=False,
                 limit_texts=("Higher robustness", "More Responsive"),
+            ),
+            "enable_close_proximity_detection": pidgets.CheckboxPidgetFactory(
+                name_label_text="Enable close proximity detection",
+                name_label_tooltip=get_attribute_docstring(
+                    DetectorConfig, "enable_close_proximity_detection"
+                ),
             ),
         }
 
