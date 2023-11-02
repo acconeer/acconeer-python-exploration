@@ -351,46 +351,6 @@ def parse_rss_version(rss_version: str) -> packaging.version.Version:
     return version
 
 
-def unwrap_ticks(
-    ticks: list[int], minimum_tick: Optional[int], limit: int = 2**32
-) -> Tuple[list[int], Optional[int]]:
-    """Unwraps a sequence of ticks belonging to a extended result
-
-    The server tick (attached to every produced Result) wraps at 2^32. Thus, if the raw tick is
-    used for evaluating the time between two results, it will be incorrect if a wrap has occurred
-    between them. Therefore, it has to be accounted for by "unwrapping".
-
-    Wrapping can occur between the results in an extended result, and that the results are not
-    necessarily ordered by the tick. This means that we have to look at all the ticks produced in
-    the extended result at the same time.
-
-    For example:
-
-    Let's say the wrap happens at limit = 100, and that we have an extended result of two elements
-    with ticks 10 and 90. Since it's more likely that 10 has wrapped than not, we assume it's
-    actually after 90, i.e., 110.
-
-    Now, let's also consider that the previous maximum unwrapped tick was 195, which is now the
-    'minimum tick'. From this, we know that the ticks have wrapped before and can account for that,
-    resulting in the final unwrapped ticks of 310 and 290.
-    """
-
-    if len(ticks) == 0:
-        return [], None
-
-    if any(tick < 0 or tick >= limit for tick in ticks):
-        raise ValueError("Tick value out of bounds")
-
-    if (max(ticks) - min(ticks)) > limit // 2:
-        ticks = [tick + limit if tick < limit // 2 else tick for tick in ticks]
-
-    if minimum_tick is not None:
-        num_wraps = max((minimum_tick - tick - 1) // limit + 1 for tick in ticks)
-        ticks = [num_wraps * limit + tick for tick in ticks]
-
-    return ticks, max(ticks)
-
-
 def indent_strs(strs: list[str], level: int) -> list[str]:
     return ["  " * level + s for s in strs]
 

@@ -23,6 +23,7 @@ from acconeer.exptool._core.communication.communication_protocol.messages.log_me
     ServerLog,
 )
 from acconeer.exptool._core.communication.links.helpers import ensure_connected_link
+from acconeer.exptool._core.communication.unwrap_ticks import unwrap_ticks
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -36,7 +37,6 @@ from acconeer.exptool.a121._core.utils import (
     create_extended_structure,
     iterate_extended_structure,
     unextend,
-    unwrap_ticks,
 )
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
 
