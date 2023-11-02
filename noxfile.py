@@ -96,7 +96,7 @@ def reformat(session):
 
 
 @nox.session
-@nox.parametrize("python", ["3.7"])
+@nox.parametrize("python", ["3.8"])
 def mypy(session):
     session.install("-e", ".", MYPY_SPEC, PYTEST_SPEC, PYSIDE_SPEC, PANDAS_SPEC, "pandas-stubs")
     session.run("python", "-m", "mypy")

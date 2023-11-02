@@ -196,7 +196,7 @@ class ResetResponse:
             raise McuMgrFlashException(f"Seq number mismatch: {header}")
 
         if len(data) > ResetRequestHeader.size:
-            dec_msg = cbor2.loads(data[ResetRequestHeader.size :])
+            dec_msg: Dict[str, Any] = cbor2.loads(data[ResetRequestHeader.size :])  # type: ignore[assignment]
         else:
             raise McuMgrFlashException(f"Complete header w/o payload: {header}")
 
@@ -295,7 +295,7 @@ class ImageUploadResponse:
             raise McuMgrFlashException(f"Seq number mismatch: {header}")
 
         if len(data) > ImageRequestHeader.size:
-            dec_msg = cbor2.loads(data[ImageRequestHeader.size :])
+            dec_msg: Dict[str, Any] = cbor2.loads(data[ImageRequestHeader.size :])  # type: ignore[assignment]
         else:
             raise McuMgrFlashException(f"Complete header w/o payload: {header}")
 

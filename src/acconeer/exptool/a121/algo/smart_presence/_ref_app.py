@@ -200,7 +200,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.delay_count = 0
         if ref_app_config.wake_up_mode:
             assert ref_app_config.wake_up_config is not None
-            self.wake_up_detections = np.zeros(ref_app_config.wake_up_config.num_zones)
+            self.wake_up_detections = np.zeros(ref_app_config.wake_up_config.num_zones, dtype=int)
             self.max_zone_time_n = int(np.around(2 * ref_app_config.wake_up_config.frame_rate))
         else:
             self.wake_up_detections = None

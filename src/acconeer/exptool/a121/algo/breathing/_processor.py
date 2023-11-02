@@ -102,8 +102,8 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorResult]):
     end_point: int
     sparse_iq_buffer: npt.NDArray[np.complex_]
     filt_sparse_iq_buffer: npt.NDArray[np.complex_]
-    angle_buffer: npt.NDArray[np.complex_]
-    filt_angle_buffer: npt.NDArray[np.complex_]
+    angle_buffer: npt.NDArray[np.float_]
+    filt_angle_buffer: npt.NDArray[np.float_]
     breathing_motion_buffer: npt.NDArray[np.float_]
     breathing_rate_history: npt.NDArray[np.float_]
     all_breathing_rate_history: npt.NDArray[np.float_]

@@ -508,7 +508,7 @@ class Detector:
                 ssc = SingleSubsweepContext(mean_sweep=subsweep_mean, std_sweep=std)
                 self.context.single_sensor_contexts[s_id].subsweep_contexts.append(ssc)
 
-            self.context.single_sensor_contexts[s_id].reference_temperature = threshold_temp
+            self.context.single_sensor_contexts[s_id].reference_temperature = float(threshold_temp)
 
     @classmethod
     def get_detector_status(

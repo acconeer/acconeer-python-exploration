@@ -335,7 +335,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         frame: npt.NDArray[np.complex_],
         detection: bool,
         patience: int,
-        detection_depth: npt.NDArray[np.float_],
+        detection_depth: npt.NDArray[np.int_],
         counts: npt.NDArray[np.int_],
         measurement_type: MeasurementType,
     ) -> bool:
@@ -380,7 +380,7 @@ class Processor(ProcessorBase[ProcessorResult]):
     def _process_multiple_ranges(
         self,
         frame: npt.NDArray[np.complex_],
-        detection_depth: npt.NDArray[np.float_],
+        detection_depth: npt.NDArray[np.int_],
         counts: npt.NDArray[np.int_],
     ) -> List[bool]:
         if detection_depth[counts > 1].size > 0:

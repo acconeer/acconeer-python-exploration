@@ -143,7 +143,7 @@ try {
                     printNodeInfo()
                     checkoutAndCleanup()
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        sh '''nox -s "mypy(python='3.7')"'''
+                        sh '''nox -s "mypy(python='3.8')"'''
                     }
                 }
             }

@@ -386,7 +386,7 @@ class PlotPlugin(PgPlotPlugin):
                 curve.setData(np.arange(0, 100), self.score_history_close[i, :].flatten())
 
             if np.max(processor_result.close.score) > max_val:
-                max_val = np.max(processor_result.close.score)
+                max_val = float(np.max(processor_result.close.score))
 
         if self.score_history_far is not None:
             self.score_history_far = np.roll(self.score_history_far, -1, axis=1)
@@ -400,7 +400,7 @@ class PlotPlugin(PgPlotPlugin):
                 curve.setData(np.arange(0, 100), self.score_history_far[i, :].flatten())
 
             if np.max(processor_result.far.score) > max_val:
-                max_val = np.max(processor_result.far.score)
+                max_val = float(np.max(processor_result.far.score))
 
         if max_val != 0.0:
             self.score_history_plot.setYRange(0.0, self.score_smooth_max.update(max_val))
