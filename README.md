@@ -56,11 +56,11 @@ For additional resources, head over to the [Acconeer developer page](https://dev
 
 ### Requirements
 
-Python 3.7 or newer. Older versions have limited or no support.
+Python 3.8 or newer. Older versions have limited or no support.
 
 Tested on:
 
-* Python 3 (developed and tested on 3.7, 3.8, 3.9, 3.10 and 3.11)
+* Python 3 (developed and tested on 3.8, 3.9, 3.10 and 3.11)
 * Windows 10
 * Ubuntu 20.04
 

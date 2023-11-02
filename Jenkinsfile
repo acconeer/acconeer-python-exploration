@@ -7,16 +7,16 @@ enum BuildScope {
 
 @Field
 def isolatedTestPythonVersionsForBuildScope = [
-    (BuildScope.SANITY)  : ["3.7", "3.9"],
+    (BuildScope.SANITY)  : ["3.8", "3.9"],
     (BuildScope.HOURLY)  : ["3.8", "3.10", "3.11"],
-    (BuildScope.NIGHTLY) : ["3.7", "3.8", "3.9", "3.10", "3.11"],
+    (BuildScope.NIGHTLY) : ["3.8", "3.9", "3.10", "3.11"],
 ]
 
 @Field
 def integrationTestPythonVersionsForBuildScope = [
-    (BuildScope.SANITY)  : ["3.7"],
+    (BuildScope.SANITY)  : ["3.8"],
     (BuildScope.HOURLY)  : ["3.9"],
-    (BuildScope.NIGHTLY) : ["3.7", "3.8", "3.9", "3.10", "3.11"],
+    (BuildScope.NIGHTLY) : ["3.8", "3.9", "3.10", "3.11"],
 ]
 
 @Field
@@ -166,7 +166,7 @@ try {
                     }
                     stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            sh '''nox -s test -p 3.7 -- --test-groups model'''
+                            sh '''nox -s test -p 3.8 -- --test-groups model'''
                         }
                     }
                 }

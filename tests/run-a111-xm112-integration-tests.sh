@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Optionally accepts a python version (e.g. "3.7")
+# Optionally accepts a python version (e.g. "3.9")
 # as the first argument. Defaults to "3.8"
 python_version="${1:-3.8}"
 

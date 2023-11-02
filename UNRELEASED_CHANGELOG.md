@@ -9,3 +9,4 @@
 ### Fixed
 
 ### Removed
+- Support for Python 3.7
