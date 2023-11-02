@@ -27,6 +27,7 @@ from .pluginbase import (
     PluginPresetBase,
     PluginSpecBase,
     ViewPluginBase,
+    visual_policies,
 )
 from .storage import get_temp_dir, get_temp_h5_path
 from .ui import (

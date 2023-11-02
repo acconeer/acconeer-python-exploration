@@ -46,11 +46,11 @@ from acconeer.exptool.app.new import (
     PluginGeneration,
     PluginPresetBase,
     PluginSpecBase,
-    PluginState,
     backend,
     icons,
     is_task,
     pidgets,
+    visual_policies,
 )
 from acconeer.exptool.app.new.ui.components import CollapsibleWidget
 
@@ -755,17 +755,24 @@ class ViewPlugin(A121ViewPluginBase):
             assert not_handled == []
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.sensor_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.breathing_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.presence_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
 
-        self.start_button.setEnabled(
-            app_model.is_ready_for_session() and self.config_editor.is_ready
+        visual_policies.apply_enabled_policy(
+            visual_policies.config_editor_enabled,
+            app_model,
+            widgets=[
+                self.config_editor,
+                self.sensor_config_editor,
+                self.breathing_config_editor,
+                self.presence_config_editor,
+            ],
         )
-        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
+        self.start_button.setEnabled(
+            visual_policies.start_button_enabled(
+                app_model, extra_condition=self.config_editor.is_ready
+            )
+        )
+        self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))
 
     def _on_config_update(self, config: RefAppConfig) -> None:
         BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)

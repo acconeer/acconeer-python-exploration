@@ -44,6 +44,7 @@ from acconeer.exptool.app.new import (
     icons,
     is_task,
     pidgets,
+    visual_policies,
 )
 from acconeer.exptool.app.new.ui.components import (
     CollapsibleWidget,
@@ -92,7 +93,6 @@ class SetupMessage(GeneralMessage):
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
         PluginPresetId.BALANCED.value: lambda: DetectorConfig(),
         PluginPresetId.HIGH_ACCURACY.value: lambda: get_high_accuracy_detector_config(),
@@ -219,7 +219,6 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
 
 class PlotPlugin(PgPlotPlugin):
-
     _DISTANCE_HISTORY_SPAN_MARGIN = 0.05
     _DISTANCE_HISTORY_LEN = 100
     _MAX_NUM_MINOR_PEAKS = 4
@@ -455,7 +454,6 @@ class PlotPlugin(PgPlotPlugin):
 
 
 class ViewPlugin(A121ViewPluginBase):
-
     sensor_config_editors: list[SensorConfigEditor]
 
     TEXT_MSG_MAP = {
@@ -611,31 +609,35 @@ class ViewPlugin(A121ViewPluginBase):
             self.collapsible_widget.widget = self.sensor_config_editor_tabs
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.sensor_id_pidget.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
-
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
+
+        visual_policies.apply_enabled_policy(
+            visual_policies.config_editor_enabled,
+            app_model,
+            widgets=[self.defaults_button, self.config_editor, self.sensor_id_pidget],
+        )
+        self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))
 
         state = app_model.backend_plugin_state
 
         if state is None:
             detector_ready = False
-            ready_to_measure = False
+            config_valid = False
         else:
             detector_ready = Detector.get_detector_status(
                 state.config, state.context, state.sensor_ids
             ).ready_to_start
 
-            ready_to_measure = (
-                app_model.is_ready_for_session()
-                and self._config_valid(state.config)
-                and self.config_editor.is_ready
-            )
+            config_valid = self._config_valid(state.config) and self.config_editor.is_ready
 
-        self.calibrate_detector_button.setEnabled(ready_to_measure)
-        self.start_button.setEnabled(detector_ready and ready_to_measure)
+        self.calibrate_detector_button.setEnabled(
+            visual_policies.start_button_enabled(app_model, extra_condition=config_valid),
+        )
+        self.start_button.setEnabled(
+            visual_policies.start_button_enabled(
+                app_model, extra_condition=detector_ready and config_valid
+            )
+        )
 
     def _config_valid(self, config: Optional[DetectorConfig]) -> bool:
         if config is None:

@@ -52,6 +52,7 @@ from acconeer.exptool.app.new import (
     icons,
     is_task,
     pidgets,
+    visual_policies,
 )
 
 from ._configs import get_default_detector_config
@@ -600,38 +601,46 @@ class ViewPlugin(A121ViewPluginBase):
             assert not_handled == []
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.two_sensor_id_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.bilateration_config_editor.setEnabled(
-            app_model.plugin_state == PluginState.LOADED_IDLE
-        )
-        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
-
         self.two_sensor_id_editor.set_selectable_sensors(app_model.connected_sensors)
+
+        visual_policies.apply_enabled_policy(
+            visual_policies.config_editor_enabled,
+            app_model,
+            widgets=[
+                self.config_editor,
+                self.defaults_button,
+                self.two_sensor_id_editor,
+                self.bilateration_config_editor,
+            ],
+        )
+        self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))
 
         state = app_model.backend_plugin_state
 
         if state is None:
             detector_ready = False
-            ready_to_measure = False
+            state_valid = False
         else:
             detector_status = Detector.get_detector_status(
                 state.config, state.context, state.sensor_ids
             )
             detector_ready = detector_status.ready_to_start
-            detector_state = detector_status.detector_state
 
-            ready_to_measure = (
-                app_model.is_ready_for_session()
-                and self._config_valid(state)
+            state_valid = (
+                self._config_valid(state)
                 and self.config_editor.is_ready
                 and self.bilateration_config_editor.is_ready
-                and detector_state is not DetailedStatus.SENSOR_IDS_NOT_UNIQUE
+                and detector_status.detector_state is not DetailedStatus.SENSOR_IDS_NOT_UNIQUE
             )
 
-        self.calibrate_detector_button.setEnabled(ready_to_measure)
-        self.start_button.setEnabled(detector_ready and ready_to_measure)
+        self.calibrate_detector_button.setEnabled(
+            visual_policies.start_button_enabled(app_model, extra_condition=state_valid)
+        )
+        self.start_button.setEnabled(
+            visual_policies.start_button_enabled(
+                app_model, extra_condition=state_valid and detector_ready
+            )
+        )
 
     def _config_valid(self, state: SharedState) -> bool:
         (session_config, _) = Detector._detector_to_session_config_and_processor_specs(

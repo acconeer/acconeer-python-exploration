@@ -37,11 +37,11 @@ from acconeer.exptool.app.new import (
     PluginGeneration,
     PluginPresetBase,
     PluginSpecBase,
-    PluginState,
     backend,
     icons,
     is_task,
     pidgets,
+    visual_policies,
 )
 from acconeer.exptool.app.new.ui.components import GotoResourceTabButton
 from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
@@ -536,13 +536,20 @@ class ViewPlugin(A121ViewPluginBase):
             self.range_helper.set_data(Detector._get_sensor_config(state.config).subsweep)
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.start_button.setEnabled(
-            app_model.is_ready_for_session() and self.config_editor.is_ready
-        )
-        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
-        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.sensor_id_pidget.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
+
+        self.start_button.setEnabled(
+            visual_policies.start_button_enabled(
+                app_model, extra_condition=self.config_editor.is_ready
+            )
+        )
+        self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))
+
+        visual_policies.apply_enabled_policy(
+            visual_policies.config_editor_enabled,
+            app_model,
+            widgets=[self.config_editor, self.sensor_id_pidget],
+        )
 
     def _on_config_update(self, config: DetectorConfig) -> None:
         BackendPlugin.update_config.rpc(self.app_model.put_task, config=config)

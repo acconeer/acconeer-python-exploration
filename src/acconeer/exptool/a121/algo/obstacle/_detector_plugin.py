@@ -45,6 +45,7 @@ from acconeer.exptool.app.new import (
     icons,
     is_task,
     pidgets,
+    visual_policies,
 )
 from acconeer.exptool.app.new.ui.components.a121 import SensorConfigEditor
 
@@ -575,33 +576,40 @@ class ViewPlugin(A121ViewPluginBase):
             assert not_handled == []
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.defaults_button.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.sensor_id_pidget.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
-
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
+
+        visual_policies.apply_enabled_policy(
+            visual_policies.config_editor_enabled,
+            app_model,
+            widgets=[
+                self.defaults_button,
+                self.config_editor,
+                self.sensor_id_pidget,
+            ],
+        )
+        self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))
 
         state = app_model.backend_plugin_state
 
         if state is None:
-            ready_to_measure = False
             ready_to_start = False
+            config_valid = False
         else:
             detector_status = Detector.get_detector_status(
                 state.config, state.context, state.sensor_ids
             )
 
             ready_to_start = detector_status.ready_to_start
+            config_valid = self._config_valid(state) and self.config_editor.is_ready
 
-            ready_to_measure = (
-                app_model.is_ready_for_session()
-                and self._config_valid(state)
-                and self.config_editor.is_ready
+        self.calibrate_detector_button.setEnabled(
+            visual_policies.start_button_enabled(app_model, extra_condition=config_valid),
+        )
+        self.start_button.setEnabled(
+            visual_policies.start_button_enabled(
+                app_model, extra_condition=ready_to_start and config_valid
             )
-
-        self.calibrate_detector_button.setEnabled(ready_to_measure)
-        self.start_button.setEnabled(ready_to_start)
+        )
 
     def _config_valid(self, state: SharedState) -> bool:
         try:

@@ -18,8 +18,8 @@ from acconeer.exptool.app.new import (
     GroupBox,
     MiscErrorView,
     PidgetFactoryMapping,
-    PluginState,
     icons,
+    visual_policies,
 )
 from acconeer.exptool.app.new.ui.components.a121 import (
     SessionConfigEditor,
@@ -137,16 +137,19 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
                 assert not_handled == []
 
     def on_app_model_update(self, app_model: AppModel) -> None:
-        self.session_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
-        self.processor_config_editor.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
+        gui_no_errors = (
+            self.session_config_editor.is_ready and self.processor_config_editor.is_ready
+        )
 
-        self.stop_button.setEnabled(app_model.plugin_state == PluginState.LOADED_BUSY)
+        visual_policies.apply_enabled_policy(
+            visual_policies.config_editor_enabled,
+            app_model,
+            widgets=[self.session_config_editor, self.processor_config_editor],
+        )
+
+        self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))
         self.start_button.setEnabled(
-            app_model.is_ready_for_session()
-            and app_model.backend_plugin_state is not None
-            and app_model.backend_plugin_state.ready
-            and self.session_config_editor.is_ready
-            and self.processor_config_editor.is_ready
+            visual_policies.start_button_enabled(app_model, extra_condition=gui_no_errors)
         )
 
         self.session_config_editor.set_selectable_sensors(self.app_model.connected_sensors)
