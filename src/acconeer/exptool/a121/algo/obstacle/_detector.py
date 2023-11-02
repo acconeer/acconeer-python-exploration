@@ -147,6 +147,7 @@ class DetectorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
+    current_velocity: float = attrs.field(default=None)
     processor_results: Dict[int, ProcessorResult] = attrs.field(default=None)
     bilateration_result: Optional[BilateratorResult] = attrs.field(default=None)
 
@@ -338,13 +339,16 @@ class Detector:
             bilateration_result = None
 
         return DetectorResult(
-            processor_results=processor_results, bilateration_result=bilateration_result
+            current_velocity=self.v_current,
+            processor_results=processor_results,
+            bilateration_result=bilateration_result,
         )
 
     def update_robot_speed(self, v_current: float) -> None:
         self.v_current = v_current
 
-    def get_obstacle_angle(self, v_measured: float) -> float:
+    @staticmethod
+    def get_obstacle_angle(v_current: float, v_measured: float) -> float:
         """
         Convert the measured speed of an object to an angle.
 
@@ -354,7 +358,7 @@ class Detector:
         approximately -v_current and the obstacle angle is positive and close
         to zero.
         """
-        return float(np.arccos(-v_measured / self.v_current))
+        return float(np.arccos(-v_measured / v_current))
 
     def stop(self) -> Any:
         """Stops the measurement session."""
