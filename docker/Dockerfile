@@ -25,10 +25,12 @@ RUN apt-get update -qq \
         python3.9-dev \
         python3.10-dev \
         python3.11-dev \
+        python3.12-dev \
         python3.8-distutils \
         python3.9-distutils \
         python3.10-distutils \
         python3.11-distutils \
+        python3.12-distutils \
         texlive-fonts-recommended \
         texlive-latex-extra \
         texlive-latex-recommended \
@@ -40,14 +42,16 @@ RUN apt-get update -qq \
         && python3.8 get-pip.py \
         && python3.9 get-pip.py \
         && python3.10 get-pip.py \
-        && python3.11 get-pip.py
+        && python3.11 get-pip.py \
+        && python3.12 get-pip.py
 
 COPY requirements-dev.txt /tmp/
 
 RUN python3.8 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
     && python3.9 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
     && python3.10 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
-    && python3.11 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
+    && python3.11 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
+    && python3.12 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
 
 ENV QT_QPA_PLATFORM offscreen
 

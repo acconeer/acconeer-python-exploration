@@ -31,6 +31,11 @@ Python related
    This is a known issue on for Qt when running Wayland display server. The issue is fixed for Qt verison >= 6.4.0.
    (See related issue: https://bugreports.qt.io/browse/QTBUG-85297)
 
+#) Issues with nox tests for Python 3.12
+
+   When running nox tests for Python 3.12, the error "AttributeError: module ‘pkgutil’ has no attribute ‘ImpImporter’. Did you mean: ‘zipimporter’?" might occur.
+   To fix this run ``python -m virtualenv --upgrade-embed-wheels`` to upgrade virtualenv's packages.
+
 Sensor related
 --------------
 

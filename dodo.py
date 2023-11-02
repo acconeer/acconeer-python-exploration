@@ -13,7 +13,7 @@ $ doit <task1> <task2>  # runs task1 & task2
 import doit
 
 
-PYTHON_VERSIONS = ("3.8", "3.9", "3.10", "3.11")
+PYTHON_VERSIONS = ("3.8", "3.9", "3.10", "3.11", "3.12")
 GENERATIONS = ("a121", "a111")
 
 CLI_ARGS = {"port_strategy": doit.get_var("port_strategy", "unique")}

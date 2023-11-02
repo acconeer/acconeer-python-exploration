@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QWidget
 _DataT = t.TypeVar("_DataT")
 
 
-class DataEditor(QWidget, t.Generic[_DataT]):
+class DataEditor(t.Generic[_DataT], QWidget):
     """A DataEditor is a widget that enables a user to edit some data.
     The updated data can be used programmatically and is propagated via
     the `sig_update` Signal or retrieved via `get_data`.

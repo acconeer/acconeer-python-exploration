@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Support for Python 3.12
 
 ### Changed
 

@@ -9,14 +9,14 @@ enum BuildScope {
 def isolatedTestPythonVersionsForBuildScope = [
     (BuildScope.SANITY)  : ["3.8", "3.9"],
     (BuildScope.HOURLY)  : ["3.8", "3.10", "3.11"],
-    (BuildScope.NIGHTLY) : ["3.8", "3.9", "3.10", "3.11"],
+    (BuildScope.NIGHTLY) : ["3.8", "3.9", "3.10", "3.11", "3.12"],
 ]
 
 @Field
 def integrationTestPythonVersionsForBuildScope = [
     (BuildScope.SANITY)  : ["3.8"],
     (BuildScope.HOURLY)  : ["3.9"],
-    (BuildScope.NIGHTLY) : ["3.8", "3.9", "3.10", "3.11"],
+    (BuildScope.NIGHTLY) : ["3.8", "3.9", "3.10", "3.11", "3.12"],
 ]
 
 @Field
