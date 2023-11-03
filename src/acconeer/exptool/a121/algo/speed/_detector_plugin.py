@@ -527,6 +527,12 @@ class ViewPlugin(A121ViewPluginBase):
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
 
+        visual_policies.apply_enabled_policy(
+            visual_policies.config_editor_enabled,
+            app_model,
+            widgets=[self.config_editor, self.sensor_id_pidget],
+        )
+
         self.start_button.setEnabled(
             visual_policies.start_button_enabled(
                 app_model, extra_condition=self.config_editor.is_ready
