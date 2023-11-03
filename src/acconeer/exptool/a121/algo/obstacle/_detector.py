@@ -545,7 +545,9 @@ class Detector:
                 for ctx in context.single_sensor_contexts.values()
             ]
         )
-        config_mismatch = context.calibration_detector_config != config
+        config_mismatch = (
+            context.calibration_detector_config != config or context.sensor_ids != sensor_ids
+        )
 
         if calibration_missing:
             detector_state = DetailedStatus.CALIBRATION_MISSING
