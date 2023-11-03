@@ -489,10 +489,12 @@ class ViewPlugin(A121ViewPluginBase):
             visual_policies.config_editor_enabled,
             app_model,
             widgets=[
-                self.filtering_editor,
-                self.sensor_config_editor,
-                self.setup_editor,
                 self.sensor_id_pidget,
+                self.config_editor,
+                self.filtering_editor,
+                self.setup_editor,
+                self.sensor_config_editor,
+                self.presence_config_editor,
             ],
         )
 
