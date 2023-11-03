@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import importlib.resources
-from typing import Optional, Union
+from typing import Optional
 
 from typing_extensions import Literal
 
@@ -89,27 +89,27 @@ class ImageButton(QToolButton):
 
 
 class CentralWidget(QWidget):
-    sig_a121_clicked = Signal()
-    sig_a111_clicked = Signal()
+    sig_new_app_clicked = Signal()
+    sig_old_app_clicked = Signal()
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setLayout(QHBoxLayout(self))
 
-        with importlib.resources.path(et_app_resources, "a121_gui.png") as path:
-            a121_button = ImageButton("A121", path.as_posix(), QSize(500, 300))
-            a121_button.clicked.connect(self.sig_a121_clicked)
-            self.layout().addWidget(a121_button)
+        with importlib.resources.path(et_app_resources, "new_gui.png") as path:
+            new_app_button = ImageButton("A121", path.as_posix(), QSize(500, 300))
+            new_app_button.clicked.connect(self.sig_new_app_clicked)
+            self.layout().addWidget(new_app_button)
 
-        with importlib.resources.path(et_app_resources, "a111_gui.png") as path:
-            a111_button = ImageButton("A111", path.as_posix(), QSize(500, 300))
-            a111_button.clicked.connect(self.sig_a111_clicked)
-            self.layout().addWidget(a111_button)
+        with importlib.resources.path(et_app_resources, "old_gui.png") as path:
+            old_app_button = ImageButton("A111", path.as_posix(), QSize(500, 300))
+            old_app_button.clicked.connect(self.sig_old_app_clicked)
+            self.layout().addWidget(old_app_button)
 
 
 class ValueHolder:
     def __init__(self) -> None:
-        self.selection: Optional[Union[Literal["a121"], Literal["a111"]]] = None
+        self.selection: Optional[Literal["new", "old"]] = None
 
 
 class Launcher(QMainWindow):
@@ -118,18 +118,18 @@ class Launcher(QMainWindow):
         self._value_holder = value_holder
 
         self._central_widget = CentralWidget()
-        self._central_widget.sig_a111_clicked.connect(lambda: self.on_selection("a111"))
-        self._central_widget.sig_a121_clicked.connect(lambda: self.on_selection("a121"))
+        self._central_widget.sig_new_app_clicked.connect(lambda: self.on_selection("new"))
+        self._central_widget.sig_old_app_clicked.connect(lambda: self.on_selection("old"))
 
         self.setWindowTitle("Acconeer Exptool Launcher")
         self.setCentralWidget(self._central_widget)
 
-    def on_selection(self, selection: Union[Literal["a121"], Literal["a111"]]) -> None:
+    def on_selection(self, selection: Literal["new", "old"]) -> None:
         self._value_holder.selection = selection
         self.close()
 
 
-def run_launcher() -> Optional[Union[Literal["a121"], Literal["a111"]]]:
+def run_launcher() -> Optional[Literal["new", "old"]]:
     app = QApplication([])
 
     vh = ValueHolder()
