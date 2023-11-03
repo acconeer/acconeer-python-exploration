@@ -594,8 +594,6 @@ class SensorIdPidget(ComboboxPidget[int]):
 
             self.set_data(self._sensor_id)
 
-        self.setEnabled(len(sensor_list) > 0)
-
     def set_data(self, sensor_id: int) -> None:
         self._sensor_id = sensor_id
 
