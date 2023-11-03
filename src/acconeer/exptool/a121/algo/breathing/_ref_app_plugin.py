@@ -761,6 +761,7 @@ class ViewPlugin(A121ViewPluginBase):
             visual_policies.config_editor_enabled,
             app_model,
             widgets=[
+                self.sensor_id_pidget,
                 self.config_editor,
                 self.sensor_config_editor,
                 self.breathing_config_editor,
