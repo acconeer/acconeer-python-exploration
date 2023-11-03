@@ -54,7 +54,7 @@ class PowerCurveBarGraphItem(pg.BarGraphItem):
         durations = [r.duration for r in power_profile.flat_iter()]
         starts = list(itertools.accumulate([0] + durations[:-1], operator.add))
         currents = [p.average_current for p in power_profile.flat_iter()]
-        colors = [self._tag_color(p.tag) for p in power_profile.flat_iter()]
+        colors = [self.tag_color(p.tag) for p in power_profile.flat_iter()]
 
         super().__init__(
             x0=starts,
@@ -68,7 +68,7 @@ class PowerCurveBarGraphItem(pg.BarGraphItem):
         self._ends = [start + duration for start, duration in zip(starts, durations)]
 
     @staticmethod
-    def _tag_color(tag: t.Optional[power.EnergyRegion.Tag]) -> str:
+    def tag_color(tag: t.Optional[power.EnergyRegion.Tag]) -> str:
         if tag == power.EnergyRegion.Tag.MEASURE:
             return "cornflowerblue"
         if tag == power.EnergyRegion.Tag.OVERHEAD:
@@ -124,6 +124,11 @@ class PowerCurveBarGraphItem(pg.BarGraphItem):
         self.setToolTip(tooltip)
 
 
+class _DummyBarGraphItem(pg.BarGraphItem):
+    def __init__(self, color: str) -> None:
+        super().__init__(brush=color, x0=1, width=1, y0=1, height=1)
+
+
 class _EnergyRegionPlot(QWidget):
     @attrs.frozen
     class _State:
@@ -154,6 +159,10 @@ class _EnergyRegionPlot(QWidget):
         self._plot_widget.getPlotItem().setLabel("bottom", "Duration", units="s")
         self._plot_widget.getPlotItem().setContentsMargins(0, 0, 0, 10)
         self._plot_widget.getViewBox().setMouseMode(pg.ViewBox.PanMode)
+
+        self._bar_legend = pg.graphicsItems.LegendItem.LegendItem(offset=(75, 10))
+        self._bar_legend.setParentItem(self._plot_widget.getPlotItem())
+        self._bar_legend.setEnabled(False)
 
         label = QLabel(_X_AXIS_SPINBOX_LABEL)
         label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
@@ -205,6 +214,15 @@ class _EnergyRegionPlot(QWidget):
 
         bar_item = PowerCurveBarGraphItem(session_profile)
         self._plot_widget.addItem(bar_item)
+
+        power_tag_set = set([p.tag for p in session_profile.flat_iter()])
+
+        self._bar_legend.clear()
+        for tag in power_tag_set:
+            if tag is not None:
+                self._bar_legend.addItem(
+                    _DummyBarGraphItem(PowerCurveBarGraphItem.tag_color(tag)), tag.name.title()
+                )
 
         hline_item = pg.InfiniteLine(
             pos=approx_avg_current,
