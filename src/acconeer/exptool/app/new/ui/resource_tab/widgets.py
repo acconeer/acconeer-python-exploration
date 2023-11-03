@@ -177,6 +177,11 @@ class _TitleBarWidget(QWidget):
         event.ignore()
 
 
+@attrs.frozen
+class _SpawnInputEvent:
+    compare_configs: bool
+
+
 class _DockWidget(QDockWidget):
     def __init__(
         self,
@@ -194,9 +199,39 @@ class _DockWidget(QDockWidget):
         self._close_hook = close_hook
 
         title_bar = _TitleBarWidget(title, tooltip, self)
-        title_bar.sig_exit_clicked.connect(close_hook)
         title_bar.sig_exit_clicked.connect(self.close)
         self.setTitleBarWidget(title_bar)
+
+    def close(self) -> bool:
+        self._close_hook()
+        return super().close()
+
+
+class _InputDockWidget(_DockWidget):
+    INTERESTS: t.ClassVar[set[type]] = {_SpawnInputEvent}
+    description: t.ClassVar[str] = ""
+
+    def __init__(
+        self,
+        title: str,
+        tooltip: str,
+        widget: QWidget,
+        close_hook: t.Callable[[], None],
+        broker: EventBroker,
+        parent: QWidget,
+    ) -> None:
+        super().__init__(title, tooltip, widget, close_hook, parent=parent)
+        self.window_title = title
+        self.uninstall_function = broker.install_service(self)
+
+    def handle_event(self, event: t.Any) -> None:
+        if isinstance(event, _SpawnInputEvent):
+            if not event.compare_configs:
+                self.close()
+
+    def close(self) -> bool:
+        self.uninstall_function()
+        return super().close()
 
 
 class ResourceMainWidget(QMainWindow):
@@ -216,6 +251,12 @@ class ResourceMainWidget(QMainWindow):
         toolbar.setIconSize(QSize(24, 24))
         toolbar.setFloatable(False)
         toolbar.setMovable(False)
+
+        self._compare_cb = QCheckBox("Compare")
+        self._compare_cb.setToolTip(
+            "Allow to open multiple configurations within the window to compare plots and numbers."
+        )
+        self._compare_cb.setChecked(False)
 
         self._populate_palette(toolbar)
         self.setCentralWidget(toolbar)
@@ -259,6 +300,8 @@ class ResourceMainWidget(QMainWindow):
         user_understandings.save()
 
     def spawn_input_block(self, config: t.Any, animate: bool = True) -> None:
+        self._broker.offer_event(_SpawnInputEvent(self._compare_cb.isChecked()))
+
         if isinstance(config, a121.SessionConfig):
             dock_widget = self._create_session_config_input(config)
         elif isinstance(config, distance.DetectorConfig):
@@ -357,13 +400,18 @@ class ResourceMainWidget(QMainWindow):
             )
         )
 
+        toolbar.addSeparator()
+
+        toolbar.addWidget(self._compare_cb)
+
     def _create_session_config_input(self, config: a121.SessionConfig) -> _DockWidget:
         service = session_config_input.SessionConfigInput(self._broker, config)
-        return _DockWidget(
+        return _InputDockWidget(
             service.window_title,
             service.description,
             service,
             service.uninstall_function,
+            self._broker,
             parent=self,
         )
 
@@ -399,21 +447,23 @@ class ResourceMainWidget(QMainWindow):
 
     def _create_distance_config_input(self, config: distance.DetectorConfig) -> _DockWidget:
         service = distance_config_input.DistanceConfigInput(self._broker, config)
-        return _DockWidget(
+        return _InputDockWidget(
             service.window_title,
             service.description,
             service,
             service.uninstall_function,
+            self._broker,
             parent=self,
         )
 
     def _create_presence_config_input(self, config: presence.DetectorConfig) -> _DockWidget:
         service = presence_config_input.PresenceConfigInput(self._broker, config)
-        return _DockWidget(
+        return _InputDockWidget(
             service.window_title,
             service.description,
             service,
             service.uninstall_function,
+            self._broker,
             parent=self,
         )
 

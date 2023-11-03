@@ -28,6 +28,7 @@ import contextlib
 import itertools
 import logging
 import typing as t
+from copy import copy
 
 import attrs
 import typing_extensions as te
@@ -156,7 +157,7 @@ class EventBroker:
         Offer an event to interested services
         """
         log.debug(f"event with type {type(event)} was offered")
-        subscribers_of_event = self._topic_callbacks.get(type(event), [])
+        subscribers_of_event = copy(self._topic_callbacks.get(type(event), []))
 
         self._event_log.append(event)
 
