@@ -98,7 +98,6 @@ class SetupMessage(GeneralMessage):
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, TankLevelPreset] = {
         PluginPresetId.SMALL.value: TankLevelPreset(
             config=get_small_config(),
@@ -233,7 +232,6 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
 
 class PlotPlugin(PgPlotPlugin):
-
     STATUS_MSG_MAP = {
         ProcessorLevelStatus.IN_RANGE: "In range",
         ProcessorLevelStatus.NO_DETECTION: "Not available",
@@ -502,7 +500,6 @@ class PlotPlugin(PgPlotPlugin):
 
 
 class ViewPlugin(A121ViewPluginBase):
-
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
         DetailedStatus.CONTEXT_MISSING: "Run detector calibration.",
@@ -664,7 +661,12 @@ class ViewPlugin(A121ViewPluginBase):
         visual_policies.apply_enabled_policy(
             visual_policies.config_editor_enabled,
             app_model,
-            widgets=[self.defaults_button, self.config_editor, self.tank_level_config_editor],
+            widgets=[
+                self.defaults_button,
+                self.config_editor,
+                self.tank_level_config_editor,
+                self.sensor_id_pidget,
+            ],
         )
 
         self.stop_button.setEnabled(visual_policies.stop_button_enabled(app_model))
