@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
+
 from __future__ import annotations
 
 import abc
@@ -11,13 +12,20 @@ import typing as t
 from pathlib import Path
 from typing import Tuple, Union
 
+import h5py
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121 import _core, algo
+from acconeer.exptool.a121 import H5Record, _core, algo
+from acconeer.exptool.a121._core_ext._replaying_client import _ReplayingClient
+from acconeer.exptool.a121.algo.breathing import RefApp as RefAppBreathing
+from acconeer.exptool.a121.algo.breathing import RefAppResult as RefAppResultBreathing
+from acconeer.exptool.a121.algo.breathing._ref_app import (
+    _load_algo_data as _load_algo_data_breathing,
+)
 
 
 try:
@@ -455,6 +463,29 @@ def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
     return df_config
 
 
+def breathing_result_as_row(processed_data: RefAppResultBreathing) -> list[t.Any]:
+
+    no_result = "None"
+    rate = (
+        no_result
+        if processed_data.breathing_result is None
+        or processed_data.breathing_result.breathing_rate is None
+        else f"{processed_data.breathing_result.breathing_rate:0.2f}"
+    )
+    motion = (
+        no_result
+        if processed_data.breathing_result is None
+        else f"{processed_data.breathing_result.extra_result.breathing_motion[-1]:0.2f}"
+    )
+    presence_dist = (
+        no_result
+        if not processed_data.presence_result.presence_detected
+        else f"{processed_data.presence_result.presence_distance:0.2f}"
+    )
+
+    return [rate, motion, presence_dist]
+
+
 def main() -> None:
     parser = ConvertToCsvArgumentParser()
     args = parser.parse_args()
@@ -485,26 +516,80 @@ def main() -> None:
 
     # Create a Pandas DataFrame from the data
     df_data = pd.DataFrame(data_table)
+    df_all = [df_data]
 
     # Create a Pandas DataFrame from the configurations
     if isinstance(record, a121.Record):
         df_config = configs_as_dataframe(record.session_config)
-    else:
-        df_config = pd.DataFrame()
+        df_all.append(df_config)
 
-    # Create a Pandas DataFrame from the configurations
-    df_all = [df_data, df_config]
-    sheet_name = ["Sparse IQ data", "Configurations"]
+    # Create a Pandas DataFrame from processed data
+
+    # Load file, data and setup detector
+    file = h5py.File(str(input_file))
+    algo_group = file["algo"]
+    app_key = file["algo/key"][()].decode()
+
+    supported_apps = ["breathing"]
+    processed_data_list = []
+    if app_key in supported_apps:
+        sensor_id, ref_app_config = _load_algo_data_breathing(algo_group)
+
+        # Client preparation
+        record = H5Record(file)
+        client = _ReplayingClient(record, realtime_replay=False)
+        num_frames = record.num_frames
+        ref_app = RefAppBreathing(
+            client=client, sensor_id=sensor_id, ref_app_config=ref_app_config
+        )
+        ref_app.start()
+
+        try:
+            for idx in range(record.num_frames):
+                processed_data = ref_app.get_next()
+
+                # Put the result in row
+                processed_data_row = breathing_result_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+                # Print progressing time every 5%
+                print(f"... {idx / num_frames:.0%}") if (
+                    idx % int(0.05 * num_frames)
+                ) == 0 else None
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
+        processed_data_as_dataframe = {
+            "rate": transposed_processed_data_list[0],
+            "motion": transposed_processed_data_list[1],
+            "presence_dist": transposed_processed_data_list[2],
+        }
+        df_processed_data = pd.DataFrame(processed_data_as_dataframe)
+        df_all.append(df_processed_data)
+
+        ref_app.stop()
+        client.close()
+
+    file.close()
+
+    # Add sheet/file names
+    sheet_name = ["Sparse IQ data", "Configurations", "Processed data"]
 
     # Save the DataFrame to a CSV or excel file
     if output_suffix == ".xlsx":
+        output_file = output_stem.with_suffix(output_suffix)
         # Write each DataFrame to a separate sheet using to_excel
-        for idx, df in enumerate(df_all):
-            df.to_excel(
-                Path(str(output_stem) + "_" + sheet_name[idx] + output_suffix),
-                sheet_name=sheet_name[idx],
-                index_label="Index",
-            )
+        # Default example data frame is written as below
+        with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
+            # Write each DataFrame to a separate sheet
+            for itx in range(len(df_all)):
+                df_all[itx].to_excel(
+                    writer, sheet_name=sheet_name[itx], index_label="Index", header=True
+                )
 
     if output_suffix == ".csv" or output_suffix == ".tsv":
         # Write each DataFrame to a separate sheet using to_csv
