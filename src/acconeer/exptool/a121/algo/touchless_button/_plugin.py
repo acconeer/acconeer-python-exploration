@@ -214,6 +214,7 @@ class PlotPlugin(PgPlotPlugin):
         self.plot_layout.clear()
 
         self.detection_history_plot = self._create_detection_plot(self.plot_layout)
+        detection_plot_legend = self.detection_history_plot.legend
 
         self.detection_history_curve_close = self.detection_history_plot.plot(
             pen=et.utils.pg_pen_cycler(1, width=5)
@@ -270,9 +271,11 @@ class PlotPlugin(PgPlotPlugin):
         if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
             measurement_type = "Close"
             score_plot_legend.addItem(self.threshold_history_curve_close, "Close range threshold")
+            detection_plot_legend.addItem(self.detection_history_curve_close, "Close range")
         elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
             measurement_type = "Far"
             score_plot_legend.addItem(self.threshold_history_curve_far, "Far range threshold")
+            detection_plot_legend.addItem(self.detection_history_curve_far, "Far range")
 
         if processor_config.measurement_type != MeasurementType.CLOSE_AND_FAR_RANGE:
             score_history = np.full((sensor_config.subsweep.num_points, 100), np.NaN)
@@ -299,6 +302,8 @@ class PlotPlugin(PgPlotPlugin):
         elif processor_config.measurement_type == MeasurementType.CLOSE_AND_FAR_RANGE:
             score_plot_legend.addItem(self.threshold_history_curve_close, "Close range threshold")
             score_plot_legend.addItem(self.threshold_history_curve_far, "Far range threshold")
+            detection_plot_legend.addItem(self.detection_history_curve_close, "Close range")
+            detection_plot_legend.addItem(self.detection_history_curve_far, "Far range")
             self.score_history_close = np.full(
                 (sensor_config.subsweeps[0].num_points, 100), np.NaN
             )
@@ -410,6 +415,7 @@ class PlotPlugin(PgPlotPlugin):
         detection_history_plot = parent.addPlot(row=0, col=0)
         detection_history_plot.setTitle("Detection")
         detection_history_plot.setLabel(axis="bottom", text="Frames")
+        detection_history_plot.addLegend()
         detection_history_plot.setMenuEnabled(False)
         detection_history_plot.setMouseEnabled(x=False, y=False)
         detection_history_plot.hideButtons()
