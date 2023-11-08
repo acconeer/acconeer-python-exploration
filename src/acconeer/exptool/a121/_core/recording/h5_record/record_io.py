@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
+from acconeer.exptool._core.recording.h5_record.utils import PathOrH5File, h5_file_factory
 from acconeer.exptool.a121._core.entities import PersistentRecord, Record
 from acconeer.exptool.a121._core.recording.im_record import InMemoryRecord
 
 from .record import H5Record
 from .recorder import H5Recorder
-from .utils import PathOrH5File, h5_file_factory
 
 
 class RecordError(Exception):
