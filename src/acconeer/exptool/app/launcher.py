@@ -9,8 +9,10 @@ from typing import Optional
 from typing_extensions import Literal
 
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QSize, Qt, QVariantAnimation, Signal
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QApplication,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -36,8 +38,16 @@ class ImageButton(QToolButton):
         self._animator = QVariantAnimation(self)
         self._animator.valueChanged.connect(self._update_zoom)
 
+        label_shadow = QGraphicsDropShadowEffect(self)
+        label_shadow.setColor(QColor(64, 64, 64))
+        label_shadow.setOffset(2, 2)
+        label_shadow.setBlurRadius(10)
+
+        label = QLabel(text)
+        label.setGraphicsEffect(label_shadow)
+
         self._layout.addStretch()
-        self._layout.addWidget(QLabel(text), 0, alignment=Qt.AlignCenter)
+        self._layout.addWidget(label, 0, alignment=Qt.AlignCenter)
         self.setStyleSheet(
             f"""
             QLabel {{
