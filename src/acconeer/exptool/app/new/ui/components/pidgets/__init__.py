@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from . import hooks
@@ -15,6 +15,8 @@ from .pidgets import (
     FloatPidgetFactory,
     FloatSliderPidget,
     FloatSliderPidgetFactory,
+    IntFlagPidget,
+    IntFlagPidgetFactory,
     IntPidget,
     IntPidgetFactory,
     OptionalEnumPidget,

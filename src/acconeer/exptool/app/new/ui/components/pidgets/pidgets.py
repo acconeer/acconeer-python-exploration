@@ -27,6 +27,7 @@ import typing_extensions as te
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
@@ -44,6 +45,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool._core.entities.validation_result import Criticality
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
+from acconeer.exptool.app.new.ui.utils import LayoutWrapper
 from acconeer.exptool.testing import is_running_in_ci
 
 from .common import MaybeIterable, as_sequence
@@ -307,6 +309,60 @@ class StrPidget(Pidget):
 
     def __on_changed(self) -> None:
         self.sig_update.emit(self.get_data())
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class IntFlagPidgetFactory(PidgetFactory):
+    num_bits: int
+
+    def create(self, parent: QWidget) -> IntFlagPidget:
+        return IntFlagPidget(self, parent)
+
+
+class IntFlagPidget(Pidget):
+    def __init__(self, factory: IntFlagPidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self._button_group = QButtonGroup(self)
+        self._button_group.setExclusive(False)
+        self._button_group.idToggled.connect(self._emit_current_data)
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        for power_of_two in (2**idx for idx in range(factory.num_bits)):
+            checkbox = QCheckBox()
+            checkbox.setToolTip(f"Value: {bin(power_of_two)}")
+            # Checkboxes are prepended for Big endian visuals
+            layout.insertWidget(0, checkbox)
+
+            # The id of the button is its value.
+            self._button_group.addButton(checkbox, id=power_of_two)
+
+        layout.insertStretch(0, stretch=0)  # makes the row of checkboxes aligned to the right
+
+        dummy = LayoutWrapper(layout)
+        dummy.setFixedWidth(WIDGET_WIDTH)
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", "extra_widget", dummy],
+        )
+
+    def _emit_current_data(self) -> None:
+        self.sig_update.emit(self.get_data())
+
+    def set_data(self, value: Any) -> None:
+        assert isinstance(value, int)
+
+        with QtCore.QSignalBlocker(self):
+            for checkbox in self._button_group.buttons():
+                checkbox.setChecked(bool(self._button_group.id(checkbox) & value))
+
+    def get_data(self) -> int:
+        return sum(
+            self._button_group.id(checkbox) if checkbox.isChecked() else 0
+            for checkbox in self._button_group.buttons()
+        )
 
 
 @attrs.frozen(kw_only=True, slots=False)
