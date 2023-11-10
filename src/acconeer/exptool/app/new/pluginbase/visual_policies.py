@@ -7,7 +7,7 @@ import typing_extensions as te
 
 from PySide6.QtWidgets import QWidget
 
-from acconeer.exptool.app.new._enums import ConnectionState, PluginState
+from acconeer.exptool.app.new._enums import ConnectionState, PluginGeneration, PluginState
 from acconeer.exptool.app.new.app_model import AppModel
 
 
@@ -20,6 +20,7 @@ def start_button_enabled(app_model: AppModel, *, extra_condition: bool = True) -
     return (
         app_model.plugin_state == PluginState.LOADED_IDLE
         and app_model.connection_state == ConnectionState.CONNECTED
+        and app_model.plugin_generation == PluginGeneration.A121
         and bool(app_model.connected_sensors)
         and app_model.backend_plugin_state is not None
         and getattr(app_model.backend_plugin_state, "ready", True)

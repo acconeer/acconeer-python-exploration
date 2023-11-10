@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -46,6 +46,7 @@ class AppModelViewer(QTextEdit):
                     f"ConnectionState:          {app_model.connection_state}",
                     f"ConnectionInterface:      {app_model.connection_interface}",
                     f"PluginState:              {app_model.plugin_state}",
+                    f"PluginGeneration:         {app_model.plugin_generation}",
                     f"socket_connection_ip:     {app_model.socket_connection_ip}",
                     f"serial_connection_device: {app_model.serial_connection_device}",
                     f"overridden_baudrate:      {app_model.overridden_baudrate}",

@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
+from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState, PluginGeneration
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.qt_subclasses import AppModelAwareWidget
 from acconeer.exptool.app.new.ui.device_comboboxes import SerialPortComboBox, USBDeviceComboBox
@@ -271,5 +271,23 @@ class GenerationSelection(QComboBox):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.addItem("A121")
+        self.addItem("A121", PluginGeneration.A121)
         self.setEnabled(False)
+
+        self.currentIndexChanged.connect(
+            lambda _: app_model.set_plugin_generation(self.currentData())
+        )
+        app_model.sig_notify.connect(self.on_app_model_update)
+        self.set_current_data(app_model.plugin_generation)
+
+    def set_current_data(self, generation: PluginGeneration) -> None:
+        idx = self.findData(generation)
+
+        assert idx >= 0, f"Generation {generation} could not be found in this combobox"
+
+        with QtCore.QSignalBlocker(self):
+            self.setCurrentIndex(idx)
+
+    def on_app_model_update(self, app_model: AppModel) -> None:
+        self.set_current_data(app_model.plugin_generation)
+        self.setEnabled(app_model.connection_state == ConnectionState.DISCONNECTED)

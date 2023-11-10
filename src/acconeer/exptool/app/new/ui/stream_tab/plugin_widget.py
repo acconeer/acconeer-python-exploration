@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool.app import resources
-from acconeer.exptool.app.new._enums import PluginFamily, PluginState
+from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration, PluginState
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox
@@ -133,7 +133,9 @@ class PluginPresetPlaceholder(QWidget):
 
 
 class PluginSelection(QWidget):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+    def __init__(
+        self, app_model: AppModel, plugins: list[PluginSpecBase], parent: QWidget
+    ) -> None:
         super().__init__(parent)
 
         self.app_model = app_model
@@ -156,7 +158,7 @@ class PluginSelection(QWidget):
         self.button_group = PluginSelectionButtonGroup(self)
         self.button_group.buttonClicked.connect(self._on_load_click)
 
-        for plugin in app_model.plugins:
+        for plugin in plugins:
             assert isinstance(plugin, PluginSpecBase)
             group_box = group_boxes[plugin.family]
             group_box.setHidden(False)
@@ -192,8 +194,12 @@ class PluginSelection(QWidget):
             self.button_group.setExclusive(True)
         else:
             buttons = self.button_group.buttons()
-            button = next(b for b in buttons if b.plugin == plugin)
-            button.setChecked(True)
+            try:
+                (button_to_check,) = {b for b in buttons if b.plugin == plugin}
+            except ValueError:
+                pass
+            else:
+                button_to_check.setChecked(True)
 
         self.setEnabled(app_model.plugin_state.is_steady)
 
@@ -202,9 +208,31 @@ class PluginSelectionArea(QWidget):
     def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setLayout(QVBoxLayout(self))
-        self.layout().addWidget(
-            ScrollAreaDecorator(TopAlignDecorator(PluginSelection(app_model, self)))
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        a121_selection = ScrollAreaDecorator(
+            TopAlignDecorator(
+                PluginSelection(
+                    app_model,
+                    [
+                        plugin
+                        for plugin in app_model.plugins
+                        if (
+                            plugin.generation == PluginGeneration.A121
+                            and isinstance(plugin, PluginSpecBase)
+                        )
+                    ],
+                    self,
+                )
+            )
         )
+        a121_selection.setVisible(True)
+
+        app_model.sig_notify.connect(
+            lambda am: a121_selection.setVisible(am.plugin_generation == PluginGeneration.A121)
+        )
+
+        self.layout().addWidget(a121_selection)
         self.layout().addWidget(HorizontalSeparator())
         self.layout().addWidget(PluginPresetPlaceholder(app_model, self))
 

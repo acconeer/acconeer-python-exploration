@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 import packaging.version
 
-from acconeer.exptool import a121
+from acconeer.exptool import _core as core
 from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 from acconeer.exptool.app.new._exceptions import HandledException
 
@@ -20,6 +20,9 @@ from ._tasks import Task, get_task, is_task
 log = logging.getLogger(__name__)
 
 
+_AnyClient = core.Client[Any, Any, Any, Any, Any]
+
+
 T = TypeVar("T")
 MessageHandler = Callable[[Message], None]
 BackendPluginFactory = Callable[[MessageHandler, str], BackendPlugin]
@@ -27,7 +30,7 @@ BackendPluginFactory = Callable[[MessageHandler, str], BackendPlugin]
 
 class Model:
     backend_plugin: Optional[BackendPlugin[Any]]
-    client: Optional[a121.Client]
+    client: Optional[_AnyClient]
 
     def __init__(self, task_callback: Callable[[Message], None]) -> None:
         self.backend_plugin = None
@@ -56,7 +59,11 @@ class Model:
         raise RuntimeError(f"'{name}' is not a task")
 
     @is_task
-    def connect_client(self, open_client_parameters: Dict[str, Any]) -> None:
+    def connect_client(
+        self,
+        client_factory: Callable[[], _AnyClient],
+        get_connection_warning: Callable[[packaging.version.Version], Optional[str]],
+    ) -> None:
         if self.client is not None:
             raise RuntimeError(
                 "Model already has a Client. The current Client needs to be disconnected first."
@@ -65,7 +72,7 @@ class Model:
         self.task_callback(ConnectionStateMessage(state=ConnectionState.CONNECTING))
 
         try:
-            self.client = a121.Client.open(**open_client_parameters)
+            self.client = client_factory()
         except Exception as exc:
             self.client = None
             self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
@@ -82,16 +89,11 @@ class Model:
         if self.backend_plugin is not None:
             self.backend_plugin.attach_client(client=self.client)
 
-        ver = packaging.version.Version(a121.SDK_VERSION)
-        if self.client.server_info.parsed_rss_version > ver:
-            connection_warning = "New server version - please upgrade client"
-        elif self.client.server_info.parsed_rss_version < ver:
-            connection_warning = "Old server version - please upgrade server"
-        else:
-            connection_warning = None
-
         self.task_callback(
-            ConnectionStateMessage(state=ConnectionState.CONNECTED, warning=connection_warning)
+            ConnectionStateMessage(
+                state=ConnectionState.CONNECTED,
+                warning=get_connection_warning(self.client.server_info.parsed_rss_version),
+            )
         )
         self.task_callback(GeneralMessage(name="server_info", data=self.client.server_info))
 

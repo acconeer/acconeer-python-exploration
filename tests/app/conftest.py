@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import functools
 import queue
 import typing as t
 from pathlib import Path
@@ -11,6 +12,7 @@ from unittest.mock import Mock
 import dirty_equals as de
 import pytest
 
+from acconeer.exptool import a121
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
 
@@ -19,14 +21,24 @@ def _mock_plugin_factory(*args: t.Any, **kwargs: t.Any) -> t.Any:
     return Mock()
 
 
+def always_return_none(*args: t.Any, **kwargs: t.Any) -> t.Any:
+    return None
+
+
 class Tasks:
     CONNECT_CLIENT_TASK: Task = (
         "connect_client",
-        dict(open_client_parameters=dict(mock=True)),
+        dict(
+            client_factory=functools.partial(a121.Client.open, mock=True),
+            get_connection_warning=always_return_none,
+        ),
     )
     BAD_CONNECT_CLIENT_TASK = (
         "connect_client",
-        dict(open_client_parameters=dict(ip_address="some_ip")),
+        dict(
+            client_factory=functools.partial(a121.Client.open, ip_address="some_ip"),
+            get_connection_warning=always_return_none,
+        ),
     )
     DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {})
     LOAD_PLUGIN_TASK: Task = (

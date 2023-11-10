@@ -15,11 +15,13 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from uuid import UUID
 
 import attrs
+from packaging.version import Version
 from typing_extensions import Protocol
 
 from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
 from PySide6.QtWidgets import QApplication, QWidget
 
+from acconeer.exptool import _core as core
 from acconeer.exptool import a121
 from acconeer.exptool._core.communication.comm_devices import CommDevice, SerialDevice, USBDevice
 from acconeer.exptool.app.new._enums import (
@@ -51,6 +53,7 @@ from .plugin_protocols import PlotPluginInterface
 from .port_updater import PortUpdater
 
 
+_AnyClient = core.Client[Any, Any, Any, Any, Any]
 log = logging.getLogger(__name__)
 
 
@@ -132,6 +135,7 @@ class _PersistentState:
     _FILE_NAME = "app_model_state.json"
     _ENUMS = {
         "ConnectionInterface": ConnectionInterface,
+        "PluginGeneration": PluginGeneration,
     }
 
     class Encoder(json.JSONEncoder):
@@ -152,6 +156,7 @@ class _PersistentState:
         return d
 
     connection_interface: ConnectionInterface = attrs.field(default=ConnectionInterface.SERIAL)
+    plugin_generation: PluginGeneration = attrs.field(default=PluginGeneration.A121)
     socket_connection_ip: str = attrs.field(default="")
     serial_connection_device: Optional[SerialDevice] = attrs.field(
         default=None, converter=_to_serialdevice
@@ -260,7 +265,6 @@ class AppModel(QObject):
         self._port_updater.start()
 
     def stop(self) -> None:
-
         WAIT_FOR_UNLOAD_TIMEOUT = 1.0
 
         try:
@@ -380,7 +384,12 @@ class AppModel(QObject):
             return
 
         if message.name == "server_info":
-            self._a121_server_info = message.data
+            server_info = message.data
+            if isinstance(server_info, a121.ServerInfo):
+                self._a121_server_info = server_info
+            else:
+                raise TypeError(f"Unexpected server_info type: {type(server_info)}")
+
             self.broadcast()
         elif message.name == "saveable_file":
             assert message.data is None or isinstance(message.data, Path)
@@ -570,14 +579,46 @@ class AppModel(QObject):
 
         log.debug(f"Connecting client with {open_client_parameters}")
 
+        get_connection_warning = functools.partial(
+            self._connection_warning, Version(a121.SDK_VERSION)
+        )
+        task_putter = functools.partial(
+            self.put_task, on_error=self._failed_autoconnect if auto else self.emit_error
+        )
+
         Model.connect_client.rpc(
-            functools.partial(
-                self.put_task, on_error=self._failed_autoconnect if auto else self.emit_error
+            task_putter,
+            client_factory=self._create_client_factory(
+                self.plugin_generation, open_client_parameters
             ),
-            open_client_parameters=open_client_parameters,
+            get_connection_warning=get_connection_warning,
         )
         self.connection_warning = None
         self.broadcast()
+
+    @staticmethod
+    def _create_client_factory(
+        generation: PluginGeneration, open_kwargs: dict[str, Any]
+    ) -> Callable[[], _AnyClient]:
+
+        factory: Callable[..., _AnyClient]
+        if generation == PluginGeneration.A121:
+            factory = a121.Client.open
+        else:
+            raise NotImplementedError(
+                f"Don't know how to construct a client for generation {generation}"
+            )
+
+        return functools.partial(factory, **open_kwargs)
+
+    @staticmethod
+    def _connection_warning(supported: Version, server: Version) -> Optional[str]:
+        if server > supported:
+            return "New server version - please upgrade client"
+        elif server < supported:
+            return "Old server version - please upgrade server"
+        else:
+            return None
 
     def disconnect_client(self) -> None:
         Model.disconnect_client.rpc(self.put_task)
@@ -641,6 +682,10 @@ class AppModel(QObject):
     def recording_enabled(self) -> bool:
         return self._persistent_state.recording_enabled
 
+    @property
+    def plugin_generation(self) -> PluginGeneration:
+        return self._persistent_state.plugin_generation
+
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
         self._persistent_state.connection_interface = connection_interface
         self.broadcast()
@@ -669,6 +714,10 @@ class AppModel(QObject):
 
     def set_recording_enabled(self, recording_enabled: bool) -> None:
         self._persistent_state.recording_enabled = recording_enabled
+        self.broadcast()
+
+    def set_plugin_generation(self, new_generation: PluginGeneration) -> None:
+        self._persistent_state.plugin_generation = new_generation
         self.broadcast()
 
     def _unload_current_plugin(self) -> None:
@@ -725,28 +774,32 @@ class AppModel(QObject):
             return
 
         try:
-            plugin = self._find_plugin(findings.key)
+            plugin = self._find_plugin(findings.key, self.plugin_generation)
         except Exception:
             log.debug(f"Could not find plugin '{findings.key}'")
 
             # TODO: Don't hardcode
-            plugin = self._find_plugin("sparse_iq")  # noqa: F841
+            plugin = self._find_plugin("sparse_iq", self.plugin_generation)  # noqa: F841
 
         self.load_plugin(plugin)
         BackendPlugin.load_from_file.rpc(self.put_task, path=path)
 
-    def _find_plugin(self, find_key: Optional[str]) -> PluginSpec:  # TODO: Also find by generation
+    def _find_plugin(self, find_key: Optional[str], generation: PluginGeneration) -> PluginSpec:
         if find_key is None:
             raise Exception
 
-        return next(plugin for plugin in self.plugins if plugin.key == find_key)
+        return next(
+            plugin
+            for plugin in self.plugins
+            if plugin.key == find_key and plugin.generation == generation
+        )
 
     @property
     def rss_version(self) -> Optional[str]:
-        if self._a121_server_info is None:
-            return None
+        if self._a121_server_info is not None:
+            return self._a121_server_info.rss_version
 
-        return self._a121_server_info.rss_version
+        return None
 
     @property
     def connected_sensors(self) -> list[int]:
