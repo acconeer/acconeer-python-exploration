@@ -13,6 +13,7 @@ import dirty_equals as de
 import pytest
 
 from acconeer.exptool import a121
+from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
 
@@ -26,20 +27,24 @@ def always_return_none(*args: t.Any, **kwargs: t.Any) -> t.Any:
 
 
 class Tasks:
-    CONNECT_CLIENT_TASK: Task = (
-        "connect_client",
-        dict(
-            client_factory=functools.partial(a121.Client.open, mock=True),
-            get_connection_warning=always_return_none,
+    CONNECT_CLIENT_TASK: dict[PluginGeneration, Task] = {
+        PluginGeneration.A121: (
+            "connect_client",
+            dict(
+                client_factory=functools.partial(a121.Client.open, mock=True),
+                get_connection_warning=always_return_none,
+            ),
         ),
-    )
-    BAD_CONNECT_CLIENT_TASK = (
-        "connect_client",
-        dict(
-            client_factory=functools.partial(a121.Client.open, ip_address="some_ip"),
-            get_connection_warning=always_return_none,
+    }
+    BAD_CONNECT_CLIENT_TASK = {
+        PluginGeneration.A121: (
+            "connect_client",
+            dict(
+                client_factory=functools.partial(a121.Client.open, ip_address="some_ip"),
+                get_connection_warning=always_return_none,
+            ),
         ),
-    )
+    }
     DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {})
     LOAD_PLUGIN_TASK: Task = (
         "load_plugin",

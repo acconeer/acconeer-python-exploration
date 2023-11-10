@@ -14,7 +14,7 @@ from acconeer.exptool.a121.algo.obstacle_bilateration._plugin import OBSTACLE_BI
 from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
 from acconeer.exptool.a121.algo.smart_presence._ref_app_plugin import SMART_PRESENCE_PLUGIN
 from acconeer.exptool.a121.algo.speed._detector_plugin import SPEED_DETECTOR_PLUGIN
-from acconeer.exptool.app.new import PluginState
+from acconeer.exptool.app.new import PluginGeneration, PluginState
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, GeneralMessage, PluginStateMessage, Task
 from acconeer.exptool.app.new.backend._backend import FromBackendQueueItem
@@ -60,7 +60,14 @@ class TestBackendPlugins:
 
     @pytest.fixture(params=load_default_plugins(), ids=_plugin_id)
     def plugin(self, request: pytest.FixtureRequest) -> PluginSpec:
-        return t.cast(PluginSpec, request.param)
+        plugin = t.cast(PluginSpec, request.param)
+
+        if plugin.generation not in [PluginGeneration.A121]:
+            pytest.xfail(
+                "These tests uses a mock client. Only A121 has a mock client at the moment."
+            )
+        else:
+            return plugin
 
     @pytest.fixture
     def extra_tasks(self, plugin: PluginSpec) -> t.Iterable[Task]:
@@ -81,7 +88,7 @@ class TestBackendPlugins:
     ) -> t.Iterator[Backend]:
         b = CaptureSaveableFile.wrap(Backend())
         b.start()
-        b.put_task(tasks.CONNECT_CLIENT_TASK)
+        b.put_task(tasks.CONNECT_CLIENT_TASK[plugin.generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
 
         b.put_task(tasks.load_plugin_task(plugin))

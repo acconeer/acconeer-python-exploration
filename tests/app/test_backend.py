@@ -7,8 +7,18 @@ import typing as t
 import dirty_equals as de
 import pytest
 
-from acconeer.exptool.app.new import ConnectionState, PluginState
+from acconeer.exptool.app.new import ConnectionState, PluginGeneration, PluginState
 from acconeer.exptool.app.new.backend import Backend, ConnectionStateMessage, PluginStateMessage
+
+
+@pytest.fixture(params=list(PluginGeneration))
+def generation(request: pytest.FixtureRequest) -> PluginGeneration:
+    gen = t.cast(PluginGeneration, request.param)
+
+    if gen not in [PluginGeneration.A121]:
+        pytest.xfail("These tests uses a mock client. Only A121 has a mock client at the moment.")
+    else:
+        return gen
 
 
 class DisconnectedBackend:
@@ -19,8 +29,9 @@ class DisconnectedBackend:
         backend: Backend,
         assert_messages: t.Callable[..., None],
         tasks: t.Any,
+        generation: PluginGeneration,
     ) -> None:
-        backend.put_task(tasks.BAD_CONNECT_CLIENT_TASK)
+        backend.put_task(tasks.BAD_CONNECT_CLIENT_TASK[generation])
         assert_messages(
             backend,
             received=[
@@ -36,8 +47,9 @@ class DisconnectedBackend:
         backend: Backend,
         assert_messages: t.Callable[..., None],
         tasks: t.Any,
+        generation: PluginGeneration,
     ) -> None:
-        backend.put_task(tasks.CONNECT_CLIENT_TASK)
+        backend.put_task(tasks.CONNECT_CLIENT_TASK[generation])
         assert_messages(
             backend,
             received=[
@@ -69,8 +81,9 @@ class ConnectedBackend:
         backend: Backend,
         assert_messages: t.Callable[..., None],
         tasks: t.Any,
+        generation: PluginGeneration,
     ) -> None:
-        backend.put_task(tasks.CONNECT_CLIENT_TASK)
+        backend.put_task(tasks.CONNECT_CLIENT_TASK[generation])
         assert_messages(
             backend,
             received=[tasks.FAILED_CLOSED_TASK],
@@ -186,10 +199,12 @@ class TestConnectedUnloadedBackend(ConnectedBackend, UnloadedBackend):
     """
 
     @pytest.fixture
-    def backend(self, tasks: t.Any, assert_messages: t.Callable[..., None]) -> t.Iterator[Backend]:
+    def backend(
+        self, tasks: t.Any, assert_messages: t.Callable[..., None], generation: PluginGeneration
+    ) -> t.Iterator[Backend]:
         b = Backend()
         b.start()
-        b.put_task(tasks.CONNECT_CLIENT_TASK)
+        b.put_task(tasks.CONNECT_CLIENT_TASK[generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
         yield b
         b.stop()
@@ -216,10 +231,12 @@ class TestConnectedLoadedBackend(ConnectedBackend, LoadedBackend):
     """
 
     @pytest.fixture
-    def backend(self, tasks: t.Any, assert_messages: t.Callable[..., None]) -> t.Iterator[Backend]:
+    def backend(
+        self, tasks: t.Any, assert_messages: t.Callable[..., None], generation: PluginGeneration
+    ) -> t.Iterator[Backend]:
         b = Backend()
         b.start()
-        b.put_task(tasks.CONNECT_CLIENT_TASK)
+        b.put_task(tasks.CONNECT_CLIENT_TASK[generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
         b.put_task(tasks.LOAD_PLUGIN_TASK)
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
