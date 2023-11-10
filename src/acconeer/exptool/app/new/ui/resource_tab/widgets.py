@@ -15,6 +15,7 @@ from packaging.version import Version
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction, QIcon, QMouseEvent
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDockWidget,
     QHBoxLayout,
     QLabel,
@@ -61,7 +62,7 @@ _DATA_IS_APPROXIMATE_DESCRIPTION = "<br><br>".join(
 )
 
 
-_TAB_BRIEF_DESCRIPTION = "\n\n".join(
+_TAB_BRIEF_DESCRIPTION = "<br><br>".join(
     [
         "This tab allows you to experiment and visualize resource "
         + "requirements for different configurations. ",
@@ -238,12 +239,16 @@ class ResourceMainWidget(QMainWindow):
         user_understandings = _UserUnderstandings.require()
 
         if not user_understandings.data_is_approximate:
-            pressed_button = QMessageBox.information(
-                self, "Data is approximate", _DATA_IS_APPROXIMATE_DESCRIPTION
+            disclaimer_box = QMessageBox(
+                QMessageBox.Icon.Information,
+                "Data is approximate",
+                _DATA_IS_APPROXIMATE_DESCRIPTION,
+                parent=self,
             )
-            user_understandings.data_is_approximate = (
-                pressed_button == QMessageBox.StandardButton.Ok
-            )
+            understand_cb = QCheckBox("I understand", self)
+            disclaimer_box.setCheckBox(understand_cb)
+            disclaimer_box.exec()
+            user_understandings.data_is_approximate = understand_cb.isChecked()
 
         if not user_understandings.tab_brief:
             pressed_button = QMessageBox.information(
@@ -413,4 +418,8 @@ class ResourceMainWidget(QMainWindow):
         )
 
     def _show_info_popup(self) -> None:
-        QMessageBox.information(self, "Resource Calculator", _TAB_BRIEF_DESCRIPTION)
+        txt = "<h2>How to use</h2>"
+        txt += _TAB_BRIEF_DESCRIPTION
+        txt += "<h2>Disclaimer</h2>"
+        txt += _DATA_IS_APPROXIMATE_DESCRIPTION
+        QMessageBox.information(self, "Resource Calculator", txt)
