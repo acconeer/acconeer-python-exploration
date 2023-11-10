@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2023
 # All rights reserved
 
+from .communication import Client, ClientCreationError, ClientError
 from .entities import (
     ClientInfo,
     MockInfo,
