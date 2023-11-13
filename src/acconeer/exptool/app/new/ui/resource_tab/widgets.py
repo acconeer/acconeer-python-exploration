@@ -87,7 +87,7 @@ class _UserUnderstandings:
     _PATH: t.ClassVar[Path] = get_config_dir() / "user_understandings.json"
 
     data_is_approximate: bool
-    tab_brief: bool
+    tab_brief: bool  # Not used anymore
     lib_version: str
 
     @classmethod
@@ -290,12 +290,6 @@ class ResourceMainWidget(QMainWindow):
             disclaimer_box.setCheckBox(understand_cb)
             disclaimer_box.exec()
             user_understandings.data_is_approximate = understand_cb.isChecked()
-
-        if not user_understandings.tab_brief:
-            pressed_button = QMessageBox.information(
-                self, "Resource Calculator", _TAB_BRIEF_DESCRIPTION
-            )
-            user_understandings.tab_brief = pressed_button == QMessageBox.StandardButton.Ok
 
         user_understandings.save()
 
