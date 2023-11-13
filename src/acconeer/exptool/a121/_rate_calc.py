@@ -7,8 +7,21 @@ import typing as t
 
 import attrs
 import numpy as np
+import typing_extensions as te
 
-from acconeer.exptool import a121
+
+class _ResultTimeAspects(te.Protocol):
+    @property
+    def tick(self) -> int:
+        ...
+
+    @property
+    def tick_time(self) -> float:
+        ...
+
+    @property
+    def frame_delayed(self) -> bool:
+        ...
 
 
 @attrs.frozen(kw_only=True)
@@ -26,29 +39,19 @@ class _RateCalculator:
 
     def __init__(
         self,
-        session_config: a121.SessionConfig,
-        metadata: t.Union[a121.Metadata, list[dict[int, a121.Metadata]]],
+        update_rate: t.Optional[float],
+        tick_period: int,
     ) -> None:
-        if isinstance(metadata, list):
-            metadata = next(a121.iterate_extended_structure_values(metadata))
+        self.tick_period = tick_period
 
-        self.metadata = metadata
+        self.update_rate = update_rate
 
-        self.session_config = session_config  # TODO: For performance calculator based warning
-        self.sensor_config = next(a121.iterate_extended_structure_values(session_config.groups))
-
-        self.last_result: t.Optional[a121.Result] = None
+        self.last_result: t.Optional[_ResultTimeAspects] = None
         self.time_fifo = np.full(200, np.nan)
         self.tick_fifo = np.full(200, np.nan)
         self.stats = _RateStats()
 
-    def update(
-        self,
-        result: t.Union[a121.Result, list[dict[int, a121.Result]]],
-    ) -> None:
-        if isinstance(result, list):
-            result = next(a121.iterate_extended_structure_values(result))
-
+    def update(self, result: _ResultTimeAspects) -> None:
         last_result = self.last_result
         self.last_result = result
 
@@ -69,8 +72,8 @@ class _RateCalculator:
 
         rate_warning = result.frame_delayed
 
-        if self.session_config.update_rate is not None:
-            limit = self.metadata.tick_period * 1.01 + 10
+        if self.update_rate is not None:
+            limit = self.tick_period * 1.01 + 10
             rate_warning |= np.nanmean(self.tick_fifo) > limit
 
         jitter_warning = jitter > self._JITTER_WARNING_LIMIT

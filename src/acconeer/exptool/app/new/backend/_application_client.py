@@ -50,21 +50,33 @@ class ApplicationClient:
         assert self._wrapped_client.extended_metadata is not None
 
         if self._wrapped_client.session_config.extended:
+            (first_metadata, *_) = utils.iterate_extended_structure_values(
+                self._wrapped_client.extended_metadata
+            )
             self._rate_stats_calc = _RateCalculator(
-                self._wrapped_client.session_config, self._wrapped_client.extended_metadata
+                self._wrapped_client.session_config.update_rate,
+                first_metadata.tick_period,
             )
         else:
             metadata = utils.unextend(self._wrapped_client.extended_metadata)
-            self._rate_stats_calc = _RateCalculator(self._wrapped_client.session_config, metadata)
+            self._rate_stats_calc = _RateCalculator(
+                self._wrapped_client.session_config.update_rate, metadata.tick_period
+            )
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:
-        results = self._wrapped_client.get_next()
+        result = self._wrapped_client.get_next()
         assert self._rate_stats_calc is not None
-        self._rate_stats_calc.update(results)
+
+        if isinstance(result, Result):
+            self._rate_stats_calc.update(result)
+        else:
+            (first_result, *_) = utils.iterate_extended_structure_values(result)
+            self._rate_stats_calc.update(first_result)
+
         self.callback(GeneralMessage(name="rate_stats", data=self._rate_stats_calc.stats))
         self._frame_count += 1
         self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
-        return results
+        return result
 
     def stop_session(self) -> None:
         result = self._wrapped_client.stop_session()
