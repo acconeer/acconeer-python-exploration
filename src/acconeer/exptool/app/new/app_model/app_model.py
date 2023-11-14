@@ -398,7 +398,7 @@ class AppModel(QObject):
         elif message.name == "rate_stats":
             stats = message.data
             if stats is None:
-                stats = _RateStats()
+                stats = _RateStats.invalid()
             else:
                 assert isinstance(stats, _RateStats)
 

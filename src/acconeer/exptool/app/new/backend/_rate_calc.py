@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
+import math
+import statistics
 import typing as t
+from collections import deque
 
 import attrs
-import numpy as np
 import typing_extensions as te
 
 
@@ -16,118 +18,94 @@ class _ResultTimeAspects(te.Protocol):
         ...
 
     @property
-    def tick_time(self) -> float:
-        ...
-
-    @property
     def frame_delayed(self) -> bool:
         ...
 
 
-@attrs.frozen(kw_only=True)
+@attrs.frozen
 class _RateStats:
-    rate: float = attrs.field(default=np.nan)
-    rate_warning: bool = attrs.field(default=False)
-    jitter: float = attrs.field(default=np.nan)
-    jitter_warning: bool = attrs.field(default=False)
+    rate: float
+    rate_warning: bool
+    jitter: float
+    jitter_warning: bool
+
+    @classmethod
+    def invalid(cls) -> te.Self:
+        return cls(rate=math.nan, rate_warning=False, jitter=math.nan, jitter_warning=False)
 
 
+@attrs.mutable
 class _RateCalculator:
     """Stateful class that monitors result rate and jitter.
 
     ``_RateCalculator`` handles object that has the attributes
-    ``tick``, ``tick_time`` & ``frame_delayed``. A minimum example of that is:
+    ``tick`` & ``frame_delayed``. A minimum example of that is:
 
     >>> @attrs.frozen
     ... class FooResult:
     ...     tick: int
-    ...     tick_time: float
     ...     frame_delayed: bool
 
     Since the ``_RateCalculator`` compares time differances between results, the first call
     to ``update`` will "prime" it and will not produce any meaningful statistics.
 
-    >>> rc = _RateCalculator(update_rate=10.0, tick_period=100)
-    >>> rc.stats
-    _RateStats(rate=nan, rate_warning=False, jitter=nan, jitter_warning=False)
-    >>> rc.update(FooResult(tick=0, tick_time=0.0, frame_delayed=False))
-    >>> rc.stats
+    >>> rc = _RateCalculator(ticks_per_second=1000, tick_period=100)
+    >>> rc.update(FooResult(tick=0, frame_delayed=False))
     _RateStats(rate=nan, rate_warning=False, jitter=nan, jitter_warning=False)
 
     Once the ``_RateCalculator`` is passed its second result, statistics are meaningful:
 
-    >>> rc.update(FooResult(tick=100, tick_time=0.1, frame_delayed=False))
-    >>> rc.stats
+    >>> rc.update(FooResult(tick=100, frame_delayed=False))
     _RateStats(rate=10.0, rate_warning=False, jitter=0.0, jitter_warning=False)
 
     Once the passed result aren't exactly equidistant in time, jitter will be non-zero:
 
-    >>> rc.update(FooResult(tick=201, tick_time=0.201, frame_delayed=False))
-    >>> rc.stats
+    >>> rc.update(FooResult(tick=201, frame_delayed=False))
     _RateStats(rate=9.95..., rate_warning=False, jitter=0.0005..., jitter_warning=False)
 
     If the result has the indication ``frame_delayed``, ``rate_warning`` will always be true.
 
-    >>> rc.update(FooResult(tick=300, tick_time=0.3, frame_delayed=True))
-    >>> rc.stats
+    >>> rc.update(FooResult(tick=300, frame_delayed=True))
     _RateStats(rate=10.0, rate_warning=True, jitter=0.0008..., jitter_warning=False)
 
     If the measured rate or its jitter becomes too large, both warning flag will be
     set to True:
 
-    >>> rc.update(FooResult(tick=600, tick_time=0.6, frame_delayed=False))
-    >>> rc.stats
+    >>> rc.update(FooResult(tick=600, frame_delayed=False))
     _RateStats(rate=6.66..., rate_warning=True, jitter=0.08..., jitter_warning=True)
     """
 
-    _JITTER_WARNING_LIMIT = 1.0e-3  # Based on testing
+    _JITTER_WARNING_LIMIT: t.ClassVar[float] = 1.0e-3  # Based on testing
 
-    stats: _RateStats
+    ticks_per_second: int
+    tick_period: int
 
-    def __init__(
-        self,
-        update_rate: t.Optional[float],
-        tick_period: int,
-    ) -> None:
-        self.tick_period = tick_period
+    ticks: deque[int] = attrs.field(factory=lambda: deque([], maxlen=200), init=False)
 
-        self.update_rate = update_rate
+    @property
+    def tick_period_upper_bound(self) -> float:
+        if self.tick_period == 0:
+            return math.inf
+        else:
+            return self.tick_period * 1.01 + 10
 
-        self.last_result: t.Optional[_ResultTimeAspects] = None
-        self.time_fifo = np.full(200, np.nan)
-        self.tick_fifo = np.full(200, np.nan)
-        self.stats = _RateStats()
+    @property
+    def tick_diffs(self) -> list[int]:
+        return [rhs - lhs for lhs, rhs in zip(self.ticks, list(self.ticks)[1:])]
 
-    def update(self, result: _ResultTimeAspects) -> None:
-        last_result = self.last_result
-        self.last_result = result
+    def update(self, result: _ResultTimeAspects) -> _RateStats:
+        self.ticks.append(result.tick)
 
-        if last_result is None:
-            return
+        if len(self.ticks) < 2:
+            return _RateStats.invalid()
 
-        delta_time = result.tick_time - last_result.tick_time
-        self.time_fifo = np.roll(self.time_fifo, -1)
-        self.time_fifo[-1] = delta_time
+        measured_tick_period = statistics.mean(self.tick_diffs)
+        measured_rate = 1.0 / (measured_tick_period / self.ticks_per_second)
+        rate_warning = result.frame_delayed or measured_tick_period > self.tick_period_upper_bound
 
-        delta_tick = result.tick - last_result.tick
-        self.tick_fifo = np.roll(self.tick_fifo, -1)
-        self.tick_fifo[-1] = delta_tick
-
-        mean_diff = np.nanmean(self.time_fifo)
-        rate = 1.0 / mean_diff if mean_diff > 0 else 0
-        jitter = np.nanstd(self.time_fifo)
-
-        rate_warning = result.frame_delayed
-
-        if self.update_rate is not None:
-            limit = self.tick_period * 1.01 + 10
-            rate_warning |= np.nanmean(self.tick_fifo) > limit
-
-        jitter_warning = jitter > self._JITTER_WARNING_LIMIT
-
-        self.stats = _RateStats(
-            rate=float(rate),
-            rate_warning=bool(rate_warning),
-            jitter=float(jitter),
-            jitter_warning=bool(jitter_warning),
-        )
+        if len(self.tick_diffs) < 2:
+            return _RateStats(measured_rate, rate_warning, jitter=0.0, jitter_warning=False)
+        else:
+            jitter_s = statistics.pstdev(self.tick_diffs) / self.ticks_per_second
+            jitter_warning = jitter_s > self._JITTER_WARNING_LIMIT
+            return _RateStats(measured_rate, rate_warning, jitter_s, jitter_warning)
