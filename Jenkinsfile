@@ -317,7 +317,10 @@ try {
 
     parallel parallel_steps
 
-    if (env.TAG_NAME ==~ /v.*/) {
+    // Only matches version on the form "vX.Y.Z" where X, Y, Z are integers
+    version_regex = /v\d+\.\d+\.\d+/
+
+    if (env.TAG_NAME ==~ version_regex) {
         node('docker') {
             ws('workspace/exptool') {
                 printNodeInfo()
