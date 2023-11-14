@@ -128,11 +128,21 @@ def test_presence_memory_model(config, test_case):
     "config,test_case",
     [
         pytest.param(
-            DistanceConfig(start_m=0.1, end_m=3.0, threshold_method=ThresholdMethod.CFAR),
+            DistanceConfig(
+                start_m=0.1,
+                end_m=3.0,
+                threshold_method=ThresholdMethod.CFAR,
+                close_range_leakage_cancellation=True,
+            ),
             "default",
         ),
         pytest.param(
-            DistanceConfig(start_m=0.05, end_m=0.2, threshold_method=ThresholdMethod.RECORDED),
+            DistanceConfig(
+                start_m=0.05,
+                end_m=0.2,
+                threshold_method=ThresholdMethod.RECORDED,
+                close_range_leakage_cancellation=True,
+            ),
             "close_range",
         ),
         pytest.param(

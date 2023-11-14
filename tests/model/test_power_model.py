@@ -194,7 +194,8 @@ def test_lower_power_state_limits(
         (
             "Distance, Default",
             distance.Detector._detector_to_session_config_and_processor_specs(
-                distance.DetectorConfig(update_rate=1.0), sensor_ids=[1]
+                distance.DetectorConfig(update_rate=1.0, close_range_leakage_cancellation=True),
+                sensor_ids=[1],
             )[0],
             power.Sensor.PowerState.OFF,
             power.algo.Distance(),
@@ -206,6 +207,7 @@ def test_lower_power_state_limits(
                     start_m=0.05,
                     end_m=0.10,
                     update_rate=1.0,
+                    close_range_leakage_cancellation=True,
                 ),
                 sensor_ids=[1],
             )[0],
@@ -219,6 +221,7 @@ def test_lower_power_state_limits(
                     start_m=0.05,
                     end_m=3.0,
                     update_rate=1.0,
+                    close_range_leakage_cancellation=True,
                 ),
                 sensor_ids=[1],
             )[0],
