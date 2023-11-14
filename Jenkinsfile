@@ -155,6 +155,9 @@ try {
             ws('workspace/exptool') {
                 modelTestA121RssVersion.each { rssVersion ->
                     stage('Setup') {
+                        printNodeInfo()
+                        checkoutAndCleanup()
+
                         findBuildAndCopyArtifacts(
                             [
                                 projectName: 'sw-main',
