@@ -33,6 +33,53 @@ class _RateStats:
 
 
 class _RateCalculator:
+    """Stateful class that monitors result rate and jitter.
+
+    ``_RateCalculator`` handles object that has the attributes
+    ``tick``, ``tick_time`` & ``frame_delayed``. A minimum example of that is:
+
+    >>> @attrs.frozen
+    ... class FooResult:
+    ...     tick: int
+    ...     tick_time: float
+    ...     frame_delayed: bool
+
+    Since the ``_RateCalculator`` compares time differances between results, the first call
+    to ``update`` will "prime" it and will not produce any meaningful statistics.
+
+    >>> rc = _RateCalculator(update_rate=10.0, tick_period=100)
+    >>> rc.stats
+    _RateStats(rate=nan, rate_warning=False, jitter=nan, jitter_warning=False)
+    >>> rc.update(FooResult(tick=0, tick_time=0.0, frame_delayed=False))
+    >>> rc.stats
+    _RateStats(rate=nan, rate_warning=False, jitter=nan, jitter_warning=False)
+
+    Once the ``_RateCalculator`` is passed its second result, statistics are meaningful:
+
+    >>> rc.update(FooResult(tick=100, tick_time=0.1, frame_delayed=False))
+    >>> rc.stats
+    _RateStats(rate=10.0, rate_warning=False, jitter=0.0, jitter_warning=False)
+
+    Once the passed result aren't exactly equidistant in time, jitter will be non-zero:
+
+    >>> rc.update(FooResult(tick=201, tick_time=0.201, frame_delayed=False))
+    >>> rc.stats
+    _RateStats(rate=9.95..., rate_warning=False, jitter=0.0005..., jitter_warning=False)
+
+    If the result has the indication ``frame_delayed``, ``rate_warning`` will always be true.
+
+    >>> rc.update(FooResult(tick=300, tick_time=0.3, frame_delayed=True))
+    >>> rc.stats
+    _RateStats(rate=10.0, rate_warning=True, jitter=0.0008..., jitter_warning=False)
+
+    If the measured rate or its jitter becomes too large, both warning flag will be
+    set to True:
+
+    >>> rc.update(FooResult(tick=600, tick_time=0.6, frame_delayed=False))
+    >>> rc.stats
+    _RateStats(rate=6.66..., rate_warning=True, jitter=0.08..., jitter_warning=True)
+    """
+
     _JITTER_WARNING_LIMIT = 1.0e-3  # Based on testing
 
     stats: _RateStats
