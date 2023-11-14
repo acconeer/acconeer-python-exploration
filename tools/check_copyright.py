@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import argparse
@@ -217,6 +217,8 @@ def check_copyright(file_path, ignore_year, update, current_year):
         # Read the file
         try:
             content = read_file(file_path)
+        except FileNotFoundError:
+            content = ""
         except ValueError:
             return (
                 Status.NOT_SUPPORTED,
