@@ -17,4 +17,5 @@ from ._message import (
     StatusMessage,
 )
 from ._model import Model
+from ._rate_calc import _RateCalculator, _RateStats
 from ._tasks import Task, is_task

@@ -53,4 +53,3 @@ from ._perf_calc import (
     get_point_overhead_duration,
     get_sample_duration,
 )
-from ._rate_calc import _RateCalculator, _RateStats

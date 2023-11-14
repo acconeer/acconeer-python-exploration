@@ -5,10 +5,11 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional, TypeVar, Union, cast
 
-from acconeer.exptool.a121 import Client, Result, _RateCalculator
+from acconeer.exptool.a121 import Client, Result
 from acconeer.exptool.a121._core import utils
 
 from ._message import GeneralMessage, Message
+from ._rate_calc import _RateCalculator
 
 
 ClientT = TypeVar("ClientT", bound=Client)

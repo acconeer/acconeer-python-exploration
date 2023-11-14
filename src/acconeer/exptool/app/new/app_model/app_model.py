@@ -46,6 +46,7 @@ from acconeer.exptool.app.new.backend import (
     PluginStateMessage,
     StatusMessage,
     Task,
+    _RateStats,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
 
@@ -397,9 +398,9 @@ class AppModel(QObject):
         elif message.name == "rate_stats":
             stats = message.data
             if stats is None:
-                stats = a121._RateStats()
+                stats = _RateStats()
             else:
-                assert isinstance(stats, a121._RateStats)
+                assert isinstance(stats, _RateStats)
 
             self.sig_rate_stats.emit(
                 stats.rate,
