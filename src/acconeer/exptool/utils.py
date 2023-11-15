@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import math
 import operator
 import signal
 import struct
@@ -12,9 +13,10 @@ import sys
 import time
 from datetime import datetime
 from types import ModuleType
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar, overload
 
 import numpy as np
+import numpy.typing as npt
 import serial.tools.list_ports
 
 from acconeer.exptool._core.communication.comm_devices import (
@@ -308,37 +310,159 @@ pg_phase_ticks = [
 ]
 
 
-def pg_setup_polar_plot(plot, max_r=1):
+@overload
+def polar_to_cartesian(length: float, angle: float) -> tuple[float, float]: ...
+
+
+@overload
+def polar_to_cartesian(
+    length: npt.NDArray[np.float64], angle: npt.NDArray[np.float64]
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]: ...
+
+
+def polar_to_cartesian(length: Any, angle: Any) -> tuple[Any, Any]:
+    """Transforms a polar coordinate (length, angle in radians) to (x, y).
+
+    ``angle`` is measured from +x toward +y. Inputs may be scalars or numpy
+    arrays of broadcast-compatible shape; the return tuple matches the input
+    kind.
+    """
+    return length * np.cos(angle), length * np.sin(angle)
+
+
+@overload
+def spherical_to_cartesian(length: float, az: float, el: float) -> tuple[float, float, float]: ...
+
+
+@overload
+def spherical_to_cartesian(
+    length: npt.NDArray[np.float64],
+    az: npt.NDArray[np.float64],
+    el: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]: ...
+
+
+def spherical_to_cartesian(length: Any, az: Any, el: Any) -> tuple[Any, Any, Any]:
+    """
+    Transforms a spherical coordinate (length, az, el) (angles in radians) to (x, y, z).
+
+    - boresight (az=0, el=0) lies on +y
+    - +az rotates toward +x (``x = length·sin(az)``), independent of elevation;
+      clockwise seen from above, i.e. left-handed about +z
+    - +el rotates toward +z
+
+    Inputs may be scalars or numpy arrays of broadcast-compatible shape; the
+    return tuple matches the input kind.
+    """
+    cos_az = np.cos(az)
+    return (
+        length * np.sin(az),
+        length * cos_az * np.cos(el),
+        length * cos_az * np.sin(el),
+    )
+
+
+@overload
+def cartesian_to_spherical(x: float, y: float, z: float) -> tuple[float, float, float]: ...
+
+
+@overload
+def cartesian_to_spherical(
+    x: npt.NDArray[np.float64],
+    y: npt.NDArray[np.float64],
+    z: npt.NDArray[np.float64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]: ...
+
+
+def cartesian_to_spherical(x: Any, y: Any, z: Any) -> tuple[Any, Any, Any]:
+    """
+    Transforms a Cartesian coordinate (x, y, z) to (length, az, el) (angles in radians).
+
+    Inverse of :func:`spherical_to_cartesian`, with the same convention:
+
+    - boresight (az=0, el=0) lies on +y
+    - az is the angle off the yz-plane toward +x (``az = atan2(x, sqrt(y² + z²))``)
+    - el is the angle in the yz-plane off +y toward +z (``el = atan2(z, y)``)
+
+    The inverse is single-valued for ``y > 0``, i.e. in front of the sensor.
+    Inputs may be scalars or numpy arrays of broadcast-compatible shape; the
+    return tuple matches the input kind.
+    """
+    return (
+        np.sqrt(x**2 + y**2 + z**2),
+        np.arctan2(x, np.sqrt(y**2 + z**2)),
+        np.arctan2(z, y),
+    )
+
+
+def _draw_outgoing_polar_line(plot, deg, length):
+    """Plots a line in the 'polar grid'
+
+    The line is the line going from the center with the angle ``deg`` (in degrees)
+    and length ``length``
+    A text with the angle in degrees is also added at the line's tip.
+    """
+    DEGREE_SYMBOL = "\u00b0"
+
+    x, y = polar_to_cartesian(length, np.radians(deg))
+    unit_x, unit_y = polar_to_cartesian(1, np.radians(deg))
+    anchor = ((-unit_x + 1) / 2, (unit_y + 1) / 2)
+
+    text_item = pg.TextItem(f"{deg:.0f}{DEGREE_SYMBOL}", color="k", anchor=anchor)
+    text_item.setPos(x * 1.02, y * 1.02)
+
+    plot.addItem(text_item)
+    plot.plot([0, x], [0, y], pen=pg.mkPen(0.5))
+
+
+def pg_setup_polar_plot(plot, max_r=1, degree_start=0, degree_span=360, range_suffix=""):
     plot.showAxis("left", False)
     plot.showAxis("bottom", False)
     plot.setAspectLocked()
     plot.disableAutoRange()
+
+    radians = [math.radians(deg) for deg in range(degree_start, degree_start + degree_span)]
+    xs = [math.cos(r) for r in radians]
+    ys = [math.sin(r) for r in radians]
     s = 1.15
-    plot.setXRange(-s * max_r, s * max_r)
-    plot.setYRange(-s * max_r, s * max_r)
+    plot.setXRange(s * min(xs + [0]) * max_r, s * max(xs + [0]) * max_r)
+    plot.setYRange(s * min(ys + [0]) * max_r, s * max(ys + [0]) * max_r)
 
     for i, r in enumerate(np.linspace(0, max_r, 5)[1:]):
         circle = pg.QtWidgets.QGraphicsEllipseItem(-r, -r, r * 2, r * 2)
+
+        # The unit of these are degrees * 16.
+        # (See https://doc.qt.io/qt-6/qgraphicsellipseitem.html#setStartAngle)
+        #   The span goes clock-wise while we want to express it
+        # counter clock-wise (hence the negation).
+        circle.setStartAngle(-degree_start * 16)
+
+        circle.setSpanAngle(-degree_span * 16)
+
         circle.setPen(pg.mkPen("k" if i == 3 else 0.5))
         plot.addItem(circle)
 
         if i == 3:
-            text_item = pg.TextItem(text=str(r), color="k", anchor=(0, 1))
+            text_item = pg.TextItem(text=f"{r:.2f} {range_suffix}", color="k", anchor=(0, 1))
             text_item.setPos(np.cos(np.pi / 8) * r, np.sin(np.pi / 8) * r)
             plot.addItem(text_item)
 
+    # plot lines that are mutliple of 45 deg if they are in the specified span
     for i in range(8):
-        deg = (360 / 8) * i
-        rad = np.radians(deg)
-        x = np.cos(rad)
-        y = np.sin(rad)
-        text = str(int(deg)) + "\u00b0"
-        ax = (-x + 1) / 2
-        ay = (y + 1) / 2
-        text_item = pg.TextItem(text, color="k", anchor=(ax, ay))
-        text_item.setPos(max_r * x * 1.02, max_r * y * 1.02)
-        plot.addItem(text_item)
-        plot.plot([0, max_r * x], [0, max_r * y], pen=pg.mkPen(0.5))
+        start_offset = (degree_start // 45) * 45
+        deg = start_offset + (360 / 8) * i
+
+        if not (degree_start <= deg <= degree_start + degree_span):
+            continue
+
+        _draw_outgoing_polar_line(plot, deg, max_r)
+
+    # plot extremes if they're not already plotted.
+    if degree_start % 45 != 0:
+        _draw_outgoing_polar_line(plot, degree_start, max_r)
+
+    if degree_span % 45 != 0:
+        _draw_outgoing_polar_line(plot, degree_start + degree_span, max_r)
 
 
 def pg_mpl_cmap(name):
