@@ -26,7 +26,10 @@ from acconeer.exptool.a121.algo.vibration import (
     ProcessorConfig,
     ProcessorResult,
     ReportedDisplacement,
-    get_sensor_config,
+    get_high_frequency_processor_config,
+    get_high_frequency_sensor_config,
+    get_low_frequency_processor_config,
+    get_low_frequency_sensor_config,
 )
 from acconeer.exptool.app.new import (
     AppModel,
@@ -46,15 +49,20 @@ log = logging.getLogger(__name__)
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    LOW_FREQ = auto()
+    HIGH_FREQ = auto()
 
 
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
 
     PLUGIN_PRESETS = {
-        PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
-            session_config=a121.SessionConfig(get_sensor_config()),
-            processor_config=BackendPlugin.get_processor_config_cls()(),
+        PluginPresetId.LOW_FREQ.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_low_frequency_sensor_config()),
+            processor_config=get_low_frequency_processor_config(),
+        ),
+        PluginPresetId.HIGH_FREQ.value: lambda: ProcessorPluginPreset(
+            session_config=a121.SessionConfig(get_high_frequency_sensor_config()),
+            processor_config=get_high_frequency_processor_config(),
         ),
     }
 
@@ -78,7 +86,7 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
 
     @classmethod
     def get_default_sensor_config(cls) -> a121.SensorConfig:
-        return get_sensor_config()
+        return get_low_frequency_sensor_config()
 
 
 class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
@@ -325,7 +333,8 @@ VIBRATION_PLUGIN = PluginSpec(
     description="Quantify the frequency content of vibrating object.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(name="Low frequency", preset_id=PluginPresetId.LOW_FREQ),
+        PluginPresetBase(name="High frequency", preset_id=PluginPresetId.HIGH_FREQ),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.LOW_FREQ,
 )

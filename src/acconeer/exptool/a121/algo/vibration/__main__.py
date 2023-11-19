@@ -6,7 +6,8 @@ import typing as t
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._plugins import processor_main
 
-from . import Processor, ProcessorConfig, get_sensor_config
+from . import Processor, ProcessorConfig
+from ._configs import get_low_frequency_sensor_config
 from ._plugin import PlotPlugin
 
 
@@ -26,7 +27,7 @@ def _processor_getter(
 
 
 def _session_config_getter(sensor_id: int) -> a121.SessionConfig:
-    return a121.SessionConfig({sensor_id: get_sensor_config()})
+    return a121.SessionConfig({sensor_id: get_low_frequency_sensor_config()})
 
 
 processor_main(

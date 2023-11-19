@@ -4,6 +4,7 @@
 
 ### Added
 - Support for Python 3.12
+- High and low frequency preset for vibration application
 
 ### Changed
 

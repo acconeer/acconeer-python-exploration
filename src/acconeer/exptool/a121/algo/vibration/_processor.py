@@ -355,23 +355,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         return threshold
 
 
-def get_sensor_config() -> a121.SensorConfig:
-    return a121.SensorConfig(
-        profile=a121.Profile.PROFILE_3,
-        hwaas=16,
-        num_points=1,
-        step_length=1,
-        start_point=80,
-        receiver_gain=10,
-        sweep_rate=2000,
-        sweeps_per_frame=50,
-        double_buffering=True,
-        continuous_sweep_mode=True,
-        inter_frame_idle_state=a121.IdleState.READY,
-        inter_sweep_idle_state=a121.IdleState.READY,
-    )
-
-
 def _load_algo_data(algo_group: h5py.Group) -> ProcessorConfig:
     processor_config = ProcessorConfig.from_json(algo_group["processor_config"][()])
     return processor_config
