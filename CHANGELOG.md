@@ -1,5 +1,23 @@
 # Changelog
 
+## v7.7.0
+
+### Added
+- Support for Python 3.12
+- Many algorithms have gotten tooltips in their config editors.
+  Hover the name to get a description of that parameter!
+- High and low frequency presets for new vibration application
+
+### Changed
+- The Vibration algorithm has been improved to be able to measure both higher
+  and lower vibration frequencies, all while not having to use
+  continuous sweep mode.
+- Distance detector no longer defaults to use
+  `close_range_leakage_cancellation`.
+
+### Removed
+- Support for Python 3.7
+
 ## v7.6.1
 
 ### Fixed
