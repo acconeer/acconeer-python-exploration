@@ -117,7 +117,6 @@ class PGUpdater:
         self.setup_is_done = False
 
     def setup(self, win):
-
         win.setWindowTitle("Acconeer speed detection example")
 
         self.raw_fft_plot = win.addPlot(row=1, col=0)
@@ -190,7 +189,6 @@ class PGUpdater:
         self.setup_is_done = True
 
     def update(self, data: DetectorResult) -> None:
-
         psd = data.extra_result.psd
         speed_guess = data.max_speed
         x_speeds = data.extra_result.velocities

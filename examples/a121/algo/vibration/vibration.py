@@ -63,7 +63,6 @@ class PGUpdater:
         self.sensor_config = sensor_config
 
     def setup(self, win):
-
         self.meas_dist_m = self.sensor_config.start_point * APPROX_BASE_STEP_LENGTH_M
 
         pen_blue = et.utils.pg_pen_cycler(0)
@@ -140,7 +139,6 @@ class PGUpdater:
         self.smooth_max_fft = et.utils.SmoothMax()
 
     def update(self, processor_result: ProcessorResult) -> None:
-
         # Extra result
         time_series = processor_result.extra_result.zm_time_series
         lp_displacements_threshold = processor_result.extra_result.lp_displacements_threshold

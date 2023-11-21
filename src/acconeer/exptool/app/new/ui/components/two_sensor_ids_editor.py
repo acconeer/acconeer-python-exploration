@@ -10,7 +10,6 @@ from . import pidgets
 
 
 class TwoSensorIdsEditor(QWidget):
-
     sig_update = Signal(object)
 
     def __init__(self, name_label_texts: list[str]):

@@ -102,7 +102,6 @@ class ProcessorResult:
 
 
 class Processor(ProcessorBase[ProcessorResult]):
-
     MIN_PEAK_VS = 0.1
 
     def __init__(

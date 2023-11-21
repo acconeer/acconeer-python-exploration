@@ -116,7 +116,6 @@ class ResultMessage(Message):
         metadata: list[dict[int, Metadata]],
         config_groups: list[dict[int, SensorConfig]],
     ) -> list[dict[int, Result]]:
-
         extended_frames = self._divide_frame_blob(self.frame_blob, metadata)
         extended_contexts = map_over_extended_structure(
             functools.partial(self._create_result_context, ticks_per_second=tps), metadata

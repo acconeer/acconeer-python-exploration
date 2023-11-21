@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import pyqtgraph as pg
@@ -71,7 +71,6 @@ class PGUpdater:
         self.guess_text_item.setVisible(True)
 
     def update(self, plot_data):
-
         smooth_data = plot_data["smooth_data"]
         best_guess = plot_data["best_guess"]
 

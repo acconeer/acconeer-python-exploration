@@ -197,7 +197,7 @@ class JsonProtocolStreamingServer(JsonProtocolBase):
         raw_infos = header["result_info"]
         mapped_infos = [{} for _ in raw_infos]
 
-        for (raw_info, mapped_info) in zip(raw_infos, mapped_infos):
+        for raw_info, mapped_info in zip(raw_infos, mapped_infos):
             for raw_key, val in raw_info.items():
                 mapped_key = DATA_HEADER_TO_INFO_KEY_REMAP.get(raw_key, raw_key)
 
@@ -439,7 +439,7 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         raw_infos = header["result_info"][0]
         mapped_infos = [{} for _ in raw_infos]
 
-        for (raw_info, mapped_info) in zip(raw_infos, mapped_infos):
+        for raw_info, mapped_info in zip(raw_infos, mapped_infos):
             for raw_key, val in raw_info.items():
                 mapped_key = DATA_HEADER_TO_INFO_KEY_REMAP.get(raw_key, raw_key)
 

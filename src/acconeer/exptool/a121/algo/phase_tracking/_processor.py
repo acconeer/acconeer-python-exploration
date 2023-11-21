@@ -87,7 +87,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         subsweep_indexes: Optional[list[int]] = None,
         context: Optional[ProcessorContext] = None,
     ) -> None:
-
         processor_config.validate(sensor_config)
 
         # Should never happen, checked in validate
@@ -116,7 +115,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.last_sweep_prev_frame = None
 
     def process(self, result: a121.Result) -> ProcessorResult:
-
         frame = result.frame
         abs_sweep = np.mean(np.abs(frame), axis=0)
 

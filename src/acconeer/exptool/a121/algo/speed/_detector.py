@@ -212,7 +212,6 @@ class DetectorMetadata:
 
 @attrs.frozen(kw_only=True)
 class DetectorExtraResult:
-
     psd: npt.NDArray[np.float_]
     """Full Power Spectral Density from the DFT"""
 
@@ -225,7 +224,6 @@ class DetectorExtraResult:
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
-
     speed_per_depth: npt.NDArray[np.float_]
     """The measured speed for each depth"""
 
@@ -317,7 +315,6 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
     def _get_max_hwaas(
         cls, sweep_rate: int, num_points: int, prf: a121.PRF, profile: a121.Profile
     ) -> int:
-
         sample_duration = get_sample_duration(prf=prf, profile=profile)
 
         MAGIC_OVERHEAD_S = 2 * 1e-6  # Constant added in rss "for good measure"
@@ -342,7 +339,6 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
     @classmethod
     def _get_sensor_config(cls, config: DetectorConfig) -> a121.SensorConfig:
-
         start_m = config.start_point * APPROX_BASE_STEP_LENGTH_M
 
         if config.profile is not None:

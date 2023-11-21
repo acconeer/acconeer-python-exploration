@@ -14,7 +14,6 @@ class UsbPortError(Exception):
 
 
 class PyUsbComm:
-
     device_cache = {}
 
     def __init__(self):
@@ -48,7 +47,6 @@ class PyUsbComm:
 
 
 class PyUsbCdc:
-
     USB_CDC_CMD_SEND_BREAK = 0x23
     USB_MESSAGE_TIMEOUT = 2
     USB_MESSAGE_TIMEOUT_MS = 1000 * USB_MESSAGE_TIMEOUT

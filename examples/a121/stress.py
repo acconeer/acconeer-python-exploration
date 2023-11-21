@@ -62,7 +62,6 @@ def flow(client: a121.Client.open) -> None:
     n = 0
 
     while True:
-
         for _ in range(5):
             client.setup_session(a121.SensorConfig())
             client.start_session()

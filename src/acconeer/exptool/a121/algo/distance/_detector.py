@@ -645,7 +645,6 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 for sensor_id in self.sensor_ids
             }
             for sensor_id, context in self.context.single_sensor_contexts.items():
-
                 if context.extra_context.recorded_threshold_frames is None:
                     context.extra_context.recorded_threshold_frames = [[] for _ in extended_result]
 
@@ -816,7 +815,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 ready_to_start=False,
             )
 
-        (session_config, _,) = cls._detector_to_session_config_and_processor_specs(
+        (
+            session_config,
+            _,
+        ) = cls._detector_to_session_config_and_processor_specs(
             config=config, sensor_ids=sensor_ids
         )
 
@@ -895,7 +897,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
     @classmethod
     def _has_recorded_threshold_mode(self, config: DetectorConfig, sensor_ids: list[int]) -> bool:
-        (_, processor_specs,) = self._detector_to_session_config_and_processor_specs(
+        (
+            _,
+            processor_specs,
+        ) = self._detector_to_session_config_and_processor_specs(
             config=config, sensor_ids=sensor_ids
         )
         return ThresholdMethod.RECORDED in [

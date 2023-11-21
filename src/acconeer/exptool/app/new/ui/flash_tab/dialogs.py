@@ -240,7 +240,6 @@ class FlashLoginDialog(QDialog):
     def _login_done(
         self, auth_info: Tuple[RequestsCookieJar, Tuple[bool, Session, Response]]
     ) -> None:
-
         self.cookies, self.content = auth_info
 
         self.login_status_label.setHidden(True)
@@ -264,7 +263,7 @@ class FlashLoginDialog(QDialog):
 
     def get_auth_info(
         self,
-    ) -> (Tuple[Optional[RequestsCookieJar], Optional[Tuple[bool, Session, Response]]]):
+    ) -> Tuple[Optional[RequestsCookieJar], Optional[Tuple[bool, Session, Response]]]:
         return self.cookies, self.content
 
     def closeEvent(self, event: QCloseEvent) -> None:

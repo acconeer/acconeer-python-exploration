@@ -73,7 +73,6 @@ def main():
 
 
 class PlotPlugin:
-
     _NUM_POINTS_ON_CIRCLE = 100
 
     def __init__(
@@ -81,13 +80,11 @@ class PlotPlugin:
         bilateration_config: ProcessorConfig,
         detector_config: DetectorConfig,
     ) -> None:
-
         self.num_curves = 5
         self.detector_config = detector_config
         self.sensor_half_spacing_m = bilateration_config.sensor_spacing_m / 2
 
     def setup(self, win):
-
         # Define sweep plot.
         self.sweep_plot = win.addPlot(row=0, col=0)
         self.sweep_plot.setMenuEnabled(False)
@@ -154,7 +151,6 @@ class PlotPlugin:
         ]
 
     def update(self, data) -> None:
-
         detector_result = data["detector_result"]
         processor_result = data["processor_result"]
 
@@ -168,7 +164,6 @@ class PlotPlugin:
             for idx, distance_processor_result in enumerate(
                 distance_detector_result.processor_results
             ):
-
                 abs_sweep = distance_processor_result.extra_result.abs_sweep
                 threshold = distance_processor_result.extra_result.used_threshold
                 distances_m = distance_processor_result.extra_result.distances_m

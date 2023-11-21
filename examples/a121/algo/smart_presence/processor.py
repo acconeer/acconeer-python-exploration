@@ -225,7 +225,7 @@ class PGUpdater:
         )
         self.sector_plot.addItem(unit_text)
 
-        for (text_item, limit) in zip(self.limit_text, np.flip(self.zone_limits)):
+        for text_item, limit in zip(self.limit_text, np.flip(self.zone_limits)):
             range_html = self.range_html.format(np.around(limit, 1))
             text_item.setHtml(range_html)
 

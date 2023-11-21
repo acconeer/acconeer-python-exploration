@@ -13,7 +13,6 @@ nox.options.stop_on_first_error = True
 nox.options.reuse_existing_virtualenvs = True
 
 
-BLACK_SPEC = "black==22.12.0"
 RUFF_SPEC = "ruff==0.1.6"
 MYPY_SPEC = "mypy==1.7.0"
 PYSIDE_SPEC = "PySide6==6.4.3"
@@ -74,7 +73,7 @@ class Parser(argparse.ArgumentParser):
 
 @nox.session
 def lint(session):
-    session.install(BLACK_SPEC, RUFF_SPEC, "packaging")
+    session.install(RUFF_SPEC, "packaging")
 
     session.run("python", "tools/check_permissions.py")
     session.run("python", "tools/check_whitespace.py")
@@ -82,16 +81,16 @@ def lint(session):
     session.run("python", "tools/check_sdk_mentions.py")
     session.run("python", "tools/check_changelog.py")
     session.run("python", "tools/check_copyright.py")
+    session.run("python", "-m", "ruff", "format", "--diff", ".")
     session.run("python", "-m", "ruff", ".")
-    session.run("python", "-m", "black", "--check", "--diff", "--quiet", ".")
 
 
 @nox.session
 def reformat(session):
-    session.install(BLACK_SPEC, RUFF_SPEC)
+    session.install(RUFF_SPEC)
 
     session.run("python", "tools/check_copyright.py", "--update-year")
-    session.run("python", "-m", "black", ".")
+    session.run("python", "-m", "ruff", "format", ".")
     session.run("python", "-m", "ruff", "--fix", ".")
 
 

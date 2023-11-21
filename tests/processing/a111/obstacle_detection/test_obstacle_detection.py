@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import tempfile
@@ -88,7 +88,6 @@ def get_output_for_calib(parameter_set=None):
     output = {k: [] for k in TEST_KEYS}
 
     for data_info, data in input_record:
-
         if data.shape[0] == 1:
             result = processor.process(data.squeeze(0), data_info[0])
         else:
@@ -251,7 +250,6 @@ def test_update_calibration_actually_updates(parameter_set):
     output = {k: [] for k in TEST_KEYS}
 
     for data_info, data in input_record:
-
         if data.shape[0] == 1:
             result = processor.process(data.squeeze(0), data_info[0])
         else:
@@ -298,7 +296,6 @@ if __name__ == "__main__":
     test_module.main()
 
     if args.command == "save":
-
         for parameter_set in PARAMETER_SETS:
             output = get_output_for_calib(parameter_set)
             save_output(

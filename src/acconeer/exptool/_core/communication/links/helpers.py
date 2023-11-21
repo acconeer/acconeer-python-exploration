@@ -30,7 +30,6 @@ from . import (
 
 
 def link_factory(client_info: ClientInfo) -> BufferedLink:
-
     if client_info.socket is not None:
         return SocketLink(host=client_info.socket.ip_address, port=client_info.socket.tcp_port)
 

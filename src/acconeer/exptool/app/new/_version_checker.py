@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -9,7 +9,6 @@ import requests
 
 
 def check_package_outdated(name: str, current_version: str) -> Tuple[bool, Optional[str]]:
-
     try:
         response = requests.get(f"https://pypi.python.org/pypi/{name}/json")
         latest_version = response.json()["info"]["version"]

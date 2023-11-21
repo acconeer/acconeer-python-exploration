@@ -69,7 +69,6 @@ def main():
 
 
 class PGUpdater:
-
     _VELOCITY_Y_SCALE_MARGIN_M = 0.25
 
     def __init__(

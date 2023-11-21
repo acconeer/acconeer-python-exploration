@@ -86,7 +86,6 @@ class SetupMessage(GeneralMessage):
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
         PluginPresetId.SITTING.value: lambda: get_sitting_config(),
         PluginPresetId.INFANT.value: lambda: get_infant_config(),
@@ -173,7 +172,6 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
 
 class PlotPlugin(PgPlotPlugin):
-
     displayed_breathing_rate: Optional[str]
 
     def __init__(self, app_model: AppModel) -> None:

@@ -33,7 +33,6 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     def _collect_validation_results(
         self, config: a121.SessionConfig
     ) -> list[a121.ValidationResult]:
-
         return []
 
 

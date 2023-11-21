@@ -37,7 +37,6 @@ class AppMode(enum.Enum):
 
 @attrs.mutable(kw_only=True)
 class ModeHandlerConfig(AlgoConfigBase):
-
     example_app_config: ExampleAppConfig = attrs.field(factory=ExampleAppConfig)
     """Hand motion detection configuration."""
 
@@ -99,7 +98,6 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
         sensor_id: int,
         mode_handler_config: ModeHandlerConfig,
     ) -> None:
-
         self.client = client
         self.sensor_id = sensor_id
         self.config = mode_handler_config

@@ -97,7 +97,6 @@ class SetupMessage(GeneralMessage):
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
         PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
         PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
@@ -469,7 +468,7 @@ class PlotPlugin(PgPlotPlugin):
         unit_text.setPos(x - x_offset, y + 0.25)
         sector_plot.addItem(unit_text)
 
-        for (text_item, limit) in zip(limit_text, np.flip(zone_limits)):
+        for text_item, limit in zip(limit_text, np.flip(zone_limits)):
             zone_range_html = range_html.format(np.around(limit, 1))
             text_item.setHtml(zone_range_html)
 

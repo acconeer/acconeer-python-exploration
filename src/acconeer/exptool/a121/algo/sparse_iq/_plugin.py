@@ -65,7 +65,6 @@ SEMI_TRANSPARENT_BRUSH = pg.mkBrush(color=(0xFF, 0xFF, 0xFF, int(0.8 * 0xFF)))
 
 
 class BackendPlugin(ExtendedProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
-
     PLUGIN_PRESETS = {
         PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
             session_config=a121.SessionConfig(get_sensor_config()),

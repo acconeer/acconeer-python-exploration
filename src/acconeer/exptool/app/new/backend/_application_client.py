@@ -16,7 +16,6 @@ ClientT = TypeVar("ClientT", bound=Client)
 
 
 class ApplicationClient:
-
     callback: Callable[[Message], None]
     _wrapped_client: Client
     _rate_stats_calc: Optional[_RateCalculator]

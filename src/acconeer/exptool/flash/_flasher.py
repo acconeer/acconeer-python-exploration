@@ -182,7 +182,6 @@ def get_flash_download_name(device, device_name):
 
 
 def get_boot_description(flash_device, device_name):
-
     flash_device_name = device_name or flash_device.name
     product = None
 

@@ -16,7 +16,6 @@ from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoProcessorConfig
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
-
     threshold: Optional[float] = attrs.field(default=10.0)
 
     num_segments: int = attrs.field(default=3)
@@ -43,7 +42,6 @@ class ProcessorExtraResult:
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-
     extra_result: ProcessorExtraResult
     speed_per_depth: npt.NDArray[np.float_]
 
@@ -60,7 +58,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
     ) -> None:
-
         self.threshold = processor_config.threshold
         self.num_points = sensor_config.num_points
         self.num_segments = processor_config.num_segments
@@ -92,7 +89,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         return freqs, psd
 
     def interpolate_peak(self, freqs: npt.NDArray[np.float_], peak_ind: int) -> float:
-
         # we assume indices to be -1,0,1 and take a inverse based on that.
 
         freqs = np.squeeze(freqs)
@@ -127,7 +123,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         actual_thresholds = np.zeros(self.num_points)
 
         for i, peak_ind in enumerate(peak_inds):
-
             median = np.median(psd[:, i])
             norm_vals = psd[:, i] / median
             actual_thresholds[i] = median * self.threshold

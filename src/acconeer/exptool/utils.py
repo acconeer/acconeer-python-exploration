@@ -351,7 +351,6 @@ class FreqCounter:
     """
 
     def __init__(self, a=None, tc=None, num_bits=None):
-
         assert (a is None) or (tc is None)
 
         if (a is None) and (tc is None):

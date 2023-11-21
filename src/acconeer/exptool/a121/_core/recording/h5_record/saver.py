@@ -62,7 +62,6 @@ class H5Saver(
         calibrations_provided: t.Optional[t.Dict[int, bool]] = None,
         **kwargs: t.Any,
     ) -> None:
-
         group.create_dataset(
             "session_config",
             data=config.to_json(),

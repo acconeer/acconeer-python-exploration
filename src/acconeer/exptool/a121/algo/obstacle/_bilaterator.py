@@ -35,7 +35,6 @@ class Bilaterator:
     def process(
         self, target_list_1: list[Target], target_list_2: list[Target], time_offset: float
     ) -> BilateratorResult:
-
         if not target_list_1 or not target_list_2:
             return BilateratorResult(beta_degs=[], velocities_m_s=[], distances_m=[])
 

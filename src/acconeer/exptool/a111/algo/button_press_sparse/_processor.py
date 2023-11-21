@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -40,7 +40,6 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-
     recalibration_period = et.configbase.FloatParameter(
         label="Time between recalibrations",
         default_value=10000.0,
@@ -87,7 +86,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         return SPARSE_RESOLUTION * round((num + EPSILON) / SPARSE_RESOLUTION)
 
     def check_sensor_config(self, sensor_config):
-
         alerts = {
             "processing": [],
             "sensor": [],
@@ -111,7 +109,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
-
         pc = ProcessingConfiguration()
         (rounded_bottom, rounded_top) = (
             pc.sparse_round_down(sensor_config.range_interval[0]),
@@ -178,7 +175,7 @@ class Processor:
         Function to map the idea of "sensitivity between 0-1" to an actual threshold.
         """
         inv_sensitivity = (
-            (SENSITIVITY_MAX - self.sensitivity)
+            SENSITIVITY_MAX - self.sensitivity
         ) * 10.0  # since intuitively high sensitivity -> more likely to detect
         sens = 2 ** (1.1 * inv_sensitivity) * 600  # Yielding a nice exponential curve between 0-10
         self.threshold_trig = int(sens)
@@ -234,12 +231,10 @@ class Processor:
         return trig
 
     def process(self, frame, data_info):
-
         detections = [False] * self.num_depths
         signal = [0.0] * self.num_depths
 
         for i in range(frame.shape[1]):
-
             if not self.initialized[i]:
                 self.lp_average[i] = int(np.mean(frame[:, i], axis=0))
                 self.initialized[i] = True

@@ -37,7 +37,6 @@ from .utils import get_calibrations_provided
 
 
 class MockClient(Client, register=True):
-
     TICKS_PER_SECOND = 1000000
     CALIBRATION_TEMPERATURE = 25
     BASE_STEP_LENGTH_M = 0.0025
@@ -147,7 +146,6 @@ class MockClient(Client, register=True):
 
     @classmethod
     def _get_mock_data(cls, sensor_id: int, subsweep: SubsweepConfig) -> npt.NDArray[np.complex_]:
-
         noise: npt.NDArray[np.complex_] = np.random.normal(
             0, cls.NOISE_AMPLITUDE, size=2 * subsweep.num_points
         ).view(np.complex_)

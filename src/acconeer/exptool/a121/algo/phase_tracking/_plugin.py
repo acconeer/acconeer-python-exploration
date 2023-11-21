@@ -49,7 +49,6 @@ class PluginPresetId(Enum):
 
 
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
-
     PLUGIN_PRESETS = {
         PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
             session_config=a121.SessionConfig(get_sensor_config()),

@@ -18,7 +18,6 @@ class ClientInfoCreationError(Exception):
 
 @attrs.frozen(slots=False)
 class ConnectionTypeBase(abc.ABC):
-
     __registry: ClassVar[List[Type[ConnectionTypeBase]]] = []
 
     @classmethod

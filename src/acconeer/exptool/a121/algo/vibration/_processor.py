@@ -154,7 +154,6 @@ class ProcessorResult:
 
 
 class Processor(ProcessorBase[ProcessorResult]):
-
     _WINDOW_BASE_LENGTH = 10
     _HALF_GUARD_BASE_LENGTH = 5
     _CFAR_MARGIN = _WINDOW_BASE_LENGTH + _HALF_GUARD_BASE_LENGTH
@@ -202,7 +201,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.has_init = False
 
     def process(self, result: a121.Result) -> ProcessorResult:
-
         # Determine if an object is in front of the sensor
         max_sweep_amplitude = float(np.max(np.abs(result.frame)))
 

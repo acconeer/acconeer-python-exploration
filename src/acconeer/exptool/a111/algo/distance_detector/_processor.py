@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -135,7 +135,6 @@ class Processor:
         return calibration
 
     def calculate_cfar_threshold(self, sweep, idx_cfar_pts, alpha, one_side):
-
         threshold = np.full(sweep.shape, np.nan)
 
         start_idx = np.max(idx_cfar_pts)
@@ -154,7 +153,6 @@ class Processor:
         return threshold
 
     def find_first_point_above_threshold(self, sweep, threshold):
-
         if threshold is None or np.all(np.isnan(threshold)):
             return None
 

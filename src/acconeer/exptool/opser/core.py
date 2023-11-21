@@ -110,7 +110,7 @@ class Persistor(abc.ABC):
             cls.assert_not_empty(dataset_contents)
             try:
                 return presentable_type.from_json(bytes.decode(dataset_contents))
-            except (json.JSONDecodeError):
+            except json.JSONDecodeError:
                 raise LoadError
 
         return type(

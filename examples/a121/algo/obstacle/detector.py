@@ -109,7 +109,6 @@ class PGUpdater:
         self.hist_x = np.linspace(-100, 0, PLOT_HISTORY_FRAMES)
 
     def setup(self, win: pg.GraphicsLayout):
-
         self.fftmap_plots: list[pg.PlotItem] = []
         self.fftmap_images: list[pg.ImageItem] = []
         self.range_hist_curves: list[pg.PlotDataItem] = []
@@ -140,7 +139,6 @@ class PGUpdater:
                 self.fftmap_plots.append(p)
 
             if PLOT_THRESHOLDS:
-
                 self.bin0 = pg.PlotItem(title="Zeroth velocity/angle bin")
                 self.bin0.showGrid(x=True, y=True)
                 self.bin0.setLabel("bottom", "Range (cm)")
@@ -244,7 +242,6 @@ class PGUpdater:
             sublayout.addItem(self.range_hist, row=0, col=0)
 
         if self.enable_bilateration:
-
             self.bil_hist_plot = pg.PlotItem(title="Bilateration history")
 
             self.bil_hist_plot.showGrid(x=True, y=True)
@@ -261,12 +258,10 @@ class PGUpdater:
             sublayout.addItem(self.bil_hist_plot, row=0, col=0)
 
     def update(self, detector_result: DetectorResult):
-
         for i_s in range(self.num_sensors):
             pr = detector_result.processor_results[SENSOR_IDS[i_s]]
 
             for i_ss in range(self.num_subsweeps):
-
                 curve_idx = self.num_subsweeps * i_s + i_ss
 
                 fftmap = pr.subsweeps_extra_results[i_ss].fft_map
@@ -336,7 +331,6 @@ class PGUpdater:
                 )
 
         if self.enable_bilateration:
-
             beta = (
                 detector_result.bilateration_result.beta_degs[0]
                 if detector_result.bilateration_result.beta_degs

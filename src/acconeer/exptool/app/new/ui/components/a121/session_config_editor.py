@@ -72,7 +72,6 @@ class SensorIdCombobox(DataEditor[Optional[int]]):
             return [(f"{data} (unavailable)", data)] + base
 
     def _update_combobox_model(self, data: Optional[int], selectable: list[int]) -> None:
-
         with QSignalBlocker(self):
             self._combobox.clear()
 

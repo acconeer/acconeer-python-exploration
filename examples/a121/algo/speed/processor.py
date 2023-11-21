@@ -98,7 +98,6 @@ class PGUpdater:
         processor_config: ProcessorConfig,
         estimated_frame_rate: float,
     ):
-
         self.sensor_config = sensor_config
 
         self.max_speed = DetectorConfig._get_max_speed(sensor_config.sweep_rate)
@@ -132,7 +131,6 @@ class PGUpdater:
         self.setup_is_done = False
 
     def setup(self, win):
-
         win.setWindowTitle("Acconeer speed detection example")
 
         self.raw_fft_plot = win.addPlot(row=1, col=0)
@@ -200,7 +198,6 @@ class PGUpdater:
         self.setup_is_done = True
 
     def update(self, data: ProcessorResult) -> None:
-
         psd = data.extra_result.psd
         speed_guess = data.max_speed
         x_speeds = data.extra_result.velocities

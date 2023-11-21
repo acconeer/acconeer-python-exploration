@@ -721,7 +721,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         bg_noise_std: list[float],
         reflector_shape: ReflectorShape,
     ) -> list[float]:
-
         # Determine subsweep breakpoints in meters.
         start_points = [subsweep.start_point for subsweep in subsweeps]
         bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
@@ -729,7 +728,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         strengths = []
         # Loop over amplitude/distance pairs.
         for amplitude, distance in zip(amplitudes, distances):
-
             subsweep_idx = np.sum(bpts_m < distance) - 1
 
             # For the current distance, get corresponding sensor parameters and background noise.

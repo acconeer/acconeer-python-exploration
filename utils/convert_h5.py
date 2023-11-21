@@ -372,7 +372,6 @@ class A121RecordTableConverter(TableConverter):
 def _check_files(
     input_file: Path, output_file: Union[Path, None], force: bool
 ) -> Tuple[bool, str, Path, str, str]:
-
     files_ok = True
     exit_text = ""
     to_csv_sep = ","

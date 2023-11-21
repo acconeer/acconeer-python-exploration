@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -14,7 +14,6 @@ from ._dev_license import DevLicense
 
 
 class DevLicenseTuiDialog(App):
-
     # The reason for this class variable is that the textual app is started
     # using the class method App#run, which in turn instantiate the subclass
     # DevLicenseTuiDialog. Because of this we don't (easily) get a handle to
@@ -30,7 +29,6 @@ class DevLicenseTuiDialog(App):
         log_verbosity: int = 1,
         title: str = "",
     ):
-
         super().__init__(screen, driver_class, log, log_verbosity, title)
 
         self.license = license

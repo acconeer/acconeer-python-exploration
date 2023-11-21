@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 # type: ignore
@@ -62,7 +62,6 @@ def test_update_rate():
 
 
 def test_input_checking():
-
     # Should not raise an error
     a121.SessionConfig(None)
     a121.SessionConfig()

@@ -198,7 +198,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
-
         # Config of the presence detector
         self.sweeps_per_frame = sensor_config.sweeps_per_frame
         self.depths = et.a111.get_range_depths(sensor_config, session_info)

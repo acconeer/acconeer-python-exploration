@@ -43,7 +43,6 @@ class ResultSlice:
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-
             if other.max_displacement is None:
                 # Handle NoneType values
                 equality = math.isclose(

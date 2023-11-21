@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -19,7 +19,6 @@ def get_sensor_config():
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-
     detection_threshold = et.configbase.FloatParameter(
         label="Detection threshold",
         default_value=1.4,
@@ -85,7 +84,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
-
         # Config of the presence detector
         presence_config = presence_detection_sparse.ProcessingConfiguration()
         presence_config.detection_threshold = processing_config.detection_threshold

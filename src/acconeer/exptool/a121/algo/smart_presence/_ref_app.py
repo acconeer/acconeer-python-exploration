@@ -53,7 +53,6 @@ class PresenceZoneConfig(DetectorConfig):
     """Maximum number of detection zones."""
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
-
         return super()._collect_validation_results()
 
 
@@ -177,7 +176,6 @@ class _Mode(Enum):
 
 
 class RefApp(Controller[RefAppConfig, RefAppResult]):
-
     wake_up_detections: Optional[npt.NDArray[np.int_]]
     ref_app_context: RefAppContext
 

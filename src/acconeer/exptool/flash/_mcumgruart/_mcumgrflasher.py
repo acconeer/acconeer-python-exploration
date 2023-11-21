@@ -217,7 +217,6 @@ class ImageUploadRequest:
         data_sha: Optional[bytes],
         seq_id: int,
     ):
-
         self.offset = offset
         self.data_len = data_len
         self.data = data

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -33,7 +33,6 @@ class Processor:
         self.update_processing_config(processing_config)
 
     def update_processing_config(self, processing_config):
-
         start = self.session_info["range_start_m"]
         step = self.session_info["step_length_m"]
 
@@ -147,7 +146,6 @@ class Processor:
 
 
 class ProcessingConfiguration(et.configbase.ProcessingConfig):
-
     VERSION = 3
 
     depth_leak_sample = et.configbase.FloatParameter(

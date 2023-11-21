@@ -227,7 +227,6 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             sensor_config.inter_frame_idle_state == a121.IdleState.READY
             for sensor_config in core_utils.iterate_extended_structure_values(config.groups)
         ):
-
             ready_config_evolver = functools.partial(
                 self._evolve_config,
                 inter_frame_idle_state=a121.IdleState.READY,

@@ -11,7 +11,10 @@ def test_merge_peaks() -> None:
     profile_fwhms = np.array([1])
     distances = np.array([0.0, 2.0, 4.0, 5.0])
     strengths = np.array([0.0, 0.0, 1.0, 2.0])
-    (actual_dists_merged, actual_strengths_merged,) = distance.Aggregator._merge_peaks(
+    (
+        actual_dists_merged,
+        actual_strengths_merged,
+    ) = distance.Aggregator._merge_peaks(
         profile_fwhms=profile_fwhms, dists=distances, strengths=strengths
     )
 

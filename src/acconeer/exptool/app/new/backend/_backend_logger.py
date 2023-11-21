@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -13,7 +13,6 @@ class BackendLoggerError(Exception):
 
 
 class BackendLogger:
-
     _callback: Optional[Callable[[Message], None]] = None
     _instances: Dict[str, BackendLogger] = {}
 

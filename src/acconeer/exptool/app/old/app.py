@@ -582,7 +582,6 @@ class GUI(QMainWindow):
         # protocol_dd items and enabled-flag are dynamically set in update_interface.
 
     def init_dropdown_sections(self, modules: dict):
-
         self.module_dd.addItem(SELECT_A_SERVICE_TEXT)
 
         for k, v in modules.items():

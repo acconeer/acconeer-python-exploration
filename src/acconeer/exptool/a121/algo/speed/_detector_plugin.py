@@ -78,7 +78,6 @@ class SetupMessage(GeneralMessage):
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
         PluginPresetId.DEFAULT.value: lambda: get_default_config(),
         PluginPresetId.TRAFFIC.value: lambda: get_traffic_config(),
@@ -310,7 +309,6 @@ class PlotPlugin(PgPlotPlugin):
         self.speed_text_item.hide()
 
     def draw_plot_job(self, data: DetectorResult) -> None:
-
         psd = data.extra_result.psd
         speed_guess = data.max_speed
         x_speeds = data.extra_result.velocities

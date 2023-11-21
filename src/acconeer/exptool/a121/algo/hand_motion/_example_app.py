@@ -199,7 +199,6 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
     def _process_processor_result(
         self, results: list[ProcessorResult], config: ExampleAppConfig
     ) -> ExampleAppResult:
-
         # Determine max presence score and if presence has been detected.
         presence_detected = False
         max_presence_scrore = results[0].inter_presence_score
@@ -274,7 +273,6 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
     ) -> list[Processor]:
         processors = []
         for subsweep_index, subsweep_config in enumerate(sensor_config.subsweeps):
-
             processor_sensor_config = a121.SensorConfig(
                 start_point=subsweep_config.start_point,
                 num_points=subsweep_config.num_points,

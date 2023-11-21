@@ -121,7 +121,6 @@ class SetupMessage(GeneralMessage):
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, BilaterationPreset] = {
         PluginPresetId.DEFAULT.value: BilaterationPreset(
             detector_config=get_default_detector_config(),
@@ -400,7 +399,6 @@ class PlotPlugin(PgPlotPlugin):
             for idx, distance_processor_result in enumerate(
                 distance_detector_result.processor_results
             ):
-
                 abs_sweep = distance_processor_result.extra_result.abs_sweep
                 threshold = distance_processor_result.extra_result.used_threshold
                 distances_m = distance_processor_result.extra_result.distances_m
@@ -451,7 +449,6 @@ class PlotPlugin(PgPlotPlugin):
 
 
 class ViewPlugin(A121ViewPluginBase):
-
     TEXT_MSG_MAP = {
         DetailedStatus.OK: "Ready to start.",
         DetailedStatus.END_LESSER_THAN_START: "'Range end' point must be greater than 'Range "

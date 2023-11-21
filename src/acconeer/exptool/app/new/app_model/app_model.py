@@ -601,7 +601,6 @@ class AppModel(QObject):
     def _create_client_factory(
         generation: PluginGeneration, open_kwargs: dict[str, Any]
     ) -> Callable[[], _AnyClient]:
-
         factory: Callable[..., _AnyClient]
         if generation == PluginGeneration.A121:
             factory = a121.Client.open

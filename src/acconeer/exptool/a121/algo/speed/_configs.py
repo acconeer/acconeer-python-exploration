@@ -6,12 +6,10 @@ from ._detector import DetectorConfig
 
 
 def get_default_config() -> DetectorConfig:
-
     return DetectorConfig()
 
 
 def get_traffic_config() -> DetectorConfig:
-
     return DetectorConfig(
         start_point=2400,
         num_bins=200,

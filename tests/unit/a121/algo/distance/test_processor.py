@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -196,7 +196,6 @@ def test_distance_filter_edge_margin() -> None:
 
 
 def test_calculate_cfar_threshold() -> None:
-
     abs_sweep = np.ones(30)
     abs_sweep[4:6] = 2
     window_length = 3

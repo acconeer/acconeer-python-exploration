@@ -56,9 +56,7 @@ class PresenceConfigInput(ScrollAreaDecorator):
                 ("Hibernate", power.Sensor.PowerState.HIBERNATE),
                 ("Off", power.Sensor.PowerState.OFF),
             ],
-        ).create(
-            self
-        )
+        ).create(self)
 
         self.power_state_selection.set_data(None)
         self.power_state_selection.sig_update.connect(self._offer_event_if_config_is_valid)

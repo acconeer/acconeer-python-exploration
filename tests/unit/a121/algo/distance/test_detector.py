@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -6,7 +6,6 @@ from acconeer.exptool.a121.algo import distance, select_prf
 
 
 def test_update_processor_mode() -> None:
-
     processor_spec = distance.ProcessorSpec(
         processor_config=distance.ProcessorConfig(
             processor_mode=distance.ProcessorMode.DISTANCE_ESTIMATION

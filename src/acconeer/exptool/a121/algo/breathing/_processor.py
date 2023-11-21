@@ -475,7 +475,6 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.base_presence_distance = None
 
         elif self.app_state == AppState.DETERMINE_DISTANCE_ESTIMATE:
-
             if self.app_state != self.prev_app_state:
                 self.distance_determination_counter = 0
             else:

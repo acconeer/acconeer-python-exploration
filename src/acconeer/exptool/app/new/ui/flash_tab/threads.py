@@ -77,7 +77,6 @@ class AuthThread(QThread):
         do_login: bool = False,
         dev_license: Optional[DevLicense] = None,
     ) -> None:
-
         super().__init__()
         self.usr = usr
         self.pwd = pwd
@@ -124,7 +123,6 @@ class BinDownloadThread(QThread):
         session: Session,
         response: Response,
     ) -> None:
-
         super().__init__()
         self.device = device
         self.cookies = cookies
@@ -132,7 +130,6 @@ class BinDownloadThread(QThread):
         self.response = response
 
     def run(self) -> None:
-
         if (
             self.device is None
             or self.cookies is None

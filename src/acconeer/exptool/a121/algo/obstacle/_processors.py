@@ -160,7 +160,6 @@ class SubsweepProcessor:
     def process(
         self, subframe: npt.NDArray[np.complex_], temperature: float
     ) -> SubsweepProcessorResult:
-
         assert self.proc_context.reference_temperature is not None
 
         # Depth filtering of each sweep
@@ -294,7 +293,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         )
 
     def process(self, result: a121.Result) -> ProcessorResult:
-
         # Filter temperature
         if self.filtered_sensor_temperature is None:
             self.filtered_sensor_temperature = float(result.temperature)
@@ -324,7 +322,6 @@ class Processor(ProcessorBase[ProcessorResult]):
     def _merge_subsweep_targets(
         self, subsweep_results: List[SubsweepProcessorResult]
     ) -> List[Target]:
-
         # The same object can be seen at multiple subsweeps, objects close can be mereged.
 
         all_targets = [target for sr in subsweep_results for target in sr.targets]
@@ -363,7 +360,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         return all_targets
 
     def apply_depth_filter(self, result: a121.Result) -> list[npt.NDArray[np.complex_]]:
-
         return [
             ssp.apply_depth_filter(r) for r, ssp in zip(result.subframes, self.subsweep_processors)
         ]

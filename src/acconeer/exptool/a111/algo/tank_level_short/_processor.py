@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -137,7 +137,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
 
 class Processor:
     def __init__(self, sensor_config, processing_config, session_info, calibration=None):
-
         self.session_info = session_info
         self.sensor_config = sensor_config
         self.processing_config = processing_config
@@ -235,7 +234,6 @@ class Processor:
         return mask
 
     def make_mask_list(self, n_points):
-
         mask_dists = np.linspace(self.range_start, self.range_start + self.range_length, n_points)
 
         masks = [[self.calculate_mask(r), r] for r in mask_dists]
@@ -243,7 +241,6 @@ class Processor:
         return masks
 
     def get_mask_guess(self):
-
         best_score = -1.0
         guess = 0.0
 
@@ -268,7 +265,6 @@ class Processor:
         return guess
 
     def process(self, data, data_info):
-
         new_calibration = None
 
         if self.calibration is None:

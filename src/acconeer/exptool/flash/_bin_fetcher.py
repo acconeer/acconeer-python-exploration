@@ -70,7 +70,6 @@ def clear_cookies() -> None:
 
 
 def login(email: str, password: str) -> requests.cookies.RequestsCookieJar:
-
     with requests.Session() as session:
         login_page = session.get(REQUEST_URL)
         soup = BeautifulSoup(login_page.content, "html.parser")
@@ -98,7 +97,6 @@ def login(email: str, password: str) -> requests.cookies.RequestsCookieJar:
 def get_content(
     cookies: requests.cookies.RequestsCookieJar,
 ) -> Tuple[bool, requests.Session, requests.Response]:
-
     with requests.Session() as session:
         response = session.get(url=REFERER_URL, cookies=cookies.get_dict())
 
@@ -122,7 +120,6 @@ def download(
     path: str,
     device: str,
 ) -> Tuple[str, str]:
-
     device = device.lower()
 
     # Get correct device slug

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import numpy as np
@@ -106,7 +106,6 @@ class PGUpdater:
         self.calibration_text_item.hide()
 
     def update(self, data):
-
         signal_hist_ys = data["signal_history"]
         average_hist_ys = data["average_history"]
         cool_down_hist_ys = data["cool_down_history"]

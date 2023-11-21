@@ -43,7 +43,6 @@ class Stm32FlashException(Exception):
 class Stm32UartFlasher(DeviceFlasherBase):
     @staticmethod
     def flash(serial_device, device_name, image_path, progress_callback=None):
-
         if device_name not in DEVICE_NAME_TO_ID:
             raise Stm32DeviceException(f"Unknown device '{device_name}'")
 
@@ -80,7 +79,6 @@ class Stm32UartFlasher(DeviceFlasherBase):
 
 
 class Stm32FlashProtocol:
-
     ACK = 0x79
     NACK = 0x1F
 

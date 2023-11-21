@@ -49,7 +49,6 @@ class Client(
     ClientABCWithGoodError,
     t.Generic[_ConfigT, _MetadataT, _ResultT, _ServerInfoT, _RecorderT],
 ):
-
     __registry: te.Final[list[type]] = []
 
     def __init__(self, client_info: ClientInfo) -> None:

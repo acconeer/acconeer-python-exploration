@@ -439,7 +439,6 @@ class FlashMainWidget(QWidget):
         self.file_label.setEnabled(False)
 
     def _get_boot_description(self, flash_device: CommDevice, device_name: Optional[str]) -> Any:
-
         flash_device_name: Optional[str] = device_name or flash_device.name
         product: Optional[str] = None
 

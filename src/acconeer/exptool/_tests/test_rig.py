@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import tempfile
@@ -11,7 +11,6 @@ import acconeer.exptool as et
 
 class ProcessingTestModule:
     def __init__(self, processor_class, processing_config_class, path, test_keys, parameter_sets):
-
         self.processor_class = processor_class
         self.processsing_config_class = processing_config_class
         self.path = path
@@ -41,7 +40,6 @@ class ProcessingTestModule:
             else:
                 result = processor.process(data, data_info[0])
             if result is not None:
-
                 for k in self.test_keys:
                     output[k].append(result[k])
 

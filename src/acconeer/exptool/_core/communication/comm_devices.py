@@ -111,7 +111,6 @@ class USBDevice(CommDevice):
 
 
 def serial_device_from_port_object(port_object: serial.Serial) -> SerialDevice:
-
     # Return USB serial port if existing in _USB_IDS
     for vid, pid, model_number, unflashed in _USB_IDS:
         if port_object.vid == vid and port_object.pid == pid:

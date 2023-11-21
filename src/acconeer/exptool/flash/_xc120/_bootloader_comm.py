@@ -221,7 +221,6 @@ _command_packets = {
 
 
 class BLCommunication:
-
     PROTOCOL_OVERHEAD = 5
     PACKET_TIMEOUT = 0.2
     PROTOCOL_TIMEOUT = 2

@@ -69,7 +69,6 @@ class SetupMessage(GeneralMessage):
 
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
-
     PLUGIN_PRESETS: Mapping[int, Callable[[], ExampleAppConfig]] = {
         PluginPresetId.DEFAULT.value: lambda: ExampleAppConfig()
     }
@@ -152,7 +151,6 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
 
 class PlotPlugin(PgPlotPlugin):
-
     _VELOCITY_Y_SCALE_MARGIN_M = 0.25
 
     def __init__(self, app_model: AppModel) -> None:
