@@ -72,7 +72,11 @@ class ExplorationClient(Client, register=True):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        generation: Optional[str] = "a121",
     ) -> te.Self:
+        if generation != "a121":
+            raise ClientCreationError
+
         if mock is not None:
             raise ClientCreationError
 

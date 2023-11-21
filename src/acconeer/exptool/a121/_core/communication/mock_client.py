@@ -90,13 +90,15 @@ class MockClient(Client, register=True):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        generation: Optional[str] = "a121",
     ) -> te.Self:
+        if generation != "a121":
+            raise ClientCreationError
+
         if mock is None:
             raise ClientCreationError
 
-        client_info = ClientInfo._from_open(
-            mock=mock,
-        )
+        client_info = ClientInfo._from_open(mock=mock)
 
         return cls(client_info=client_info)
 

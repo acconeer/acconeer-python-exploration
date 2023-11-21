@@ -6,8 +6,10 @@ from __future__ import annotations
 import abc
 import typing as t
 
+import typing_extensions as te
+
 from acconeer.exptool._core.communication import Client as BaseClient
-from acconeer.exptool._core.communication import ClientError
+from acconeer.exptool._core.communication import ClientCreationError, ClientError
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
     Metadata,
@@ -31,6 +33,30 @@ class Client(
     ],
     register=False,
 ):
+    @classmethod
+    def open(
+        cls,
+        ip_address: t.Optional[str] = None,
+        tcp_port: t.Optional[int] = None,
+        serial_port: t.Optional[str] = None,
+        usb_device: t.Optional[t.Union[str, bool]] = None,
+        mock: t.Optional[bool] = None,
+        override_baudrate: t.Optional[int] = None,
+        generation: t.Optional[str] = "a121",
+    ) -> te.Self:
+        if generation != "a121":
+            raise ClientCreationError
+
+        return super().open(
+            ip_address,
+            tcp_port,
+            serial_port,
+            usb_device,
+            mock,
+            override_baudrate,
+            generation="a121",
+        )
+
     def __init__(self, client_info: ClientInfo) -> None:
         super().__init__(client_info)
         self._sensor_calibrations: t.Optional[dict[int, SensorCalibration]] = None

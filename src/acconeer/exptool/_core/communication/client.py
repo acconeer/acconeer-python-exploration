@@ -69,6 +69,7 @@ class Client(
         usb_device: t.Optional[t.Union[str, bool]] = None,
         mock: t.Optional[bool] = None,
         override_baudrate: t.Optional[int] = None,
+        generation: t.Optional[str] = None,
     ) -> te.Self:
         """
         Open a new client
@@ -91,6 +92,7 @@ class Client(
                     usb_device,
                     mock,
                     override_baudrate,
+                    generation,
                 )
             except ClientCreationError:
                 continue
@@ -99,7 +101,10 @@ class Client(
         # only has two clients which are mutual exclusive.
         # * The mock client (mock is not None)
         # * The exploration client (mock is None)
-        raise ClientCreationError("No client could be created")
+        raise ClientCreationError(
+            "No client could be created"
+            + (". Try specifying 'generation'" if generation is None else "")
+        )
 
     @classmethod
     def __init_subclass__(cls, *, register: bool, **kwargs: t.Any) -> None:
