@@ -54,6 +54,9 @@ def main() -> None:
     model = AppModel(backend, load_default_plugins())
     model.start()
 
+    app.aboutToQuit.connect(model.stop)
+    app.aboutToQuit.connect(backend.stop)
+
     pg.setConfigOption("background", "w")
     pg.setConfigOption("foreground", "k")
     pg.setConfigOption("leftButtonPan", False)
@@ -71,10 +74,7 @@ def main() -> None:
 
     model.broadcast()
 
-    app.exec()
-
-    model.stop()
-    backend.stop()
+    sys.exit(app.exec())
 
 
 def _pixmap_to_icon(pixmap: QtGui.QPixmap) -> QtGui.QIcon:
