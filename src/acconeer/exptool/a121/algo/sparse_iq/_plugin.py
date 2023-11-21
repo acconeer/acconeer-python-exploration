@@ -13,7 +13,9 @@ import numpy.typing as npt
 
 from PySide6 import QtCore
 from PySide6.QtGui import QTransform
-from PySide6.QtWidgets import QTabWidget, QVBoxLayout
+from PySide6.QtWidgets import (
+    QVBoxLayout,
+)
 
 import pyqtgraph as pg
 
@@ -40,7 +42,7 @@ from acconeer.exptool.app.new import (
     backend,
     pidgets,
 )
-from acconeer.exptool.app.new.ui.components import GotoResourceTabButton
+from acconeer.exptool.app.new.ui.components import GotoResourceTabButton, TabPGWidget
 
 from ._processor import (
     AmplitudeMethod,
@@ -149,13 +151,13 @@ class PlotPlugin(PlotPluginBase):
 
         self.amplitude_plot_widget = pg.GraphicsLayoutWidget()
 
-        self.tab_widget = QTabWidget()
+        self.tab_widget = TabPGWidget()
 
         layout.addWidget(self.amplitude_plot_widget, stretch=1)
         layout.addWidget(self.tab_widget, stretch=2)
 
         self.setLayout(layout)
-        self.setVisible(False)
+        self.tab_widget.setVisible(False)
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
         if isinstance(message, backend.PlotMessage):
@@ -171,7 +173,7 @@ class PlotPlugin(PlotPluginBase):
                 session_config=message.session_config,
             )
             self._is_setup = True
-            self.setVisible(True)
+            self.tab_widget.setVisible(True)
         else:
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
 
@@ -362,7 +364,7 @@ class PlotPlugin(PlotPluginBase):
         for group_idx, sensor_id, sensor_config in core_utils.iterate_extended_structure(
             session_config.groups
         ):
-            plot_widget = pg.GraphicsLayoutWidget()
+            plot_widget = self.tab_widget.newPlotWidget(f"G{group_idx}:S{sensor_id}")
 
             phase_plot = plot_widget.addPlot(colspan=sensor_config.num_subsweeps)
             phase_plot.setMenuEnabled(False)
@@ -426,8 +428,6 @@ class PlotPlugin(PlotPluginBase):
                 images.append(image)
 
             dvm_images.append((group_idx, sensor_id, images))
-
-            self.tab_widget.addTab(plot_widget, f"G{group_idx}:S{sensor_id}")
 
         self.phase_curves = core_utils.create_extended_structure(phase_curves)
         self.ft_images = core_utils.create_extended_structure(dvm_images)

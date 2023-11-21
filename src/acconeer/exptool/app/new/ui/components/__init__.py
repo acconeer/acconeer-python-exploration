@@ -9,5 +9,6 @@ from .goto_resource_tab_button import GotoResourceTabButton
 from .group_box import GroupBox
 from .json_save_load_buttons import PresentationType, PresenterFunc
 from .misc_error_view import MiscErrorView
+from .tab_pg_widget import TabPGWidget
 from .two_sensor_ids_editor import TwoSensorIdsEditor
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping

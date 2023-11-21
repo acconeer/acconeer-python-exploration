@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6 import QtCore
-from PySide6.QtWidgets import QFrame, QLayout, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLayout, QScrollArea, QVBoxLayout, QWidget
 
 
 class ScrollAreaDecorator(QScrollArea):
@@ -27,6 +27,19 @@ class TopAlignDecorator(QWidget):
         super().__init__()
 
         layout = QVBoxLayout(self)
+        self.setLayout(layout)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(decoratee)
+        layout.addStretch(1)
+
+
+class LeftAlignDecorator(QWidget):
+    def __init__(self, decoratee: QWidget) -> None:
+        """Left-aligns `decoratee` by using QHBoxLayout and its stretch-functionality"""
+        super().__init__()
+
+        layout = QHBoxLayout(self)
         self.setLayout(layout)
 
         layout.setContentsMargins(0, 0, 0, 0)
