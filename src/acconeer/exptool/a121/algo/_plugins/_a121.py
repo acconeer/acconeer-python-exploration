@@ -182,7 +182,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     @is_task
     def stop_session(self) -> None:
         if not self._started:
-            raise RuntimeError
+            log.debug("Not stopping. Session was not started")
+            return
 
         self.callback(PluginStateMessage(state=PluginState.LOADED_STOPPING))
         try:
