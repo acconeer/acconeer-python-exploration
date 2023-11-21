@@ -15,7 +15,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 BLACK_SPEC = "black==22.12.0"
 RUFF_SPEC = "ruff==0.0.270"
-MYPY_SPEC = "mypy==1.4.1"
+MYPY_SPEC = "mypy==1.7.0"
 PYSIDE_SPEC = "PySide6==6.4.3"
 PANDAS_SPEC = "pandas==1.3.5"
 PIP_SPEC = "pip>=21.3"

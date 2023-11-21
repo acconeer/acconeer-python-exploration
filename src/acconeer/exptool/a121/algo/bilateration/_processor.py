@@ -261,7 +261,7 @@ class Processor:
         if len(distances) == 0:
             return []
         # Sort according to distance.
-        distances, rcs = zip(*sorted(zip(distances, rcs)))
+        distances, rcs = zip(*sorted(zip(distances, rcs)))  # type: ignore[assignment]
         # If two distance are closer than the senor spacing, remove the one with smaller amplitude.
         index_closely_spaced_distances = np.where(np.abs(np.diff(distances)) < min_dist)[0]
         # Flip the array of indexes to avoid altering the order of the elements to the left in

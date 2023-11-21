@@ -21,7 +21,7 @@ from acconeer.exptool.a121 import _core, algo
 
 
 try:
-    import prettyprinter  # type: ignore[import]
+    import prettyprinter  # type: ignore[import-not-found]
 
     prettyprinter.install_extras(["attrs"])
 

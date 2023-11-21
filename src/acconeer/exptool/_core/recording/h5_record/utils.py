@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from typing import Tuple, Union
 import h5py
 
 
-PathOrH5File = Union[str, os.PathLike, h5py.File]
+PathOrH5File = Union[str, "os.PathLike[str]", h5py.File]
 
 
 def h5_file_factory(path_or_file: PathOrH5File, h5_file_mode: str) -> Tuple[h5py.File, bool]:

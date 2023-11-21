@@ -25,7 +25,7 @@ _AnyClient = core.Client[Any, Any, Any, Any, Any]
 
 T = TypeVar("T")
 MessageHandler = Callable[[Message], None]
-BackendPluginFactory = Callable[[MessageHandler, str], BackendPlugin]
+BackendPluginFactory = Callable[[MessageHandler, str], BackendPlugin[Any]]
 
 
 class Model:

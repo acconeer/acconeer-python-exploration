@@ -108,15 +108,17 @@ class SensorConfig:
     _inter_frame_idle_state: IdleState
     _inter_sweep_idle_state: IdleState
 
-    start_point = subsweep_delegate_field(SubsweepConfig.start_point, type_=int)
-    num_points = subsweep_delegate_field(SubsweepConfig.num_points, type_=int)
-    step_length = subsweep_delegate_field(SubsweepConfig.step_length, type_=int)
-    profile = subsweep_delegate_field(SubsweepConfig.profile, type_=Profile)
-    hwaas = subsweep_delegate_field(SubsweepConfig.hwaas, type_=int)
-    receiver_gain = subsweep_delegate_field(SubsweepConfig.receiver_gain, type_=int)
-    enable_tx = subsweep_delegate_field(SubsweepConfig.enable_tx, type_=bool)
-    enable_loopback = subsweep_delegate_field(SubsweepConfig.enable_loopback, type_=bool)
-    phase_enhancement = subsweep_delegate_field(SubsweepConfig.phase_enhancement, type_=bool)
+    # Seems like there is a false positive where mypy confuses
+    # the below descriptors (class members) of attrs.fields with __slots__ variables.
+    start_point = subsweep_delegate_field(SubsweepConfig.start_point, type_=int)  # type: ignore[misc]
+    num_points = subsweep_delegate_field(SubsweepConfig.num_points, type_=int)  # type: ignore[misc]
+    step_length = subsweep_delegate_field(SubsweepConfig.step_length, type_=int)  # type: ignore[misc]
+    profile = subsweep_delegate_field(SubsweepConfig.profile, type_=Profile)  # type: ignore[misc]
+    hwaas = subsweep_delegate_field(SubsweepConfig.hwaas, type_=int)  # type: ignore[misc]
+    receiver_gain = subsweep_delegate_field(SubsweepConfig.receiver_gain, type_=int)  # type: ignore[misc]
+    enable_tx = subsweep_delegate_field(SubsweepConfig.enable_tx, type_=bool)  # type: ignore[misc]
+    enable_loopback = subsweep_delegate_field(SubsweepConfig.enable_loopback, type_=bool)  # type: ignore[misc]
+    phase_enhancement = subsweep_delegate_field(SubsweepConfig.phase_enhancement, type_=bool)  # type: ignore[misc]
     prf = subsweep_delegate_field(SubsweepConfig.prf, type_=PRF)
 
     def __init__(
