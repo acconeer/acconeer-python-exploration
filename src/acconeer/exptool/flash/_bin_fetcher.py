@@ -123,7 +123,7 @@ def download(
     device = device.lower()
 
     # Get correct device slug
-    slugs = {"xc120": "xe121", "xm125": "xm125_sw", "xm126": "xm126_sw"}
+    slugs = {"xc120": "xe121", "xm125": "xm125_sw", "xm126": "xm126"}
     slug = slugs.get(device, device)
 
     data = f"action=ajax_file_tabs&slug={slug}"
