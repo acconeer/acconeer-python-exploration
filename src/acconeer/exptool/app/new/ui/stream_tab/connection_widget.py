@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -312,4 +312,4 @@ class GenerationSelection(QComboBox):
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.set_current_data(app_model.plugin_generation)
-        self.setEnabled(False)
+        self.setEnabled(app_model.connection_state == ConnectionState.DISCONNECTED)
