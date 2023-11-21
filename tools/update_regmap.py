@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 """Internal tool for updating the register map YAML file
@@ -49,7 +49,7 @@ def clean(d):
             to_pop.append(k)
             continue
 
-        if type(v) == dict:
+        if isinstance(v, dict):
             if v.get("internal", False):
                 to_pop.append(k)
                 continue

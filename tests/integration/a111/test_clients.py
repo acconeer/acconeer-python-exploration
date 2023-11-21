@@ -147,11 +147,11 @@ def test_sanity_check_output(setup, mode):
     else:
         assert "stitch_count" in session_info
 
-    assert type(data_info["data_saturated"]) == bool
-    assert type(data_info["missed_data"]) == bool
+    assert isinstance(data_info["data_saturated"], bool)
+    assert isinstance(data_info["missed_data"], bool)
 
     if mode != et.a111.Mode.SPARSE:
-        assert type(data_info["data_quality_warning"]) == bool
+        assert isinstance(data_info["data_quality_warning"], bool)
 
     assert isinstance(data, np.ndarray)
 

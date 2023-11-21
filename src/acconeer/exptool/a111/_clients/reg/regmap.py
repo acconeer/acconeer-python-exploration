@@ -302,7 +302,7 @@ def load_yaml():
                 stripped_name = full_name
 
         addr = raw_reg["address"]
-        assert type(addr) == int
+        assert isinstance(addr, int)
 
         readable, writable = [c in raw_reg.get("access", "rw").strip().lower() for c in "rw"]
         category = Category(raw_reg["category"].strip().lower())

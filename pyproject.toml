@@ -22,6 +22,8 @@ extend-select = ["Q", "TID", "I", "FA"]
 # E501 = "line too long". Handled by black.
 extend-ignore = ["E741", "E501"]
 
+target-version = "py38"
+
 line-length = 100
 
 show-fixes = true

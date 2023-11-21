@@ -1,5 +1,6 @@
 # Copyright (c) Acconeer AB, 2023
 # All rights reserved
+from __future__ import annotations
 
 import typing as t
 
