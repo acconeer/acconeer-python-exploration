@@ -464,7 +464,6 @@ def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
 
 
 def breathing_result_as_row(processed_data: RefAppResultBreathing) -> list[t.Any]:
-
     no_result = "None"
     rate = (
         no_result
