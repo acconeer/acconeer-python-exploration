@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.7.1
+
+### Changed
+- Bump SDK version for A121
+
 ## v7.7.0
 
 ### Added
