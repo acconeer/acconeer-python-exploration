@@ -1,8 +1,8 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 project = "acconeer-python-exploration"
-copyright = "2019 - 2022, Acconeer AB"
+copyright = "2019 - 2023, Acconeer AB"
 author = "Acconeer AB"
 html_title = "Acconeer docs"
 
@@ -52,7 +52,7 @@ source_suffix = ".rst"
 
 master_doc = "index"
 
-language = None
+language = "en"
 
 exclude_patterns = [
     "_build",
