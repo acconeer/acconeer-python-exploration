@@ -27,7 +27,7 @@ from acconeer.exptool.a121.algo.presence import (
 
 
 OVERHEAD = 68
-CALIB_BUFFER = 3452
+CALIB_BUFFER = 2492
 BYTES_PER_POINT = 4
 MAX_NUM_POINTS = 4095
 

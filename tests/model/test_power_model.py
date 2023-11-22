@@ -178,11 +178,13 @@ def test_lower_power_state_limits(
     limit_name: str,
     lower_power_state: power.Sensor.LowerPowerState,
 ) -> None:
-    unit = MODULE_CURRENT_LIMITS[limit_name]["limit"]["unit"]
+    unit = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["unit"]
     unit_factor = {"mA": 1e-3, "μA": 1e-6}[unit]
 
-    expected_current = MODULE_CURRENT_LIMITS[limit_name]["limit"]["target"] * unit_factor
-    absolute_tolerance = MODULE_CURRENT_LIMITS[limit_name]["limit"]["abs_tol"] * unit_factor
+    expected_current = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["target"] * unit_factor
+    absolute_tolerance = (
+        MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["abs_tol"] * unit_factor
+    )
 
     avg_current = power.power_state(lower_power_state, duration=0.1).average_current
     assert avg_current == pytest.approx(expected_current, abs=absolute_tolerance)
@@ -273,11 +275,13 @@ def test_module_limits(
     lower_power_state: power.Sensor.LowerPowerState,
     algorithm: power.algo.Algorithm,
 ) -> None:
-    unit = MODULE_CURRENT_LIMITS[limit_name]["limit"]["unit"]
+    unit = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["unit"]
     unit_factor = {"mA": 1e-3, "μA": 1e-6}[unit]
 
-    expected_current = MODULE_CURRENT_LIMITS[limit_name]["limit"]["target"] * unit_factor
-    absolute_tolerance = MODULE_CURRENT_LIMITS[limit_name]["limit"]["abs_tol"] * unit_factor
+    expected_current = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["target"] * unit_factor
+    absolute_tolerance = (
+        MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["abs_tol"] * unit_factor
+    )
 
     avg_current = power.converged_average_current(
         session_config,
