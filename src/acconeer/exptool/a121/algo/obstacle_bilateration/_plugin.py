@@ -593,6 +593,7 @@ OBSTACLE_BILATERATION_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="obstacle_bilateration",
     title="Obstacle Bilateration",
+    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/examples/obstacle_bilateration.html",
     description="Use two sensors to estimate distance and two angles.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[

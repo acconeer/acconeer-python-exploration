@@ -7,6 +7,7 @@ import qtawesome as qta
 
 
 BUTTON_ICON_COLOR = "#0081db"
+TEXT_GREY = "#4d5157"
 WARNING_YELLOW = "#ff9e00"
 
 

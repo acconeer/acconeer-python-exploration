@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 import qtawesome as qta
 
-from PySide6 import QtCore
+from PySide6 import QtCore, QtGui
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -31,9 +32,10 @@ from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration, Plug
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox
-from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD
+from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD, EXTERNAL_LINK, TEXT_GREY
 from acconeer.exptool.app.new.ui.utils import (
     HorizontalSeparator,
+    LayoutWrapper,
     ScrollAreaDecorator,
     TopAlignDecorator,
 )
@@ -163,15 +165,28 @@ class PluginSelection(QWidget):
             group_box = group_boxes[plugin.family]
             group_box.setHidden(False)
 
+            button_layout = QHBoxLayout()
+            button_layout.setContentsMargins(0, 0, 0, 0)
+            group_box.layout().addWidget(LayoutWrapper(button_layout))
+
             button = PluginSelectionButton(plugin, group_box)
             self.button_group.addButton(button)
-            group_box.layout().addWidget(button)
+            button_layout.addWidget(button)
 
             if plugin.description:
                 label = QLabel(group_box)
                 label.setText(plugin.description)
                 label.setWordWrap(True)
                 group_box.layout().addWidget(label)
+
+            if plugin.docs_link:
+                info_button = QPushButton(text="docs", icon=EXTERNAL_LINK(color=TEXT_GREY))
+                info_button.setStyleSheet(f"QPushButton {{color: {TEXT_GREY}}}")
+                info_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+                info_button.clicked.connect(
+                    lambda _=False, p=plugin: QtGui.QDesktopServices.openUrl(p.docs_link)
+                )
+                button_layout.addWidget(info_button)
 
     def layout(self) -> QVBoxLayout:
         return super().layout()  # type: ignore[return-value]

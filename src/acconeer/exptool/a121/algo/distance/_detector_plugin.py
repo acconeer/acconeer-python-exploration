@@ -715,6 +715,7 @@ DISTANCE_DETECTOR_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="distance_detector",
     title="Distance detector",
+    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/detectors/distance_detection.html",
     description="Easily measure distance to objects.",
     family=PluginFamily.DETECTOR,
     presets=[

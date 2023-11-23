@@ -565,6 +565,7 @@ SPEED_DETECTOR_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="speed_detector",
     title="Speed detector",
+    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/detectors/speed_detection.html",
     description="Measure speed.",
     family=PluginFamily.DETECTOR,
     presets=[

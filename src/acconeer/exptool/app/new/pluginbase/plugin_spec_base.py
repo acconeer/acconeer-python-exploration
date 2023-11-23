@@ -22,6 +22,7 @@ class PluginSpecBase(abc.ABC, PluginSpec):
     generation: PluginGeneration = attrs.field()
     key: str = attrs.field()
     title: str = attrs.field()
+    docs_link: Optional[str] = attrs.field(default=None)
     description: Optional[str] = attrs.field(default=None)
     family: PluginFamily = attrs.field()
     presets: List[PluginPresetSpec] = attrs.field()

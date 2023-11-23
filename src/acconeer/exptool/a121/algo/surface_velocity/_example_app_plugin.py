@@ -609,6 +609,7 @@ SURFACE_VELOCITY_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="surface_velocity",
     title="Surface velocity",
+    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/examples/surface_velocity.html",
     description="Estimate surface speed and direction of streaming water.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[

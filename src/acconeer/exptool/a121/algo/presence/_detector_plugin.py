@@ -643,6 +643,7 @@ PRESENCE_DETECTOR_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="presence_detector",
     title="Presence detector",
+    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/detectors/presence_detection.html",
     description="Detect human presence.",
     family=PluginFamily.DETECTOR,
     presets=[

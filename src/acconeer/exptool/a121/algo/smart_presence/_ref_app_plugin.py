@@ -823,6 +823,7 @@ SMART_PRESENCE_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="smart_presence",
     title="Smart presence",
+    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/ref_apps/smart_presence.html",
     description="Split presence detection range into zones.",
     family=PluginFamily.REF_APP,
     presets=[
