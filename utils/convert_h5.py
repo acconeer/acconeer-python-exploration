@@ -10,7 +10,7 @@ import json
 import os
 import typing as t
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import h5py
 import numpy as np
@@ -225,13 +225,9 @@ class A111RecordTableConverter(TableConverter):
 
         print("\n")
 
-        m = {
-            "RSS version": record.rss_version,
-            "acconeer.exptool library version": record.lib_version,
-            "Timestamp": record.timestamp,
-        }
+        environtment_a111 = get_environment(record)
 
-        for k, v in m.items():
+        for k, v in environtment_a111.items():
             print("{:.<37} {}".format(k + " ", v))
 
         if record.note:
@@ -368,13 +364,40 @@ class A121RecordTableConverter(TableConverter):
         pprint(self._record.server_info)
         print("=== Client info " + "=" * 44)
         pprint(self._record.client_info)
-        print("=== Misc. " + "=" * 50)
-        print(f"Exptool version:  {self._record.lib_version}")
-        print(f"Number of frames: {self._record.num_frames}")
-        print(f"Timestamp:        {self._record.timestamp}")
-        print(f"UUID:             {self._record.uuid}")
+
+        environtment_a121 = get_environment(self._record)
+
+        for k, v in environtment_a121.items():
+            print("{:.<37} {}".format(k + " ", v))
 
         print("=" * 60)
+
+
+def get_environment(
+    record: Union[et.a111.recording.Record, a121.Record]
+) -> dict[str, Optional[str]]:
+    if isinstance(record, et.a111.recording.Record):
+        environment_dict = {
+            "RSS version": record.rss_version,
+            "acconeer.exptool library version": record.lib_version,
+            "Timestamp": record.timestamp,
+        }
+        return environment_dict
+
+    elif isinstance(record, a121.Record):
+        environment_dict = {
+            "RSS version": record.server_info.rss_version,
+            "Exptool version": record.lib_version,
+            "Number of frames": str(record.num_frames),
+            "Timestamp": record.timestamp,
+            "UUID": record.uuid,
+        }
+        return environment_dict
+    else:
+        raise TypeError(
+            f"Passed record ({record}) was of unexpected type."
+            f" actual {type(record)}, expected et.a111.recording.Record or a121.Record"
+        )
 
 
 def _check_files(
@@ -457,10 +480,59 @@ def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
         "phase_enhancement": sensor_config.subsweep.phase_enhancement,
         "prf": sensor_config.subsweep.prf,
     }
-
-    configs_array = np.array(list(configs.items()), dtype=object)
-    df_config = pd.DataFrame(configs_array)
+    df_config = pd.DataFrame(configs.items())
     return df_config
+
+
+def get_processed_data(h5_file: h5py.File) -> pd.DataFrame:
+    algo_group = h5_file["algo"]
+    app_key = h5_file["algo/key"][()].decode()
+
+    supported_apps = ["breathing"]
+    processed_data_list = []
+
+    # Input with h5 or record
+    if app_key in supported_apps:
+        sensor_id, ref_app_config = _load_algo_data_breathing(algo_group)
+
+        # Client preparation
+        record = H5Record(h5_file)
+        client = _ReplayingClient(record, realtime_replay=False)
+        num_frames = record.num_frames
+        ref_app = RefAppBreathing(
+            client=client, sensor_id=sensor_id, ref_app_config=ref_app_config
+        )
+        ref_app.start()
+
+        try:
+            for idx in range(record.num_frames):
+                processed_data = ref_app.get_next()
+
+                # Put the result in row
+                processed_data_row = breathing_result_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+                # Print progressing time every 5%
+                print(f"... {idx / num_frames:.0%}") if (
+                    idx % int(0.05 * num_frames)
+                ) == 0 else None
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
+        processed_data_as_dataframe = {
+            "rate": transposed_processed_data_list[0],
+            "motion": transposed_processed_data_list[1],
+            "presence_dist": transposed_processed_data_list[2],
+        }
+        ref_app.stop()
+        client.close()
+
+    df_processed_data = pd.DataFrame(processed_data_as_dataframe)
+    return df_processed_data
 
 
 def breathing_result_as_row(processed_data: RefAppResultBreathing) -> list[t.Any]:
@@ -514,70 +586,23 @@ def main() -> None:
         data_table = data_table.T
 
     # Create a Pandas DataFrame from the data
-    df_data = pd.DataFrame(data_table)
-    df_all = [df_data]
+    dict_excel_file = {"Sparse IQ data": pd.DataFrame(data_table)}
 
-    # Create a Pandas DataFrame from the configurations
+    # Create a Pandas DataFrame from the environtment
+    record_environtment = get_environment(record)
+    dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
+
     if isinstance(record, a121.Record):
+        # Add configurations in excel
         df_config = configs_as_dataframe(record.session_config)
-        df_all.append(df_config)
+        dict_excel_file["Configurations"] = df_config
 
     # Create a Pandas DataFrame from processed data
+    h5_file = h5py.File(str(input_file))
+    df_processed_data = get_processed_data(h5_file)
+    dict_excel_file["Processed data"] = df_processed_data
 
-    # Load file, data and setup detector
-    file = h5py.File(str(input_file))
-    algo_group = file["algo"]
-    app_key = file["algo/key"][()].decode()
-
-    supported_apps = ["breathing"]
-    processed_data_list = []
-    if app_key in supported_apps:
-        sensor_id, ref_app_config = _load_algo_data_breathing(algo_group)
-
-        # Client preparation
-        record = H5Record(file)
-        client = _ReplayingClient(record, realtime_replay=False)
-        num_frames = record.num_frames
-        ref_app = RefAppBreathing(
-            client=client, sensor_id=sensor_id, ref_app_config=ref_app_config
-        )
-        ref_app.start()
-
-        try:
-            for idx in range(record.num_frames):
-                processed_data = ref_app.get_next()
-
-                # Put the result in row
-                processed_data_row = breathing_result_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
-
-                # Print progressing time every 5%
-                print(f"... {idx / num_frames:.0%}") if (
-                    idx % int(0.05 * num_frames)
-                ) == 0 else None
-
-        except KeyboardInterrupt:
-            print("Conversion aborted")
-        else:
-            print("Processing data is finished. . .")
-
-        transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
-        processed_data_as_dataframe = {
-            "rate": transposed_processed_data_list[0],
-            "motion": transposed_processed_data_list[1],
-            "presence_dist": transposed_processed_data_list[2],
-        }
-        df_processed_data = pd.DataFrame(processed_data_as_dataframe)
-        df_all.append(df_processed_data)
-
-        ref_app.stop()
-        client.close()
-
-    file.close()
-
-    # Add sheet/file names
-    sheet_name = ["Sparse IQ data", "Configurations", "Processed data"]
-
+    h5_file.close()
     # Save the DataFrame to a CSV or excel file
     if output_suffix == ".xlsx":
         output_file = output_stem.with_suffix(output_suffix)
@@ -585,16 +610,16 @@ def main() -> None:
         # Default example data frame is written as below
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
             # Write each DataFrame to a separate sheet
-            for itx in range(len(df_all)):
-                df_all[itx].to_excel(
-                    writer, sheet_name=sheet_name[itx], index_label="Index", header=True
+            for key, value in dict_excel_file.items():
+                pd.DataFrame(value).to_excel(
+                    writer, sheet_name=key, index_label="Index", header=True
                 )
 
     if output_suffix == ".csv" or output_suffix == ".tsv":
         # Write each DataFrame to a separate sheet using to_csv
-        for idx, df in enumerate(df_all):
-            df.to_csv(
-                Path(str(output_stem) + "_" + sheet_name[idx] + output_suffix),
+        for key, value in dict_excel_file.items():
+            pd.DataFrame(value).to_csv(
+                Path(str(output_stem) + "_" + key + output_suffix),
                 sep=to_csv_sep,
                 index_label="Index",
             )
