@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ class ValidationResult(Exception):
         super(Exception, self).__init__(self.source, self.aspect, self.message, self.criticality)
 
     def __str__(self) -> str:
-        return self.message
+        return f"{type(self.source).__name__}.{self.aspect}: {self.message}"
 
 
 @define
