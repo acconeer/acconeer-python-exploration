@@ -67,7 +67,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             raise HandledException("Could not load from file") from exc
 
-        self._replaying_client = ApplicationClient.wrap(replaying_client, self.callback)
+        self._replaying_client = ApplicationClient.wrap_a121(replaying_client, self.callback)
 
         self.start_session(with_recorder=False)
 
@@ -131,7 +131,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         pass
 
     def attach_client(self, *, client: a121.Client) -> None:
-        self._live_client = ApplicationClient.wrap(client, self.callback)
+        self._live_client = ApplicationClient.wrap_a121(client, self.callback)
         self._sync_sensor_ids()
         self.broadcast()
 
