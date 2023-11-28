@@ -17,6 +17,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
@@ -44,14 +45,23 @@ from acconeer.exptool.app.new import (
     visual_policies,
 )
 from acconeer.exptool.app.new.ui.components import CollapsibleWidget
-from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView, SensorConfigEditor
+from acconeer.exptool.app.new.ui.components.a121 import (
+    RangeHelpView,
+    SensorConfigEditor,
+)
 from acconeer.exptool.app.new.ui.components.json_save_load_buttons import (
     JsonButtonOperations,
 )
 from acconeer.exptool.app.new.ui.stream_tab.plugin_widget import PluginPlotArea
 
 from ._configs import get_default_config, get_traffic_config
-from ._detector import Detector, DetectorConfig, DetectorMetadata, DetectorResult, _load_algo_data
+from ._detector import (
+    Detector,
+    DetectorConfig,
+    DetectorMetadata,
+    DetectorResult,
+    _load_algo_data,
+)
 
 
 log = logging.getLogger(__name__)
@@ -84,7 +94,10 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
     }
 
     def __init__(
-        self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
+        self,
+        callback: Callable[[Message], None],
+        generation: PluginGeneration,
+        key: str,
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key)
 
@@ -439,19 +452,23 @@ class ViewPlugin(A121ViewPluginBase):
         service_parameters = {
             "start_point": pidgets.IntPidgetFactory(
                 name_label_text="Start point:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "start_point"),
             ),
             "num_points": pidgets.IntPidgetFactory(
                 name_label_text="Number of points:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "num_points"),
                 limits=(1, 100),
             ),
             "step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Step length:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "step_length"),
                 checkbox_label_text="Override",
                 limits=(1, None),
                 init_set_value=72,
             ),
             "profile": pidgets.OptionalEnumPidgetFactory(
                 name_label_text="Profile:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "profile"),
                 checkbox_label_text="Override",
                 enum_type=a121.Profile,
                 label_mapping={
@@ -464,6 +481,7 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "sweep_rate": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Sweep rate:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "sweep_rate"),
                 suffix=" Hz",
                 checkbox_label_text="Override",
                 limits=(1, 134000),
@@ -471,6 +489,7 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "frame_rate": pidgets.OptionalFloatPidgetFactory(
                 name_label_text="Frame rate:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "frame_rate"),
                 suffix=" Hz",
                 checkbox_label_text="Override",
                 limits=(1, 200),
@@ -478,23 +497,27 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "hwaas": pidgets.OptionalIntPidgetFactory(
                 name_label_text="HWAAS:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "hwaas"),
                 checkbox_label_text="Override",
                 limits=(1, 511),
                 init_set_value=4,
             ),
             "num_bins": pidgets.IntPidgetFactory(
                 name_label_text="Number of bins:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "num_bins"),
                 limits=(3, 4095),
             ),
         }
         processing_parameters = {
             "max_speed": pidgets.FloatPidgetFactory(
                 name_label_text="Max speed:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "max_speed"),
                 suffix=" m/s",
                 limits=(0, 150.0),
             ),
             "threshold": pidgets.FloatPidgetFactory(
                 name_label_text="Detection threshold:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "threshold"),
                 limits=(1.0, 10000.0),
             ),
         }

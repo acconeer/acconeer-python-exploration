@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.7.2
+
+### Added
+- Tooltips for speed detector.
+
 ## v7.7.1
 
 ### Changed

@@ -10,6 +10,7 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
@@ -43,6 +44,7 @@ def idle_state_converter(idle_state: IdleState) -> IdleState:
     return IdleState(idle_state)
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
     start_point: int = attrs.field(default=200)
@@ -68,7 +70,7 @@ class DetectorConfig(AlgoConfigBase):
     """Frame rate in Hz."""
 
     num_bins: int = attrs.field(default=50)
-    """This will set sweeps_per_frame by sweeps_per_frame = NUM_SEGMENTS*num_bins."""
+    """Determines the resolution in m/s by max_speed/num_bins."""
 
     sweep_rate: Optional[int] = attrs.field(default=None)
     """Sweep rate in Hz."""
@@ -77,14 +79,12 @@ class DetectorConfig(AlgoConfigBase):
     """Number of HWAAS."""
 
     max_speed: float = attrs.field(default=10.0)
-    """
-    Max detectable speed in m/s.
-    """
+    """Max detectable speed in m/s."""
 
     threshold: float = attrs.field(default=100.0)
     """
     Peak relative height to median scaled PSD.
-    E.g., 10.0 indicates that we need to have 10 times median value to trigger.
+    E.g., 10.0 indicates that we need to have 10 times the median value to trigger.
     """
 
     @classmethod
@@ -127,7 +127,9 @@ class DetectorConfig(AlgoConfigBase):
         if self.start_point < profile_3_direct_leakage_end:
             validation_results.append(
                 a121.ValidationWarning(
-                    self, "start_point", "Range includes direct leakage, risk for missed detection"
+                    self,
+                    "start_point",
+                    "Range includes direct leakage, risk for missed detection",
                 )
             )
 
@@ -266,7 +268,9 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         self.timing = 0.0
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+        self,
+        recorder: Optional[a121.Recorder] = None,
+        _algo_group: Optional[h5py.Group] = None,
     ) -> None:
         if self.started:
             raise RuntimeError("Already started")
