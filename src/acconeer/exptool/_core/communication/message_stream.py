@@ -78,11 +78,14 @@ class MessageStream:
         """returns an iterator of parsed messages"""
         while True:
             try:
-                header: dict[str, t.Any] = json.loads(
-                    self._link.recv_until(self.protocol.end_sequence)
-                )
+                header_in_bytes = self._link.recv_until(self.protocol.end_sequence)
             except Exception as e:
                 self._error_callback(e)
+
+            try:
+                header: dict[str, t.Any] = json.loads(header_in_bytes)
+            except json.JSONDecodeError:
+                self._error_callback(RuntimeError(f"Cannot decode header {header_in_bytes!r}"))
 
             try:
                 payload_size = header["payload_size"]
