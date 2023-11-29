@@ -19,6 +19,7 @@ from ._utils import (
     RLG_PER_HWAAS_MAP,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
     ReflectorShape,
+    calc_processing_gain,
     calculate_loopback_peak_location,
     double_buffering_frame_filter,
     exponential_smoothing_coefficient,

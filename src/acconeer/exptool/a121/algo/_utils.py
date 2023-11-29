@@ -423,3 +423,21 @@ def _safe_ceil(x: float) -> float:
     Implementation of ceil function, compatible with float representation in C.
     """
     return float(f"{x:.16g}")
+
+
+def calc_processing_gain(profile: a121.Profile, step_length: int) -> float:
+    """
+    Approximates the processing gain of the matched filter.
+    """
+    envelope_base_length_m = ENVELOPE_FWHM_M[profile] * 2  # approx envelope width
+    num_points_in_envelope = (
+        int(envelope_base_length_m / (step_length * APPROX_BASE_STEP_LENGTH_M)) + 2
+    )
+    mid_point = num_points_in_envelope // 2
+    pulse = np.concatenate(
+        (
+            np.linspace(0, 1, mid_point),
+            np.linspace(1, 0, num_points_in_envelope - mid_point),
+        )
+    )
+    return float(np.sum(pulse**2))

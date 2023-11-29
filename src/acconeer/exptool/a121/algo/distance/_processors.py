@@ -22,6 +22,7 @@ from acconeer.exptool.a121.algo import (
     AlgoProcessorConfigBase,
     ProcessorBase,
     ReflectorShape,
+    calc_processing_gain,
     find_peaks,
     get_distance_filter_coeffs,
     get_distance_filter_edge_margin,
@@ -670,9 +671,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         distances_m = (
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
         ) * APPROX_BASE_STEP_LENGTH_M
-        processing_gain_db = 10 * np.log10(
-            self.calc_processing_gain(self.profile, self.step_length)
-        )
+        processing_gain_db = 10 * np.log10(calc_processing_gain(self.profile, self.step_length))
         start_points = [subsweep.start_point for subsweep in subsweeps]
         bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
         profile = self.profile
@@ -716,7 +715,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             step_length = subsweeps[subsweep_idx].step_length
 
             # Calculate strengths.
-            processing_gain_db = 10 * np.log10(cls.calc_processing_gain(profile, step_length))
+            processing_gain_db = 10 * np.log10(calc_processing_gain(profile, step_length))
             s_db = 20 * np.log10(amplitude)
             n_db = 20 * np.log10(sigma)
             r_db = reflector_shape.exponent * 10 * np.log10(distance)
@@ -725,24 +724,6 @@ class Processor(ProcessorBase[ProcessorResult]):
             strengths.append(s_db - n_db - rlg_db + r_db - processing_gain_db)
 
         return strengths
-
-    @staticmethod
-    def calc_processing_gain(profile: a121.Profile, step_length: int) -> float:
-        """
-        Approximates the processing gain of the matched filter.
-        """
-        envelope_base_length_m = ENVELOPE_FWHM_M[profile] * 2  # approx envelope width
-        num_points_in_envelope = (
-            int(envelope_base_length_m / (step_length * APPROX_BASE_STEP_LENGTH_M)) + 2
-        )
-        mid_point = num_points_in_envelope // 2
-        pulse = np.concatenate(
-            (
-                np.linspace(0, 1, mid_point),
-                np.linspace(1, 0, num_points_in_envelope - mid_point),
-            )
-        )
-        return float(np.sum(pulse**2))
 
     @staticmethod
     def _detect_close_object(

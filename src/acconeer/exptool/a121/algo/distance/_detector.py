@@ -26,6 +26,7 @@ from acconeer.exptool.a121.algo import (
     AlgoConfigBase,
     Controller,
     ReflectorShape,
+    calc_processing_gain,
     calculate_loopback_peak_location,
     get_distance_filter_edge_margin,
     select_prf,
@@ -1341,7 +1342,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         rlg_per_hwaas = RLG_PER_HWAAS_MAP[profile]
         hwaas = []
         for idx in range(len(breakpoints) - 1):
-            processing_gain = Processor.calc_processing_gain(profile, step_length)
+            processing_gain = calc_processing_gain(profile, step_length)
             subsweep_end_point_m = max(
                 APPROX_BASE_STEP_LENGTH_M * breakpoints[idx + 1],
                 cls.HWAAS_MIN_DISTANCE,
