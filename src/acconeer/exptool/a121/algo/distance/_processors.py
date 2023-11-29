@@ -17,6 +17,7 @@ from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_i
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
+    RLG_PER_HWAAS_MAP,
     AlgoParamEnum,
     AlgoProcessorConfigBase,
     ProcessorBase,
@@ -163,14 +164,6 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     CLOSE_RANGE_LOOPBACK_IDX = 0
     CLOSE_RANGE_DIST_IDX = 1
-
-    RLG_PER_HWAAS_MAP = {
-        a121.Profile.PROFILE_1: 11.3,
-        a121.Profile.PROFILE_2: 13.7,
-        a121.Profile.PROFILE_3: 19.0,
-        a121.Profile.PROFILE_4: 20.5,
-        a121.Profile.PROFILE_5: 21.6,
-    }
 
     def __init__(
         self,
@@ -692,7 +685,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
             n_db = 20 * np.log10(sigma)
             r_db = reflector_shape.exponent * 10 * np.log10(distance_m)
-            rlg_db = self.RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
+            rlg_db = RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
 
             threshold.append(10 ** ((processing_gain_db + n_db + rlg_db - r_db + strength) / 20))
 
@@ -727,7 +720,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             s_db = 20 * np.log10(amplitude)
             n_db = 20 * np.log10(sigma)
             r_db = reflector_shape.exponent * 10 * np.log10(distance)
-            rlg_db = cls.RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
+            rlg_db = RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
 
             strengths.append(s_db - n_db - rlg_db + r_db - processing_gain_db)
 

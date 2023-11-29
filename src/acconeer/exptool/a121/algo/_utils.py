@@ -42,6 +42,14 @@ PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 
 MEAN_ABS_DEV_OUTLIER_TH = 5
 
+RLG_PER_HWAAS_MAP = {
+    a121.Profile.PROFILE_1: 11.3,
+    a121.Profile.PROFILE_2: 13.7,
+    a121.Profile.PROFILE_3: 19.0,
+    a121.Profile.PROFILE_4: 20.5,
+    a121.Profile.PROFILE_5: 21.6,
+}
+
 
 class ReflectorShape(AlgoParamEnum):
     """Reflector shape.

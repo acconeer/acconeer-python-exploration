@@ -21,6 +21,7 @@ from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
+    RLG_PER_HWAAS_MAP,
     AlgoBase,
     AlgoConfigBase,
     Controller,
@@ -1337,7 +1338,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         step_length: int,
         reflector_shape: ReflectorShape,
     ) -> list[int]:
-        rlg_per_hwaas = Processor.RLG_PER_HWAAS_MAP[profile]
+        rlg_per_hwaas = RLG_PER_HWAAS_MAP[profile]
         hwaas = []
         for idx in range(len(breakpoints) - 1):
             processing_gain = Processor.calc_processing_gain(profile, step_length)

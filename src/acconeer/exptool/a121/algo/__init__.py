@@ -16,6 +16,7 @@ from ._utils import (
     ENVELOPE_FWHM_M,
     NOISE_TEMPERATURE_MODEL_PARAMETER,
     PERCEIVED_WAVELENGTH,
+    RLG_PER_HWAAS_MAP,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
     ReflectorShape,
     calculate_loopback_peak_location,
