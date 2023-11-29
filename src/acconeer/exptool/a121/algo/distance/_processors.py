@@ -22,6 +22,7 @@ from acconeer.exptool.a121.algo import (
     AlgoProcessorConfigBase,
     ProcessorBase,
     ReflectorShape,
+    _convert_multiple_amplitudes_to_strengths,
     calc_processing_gain,
     find_peaks,
     get_distance_filter_coeffs,
@@ -480,7 +481,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         # Calculate strengths before applying offset as the offset could push the estimated
         # distance into the next subsweep, resulting in strengths being calculated with wrong
         # sensor parameters.
-        estimated_strengths = self._convert_amplitudes_to_strengths(
+        estimated_strengths = _convert_multiple_amplitudes_to_strengths(
             estimated_amplitudes,
             estimated_distances,
             self.range_subsweep_configs,
@@ -689,41 +690,6 @@ class Processor(ProcessorBase[ProcessorResult]):
             threshold.append(10 ** ((processing_gain_db + n_db + rlg_db - r_db + strength) / 20))
 
         return np.array(threshold)
-
-    @classmethod
-    def _convert_amplitudes_to_strengths(
-        cls,
-        amplitudes: list[float],
-        distances: list[float],
-        subsweeps: list[a121.SubsweepConfig],
-        bg_noise_std: list[float],
-        reflector_shape: ReflectorShape,
-    ) -> list[float]:
-        # Determine subsweep breakpoints in meters.
-        start_points = [subsweep.start_point for subsweep in subsweeps]
-        bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
-
-        strengths = []
-        # Loop over amplitude/distance pairs.
-        for amplitude, distance in zip(amplitudes, distances):
-            subsweep_idx = np.sum(bpts_m < distance) - 1
-
-            # For the current distance, get corresponding sensor parameters and background noise.
-            sigma = bg_noise_std[subsweep_idx]
-            hwaas = subsweeps[subsweep_idx].hwaas
-            profile = subsweeps[subsweep_idx].profile
-            step_length = subsweeps[subsweep_idx].step_length
-
-            # Calculate strengths.
-            processing_gain_db = 10 * np.log10(calc_processing_gain(profile, step_length))
-            s_db = 20 * np.log10(amplitude)
-            n_db = 20 * np.log10(sigma)
-            r_db = reflector_shape.exponent * 10 * np.log10(distance)
-            rlg_db = RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
-
-            strengths.append(s_db - n_db - rlg_db + r_db - processing_gain_db)
-
-        return strengths
 
     @staticmethod
     def _detect_close_object(

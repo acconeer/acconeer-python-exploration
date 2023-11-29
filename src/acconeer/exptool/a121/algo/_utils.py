@@ -441,3 +441,50 @@ def calc_processing_gain(profile: a121.Profile, step_length: int) -> float:
         )
     )
     return float(np.sum(pulse**2))
+
+
+def _convert_multiple_amplitudes_to_strengths(
+    amplitudes: list[float],
+    distances: list[float],
+    subsweeps: list[a121.SubsweepConfig],
+    bg_noise_std: list[float],
+    reflector_shape: ReflectorShape,
+) -> list[float]:
+    # Determine subsweep breakpoints in meters.
+    start_points = [subsweep.start_point for subsweep in subsweeps]
+    bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
+
+    strengths = []
+    # Loop over amplitude/distance pairs.
+    for amplitude, distance in zip(amplitudes, distances):
+        # For the current distance, get corresponding sensor parameters and background noise.
+        subsweep_idx = np.sum(bpts_m < distance) - 1
+        subsweep_config = subsweeps[subsweep_idx]
+        sigma = bg_noise_std[subsweep_idx]
+
+        # Calculate strengths.
+        strengths.append(
+            _convert_amplitude_to_strength(
+                subsweep_config, amplitude, distance, sigma, reflector_shape
+            )
+        )
+
+    return strengths
+
+
+def _convert_amplitude_to_strength(
+    subsweep_config: a121.SubsweepConfig,
+    amplitude: float,
+    distance: float,
+    bg_noise_std: float,
+    reflector_shape: ReflectorShape = ReflectorShape.GENERIC,
+) -> float:
+    processing_gain_db = 10 * np.log10(
+        calc_processing_gain(subsweep_config.profile, subsweep_config.step_length)
+    )
+    s_db = 20 * np.log10(amplitude)
+    n_db = 20 * np.log10(bg_noise_std)
+    r_db = reflector_shape.exponent * 10 * np.log10(distance)
+    rlg_db = RLG_PER_HWAAS_MAP[subsweep_config.profile] + 10 * np.log10(subsweep_config.hwaas)
+
+    return float(s_db - n_db - rlg_db + r_db - processing_gain_db)

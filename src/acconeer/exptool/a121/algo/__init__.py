@@ -19,6 +19,8 @@ from ._utils import (
     RLG_PER_HWAAS_MAP,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
     ReflectorShape,
+    _convert_amplitude_to_strength,
+    _convert_multiple_amplitudes_to_strengths,
     calc_processing_gain,
     calculate_loopback_peak_location,
     double_buffering_frame_filter,

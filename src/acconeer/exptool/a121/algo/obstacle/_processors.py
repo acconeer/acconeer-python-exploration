@@ -17,6 +17,7 @@ from acconeer.exptool.a121.algo import (
     PERCEIVED_WAVELENGTH,
     AlgoProcessorConfigBase,
     ProcessorBase,
+    _convert_amplitude_to_strength,
     get_distance_filter_coeffs,
     get_distance_offset,
     get_temperature_adjustment_factors,
@@ -45,6 +46,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 class Target:
     distance: float = attrs.field(default=None)
     velocity: float = attrs.field(default=None)
+    strength: float = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -192,6 +194,8 @@ class SubsweepProcessor:
 
         targets = []
 
+        bg_noise_stds = self.proc_context.std_sweeps[self.ssproc_context.sub_sweep_idx]
+
         diff = abs_fftframe - fft_map_threshold
         spf = self.sensor_config.sweeps_per_frame
         while np.any(diff > 0):
@@ -210,7 +214,13 @@ class SubsweepProcessor:
             v = ((i_speed + spf / 2) % spf - spf / 2) * self.dv
 
             if 0 < idx_max[1] < (diff.shape[1] - 1):  # Disregard peaks at the limit of the range
-                targets.append(Target(distance=distance, velocity=v))
+                strength = _convert_amplitude_to_strength(
+                    self.sensor_config.subsweeps[0],
+                    abs_fftframe[idx_max[0], idx_max[1]],
+                    distance,
+                    bg_noise_stds[idx_max[1]],
+                )
+                targets.append(Target(distance=distance, velocity=v, strength=strength))
 
             abs_fftframe = subtract_reflector_from_fftmap(
                 abs_fftframe, int(idx_max[1]), int(idx_max[0]), int(self.fwhm_points)
@@ -348,6 +358,7 @@ class Processor(ProcessorBase[ProcessorResult]):
                     Target(
                         distance=(t1.distance + t2.distance) / 2,
                         velocity=(t1.velocity + t2.velocity) / 2,
+                        strength=(t1.strength + t2.strength) / 2,
                     )
                 )
 
