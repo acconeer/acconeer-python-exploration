@@ -11,6 +11,7 @@ import numpy.typing as npt
 from scipy.signal import butter, filtfilt
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo import AlgoParamEnum
 
 
 ENVELOPE_FWHM_M = {
@@ -40,6 +41,21 @@ WAVELENGTH = SPEED_OF_LIGHT / RADIO_FREQUENCY
 PERCEIVED_WAVELENGTH = WAVELENGTH / 2
 
 MEAN_ABS_DEV_OUTLIER_TH = 5
+
+
+class ReflectorShape(AlgoParamEnum):
+    """Reflector shape.
+
+    ``GENERIC`` Reflectors of any shape.
+    ``PLANAR`` Planar shaped reflectors facing the radar, for example water surfaces.
+    """
+
+    GENERIC = 4
+    PLANAR = 2
+
+    @property
+    def exponent(self) -> float:
+        return float(self.value)
 
 
 def get_distance_offset(peak_location: Optional[float], profile: a121.Profile) -> float:

@@ -20,6 +20,7 @@ from acconeer.exptool.a121.algo import (
     AlgoParamEnum,
     AlgoProcessorConfigBase,
     ProcessorBase,
+    ReflectorShape,
     find_peaks,
     get_distance_filter_coeffs,
     get_distance_filter_edge_margin,
@@ -57,21 +58,6 @@ class ThresholdMethod(AlgoParamEnum):
     FIXED = enum.auto()
     FIXED_STRENGTH = enum.auto()
     RECORDED = enum.auto()
-
-
-class ReflectorShape(AlgoParamEnum):
-    """Reflector shape.
-
-    ``GENERIC`` Reflectors of any shape.
-    ``PLANAR`` Planar shaped reflectors facing the radar, for example water surfaces.
-    """
-
-    GENERIC = 4
-    PLANAR = 2
-
-    @property
-    def exponent(self) -> float:
-        return float(self.value)
 
 
 @attrs.mutable(kw_only=True)

@@ -17,6 +17,7 @@ from ._utils import (
     NOISE_TEMPERATURE_MODEL_PARAMETER,
     PERCEIVED_WAVELENGTH,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
+    ReflectorShape,
     calculate_loopback_peak_location,
     double_buffering_frame_filter,
     exponential_smoothing_coefficient,
