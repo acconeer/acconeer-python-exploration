@@ -55,7 +55,7 @@ class Algorithm(te.Protocol):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_power_state: t.Optional[Sensor.LowerPowerState],
+        lower_idle_state: t.Optional[Sensor.LowerIdleState],
         sensor: Sensor,
         module: Module,
     ) -> t.Iterable[domain.EnergyRegion]:
@@ -68,16 +68,16 @@ class SparseIq(Algorithm):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_power_state: t.Optional[Sensor.LowerPowerState],
+        lower_idle_state: t.Optional[Sensor.LowerIdleState],
         sensor: Sensor,
         module: Module,
     ) -> t.Iterable[domain.EnergyRegion]:
         active_iter = core_utils.iterate_extended_structure_values(frame_actives)
         idle_list = list(core_utils.iterate_extended_structure_values(frame_idles))[:-1]
 
-        if lower_power_state == Sensor.PowerState.OFF:
+        if lower_idle_state == Sensor.IdleState.OFF:
             yield off_exit(sensor, module)
-        elif lower_power_state == Sensor.PowerState.HIBERNATE:
+        elif lower_idle_state == Sensor.IdleState.HIBERNATE:
             yield hibernate_exit(last_inter_frame_idle_state(config), sensor, module)
 
         yield from _interleave(
@@ -85,9 +85,9 @@ class SparseIq(Algorithm):
             idle_list,
         )
 
-        if lower_power_state == Sensor.PowerState.OFF:
+        if lower_idle_state == Sensor.IdleState.OFF:
             yield off_enter(sensor, module)
-        elif lower_power_state == Sensor.PowerState.HIBERNATE:
+        elif lower_idle_state == Sensor.IdleState.HIBERNATE:
             yield hibernate_enter(sensor, module)
 
 
@@ -99,7 +99,7 @@ class Presence(Algorithm):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_power_state: t.Optional[Sensor.LowerPowerState],
+        lower_idle_state: t.Optional[Sensor.LowerIdleState],
         sensor: Sensor,
         module: Module,
     ) -> t.Iterable[domain.EnergyRegion]:
@@ -108,7 +108,7 @@ class Presence(Algorithm):
         process_duration = points_measured * self._PROCESSING_SECONDS_PER_POINT
 
         yield from SparseIq().decide_control(
-            frame_actives, frame_idles, config, lower_power_state, sensor, module
+            frame_actives, frame_idles, config, lower_idle_state, sensor, module
         )
         yield domain.SimpleRegion(
             module.currents[Module.PowerState.PROCESSING],
@@ -157,7 +157,7 @@ class Distance(Algorithm):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_power_state: t.Optional[Sensor.LowerPowerState],
+        lower_idle_state: t.Optional[Sensor.LowerIdleState],
         sensor: Sensor,
         module: Module,
     ) -> t.Iterator[domain.EnergyRegion]:
@@ -174,9 +174,9 @@ class Distance(Algorithm):
             ),
         )
 
-        if lower_power_state == Sensor.PowerState.OFF:
+        if lower_idle_state == Sensor.IdleState.OFF:
             yield off_exit(sensor, module)
-        elif lower_power_state == Sensor.PowerState.HIBERNATE:
+        elif lower_idle_state == Sensor.IdleState.HIBERNATE:
             yield hibernate_exit(last_inter_frame_idle_state(config), sensor, module)
 
         for region in _interleave(
@@ -187,9 +187,9 @@ class Distance(Algorithm):
             if region is not None:
                 yield region
 
-        if lower_power_state == Sensor.PowerState.OFF:
+        if lower_idle_state == Sensor.IdleState.OFF:
             yield off_enter(sensor, module)
-        elif lower_power_state == Sensor.PowerState.HIBERNATE:
+        elif lower_idle_state == Sensor.IdleState.HIBERNATE:
             yield hibernate_enter(sensor, module)
 
 

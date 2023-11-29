@@ -21,14 +21,14 @@ from acconeer.exptool.app.new.ui.utils import LayoutWrapper, ScrollAreaDecorator
 class SessionConfigEvent:
     service_id: str
     session_config: a121.SessionConfig
-    lower_power_state: t.Optional[power.Sensor.LowerPowerState]
+    lower_idle_state: t.Optional[power.Sensor.LowerIdleState]
 
 
 class SessionConfigInput(ScrollAreaDecorator):
     INTERESTS: t.ClassVar[set[type]] = set()
     description: t.ClassVar[str] = (
         "Specify sensor configuration as in the Stream tab.\n\n"
-        + "Additionally, you can specify a lower power state."
+        + "Additionally, you can specify a lower idle state."
     )
 
     def __init__(self, broker: EventBroker, initial_config: a121.SessionConfig) -> None:
@@ -38,13 +38,14 @@ class SessionConfigInput(ScrollAreaDecorator):
 
         self._broker = broker
         self.power_state_selection = pidgets.ComboboxPidgetFactory[
-            t.Optional[power.Sensor.LowerPowerState]
+            t.Optional[power.Sensor.LowerIdleState]
         ](
-            name_label_text="Lower power state:",
+            name_label_text="Lower idle state:",
+            name_label_tooltip="The lowest idle states of the sensor are set by the host",
             items=[
                 ("Don't use", None),
-                ("Hibernate", power.Sensor.PowerState.HIBERNATE),
-                ("Off", power.Sensor.PowerState.OFF),
+                ("Hibernate", power.Sensor.IdleState.HIBERNATE),
+                ("Off", power.Sensor.IdleState.OFF),
             ],
         ).create(self)
 

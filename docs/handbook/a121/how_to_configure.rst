@@ -91,7 +91,7 @@ With the range related parameters all set up, we move on to parameters related t
   However, idling between sweeps is rarely as efficient as idling between frames.
 
 - If power consumption is not an issue, start by using the highest possible **frame rate**.
-  Otherwise, it is crucial to minimize the frame rate to let the sensor idle in a lower power state as much as possible.
+  Otherwise, it is crucial to minimize the frame rate to let the sensor idle in a lower idle state as much as possible.
   See :numref:`tab_a121_typical_parameter_values` for typical values.
 
 .. _tab_a121_typical_parameter_values:

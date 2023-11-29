@@ -25,21 +25,20 @@ class Sensor:
     Consists of multiple table for different currents, overhead- and transition times.
     """
 
-    class PowerState(Enum):
+    class IdleState(Enum):
         OFF = auto()
         HIBERNATE = auto()
-        MEASURE = auto()
 
     class FixedOverhead(Enum):
         SUBSWEEP = auto()
         SWEEP = auto()
         FRAME = auto()
 
-    LowerPowerState = te.Literal[PowerState.OFF, PowerState.HIBERNATE]
+    LowerIdleState = te.Literal[IdleState.OFF, IdleState.HIBERNATE]
 
     inter_sweep_currents: t.Mapping[a121.IdleState, float]
     inter_sweep_currents_high_speed_mode: t.Mapping[a121.IdleState, float]
-    inter_frame_currents: t.Mapping[t.Union[a121.IdleState, PowerState], float]
+    inter_frame_currents: t.Mapping[t.Union[a121.IdleState, IdleState], float]
     measure_currents: t.Mapping[a121.Profile, float]
 
     time_for_measure_transition: t.Mapping[a121.IdleState, float]
@@ -78,8 +77,8 @@ class Sensor:
             inter_sweep_currents=idle_currents,
             inter_frame_currents={
                 **idle_currents,  # type: ignore[dict-item]
-                cls.PowerState.OFF: 3 * _uA,
-                cls.PowerState.HIBERNATE: 15 * _uA,
+                cls.IdleState.OFF: 3 * _uA,
+                cls.IdleState.HIBERNATE: 15 * _uA,
             },
             measure_currents={
                 a121.Profile.PROFILE_1: 70.5 * _mA,
@@ -198,7 +197,7 @@ class Module:
         ASLEEP = auto()
         IO = auto()
 
-    currents: t.Mapping[t.Union[PowerState, Sensor.PowerState], float]
+    currents: t.Mapping[t.Union[PowerState, Sensor.IdleState], float]
 
     @classmethod
     def xm125(cls) -> te.Self:

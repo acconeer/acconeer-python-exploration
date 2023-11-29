@@ -25,7 +25,7 @@ from ._preset_selection import create_plugin_selection_widget
 class PresenceConfigEvent:
     service_id: str
     config: DetectorConfig
-    lower_power_state: t.Optional[power.Sensor.LowerPowerState]
+    lower_idle_state: t.Optional[power.Sensor.LowerIdleState]
 
     @property
     def translated_session_config(self) -> a121.SessionConfig:
@@ -36,7 +36,7 @@ class PresenceConfigInput(ScrollAreaDecorator):
     INTERESTS: t.ClassVar[set[type]] = set()
     description: t.ClassVar[str] = (
         "Specify presence configuration as in the Stream tab.\n\n"
-        + "Additionally, you can specify a lower power state."
+        + "Additionally, you can specify a lower idle state."
     )
 
     def __init__(self, broker: EventBroker, initial_config: DetectorConfig) -> None:
@@ -48,13 +48,14 @@ class PresenceConfigInput(ScrollAreaDecorator):
         self.setMinimumWidth(400)
 
         self.power_state_selection = pidgets.ComboboxPidgetFactory[
-            t.Optional[power.Sensor.LowerPowerState]
+            t.Optional[power.Sensor.LowerIdleState]
         ](
-            name_label_text="Lower power state:",
+            name_label_text="Lower idle state:",
+            name_label_tooltip="The lowest idle states of the sensor are set by the host",
             items=[
                 ("Don't use", None),
-                ("Hibernate", power.Sensor.PowerState.HIBERNATE),
-                ("Off", power.Sensor.PowerState.OFF),
+                ("Hibernate", power.Sensor.IdleState.HIBERNATE),
+                ("Off", power.Sensor.IdleState.OFF),
             ],
         ).create(self)
 

@@ -140,18 +140,18 @@ class _EnergyRegionPlot(QWidget):
         session_config: a121.SessionConfig
         """This received from events"""
 
-        lower_power_state: t.Optional[power.Sensor.LowerPowerState]
+        lower_idle_state: t.Optional[power.Sensor.LowerIdleState]
 
     def __init__(
         self,
         profile_duration_s: float,
         session_config: a121.SessionConfig,
-        lower_power_state: t.Optional[power.Sensor.LowerPowerState],
+        lower_idle_state: t.Optional[power.Sensor.LowerIdleState],
         algorithm: power.algo.Algorithm,
     ) -> None:
         super().__init__()
 
-        self._state = self._State(profile_duration_s, session_config, lower_power_state)
+        self._state = self._State(profile_duration_s, session_config, lower_idle_state)
         self._algorithm: te.Final[power.algo.Algorithm] = algorithm
 
         self._plot_widget = pg.plot()
@@ -193,13 +193,13 @@ class _EnergyRegionPlot(QWidget):
     def plot_current_state(self) -> None:
         session_profile = power.session(
             self._state.session_config,
-            lower_power_state=self._state.lower_power_state,
+            lower_idle_state=self._state.lower_idle_state,
             duration=self._state.profile_duration_s,
             algorithm=self._algorithm,
         )
         approx_avg_current = power.converged_average_current(
             self._state.session_config,
-            lower_power_state=self._state.lower_power_state,
+            lower_idle_state=self._state.lower_idle_state,
             absolute_tolerance=0.01 * _mA,
             algorithm=self._algorithm,
         )
@@ -241,7 +241,7 @@ class _EnergyRegionPlot(QWidget):
 
         active = power.group_active(
             self._state.session_config,
-            self._state.lower_power_state,
+            self._state.lower_idle_state,
             algorithm=self._algorithm,
         )
         if active.duration > 1 / rate:
@@ -308,7 +308,7 @@ class EnergyRegionOutput(QTabWidget):
             plot_widget = _EnergyRegionPlot(
                 seconds_in_x_axis,
                 event.session_config,
-                event.lower_power_state,
+                event.lower_idle_state,
                 power.algo.SparseIq(),
             )
             self._tabs[event.service_id] = plot_widget
@@ -318,7 +318,7 @@ class EnergyRegionOutput(QTabWidget):
         else:
             self._tabs[event.service_id].evolve_current_state(
                 session_config=event.session_config,
-                lower_power_state=event.lower_power_state,
+                lower_idle_state=event.lower_idle_state,
             )
 
         self._tabs[event.service_id].plot_current_state()
@@ -336,7 +336,7 @@ class EnergyRegionOutput(QTabWidget):
             plot_widget = _EnergyRegionPlot(
                 seconds_in_x_axis,
                 session_config,
-                event.lower_power_state,
+                event.lower_idle_state,
                 power.algo.Distance(),
             )
             self._tabs[event.service_id] = plot_widget
@@ -346,7 +346,7 @@ class EnergyRegionOutput(QTabWidget):
         else:
             self._tabs[event.service_id].evolve_current_state(
                 session_config=session_config,
-                lower_power_state=event.lower_power_state,
+                lower_idle_state=event.lower_idle_state,
             )
 
         self._tabs[event.service_id].plot_current_state()
@@ -364,7 +364,7 @@ class EnergyRegionOutput(QTabWidget):
             plot_widget = _EnergyRegionPlot(
                 seconds_in_x_axis,
                 session_config,
-                event.lower_power_state,
+                event.lower_idle_state,
                 power.algo.Presence(),
             )
             self._tabs[event.service_id] = plot_widget
@@ -374,7 +374,7 @@ class EnergyRegionOutput(QTabWidget):
         else:
             self._tabs[event.service_id].evolve_current_state(
                 session_config=session_config,
-                lower_power_state=event.lower_power_state,
+                lower_idle_state=event.lower_idle_state,
             )
 
         self._tabs[event.service_id].plot_current_state()

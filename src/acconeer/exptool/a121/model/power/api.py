@@ -97,7 +97,7 @@ def is_high_speed_mode(config: a121.SensorConfig) -> bool:
 
 
 def power_state(
-    state: Sensor.LowerPowerState,
+    state: Sensor.LowerIdleState,
     duration: float,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -289,7 +289,7 @@ def frame_idle(
 
 def group_active(
     session_config: a121.SessionConfig,
-    lower_power_state: t.Optional[Sensor.LowerPowerState],
+    lower_idle_state: t.Optional[Sensor.LowerIdleState],
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -321,7 +321,7 @@ def group_active(
                 frame_actives,
                 frame_idles,
                 session_config,
-                lower_power_state,
+                lower_idle_state,
                 sensor,
                 module,
             )
@@ -331,7 +331,7 @@ def group_active(
 
 
 def group_idle(
-    inter_group_power_state: t.Union[a121.IdleState, Sensor.LowerPowerState],
+    inter_group_power_state: t.Union[a121.IdleState, Sensor.LowerIdleState],
     duration: float,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -357,7 +357,7 @@ def group_idle(
 
 def session_generator(
     session_config: a121.SessionConfig,
-    lower_power_state: t.Optional[Sensor.LowerPowerState],
+    lower_idle_state: t.Optional[Sensor.LowerIdleState],
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -365,7 +365,7 @@ def session_generator(
     """
     Indefinitely simulates the session, yielding region per region
     """
-    active = group_active(session_config, lower_power_state, algorithm, sensor, module)
+    active = group_active(session_config, lower_idle_state, algorithm, sensor, module)
 
     rate = configured_rate(session_config)
 
@@ -376,7 +376,7 @@ def session_generator(
 
         if duration > 0:
             idle = group_idle(
-                lower_power_state or algo.last_inter_frame_idle_state(session_config),
+                lower_idle_state or algo.last_inter_frame_idle_state(session_config),
                 duration,
                 sensor=sensor,
                 module=module,
@@ -391,7 +391,7 @@ def session_generator(
 
 def session(
     session_config: a121.SessionConfig,
-    lower_power_state: t.Optional[Sensor.LowerPowerState],
+    lower_idle_state: t.Optional[Sensor.LowerIdleState],
     duration: float,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
@@ -405,7 +405,7 @@ def session(
 
     for region in session_generator(
         session_config,
-        lower_power_state,
+        lower_idle_state,
         algorithm,
         sensor,
         module,
@@ -426,7 +426,7 @@ def session(
 
 def converged_average_current(
     session_config: a121.SessionConfig,
-    lower_power_state: t.Optional[Sensor.LowerPowerState],
+    lower_idle_state: t.Optional[Sensor.LowerIdleState],
     absolute_tolerance: float,
     convergence_window: int = 10,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
@@ -439,7 +439,7 @@ def converged_average_current(
     """
     gen = session_generator(
         session_config,
-        lower_power_state,
+        lower_idle_state,
         algorithm,
         sensor,
         module,

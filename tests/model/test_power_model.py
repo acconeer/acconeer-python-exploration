@@ -117,14 +117,14 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
             "Hibernation state",
             SENSOR_CURRENT_LIMITS,
             power.power_state(
-                power.Sensor.PowerState.HIBERNATE, duration=1, module=power.Module.none()
+                power.Sensor.IdleState.HIBERNATE, duration=1, module=power.Module.none()
             ).average_current,
         ),
         (
             "Off state, ENABLE low",
             SENSOR_CURRENT_LIMITS,
             power.power_state(
-                power.Sensor.PowerState.OFF, duration=1, module=power.Module.none()
+                power.Sensor.IdleState.OFF, duration=1, module=power.Module.none()
             ).average_current,
         ),
         (
@@ -168,15 +168,15 @@ def test_sensor_limits(
 
 
 @pytest.mark.parametrize(
-    ("limit_name", "lower_power_state"),
+    ("limit_name", "lower_idle_state"),
     [
-        ("Off state, ENABLE low", power.Sensor.PowerState.OFF),
-        ("Hibernation state", power.Sensor.PowerState.HIBERNATE),
+        ("Off state, ENABLE low", power.Sensor.IdleState.OFF),
+        ("Hibernation state", power.Sensor.IdleState.HIBERNATE),
     ],
 )
-def test_lower_power_state_limits(
+def test_lower_idle_state_limits(
     limit_name: str,
-    lower_power_state: power.Sensor.LowerPowerState,
+    lower_idle_state: power.Sensor.LowerIdleState,
 ) -> None:
     unit = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["unit"]
     unit_factor = {"mA": 1e-3, "μA": 1e-6}[unit]
@@ -186,12 +186,12 @@ def test_lower_power_state_limits(
         MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["abs_tol"] * unit_factor
     )
 
-    avg_current = power.power_state(lower_power_state, duration=0.1).average_current
+    avg_current = power.power_state(lower_idle_state, duration=0.1).average_current
     assert avg_current == pytest.approx(expected_current, abs=absolute_tolerance)
 
 
 @pytest.mark.parametrize(
-    ("limit_name", "session_config", "lower_power_state", "algorithm"),
+    ("limit_name", "session_config", "lower_idle_state", "algorithm"),
     [
         (
             "Distance, Default",
@@ -199,7 +199,7 @@ def test_lower_power_state_limits(
                 distance.DetectorConfig(update_rate=1.0, close_range_leakage_cancellation=True),
                 sensor_ids=[1],
             )[0],
-            power.Sensor.PowerState.OFF,
+            power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),
         (
@@ -213,7 +213,7 @@ def test_lower_power_state_limits(
                 ),
                 sensor_ids=[1],
             )[0],
-            power.Sensor.PowerState.OFF,
+            power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),
         (
@@ -227,7 +227,7 @@ def test_lower_power_state_limits(
                 ),
                 sensor_ids=[1],
             )[0],
-            power.Sensor.PowerState.OFF,
+            power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),
         (
@@ -240,7 +240,7 @@ def test_lower_power_state_limits(
                 ),
                 sensor_ids=[1],
             )[0],
-            power.Sensor.PowerState.OFF,
+            power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),
         (
@@ -248,7 +248,7 @@ def test_lower_power_state_limits(
             a121.SessionConfig(
                 presence.Detector._get_sensor_config(presence_configs.get_medium_range_config()),
             ),
-            power.Sensor.PowerState.HIBERNATE,
+            power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),
         ),
         (
@@ -256,7 +256,7 @@ def test_lower_power_state_limits(
             a121.SessionConfig(
                 presence.Detector._get_sensor_config(presence_configs.get_short_range_config()),
             ),
-            power.Sensor.PowerState.HIBERNATE,
+            power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),
         ),
         (
@@ -264,7 +264,7 @@ def test_lower_power_state_limits(
             a121.SessionConfig(
                 presence.Detector._get_sensor_config(presence_configs.get_low_power_config()),
             ),
-            power.Sensor.PowerState.HIBERNATE,
+            power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),
         ),
     ],
@@ -272,7 +272,7 @@ def test_lower_power_state_limits(
 def test_module_limits(
     limit_name: str,
     session_config: a121.SessionConfig,
-    lower_power_state: power.Sensor.LowerPowerState,
+    lower_idle_state: power.Sensor.LowerIdleState,
     algorithm: power.algo.Algorithm,
 ) -> None:
     unit = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["unit"]
@@ -285,7 +285,7 @@ def test_module_limits(
 
     avg_current = power.converged_average_current(
         session_config,
-        lower_power_state,
+        lower_idle_state,
         absolute_tolerance / 4,
         algorithm=algorithm,
     )

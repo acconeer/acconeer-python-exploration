@@ -161,7 +161,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
     @staticmethod
     def _will_keep_rate(
         config: a121.SessionConfig,
-        lower_power_state: t.Optional[power.Sensor.LowerPowerState],
+        lower_idle_state: t.Optional[power.Sensor.LowerIdleState],
         algorithm: power.algo.Algorithm,
     ) -> bool:
         rate = power.configured_rate(config)
@@ -169,13 +169,13 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         if rate is None:
             return True
 
-        active = power.group_active(config, lower_power_state, algorithm)
+        active = power.group_active(config, lower_idle_state, algorithm)
         return active.duration < 1 / rate
 
     def update_power_curves(
         self,
         config: a121.SessionConfig,
-        lower_power_state: t.Optional[power.Sensor.LowerPowerState],
+        lower_idle_state: t.Optional[power.Sensor.LowerIdleState],
     ) -> None:
         self._plot_increment_timer.stop()
         self.clear()
@@ -213,7 +213,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
                 [
                     power.converged_average_current(
                         config,
-                        lower_power_state=lower_power_state,
+                        lower_idle_state=lower_idle_state,
                         absolute_tolerance=1e-3,
                         algorithm=self._algorithm,
                     )
@@ -233,7 +233,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             )
             if not self._will_keep_rate(
                 ready_config_evolver(config, update_rate=max(update_rates)),
-                lower_power_state=None,
+                lower_idle_state=None,
                 algorithm=self._algorithm,
             ):
                 curves_that_wont_keep_rate += ["Ready"]
@@ -241,7 +241,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
             def ready_f(update_rate: float) -> float:
                 return power.converged_average_current(
                     ready_config_evolver(config, update_rate=update_rate),
-                    lower_power_state=None,
+                    lower_idle_state=None,
                     absolute_tolerance=1e-3,
                     algorithm=self._algorithm,
                 )
@@ -254,7 +254,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         )
         if not self._will_keep_rate(
             sleep_config_evolver(config, update_rate=max(update_rates)),
-            lower_power_state=None,
+            lower_idle_state=None,
             algorithm=self._algorithm,
         ):
             curves_that_wont_keep_rate += ["Sleep"]
@@ -262,7 +262,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         def sleep_f(update_rate: float) -> float:
             return power.converged_average_current(
                 sleep_config_evolver(config, update_rate=update_rate),
-                lower_power_state=None,
+                lower_idle_state=None,
                 absolute_tolerance=1e-3,
                 algorithm=self._algorithm,
             )
@@ -275,7 +275,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         )
         if not self._will_keep_rate(
             deep_sleep_config_evolver(config, update_rate=max(update_rates)),
-            lower_power_state=None,
+            lower_idle_state=None,
             algorithm=self._algorithm,
         ):
             curves_that_wont_keep_rate += ["Deep Sleep"]
@@ -283,7 +283,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         def deep_sleep_f(update_rate: float) -> float:
             return power.converged_average_current(
                 deep_sleep_config_evolver(config, update_rate=update_rate),
-                lower_power_state=None,
+                lower_idle_state=None,
                 absolute_tolerance=1e-3,
                 algorithm=self._algorithm,
             )
@@ -294,7 +294,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
 
         if not self._will_keep_rate(
             self._evolve_config(config, update_rate=max(update_rates)),
-            lower_power_state=power.Sensor.PowerState.HIBERNATE,
+            lower_idle_state=power.Sensor.IdleState.HIBERNATE,
             algorithm=self._algorithm,
         ):
             curves_that_wont_keep_rate += ["Hibernate"]
@@ -302,7 +302,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         def hibernate_f(update_rate: float) -> float:
             return power.converged_average_current(
                 self._evolve_config(config, update_rate=update_rate),
-                lower_power_state=power.Sensor.PowerState.HIBERNATE,
+                lower_idle_state=power.Sensor.IdleState.HIBERNATE,
                 absolute_tolerance=1e-3,
                 algorithm=self._algorithm,
             )
@@ -313,7 +313,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
 
         if not self._will_keep_rate(
             self._evolve_config(config, update_rate=max(update_rates)),
-            lower_power_state=power.Sensor.PowerState.OFF,
+            lower_idle_state=power.Sensor.IdleState.OFF,
             algorithm=self._algorithm,
         ):
             curves_that_wont_keep_rate += ["Off"]
@@ -321,7 +321,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         def off_f(update_rate: float) -> float:
             return power.converged_average_current(
                 self._evolve_config(config, update_rate=update_rate),
-                lower_power_state=power.Sensor.PowerState.OFF,
+                lower_idle_state=power.Sensor.IdleState.OFF,
                 absolute_tolerance=1e-3,
                 algorithm=self._algorithm,
             )
@@ -404,7 +404,7 @@ class PowerConsumptionVsRateOutput(QWidget):
             self._tab_widget.setCurrentWidget(plot_widget)
 
         self._tabs[event.service_id].update_power_curves(
-            event.session_config, event.lower_power_state
+            event.session_config, event.lower_idle_state
         )
 
     def _handle_distance_config_event(self, event: DistanceConfigEvent) -> None:
@@ -416,7 +416,7 @@ class PowerConsumptionVsRateOutput(QWidget):
             self._tab_widget.setCurrentWidget(plot_widget)
 
         self._tabs[event.service_id].update_power_curves(
-            event.translated_session_config, event.lower_power_state
+            event.translated_session_config, event.lower_idle_state
         )
 
     def _handle_presence_config_event(self, event: PresenceConfigEvent) -> None:
@@ -428,7 +428,7 @@ class PowerConsumptionVsRateOutput(QWidget):
             self._tab_widget.setCurrentWidget(plot_widget)
 
         self._tabs[event.service_id].update_power_curves(
-            event.translated_session_config, event.lower_power_state
+            event.translated_session_config, event.lower_idle_state
         )
 
     def _handle_identified_service_uninstalled_event(
