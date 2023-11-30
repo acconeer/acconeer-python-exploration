@@ -43,11 +43,15 @@ class TabPGWidget(QFrame):
         self.setLayout(self._main_layout)
 
     def newPlotWidget(self, title: str) -> pg.GraphicsLayoutWidget:
-        new_tab_id = len(self._button_group.buttons())
         plot_widget = pg.GraphicsLayoutWidget()
-        plot_widget.setVisible(new_tab_id == 0)
-        self._plot_widgets.append(plot_widget)
-        self._main_layout.addWidget(plot_widget)
+        self.newTab(plot_widget, title)
+        return plot_widget
+
+    def newTab(self, widget: QWidget, title: str) -> None:
+        new_tab_id = len(self._button_group.buttons())
+        widget.setVisible(new_tab_id == 0)
+        self._plot_widgets.append(widget)
+        self._main_layout.addWidget(widget)
 
         button = QPushButton(title, self)
         button.setCheckable(True)
@@ -55,11 +59,9 @@ class TabPGWidget(QFrame):
         button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._button_group.addButton(button, id=len(self._button_group.buttons()))
         self._button_group.idToggled.connect(
-            lambda button_id, checked: plot_widget.setVisible(button_id == new_tab_id and checked)
+            lambda button_id, checked: widget.setVisible(button_id == new_tab_id and checked)
         )
         self._button_layout.addWidget(button)
-
-        return plot_widget
 
     def clear(self) -> None:
         try:
