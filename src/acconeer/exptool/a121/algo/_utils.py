@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import enum
 from typing import Any, Optional, Tuple, Union
 
 import numpy as np
@@ -64,6 +65,15 @@ class ReflectorShape(AlgoParamEnum):
     @property
     def exponent(self) -> float:
         return float(self.value)
+
+
+class PeakSortingMethod(AlgoParamEnum):
+    """Peak sorting methods.
+    ``CLOSEST`` sort according to distance.
+    ``STRONGEST`` sort according to strongest reflector."""
+
+    CLOSEST = enum.auto()
+    STRONGEST = enum.auto()
 
 
 def get_distance_offset(peak_location: Optional[float], profile: a121.Profile) -> float:

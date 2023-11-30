@@ -25,6 +25,7 @@ from acconeer.exptool.a121.algo import (
     AlgoBase,
     AlgoConfigBase,
     Controller,
+    PeakSortingMethod,
     ReflectorShape,
     calc_processing_gain,
     calculate_loopback_peak_location,
@@ -32,7 +33,7 @@ from acconeer.exptool.a121.algo import (
     select_prf,
 )
 
-from ._aggregator import Aggregator, AggregatorConfig, PeakSortingMethod, ProcessorSpec
+from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
 from ._processors import (
     DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE,
     DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE,

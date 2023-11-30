@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import enum
 from typing import Optional, Tuple
 
 import attrs
@@ -11,22 +10,13 @@ import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, AlgoParamEnum
+from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, PeakSortingMethod
 from acconeer.exptool.a121.algo.distance._processors import (
     Processor,
     ProcessorConfig,
     ProcessorContext,
     ProcessorResult,
 )
-
-
-class PeakSortingMethod(AlgoParamEnum):
-    """Peak sorting methods.
-    ``CLOSEST`` sort according to distance.
-    ``STRONGEST`` sort according to strongest reflector."""
-
-    CLOSEST = enum.auto()
-    STRONGEST = enum.auto()
 
 
 @attrs.frozen(kw_only=True)

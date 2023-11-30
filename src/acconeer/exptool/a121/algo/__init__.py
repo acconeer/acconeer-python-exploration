@@ -18,6 +18,7 @@ from ._utils import (
     PERCEIVED_WAVELENGTH,
     RLG_PER_HWAAS_MAP,
     SIGNAL_TEMPERATURE_MODEL_PARAMETER,
+    PeakSortingMethod,
     ReflectorShape,
     _convert_amplitude_to_strength,
     _convert_multiple_amplitudes_to_strengths,
