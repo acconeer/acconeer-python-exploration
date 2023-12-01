@@ -20,6 +20,7 @@ from acconeer.exptool.a121.algo import (
     PERCEIVED_WAVELENGTH,
     AlgoBase,
     AlgoConfigBase,
+    PeakSortingMethod,
     calculate_loopback_peak_location,
 )
 
@@ -99,6 +100,12 @@ class DetectorConfig(AlgoConfigBase):
 
     subsweep_configurations: Optional[List[a121.SubsweepConfig]] = attrs.field(default=None)
     """Optional list of subsweep configurations that over-writes the sensor configuration."""
+
+    peak_sorting_method: PeakSortingMethod = attrs.field(
+        default=PeakSortingMethod.CLOSEST,
+        converter=PeakSortingMethod,
+    )
+    """Sorting method of targets."""
 
     enable_bilateration: bool = attrs.field(default=False)
     """Enable two-sensor bilateration."""
@@ -270,6 +277,7 @@ class Detector:
             pc = ProcessorConfig(
                 num_std_treshold=self.detector_config.num_std_threshold,
                 num_mean_treshold=self.detector_config.num_mean_threshold,
+                peak_sorting_method=self.detector_config.peak_sorting_method,
             )
 
             self.processors[s_id] = Processor(

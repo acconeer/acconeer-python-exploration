@@ -20,6 +20,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121, opser
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo import PeakSortingMethod
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -553,6 +554,15 @@ class ViewPlugin(A121ViewPluginBase):
                 name_label_tooltip=get_attribute_docstring(DetectorConfig, "update_rate"),
                 suffix=" Hz",
                 decimals=1,
+            ),
+            "peak_sorting_method": pidgets.EnumPidgetFactory(
+                name_label_text="Peak sorting method:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "peak_sorting_method"),  # type: ignore[arg-type]
+                enum_type=PeakSortingMethod,
+                label_mapping={
+                    PeakSortingMethod.CLOSEST: "Closest",
+                    PeakSortingMethod.STRONGEST: "Strongest",
+                },
             ),
         }
 

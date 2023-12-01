@@ -16,6 +16,7 @@ from acconeer.exptool.a121.algo import (
     ENVELOPE_FWHM_M,
     PERCEIVED_WAVELENGTH,
     AlgoProcessorConfigBase,
+    PeakSortingMethod,
     ProcessorBase,
     _convert_amplitude_to_strength,
     get_distance_filter_coeffs,
@@ -35,6 +36,10 @@ MERGE_SPEED_MPS = 0.05
 class ProcessorConfig(AlgoProcessorConfigBase):
     num_std_treshold: float = attrs.field(default=5)
     num_mean_treshold: float = attrs.field(default=2)
+    peak_sorting_method: PeakSortingMethod = attrs.field(
+        default=PeakSortingMethod.STRONGEST,
+        converter=PeakSortingMethod,
+    )
 
     def _collect_validation_results(
         self, config: Optional[a121.SessionConfig]
@@ -318,12 +323,16 @@ class Processor(ProcessorBase[ProcessorResult]):
         ]
 
         merged_targets = self._merge_subsweep_targets(subsweep_results)
+        sorted_targets = self._sort_targets(
+            merged_targets, self.processor_config.peak_sorting_method
+        )
+
         subweeps_extra_results = [res.extra_result for res in subsweep_results]
 
         er = ProcessorExtraResult(dv=self.dv)
 
         return ProcessorResult(
-            targets=merged_targets,
+            targets=sorted_targets,
             time=result.tick_time,
             extra_result=er,
             subsweeps_extra_results=subweeps_extra_results,
@@ -377,6 +386,20 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def update_config(self, config: ProcessorConfig) -> None:
         pass
+
+    @staticmethod
+    def _sort_targets(
+        targets: List[Target],
+        method: PeakSortingMethod,
+    ) -> List[Target]:
+        if method == PeakSortingMethod.CLOSEST:
+            quantity_to_sort = np.array([target.distance for target in targets])
+        elif method == PeakSortingMethod.STRONGEST:
+            quantity_to_sort = np.array([-target.strength for target in targets])
+        else:
+            raise ValueError("Unknown peak sorting method")
+
+        return [targets[i] for i in quantity_to_sort.argsort()]
 
 
 def apply_max_depth_filter(
