@@ -780,9 +780,16 @@ class ComboboxPidget(Pidget, Generic[T]):
         data = self._combobox.itemData(index)
         self.sig_update.emit(data)
 
+    def _find_data(self, data: Any) -> int:
+        for idx in range(self._combobox.count()):
+            if self._combobox.itemData(idx) == data:
+                return idx
+
+        return -1
+
     def set_data(self, param: Any) -> None:
         with QtCore.QSignalBlocker(self):
-            index = self._combobox.findData(param)
+            index = self._find_data(param)
             if index == -1:
                 msg = f"Data item {param} could not be found in {self}."
                 raise ValueError(msg)
