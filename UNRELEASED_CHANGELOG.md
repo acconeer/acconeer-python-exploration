@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Strenght added to target in obstacle.
 
 ### Changed
 
