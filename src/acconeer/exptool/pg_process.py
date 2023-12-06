@@ -1,22 +1,34 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2023
 # All rights reserved
 
 import multiprocessing as mp
 import queue
 import signal
+import warnings
 from time import sleep, time
 
 
+_MISSING = object()
+
+
 class PGProcess:
-    def __init__(self, updater, max_freq=60):
+    def __init__(self, updater, max_freq=_MISSING, setup_style="layout", allow_subsampling=True):
         self._queue = mp.Queue()
         self._exit_event = mp.Event()
+
+        if max_freq is _MISSING and not allow_subsampling:
+            warnings.warn(
+                "'allow_subsampling==False' and not specifying 'max_freq' can lead to "
+                + "accumulating lag. Specify a high enough 'max_freq' to avoid this."
+            )
 
         args = (
             self._queue,
             self._exit_event,
             updater,
-            max_freq,
+            60 if max_freq is _MISSING else max_freq,
+            setup_style,
+            allow_subsampling,
         )
 
         self._process = mp.Process(target=pg_process_program, args=args, daemon=True)
@@ -48,7 +60,7 @@ class PGProcess:
             raise RuntimeError
 
 
-def pg_process_program(q, exit_event, updater, max_freq):
+def pg_process_program(q, exit_event, updater, max_freq, setup_style, allow_subsampling):
     from PySide6 import QtWidgets
 
     import pyqtgraph as pg
@@ -62,7 +74,12 @@ def pg_process_program(q, exit_event, updater, max_freq):
     win = pg.GraphicsLayoutWidget()
     win.closeEvent = lambda _: exit_event.set()
 
-    updater.setup(win.ci)
+    if setup_style == "layout":
+        updater.setup(win.ci)
+    elif setup_style == "widget":
+        updater.setup(win)
+    else:
+        raise ValueError(f"setup_style ({setup_style!r}) needs to be 'layout' or 'widget'.")
 
     win.show()
     app.processEvents()
@@ -71,8 +88,9 @@ def pg_process_program(q, exit_event, updater, max_freq):
         data = None
         try:
             data = q.get(timeout=0.1)
-            while True:
-                data = q.get(timeout=0.001)
+            if allow_subsampling:
+                while True:
+                    data = q.get(timeout=0.001)
         except queue.Empty:
             pass
 
