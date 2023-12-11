@@ -1,5 +1,15 @@
 # Changelog
 
+## v7.7.3
+
+### Added
+- Strength added to target in obstacle.
+- Direct links to algorithms' documentation pages.
+- Example for post-processing recorded data.
+
+### Changed
+- Some error messages have been improved to simplify troubleshooting.
+
 ## v7.7.2
 
 ### Added
