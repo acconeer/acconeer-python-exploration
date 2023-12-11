@@ -18,7 +18,7 @@ from acconeer.exptool.a121.algo.vibration import (
     ProcessorConfig,
     ProcessorContext,
     ProcessorResult,
-    get_sensor_config,
+    get_high_frequency_sensor_config,
 )
 
 
@@ -26,7 +26,7 @@ def main():
     args = a121.ExampleArgumentParser().parse_args()
     et.utils.config_logging(args)
 
-    sensor_config = get_sensor_config()
+    sensor_config = get_high_frequency_sensor_config()
 
     client = a121.Client.open(**a121.get_client_args(args))
     metadata = client.setup_session(sensor_config)
