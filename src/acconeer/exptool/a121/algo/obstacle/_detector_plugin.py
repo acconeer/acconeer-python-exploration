@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -563,6 +563,18 @@ class ViewPlugin(A121ViewPluginBase):
                     PeakSortingMethod.CLOSEST: "Closest",
                     PeakSortingMethod.STRONGEST: "Strongest",
                 },
+            ),
+            "dead_reckoning_duration_s": pidgets.FloatPidgetFactory(
+                name_label_text="Dead reckoning duration:",
+                suffix=" s",
+                decimals=1,
+            ),
+            "kalman_sensitivity": pidgets.FloatSliderPidgetFactory(
+                name_label_text="Kalman filter sensitivity:",
+                decimals=2,
+                limits=(0.001, 1),
+                show_limit_values=False,
+                limit_texts=("Higher robustness", "More Responsive"),
             ),
         }
 

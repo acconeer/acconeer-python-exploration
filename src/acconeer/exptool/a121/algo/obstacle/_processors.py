@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
 
+import copy
 from typing import List, Optional
 
 import attrs
@@ -40,6 +41,9 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         default=PeakSortingMethod.STRONGEST,
         converter=PeakSortingMethod,
     )
+    max_robot_speed: float = attrs.field(default=0.5)
+    dead_reckoning_duration_s: float = attrs.field(default=0.5)
+    sensitivity: float = attrs.field(default=0.5)
 
     def _collect_validation_results(
         self, config: Optional[a121.SessionConfig]
@@ -95,6 +99,7 @@ class SubsweepProcessorContext:
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
+    update_rate: float = attrs.field()
     mean_sweeps: list[npt.NDArray[np.float_]] = attrs.field(factory=list)
     std_sweeps: list[npt.NDArray[np.float_]] = attrs.field(factory=list)
     reference_temperature: Optional[float] = attrs.field(default=None)
@@ -116,14 +121,10 @@ class SubsweepProcessor:
         *,
         sensor_config: a121.SensorConfig,
         processor_config: ProcessorConfig,
-        proc_context: Optional[ProcessorContext] = None,
+        proc_context: ProcessorContext,
         ssproc_context: Optional[SubsweepProcessorContext] = None,
     ) -> None:
-        if proc_context is None:
-            self.proc_context = ProcessorContext()
-        else:
-            self.proc_context = proc_context
-
+        self.proc_context = proc_context
         if ssproc_context is None:
             self.ssproc_context = SubsweepProcessorContext()
         else:
@@ -252,7 +253,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     :param sensor_config: Sensor configuration
     :param processor_config: Processor configuration
-    :param context: Optional processor context
+    :param context: Processor context
     """
 
     def __init__(
@@ -260,13 +261,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         *,
         sensor_config: a121.SensorConfig,
         processor_config: ProcessorConfig,
-        context: Optional[ProcessorContext] = None,
+        context: ProcessorContext,
     ) -> None:
-        if context is None:
-            self.context = ProcessorContext()
-        else:
-            self.context = context
-
         self.sensor_config = sensor_config
         self.processor_config = processor_config
 
@@ -285,7 +281,7 @@ class Processor(ProcessorBase[ProcessorResult]):
                 SubsweepProcessor(
                     sensor_config=subsweep_sensor_config,
                     processor_config=processor_config,
-                    proc_context=self.context,
+                    proc_context=context,
                     ssproc_context=sspc,
                 )
             )
@@ -307,6 +303,20 @@ class Processor(ProcessorBase[ProcessorResult]):
             * self.sensor_config.sweep_rate
         )
 
+        self.kalman_filters: list[_KalmanFilter] = []
+        self.update_rate = context.update_rate
+        self.num_dead_reckoning_frames = int(
+            processor_config.dead_reckoning_duration_s * self.update_rate
+        )
+        self.process_noise_gain_sensitivity = processor_config.sensitivity
+        self.min_num_updates_valid_estimate = int(
+            2 + (1 - self.process_noise_gain_sensitivity) * 20
+        )
+
+        # Largest anticipated distance change of target between frames. 4 to add margin.
+        self.max_meas_state_diff_m = processor_config.max_robot_speed / self.update_rate * 4
+        self.max_robot_speed = processor_config.max_robot_speed
+
     def process(self, result: a121.Result) -> ProcessorResult:
         # Filter temperature
         if self.filtered_sensor_temperature is None:
@@ -327,12 +337,26 @@ class Processor(ProcessorBase[ProcessorResult]):
             merged_targets, self.processor_config.peak_sorting_method
         )
 
+        # Update kalman filters.
+        target_distances = [target.distance for target in sorted_targets]
+        target_velocities = [target.velocity for target in sorted_targets]
+        self.kalman_filters = self._update_kalman_filters(
+            self.kalman_filters, target_distances, target_velocities
+        )
+
+        filtered_targets = []
+        for target, kf in zip(sorted_targets, self.kalman_filters):
+            distance = kf.get_distance()
+            velocity = kf.get_velocity()
+            new_target = Target(distance=distance, velocity=velocity, strength=target.strength)
+            filtered_targets.append(new_target)
+
         subweeps_extra_results = [res.extra_result for res in subsweep_results]
 
         er = ProcessorExtraResult(dv=self.dv)
 
         return ProcessorResult(
-            targets=sorted_targets,
+            targets=filtered_targets,
             time=result.tick_time,
             extra_result=er,
             subsweeps_extra_results=subweeps_extra_results,
@@ -400,6 +424,87 @@ class Processor(ProcessorBase[ProcessorResult]):
             raise ValueError("Unknown peak sorting method")
 
         return [targets[i] for i in quantity_to_sort.argsort()]
+
+    def get_closest_target_index(
+        self,
+        distances: npt.NDArray[np.float_],
+        velocities: npt.NDArray[np.float_],
+        kf_distance: float,
+        kf_velocity: float,
+    ) -> int:
+        cost = np.sqrt(
+            np.square((velocities - kf_velocity) / self.max_robot_speed)
+            + np.square((distances - kf_distance) / self.max_meas_state_diff_m)
+        )
+        index = int(np.argmin(cost))
+
+        return index
+
+    def _update_kalman_filters(
+        self,
+        kfs: List[_KalmanFilter],
+        distances: List[float],
+        velocities: List[float],
+    ) -> List[_KalmanFilter]:
+        """Update Kalman filters for a sensor, using new distance and velocity estimates.
+        Identifying the target, based on distance and velocity, closest to the current state of the filter.
+        If the target is sufficiently close to the current state, it is used to update the filter.
+        Once a target has been used to update a filter, it can't be used by other filters.
+        If no estimated target matches the filter, dead reckoning is used. Each time dead
+        reckoning is performed, a counter is incremented. If the counter exceeds a certain value,
+        the filter is deleted.
+        A filter must have a minimum number of updates before it is regarded as initiated.
+        """
+        distances = copy.deepcopy(list(distances))
+        velocities = copy.deepcopy(list(velocities))
+        kfs = copy.deepcopy(kfs)
+        for kf in kfs:
+            # Find the indexes of the closest distances.
+            state_vs_distance_diff = np.abs(np.array(kf.get_distance()) - np.array(distances))
+            idxs_close_to_estimate = np.where(state_vs_distance_diff < self.max_meas_state_diff_m)[
+                0
+            ]
+            kf.predict()
+            if len(distances) == 0 or len(idxs_close_to_estimate) == 0:
+                # No estimates found.
+                kf.dead_reckoning_count += 1
+                # Remove the filter if not initialized or number of dead reckoning steps is to
+                # high.
+                if self.num_dead_reckoning_frames < kf.dead_reckoning_count or not kf.has_init:
+                    kfs.remove(kf)
+            else:
+                # Estimates found.
+                kf.dead_reckoning_count = 0
+                # Find the target closest to the current estimates.
+                distances_array = np.asarray(distances)
+                velocities_array = np.asarray(velocities)
+                idx_closest = self.get_closest_target_index(
+                    distances_array[idxs_close_to_estimate],
+                    velocities_array[idxs_close_to_estimate],
+                    kf.get_distance(),
+                    kf.get_velocity(),
+                )
+                idx_in_r_array = idxs_close_to_estimate[idx_closest]
+                # Update KF
+                kf.update(np.matrix([[distances[idx_in_r_array]], [velocities[idx_in_r_array]]]))
+                # Remove distance and velocity as they have now been used to update a filter.
+                distances.pop(idx_in_r_array)
+                velocities.pop(idx_in_r_array)
+                # Check if the minimum number of updates have been reached. If so, the filter has
+                # been initialized.
+                if self.min_num_updates_valid_estimate <= kf.num_updates:
+                    kf.has_init = True
+        for distance, velocity in zip(distances, velocities):
+            kfs.append(
+                _KalmanFilter(
+                    1 / self.update_rate,
+                    self.process_noise_gain_sensitivity,
+                    distance,
+                    velocity,
+                    self.min_num_updates_valid_estimate,
+                )
+            )
+        return kfs
 
 
 def apply_max_depth_filter(
@@ -476,3 +581,59 @@ def subtract_reflector_from_fftmap(
             np.inf,
         )
     )
+
+
+class _KalmanFilter:
+    # Acceleration noise std (m/s^2).
+    _PROCESS_NOISE_STD = 0.01
+    # Distance estimated noise std (m).
+    _MEASUREMENT_NOISE_STD = 0.005
+
+    def __init__(
+        self,
+        dt: float,
+        process_noise_gain_sensitivity: float,
+        init_position: float,
+        init_velocity: float,
+        min_num_updates_valid_estimate: int,
+    ) -> None:
+        self.A: npt.NDArray[np.float_] = np.matrix([[1.0, dt], [0.0, 1.0]])
+        self.H: npt.NDArray[np.float_] = np.matrix([[1, 0], [0, 1]])
+        process_noise_gain = self._sensitivity_to_gain(process_noise_gain_sensitivity)
+        # Random acceleration process noise.
+        self.Q = (
+            np.matrix([[(dt**4) / 4, (dt**3) / 2], [(dt**3) / 2, dt**2]])
+            * (self._PROCESS_NOISE_STD) ** 2
+            * process_noise_gain
+        )
+        self.R = self._MEASUREMENT_NOISE_STD**2
+        self.P = np.eye(self.A.shape[1])
+        self.x: npt.NDArray[np.float_] = np.matrix([[init_position], [init_velocity]])
+        self.min_num_updates_valid_estimate = min_num_updates_valid_estimate
+        self.dead_reckoning_count = 0
+        self.num_updates = 0
+        self.has_init = False
+
+    def predict(self) -> None:
+        self.x = np.dot(self.A, self.x)
+        self.P = np.dot(np.dot(self.A, self.P), self.A.T) + self.Q
+
+    def update(self, z: npt.NDArray[np.float_]) -> None:
+        S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
+        K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))
+        self.x = self.x + np.dot(K, (z - np.dot(self.H, self.x)))
+        I = np.eye(self.H.shape[1])
+        self.P = (I - (K * self.H)) * self.P
+        self.num_updates += 1
+        if self.min_num_updates_valid_estimate < self.num_updates:
+            self.has_init = True
+
+    def get_distance(self) -> float:
+        return float(self.x[0, 0])
+
+    def get_velocity(self) -> float:
+        return float(self.x[1, 0])
+
+    @staticmethod
+    def _sensitivity_to_gain(sensitivity: float) -> float:
+        return 0.01 + sensitivity * 20.0

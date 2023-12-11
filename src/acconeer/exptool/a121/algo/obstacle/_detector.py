@@ -110,6 +110,14 @@ class DetectorConfig(AlgoConfigBase):
     )
     """Sorting method of targets."""
 
+    dead_reckoning_duration_s: float = attrs.field(default=0.5)
+    """Specify the duration (s) of the Kalman filter to perform dead reckoning before stop
+    tracking."""
+
+    kalman_sensitivity: float = attrs.field(default=0.5)
+    """Specify the sensitivity of the Kalman filter. A higher value yields a more responsive
+    filter. A lower value yields a more robust filter."""
+
     enable_bilateration: bool = attrs.field(default=False)
     """Enable two-sensor bilateration."""
 
@@ -272,6 +280,7 @@ class Detector:
 
             assert sens_context.loopback_peak_location_m is not None
             proc_context = ProcessorContext(
+                update_rate=self.detector_config.update_rate,
                 mean_sweeps=mean_sweeps,
                 std_sweeps=std_sweeps,
                 loopback_peak_location_m=sens_context.loopback_peak_location_m,
@@ -282,6 +291,9 @@ class Detector:
                 num_std_treshold=self.detector_config.num_std_threshold,
                 num_mean_treshold=self.detector_config.num_mean_threshold,
                 peak_sorting_method=self.detector_config.peak_sorting_method,
+                max_robot_speed=self.detector_config.max_robot_speed,
+                dead_reckoning_duration_s=self.detector_config.dead_reckoning_duration_s,
+                sensitivity=self.detector_config.kalman_sensitivity,
             )
 
             self.processors[s_id] = Processor(
@@ -292,7 +304,9 @@ class Detector:
 
             group.append({s_id: sensor_config})
 
-        self.session_config = a121.SessionConfig(group, extended=True)
+        self.session_config = a121.SessionConfig(
+            group, extended=True, update_rate=self.detector_config.update_rate
+        )
 
         self.client.setup_session(self.session_config)
 
@@ -498,7 +512,11 @@ class Detector:
         self.client.stop_session()
 
         # Processor used for applying the depth filter
-        processor = Processor(sensor_config=sensor_config, processor_config=ProcessorConfig())
+        processor = Processor(
+            sensor_config=sensor_config,
+            processor_config=ProcessorConfig(),
+            context=ProcessorContext(update_rate=self.detector_config.update_rate),
+        )
 
         for s_id in self.sensor_ids:
             results: list[a121.Result] = [r[s_id] for r in result_list]
