@@ -27,6 +27,7 @@ def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a121.algo.tank_level._plugin import TANK_LEVEL_PLUGIN
     from acconeer.exptool.a121.algo.touchless_button._plugin import TOUCHLESS_BUTTON_PLUGIN
     from acconeer.exptool.a121.algo.vibration._plugin import VIBRATION_PLUGIN
+    from acconeer.exptool.a121.algo.waste_level._plugin import WASTE_LEVEL_PLUGIN
 
     # Please keep in lexicographical order
     return [
@@ -46,4 +47,5 @@ def load_default_plugins() -> list[PluginSpec]:
         TOUCHLESS_BUTTON_PLUGIN,
         VIBRATION_PLUGIN,
         SPEED_DETECTOR_PLUGIN,
+        WASTE_LEVEL_PLUGIN,
     ]

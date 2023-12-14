@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Waste level example app
 
 ### Changed
 
