@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -37,10 +37,13 @@ from ._processors import (
 )
 
 
+opser.register_json_presentable(a121.SessionConfig)
+
+
 @attrs.mutable(kw_only=True)
 class DetectorContext(AlgoBase):
     single_sensor_contexts: Dict[int, SingleSensorContext] = attrs.field(factory=dict)
-    calibration_detector_config: Optional[DetectorConfig] = attrs.field(default=None)
+    calibration_session_config: Optional[a121.SessionConfig] = attrs.field(default=None)
 
     @property
     def sensor_ids(self) -> list[int]:
@@ -236,7 +239,7 @@ class Detector:
         self._calibrate_offset()
         self._calibrate_threshold()
 
-        self.context.calibration_detector_config = self.detector_config
+        self.context.calibration_session_config = self.session_config
 
         self.detector_status.detector_state = DetailedStatus.OK
         self.detector_status.ready_to_start = True
@@ -389,7 +392,7 @@ class Detector:
             config=config, sensor_ids=self.sensor_ids
         )
 
-        if not (self.context.calibration_detector_config == config):
+        if not (self.context.calibration_session_config == self.session_config):
             self.detector_status.detector_state = DetailedStatus.CALIBRATION_MISSING
             self.detector_status.ready_to_start = False
 
@@ -549,6 +552,12 @@ class Detector:
                 ready_to_start=False,
             )
 
+        (
+            session_config,
+            _,
+        ) = cls._detector_to_session_config_and_processor_specs(
+            config=config, sensor_ids=sensor_ids
+        )
         # Offset calibration is always performed as a part of the detector calibration process.
         # Use this as indication whether detector calibration has been performed.
         calibration_missing = np.any(
@@ -558,7 +567,8 @@ class Detector:
             ]
         )
         config_mismatch = (
-            context.calibration_detector_config != config or context.sensor_ids != sensor_ids
+            context.calibration_session_config != session_config
+            or context.sensor_ids != sensor_ids
         )
 
         if calibration_missing:
