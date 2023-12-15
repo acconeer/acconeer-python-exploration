@@ -21,10 +21,23 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import H5Record, _core, algo
 from acconeer.exptool.a121._core_ext._replaying_client import _ReplayingClient
-from acconeer.exptool.a121.algo.breathing import RefApp as RefAppBreathing
-from acconeer.exptool.a121.algo.breathing import RefAppResult as RefAppResultBreathing
+from acconeer.exptool.a121.algo.breathing import (
+    RefApp as RefAppBreathing,
+)
+from acconeer.exptool.a121.algo.breathing import (
+    RefAppResult as RefAppResultBreathing,
+)
 from acconeer.exptool.a121.algo.breathing._ref_app import (
     _load_algo_data as _load_algo_data_breathing,
+)
+from acconeer.exptool.a121.algo.surface_velocity import (
+    ExampleApp as ExampleApp_surface_velocity,
+)
+from acconeer.exptool.a121.algo.surface_velocity import (
+    ExampleAppResult,
+)
+from acconeer.exptool.a121.algo.surface_velocity._example_app import (
+    _load_algo_data as _load_algo_data_surface_velocity,
 )
 
 
@@ -485,51 +498,102 @@ def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
 
 
 def get_processed_data(h5_file: h5py.File) -> pd.DataFrame:
-    algo_group = h5_file["algo"]
     app_key = h5_file["algo/key"][()].decode()
+    supported_apps = ["breathing", "surface_velocity"]
 
-    supported_apps = ["breathing"]
-    processed_data_list = []
-
-    # Input with h5 or record
+    load_algo_and_client = {
+        "breathing": get_processed_data_breathing,
+        "surface_velocity": get_processed_data_surface_velocity,
+    }
     if app_key in supported_apps:
-        sensor_id, ref_app_config = _load_algo_data_breathing(algo_group)
+        df_processed_data = load_algo_and_client[app_key](h5_file)
+    else:
+        df_processed_data = pd.DataFrame()
+    return df_processed_data
 
-        # Client preparation
-        record = H5Record(h5_file)
-        client = _ReplayingClient(record, realtime_replay=False)
-        num_frames = record.num_frames
-        ref_app = RefAppBreathing(
-            client=client, sensor_id=sensor_id, ref_app_config=ref_app_config
-        )
-        ref_app.start()
 
-        try:
-            for idx in range(record.num_frames):
-                processed_data = ref_app.get_next()
+def get_processed_data_breathing(h5_file: h5py.File) -> pd.DataFrame:
+    processed_data_list = []
+    sensor_id, ref_app_config = _load_algo_data_breathing(h5_file["algo"])
 
-                # Put the result in row
-                processed_data_row = breathing_result_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    num_frames = record.num_frames
+    ref_app = RefAppBreathing(client=client, sensor_id=sensor_id, ref_app_config=ref_app_config)
+    ref_app.start()
 
-                # Print progressing time every 5%
-                print(f"... {idx / num_frames:.0%}") if (
-                    idx % int(0.05 * num_frames)
-                ) == 0 else None
+    try:
+        for idx in range(record.num_frames):
+            processed_data = ref_app.get_next()
 
-        except KeyboardInterrupt:
-            print("Conversion aborted")
-        else:
-            print("Processing data is finished. . .")
+            # Put the result in row
+            processed_data_row = breathing_result_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
 
-        transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
-        processed_data_as_dataframe = {
-            "rate": transposed_processed_data_list[0],
-            "motion": transposed_processed_data_list[1],
-            "presence_dist": transposed_processed_data_list[2],
-        }
-        ref_app.stop()
-        client.close()
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
+    processed_data_as_dataframe = {
+        "rate": transposed_processed_data_list[0],
+        "motion": transposed_processed_data_list[1],
+        "presence_dist": transposed_processed_data_list[2],
+    }
+    ref_app.stop()
+    client.close()
+    print("Disconnecting...")
+
+    df_processed_data = pd.DataFrame(processed_data_as_dataframe)
+    return df_processed_data
+
+
+def get_processed_data_surface_velocity(h5_file: h5py.File) -> pd.DataFrame:
+    processed_data_list = []
+    sensor_id, ExampleAppConfig = _load_algo_data_surface_velocity(h5_file["algo"])
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    num_frames = record.num_frames
+
+    example_app = ExampleApp_surface_velocity(
+        client=client,
+        sensor_id=int(sensor_id),
+        example_app_config=ExampleAppConfig,
+    )
+    example_app.start()
+
+    try:
+        for idx in range(record.num_frames):
+            processed_data = example_app.get_next()
+
+            # Put the result in row
+            processed_data_row = surface_velocity_result_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    example_app.stop()
+    client.close()
+    print("Disconnecting...")
+
+    transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
+    processed_data_as_dataframe = {
+        "estimated_velocity": transposed_processed_data_list[0],
+        "distance": transposed_processed_data_list[1],
+    }
 
     df_processed_data = pd.DataFrame(processed_data_as_dataframe)
     return df_processed_data
@@ -555,6 +619,13 @@ def breathing_result_as_row(processed_data: RefAppResultBreathing) -> list[t.Any
     )
 
     return [rate, motion, presence_dist]
+
+
+def surface_velocity_result_as_row(processed_data: ExampleAppResult) -> list[t.Any]:
+    velocity = f"{processed_data.velocity :.3f}"
+    distance_m = f"{processed_data.distance_m :.3f} m"
+
+    return [velocity, distance_m]
 
 
 def main() -> None:
