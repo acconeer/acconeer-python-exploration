@@ -21,6 +21,7 @@ from acconeer.exptool.a121.algo import (
     ProcessorBase,
     _convert_amplitude_to_strength,
     get_distance_filter_coeffs,
+    get_distance_filter_edge_margin,
     get_distance_offset,
     get_temperature_adjustment_factors,
 )
@@ -160,9 +161,16 @@ class SubsweepProcessor:
             APPROX_BASE_STEP_LENGTH_M * sensor_config.step_length
         )
 
+        self.filt_margin = get_distance_filter_edge_margin(
+            sensor_config.profile,
+            sensor_config.step_length,
+        )
+
         # Extra
         self.r = APPROX_BASE_STEP_LENGTH_M * (
-            sensor_config.start_point + sensor_config.step_length * np.arange(self.num_points)
+            sensor_config.start_point
+            + self.filt_margin * sensor_config.step_length
+            + sensor_config.step_length * np.arange(self.num_points - 2 * self.filt_margin)
         )
 
     def process(
@@ -213,7 +221,11 @@ class SubsweepProcessor:
 
             distance = (
                 APPROX_BASE_STEP_LENGTH_M
-                * (self.sensor_config.start_point + self.sensor_config.step_length * i_dist)
+                * (
+                    self.sensor_config.start_point
+                    + self.filt_margin * self.sensor_config.step_length
+                    + self.sensor_config.step_length * i_dist
+                )
                 - self.offset_m
             )
 
@@ -242,7 +254,9 @@ class SubsweepProcessor:
     def apply_depth_filter(self, frame: npt.NDArray[np.complex_]) -> npt.NDArray[np.complex_]:
         # Written as a separate function to be callable during detector calibration
 
-        return np.array(filtfilt(self.b, self.a, frame), dtype=complex)
+        filtered_array = np.array(filtfilt(self.b, self.a, frame), dtype=complex)
+        cropped_array = filtered_array[:, self.filt_margin : -self.filt_margin]
+        return cropped_array
 
     def update_config(self, config: ProcessorConfig) -> None:
         pass

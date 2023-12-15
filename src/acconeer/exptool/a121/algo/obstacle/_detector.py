@@ -23,6 +23,7 @@ from acconeer.exptool.a121.algo import (
     AlgoConfigBase,
     PeakSortingMethod,
     calculate_loopback_peak_location,
+    get_distance_filter_edge_margin,
 )
 from acconeer.exptool.a121.algo.touchless_button import (
     MeasurementType,
@@ -603,10 +604,16 @@ class Detector:
                 subsweeps.append(close_proximity_subsweep)
 
             start_p = int(detector_config.start_m / APPROX_BASE_STEP_LENGTH_M)
+            point_margin = get_distance_filter_edge_margin(
+                detector_config.profile, detector_config.step_length
+            )
+            start_p = start_p - point_margin * detector_config.step_length
+
             num_p = int(
                 (detector_config.end_m - detector_config.start_m)
                 / (APPROX_BASE_STEP_LENGTH_M * detector_config.step_length)
             )
+            num_p = num_p + 2 * point_margin
 
             subsweeps.append(
                 a121.SubsweepConfig(
