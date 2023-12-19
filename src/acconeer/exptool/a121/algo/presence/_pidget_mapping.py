@@ -53,7 +53,7 @@ def get_pidget_mapping() -> PidgetGroupFactoryMapping:
             name_label_tooltip=get_attribute_docstring(DetectorConfig, "frame_rate"),
             suffix=" Hz",
             decimals=1,
-            limits=(1, 100),
+            limits=(0.1, 100),
         ),
         "sweeps_per_frame": pidgets.IntPidgetFactory(
             name_label_text="Sweeps per frame:",
