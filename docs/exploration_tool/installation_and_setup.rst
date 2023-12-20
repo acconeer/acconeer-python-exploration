@@ -7,6 +7,7 @@ Install
 -------
 Install from PyPI
 ^^^^^^^^^^^^^^^^^
+.. code-block::
 
     python -m pip install --upgrade acconeer-exptool[app]
 
