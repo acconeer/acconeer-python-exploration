@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -97,11 +97,6 @@ class GenericProcessorBackendPluginBase(
         self.shared_state.processor_config = self.get_processor_config_cls().from_json(
             file["processor_config"][()]
         )
-
-    @is_task
-    @abc.abstractmethod
-    def restore_defaults(self) -> None:
-        pass
 
     def _sync_sensor_ids(self) -> None:
         if self.client is None:

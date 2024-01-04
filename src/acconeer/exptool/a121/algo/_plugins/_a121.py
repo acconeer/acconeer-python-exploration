@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -85,12 +85,20 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
                 self._load_from_cache(f)
         except FileNotFoundError:
             pass
+        except KeyError:
+            log.warning("Cache file loading failed, using defaults")
+            self.restore_defaults()
 
         self._sync_sensor_ids()
         self.broadcast()
 
     @abc.abstractmethod
     def _load_from_cache(self, file: h5py.File) -> None:
+        pass
+
+    @is_task
+    @abc.abstractmethod
+    def restore_defaults(self) -> None:
         pass
 
     @abc.abstractmethod
