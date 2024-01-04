@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -41,6 +41,12 @@ class BackendPluginStateMessage(Message):
 @attrs.frozen(kw_only=True, slots=False)
 class StatusMessage(Message):
     status: Optional[str] = attrs.field()
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class StatusFileAccessMessage(Message):
+    file_path: str = attrs.field()
+    opened: bool = attrs.field()
 
 
 @attrs.frozen(kw_only=True, slots=False)

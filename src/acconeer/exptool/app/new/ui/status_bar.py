@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -225,6 +225,7 @@ class StatusBar(QStatusBar):
 
         self._status_messages: list[str] = []
 
+        app_model.sig_status_file_path.connect(self._update_file_path)
         app_model.sig_status_message.connect(lambda m: self._status_messages.append(m))
         app_model.sig_status_message.connect(self._trigger_display)
 
@@ -235,6 +236,9 @@ class StatusBar(QStatusBar):
 
         self.message_widget = QLabel(self)
         self.addWidget(self.message_widget)
+
+        self.file_path_widget = QLabel(self)
+        self.addWidget(self.file_path_widget)
 
         self.addPermanentWidget(FrameCountLabel(app_model, self))
         self.addPermanentWidget(RateStatsLabel(app_model, self))
@@ -251,6 +255,9 @@ class StatusBar(QStatusBar):
         ]
         font_family = ", ".join(f'"{ff}"' for ff in font_families)
         self.setStyleSheet(f"QWidget{{font-family: {font_family};}}")
+
+    def _update_file_path(self, file_path: str, opened: bool) -> None:
+        self.file_path_widget.setText(f"Replaying file: <b>{file_path}<\b>" if opened else "")
 
     def _trigger_display(self) -> None:
         if self.message_timer.isActive():

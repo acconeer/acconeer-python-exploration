@@ -44,6 +44,7 @@ from acconeer.exptool.app.new.backend import (
     Model,
     PlotMessage,
     PluginStateMessage,
+    StatusFileAccessMessage,
     StatusMessage,
     Task,
     _RateStats,
@@ -198,6 +199,7 @@ class AppModel(QObject):
     sig_load_plugin = Signal(object)
     sig_message_plot_plugin = Signal(PlotMessage)
     sig_message_view_plugin = Signal(object)
+    sig_status_file_path = Signal(str, bool)
     sig_status_message = Signal(object)
     sig_rate_stats = Signal(float, bool, float, bool)
     sig_backend_cpu_percent = Signal(int)
@@ -355,6 +357,8 @@ class AppModel(QObject):
             self.backend_plugin_state = message.state
             self.broadcast_backend_state()
             self.broadcast()
+        elif isinstance(message, StatusFileAccessMessage):
+            self.send_status_file_path(message.file_path, message.opened)
         elif isinstance(message, StatusMessage):
             self.send_status_message(message.status)
         elif isinstance(message, LogMessage):
@@ -805,6 +809,9 @@ class AppModel(QObject):
     @property
     def connected_sensors(self) -> list[int]:
         return self._a121_server_info.connected_sensors if self._a121_server_info else []
+
+    def send_status_file_path(self, file_path: str, opened: bool) -> None:
+        self.sig_status_file_path.emit(file_path, opened)
 
     def send_status_message(self, message: Optional[str]) -> None:
         self.sig_status_message.emit(message)

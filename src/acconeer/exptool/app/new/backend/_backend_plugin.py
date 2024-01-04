@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import h5py
 from acconeer.exptool.app.new import PluginGeneration
 from acconeer.exptool.app.new.storage import get_config_dir
 
-from ._message import BackendPluginStateMessage, Message, StatusMessage
+from ._message import BackendPluginStateMessage, Message, StatusFileAccessMessage, StatusMessage
 from ._tasks import is_task
 
 
@@ -77,6 +77,9 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
 
     def broadcast(self) -> None:
         self.callback(BackendPluginStateMessage(state=self.shared_state))
+
+    def send_status_file_access_message(self, file_path: str, opened: bool) -> None:
+        self.callback(StatusFileAccessMessage(file_path=file_path, opened=opened))
 
     def send_status_message(self, message: Optional[str]) -> None:
         self.callback(StatusMessage(status=message))

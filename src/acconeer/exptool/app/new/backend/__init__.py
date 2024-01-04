@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from ._application_client import ApplicationClient
@@ -14,6 +14,7 @@ from ._message import (
     PlotMessage,
     PluginStateMessage,
     RecipientLiteral,
+    StatusFileAccessMessage,
     StatusMessage,
 )
 from ._model import Model
