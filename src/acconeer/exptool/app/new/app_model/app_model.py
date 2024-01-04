@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -78,6 +78,7 @@ class PluginSpec(Protocol):
     key: str
     generation: PluginGeneration
     presets: List[PluginPresetSpec]
+    title: str
     default_preset_id: Enum
 
     def create_backend_plugin(

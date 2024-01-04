@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Plugin title to plot area
 
 ### Changed
 
