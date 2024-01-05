@@ -11,6 +11,7 @@
 ## v7.7.3
 
 ### Added
+- A121 Parking algorithm and documentation.
 - Strength added to target in obstacle.
 - Direct links to algorithms' documentation pages.
 - Example for post-processing recorded data.

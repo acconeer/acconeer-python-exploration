@@ -826,6 +826,7 @@ PARKING_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="parking",
     title="Parking",
+    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/ref_apps/parking.html",
     description="Detect parked cars.",
     family=PluginFamily.REF_APP,
     presets=[
