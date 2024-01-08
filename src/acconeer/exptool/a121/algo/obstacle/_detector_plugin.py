@@ -698,10 +698,10 @@ class PluginSpec(PluginSpecBase):
 OBSTACLE_DETECTOR_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="obstacle_detector",
-    title="Obstacle detector",
+    title="Obstacle detection",
     docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/detectors/obstacle_detection.html",
     description="Measure distance and angle to objects from a moving platform.",
-    family=PluginFamily.DETECTOR,
+    family=PluginFamily.EXAMPLE_APP,
     presets=[
         PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
     ],

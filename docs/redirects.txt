@@ -1,3 +1,4 @@
+"exploration_tool/algo/a121/detectors/obstacle_detection.rst" "exploration_tool/algo/a121/examples/obstacle_detection.rst"
 "exploration_tool/algo/a121/distance_detection.rst" "exploration_tool/algo/a121/detectors/distance_detection.rst"
 "exploration_tool/algo/a121/presence_detection.rst" "exploration_tool/algo/a121/detectors/presence_detection.rst"
 "exploration_tool/algo/a121/tank_level.rst" "exploration_tool/algo/a121/ref_apps/tank_level.rst"
