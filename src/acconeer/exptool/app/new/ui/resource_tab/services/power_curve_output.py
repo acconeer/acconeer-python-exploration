@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.icons import WARNING_YELLOW
 from acconeer.exptool.app.new.ui.resource_tab.event_system import (
+    ChangeIdEvent,
     EventBroker,
     IdentifiedServiceUninstalledEvent,
 )
@@ -265,6 +266,7 @@ class EnergyRegionOutput(QTabWidget):
         IdentifiedServiceUninstalledEvent,
         DistanceConfigEvent,
         PresenceConfigEvent,
+        ChangeIdEvent,
     }
     description: t.ClassVar[str] = "\n\n".join(
         [
@@ -282,7 +284,8 @@ class EnergyRegionOutput(QTabWidget):
         self.setContentsMargins(0, 0, 0, 0)
         self.setStyleSheet("QTabBar { font: bold 14px; font-family: monospace; }")
 
-        self.uninstall_function = broker.install_service(self)
+        broker.install_service(self)
+        self.uninstall_function = lambda: broker.uninstall_service(self)
         broker.brief_service(self)
 
     def handle_event(self, event: t.Any) -> None:
@@ -294,6 +297,8 @@ class EnergyRegionOutput(QTabWidget):
             self._handle_presence_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
+        elif isinstance(event, ChangeIdEvent):
+            self._handle_change_id_event(event)
         else:
             raise NotImplementedError
 
@@ -386,3 +391,10 @@ class EnergyRegionOutput(QTabWidget):
         tab_index = self.indexOf(tab_widget)
         if tab_index != -1:
             self.removeTab(tab_index)
+
+    def _handle_change_id_event(self, event: ChangeIdEvent) -> None:
+        tab_widget = self._tabs.pop(event.old_id, None)
+        if tab_widget is not None:
+            tab_index = self.indexOf(tab_widget)
+            self.setTabText(tab_index, event.new_id)
+            self._tabs[event.new_id] = tab_widget

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from acconeer.exptool.a121.algo.distance._detector import Detector, DetectorConf
 from acconeer.exptool.a121.algo.distance._pidget_mapping import get_pidget_mapping
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.components import AttrsConfigEditor, GroupBox, pidgets
-from acconeer.exptool.app.new.ui.resource_tab.event_system import EventBroker
+from acconeer.exptool.app.new.ui.resource_tab.event_system import ChangeIdEvent, EventBroker
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper, ScrollAreaDecorator, TopAlignDecorator
 
 from ._preset_selection import create_plugin_selection_widget
@@ -37,11 +37,12 @@ class DistanceConfigEvent:
 
 
 class DistanceConfigInput(ScrollAreaDecorator):
-    INTERESTS: t.ClassVar[set[type]] = set()
+    INTERESTS: t.ClassVar[set[type]] = set([ChangeIdEvent])
     description: t.ClassVar[str] = (
         "Specify distance configuration as in the Stream tab.\n\n"
         + "Additionally, you can specify a lower idle state."
     )
+    id_: str = ""
 
     def __init__(self, broker: EventBroker, initial_config: DetectorConfig) -> None:
         layout = QVBoxLayout()
@@ -102,9 +103,11 @@ class DistanceConfigInput(ScrollAreaDecorator):
         layout.addWidget(self.editor)
         layout.addWidget(preset_selection)
 
-        (self.uninstall_function, self._id) = broker.install_identified_service(self, "distance")
+        self.id_ = broker.install_identified_service(self, "distance")
+        self.uninstall_function = lambda: broker.uninstall_identified_service(self, self.id_)
         self._offer_event_if_config_is_valid()
-        self.window_title = f"<b><code>[{self._id}]</code></b> Distance config"
+        self.window_title = f"<b><code>[{self.id_}]</code></b> Distance config"
+        self.fixed_title = "Distance config"
 
     def _display_validation_results(self) -> None:
         config = self.editor.get_data()
@@ -130,11 +133,18 @@ class DistanceConfigInput(ScrollAreaDecorator):
 
         self._broker.offer_event(
             DistanceConfigEvent(
-                self._id,
+                self.id_,
                 config,
                 self.power_state_selection.get_data(),
             )
         )
 
     def handle_event(self, event: t.Any) -> None:
-        pass
+        if isinstance(event, ChangeIdEvent):
+            self._handle_change_id_event(event)
+        else:
+            raise NotImplementedError
+
+    def _handle_change_id_event(self, event: ChangeIdEvent) -> None:
+        if event.old_id == self.id_:
+            self.id_ = event.new_id

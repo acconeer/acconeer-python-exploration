@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from acconeer.exptool.a121._core import utils as core_utils
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.icons import WARNING_YELLOW
 from acconeer.exptool.app.new.ui.resource_tab.event_system import (
+    ChangeIdEvent,
     EventBroker,
     IdentifiedServiceUninstalledEvent,
 )
@@ -355,6 +356,7 @@ class PowerConsumptionVsRateOutput(QWidget):
         IdentifiedServiceUninstalledEvent,
         DistanceConfigEvent,
         PresenceConfigEvent,
+        ChangeIdEvent,
     }
     description: t.ClassVar[str] = "\n\n".join(
         [
@@ -380,7 +382,8 @@ class PowerConsumptionVsRateOutput(QWidget):
         layout.addWidget(self._tab_widget)
         self.setLayout(layout)
 
-        self.uninstall_function = broker.install_service(self)
+        broker.install_service(self)
+        self.uninstall_function = lambda: broker.uninstall_service(self)
         broker.brief_service(self)
 
     def handle_event(self, event: t.Any) -> None:
@@ -392,6 +395,8 @@ class PowerConsumptionVsRateOutput(QWidget):
             self._handle_presence_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
+        elif isinstance(event, ChangeIdEvent):
+            self._handle_change_id_event(event)
         else:
             raise NotImplementedError
 
@@ -438,3 +443,10 @@ class PowerConsumptionVsRateOutput(QWidget):
         tab_index = self._tab_widget.indexOf(tab_widget)
         if tab_index != -1:
             self._tab_widget.removeTab(tab_index)
+
+    def _handle_change_id_event(self, event: ChangeIdEvent) -> None:
+        tab_widget = self._tabs.pop(event.old_id, None)
+        if tab_widget is not None:
+            tab_index = self._tab_widget.indexOf(tab_widget)
+            self._tab_widget.setTabText(tab_index, event.new_id)
+            self._tabs[event.new_id] = tab_widget

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 """
 This module defines the primitives of an event system.
@@ -62,7 +62,7 @@ class _IdLedger:
     def __init__(self) -> None:
         self._taken_ids: set[str] = set()
 
-    def borrow_id(self, prefix: str) -> str:
+    def borrow_numbered_id(self, prefix: str) -> str:
         for serial_number in itertools.count(1):
             candidate = f"{prefix}-{serial_number}"
             if candidate not in self._taken_ids:
@@ -72,6 +72,13 @@ class _IdLedger:
         # since itertools.count returns an infinite iterator,
         # we should never end up here.
         raise RuntimeError
+
+    def borrow_id(self, id_: str) -> str:
+        if id_ in self._taken_ids:
+            return self.borrow_numbered_id(id_)
+        else:
+            self._taken_ids.add(id_)
+            return id_
 
     def return_id(self, id_: str) -> None:
         self._taken_ids.remove(id_)
@@ -88,13 +95,19 @@ class IdentifiedServiceUninstalledEvent:
     id_: str
 
 
+@attrs.frozen
+class ChangeIdEvent:
+    old_id: str
+    new_id: str
+
+
 class EventBroker:
     def __init__(self, event_log_capacity: int = 100) -> None:
         self._topic_callbacks: dict[type, list[t.Callable[[t.Any], None]]] = {}
         self._event_log: collections.deque[t.Any] = collections.deque(maxlen=event_log_capacity)
         self._id_pool = _IdLedger()
 
-    def install_service(self, service: Service) -> t.Callable[[], None]:
+    def install_service(self, service: Service) -> None:
         """
         Installs a service, subscribing its handle_event to
         all topics in INTERESTS
@@ -104,44 +117,40 @@ class EventBroker:
         for interest in service.INTERESTS:
             self._topic_callbacks.setdefault(interest, []).append(service.handle_event)
 
-        def _uninstall_function() -> None:
-            log.debug(f"Uninstalling service of type {type(service)}")
+    def uninstall_service(self, service: Service) -> None:
+        log.debug(f"Uninstalling service of type {type(service)}")
 
-            for interest in service.INTERESTS:
-                with contextlib.suppress(KeyError, ValueError):
-                    self._topic_callbacks[interest].remove(service.handle_event)
+        for interest in service.INTERESTS:
+            with contextlib.suppress(KeyError, ValueError):
+                self._topic_callbacks[interest].remove(service.handle_event)
 
-        return _uninstall_function
+    def change_id(self, new_id: str, old_id: str) -> str:
+        new_id = self._id_pool.borrow_id(new_id)
 
-    def install_identified_service(
-        self, service: Service, prefix: str
-    ) -> tuple[t.Callable[[], None], str]:
+        self._id_pool.return_id(old_id)
+
+        return new_id
+
+    def install_identified_service(self, service: Service, prefix: str) -> str:
         """
         Installs a service that requires an id, subscribing its handle_event to
         all topics in INTERESTS
 
         returns a function that uninstalls the passed service and the id
         """
-        service_id = self._id_pool.borrow_id(prefix)
-
-        if service_id is None:
-            pass
+        service_id = self._id_pool.borrow_numbered_id(prefix)
 
         for interest in service.INTERESTS:
             self._topic_callbacks.setdefault(interest, []).append(service.handle_event)
 
-        def _uninstall_function() -> None:
-            log.debug(f"Uninstalling identified service of type {type(service)}")
+        return service_id
 
-            self._id_pool.return_id(service_id)
+    def uninstall_identified_service(self, service: Service, service_id: str) -> None:
+        self.uninstall_service(service)
 
-            for interest in service.INTERESTS:
-                with contextlib.suppress(KeyError, ValueError):
-                    self._topic_callbacks[interest].remove(service.handle_event)
+        self._id_pool.return_id(service_id)
 
-            self.offer_event(IdentifiedServiceUninstalledEvent(service_id))
-
-        return _uninstall_function, service_id
+        self.offer_event(IdentifiedServiceUninstalledEvent(service_id))
 
     def brief_service(self, service: Service) -> None:
         """

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QTextEdit
 
 from acconeer.exptool.a121.model import memory
 from acconeer.exptool.app.new.ui.resource_tab.event_system import (
+    ChangeIdEvent,
     EventBroker,
     IdentifiedServiceUninstalledEvent,
 )
@@ -26,6 +27,7 @@ class MemoryBreakdownOutput(QTextEdit):
         SessionConfigEvent,
         PresenceConfigEvent,
         IdentifiedServiceUninstalledEvent,
+        ChangeIdEvent,
     }
     description: t.ClassVar[str] = "Tabulates heap memory consumption of configurations"
     window_title = "Memory breakdown"
@@ -40,7 +42,8 @@ class MemoryBreakdownOutput(QTextEdit):
         self.setWordWrapMode(QTextOption.WrapMode.NoWrap)
         self.setFontFamily("monospace")
 
-        self.uninstall_function = broker.install_service(self)
+        broker.install_service(self)
+        self.uninstall_function = lambda: broker.uninstall_service(self)
         broker.brief_service(self)
 
     def handle_event(self, event: t.Any) -> None:
@@ -52,6 +55,8 @@ class MemoryBreakdownOutput(QTextEdit):
             self._handle_presence_config_event(event)
         elif isinstance(event, IdentifiedServiceUninstalledEvent):
             self._handle_identified_service_uninstalled_event(event)
+        elif isinstance(event, ChangeIdEvent):
+            self._handle_change_id_event(event)
         else:
             raise NotImplementedError
 
@@ -83,6 +88,14 @@ class MemoryBreakdownOutput(QTextEdit):
         self, event: IdentifiedServiceUninstalledEvent
     ) -> None:
         self._memory_numbers.pop(event.id_)
+        self._show_memory_numbers()
+
+    def _handle_change_id_event(self, event: ChangeIdEvent) -> None:
+        memory_entry = self._memory_numbers.pop(event.old_id, None)
+
+        if memory_entry is not None:
+            self._memory_numbers[event.new_id] = memory_entry
+
         self._show_memory_numbers()
 
     @staticmethod

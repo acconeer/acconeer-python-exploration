@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from functools import partial
@@ -30,6 +30,7 @@ CHART_LINE      = partial(qta.icon, "ri.line-chart-fill",        color=BUTTON_IC
 CHECKMARK       = partial(qta.icon, "fa5s.check",                color=BUTTON_ICON_COLOR)
 CLOSE           = partial(qta.icon, "fa.close",                  color=BUTTON_ICON_COLOR)
 COG             = partial(qta.icon, "fa5s.cog",                  color=BUTTON_ICON_COLOR)
+EDIT            = partial(qta.icon, "fa5s.edit",                 color=BUTTON_ICON_COLOR)
 EXTERNAL_LINK   = partial(qta.icon, "fa5s.external-link-alt",    color=BUTTON_ICON_COLOR)
 FLASH           = partial(qta.icon, "mdi.flash",                 color=BUTTON_ICON_COLOR)
 FOLDER_OPEN     = partial(qta.icon, "fa.folder-open",            color=BUTTON_ICON_COLOR)
