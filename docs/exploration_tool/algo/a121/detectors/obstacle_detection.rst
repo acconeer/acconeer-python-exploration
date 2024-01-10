@@ -22,7 +22,10 @@ The velocity component at every distance point is computed by performing a Discr
 **3. Comparing frame to a threshold:**
 Peaks in the distance-velocity frames, corresponding to objects in front of the radar, are found and compared to a threshold.
 
-**4. Velocity to angle conversion:**
+**4. Kalman filtering:**
+Kalman filters are used to track the objects over time based on both position and velocity.
+
+**5. Velocity to angle conversion:**
 The A121 radar has only a single channel, and therefore cannot supply any angular information to an object. However, if the robot, and therefore also the radar, is moving at a known speed, angular information can be extracted. For example, if the radar is moving at 20 cm/s, and sees an object approaching the radar at 20 cm/s, the object is likely straight in front of the radar. If the object is instead standing still, it is likely 90 degrees to the side. More precisely,
 
 .. math::
