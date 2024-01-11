@@ -13,7 +13,7 @@ getopts ":p" arg && push_branch=1 || push_branch=0
 
 positional_args=${@:$OPTIND:$#}
 
-if [ -z "$positional" ]; then
+if [ -z "$positional_args" ]; then
     echo "Need to specify at least one branch."
     echo
     usage
