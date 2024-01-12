@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 
@@ -29,6 +29,15 @@ from acconeer.exptool.a121.algo.breathing import (
 )
 from acconeer.exptool.a121.algo.breathing._ref_app import (
     _load_algo_data as _load_algo_data_breathing,
+)
+from acconeer.exptool.a121.algo.presence import (
+    Detector as PresenceDetector,
+)
+from acconeer.exptool.a121.algo.presence import (
+    DetectorResult as PresenceDetectorResult,
+)
+from acconeer.exptool.a121.algo.presence._detector import (
+    _load_algo_data as _load_algo_data_presence,
 )
 from acconeer.exptool.a121.algo.surface_velocity import (
     ExampleApp as ExampleApp_surface_velocity,
@@ -499,10 +508,11 @@ def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
 
 def get_processed_data(h5_file: h5py.File) -> pd.DataFrame:
     app_key = h5_file["algo/key"][()].decode()
-    supported_apps = ["breathing", "surface_velocity"]
+    supported_apps = ["breathing", "presence_detector", "surface_velocity"]
 
     load_algo_and_client = {
         "breathing": get_processed_data_breathing,
+        "presence_detector": get_processed_data_presence,
         "surface_velocity": get_processed_data_surface_velocity,
     }
     if app_key in supported_apps:
@@ -599,6 +609,59 @@ def get_processed_data_surface_velocity(h5_file: h5py.File) -> pd.DataFrame:
     return df_processed_data
 
 
+def get_processed_data_presence(h5_file: h5py.File) -> pd.DataFrame:
+    processed_data_list = []
+    sensor_id, detector_config, detector_context = _load_algo_data_presence(h5_file["algo"])
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    num_frames = record.num_frames
+    detector = PresenceDetector(
+        client=client,
+        sensor_id=int(sensor_id),
+        detector_config=detector_config,
+        detector_context=detector_context,
+    )
+    detector.start()
+
+    try:
+        for idx in range(record.num_frames):
+            processed_data = detector.get_next()
+
+            # Put the result in row
+            processed_data_row = presence_result_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    detector.stop()
+    client.close()
+    print("Disconnecting...")
+
+    transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
+    processed_data_as_dataframe = {
+        "Presence": transposed_processed_data_list[0],
+        f"Intra_presence_score_(threshold_{detector_config.intra_detection_threshold:.1f})": transposed_processed_data_list[
+            1
+        ],
+        f"Inter_presence_score_(threshold_{detector_config.inter_detection_threshold:.1f})": transposed_processed_data_list[
+            2
+        ],
+        "Presence_distance": transposed_processed_data_list[3],
+    }
+
+    df_processed_data = pd.DataFrame(processed_data_as_dataframe)
+
+    return df_processed_data
+
+
 def breathing_result_as_row(processed_data: RefAppResultBreathing) -> list[t.Any]:
     no_result = "None"
     rate = (
@@ -626,6 +689,15 @@ def surface_velocity_result_as_row(processed_data: ExampleAppResult) -> list[t.A
     distance_m = f"{processed_data.distance_m :.3f} m"
 
     return [velocity, distance_m]
+
+
+def presence_result_as_row(processed_data: PresenceDetectorResult) -> list[t.Any]:
+    presence_detected = "Presence!" if processed_data.presence_detected else "None"
+    intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
+    inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
+    presence_dist = f"{processed_data.presence_distance:.3f} m"
+
+    return [presence_detected, intra_presence_score, inter_presence_score, presence_dist]
 
 
 def main() -> None:
