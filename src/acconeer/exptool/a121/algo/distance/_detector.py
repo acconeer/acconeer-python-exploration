@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -451,12 +451,12 @@ class DetectorResult:
     measurement range.
     """
 
-    sensor_calibration_needed: Optional[bool] = attrs.field(default=None)
-    """Indication of sensor calibration needed. The sensor calibration needs to be redone if this
+    calibration_needed: Optional[bool] = attrs.field(default=None)
+    """Indication of calibration needed. The sensor calibration needs to be redone if this
     indication is set.
 
-    A sensor calibration should be followed by a detector recalibration, by calling
-    :func:`recalibrate_detector`.
+    A sensor calibration should be followed by a detector calibration update, by calling
+    :func:`update_detector_calibration`.
     """
 
     temperature: Optional[int] = attrs.field(default=None)
@@ -553,11 +553,11 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         for context in self.context.single_sensor_contexts.values():
             context.session_config_used_during_calibration = self.session_config
 
-    def recalibrate_detector(self) -> None:
-        """Recalibrate detector by running a subset of the calibration routines.
+    def update_detector_calibration(self) -> None:
+        """Do a detector calibration update by running a subset of the calibration routines.
 
         Once the detector is calibrated, by calling :func:`calibrate_detector`, a sensor
-        calibration should be followed by a detector recalibration.
+        calibration should be followed by a detector calibration update.
         """
 
         self._validate_ready_for_calibration()
@@ -992,7 +992,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 strengths=aggregator_results[sensor_id].estimated_strengths,
                 distances=aggregator_results[sensor_id].estimated_distances,
                 near_edge_status=aggregator_results[sensor_id].near_edge_status,
-                sensor_calibration_needed=extended_result[0][sensor_id].calibration_needed,
+                calibration_needed=extended_result[0][sensor_id].calibration_needed,
                 temperature=extended_result[0][sensor_id].temperature,
                 processor_results=aggregator_results[sensor_id].processor_results,
                 service_extended_result=aggregator_results[sensor_id].service_extended_result,

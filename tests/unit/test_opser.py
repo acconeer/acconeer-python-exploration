@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -239,7 +239,7 @@ DISTANCE_DETECTOR_RESULT = distance.DetectorResult(
     distances=_array(np.float_),
     strengths=None,
     near_edge_status=choice([False, True]),
-    sensor_calibration_needed=False,
+    calibration_needed=False,
     temperature=13,
     processor_results=[DISTANCE_PROCESSOR_RESULT],
     service_extended_result=[{1: MOCK_SERVICE_RESULT}],

@@ -190,15 +190,15 @@ Recorded threshold
   The recorded threshold is also recorded as a part of the detector calibration.
   Note, this calibration is only performed if the detector is configured to used recorded threshold or if close range measurement is active, where recorded threshold is used.
 
-Detector Recalibration
-----------------------
+Detector Calibration Update
+---------------------------
 
 To maintain optimal performance, the sensor should be recalibrated if
-:attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.sensor_calibration_needed`
+:attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.calibration_needed`
 is set to True.
-A sensor calibration should be followed by a detector recalibration, performed by calling :attr:`~acconeer.exptool.a121.algo.distance._detector.Detector.recalibrate_detector`.
+A sensor calibration should be followed by a detector calibration update, performed by calling :attr:`~acconeer.exptool.a121.algo.distance._detector.Detector.update_detector_calibration`.
 
-The detector recalibration carries out a subset of the calibration steps.
+The detector calibration update carries out a subset of the calibration steps.
 All the calibration steps performed are agnostic to its surroundings and can be done at any time without considerations to the environment.
 
 Temperature Compensation (Recorded Threshold)
@@ -226,7 +226,7 @@ The purpose of the boolean is to provide information in the case when an object 
 One example of when this becomes useful is the :doc:`Tank reference application</exploration_tool/algo/a121/ref_apps/tank_level>`, which is built on top of the distance detector.
 If the tank is overflowing, the peak might end up just outside of the measured interval, but the tail end of the envelope would still be observable.
 
-The result also contains the boolean :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.sensor_calibration_needed`.
+The result also contains the boolean :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.calibration_needed`.
 If True, the procedure, described in the section :ref:`sec_detector_calibration`, needs to be performed to maintain optimal performance.
 
 Note, the sweep and threshold, presented in the distance detector GUI are not returned by the distance detector.
@@ -275,7 +275,7 @@ The following points provide insight into the configuration process.
 
   Due to these restrictions, it is advised to only use this mode when the use case allows for calibration in a known environment,
   and the possibility to redo the calibration when the temperature has changed more than 15 °C,
-  indicated by the variable :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.sensor_calibration_needed`.
+  indicated by the variable :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.calibration_needed`.
 
   If :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.close_range_leakage_cancellation` is disabled, the application will not perform the close range leakage cancellation.
   Measuring close to the sensor can result in artifacts from the direct leakage being visible as peaks in the sweep.
@@ -421,7 +421,7 @@ Detector Calibration
 .. autoclass:: acconeer.exptool.a121.algo.distance._detector.Detector.calibrate_detector
    :members:
 
-.. autoclass:: acconeer.exptool.a121.algo.distance._detector.Detector.recalibrate_detector
+.. autoclass:: acconeer.exptool.a121.algo.distance._detector.Detector.update_detector_calibration
    :members:
 
 
