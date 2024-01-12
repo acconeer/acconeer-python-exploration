@@ -45,6 +45,8 @@ String dockerArgs(env_map) {
          " --mount type=volume,src=cachepip-${env_map.EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip"
 }
 
+def messageOnFailure = true
+
 def getCronTriggers(String branchName) {
     def triggers = []
 
@@ -74,12 +76,18 @@ BuildScope getBuildScope() {
     }
 }
 
-def finishBuild() {
+def finishBuild(messageOnFailure) {
     stage('Report to gerrit') {
         int score = currentBuild.currentResult == 'SUCCESS' ? 1 : -1
         String success = currentBuild.currentResult == 'SUCCESS' ? "success" : "failure"
         String message = "${currentBuild.currentResult}: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
         gerritReview labels: [Verified: score], message: message
+    }
+
+    if (messageOnFailure && (currentBuild.currentResult == 'FAILURE')) {
+        withCredentials([string(credentialsId: 'teams-robot', variable: 'TEAMS_API_TOKEN')]) {
+            office365ConnectorSend webhookUrl: TEAMS_API_TOKEN
+        }
     }
 }
 
@@ -94,6 +102,11 @@ try {
     def integrationTestA121RssVersions = integrationTestA121RssVersionsForBuildScope[buildScope]
     def integrationTestA111RssVersions = integrationTestA111RssVersionsForBuildScope[buildScope]
     def modelTestA121RssVersion = modelTestA121RssVersionForBuildScope[buildScope]
+
+    if (env.BRANCH_NAME =~ /[0-9]+\/[0-9]+\/[0-9]+/) {
+        buildType = "change"
+        messageOnFailure = false
+    }
 
     stage('Report start to Gerrit') {
         gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}, Scope: ${buildScope}"
@@ -385,4 +398,4 @@ try {
     currentBuild.result = 'FAILURE'
 }
 
-finishBuild()
+finishBuild(messageOnFailure)
