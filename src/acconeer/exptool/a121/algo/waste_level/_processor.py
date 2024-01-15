@@ -102,6 +102,7 @@ class ProcessorResult:
     level_percent: Optional[int]
     """Fill level in the bin in percentage."""
     extra_result: ProcessorExtraResult
+    """Extra result used for visualization."""
 
 
 class Processor(ProcessorBase[ProcessorResult]):
