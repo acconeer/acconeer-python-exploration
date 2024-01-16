@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -29,25 +29,25 @@ class Result:
     Represents the RSS ``processing_result``.
     """
 
-    data_saturated: bool = attrs.field()
+    data_saturated: bool = attrs.field(converter=bool)
     """
     Indication of sensor data being saturated, can cause data corruption. Lower the receiver gain
     if this indication is set.
     """
 
-    frame_delayed: bool = attrs.field()
+    frame_delayed: bool = attrs.field(converter=bool)
     """
     Indication of a delayed frame. The frame rate might need to be lowered if this indication is
     set.
     """
 
-    calibration_needed: bool = attrs.field()
+    calibration_needed: bool = attrs.field(converter=bool)
     """
     Indication of calibration needed. The sensor calibration needs to be redone if this indication
     is set.
     """
 
-    temperature: int = attrs.field()
+    temperature: int = attrs.field(converter=int)
     """
     Temperature in sensor during measurement (in degree Celsius). Notice that this has poor
     absolute accuracy.
@@ -56,7 +56,7 @@ class Result:
     _frame: npt.NDArray[t.Any] = attrs.field(eq=attrs_ndarray_eq)
     """Frame data in the original data format (complex int16)"""
 
-    tick: int = attrs.field()
+    tick: int = attrs.field(converter=int)
     """Server tick when the server got the interrupt from the sensor"""
 
     _context: ResultContext = attrs.field()
