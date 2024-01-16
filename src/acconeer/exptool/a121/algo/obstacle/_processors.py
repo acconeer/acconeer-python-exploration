@@ -142,7 +142,9 @@ class SubsweepProcessor:
         self.true_zero_dist_idx = 0
 
         self.offset_m = get_distance_offset(
-            self.proc_context.loopback_peak_location_m, sensor_config.profile
+            self.proc_context.loopback_peak_location_m,
+            sensor_config.profile,
+            self.proc_context.reference_temperature,
         )
 
         if self.sensor_config.sweep_rate is None:

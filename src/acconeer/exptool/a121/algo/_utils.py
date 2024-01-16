@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -76,21 +76,56 @@ class PeakSortingMethod(AlgoParamEnum):
     STRONGEST = enum.auto()
 
 
-def get_distance_offset(peak_location: Optional[float], profile: a121.Profile) -> float:
+def get_distance_offset(
+    peak_location: Optional[float], profile: a121.Profile, temperature: Optional[Union[float, int]]
+) -> float:
     """
     Returns the distance offset in meters based on a loopback measurement.
     """
-
     if peak_location is None:
         return 0.0
 
-    OFFSET_COMPENSATION_COEFFS = {
-        a121.Profile.PROFILE_1: (0.76520069, 0.01146756),
-        a121.Profile.PROFILE_2: (0.88898859, 0.02202941),
-        a121.Profile.PROFILE_3: (0.92195011, 0.01356246),
-        a121.Profile.PROFILE_4: (0.90674059, 0.01593211),
-        a121.Profile.PROFILE_5: (1.08015653, 0.00390931),
-    }
+    if temperature is not None:
+        if temperature < -25:
+            OFFSET_COMPENSATION_COEFFS = {
+                a121.Profile.PROFILE_1: [0.7775766, 0.01424555],
+                a121.Profile.PROFILE_2: [0.78830728, 0.01977184],
+                a121.Profile.PROFILE_3: [0.81372193, 0.01186914],
+                a121.Profile.PROFILE_4: [0.762505, 0.01343452],
+                a121.Profile.PROFILE_5: [0.81893223, -0.003465],
+            }
+        elif temperature < 45:
+            OFFSET_COMPENSATION_COEFFS = {
+                a121.Profile.PROFILE_1: [0.52589179, 0.00767648],
+                a121.Profile.PROFILE_2: [0.5506853, 0.01669611],
+                a121.Profile.PROFILE_3: [0.55525774, 0.00630906],
+                a121.Profile.PROFILE_4: [0.50062257, 0.00931814],
+                a121.Profile.PROFILE_5: [0.30723402, -0.01157347],
+            }
+        elif temperature < 80:
+            OFFSET_COMPENSATION_COEFFS = {
+                a121.Profile.PROFILE_1: [0.40261719, 0.00320823],
+                a121.Profile.PROFILE_2: [0.41256604, 0.01628009],
+                a121.Profile.PROFILE_3: [0.40389208, 0.00247742],
+                a121.Profile.PROFILE_4: [0.46767179, 0.00931563],
+                a121.Profile.PROFILE_5: [0.39826142, -0.00668402],
+            }
+        else:
+            OFFSET_COMPENSATION_COEFFS = {
+                a121.Profile.PROFILE_1: [0.38332261, 0.00200361],
+                a121.Profile.PROFILE_2: [0.33236478, 0.01486831],
+                a121.Profile.PROFILE_3: [0.35708526, 0.00114435],
+                a121.Profile.PROFILE_4: [0.43023859, 0.00824871],
+                a121.Profile.PROFILE_5: [0.32260045, -0.00784442],
+            }
+    else:
+        OFFSET_COMPENSATION_COEFFS = {
+            a121.Profile.PROFILE_1: [0.52589179, 0.00767648],
+            a121.Profile.PROFILE_2: [0.5506853, 0.01669611],
+            a121.Profile.PROFILE_3: [0.55525774, 0.00630906],
+            a121.Profile.PROFILE_4: [0.50062257, 0.00931814],
+            a121.Profile.PROFILE_5: [0.30723402, -0.01157347],
+        }
 
     p = OFFSET_COMPENSATION_COEFFS[profile]
     return p[0] * peak_location + p[1]

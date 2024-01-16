@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -428,7 +428,9 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self.profile, self.step_length
             )
 
-        self.offset_m = get_distance_offset(self.context.loopback_peak_location_m, self.profile)
+        self.offset_m = get_distance_offset(
+            self.context.loopback_peak_location_m, self.profile, self.context.reference_temperature
+        )
 
     @classmethod
     def _calc_cfar_window_length(cls, profile: a121.Profile, step_length: int) -> int:
