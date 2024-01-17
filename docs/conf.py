@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 project = "acconeer-python-exploration"
@@ -107,8 +107,11 @@ html_theme_options = {
         "search-field",
         "navbar-icon-links",
     ],
+    "navbar_persistent": [],
+    "navigation_with_keys": True,
     "search_bar_text": "Search...",
-    "footer_items": ["copyright", "last-updated"],
+    "footer_start": ["copyright"],
+    "footer_end": ["last-updated"],
 }
 
 html_last_updated_fmt = "%Y-%m-%d"
