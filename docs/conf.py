@@ -2,7 +2,7 @@
 # All rights reserved
 
 project = "acconeer-python-exploration"
-copyright = "2019 - 2023, Acconeer AB"
+copyright = "2019-2024, Acconeer AB"
 author = "Acconeer AB"
 html_title = "Acconeer docs"
 

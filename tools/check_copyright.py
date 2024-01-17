@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import argparse
@@ -45,7 +45,6 @@ def update_copyright_year(file_content, copyright_line_nbr, current_year, copyri
         year_format = re.compile(r".*([1-2][0-9]{3})")
         result = year_format.match(copyright_line)
         start_pos = result.start(1)
-        end_pos = result.end(1)
 
         # Check whether we had a standalone year, e.g., 2017, or a range, e.g, 2017-2018
         # In either case update the year to the current year
@@ -53,7 +52,7 @@ def update_copyright_year(file_content, copyright_line_nbr, current_year, copyri
             file_content[copyright_line_nbr] = (
                 copyright_line[:start_pos]
                 + str(current_year)
-                + copyright_line[start_pos + 4 : end_pos]
+                + copyright_line[start_pos + 4 : -1]
                 + "\n"
             )
         else:
@@ -61,7 +60,7 @@ def update_copyright_year(file_content, copyright_line_nbr, current_year, copyri
                 copyright_line[: start_pos + 4]
                 + "-"
                 + str(current_year)
-                + copyright_line[start_pos + 5 : end_pos + 4]
+                + copyright_line[start_pos + 5 : -1]
                 + "\n"
             )
 
@@ -83,8 +82,8 @@ def match_copyright_pattern(file_content, patterns):
     if any([len(file_content) >= len(p) for p in patterns]):
         for row, line in enumerate(file_content):
             for pattern in patterns:
-                if pattern[0] in line:
-                    line_matches = [i in j for i, j in zip(pattern, file_content[row:])]
+                if re.match(pattern[0], line):
+                    line_matches = [re.match(i, j) for i, j in zip(pattern, file_content[row:])]
                     if all(line_matches):
                         return row
 
@@ -137,7 +136,7 @@ def copyright_pattern_py(year=""):
     year - Replaces year in the copyright statement.
             Should be left empty when used to match against file content.
     """
-    return [f"# Copyright (c) Acconeer AB, {year}", "# All rights reserved"]
+    return [rf"# Copyright \(c\) Acconeer AB, {year}", "# All rights reserved"]
 
 
 def copyright_exists_py(file_content):
@@ -164,6 +163,41 @@ def copyright_check_year_py(file_content, line_nbr, current_year):
         r"# Copyright (\(c\)|&copy;) Acconeer AB, "
         + r"(?P<date>\d+(-\d+)?)(. All rights reserved.)?\n"
     )
+
+    return match_copyright_year(file_content[line_nbr], year_pattern, current_year)
+
+
+def copyright_pattern_docs(year=""):
+    """
+    Copyright pattern for python files
+
+    year - Replaces year in the copyright statement.
+            Should be left empty when used to match against file content.
+    """
+    return [f'copyright = "{year}, Acconeer AB"']
+
+
+def copyright_exists_docs(file_content):
+    """
+    Check if a copyright statement is present in a .py file and is in the correct format.
+    Returns the line number where the copyright statement begins. If no statement exists or
+    is in the wrong format, None is returned.
+
+    file_content - The content of the source file as a list where every entry is a line
+    """
+
+    return match_copyright_pattern(file_content, copyright_pattern_docs("\d+(-\d+)?"))
+
+
+def copyright_check_year_docs(file_content, line_nbr, current_year):
+    """
+    Check that the current year is present in a copyright statement in a .py-file.
+
+    file_content - the content of the file
+    line_nbr     - the line number where the copyright statement begins
+    """
+
+    year_pattern = re.compile(r'copyright = "' + r'(?P<date>\d+(-\d+)?), Acconeer AB"\n')
 
     return match_copyright_year(file_content[line_nbr], year_pattern, current_year)
 
@@ -195,21 +229,28 @@ def write_file(file_path, content):
         header_file.write(content)
 
 
-def check_copyright(file_path, ignore_year, update, current_year):
+def check_copyright(file_path, ignore_year, update_year, current_year, docs=False):
     """
     Check copyright statement of a file
 
     file_path    - The file to check
     ignore_year  - Don't check the year stated in copyright statement
-    update       - Update year of copyright statement or add copyright statement if missing
+    update_year  - Update year of copyright statement or add copyright statement if missing
     current_year - The current year. Used to check year of copyright statement
     """
 
-    link_copyright_methods = {
-        ".py": (copyright_exists_py, copyright_check_year_py, copyright_pattern_py),
-    }
+    if not docs:
+        link_copyright_methods = {
+            ".py": (copyright_exists_py, copyright_check_year_py, copyright_pattern_py),
+        }
 
-    copyright_methods = link_copyright_methods.get(Path(file_path).suffix, None)
+        copyright_methods = link_copyright_methods.get(Path(file_path).suffix, None)
+    else:
+        copyright_methods = (
+            copyright_exists_docs,
+            copyright_check_year_docs,
+            copyright_pattern_docs,
+        )
 
     if copyright_methods:
         copyright_exist, copyright_check_year, copyright_pattern = copyright_methods
@@ -230,7 +271,7 @@ def check_copyright(file_path, ignore_year, update, current_year):
             # Check if there is a correctly formatted copyright statement
             copyright_line_nbr = copyright_exist(content)
 
-            if copyright_line_nbr is None and not update:
+            if copyright_line_nbr is None and not update_year:
                 return (
                     Status.MISSING,
                     "{}: copyright statement is missing or has incorrect format.".format(
@@ -248,7 +289,7 @@ def check_copyright(file_path, ignore_year, update, current_year):
             )
 
             # Update the year and write it to the source file
-            if update and not year_up_to_date:
+            if update_year and not year_up_to_date:
                 content = update_copyright_year(
                     content, copyright_line_nbr, current_year, copyright_pattern(current_year)
                 )
@@ -359,6 +400,8 @@ def main():
     ignore_files = [s.strip() for s in ignore_files.split(",")]
     ignore_files = [s for s in ignore_files if s]
 
+    docs_conf_file = config.get(section, "docs_conf_file")
+
     current_year = args.year
 
     if not current_year:
@@ -379,6 +422,19 @@ def main():
     incorrect_files = check_copyright_files(
         filenames, update_year=args.update_year, current_year=current_year
     )
+
+    file_status, print_str = check_copyright(
+        docs_conf_file,
+        ignore_year=False,
+        update_year=args.update_year,
+        current_year=current_year,
+        docs=True,
+    )
+
+    if print_str:
+        print(print_str)
+    if file_status not in {Status.OK, Status.NOT_SUPPORTED}:
+        incorrect_files.append(docs_conf_file)
 
     # Check if there were incorrect files
     if incorrect_files:
