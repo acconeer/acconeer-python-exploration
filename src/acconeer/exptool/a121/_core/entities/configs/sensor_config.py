@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
 
 import json
 import warnings
-from typing import Any, Optional, TypeVar
+from typing import Any, List, Optional, TypeVar
 
 import numpy as np
 
@@ -98,7 +98,7 @@ class SensorConfig:
 
     MAX_HWAAS = SubsweepConfig.MAX_HWAAS
 
-    _subsweeps: list[SubsweepConfig]
+    _subsweeps: List[SubsweepConfig]
 
     _sweeps_per_frame: int
     _sweep_rate: Optional[float]
