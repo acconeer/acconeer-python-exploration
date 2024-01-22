@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -209,7 +209,7 @@ def test_lower_idle_state_limits(
                     start_m=0.05,
                     end_m=0.10,
                     update_rate=1.0,
-                    close_range_leakage_cancellation=True,
+                    close_range_leakage_cancellation=False,
                 ),
                 sensor_ids=[1],
             )[0],
@@ -223,7 +223,7 @@ def test_lower_idle_state_limits(
                     start_m=0.05,
                     end_m=3.0,
                     update_rate=1.0,
-                    close_range_leakage_cancellation=True,
+                    close_range_leakage_cancellation=False,
                 ),
                 sensor_ids=[1],
             )[0],

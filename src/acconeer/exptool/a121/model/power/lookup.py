@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -63,14 +63,14 @@ class Sensor:
     @classmethod
     def default(cls) -> te.Self:
         idle_currents = {
-            a121.IdleState.READY: 60.0 * _mA,
+            a121.IdleState.READY: 62.5 * _mA,
             a121.IdleState.SLEEP: 1.6 * _mA,
             a121.IdleState.DEEP_SLEEP: 1.1 * _mA,
         }
 
         return cls(
             inter_sweep_currents_high_speed_mode={
-                a121.IdleState.READY: 66.0 * _mA,
+                a121.IdleState.READY: 68.5 * _mA,
                 a121.IdleState.SLEEP: 1.6 * _mA,
                 a121.IdleState.DEEP_SLEEP: 1.1 * _mA,
             },
@@ -81,11 +81,11 @@ class Sensor:
                 cls.IdleState.HIBERNATE: 15 * _uA,
             },
             measure_currents={
-                a121.Profile.PROFILE_1: 70.5 * _mA,
-                a121.Profile.PROFILE_2: 70 * _mA,
-                a121.Profile.PROFILE_3: 71.5 * _mA,
-                a121.Profile.PROFILE_4: 72.5 * _mA,
-                a121.Profile.PROFILE_5: 74 * _mA,
+                a121.Profile.PROFILE_1: 73.0 * _mA,
+                a121.Profile.PROFILE_2: 72.5 * _mA,
+                a121.Profile.PROFILE_3: 74.0 * _mA,
+                a121.Profile.PROFILE_4: 75.0 * _mA,
+                a121.Profile.PROFILE_5: 76.5 * _mA,
             },
             time_for_measure_transition={
                 a121.IdleState.READY: 0,

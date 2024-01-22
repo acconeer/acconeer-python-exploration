@@ -35,7 +35,7 @@ def integrationTestA111RssVersionsForBuildScope = [
 
 @Field
 def modelTestA121RssVersionForBuildScope = [
-    (BuildScope.SANITY)  : [tag: "a121-v1.4.0"],
+    (BuildScope.SANITY)  : [tag: "a121-v1.5.0"],
     (BuildScope.HOURLY)  : [],
     (BuildScope.NIGHTLY) : [],
 ]

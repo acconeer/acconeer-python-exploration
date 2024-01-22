@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -119,7 +119,7 @@ class Presence(Algorithm):
 
 
 class Distance(Algorithm):
-    _PROCESSING_SECONDS_PER_POINT = 11.28125e-6
+    _PROCESSING_SECONDS_PER_POINT = 12e-6
 
     @classmethod
     def processing_region(
@@ -128,7 +128,7 @@ class Distance(Algorithm):
         sensor: Sensor,
         module: Module,
     ) -> domain.SimpleRegion:
-        static_duration = 3e-3
+        static_duration = 2.5e-3
 
         num_points = sum(ssc.num_points for ssc in sensor_config.subsweeps)
         return domain.SimpleRegion(
@@ -294,7 +294,7 @@ def off_exit(
 
     return domain.SimpleRegion(
         10.51 * _mA,
-        4.997 * _ms,
+        4 * _ms,
         tag=domain.EnergyRegion.Tag.COMMUNICATION,
         description="Wake up from off",
     )
