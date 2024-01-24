@@ -1,5 +1,13 @@
 # Changelog
 
+## v7.7.4
+
+### Added
+- Plugin title to plot area
+- Display filename of loaded data file
+- Hide unnecesary details in the status bar when not in the Streaming tab.
+- Resource calculator: Add input block renaming
+
 ## v7.7.3
 
 ### Added
