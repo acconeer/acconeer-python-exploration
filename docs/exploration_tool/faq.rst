@@ -31,6 +31,12 @@ Python related
    This is a known issue on for Qt when running Wayland display server. The issue is fixed for Qt verison >= 6.4.0.
    (See related issue: https://bugreports.qt.io/browse/QTBUG-85297)
 
+#) ``malloc_consolidate(): unaligned fastbin chunk detected`` appears in the console when running ET
+
+   This error has been witnessed when running ET on Ubuntu 22.04.
+   The error is usually resolved by selecting *Ubuntu on Xorg* instead of *Ubuntu* in the Ubuntu login screen
+   (by pressing the cogwheel in the lower right).
+
 #) Issues with nox tests for Python 3.12
 
    When running nox tests for Python 3.12, the error "AttributeError: module ‘pkgutil’ has no attribute ‘ImpImporter’. Did you mean: ‘zipimporter’?" might occur.
